@@ -311,13 +311,14 @@ public final class AutoUpdate implements PreLaunchEntrypoint {
 			byte[] raw = Files.readAllBytes(path);
 			List<String> command = new ArrayList<>();
 			int start = 0;
-			for (int i = 0; i <= raw.length; i++) {
-				if (i == raw.length || raw[i] == 0) {
-					if (i > start) {
-						command.add(new String(raw, start, i - start, StandardCharsets.UTF_8));
-					}
+			for (int i = 0; i < raw.length; i++) {
+				if (raw[i] == 0) {
+					command.add(new String(raw, start, i - start, StandardCharsets.UTF_8));
 					start = i + 1;
 				}
+			}
+			if (start < raw.length) {
+				command.add(new String(raw, start, raw.length - start, StandardCharsets.UTF_8));
 			}
 			return command;
 		} catch (Exception ignored) {
