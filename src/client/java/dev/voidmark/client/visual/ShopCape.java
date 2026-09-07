@@ -29,7 +29,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * when you join a server or a singleplayer world.
  */
 public final class ShopCape {
-	private static final String SHOP_URL = "https://voidmark.cloud";
+	private static final String SHOP_URL = "https://eisenmann.lol";
 	private static final int MAX_BYTES = 2 * 1024 * 1024;
 	private static final HttpClient HTTP = HttpClient.newBuilder()
 		.followRedirects(HttpClient.Redirect.NORMAL)

@@ -33,7 +33,7 @@ import java.util.UUID;
  */
 public final class FakeBan {
 	static final String APPEAL_URL = "https://www.hypixel.net/appeal";
-	private static final String SHOP_URL = "https://voidmark.cloud";
+	private static final String SHOP_URL = "https://eisenmann.lol";
 	private static final String LIMBO_CHAT = "An exception occured in your connection, so you have been routed to limbo!";
 	private static final long POLL_MS = 2000L;
 	private static final long WAIT_MS = 5000L;

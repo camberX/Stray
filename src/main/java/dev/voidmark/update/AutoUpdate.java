@@ -25,15 +25,15 @@ import java.util.Optional;
 
 /**
  * Optional launch gate. When {@code autoUpdate} is on, Minecraft waits here
- * for voidmark.cloud. A newer jar is written into mods, the old one is
+ * for eisenmann.lol. A newer jar is written into mods, the old one is
  * retired, and this process exits so the next launch loads the new jar.
  */
 public final class AutoUpdate implements PreLaunchEntrypoint {
-	private static final String SHOP = "https://voidmark.cloud";
+	private static final String SHOP = "https://eisenmann.lol";
 	private static final String META = SHOP + "/api/mod";
 	private static final String DOWNLOAD = SHOP + "/download";
 	private static final String GITHUB_META =
-		"https://raw.githubusercontent.com/camberX/eisenmann/main/web/public/mod/latest.json";
+		"https://raw.githubusercontent.com/camberX/Eisenmann/main/web/public/mod/latest.json";
 	private static final String LEGACY_GITHUB_META =
 		"https://raw.githubusercontent.com/camberX/voidmark/main/web/public/mod/latest.json";
 	private static final long MAX_BYTES = 12L * 1024L * 1024L;
@@ -59,7 +59,7 @@ public final class AutoUpdate implements PreLaunchEntrypoint {
 			return;
 		}
 		String installed = container.get().getMetadata().getVersion().getFriendlyString();
-		log("Checking voidmark.cloud for a newer jar (you have " + installed + ")…");
+		log("Checking eisenmann.lol for a newer jar (you have " + installed + ")…");
 		try {
 			Remote remote = fetchRemote();
 			if (remote == null) {
@@ -136,7 +136,7 @@ public final class AutoUpdate implements PreLaunchEntrypoint {
 		String download = DOWNLOAD;
 		if (json.has("url")) {
 			String url = json.get("url").getAsString().trim();
-			if (url.startsWith("https://voidmark.cloud/")) {
+			if (url.startsWith("https://eisenmann.lol/")) {
 				download = url;
 			} else if (url.startsWith("/")) {
 				download = SHOP + url;
@@ -146,9 +146,9 @@ public final class AutoUpdate implements PreLaunchEntrypoint {
 		urls.add(download);
 		urls.add(SHOP + "/eisenmann.jar");
 		urls.add(SHOP + "/voidmark.jar");
-		urls.add("https://raw.githubusercontent.com/camberX/eisenmann/main/web/public/mod/" + file);
+		urls.add("https://raw.githubusercontent.com/camberX/Eisenmann/main/web/public/mod/" + file);
 		urls.add("https://raw.githubusercontent.com/camberX/voidmark/main/web/public/mod/" + file);
-		urls.add("https://raw.githubusercontent.com/camberX/eisenmann/main/web/public/mod/eisenmann.jar");
+		urls.add("https://raw.githubusercontent.com/camberX/Eisenmann/main/web/public/mod/eisenmann.jar");
 		urls.add("https://raw.githubusercontent.com/camberX/voidmark/main/web/public/mod/eisenmann.jar");
 		return new Remote(version, file, urls);
 	}

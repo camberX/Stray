@@ -25,7 +25,7 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 final class TrackLookup {
 	private static final String BROWSER_UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36";
-	private static final String APP_UA = "Eisenmann/1.2 (https://github.com/camberX/eisenmann)";
+	private static final String APP_UA = "Eisenmann/1.2 (https://github.com/camberX/Eisenmann)";
 	private static final String YTM_SONGS = "EgWKAQIIAWoKEAkQBRAKEAMQBA==";
 	private static final long RETRY_MS = 45_000L;
 	private static final HttpClient HTTP = HttpClient.newBuilder()
