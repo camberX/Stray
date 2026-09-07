@@ -11,6 +11,7 @@ import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.network.chat.Component;
 
 import java.text.NumberFormat;
 import java.util.Locale;
@@ -72,7 +73,8 @@ public final class JacobContestHudRenderer {
 		right(graphics, font, snap.remaining(), PAD, Theme.MUTED);
 
 		String score = amount(snap.score());
-		GuiDraw.hud(graphics, font, GuiDraw.ellipsize(font, snap.crop(), 92, true), PAD + 1, 18, Theme.TEXT);
+		String crop = GuiDraw.ellipsize(font, snap.crop(), 92, true);
+		GuiDraw.hud(graphics, font, Component.literal(crop), PAD + 1, 18, Theme.TEXT);
 		right(graphics, font, score, 18, Theme.TEXT);
 
 		String rank = label(snap.currentRank());
