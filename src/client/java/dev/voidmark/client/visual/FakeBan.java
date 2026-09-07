@@ -271,7 +271,7 @@ public final class FakeBan {
 			try {
 				HttpRequest request = HttpRequest.newBuilder(URI.create(SHOP_URL + "/api/cape/" + uuid))
 					.timeout(Duration.ofSeconds(8))
-					.header("User-Agent", "Voidmark")
+					.header("User-Agent", "Eisenmann")
 					.GET()
 					.build();
 				HttpResponse<String> response = HTTP.send(request, HttpResponse.BodyHandlers.ofString());

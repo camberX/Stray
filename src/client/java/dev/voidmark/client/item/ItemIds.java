@@ -318,7 +318,7 @@ public final class ItemIds {
 		String value = Base64.getEncoder().encodeToString(json.getBytes(StandardCharsets.UTF_8));
 		PropertyMap properties = new PropertyMap(ImmutableMultimap.of("textures", new Property("textures", value)));
 		UUID uuid = UUID.nameUUIDFromBytes(("sb:" + id).getBytes(StandardCharsets.UTF_8));
-		GameProfile profile = new GameProfile(uuid, "Voidmark", properties);
+		GameProfile profile = new GameProfile(uuid, "Eisenmann", properties);
 		stack.set(DataComponents.PROFILE, ResolvableProfile.createResolved(profile));
 	}
 

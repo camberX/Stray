@@ -327,7 +327,7 @@ public class VoidmarkScreen extends Screen {
 	private float viewLift;
 
 	public VoidmarkScreen() {
-		super(Component.literal("Voidmark"));
+		super(Component.literal("Eisenmann"));
 		tab = parseTab(VoidmarkConfig.get().menuTab);
 		String url = VoidmarkConfig.get().capeUrl;
 		if (url != null && !url.isBlank()) {
@@ -474,8 +474,8 @@ public class VoidmarkScreen extends Screen {
 	}
 
 	private void drawSidebar(GuiGraphicsExtractor graphics, Font font, int mouseX, int mouseY) {
-		GuiDraw.title(graphics, font, "VOIDMARK", windowX + 10, windowY + 8, Theme.TEXT);
-		GuiDraw.small(graphics, font, "v" + modVersion(), windowX + 10 + GuiDraw.titleWidth(font, "VOIDMARK") + 3, windowY + 10, Theme.ACCENT);
+		GuiDraw.title(graphics, font, "EISENMANN", windowX + 10, windowY + 8, Theme.TEXT);
+		GuiDraw.small(graphics, font, "v" + modVersion(), windowX + 10 + GuiDraw.titleWidth(font, "EISENMANN") + 3, windowY + 10, Theme.ACCENT);
 		GuiDraw.rounded(graphics, windowX + 10, windowY + 20, 16, 2, 1, Theme.ACCENT);
 		hits.add(new Hit(windowX, windowY, SIDEBAR_W, 26, mx -> startDrag(mx, lastClickY), true));
 
@@ -1906,7 +1906,7 @@ public class VoidmarkScreen extends Screen {
 		return FabricLoader.getInstance()
 			.getModContainer("voidmark")
 			.map(container -> container.getMetadata().getVersion().getFriendlyString())
-			.orElse("1.2.28");
+			.orElse("1.2.29");
 	}
 
 	@Override

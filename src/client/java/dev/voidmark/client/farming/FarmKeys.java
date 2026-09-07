@@ -101,7 +101,7 @@ public final class FarmKeys {
 
 	private static void message(Minecraft client, String text) {
 		if (client.gui != null) {
-			MutableComponent line = Component.literal("VOIDMARK")
+			MutableComponent line = Component.literal("EISENMANN")
 				.withStyle(style(Theme.ACCENT).withBold(true))
 				.append(Component.literal(" | ").withStyle(style(Theme.MUTED)))
 				.append(Component.literal(text).withStyle(style(Theme.TEXT)));

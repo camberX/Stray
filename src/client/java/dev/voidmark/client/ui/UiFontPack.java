@@ -138,7 +138,7 @@ public final class UiFontPack {
 			{
 				"pack": {
 					"pack_format": 84,
-					"description": "Voidmark UI font"
+					"description": "Eisenmann UI font"
 				}
 			}
 			""";

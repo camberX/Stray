@@ -25,7 +25,7 @@ public final class WardrobeCommands {
 		}
 		if (!SkyblockLocation.inSkyblock && !SkyblockLocation.onHypixel) {
 			client.gui.getChat().addClientSystemMessage(
-				Component.literal("Voidmark | Join Skyblock, then /wardrobe opens the custom menu.")
+				Component.literal("Eisenmann | Join Skyblock, then /wardrobe opens the custom menu.")
 			);
 		}
 		try {

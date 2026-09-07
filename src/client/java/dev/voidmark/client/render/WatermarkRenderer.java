@@ -49,7 +49,7 @@ public final class WatermarkRenderer {
 
 	public static void draw(GuiGraphicsExtractor graphics, Font font, float x, float y, float scale) {
 		List<String> parts = new ArrayList<>();
-		parts.add("VOIDMARK");
+		parts.add("EISENMANN");
 		VoidmarkConfig config = VoidmarkConfig.get();
 		if (config.watermarkFps) {
 			parts.add(HudStats.fps() + " fps");
@@ -111,7 +111,7 @@ public final class WatermarkRenderer {
 		}
 		VoidmarkConfig config = VoidmarkConfig.get();
 		float w = 16 + brandExtra(font);
-		w += GuiDraw.brandWidth(font, "VOIDMARK");
+		w += GuiDraw.brandWidth(font, "EISENMANN");
 		if (config.watermarkFps) {
 			w += 9 + GuiDraw.menuWidth(font, "000 fps");
 		}

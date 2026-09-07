@@ -572,7 +572,7 @@ public final class VoidmarkConfig {
 	}
 
 	public String nametagStyleLabel() {
-		return nametagCustom() ? "Voidmark" : "Vanilla";
+		return nametagCustom() ? "Eisenmann" : "Vanilla";
 	}
 
 	public static String normalizeNametagStyle(String style) {

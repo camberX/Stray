@@ -97,13 +97,13 @@ public final class EspCommands {
 		tell(line);
 		int learned = EspMobPrint.learned(trimmed.toLowerCase(Locale.ROOT));
 		if (learned == 0) {
-			tell(muted("Walk up to one named mob in this world. Voidmark copies its type and armor, then forgets the look when you change worlds."));
+			tell(muted("Walk up to one named mob in this world. Eisenmann copies its type and armor, then forgets the look when you change worlds."));
 		}
 		return Command.SINGLE_SUCCESS;
 	}
 
 	private static MutableComponent brand() {
-		return Component.literal("VOIDMARK").withStyle(style(Theme.ACCENT).withBold(true));
+		return Component.literal("EISENMANN").withStyle(style(Theme.ACCENT).withBold(true));
 	}
 
 	private static MutableComponent sep() {
