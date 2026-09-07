@@ -35,6 +35,7 @@ public final class AutoUpdate implements PreLaunchEntrypoint {
 	private static final String GITHUB_META =
 		"https://raw.githubusercontent.com/camberX/voidmark/main/web/public/mod/latest.json";
 	private static final long MAX_BYTES = 12L * 1024L * 1024L;
+	private static final String RELAUNCH_GUARD = "voidmark.relaunchVersion";
 
 	@Override
 	public void onPreLaunch() {
@@ -68,13 +69,17 @@ public final class AutoUpdate implements PreLaunchEntrypoint {
 				log("Already up to date (" + installed + ").");
 				return;
 			}
+			if (remote.version.equals(System.getProperty(RELAUNCH_GUARD))) {
+				log("Automatic relaunch already attempted for " + remote.version + ". Continuing this launch to avoid a loop.");
+				return;
+			}
 			log("Found " + remote.version + ". Downloading and relaunching Minecraft.");
 			Path dest = apply(current, remote);
 			if (dest == null) {
 				log("Update failed. Continuing with " + installed + ".");
 				return;
 			}
-			if (relaunch(current, dest)) {
+			if (relaunch(current, dest, remote.version)) {
 				log("Updated to " + remote.version + " at " + dest.getFileName() + ". Relaunch started.");
 			} else {
 				log("Updated to " + remote.version + " at " + dest.getFileName() + ". Relaunch Minecraft manually.");
@@ -189,7 +194,7 @@ public final class AutoUpdate implements PreLaunchEntrypoint {
 				break;
 			}
 		}
-		if (!downloaded || !validJar(part)) {
+		if (!downloaded || !validJar(part, remote)) {
 			Files.deleteIfExists(part);
 			return null;
 		}
@@ -205,7 +210,7 @@ public final class AutoUpdate implements PreLaunchEntrypoint {
 		return dest;
 	}
 
-	private static boolean relaunch(Path current, Path updated) {
+	private static boolean relaunch(Path current, Path updated, String version) {
 		ProcessHandle.Info info = ProcessHandle.current().info();
 		Optional<String> executable = info.command();
 		Optional<String[]> arguments = info.arguments();
@@ -213,29 +218,41 @@ public final class AutoUpdate implements PreLaunchEntrypoint {
 			log("The launcher did not expose its Java command, so automatic relaunch is unavailable.");
 			return false;
 		}
-		List<String> command = new ArrayList<>(arguments.get().length + 1);
-		command.add(executable.get());
+		List<String> launch = new ArrayList<>(arguments.get().length + 2);
+		launch.add(executable.get());
+		launch.add("-D" + RELAUNCH_GUARD + "=" + version);
 		for (String argument : arguments.get()) {
-			command.add(rewriteLaunchArgument(argument, current, updated));
+			launch.add(rewriteLaunchArgument(argument, current, updated));
 		}
 		try {
-			ProcessBuilder builder = new ProcessBuilder(command);
 			String cwd = System.getProperty("user.dir");
-			if (cwd != null && !cwd.isBlank()) {
-				Path directory = Path.of(cwd).toAbsolutePath().normalize();
-				if (Files.isDirectory(directory)) {
-					builder.directory(directory.toFile());
-				}
+			Path directory = cwd == null || cwd.isBlank()
+				? updated.getParent()
+				: Path.of(cwd).toAbsolutePath().normalize();
+			List<String> helper = new ArrayList<>(launch.size() + 8);
+			helper.add(executable.get());
+			helper.add("-cp");
+			helper.add(updated.toString());
+			helper.add(RelaunchHelper.class.getName());
+			helper.add(Long.toString(ProcessHandle.current().pid()));
+			helper.add(directory.toString());
+			helper.add(current.toString());
+			helper.add(updated.toString());
+			helper.add(Integer.toString(launch.size()));
+			helper.addAll(launch);
+			ProcessBuilder builder = new ProcessBuilder(helper);
+			if (Files.isDirectory(directory)) {
+				builder.directory(directory.toFile());
 			}
 			builder.inheritIO();
-			Process child = builder.start();
+			Process helperProcess = builder.start();
 			try {
-				Thread.sleep(750L);
+				Thread.sleep(400L);
 			} catch (InterruptedException interrupted) {
 				Thread.currentThread().interrupt();
 			}
-			if (!child.isAlive()) {
-				log("The replacement process exited before Minecraft started.");
+			if (!helperProcess.isAlive()) {
+				log("The relaunch helper exited before Minecraft stopped.");
 				return false;
 			}
 			return true;
@@ -291,10 +308,19 @@ public final class AutoUpdate implements PreLaunchEntrypoint {
 			.GET();
 	}
 
-	private static boolean validJar(Path path) {
-		try (InputStream in = Files.newInputStream(path)) {
-			byte[] head = in.readNBytes(4);
-			return head.length >= 4 && head[0] == 'P' && head[1] == 'K';
+	private static boolean validJar(Path path, Remote remote) {
+		try (java.util.zip.ZipFile zip = new java.util.zip.ZipFile(path.toFile())) {
+			java.util.zip.ZipEntry entry = zip.getEntry("fabric.mod.json");
+			if (entry == null) {
+				return false;
+			}
+			try (Reader reader = new java.io.InputStreamReader(zip.getInputStream(entry))) {
+				JsonObject metadata = JsonParser.parseReader(reader).getAsJsonObject();
+				return metadata.has("id")
+					&& Voidmark.MOD_ID.equals(metadata.get("id").getAsString())
+					&& metadata.has("version")
+					&& remote.version.equals(metadata.get("version").getAsString());
+			}
 		} catch (Exception ignored) {
 			return false;
 		}
