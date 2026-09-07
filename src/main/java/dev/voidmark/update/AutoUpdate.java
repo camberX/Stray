@@ -9,10 +9,12 @@ import net.fabricmc.loader.api.entrypoint.PreLaunchEntrypoint;
 
 import java.io.InputStream;
 import java.io.Reader;
+import java.lang.management.ManagementFactory;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -22,6 +24,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Optional launch gate. When {@code autoUpdate} is on, Minecraft waits here
@@ -211,17 +214,20 @@ public final class AutoUpdate implements PreLaunchEntrypoint {
 	}
 
 	private static boolean relaunch(Path current, Path updated, String version) {
-		ProcessHandle.Info info = ProcessHandle.current().info();
-		Optional<String> executable = info.command();
-		Optional<String[]> arguments = info.arguments();
-		if (executable.isEmpty() || arguments.isEmpty()) {
-			log("The launcher did not expose its Java command, so automatic relaunch is unavailable.");
+		List<String> recovered = launchCommand();
+		if (recovered.size() < 2) {
+			log("Could not recover the launcher's Java command, so automatic relaunch is unavailable.");
 			return false;
 		}
-		List<String> launch = new ArrayList<>(arguments.get().length + 2);
-		launch.add(executable.get());
+		String executable = recovered.getFirst();
+		List<String> launch = new ArrayList<>(recovered.size() + 1);
+		launch.add(executable);
 		launch.add("-D" + RELAUNCH_GUARD + "=" + version);
-		for (String argument : arguments.get()) {
+		for (int i = 1; i < recovered.size(); i++) {
+			String argument = recovered.get(i);
+			if (argument.startsWith("-D" + RELAUNCH_GUARD + "=")) {
+				continue;
+			}
 			launch.add(rewriteLaunchArgument(argument, current, updated));
 		}
 		try {
@@ -230,7 +236,7 @@ public final class AutoUpdate implements PreLaunchEntrypoint {
 				? updated.getParent()
 				: Path.of(cwd).toAbsolutePath().normalize();
 			List<String> helper = new ArrayList<>(launch.size() + 8);
-			helper.add(executable.get());
+			helper.add(executable);
 			helper.add("-cp");
 			helper.add(updated.toString());
 			helper.add(RelaunchHelper.class.getName());
@@ -260,6 +266,194 @@ public final class AutoUpdate implements PreLaunchEntrypoint {
 			Voidmark.LOGGER.warn("Could not relaunch Minecraft after updating", exception);
 			return false;
 		}
+	}
+
+	private static List<String> launchCommand() {
+		List<String> command;
+		if (windows()) {
+			command = splitWindowsCommandLine(windowsCommandLine(ProcessHandle.current().pid()));
+			if (command.size() >= 2) {
+				return command;
+			}
+		} else {
+			command = linuxCommandLine();
+			if (command.size() >= 2) {
+				return command;
+			}
+		}
+		command = processHandleCommand();
+		if (command.size() >= 2) {
+			return command;
+		}
+		return reconstructCommand();
+	}
+
+	private static List<String> processHandleCommand() {
+		ProcessHandle.Info info = ProcessHandle.current().info();
+		Optional<String> executable = info.command();
+		Optional<String[]> arguments = info.arguments();
+		if (executable.isPresent() && arguments.isPresent()) {
+			List<String> command = new ArrayList<>(arguments.get().length + 1);
+			command.add(executable.get());
+			command.addAll(List.of(arguments.get()));
+			return command;
+		}
+		String raw = info.commandLine().orElse("");
+		return windows() ? splitWindowsCommandLine(raw) : splitUnixCommandLine(raw);
+	}
+
+	private static List<String> linuxCommandLine() {
+		Path path = Path.of("/proc/self/cmdline");
+		if (!Files.isReadable(path)) {
+			return List.of();
+		}
+		try {
+			byte[] raw = Files.readAllBytes(path);
+			List<String> command = new ArrayList<>();
+			int start = 0;
+			for (int i = 0; i <= raw.length; i++) {
+				if (i == raw.length || raw[i] == 0) {
+					if (i > start) {
+						command.add(new String(raw, start, i - start, StandardCharsets.UTF_8));
+					}
+					start = i + 1;
+				}
+			}
+			return command;
+		} catch (Exception ignored) {
+			return List.of();
+		}
+	}
+
+	private static String windowsCommandLine(long pid) {
+		try {
+			Process process = new ProcessBuilder(
+				"powershell.exe",
+				"-NoProfile",
+				"-Command",
+				"(Get-CimInstance Win32_Process -Filter \"ProcessId=" + pid + "\").CommandLine"
+			).redirectError(ProcessBuilder.Redirect.DISCARD).start();
+			if (!process.waitFor(4, TimeUnit.SECONDS)) {
+				process.destroyForcibly();
+				return "";
+			}
+			return new String(process.getInputStream().readAllBytes(), StandardCharsets.UTF_8).trim();
+		} catch (Exception ignored) {
+			return ProcessHandle.current().info().commandLine().orElse("");
+		}
+	}
+
+	private static List<String> reconstructCommand() {
+		String executable = javaBinary();
+		String main = System.getProperty("sun.java.command", "");
+		if (executable == null || main.isBlank()) {
+			return List.of();
+		}
+		List<String> command = new ArrayList<>();
+		command.add(executable);
+		command.addAll(ManagementFactory.getRuntimeMXBean().getInputArguments());
+		String classPath = System.getProperty("java.class.path");
+		if (classPath != null && !classPath.isBlank()) {
+			command.add("-cp");
+			command.add(classPath);
+		}
+		command.addAll(windows() ? splitWindowsCommandLine(main) : splitUnixCommandLine(main));
+		return command;
+	}
+
+	private static String javaBinary() {
+		Path bin = Path.of(System.getProperty("java.home", ""), "bin");
+		Path preferred = bin.resolve(windows() ? "javaw.exe" : "java");
+		if (Files.isRegularFile(preferred)) {
+			return preferred.toAbsolutePath().normalize().toString();
+		}
+		Path fallback = bin.resolve(windows() ? "java.exe" : "java");
+		return Files.isRegularFile(fallback) ? fallback.toAbsolutePath().normalize().toString() : null;
+	}
+
+	private static List<String> splitWindowsCommandLine(String raw) {
+		if (raw == null || raw.isBlank()) {
+			return List.of();
+		}
+		List<String> args = new ArrayList<>();
+		StringBuilder current = new StringBuilder();
+		boolean quoted = false;
+		int slashes = 0;
+		for (int i = 0; i < raw.length(); i++) {
+			char c = raw.charAt(i);
+			if (c == '\\') {
+				slashes++;
+				continue;
+			}
+			if (c == '"') {
+				current.append("\\".repeat(slashes / 2));
+				if (slashes % 2 == 0) {
+					quoted = !quoted;
+				} else {
+					current.append('"');
+				}
+				slashes = 0;
+				continue;
+			}
+			if (slashes > 0) {
+				current.append("\\".repeat(slashes));
+				slashes = 0;
+			}
+			if (!quoted && Character.isWhitespace(c)) {
+				if (!current.isEmpty()) {
+					args.add(current.toString());
+					current.setLength(0);
+				}
+			} else {
+				current.append(c);
+			}
+		}
+		if (slashes > 0) {
+			current.append("\\".repeat(slashes));
+		}
+		if (!current.isEmpty()) {
+			args.add(current.toString());
+		}
+		return args;
+	}
+
+	private static List<String> splitUnixCommandLine(String raw) {
+		if (raw == null || raw.isBlank()) {
+			return List.of();
+		}
+		List<String> args = new ArrayList<>();
+		StringBuilder current = new StringBuilder();
+		char quote = 0;
+		boolean escaped = false;
+		for (int i = 0; i < raw.length(); i++) {
+			char c = raw.charAt(i);
+			if (escaped) {
+				current.append(c);
+				escaped = false;
+			} else if (c == '\\' && quote != '\'') {
+				escaped = true;
+			} else if ((c == '\'' || c == '"') && (quote == 0 || quote == c)) {
+				quote = quote == 0 ? c : 0;
+			} else if (quote == 0 && Character.isWhitespace(c)) {
+				if (!current.isEmpty()) {
+					args.add(current.toString());
+					current.setLength(0);
+				}
+			} else {
+				current.append(c);
+			}
+		}
+		if (escaped) {
+			current.append('\\');
+		}
+		if (!current.isEmpty()) {
+			args.add(current.toString());
+		}
+		return args;
+	}
+
+	private static boolean windows() {
+		return System.getProperty("os.name", "").toLowerCase(Locale.ROOT).contains("win");
 	}
 
 	private static String rewriteLaunchArgument(String argument, Path current, Path updated) {
