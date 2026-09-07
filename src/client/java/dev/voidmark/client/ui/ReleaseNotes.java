@@ -9,7 +9,7 @@ public final class ReleaseNotes {
 
 	public static final Entry[] ENTRIES = {
 		new Entry("1.2.28", new String[]{
-			"Auto update can recover the full Java launch command from Windows, Linux, or JVM fallbacks when the launcher hides ProcessHandle arguments."
+			"Auto update can recover the full Java launch command from Windows process data, Linux /proc, or raw process data when the launcher hides ProcessHandle arguments."
 		}),
 		new Entry("1.2.27", new String[]{
 			"Test release for verifying that auto-update installs the new jar and relaunches Minecraft."

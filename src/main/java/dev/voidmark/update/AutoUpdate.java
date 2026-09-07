@@ -9,7 +9,6 @@ import net.fabricmc.loader.api.entrypoint.PreLaunchEntrypoint;
 
 import java.io.InputStream;
 import java.io.Reader;
-import java.lang.management.ManagementFactory;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -24,6 +23,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -285,7 +285,7 @@ public final class AutoUpdate implements PreLaunchEntrypoint {
 		if (command.size() >= 2) {
 			return command;
 		}
-		return reconstructCommand();
+		return List.of();
 	}
 
 	private static List<String> processHandleCommand() {
@@ -331,44 +331,25 @@ public final class AutoUpdate implements PreLaunchEntrypoint {
 				"powershell.exe",
 				"-NoProfile",
 				"-Command",
-				"(Get-CimInstance Win32_Process -Filter \"ProcessId=" + pid + "\").CommandLine"
+				"[Console]::OutputEncoding = [System.Text.Encoding]::UTF8; "
+					+ "(Get-CimInstance Win32_Process -Filter \"ProcessId=" + pid + "\").CommandLine"
 			).redirectError(ProcessBuilder.Redirect.DISCARD).start();
+			CompletableFuture<byte[]> output = CompletableFuture.supplyAsync(() -> {
+				try {
+					return process.getInputStream().readAllBytes();
+				} catch (Exception ignored) {
+					return new byte[0];
+				}
+			});
 			if (!process.waitFor(4, TimeUnit.SECONDS)) {
 				process.destroyForcibly();
+				output.cancel(true);
 				return "";
 			}
-			return new String(process.getInputStream().readAllBytes(), StandardCharsets.UTF_8).trim();
+			return new String(output.get(1, TimeUnit.SECONDS), StandardCharsets.UTF_8).trim();
 		} catch (Exception ignored) {
 			return ProcessHandle.current().info().commandLine().orElse("");
 		}
-	}
-
-	private static List<String> reconstructCommand() {
-		String executable = javaBinary();
-		String main = System.getProperty("sun.java.command", "");
-		if (executable == null || main.isBlank()) {
-			return List.of();
-		}
-		List<String> command = new ArrayList<>();
-		command.add(executable);
-		command.addAll(ManagementFactory.getRuntimeMXBean().getInputArguments());
-		String classPath = System.getProperty("java.class.path");
-		if (classPath != null && !classPath.isBlank()) {
-			command.add("-cp");
-			command.add(classPath);
-		}
-		command.addAll(windows() ? splitWindowsCommandLine(main) : splitUnixCommandLine(main));
-		return command;
-	}
-
-	private static String javaBinary() {
-		Path bin = Path.of(System.getProperty("java.home", ""), "bin");
-		Path preferred = bin.resolve(windows() ? "javaw.exe" : "java");
-		if (Files.isRegularFile(preferred)) {
-			return preferred.toAbsolutePath().normalize().toString();
-		}
-		Path fallback = bin.resolve(windows() ? "java.exe" : "java");
-		return Files.isRegularFile(fallback) ? fallback.toAbsolutePath().normalize().toString() : null;
 	}
 
 	private static List<String> splitWindowsCommandLine(String raw) {
@@ -378,14 +359,17 @@ public final class AutoUpdate implements PreLaunchEntrypoint {
 		List<String> args = new ArrayList<>();
 		StringBuilder current = new StringBuilder();
 		boolean quoted = false;
+		boolean started = false;
 		int slashes = 0;
 		for (int i = 0; i < raw.length(); i++) {
 			char c = raw.charAt(i);
 			if (c == '\\') {
 				slashes++;
+				started = true;
 				continue;
 			}
 			if (c == '"') {
+				started = true;
 				current.append("\\".repeat(slashes / 2));
 				if (slashes % 2 == 0) {
 					quoted = !quoted;
@@ -400,18 +384,20 @@ public final class AutoUpdate implements PreLaunchEntrypoint {
 				slashes = 0;
 			}
 			if (!quoted && Character.isWhitespace(c)) {
-				if (!current.isEmpty()) {
+				if (started) {
 					args.add(current.toString());
 					current.setLength(0);
+					started = false;
 				}
 			} else {
 				current.append(c);
+				started = true;
 			}
 		}
 		if (slashes > 0) {
 			current.append("\\".repeat(slashes));
 		}
-		if (!current.isEmpty()) {
+		if (started) {
 			args.add(current.toString());
 		}
 		return args;
