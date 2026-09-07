@@ -8,6 +8,10 @@ public final class ReleaseNotes {
 	}
 
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.29", new String[]{
+			"Voidmark is now Eisenmann. Existing settings and the legacy /voidmark command keep working.",
+			"Auto update installs the new jar and exits cleanly for a normal launcher start; automatic relaunch has been removed."
+		}),
 		new Entry("1.2.28", new String[]{
 			"Auto update can recover the full Java launch command from Windows process data, Linux /proc, or raw process data when the launcher hides ProcessHandle arguments."
 		}),
@@ -15,7 +19,7 @@ public final class ReleaseNotes {
 			"Test release for verifying that auto-update installs the new jar and relaunches Minecraft."
 		}),
 		new Entry("1.2.26", new String[]{
-			"Auto update starts the same Minecraft launch again after installing a new jar. If a launcher hides its command, Voidmark exits with the update installed for a manual start."
+			"Auto update starts the same Minecraft launch again after installing a new jar. If a launcher hides its command, Eisenmann exits with the update installed for a manual start."
 		}),
 		new Entry("1.2.25", new String[]{
 			"Jacob's Contest HUD predicts your finishing bracket and crop total from live tab data, with average crops per second and per score update."
@@ -94,7 +98,7 @@ public final class ReleaseNotes {
 			"Chest Aim tracks each distinct crit box and only turns after that box jumps or vanishes, instead of locking onto the chest block."
 		}),
 		new Entry("1.2.0", new String[]{
-			"Voidmark 1.2.0 release."
+			"Eisenmann 1.2.0 release."
 		}),
 		new Entry("1.1.223", new String[]{
 			"Chest ESP has a Speed slider for how fast Chest Aim turns."
@@ -112,7 +116,7 @@ public final class ReleaseNotes {
 			"Block outline glow is back. Looking at a block uses a small blur instead of the full ESP kernel, so world FPS stays up."
 		}),
 		new Entry("1.1.218", new String[]{
-			"Farm keys uses VOIDMARK chat prefixes, sets sensitivity to minimum, and restores your exact sensitivity when disabled."
+			"Farm keys uses EISENMANN chat prefixes, sets sensitivity to minimum, and restores your exact sensitivity when disabled."
 		}),
 		new Entry("1.1.217", new String[]{
 			"/vm farmkeys or /vm fk swaps Attack/Destroy with Jump and makes Attack/Destroy toggle. Run it again to restore your original bindings."
@@ -214,7 +218,7 @@ public final class ReleaseNotes {
 			"Auto update replaces the jar and relaunches Minecraft on its own, so you do not have to open the launcher again."
 		}),
 		new Entry("1.1.184", new String[]{
-			"The vanilla black block outline stays off while Voidmark's glow outline is on, so you only see the custom rim."
+			"The vanilla black block outline stays off while Eisenmann's glow outline is on, so you only see the custom rim."
 		}),
 		new Entry("1.1.183", new String[]{
 			"The click GUI has more sidebar tabs: Combat, Menus, and Status sit next to World, ESP, Overlay, Bars, Nodes, and Mining so the list fills the pane."
@@ -223,7 +227,7 @@ public final class ReleaseNotes {
 			"Auto update is off by default. Turn it on in the theme settings and the next launch waits for voidmark.cloud: if a newer jar is there it replaces the one in mods and Minecraft closes so you can relaunch."
 		}),
 		new Entry("1.1.181", new String[]{
-			"Hypixel wardrobe ((1/3) Armor Sets) opens a Voidmark menu with a 3D armor preview and the set slots on the right. Pets and extra gear are left out. Clicks go through the real chest."
+			"Hypixel wardrobe ((1/3) Armor Sets) opens a Eisenmann menu with a 3D armor preview and the set slots on the right. Pets and extra gear are left out. Clicks go through the real chest."
 		}),
 		new Entry("1.1.180", new String[]{
 			"The loadouts gear row only shows armor and equipment that is actually there. Empty placeholder slots to the right are gone."
@@ -244,7 +248,7 @@ public final class ReleaseNotes {
 			"The custom loadouts menu actually opens. It looks for Hypixel's (1/3) Loadouts title (any page numbers), which the last build missed because it looked for lowercase loadout."
 		}),
 		new Entry("1.1.174", new String[]{
-			"Hypixel /loadouts opens a Voidmark menu: 3D armor and pet for the selected loadout, and the eight slots on the right. Clicks go through the real chest so the server sees a normal GUI click."
+			"Hypixel /loadouts opens a Eisenmann menu: 3D armor and pet for the selected loadout, and the eight slots on the right. Clicks go through the real chest so the server sees a normal GUI click."
 		}),
 		new Entry("1.1.173", new String[]{
 			"Melee hitsounds wait for Minecraft's attack cooldown. Spam-clicks before the weapon is charged no longer ding."
@@ -328,7 +332,7 @@ public final class ReleaseNotes {
 			"/vm esp <text> glows every mob whose nametag contains that word, including holograms above the real mob. Raw mats reads Ender Chest and backpacks from the profile API again — older inventory layouts, nested backpacks, and 1.21 item components included."
 		}),
 		new Entry("1.1.146", new String[]{
-			"Theme has a Font picker for every menu and HUD label. It lists the TrueType fonts installed on your PC. The watermark VOIDMARK logo and the VOIDMARK Dev nametag stay on Nunito."
+			"Theme has a Font picker for every menu and HUD label. It lists the TrueType fonts installed on your PC. The watermark EISENMANN logo and the EISENMANN Dev nametag stay on Nunito."
 		}),
 		new Entry("1.1.145", new String[]{
 			"/vm edit is a visual reskin again — no lore, no Maxed, no worn armor models. Raw mats only counts the materials you actually have, not cobble locked inside minions and other crafts."
@@ -343,7 +347,7 @@ public final class ReleaseNotes {
 			"Glow ESP renders through walls at full range — entities behind geometry are no longer culled. Music HUD is more compact; hover controls (prev/play/next) are visible again."
 		}),
 		new Entry("1.1.141", new String[]{
-			"Chams and the ESP 3D preview are gone. Vanilla nametag style still uses Voidmark range, size, opacity, through-walls, distance text, and distance scaling — only the chrome is Minecraft's."
+			"Chams and the ESP 3D preview are gone. Vanilla nametag style still uses Eisenmann range, size, opacity, through-walls, distance text, and distance scaling — only the chrome is Minecraft's."
 		}),
 		new Entry("1.1.140", new String[]{
 			"Fresh jar. Replace a truncated 1.1.139 download (zip END header not found) with this build."
@@ -370,10 +374,10 @@ public final class ReleaseNotes {
 			"Music controls stay hidden until you hover the HUD with chat open, then slide down. /vm edit can copy a Hypixel item's name and lore, color codes included, and replace the one you are holding."
 		}),
 		new Entry("1.1.132", new String[]{
-			"Cape creator crops photos onto the 10×16 cape face in Voidmark and on the cape desk. Drag to pan, scroll to zoom, then apply. Vanilla 64×32 templates still skip the cropper."
+			"Cape creator crops photos onto the 10×16 cape face in Eisenmann and on the cape desk. Drag to pan, scroll to zoom, then apply. Vanilla 64×32 templates still skip the cropper."
 		}),
 		new Entry("1.1.131", new String[]{
-			"Nametags cog picks Voidmark plates or vanilla tags. Menu buttons, fields, list rows, and compact HUD pieces no longer draw a left accent rail. Remaining HUD rails flip to the side closer to the screen edge."
+			"Nametags cog picks Eisenmann plates or vanilla tags. Menu buttons, fields, list rows, and compact HUD pieces no longer draw a left accent rail. Remaining HUD rails flip to the side closer to the screen edge."
 		}),
 		new Entry("1.1.130", new String[]{
 			"Node ESP sits on the Nodes tab without the extra caption text. Server list and world list no longer have dark bands over the header and footer."
@@ -382,7 +386,7 @@ public final class ReleaseNotes {
 			"YouTube Music HUD no longer guesses a different song from the window title. Artist, cover, and the progress bar come from the API Server on 26538."
 		}),
 		new Entry("1.1.128", new String[]{
-			"Server list and world list keep a single Voidmark separator. The extra vanilla bar is gone."
+			"Server list and world list keep a single Eisenmann separator. The extra vanilla bar is gone."
 		}),
 		new Entry("1.1.127", new String[]{
 			"YouTube Music now reads the API Server on 26538, asks for access when the plugin requires it, and uses the album cover and artist the API actually returns."
@@ -451,26 +455,26 @@ public final class ReleaseNotes {
 			"The shop rejects everyone else with uuid not whitelisted."
 		}),
 		new Entry("1.1.106", new String[]{
-			"Shop capes show for every Voidmark user, not just you.",
+			"Shop capes show for every Eisenmann user, not just you.",
 			"Changing the cape in the menu updates it for everyone within a couple of seconds."
 		}),
 		new Entry("1.1.105", new String[]{
 			"Own nametag is its own switch on ESP, not inside the Nametags cog."
 		}),
 		new Entry("1.1.104", new String[]{
-			"Own nametag toggle. VOIDMARK Dev only draws with it, and no longer overlaps the name."
+			"Own nametag toggle. EISENMANN Dev only draws with it, and no longer overlaps the name."
 		}),
 		new Entry("1.1.103", new String[]{
-			"VOIDMARK Dev uses vanilla nametag chrome when custom nametags are off."
+			"EISENMANN Dev uses vanilla nametag chrome when custom nametags are off."
 		}),
 		new Entry("1.1.102", new String[]{
-			"VOIDMARK Dev and the name share one plate."
+			"EISENMANN Dev and the name share one plate."
 		}),
 		new Entry("1.1.101", new String[]{
-			"VOIDMARK Dev still shows when custom nametags are off."
+			"EISENMANN Dev still shows when custom nametags are off."
 		}),
 		new Entry("1.1.100", new String[]{
-			"VOIDMARK Dev uses the menu font and sits on the nametag.",
+			"EISENMANN Dev uses the menu font and sits on the nametag.",
 			"Nametags no longer fade in or out."
 		}),
 		new Entry("1.1.99", new String[]{

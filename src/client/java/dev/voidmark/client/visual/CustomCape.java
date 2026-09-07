@@ -386,7 +386,7 @@ public final class CustomCape {
 				}
 				HttpRequest request = HttpRequest.newBuilder(uri)
 					.timeout(Duration.ofSeconds(10))
-					.header("User-Agent", "Voidmark/1.1")
+					.header("User-Agent", "Eisenmann/1.1")
 					.GET()
 					.build();
 				HttpResponse<InputStream> response = HTTP.send(request, HttpResponse.BodyHandlers.ofInputStream());

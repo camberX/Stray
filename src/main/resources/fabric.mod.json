@@ -2,13 +2,13 @@
 	"schemaVersion": 1,
 	"id": "voidmark",
 	"version": "${version}",
-	"name": "Voidmark",
+	"name": "Eisenmann",
 	"description": "Hypixel Skyblock QoL for Minecraft 26.1.2. Marks Ender Nodes, tints the world and skybox, and ships a NEVERLOSE-style click GUI.",
 	"authors": [
-		"Voidmark"
+		"Eisenmann"
 	],
 	"contact": {
-		"sources": "https://github.com/Noamm9/NoammAddons"
+		"sources": "https://github.com/camberX/eisenmann"
 	},
 	"license": "CC0-1.0",
 	"icon": "assets/voidmark/icon.png",

@@ -92,7 +92,7 @@ public class VoidmarkTitleScreen extends Screen {
 		float stackH = BUTTON_H * 3 + BUTTON_GAP * 2 + 14 + BUTTON_H;
 		float colY = Mth.clamp((height - stackH) * 0.42f, 56, height - stackH - 48);
 
-		GuiDraw.title(graphics, font, "VOIDMARK", colX, colY - 28, Anim.fade(Theme.TEXT, fade));
+		GuiDraw.title(graphics, font, "EISENMANN", colX, colY - 28, Anim.fade(Theme.TEXT, fade));
 		GuiDraw.rounded(graphics, colX, colY - 14, 18, 2, 1, Anim.fade(Theme.ACCENT, fade));
 		String ver = "v" + modVersion();
 		GuiDraw.small(graphics, font, ver, colX + 22, colY - 16, Anim.fade(Theme.ACCENT, fade));
@@ -260,7 +260,7 @@ public class VoidmarkTitleScreen extends Screen {
 		return FabricLoader.getInstance()
 			.getModContainer("voidmark")
 			.map(container -> container.getMetadata().getVersion().getFriendlyString())
-			.orElse("1.2.28");
+			.orElse("1.2.29");
 	}
 
 	private record Hit(float x, float y, float w, float h, Runnable click) {

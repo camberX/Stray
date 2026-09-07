@@ -451,7 +451,7 @@ public final class ChestAimer {
 			return;
 		}
 		client.player.sendSystemMessage(
-			Component.literal("VOIDMARK").withStyle(Style.EMPTY.withColor(0x2FB5FF).withBold(true))
+			Component.literal("EISENMANN").withStyle(Style.EMPTY.withColor(0x2FB5FF).withBold(true))
 				.append(Component.literal(" · ").withStyle(Style.EMPTY.withColor(0x6B7280).withBold(false)))
 				.append(Component.literal(text).withStyle(Style.EMPTY.withColor(0xE5E7EB).withBold(false)))
 		);

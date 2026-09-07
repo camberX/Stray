@@ -41,7 +41,7 @@ final class CompanionNowPlaying {
 
 	String statusHint() {
 		if (awaitingAuth) {
-			return "Allow Voidmark in YouTube Music";
+			return "Allow Eisenmann in YouTube Music";
 		}
 		if (reachable) {
 			return "YOUTUBE MUSIC";

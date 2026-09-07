@@ -112,7 +112,7 @@ public final class SkyblockLore {
 	private static Snapshot download(String url) throws Exception {
 		HttpRequest request = HttpRequest.newBuilder(URI.create(url))
 			.timeout(Duration.ofSeconds(12))
-			.header("User-Agent", "Voidmark/" + Voidmark.MOD_ID)
+			.header("User-Agent", "Eisenmann/" + Voidmark.MOD_ID)
 			.GET()
 			.build();
 		HttpResponse<String> response = HTTP.send(request, HttpResponse.BodyHandlers.ofString());

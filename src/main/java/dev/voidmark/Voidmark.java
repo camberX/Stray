@@ -11,7 +11,7 @@ public final class Voidmark implements ModInitializer {
 
 	@Override
 	public void onInitialize() {
-		LOGGER.info("Voidmark loaded");
+		LOGGER.info("Eisenmann loaded");
 	}
 
 	public static Identifier id(String path) {

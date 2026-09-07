@@ -142,7 +142,7 @@ public final class RawmatsCommands {
 	}
 
 	private static MutableComponent brand() {
-		return Component.literal("VOIDMARK").withStyle(style(Theme.ACCENT).withBold(true));
+		return Component.literal("EISENMANN").withStyle(style(Theme.ACCENT).withBold(true));
 	}
 
 	private static MutableComponent sep() {

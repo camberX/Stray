@@ -148,7 +148,7 @@ public final class VoidmarkClient implements ClientModInitializer {
 				Minecraft client = Minecraft.getInstance();
 				if (client.player != null) {
 					client.player.sendSystemMessage(
-						Component.literal("Voidmark markers " + (config.markersEnabled ? "enabled" : "disabled"))
+						Component.literal("Eisenmann markers " + (config.markersEnabled ? "enabled" : "disabled"))
 					);
 				}
 				return Command.SINGLE_SUCCESS;
@@ -161,7 +161,8 @@ public final class VoidmarkClient implements ClientModInitializer {
 			root.then(EspCommands.command());
 			root.then(LoadoutsCommands.command());
 			root.then(WardrobeCommands.command());
-			dispatcher.register(root);
+			var brand = dispatcher.register(root);
+			dispatcher.register(ClientCommands.literal("eisenmann").redirect(brand));
 			var vm = ClientCommands.literal("vm").executes(context -> openScreen());
 			vm.then(ClientCommands.literal("edit").executes(context -> openItemEdit()));
 			vm.then(ClientCommands.literal("farmkeys").executes(context -> FarmKeys.toggle()));

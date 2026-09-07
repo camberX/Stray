@@ -99,7 +99,7 @@ public final class SkyblockProfileApi {
 		try {
 			HttpRequest request = HttpRequest.newBuilder(URI.create(ENDPOINT + uuid))
 				.timeout(Duration.ofSeconds(20))
-				.header("User-Agent", "Voidmark/" + Voidmark.MOD_ID)
+				.header("User-Agent", "Eisenmann/" + Voidmark.MOD_ID)
 				.GET()
 				.build();
 			HttpResponse<String> response = HTTP.send(request, HttpResponse.BodyHandlers.ofString());

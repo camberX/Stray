@@ -219,7 +219,7 @@ public final class ShopCape {
 			try {
 				HttpRequest request = HttpRequest.newBuilder(URI.create(base + "/api/cape"))
 					.timeout(Duration.ofSeconds(12))
-					.header("User-Agent", "Voidmark")
+					.header("User-Agent", "Eisenmann")
 					.header("X-UUID", uuid.toString())
 					.PUT(HttpRequest.BodyPublishers.ofInputStream(() -> new ByteArrayInputStream(png)))
 					.build();
@@ -257,7 +257,7 @@ public final class ShopCape {
 			try {
 				HttpRequest request = HttpRequest.newBuilder(URI.create(base + "/api/cape"))
 					.timeout(Duration.ofSeconds(12))
-					.header("User-Agent", "Voidmark")
+					.header("User-Agent", "Eisenmann")
 					.header("X-UUID", uuid.toString())
 					.DELETE()
 					.build();
@@ -305,7 +305,7 @@ public final class ShopCape {
 			}
 			HttpRequest meta = HttpRequest.newBuilder(URI.create(base + "/api/cape/" + uuid))
 				.timeout(Duration.ofSeconds(8))
-				.header("User-Agent", "Voidmark")
+				.header("User-Agent", "Eisenmann")
 				.GET()
 				.build();
 			HttpResponse<String> status = HTTP.send(meta, HttpResponse.BodyHandlers.ofString());
@@ -332,7 +332,7 @@ public final class ShopCape {
 			}
 			HttpRequest png = HttpRequest.newBuilder(URI.create(base + "/capes/" + uuid + ".png"))
 				.timeout(Duration.ofSeconds(10))
-				.header("User-Agent", "Voidmark")
+				.header("User-Agent", "Eisenmann")
 				.GET()
 				.build();
 			HttpResponse<InputStream> response = HTTP.send(png, HttpResponse.BodyHandlers.ofInputStream());

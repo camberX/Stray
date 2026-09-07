@@ -43,7 +43,7 @@ public final class NametagRenderer {
 	private static final float TAG_H = 14f;
 	private static final float BADGE_H = 13f;
 	private static final float PAD_X = 8f;
-	private static final String BADGE_BRAND = "VOIDMARK";
+	private static final String BADGE_BRAND = "EISENMANN";
 	private static final String BADGE_ROLE = "Dev";
 	private static final UUID DEV_UUID = UUID.fromString("f1b21931-667f-4be2-91bb-a06074978e0e");
 	private static final int NPC_UUID_VERSION = 2;
