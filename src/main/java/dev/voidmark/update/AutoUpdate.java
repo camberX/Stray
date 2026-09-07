@@ -205,6 +205,12 @@ public final class AutoUpdate implements PreLaunchEntrypoint {
 		for (Path old : staleJars(mods, dest)) {
 			retire(old);
 		}
+		List<Path> remaining = staleJars(mods, dest);
+		if (!remaining.isEmpty()) {
+			Files.deleteIfExists(dest);
+			log("Could not safely remove the old jar. Continuing with the installed version.");
+			return null;
+		}
 		sweep(mods, dest);
 		return dest;
 	}
