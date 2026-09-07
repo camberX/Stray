@@ -25,6 +25,7 @@ public final class HudLayout {
 		RAWMATS("Raw mats"),
 		PICKUPS("Pickup log"),
 		MINING("Mining"),
+		JACOB("Jacob contest"),
 		HOTBAR("Hotbar"),
 		HEALTH("Health"),
 		HUNGER("Hunger"),
@@ -161,6 +162,17 @@ public final class HudLayout {
 					}
 					y = placed(config.hudMiningY) ? config.hudMiningY : MARGIN + below;
 				}
+				case JACOB -> {
+					x = placed(config.hudJacobX) ? config.hudJacobX : MARGIN;
+					float below = WatermarkRenderer.occupiedHeight();
+					if (config.hudEnabled) {
+						below += NodeHudRenderer.drawHeight() * scale(Id.NODES) + 4;
+					}
+					if (config.miningHudEnabled) {
+						below += MiningHudRenderer.drawHeight() * scale(Id.MINING) + 4;
+					}
+					y = placed(config.hudJacobY) ? config.hudJacobY : MARGIN + below;
+				}
 				default -> {
 					x = defaultX(id, font, guiW, w);
 					y = defaultY(id, font, guiH, h);
@@ -222,6 +234,10 @@ public final class HudLayout {
 				config.hudMiningX = x;
 				config.hudMiningY = y;
 			}
+			case JACOB -> {
+				config.hudJacobX = x;
+				config.hudJacobY = y;
+			}
 			default -> {
 			}
 		}
@@ -241,6 +257,7 @@ public final class HudLayout {
 			case RAWMATS -> VoidmarkConfig.clampHudScale(config.hudRawmatsScale);
 			case PICKUPS -> VoidmarkConfig.clampHudScale(config.hudPickupScale);
 			case MINING -> VoidmarkConfig.clampHudScale(config.hudMiningScale);
+			case JACOB -> VoidmarkConfig.clampHudScale(config.hudJacobScale);
 			default -> 1.0f;
 		};
 	}
@@ -262,6 +279,7 @@ public final class HudLayout {
 			case RAWMATS -> config.hudRawmatsScale = value;
 			case PICKUPS -> config.hudPickupScale = value;
 			case MINING -> config.hudMiningScale = value;
+			case JACOB -> config.hudJacobScale = value;
 			default -> {
 			}
 		}
@@ -305,6 +323,10 @@ public final class HudLayout {
 				config.hudMiningX = -1f;
 				config.hudMiningY = -1f;
 			}
+			case JACOB -> {
+				config.hudJacobX = -1f;
+				config.hudJacobY = -1f;
+			}
 			default -> {
 			}
 		}
@@ -320,6 +342,7 @@ public final class HudLayout {
 			case RAWMATS -> config.rawmatsHudEnabled;
 			case PICKUPS -> config.pickupLogEnabled;
 			case MINING -> config.miningHudEnabled;
+			case JACOB -> config.jacobContestHudEnabled;
 			case HOTBAR -> config.hudHotbar;
 			case HEALTH -> config.hudHealth;
 			case HUNGER -> config.hudHunger;
@@ -457,6 +480,7 @@ public final class HudLayout {
 			case RAWMATS -> RawmatsHudRenderer.drawWidth() * scale;
 			case PICKUPS -> PickupLogRenderer.drawWidth() * scale;
 			case MINING -> MiningHudRenderer.drawWidth() * scale;
+			case JACOB -> JacobContestHudRenderer.drawWidth() * scale;
 			case HOTBAR -> HotbarHudRenderer.drawWidth() * scale;
 			case HEALTH, HUNGER, ARMOR, AIR, MOUNT -> StatusHudRenderer.BAR_W * scale;
 			case EXPERIENCE -> StatusHudRenderer.xpWidth() * scale;
@@ -477,6 +501,7 @@ public final class HudLayout {
 			case RAWMATS -> RawmatsHudRenderer.drawHeight() * scale;
 			case PICKUPS -> PickupLogRenderer.drawHeight() * scale;
 			case MINING -> MiningHudRenderer.drawHeight() * scale;
+			case JACOB -> JacobContestHudRenderer.drawHeight() * scale;
 			case HOTBAR -> HotbarHudRenderer.HEIGHT * scale;
 			case HEALTH, HUNGER, ARMOR, AIR, MOUNT -> StatusHudRenderer.BAR_H * scale;
 			case EXPERIENCE -> StatusHudRenderer.XP_BOX_H * scale;

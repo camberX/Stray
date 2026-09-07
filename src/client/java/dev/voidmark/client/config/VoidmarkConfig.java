@@ -73,6 +73,7 @@ public final class VoidmarkConfig {
 	public boolean miningAbilityAlert = false;
 	public boolean farmingYawPitch = false;
 	public float farmingYawPitchScale = 1.00f;
+	public boolean jacobContestHudEnabled = false;
 	public boolean titaniumEsp = false;
 	public boolean titaniumEspThroughWalls = true;
 	public boolean chestEspEnabled = false;
@@ -128,6 +129,7 @@ public final class VoidmarkConfig {
 	public float hudRawmatsScale = 1.0f;
 	public float hudPickupScale = 1.0f;
 	public float hudMiningScale = 1.0f;
+	public float hudJacobScale = 1.0f;
 	public float hudInventoryX = -1f;
 	public float hudInventoryY = -1f;
 	public float hudWatermarkX = -1f;
@@ -142,6 +144,8 @@ public final class VoidmarkConfig {
 	public float hudPickupY = -1f;
 	public float hudMiningX = -1f;
 	public float hudMiningY = -1f;
+	public float hudJacobX = -1f;
+	public float hudJacobY = -1f;
 	public float menuX = -1f;
 	public float menuY = -1f;
 	public boolean menuPlaced = false;
@@ -478,6 +482,9 @@ public final class VoidmarkConfig {
 				loaded.hudRawmatsScale = clampHudScale(loaded.hudRawmatsScale);
 				loaded.hudPickupScale = clampHudScale(loaded.hudPickupScale);
 				loaded.hudMiningScale = clampHudScale(loaded.hudMiningScale);
+				loaded.hudJacobScale = json.has("hudJacobScale")
+					? clampHudScale(loaded.hudJacobScale)
+					: 1.00f;
 				if (!json.has("farmingYawPitch")) {
 					loaded.farmingYawPitch = false;
 				}

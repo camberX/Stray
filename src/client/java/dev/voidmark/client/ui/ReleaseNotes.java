@@ -8,6 +8,9 @@ public final class ReleaseNotes {
 	}
 
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.25", new String[]{
+			"Jacob's Contest HUD predicts your finishing bracket and crop total from live tab data, with average crops per second and per score update."
+		}),
 		new Entry("1.2.24", new String[]{
 			"Pickup log now uses actual inventory gains, so direct rewards count, ground pickups count once, slot moves do not count, and quantities are correct."
 		}),

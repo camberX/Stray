@@ -62,6 +62,8 @@ Commission lines come from the Skyblock tab list (`Commissions:` widget) in the 
 
 **Yaw / Pitch** (on by default) draws your look angles next to the crosshair while the held item's lore contains `FARMING TOOL` (color codes ignored). It hides with F1 and while a menu is open. Scale sits on the cog.
 
+**Jacob contest HUD** reads Hypixel's live player-list widget during a contest. It shows the current crop and bracket, predicts the finishing bracket and crop total from recent rates, and reports average crops per second and per score update. Move and scale it in the HUD editor.
+
 ## Settings
 
 | Tab | What it does |
