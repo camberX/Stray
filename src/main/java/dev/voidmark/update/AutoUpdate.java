@@ -33,7 +33,7 @@ public final class AutoUpdate implements PreLaunchEntrypoint {
 	private static final String META = SHOP + "/api/mod";
 	private static final String DOWNLOAD = SHOP + "/download";
 	private static final String GITHUB_META =
-		"https://raw.githubusercontent.com/camberX/eisenmann/main/web/public/mod/latest.json";
+		"https://raw.githubusercontent.com/camberX/Eisenmann/main/web/public/mod/latest.json";
 	private static final String LEGACY_GITHUB_META =
 		"https://raw.githubusercontent.com/camberX/voidmark/main/web/public/mod/latest.json";
 	private static final long MAX_BYTES = 12L * 1024L * 1024L;
@@ -146,9 +146,9 @@ public final class AutoUpdate implements PreLaunchEntrypoint {
 		urls.add(download);
 		urls.add(SHOP + "/eisenmann.jar");
 		urls.add(SHOP + "/voidmark.jar");
-		urls.add("https://raw.githubusercontent.com/camberX/eisenmann/main/web/public/mod/" + file);
+		urls.add("https://raw.githubusercontent.com/camberX/Eisenmann/main/web/public/mod/" + file);
 		urls.add("https://raw.githubusercontent.com/camberX/voidmark/main/web/public/mod/" + file);
-		urls.add("https://raw.githubusercontent.com/camberX/eisenmann/main/web/public/mod/eisenmann.jar");
+		urls.add("https://raw.githubusercontent.com/camberX/Eisenmann/main/web/public/mod/eisenmann.jar");
 		urls.add("https://raw.githubusercontent.com/camberX/voidmark/main/web/public/mod/eisenmann.jar");
 		return new Remote(version, file, urls);
 	}

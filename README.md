@@ -99,7 +99,7 @@ Settings are saved in:
 
 ## Building from source
 
-Clone [camberX/eisenmann](https://github.com/camberX/eisenmann) and run:
+Clone [camberX/Eisenmann](https://github.com/camberX/Eisenmann) and run:
 
 ```bash
 ./gradlew build
