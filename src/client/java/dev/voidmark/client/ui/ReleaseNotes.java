@@ -8,6 +8,9 @@ public final class ReleaseNotes {
 	}
 
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.30", new String[]{
+			"Eisenmann now uses https://eisenmann.lol for updates, capes, and the download site."
+		}),
 		new Entry("1.2.29", new String[]{
 			"Voidmark is now Eisenmann. Existing settings and the legacy /voidmark command keep working.",
 			"Auto update installs the new jar and exits cleanly for a normal launcher start; automatic relaunch has been removed."
@@ -224,7 +227,7 @@ public final class ReleaseNotes {
 			"The click GUI has more sidebar tabs: Combat, Menus, and Status sit next to World, ESP, Overlay, Bars, Nodes, and Mining so the list fills the pane."
 		}),
 		new Entry("1.1.182", new String[]{
-			"Auto update is off by default. Turn it on in the theme settings and the next launch waits for voidmark.cloud: if a newer jar is there it replaces the one in mods and Minecraft closes so you can relaunch."
+			"Auto update is off by default. Turn it on in the theme settings and the next launch waits for eisenmann.lol: if a newer jar is there it replaces the one in mods and Minecraft closes so you can relaunch."
 		}),
 		new Entry("1.1.181", new String[]{
 			"Hypixel wardrobe ((1/3) Armor Sets) opens a Eisenmann menu with a 3D armor preview and the set slots on the right. Pets and extra gear are left out. Clicks go through the real chest."
@@ -254,10 +257,10 @@ public final class ReleaseNotes {
 			"Melee hitsounds wait for Minecraft's attack cooldown. Spam-clicks before the weapon is charged no longer ding."
 		}),
 		new Entry("1.1.172", new String[]{
-			"Shop download version is 1.1.172 so voidmark.cloud can show the new jar name after a git push."
+			"Shop download version is 1.1.172 so eisenmann.lol can show the new jar name after a git push."
 		}),
 		new Entry("1.1.171", new String[]{
-			"Shop download version is 1.1.171 so voidmark.cloud can show the new jar name after a git push."
+			"Shop download version is 1.1.171 so eisenmann.lol can show the new jar name after a git push."
 		}),
 		new Entry("1.1.170", new String[]{
 			"Hitsound uses the agpa2 clip, and only plays when you land the hit. Nearby players punching the same mob no longer trigger it."
@@ -422,10 +425,10 @@ public final class ReleaseNotes {
 			"Admin Fake ban sends you to Limbo for 2 seconds, then a 180-day Hypixel Boosting kick with a random Ban ID."
 		}),
 		new Entry("1.1.116", new String[]{
-			"capeServerUrl is gone from voidmark.json. Capes still use https://voidmark.cloud."
+			"capeServerUrl is gone from voidmark.json. Capes still use https://eisenmann.lol."
 		}),
 		new Entry("1.1.115", new String[]{
-			"Cape shop is always https://voidmark.cloud. Old workers.dev and localhost URLs are ignored."
+			"Cape shop is always https://eisenmann.lol. Old workers.dev and localhost URLs are ignored."
 		}),
 		new Entry("1.1.114", new String[]{
 			"Refresh capes can only run once every 5 minutes so the shop cannot be rate-limited from the button."
