@@ -160,6 +160,7 @@ public final class JacobContestTracker {
 		lastScore = parsed.score;
 		SCORE_SAMPLES.addLast(new ScoreSample(parsed.remaining, parsed.score));
 		trimScores(parsed.remaining);
+		CUTOFF_SAMPLES.keySet().retainAll(parsed.cutoffs.keySet());
 		for (Map.Entry<Medal, Integer> entry : parsed.cutoffs.entrySet()) {
 			Deque<CutoffSample> samples = CUTOFF_SAMPLES.computeIfAbsent(entry.getKey(), ignored -> new ArrayDeque<>());
 			samples.addLast(new CutoffSample(parsed.remaining, entry.getValue()));
@@ -173,10 +174,8 @@ public final class JacobContestTracker {
 		double perSecond = rate(SCORE_SAMPLES, parsed.score, parsed.remaining);
 		int projectedScore = safeRound(parsed.score + perSecond * parsed.remaining);
 		Medal projectedRank = parsed.rank;
-		for (Medal medal : Medal.values()) {
-			if (medal == Medal.NONE) {
-				continue;
-			}
+		int demotionCap = Medal.DIAMOND.ordinal();
+		for (Medal medal : parsed.cutoffs.keySet()) {
 			Deque<CutoffSample> samples = CUTOFF_SAMPLES.get(medal);
 			if (samples == null || samples.isEmpty()) {
 				continue;
@@ -188,7 +187,12 @@ public final class JacobContestTracker {
 				if (medal.ordinal() > projectedRank.ordinal()) {
 					projectedRank = medal;
 				}
+			} else if (medal.ordinal() <= parsed.rank.ordinal()) {
+				demotionCap = Math.min(demotionCap, medal.ordinal() - 1);
 			}
+		}
+		if (projectedRank.ordinal() > demotionCap) {
+			projectedRank = Medal.values()[Math.max(Medal.NONE.ordinal(), demotionCap)];
 		}
 		double perUpdate = updateCount == 0 ? 0d : updateTotal / (double) updateCount;
 		return new Snapshot(
@@ -221,7 +225,7 @@ public final class JacobContestTracker {
 		CutoffSample first = samples.peekFirst();
 		if (first != null) {
 			int seconds = first.remaining - remaining;
-			if (seconds >= 2 && current >= first.value) {
+			if (seconds >= 2) {
 				return (current - first.value) / (double) seconds;
 			}
 		}

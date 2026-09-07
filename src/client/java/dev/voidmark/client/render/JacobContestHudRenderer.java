@@ -73,8 +73,8 @@ public final class JacobContestHudRenderer {
 		right(graphics, font, snap.remaining(), PAD, Theme.MUTED);
 
 		String score = amount(snap.score());
-		String crop = GuiDraw.ellipsize(font, snap.crop(), 92, true);
-		GuiDraw.hud(graphics, font, Component.literal(crop), PAD + 1, 18, Theme.TEXT);
+		Component crop = hudClip(font, snap.crop(), 92);
+		GuiDraw.hud(graphics, font, crop, PAD + 1, 18, Theme.TEXT);
 		right(graphics, font, score, 18, Theme.TEXT);
 
 		String rank = label(snap.currentRank());
@@ -83,11 +83,11 @@ public final class JacobContestHudRenderer {
 
 		String projected = label(snap.projectedRank()) + " · " + amount(snap.projectedScore());
 		GuiDraw.small(graphics, font, "Projected", PAD + 1, 43, Theme.MUTED);
-		GuiDraw.small(graphics, font, projected, 46, 43, medalColor(snap.projectedRank()));
+		GuiDraw.small(graphics, font, GuiDraw.ellipsize(font, projected, WIDTH - 46 - PAD, true), 46, 43, medalColor(snap.projectedRank()));
 
 		String update = snap.updates() == 0 ? "learning" : amount(Math.round(snap.perUpdate())) + "/update";
 		String rate = amount(Math.round(snap.perSecond())) + "/s · " + update;
-		GuiDraw.small(graphics, font, rate, PAD + 1, 53, Theme.MUTED);
+		GuiDraw.small(graphics, font, GuiDraw.ellipsize(font, rate, WIDTH - PAD * 2, true), PAD + 1, 53, Theme.MUTED);
 		graphics.pose().popMatrix();
 	}
 
@@ -116,6 +116,17 @@ public final class JacobContestHudRenderer {
 
 	private static String amount(long value) {
 		return NumberFormat.getIntegerInstance(Locale.US).format(Math.max(0L, value));
+	}
+
+	private static Component hudClip(Font font, String value, float width) {
+		String text = value == null ? "" : value;
+		if (GuiDraw.hudWidth(font, Component.literal(text)) <= width) {
+			return Component.literal(text);
+		}
+		while (text.length() > 1 && GuiDraw.hudWidth(font, Component.literal(text + "..")) > width) {
+			text = text.substring(0, text.length() - 1);
+		}
+		return Component.literal(text + "..");
 	}
 
 	private static JacobContestTracker.Snapshot sample() {
