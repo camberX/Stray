@@ -8,6 +8,9 @@ public final class ReleaseNotes {
 	}
 
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.27", new String[]{
+			"Test release for verifying that auto-update installs the new jar and relaunches Minecraft."
+		}),
 		new Entry("1.2.26", new String[]{
 			"Auto update starts the same Minecraft launch again after installing a new jar. If a launcher hides its command, Voidmark exits with the update installed for a manual start."
 		}),
