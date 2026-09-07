@@ -8,6 +8,9 @@ public final class ReleaseNotes {
 	}
 
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.26", new String[]{
+			"Auto update starts the same Minecraft launch again after installing a new jar. If a launcher hides its command, Voidmark exits with the update installed for a manual start."
+		}),
 		new Entry("1.2.25", new String[]{
 			"Jacob's Contest HUD predicts your finishing bracket and crop total from live tab data, with average crops per second and per score update."
 		}),

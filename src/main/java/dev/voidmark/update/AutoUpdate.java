@@ -26,7 +26,7 @@ import java.util.Optional;
 /**
  * Optional launch gate. When {@code autoUpdate} is on, Minecraft waits here
  * for voidmark.cloud. A newer jar is written into mods, the old one is
- * retired, and this process exits so the next launch loads the new jar.
+ * retired, and the current Java launch is started again with the new jar.
  */
 public final class AutoUpdate implements PreLaunchEntrypoint {
 	private static final String SHOP = "https://voidmark.cloud";
@@ -68,13 +68,17 @@ public final class AutoUpdate implements PreLaunchEntrypoint {
 				log("Already up to date (" + installed + ").");
 				return;
 			}
-			log("Found " + remote.version + ". Downloading and closing Minecraft so the new jar can load.");
+			log("Found " + remote.version + ". Downloading and relaunching Minecraft.");
 			Path dest = apply(current, remote);
 			if (dest == null) {
 				log("Update failed. Continuing with " + installed + ".");
 				return;
 			}
-			log("Updated to " + remote.version + " at " + dest.getFileName() + ". Relaunch Minecraft.");
+			if (relaunch(current, dest)) {
+				log("Updated to " + remote.version + " at " + dest.getFileName() + ". Relaunch started.");
+			} else {
+				log("Updated to " + remote.version + " at " + dest.getFileName() + ". Relaunch Minecraft manually.");
+			}
 			System.exit(0);
 		} catch (Exception exception) {
 			log("Update check failed: " + exception.getMessage());
@@ -199,6 +203,59 @@ public final class AutoUpdate implements PreLaunchEntrypoint {
 		}
 		sweep(mods, dest);
 		return dest;
+	}
+
+	private static boolean relaunch(Path current, Path updated) {
+		ProcessHandle.Info info = ProcessHandle.current().info();
+		Optional<String> executable = info.command();
+		Optional<String[]> arguments = info.arguments();
+		if (executable.isEmpty() || arguments.isEmpty()) {
+			log("The launcher did not expose its Java command, so automatic relaunch is unavailable.");
+			return false;
+		}
+		List<String> command = new ArrayList<>(arguments.get().length + 1);
+		command.add(executable.get());
+		for (String argument : arguments.get()) {
+			command.add(rewriteLaunchArgument(argument, current, updated));
+		}
+		try {
+			ProcessBuilder builder = new ProcessBuilder(command);
+			String cwd = System.getProperty("user.dir");
+			if (cwd != null && !cwd.isBlank()) {
+				Path directory = Path.of(cwd).toAbsolutePath().normalize();
+				if (Files.isDirectory(directory)) {
+					builder.directory(directory.toFile());
+				}
+			}
+			builder.inheritIO();
+			Process child = builder.start();
+			try {
+				Thread.sleep(750L);
+			} catch (InterruptedException interrupted) {
+				Thread.currentThread().interrupt();
+			}
+			if (!child.isAlive()) {
+				log("The replacement process exited before Minecraft started.");
+				return false;
+			}
+			return true;
+		} catch (Exception exception) {
+			Voidmark.LOGGER.warn("Could not relaunch Minecraft after updating", exception);
+			return false;
+		}
+	}
+
+	private static String rewriteLaunchArgument(String argument, Path current, Path updated) {
+		if (argument == null || argument.isEmpty()) {
+			return argument;
+		}
+		String currentPath = current.toAbsolutePath().normalize().toString();
+		String updatedPath = updated.toAbsolutePath().normalize().toString();
+		String rewritten = argument.replace(currentPath, updatedPath);
+		if (rewritten.equals(argument)) {
+			rewritten = argument.replace(current.getFileName().toString(), updated.getFileName().toString());
+		}
+		return rewritten;
 	}
 
 	private static boolean download(HttpClient http, String url, Path part) {
