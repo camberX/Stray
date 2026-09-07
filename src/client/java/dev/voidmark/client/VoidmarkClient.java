@@ -8,6 +8,7 @@ import dev.voidmark.client.combat.Hitmarker;
 import dev.voidmark.client.combat.Hitsound;
 import dev.voidmark.client.farming.FarmKeys;
 import dev.voidmark.client.farming.FarmingHud;
+import dev.voidmark.client.farming.JacobContestTracker;
 import dev.voidmark.client.config.VoidmarkConfig;
 import dev.voidmark.client.location.SkyblockLocation;
 import dev.voidmark.client.net.ConnectionPing;
@@ -28,6 +29,7 @@ import dev.voidmark.client.mining.MiningTracker;
 import dev.voidmark.client.mining.TitaniumTracker;
 import dev.voidmark.client.render.ChestEspRenderer;
 import dev.voidmark.client.render.InventoryHudRenderer;
+import dev.voidmark.client.render.JacobContestHudRenderer;
 import dev.voidmark.client.render.MusicHudRenderer;
 import dev.voidmark.client.render.NametagRenderer;
 import dev.voidmark.client.render.NodeHudRenderer;
@@ -100,6 +102,7 @@ public final class VoidmarkClient implements ClientModInitializer {
 		ChestAimer.init();
 		Hitmarker.init();
 		FarmingHud.init();
+		JacobContestHudRenderer.init();
 		WatermarkRenderer.init();
 		InventoryHudRenderer.init();
 		NodeHudRenderer.init();
@@ -225,6 +228,7 @@ public final class VoidmarkClient implements ClientModInitializer {
 			WardrobeScreen.tickSwap(client);
 			Hitsound.tick(client);
 			PickupLogRenderer.tick(client);
+			JacobContestTracker.tick(client);
 			EnderNodeTracker.get().tick(client);
 			ConnectionPing.tick(client);
 			RawmatsTracker.tick(client);
@@ -247,6 +251,7 @@ public final class VoidmarkClient implements ClientModInitializer {
 			Hitsound.reset();
 			Hitmarker.reset();
 			PickupLogRenderer.clear();
+			JacobContestTracker.reset();
 			FakeBan.onJoin();
 			SkyblockProfileApi.refresh();
 			ShopCape.onJoin();
@@ -257,6 +262,7 @@ public final class VoidmarkClient implements ClientModInitializer {
 			Hitsound.reset();
 			Hitmarker.reset();
 			PickupLogRenderer.clear();
+			JacobContestTracker.reset();
 			EnderNodeTracker.get().clear();
 			ConnectionPing.reset();
 			MiningTracker.reset();

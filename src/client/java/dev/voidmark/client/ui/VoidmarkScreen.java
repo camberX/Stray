@@ -4,6 +4,7 @@ import com.mojang.blaze3d.platform.InputConstants;
 import dev.voidmark.client.combat.Hitsound;
 import dev.voidmark.client.config.UnloadState;
 import dev.voidmark.client.farming.FarmingHud;
+import dev.voidmark.client.farming.JacobContestTracker;
 import dev.voidmark.client.config.VoidmarkConfig;
 import dev.voidmark.client.location.SkyblockLocation;
 import dev.voidmark.client.mining.MiningAreas;
@@ -193,6 +194,9 @@ public class VoidmarkScreen extends Screen {
 		new SearchEntry("Pitch", Tab.FARMING, "Farming"),
 		new SearchEntry("Yaw / Pitch", Tab.FARMING, "Farming"),
 		new SearchEntry("Farming tool", Tab.FARMING, "Farming"),
+		new SearchEntry("Jacob contest HUD", Tab.FARMING, "Farming"),
+		new SearchEntry("Contest prediction", Tab.FARMING, "Farming"),
+		new SearchEntry("Crops per second", Tab.FARMING, "Farming"),
 		new SearchEntry("Filled box", Tab.NODES, "Nodes"),
 		new SearchEntry("Watermark", Tab.OVERLAY, "Overlay"),
 		new SearchEntry("Music HUD", Tab.OVERLAY, "Overlay"),
@@ -1388,19 +1392,26 @@ public class VoidmarkScreen extends Screen {
 				GuiDraw.menu(graphics, font, clip(font, titanium, (int) iw - 4), rx, y + 38, titaniumColor);
 			}
 			case FARMING -> {
-				float y = featureCard(graphics, font, left, top, col, cardHeight(1), "Farming");
-				toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Yaw / Pitch", config.farmingYawPitch, v -> config.farmingYawPitch = v, Feature.FARMING);
+				float y = featureCard(graphics, font, left, top, col, cardHeight(2), "Farming");
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Yaw / Pitch", config.farmingYawPitch, v -> config.farmingYawPitch = v, Feature.FARMING);
+				toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Jacob contest HUD", config.jacobContestHudEnabled, v -> config.jacobContestHudEnabled = v);
 
-				y = featureCard(graphics, font, right, top, col, CARD_HEAD + 42 + CARD_PAD, "Live");
-				if (minecraft.player == null) {
-					GuiDraw.menu(graphics, font, "No player", rx, y + 2, Theme.MUTED);
-				} else if (!FarmingHud.holdingTool(minecraft.player)) {
-					GuiDraw.menu(graphics, font, "Hold a Farming Tool", rx, y + 2, Theme.MUTED);
-					GuiDraw.small(graphics, font, "Lore must include FARMING TOOL", rx, y + 16, Theme.MUTED);
+				y = featureCard(graphics, font, right, top, col, cardHeight(4), "Contest");
+				var contest = JacobContestTracker.snapshot();
+				if (contest.present()) {
+					GuiDraw.menu(graphics, font, clip(font, contest.crop() + "  " + contest.remaining(), (int) iw - 4), rx, y + 2, Theme.TEXT);
+					GuiDraw.menu(graphics, font, String.format(Locale.ROOT, "%,d collected", contest.score()), rx, y + 16, Theme.MUTED);
+					String projected = contest.projectedRank().name() + "  " + String.format(Locale.ROOT, "%,d", contest.projectedScore());
+					GuiDraw.menu(graphics, font, clip(font, projected, (int) iw - 4), rx, y + 30, Theme.ACCENT);
+					String rate = String.format(Locale.ROOT, "%,.0f/s · %,.0f/update", contest.perSecond(), contest.perUpdate());
+					GuiDraw.small(graphics, font, clip(font, rate, (int) iw - 4), rx, y + 44, Theme.MUTED);
 				} else {
-					GuiDraw.menu(graphics, font, "Yaw  " + FarmingHud.yawLabel(minecraft.player), rx, y + 2, Theme.TEXT);
-					GuiDraw.menu(graphics, font, "Pitch  " + FarmingHud.pitchLabel(minecraft.player), rx, y + 16, Theme.TEXT);
-					GuiDraw.small(graphics, font, "Next to the crosshair", rx, y + 30, Theme.MUTED);
+					GuiDraw.menu(graphics, font, "No active Jacob contest", rx, y + 2, Theme.MUTED);
+					GuiDraw.small(graphics, font, "Reads the live player-list widget", rx, y + 16, Theme.MUTED);
+					if (minecraft.player != null && FarmingHud.holdingTool(minecraft.player)) {
+						GuiDraw.menu(graphics, font, "Yaw  " + FarmingHud.yawLabel(minecraft.player), rx, y + 32, Theme.TEXT);
+						GuiDraw.menu(graphics, font, "Pitch  " + FarmingHud.pitchLabel(minecraft.player), rx, y + 46, Theme.TEXT);
+					}
 				}
 			}
 			case PLAYER -> drawPlayerTab(graphics, font, mouseX, mouseY);
@@ -1895,7 +1906,7 @@ public class VoidmarkScreen extends Screen {
 		return FabricLoader.getInstance()
 			.getModContainer("voidmark")
 			.map(container -> container.getMetadata().getVersion().getFriendlyString())
-			.orElse("1.2.24");
+			.orElse("1.2.28");
 	}
 
 	@Override

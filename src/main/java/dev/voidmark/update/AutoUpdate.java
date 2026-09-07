@@ -13,6 +13,7 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -22,11 +23,13 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Optional launch gate. When {@code autoUpdate} is on, Minecraft waits here
  * for voidmark.cloud. A newer jar is written into mods, the old one is
- * retired, and this process exits so the next launch loads the new jar.
+ * retired, and the current Java launch is started again with the new jar.
  */
 public final class AutoUpdate implements PreLaunchEntrypoint {
 	private static final String SHOP = "https://voidmark.cloud";
@@ -35,6 +38,7 @@ public final class AutoUpdate implements PreLaunchEntrypoint {
 	private static final String GITHUB_META =
 		"https://raw.githubusercontent.com/camberX/voidmark/main/web/public/mod/latest.json";
 	private static final long MAX_BYTES = 12L * 1024L * 1024L;
+	private static final String RELAUNCH_GUARD = "voidmark.relaunchVersion";
 
 	@Override
 	public void onPreLaunch() {
@@ -68,13 +72,21 @@ public final class AutoUpdate implements PreLaunchEntrypoint {
 				log("Already up to date (" + installed + ").");
 				return;
 			}
-			log("Found " + remote.version + ". Downloading and closing Minecraft so the new jar can load.");
+			if (remote.version.equals(System.getProperty(RELAUNCH_GUARD))) {
+				log("Automatic relaunch already attempted for " + remote.version + ". Continuing this launch to avoid a loop.");
+				return;
+			}
+			log("Found " + remote.version + ". Downloading and relaunching Minecraft.");
 			Path dest = apply(current, remote);
 			if (dest == null) {
 				log("Update failed. Continuing with " + installed + ".");
 				return;
 			}
-			log("Updated to " + remote.version + " at " + dest.getFileName() + ". Relaunch Minecraft.");
+			if (relaunch(current, dest, remote.version)) {
+				log("Updated to " + remote.version + " at " + dest.getFileName() + ". Relaunch started.");
+			} else {
+				log("Updated to " + remote.version + " at " + dest.getFileName() + ". Relaunch Minecraft manually.");
+			}
 			System.exit(0);
 		} catch (Exception exception) {
 			log("Update check failed: " + exception.getMessage());
@@ -185,7 +197,7 @@ public final class AutoUpdate implements PreLaunchEntrypoint {
 				break;
 			}
 		}
-		if (!downloaded || !validJar(part)) {
+		if (!downloaded || !validJar(part, remote)) {
 			Files.deleteIfExists(part);
 			return null;
 		}
@@ -199,6 +211,249 @@ public final class AutoUpdate implements PreLaunchEntrypoint {
 		}
 		sweep(mods, dest);
 		return dest;
+	}
+
+	private static boolean relaunch(Path current, Path updated, String version) {
+		List<String> recovered = launchCommand();
+		if (recovered.size() < 2) {
+			log("Could not recover the launcher's Java command, so automatic relaunch is unavailable.");
+			return false;
+		}
+		String executable = recovered.getFirst();
+		List<String> launch = new ArrayList<>(recovered.size() + 1);
+		launch.add(executable);
+		launch.add("-D" + RELAUNCH_GUARD + "=" + version);
+		for (int i = 1; i < recovered.size(); i++) {
+			String argument = recovered.get(i);
+			if (argument.startsWith("-D" + RELAUNCH_GUARD + "=")) {
+				continue;
+			}
+			launch.add(rewriteLaunchArgument(argument, current, updated));
+		}
+		try {
+			String cwd = System.getProperty("user.dir");
+			Path directory = cwd == null || cwd.isBlank()
+				? updated.getParent()
+				: Path.of(cwd).toAbsolutePath().normalize();
+			List<String> helper = new ArrayList<>(launch.size() + 8);
+			helper.add(executable);
+			helper.add("-cp");
+			helper.add(updated.toString());
+			helper.add(RelaunchHelper.class.getName());
+			helper.add(Long.toString(ProcessHandle.current().pid()));
+			helper.add(directory.toString());
+			helper.add(current.toString());
+			helper.add(updated.toString());
+			helper.add(Integer.toString(launch.size()));
+			helper.addAll(launch);
+			ProcessBuilder builder = new ProcessBuilder(helper);
+			if (Files.isDirectory(directory)) {
+				builder.directory(directory.toFile());
+			}
+			builder.inheritIO();
+			Process helperProcess = builder.start();
+			try {
+				Thread.sleep(400L);
+			} catch (InterruptedException interrupted) {
+				Thread.currentThread().interrupt();
+			}
+			if (!helperProcess.isAlive()) {
+				log("The relaunch helper exited before Minecraft stopped.");
+				return false;
+			}
+			return true;
+		} catch (Exception exception) {
+			Voidmark.LOGGER.warn("Could not relaunch Minecraft after updating", exception);
+			return false;
+		}
+	}
+
+	private static List<String> launchCommand() {
+		List<String> command;
+		if (windows()) {
+			command = splitWindowsCommandLine(windowsCommandLine(ProcessHandle.current().pid()));
+			if (command.size() >= 2) {
+				return command;
+			}
+		} else {
+			command = linuxCommandLine();
+			if (command.size() >= 2) {
+				return command;
+			}
+		}
+		command = processHandleCommand();
+		if (command.size() >= 2) {
+			return command;
+		}
+		return List.of();
+	}
+
+	private static List<String> processHandleCommand() {
+		ProcessHandle.Info info = ProcessHandle.current().info();
+		Optional<String> executable = info.command();
+		Optional<String[]> arguments = info.arguments();
+		if (executable.isPresent() && arguments.isPresent()) {
+			List<String> command = new ArrayList<>(arguments.get().length + 1);
+			command.add(executable.get());
+			command.addAll(List.of(arguments.get()));
+			return command;
+		}
+		String raw = info.commandLine().orElse("");
+		return windows() ? splitWindowsCommandLine(raw) : splitUnixCommandLine(raw);
+	}
+
+	private static List<String> linuxCommandLine() {
+		Path path = Path.of("/proc/self/cmdline");
+		if (!Files.isReadable(path)) {
+			return List.of();
+		}
+		try {
+			byte[] raw = Files.readAllBytes(path);
+			List<String> command = new ArrayList<>();
+			int start = 0;
+			for (int i = 0; i < raw.length; i++) {
+				if (raw[i] == 0) {
+					command.add(new String(raw, start, i - start, StandardCharsets.UTF_8));
+					start = i + 1;
+				}
+			}
+			if (start < raw.length) {
+				command.add(new String(raw, start, raw.length - start, StandardCharsets.UTF_8));
+			}
+			return command;
+		} catch (Exception ignored) {
+			return List.of();
+		}
+	}
+
+	private static String windowsCommandLine(long pid) {
+		try {
+			Process process = new ProcessBuilder(
+				"powershell.exe",
+				"-NoProfile",
+				"-Command",
+				"[Console]::OutputEncoding = [System.Text.Encoding]::UTF8; "
+					+ "(Get-CimInstance Win32_Process -Filter \"ProcessId=" + pid + "\").CommandLine"
+			).redirectError(ProcessBuilder.Redirect.DISCARD).start();
+			CompletableFuture<byte[]> output = CompletableFuture.supplyAsync(() -> {
+				try {
+					return process.getInputStream().readAllBytes();
+				} catch (Exception ignored) {
+					return new byte[0];
+				}
+			});
+			if (!process.waitFor(4, TimeUnit.SECONDS)) {
+				process.destroyForcibly();
+				output.cancel(true);
+				return "";
+			}
+			return new String(output.get(1, TimeUnit.SECONDS), StandardCharsets.UTF_8).trim();
+		} catch (Exception ignored) {
+			return ProcessHandle.current().info().commandLine().orElse("");
+		}
+	}
+
+	private static List<String> splitWindowsCommandLine(String raw) {
+		if (raw == null || raw.isBlank()) {
+			return List.of();
+		}
+		List<String> args = new ArrayList<>();
+		StringBuilder current = new StringBuilder();
+		boolean quoted = false;
+		boolean started = false;
+		int slashes = 0;
+		for (int i = 0; i < raw.length(); i++) {
+			char c = raw.charAt(i);
+			if (c == '\\') {
+				slashes++;
+				started = true;
+				continue;
+			}
+			if (c == '"') {
+				started = true;
+				current.append("\\".repeat(slashes / 2));
+				if (slashes % 2 == 0) {
+					quoted = !quoted;
+				} else {
+					current.append('"');
+				}
+				slashes = 0;
+				continue;
+			}
+			if (slashes > 0) {
+				current.append("\\".repeat(slashes));
+				slashes = 0;
+			}
+			if (!quoted && Character.isWhitespace(c)) {
+				if (started) {
+					args.add(current.toString());
+					current.setLength(0);
+					started = false;
+				}
+			} else {
+				current.append(c);
+				started = true;
+			}
+		}
+		if (slashes > 0) {
+			current.append("\\".repeat(slashes));
+		}
+		if (started) {
+			args.add(current.toString());
+		}
+		return args;
+	}
+
+	private static List<String> splitUnixCommandLine(String raw) {
+		if (raw == null || raw.isBlank()) {
+			return List.of();
+		}
+		List<String> args = new ArrayList<>();
+		StringBuilder current = new StringBuilder();
+		char quote = 0;
+		boolean escaped = false;
+		for (int i = 0; i < raw.length(); i++) {
+			char c = raw.charAt(i);
+			if (escaped) {
+				current.append(c);
+				escaped = false;
+			} else if (c == '\\' && quote != '\'') {
+				escaped = true;
+			} else if ((c == '\'' || c == '"') && (quote == 0 || quote == c)) {
+				quote = quote == 0 ? c : 0;
+			} else if (quote == 0 && Character.isWhitespace(c)) {
+				if (!current.isEmpty()) {
+					args.add(current.toString());
+					current.setLength(0);
+				}
+			} else {
+				current.append(c);
+			}
+		}
+		if (escaped) {
+			current.append('\\');
+		}
+		if (!current.isEmpty()) {
+			args.add(current.toString());
+		}
+		return args;
+	}
+
+	private static boolean windows() {
+		return System.getProperty("os.name", "").toLowerCase(Locale.ROOT).contains("win");
+	}
+
+	private static String rewriteLaunchArgument(String argument, Path current, Path updated) {
+		if (argument == null || argument.isEmpty()) {
+			return argument;
+		}
+		String currentPath = current.toAbsolutePath().normalize().toString();
+		String updatedPath = updated.toAbsolutePath().normalize().toString();
+		String rewritten = argument.replace(currentPath, updatedPath);
+		if (rewritten.equals(argument)) {
+			rewritten = argument.replace(current.getFileName().toString(), updated.getFileName().toString());
+		}
+		return rewritten;
 	}
 
 	private static boolean download(HttpClient http, String url, Path part) {
@@ -234,10 +489,19 @@ public final class AutoUpdate implements PreLaunchEntrypoint {
 			.GET();
 	}
 
-	private static boolean validJar(Path path) {
-		try (InputStream in = Files.newInputStream(path)) {
-			byte[] head = in.readNBytes(4);
-			return head.length >= 4 && head[0] == 'P' && head[1] == 'K';
+	private static boolean validJar(Path path, Remote remote) {
+		try (java.util.zip.ZipFile zip = new java.util.zip.ZipFile(path.toFile())) {
+			java.util.zip.ZipEntry entry = zip.getEntry("fabric.mod.json");
+			if (entry == null) {
+				return false;
+			}
+			try (Reader reader = new java.io.InputStreamReader(zip.getInputStream(entry))) {
+				JsonObject metadata = JsonParser.parseReader(reader).getAsJsonObject();
+				return metadata.has("id")
+					&& Voidmark.MOD_ID.equals(metadata.get("id").getAsString())
+					&& metadata.has("version")
+					&& remote.version.equals(metadata.get("version").getAsString());
+			}
 		} catch (Exception ignored) {
 			return false;
 		}

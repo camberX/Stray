@@ -8,6 +8,18 @@ public final class ReleaseNotes {
 	}
 
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.28", new String[]{
+			"Auto update can recover the full Java launch command from Windows process data, Linux /proc, or raw process data when the launcher hides ProcessHandle arguments."
+		}),
+		new Entry("1.2.27", new String[]{
+			"Test release for verifying that auto-update installs the new jar and relaunches Minecraft."
+		}),
+		new Entry("1.2.26", new String[]{
+			"Auto update starts the same Minecraft launch again after installing a new jar. If a launcher hides its command, Voidmark exits with the update installed for a manual start."
+		}),
+		new Entry("1.2.25", new String[]{
+			"Jacob's Contest HUD predicts your finishing bracket and crop total from live tab data, with average crops per second and per score update."
+		}),
 		new Entry("1.2.24", new String[]{
 			"Pickup log now uses actual inventory gains, so direct rewards count, ground pickups count once, slot moves do not count, and quantities are correct."
 		}),
