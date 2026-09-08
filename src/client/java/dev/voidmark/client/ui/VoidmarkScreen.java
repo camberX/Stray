@@ -12,6 +12,7 @@ import dev.voidmark.client.mining.MiningTracker;
 import dev.voidmark.client.mining.TitaniumTracker;
 import dev.voidmark.client.render.GlowBlurRadius;
 import dev.voidmark.client.render.GuiDraw;
+import dev.voidmark.client.render.GuiFrostBlur;
 import dev.voidmark.client.render.HudStats;
 import dev.voidmark.client.render.EspMobPrint;
 import dev.voidmark.client.render.MobCatalog;
@@ -360,7 +361,13 @@ public class VoidmarkScreen extends Screen {
 
 	@Override
 	public void extractBackground(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float delta) {
-		if (!controlCenter() && minecraft.level != null) {
+		if (controlCenter()) {
+			if (minecraft.level != null) {
+				GuiFrostBlur.capture(VoidmarkConfig.get().controlFrost);
+			}
+			return;
+		}
+		if (minecraft.level != null) {
 			extractBlurredBackground(graphics);
 		}
 	}
@@ -2266,7 +2273,7 @@ public class VoidmarkScreen extends Screen {
 		return FabricLoader.getInstance()
 			.getModContainer("voidmark")
 			.map(container -> container.getMetadata().getVersion().getFriendlyString())
-			.orElse("1.2.69");
+			.orElse("1.2.70");
 	}
 
 	@Override

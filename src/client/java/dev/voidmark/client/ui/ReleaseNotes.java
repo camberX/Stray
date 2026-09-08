@@ -8,6 +8,9 @@ public final class ReleaseNotes {
 	}
 
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.70", new String[]{
+			"Control frost blurs the world under the menu only. The slider is blur strength again, not a second opacity layer."
+		}),
 		new Entry("1.2.69", new String[]{
 			"Control frost stays on the menu glass. The world around it is no longer blurred. Feature cards are only a little lighter than the pane."
 		}),

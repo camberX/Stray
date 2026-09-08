@@ -2,6 +2,7 @@ package dev.voidmark.client.ui;
 
 import dev.voidmark.client.config.VoidmarkConfig;
 import dev.voidmark.client.render.GuiDraw;
+import dev.voidmark.client.render.GuiFrostBlur;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.core.ClientAsset;
 import net.minecraft.resources.Identifier;
@@ -79,19 +80,8 @@ public final class ControlChrome {
 	}
 
 	public static void window(GuiGraphicsExtractor graphics, float x, float y, float w, float h) {
+		GuiFrostBlur.blitWindow(graphics, x, y, w, h, WINDOW_R);
 		GuiDraw.rounded(graphics, x, y, w, h, WINDOW_R, windowFill());
-		float frost = VoidmarkConfig.clamp(VoidmarkConfig.get().controlFrost, 0f, 1f);
-		if (frost > 0.01f) {
-			GuiDraw.rounded(
-				graphics,
-				x,
-				y,
-				w,
-				h,
-				WINDOW_R,
-				Theme.withAlpha(Theme.mix(paneRgb(), 0xFFFFFF, 0.28f), Math.round(frost * 58f))
-			);
-		}
 	}
 
 	public static void card(GuiGraphicsExtractor graphics, float x, float y, float w, float h) {
