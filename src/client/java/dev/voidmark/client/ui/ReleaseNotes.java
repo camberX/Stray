@@ -8,6 +8,9 @@ public final class ReleaseNotes {
 	}
 
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.53", new String[]{
+			"Ghost's white silhouette is back. It traces the held item on screen around the transparent fill and smoke."
+		}),
 		new Entry("1.2.52", new String[]{
 			"Ghost outlines the held item as you see it on screen, not each 3D face or texture pixel."
 		}),

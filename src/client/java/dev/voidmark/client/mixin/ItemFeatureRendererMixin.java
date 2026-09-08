@@ -61,7 +61,7 @@ public class ItemFeatureRendererMixin {
 		if (HeldItemShader.applies(submit.displayContext())) {
 			this.quadInstance.setLightCoords(submit.lightCoords());
 			this.quadInstance.setOverlayCoords(submit.overlayCoords());
-			HeldItemShader.drawViewMask(outlineBufferSource, submit.pose(), submit.quads(), this.quadInstance);
+			HeldItemShader.drawViewMask(submit.pose(), submit.quads(), this.quadInstance);
 		}
 		this.voidmark$itemSubmit = null;
 	}

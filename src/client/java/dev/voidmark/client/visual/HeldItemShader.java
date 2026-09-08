@@ -5,7 +5,9 @@ import com.mojang.blaze3d.pipeline.ColorTargetState;
 import com.mojang.blaze3d.pipeline.DepthStencilState;
 import com.mojang.blaze3d.pipeline.RenderPipeline;
 import com.mojang.blaze3d.pipeline.RenderTarget;
+import com.mojang.blaze3d.pipeline.TextureTarget;
 import com.mojang.blaze3d.platform.CompareOp;
+import com.mojang.blaze3d.systems.CommandEncoder;
 import com.mojang.blaze3d.systems.RenderPass;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.textures.FilterMode;
@@ -19,9 +21,9 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.OutlineBufferSource;
 import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.client.renderer.feature.ItemFeatureRenderer;
+import net.minecraft.client.renderer.rendertype.OutputTarget;
 import net.minecraft.client.renderer.rendertype.RenderSetup;
 import net.minecraft.client.renderer.rendertype.RenderType;
-import net.minecraft.client.renderer.rendertype.RenderTypes;
 import net.minecraft.client.renderer.texture.TextureAtlas;
 import net.minecraft.client.resources.model.geometry.BakedQuad;
 import net.minecraft.resources.Identifier;
@@ -39,9 +41,13 @@ public final class HeldItemShader {
 	private static final Identifier FILL_PIPELINE_ID = Voidmark.id("pipeline/held_item");
 	private static final Identifier FILL_SHADER_ID = Voidmark.id("core/held_item");
 	private static final Identifier SILHOUETTE_SHADER_ID = Voidmark.id("post/held_item_silhouette");
+	private static final OutlineBufferSource MASK_BUFFERS = new OutlineBufferSource();
+	private static final OutputTarget MASK_OUTPUT = new OutputTarget("voidmark_held_item_mask", HeldItemShader::maskTarget);
+	private static final Function<Identifier, RenderType> FILL_TYPES = Util.memoize(HeldItemShader::createFillType);
+	private static final Function<Identifier, RenderType> MASK_TYPES = Util.memoize(HeldItemShader::createMaskType);
 	private static RenderPipeline fillPipeline;
 	private static RenderPipeline silhouettePipeline;
-	private static final Function<Identifier, RenderType> FILL_TYPES = Util.memoize(HeldItemShader::createFillType);
+	private static RenderTarget maskTarget;
 	private static boolean maskThisFrame;
 
 	private HeldItemShader() {
@@ -87,30 +93,38 @@ public final class HeldItemShader {
 		if (!active()) {
 			return;
 		}
-		RenderTarget target = outlineTarget();
-		if (target == null || target.getColorTexture() == null) {
+		Minecraft client = Minecraft.getInstance();
+		RenderTarget main = client.getMainRenderTarget();
+		if (main == null || main.width <= 0 || main.height <= 0) {
 			return;
 		}
-		RenderSystem.getDevice().createCommandEncoder().clearColorTexture(target.getColorTexture(), 0);
+		if (maskTarget == null) {
+			maskTarget = new TextureTarget("voidmark held item mask", main.width, main.height, true);
+		} else if (maskTarget.width != main.width || maskTarget.height != main.height) {
+			maskTarget.resize(main.width, main.height);
+		}
+		if (maskTarget.getColorTexture() == null) {
+			return;
+		}
+		CommandEncoder encoder = RenderSystem.getDevice().createCommandEncoder();
+		encoder.clearColorTexture(maskTarget.getColorTexture(), 0);
+		if (maskTarget.getDepthTexture() != null) {
+			encoder.clearDepthTexture(maskTarget.getDepthTexture(), 1.0);
+		}
 		maskThisFrame = true;
 	}
 
-	public static void drawViewMask(
-		OutlineBufferSource outlines,
-		PoseStack.Pose pose,
-		Iterable<BakedQuad> quads,
-		QuadInstance quadInstance
-	) {
-		if (!maskThisFrame || outlines == null || quads == null) {
+	public static void drawViewMask(PoseStack.Pose pose, Iterable<BakedQuad> quads, QuadInstance quadInstance) {
+		if (!maskThisFrame || quads == null || pose == null || quadInstance == null) {
 			return;
 		}
-		outlines.setColor(0xFFFFFFFF);
+		MASK_BUFFERS.setColor(0xFFFFFFFF);
 		for (BakedQuad quad : quads) {
 			Identifier atlas = TextureAtlas.LOCATION_ITEMS;
 			if (quad != null) {
 				atlas = quad.materialInfo().sprite().atlasLocation();
 			}
-			outlines.getBuffer(RenderTypes.outline(atlas)).putBakedQuad(pose, quad, quadInstance);
+			MASK_BUFFERS.getBuffer(MASK_TYPES.apply(atlas)).putBakedQuad(pose, quad, quadInstance);
 		}
 	}
 
@@ -119,14 +133,10 @@ public final class HeldItemShader {
 			return;
 		}
 		maskThisFrame = false;
+		MASK_BUFFERS.endOutlineBatch();
 		Minecraft client = Minecraft.getInstance();
-		if (client.levelRenderer == null) {
-			return;
-		}
-		client.renderBuffers().outlineBufferSource().endOutlineBatch();
-		RenderTarget mask = outlineTarget();
 		RenderTarget main = client.getMainRenderTarget();
-		if (mask == null || main == null || mask.getColorTextureView() == null || main.getColorTextureView() == null) {
+		if (maskTarget == null || main == null || maskTarget.getColorTextureView() == null || main.getColorTextureView() == null) {
 			return;
 		}
 		ensureSilhouettePipeline();
@@ -139,7 +149,7 @@ public final class HeldItemShader {
 			RenderSystem.bindDefaultUniforms(pass);
 			pass.bindTexture(
 				"InSampler",
-				mask.getColorTextureView(),
+				maskTarget.getColorTextureView(),
 				RenderSystem.getSamplerCache().getClampToEdge(FilterMode.NEAREST)
 			);
 			pass.draw(0, 3);
@@ -166,12 +176,8 @@ public final class HeldItemShader {
 		);
 	}
 
-	private static RenderTarget outlineTarget() {
-		Minecraft client = Minecraft.getInstance();
-		if (client.levelRenderer == null) {
-			return null;
-		}
-		return client.levelRenderer.entityOutlineTarget();
+	private static RenderTarget maskTarget() {
+		return maskTarget;
 	}
 
 	private static Identifier atlas(RenderType original, Iterable<BakedQuad> quads) {
@@ -195,7 +201,18 @@ public final class HeldItemShader {
 				.withTexture("Sampler1", ItemFeatureRenderer.ENCHANTED_GLINT_ITEM)
 				.useLightmap()
 				.affectsCrumbling()
-				.setOutline(RenderSetup.OutlineProperty.AFFECTS_OUTLINE)
+				.setOutline(RenderSetup.OutlineProperty.NONE)
+				.createRenderSetup()
+		);
+	}
+
+	private static RenderType createMaskType(Identifier atlas) {
+		return RenderType.create(
+			"voidmark_held_item_mask",
+			RenderSetup.builder(RenderPipelines.OUTLINE_NO_CULL)
+				.withTexture("Sampler0", atlas)
+				.setOutputTarget(MASK_OUTPUT)
+				.setOutline(RenderSetup.OutlineProperty.IS_OUTLINE)
 				.createRenderSetup()
 		);
 	}
