@@ -8,6 +8,9 @@ public final class ReleaseNotes {
 	}
 
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.49", new String[]{
+			"Ghost keeps its color in caves and fog. World lighting no longer tints the held item, and the outline fade is softer on the corners."
+		}),
 		new Entry("1.2.48", new String[]{
 			"Ghost no longer draws a 3x3 of held items. The white outline stays a tight sticker rim around the one item in your hand."
 		}),

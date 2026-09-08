@@ -1,6 +1,5 @@
 #version 330
 
-#moj_import <minecraft:fog.glsl>
 #moj_import <minecraft:dynamictransforms.glsl>
 #moj_import <minecraft:globals.glsl>
 
@@ -11,7 +10,6 @@ in float sphericalVertexDistance;
 in float cylindricalVertexDistance;
 in vec4 vertexColor;
 in vec2 texCoord0;
-in vec3 viewNormal;
 
 out vec4 fragColor;
 
@@ -69,9 +67,7 @@ void main() {
     vec3 mist = mix(fill * 0.55, mix(fill, vec3(0.85, 0.97, 1.0), 0.55), wisps);
     body = mix(body, mist, smoke * 0.82);
     body = mix(body, mix(fill, vec3(1.0), 0.35), glint * 0.72);
-    body *= mix(0.92, 1.08, vertexColor.r);
 
-    float alpha = tex.a * fillOpacity * (0.28 + 0.42 * smoke + 0.22 * glint) * vertexColor.a;
-    vec4 outColor = vec4(body, clamp(alpha, 0.0, 1.0));
-    fragColor = apply_fog(outColor, sphericalVertexDistance, cylindricalVertexDistance, FogEnvironmentalStart, FogEnvironmentalEnd, FogRenderDistanceStart, FogRenderDistanceEnd, FogColor);
+    float alpha = tex.a * fillOpacity * (0.28 + 0.42 * smoke + 0.22 * glint);
+    fragColor = vec4(body, clamp(alpha, 0.0, 1.0));
 }

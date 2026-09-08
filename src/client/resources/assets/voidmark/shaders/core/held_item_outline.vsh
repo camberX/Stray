@@ -14,6 +14,7 @@ in vec3 Normal;
 
 out float sphericalVertexDistance;
 out float cylindricalVertexDistance;
+out float rimWeight;
 out vec2 texCoord0;
 
 void main() {
@@ -27,4 +28,5 @@ void main() {
     vec2 ndcPixel = vec2(2.0 / max(ScreenSize.x, 1.0), 2.0 / max(ScreenSize.y, 1.0));
     clip.xy += jump * pixels * ndcPixel * clip.w;
     gl_Position = clip;
+    rimWeight = length(jump) > 1.2 ? 0.42 : 1.0;
 }
