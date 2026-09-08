@@ -8,6 +8,9 @@ public final class ReleaseNotes {
 	}
 
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.48", new String[]{
+			"Ghost no longer draws a 3x3 of held items. The white outline stays a tight sticker rim around the one item in your hand."
+		}),
 		new Entry("1.2.47", new String[]{
 			"Ghost's white outline follows the item's pixel edges like a sticker, sitting behind the transparent fill."
 		}),
