@@ -8,6 +8,9 @@ public final class ReleaseNotes {
 	}
 
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.76", new String[]{
+			"The selected Control category is darker than the pane and uses the same gradient outline."
+		}),
 		new Entry("1.2.75", new String[]{
 			"Control keeps the gradient glass rims. The dotted corner strokes are gone so the curves stay smooth."
 		}),

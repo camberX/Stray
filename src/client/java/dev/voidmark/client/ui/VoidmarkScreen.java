@@ -1012,8 +1012,16 @@ public class VoidmarkScreen extends Screen {
 			boolean hover = GuiDraw.hovered(mouseX, mouseY, railX + 4, iy, railW - 8, slot);
 			float t = anim("cc-nav-" + group.name(), on || hover ? 1f : 0f);
 			if (t > 0.02f) {
+				float px = railX + 6;
+				float py = iy + 2;
+				float pw = railW - 12;
+				float ph = slot - 4;
+				float pr = 12;
 				int fill = on ? ControlChrome.selectedFill() : Anim.fade(ControlChrome.selectedFill(), t * 0.45f);
-				GuiDraw.rounded(graphics, railX + 6, iy + 2, railW - 12, slot - 4, 12, fill);
+				GuiDraw.rounded(graphics, px, py, pw, ph, pr, fill);
+				if (on) {
+					ControlChrome.rim(graphics, px, py, pw, ph, pr);
+				}
 			}
 			int icon = ControlChrome.text();
 			GuiDraw.icon(graphics, font, glyphs[i], railX + (railW - GuiDraw.iconWidth(font, glyphs[i])) * 0.5f, GuiDraw.middle(iy, slot), icon);
@@ -2485,7 +2493,7 @@ public class VoidmarkScreen extends Screen {
 		return FabricLoader.getInstance()
 			.getModContainer("voidmark")
 			.map(container -> container.getMetadata().getVersion().getFriendlyString())
-			.orElse("1.2.75");
+			.orElse("1.2.76");
 	}
 
 	@Override

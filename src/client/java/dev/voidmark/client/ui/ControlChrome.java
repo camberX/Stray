@@ -89,7 +89,7 @@ public final class ControlChrome {
 	}
 
 	public static int selectedFill() {
-		return windowFill();
+		return Theme.withAlpha(Theme.mix(paneRgb(), 0x000000, 0.34f), Math.round(Math.min(0.78f, paneOpacity() + 0.24f) * 255f));
 	}
 
 	public static int pillFill() {
