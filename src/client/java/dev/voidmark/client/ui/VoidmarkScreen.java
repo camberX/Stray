@@ -497,7 +497,7 @@ public class VoidmarkScreen extends Screen {
 	}
 
 	private float cardHead() {
-		return controlCenter() ? 28f : CARD_HEAD;
+		return controlCenter() ? rowH() : CARD_HEAD;
 	}
 
 	private float rowH() {
@@ -2040,7 +2040,7 @@ public class VoidmarkScreen extends Screen {
 	) {
 		if (controlCenter()) {
 			ControlChrome.card(graphics, x, y, w, h);
-			GuiDraw.menu(graphics, font, title, x + cardPad(), y + 8, ControlChrome.cardText());
+			GuiDraw.menu(graphics, font, title, x + cardPad(), GuiDraw.middle(y, cardHead()), ControlChrome.cardText());
 			if (setter != null && value != null) {
 				float trackW = 28;
 				float trackH = 16;
@@ -2493,7 +2493,7 @@ public class VoidmarkScreen extends Screen {
 		return FabricLoader.getInstance()
 			.getModContainer("voidmark")
 			.map(container -> container.getMetadata().getVersion().getFriendlyString())
-			.orElse("1.2.76");
+			.orElse("1.2.77");
 	}
 
 	@Override

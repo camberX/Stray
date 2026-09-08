@@ -8,6 +8,9 @@ public final class ReleaseNotes {
 	}
 
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.77", new String[]{
+			"Control selected category and search are darker, frost can go stronger, and the first row in a feature pill matches the spacing of the ones after it."
+		}),
 		new Entry("1.2.76", new String[]{
 			"The selected Control category is darker than the pane and uses the same gradient outline."
 		}),

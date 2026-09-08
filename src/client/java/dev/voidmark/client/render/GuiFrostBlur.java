@@ -138,7 +138,7 @@ public final class GuiFrostBlur {
 		try {
 			copy(main.getColorTexture(), backup.getColorTexture(), main.width, main.height);
 			capturing = true;
-			captureRadius = 2.5f + VoidmarkConfig.clamp(frost01, 0f, 1f) * 13.5f;
+			captureRadius = 2.5f + VoidmarkConfig.clamp(frost01, 0f, 1f) * 29.5f;
 			try {
 				client.gameRenderer.processBlurEffect();
 			} finally {

@@ -89,7 +89,7 @@ public final class ControlChrome {
 	}
 
 	public static int selectedFill() {
-		return Theme.withAlpha(Theme.mix(paneRgb(), 0x000000, 0.34f), Math.round(Math.min(0.78f, paneOpacity() + 0.24f) * 255f));
+		return Theme.withAlpha(Theme.mix(paneRgb(), 0x000000, 0.44f), Math.round(Math.min(0.86f, paneOpacity() + 0.32f) * 255f));
 	}
 
 	public static int pillFill() {
@@ -101,7 +101,7 @@ public final class ControlChrome {
 	}
 
 	public static int searchFill() {
-		return Theme.withAlpha(Theme.mix(paneRgb(), 0x000000, 0.22f), Math.round(Math.min(0.70f, paneOpacity() + 0.16f) * 255f));
+		return Theme.withAlpha(Theme.mix(paneRgb(), 0x000000, 0.38f), Math.round(Math.min(0.82f, paneOpacity() + 0.28f) * 255f));
 	}
 
 	public static int clipFill() {
