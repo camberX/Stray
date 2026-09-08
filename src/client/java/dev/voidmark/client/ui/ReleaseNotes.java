@@ -8,6 +8,9 @@ public final class ReleaseNotes {
 	}
 
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.38", new String[]{
+			"Triggerbot no longer hits armor stands or mannequins."
+		}),
 		new Entry("1.2.37", new String[]{
 			"Triggerbot left-clicks at the same point in the tick as a normal attack, so moving while it hits no longer sends the attack after movement."
 		}),

@@ -6,13 +6,16 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.MultiPlayerGameMode;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.core.component.DataComponents;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.Display;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.ExperienceOrb;
 import net.minecraft.world.entity.Interaction;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.decoration.ArmorStand;
+import net.minecraft.world.entity.decoration.Mannequin;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
@@ -113,15 +116,34 @@ public final class Triggerbot {
 		if (entity == null || entity == player || entity.isRemoved()) {
 			return false;
 		}
+		if (isArmorStand(entity)) {
+			return false;
+		}
 		if (entity instanceof ItemEntity || entity instanceof ExperienceOrb) {
 			return false;
 		}
-		if (entity instanceof ArmorStand || entity instanceof Interaction || entity instanceof Display) {
+		if (entity instanceof Interaction || entity instanceof Display) {
 			return false;
 		}
 		if (entity instanceof Player) {
 			return players;
 		}
 		return entity instanceof LivingEntity;
+	}
+
+	private static boolean isArmorStand(Entity entity) {
+		if (entity instanceof ArmorStand || entity instanceof Mannequin) {
+			return true;
+		}
+		EntityType<?> type = entity.getType();
+		if (type == EntityType.ARMOR_STAND || type == EntityType.MANNEQUIN) {
+			return true;
+		}
+		Identifier id = EntityType.getKey(type);
+		if (id == null) {
+			return false;
+		}
+		String path = id.getPath();
+		return path.equals("armor_stand") || path.equals("mannequin");
 	}
 }
