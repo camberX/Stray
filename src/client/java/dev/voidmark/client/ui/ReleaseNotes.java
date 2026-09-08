@@ -8,6 +8,9 @@ public final class ReleaseNotes {
 	}
 
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.50", new String[]{
+			"Ghost is one held item again. The white rim is painted on the sprite edges, not extra copies stacked in your FOV."
+		}),
 		new Entry("1.2.49", new String[]{
 			"Ghost keeps its color in caves and fog. World lighting no longer tints the held item, and the outline fade is softer on the corners."
 		}),

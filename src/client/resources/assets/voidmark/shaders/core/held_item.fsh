@@ -36,6 +36,10 @@ float fbm(vec2 p) {
     return v;
 }
 
+float texelAlpha(vec2 uv) {
+    return texture(Sampler0, uv).a;
+}
+
 void main() {
     vec4 tex = texture(Sampler0, texCoord0);
 #ifdef ALPHA_CUTOUT
@@ -46,7 +50,26 @@ void main() {
 
     vec3 fill = ColorModulator.rgb;
     float fillOpacity = ColorModulator.a;
+    float outlineStrength = clamp((ModelOffset.x - 0.15) / 1.35, 0.0, 1.0);
     float smokeSpeed = max(ModelOffset.y, 0.05);
+
+    vec2 texel = 1.0 / vec2(textureSize(Sampler0, 0));
+    float neighbor = min(
+        min(texelAlpha(texCoord0 + vec2(texel.x, 0.0)), texelAlpha(texCoord0 - vec2(texel.x, 0.0))),
+        min(texelAlpha(texCoord0 + vec2(0.0, texel.y)), texelAlpha(texCoord0 - vec2(0.0, texel.y)))
+    );
+    float neighbor2 = min(
+        min(texelAlpha(texCoord0 + vec2(texel.x * 2.0, 0.0)), texelAlpha(texCoord0 - vec2(texel.x * 2.0, 0.0))),
+        min(texelAlpha(texCoord0 + vec2(0.0, texel.y * 2.0)), texelAlpha(texCoord0 - vec2(0.0, texel.y * 2.0)))
+    );
+#ifdef ALPHA_CUTOUT
+    float cut = ALPHA_CUTOUT;
+#else
+    float cut = 0.1;
+#endif
+    float edge1 = 1.0 - step(cut, neighbor);
+    float edge2 = 1.0 - step(cut, neighbor2);
+    float outline = clamp(mix(edge1, max(edge1, edge2 * 0.85), outlineStrength), 0.0, 1.0);
 
     float t = GameTime * 420.0 * smokeSpeed;
     vec2 flow = texCoord0 * 6.5;
@@ -68,6 +91,8 @@ void main() {
     body = mix(body, mist, smoke * 0.82);
     body = mix(body, mix(fill, vec3(1.0), 0.35), glint * 0.72);
 
-    float alpha = tex.a * fillOpacity * (0.28 + 0.42 * smoke + 0.22 * glint);
-    fragColor = vec4(body, clamp(alpha, 0.0, 1.0));
+    vec3 rim = vec3(0.95, 0.98, 1.0);
+    vec3 color = mix(body, rim, outline);
+    float alpha = tex.a * mix(fillOpacity * (0.28 + 0.42 * smoke + 0.22 * glint), 1.0, outline);
+    fragColor = vec4(color, clamp(alpha, 0.0, 1.0));
 }
