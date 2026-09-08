@@ -496,6 +496,10 @@ public class VoidmarkScreen extends Screen {
 		return controlCenter() ? 14f : CARD_PAD;
 	}
 
+	private float cardTop() {
+		return controlCenter() ? cardPad() : 0f;
+	}
+
 	private float cardHead() {
 		return controlCenter() ? rowH() : CARD_HEAD;
 	}
@@ -676,7 +680,7 @@ public class VoidmarkScreen extends Screen {
 		float namesH = Math.max(cardHeight(2), windowY + windowH - PAD - namesTop);
 		String namesTitle = nametags.isEmpty() ? "Nametag ESP" : "Nametag ESP  " + nametags.size();
 		float namesY = featureCard(graphics, font, left, namesTop, col, namesH, namesTitle);
-		drawNametagEspList(graphics, font, ix, namesY, iw, namesH - cardHead() - 4, mouseX, mouseY, true);
+		drawNametagEspList(graphics, font, ix, namesY, iw, namesH - cardTop() - cardHead() - 4, mouseX, mouseY, true);
 
 		List<MobCatalog.Entry> entries = MobCatalog.filtered(mobQuery);
 		float mobTop = top;
@@ -689,7 +693,7 @@ public class VoidmarkScreen extends Screen {
 		}
 		float listH = windowY + windowH - pad() - mobTop;
 		featureCard(graphics, font, right, mobTop, col, listH, entries.isEmpty() ? "Mobs" : "Mobs  " + entries.size());
-		float searchY = mobTop + cardHead();
+		float searchY = mobTop + cardTop() + cardHead();
 		mobFieldX = rx;
 		mobFieldY = searchY;
 		mobFieldW = iw;
@@ -707,7 +711,7 @@ public class VoidmarkScreen extends Screen {
 		mobListX = rx;
 		mobListY = searchY + 18;
 		mobListW = iw;
-		mobListH = Math.max(16, listH - cardHead() - 22);
+		mobListH = Math.max(16, listH - cardTop() - cardHead() - 22);
 		float contentH = entries.size() * ROW;
 		float maxScroll = Math.max(0f, contentH - mobListH);
 		if (ensureMobVisible) {
@@ -788,7 +792,7 @@ public class VoidmarkScreen extends Screen {
 		previewX = ix;
 		previewY = top + CARD_HEAD;
 		previewW = iw;
-		previewH = Math.max(48, modelH - cardHead() - cardPad());
+		previewH = Math.max(48, modelH - cardTop() - cardHead() - cardPad());
 		boolean previewHover = GuiDraw.hovered(mouseX, mouseY, previewX, previewY, previewW, previewH);
 		PlayerPreview.Drawn drawn = PlayerPreview.draw(
 			graphics,
@@ -1645,7 +1649,7 @@ public class VoidmarkScreen extends Screen {
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Mining HUD", config.miningHudEnabled, v -> config.miningHudEnabled = v, Feature.MINING);
 				toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Titanium ESP", config.titaniumEsp, v -> config.titaniumEsp = v, Feature.TITANIUM);
 
-				y = featureCard(graphics, font, right, top, col, cardHead() + 54 + cardPad(), "Live");
+				y = featureCard(graphics, font, right, top, col, cardTop() + cardHead() + 54 + cardPad(), "Live");
 				var snap = MiningTracker.snapshot();
 				GuiDraw.menu(graphics, font, snap.ability(), rx, y + 2, ink());
 				GuiDraw.menu(graphics, font, snap.abilityReady() ? "Ready" : snap.abilityLabel(), rx, y + 14, snap.abilityReady() ? (controlCenter() ? ControlChrome.BLUE : Theme.ACCENT) : fade());
@@ -1793,7 +1797,7 @@ public class VoidmarkScreen extends Screen {
 				float y = controlCard(graphics, font, left, top, col, mouseX, mouseY, "Mining HUD", config.miningHudEnabled, v -> config.miningHudEnabled = v, Feature.MINING);
 				controlCard(graphics, font, left, y, col, mouseX, mouseY, "Titanium ESP", config.titaniumEsp, v -> config.titaniumEsp = v, Feature.TITANIUM);
 
-				y = featureCard(graphics, font, right, top, col, cardHead() + 54 + cardPad(), "Live");
+				y = featureCard(graphics, font, right, top, col, cardTop() + cardHead() + 54 + cardPad(), "Live");
 				var snap = MiningTracker.snapshot();
 				GuiDraw.menu(graphics, font, snap.ability(), rx, y + 2, ink());
 				GuiDraw.menu(graphics, font, snap.abilityReady() ? "Ready" : snap.abilityLabel(), rx, y + 14, snap.abilityReady() ? ControlChrome.BLUE : fade());
@@ -1888,7 +1892,7 @@ public class VoidmarkScreen extends Screen {
 		y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Animations", config.uiAnimations, v -> config.uiAnimations = v);
 		toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Auto update", config.autoUpdate, v -> config.autoUpdate = v);
 
-		float accentH = cardHead() + 14 + swatchBlockH(Theme.PRESETS.length, iw) + rowH() * 3 + cardPad();
+		float accentH = cardTop() + cardHead() + 14 + swatchBlockH(Theme.PRESETS.length, iw) + rowH() * 3 + cardPad();
 		y = featureCard(graphics, font, right, top, col, accentH, "Accent");
 		GuiDraw.small(graphics, font, "Preset", rx, y + 1, ControlChrome.muted());
 		y = swatchRow(graphics, mouseX, mouseY, rx + 2, y + 12, iw - 2, Theme.PRESETS, true);
@@ -1942,7 +1946,7 @@ public class VoidmarkScreen extends Screen {
 	}
 
 	private float cardHeight(int rows) {
-		return cardHead() + rows * rowH() + cardPad();
+		return cardTop() + cardHead() + rows * rowH() + cardPad();
 	}
 
 	private void drawNametagEspList(
@@ -2040,20 +2044,21 @@ public class VoidmarkScreen extends Screen {
 	) {
 		if (controlCenter()) {
 			ControlChrome.card(graphics, x, y, w, h);
-			GuiDraw.menu(graphics, font, title, x + cardPad(), GuiDraw.middle(y, cardHead()), ControlChrome.cardText());
+			float headY = y + cardTop();
+			GuiDraw.menu(graphics, font, title, x + cardPad(), GuiDraw.middle(headY, cardHead()), ControlChrome.cardText());
 			if (setter != null && value != null) {
 				float trackW = 28;
 				float trackH = 16;
 				float tx = x + w - cardPad() - trackW;
-				float ty = y + (cardHead() - trackH) * 0.5f;
+				float ty = headY + (cardHead() - trackH) * 0.5f;
 				float t = anim("tog-" + title, value ? 1f : 0f);
 				ControlChrome.toggle(graphics, tx, ty, trackW, trackH, t);
-				hits.add(new Hit(tx - 2, y, trackW + 4, cardHead(), () -> {
+				hits.add(new Hit(tx - 2, headY, trackW + 4, cardHead(), () -> {
 					setter.accept(!value);
 					UnloadState.markDirty();
 				}));
 			}
-			return y + cardHead();
+			return headY + cardHead();
 		}
 		GuiDraw.panel(graphics, x, y, w, h, Math.min(14f, h / 2f), Theme.CARD, Theme.LINE);
 		GuiDraw.small(graphics, font, title, x + CARD_PAD, y + 5, Theme.HEADER);
@@ -2493,7 +2498,7 @@ public class VoidmarkScreen extends Screen {
 		return FabricLoader.getInstance()
 			.getModContainer("voidmark")
 			.map(container -> container.getMetadata().getVersion().getFriendlyString())
-			.orElse("1.2.77");
+			.orElse("1.2.78");
 	}
 
 	@Override

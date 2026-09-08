@@ -8,6 +8,9 @@ public final class ReleaseNotes {
 	}
 
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.78", new String[]{
+			"Control feature pills use the same inset at the top as the bottom."
+		}),
 		new Entry("1.2.77", new String[]{
 			"Control selected category and search are darker, frost can go stronger, and the first row in a feature pill matches the spacing of the ones after it."
 		}),
