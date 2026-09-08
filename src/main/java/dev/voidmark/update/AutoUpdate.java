@@ -76,8 +76,8 @@ public final class AutoUpdate implements PreLaunchEntrypoint {
 				log("Update failed. Continuing with " + installed + ".");
 				return;
 			}
-			log("Updated to " + remote.version + " at " + dest.getFileName() + ". Relaunch Minecraft.");
-			System.exit(0);
+			log("Updated to " + remote.version + " at " + dest.getFileName() + ". Closing Minecraft.");
+			killGame();
 		} catch (Exception exception) {
 			log("Update check failed: " + exception.getMessage());
 			Voidmark.LOGGER.warn("Auto-update failed", exception);
@@ -204,12 +204,6 @@ public final class AutoUpdate implements PreLaunchEntrypoint {
 		}
 		for (Path old : staleJars(mods, dest)) {
 			retire(old);
-		}
-		List<Path> remaining = staleJars(mods, dest);
-		if (!remaining.isEmpty()) {
-			Files.deleteIfExists(dest);
-			log("Could not safely remove the old jar. Continuing with the installed version.");
-			return null;
 		}
 		sweep(mods, dest);
 		return dest;
@@ -435,6 +429,28 @@ public final class AutoUpdate implements PreLaunchEntrypoint {
 		int[] trimmed = new int[n];
 		System.arraycopy(out, 0, trimmed, 0, n);
 		return trimmed;
+	}
+
+	private static void killGame() {
+		try {
+			ProcessHandle.current().descendants().forEach(child -> {
+				try {
+					child.destroyForcibly();
+				} catch (Exception ignored) {
+				}
+			});
+		} catch (Exception ignored) {
+		}
+		try {
+			ProcessHandle.current().destroyForcibly();
+		} catch (Exception ignored) {
+		}
+		try {
+			System.out.flush();
+			System.err.flush();
+		} catch (Exception ignored) {
+		}
+		Runtime.getRuntime().halt(0);
 	}
 
 	private static void log(String message) {

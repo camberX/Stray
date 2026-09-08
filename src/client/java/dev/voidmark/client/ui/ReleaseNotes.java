@@ -8,6 +8,9 @@ public final class ReleaseNotes {
 	}
 
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.33", new String[]{
+			"Auto update closes Minecraft after it replaces the jar, so the next launch is the new version."
+		}),
 		new Entry("1.2.32", new String[]{
 			"Combat Triggerbot hits the crosshair entity with a vanilla attack when it is in reach. Players stay off unless you turn that toggle on."
 		}),
