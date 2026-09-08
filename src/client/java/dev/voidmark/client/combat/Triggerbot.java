@@ -22,9 +22,10 @@ import net.minecraft.world.phys.HitResult;
 
 /**
  * Attacks the crosshair entity using vanilla {@code gameMode.attack} plus a
- * swing. No custom packets. Fires only when Minecraft already resolved an
- * entity hit that is inside reach. Vanilla worlds wait for weapon charge;
- * Skyblock waits for tab Attack Speed.
+ * swing, from {@code handleKeybinds} so the attack goes out before this tick's
+ * movement packet. Fires only when Minecraft already resolved an entity hit
+ * that is inside reach. Vanilla worlds wait for weapon charge; Skyblock waits
+ * for tab Attack Speed.
  */
 public final class Triggerbot {
 	private static int tick;

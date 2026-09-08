@@ -226,7 +226,6 @@ public final class VoidmarkClient implements ClientModInitializer {
 			VoidmarkConfig running = VoidmarkConfig.get();
 			SpotifySmtc.tick(running.musicHudEnabled && running.spotifyEnabled);
 			SkyblockLocation.tick(client);
-			Triggerbot.tick(client);
 			LoadoutsScreen.tickSwap(client);
 			WardrobeScreen.tickSwap(client);
 			Hitsound.tick(client);

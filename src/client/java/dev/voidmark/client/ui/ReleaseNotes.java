@@ -8,6 +8,9 @@ public final class ReleaseNotes {
 	}
 
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.37", new String[]{
+			"Triggerbot left-clicks at the same point in the tick as a normal attack, so moving while it hits no longer sends the attack after movement."
+		}),
 		new Entry("1.2.36", new String[]{
 			"Triggerbot waits for vanilla weapon charge between swings. Skyblock still uses tab Attack Speed."
 		}),

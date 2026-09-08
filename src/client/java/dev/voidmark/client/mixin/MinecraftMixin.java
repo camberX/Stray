@@ -1,5 +1,6 @@
 package dev.voidmark.client.mixin;
 
+import dev.voidmark.client.combat.Triggerbot;
 import dev.voidmark.client.render.MobGlowRenderer;
 import dev.voidmark.client.ui.LoadoutsScreen;
 import dev.voidmark.client.ui.VoidmarkTitleScreen;
@@ -12,6 +13,7 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.ModifyVariable;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(Minecraft.class)
@@ -22,6 +24,15 @@ public class MinecraftMixin {
 			return new VoidmarkTitleScreen();
 		}
 		return WardrobeScreen.wrap(LoadoutsScreen.wrap(screen));
+	}
+
+	/**
+	 * Same place vanilla left-click is handled, before this tick's movement
+	 * packet is sent.
+	 */
+	@Inject(method = "handleKeybinds", at = @At("HEAD"))
+	private void voidmark$triggerbot(CallbackInfo ci) {
+		Triggerbot.tick((Minecraft) (Object) this);
 	}
 
 	/**
