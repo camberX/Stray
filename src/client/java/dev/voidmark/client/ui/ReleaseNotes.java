@@ -8,6 +8,9 @@ public final class ReleaseNotes {
 	}
 
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.71", new String[]{
+			"Theme has a Pills color picker for Control category highlights and feature cards, separate from the glass color."
+		}),
 		new Entry("1.2.70", new String[]{
 			"Control frost blurs the world under the menu only. The slider is blur strength again, not a second opacity layer."
 		}),

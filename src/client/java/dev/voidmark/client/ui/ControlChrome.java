@@ -31,12 +31,24 @@ public final class ControlChrome {
 		return rgb == 0 ? 0xFFFFFF : rgb;
 	}
 
+	public static int pillRgb() {
+		int rgb = VoidmarkConfig.get().controlPillRgb & 0xFFFFFF;
+		return rgb == 0 ? 0xFFFFFF : rgb;
+	}
+
 	public static float paneOpacity() {
 		return VoidmarkConfig.clamp(VoidmarkConfig.get().controlPaneOpacity, 0.12f, 0.78f);
 	}
 
 	public static boolean darkText() {
-		int rgb = paneRgb();
+		return darkText(paneRgb());
+	}
+
+	public static boolean pillDarkText() {
+		return darkText(pillRgb());
+	}
+
+	private static boolean darkText(int rgb) {
 		int r = (rgb >> 16) & 0xFF;
 		int g = (rgb >> 8) & 0xFF;
 		int b = rgb & 0xFF;
@@ -51,12 +63,20 @@ public final class ControlChrome {
 		return darkText() ? MUTED : LIGHT_MUTED;
 	}
 
+	public static int cardText() {
+		return pillDarkText() ? TEXT : LIGHT_TEXT;
+	}
+
+	public static int cardMuted() {
+		return pillDarkText() ? MUTED : LIGHT_MUTED;
+	}
+
 	public static int windowFill() {
 		return Theme.withAlpha(paneRgb(), Math.round(paneOpacity() * 255f));
 	}
 
 	public static int cardFill() {
-		return Theme.withAlpha(Theme.mix(paneRgb(), 0xFFFFFF, 0.16f), Math.round(Math.min(0.46f, paneOpacity() + 0.06f) * 255f));
+		return Theme.withAlpha(pillRgb(), pillAlpha());
 	}
 
 	public static int railFill() {
@@ -64,7 +84,11 @@ public final class ControlChrome {
 	}
 
 	public static int pillFill() {
-		return Theme.withAlpha(0xFFFFFF, darkText() ? 48 : 36);
+		return Theme.withAlpha(pillRgb(), Math.round(pillAlpha() * 0.78f));
+	}
+
+	private static int pillAlpha() {
+		return Math.round(Math.min(0.50f, paneOpacity() + 0.10f) * 255f);
 	}
 
 	public static int searchFill() {

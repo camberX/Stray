@@ -180,6 +180,7 @@ public final class VoidmarkConfig {
 	public boolean hudStarfield = false;
 	public String guiDesign = "eisenmann";
 	public int controlPaneRgb = 0xFFFFFF;
+	public int controlPillRgb = 0xFFFFFF;
 	public float controlPaneOpacity = 0.30f;
 	public float controlFrost = 0.62f;
 	public String uiFont = "";
@@ -385,6 +386,9 @@ public final class VoidmarkConfig {
 				loaded.guiDesign = normalizeGuiDesign(loaded.guiDesign);
 				if (loaded.controlPaneRgb == 0) {
 					loaded.controlPaneRgb = 0xFFFFFF;
+				}
+				if (!json.has("controlPillRgb") || loaded.controlPillRgb == 0) {
+					loaded.controlPillRgb = 0xFFFFFF;
 				}
 				loaded.controlPaneOpacity = json.has("controlPaneOpacity")
 					? clamp(loaded.controlPaneOpacity, 0.12f, 0.78f)
