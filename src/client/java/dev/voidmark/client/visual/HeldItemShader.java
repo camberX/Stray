@@ -6,6 +6,7 @@ import com.mojang.blaze3d.pipeline.RenderPipeline;
 import dev.voidmark.Voidmark;
 import dev.voidmark.client.config.VoidmarkConfig;
 import net.minecraft.client.renderer.RenderPipelines;
+import net.minecraft.client.renderer.feature.ItemFeatureRenderer;
 import net.minecraft.client.renderer.rendertype.RenderSetup;
 import net.minecraft.client.renderer.rendertype.RenderType;
 import net.minecraft.client.renderer.texture.TextureAtlas;
@@ -55,6 +56,7 @@ public final class HeldItemShader {
 				.withLocation(PIPELINE_ID)
 				.withVertexShader(SHADER_ID)
 				.withFragmentShader(SHADER_ID)
+				.withSampler("Sampler1")
 				.withShaderDefine("ALPHA_CUTOUT", 0.1f)
 				.withColorTargetState(new ColorTargetState(BlendFunction.TRANSLUCENT))
 				.build()
@@ -93,7 +95,7 @@ public final class HeldItemShader {
 		return new Vector3f(
 			VoidmarkConfig.clamp(config.heldItemShaderOutline, 0.15f, 1.50f),
 			VoidmarkConfig.clamp(config.heldItemShaderSmoke, 0.10f, 1.50f),
-			0f
+			config.heldItemShaderStyleIndex()
 		);
 	}
 
@@ -103,6 +105,7 @@ public final class HeldItemShader {
 			"voidmark_held_item",
 			RenderSetup.builder(pipeline())
 				.withTexture("Sampler0", atlas)
+				.withTexture("Sampler1", ItemFeatureRenderer.ENCHANTED_GLINT_ITEM)
 				.useLightmap()
 				.affectsCrumbling()
 				.sortOnUpload()

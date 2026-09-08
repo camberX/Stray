@@ -105,7 +105,7 @@ public class VoidmarkScreen extends Screen {
 		FOG("Fog", 5),
 		VIEW("Aspect", 3),
 		HITSOUND("Hitsound", 3),
-		HELD_ITEM("Held item", 4),
+		HELD_ITEM("Held item", 5),
 		MOB("Mob glow", 4),
 		BLOCK("Block outline", 2),
 		CHEST("Chest ESP", 4),
@@ -162,6 +162,8 @@ public class VoidmarkScreen extends Screen {
 		new SearchEntry("Item shader", Tab.COMBAT, "Combat"),
 		new SearchEntry("Held item outline", Tab.COMBAT, "Combat"),
 		new SearchEntry("Item smoke", Tab.COMBAT, "Combat"),
+		new SearchEntry("Ghost", Tab.COMBAT, "Combat"),
+		new SearchEntry("Ghost item", Tab.COMBAT, "Combat"),
 		new SearchEntry("Mob glow", Tab.ESP, "ESP"),
 		new SearchEntry("Nametag ESP", Tab.ESP, "ESP"),
 		new SearchEntry("Block outline", Tab.ESP, "ESP"),
@@ -1647,6 +1649,7 @@ public class VoidmarkScreen extends Screen {
 				slider(graphics, font, ix, y, iw, "Marker", Math.round(config.hitmarkerScale * 100) + "%", (config.hitmarkerScale - 0.50f) / 1.50f, v -> config.hitmarkerScale = VoidmarkConfig.clampHudScale(0.50f + v * 1.50f));
 			}
 			case HELD_ITEM -> {
+				y = cycle(graphics, font, ix, y, iw, mouseX, mouseY, "Style", config.heldItemShaderStyleLabel(), config::cycleHeldItemShaderStyle);
 				y = colorRow(graphics, font, ix, y, iw, mouseX, mouseY, "Color", config.heldItemShaderRgb, PickerTarget.HELD_ITEM);
 				y = slider(graphics, font, ix, y, iw, "Fill", Math.round(config.heldItemShaderFill * 100) + "%", (config.heldItemShaderFill - 0.08f) / 0.77f, v -> config.heldItemShaderFill = VoidmarkConfig.clamp(0.08f + v * 0.77f, 0.08f, 0.85f));
 				y = slider(graphics, font, ix, y, iw, "Outline", Math.round(config.heldItemShaderOutline * 100) + "%", (config.heldItemShaderOutline - 0.15f) / 1.35f, v -> config.heldItemShaderOutline = VoidmarkConfig.clamp(0.15f + v * 1.35f, 0.15f, 1.50f));
@@ -1929,7 +1932,7 @@ public class VoidmarkScreen extends Screen {
 		return FabricLoader.getInstance()
 			.getModContainer("voidmark")
 			.map(container -> container.getMetadata().getVersion().getFriendlyString())
-			.orElse("1.2.42");
+			.orElse("1.2.43");
 	}
 
 	@Override

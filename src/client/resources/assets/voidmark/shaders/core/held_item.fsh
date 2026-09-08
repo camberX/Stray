@@ -5,6 +5,7 @@
 #moj_import <minecraft:globals.glsl>
 
 uniform sampler2D Sampler0;
+uniform sampler2D Sampler1;
 
 in float sphericalVertexDistance;
 in float cylindricalVertexDistance;
@@ -22,23 +23,23 @@ float noise(vec2 p) {
     vec2 i = floor(p);
     vec2 f = fract(p);
     vec2 u = f * f * (3.0 - 2.0 * f);
-    return mix(
-        mix(hash(i), hash(i + vec2(1.0, 0.0)), u.x),
-        mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), u.x),
-        u.y
-    );
+    return mix(mix(hash(i), hash(i + vec2(1.0, 0.0)), u.x), mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), u.x), u.y);
 }
 
 float fbm(vec2 p) {
     float v = 0.0;
-    float a = 0.55;
+    float a = 0.52;
     mat2 m = mat2(0.80, -0.60, 0.60, 0.80);
     for (int i = 0; i < 4; i++) {
         v += a * noise(p);
-        p = m * p * 2.07;
-        a *= 0.55;
+        p = m * p * 2.05;
+        a *= 0.52;
     }
     return v;
+}
+
+float texelAlpha(vec2 uv) {
+    return texture(Sampler0, uv).a;
 }
 
 void main() {
@@ -54,29 +55,44 @@ void main() {
     float outlineStrength = max(ModelOffset.x, 0.0);
     float smokeSpeed = max(ModelOffset.y, 0.05);
 
-    float t = GameTime * 480.0 * smokeSpeed;
-    vec2 uv = texCoord0 * 4.2;
-    float n1 = fbm(uv + vec2(t * 0.35, t * 0.18));
-    float n2 = fbm(uv * 1.7 - vec2(t * 0.22, -t * 0.31) + n1);
-    float smoke = smoothstep(0.18, 0.88, mix(n1, n2, 0.62));
-    float wisps = smoothstep(0.45, 0.95, n2) * 0.55;
+    vec2 texel = 1.0 / vec2(textureSize(Sampler0, 0));
+    float neighbor = min(
+        min(texelAlpha(texCoord0 + vec2(texel.x, 0.0)), texelAlpha(texCoord0 - vec2(texel.x, 0.0))),
+        min(texelAlpha(texCoord0 + vec2(0.0, texel.y)), texelAlpha(texCoord0 - vec2(0.0, texel.y)))
+    );
+#ifdef ALPHA_CUTOUT
+    float pixelEdge = 1.0 - step(ALPHA_CUTOUT, neighbor);
+#else
+    float pixelEdge = 1.0 - step(0.1, neighbor);
+#endif
+    float glow = smoothstep(0.02, 0.22, length(vec2(dFdx(tex.a), dFdy(tex.a))));
+    float outline = clamp(max(pixelEdge, glow * 0.35) * outlineStrength, 0.0, 1.0);
 
-    float lum = dot(tex.rgb, vec3(0.30, 0.54, 0.16));
-    vec3 dark = fill * 0.28;
-    vec3 mid = fill * 0.78;
-    vec3 bright = mix(fill, vec3(1.0), 0.42);
-    vec3 body = mix(dark, mid, smoke);
-    body = mix(body, bright, wisps * 0.65);
-    body *= mix(0.72, 1.18, lum);
-    body *= mix(0.85, 1.12, vertexColor.r);
+    float t = GameTime * 420.0 * smokeSpeed;
+    vec2 flow = texCoord0 * 6.5;
+    float ang = 0.17453292;
+    float ca = cos(ang);
+    float sa = sin(ang);
+    vec2 glintUv = mat2(ca, -sa, sa, ca) * flow;
+    glintUv += vec2(-t * 0.22, t * 0.08);
+    float glint = texture(Sampler1, glintUv).r;
+    glint = pow(clamp(glint, 0.0, 1.0), 1.35);
 
-    float edge = length(vec2(dFdx(tex.a), dFdy(tex.a)));
-    float texOutline = smoothstep(0.04, 0.28, edge);
-    float fresnel = pow(1.0 - abs(normalize(viewNormal).z), 2.4);
-    float outline = clamp(max(texOutline * 1.35, fresnel * 0.85) * outlineStrength, 0.0, 1.0);
+    vec2 smokeUv = texCoord0 * 5.4 + vec2(t * 0.12, -t * 0.07);
+    float n1 = fbm(smokeUv);
+    float n2 = fbm(smokeUv * 1.65 + vec2(-t * 0.09, t * 0.11) + n1);
+    float smoke = smoothstep(0.22, 0.86, mix(n1, n2, 0.58));
+    float wisps = smoothstep(0.52, 0.96, max(glint, n2));
 
-    vec3 color = mix(body, mix(fill, vec3(1.0), 0.55), outline);
-    float alpha = tex.a * mix(fillOpacity * (0.42 + 0.58 * smoke), mix(fillOpacity, 0.95, 0.55), outline);
+    vec3 body = fill * 0.16;
+    vec3 mist = mix(fill * 0.55, mix(fill, vec3(0.85, 0.97, 1.0), 0.55), wisps);
+    body = mix(body, mist, smoke * 0.82);
+    body = mix(body, mix(fill, vec3(1.0), 0.35), glint * 0.72);
+    body *= mix(0.92, 1.08, vertexColor.r);
+
+    vec3 rim = mix(vec3(0.92, 0.97, 1.0), vec3(1.0), 0.35);
+    vec3 color = mix(body, rim, outline);
+    float alpha = tex.a * mix(fillOpacity * (0.28 + 0.42 * smoke + 0.22 * glint), 0.92, outline);
     alpha *= vertexColor.a;
 
     vec4 outColor = vec4(color, clamp(alpha, 0.0, 1.0));

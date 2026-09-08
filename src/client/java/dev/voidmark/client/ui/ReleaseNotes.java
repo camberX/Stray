@@ -8,6 +8,9 @@ public final class ReleaseNotes {
 	}
 
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.43", new String[]{
+			"The held item shader is saved as Ghost: a thin white outline and a transparent fill with enchantment-glint smoke moving through it."
+		}),
 		new Entry("1.2.42", new String[]{
 			"The held item shader no longer crashes on launch."
 		}),

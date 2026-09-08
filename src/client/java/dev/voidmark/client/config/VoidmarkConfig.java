@@ -95,10 +95,11 @@ public final class VoidmarkConfig {
 	public float hitsoundVolume = 0.80f;
 	public float hitsoundPitch = 1.00f;
 	public boolean heldItemShaderEnabled = false;
-	public int heldItemShaderRgb = 0x9EE7FF;
+	public int heldItemShaderRgb = 0x4FD6EA;
 	public float heldItemShaderFill = 0.32f;
 	public float heldItemShaderOutline = 0.90f;
 	public float heldItemShaderSmoke = 0.55f;
+	public String heldItemShaderStyle = "ghost";
 	public int titaniumEspRange = 48;
 	public int titaniumEspRgb = 0xE8ECF2;
 	public boolean rawmatsEnchanted = false;
@@ -487,6 +488,7 @@ public final class VoidmarkConfig {
 				loaded.heldItemShaderSmoke = json.has("heldItemShaderSmoke")
 					? clamp(loaded.heldItemShaderSmoke, 0.10f, 1.50f)
 					: 0.55f;
+				loaded.heldItemShaderStyle = normalizeHeldItemShaderStyle(loaded.heldItemShaderStyle);
 				loaded.triggerbotHumanize = json.has("triggerbotHumanize")
 					? clamp(loaded.triggerbotHumanize, 0f, 1f)
 					: 0.50f;
@@ -602,6 +604,22 @@ public final class VoidmarkConfig {
 
 	public String nametagStyleLabel() {
 		return nametagCustom() ? "Eisenmann" : "Vanilla";
+	}
+
+	public void cycleHeldItemShaderStyle() {
+		heldItemShaderStyle = "ghost";
+	}
+
+	public String heldItemShaderStyleLabel() {
+		return "Ghost";
+	}
+
+	public float heldItemShaderStyleIndex() {
+		return 0f;
+	}
+
+	public static String normalizeHeldItemShaderStyle(String style) {
+		return "ghost";
 	}
 
 	public static String normalizeNametagStyle(String style) {
