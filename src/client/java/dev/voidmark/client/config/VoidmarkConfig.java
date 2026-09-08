@@ -178,6 +178,7 @@ public final class VoidmarkConfig {
 	public float menuScale = 1.0f;
 	public boolean menuStarfield = false;
 	public boolean hudStarfield = false;
+	public String guiDesign = "eisenmann";
 	public String uiFont = "";
 	public boolean mobGlowEnabled = false;
 	public boolean mobGlowThroughWalls = true;
@@ -378,6 +379,7 @@ public final class VoidmarkConfig {
 				loaded.nametagOpacity = loaded.nametagOpacity <= 0f ? 1.0f : clamp(loaded.nametagOpacity, 0.15f, 1f);
 				loaded.nametagStyle = normalizeNametagStyle(loaded.nametagStyle);
 				loaded.menuScale = normalizeMenuScale(loaded.menuScale);
+				loaded.guiDesign = normalizeGuiDesign(loaded.guiDesign);
 				if (loaded.mobGlowName == null) {
 					loaded.mobGlowName = "";
 				}
@@ -596,6 +598,28 @@ public final class VoidmarkConfig {
 
 	public boolean nametagCustom() {
 		return !"vanilla".equalsIgnoreCase(nametagStyle);
+	}
+
+	public void cycleGuiDesign() {
+		guiDesign = guiDesignControl() ? "eisenmann" : "control";
+	}
+
+	public String guiDesignLabel() {
+		return guiDesignControl() ? "Control" : "Eisenmann";
+	}
+
+	public boolean guiDesignControl() {
+		return "control".equals(guiDesign);
+	}
+
+	public static String normalizeGuiDesign(String style) {
+		if (style == null) {
+			return "eisenmann";
+		}
+		return switch (style.toLowerCase(java.util.Locale.ROOT)) {
+			case "control", "control_center", "glass", "apple" -> "control";
+			default -> "eisenmann";
+		};
 	}
 
 	public void cycleNametagStyle() {

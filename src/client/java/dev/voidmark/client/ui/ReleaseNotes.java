@@ -8,6 +8,9 @@ public final class ReleaseNotes {
 	}
 
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.62", new String[]{
+			"Theme can switch the click GUI between Eisenmann and a frosted Control Center layout with iOS toggles and a blurred background."
+		}),
 		new Entry("1.2.61", new String[]{
 			"Ghost smoke is soft drifting clouds again, not thin scribble lines on the item."
 		}),
