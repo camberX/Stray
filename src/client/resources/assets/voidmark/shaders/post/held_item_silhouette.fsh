@@ -1,5 +1,7 @@
 #version 330
 
+#moj_import <minecraft:dynamictransforms.glsl>
+
 uniform sampler2D InSampler;
 
 in vec2 texCoord;
@@ -15,17 +17,19 @@ bool covered(vec4 sampleColor) {
 }
 
 void main() {
+    float radius = mix(1.25, 12.0, clamp((ModelOffset.x - 0.15) / 1.35, 0.0, 1.0));
     vec2 texel = 1.0 / vec2(textureSize(InSampler, 0));
     vec4 insideSample = maskAt(texCoord);
     bool inside = covered(insideSample);
-    vec3 outline = vec3(0.0);
+    vec3 outline = ColorModulator.rgb;
     float cover = 0.0;
-    for (int y = -5; y <= 5; y++) {
-        for (int x = -5; x <= 5; x++) {
+    for (int y = -12; y <= 12; y++) {
+        for (int x = -12; x <= 12; x++) {
             if (x == 0 && y == 0) {
                 continue;
             }
-            if (length(vec2(float(x), float(y))) > 5.5) {
+            float dist = length(vec2(float(x), float(y)));
+            if (dist > radius + 0.35) {
                 continue;
             }
             vec4 neighbor = maskAt(texCoord + texel * vec2(float(x), float(y)));

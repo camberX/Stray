@@ -8,6 +8,9 @@ public final class ReleaseNotes {
 	}
 
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.55", new String[]{
+			"Ghost's outline slider changes how thick the silhouette is. The fill slider tints the item instead of fading it, and the smoke is easier to see."
+		}),
 		new Entry("1.2.54", new String[]{
 			"Ghost tints the held item instead of replacing it. The outline sits on the item and uses a lighter version of the color you pick."
 		}),

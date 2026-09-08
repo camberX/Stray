@@ -50,30 +50,31 @@ void main() {
 #endif
 
     vec3 fill = ColorModulator.rgb;
-    float fillOpacity = ColorModulator.a;
-    float smokeSpeed = max(ModelOffset.y, 0.05);
+    float tintAmount = ColorModulator.a;
+    float smokeAmount = clamp(ModelOffset.y, 0.10, 1.50);
     vec3 albedo = tex.rgb * vertexColor.rgb;
-    vec3 tinted = albedo * mix(vec3(1.0), fill, 0.82);
+    vec3 tinted = mix(albedo, albedo * fill, tintAmount);
 
-    float t = GameTime * 420.0 * smokeSpeed;
-    vec2 flow = texCoord0 * 6.5;
+    float t = GameTime * 1400.0 * (0.35 + smokeAmount);
+    vec2 flow = texCoord0 * 4.2;
     float ang = 0.17453292;
     float ca = cos(ang);
     float sa = sin(ang);
     vec2 glintUv = mat2(ca, -sa, sa, ca) * flow;
-    glintUv += vec2(-t * 0.22, t * 0.08);
-    float glint = pow(clamp(texture(Sampler1, glintUv).r, 0.0, 1.0), 1.35);
+    glintUv += vec2(-t * 0.38, t * 0.16);
+    float glint = pow(clamp(texture(Sampler1, glintUv).r, 0.0, 1.0), 0.85);
 
-    vec2 smokeUv = texCoord0 * 5.4 + vec2(t * 0.12, -t * 0.07);
+    vec2 smokeUv = texCoord0 * 3.2 + vec2(t * 0.22, -t * 0.14);
     float n1 = fbm(smokeUv);
-    float n2 = fbm(smokeUv * 1.65 + vec2(-t * 0.09, t * 0.11) + n1);
-    float smoke = smoothstep(0.22, 0.86, mix(n1, n2, 0.58));
-    float wisps = smoothstep(0.52, 0.96, max(glint, n2));
+    float n2 = fbm(smokeUv * 1.85 + vec2(-t * 0.18, t * 0.21) + n1 * 1.4);
+    float bands = fbm(smokeUv * 0.55 + vec2(t * 0.09, t * 0.05));
+    float smoke = smoothstep(0.18, 0.58, mix(n1, n2, 0.62) + bands * 0.22);
+    float wisps = smoothstep(0.28, 0.82, max(glint, n2));
 
-    vec3 mist = mix(tinted, mix(fill, vec3(1.0), 0.35), wisps);
-    vec3 body = mix(tinted, mist, smoke * 0.42);
-    body = mix(body, mix(tinted, vec3(1.0), 0.28), glint * 0.35);
+    vec3 mist = mix(fill * 0.35, mix(fill, vec3(1.0), 0.55), wisps);
+    float smokeMix = smoke * mix(0.28, 0.92, (smokeAmount - 0.10) / 1.40);
+    vec3 body = mix(tinted, mist, smokeMix);
+    body = mix(body, mix(tinted, vec3(1.0), 0.45), glint * mix(0.20, 0.70, smokeAmount / 1.50));
 
-    float alpha = tex.a * mix(0.42, 0.92, fillOpacity);
-    fragColor = vec4(body, clamp(alpha, 0.0, 1.0));
+    fragColor = vec4(body, tex.a);
 }

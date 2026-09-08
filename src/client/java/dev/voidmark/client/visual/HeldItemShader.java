@@ -7,6 +7,7 @@ import com.mojang.blaze3d.pipeline.RenderPipeline;
 import com.mojang.blaze3d.pipeline.RenderTarget;
 import com.mojang.blaze3d.pipeline.TextureTarget;
 import com.mojang.blaze3d.platform.CompareOp;
+import com.mojang.blaze3d.shaders.UniformType;
 import com.mojang.blaze3d.systems.CommandEncoder;
 import com.mojang.blaze3d.systems.RenderPass;
 import com.mojang.blaze3d.systems.RenderSystem;
@@ -29,6 +30,7 @@ import net.minecraft.client.resources.model.geometry.BakedQuad;
 import net.minecraft.resources.Identifier;
 import net.minecraft.util.Util;
 import net.minecraft.world.item.ItemDisplayContext;
+import org.joml.Matrix4f;
 import org.joml.Vector3f;
 import org.joml.Vector3fc;
 import org.joml.Vector4f;
@@ -85,7 +87,7 @@ public final class HeldItemShader {
 				.withFragmentShader(FILL_SHADER_ID)
 				.withSampler("Sampler1")
 				.withShaderDefine("ALPHA_CUTOUT", 0.1f)
-				.withColorTargetState(new ColorTargetState(BlendFunction.TRANSLUCENT))
+				.withColorTargetState(ColorTargetState.DEFAULT)
 				.build()
 		);
 		maskPipeline = RenderPipelines.register(
@@ -171,6 +173,15 @@ public final class HeldItemShader {
 		)) {
 			pass.setPipeline(silhouettePipeline);
 			RenderSystem.bindDefaultUniforms(pass);
+			pass.setUniform(
+				"DynamicTransforms",
+				RenderSystem.getDynamicUniforms().writeTransform(
+					new Matrix4f(),
+					outlineColorModulator(),
+					modelOffset(),
+					new Matrix4f()
+				)
+			);
 			pass.bindTexture(
 				"InSampler",
 				maskTarget.getColorTextureView(),
@@ -263,6 +274,7 @@ public final class HeldItemShader {
 			.withVertexShader(Identifier.withDefaultNamespace("core/screenquad"))
 			.withFragmentShader(SILHOUETTE_SHADER_ID)
 			.withSampler("InSampler")
+			.withUniform("DynamicTransforms", UniformType.UNIFORM_BUFFER)
 			.withVertexFormat(DefaultVertexFormat.EMPTY, VertexFormat.Mode.TRIANGLES)
 			.withColorTargetState(new ColorTargetState(BlendFunction.ENTITY_OUTLINE_BLIT))
 			.withDepthStencilState(new DepthStencilState(CompareOp.ALWAYS_PASS, false))
