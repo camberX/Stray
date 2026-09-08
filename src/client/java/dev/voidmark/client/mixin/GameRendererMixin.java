@@ -1,6 +1,7 @@
 package dev.voidmark.client.mixin;
 
 import dev.voidmark.client.render.GuiFrostBlur;
+import dev.voidmark.client.render.MobGlowRenderer;
 import dev.voidmark.client.visual.HeldItemShader;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.renderer.GameRenderer;
@@ -13,6 +14,11 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(GameRenderer.class)
 public class GameRendererMixin {
+	@Inject(method = "render", at = @At("HEAD"))
+	private void voidmark$beginFrame(DeltaTracker deltaTracker, boolean renderLevel, CallbackInfo ci) {
+		MobGlowRenderer.beginFrame();
+	}
+
 	@Inject(method = "renderItemInHand", at = @At("HEAD"))
 	private void voidmark$beginHeldItemMask(CameraRenderState camera, float partialTick, Matrix4fc pose, CallbackInfo ci) {
 		HeldItemShader.beginMask();

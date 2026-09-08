@@ -185,7 +185,14 @@ public final class ShopCape {
 		}
 		Slot slot = SLOTS.get(uuid);
 		if (slot != null && slot.asset != null) {
-			return new PlayerSkin(skin.body(), slot.asset, skin.elytra(), skin.model(), skin.secure());
+			// getSkin() is asked for every render; reuse the patched skin until the
+			// source skin or cape asset changes.
+			if (slot.patched == null || slot.patchedFrom != skin || slot.patchedAsset != slot.asset) {
+				slot.patched = new PlayerSkin(skin.body(), slot.asset, skin.elytra(), skin.model(), skin.secure());
+				slot.patchedFrom = skin;
+				slot.patchedAsset = slot.asset;
+			}
+			return slot.patched;
 		}
 		Minecraft client = Minecraft.getInstance();
 		if (client.player != null && uuid.equals(client.player.getUUID()) && CustomCape.ready() && allowed()) {
@@ -468,5 +475,8 @@ public final class ShopCape {
 		String hash = "";
 		String tag = "";
 		boolean fetched;
+		PlayerSkin patched;
+		PlayerSkin patchedFrom;
+		ClientAsset.Texture patchedAsset;
 	}
 }

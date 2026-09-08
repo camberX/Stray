@@ -11,6 +11,7 @@ import net.minecraft.gizmos.GizmoStyle;
 import net.minecraft.gizmos.Gizmos;
 import net.minecraft.world.phys.Vec3;
 
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -39,29 +40,19 @@ public final class MiningWorldRenderer {
 		if (blocks.isEmpty()) {
 			return;
 		}
-		Set<Long> occupied = new HashSet<>(blocks.size() * 2);
-		for (BlockPos pos : blocks) {
-			occupied.add(pos.asLong());
-		}
 		boolean through = config.titaniumEspThroughWalls;
 		int rgb = config.titaniumEspRgb & 0xFFFFFF;
 		int fill = (Math.round(0.38f * 255f) << 24) | rgb;
 		int line = 0xFF000000 | rgb;
+		Mesh mesh = mesh(blocks);
 		GizmoStyle fillStyle = GizmoStyle.fill(fill);
-		for (Direction dir : Direction.values()) {
-			meshFaces(occupied, dir, fillStyle, through);
-		}
-		Set<Edge> edges = new HashSet<>();
-		for (long packed : occupied) {
-			int x = BlockPos.getX(packed);
-			int y = BlockPos.getY(packed);
-			int z = BlockPos.getZ(packed);
-			collectEdges(edges, x, y, z);
-		}
-		for (Edge edge : edges) {
-			if (!outline(occupied, edge)) {
-				continue;
+		for (Face face : mesh.faces) {
+			GizmoProperties properties = Gizmos.rect(face.from, face.to, face.dir, fillStyle);
+			if (through) {
+				properties.setAlwaysOnTop();
 			}
+		}
+		for (Edge edge : mesh.edges) {
 			GizmoProperties properties = Gizmos.line(edge.from(), edge.to(), line, 2.2f);
 			if (through) {
 				properties.setAlwaysOnTop();
@@ -70,10 +61,49 @@ public final class MiningWorldRenderer {
 	}
 
 	/**
+	 * Gizmos are immediate-mode and must be re-emitted every frame, but the greedy
+	 * mesh only depends on the block set, which changes at most once per tick.
+	 */
+	private static Mesh mesh(List<BlockPos> blocks) {
+		Mesh cached = lastMesh;
+		if (cached != null && (blocks == lastBlocks || blocks.equals(lastBlocks))) {
+			return cached;
+		}
+		Set<Long> occupied = new HashSet<>(blocks.size() * 2);
+		for (BlockPos pos : blocks) {
+			occupied.add(pos.asLong());
+		}
+		List<Face> faces = new ArrayList<>();
+		for (Direction dir : Direction.values()) {
+			meshFaces(occupied, dir, faces);
+		}
+		Set<Edge> candidates = new HashSet<>();
+		for (long packed : occupied) {
+			int x = BlockPos.getX(packed);
+			int y = BlockPos.getY(packed);
+			int z = BlockPos.getZ(packed);
+			collectEdges(candidates, x, y, z);
+		}
+		List<Edge> edges = new ArrayList<>();
+		for (Edge edge : candidates) {
+			if (outline(occupied, edge)) {
+				edges.add(edge);
+			}
+		}
+		Mesh made = new Mesh(List.copyOf(faces), List.copyOf(edges));
+		lastBlocks = blocks;
+		lastMesh = made;
+		return made;
+	}
+
+	private static List<BlockPos> lastBlocks;
+	private static Mesh lastMesh;
+
+	/**
 	 * Greedy-mesh exposed faces so neighboring polished diorite fills as one
 	 * volume. Shared faces are skipped.
 	 */
-	private static void meshFaces(Set<Long> occupied, Direction dir, GizmoStyle style, boolean through) {
+	private static void meshFaces(Set<Long> occupied, Direction dir, List<Face> out) {
 		int dx = dir.getStepX();
 		int dy = dir.getStepY();
 		int dz = dir.getStepZ();
@@ -92,14 +122,14 @@ public final class MiningWorldRenderer {
 			int y = BlockPos.getY(packed);
 			int z = BlockPos.getZ(packed);
 			switch (dir.getAxis()) {
-				case X -> emitXFace(faces, x, y, z, dir, style, through);
-				case Y -> emitYFace(faces, x, y, z, dir, style, through);
-				case Z -> emitZFace(faces, x, y, z, dir, style, through);
+				case X -> emitXFace(faces, x, y, z, dir, out);
+				case Y -> emitYFace(faces, x, y, z, dir, out);
+				case Z -> emitZFace(faces, x, y, z, dir, out);
 			}
 		}
 	}
 
-	private static void emitXFace(Set<Long> faces, int x, int y, int z, Direction dir, GizmoStyle style, boolean through) {
+	private static void emitXFace(Set<Long> faces, int x, int y, int z, Direction dir, List<Face> out) {
 		int y0 = y;
 		int y1 = y;
 		while (faces.contains(BlockPos.asLong(x, y0 - 1, z))) {
@@ -121,10 +151,10 @@ public final class MiningWorldRenderer {
 				faces.remove(BlockPos.asLong(x, by, bz));
 			}
 		}
-		emit(x, y0, z0, x + 1, y1 + 1, z1 + 1, dir, style, through);
+		emit(x, y0, z0, x + 1, y1 + 1, z1 + 1, dir, out);
 	}
 
-	private static void emitYFace(Set<Long> faces, int x, int y, int z, Direction dir, GizmoStyle style, boolean through) {
+	private static void emitYFace(Set<Long> faces, int x, int y, int z, Direction dir, List<Face> out) {
 		int x0 = x;
 		int x1 = x;
 		while (faces.contains(BlockPos.asLong(x0 - 1, y, z))) {
@@ -146,10 +176,10 @@ public final class MiningWorldRenderer {
 				faces.remove(BlockPos.asLong(bx, y, bz));
 			}
 		}
-		emit(x0, y, z0, x1 + 1, y + 1, z1 + 1, dir, style, through);
+		emit(x0, y, z0, x1 + 1, y + 1, z1 + 1, dir, out);
 	}
 
-	private static void emitZFace(Set<Long> faces, int x, int y, int z, Direction dir, GizmoStyle style, boolean through) {
+	private static void emitZFace(Set<Long> faces, int x, int y, int z, Direction dir, List<Face> out) {
 		int x0 = x;
 		int x1 = x;
 		while (faces.contains(BlockPos.asLong(x0 - 1, y, z))) {
@@ -171,7 +201,7 @@ public final class MiningWorldRenderer {
 				faces.remove(BlockPos.asLong(bx, by, z));
 			}
 		}
-		emit(x0, y0, z, x1 + 1, y1 + 1, z + 1, dir, style, through);
+		emit(x0, y0, z, x1 + 1, y1 + 1, z + 1, dir, out);
 	}
 
 	private static boolean filledYZ(Set<Long> faces, int x, int y0, int y1, int z) {
@@ -201,11 +231,14 @@ public final class MiningWorldRenderer {
 		return true;
 	}
 
-	private static void emit(int x0, int y0, int z0, int x1, int y1, int z1, Direction dir, GizmoStyle style, boolean through) {
-		GizmoProperties properties = Gizmos.rect(new Vec3(x0, y0, z0), new Vec3(x1, y1, z1), dir, style);
-		if (through) {
-			properties.setAlwaysOnTop();
-		}
+	private static void emit(int x0, int y0, int z0, int x1, int y1, int z1, Direction dir, List<Face> out) {
+		out.add(new Face(new Vec3(x0, y0, z0), new Vec3(x1, y1, z1), dir));
+	}
+
+	private record Face(Vec3 from, Vec3 to, Direction dir) {
+	}
+
+	private record Mesh(List<Face> faces, List<Edge> edges) {
 	}
 
 	private static void collectEdges(Set<Edge> edges, int x, int y, int z) {

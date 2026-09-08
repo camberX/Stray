@@ -143,7 +143,7 @@ public final class ChestEsp {
 			return;
 		}
 		long now = System.currentTimeMillis();
-		chests.entrySet().removeIf(entry -> {
+		boolean changed = chests.entrySet().removeIf(entry -> {
 			Mark mark = entry.getValue();
 			if (!client.level.hasChunkAt(mark.pos)) {
 				return false;
@@ -155,9 +155,11 @@ public final class ChestEsp {
 			return true;
 		});
 		synchronized (crits) {
-			crits.removeIf(mark -> now - mark.born > CRIT_MS);
+			changed |= crits.removeIf(mark -> now - mark.born > CRIT_MS);
 		}
-		dirty = true;
+		if (changed) {
+			dirty = true;
+		}
 	}
 
 	public void clear() {

@@ -29,7 +29,9 @@ import org.joml.Vector3fc;
 
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -126,7 +128,7 @@ public final class NametagRenderer {
 			if (facing <= 0.12) {
 				continue;
 			}
-			if (!through && occluded(client, camPos, head)) {
+			if (!through && occludedThisTick(client, player, camPos, head)) {
 				continue;
 			}
 			Vec3 ndc = client.gameRenderer.projectPointToScreen(head);
@@ -189,6 +191,29 @@ public final class NametagRenderer {
 		}
 		return player == self || version == PLAYER_UUID_VERSION;
 	}
+
+	/**
+	 * One block raycast per player per tick instead of per frame. Lobbies hold
+	 * dozens of players, and a 50 ms occlusion refresh is not visible.
+	 */
+	private static boolean occludedThisTick(Minecraft client, AbstractClientPlayer player, Vec3 from, Vec3 to) {
+		int tick = client.player == null ? 0 : client.player.tickCount;
+		if (tick != occlusionTick) {
+			occlusionTick = tick;
+			OCCLUSION.clear();
+		}
+		UUID id = player.getUUID();
+		Boolean cached = OCCLUSION.get(id);
+		if (cached != null) {
+			return cached;
+		}
+		boolean value = occluded(client, from, to);
+		OCCLUSION.put(id, value);
+		return value;
+	}
+
+	private static int occlusionTick = Integer.MIN_VALUE;
+	private static final Map<UUID, Boolean> OCCLUSION = new HashMap<>();
 
 	private static boolean occluded(Minecraft client, Vec3 from, Vec3 to) {
 		HitResult hit = client.level.clip(new ClipContext(

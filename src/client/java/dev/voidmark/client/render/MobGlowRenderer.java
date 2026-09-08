@@ -2,6 +2,7 @@ package dev.voidmark.client.render;
 
 import dev.voidmark.client.config.VoidmarkConfig;
 import dev.voidmark.client.mixin.ClientLevelAccessor;
+import it.unimi.dsi.fastutil.ints.Int2IntOpenHashMap;
 import it.unimi.dsi.fastutil.ints.IntList;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
@@ -50,6 +51,12 @@ public final class MobGlowRenderer {
 	private static volatile Set<Integer> nameIds = Set.of();
 	private static final Map<UUID, String> remembered = new ConcurrentHashMap<>();
 	private static final Map<Integer, String> packetLabels = new ConcurrentHashMap<>();
+	private static int needleTick = Integer.MIN_VALUE;
+	private static List<String> cachedNeedles = List.of();
+	private static String cachedNeedleKey = "";
+	private static int frame;
+	private static int colorFrame = Integer.MIN_VALUE;
+	private static final Int2IntOpenHashMap COLOR_CACHE = new Int2IntOpenHashMap();
 
 	private MobGlowRenderer() {
 	}
@@ -57,11 +64,21 @@ public final class MobGlowRenderer {
 	public static void init() {
 	}
 
+	/**
+	 * Called once per rendered frame. Outline colors (which may raycast) are
+	 * asked for by several hooks per entity per frame; they only need one answer.
+	 */
+	public static void beginFrame() {
+		frame++;
+	}
+
 	public static void reset() {
 		synchronized (NAME_LOCK) {
 			nameTick = Integer.MIN_VALUE;
+			needleTick = Integer.MIN_VALUE;
 			nameNeedle = "";
 			nameIds = Set.of();
+			COLOR_CACHE.clear();
 			remembered.clear();
 			packetLabels.clear();
 			EspMobPrint.clear();
@@ -157,6 +174,21 @@ public final class MobGlowRenderer {
 		if (hasVanillaGlow(entity) || !isEspTarget(entity, client.player)) {
 			return 0;
 		}
+		if (colorFrame != frame) {
+			colorFrame = frame;
+			COLOR_CACHE.clear();
+		}
+		int id = entity.getId();
+		int cached = COLOR_CACHE.getOrDefault(id, Integer.MIN_VALUE);
+		if (cached != Integer.MIN_VALUE) {
+			return cached;
+		}
+		int color = computeOutlineColor(config, client, entity);
+		COLOR_CACHE.put(id, color);
+		return color;
+	}
+
+	private static int computeOutlineColor(VoidmarkConfig config, Minecraft client, Entity entity) {
 		Vec3 camera = client.gameRenderer.getMainCamera().position();
 		if (entity.distanceToSqr(camera) > MAX_RANGE_SQ) {
 			return 0;
@@ -218,7 +250,7 @@ public final class MobGlowRenderer {
 	}
 
 	private static boolean nametagHit(Entity entity) {
-		java.util.List<String> needles = VoidmarkConfig.get().nametagEspNeedles();
+		List<String> needles = needles();
 		if (needles.isEmpty()) {
 			return false;
 		}
@@ -226,11 +258,28 @@ public final class MobGlowRenderer {
 		return nameIds.contains(entity.getId());
 	}
 
-	private static void refreshNameIds(java.util.List<String> needles) {
+	/**
+	 * {@link VoidmarkConfig#nametagEspNeedles()} re-normalizes and copies the
+	 * label list on every call, so only ask it once per tick.
+	 */
+	private static List<String> needles() {
 		Minecraft client = Minecraft.getInstance();
 		int tick = client.player == null ? 0 : client.player.tickCount;
-		String key = String.join("\n", needles);
 		synchronized (NAME_LOCK) {
+			if (tick != needleTick) {
+				needleTick = tick;
+				cachedNeedles = VoidmarkConfig.get().nametagEspNeedles();
+				cachedNeedleKey = String.join("\n", cachedNeedles);
+			}
+			return cachedNeedles;
+		}
+	}
+
+	private static void refreshNameIds(List<String> needles) {
+		Minecraft client = Minecraft.getInstance();
+		int tick = client.player == null ? 0 : client.player.tickCount;
+		synchronized (NAME_LOCK) {
+			String key = needles == cachedNeedles ? cachedNeedleKey : String.join("\n", needles);
 			if (tick == nameTick && key.equals(nameNeedle)) {
 				return;
 			}
@@ -238,7 +287,7 @@ public final class MobGlowRenderer {
 		}
 	}
 
-	private static void rebuildNameIds(Minecraft client, java.util.List<String> needles, int tick, String key) {
+	private static void rebuildNameIds(Minecraft client, List<String> needles, int tick, String key) {
 		nameTick = tick;
 		nameNeedle = key;
 		if (client.level == null || client.player == null) {
