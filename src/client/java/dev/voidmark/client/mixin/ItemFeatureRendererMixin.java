@@ -52,7 +52,7 @@ public class ItemFeatureRendererMixin {
 	}
 
 	@Inject(method = "renderItem", at = @At("RETURN"))
-	private void voidmark$heldItemOutline(
+	private void voidmark$heldItemMask(
 		MultiBufferSource.BufferSource bufferSource,
 		OutlineBufferSource outlineBufferSource,
 		SubmitNodeStorage.ItemSubmit submit,
@@ -61,7 +61,7 @@ public class ItemFeatureRendererMixin {
 		if (HeldItemShader.applies(submit.displayContext())) {
 			this.quadInstance.setLightCoords(submit.lightCoords());
 			this.quadInstance.setOverlayCoords(submit.overlayCoords());
-			HeldItemShader.drawMeshOutline(bufferSource, submit.pose(), submit.quads(), this.quadInstance);
+			HeldItemShader.drawViewMask(outlineBufferSource, submit.pose(), submit.quads(), this.quadInstance);
 		}
 		this.voidmark$itemSubmit = null;
 	}

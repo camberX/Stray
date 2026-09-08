@@ -8,6 +8,9 @@ public final class ReleaseNotes {
 	}
 
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.52", new String[]{
+			"Ghost outlines the held item as you see it on screen, not each 3D face or texture pixel."
+		}),
 		new Entry("1.2.51", new String[]{
 			"Ghost outlines the held item as a mesh, not each texture pixel. One white rim around the item, fill and smoke inside."
 		}),

@@ -4,16 +4,24 @@ import com.mojang.blaze3d.pipeline.BlendFunction;
 import com.mojang.blaze3d.pipeline.ColorTargetState;
 import com.mojang.blaze3d.pipeline.DepthStencilState;
 import com.mojang.blaze3d.pipeline.RenderPipeline;
+import com.mojang.blaze3d.pipeline.RenderTarget;
 import com.mojang.blaze3d.platform.CompareOp;
+import com.mojang.blaze3d.systems.RenderPass;
+import com.mojang.blaze3d.systems.RenderSystem;
+import com.mojang.blaze3d.textures.FilterMode;
+import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.QuadInstance;
+import com.mojang.blaze3d.vertex.VertexFormat;
 import dev.voidmark.Voidmark;
 import dev.voidmark.client.config.VoidmarkConfig;
-import net.minecraft.client.renderer.MultiBufferSource;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.OutlineBufferSource;
 import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.client.renderer.feature.ItemFeatureRenderer;
 import net.minecraft.client.renderer.rendertype.RenderSetup;
 import net.minecraft.client.renderer.rendertype.RenderType;
+import net.minecraft.client.renderer.rendertype.RenderTypes;
 import net.minecraft.client.renderer.texture.TextureAtlas;
 import net.minecraft.client.resources.model.geometry.BakedQuad;
 import net.minecraft.resources.Identifier;
@@ -24,17 +32,17 @@ import org.joml.Vector3fc;
 import org.joml.Vector4f;
 import org.joml.Vector4fc;
 
+import java.util.OptionalInt;
 import java.util.function.Function;
 
 public final class HeldItemShader {
 	private static final Identifier FILL_PIPELINE_ID = Voidmark.id("pipeline/held_item");
-	private static final Identifier OUTLINE_PIPELINE_ID = Voidmark.id("pipeline/held_item_outline");
 	private static final Identifier FILL_SHADER_ID = Voidmark.id("core/held_item");
-	private static final Identifier OUTLINE_SHADER_ID = Voidmark.id("core/held_item_outline");
+	private static final Identifier SILHOUETTE_SHADER_ID = Voidmark.id("post/held_item_silhouette");
 	private static RenderPipeline fillPipeline;
-	private static RenderPipeline outlinePipeline;
+	private static RenderPipeline silhouettePipeline;
 	private static final Function<Identifier, RenderType> FILL_TYPES = Util.memoize(HeldItemShader::createFillType);
-	private static final Function<Identifier, RenderType> OUTLINE_TYPES = Util.memoize(HeldItemShader::createOutlineType);
+	private static boolean maskThisFrame;
 
 	private HeldItemShader() {
 	}
@@ -48,7 +56,7 @@ public final class HeldItemShader {
 	}
 
 	public static boolean isPipeline(RenderPipeline value) {
-		return value != null && (FILL_PIPELINE_ID.equals(value.getLocation()) || OUTLINE_PIPELINE_ID.equals(value.getLocation()));
+		return value != null && FILL_PIPELINE_ID.equals(value.getLocation());
 	}
 
 	public static synchronized void ensureRegistered() {
@@ -65,16 +73,6 @@ public final class HeldItemShader {
 				.withColorTargetState(new ColorTargetState(BlendFunction.TRANSLUCENT))
 				.build()
 		);
-		outlinePipeline = RenderPipelines.register(
-			RenderPipeline.builder(RenderPipelines.ITEM_SNIPPET, RenderPipelines.GLOBALS_SNIPPET)
-				.withLocation(OUTLINE_PIPELINE_ID)
-				.withVertexShader(OUTLINE_SHADER_ID)
-				.withFragmentShader(OUTLINE_SHADER_ID)
-				.withShaderDefine("ALPHA_CUTOUT", 0.1f)
-				.withColorTargetState(new ColorTargetState(BlendFunction.TRANSLUCENT))
-				.withDepthStencilState(new DepthStencilState(CompareOp.LESS_THAN, false))
-				.build()
-		);
 	}
 
 	public static RenderType wrap(RenderType original, Iterable<BakedQuad> quads) {
@@ -84,27 +82,68 @@ public final class HeldItemShader {
 		return FILL_TYPES.apply(atlas(original, quads));
 	}
 
-	public static void drawMeshOutline(
-		MultiBufferSource.BufferSource bufferSource,
+	public static void beginMask() {
+		maskThisFrame = false;
+		if (!active()) {
+			return;
+		}
+		RenderTarget target = outlineTarget();
+		if (target == null || target.getColorTexture() == null) {
+			return;
+		}
+		RenderSystem.getDevice().createCommandEncoder().clearColorTexture(target.getColorTexture(), 0);
+		maskThisFrame = true;
+	}
+
+	public static void drawViewMask(
+		OutlineBufferSource outlines,
 		PoseStack.Pose pose,
 		Iterable<BakedQuad> quads,
 		QuadInstance quadInstance
 	) {
-		if (quads == null) {
+		if (!maskThisFrame || outlines == null || quads == null) {
 			return;
 		}
-		quadInstance.setColor(0xFFFFFFFF);
+		outlines.setColor(0xFFFFFFFF);
 		for (BakedQuad quad : quads) {
-			bufferSource.getBuffer(outlineType(quad)).putBakedQuad(pose, quad, quadInstance);
+			Identifier atlas = TextureAtlas.LOCATION_ITEMS;
+			if (quad != null) {
+				atlas = quad.materialInfo().sprite().atlasLocation();
+			}
+			outlines.getBuffer(RenderTypes.outline(atlas)).putBakedQuad(pose, quad, quadInstance);
 		}
 	}
 
-	public static RenderType outlineType(BakedQuad quad) {
-		Identifier atlas = TextureAtlas.LOCATION_ITEMS;
-		if (quad != null) {
-			atlas = quad.materialInfo().sprite().atlasLocation();
+	public static void compositeSilhouette() {
+		if (!maskThisFrame) {
+			return;
 		}
-		return OUTLINE_TYPES.apply(atlas);
+		maskThisFrame = false;
+		Minecraft client = Minecraft.getInstance();
+		if (client.levelRenderer == null) {
+			return;
+		}
+		client.renderBuffers().outlineBufferSource().endOutlineBatch();
+		RenderTarget mask = outlineTarget();
+		RenderTarget main = client.getMainRenderTarget();
+		if (mask == null || main == null || mask.getColorTextureView() == null || main.getColorTextureView() == null) {
+			return;
+		}
+		ensureSilhouettePipeline();
+		try (RenderPass pass = RenderSystem.getDevice().createCommandEncoder().createRenderPass(
+			() -> "voidmark held item silhouette",
+			main.getColorTextureView(),
+			OptionalInt.empty()
+		)) {
+			pass.setPipeline(silhouettePipeline);
+			RenderSystem.bindDefaultUniforms(pass);
+			pass.bindTexture(
+				"InSampler",
+				mask.getColorTextureView(),
+				RenderSystem.getSamplerCache().getClampToEdge(FilterMode.NEAREST)
+			);
+			pass.draw(0, 3);
+		}
 	}
 
 	public static Vector4fc colorModulator() {
@@ -125,6 +164,14 @@ public final class HeldItemShader {
 			VoidmarkConfig.clamp(config.heldItemShaderSmoke, 0.10f, 1.50f),
 			config.heldItemShaderStyleIndex()
 		);
+	}
+
+	private static RenderTarget outlineTarget() {
+		Minecraft client = Minecraft.getInstance();
+		if (client.levelRenderer == null) {
+			return null;
+		}
+		return client.levelRenderer.entityOutlineTarget();
 	}
 
 	private static Identifier atlas(RenderType original, Iterable<BakedQuad> quads) {
@@ -153,16 +200,18 @@ public final class HeldItemShader {
 		);
 	}
 
-	private static RenderType createOutlineType(Identifier atlas) {
-		ensureRegistered();
-		return RenderType.create(
-			"voidmark_held_item_outline",
-			RenderSetup.builder(outlinePipeline)
-				.withTexture("Sampler0", atlas)
-				.useLightmap()
-				.affectsCrumbling()
-				.setOutline(RenderSetup.OutlineProperty.AFFECTS_OUTLINE)
-				.createRenderSetup()
-		);
+	private static synchronized void ensureSilhouettePipeline() {
+		if (silhouettePipeline != null) {
+			return;
+		}
+		silhouettePipeline = RenderPipeline.builder()
+			.withLocation(Voidmark.id("pipeline/held_item_silhouette"))
+			.withVertexShader(Identifier.withDefaultNamespace("core/screenquad"))
+			.withFragmentShader(SILHOUETTE_SHADER_ID)
+			.withSampler("InSampler")
+			.withVertexFormat(DefaultVertexFormat.EMPTY, VertexFormat.Mode.TRIANGLES)
+			.withColorTargetState(new ColorTargetState(BlendFunction.ENTITY_OUTLINE_BLIT))
+			.withDepthStencilState(new DepthStencilState(CompareOp.ALWAYS_PASS, false))
+			.build();
 	}
 }
