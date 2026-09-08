@@ -181,6 +181,7 @@ public final class VoidmarkConfig {
 	public String guiDesign = "eisenmann";
 	public int controlPaneRgb = 0xFFFFFF;
 	public float controlPaneOpacity = 0.30f;
+	public float controlFrost = 0.62f;
 	public String uiFont = "";
 	public boolean mobGlowEnabled = false;
 	public boolean mobGlowThroughWalls = true;
@@ -388,6 +389,9 @@ public final class VoidmarkConfig {
 				loaded.controlPaneOpacity = json.has("controlPaneOpacity")
 					? clamp(loaded.controlPaneOpacity, 0.12f, 0.78f)
 					: 0.30f;
+				loaded.controlFrost = json.has("controlFrost")
+					? clamp(loaded.controlFrost, 0f, 1f)
+					: 0.62f;
 				if (loaded.mobGlowName == null) {
 					loaded.mobGlowName = "";
 				}

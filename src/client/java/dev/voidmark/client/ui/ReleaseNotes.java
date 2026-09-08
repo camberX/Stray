@@ -8,6 +8,9 @@ public final class ReleaseNotes {
 	}
 
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.67", new String[]{
+			"Frost now blurs the world behind Control, not the glass opacity. Feature cards and the category pill sit lighter than the menu pane. Corners are smooth scanline arcs, and the player head is clipped to a circle."
+		}),
 		new Entry("1.2.66", new String[]{
 			"Control no longer whites out the world. Accent presets stay inside their card instead of stacking over Scale."
 		}),

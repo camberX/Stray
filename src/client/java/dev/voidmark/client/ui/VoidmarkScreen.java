@@ -58,7 +58,7 @@ public class VoidmarkScreen extends Screen {
 	private static final float PICKER_H = 122;
 	private static final float PANEL_W = 168;
 	private static final float FEATURE_W = 176;
-	private static final float SETTINGS_H = 418;
+	private static final float SETTINGS_H = 438;
 	private static final float FONT_SEARCH_H = 14;
 	private static final float FONT_ROW = 16;
 	private static final int FONT_VISIBLE = 6;
@@ -989,7 +989,7 @@ public class VoidmarkScreen extends Screen {
 			boolean hover = GuiDraw.hovered(mouseX, mouseY, railX + 4, iy, railW - 8, slot);
 			float t = anim("cc-nav-" + group.name(), on || hover ? 1f : 0f);
 			if (t > 0.02f) {
-				GuiDraw.rounded(graphics, railX + 6, iy + 2, railW - 12, slot - 4, 12, Anim.fade(0x66FFFFFF, on ? 1f : t * 0.40f));
+				GuiDraw.rounded(graphics, railX + 6, iy + 2, railW - 12, slot - 4, 12, Anim.fade(ControlChrome.pillFill(), on ? 1f : t * 0.45f));
 			}
 			int icon = on ? 0xFF1C1C1E : ControlChrome.text();
 			GuiDraw.icon(graphics, font, glyphs[i], railX + (railW - GuiDraw.iconWidth(font, glyphs[i])) * 0.5f, GuiDraw.middle(iy, slot), icon);
@@ -1268,7 +1268,8 @@ public class VoidmarkScreen extends Screen {
 		GuiDraw.menu(graphics, font, "Theme", settingsX + 8, settingsY + 6, Theme.HEADER);
 		float y = cycle(graphics, font, settingsX + 8, settingsY + 20, PANEL_W - 16, mouseX, mouseY, "GUI", VoidmarkConfig.get().guiDesignLabel(), VoidmarkConfig.get()::cycleGuiDesign);
 		y = colorRow(graphics, font, settingsX + 8, y, PANEL_W - 16, mouseX, mouseY, "Glass", VoidmarkConfig.get().controlPaneRgb, PickerTarget.CONTROL);
-		y = slider(graphics, font, settingsX + 8, y, PANEL_W - 16, "Frost", Math.round(VoidmarkConfig.get().controlPaneOpacity * 100) + "%", (VoidmarkConfig.get().controlPaneOpacity - 0.12f) / 0.66f, v -> VoidmarkConfig.get().controlPaneOpacity = VoidmarkConfig.clamp(0.12f + v * 0.66f, 0.12f, 0.78f));
+		y = slider(graphics, font, settingsX + 8, y, PANEL_W - 16, "Frost", Math.round(VoidmarkConfig.get().controlFrost * 100) + "%", VoidmarkConfig.get().controlFrost, v -> VoidmarkConfig.get().controlFrost = VoidmarkConfig.clamp(v, 0f, 1f));
+		y = slider(graphics, font, settingsX + 8, y, PANEL_W - 16, "Opacity", Math.round(VoidmarkConfig.get().controlPaneOpacity * 100) + "%", (VoidmarkConfig.get().controlPaneOpacity - 0.12f) / 0.66f, v -> VoidmarkConfig.get().controlPaneOpacity = VoidmarkConfig.clamp(0.12f + v * 0.66f, 0.12f, 0.78f));
 		GuiDraw.small(graphics, font, "Accent", settingsX + 8, y + 2, controlCenter() ? ControlChrome.muted() : Theme.MUTED);
 		y = swatchRow(graphics, mouseX, mouseY, settingsX + 10, y + 14, PANEL_W - 26, Theme.PRESETS, true);
 		y = colorRow(graphics, font, settingsX + 8, y, PANEL_W - 16, mouseX, mouseY, "Custom", VoidmarkConfig.get().themeAccentRgb, PickerTarget.THEME);
@@ -1673,7 +1674,7 @@ public class VoidmarkScreen extends Screen {
 		float iw
 	) {
 		VoidmarkConfig config = VoidmarkConfig.get();
-		float y = featureCard(graphics, font, left, top, col, cardHeight(6), "Control");
+		float y = featureCard(graphics, font, left, top, col, cardHeight(7), "Control");
 		y = cycle(graphics, font, ix, y, iw, mouseX, mouseY, "GUI", config.guiDesignLabel(), () -> {
 			config.cycleGuiDesign();
 			if (!config.guiDesignControl() && tab == Tab.SETTINGS) {
@@ -1681,7 +1682,8 @@ public class VoidmarkScreen extends Screen {
 			}
 		});
 		y = colorRow(graphics, font, ix, y, iw, mouseX, mouseY, "Glass", config.controlPaneRgb, PickerTarget.CONTROL);
-		y = slider(graphics, font, ix, y, iw, "Frost", Math.round(config.controlPaneOpacity * 100) + "%", (config.controlPaneOpacity - 0.12f) / 0.66f, v -> config.controlPaneOpacity = VoidmarkConfig.clamp(0.12f + v * 0.66f, 0.12f, 0.78f));
+		y = slider(graphics, font, ix, y, iw, "Frost", Math.round(config.controlFrost * 100) + "%", config.controlFrost, v -> config.controlFrost = VoidmarkConfig.clamp(v, 0f, 1f));
+		y = slider(graphics, font, ix, y, iw, "Opacity", Math.round(config.controlPaneOpacity * 100) + "%", (config.controlPaneOpacity - 0.12f) / 0.66f, v -> config.controlPaneOpacity = VoidmarkConfig.clamp(0.12f + v * 0.66f, 0.12f, 0.78f));
 		y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Menu stars", config.menuStarfield, v -> config.menuStarfield = v);
 		y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Animations", config.uiAnimations, v -> config.uiAnimations = v);
 		toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Auto update", config.autoUpdate, v -> config.autoUpdate = v);
@@ -2264,7 +2266,7 @@ public class VoidmarkScreen extends Screen {
 		return FabricLoader.getInstance()
 			.getModContainer("voidmark")
 			.map(container -> container.getMetadata().getVersion().getFriendlyString())
-			.orElse("1.2.66");
+			.orElse("1.2.67");
 	}
 
 	@Override

@@ -7,6 +7,7 @@ import com.mojang.blaze3d.pipeline.RenderPipeline;
 import com.mojang.blaze3d.pipeline.RenderTarget;
 import com.mojang.blaze3d.resource.ResourceHandle;
 import dev.voidmark.client.render.GlowBlurRadius;
+import dev.voidmark.client.render.GuiFrostBlur;
 import net.minecraft.client.renderer.PostPass;
 import net.minecraft.client.renderer.UniformValue;
 import net.minecraft.resources.Identifier;
@@ -48,6 +49,7 @@ public class PostPassMixin {
 		CallbackInfo ci
 	) {
 		GlowBlurRadius.register((PostPass) (Object) this, pipeline, uniforms);
+		GuiFrostBlur.register((PostPass) (Object) this, pipeline, uniforms);
 	}
 
 	@Inject(method = "addToFrame", at = @At("HEAD"))
@@ -58,10 +60,12 @@ public class PostPassMixin {
 		CallbackInfo ci
 	) {
 		GlowBlurRadius.apply((PostPass) (Object) this, customUniforms);
+		GuiFrostBlur.apply((PostPass) (Object) this, customUniforms);
 	}
 
 	@Inject(method = "close", at = @At("HEAD"))
 	private void voidmark$forgetGlowBlur(CallbackInfo ci) {
 		GlowBlurRadius.unregister((PostPass) (Object) this);
+		GuiFrostBlur.unregister((PostPass) (Object) this);
 	}
 }

@@ -224,6 +224,54 @@ public final class GuiDraw {
 		graphics.pose().popMatrix();
 	}
 
+	private static void fillCorner(GuiGraphicsExtractor graphics, float cx, float cy, float r, boolean left, boolean top, int color) {
+		int rows = Math.max(20, Math.round(r * 10f));
+		float rowH = r / rows;
+		for (int i = 0; i < rows; i++) {
+			float ly = i * rowH;
+			float dy = r - (ly + rowH * 0.5f);
+			float dx = (float) Math.sqrt(Math.max(0f, r * r - dy * dy));
+			float slice = rowH + 0.12f;
+			float px = left ? cx - dx : cx;
+			float py = top ? cy - r + ly : cy + r - ly - rowH;
+			fillSmooth(graphics, px, py, dx, slice, color);
+		}
+	}
+
+	public static void circleBlit(
+		GuiGraphicsExtractor graphics,
+		Identifier id,
+		float x,
+		float y,
+		float size,
+		float u,
+		float v,
+		int region,
+		int texSize
+	) {
+		if (id == null || size <= 1f) {
+			return;
+		}
+		float r = size * 0.5f;
+		int rows = Math.max(24, Math.round(size * 10f));
+		float rowH = size / rows;
+		for (int i = 0; i < rows; i++) {
+			float ly = i * rowH;
+			float dy = r - (ly + rowH * 0.5f);
+			float chord = (float) Math.sqrt(Math.max(0f, r * r - dy * dy));
+			float sx = r - chord;
+			float sw = chord * 2f;
+			if (sw <= 0.04f) {
+				continue;
+			}
+			float u0 = u + region * (sx / size);
+			float v0 = v + region * (ly / size);
+			int ru = Math.max(1, Math.round(region * (sw / size)));
+			int rv = Math.max(1, Math.round(region * (rowH / size)));
+			blit(graphics, id, x + sx, y + ly, sw, rowH + 0.08f, u0, v0, ru, rv, texSize, texSize);
+		}
+	}
+
 	public static void blit(GuiGraphicsExtractor graphics, Identifier id, float x, float y, float w, float h, float u, float v, int regionW, int regionH, int texW, int texH) {
 		if (w <= 0 || h <= 0) {
 			return;
@@ -302,26 +350,26 @@ public final class GuiDraw {
 		fillSmooth(graphics, x + r, y, w - 2f * r, h, color);
 		fillSmooth(graphics, x, y + r, r, h - 2f * r, color);
 		fillSmooth(graphics, x + w - r, y + r, r, h - 2f * r, color);
-		corner(graphics, x, y, r, 0f, 0f, color);
-		corner(graphics, x + w - r, y, r, CIRCLE_HALF, 0f, color);
-		corner(graphics, x, y + h - r, r, 0f, CIRCLE_HALF, color);
-		corner(graphics, x + w - r, y + h - r, r, CIRCLE_HALF, CIRCLE_HALF, color);
+		fillCorner(graphics, x + r, y + r, r, true, true, color);
+		fillCorner(graphics, x + w - r, y + r, r, false, true, color);
+		fillCorner(graphics, x + r, y + h - r, r, true, false, color);
+		fillCorner(graphics, x + w - r, y + h - r, r, false, false, color);
 	}
 
 	public static void roundLeft(GuiGraphicsExtractor graphics, float x, float y, float w, float h, float radius, int color) {
 		float r = Math.min(radius, Math.min(w, h) / 2f);
 		fillSmooth(graphics, x + r, y, w - r, h, color);
 		fillSmooth(graphics, x, y + r, r, h - 2f * r, color);
-		corner(graphics, x, y, r, 0f, 0f, color);
-		corner(graphics, x, y + h - r, r, 0f, CIRCLE_HALF, color);
+		fillCorner(graphics, x + r, y + r, r, true, true, color);
+		fillCorner(graphics, x + r, y + h - r, r, true, false, color);
 	}
 
 	public static void roundRight(GuiGraphicsExtractor graphics, float x, float y, float w, float h, float radius, int color) {
 		float r = Math.min(radius, Math.min(w, h) / 2f);
 		fillSmooth(graphics, x, y, w - r, h, color);
 		fillSmooth(graphics, x + w - r, y + r, r, h - 2f * r, color);
-		corner(graphics, x + w - r, y, r, CIRCLE_HALF, 0f, color);
-		corner(graphics, x + w - r, y + h - r, r, CIRCLE_HALF, CIRCLE_HALF, color);
+		fillCorner(graphics, x + w - r, y + r, r, false, true, color);
+		fillCorner(graphics, x + w - r, y + h - r, r, false, false, color);
 	}
 
 	public static void panel(GuiGraphicsExtractor graphics, float x, float y, float w, float h, float radius, int fill, int outline) {
