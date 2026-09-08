@@ -184,8 +184,6 @@ public final class VoidmarkClient implements ClientModInitializer {
 		ClientTickEvents.START_CLIENT_TICK.register(client -> {
 			FarmKeys.tick(client);
 			ChestAimer.tick(client);
-			SkyblockLocation.tick(client);
-			Triggerbot.tick(client);
 			if (itemAppearancesLoaded) {
 				return;
 			}
@@ -228,6 +226,7 @@ public final class VoidmarkClient implements ClientModInitializer {
 			VoidmarkConfig running = VoidmarkConfig.get();
 			SpotifySmtc.tick(running.musicHudEnabled && running.spotifyEnabled);
 			SkyblockLocation.tick(client);
+			Triggerbot.tick(client);
 			LoadoutsScreen.tickSwap(client);
 			WardrobeScreen.tickSwap(client);
 			Hitsound.tick(client);

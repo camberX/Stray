@@ -74,23 +74,21 @@ public final class AttackSpeed {
 
 	/**
 	 * Triggerbot swing wait. Skyblock / Hypixel use tab Attack Speed
-	 * ({@code round(10 / (1 + AS/100))}). Vanilla worlds use the item charge
-	 * delay. Instant vanilla charge (typical Skyblock items) still uses the
-	 * Skyblock formula so this cannot collapse to 1 tick.
+	 * ({@code round(10 / (1 + AS/100))}). Vanilla uses the weapon charge
+	 * delay ({@code 20 / attackSpeed} ticks).
 	 */
 	public static int triggerDelay(LocalPlayer player) {
-		int skyblock = meleeTicks(known ? bonus : DEFAULT_AS);
 		if (SkyblockLocation.inSkyblock || SkyblockLocation.onHypixel) {
-			return skyblock;
+			return meleeTicks(known ? bonus : DEFAULT_AS);
 		}
 		if (player == null) {
-			return skyblock;
+			return 5;
 		}
-		int vanilla = Math.max(1, Math.round(player.getCurrentItemAttackStrengthDelay()));
-		if (vanilla <= 2) {
-			return skyblock;
+		float delay = player.getCurrentItemAttackStrengthDelay();
+		if (!Float.isFinite(delay) || delay < 1f) {
+			return 1;
 		}
-		return vanilla;
+		return Math.max(1, (int) Math.ceil(delay - 1.0e-4f));
 	}
 
 	public static int arrowDelay() {

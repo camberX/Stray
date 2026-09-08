@@ -29,7 +29,6 @@
 		"LightmapRenderStateExtractorMixin",
 		"LivingEntityRendererMixin",
 		"MinecraftMixin",
-		"MinecraftAccessor",
 		"ModelBlockRendererMixin",
 		"MultiPlayerGameModeMixin",
 		"PlayerTabOverlayMixin",

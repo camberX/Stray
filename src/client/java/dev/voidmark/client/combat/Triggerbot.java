@@ -2,7 +2,6 @@ package dev.voidmark.client.combat;
 
 import dev.voidmark.client.config.VoidmarkConfig;
 import dev.voidmark.client.location.SkyblockLocation;
-import dev.voidmark.client.mixin.MinecraftAccessor;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.MultiPlayerGameMode;
 import net.minecraft.client.player.LocalPlayer;
@@ -24,21 +23,23 @@ import net.minecraft.world.phys.HitResult;
 /**
  * Attacks the crosshair entity using vanilla {@code gameMode.attack} plus a
  * swing. No custom packets. Fires only when Minecraft already resolved an
- * entity hit that is inside reach. Off Skyblock this waits for the vanilla
- * attack cooldown; on Skyblock it waits for tab Attack Speed.
+ * entity hit that is inside reach. Vanilla worlds wait for weapon charge;
+ * Skyblock waits for tab Attack Speed.
  */
 public final class Triggerbot {
-	private static int lastHitTick = Integer.MIN_VALUE;
+	private static int tick;
+	private static int lastHit = Integer.MIN_VALUE;
 
 	private Triggerbot() {
 	}
 
 	public static void reset() {
-		lastHitTick = Integer.MIN_VALUE;
+		tick = 0;
+		lastHit = Integer.MIN_VALUE;
 	}
 
 	public static void tick(Minecraft client) {
-		SkyblockLocation.tick(client);
+		tick++;
 		AttackSpeed.tick(client);
 		VoidmarkConfig config = VoidmarkConfig.get();
 		if (!config.triggerbotEnabled) {
@@ -62,7 +63,7 @@ public final class Triggerbot {
 		if (player.isSpectator() || gameMode.isSpectator() || player.isHandsBusy() || player.isUsingItem()) {
 			return;
 		}
-		if (!delayReady(client, player)) {
+		if (!delayReady(player)) {
 			return;
 		}
 		HitResult hit = client.hitResult;
@@ -90,18 +91,14 @@ public final class Triggerbot {
 		if (range != null && !range.isInRange(player, hit.getLocation())) {
 			return;
 		}
-		lastHitTick = player.tickCount;
+		lastHit = tick;
 		gameMode.attack(player, target);
 		player.swing(InteractionHand.MAIN_HAND);
 	}
 
-	private static boolean delayReady(Minecraft client, LocalPlayer player) {
-		if (((MinecraftAccessor) client).voidmark$missTime() > 0) {
-			return false;
-		}
+	private static boolean delayReady(LocalPlayer player) {
 		int wait = Math.max(1, AttackSpeed.triggerDelay(player));
-		int now = player.tickCount;
-		if (lastHitTick != Integer.MIN_VALUE && now >= lastHitTick && now - lastHitTick < wait) {
+		if (lastHit != Integer.MIN_VALUE && tick - lastHit < wait) {
 			return false;
 		}
 		if (!SkyblockLocation.inSkyblock && !SkyblockLocation.onHypixel
