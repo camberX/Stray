@@ -55,26 +55,28 @@ void main() {
     vec3 albedo = tex.rgb * vertexColor.rgb;
     vec3 tinted = mix(albedo, albedo * fill, tintAmount);
 
-    float t = GameTime * 1400.0 * (0.35 + smokeAmount);
-    vec2 flow = texCoord0 * 4.2;
+    float t = GameTime * 1650.0 * (0.40 + smokeAmount * 0.55);
     float ang = 0.17453292;
     float ca = cos(ang);
     float sa = sin(ang);
-    vec2 glintUv = mat2(ca, -sa, sa, ca) * flow;
-    glintUv += vec2(-t * 0.38, t * 0.16);
-    float glint = pow(clamp(texture(Sampler1, glintUv).r, 0.0, 1.0), 0.85);
+    vec2 glintUv = mat2(ca, -sa, sa, ca) * (texCoord0 * 9.5);
+    glintUv += vec2(-t * 0.42, t * 0.18);
+    float glint = pow(clamp(texture(Sampler1, glintUv).r, 0.0, 1.0), 1.35);
 
-    vec2 smokeUv = texCoord0 * 3.2 + vec2(t * 0.22, -t * 0.14);
+    vec2 smokeUv = texCoord0 * 14.5 + vec2(t * 0.16, -t * 0.34);
     float n1 = fbm(smokeUv);
-    float n2 = fbm(smokeUv * 1.85 + vec2(-t * 0.18, t * 0.21) + n1 * 1.4);
-    float bands = fbm(smokeUv * 0.55 + vec2(t * 0.09, t * 0.05));
-    float smoke = smoothstep(0.18, 0.58, mix(n1, n2, 0.62) + bands * 0.22);
-    float wisps = smoothstep(0.28, 0.82, max(glint, n2));
+    float n2 = fbm(smokeUv * 2.35 + vec2(-t * 0.28, t * 0.17) + n1 * 0.55);
+    float n3 = fbm(smokeUv * 4.1 + vec2(t * 0.13, -t * 0.22));
+    float ridge = 1.0 - abs(n2 * 2.0 - 1.0);
+    float filaments = pow(smoothstep(0.52, 0.88, ridge * mix(0.82, 1.12, n3)), 2.15);
+    float dust = pow(smoothstep(0.62, 0.98, n1 * n3), 2.8) * 0.22;
+    float wisps = clamp(filaments + dust, 0.0, 1.0);
+    float spark = glint * mix(0.25, 1.0, filaments);
 
-    vec3 mist = mix(fill * 0.35, mix(fill, vec3(1.0), 0.55), wisps);
-    float smokeMix = smoke * mix(0.28, 0.92, (smokeAmount - 0.10) / 1.40);
-    vec3 body = mix(tinted, mist, smokeMix);
-    body = mix(body, mix(tinted, vec3(1.0), 0.45), glint * mix(0.20, 0.70, smokeAmount / 1.50));
+    vec3 wispColor = mix(fill * 1.05, vec3(1.0), 0.42 + spark * 0.48);
+    float strength = mix(0.38, 0.92, (smokeAmount - 0.10) / 1.40);
+    vec3 body = mix(tinted, wispColor, wisps * strength);
+    body += wispColor * spark * mix(0.18, 0.55, smokeAmount / 1.50);
 
     fragColor = vec4(body, tex.a);
 }

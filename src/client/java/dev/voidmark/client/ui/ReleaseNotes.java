@@ -8,6 +8,9 @@ public final class ReleaseNotes {
 	}
 
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.57", new String[]{
+			"Ghost smoke is smaller and brighter. You see thin moving wisps on the item instead of a large shade change."
+		}),
 		new Entry("1.2.56", new String[]{
 			"Ghost no longer crashes when the silhouette is drawn. The outline uniforms are written before the render pass opens."
 		}),
