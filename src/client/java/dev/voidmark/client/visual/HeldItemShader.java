@@ -12,6 +12,7 @@ import com.mojang.blaze3d.systems.CommandEncoder;
 import com.mojang.blaze3d.systems.RenderPass;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.textures.FilterMode;
+import com.mojang.blaze3d.textures.GpuSampler;
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.QuadInstance;
@@ -39,6 +40,7 @@ import org.joml.Vector3fc;
 import org.joml.Vector4f;
 import org.joml.Vector4fc;
 
+import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.function.Function;
 
@@ -47,13 +49,16 @@ public final class HeldItemShader {
 	private static final Identifier MASK_PIPELINE_ID = Voidmark.id("pipeline/held_item_mask");
 	private static final Identifier FILL_SHADER_ID = Voidmark.id("core/held_item");
 	private static final Identifier SILHOUETTE_SHADER_ID = Voidmark.id("post/held_item_silhouette");
+	private static final Identifier ROWDIST_SHADER_ID = Voidmark.id("post/held_item_rowdist");
 	private static final OutputTarget MASK_OUTPUT = new OutputTarget("voidmark_held_item_mask", HeldItemShader::maskTarget);
 	private static final Function<Identifier, RenderType> FILL_TYPES = Util.memoize(HeldItemShader::createFillType);
 	private static final Function<Identifier, RenderType> MASK_TYPES = Util.memoize(HeldItemShader::createMaskType);
 	private static RenderPipeline fillPipeline;
 	private static RenderPipeline maskPipeline;
 	private static RenderPipeline silhouettePipeline;
+	private static RenderPipeline rowDistPipeline;
 	private static RenderTarget maskTarget;
+	private static RenderTarget rowTarget;
 	private static boolean maskThisFrame;
 
 	private HeldItemShader() {
@@ -149,9 +154,10 @@ public final class HeldItemShader {
 			return;
 		}
 		CommandEncoder encoder = RenderSystem.getDevice().createCommandEncoder();
-		encoder.clearColorTexture(maskTarget.getColorTexture(), 0);
 		if (maskTarget.getDepthTexture() != null) {
-			encoder.clearDepthTexture(maskTarget.getDepthTexture(), 1.0);
+			encoder.clearColorAndDepthTextures(maskTarget.getColorTexture(), 0, maskTarget.getDepthTexture(), 1.0);
+		} else {
+			encoder.clearColorTexture(maskTarget.getColorTexture(), 0);
 		}
 		maskThisFrame = true;
 	}
@@ -185,6 +191,14 @@ public final class HeldItemShader {
 		if (maskTarget == null || main == null || maskTarget.getColorTextureView() == null || main.getColorTextureView() == null) {
 			return;
 		}
+		if (rowTarget == null) {
+			rowTarget = new TextureTarget("voidmark held item row distance", main.width, main.height, false);
+		} else if (rowTarget.width != main.width || rowTarget.height != main.height) {
+			rowTarget.resize(main.width, main.height);
+		}
+		if (rowTarget.getColorTextureView() == null) {
+			return;
+		}
 		ensureSilhouettePipeline();
 		// Mapping a UBO is illegal while a RenderPass is open.
 		var transforms = RenderSystem.getDynamicUniforms().writeTransform(
@@ -193,7 +207,22 @@ public final class HeldItemShader {
 			modelOffset(),
 			new Matrix4f()
 		);
-		try (RenderPass pass = RenderSystem.getDevice().createCommandEncoder().createRenderPass(
+		GpuSampler nearest = RenderSystem.getSamplerCache().getClampToEdge(FilterMode.NEAREST);
+		CommandEncoder encoder = RenderSystem.getDevice().createCommandEncoder();
+		// The disc dilation is separable: a per-row nearest-distance pass, then a
+		// vertical combine. 2 * (2r+1) reads per pixel instead of (2r+1)^2.
+		try (RenderPass pass = encoder.createRenderPass(
+			() -> "voidmark held item row distance",
+			rowTarget.getColorTextureView(),
+			OptionalInt.empty()
+		)) {
+			pass.setPipeline(rowDistPipeline);
+			RenderSystem.bindDefaultUniforms(pass);
+			pass.setUniform("DynamicTransforms", transforms);
+			pass.bindTexture("InSampler", maskTarget.getColorTextureView(), nearest);
+			pass.draw(0, 3);
+		}
+		try (RenderPass pass = encoder.createRenderPass(
 			() -> "voidmark held item silhouette",
 			main.getColorTextureView(),
 			OptionalInt.empty()
@@ -201,11 +230,8 @@ public final class HeldItemShader {
 			pass.setPipeline(silhouettePipeline);
 			RenderSystem.bindDefaultUniforms(pass);
 			pass.setUniform("DynamicTransforms", transforms);
-			pass.bindTexture(
-				"InSampler",
-				maskTarget.getColorTextureView(),
-				RenderSystem.getSamplerCache().getClampToEdge(FilterMode.NEAREST)
-			);
+			pass.bindTexture("InSampler", maskTarget.getColorTextureView(), nearest);
+			pass.bindTexture("RowSampler", rowTarget.getColorTextureView(), nearest);
 			pass.draw(0, 3);
 		}
 	}
@@ -288,11 +314,22 @@ public final class HeldItemShader {
 		if (silhouettePipeline != null) {
 			return;
 		}
+		rowDistPipeline = RenderPipeline.builder()
+			.withLocation(Voidmark.id("pipeline/held_item_rowdist"))
+			.withVertexShader(Identifier.withDefaultNamespace("core/screenquad"))
+			.withFragmentShader(ROWDIST_SHADER_ID)
+			.withSampler("InSampler")
+			.withUniform("DynamicTransforms", UniformType.UNIFORM_BUFFER)
+			.withVertexFormat(DefaultVertexFormat.EMPTY, VertexFormat.Mode.TRIANGLES)
+			.withColorTargetState(new ColorTargetState(Optional.empty(), ColorTargetState.WRITE_ALL))
+			.withDepthStencilState(new DepthStencilState(CompareOp.ALWAYS_PASS, false))
+			.build();
 		silhouettePipeline = RenderPipeline.builder()
 			.withLocation(Voidmark.id("pipeline/held_item_silhouette"))
 			.withVertexShader(Identifier.withDefaultNamespace("core/screenquad"))
 			.withFragmentShader(SILHOUETTE_SHADER_ID)
 			.withSampler("InSampler")
+			.withSampler("RowSampler")
 			.withUniform("DynamicTransforms", UniformType.UNIFORM_BUFFER)
 			.withVertexFormat(DefaultVertexFormat.EMPTY, VertexFormat.Mode.TRIANGLES)
 			.withColorTargetState(new ColorTargetState(BlendFunction.ENTITY_OUTLINE_BLIT))
