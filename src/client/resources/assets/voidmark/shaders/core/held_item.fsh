@@ -38,10 +38,6 @@ float fbm(vec2 p) {
     return v;
 }
 
-float texelAlpha(vec2 uv) {
-    return texture(Sampler0, uv).a;
-}
-
 void main() {
     vec4 tex = texture(Sampler0, texCoord0);
 #ifdef ALPHA_CUTOUT
@@ -55,18 +51,10 @@ void main() {
     float outlineStrength = max(ModelOffset.x, 0.0);
     float smokeSpeed = max(ModelOffset.y, 0.05);
 
-    vec2 texel = 1.0 / vec2(textureSize(Sampler0, 0));
-    float neighbor = min(
-        min(texelAlpha(texCoord0 + vec2(texel.x, 0.0)), texelAlpha(texCoord0 - vec2(texel.x, 0.0))),
-        min(texelAlpha(texCoord0 + vec2(0.0, texel.y)), texelAlpha(texCoord0 - vec2(0.0, texel.y)))
-    );
-#ifdef ALPHA_CUTOUT
-    float pixelEdge = 1.0 - step(ALPHA_CUTOUT, neighbor);
-#else
-    float pixelEdge = 1.0 - step(0.1, neighbor);
-#endif
-    float glow = smoothstep(0.02, 0.22, length(vec2(dFdx(tex.a), dFdy(tex.a))));
-    float outline = clamp(max(pixelEdge, glow * 0.35) * outlineStrength, 0.0, 1.0);
+    vec3 n = normalize(viewNormal);
+    float facing = abs(n.z);
+    float outline = smoothstep(0.62, 0.18, facing) * outlineStrength;
+    outline = clamp(outline, 0.0, 1.0);
 
     float t = GameTime * 420.0 * smokeSpeed;
     vec2 flow = texCoord0 * 6.5;
@@ -75,8 +63,7 @@ void main() {
     float sa = sin(ang);
     vec2 glintUv = mat2(ca, -sa, sa, ca) * flow;
     glintUv += vec2(-t * 0.22, t * 0.08);
-    float glint = texture(Sampler1, glintUv).r;
-    glint = pow(clamp(glint, 0.0, 1.0), 1.35);
+    float glint = pow(clamp(texture(Sampler1, glintUv).r, 0.0, 1.0), 1.35);
 
     vec2 smokeUv = texCoord0 * 5.4 + vec2(t * 0.12, -t * 0.07);
     float n1 = fbm(smokeUv);
@@ -90,9 +77,9 @@ void main() {
     body = mix(body, mix(fill, vec3(1.0), 0.35), glint * 0.72);
     body *= mix(0.92, 1.08, vertexColor.r);
 
-    vec3 rim = mix(vec3(0.92, 0.97, 1.0), vec3(1.0), 0.35);
+    vec3 rim = vec3(0.95, 0.98, 1.0);
     vec3 color = mix(body, rim, outline);
-    float alpha = tex.a * mix(fillOpacity * (0.28 + 0.42 * smoke + 0.22 * glint), 0.92, outline);
+    float alpha = tex.a * mix(fillOpacity * (0.28 + 0.42 * smoke + 0.22 * glint), 0.95, outline);
     alpha *= vertexColor.a;
 
     vec4 outColor = vec4(color, clamp(alpha, 0.0, 1.0));

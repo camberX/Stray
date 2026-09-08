@@ -8,6 +8,9 @@ public final class ReleaseNotes {
 	}
 
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.44", new String[]{
+			"Ghost outlines the held item as a whole instead of tracing each texture pixel."
+		}),
 		new Entry("1.2.43", new String[]{
 			"The held item shader is saved as Ghost: a thin white outline and a transparent fill with enchantment-glint smoke moving through it."
 		}),
