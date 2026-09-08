@@ -21,7 +21,7 @@ public class GameRendererMixin {
 		method = "renderLevel",
 		at = @At(
 			value = "INVOKE",
-			target = "Lnet/minecraft/client/renderer/feature/FeatureRenderDispatcher;renderAllFeatures()V",
+			target = "Lnet/minecraft/client/renderer/MultiBufferSource$BufferSource;endBatch()V",
 			shift = At.Shift.AFTER
 		)
 	)

@@ -44,9 +44,16 @@ void main() {
     }
 #endif
 
+#ifdef COVERAGE_MASK
+    fragColor = vec4(ColorModulator.rgb, 1.0);
+    return;
+#endif
+
     vec3 fill = ColorModulator.rgb;
     float fillOpacity = ColorModulator.a;
     float smokeSpeed = max(ModelOffset.y, 0.05);
+    vec3 albedo = tex.rgb * vertexColor.rgb;
+    vec3 tinted = albedo * mix(vec3(1.0), fill, 0.82);
 
     float t = GameTime * 420.0 * smokeSpeed;
     vec2 flow = texCoord0 * 6.5;
@@ -63,11 +70,10 @@ void main() {
     float smoke = smoothstep(0.22, 0.86, mix(n1, n2, 0.58));
     float wisps = smoothstep(0.52, 0.96, max(glint, n2));
 
-    vec3 body = fill * 0.16;
-    vec3 mist = mix(fill * 0.55, mix(fill, vec3(0.85, 0.97, 1.0), 0.55), wisps);
-    body = mix(body, mist, smoke * 0.82);
-    body = mix(body, mix(fill, vec3(1.0), 0.35), glint * 0.72);
+    vec3 mist = mix(tinted, mix(fill, vec3(1.0), 0.35), wisps);
+    vec3 body = mix(tinted, mist, smoke * 0.42);
+    body = mix(body, mix(tinted, vec3(1.0), 0.28), glint * 0.35);
 
-    float alpha = tex.a * fillOpacity * (0.28 + 0.42 * smoke + 0.22 * glint);
+    float alpha = tex.a * mix(0.42, 0.92, fillOpacity);
     fragColor = vec4(body, clamp(alpha, 0.0, 1.0));
 }

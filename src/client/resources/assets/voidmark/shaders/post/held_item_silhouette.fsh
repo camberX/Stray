@@ -6,14 +6,19 @@ in vec2 texCoord;
 
 out vec4 fragColor;
 
-float covered(vec2 uv) {
-    vec4 sampleColor = texture(InSampler, uv);
-    return (sampleColor.a > 0.04 || max(sampleColor.r, max(sampleColor.g, sampleColor.b)) > 0.04) ? 1.0 : 0.0;
+vec4 maskAt(vec2 uv) {
+    return texture(InSampler, uv);
+}
+
+bool covered(vec4 sampleColor) {
+    return sampleColor.a > 0.04 || max(sampleColor.r, max(sampleColor.g, sampleColor.b)) > 0.04;
 }
 
 void main() {
     vec2 texel = 1.0 / vec2(textureSize(InSampler, 0));
-    float inside = covered(texCoord);
+    vec4 insideSample = maskAt(texCoord);
+    bool inside = covered(insideSample);
+    vec3 outline = vec3(0.0);
     float cover = 0.0;
     for (int y = -5; y <= 5; y++) {
         for (int x = -5; x <= 5; x++) {
@@ -23,12 +28,15 @@ void main() {
             if (length(vec2(float(x), float(y))) > 5.5) {
                 continue;
             }
-            cover = max(cover, covered(texCoord + texel * vec2(float(x), float(y))));
+            vec4 neighbor = maskAt(texCoord + texel * vec2(float(x), float(y)));
+            if (covered(neighbor)) {
+                cover = 1.0;
+                outline = max(outline, neighbor.rgb);
+            }
         }
     }
-    float rim = max(cover - inside, 0.0);
-    if (rim < 0.04) {
+    if (inside || cover < 0.04) {
         discard;
     }
-    fragColor = vec4(0.95, 0.98, 1.0, 1.0);
+    fragColor = vec4(outline, 1.0);
 }

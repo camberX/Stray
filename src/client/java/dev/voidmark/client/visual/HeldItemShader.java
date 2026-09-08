@@ -18,7 +18,7 @@ import com.mojang.blaze3d.vertex.VertexFormat;
 import dev.voidmark.Voidmark;
 import dev.voidmark.client.config.VoidmarkConfig;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.OutlineBufferSource;
+import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.client.renderer.feature.ItemFeatureRenderer;
 import net.minecraft.client.renderer.rendertype.OutputTarget;
@@ -39,13 +39,14 @@ import java.util.function.Function;
 
 public final class HeldItemShader {
 	private static final Identifier FILL_PIPELINE_ID = Voidmark.id("pipeline/held_item");
+	private static final Identifier MASK_PIPELINE_ID = Voidmark.id("pipeline/held_item_mask");
 	private static final Identifier FILL_SHADER_ID = Voidmark.id("core/held_item");
 	private static final Identifier SILHOUETTE_SHADER_ID = Voidmark.id("post/held_item_silhouette");
-	private static final OutlineBufferSource MASK_BUFFERS = new OutlineBufferSource();
 	private static final OutputTarget MASK_OUTPUT = new OutputTarget("voidmark_held_item_mask", HeldItemShader::maskTarget);
 	private static final Function<Identifier, RenderType> FILL_TYPES = Util.memoize(HeldItemShader::createFillType);
 	private static final Function<Identifier, RenderType> MASK_TYPES = Util.memoize(HeldItemShader::createMaskType);
 	private static RenderPipeline fillPipeline;
+	private static RenderPipeline maskPipeline;
 	private static RenderPipeline silhouettePipeline;
 	private static RenderTarget maskTarget;
 	private static boolean maskThisFrame;
@@ -61,8 +62,16 @@ public final class HeldItemShader {
 		return active() && context != null && context.firstPerson();
 	}
 
-	public static boolean isPipeline(RenderPipeline value) {
+	public static boolean isFillPipeline(RenderPipeline value) {
 		return value != null && FILL_PIPELINE_ID.equals(value.getLocation());
+	}
+
+	public static boolean isMaskPipeline(RenderPipeline value) {
+		return value != null && MASK_PIPELINE_ID.equals(value.getLocation());
+	}
+
+	public static boolean isPipeline(RenderPipeline value) {
+		return isFillPipeline(value) || isMaskPipeline(value);
 	}
 
 	public static synchronized void ensureRegistered() {
@@ -77,6 +86,17 @@ public final class HeldItemShader {
 				.withSampler("Sampler1")
 				.withShaderDefine("ALPHA_CUTOUT", 0.1f)
 				.withColorTargetState(new ColorTargetState(BlendFunction.TRANSLUCENT))
+				.build()
+		);
+		maskPipeline = RenderPipelines.register(
+			RenderPipeline.builder(RenderPipelines.ITEM_SNIPPET, RenderPipelines.GLOBALS_SNIPPET)
+				.withLocation(MASK_PIPELINE_ID)
+				.withVertexShader(FILL_SHADER_ID)
+				.withFragmentShader(FILL_SHADER_ID)
+				.withSampler("Sampler1")
+				.withShaderDefine("ALPHA_CUTOUT", 0.1f)
+				.withShaderDefine("COVERAGE_MASK")
+				.withColorTargetState(ColorTargetState.DEFAULT)
 				.build()
 		);
 	}
@@ -114,17 +134,22 @@ public final class HeldItemShader {
 		maskThisFrame = true;
 	}
 
-	public static void drawViewMask(PoseStack.Pose pose, Iterable<BakedQuad> quads, QuadInstance quadInstance) {
-		if (!maskThisFrame || quads == null || pose == null || quadInstance == null) {
+	public static void drawViewMask(
+		MultiBufferSource.BufferSource buffers,
+		PoseStack.Pose pose,
+		Iterable<BakedQuad> quads,
+		QuadInstance quadInstance
+	) {
+		if (!maskThisFrame || buffers == null || quads == null || pose == null || quadInstance == null) {
 			return;
 		}
-		MASK_BUFFERS.setColor(0xFFFFFFFF);
+		ensureRegistered();
 		for (BakedQuad quad : quads) {
 			Identifier atlas = TextureAtlas.LOCATION_ITEMS;
 			if (quad != null) {
 				atlas = quad.materialInfo().sprite().atlasLocation();
 			}
-			MASK_BUFFERS.getBuffer(MASK_TYPES.apply(atlas)).putBakedQuad(pose, quad, quadInstance);
+			buffers.getBuffer(MASK_TYPES.apply(atlas)).putBakedQuad(pose, quad, quadInstance);
 		}
 	}
 
@@ -133,7 +158,6 @@ public final class HeldItemShader {
 			return;
 		}
 		maskThisFrame = false;
-		MASK_BUFFERS.endOutlineBatch();
 		Minecraft client = Minecraft.getInstance();
 		RenderTarget main = client.getMainRenderTarget();
 		if (maskTarget == null || main == null || maskTarget.getColorTextureView() == null || main.getColorTextureView() == null) {
@@ -164,6 +188,16 @@ public final class HeldItemShader {
 			((rgb >> 8) & 0xFF) / 255f,
 			(rgb & 0xFF) / 255f,
 			VoidmarkConfig.clamp(config.heldItemShaderFill, 0.08f, 0.85f)
+		);
+	}
+
+	public static Vector4fc outlineColorModulator() {
+		Vector4fc fill = colorModulator();
+		return new Vector4f(
+			fill.x() + (1f - fill.x()) * 0.62f,
+			fill.y() + (1f - fill.y()) * 0.62f,
+			fill.z() + (1f - fill.z()) * 0.62f,
+			1f
 		);
 	}
 
@@ -207,12 +241,15 @@ public final class HeldItemShader {
 	}
 
 	private static RenderType createMaskType(Identifier atlas) {
+		ensureRegistered();
 		return RenderType.create(
 			"voidmark_held_item_mask",
-			RenderSetup.builder(RenderPipelines.OUTLINE_NO_CULL)
+			RenderSetup.builder(maskPipeline)
 				.withTexture("Sampler0", atlas)
+				.withTexture("Sampler1", ItemFeatureRenderer.ENCHANTED_GLINT_ITEM)
+				.useLightmap()
 				.setOutputTarget(MASK_OUTPUT)
-				.setOutline(RenderSetup.OutlineProperty.IS_OUTLINE)
+				.setOutline(RenderSetup.OutlineProperty.NONE)
 				.createRenderSetup()
 		);
 	}

@@ -8,6 +8,9 @@ public final class ReleaseNotes {
 	}
 
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.54", new String[]{
+			"Ghost tints the held item instead of replacing it. The outline sits on the item and uses a lighter version of the color you pick."
+		}),
 		new Entry("1.2.53", new String[]{
 			"Ghost's white silhouette is back. It traces the held item on screen around the transparent fill and smoke."
 		}),

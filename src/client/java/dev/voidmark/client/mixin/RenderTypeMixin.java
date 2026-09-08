@@ -19,10 +19,14 @@ public class RenderTypeMixin {
 		index = 1
 	)
 	private Vector4fc voidmark$heldItemColor(Vector4fc color) {
-		if (!HeldItemShader.isPipeline(((RenderType) (Object) this).pipeline())) {
-			return color;
+		var pipeline = ((RenderType) (Object) this).pipeline();
+		if (HeldItemShader.isMaskPipeline(pipeline)) {
+			return HeldItemShader.outlineColorModulator();
 		}
-		return HeldItemShader.colorModulator();
+		if (HeldItemShader.isFillPipeline(pipeline)) {
+			return HeldItemShader.colorModulator();
+		}
+		return color;
 	}
 
 	@ModifyArg(
