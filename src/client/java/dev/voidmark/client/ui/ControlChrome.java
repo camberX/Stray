@@ -55,15 +55,15 @@ public final class ControlChrome {
 	}
 
 	public static int cardFill() {
-		return Theme.withAlpha(Theme.mix(paneRgb(), 0xFFFFFF, 0.62f), Math.round(Math.min(0.58f, paneOpacity() + 0.10f) * 255f));
+		return Theme.withAlpha(Theme.mix(paneRgb(), 0xFFFFFF, 0.16f), Math.round(Math.min(0.46f, paneOpacity() + 0.06f) * 255f));
 	}
 
 	public static int railFill() {
-		return Theme.withAlpha(Theme.mix(paneRgb(), 0xFFFFFF, 0.52f), Math.round(Math.min(0.52f, paneOpacity() + 0.08f) * 255f));
+		return Theme.withAlpha(Theme.mix(paneRgb(), 0xFFFFFF, 0.12f), Math.round(Math.min(0.42f, paneOpacity() + 0.05f) * 255f));
 	}
 
 	public static int pillFill() {
-		return Theme.withAlpha(0xFFFFFF, darkText() ? 150 : 96);
+		return Theme.withAlpha(0xFFFFFF, darkText() ? 48 : 36);
 	}
 
 	public static int searchFill() {
@@ -80,6 +80,18 @@ public final class ControlChrome {
 
 	public static void window(GuiGraphicsExtractor graphics, float x, float y, float w, float h) {
 		GuiDraw.rounded(graphics, x, y, w, h, WINDOW_R, windowFill());
+		float frost = VoidmarkConfig.clamp(VoidmarkConfig.get().controlFrost, 0f, 1f);
+		if (frost > 0.01f) {
+			GuiDraw.rounded(
+				graphics,
+				x,
+				y,
+				w,
+				h,
+				WINDOW_R,
+				Theme.withAlpha(Theme.mix(paneRgb(), 0xFFFFFF, 0.28f), Math.round(frost * 58f))
+			);
+		}
 	}
 
 	public static void card(GuiGraphicsExtractor graphics, float x, float y, float w, float h) {

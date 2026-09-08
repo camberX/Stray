@@ -360,7 +360,7 @@ public class VoidmarkScreen extends Screen {
 
 	@Override
 	public void extractBackground(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float delta) {
-		if (minecraft.level != null) {
+		if (!controlCenter() && minecraft.level != null) {
 			extractBlurredBackground(graphics);
 		}
 	}
@@ -2266,7 +2266,7 @@ public class VoidmarkScreen extends Screen {
 		return FabricLoader.getInstance()
 			.getModContainer("voidmark")
 			.map(container -> container.getMetadata().getVersion().getFriendlyString())
-			.orElse("1.2.68");
+			.orElse("1.2.69");
 	}
 
 	@Override
