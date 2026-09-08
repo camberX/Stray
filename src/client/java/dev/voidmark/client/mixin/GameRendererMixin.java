@@ -1,5 +1,6 @@
 package dev.voidmark.client.mixin;
 
+import dev.voidmark.client.render.GuiFrostBlur;
 import dev.voidmark.client.visual.HeldItemShader;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.renderer.GameRenderer;
@@ -27,5 +28,16 @@ public class GameRendererMixin {
 	)
 	private void voidmark$compositeHeldItemSilhouette(DeltaTracker deltaTracker, CallbackInfo ci) {
 		HeldItemShader.compositeSilhouette();
+	}
+
+	@Inject(
+		method = "render",
+		at = @At(
+			value = "INVOKE",
+			target = "Lnet/minecraft/client/gui/render/GuiRenderer;render(Lcom/mojang/blaze3d/buffers/GpuBufferSlice;)V"
+		)
+	)
+	private void voidmark$captureControlFrost(DeltaTracker deltaTracker, boolean renderLevel, CallbackInfo ci) {
+		GuiFrostBlur.captureAfterWorld();
 	}
 }

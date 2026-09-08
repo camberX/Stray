@@ -3,15 +3,23 @@ package dev.voidmark.client.render;
 import com.mojang.blaze3d.buffers.GpuBuffer;
 import com.mojang.blaze3d.buffers.Std140Builder;
 import com.mojang.blaze3d.buffers.Std140SizeCalculator;
+import com.mojang.blaze3d.pipeline.ColorTargetState;
+import com.mojang.blaze3d.pipeline.DepthStencilState;
 import com.mojang.blaze3d.pipeline.RenderPipeline;
 import com.mojang.blaze3d.pipeline.RenderTarget;
 import com.mojang.blaze3d.pipeline.TextureTarget;
+import com.mojang.blaze3d.platform.CompareOp;
+import com.mojang.blaze3d.systems.RenderPass;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.textures.FilterMode;
 import com.mojang.blaze3d.textures.GpuSampler;
 import com.mojang.blaze3d.textures.GpuTexture;
 import com.mojang.blaze3d.textures.GpuTextureView;
+import com.mojang.blaze3d.vertex.DefaultVertexFormat;
+import com.mojang.blaze3d.vertex.VertexFormat;
+import dev.voidmark.Voidmark;
 import dev.voidmark.client.config.VoidmarkConfig;
+import dev.voidmark.client.ui.VoidmarkScreen;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.renderer.PostPass;
@@ -23,13 +31,16 @@ import org.lwjgl.system.MemoryStack;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.OptionalInt;
 
 /**
- * Control frost: blur a copy of the world, restore {@code minecraft:main},
- * then blit that copy only inside the rounded menu.
+ * Blur a copy of the world after it is drawn, restore {@code minecraft:main},
+ * and blit that copy as opaque RGB only inside the Control pane.
  */
 public final class GuiFrostBlur {
 	private static final Identifier BOX_BLUR = Identifier.withDefaultNamespace("post/box_blur");
+	private static final Identifier COPY_SHADER = Voidmark.id("post/gui_frost");
 	private static final IdentityHashMap<PostPass, Vector2f> DIRECTIONS = new IdentityHashMap<>();
 	private static final Vector2f UV_A = new Vector2f();
 	private static final Vector2f UV_B = new Vector2f();
@@ -40,6 +51,7 @@ public final class GuiFrostBlur {
 	private static TextureTarget backup;
 	private static boolean haveFrost;
 	private static float lastFrost = -1f;
+	private static RenderPipeline copyPipeline;
 
 	private GuiFrostBlur() {
 	}
@@ -89,6 +101,16 @@ public final class GuiFrostBlur {
 		}
 	}
 
+	public static void captureAfterWorld() {
+		Minecraft client = Minecraft.getInstance();
+		if (!(client.screen instanceof VoidmarkScreen) || !VoidmarkConfig.get().guiDesignControl()) {
+			haveFrost = false;
+			lastFrost = -1f;
+			return;
+		}
+		capture(VoidmarkConfig.get().controlFrost);
+	}
+
 	public static void capture(float frost01) {
 		Minecraft client = Minecraft.getInstance();
 		if (client.level == null || frost01 < 0.01f) {
@@ -97,12 +119,12 @@ public final class GuiFrostBlur {
 			return;
 		}
 		RenderTarget main = client.getMainRenderTarget();
-		if (main == null || main.getColorTexture() == null || main.width <= 0 || main.height <= 0) {
+		if (main == null || main.getColorTexture() == null || main.getColorTextureView() == null || main.width <= 0 || main.height <= 0) {
 			haveFrost = false;
 			return;
 		}
 		ensure(main.width, main.height);
-		if (frost == null || backup == null || frost.getColorTexture() == null || backup.getColorTexture() == null) {
+		if (frost == null || backup == null || frost.getColorTexture() == null || backup.getColorTexture() == null || frost.getColorTextureView() == null) {
 			haveFrost = false;
 			return;
 		}
@@ -118,9 +140,7 @@ public final class GuiFrostBlur {
 			} finally {
 				capturing = false;
 			}
-			if (main.getColorTexture() != null && frost.getColorTexture() != null) {
-				copy(main.getColorTexture(), frost.getColorTexture(), main.width, main.height);
-			}
+			flatten(main.getColorTextureView(), frost.getColorTextureView());
 			if (backup.getColorTexture() != null && main.getColorTexture() != null) {
 				copy(backup.getColorTexture(), main.getColorTexture(), main.width, main.height);
 			}
@@ -133,51 +153,18 @@ public final class GuiFrostBlur {
 	}
 
 	public static void blitWindow(GuiGraphicsExtractor graphics, float x, float y, float w, float h, float radius) {
-		if (!haveFrost || frost == null || backup == null) {
+		if (!haveFrost || frost == null) {
 			return;
 		}
 		GpuTextureView view = frost.getColorTextureView();
-		GpuTextureView sharp = backup.getColorTextureView();
-		if (view == null || sharp == null) {
+		if (view == null) {
 			return;
 		}
 		GpuSampler sampler = RenderSystem.getSamplerCache().getClampToEdge(FilterMode.LINEAR);
-		blitRegion(graphics, view, sampler, x, y, w, h);
-		coverEars(graphics, sharp, sampler, x, y, w, h, radius);
-	}
-
-	private static void coverEars(
-		GuiGraphicsExtractor graphics,
-		GpuTextureView sharp,
-		GpuSampler sampler,
-		float x,
-		float y,
-		float w,
-		float h,
-		float radius
-	) {
 		float r = Math.min(radius, Math.min(w, h) / 2f);
-		if (r < 0.75f) {
-			return;
-		}
-		int rows = Math.max(10, Math.round(r));
-		float rowH = r / rows;
-		for (int i = 0; i < rows; i++) {
-			float ly = i * rowH;
-			float dy = r - (ly + rowH * 0.5f);
-			float chord = (float) Math.sqrt(Math.max(0f, r * r - dy * dy));
-			float ear = r - chord;
-			if (ear <= 0.02f) {
-				continue;
-			}
-			float top = y + ly;
-			float bottom = y + h - ly - rowH;
-			float strip = rowH + 0.2f;
-			blitRegion(graphics, sharp, sampler, x, top, ear, strip);
-			blitRegion(graphics, sharp, sampler, x + w - ear, top, ear, strip);
-			blitRegion(graphics, sharp, sampler, x, bottom, ear, strip);
-			blitRegion(graphics, sharp, sampler, x + w - ear, bottom, ear, strip);
-		}
+		blitRegion(graphics, view, sampler, x + r, y, w - 2f * r, h);
+		blitRegion(graphics, view, sampler, x, y + r, r, h - 2f * r);
+		blitRegion(graphics, view, sampler, x + w - r, y + r, r, h - 2f * r);
 	}
 
 	private static void blitRegion(
@@ -208,6 +195,38 @@ public final class GuiFrostBlur {
 		graphics.pose().popMatrix();
 	}
 
+	private static void flatten(GpuTextureView source, GpuTextureView dest) {
+		ensureCopyPipeline();
+		try (RenderPass pass = RenderSystem.getDevice().createCommandEncoder().createRenderPass(
+			() -> "voidmark control frost",
+			dest,
+			OptionalInt.empty()
+		)) {
+			pass.setPipeline(copyPipeline);
+			pass.bindTexture(
+				"InSampler",
+				source,
+				RenderSystem.getSamplerCache().getClampToEdge(FilterMode.LINEAR)
+			);
+			pass.draw(0, 3);
+		}
+	}
+
+	private static synchronized void ensureCopyPipeline() {
+		if (copyPipeline != null) {
+			return;
+		}
+		copyPipeline = RenderPipeline.builder()
+			.withLocation(Voidmark.id("pipeline/gui_frost"))
+			.withVertexShader(Identifier.withDefaultNamespace("core/screenquad"))
+			.withFragmentShader(COPY_SHADER)
+			.withSampler("InSampler")
+			.withVertexFormat(DefaultVertexFormat.EMPTY, VertexFormat.Mode.TRIANGLES)
+			.withColorTargetState(new ColorTargetState(Optional.empty(), ColorTargetState.WRITE_ALL))
+			.withDepthStencilState(new DepthStencilState(CompareOp.ALWAYS_PASS, false))
+			.build();
+	}
+
 	private static void ensure(int width, int height) {
 		if (frost != null && frost.width == width && frost.height == height) {
 			return;
@@ -229,5 +248,4 @@ public final class GuiFrostBlur {
 		RenderSystem.getDevice().createCommandEncoder()
 			.copyTextureToTexture(src, dest, 0, 0, 0, 0, 0, width, height);
 	}
-
 }

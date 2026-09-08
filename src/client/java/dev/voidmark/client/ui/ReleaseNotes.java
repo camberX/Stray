@@ -8,6 +8,9 @@ public final class ReleaseNotes {
 	}
 
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.72", new String[]{
+			"Control frost is an opaque world blur under the pane only. The last build's framebuffer alpha made every card and control glow."
+		}),
 		new Entry("1.2.71", new String[]{
 			"Theme has a Pills color picker for Control category highlights and feature cards, separate from the glass color."
 		}),
