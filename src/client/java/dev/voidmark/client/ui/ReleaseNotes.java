@@ -8,6 +8,9 @@ public final class ReleaseNotes {
 	}
 
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.40", new String[]{
+			"Triggerbot skips dead mobs (death animation, and vanilla health). Skyblock still allows 0-health hologram mobs."
+		}),
 		new Entry("1.2.39", new String[]{
 			"Triggerbot has a Humanize slider: a short reaction wait when a target appears, a little extra delay after hits, and occasional one-tick hesitation."
 		}),

@@ -181,9 +181,25 @@ public final class Triggerbot {
 			return false;
 		}
 		if (entity instanceof Player) {
-			return players;
+			return players && isCombatAlive(entity);
 		}
-		return entity instanceof LivingEntity;
+		return entity instanceof LivingEntity && isCombatAlive(entity);
+	}
+
+	private static boolean isCombatAlive(Entity entity) {
+		if (entity.isRemoved()) {
+			return false;
+		}
+		if (!(entity instanceof LivingEntity living)) {
+			return true;
+		}
+		if (living.deathTime > 0) {
+			return false;
+		}
+		if (SkyblockLocation.inSkyblock || SkyblockLocation.onHypixel) {
+			return true;
+		}
+		return living.isAlive();
 	}
 
 	private static boolean isArmorStand(Entity entity) {
