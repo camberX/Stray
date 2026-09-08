@@ -184,6 +184,7 @@ public final class VoidmarkClient implements ClientModInitializer {
 		ClientTickEvents.START_CLIENT_TICK.register(client -> {
 			FarmKeys.tick(client);
 			ChestAimer.tick(client);
+			SkyblockLocation.tick(client);
 			Triggerbot.tick(client);
 			if (itemAppearancesLoaded) {
 				return;

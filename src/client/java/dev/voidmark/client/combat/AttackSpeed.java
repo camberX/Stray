@@ -4,6 +4,7 @@ import dev.voidmark.client.location.SkyblockLocation;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientPacketListener;
 import net.minecraft.client.multiplayer.PlayerInfo;
+import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.level.GameType;
 import net.minecraft.world.scores.PlayerTeam;
@@ -43,7 +44,7 @@ public final class AttackSpeed {
 	}
 
 	public static void tick(Minecraft client) {
-		if (client.player == null || client.level == null || !SkyblockLocation.inSkyblock) {
+		if (client.player == null || client.level == null || !SkyblockLocation.inSkyblock && !SkyblockLocation.onHypixel) {
 			return;
 		}
 		int t = client.player.tickCount;
@@ -69,6 +70,27 @@ public final class AttackSpeed {
 			return 1;
 		}
 		return meleeTicks(known ? bonus : DEFAULT_AS);
+	}
+
+	/**
+	 * Triggerbot swing wait. Skyblock / Hypixel use tab Attack Speed
+	 * ({@code round(10 / (1 + AS/100))}). Vanilla worlds use the item charge
+	 * delay. Instant vanilla charge (typical Skyblock items) still uses the
+	 * Skyblock formula so this cannot collapse to 1 tick.
+	 */
+	public static int triggerDelay(LocalPlayer player) {
+		int skyblock = meleeTicks(known ? bonus : DEFAULT_AS);
+		if (SkyblockLocation.inSkyblock || SkyblockLocation.onHypixel) {
+			return skyblock;
+		}
+		if (player == null) {
+			return skyblock;
+		}
+		int vanilla = Math.max(1, Math.round(player.getCurrentItemAttackStrengthDelay()));
+		if (vanilla <= 2) {
+			return skyblock;
+		}
+		return vanilla;
 	}
 
 	public static int arrowDelay() {

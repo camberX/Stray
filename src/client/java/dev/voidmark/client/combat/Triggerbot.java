@@ -28,19 +28,17 @@ import net.minecraft.world.phys.HitResult;
  * attack cooldown; on Skyblock it waits for tab Attack Speed.
  */
 public final class Triggerbot {
-	private static int gameTick;
-	private static int lastHit;
+	private static int lastHitTick = Integer.MIN_VALUE;
 
 	private Triggerbot() {
 	}
 
 	public static void reset() {
-		gameTick = 0;
-		lastHit = 0;
+		lastHitTick = Integer.MIN_VALUE;
 	}
 
 	public static void tick(Minecraft client) {
-		gameTick++;
+		SkyblockLocation.tick(client);
 		AttackSpeed.tick(client);
 		VoidmarkConfig config = VoidmarkConfig.get();
 		if (!config.triggerbotEnabled) {
@@ -92,7 +90,7 @@ public final class Triggerbot {
 		if (range != null && !range.isInRange(player, hit.getLocation())) {
 			return;
 		}
-		lastHit = gameTick;
+		lastHitTick = player.tickCount;
 		gameMode.attack(player, target);
 		player.swing(InteractionHand.MAIN_HAND);
 	}
@@ -101,10 +99,16 @@ public final class Triggerbot {
 		if (((MinecraftAccessor) client).voidmark$missTime() > 0) {
 			return false;
 		}
-		if (SkyblockLocation.inSkyblock) {
-			return lastHit == 0 || gameTick - lastHit >= AttackSpeed.meleeDelay();
+		int wait = Math.max(1, AttackSpeed.triggerDelay(player));
+		int now = player.tickCount;
+		if (lastHitTick != Integer.MIN_VALUE && now >= lastHitTick && now - lastHitTick < wait) {
+			return false;
 		}
-		return player.getAttackStrengthScale(0.0f) >= 1.0f;
+		if (!SkyblockLocation.inSkyblock && !SkyblockLocation.onHypixel
+			&& player.getAttackStrengthScale(0.0f) < 1.0f) {
+			return false;
+		}
+		return true;
 	}
 
 	private static boolean isTarget(Entity entity, LocalPlayer player, boolean players) {

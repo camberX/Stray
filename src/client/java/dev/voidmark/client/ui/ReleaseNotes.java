@@ -8,6 +8,9 @@ public final class ReleaseNotes {
 	}
 
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.35", new String[]{
+			"Triggerbot no longer swings every tick on Skyblock. It waits for tab Attack Speed, and vanilla worlds wait for the real weapon charge."
+		}),
 		new Entry("1.2.34", new String[]{
 			"Triggerbot waits for vanilla attack cooldown, and on Skyblock it waits for tab Attack Speed."
 		}),
