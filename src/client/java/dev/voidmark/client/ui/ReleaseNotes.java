@@ -8,6 +8,9 @@ public final class ReleaseNotes {
 	}
 
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.41", new String[]{
+			"Combat has a Held item shader: a glowing outline, a transparent fill, and a smoke animation through the item you are holding. It stays off until you enable it."
+		}),
 		new Entry("1.2.40", new String[]{
 			"Triggerbot skips dead mobs (death animation, and vanilla health). Skyblock still allows 0-health hologram mobs."
 		}),

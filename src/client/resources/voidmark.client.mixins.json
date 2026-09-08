@@ -24,6 +24,7 @@
 		"FogRendererMixin",
 		"FontMixin",
 		"GuiGraphicsExtractorMixin",
+		"ItemFeatureRendererMixin",
 		"ItemModelResolverMixin",
 		"ItemStackMixin",
 		"LightmapRenderStateExtractorMixin",
@@ -34,6 +35,8 @@
 		"PlayerTabOverlayMixin",
 		"PostPassMixin",
 		"ProjectionMixin",
+		"RenderPipelinesMixin",
+		"RenderTypeMixin",
 		"ScreenMixin",
 		"SkyRendererMixin",
 		"StringWidgetMixin"

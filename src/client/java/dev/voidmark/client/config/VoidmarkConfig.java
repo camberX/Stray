@@ -94,6 +94,11 @@ public final class VoidmarkConfig {
 	public float hitmarkerScale = 1.00f;
 	public float hitsoundVolume = 0.80f;
 	public float hitsoundPitch = 1.00f;
+	public boolean heldItemShaderEnabled = false;
+	public int heldItemShaderRgb = 0x9EE7FF;
+	public float heldItemShaderFill = 0.32f;
+	public float heldItemShaderOutline = 0.90f;
+	public float heldItemShaderSmoke = 0.55f;
 	public int titaniumEspRange = 48;
 	public int titaniumEspRgb = 0xE8ECF2;
 	public boolean rawmatsEnchanted = false;
@@ -470,6 +475,18 @@ public final class VoidmarkConfig {
 				if (!json.has("triggerbotPlayers")) {
 					loaded.triggerbotPlayers = false;
 				}
+				if (!json.has("heldItemShaderEnabled")) {
+					loaded.heldItemShaderEnabled = false;
+				}
+				loaded.heldItemShaderFill = json.has("heldItemShaderFill")
+					? clamp(loaded.heldItemShaderFill, 0.08f, 0.85f)
+					: 0.32f;
+				loaded.heldItemShaderOutline = json.has("heldItemShaderOutline")
+					? clamp(loaded.heldItemShaderOutline, 0.15f, 1.50f)
+					: 0.90f;
+				loaded.heldItemShaderSmoke = json.has("heldItemShaderSmoke")
+					? clamp(loaded.heldItemShaderSmoke, 0.10f, 1.50f)
+					: 0.55f;
 				loaded.triggerbotHumanize = json.has("triggerbotHumanize")
 					? clamp(loaded.triggerbotHumanize, 0f, 1f)
 					: 0.50f;

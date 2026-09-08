@@ -105,6 +105,7 @@ public class VoidmarkScreen extends Screen {
 		FOG("Fog", 5),
 		VIEW("Aspect", 3),
 		HITSOUND("Hitsound", 3),
+		HELD_ITEM("Held item", 4),
 		MOB("Mob glow", 4),
 		BLOCK("Block outline", 2),
 		CHEST("Chest ESP", 4),
@@ -133,7 +134,7 @@ public class VoidmarkScreen extends Screen {
 	}
 
 	private enum PickerTarget {
-		WORLD, SKY, FOG, NODE, THEME, PANE, MOB, BLOCK, TITANIUM, CHEST
+		WORLD, SKY, FOG, NODE, THEME, PANE, MOB, BLOCK, TITANIUM, CHEST, HELD_ITEM
 	}
 
 	private record SearchEntry(String label, Tab tab, String hint) {
@@ -157,6 +158,10 @@ public class VoidmarkScreen extends Screen {
 		new SearchEntry("Triggerbot", Tab.COMBAT, "Combat"),
 		new SearchEntry("Triggerbot players", Tab.COMBAT, "Combat"),
 		new SearchEntry("Triggerbot humanize", Tab.COMBAT, "Combat"),
+		new SearchEntry("Held item shader", Tab.COMBAT, "Combat"),
+		new SearchEntry("Item shader", Tab.COMBAT, "Combat"),
+		new SearchEntry("Held item outline", Tab.COMBAT, "Combat"),
+		new SearchEntry("Item smoke", Tab.COMBAT, "Combat"),
 		new SearchEntry("Mob glow", Tab.ESP, "ESP"),
 		new SearchEntry("Nametag ESP", Tab.ESP, "ESP"),
 		new SearchEntry("Block outline", Tab.ESP, "ESP"),
@@ -1308,6 +1313,9 @@ public class VoidmarkScreen extends Screen {
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Arrows", config.hitsoundArrows, v -> config.hitsoundArrows = v);
 				toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Hitmarker", config.hitmarkerEnabled, v -> config.hitmarkerEnabled = v);
 
+				y = featureCard(graphics, font, left, top + cardHeight(4) + 8, col, cardHeight(1), "Held item");
+				toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Shader", config.heldItemShaderEnabled, v -> config.heldItemShaderEnabled = v, Feature.HELD_ITEM);
+
 				y = featureCard(graphics, font, right, top, col, cardHeight(3), "Mix");
 				y = slider(graphics, font, rx, y, iw, "Volume", Math.round(config.hitsoundVolume * 100) + "%", config.hitsoundVolume, v -> config.hitsoundVolume = VoidmarkConfig.clamp(v, 0f, 1f));
 				y = slider(graphics, font, rx, y, iw, "Pitch", String.format(Locale.ROOT, "%.2f", config.hitsoundPitch), (config.hitsoundPitch - 0.50f) / 1.00f, v -> config.hitsoundPitch = VoidmarkConfig.clamp(0.50f + v, 0.50f, 1.50f));
@@ -1638,6 +1646,12 @@ public class VoidmarkScreen extends Screen {
 				y = slider(graphics, font, ix, y, iw, "Pitch", String.format(Locale.ROOT, "%.2f", config.hitsoundPitch), (config.hitsoundPitch - 0.50f) / 1.00f, v -> config.hitsoundPitch = VoidmarkConfig.clamp(0.50f + v, 0.50f, 1.50f));
 				slider(graphics, font, ix, y, iw, "Marker", Math.round(config.hitmarkerScale * 100) + "%", (config.hitmarkerScale - 0.50f) / 1.50f, v -> config.hitmarkerScale = VoidmarkConfig.clampHudScale(0.50f + v * 1.50f));
 			}
+			case HELD_ITEM -> {
+				y = colorRow(graphics, font, ix, y, iw, mouseX, mouseY, "Color", config.heldItemShaderRgb, PickerTarget.HELD_ITEM);
+				y = slider(graphics, font, ix, y, iw, "Fill", Math.round(config.heldItemShaderFill * 100) + "%", (config.heldItemShaderFill - 0.08f) / 0.77f, v -> config.heldItemShaderFill = VoidmarkConfig.clamp(0.08f + v * 0.77f, 0.08f, 0.85f));
+				y = slider(graphics, font, ix, y, iw, "Outline", Math.round(config.heldItemShaderOutline * 100) + "%", (config.heldItemShaderOutline - 0.15f) / 1.35f, v -> config.heldItemShaderOutline = VoidmarkConfig.clamp(0.15f + v * 1.35f, 0.15f, 1.50f));
+				slider(graphics, font, ix, y, iw, "Smoke", Math.round(config.heldItemShaderSmoke * 100) + "%", (config.heldItemShaderSmoke - 0.10f) / 1.40f, v -> config.heldItemShaderSmoke = VoidmarkConfig.clamp(0.10f + v * 1.40f, 0.10f, 1.50f));
+			}
 			case MOB -> {
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Through walls", config.mobGlowThroughWalls, v -> config.mobGlowThroughWalls = v);
 				y = slider(graphics, font, ix, y, iw, "Radius", String.format(Locale.ROOT, "%.0f", config.mobGlowRadius), (config.mobGlowRadius - GlowBlurRadius.MIN) / (GlowBlurRadius.MAX - GlowBlurRadius.MIN), v -> config.mobGlowRadius = VoidmarkConfig.clamp(GlowBlurRadius.MIN + v * (GlowBlurRadius.MAX - GlowBlurRadius.MIN), GlowBlurRadius.MIN, GlowBlurRadius.MAX));
@@ -1879,6 +1893,7 @@ public class VoidmarkScreen extends Screen {
 			case BLOCK -> config.blockOutlineRgb = packed;
 			case TITANIUM -> config.titaniumEspRgb = packed;
 			case CHEST -> config.chestEspRgb = packed;
+			case HELD_ITEM -> config.heldItemShaderRgb = packed;
 			case THEME -> Theme.applyCustom(packed);
 			case PANE -> Theme.applyPane(packed);
 		}
@@ -1914,7 +1929,7 @@ public class VoidmarkScreen extends Screen {
 		return FabricLoader.getInstance()
 			.getModContainer("voidmark")
 			.map(container -> container.getMetadata().getVersion().getFriendlyString())
-			.orElse("1.2.40");
+			.orElse("1.2.41");
 	}
 
 	@Override
