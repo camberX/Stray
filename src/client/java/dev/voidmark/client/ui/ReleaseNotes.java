@@ -8,6 +8,9 @@ public final class ReleaseNotes {
 	}
 
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.75", new String[]{
+			"Control keeps the gradient glass rims. The dotted corner strokes are gone so the curves stay smooth."
+		}),
 		new Entry("1.2.74", new String[]{
 			"Control chrome has a light gradient rim. The category pill is even, selected icons match the pane, search is darker, corners frost, and feature settings sit in the card instead of behind a cog."
 		}),

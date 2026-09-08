@@ -19,9 +19,12 @@ import java.util.Locale;
 public final class GuiDraw {
 	private static final Identifier CIRCLE = Voidmark.id("textures/gui/circle.png");
 	private static final Identifier CIRCLE_HOLE = Voidmark.id("textures/gui/circle_hole.png");
+	private static final Identifier CIRCLE_RING = Voidmark.id("textures/gui/circle_ring.png");
 	private static final Identifier STROKE = Voidmark.id("textures/gui/stroke.png");
 	private static final int CIRCLE_TEX = 64;
 	private static final int CIRCLE_HALF = 32;
+	private static final int RING_TEX = 256;
+	private static final int RING_HALF = 128;
 	private static final int STROKE_TEX_W = 64;
 	private static final int STROKE_TEX_H = 16;
 
@@ -423,25 +426,25 @@ public final class GuiDraw {
 		if (w <= 0 || h <= 0 || ((high | low) & 0xFF000000) == 0) {
 			return;
 		}
-		float t = 0.7f;
 		float r = Math.min(radius, Math.min(w, h) / 2f);
+		float t = Math.max(0.9f, Math.min(1.35f, r * 0.055f));
 		int left = mixArgb(high, low, 0.28f);
 		int right = mixArgb(high, low, 0.62f);
 		if (r < 0.75f) {
-			fill(graphics, x, y, w, t, high);
-			fill(graphics, x, y + h - t, w, t, low);
-			fill(graphics, x, y, t, h, left);
-			fill(graphics, x + w - t, y, t, h, right);
+			fillSmooth(graphics, x, y, w, t, high);
+			fillSmooth(graphics, x, y + h - t, w, t, low);
+			fillSmooth(graphics, x, y, t, h, left);
+			fillSmooth(graphics, x + w - t, y, t, h, right);
 			return;
 		}
-		fill(graphics, x + r, y, w - 2f * r, t, high);
-		fill(graphics, x + r, y + h - t, w - 2f * r, t, low);
-		fill(graphics, x, y + r, t, h - 2f * r, left);
-		fill(graphics, x + w - t, y + r, t, h - 2f * r, right);
-		cornerArc(graphics, x + r, y + r, r, t, Math.PI, Math.PI * 1.5, high);
-		cornerArc(graphics, x + w - r, y + r, r, t, Math.PI * 1.5, Math.PI * 2.0, mixArgb(high, low, 0.45f));
-		cornerArc(graphics, x + w - r, y + h - r, r, t, 0.0, Math.PI * 0.5, low);
-		cornerArc(graphics, x + r, y + h - r, r, t, Math.PI * 0.5, Math.PI, mixArgb(high, low, 0.55f));
+		fillSmooth(graphics, x + r, y, w - 2f * r, t, high);
+		fillSmooth(graphics, x + r, y + h - t, w - 2f * r, t, low);
+		fillSmooth(graphics, x, y + r, t, h - 2f * r, left);
+		fillSmooth(graphics, x + w - t, y + r, t, h - 2f * r, right);
+		cornerRing(graphics, x, y, r, 0f, 0f, high);
+		cornerRing(graphics, x + w - r, y, r, RING_HALF, 0f, mixArgb(high, low, 0.45f));
+		cornerRing(graphics, x + w - r, y + h - r, r, RING_HALF, RING_HALF, low);
+		cornerRing(graphics, x, y + h - r, r, 0f, RING_HALF, mixArgb(high, low, 0.55f));
 	}
 
 	private static int mixArgb(int from, int to, float t) {
@@ -451,6 +454,17 @@ public final class GuiDraw {
 		int g = Math.round(((from >> 8) & 0xFF) + ((((to >> 8) & 0xFF) - ((from >> 8) & 0xFF)) * t));
 		int b = Math.round((from & 0xFF) + (((to & 0xFF) - (from & 0xFF)) * t));
 		return (a << 24) | (r << 16) | (g << 8) | b;
+	}
+
+	private static void cornerRing(GuiGraphicsExtractor graphics, float x, float y, float radius, float u, float v, int color) {
+		if (radius <= 0 || (color >>> 24) < 2) {
+			return;
+		}
+		graphics.pose().pushMatrix();
+		graphics.pose().translate(x, y);
+		graphics.pose().scale(radius, radius);
+		graphics.blit(RenderPipelines.GUI_TEXTURED, CIRCLE_RING, 0, 0, u, v, 1, 1, RING_HALF, RING_HALF, RING_TEX, RING_TEX, color);
+		graphics.pose().popMatrix();
 	}
 
 	public static void roundedOutline(GuiGraphicsExtractor graphics, float x, float y, float w, float h, float radius, int color, float thickness) {
