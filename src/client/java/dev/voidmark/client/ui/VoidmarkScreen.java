@@ -363,9 +363,6 @@ public class VoidmarkScreen extends Screen {
 		if (minecraft.level != null) {
 			extractBlurredBackground(graphics);
 		}
-		if (controlCenter()) {
-			GuiDraw.fill(graphics, 0, 0, width, height, ControlChrome.frostVeil());
-		}
 	}
 
 	@Override
@@ -379,7 +376,7 @@ public class VoidmarkScreen extends Screen {
 		Font font = minecraft.font;
 		layout();
 
-		int dim = Anim.fade(controlCenter() ? 0x10FFFFFF : 0x14000000, appear);
+		int dim = Anim.fade(0x14000000, appear);
 		GuiDraw.fill(graphics, 0, 0, width, height, dim);
 
 		float scale = (0.92f + 0.08f * appear) * VoidmarkConfig.normalizeMenuScale(VoidmarkConfig.get().menuScale);
@@ -1273,10 +1270,10 @@ public class VoidmarkScreen extends Screen {
 		y = colorRow(graphics, font, settingsX + 8, y, PANEL_W - 16, mouseX, mouseY, "Glass", VoidmarkConfig.get().controlPaneRgb, PickerTarget.CONTROL);
 		y = slider(graphics, font, settingsX + 8, y, PANEL_W - 16, "Frost", Math.round(VoidmarkConfig.get().controlPaneOpacity * 100) + "%", (VoidmarkConfig.get().controlPaneOpacity - 0.12f) / 0.66f, v -> VoidmarkConfig.get().controlPaneOpacity = VoidmarkConfig.clamp(0.12f + v * 0.66f, 0.12f, 0.78f));
 		GuiDraw.small(graphics, font, "Accent", settingsX + 8, y + 2, controlCenter() ? ControlChrome.muted() : Theme.MUTED);
-		y = swatchRow(graphics, mouseX, mouseY, settingsX + 10, y + 14, Theme.PRESETS, true);
+		y = swatchRow(graphics, mouseX, mouseY, settingsX + 10, y + 14, PANEL_W - 26, Theme.PRESETS, true);
 		y = colorRow(graphics, font, settingsX + 8, y, PANEL_W - 16, mouseX, mouseY, "Custom", VoidmarkConfig.get().themeAccentRgb, PickerTarget.THEME);
 		GuiDraw.small(graphics, font, "Pane", settingsX + 8, y + 1, Theme.MUTED);
-		y = swatchRow(graphics, mouseX, mouseY, settingsX + 10, y + 12, Theme.PANE_PRESETS, false);
+		y = swatchRow(graphics, mouseX, mouseY, settingsX + 10, y + 12, PANEL_W - 26, Theme.PANE_PRESETS, false);
 		y = colorRow(graphics, font, settingsX + 8, y, PANEL_W - 16, mouseX, mouseY, "Custom", VoidmarkConfig.get().themePaneRgb, PickerTarget.PANE);
 		y = slider(graphics, font, settingsX + 8, y, PANEL_W - 16, "Opacity", Math.round(VoidmarkConfig.get().themePaneOpacity * 100) + "%", (VoidmarkConfig.get().themePaneOpacity - 0.20f) / 0.80f, v -> {
 			VoidmarkConfig.get().themePaneOpacity = VoidmarkConfig.clamp(0.20f + v * 0.80f, 0.20f, 1f);
@@ -1436,25 +1433,31 @@ public class VoidmarkScreen extends Screen {
 		return 3;
 	}
 
-	private float swatchRow(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float startX, float startY, Theme.Swatch[] swatches, boolean accent) {
+	private float swatchRow(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float startX, float startY, float maxW, Theme.Swatch[] swatches, boolean accent) {
 		float dx = startX;
 		float dy = startY;
-		float rowEnd = settingsX + PANEL_W - 20;
+		float rowEnd = startX + Math.max(16, maxW);
 		for (int i = 0; i < swatches.length; i++) {
 			Theme.Swatch swatch = swatches[i];
 			int current = accent ? VoidmarkConfig.get().themeAccentRgb : VoidmarkConfig.get().themePaneRgb;
 			boolean active = (current & 0xFFFFFF) == swatch.rgb();
 			boolean hover = GuiDraw.hovered(mouseX, mouseY, dx, dy, 14, 14);
-			GuiDraw.rounded(graphics, dx - 1, dy - 1, 16, 16, 4, active || hover ? Theme.TEXT : Theme.LINE);
+			GuiDraw.rounded(graphics, dx - 1, dy - 1, 16, 16, 4, active || hover ? ink() : fade());
 			GuiDraw.rounded(graphics, dx, dy, 14, 14, 3, 0xFF000000 | swatch.rgb());
 			hits.add(new Hit(dx, dy, 14, 14, accent ? () -> Theme.applyPreset(swatch) : () -> Theme.applyPanePreset(swatch)));
 			dx += 18;
-			if (i + 1 < swatches.length && dx > rowEnd) {
+			if (i + 1 < swatches.length && dx + 14 > rowEnd) {
 				dx = startX;
 				dy += 18;
 			}
 		}
 		return dy + 18;
+	}
+
+	private static float swatchBlockH(int count, float maxW) {
+		int per = Math.max(1, (int) (maxW / 18f));
+		int rows = (count + per - 1) / per;
+		return rows * 18f;
 	}
 
 	private void drawNotes(GuiGraphicsExtractor graphics, Font font, int mouseX, int mouseY) {
@@ -1683,9 +1686,10 @@ public class VoidmarkScreen extends Screen {
 		y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Animations", config.uiAnimations, v -> config.uiAnimations = v);
 		toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Auto update", config.autoUpdate, v -> config.autoUpdate = v);
 
-		y = featureCard(graphics, font, right, top, col, cardHeight(5), "Accent");
+		float accentH = cardHead() + 14 + swatchBlockH(Theme.PRESETS.length, iw) + rowH() * 3 + cardPad();
+		y = featureCard(graphics, font, right, top, col, accentH, "Accent");
 		GuiDraw.small(graphics, font, "Preset", rx, y + 1, ControlChrome.muted());
-		y = swatchRow(graphics, mouseX, mouseY, rx + 2, y + 12, Theme.PRESETS, true);
+		y = swatchRow(graphics, mouseX, mouseY, rx + 2, y + 12, iw - 2, Theme.PRESETS, true);
 		y = colorRow(graphics, font, rx, y, iw, mouseX, mouseY, "Custom", config.themeAccentRgb, PickerTarget.THEME);
 		y = slider(graphics, font, rx, y, iw, "HUD", Math.round(config.hudOpacity * 100) + "%", (config.hudOpacity - 0.20f) / 0.80f, v -> {
 			config.hudOpacity = VoidmarkConfig.clamp(0.20f + v * 0.80f, 0.20f, 1f);
@@ -1693,7 +1697,7 @@ public class VoidmarkScreen extends Screen {
 		});
 		toggle(graphics, font, rx, y, iw, mouseX, mouseY, "HUD stars", config.hudStarfield, v -> config.hudStarfield = v);
 
-		float scaleTop = top + cardHeight(5) + 10;
+		float scaleTop = top + accentH + 10;
 		y = featureCard(graphics, font, right, scaleTop, col, cardHeight(3) + 18, "Scale");
 		GuiDraw.small(graphics, font, "Menu", rx, y + 1, ControlChrome.muted());
 		y += 12;
@@ -2260,7 +2264,7 @@ public class VoidmarkScreen extends Screen {
 		return FabricLoader.getInstance()
 			.getModContainer("voidmark")
 			.map(container -> container.getMetadata().getVersion().getFriendlyString())
-			.orElse("1.2.65");
+			.orElse("1.2.66");
 	}
 
 	@Override

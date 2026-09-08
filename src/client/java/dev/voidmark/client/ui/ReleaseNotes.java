@@ -8,6 +8,9 @@ public final class ReleaseNotes {
 	}
 
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.66", new String[]{
+			"Control no longer whites out the world. Accent presets stay inside their card instead of stacking over Scale."
+		}),
 		new Entry("1.2.65", new String[]{
 			"Opening the Control GUI no longer crashes. Frost still uses the vanilla blur once, then a glass veil on top."
 		}),
