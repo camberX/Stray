@@ -8,6 +8,9 @@ public final class ReleaseNotes {
 	}
 
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.73", new String[]{
+			"The Control category pill sits in a matching inset from the menu and follows the window's left corners."
+		}),
 		new Entry("1.2.72", new String[]{
 			"Control frost is an opaque world blur under the pane only. The last build's framebuffer alpha made every card and control glow."
 		}),

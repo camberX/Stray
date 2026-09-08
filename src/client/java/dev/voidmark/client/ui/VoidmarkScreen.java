@@ -978,10 +978,10 @@ public class VoidmarkScreen extends Screen {
 	}
 
 	private void drawControlRail(GuiGraphicsExtractor graphics, Font font, int mouseX, int mouseY) {
-		float railX = windowX + 10;
-		float railY = windowY + 14;
-		float railW = 44;
-		float railH = windowH - 28;
+		float railX = windowX + ControlChrome.RAIL_INSET;
+		float railY = windowY + ControlChrome.RAIL_INSET;
+		float railW = ControlChrome.RAIL_W;
+		float railH = windowH - ControlChrome.RAIL_INSET * 2f;
 		ControlChrome.rail(graphics, railX, railY, railW, railH);
 		hits.add(new Hit(windowX, windowY, sidebarW(), windowH, mx -> startDrag(mx, lastClickY), true));
 
@@ -2275,7 +2275,7 @@ public class VoidmarkScreen extends Screen {
 		return FabricLoader.getInstance()
 			.getModContainer("voidmark")
 			.map(container -> container.getMetadata().getVersion().getFriendlyString())
-			.orElse("1.2.72");
+			.orElse("1.2.73");
 	}
 
 	@Override

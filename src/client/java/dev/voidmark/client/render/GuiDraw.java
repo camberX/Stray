@@ -311,21 +311,46 @@ public final class GuiDraw {
 	}
 
 	public static void rounded(GuiGraphicsExtractor graphics, float x, float y, float w, float h, float radius, int color) {
+		roundedSides(graphics, x, y, w, h, radius, radius, color);
+	}
+
+	public static void roundedSides(
+		GuiGraphicsExtractor graphics,
+		float x,
+		float y,
+		float w,
+		float h,
+		float leftRadius,
+		float rightRadius,
+		int color
+	) {
 		if (w <= 0 || h <= 0 || (color >>> 24) == 0) {
 			return;
 		}
-		float r = Math.min(radius, Math.min(w, h) / 2f);
-		if (r < 0.75f) {
+		float max = Math.min(w, h) / 2f;
+		float l = Math.min(Math.max(0f, leftRadius), max);
+		float r = Math.min(Math.max(0f, rightRadius), max);
+		if (l < 0.75f && r < 0.75f) {
 			fillSmooth(graphics, x, y, w, h, color);
 			return;
 		}
-		fillSmooth(graphics, x + r, y, w - 2f * r, h, color);
-		fillSmooth(graphics, x, y + r, r, h - 2f * r, color);
+		fillSmooth(graphics, x + l, y, w - l - r, h, color);
+		fillSmooth(graphics, x, y + l, l, h - 2f * l, color);
 		fillSmooth(graphics, x + w - r, y + r, r, h - 2f * r, color);
-		corner(graphics, x, y, r, 0f, 0f, color);
-		corner(graphics, x + w - r, y, r, CIRCLE_HALF, 0f, color);
-		corner(graphics, x, y + h - r, r, 0f, CIRCLE_HALF, color);
-		corner(graphics, x + w - r, y + h - r, r, CIRCLE_HALF, CIRCLE_HALF, color);
+		if (l >= 0.75f) {
+			corner(graphics, x, y, l, 0f, 0f, color);
+			corner(graphics, x, y + h - l, l, 0f, CIRCLE_HALF, color);
+		} else if (l > 0f) {
+			fillSmooth(graphics, x, y, l, l, color);
+			fillSmooth(graphics, x, y + h - l, l, l, color);
+		}
+		if (r >= 0.75f) {
+			corner(graphics, x + w - r, y, r, CIRCLE_HALF, 0f, color);
+			corner(graphics, x + w - r, y + h - r, r, CIRCLE_HALF, CIRCLE_HALF, color);
+		} else if (r > 0f) {
+			fillSmooth(graphics, x + w - r, y, r, r, color);
+			fillSmooth(graphics, x + w - r, y + h - r, r, r, color);
+		}
 	}
 
 	public static void roundLeft(GuiGraphicsExtractor graphics, float x, float y, float w, float h, float radius, int color) {

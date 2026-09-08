@@ -21,7 +21,8 @@ public final class ControlChrome {
 	public static final int KNOB = 0xFFFFFFFF;
 	public static final float WINDOW_R = 24f;
 	public static final float CARD_R = 18f;
-	public static final float RAIL_R = 22f;
+	public static final float RAIL_INSET = 10f;
+	public static final float RAIL_W = 44f;
 
 	private ControlChrome() {
 	}
@@ -80,7 +81,15 @@ public final class ControlChrome {
 	}
 
 	public static int railFill() {
-		return Theme.withAlpha(Theme.mix(paneRgb(), 0xFFFFFF, 0.12f), Math.round(Math.min(0.42f, paneOpacity() + 0.05f) * 255f));
+		return cardFill();
+	}
+
+	public static float railLeftRadius() {
+		return Math.max(8f, WINDOW_R - RAIL_INSET);
+	}
+
+	public static float railRightRadius() {
+		return RAIL_W * 0.5f;
 	}
 
 	public static int pillFill() {
@@ -113,7 +122,7 @@ public final class ControlChrome {
 	}
 
 	public static void rail(GuiGraphicsExtractor graphics, float x, float y, float w, float h) {
-		GuiDraw.rounded(graphics, x, y, w, h, RAIL_R, railFill());
+		GuiDraw.roundedSides(graphics, x, y, w, h, railLeftRadius(), railRightRadius(), railFill());
 	}
 
 	public static void search(GuiGraphicsExtractor graphics, float x, float y, float w, float h) {
