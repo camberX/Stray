@@ -8,6 +8,9 @@ public final class ReleaseNotes {
 	}
 
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.65", new String[]{
+			"Opening the Control GUI no longer crashes. Frost still uses the vanilla blur once, then a glass veil on top."
+		}),
 		new Entry("1.2.64", new String[]{
 			"Control GUI is lighter and much more frosted. Feature gears open a Theme-style page instead of a dropdown, the player head is a real circle that opens capes, the HUD editor sits in the header, and you can pick the glass color."
 		}),
