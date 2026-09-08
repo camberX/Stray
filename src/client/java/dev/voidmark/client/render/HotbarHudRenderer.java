@@ -46,7 +46,7 @@ public final class HotbarHudRenderer {
 			}
 			if (showOffhand) {
 				float ox = leftHanded ? WIDTH + GAP : -(SLOT + PAD * 2) - GAP;
-				GuiDraw.panel(graphics, ox, 0, SLOT + PAD * 2, HEIGHT, 5, Theme.HUD_WINDOW, Theme.HUD_LINE);
+				HudChrome.panel(graphics, ox, 0, SLOT + PAD * 2, HEIGHT, 5, Theme.HUD_WINDOW, Theme.HUD_LINE);
 				slot(graphics, font, player, offhand, Math.round(ox) + PAD, PAD, 40, false);
 			}
 		});

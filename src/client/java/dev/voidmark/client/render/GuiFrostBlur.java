@@ -36,7 +36,7 @@ import java.util.OptionalInt;
 
 /**
  * Blur a copy of the world after it is drawn, restore {@code minecraft:main},
- * and blit that copy as opaque RGB only inside the Control pane.
+ * and blit that copy as opaque RGB inside Control panes and HUD glass.
  */
 public final class GuiFrostBlur {
 	private static final Identifier BOX_BLUR = Identifier.withDefaultNamespace("post/box_blur");
@@ -104,7 +104,14 @@ public final class GuiFrostBlur {
 
 	public static void captureAfterWorld() {
 		Minecraft client = Minecraft.getInstance();
-		if (!(client.screen instanceof VoidmarkScreen) || !VoidmarkConfig.get().guiDesignControl()) {
+		if (client == null || !VoidmarkConfig.get().guiDesignControl()) {
+			haveFrost = false;
+			lastFrost = -1f;
+			return;
+		}
+		boolean menu = client.screen instanceof VoidmarkScreen;
+		boolean hud = client.level != null && (client.options == null || !client.options.hideGui);
+		if (!menu && !hud) {
 			haveFrost = false;
 			lastFrost = -1f;
 			return;

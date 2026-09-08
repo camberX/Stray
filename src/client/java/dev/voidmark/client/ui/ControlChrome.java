@@ -33,7 +33,7 @@ public final class ControlChrome {
 
 	public static int hudFill() {
 		float hud = VoidmarkConfig.clamp(VoidmarkConfig.get().hudOpacity, 0.20f, 1f);
-		return Theme.withAlpha(pillRgb(), Math.round(Math.min(0.86f, Math.max(0.24f, hud * 0.82f)) * 255f));
+		return Theme.withAlpha(paneRgb(), Math.round(paneOpacity() * hud * 255f));
 	}
 
 	public static void glass(GuiGraphicsExtractor graphics, float x, float y, float w, float h, float radius, int fill) {
