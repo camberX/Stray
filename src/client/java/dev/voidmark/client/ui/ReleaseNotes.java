@@ -8,6 +8,9 @@ public final class ReleaseNotes {
 	}
 
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.68", new String[]{
+			"Rounded glass uses the smooth circle texture again. The last build's slice corners were the dark square bites on every panel."
+		}),
 		new Entry("1.2.67", new String[]{
 			"Frost now blurs the world behind Control, not the glass opacity. Feature cards and the category pill sit lighter than the menu pane. Corners are smooth scanline arcs, and the player head is clipped to a circle."
 		}),

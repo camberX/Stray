@@ -55,11 +55,11 @@ public final class ControlChrome {
 	}
 
 	public static int cardFill() {
-		return Theme.withAlpha(Theme.mix(paneRgb(), 0xFFFFFF, 0.38f), Math.round(Math.min(0.94f, paneOpacity() + 0.28f) * 255f));
+		return Theme.withAlpha(Theme.mix(paneRgb(), 0xFFFFFF, 0.62f), Math.round(Math.min(0.58f, paneOpacity() + 0.10f) * 255f));
 	}
 
 	public static int railFill() {
-		return Theme.withAlpha(Theme.mix(paneRgb(), 0xFFFFFF, 0.30f), Math.round(Math.min(0.92f, paneOpacity() + 0.22f) * 255f));
+		return Theme.withAlpha(Theme.mix(paneRgb(), 0xFFFFFF, 0.52f), Math.round(Math.min(0.52f, paneOpacity() + 0.08f) * 255f));
 	}
 
 	public static int pillFill() {
@@ -67,7 +67,7 @@ public final class ControlChrome {
 	}
 
 	public static int searchFill() {
-		return Theme.withAlpha(Theme.mix(paneRgb(), 0x000000, 0.10f), Math.round(Math.min(0.72f, paneOpacity() + 0.12f) * 255f));
+		return Theme.withAlpha(Theme.mix(paneRgb(), 0xFFFFFF, 0.22f), Math.round(Math.min(0.48f, paneOpacity() + 0.06f) * 255f));
 	}
 
 	public static int clipFill() {
@@ -104,8 +104,9 @@ public final class ControlChrome {
 			GuiDraw.circle(graphics, x + size * 0.5f, y + size * 0.5f, size * 0.5f, clipFill());
 			return;
 		}
-		GuiDraw.circleBlit(graphics, id, x, y, size, 8f, 8f, 8, 64);
-		GuiDraw.circleBlit(graphics, id, x, y, size, 40f, 8f, 8, 64);
+		GuiDraw.blit(graphics, id, x, y, size, size, 8f, 8f, 8, 8, 64, 64);
+		GuiDraw.blit(graphics, id, x, y, size, size, 40f, 8f, 8, 8, 64, 64);
+		GuiDraw.circleClip(graphics, x, y, size, windowFill());
 	}
 
 	private static Identifier faceTexture(PlayerSkin skin) {
