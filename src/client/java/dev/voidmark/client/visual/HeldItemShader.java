@@ -2,11 +2,12 @@ package dev.voidmark.client.visual;
 
 import com.mojang.blaze3d.pipeline.BlendFunction;
 import com.mojang.blaze3d.pipeline.ColorTargetState;
-import com.mojang.blaze3d.pipeline.DepthStencilState;
 import com.mojang.blaze3d.pipeline.RenderPipeline;
-import com.mojang.blaze3d.platform.CompareOp;
+import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.blaze3d.vertex.QuadInstance;
 import dev.voidmark.Voidmark;
 import dev.voidmark.client.config.VoidmarkConfig;
+import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.client.renderer.feature.ItemFeatureRenderer;
 import net.minecraft.client.renderer.rendertype.RenderSetup;
@@ -24,6 +25,11 @@ import org.joml.Vector4fc;
 import java.util.function.Function;
 
 public final class HeldItemShader {
+	private static final int[] OUTLINE_OFFSETS = {
+		packOffset(-1, -1), packOffset(-1, 0), packOffset(-1, 1),
+		packOffset(0, -1), packOffset(0, 1),
+		packOffset(1, -1), packOffset(1, 0), packOffset(1, 1)
+	};
 	private static final Identifier FILL_PIPELINE_ID = Voidmark.id("pipeline/held_item");
 	private static final Identifier OUTLINE_PIPELINE_ID = Voidmark.id("pipeline/held_item_outline");
 	private static final Identifier FILL_SHADER_ID = Voidmark.id("core/held_item");
@@ -69,9 +75,31 @@ public final class HeldItemShader {
 				.withFragmentShader(OUTLINE_SHADER_ID)
 				.withShaderDefine("ALPHA_CUTOUT", 0.1f)
 				.withColorTargetState(new ColorTargetState(BlendFunction.TRANSLUCENT))
-				.withDepthStencilState(new DepthStencilState(CompareOp.LESS_THAN, false))
 				.build()
 		);
+	}
+
+	public static void drawPixelOutline(
+		MultiBufferSource.BufferSource bufferSource,
+		PoseStack.Pose pose,
+		Iterable<BakedQuad> quads,
+		QuadInstance quadInstance
+	) {
+		if (quads == null) {
+			return;
+		}
+		for (int color : OUTLINE_OFFSETS) {
+			quadInstance.setColor(color);
+			for (BakedQuad quad : quads) {
+				bufferSource.getBuffer(outlineType(quad)).putBakedQuad(pose, quad, quadInstance);
+			}
+		}
+	}
+
+	private static int packOffset(int dx, int dy) {
+		int red = (dx + 1) * 127;
+		int green = (dy + 1) * 127;
+		return 0xFF000000 | (red << 16) | (green << 8) | 0xFF;
 	}
 
 	public static RenderType wrap(RenderType original, Iterable<BakedQuad> quads) {
