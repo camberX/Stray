@@ -1653,7 +1653,7 @@ public class VoidmarkScreen extends Screen {
 				y = colorRow(graphics, font, ix, y, iw, mouseX, mouseY, "Color", config.heldItemShaderRgb, PickerTarget.HELD_ITEM);
 				y = slider(graphics, font, ix, y, iw, "Fill", Math.round(config.heldItemShaderFill * 100) + "%", (config.heldItemShaderFill - 0.08f) / 0.77f, v -> config.heldItemShaderFill = VoidmarkConfig.clamp(0.08f + v * 0.77f, 0.08f, 0.85f));
 				y = slider(graphics, font, ix, y, iw, "Outline", Math.round(config.heldItemShaderOutline * 100) + "%", (config.heldItemShaderOutline - 0.15f) / 1.35f, v -> config.heldItemShaderOutline = VoidmarkConfig.clamp(0.15f + v * 1.35f, 0.15f, 1.50f));
-				slider(graphics, font, ix, y, iw, "Smoke", Math.round(config.heldItemShaderSmoke * 100) + "%", (config.heldItemShaderSmoke - 0.10f) / 1.40f, v -> config.heldItemShaderSmoke = VoidmarkConfig.clamp(0.10f + v * 1.40f, 0.10f, 1.50f));
+				slider(graphics, font, ix, y, iw, config.heldItemShaderStyleLabel(), Math.round(config.heldItemShaderSmoke * 100) + "%", (config.heldItemShaderSmoke - 0.10f) / 1.40f, v -> config.heldItemShaderSmoke = VoidmarkConfig.clamp(0.10f + v * 1.40f, 0.10f, 1.50f));
 			}
 			case MOB -> {
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Through walls", config.mobGlowThroughWalls, v -> config.mobGlowThroughWalls = v);
@@ -1932,7 +1932,7 @@ public class VoidmarkScreen extends Screen {
 		return FabricLoader.getInstance()
 			.getModContainer("voidmark")
 			.map(container -> container.getMetadata().getVersion().getFriendlyString())
-			.orElse("1.2.59");
+			.orElse("1.2.60");
 	}
 
 	@Override

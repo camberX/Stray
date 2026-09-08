@@ -8,6 +8,9 @@ public final class ReleaseNotes {
 	}
 
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.60", new String[]{
+			"The game no longer goes black after the last Ghost hand change. Style can be Smoke or a drifting starry sky on the item and hand."
+		}),
 		new Entry("1.2.59", new String[]{
 			"Ghost now tints the first-person hand as well as the held item. Smoke is larger moving wisps instead of TV static."
 		}),

@@ -9,12 +9,13 @@ import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.client.renderer.entity.player.AvatarRenderer;
 import net.minecraft.client.renderer.entity.state.AvatarRenderState;
 import net.minecraft.client.renderer.rendertype.RenderType;
+import net.minecraft.client.renderer.rendertype.RenderTypes;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.Avatar;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.ModifyArg;
+import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
@@ -41,24 +42,15 @@ public class AvatarRendererMixin {
 		}
 	}
 
-	@ModifyArg(
+	@Redirect(
 		method = "renderHand",
 		at = @At(
 			value = "INVOKE",
-			target = "Lnet/minecraft/client/renderer/SubmitNodeCollector;submitModelPart(Lnet/minecraft/client/model/geom/ModelPart;Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/rendertype/RenderType;IILnet/minecraft/client/renderer/texture/TextureAtlasSprite;)V"
-		),
-		index = 2
+			target = "Lnet/minecraft/client/renderer/rendertype/RenderTypes;entityTranslucent(Lnet/minecraft/resources/Identifier;)Lnet/minecraft/client/renderer/rendertype/RenderType;"
+		)
 	)
-	private RenderType voidmark$ghostHand(
-		RenderType original,
-		PoseStack pose,
-		SubmitNodeCollector collector,
-		int light,
-		Identifier texture,
-		ModelPart part,
-		boolean sleeve
-	) {
-		return HeldItemShader.wrapArm(original, texture);
+	private RenderType voidmark$ghostHand(Identifier texture) {
+		return HeldItemShader.wrapArm(RenderTypes.entityTranslucent(texture), texture);
 	}
 
 	@Inject(method = "renderHand", at = @At("RETURN"))

@@ -99,7 +99,7 @@ public final class VoidmarkConfig {
 	public float heldItemShaderFill = 0.32f;
 	public float heldItemShaderOutline = 0.90f;
 	public float heldItemShaderSmoke = 0.55f;
-	public String heldItemShaderStyle = "ghost";
+	public String heldItemShaderStyle = "smoke";
 	public int titaniumEspRange = 48;
 	public int titaniumEspRgb = 0xE8ECF2;
 	public boolean rawmatsEnchanted = false;
@@ -607,19 +607,29 @@ public final class VoidmarkConfig {
 	}
 
 	public void cycleHeldItemShaderStyle() {
-		heldItemShaderStyle = "ghost";
+		heldItemShaderStyle = heldItemShaderStars() ? "smoke" : "stars";
 	}
 
 	public String heldItemShaderStyleLabel() {
-		return "Ghost";
+		return heldItemShaderStars() ? "Stars" : "Smoke";
+	}
+
+	public boolean heldItemShaderStars() {
+		return "stars".equals(heldItemShaderStyle);
 	}
 
 	public float heldItemShaderStyleIndex() {
-		return 0f;
+		return heldItemShaderStars() ? 1f : 0f;
 	}
 
 	public static String normalizeHeldItemShaderStyle(String style) {
-		return "ghost";
+		if (style == null) {
+			return "smoke";
+		}
+		return switch (style.toLowerCase(java.util.Locale.ROOT)) {
+			case "stars", "star", "starry", "sky" -> "stars";
+			default -> "smoke";
+		};
 	}
 
 	public static String normalizeNametagStyle(String style) {
