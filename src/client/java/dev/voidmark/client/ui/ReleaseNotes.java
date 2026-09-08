@@ -8,6 +8,9 @@ public final class ReleaseNotes {
 	}
 
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.42", new String[]{
+			"The held item shader no longer crashes on launch."
+		}),
 		new Entry("1.2.41", new String[]{
 			"Combat has a Held item shader: a glowing outline, a transparent fill, and a smoke animation through the item you are holding. It stays off until you enable it."
 		}),
