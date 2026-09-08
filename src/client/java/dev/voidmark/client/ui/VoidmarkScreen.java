@@ -497,7 +497,7 @@ public class VoidmarkScreen extends Screen {
 	}
 
 	private float cardTop() {
-		return controlCenter() ? cardPad() : 0f;
+		return controlCenter() ? 9f : 0f;
 	}
 
 	private float cardHead() {
@@ -2498,7 +2498,7 @@ public class VoidmarkScreen extends Screen {
 		return FabricLoader.getInstance()
 			.getModContainer("voidmark")
 			.map(container -> container.getMetadata().getVersion().getFriendlyString())
-			.orElse("1.2.78");
+			.orElse("1.2.79");
 	}
 
 	@Override

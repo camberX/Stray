@@ -19,6 +19,7 @@ import java.util.Locale;
 public final class GuiDraw {
 	private static final Identifier CIRCLE = Voidmark.id("textures/gui/circle.png");
 	private static final Identifier CIRCLE_HOLE = Voidmark.id("textures/gui/circle_hole.png");
+	private static final Identifier CIRCLE_AA = Voidmark.id("textures/gui/circle_aa.png");
 	private static final Identifier CIRCLE_RING = Voidmark.id("textures/gui/circle_ring.png");
 	private static final Identifier STROKE = Voidmark.id("textures/gui/stroke.png");
 	private static final int CIRCLE_TEX = 64;
@@ -315,6 +316,36 @@ public final class GuiDraw {
 
 	public static void rounded(GuiGraphicsExtractor graphics, float x, float y, float w, float h, float radius, int color) {
 		roundedSides(graphics, x, y, w, h, radius, radius, color);
+	}
+
+	/** Control chrome: 256px AA corners so large menu radii stay smooth. */
+	public static void roundedFine(GuiGraphicsExtractor graphics, float x, float y, float w, float h, float radius, int color) {
+		if (w <= 0 || h <= 0 || (color >>> 24) == 0) {
+			return;
+		}
+		float r = Math.min(Math.max(0f, radius), Math.min(w, h) / 2f);
+		if (r < 0.75f) {
+			fillSmooth(graphics, x, y, w, h, color);
+			return;
+		}
+		fillSmooth(graphics, x + r, y, w - 2f * r, h, color);
+		fillSmooth(graphics, x, y + r, r, h - 2f * r, color);
+		fillSmooth(graphics, x + w - r, y + r, r, h - 2f * r, color);
+		cornerFine(graphics, x, y, r, 0f, 0f, color);
+		cornerFine(graphics, x + w - r, y, r, RING_HALF, 0f, color);
+		cornerFine(graphics, x + w - r, y + h - r, r, RING_HALF, RING_HALF, color);
+		cornerFine(graphics, x, y + h - r, r, 0f, RING_HALF, color);
+	}
+
+	private static void cornerFine(GuiGraphicsExtractor graphics, float x, float y, float radius, float u, float v, int color) {
+		if (radius <= 0) {
+			return;
+		}
+		graphics.pose().pushMatrix();
+		graphics.pose().translate(x, y);
+		graphics.pose().scale(radius, radius);
+		graphics.blit(RenderPipelines.GUI_TEXTURED, CIRCLE_AA, 0, 0, u, v, 1, 1, RING_HALF, RING_HALF, RING_TEX, RING_TEX, color);
+		graphics.pose().popMatrix();
 	}
 
 	public static void roundedSides(

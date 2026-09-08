@@ -158,12 +158,11 @@ public final class GuiFrostBlur {
 	}
 
 	public static void blitWindow(GuiGraphicsExtractor graphics, float x, float y, float w, float h, float radius) {
-		if (!haveFrost || frost == null || sharp == null) {
+		if (!haveFrost || frost == null) {
 			return;
 		}
 		GpuTextureView view = frost.getColorTextureView();
-		GpuTextureView clear = sharp.getColorTextureView();
-		if (view == null || clear == null) {
+		if (view == null) {
 			return;
 		}
 		GpuSampler sampler = RenderSystem.getSamplerCache().getClampToEdge(FilterMode.LINEAR);
@@ -171,16 +170,12 @@ public final class GuiFrostBlur {
 		blitRegion(graphics, view, sampler, x + r, y, w - 2f * r, h);
 		blitRegion(graphics, view, sampler, x, y + r, r, h - 2f * r);
 		blitRegion(graphics, view, sampler, x + w - r, y + r, r, h - 2f * r);
-		blitRegion(graphics, view, sampler, x, y, r, r);
-		blitRegion(graphics, view, sampler, x + w - r, y, r, r);
-		blitRegion(graphics, view, sampler, x, y + h - r, r, r);
-		blitRegion(graphics, view, sampler, x + w - r, y + h - r, r, r);
-		coverEars(graphics, clear, sampler, x, y, w, h, r);
+		blitCornerPies(graphics, view, sampler, x, y, w, h, r);
 	}
 
-	private static void coverEars(
+	private static void blitCornerPies(
 		GuiGraphicsExtractor graphics,
-		GpuTextureView sharpView,
+		GpuTextureView view,
 		GpuSampler sampler,
 		float x,
 		float y,
@@ -191,23 +186,21 @@ public final class GuiFrostBlur {
 		if (r < 0.75f) {
 			return;
 		}
-		int rows = Math.max(10, Math.round(r));
+		int rows = Math.max(64, Math.round(r * 8f));
 		float rowH = r / rows;
 		for (int i = 0; i < rows; i++) {
 			float ly = i * rowH;
 			float dy = r - (ly + rowH * 0.5f);
 			float chord = (float) Math.sqrt(Math.max(0f, r * r - dy * dy));
-			float ear = r - chord;
-			if (ear <= 0.02f) {
+			if (chord <= 0.02f) {
 				continue;
 			}
 			float top = y + ly;
 			float bottom = y + h - ly - rowH;
-			float strip = rowH + 0.2f;
-			blitRegion(graphics, sharpView, sampler, x, top, ear, strip);
-			blitRegion(graphics, sharpView, sampler, x + w - ear, top, ear, strip);
-			blitRegion(graphics, sharpView, sampler, x, bottom, ear, strip);
-			blitRegion(graphics, sharpView, sampler, x + w - ear, bottom, ear, strip);
+			blitRegion(graphics, view, sampler, x + r - chord, top, chord, rowH);
+			blitRegion(graphics, view, sampler, x + w - r, top, chord, rowH);
+			blitRegion(graphics, view, sampler, x + r - chord, bottom, chord, rowH);
+			blitRegion(graphics, view, sampler, x + w - r, bottom, chord, rowH);
 		}
 	}
 

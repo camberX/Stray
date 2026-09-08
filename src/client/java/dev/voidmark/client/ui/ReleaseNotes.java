@@ -8,6 +8,9 @@ public final class ReleaseNotes {
 	}
 
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.79", new String[]{
+			"Control feature rows sit a little higher, and the menu corners use a smoother frost clip and matching rim."
+		}),
 		new Entry("1.2.78", new String[]{
 			"Control feature pills use the same inset at the top as the bottom."
 		}),

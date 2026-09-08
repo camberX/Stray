@@ -114,24 +114,24 @@ public final class ControlChrome {
 
 	public static void window(GuiGraphicsExtractor graphics, float x, float y, float w, float h) {
 		GuiFrostBlur.blitWindow(graphics, x, y, w, h, WINDOW_R);
-		GuiDraw.rounded(graphics, x, y, w, h, WINDOW_R, windowFill());
+		GuiDraw.roundedFine(graphics, x, y, w, h, WINDOW_R, windowFill());
 		rim(graphics, x, y, w, h, WINDOW_R);
 	}
 
 	public static void card(GuiGraphicsExtractor graphics, float x, float y, float w, float h) {
-		GuiDraw.rounded(graphics, x, y, w, h, CARD_R, cardFill());
+		GuiDraw.roundedFine(graphics, x, y, w, h, CARD_R, cardFill());
 		rim(graphics, x, y, w, h, CARD_R);
 	}
 
 	public static void rail(GuiGraphicsExtractor graphics, float x, float y, float w, float h) {
 		float r = railRadius();
-		GuiDraw.rounded(graphics, x, y, w, h, r, railFill());
+		GuiDraw.roundedFine(graphics, x, y, w, h, r, railFill());
 		rim(graphics, x, y, w, h, r);
 	}
 
 	public static void search(GuiGraphicsExtractor graphics, float x, float y, float w, float h) {
 		float r = h * 0.5f;
-		GuiDraw.rounded(graphics, x, y, w, h, r, searchFill());
+		GuiDraw.roundedFine(graphics, x, y, w, h, r, searchFill());
 		rim(graphics, x, y, w, h, r);
 	}
 
@@ -142,7 +142,7 @@ public final class ControlChrome {
 	}
 
 	public static void sheet(GuiGraphicsExtractor graphics, float x, float y, float w, float h) {
-		GuiDraw.rounded(graphics, x, y, w, h, 16f, Theme.withAlpha(paneRgb(), 210));
+		GuiDraw.roundedFine(graphics, x, y, w, h, 16f, Theme.withAlpha(paneRgb(), 210));
 		rim(graphics, x, y, w, h, 16f);
 	}
 
