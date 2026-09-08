@@ -5,9 +5,7 @@
 #moj_import <minecraft:globals.glsl>
 
 uniform sampler2D Sampler0;
-#ifndef OUTLINE_PASS
 uniform sampler2D Sampler1;
-#endif
 
 in float sphericalVertexDistance;
 in float cylindricalVertexDistance;
@@ -46,12 +44,6 @@ void main() {
     if (tex.a < ALPHA_CUTOUT) {
         discard;
     }
-#endif
-
-#ifdef OUTLINE_PASS
-    vec4 outline = vec4(0.95, 0.98, 1.0, tex.a * vertexColor.a);
-    fragColor = apply_fog(outline, sphericalVertexDistance, cylindricalVertexDistance, FogEnvironmentalStart, FogEnvironmentalEnd, FogRenderDistanceStart, FogRenderDistanceEnd, FogColor);
-    return;
 #endif
 
     vec3 fill = ColorModulator.rgb;

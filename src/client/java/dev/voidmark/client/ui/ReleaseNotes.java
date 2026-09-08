@@ -8,6 +8,9 @@ public final class ReleaseNotes {
 	}
 
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.46", new String[]{
+			"The game no longer goes black after the Mojang logo. Ghost still has a separate outline around the held item."
+		}),
 		new Entry("1.2.45", new String[]{
 			"Ghost has a real outline around the held item. The outline slider changes that rim, not the fill color."
 		}),

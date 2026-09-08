@@ -26,7 +26,8 @@ import java.util.function.Function;
 public final class HeldItemShader {
 	private static final Identifier FILL_PIPELINE_ID = Voidmark.id("pipeline/held_item");
 	private static final Identifier OUTLINE_PIPELINE_ID = Voidmark.id("pipeline/held_item_outline");
-	private static final Identifier SHADER_ID = Voidmark.id("core/held_item");
+	private static final Identifier FILL_SHADER_ID = Voidmark.id("core/held_item");
+	private static final Identifier OUTLINE_SHADER_ID = Voidmark.id("core/held_item_outline");
 	private static RenderPipeline fillPipeline;
 	private static RenderPipeline outlinePipeline;
 	private static final Function<Identifier, RenderType> FILL_TYPES = Util.memoize(HeldItemShader::createFillType);
@@ -54,8 +55,8 @@ public final class HeldItemShader {
 		fillPipeline = RenderPipelines.register(
 			RenderPipeline.builder(RenderPipelines.ITEM_SNIPPET, RenderPipelines.GLOBALS_SNIPPET)
 				.withLocation(FILL_PIPELINE_ID)
-				.withVertexShader(SHADER_ID)
-				.withFragmentShader(SHADER_ID)
+				.withVertexShader(FILL_SHADER_ID)
+				.withFragmentShader(FILL_SHADER_ID)
 				.withSampler("Sampler1")
 				.withShaderDefine("ALPHA_CUTOUT", 0.1f)
 				.withColorTargetState(new ColorTargetState(BlendFunction.TRANSLUCENT))
@@ -64,10 +65,9 @@ public final class HeldItemShader {
 		outlinePipeline = RenderPipelines.register(
 			RenderPipeline.builder(RenderPipelines.ITEM_SNIPPET, RenderPipelines.GLOBALS_SNIPPET)
 				.withLocation(OUTLINE_PIPELINE_ID)
-				.withVertexShader(SHADER_ID)
-				.withFragmentShader(SHADER_ID)
+				.withVertexShader(OUTLINE_SHADER_ID)
+				.withFragmentShader(OUTLINE_SHADER_ID)
 				.withShaderDefine("ALPHA_CUTOUT", 0.1f)
-				.withShaderDefine("OUTLINE_PASS")
 				.withColorTargetState(new ColorTargetState(BlendFunction.TRANSLUCENT))
 				.withDepthStencilState(new DepthStencilState(CompareOp.LESS_THAN, false))
 				.build()

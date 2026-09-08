@@ -35,7 +35,6 @@
 		"PlayerTabOverlayMixin",
 		"PostPassMixin",
 		"ProjectionMixin",
-		"RenderPipelinesMixin",
 		"RenderTypeMixin",
 		"ScreenMixin",
 		"SkyRendererMixin",

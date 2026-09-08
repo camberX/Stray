@@ -56,7 +56,6 @@ import dev.voidmark.client.ui.UiFontPack;
 import dev.voidmark.client.ui.VoidmarkScreen;
 import dev.voidmark.client.visual.CustomCape;
 import dev.voidmark.client.visual.FakeBan;
-import dev.voidmark.client.visual.HeldItemShader;
 import dev.voidmark.client.visual.ShopCape;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback;
@@ -115,7 +114,6 @@ public final class VoidmarkClient implements ClientModInitializer {
 		NametagRenderer.init();
 		VanillaHud.init();
 		MediaSession.init();
-		HeldItemShader.ensureRegistered();
 
 		openGui = KeyMappingHelper.registerKeyMapping(new KeyMapping(
 			"key.voidmark.open",

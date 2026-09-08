@@ -20,13 +20,23 @@ out float sphericalVertexDistance;
 out float cylindricalVertexDistance;
 out vec4 vertexColor;
 out vec2 texCoord0;
-out vec3 viewNormal;
 
 void main() {
-    viewNormal = normalize(mat3(ModelViewMat) * Normal);
     sphericalVertexDistance = fog_spherical_distance(Position);
     cylindricalVertexDistance = fog_cylindrical_distance(Position);
-    vertexColor = minecraft_mix_light(Light0_Direction, Light1_Direction, Normal, Color) * sample_lightmap(Sampler2, UV2);
+    vertexColor = Color * sample_lightmap(Sampler2, UV2);
     texCoord0 = UV0;
-    gl_Position = ProjMat * ModelViewMat * vec4(Position, 1.0);
+
+    vec4 clip = ProjMat * ModelViewMat * vec4(Position, 1.0);
+    vec4 clipC = ProjMat * ModelViewMat * vec4(8.0, 8.0, 8.0, 1.0);
+    vec2 ndc = clip.xy / clip.w;
+    vec2 ndcC = clipC.xy / clipC.w;
+    vec2 dir = ndc - ndcC;
+    float len = length(dir);
+    vec2 radial = len > 1.0e-5 ? dir / len : vec2(0.0);
+    float pixels = mix(2.0, 10.0, clamp((ModelOffset.x - 0.15) / 1.35, 0.0, 1.0));
+    vec2 ndcPixel = vec2(2.0 / max(ScreenSize.x, 1.0), 2.0 / max(ScreenSize.y, 1.0));
+    ndc += radial * pixels * ndcPixel;
+    clip.xy = ndc * clip.w;
+    gl_Position = clip;
 }
