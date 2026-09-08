@@ -14,6 +14,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * After {@code /vm esp} sees one named mob, remember its type and armor so
@@ -31,7 +32,7 @@ public final class EspMobPrint {
 	};
 	private static final int MAX_PER_NEEDLE = 8;
 	private static final int MAX_TOTAL = 64;
-	private static final List<Saved> samples = new ArrayList<>();
+	private static final List<Saved> samples = new CopyOnWriteArrayList<>();
 
 	public static final class Saved {
 		public String needle = "";

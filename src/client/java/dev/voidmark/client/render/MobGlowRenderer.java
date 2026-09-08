@@ -24,6 +24,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
 
 /**
@@ -43,11 +44,12 @@ public final class MobGlowRenderer {
 	private static final Pattern STRIP = Pattern.compile("§.");
 	private static List<String> cachedIds;
 	private static Set<EntityType<?>> cachedTypes = Set.of();
-	private static int nameTick = Integer.MIN_VALUE;
-	private static String nameNeedle = "";
-	private static Set<Integer> nameIds = Set.of();
-	private static final Map<UUID, String> remembered = new HashMap<>();
-	private static final Map<Integer, String> packetLabels = new HashMap<>();
+	private static final Object NAME_LOCK = new Object();
+	private static volatile int nameTick = Integer.MIN_VALUE;
+	private static volatile String nameNeedle = "";
+	private static volatile Set<Integer> nameIds = Set.of();
+	private static final Map<UUID, String> remembered = new ConcurrentHashMap<>();
+	private static final Map<Integer, String> packetLabels = new ConcurrentHashMap<>();
 
 	private MobGlowRenderer() {
 	}
@@ -56,12 +58,14 @@ public final class MobGlowRenderer {
 	}
 
 	public static void reset() {
-		nameTick = Integer.MIN_VALUE;
-		nameNeedle = "";
-		nameIds = Set.of();
-		remembered.clear();
-		packetLabels.clear();
-		EspMobPrint.clear();
+		synchronized (NAME_LOCK) {
+			nameTick = Integer.MIN_VALUE;
+			nameNeedle = "";
+			nameIds = Set.of();
+			remembered.clear();
+			packetLabels.clear();
+			EspMobPrint.clear();
+		}
 	}
 
 	public static void onNamePacket(int entityId, String label) {
@@ -226,9 +230,15 @@ public final class MobGlowRenderer {
 		Minecraft client = Minecraft.getInstance();
 		int tick = client.player == null ? 0 : client.player.tickCount;
 		String key = String.join("\n", needles);
-		if (tick == nameTick && key.equals(nameNeedle)) {
-			return;
+		synchronized (NAME_LOCK) {
+			if (tick == nameTick && key.equals(nameNeedle)) {
+				return;
+			}
+			rebuildNameIds(client, needles, tick, key);
 		}
+	}
+
+	private static void rebuildNameIds(Minecraft client, java.util.List<String> needles, int tick, String key) {
 		nameTick = tick;
 		nameNeedle = key;
 		if (client.level == null || client.player == null) {

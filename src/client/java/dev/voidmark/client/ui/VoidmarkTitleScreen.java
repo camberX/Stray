@@ -260,7 +260,7 @@ public class VoidmarkTitleScreen extends Screen {
 		return FabricLoader.getInstance()
 			.getModContainer("voidmark")
 			.map(container -> container.getMetadata().getVersion().getFriendlyString())
-			.orElse("1.2.30");
+			.orElse("1.2.31");
 	}
 
 	private record Hit(float x, float y, float w, float h, Runnable click) {

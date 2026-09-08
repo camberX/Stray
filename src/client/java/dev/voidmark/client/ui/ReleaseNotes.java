@@ -8,6 +8,9 @@ public final class ReleaseNotes {
 	}
 
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.31", new String[]{
+			"ESP no longer crashes when nametag matching runs while another copy of the same mob is learned."
+		}),
 		new Entry("1.2.30", new String[]{
 			"Eisenmann now uses https://eisenmann.lol for updates, capes, and the download site."
 		}),
