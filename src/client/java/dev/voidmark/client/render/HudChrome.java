@@ -22,7 +22,7 @@ public final class HudChrome {
 	) {
 		Theme.refresh();
 		if (VoidmarkConfig.get().guiDesignControl()) {
-			ControlChrome.glass(graphics, x, y, w, h, Math.max(8f, radius), Theme.HUD_WINDOW);
+			ControlChrome.glass(graphics, x, y, w, h, Math.max(8f, radius), ControlChrome.hudFill());
 			if (VoidmarkConfig.get().hudStarfield && w >= 72f && h >= 22f) {
 				Starfield.drawHud(graphics, x, y, w, h, Math.max(8f, radius));
 			}

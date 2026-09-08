@@ -69,27 +69,31 @@ public class VoidmarkTitleScreen extends Screen {
 
 	@Override
 	public void extractBackground(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float delta) {
+		Theme.refresh();
+		int pane = ControlChrome.on() ? ControlChrome.paneRgb() : (Theme.WINDOW_SOLID & 0xFFFFFF);
 		int top;
 		int bot;
 		if (ControlChrome.on()) {
-			int pane = ControlChrome.paneRgb();
-			top = 0xFF000000 | Theme.mix(0x101218, pane, 0.28f);
-			bot = 0xFF000000 | Theme.mix(0x05070D, pane, 0.16f);
+			top = 0xFF000000 | Theme.mix(0x1C1E24, pane, 0.55f);
+			bot = 0xFF000000 | Theme.mix(0x0B0D12, pane, 0.38f);
 		} else {
 			top = 0xFF05070D;
-			bot = 0xFF000000 | Theme.mix(0x0B0E14, Theme.ACCENT & 0xFFFFFF, 0.06f);
+			bot = 0xFF000000 | Theme.mix(pane, Theme.ACCENT & 0xFFFFFF, 0.08f);
 		}
 		GuiDraw.fillGradient(graphics, 0, 0, width, height, top, bot);
 		try {
 			Starfield.drawSky(graphics, width, height);
 		} catch (Throwable ignored) {
 		}
-		GuiDraw.fill(graphics, 0, 0, width, 48, 0x66000000);
-		GuiDraw.fill(graphics, 0, height - 36, width, 36, 0x88000000);
+		if (!ControlChrome.on()) {
+			GuiDraw.fill(graphics, 0, 0, width, 48, 0x66000000);
+			GuiDraw.fill(graphics, 0, height - 36, width, 36, 0x88000000);
+		}
 	}
 
 	@Override
 	public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float delta) {
+		Theme.refresh();
 		tickAnim();
 		hits.clear();
 		Font font = minecraft.font;
@@ -100,10 +104,25 @@ public class VoidmarkTitleScreen extends Screen {
 		float stackH = BUTTON_H * 3 + BUTTON_GAP * 2 + 14 + BUTTON_H;
 		float colY = Mth.clamp((height - stackH) * 0.42f, 56, height - stackH - 48);
 
-		GuiDraw.title(graphics, font, "EISENMANN", colX, colY - 28, Anim.fade(Theme.TEXT, fade));
-		GuiDraw.rounded(graphics, colX, colY - 14, 18, 2, 1, Anim.fade(Theme.ACCENT, fade));
+		if (ControlChrome.on()) {
+			float pad = 22f;
+			ControlChrome.glass(
+				graphics,
+				colX - pad,
+				colY - 50,
+				colW + pad * 2,
+				stackH + 74,
+				ControlChrome.WINDOW_R,
+				Anim.fade(ControlChrome.windowFill(), fade)
+			);
+		}
+
+		int title = ControlChrome.on() ? ControlChrome.text() : Theme.TEXT;
+		int accent = Theme.ACCENT;
+		GuiDraw.title(graphics, font, "EISENMANN", colX, colY - 28, Anim.fade(title, fade));
+		GuiDraw.rounded(graphics, colX, colY - 14, 18, 2, 1, Anim.fade(accent, fade));
 		String ver = "v" + modVersion();
-		GuiDraw.small(graphics, font, ver, colX + 22, colY - 16, Anim.fade(Theme.ACCENT, fade));
+		GuiDraw.small(graphics, font, ver, colX + 22, colY - 16, Anim.fade(accent, fade));
 
 		float y = colY;
 		y = button(graphics, font, mouseX, mouseY, colX, y, colW, "Singleplayer", true, fade, this::openSingleplayer);
@@ -153,11 +172,14 @@ public class VoidmarkTitleScreen extends Screen {
 		int fill = Theme.withAlpha(Theme.mix(Theme.CARD, Theme.CARD_HOVER, hover), (Theme.CARD >>> 24) & 0xFF);
 		int outline = hover > 0.55f ? Theme.ACCENT : Theme.LINE;
 		if (ControlChrome.on()) {
-			ControlChrome.glass(graphics, x, y, w, BUTTON_H, 14f, Anim.fade(fill, fade));
+			int pill = hover > 0.4f ? Theme.CARD_HOVER : ControlChrome.cardFill();
+			ControlChrome.glass(graphics, x, y, w, BUTTON_H, 14f, Anim.fade(pill, fade));
 		} else {
 			GuiDraw.panel(graphics, x, y, w, BUTTON_H, 7, Anim.fade(fill, fade), Anim.fade(outline, fade), enabled ? Theme.ACCENT : 0);
 		}
-		int text = enabled ? Theme.TEXT : Theme.MUTED;
+		int text = enabled
+			? (ControlChrome.on() ? ControlChrome.cardText() : Theme.TEXT)
+			: (ControlChrome.on() ? ControlChrome.cardMuted() : Theme.MUTED);
 		GuiDraw.menu(graphics, font, label, x + 14, GuiDraw.middle(y, BUTTON_H), Anim.fade(text, fade));
 		if (enabled) {
 			hits.add(new Hit(x, y, w, BUTTON_H, action));
@@ -272,7 +294,7 @@ public class VoidmarkTitleScreen extends Screen {
 		return FabricLoader.getInstance()
 			.getModContainer("voidmark")
 			.map(container -> container.getMetadata().getVersion().getFriendlyString())
-			.orElse("1.2.80");
+			.orElse("1.2.81");
 	}
 
 	private record Hit(float x, float y, float w, float h, Runnable click) {

@@ -8,6 +8,9 @@ public final class ReleaseNotes {
 	}
 
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.81", new String[]{
+			"The custom title screen and HUD panes use the same glass, pills, and accent as the GUI theme you pick."
+		}),
 		new Entry("1.2.80", new String[]{
 			"HUD panes, the title screen, and vanilla menus follow the GUI style you pick."
 		}),
