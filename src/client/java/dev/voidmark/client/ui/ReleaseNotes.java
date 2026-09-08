@@ -8,6 +8,9 @@ public final class ReleaseNotes {
 	}
 
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.56", new String[]{
+			"Ghost no longer crashes when the silhouette is drawn. The outline uniforms are written before the render pass opens."
+		}),
 		new Entry("1.2.55", new String[]{
 			"Ghost's outline slider changes how thick the silhouette is. The fill slider tints the item instead of fading it, and the smoke is easier to see."
 		}),

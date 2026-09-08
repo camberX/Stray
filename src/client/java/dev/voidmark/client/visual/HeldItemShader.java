@@ -166,6 +166,13 @@ public final class HeldItemShader {
 			return;
 		}
 		ensureSilhouettePipeline();
+		// Mapping a UBO is illegal while a RenderPass is open.
+		var transforms = RenderSystem.getDynamicUniforms().writeTransform(
+			new Matrix4f(),
+			outlineColorModulator(),
+			modelOffset(),
+			new Matrix4f()
+		);
 		try (RenderPass pass = RenderSystem.getDevice().createCommandEncoder().createRenderPass(
 			() -> "voidmark held item silhouette",
 			main.getColorTextureView(),
@@ -173,15 +180,7 @@ public final class HeldItemShader {
 		)) {
 			pass.setPipeline(silhouettePipeline);
 			RenderSystem.bindDefaultUniforms(pass);
-			pass.setUniform(
-				"DynamicTransforms",
-				RenderSystem.getDynamicUniforms().writeTransform(
-					new Matrix4f(),
-					outlineColorModulator(),
-					modelOffset(),
-					new Matrix4f()
-				)
-			);
+			pass.setUniform("DynamicTransforms", transforms);
 			pass.bindTexture(
 				"InSampler",
 				maskTarget.getColorTextureView(),
