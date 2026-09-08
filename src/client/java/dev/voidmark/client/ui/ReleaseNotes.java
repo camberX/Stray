@@ -8,6 +8,9 @@ public final class ReleaseNotes {
 	}
 
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.45", new String[]{
+			"Ghost has a real outline around the held item. The outline slider changes that rim, not the fill color."
+		}),
 		new Entry("1.2.44", new String[]{
 			"Ghost outlines the held item as a whole instead of tracing each texture pixel."
 		}),

@@ -2,7 +2,9 @@ package dev.voidmark.client.visual;
 
 import com.mojang.blaze3d.pipeline.BlendFunction;
 import com.mojang.blaze3d.pipeline.ColorTargetState;
+import com.mojang.blaze3d.pipeline.DepthStencilState;
 import com.mojang.blaze3d.pipeline.RenderPipeline;
+import com.mojang.blaze3d.platform.CompareOp;
 import dev.voidmark.Voidmark;
 import dev.voidmark.client.config.VoidmarkConfig;
 import net.minecraft.client.renderer.RenderPipelines;
@@ -22,10 +24,13 @@ import org.joml.Vector4fc;
 import java.util.function.Function;
 
 public final class HeldItemShader {
-	private static final Identifier PIPELINE_ID = Voidmark.id("pipeline/held_item");
+	private static final Identifier FILL_PIPELINE_ID = Voidmark.id("pipeline/held_item");
+	private static final Identifier OUTLINE_PIPELINE_ID = Voidmark.id("pipeline/held_item_outline");
 	private static final Identifier SHADER_ID = Voidmark.id("core/held_item");
-	private static RenderPipeline pipeline;
-	private static final Function<Identifier, RenderType> TYPES = Util.memoize(HeldItemShader::createType);
+	private static RenderPipeline fillPipeline;
+	private static RenderPipeline outlinePipeline;
+	private static final Function<Identifier, RenderType> FILL_TYPES = Util.memoize(HeldItemShader::createFillType);
+	private static final Function<Identifier, RenderType> OUTLINE_TYPES = Util.memoize(HeldItemShader::createOutlineType);
 
 	private HeldItemShader() {
 	}
@@ -38,27 +43,33 @@ public final class HeldItemShader {
 		return active() && context != null && context.firstPerson();
 	}
 
-	public static RenderPipeline pipeline() {
-		ensureRegistered();
-		return pipeline;
-	}
-
 	public static boolean isPipeline(RenderPipeline value) {
-		return value != null && PIPELINE_ID.equals(value.getLocation());
+		return value != null && (FILL_PIPELINE_ID.equals(value.getLocation()) || OUTLINE_PIPELINE_ID.equals(value.getLocation()));
 	}
 
 	public static synchronized void ensureRegistered() {
-		if (pipeline != null) {
+		if (fillPipeline != null) {
 			return;
 		}
-		pipeline = RenderPipelines.register(
+		fillPipeline = RenderPipelines.register(
 			RenderPipeline.builder(RenderPipelines.ITEM_SNIPPET, RenderPipelines.GLOBALS_SNIPPET)
-				.withLocation(PIPELINE_ID)
+				.withLocation(FILL_PIPELINE_ID)
 				.withVertexShader(SHADER_ID)
 				.withFragmentShader(SHADER_ID)
 				.withSampler("Sampler1")
 				.withShaderDefine("ALPHA_CUTOUT", 0.1f)
 				.withColorTargetState(new ColorTargetState(BlendFunction.TRANSLUCENT))
+				.build()
+		);
+		outlinePipeline = RenderPipelines.register(
+			RenderPipeline.builder(RenderPipelines.ITEM_SNIPPET, RenderPipelines.GLOBALS_SNIPPET)
+				.withLocation(OUTLINE_PIPELINE_ID)
+				.withVertexShader(SHADER_ID)
+				.withFragmentShader(SHADER_ID)
+				.withShaderDefine("ALPHA_CUTOUT", 0.1f)
+				.withShaderDefine("OUTLINE_PASS")
+				.withColorTargetState(new ColorTargetState(BlendFunction.TRANSLUCENT))
+				.withDepthStencilState(new DepthStencilState(CompareOp.LESS_THAN, false))
 				.build()
 		);
 	}
@@ -67,16 +78,15 @@ public final class HeldItemShader {
 		if (original == null || isPipeline(original.pipeline())) {
 			return original;
 		}
+		return FILL_TYPES.apply(atlas(original, quads));
+	}
+
+	public static RenderType outlineType(BakedQuad quad) {
 		Identifier atlas = TextureAtlas.LOCATION_ITEMS;
-		if (quads != null) {
-			for (BakedQuad quad : quads) {
-				if (quad.materialInfo().itemRenderType() == original) {
-					atlas = quad.materialInfo().sprite().atlasLocation();
-					break;
-				}
-			}
+		if (quad != null) {
+			atlas = quad.materialInfo().sprite().atlasLocation();
 		}
-		return TYPES.apply(atlas);
+		return OUTLINE_TYPES.apply(atlas);
 	}
 
 	public static Vector4fc colorModulator() {
@@ -99,16 +109,40 @@ public final class HeldItemShader {
 		);
 	}
 
-	private static RenderType createType(Identifier atlas) {
+	private static Identifier atlas(RenderType original, Iterable<BakedQuad> quads) {
+		Identifier atlas = TextureAtlas.LOCATION_ITEMS;
+		if (quads != null) {
+			for (BakedQuad quad : quads) {
+				if (quad.materialInfo().itemRenderType() == original) {
+					return quad.materialInfo().sprite().atlasLocation();
+				}
+			}
+		}
+		return atlas;
+	}
+
+	private static RenderType createFillType(Identifier atlas) {
 		ensureRegistered();
 		return RenderType.create(
 			"voidmark_held_item",
-			RenderSetup.builder(pipeline())
+			RenderSetup.builder(fillPipeline)
 				.withTexture("Sampler0", atlas)
 				.withTexture("Sampler1", ItemFeatureRenderer.ENCHANTED_GLINT_ITEM)
 				.useLightmap()
 				.affectsCrumbling()
-				.sortOnUpload()
+				.setOutline(RenderSetup.OutlineProperty.AFFECTS_OUTLINE)
+				.createRenderSetup()
+		);
+	}
+
+	private static RenderType createOutlineType(Identifier atlas) {
+		ensureRegistered();
+		return RenderType.create(
+			"voidmark_held_item_outline",
+			RenderSetup.builder(outlinePipeline)
+				.withTexture("Sampler0", atlas)
+				.useLightmap()
+				.affectsCrumbling()
 				.setOutline(RenderSetup.OutlineProperty.AFFECTS_OUTLINE)
 				.createRenderSetup()
 		);

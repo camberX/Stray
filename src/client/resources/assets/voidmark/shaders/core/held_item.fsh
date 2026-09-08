@@ -5,7 +5,9 @@
 #moj_import <minecraft:globals.glsl>
 
 uniform sampler2D Sampler0;
+#ifndef OUTLINE_PASS
 uniform sampler2D Sampler1;
+#endif
 
 in float sphericalVertexDistance;
 in float cylindricalVertexDistance;
@@ -46,15 +48,15 @@ void main() {
     }
 #endif
 
+#ifdef OUTLINE_PASS
+    vec4 outline = vec4(0.95, 0.98, 1.0, tex.a * vertexColor.a);
+    fragColor = apply_fog(outline, sphericalVertexDistance, cylindricalVertexDistance, FogEnvironmentalStart, FogEnvironmentalEnd, FogRenderDistanceStart, FogRenderDistanceEnd, FogColor);
+    return;
+#endif
+
     vec3 fill = ColorModulator.rgb;
     float fillOpacity = ColorModulator.a;
-    float outlineStrength = max(ModelOffset.x, 0.0);
     float smokeSpeed = max(ModelOffset.y, 0.05);
-
-    vec3 n = normalize(viewNormal);
-    float facing = abs(n.z);
-    float outline = smoothstep(0.62, 0.18, facing) * outlineStrength;
-    outline = clamp(outline, 0.0, 1.0);
 
     float t = GameTime * 420.0 * smokeSpeed;
     vec2 flow = texCoord0 * 6.5;
@@ -77,11 +79,7 @@ void main() {
     body = mix(body, mix(fill, vec3(1.0), 0.35), glint * 0.72);
     body *= mix(0.92, 1.08, vertexColor.r);
 
-    vec3 rim = vec3(0.95, 0.98, 1.0);
-    vec3 color = mix(body, rim, outline);
-    float alpha = tex.a * mix(fillOpacity * (0.28 + 0.42 * smoke + 0.22 * glint), 0.95, outline);
-    alpha *= vertexColor.a;
-
-    vec4 outColor = vec4(color, clamp(alpha, 0.0, 1.0));
+    float alpha = tex.a * fillOpacity * (0.28 + 0.42 * smoke + 0.22 * glint) * vertexColor.a;
+    vec4 outColor = vec4(body, clamp(alpha, 0.0, 1.0));
     fragColor = apply_fog(outColor, sphericalVertexDistance, cylindricalVertexDistance, FogEnvironmentalStart, FogEnvironmentalEnd, FogRenderDistanceStart, FogRenderDistanceEnd, FogColor);
 }
