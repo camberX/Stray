@@ -49,6 +49,7 @@ public final class GuiFrostBlur {
 	private static float captureRadius;
 	private static TextureTarget frost;
 	private static TextureTarget backup;
+	private static TextureTarget sharp;
 	private static boolean haveFrost;
 	private static float lastFrost = -1f;
 	private static RenderPipeline copyPipeline;
@@ -124,7 +125,10 @@ public final class GuiFrostBlur {
 			return;
 		}
 		ensure(main.width, main.height);
-		if (frost == null || backup == null || frost.getColorTexture() == null || backup.getColorTexture() == null || frost.getColorTextureView() == null) {
+		if (frost == null || backup == null || sharp == null
+			|| frost.getColorTexture() == null || backup.getColorTexture() == null
+			|| frost.getColorTextureView() == null || sharp.getColorTextureView() == null
+			|| backup.getColorTextureView() == null) {
 			haveFrost = false;
 			return;
 		}
@@ -141,6 +145,7 @@ public final class GuiFrostBlur {
 				capturing = false;
 			}
 			flatten(main.getColorTextureView(), frost.getColorTextureView());
+			flatten(backup.getColorTextureView(), sharp.getColorTextureView());
 			if (backup.getColorTexture() != null && main.getColorTexture() != null) {
 				copy(backup.getColorTexture(), main.getColorTexture(), main.width, main.height);
 			}
@@ -153,11 +158,12 @@ public final class GuiFrostBlur {
 	}
 
 	public static void blitWindow(GuiGraphicsExtractor graphics, float x, float y, float w, float h, float radius) {
-		if (!haveFrost || frost == null) {
+		if (!haveFrost || frost == null || sharp == null) {
 			return;
 		}
 		GpuTextureView view = frost.getColorTextureView();
-		if (view == null) {
+		GpuTextureView clear = sharp.getColorTextureView();
+		if (view == null || clear == null) {
 			return;
 		}
 		GpuSampler sampler = RenderSystem.getSamplerCache().getClampToEdge(FilterMode.LINEAR);
@@ -165,6 +171,44 @@ public final class GuiFrostBlur {
 		blitRegion(graphics, view, sampler, x + r, y, w - 2f * r, h);
 		blitRegion(graphics, view, sampler, x, y + r, r, h - 2f * r);
 		blitRegion(graphics, view, sampler, x + w - r, y + r, r, h - 2f * r);
+		blitRegion(graphics, view, sampler, x, y, r, r);
+		blitRegion(graphics, view, sampler, x + w - r, y, r, r);
+		blitRegion(graphics, view, sampler, x, y + h - r, r, r);
+		blitRegion(graphics, view, sampler, x + w - r, y + h - r, r, r);
+		coverEars(graphics, clear, sampler, x, y, w, h, r);
+	}
+
+	private static void coverEars(
+		GuiGraphicsExtractor graphics,
+		GpuTextureView sharpView,
+		GpuSampler sampler,
+		float x,
+		float y,
+		float w,
+		float h,
+		float r
+	) {
+		if (r < 0.75f) {
+			return;
+		}
+		int rows = Math.max(10, Math.round(r));
+		float rowH = r / rows;
+		for (int i = 0; i < rows; i++) {
+			float ly = i * rowH;
+			float dy = r - (ly + rowH * 0.5f);
+			float chord = (float) Math.sqrt(Math.max(0f, r * r - dy * dy));
+			float ear = r - chord;
+			if (ear <= 0.02f) {
+				continue;
+			}
+			float top = y + ly;
+			float bottom = y + h - ly - rowH;
+			float strip = rowH + 0.2f;
+			blitRegion(graphics, sharpView, sampler, x, top, ear, strip);
+			blitRegion(graphics, sharpView, sampler, x + w - ear, top, ear, strip);
+			blitRegion(graphics, sharpView, sampler, x, bottom, ear, strip);
+			blitRegion(graphics, sharpView, sampler, x + w - ear, bottom, ear, strip);
+		}
 	}
 
 	private static void blitRegion(
@@ -239,9 +283,14 @@ public final class GuiFrostBlur {
 			backup.destroyBuffers();
 			backup = null;
 		}
+		if (sharp != null) {
+			sharp.destroyBuffers();
+			sharp = null;
+		}
 		haveFrost = false;
 		frost = new TextureTarget("voidmark control frost", width, height, false);
 		backup = new TextureTarget("voidmark control backup", width, height, false);
+		sharp = new TextureTarget("voidmark control sharp", width, height, false);
 	}
 
 	private static void copy(GpuTexture src, GpuTexture dest, int width, int height) {

@@ -84,12 +84,12 @@ public final class ControlChrome {
 		return cardFill();
 	}
 
-	public static float railLeftRadius() {
+	public static float railRadius() {
 		return Math.max(8f, WINDOW_R - RAIL_INSET);
 	}
 
-	public static float railRightRadius() {
-		return RAIL_W * 0.5f;
+	public static int selectedFill() {
+		return windowFill();
 	}
 
 	public static int pillFill() {
@@ -101,7 +101,7 @@ public final class ControlChrome {
 	}
 
 	public static int searchFill() {
-		return Theme.withAlpha(Theme.mix(paneRgb(), 0xFFFFFF, 0.22f), Math.round(Math.min(0.48f, paneOpacity() + 0.06f) * 255f));
+		return Theme.withAlpha(Theme.mix(paneRgb(), 0x000000, 0.22f), Math.round(Math.min(0.70f, paneOpacity() + 0.16f) * 255f));
 	}
 
 	public static int clipFill() {
@@ -115,22 +115,35 @@ public final class ControlChrome {
 	public static void window(GuiGraphicsExtractor graphics, float x, float y, float w, float h) {
 		GuiFrostBlur.blitWindow(graphics, x, y, w, h, WINDOW_R);
 		GuiDraw.rounded(graphics, x, y, w, h, WINDOW_R, windowFill());
+		rim(graphics, x, y, w, h, WINDOW_R);
 	}
 
 	public static void card(GuiGraphicsExtractor graphics, float x, float y, float w, float h) {
 		GuiDraw.rounded(graphics, x, y, w, h, CARD_R, cardFill());
+		rim(graphics, x, y, w, h, CARD_R);
 	}
 
 	public static void rail(GuiGraphicsExtractor graphics, float x, float y, float w, float h) {
-		GuiDraw.roundedSides(graphics, x, y, w, h, railLeftRadius(), railRightRadius(), railFill());
+		float r = railRadius();
+		GuiDraw.rounded(graphics, x, y, w, h, r, railFill());
+		rim(graphics, x, y, w, h, r);
 	}
 
 	public static void search(GuiGraphicsExtractor graphics, float x, float y, float w, float h) {
-		GuiDraw.rounded(graphics, x, y, w, h, h * 0.5f, searchFill());
+		float r = h * 0.5f;
+		GuiDraw.rounded(graphics, x, y, w, h, r, searchFill());
+		rim(graphics, x, y, w, h, r);
+	}
+
+	public static void rim(GuiGraphicsExtractor graphics, float x, float y, float w, float h, float radius) {
+		int hi = Theme.withAlpha(0xFFFFFF, darkText() ? 58 : 40);
+		int lo = Theme.withAlpha(0xFFFFFF, darkText() ? 16 : 11);
+		GuiDraw.gradientRim(graphics, x, y, w, h, radius, hi, lo);
 	}
 
 	public static void sheet(GuiGraphicsExtractor graphics, float x, float y, float w, float h) {
 		GuiDraw.rounded(graphics, x, y, w, h, 16f, Theme.withAlpha(paneRgb(), 210));
+		rim(graphics, x, y, w, h, 16f);
 	}
 
 	public static void face(GuiGraphicsExtractor graphics, float x, float y, float size, PlayerSkin skin) {

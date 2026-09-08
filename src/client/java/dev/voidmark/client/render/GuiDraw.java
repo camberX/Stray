@@ -410,6 +410,49 @@ public final class GuiDraw {
 		roundedOutline(graphics, x, y, w, h, radius, outline, 0.5f);
 	}
 
+	public static void gradientRim(
+		GuiGraphicsExtractor graphics,
+		float x,
+		float y,
+		float w,
+		float h,
+		float radius,
+		int high,
+		int low
+	) {
+		if (w <= 0 || h <= 0 || ((high | low) & 0xFF000000) == 0) {
+			return;
+		}
+		float t = 0.7f;
+		float r = Math.min(radius, Math.min(w, h) / 2f);
+		int left = mixArgb(high, low, 0.28f);
+		int right = mixArgb(high, low, 0.62f);
+		if (r < 0.75f) {
+			fill(graphics, x, y, w, t, high);
+			fill(graphics, x, y + h - t, w, t, low);
+			fill(graphics, x, y, t, h, left);
+			fill(graphics, x + w - t, y, t, h, right);
+			return;
+		}
+		fill(graphics, x + r, y, w - 2f * r, t, high);
+		fill(graphics, x + r, y + h - t, w - 2f * r, t, low);
+		fill(graphics, x, y + r, t, h - 2f * r, left);
+		fill(graphics, x + w - t, y + r, t, h - 2f * r, right);
+		cornerArc(graphics, x + r, y + r, r, t, Math.PI, Math.PI * 1.5, high);
+		cornerArc(graphics, x + w - r, y + r, r, t, Math.PI * 1.5, Math.PI * 2.0, mixArgb(high, low, 0.45f));
+		cornerArc(graphics, x + w - r, y + h - r, r, t, 0.0, Math.PI * 0.5, low);
+		cornerArc(graphics, x + r, y + h - r, r, t, Math.PI * 0.5, Math.PI, mixArgb(high, low, 0.55f));
+	}
+
+	private static int mixArgb(int from, int to, float t) {
+		t = Math.max(0f, Math.min(1f, t));
+		int a = Math.round(((from >>> 24) & 0xFF) + ((((to >>> 24) & 0xFF) - ((from >>> 24) & 0xFF)) * t));
+		int r = Math.round(((from >> 16) & 0xFF) + ((((to >> 16) & 0xFF) - ((from >> 16) & 0xFF)) * t));
+		int g = Math.round(((from >> 8) & 0xFF) + ((((to >> 8) & 0xFF) - ((from >> 8) & 0xFF)) * t));
+		int b = Math.round((from & 0xFF) + (((to & 0xFF) - (from & 0xFF)) * t));
+		return (a << 24) | (r << 16) | (g << 8) | b;
+	}
+
 	public static void roundedOutline(GuiGraphicsExtractor graphics, float x, float y, float w, float h, float radius, int color, float thickness) {
 		if ((color & 0xFF000000) == 0 || w <= 0 || h <= 0) {
 			return;
