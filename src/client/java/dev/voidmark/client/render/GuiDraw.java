@@ -254,6 +254,10 @@ public final class GuiDraw {
 		paintRoundedEars(graphics, x, y, w, h, radius, earColor);
 	}
 
+	public static void roundedBlitEars(GuiGraphicsExtractor graphics, float x, float y, float w, float h, float radius, int earColor) {
+		paintRoundedEars(graphics, x, y, w, h, radius, earColor);
+	}
+
 	private static void paintRoundedEars(
 		GuiGraphicsExtractor graphics,
 		float x,
@@ -391,14 +395,14 @@ public final class GuiDraw {
 		double a1,
 		int color
 	) {
-		int steps = Math.max(10, Math.round(radius * 4f));
+		int steps = Math.max(14, Math.round(radius * 6f));
 		float mid = radius - thickness * 0.5f;
-		float size = thickness;
+		float size = Math.max(0.55f, thickness * 0.55f);
 		for (int i = 0; i <= steps; i++) {
 			double a = a0 + (a1 - a0) * (i / (double) steps);
 			float px = cx + (float) Math.cos(a) * mid;
 			float py = cy + (float) Math.sin(a) * mid;
-			fill(graphics, px - size * 0.5f, py - size * 0.5f, size, size, color);
+			circle(graphics, px, py, size, color);
 		}
 	}
 

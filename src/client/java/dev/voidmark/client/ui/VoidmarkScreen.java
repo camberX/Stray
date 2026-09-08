@@ -355,11 +355,11 @@ public class VoidmarkScreen extends Screen {
 
 	@Override
 	public void extractBackground(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float delta) {
-		if (minecraft.level != null) {
-			extractBlurredBackground(graphics);
-		}
 		if (controlCenter()) {
-			GuiDraw.fill(graphics, 0, 0, width, height, minecraft.level != null ? 0x52000000 : 0xB3101014);
+			graphics.blurBeforeThisStratum();
+			GuiDraw.fill(graphics, 0, 0, width, height, 0x66101014);
+		} else if (minecraft.level != null) {
+			extractBlurredBackground(graphics);
 		}
 	}
 
@@ -374,7 +374,7 @@ public class VoidmarkScreen extends Screen {
 		Font font = minecraft.font;
 		layout();
 
-		int dim = Anim.fade(controlCenter() ? 0x2A000000 : 0x14000000, appear);
+		int dim = Anim.fade(controlCenter() ? 0x1A000000 : 0x14000000, appear);
 		GuiDraw.fill(graphics, 0, 0, width, height, dim);
 
 		float scale = (0.92f + 0.08f * appear) * VoidmarkConfig.normalizeMenuScale(VoidmarkConfig.get().menuScale);
@@ -461,7 +461,7 @@ public class VoidmarkScreen extends Screen {
 	}
 
 	private float menuH() {
-		return controlCenter() ? 324f : MENU_H;
+		return controlCenter() ? 340f : MENU_H;
 	}
 
 	private float sidebarW() {
@@ -473,7 +473,19 @@ public class VoidmarkScreen extends Screen {
 	}
 
 	private float pad() {
-		return controlCenter() ? 12f : PAD;
+		return controlCenter() ? 14f : PAD;
+	}
+
+	private float cardPad() {
+		return controlCenter() ? 14f : CARD_PAD;
+	}
+
+	private float cardHead() {
+		return controlCenter() ? 28f : CARD_HEAD;
+	}
+
+	private float rowH() {
+		return controlCenter() ? 20f : ROW;
 	}
 
 	private void layout() {
@@ -639,7 +651,7 @@ public class VoidmarkScreen extends Screen {
 		float namesH = Math.max(cardHeight(2), windowY + windowH - PAD - namesTop);
 		String namesTitle = nametags.isEmpty() ? "Nametag ESP" : "Nametag ESP  " + nametags.size();
 		float namesY = featureCard(graphics, font, left, namesTop, col, namesH, namesTitle);
-		drawNametagEspList(graphics, font, ix, namesY, iw, namesH - CARD_HEAD - 4, mouseX, mouseY, true);
+		drawNametagEspList(graphics, font, ix, namesY, iw, namesH - cardHead() - 4, mouseX, mouseY, true);
 
 		List<MobCatalog.Entry> entries = MobCatalog.filtered(mobQuery);
 		float listH = windowY + windowH - PAD - top;
@@ -662,7 +674,7 @@ public class VoidmarkScreen extends Screen {
 		mobListX = rx;
 		mobListY = searchY + 18;
 		mobListW = iw;
-		mobListH = Math.max(16, listH - CARD_HEAD - 22);
+		mobListH = Math.max(16, listH - cardHead() - 22);
 		float contentH = entries.size() * ROW;
 		float maxScroll = Math.max(0f, contentH - mobListH);
 		if (ensureMobVisible) {
@@ -743,7 +755,7 @@ public class VoidmarkScreen extends Screen {
 		previewX = ix;
 		previewY = top + CARD_HEAD;
 		previewW = iw;
-		previewH = Math.max(48, modelH - CARD_HEAD - CARD_PAD);
+		previewH = Math.max(48, modelH - cardHead() - cardPad());
 		boolean previewHover = GuiDraw.hovered(mouseX, mouseY, previewX, previewY, previewW, previewH);
 		PlayerPreview.Drawn drawn = PlayerPreview.draw(
 			graphics,
@@ -1033,13 +1045,14 @@ public class VoidmarkScreen extends Screen {
 				continue;
 			}
 			boolean on = tab == value;
-			float tw = GuiDraw.menuWidth(font, value.label) + 14;
+			float textW = GuiDraw.menuWidth(font, value.label);
+			float tw = textW + 16;
 			GuiDraw.menu(graphics, font, value.label, tabX, GuiDraw.middle(y, 22), on ? ControlChrome.TEXT : ControlChrome.MUTED);
 			if (on) {
-				GuiDraw.rounded(graphics, tabX + tw * 0.5f - 8, y + 20, 16, 2, 1, ControlChrome.TEXT);
+				GuiDraw.rounded(graphics, tabX, y + 19, textW, 1.4f, 0.7f, ControlChrome.TEXT);
 			}
 			hits.add(new Hit(tabX, y, tw, 22, () -> selectTab(value)));
-			tabX += tw + 8;
+			tabX += tw + 6;
 		}
 
 		float face = 22;
@@ -1086,11 +1099,7 @@ public class VoidmarkScreen extends Screen {
 		GuiDraw.icon(graphics, font, MenuFont.SAVE, saveX + 4, GuiDraw.middle(y, 22), ControlChrome.TEXT);
 		hits.add(new Hit(saveX, y, 22, 22, () -> VoidmarkConfig.get().save()));
 
-		PlayerSkin skin = playerSkin();
-		GuiDraw.circle(graphics, faceX + face * 0.5f, y + 11, 12, 0x55FFFFFF);
-		if (skin != null && skin.body() != null) {
-			PlayerFaceExtractor.extractRenderState(graphics, skin, Math.round(faceX + 1), Math.round(y + 1), Math.round(face - 2));
-		}
+		ControlChrome.face(graphics, faceX, y, face, playerSkin());
 		hits.add(new Hit(faceX, y, face, 22, () -> selectTab(Tab.PLAYER)));
 	}
 
@@ -1592,7 +1601,7 @@ public class VoidmarkScreen extends Screen {
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Mining HUD", config.miningHudEnabled, v -> config.miningHudEnabled = v, Feature.MINING);
 				toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Titanium ESP", config.titaniumEsp, v -> config.titaniumEsp = v, Feature.TITANIUM);
 
-				y = featureCard(graphics, font, right, top, col, CARD_HEAD + 54 + CARD_PAD, "Live");
+				y = featureCard(graphics, font, right, top, col, cardHead() + 54 + cardPad(), "Live");
 				var snap = MiningTracker.snapshot();
 				GuiDraw.menu(graphics, font, snap.ability(), rx, y + 2, Theme.TEXT);
 				GuiDraw.menu(graphics, font, snap.abilityReady() ? "Ready" : snap.abilityLabel(), rx, y + 14, snap.abilityReady() ? Theme.ACCENT : Theme.MUTED);
@@ -1639,16 +1648,16 @@ public class VoidmarkScreen extends Screen {
 		}
 	}
 
-	private static float innerX(float cardX) {
-		return cardX + CARD_PAD;
+	private float innerX(float cardX) {
+		return cardX + cardPad();
 	}
 
-	private static float innerW(float cardW) {
-		return cardW - CARD_PAD * 2;
+	private float innerW(float cardW) {
+		return cardW - cardPad() * 2;
 	}
 
-	private static float cardHeight(int rows) {
-		return CARD_HEAD + rows * ROW + CARD_PAD;
+	private float cardHeight(int rows) {
+		return cardHead() + rows * rowH() + cardPad();
 	}
 
 	private void drawNametagEspList(
@@ -1730,8 +1739,8 @@ public class VoidmarkScreen extends Screen {
 	private float featureCard(GuiGraphicsExtractor graphics, Font font, float x, float y, float w, float h, String title) {
 		if (controlCenter()) {
 			ControlChrome.card(graphics, x, y, w, h);
-			GuiDraw.menu(graphics, font, title, x + CARD_PAD, y + 6, ControlChrome.TEXT);
-			return y + CARD_HEAD;
+			GuiDraw.menu(graphics, font, title, x + cardPad(), y + 8, ControlChrome.TEXT);
+			return y + cardHead();
 		}
 		GuiDraw.panel(graphics, x, y, w, h, Math.min(14f, h / 2f), Theme.CARD, Theme.LINE);
 		GuiDraw.small(graphics, font, title, x + CARD_PAD, y + 5, Theme.HEADER);
@@ -1744,23 +1753,24 @@ public class VoidmarkScreen extends Screen {
 	}
 
 	private float toggle(GuiGraphicsExtractor graphics, Font font, float x, float y, float w, int mouseX, int mouseY, String label, boolean value, Consumer<Boolean> setter, Feature feature) {
-		boolean hovered = GuiDraw.hovered(mouseX, mouseY, x, y, w, ROW);
+		float row = rowH();
+		boolean hovered = GuiDraw.hovered(mouseX, mouseY, x, y, w, row);
 		float hover = anim("hov-" + label, hovered ? 1f : 0f);
 		if (hover > 0.02f) {
-			GuiDraw.rounded(graphics, x - 3, y, w + 6, ROW, 6, Anim.fade(0x08FFFFFF, hover));
+			GuiDraw.rounded(graphics, x - 3, y, w + 6, row, 6, Anim.fade(0x08FFFFFF, hover));
 		}
-		float labelY = GuiDraw.middle(y, ROW);
+		float labelY = GuiDraw.middle(y, row);
 		GuiDraw.menu(graphics, font, label, x + 1, labelY, Theme.TEXT);
 
 		float t = anim("tog-" + label, value ? 1f : 0f);
 		float trackW = controlCenter() ? 28 : 22;
 		float trackH = controlCenter() ? 16 : 11;
 		float tx = x + w - trackW;
-		float ty = y + (ROW - trackH) / 2f;
+		float ty = y + (row - trackH) / 2f;
 		if (feature != null) {
 			float cogX = tx - COG_W - 2;
 			boolean cogOn = featureOpen && featureId == feature;
-			boolean cogHover = GuiDraw.hovered(mouseX, mouseY, cogX, y, COG_W, ROW);
+			boolean cogHover = GuiDraw.hovered(mouseX, mouseY, cogX, y, COG_W, row);
 			GuiDraw.icon(graphics, font, MenuFont.SETTINGS, cogX + 1, labelY, cogOn || cogHover ? Theme.ACCENT : Theme.MUTED);
 			hits.add(new Hit(cogX, y, COG_W, ROW, () -> openFeature(feature)));
 		}
@@ -1775,21 +1785,21 @@ public class VoidmarkScreen extends Screen {
 		float hitW = feature == null ? w : w - COG_W - 2;
 		float hitX = feature == null ? x : x;
 		if (feature != null) {
-			hits.add(new Hit(x, y, tx - COG_W - 4 - x, ROW, () -> {
+			hits.add(new Hit(x, y, tx - COG_W - 4 - x, row, () -> {
 				setter.accept(!value);
 				UnloadState.markDirty();
 			}));
-			hits.add(new Hit(tx, y, trackW, ROW, () -> {
+			hits.add(new Hit(tx, y, trackW, row, () -> {
 				setter.accept(!value);
 				UnloadState.markDirty();
 			}));
 		} else {
-			hits.add(new Hit(hitX, y, hitW, ROW, () -> {
+			hits.add(new Hit(hitX, y, hitW, row, () -> {
 				setter.accept(!value);
 				UnloadState.markDirty();
 			}));
 		}
-		return y + ROW;
+		return y + row;
 	}
 
 	private void openFeature(Feature feature) {
@@ -1936,16 +1946,17 @@ public class VoidmarkScreen extends Screen {
 	}
 
 	private float cycle(GuiGraphicsExtractor graphics, Font font, float x, float y, float w, int mouseX, int mouseY, String label, String value, Runnable next) {
-		boolean hovered = GuiDraw.hovered(mouseX, mouseY, x, y, w, ROW);
+		float row = rowH();
+		boolean hovered = GuiDraw.hovered(mouseX, mouseY, x, y, w, row);
 		if (hovered) {
-			GuiDraw.rounded(graphics, x - 3, y, w + 6, ROW, 6, 0x08FFFFFF);
+			GuiDraw.rounded(graphics, x - 3, y, w + 6, row, 6, 0x08FFFFFF);
 		}
-		float labelY = GuiDraw.middle(y, ROW);
+		float labelY = GuiDraw.middle(y, row);
 		GuiDraw.menu(graphics, font, label, x + 1, labelY, Theme.TEXT);
 		int valueWidth = GuiDraw.menuWidth(font, value);
 		GuiDraw.menu(graphics, font, value, x + w - valueWidth, labelY, controlCenter() ? ControlChrome.BLUE : Theme.ACCENT);
-		hits.add(new Hit(x, y, w, ROW, next));
-		return y + ROW;
+		hits.add(new Hit(x, y, w, row, next));
+		return y + row;
 	}
 
 	private float chipRow(GuiGraphicsExtractor graphics, Font font, float x, float y, float w, int mouseX, int mouseY, String[] labels, int selected, java.util.function.IntConsumer pick) {
@@ -1985,13 +1996,14 @@ public class VoidmarkScreen extends Screen {
 	}
 
 	private float slider(GuiGraphicsExtractor graphics, Font font, float x, float y, float w, String label, String valueText, float progress, Consumer<Float> setter) {
-		float labelY = GuiDraw.middle(y, ROW);
+		float row = rowH();
+		float labelY = GuiDraw.middle(y, row);
 		GuiDraw.menu(graphics, font, label, x + 1, labelY, Theme.TEXT);
 		int valueWidth = GuiDraw.menuWidth(font, valueText);
 		GuiDraw.menu(graphics, font, valueText, x + w - valueWidth, labelY, Theme.TEXT);
 		float barX = x + GuiDraw.menuWidth(font, label) + 8;
 		float barW = Math.max(24, w - GuiDraw.menuWidth(font, label) - valueWidth - 16);
-		float barY = y + 7;
+		float barY = y + row * 0.45f;
 		float t = Mth.clamp(progress, 0f, 1f);
 		if (controlCenter()) {
 			ControlChrome.slider(graphics, barX, barY - 1, barW, 5, t);
@@ -2000,30 +2012,31 @@ public class VoidmarkScreen extends Screen {
 			GuiDraw.pill(graphics, barX, barY, Math.max(3, barW * t), 3, Theme.ACCENT);
 			GuiDraw.circle(graphics, barX + barW * t, barY + 1.5f, 3.6f, Theme.ACCENT);
 		}
-		hits.add(new Hit(barX - 2, y, barW + 4, ROW, mx -> setter.accept(Mth.clamp((float) ((mx - barX) / barW), 0f, 1f)), true));
-		return y + ROW;
+		hits.add(new Hit(barX - 2, y, barW + 4, row, mx -> setter.accept(Mth.clamp((float) ((mx - barX) / barW), 0f, 1f)), true));
+		return y + row;
 	}
 
 	private float colorRow(GuiGraphicsExtractor graphics, Font font, float x, float y, float w, int mouseX, int mouseY, String label, int rgb, PickerTarget target) {
-		float labelY = GuiDraw.middle(y, ROW);
+		float row = rowH();
+		float labelY = GuiDraw.middle(y, row);
 		GuiDraw.menu(graphics, font, label, x + 1, labelY, Theme.TEXT);
 		float pw = 18;
 		float ph = 10;
 		float px = x + w - pw;
-		float py = y + (ROW - ph) / 2f;
-		boolean hover = GuiDraw.hovered(mouseX, mouseY, px - 1, y, pw + 2, ROW);
+		float py = y + (row - ph) / 2f;
+		boolean hover = GuiDraw.hovered(mouseX, mouseY, px - 1, y, pw + 2, row);
 		GuiDraw.rounded(graphics, px - 1, py - 1, pw + 2, ph + 2, 3, hover ? Theme.ACCENT : Theme.LINE);
 		GuiDraw.rounded(graphics, px, py, pw, ph, 2, 0xFF000000 | rgb);
-		hits.add(new Hit(px - 2, y, pw + 4, ROW, () -> {
+		hits.add(new Hit(px - 2, y, pw + 4, row, () -> {
 			if (target == PickerTarget.SKY) {
 				VoidmarkConfig.get().matchSkyToWorld = false;
 			}
 			if (target == PickerTarget.FOG) {
 				VoidmarkConfig.get().matchFogToWorld = false;
 			}
-			openPicker(target, rgb, px - PICKER_W + pw, y + ROW + 2);
+			openPicker(target, rgb, px - PICKER_W + pw, y + row + 2);
 		}));
-		return y + ROW;
+		return y + row;
 	}
 
 	private float readout(GuiGraphicsExtractor graphics, Font font, float x, float y, float w, String label, boolean on) {
@@ -2152,7 +2165,7 @@ public class VoidmarkScreen extends Screen {
 		return FabricLoader.getInstance()
 			.getModContainer("voidmark")
 			.map(container -> container.getMetadata().getVersion().getFriendlyString())
-			.orElse("1.2.62");
+			.orElse("1.2.63");
 	}
 
 	@Override

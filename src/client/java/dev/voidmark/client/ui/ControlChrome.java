@@ -2,21 +2,23 @@ package dev.voidmark.client.ui;
 
 import dev.voidmark.client.render.GuiDraw;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.gui.components.PlayerFaceExtractor;
+import net.minecraft.world.entity.player.PlayerSkin;
 
 /**
  * Apple Control Center / visionOS glass tokens for the optional click-GUI design.
  */
 public final class ControlChrome {
 	public static final int BLUE = 0xFF0A84FF;
-	public static final int WINDOW = 0x99111114;
-	public static final int WINDOW_TOP = 0x3D2A2A2E;
-	public static final int CARD = 0x73202024;
-	public static final int CARD_HI = 0x8A2A2A30;
-	public static final int STROKE = 0x3DFFFFFF;
-	public static final int STROKE_SOFT = 0x22FFFFFF;
-	public static final int RAIL = 0x8C1A1A1E;
-	public static final int RAIL_PILL = 0x66FFFFFF;
-	public static final int SEARCH = 0xB3141418;
+	public static final int WINDOW = 0xC41C1C20;
+	public static final int CARD = 0x8A2A2A30;
+	public static final int CARD_HI = 0xA2323238;
+	public static final int STROKE = 0x1AFFFFFF;
+	public static final int STROKE_SOFT = 0x14FFFFFF;
+	public static final int RAIL = 0xB21C1C20;
+	public static final int RAIL_PILL = 0x59FFFFFF;
+	public static final int SEARCH = 0xC2141418;
+	public static final int FACE_CLIP = 0xD41C1C20;
 	public static final int TRACK = 0x4DFFFFFF;
 	public static final int KNOB = 0xFFFFFFFF;
 	public static final int TEXT = 0xFFF5F5F7;
@@ -32,29 +34,34 @@ public final class ControlChrome {
 
 	public static void window(GuiGraphicsExtractor graphics, float x, float y, float w, float h) {
 		GuiDraw.rounded(graphics, x, y, w, h, WINDOW_R, WINDOW);
-		GuiDraw.rounded(graphics, x, y, w, Math.min(72f, h * 0.28f), WINDOW_R, WINDOW_TOP);
-		GuiDraw.roundedOutline(graphics, x, y, w, h, WINDOW_R, STROKE, 1.1f);
-		GuiDraw.roundedOutline(graphics, x + 1.2f, y + 1.2f, w - 2.4f, h - 2.4f, WINDOW_R - 1.2f, STROKE_SOFT, 0.6f);
+		GuiDraw.roundedOutline(graphics, x, y, w, h, WINDOW_R, STROKE, 0.5f);
 	}
 
 	public static void card(GuiGraphicsExtractor graphics, float x, float y, float w, float h) {
 		GuiDraw.rounded(graphics, x, y, w, h, CARD_R, CARD);
-		GuiDraw.roundedOutline(graphics, x, y, w, h, CARD_R, STROKE, 0.9f);
+		GuiDraw.roundedOutline(graphics, x, y, w, h, CARD_R, STROKE_SOFT, 0.5f);
 	}
 
 	public static void rail(GuiGraphicsExtractor graphics, float x, float y, float w, float h) {
 		GuiDraw.rounded(graphics, x, y, w, h, RAIL_R, RAIL);
-		GuiDraw.roundedOutline(graphics, x, y, w, h, RAIL_R, STROKE, 0.9f);
+		GuiDraw.roundedOutline(graphics, x, y, w, h, RAIL_R, STROKE_SOFT, 0.5f);
 	}
 
 	public static void search(GuiGraphicsExtractor graphics, float x, float y, float w, float h) {
 		GuiDraw.rounded(graphics, x, y, w, h, h * 0.5f, SEARCH);
-		GuiDraw.roundedOutline(graphics, x, y, w, h, h * 0.5f, STROKE_SOFT, 0.7f);
 	}
 
 	public static void sheet(GuiGraphicsExtractor graphics, float x, float y, float w, float h) {
-		GuiDraw.rounded(graphics, x, y, w, h, 16f, 0xD116161A);
-		GuiDraw.roundedOutline(graphics, x, y, w, h, 16f, STROKE, 0.9f);
+		GuiDraw.rounded(graphics, x, y, w, h, 16f, 0xE016161A);
+		GuiDraw.roundedOutline(graphics, x, y, w, h, 16f, STROKE_SOFT, 0.5f);
+	}
+
+	public static void face(GuiGraphicsExtractor graphics, float x, float y, float size, PlayerSkin skin) {
+		GuiDraw.circle(graphics, x + size * 0.5f, y + size * 0.5f, size * 0.5f, 0x33FFFFFF);
+		if (skin != null && skin.body() != null) {
+			PlayerFaceExtractor.extractRenderState(graphics, skin, Math.round(x), Math.round(y), Math.round(size));
+			GuiDraw.roundedBlitEars(graphics, x, y, size, size, size * 0.5f, FACE_CLIP);
+		}
 	}
 
 	public static void toggle(GuiGraphicsExtractor graphics, float x, float y, float w, float h, float t) {

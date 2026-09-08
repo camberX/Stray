@@ -8,6 +8,9 @@ public final class ReleaseNotes {
 	}
 
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.63", new String[]{
+			"Control GUI frost is heavier. The menu outline is softer, tab underlines sit under the text, cards have more padding, and the player head is round."
+		}),
 		new Entry("1.2.62", new String[]{
 			"Theme can switch the click GUI between Eisenmann and a frosted Control Center layout with iOS toggles and a blurred background."
 		}),
