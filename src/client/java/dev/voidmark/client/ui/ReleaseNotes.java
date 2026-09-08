@@ -8,6 +8,11 @@ public final class ReleaseNotes {
 	}
 
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.83", new String[]{
+			"Held item shader outline now costs a fraction of before: the full-screen 625-sample search became two exact separable passes bounded by the outline radius. Same pixels, far fewer reads.",
+			"Control frost no longer copies, blurs, and restores the whole frame; it blurs straight into its own target and, on the HUD, only under the panes that are actually drawn.",
+			"ESP name matching, ESP occlusion raycasts, nametag occlusion, titanium ESP meshing, chest ESP sorting, and shop cape skins are cached per frame or per tick instead of recomputed for every entity."
+		}),
 		new Entry("1.2.82", new String[]{
 			"Control HUD panes use the menu glass color and the same frost strength as the click GUI."
 		}),
