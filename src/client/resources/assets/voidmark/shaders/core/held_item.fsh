@@ -89,27 +89,21 @@ void main() {
         return;
     }
 
-    float t = GameTime * 380.0 * (0.50 + amount * 0.50);
-    float ang = 0.17453292;
-    float ca = cos(ang);
-    float sa = sin(ang);
-    vec2 glintUv = mat2(ca, -sa, sa, ca) * (gl_FragCoord.xy * 0.010);
-    glintUv += vec2(-t * 0.55, t * 0.22);
-    float smokeGlint = pow(clamp(texture(Sampler1, glintUv).r, 0.0, 1.0), 2.4);
-
-    vec2 smokeUv = gl_FragCoord.xy * 0.020 + vec2(t * 2.2, -t * 3.4);
-    float n1 = fbm(smokeUv);
-    float n2 = fbm(smokeUv * 1.55 + vec2(-t * 1.6, t * 1.1) + n1 * 0.70);
-    float ridge = 1.0 - abs(n2 * 2.0 - 1.0);
-    float filaments = pow(smoothstep(0.78, 0.98, ridge), 2.8);
-    float sheets = pow(smoothstep(0.62, 0.90, n1), 3.2) * 0.18;
-    float wisps = clamp(filaments + sheets, 0.0, 1.0);
-    float spark = smokeGlint * mix(0.15, 1.0, filaments);
-
-    vec3 wispColor = mix(fill * 1.08, vec3(1.0), 0.38 + spark * 0.50);
-    float strength = mix(0.28, 0.78, (amount - 0.10) / 1.40);
-    vec3 body = mix(tinted, wispColor, wisps * strength);
-    body += wispColor * spark * mix(0.12, 0.40, amount / 1.50);
+    float t = GameTime * 140.0 * (0.55 + amount * 0.45);
+    vec2 flowA = gl_FragCoord.xy * 0.012 + vec2(t * 1.10, -t * 1.65);
+    vec2 flowB = gl_FragCoord.xy * 0.018 + vec2(-t * 0.80, t * 1.20);
+    float warp = fbm(flowA);
+    float cloud = fbm(flowA + vec2(warp * 0.90, -warp * 0.55));
+    float haze = fbm(flowB + vec2(warp * 0.35, cloud * 0.25));
+    float smoke = smoothstep(0.22, 0.80, cloud * 0.70 + haze * 0.40);
+    smoke = smoke * smoke * (3.0 - 2.0 * smoke);
+    float bloom = smoothstep(0.55, 0.88, cloud);
+    float strength = mix(0.24, 0.68, (amount - 0.10) / 1.40);
+    vec3 smokeColor = mix(fill * 0.78, fill * 1.18, haze);
+    smokeColor = mix(smokeColor, vec3(1.0), bloom * 0.22);
+    smokeColor += fill * glint * bloom * 0.12;
+    vec3 body = mix(tinted, smokeColor, smoke * strength);
+    body += smokeColor * bloom * mix(0.04, 0.16, amount / 1.50);
 
     fragColor = vec4(body, tex.a);
 }

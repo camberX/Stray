@@ -8,6 +8,9 @@ public final class ReleaseNotes {
 	}
 
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.61", new String[]{
+			"Ghost smoke is soft drifting clouds again, not thin scribble lines on the item."
+		}),
 		new Entry("1.2.60", new String[]{
 			"The game no longer goes black after the last Ghost hand change. Style can be Smoke or a drifting starry sky on the item and hand."
 		}),
