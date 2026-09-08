@@ -90,6 +90,7 @@ public final class VoidmarkConfig {
 	public boolean hitmarkerEnabled = false;
 	public boolean triggerbotEnabled = false;
 	public boolean triggerbotPlayers = false;
+	public float triggerbotHumanize = 0.50f;
 	public float hitmarkerScale = 1.00f;
 	public float hitsoundVolume = 0.80f;
 	public float hitsoundPitch = 1.00f;
@@ -469,6 +470,9 @@ public final class VoidmarkConfig {
 				if (!json.has("triggerbotPlayers")) {
 					loaded.triggerbotPlayers = false;
 				}
+				loaded.triggerbotHumanize = json.has("triggerbotHumanize")
+					? clamp(loaded.triggerbotHumanize, 0f, 1f)
+					: 0.50f;
 				loaded.hitmarkerScale = json.has("hitmarkerScale")
 					? clampHudScale(loaded.hitmarkerScale)
 					: 1.00f;

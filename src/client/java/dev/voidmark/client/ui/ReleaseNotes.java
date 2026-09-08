@@ -8,6 +8,9 @@ public final class ReleaseNotes {
 	}
 
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.39", new String[]{
+			"Triggerbot has a Humanize slider: a short reaction wait when a target appears, a little extra delay after hits, and occasional one-tick hesitation."
+		}),
 		new Entry("1.2.38", new String[]{
 			"Triggerbot no longer hits armor stands or mannequins."
 		}),
