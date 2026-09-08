@@ -179,6 +179,8 @@ public final class VoidmarkConfig {
 	public boolean menuStarfield = false;
 	public boolean hudStarfield = false;
 	public String guiDesign = "eisenmann";
+	public int controlPaneRgb = 0xFFFFFF;
+	public float controlPaneOpacity = 0.30f;
 	public String uiFont = "";
 	public boolean mobGlowEnabled = false;
 	public boolean mobGlowThroughWalls = true;
@@ -380,6 +382,12 @@ public final class VoidmarkConfig {
 				loaded.nametagStyle = normalizeNametagStyle(loaded.nametagStyle);
 				loaded.menuScale = normalizeMenuScale(loaded.menuScale);
 				loaded.guiDesign = normalizeGuiDesign(loaded.guiDesign);
+				if (loaded.controlPaneRgb == 0) {
+					loaded.controlPaneRgb = 0xFFFFFF;
+				}
+				loaded.controlPaneOpacity = json.has("controlPaneOpacity")
+					? clamp(loaded.controlPaneOpacity, 0.12f, 0.78f)
+					: 0.30f;
 				if (loaded.mobGlowName == null) {
 					loaded.mobGlowName = "";
 				}
@@ -709,6 +717,7 @@ public final class VoidmarkConfig {
 			case "MENUS", "LOADOUTS", "WARDROBE" -> "MENUS";
 			case "STATUS" -> "STATUS";
 			case "PLAYER", "NICK", "CAPE" -> "PLAYER";
+			case "SETTINGS", "THEME" -> "SETTINGS";
 			default -> "WORLD";
 		};
 	}

@@ -8,6 +8,9 @@ public final class ReleaseNotes {
 	}
 
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.64", new String[]{
+			"Control GUI is lighter and much more frosted. Feature gears open a Theme-style page instead of a dropdown, the player head is a real circle that opens capes, the HUD editor sits in the header, and you can pick the glass color."
+		}),
 		new Entry("1.2.63", new String[]{
 			"Control GUI frost is heavier. The menu outline is softer, tab underlines sit under the text, cards have more padding, and the player head is round."
 		}),

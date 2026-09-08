@@ -1,8 +1,10 @@
 package dev.voidmark.client.ui;
 
+import dev.voidmark.client.config.VoidmarkConfig;
 import dev.voidmark.client.render.GuiDraw;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
-import net.minecraft.client.gui.components.PlayerFaceExtractor;
+import net.minecraft.core.ClientAsset;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.player.PlayerSkin;
 
 /**
@@ -10,58 +12,105 @@ import net.minecraft.world.entity.player.PlayerSkin;
  */
 public final class ControlChrome {
 	public static final int BLUE = 0xFF0A84FF;
-	public static final int WINDOW = 0xC41C1C20;
-	public static final int CARD = 0x8A2A2A30;
-	public static final int CARD_HI = 0xA2323238;
-	public static final int STROKE = 0x1AFFFFFF;
-	public static final int STROKE_SOFT = 0x14FFFFFF;
-	public static final int RAIL = 0xB21C1C20;
-	public static final int RAIL_PILL = 0x59FFFFFF;
-	public static final int SEARCH = 0xC2141418;
-	public static final int FACE_CLIP = 0xD41C1C20;
-	public static final int TRACK = 0x4DFFFFFF;
+	public static final int TEXT = 0xFF1C1C1E;
+	public static final int MUTED = 0x991C1C1E;
+	public static final int LIGHT_TEXT = 0xFFF5F5F7;
+	public static final int LIGHT_MUTED = 0x99EBEBF0;
+	public static final int TRACK = 0x59FFFFFF;
 	public static final int KNOB = 0xFFFFFFFF;
-	public static final int TEXT = 0xFFF5F5F7;
-	public static final int MUTED = 0x99EBEBF0;
-	public static final int POWER = 0x66FFFFFF;
 	public static final float WINDOW_R = 24f;
 	public static final float CARD_R = 18f;
 	public static final float RAIL_R = 22f;
-	public static final float PILL_R = 16f;
 
 	private ControlChrome() {
 	}
 
+	public static int paneRgb() {
+		int rgb = VoidmarkConfig.get().controlPaneRgb & 0xFFFFFF;
+		return rgb == 0 ? 0xFFFFFF : rgb;
+	}
+
+	public static float paneOpacity() {
+		return VoidmarkConfig.clamp(VoidmarkConfig.get().controlPaneOpacity, 0.12f, 0.78f);
+	}
+
+	public static boolean darkText() {
+		int rgb = paneRgb();
+		int r = (rgb >> 16) & 0xFF;
+		int g = (rgb >> 8) & 0xFF;
+		int b = rgb & 0xFF;
+		return (r * 0.30f + g * 0.59f + b * 0.11f) > 140f;
+	}
+
+	public static int text() {
+		return darkText() ? TEXT : LIGHT_TEXT;
+	}
+
+	public static int muted() {
+		return darkText() ? MUTED : LIGHT_MUTED;
+	}
+
+	public static int windowFill() {
+		return Theme.withAlpha(paneRgb(), Math.round(paneOpacity() * 255f));
+	}
+
+	public static int cardFill() {
+		return Theme.withAlpha(Theme.mix(paneRgb(), 0xFFFFFF, 0.16f), Math.round(paneOpacity() * 0.62f * 255f));
+	}
+
+	public static int railFill() {
+		return Theme.withAlpha(Theme.mix(paneRgb(), 0xFFFFFF, 0.08f), Math.round(paneOpacity() * 0.78f * 255f));
+	}
+
+	public static int searchFill() {
+		return Theme.withAlpha(Theme.mix(paneRgb(), 0x000000, 0.10f), Math.round(Math.min(0.72f, paneOpacity() + 0.12f) * 255f));
+	}
+
+	public static int clipFill() {
+		return Theme.withAlpha(paneRgb(), Math.min(255, Math.round(paneOpacity() * 255f) + 48));
+	}
+
+	public static int frostVeil() {
+		return Theme.withAlpha(Theme.mix(paneRgb(), 0xFFFFFF, 0.72f), 168);
+	}
+
 	public static void window(GuiGraphicsExtractor graphics, float x, float y, float w, float h) {
-		GuiDraw.rounded(graphics, x, y, w, h, WINDOW_R, WINDOW);
-		GuiDraw.roundedOutline(graphics, x, y, w, h, WINDOW_R, STROKE, 0.5f);
+		GuiDraw.rounded(graphics, x, y, w, h, WINDOW_R, windowFill());
 	}
 
 	public static void card(GuiGraphicsExtractor graphics, float x, float y, float w, float h) {
-		GuiDraw.rounded(graphics, x, y, w, h, CARD_R, CARD);
-		GuiDraw.roundedOutline(graphics, x, y, w, h, CARD_R, STROKE_SOFT, 0.5f);
+		GuiDraw.rounded(graphics, x, y, w, h, CARD_R, cardFill());
 	}
 
 	public static void rail(GuiGraphicsExtractor graphics, float x, float y, float w, float h) {
-		GuiDraw.rounded(graphics, x, y, w, h, RAIL_R, RAIL);
-		GuiDraw.roundedOutline(graphics, x, y, w, h, RAIL_R, STROKE_SOFT, 0.5f);
+		GuiDraw.rounded(graphics, x, y, w, h, RAIL_R, railFill());
 	}
 
 	public static void search(GuiGraphicsExtractor graphics, float x, float y, float w, float h) {
-		GuiDraw.rounded(graphics, x, y, w, h, h * 0.5f, SEARCH);
+		GuiDraw.rounded(graphics, x, y, w, h, h * 0.5f, searchFill());
 	}
 
 	public static void sheet(GuiGraphicsExtractor graphics, float x, float y, float w, float h) {
-		GuiDraw.rounded(graphics, x, y, w, h, 16f, 0xE016161A);
-		GuiDraw.roundedOutline(graphics, x, y, w, h, 16f, STROKE_SOFT, 0.5f);
+		GuiDraw.rounded(graphics, x, y, w, h, 16f, Theme.withAlpha(paneRgb(), 210));
 	}
 
 	public static void face(GuiGraphicsExtractor graphics, float x, float y, float size, PlayerSkin skin) {
-		GuiDraw.circle(graphics, x + size * 0.5f, y + size * 0.5f, size * 0.5f, 0x33FFFFFF);
-		if (skin != null && skin.body() != null) {
-			PlayerFaceExtractor.extractRenderState(graphics, skin, Math.round(x), Math.round(y), Math.round(size));
-			GuiDraw.roundedBlitEars(graphics, x, y, size, size, size * 0.5f, FACE_CLIP);
+		int ear = windowFill();
+		GuiDraw.circle(graphics, x + size * 0.5f, y + size * 0.5f, size * 0.5f + 0.8f, ear);
+		Identifier id = faceTexture(skin);
+		if (id != null) {
+			GuiDraw.blit(graphics, id, x, y, size, size, 8f, 8f, 8, 8, 64, 64);
+			GuiDraw.blit(graphics, id, x, y, size, size, 40f, 8f, 8, 8, 64, 64);
 		}
+		GuiDraw.roundedBlitEars(graphics, x - 1f, y - 1f, size + 2f, size + 2f, size * 0.5f + 1f, ear);
+	}
+
+	private static Identifier faceTexture(PlayerSkin skin) {
+		if (skin == null || skin.body() == null) {
+			return null;
+		}
+		ClientAsset.Texture body = skin.body();
+		return body.texturePath();
 	}
 
 	public static void toggle(GuiGraphicsExtractor graphics, float x, float y, float w, float h, float t) {
