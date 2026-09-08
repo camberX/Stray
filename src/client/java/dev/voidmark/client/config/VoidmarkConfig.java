@@ -88,6 +88,8 @@ public final class VoidmarkConfig {
 	public boolean hitsoundMelee = false;
 	public boolean hitsoundArrows = false;
 	public boolean hitmarkerEnabled = false;
+	public boolean triggerbotEnabled = false;
+	public boolean triggerbotPlayers = false;
 	public float hitmarkerScale = 1.00f;
 	public float hitsoundVolume = 0.80f;
 	public float hitsoundPitch = 1.00f;
@@ -461,6 +463,12 @@ public final class VoidmarkConfig {
 				if (!json.has("hitmarkerEnabled")) {
 					loaded.hitmarkerEnabled = false;
 				}
+				if (!json.has("triggerbotEnabled")) {
+					loaded.triggerbotEnabled = false;
+				}
+				if (!json.has("triggerbotPlayers")) {
+					loaded.triggerbotPlayers = false;
+				}
 				loaded.hitmarkerScale = json.has("hitmarkerScale")
 					? clampHudScale(loaded.hitmarkerScale)
 					: 1.00f;
@@ -618,7 +626,7 @@ public final class VoidmarkConfig {
 		String name = tab.trim().toUpperCase(java.util.Locale.ROOT);
 		return switch (name) {
 			case "WORLD", "VIEW", "FOG", "CAMERA" -> "WORLD";
-			case "COMBAT", "HITSOUND" -> "COMBAT";
+			case "COMBAT", "HITSOUND", "TRIGGERBOT" -> "COMBAT";
 			case "ESP", "MOBS" -> "ESP";
 			case "OVERLAY", "DISPLAY", "INVENTORY" -> "OVERLAY";
 			case "BARS", "HUD" -> "BARS";

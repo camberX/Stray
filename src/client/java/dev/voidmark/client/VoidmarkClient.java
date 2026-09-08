@@ -6,6 +6,7 @@ import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import dev.voidmark.Voidmark;
 import dev.voidmark.client.combat.Hitmarker;
 import dev.voidmark.client.combat.Hitsound;
+import dev.voidmark.client.combat.Triggerbot;
 import dev.voidmark.client.farming.FarmKeys;
 import dev.voidmark.client.farming.FarmingHud;
 import dev.voidmark.client.farming.JacobContestTracker;
@@ -183,6 +184,7 @@ public final class VoidmarkClient implements ClientModInitializer {
 		ClientTickEvents.START_CLIENT_TICK.register(client -> {
 			FarmKeys.tick(client);
 			ChestAimer.tick(client);
+			Triggerbot.tick(client);
 			if (itemAppearancesLoaded) {
 				return;
 			}
@@ -251,6 +253,7 @@ public final class VoidmarkClient implements ClientModInitializer {
 			MobGlowRenderer.reset();
 			Hitsound.reset();
 			Hitmarker.reset();
+			Triggerbot.reset();
 			PickupLogRenderer.clear();
 			JacobContestTracker.reset();
 			FakeBan.onJoin();
@@ -262,6 +265,7 @@ public final class VoidmarkClient implements ClientModInitializer {
 			SkyblockLocation.reset();
 			Hitsound.reset();
 			Hitmarker.reset();
+			Triggerbot.reset();
 			PickupLogRenderer.clear();
 			JacobContestTracker.reset();
 			EnderNodeTracker.get().clear();

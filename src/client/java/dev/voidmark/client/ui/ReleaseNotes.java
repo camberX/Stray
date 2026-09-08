@@ -8,6 +8,9 @@ public final class ReleaseNotes {
 	}
 
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.32", new String[]{
+			"Combat Triggerbot hits the crosshair entity with a vanilla attack when it is in reach. Players stay off unless you turn that toggle on."
+		}),
 		new Entry("1.2.31", new String[]{
 			"ESP no longer crashes when nametag matching runs while another copy of the same mob is learned."
 		}),

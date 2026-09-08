@@ -154,6 +154,8 @@ public class VoidmarkScreen extends Screen {
 		new SearchEntry("Hitmarker scale", Tab.COMBAT, "Combat"),
 		new SearchEntry("Hit volume", Tab.COMBAT, "Combat"),
 		new SearchEntry("Hit pitch", Tab.COMBAT, "Combat"),
+		new SearchEntry("Triggerbot", Tab.COMBAT, "Combat"),
+		new SearchEntry("Triggerbot players", Tab.COMBAT, "Combat"),
 		new SearchEntry("Mob glow", Tab.ESP, "ESP"),
 		new SearchEntry("Nametag ESP", Tab.ESP, "ESP"),
 		new SearchEntry("Block outline", Tab.ESP, "ESP"),
@@ -1309,6 +1311,10 @@ public class VoidmarkScreen extends Screen {
 				y = slider(graphics, font, rx, y, iw, "Volume", Math.round(config.hitsoundVolume * 100) + "%", config.hitsoundVolume, v -> config.hitsoundVolume = VoidmarkConfig.clamp(v, 0f, 1f));
 				y = slider(graphics, font, rx, y, iw, "Pitch", String.format(Locale.ROOT, "%.2f", config.hitsoundPitch), (config.hitsoundPitch - 0.50f) / 1.00f, v -> config.hitsoundPitch = VoidmarkConfig.clamp(0.50f + v, 0.50f, 1.50f));
 				slider(graphics, font, rx, y, iw, "Marker", Math.round(config.hitmarkerScale * 100) + "%", (config.hitmarkerScale - 0.50f) / 1.50f, v -> config.hitmarkerScale = VoidmarkConfig.clampHudScale(0.50f + v * 1.50f));
+
+				y = featureCard(graphics, font, right, top + cardHeight(3) + 8, col, cardHeight(2), "Triggerbot");
+				y = toggle(graphics, font, rx, y, iw, mouseX, mouseY, "Enable", config.triggerbotEnabled, v -> config.triggerbotEnabled = v);
+				toggle(graphics, font, rx, y, iw, mouseX, mouseY, "Players", config.triggerbotPlayers, v -> config.triggerbotPlayers = v);
 			}
 			case ESP -> drawMobsTab(graphics, font, mouseX, mouseY);
 			case OVERLAY -> {
@@ -1906,7 +1912,7 @@ public class VoidmarkScreen extends Screen {
 		return FabricLoader.getInstance()
 			.getModContainer("voidmark")
 			.map(container -> container.getMetadata().getVersion().getFriendlyString())
-			.orElse("1.2.31");
+			.orElse("1.2.32");
 	}
 
 	@Override
