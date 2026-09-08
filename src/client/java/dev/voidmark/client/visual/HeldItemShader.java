@@ -19,12 +19,15 @@ import com.mojang.blaze3d.vertex.VertexFormat;
 import dev.voidmark.Voidmark;
 import dev.voidmark.client.config.VoidmarkConfig;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.model.geom.ModelPart;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderPipelines;
+import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.client.renderer.feature.ItemFeatureRenderer;
 import net.minecraft.client.renderer.rendertype.OutputTarget;
 import net.minecraft.client.renderer.rendertype.RenderSetup;
 import net.minecraft.client.renderer.rendertype.RenderType;
+import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.client.renderer.texture.TextureAtlas;
 import net.minecraft.client.resources.model.geometry.BakedQuad;
 import net.minecraft.resources.Identifier;
@@ -88,6 +91,7 @@ public final class HeldItemShader {
 				.withSampler("Sampler1")
 				.withShaderDefine("ALPHA_CUTOUT", 0.1f)
 				.withColorTargetState(ColorTargetState.DEFAULT)
+				.withCull(false)
 				.build()
 		);
 		maskPipeline = RenderPipelines.register(
@@ -99,6 +103,7 @@ public final class HeldItemShader {
 				.withShaderDefine("ALPHA_CUTOUT", 0.1f)
 				.withShaderDefine("COVERAGE_MASK")
 				.withColorTargetState(ColorTargetState.DEFAULT)
+				.withCull(false)
 				.build()
 		);
 	}
@@ -108,6 +113,21 @@ public final class HeldItemShader {
 			return original;
 		}
 		return FILL_TYPES.apply(atlas(original, quads));
+	}
+
+	public static RenderType wrapArm(RenderType original, Identifier skin) {
+		if (!active() || original == null || isPipeline(original.pipeline()) || skin == null) {
+			return original;
+		}
+		return FILL_TYPES.apply(skin);
+	}
+
+	public static void submitArmMask(SubmitNodeCollector collector, PoseStack pose, int light, Identifier skin, ModelPart part) {
+		if (!maskThisFrame || collector == null || pose == null || skin == null || part == null) {
+			return;
+		}
+		ensureRegistered();
+		collector.submitModelPart(part, pose, MASK_TYPES.apply(skin), light, OverlayTexture.NO_OVERLAY, null);
 	}
 
 	public static void beginMask() {

@@ -8,6 +8,9 @@ public final class ReleaseNotes {
 	}
 
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.59", new String[]{
+			"Ghost now tints the first-person hand as well as the held item. Smoke is larger moving wisps instead of TV static."
+		}),
 		new Entry("1.2.58", new String[]{
 			"Ghost smoke is much smaller. The wisps are sized on screen so they no longer cover the whole item."
 		}),
