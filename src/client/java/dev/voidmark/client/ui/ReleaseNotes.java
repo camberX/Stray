@@ -8,6 +8,9 @@ public final class ReleaseNotes {
 	}
 
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.51", new String[]{
+			"Ghost outlines the held item as a mesh, not each texture pixel. One white rim around the item, fill and smoke inside."
+		}),
 		new Entry("1.2.50", new String[]{
 			"Ghost is one held item again. The white rim is painted on the sprite edges, not extra copies stacked in your FOV."
 		}),

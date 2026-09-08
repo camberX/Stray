@@ -1,12 +1,15 @@
 package dev.voidmark.client.mixin;
 
+import com.mojang.blaze3d.vertex.QuadInstance;
 import dev.voidmark.client.visual.HeldItemShader;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.OutlineBufferSource;
 import net.minecraft.client.renderer.SubmitNodeStorage;
 import net.minecraft.client.renderer.feature.ItemFeatureRenderer;
 import net.minecraft.client.renderer.rendertype.RenderType;
+import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -15,6 +18,10 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(ItemFeatureRenderer.class)
 public class ItemFeatureRendererMixin {
+	@Shadow
+	@Final
+	private QuadInstance quadInstance;
+
 	@Unique
 	private SubmitNodeStorage.ItemSubmit voidmark$itemSubmit;
 
@@ -45,7 +52,17 @@ public class ItemFeatureRendererMixin {
 	}
 
 	@Inject(method = "renderItem", at = @At("RETURN"))
-	private void voidmark$clearItem(CallbackInfo ci) {
+	private void voidmark$heldItemOutline(
+		MultiBufferSource.BufferSource bufferSource,
+		OutlineBufferSource outlineBufferSource,
+		SubmitNodeStorage.ItemSubmit submit,
+		CallbackInfo ci
+	) {
+		if (HeldItemShader.applies(submit.displayContext())) {
+			this.quadInstance.setLightCoords(submit.lightCoords());
+			this.quadInstance.setOverlayCoords(submit.overlayCoords());
+			HeldItemShader.drawMeshOutline(bufferSource, submit.pose(), submit.quads(), this.quadInstance);
+		}
 		this.voidmark$itemSubmit = null;
 	}
 }
