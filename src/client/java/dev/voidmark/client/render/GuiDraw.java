@@ -1,6 +1,8 @@
 package dev.voidmark.client.render;
 
 import dev.voidmark.Voidmark;
+import dev.voidmark.client.config.VoidmarkConfig;
+import dev.voidmark.client.ui.ControlChrome;
 import dev.voidmark.client.ui.LoadoutsScreen;
 import dev.voidmark.client.ui.MenuFont;
 import dev.voidmark.client.visual.WorldTint;
@@ -423,6 +425,10 @@ public final class GuiDraw {
 		int accent,
 		boolean accentRight
 	) {
+		if (VoidmarkConfig.get().guiDesignControl()) {
+			ControlChrome.glass(graphics, x, y, w, h, radius, fill);
+			return;
+		}
 		rounded(graphics, x, y, w, h, radius, outline);
 		rounded(graphics, x + 1, y + 1, w - 2, h - 2, Math.max(0.5f, radius - 1f), fill);
 		if ((accent & 0xFF000000) != 0) {

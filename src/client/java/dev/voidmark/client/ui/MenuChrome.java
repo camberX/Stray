@@ -50,8 +50,16 @@ public final class MenuChrome {
 
 	public static void sky(GuiGraphicsExtractor graphics, int width, int height) {
 		Theme.refresh();
-		int top = 0xFF05070D;
-		int bot = 0xFF000000 | Theme.mix(0x0B0E14, Theme.ACCENT & 0xFFFFFF, 0.06f);
+		int top;
+		int bot;
+		if (ControlChrome.on()) {
+			int pane = ControlChrome.paneRgb();
+			top = 0xFF000000 | Theme.mix(0x101218, pane, 0.28f);
+			bot = 0xFF000000 | Theme.mix(0x05070D, pane, 0.16f);
+		} else {
+			top = 0xFF05070D;
+			bot = 0xFF000000 | Theme.mix(0x0B0E14, Theme.ACCENT & 0xFFFFFF, 0.06f);
+		}
 		GuiDraw.fillGradient(graphics, 0, 0, width, height, top, bot);
 		try {
 			Starfield.drawSky(graphics, width, height);
@@ -79,6 +87,18 @@ public final class MenuChrome {
 		int fillRgb = Theme.mix(Theme.CARD, Theme.CARD_HOVER, hover ? 1f : 0f);
 		int fill = Theme.withAlpha(fillRgb, Math.round((((Theme.CARD >>> 24) & 0xFF) + (hover ? 18 : 0)) * alpha));
 		int outline = fade(hover ? Theme.ACCENT : Theme.LINE, alpha);
+		if (ControlChrome.on()) {
+			ControlChrome.glass(
+				graphics,
+				widget.getX(),
+				widget.getY(),
+				widget.getWidth(),
+				widget.getHeight(),
+				compact ? radius : 12f,
+				fill
+			);
+			return;
+		}
 		GuiDraw.panel(
 			graphics,
 			widget.getX(),
@@ -96,6 +116,10 @@ public final class MenuChrome {
 		boolean focus = widget.isFocused();
 		int fill = Theme.withAlpha(Theme.PANEL, Math.round(220 * alpha));
 		int outline = fade(focus ? Theme.ACCENT : Theme.LINE, alpha);
+		if (ControlChrome.on()) {
+			ControlChrome.glass(graphics, widget.getX(), widget.getY(), widget.getWidth(), widget.getHeight(), 10f, fill);
+			return;
+		}
 		GuiDraw.panel(
 			graphics,
 			widget.getX(),
@@ -115,6 +139,11 @@ public final class MenuChrome {
 		int w = widget.getWidth();
 		int h = widget.getHeight();
 		boolean hover = widget.active && widget.isHoveredOrFocused();
+		if (ControlChrome.on()) {
+			ControlChrome.glass(graphics, x, y, w, h, 12f, fade(Theme.CARD, alpha));
+			ControlChrome.slider(graphics, x + 10, y + h * 0.5f - 2.5f, w - 20, 5, (float) Math.max(0d, Math.min(1d, value)));
+			return;
+		}
 		GuiDraw.panel(
 			graphics,
 			x,

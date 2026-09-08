@@ -1,6 +1,7 @@
 package dev.voidmark.client.render;
 
 import dev.voidmark.client.config.VoidmarkConfig;
+import dev.voidmark.client.ui.ControlChrome;
 import dev.voidmark.client.ui.Theme;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 
@@ -19,6 +20,14 @@ public final class HudChrome {
 		int outline,
 		int accent
 	) {
+		Theme.refresh();
+		if (VoidmarkConfig.get().guiDesignControl()) {
+			ControlChrome.glass(graphics, x, y, w, h, Math.max(8f, radius), Theme.HUD_WINDOW);
+			if (VoidmarkConfig.get().hudStarfield && w >= 72f && h >= 22f) {
+				Starfield.drawHud(graphics, x, y, w, h, Math.max(8f, radius));
+			}
+			return;
+		}
 		boolean right = accentTowardRight(graphics, x, y, w);
 		GuiDraw.panel(graphics, x, y, w, h, radius, Theme.HUD_WINDOW, Theme.HUD_LINE, accent, right);
 		if (VoidmarkConfig.get().hudStarfield && w >= 72f && h >= 22f) {

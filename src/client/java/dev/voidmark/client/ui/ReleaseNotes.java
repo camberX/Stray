@@ -8,6 +8,9 @@ public final class ReleaseNotes {
 	}
 
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.80", new String[]{
+			"HUD panes, the title screen, and vanilla menus follow the GUI style you pick."
+		}),
 		new Entry("1.2.79", new String[]{
 			"Control feature rows sit a little higher, and the menu corners use a smoother frost clip and matching rim."
 		}),

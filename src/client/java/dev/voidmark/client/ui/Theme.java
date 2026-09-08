@@ -69,6 +69,33 @@ public final class Theme {
 
 		ACCENT = 0xFF000000 | accent;
 		ACCENT_DIM = 0xFF000000 | mix(accent, pane, 0.42f);
+		if (VoidmarkConfig.get().guiDesignControl()) {
+			int glass = ControlChrome.paneRgb();
+			int pill = ControlChrome.pillRgb();
+			WINDOW_SOLID = 0xFF000000 | glass;
+			WINDOW = ControlChrome.windowFill();
+			SHEET = Theme.withAlpha(glass, 210);
+			CARD = ControlChrome.cardFill();
+			CARD_HOVER = Theme.withAlpha(pill, Math.min(255, ((ControlChrome.cardFill() >>> 24) & 0xFF) + 28));
+			LINE = Theme.withAlpha(0xFFFFFF, ControlChrome.darkText() ? 48 : 32);
+			TRACK = ControlChrome.TRACK;
+			PANEL = ControlChrome.searchFill();
+			HUD_WINDOW = ControlChrome.hudFill();
+			HUD_LINE = LINE;
+			HUD_TRACK = TRACK;
+			HUD_CARD = CARD;
+			HUD_CARD_HOVER = CARD_HOVER;
+			HUD_PANEL = PANEL;
+			OFF = Theme.withAlpha(mix(pill, 0x000000, 0.25f), 160);
+			TEXT = ControlChrome.text();
+			MUTED = ControlChrome.muted();
+			HEADER = TEXT;
+			NAV_PILL = ControlChrome.selectedFill();
+			SIDEBAR = ControlChrome.railFill();
+			return;
+		}
+		TEXT = 0xFFF2F4F7;
+		MUTED = 0xFF8A9AAB;
 		WINDOW_SOLID = 0xFF000000 | pane;
 		WINDOW = withAlpha(pane, paneA);
 		SHEET = withAlpha(pane, Math.max(paneA, 232));

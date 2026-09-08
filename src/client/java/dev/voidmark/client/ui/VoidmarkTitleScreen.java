@@ -69,8 +69,16 @@ public class VoidmarkTitleScreen extends Screen {
 
 	@Override
 	public void extractBackground(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float delta) {
-		int top = 0xFF05070D;
-		int bot = 0xFF000000 | Theme.mix(0x0B0E14, Theme.ACCENT & 0xFFFFFF, 0.06f);
+		int top;
+		int bot;
+		if (ControlChrome.on()) {
+			int pane = ControlChrome.paneRgb();
+			top = 0xFF000000 | Theme.mix(0x101218, pane, 0.28f);
+			bot = 0xFF000000 | Theme.mix(0x05070D, pane, 0.16f);
+		} else {
+			top = 0xFF05070D;
+			bot = 0xFF000000 | Theme.mix(0x0B0E14, Theme.ACCENT & 0xFFFFFF, 0.06f);
+		}
 		GuiDraw.fillGradient(graphics, 0, 0, width, height, top, bot);
 		try {
 			Starfield.drawSky(graphics, width, height);
@@ -144,7 +152,11 @@ public class VoidmarkTitleScreen extends Screen {
 		float hover = anim("btn-" + label, hovered ? 1f : 0f);
 		int fill = Theme.withAlpha(Theme.mix(Theme.CARD, Theme.CARD_HOVER, hover), (Theme.CARD >>> 24) & 0xFF);
 		int outline = hover > 0.55f ? Theme.ACCENT : Theme.LINE;
-		GuiDraw.panel(graphics, x, y, w, BUTTON_H, 7, Anim.fade(fill, fade), Anim.fade(outline, fade), enabled ? Theme.ACCENT : 0);
+		if (ControlChrome.on()) {
+			ControlChrome.glass(graphics, x, y, w, BUTTON_H, 14f, Anim.fade(fill, fade));
+		} else {
+			GuiDraw.panel(graphics, x, y, w, BUTTON_H, 7, Anim.fade(fill, fade), Anim.fade(outline, fade), enabled ? Theme.ACCENT : 0);
+		}
 		int text = enabled ? Theme.TEXT : Theme.MUTED;
 		GuiDraw.menu(graphics, font, label, x + 14, GuiDraw.middle(y, BUTTON_H), Anim.fade(text, fade));
 		if (enabled) {
@@ -260,7 +272,7 @@ public class VoidmarkTitleScreen extends Screen {
 		return FabricLoader.getInstance()
 			.getModContainer("voidmark")
 			.map(container -> container.getMetadata().getVersion().getFriendlyString())
-			.orElse("1.2.79");
+			.orElse("1.2.80");
 	}
 
 	private record Hit(float x, float y, float w, float h, Runnable click) {

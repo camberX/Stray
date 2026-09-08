@@ -7,6 +7,7 @@ import com.google.gson.JsonParser;
 import dev.voidmark.Voidmark;
 import dev.voidmark.client.render.GlowBlurRadius;
 import dev.voidmark.client.render.MobCatalog;
+import dev.voidmark.client.ui.Theme;
 import net.fabricmc.loader.api.FabricLoader;
 
 import java.io.IOException;
@@ -618,6 +619,7 @@ public final class VoidmarkConfig {
 
 	public void cycleGuiDesign() {
 		guiDesign = guiDesignControl() ? "eisenmann" : "control";
+		Theme.refresh();
 	}
 
 	public String guiDesignLabel() {

@@ -27,6 +27,21 @@ public final class ControlChrome {
 	private ControlChrome() {
 	}
 
+	public static boolean on() {
+		return VoidmarkConfig.get().guiDesignControl();
+	}
+
+	public static int hudFill() {
+		float hud = VoidmarkConfig.clamp(VoidmarkConfig.get().hudOpacity, 0.20f, 1f);
+		return Theme.withAlpha(paneRgb(), Math.round(Math.min(0.82f, hud * 0.72f) * 255f));
+	}
+
+	public static void glass(GuiGraphicsExtractor graphics, float x, float y, float w, float h, float radius, int fill) {
+		float r = Math.min(Math.max(6f, radius), Math.min(w, h) * 0.5f);
+		GuiDraw.roundedFine(graphics, x, y, w, h, r, fill);
+		rim(graphics, x, y, w, h, r);
+	}
+
 	public static int paneRgb() {
 		int rgb = VoidmarkConfig.get().controlPaneRgb & 0xFFFFFF;
 		return rgb == 0 ? 0xFFFFFF : rgb;

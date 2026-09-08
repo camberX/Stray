@@ -1306,7 +1306,10 @@ public class VoidmarkScreen extends Screen {
 		y = colorRow(graphics, font, settingsX + 8, y, PANEL_W - 16, mouseX, mouseY, "Glass", VoidmarkConfig.get().controlPaneRgb, PickerTarget.CONTROL);
 		y = colorRow(graphics, font, settingsX + 8, y, PANEL_W - 16, mouseX, mouseY, "Pills", VoidmarkConfig.get().controlPillRgb, PickerTarget.PILL);
 		y = slider(graphics, font, settingsX + 8, y, PANEL_W - 16, "Frost", Math.round(VoidmarkConfig.get().controlFrost * 100) + "%", VoidmarkConfig.get().controlFrost, v -> VoidmarkConfig.get().controlFrost = VoidmarkConfig.clamp(v, 0f, 1f));
-		y = slider(graphics, font, settingsX + 8, y, PANEL_W - 16, "Opacity", Math.round(VoidmarkConfig.get().controlPaneOpacity * 100) + "%", (VoidmarkConfig.get().controlPaneOpacity - 0.12f) / 0.66f, v -> VoidmarkConfig.get().controlPaneOpacity = VoidmarkConfig.clamp(0.12f + v * 0.66f, 0.12f, 0.78f));
+		y = slider(graphics, font, settingsX + 8, y, PANEL_W - 16, "Opacity", Math.round(VoidmarkConfig.get().controlPaneOpacity * 100) + "%", (VoidmarkConfig.get().controlPaneOpacity - 0.12f) / 0.66f, v -> {
+			VoidmarkConfig.get().controlPaneOpacity = VoidmarkConfig.clamp(0.12f + v * 0.66f, 0.12f, 0.78f);
+			Theme.refresh();
+		});
 		GuiDraw.small(graphics, font, "Accent", settingsX + 8, y + 2, controlCenter() ? ControlChrome.muted() : Theme.MUTED);
 		y = swatchRow(graphics, mouseX, mouseY, settingsX + 10, y + 14, PANEL_W - 26, Theme.PRESETS, true);
 		y = colorRow(graphics, font, settingsX + 8, y, PANEL_W - 16, mouseX, mouseY, "Custom", VoidmarkConfig.get().themeAccentRgb, PickerTarget.THEME);
@@ -1887,7 +1890,10 @@ public class VoidmarkScreen extends Screen {
 		y = colorRow(graphics, font, ix, y, iw, mouseX, mouseY, "Glass", config.controlPaneRgb, PickerTarget.CONTROL);
 		y = colorRow(graphics, font, ix, y, iw, mouseX, mouseY, "Pills", config.controlPillRgb, PickerTarget.PILL);
 		y = slider(graphics, font, ix, y, iw, "Frost", Math.round(config.controlFrost * 100) + "%", config.controlFrost, v -> config.controlFrost = VoidmarkConfig.clamp(v, 0f, 1f));
-		y = slider(graphics, font, ix, y, iw, "Opacity", Math.round(config.controlPaneOpacity * 100) + "%", (config.controlPaneOpacity - 0.12f) / 0.66f, v -> config.controlPaneOpacity = VoidmarkConfig.clamp(0.12f + v * 0.66f, 0.12f, 0.78f));
+		y = slider(graphics, font, ix, y, iw, "Opacity", Math.round(config.controlPaneOpacity * 100) + "%", (config.controlPaneOpacity - 0.12f) / 0.66f, v -> {
+			config.controlPaneOpacity = VoidmarkConfig.clamp(0.12f + v * 0.66f, 0.12f, 0.78f);
+			Theme.refresh();
+		});
 		y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Menu stars", config.menuStarfield, v -> config.menuStarfield = v);
 		y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Animations", config.uiAnimations, v -> config.uiAnimations = v);
 		toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Auto update", config.autoUpdate, v -> config.autoUpdate = v);
@@ -2463,8 +2469,14 @@ public class VoidmarkScreen extends Screen {
 			case HELD_ITEM -> config.heldItemShaderRgb = packed;
 			case THEME -> Theme.applyCustom(packed);
 			case PANE -> Theme.applyPane(packed);
-			case CONTROL -> config.controlPaneRgb = packed == 0 ? 0xFFFFFF : packed;
-			case PILL -> config.controlPillRgb = packed == 0 ? 0xFFFFFF : packed;
+			case CONTROL -> {
+				config.controlPaneRgb = packed == 0 ? 0xFFFFFF : packed;
+				Theme.refresh();
+			}
+			case PILL -> {
+				config.controlPillRgb = packed == 0 ? 0xFFFFFF : packed;
+				Theme.refresh();
+			}
 		}
 	}
 
@@ -2498,7 +2510,7 @@ public class VoidmarkScreen extends Screen {
 		return FabricLoader.getInstance()
 			.getModContainer("voidmark")
 			.map(container -> container.getMetadata().getVersion().getFriendlyString())
-			.orElse("1.2.79");
+			.orElse("1.2.80");
 	}
 
 	@Override

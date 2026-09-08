@@ -247,7 +247,11 @@ public class WardrobeScreen extends Screen {
 		graphics.pose().translate(-cx, -cy);
 
 		boolean clip = GuiDraw.scissor(graphics, windowX, windowY, windowW, windowH);
-		GuiDraw.rounded(graphics, windowX, windowY, windowW, windowH, Theme.WINDOW_RADIUS, Theme.WINDOW);
+		if (ControlChrome.on()) {
+			ControlChrome.glass(graphics, windowX, windowY, windowW, windowH, ControlChrome.WINDOW_R, Theme.WINDOW);
+		} else {
+			GuiDraw.rounded(graphics, windowX, windowY, windowW, windowH, Theme.WINDOW_RADIUS, Theme.WINDOW);
+		}
 		Starfield.draw(graphics, windowX, windowY, windowW, windowH, Theme.WINDOW_RADIUS, appear);
 		if (clip) {
 			GuiDraw.disableScissor(graphics);
