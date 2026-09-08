@@ -8,6 +8,9 @@ public final class ReleaseNotes {
 	}
 
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.58", new String[]{
+			"Ghost smoke is much smaller. The wisps are sized on screen so they no longer cover the whole item."
+		}),
 		new Entry("1.2.57", new String[]{
 			"Ghost smoke is smaller and brighter. You see thin moving wisps on the item instead of a large shade change."
 		}),

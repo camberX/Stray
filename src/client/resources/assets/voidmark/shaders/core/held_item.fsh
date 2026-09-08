@@ -59,17 +59,17 @@ void main() {
     float ang = 0.17453292;
     float ca = cos(ang);
     float sa = sin(ang);
-    vec2 glintUv = mat2(ca, -sa, sa, ca) * (texCoord0 * 9.5);
+    vec2 glintUv = mat2(ca, -sa, sa, ca) * (gl_FragCoord.xy * 0.085);
     glintUv += vec2(-t * 0.42, t * 0.18);
     float glint = pow(clamp(texture(Sampler1, glintUv).r, 0.0, 1.0), 1.35);
 
-    vec2 smokeUv = texCoord0 * 14.5 + vec2(t * 0.16, -t * 0.34);
+    vec2 smokeUv = gl_FragCoord.xy * 0.42 + vec2(t * 12.0, -t * 18.0);
     float n1 = fbm(smokeUv);
-    float n2 = fbm(smokeUv * 2.35 + vec2(-t * 0.28, t * 0.17) + n1 * 0.55);
-    float n3 = fbm(smokeUv * 4.1 + vec2(t * 0.13, -t * 0.22));
+    float n2 = fbm(smokeUv * 2.35 + vec2(-t * 9.0, t * 7.0) + n1 * 0.18);
+    float n3 = fbm(smokeUv * 4.1 + vec2(t * 6.0, -t * 11.0));
     float ridge = 1.0 - abs(n2 * 2.0 - 1.0);
-    float filaments = pow(smoothstep(0.52, 0.88, ridge * mix(0.82, 1.12, n3)), 2.15);
-    float dust = pow(smoothstep(0.62, 0.98, n1 * n3), 2.8) * 0.22;
+    float filaments = pow(smoothstep(0.58, 0.92, ridge * mix(0.82, 1.12, n3)), 2.45);
+    float dust = pow(smoothstep(0.70, 0.98, n1 * n3), 3.2) * 0.16;
     float wisps = clamp(filaments + dust, 0.0, 1.0);
     float spark = glint * mix(0.25, 1.0, filaments);
 
