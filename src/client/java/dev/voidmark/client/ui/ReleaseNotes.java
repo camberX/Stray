@@ -8,6 +8,9 @@ public final class ReleaseNotes {
 	}
 
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.34", new String[]{
+			"Triggerbot waits for vanilla attack cooldown, and on Skyblock it waits for tab Attack Speed."
+		}),
 		new Entry("1.2.33", new String[]{
 			"Auto update closes Minecraft after it replaces the jar, so the next launch is the new version."
 		}),

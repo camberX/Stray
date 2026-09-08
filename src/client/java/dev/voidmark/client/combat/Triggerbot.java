@@ -1,7 +1,8 @@
 package dev.voidmark.client.combat;
 
 import dev.voidmark.client.config.VoidmarkConfig;
-import it.unimi.dsi.fastutil.ints.Int2IntOpenHashMap;
+import dev.voidmark.client.location.SkyblockLocation;
+import dev.voidmark.client.mixin.MinecraftAccessor;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.MultiPlayerGameMode;
 import net.minecraft.client.player.LocalPlayer;
@@ -23,25 +24,24 @@ import net.minecraft.world.phys.HitResult;
 /**
  * Attacks the crosshair entity using vanilla {@code gameMode.attack} plus a
  * swing. No custom packets. Fires only when Minecraft already resolved an
- * entity hit that is inside reach.
+ * entity hit that is inside reach. Off Skyblock this waits for the vanilla
+ * attack cooldown; on Skyblock it waits for tab Attack Speed.
  */
 public final class Triggerbot {
-	private static final Int2IntOpenHashMap LAST = new Int2IntOpenHashMap();
 	private static int gameTick;
+	private static int lastHit;
 
 	private Triggerbot() {
 	}
 
 	public static void reset() {
-		LAST.clear();
 		gameTick = 0;
+		lastHit = 0;
 	}
 
 	public static void tick(Minecraft client) {
 		gameTick++;
-		if ((gameTick & 31) == 0) {
-			prune();
-		}
+		AttackSpeed.tick(client);
 		VoidmarkConfig config = VoidmarkConfig.get();
 		if (!config.triggerbotEnabled) {
 			return;
@@ -64,12 +64,15 @@ public final class Triggerbot {
 		if (player.isSpectator() || gameMode.isSpectator() || player.isHandsBusy() || player.isUsingItem()) {
 			return;
 		}
+		if (!delayReady(client, player)) {
+			return;
+		}
 		HitResult hit = client.hitResult;
 		if (!(hit instanceof EntityHitResult entityHit) || hit.getType() != HitResult.Type.ENTITY) {
 			return;
 		}
 		Entity target = entityHit.getEntity();
-		if (!isTarget(target, player, configPlayers())) {
+		if (!isTarget(target, player, VoidmarkConfig.get().triggerbotPlayers)) {
 			return;
 		}
 		if (!player.isWithinEntityInteractionRange(target, 0.0)) {
@@ -89,16 +92,19 @@ public final class Triggerbot {
 		if (range != null && !range.isInRange(player, hit.getLocation())) {
 			return;
 		}
-		if (!entityReady(target.getId())) {
-			return;
-		}
-		LAST.put(target.getId(), gameTick);
+		lastHit = gameTick;
 		gameMode.attack(player, target);
 		player.swing(InteractionHand.MAIN_HAND);
 	}
 
-	private static boolean configPlayers() {
-		return VoidmarkConfig.get().triggerbotPlayers;
+	private static boolean delayReady(Minecraft client, LocalPlayer player) {
+		if (((MinecraftAccessor) client).voidmark$missTime() > 0) {
+			return false;
+		}
+		if (SkyblockLocation.inSkyblock) {
+			return lastHit == 0 || gameTick - lastHit >= AttackSpeed.meleeDelay();
+		}
+		return player.getAttackStrengthScale(0.0f) >= 1.0f;
 	}
 
 	private static boolean isTarget(Entity entity, LocalPlayer player, boolean players) {
@@ -115,16 +121,5 @@ public final class Triggerbot {
 			return players;
 		}
 		return entity instanceof LivingEntity;
-	}
-
-	private static boolean entityReady(int entityId) {
-		int last = LAST.get(entityId);
-		return last == 0 || gameTick - last >= AttackSpeed.meleeDelay();
-	}
-
-	private static void prune() {
-		if (!LAST.isEmpty()) {
-			LAST.int2IntEntrySet().removeIf(entry -> gameTick - entry.getIntValue() > 40);
-		}
 	}
 }
