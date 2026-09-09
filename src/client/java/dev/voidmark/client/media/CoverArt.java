@@ -37,6 +37,10 @@ public final class CoverArt {
 		.build();
 
 	private static volatile String boundKey = "";
+	private static volatile String lastCover = "";
+	private static volatile String lastTitle = "";
+	private static volatile String lastArtist = "";
+	private static volatile String lastAlbum = "";
 	private static volatile boolean ready;
 	private static volatile boolean loading;
 	private static volatile int texSize;
@@ -50,6 +54,10 @@ public final class CoverArt {
 		if (track == null || !track.present()) {
 			if (!boundKey.isEmpty()) {
 				boundKey = "";
+				lastCover = "";
+				lastTitle = "";
+				lastArtist = "";
+				lastAlbum = "";
 				ready = false;
 				loading = false;
 				texSize = 0;
@@ -57,22 +65,34 @@ public final class CoverArt {
 			}
 			return;
 		}
-		String cover = track.hasCover() ? track.cover().trim() : "";
+		String cover = track.hasCover() ? track.cover() : "";
+		if (cover == null) {
+			cover = "";
+		}
 		String title = nullToEmpty(track.title());
 		String artist = nullToEmpty(track.artist());
 		String album = nullToEmpty(track.album());
-		long stamp = stamp(cover);
-		String key = cover + "|" + title + "|" + artist + "|" + album + "|" + stamp;
-		long now = System.nanoTime();
-		if (key.equals(boundKey)) {
-			if (ready || loading) {
+		if (cover == lastCover && title == lastTitle && artist == lastArtist && album == lastAlbum) {
+			if (ready || loading || System.nanoTime() - lastTryNs < 800_000_000L) {
 				return;
 			}
-			if (now - lastTryNs < 800_000_000L) {
+		}
+		String key = bindKey(cover, title, artist, album);
+		long now = System.nanoTime();
+		if (key.equals(boundKey)) {
+			lastCover = cover;
+			lastTitle = title;
+			lastArtist = artist;
+			lastAlbum = album;
+			if (ready || loading || now - lastTryNs < 800_000_000L) {
 				return;
 			}
 		} else {
 			boundKey = key;
+			lastCover = cover;
+			lastTitle = title;
+			lastArtist = artist;
+			lastAlbum = album;
 			ready = false;
 			texSize = 0;
 			generation++;
@@ -410,6 +430,16 @@ public final class CoverArt {
 		} catch (Exception ignored) {
 		}
 		return 0L;
+	}
+
+	private static String bindKey(String cover, String title, String artist, String album) {
+		String coverId;
+		if (cover.startsWith("data:") || cover.length() > 96) {
+			coverId = cover.length() + ":" + cover.hashCode();
+		} else {
+			coverId = cover;
+		}
+		return coverId + "|" + title + "|" + artist + "|" + album + "|" + stamp(cover);
 	}
 
 	private static String nullToEmpty(String value) {

@@ -17,8 +17,10 @@ public record NowPlaying(
 	long sampledAtNanos,
 	long sourcePositionMs
 ) {
+	private static final NowPlaying NONE = new NowPlaying("", "", "", "", "", "", false, 0L, 0L, 0L, -1L);
+
 	public static NowPlaying none() {
-		return new NowPlaying("", "", "", "", "", "", false, 0L, 0L, 0L, -1L);
+		return NONE;
 	}
 
 	public boolean present() {

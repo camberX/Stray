@@ -313,7 +313,7 @@ public final class GuiFrostBlur {
 		if (r < 0.75f) {
 			return;
 		}
-		int rows = Math.max(64, Math.round(r * 8f));
+		int rows = Math.max(12, Math.min(40, Math.round(r * 2f)));
 		float rowH = r / rows;
 		for (int i = 0; i < rows; i++) {
 			float ly = i * rowH;

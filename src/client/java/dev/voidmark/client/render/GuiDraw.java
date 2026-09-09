@@ -300,23 +300,10 @@ public final class GuiDraw {
 		if (r < 0.75f) {
 			return;
 		}
-		int rows = Math.max(8, Math.round(r * 4f));
-		float rowH = r / rows;
-		for (int i = 0; i < rows; i++) {
-			float ly = i * rowH;
-			float dy = r - (ly + rowH * 0.5f);
-			float chord = (float) Math.sqrt(Math.max(0f, r * r - dy * dy));
-			float ear = r - chord;
-			if (ear <= 0.02f) {
-				continue;
-			}
-			float top = y + ly;
-			float bottom = y + h - ly - rowH;
-			fill(graphics, x, top, ear, rowH + 0.2f, color);
-			fill(graphics, x + w - ear, top, ear, rowH + 0.2f, color);
-			fill(graphics, x, bottom, ear, rowH + 0.2f, color);
-			fill(graphics, x + w - ear, bottom, ear, rowH + 0.2f, color);
-		}
+		hole(graphics, x, y, r, 0f, 0f, color);
+		hole(graphics, x + w - r, y, r, CIRCLE_HALF, 0f, color);
+		hole(graphics, x, y + h - r, r, 0f, CIRCLE_HALF, color);
+		hole(graphics, x + w - r, y + h - r, r, CIRCLE_HALF, CIRCLE_HALF, color);
 	}
 
 	public static void rounded(GuiGraphicsExtractor graphics, float x, float y, float w, float h, float radius, int color) {

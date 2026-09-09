@@ -25,14 +25,14 @@ public final class HudChrome {
 			float r = Math.max(8f, radius);
 			GuiFrostBlur.blitWindow(graphics, x, y, w, h, r);
 			ControlChrome.glass(graphics, x, y, w, h, r, ControlChrome.hudFill());
-			if (VoidmarkConfig.get().hudStarfield && w >= 72f && h >= 22f) {
+			if (VoidmarkConfig.get().hudStarfield && w >= 72f && h >= 52f) {
 				Starfield.drawHud(graphics, x, y, w, h, Math.max(8f, radius));
 			}
 			return;
 		}
 		boolean right = accentTowardRight(graphics, x, y, w);
 		GuiDraw.panel(graphics, x, y, w, h, radius, Theme.HUD_WINDOW, Theme.HUD_LINE, accent, right);
-		if (VoidmarkConfig.get().hudStarfield && w >= 72f && h >= 22f) {
+		if (VoidmarkConfig.get().hudStarfield && w >= 72f && h >= 52f) {
 			Starfield.drawHud(graphics, x, y, w, h, radius);
 		}
 	}

@@ -60,6 +60,8 @@ public final class SpotifySmtc {
 	private volatile boolean available = true;
 	private long nextStartAt;
 	private volatile String lastTrackKey = "";
+	private Track cachedTrack;
+	private NowPlaying cachedPlaying;
 	private long lastSmtcPos = -1L;
 	private String lastArtQuery = "";
 	private long lastArtAttempt;
@@ -152,6 +154,8 @@ public final class SpotifySmtc {
 	private void stop() {
 		this.started = false;
 		this.lastTrackKey = "";
+		this.cachedTrack = null;
+		this.cachedPlaying = null;
 		this.lastSmtcPos = -1L;
 		this.lastArtQuery = "";
 		Process running = this.process;
@@ -164,11 +168,16 @@ public final class SpotifySmtc {
 
 	private NowPlaying asNowPlaying() {
 		Track value = this.track.get();
+		if (value == this.cachedTrack && this.cachedPlaying != null) {
+			return this.cachedPlaying;
+		}
+		this.cachedTrack = value;
 		if (value == null || !value.active()) {
-			return NowPlaying.none();
+			this.cachedPlaying = NowPlaying.none();
+			return this.cachedPlaying;
 		}
 		String title = value.title() == null || value.title().isBlank() ? "Unknown track" : value.title();
-		return new NowPlaying(
+		this.cachedPlaying = new NowPlaying(
 			title,
 			value.artist() == null ? "" : value.artist(),
 			value.album() == null ? "" : value.album(),
@@ -181,6 +190,7 @@ public final class SpotifySmtc {
 			value.sampledAt(),
 			value.positionMs()
 		);
+		return this.cachedPlaying;
 	}
 
 	private void startProcess() {
@@ -297,6 +307,8 @@ public final class SpotifySmtc {
 	private void clearTrack() {
 		this.track.set(Track.NONE);
 		this.lastTrackKey = "";
+		this.cachedTrack = null;
+		this.cachedPlaying = null;
 		this.lastSmtcPos = -1L;
 		this.lastArtQuery = "";
 	}

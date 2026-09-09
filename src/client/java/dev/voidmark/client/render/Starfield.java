@@ -87,7 +87,11 @@ public final class Starfield {
 		if (hud && stars == PANE) {
 			ensureTwinkle(t);
 		}
-		for (int i = 0; i < stars.length; i++) {
+		int limit = stars.length;
+		if (hud) {
+			limit = Math.min(stars.length, Math.max(6, Math.round(w * h / 500f)));
+		}
+		for (int i = 0; i < limit; i++) {
 			Star star = stars[i];
 			float px = x + wrap(star.nx * w + t * star.vx, w);
 			float py = y + wrap(star.ny * h + t * star.vy, h);

@@ -36,6 +36,15 @@ public final class MusicHudRenderer {
 	private static Rect playHit = Rect.EMPTY;
 	private static Rect nextHit = Rect.EMPTY;
 	private static float reveal;
+	private static NowPlaying cachedTrack;
+	private static long cachedTrackNs;
+	private static boolean cachedSpotify;
+	private static String cachedTitleSrc = "";
+	private static String cachedTitleOut = "";
+	private static float cachedTitleMax = Float.NaN;
+	private static String cachedArtistSrc = "";
+	private static String cachedArtistOut = "";
+	private static float cachedArtistMax = Float.NaN;
 
 	private MusicHudRenderer() {
 	}
@@ -99,14 +108,20 @@ public final class MusicHudRenderer {
 	}
 
 	private static NowPlaying resolveTrack() {
-		VoidmarkConfig config = VoidmarkConfig.get();
-		if (config.spotifyEnabled) {
-			NowPlaying spotify = SpotifySmtc.current();
-			if (spotify.present()) {
-				return spotify;
+		long now = System.nanoTime();
+		boolean spotify = VoidmarkConfig.get().spotifyEnabled;
+		if (cachedTrack != null && spotify == cachedSpotify && now - cachedTrackNs < 2_000_000L) {
+			return cachedTrack;
+		}
+		cachedSpotify = spotify;
+		cachedTrackNs = now;
+		if (spotify) {
+			NowPlaying live = SpotifySmtc.current();
+			if (live.present()) {
+				return cachedTrack = live;
 			}
 		}
-		return MediaSession.current();
+		return cachedTrack = MediaSession.current();
 	}
 
 	private static void extract(GuiGraphicsExtractor graphics, DeltaTracker deltaTracker) {
@@ -187,8 +202,8 @@ public final class MusicHudRenderer {
 		String source = track.sourceLabel();
 		float sourceW = GuiDraw.smallWidth(font, source);
 		float titleMax = WIDTH - textX - sourceW - 16;
-		String title = ellipsize(font, track.title(), titleMax, false);
-		String artist = ellipsize(font, track.artistLine(), WIDTH - textX - 12, true);
+		String title = ellipsizeCached(font, track.title(), titleMax, false);
+		String artist = ellipsizeCached(font, track.artistLine(), WIDTH - textX - 12, true);
 		GuiDraw.menu(graphics, font, title, textX, 5, Theme.TEXT);
 		GuiDraw.small(graphics, font, artist, textX, 15, Theme.MUTED);
 		GuiDraw.small(graphics, font, source, WIDTH - 8 - sourceW, 5, Theme.ACCENT);
@@ -273,6 +288,23 @@ public final class MusicHudRenderer {
 
 	private static String ellipsize(Font font, String value, float max, boolean small) {
 		return GuiDraw.ellipsize(font, value, max, small);
+	}
+
+	private static String ellipsizeCached(Font font, String value, float max, boolean small) {
+		if (small) {
+			if (value == cachedArtistSrc && max == cachedArtistMax) {
+				return cachedArtistOut;
+			}
+			cachedArtistSrc = value;
+			cachedArtistMax = max;
+			return cachedArtistOut = GuiDraw.ellipsize(font, value, max, true);
+		}
+		if (value == cachedTitleSrc && max == cachedTitleMax) {
+			return cachedTitleOut;
+		}
+		cachedTitleSrc = value;
+		cachedTitleMax = max;
+		return cachedTitleOut = GuiDraw.ellipsize(font, value, max, false);
 	}
 
 	private record Rect(float x, float y, float w, float h) {
