@@ -43,7 +43,6 @@ public class LoadoutsScreen extends Screen {
 	private static LoadoutsMenus.Snapshot cache = LoadoutsMenus.Snapshot.empty();
 	private static final List<QueuedClick> QUEUE = new ArrayList<>();
 	private static final long SUPPRESS_NS = 3_000_000_000L;
-	private static final int CLOSE_AFTER_TICKS = 5;
 	private static boolean silentFlush;
 	private static boolean cancelIncoming;
 	private static boolean skipCustomThisOpen;
@@ -74,7 +73,6 @@ public class LoadoutsScreen extends Screen {
 	private LoadoutsMenus.Snapshot snapshot = LoadoutsMenus.Snapshot.empty();
 	private int selectedSlot = -1;
 	private int pendingSelectSlot = -1;
-	private int closeAfterTicks;
 
 	public LoadoutsScreen(AbstractContainerScreen<?> vanilla) {
 		super(vanilla.getTitle());
@@ -147,7 +145,6 @@ public class LoadoutsScreen extends Screen {
 		if (skipCustomThisOpen) {
 			if (client.screen instanceof LoadoutsScreen loadouts) {
 				loadouts.followServer();
-				loadouts.tickPendingClose();
 				return;
 			}
 			boolean vanillaChest = client.screen instanceof AbstractContainerScreen<?> chest
@@ -166,7 +163,6 @@ public class LoadoutsScreen extends Screen {
 		}
 		if (client.screen instanceof LoadoutsScreen loadouts) {
 			loadouts.followServer();
-			loadouts.tickPendingClose();
 			return;
 		}
 		if (!LoadoutsMenus.enabled() || shouldDiscardIncoming()) {
@@ -814,18 +810,23 @@ public class LoadoutsScreen extends Screen {
 			return;
 		}
 		markSelected(piece.slot());
-		clickSlot(piece.slot(), 0);
-		closeAfterTicks = CLOSE_AFTER_TICKS;
+		queueClickAndClose(piece.slot());
 	}
 
-	private void tickPendingClose() {
-		if (closeAfterTicks <= 0) {
+	private void queueClickAndClose(int slot) {
+		if (slot < 0) {
 			return;
 		}
-		closeAfterTicks--;
-		if (closeAfterTicks <= 0) {
-			onClose();
+		QUEUE.add(new QueuedClick(slot, 0));
+		silentFlush = true;
+		cancelIncoming = false;
+		rememberCache();
+		if (vanilla != null && minecraft != null) {
+			handingOff = true;
+			minecraft.setScreen(vanilla);
+			return;
 		}
+		super.onClose();
 	}
 
 	private boolean loadoutSelected(LoadoutsMenus.Piece piece) {

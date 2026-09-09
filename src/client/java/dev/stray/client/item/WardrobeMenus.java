@@ -233,20 +233,30 @@ public final class WardrobeMenus {
 		);
 	}
 
+	/**
+	 * Hypixel's click-to-equip well is the 5th chest row (slots 36-44),
+	 * same as SkyHanni {@code inventorySlot}. The last row is Go Back / Next.
+	 */
 	private static int equipSlot(AbstractContainerMenu menu, int chest, int rows, int col) {
-		for (int row = rows - 1; row >= 4; row--) {
-			int index = col + row * COLS;
-			if (index < 0 || index >= chest) {
-				continue;
+		if (rows >= 5) {
+			int well = col + 4 * COLS;
+			if (well < chest && !isNav(stackAt(menu, well))) {
+				return well;
 			}
-			ItemStack stack = stackAt(menu, index);
-			String blob = blob(stack);
-			if (isClose(stack, blob) || isNext(stack, blob) || isPrev(stack, blob)) {
+		}
+		for (int row = Math.min(rows, 5) - 1; row >= 4; row--) {
+			int index = col + row * COLS;
+			if (index < 0 || index >= chest || isNav(stackAt(menu, index))) {
 				continue;
 			}
 			return index;
 		}
-		return -1;
+		return col < chest ? col : -1;
+	}
+
+	private static boolean isNav(ItemStack stack) {
+		String blob = blob(stack);
+		return isClose(stack, blob) || isNext(stack, blob) || isPrev(stack, blob);
 	}
 
 	private enum Kind {

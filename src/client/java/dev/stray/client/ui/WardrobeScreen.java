@@ -39,7 +39,6 @@ public class WardrobeScreen extends Screen {
 	private static WardrobeMenus.Snapshot cache = WardrobeMenus.Snapshot.empty();
 	private static final List<QueuedClick> QUEUE = new ArrayList<>();
 	private static final long SUPPRESS_NS = 3_000_000_000L;
-	private static final int CLOSE_AFTER_TICKS = 5;
 	private static boolean silentFlush;
 	private static boolean cancelIncoming;
 	private static boolean skipCustomThisOpen;
@@ -68,8 +67,6 @@ public class WardrobeScreen extends Screen {
 	private float appear;
 	private ItemStack tooltip = ItemStack.EMPTY;
 	private WardrobeMenus.Snapshot snapshot = WardrobeMenus.Snapshot.empty();
-	private int closeAfterTicks;
-	private int pendingEquipSlot = -1;
 
 	public WardrobeScreen(AbstractContainerScreen<?> vanilla) {
 		super(vanilla.getTitle());
@@ -137,7 +134,6 @@ public class WardrobeScreen extends Screen {
 		if (skipCustomThisOpen) {
 			if (client.screen instanceof WardrobeScreen wardrobe) {
 				wardrobe.followServer();
-				wardrobe.tickPendingClose();
 				return;
 			}
 			boolean vanillaChest = client.screen instanceof AbstractContainerScreen<?> chest
@@ -156,7 +152,6 @@ public class WardrobeScreen extends Screen {
 		}
 		if (client.screen instanceof WardrobeScreen wardrobe) {
 			wardrobe.followServer();
-			wardrobe.tickPendingClose();
 			return;
 		}
 		if (client.screen instanceof LoadoutsScreen || !WardrobeMenus.enabled() || shouldDiscardIncoming()) {
@@ -725,31 +720,23 @@ public class WardrobeScreen extends Screen {
 		if (set == null || set.slot() < 0 || set.locked()) {
 			return;
 		}
-		clickSlot(set.slot(), 0);
-		pendingEquipSlot = set.slot();
-		closeAfterTicks = CLOSE_AFTER_TICKS;
+		queueClickAndClose(set.slot());
 	}
 
-	private void tickPendingClose() {
-		if (closeAfterTicks <= 0) {
+	private void queueClickAndClose(int slot) {
+		if (slot < 0) {
 			return;
 		}
-		if (menu != null) {
-			snapshot = WardrobeMenus.read(menu, vanilla != null ? vanilla.getTitle() : getTitle());
-			for (WardrobeMenus.ArmorSet set : snapshot.sets()) {
-				if (set != null && set.slot() == pendingEquipSlot && set.selected()) {
-					closeAfterTicks = 0;
-					pendingEquipSlot = -1;
-					onClose();
-					return;
-				}
-			}
+		QUEUE.add(new QueuedClick(slot, 0));
+		silentFlush = true;
+		cancelIncoming = false;
+		rememberCache();
+		if (vanilla != null && minecraft != null) {
+			handingOff = true;
+			minecraft.setScreen(vanilla);
+			return;
 		}
-		closeAfterTicks--;
-		if (closeAfterTicks <= 0) {
-			pendingEquipSlot = -1;
-			onClose();
-		}
+		super.onClose();
 	}
 
 	@Override

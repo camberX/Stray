@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.129", new String[]{
+			"Wardrobe 1-9 queues the equip click like loadouts, then flushes it on the real chest. Equip uses the Slot 1-9 row."
+		}),
 		new Entry("1.2.128", new String[]{
 			"1-9 on loadouts and wardrobe sends the click first, then closes. Wardrobe clicks the whole set card, not a tiny spot."
 		}),
