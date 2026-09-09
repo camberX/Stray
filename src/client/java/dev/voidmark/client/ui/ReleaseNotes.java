@@ -8,6 +8,10 @@ public final class ReleaseNotes {
 	}
 
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.97", new String[]{
+			"Each Control category now has a small name under its rail icon.",
+			"Opacity lives on the color picker. Duplicate Opacity sliders next to those colors are gone."
+		}),
 		new Entry("1.2.96", new String[]{
 			"Pills have their own opacity slider, and every color picker now sets opacity as well as hue."
 		}),

@@ -60,30 +60,32 @@ public class VoidmarkScreen extends Screen {
 	private static final float PICKER_H = 140;
 	private static final float PANEL_W = 168;
 	private static final float FEATURE_W = 176;
-	private static final float SETTINGS_H = 474;
+	private static final float SETTINGS_H = 426;
 	private static final float FONT_SEARCH_H = 14;
 	private static final float FONT_ROW = 16;
 	private static final int FONT_VISIBLE = 6;
 	private static final float COG_W = 14;
 
 	private enum Group {
-		WORLD("WORLD"),
-		COMBAT("COMBAT"),
-		ESP("ESP"),
-		HUD("HUD"),
-		BARS("BARS"),
-		NODES("NODES"),
-		MINING("MINING"),
-		FARMING("FARMING"),
-		MENUS("MENUS"),
-		STATUS("STATUS"),
-		PLAYER("PLAYER"),
-		THEME("THEME");
+		WORLD("WORLD", "World"),
+		COMBAT("COMBAT", "Combat"),
+		ESP("ESP", "ESP"),
+		HUD("HUD", "HUD"),
+		BARS("BARS", "Bars"),
+		NODES("NODES", "Nodes"),
+		MINING("MINING", "Mining"),
+		FARMING("FARMING", "Farming"),
+		MENUS("MENUS", "Menus"),
+		STATUS("STATUS", "Status"),
+		PLAYER("PLAYER", "Player"),
+		THEME("THEME", "Theme");
 
 		final String label;
+		final String caption;
 
-		Group(String label) {
+		Group(String label, String caption) {
 			this.label = label;
+			this.caption = caption;
 		}
 	}
 
@@ -117,10 +119,10 @@ public class VoidmarkScreen extends Screen {
 		VIEW("Aspect", 3),
 		HITSOUND("Hitsound", 3),
 		HELD_ITEM("Held item", 5),
-		MOB("Mob glow", 4),
-		BLOCK("Block outline", 2),
+		MOB("Mob glow", 3),
+		BLOCK("Block outline", 1),
 		CHEST("Chest ESP", 4),
-		NODE_ESP("Node ESP", 5),
+		NODE_ESP("Node ESP", 4),
 		WATERMARK("Watermark", 4),
 		MUSIC("Music", 2),
 		RAWMATS("Raw mats", 1),
@@ -492,7 +494,7 @@ public class VoidmarkScreen extends Screen {
 	}
 
 	private float sidebarW() {
-		return controlCenter() ? 64f : SIDEBAR_W;
+		return controlCenter() ? ControlChrome.RAIL_INSET * 2f + ControlChrome.RAIL_W : SIDEBAR_W;
 	}
 
 	private float toolbarH() {
@@ -1054,18 +1056,22 @@ public class VoidmarkScreen extends Screen {
 				}
 			}
 			String glyph = groupGlyph(group);
-			int icon = ControlChrome.text();
+			int icon = on ? ControlChrome.text() : ControlChrome.muted();
 			float iconH = CATEGORY_ICON_LINE * CATEGORY_ICON;
 			float iconW = GuiDraw.iconWidth(font, glyph, CATEGORY_ICON);
+			float capH = 8f;
+			float stack = iconH + 1.5f + capH;
+			float sy = iy + (slot - stack) * 0.5f;
 			GuiDraw.icon(
 				graphics,
 				font,
 				glyph,
 				railX + (railW - iconW) * 0.5f,
-				iy + (slot - iconH) * 0.5f,
+				sy,
 				CATEGORY_ICON,
 				icon
 			);
+			drawRailCaption(graphics, font, group.caption, railX + railW * 0.5f, sy + iconH + 1.5f, railW - 8f, icon);
 			hits.add(new Hit(railX + 4, iy, railW - 8, slot, () -> openControlGroup(group)));
 			iy += slot;
 		}
@@ -1088,6 +1094,24 @@ public class VoidmarkScreen extends Screen {
 			}
 		}
 		return MenuFont.SETTINGS;
+	}
+
+	private static void drawRailCaption(
+		GuiGraphicsExtractor graphics,
+		Font font,
+		String label,
+		float centerX,
+		float y,
+		float maxW,
+		int color
+	) {
+		float scale = MenuFont.smallScale() * 0.78f;
+		float width = font.width(MenuFont.small(label)) * scale;
+		if (width > maxW && width > 0.5f) {
+			scale *= maxW / width;
+			width = maxW;
+		}
+		GuiDraw.text(graphics, font, MenuFont.small(label), centerX - width * 0.5f, MenuFont.menuY(y, scale), scale, color, false);
 	}
 
 	private void openControlGroup(Group group) {
@@ -1360,15 +1384,7 @@ public class VoidmarkScreen extends Screen {
 		GuiDraw.menu(graphics, font, "Theme", settingsX + 8, settingsY + 6, Theme.HEADER);
 		float y = cycle(graphics, font, settingsX + 8, settingsY + 20, PANEL_W - 16, mouseX, mouseY, "GUI", VoidmarkConfig.get().guiDesignLabel(), VoidmarkConfig.get()::cycleGuiDesign);
 		y = colorRow(graphics, font, settingsX + 8, y, PANEL_W - 16, mouseX, mouseY, "Glass", VoidmarkConfig.get().controlPaneRgb, PickerTarget.CONTROL);
-		y = slider(graphics, font, settingsX + 8, y, PANEL_W - 16, "Opacity", Math.round(VoidmarkConfig.get().controlPaneOpacity * 100) + "%", (VoidmarkConfig.get().controlPaneOpacity - 0.12f) / 0.66f, v -> {
-			VoidmarkConfig.get().controlPaneOpacity = VoidmarkConfig.clamp(0.12f + v * 0.66f, 0.12f, 0.78f);
-			Theme.refresh();
-		});
 		y = colorRow(graphics, font, settingsX + 8, y, PANEL_W - 16, mouseX, mouseY, "Pills", VoidmarkConfig.get().controlPillRgb, PickerTarget.PILL);
-		y = slider(graphics, font, settingsX + 8, y, PANEL_W - 16, "Opacity", Math.round(VoidmarkConfig.get().controlPillOpacity * 100) + "%", (VoidmarkConfig.get().controlPillOpacity - 0.12f) / 0.66f, v -> {
-			VoidmarkConfig.get().controlPillOpacity = VoidmarkConfig.clamp(0.12f + v * 0.66f, 0.12f, 0.78f);
-			Theme.refresh();
-		});
 		y = slider(graphics, font, settingsX + 8, y, PANEL_W - 16, "Frost", Math.round(VoidmarkConfig.get().controlFrost * 100) + "%", VoidmarkConfig.get().controlFrost, v -> VoidmarkConfig.get().controlFrost = VoidmarkConfig.clamp(v, 0f, 1f));
 		GuiDraw.small(graphics, font, "Accent", settingsX + 8, y + 2, controlCenter() ? ControlChrome.muted() : Theme.MUTED);
 		y = swatchRow(graphics, mouseX, mouseY, settingsX + 10, y + 14, PANEL_W - 26, Theme.PRESETS, true);
@@ -1376,10 +1392,6 @@ public class VoidmarkScreen extends Screen {
 		GuiDraw.small(graphics, font, "Pane", settingsX + 8, y + 1, Theme.MUTED);
 		y = swatchRow(graphics, mouseX, mouseY, settingsX + 10, y + 12, PANEL_W - 26, Theme.PANE_PRESETS, false);
 		y = colorRow(graphics, font, settingsX + 8, y, PANEL_W - 16, mouseX, mouseY, "Custom", VoidmarkConfig.get().themePaneRgb, PickerTarget.PANE);
-		y = slider(graphics, font, settingsX + 8, y, PANEL_W - 16, "Opacity", Math.round(VoidmarkConfig.get().themePaneOpacity * 100) + "%", (VoidmarkConfig.get().themePaneOpacity - 0.20f) / 0.80f, v -> {
-			VoidmarkConfig.get().themePaneOpacity = VoidmarkConfig.clamp(0.20f + v * 0.80f, 0.20f, 1f);
-			Theme.refresh();
-		});
 		GuiDraw.small(graphics, font, "Scale", settingsX + 8, y + 1, Theme.MUTED);
 		y += 12;
 		y = chipRow(graphics, font, settingsX + 8, y, PANEL_W - 16, mouseX, mouseY, new String[]{"100%", "90%", "75%", "50%"}, menuScaleChip(), index -> {
@@ -1940,7 +1952,7 @@ public class VoidmarkScreen extends Screen {
 		float iw
 	) {
 		VoidmarkConfig config = VoidmarkConfig.get();
-		float y = featureCard(graphics, font, left, top, col, cardHeight(9), "Control");
+		float y = featureCard(graphics, font, left, top, col, cardHeight(7), "Control");
 		y = cycle(graphics, font, ix, y, iw, mouseX, mouseY, "GUI", config.guiDesignLabel(), () -> {
 			config.cycleGuiDesign();
 			if (!config.guiDesignControl() && tab == Tab.SETTINGS) {
@@ -1948,15 +1960,7 @@ public class VoidmarkScreen extends Screen {
 			}
 		});
 		y = colorRow(graphics, font, ix, y, iw, mouseX, mouseY, "Glass", config.controlPaneRgb, PickerTarget.CONTROL);
-		y = slider(graphics, font, ix, y, iw, "Opacity", Math.round(config.controlPaneOpacity * 100) + "%", (config.controlPaneOpacity - 0.12f) / 0.66f, v -> {
-			config.controlPaneOpacity = VoidmarkConfig.clamp(0.12f + v * 0.66f, 0.12f, 0.78f);
-			Theme.refresh();
-		});
 		y = colorRow(graphics, font, ix, y, iw, mouseX, mouseY, "Pills", config.controlPillRgb, PickerTarget.PILL);
-		y = slider(graphics, font, ix, y, iw, "Opacity", Math.round(config.controlPillOpacity * 100) + "%", (config.controlPillOpacity - 0.12f) / 0.66f, v -> {
-			config.controlPillOpacity = VoidmarkConfig.clamp(0.12f + v * 0.66f, 0.12f, 0.78f);
-			Theme.refresh();
-		});
 		y = slider(graphics, font, ix, y, iw, "Frost", Math.round(config.controlFrost * 100) + "%", config.controlFrost, v -> config.controlFrost = VoidmarkConfig.clamp(v, 0f, 1f));
 		y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Menu stars", config.menuStarfield, v -> config.menuStarfield = v);
 		y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Animations", config.uiAnimations, v -> config.uiAnimations = v);
@@ -2280,11 +2284,9 @@ public class VoidmarkScreen extends Screen {
 			case MOB -> {
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Through walls", config.mobGlowThroughWalls, v -> config.mobGlowThroughWalls = v);
 				y = slider(graphics, font, ix, y, iw, "Radius", String.format(Locale.ROOT, "%.0f", config.mobGlowRadius), (config.mobGlowRadius - GlowBlurRadius.MIN) / (GlowBlurRadius.MAX - GlowBlurRadius.MIN), v -> config.mobGlowRadius = VoidmarkConfig.clamp(GlowBlurRadius.MIN + v * (GlowBlurRadius.MAX - GlowBlurRadius.MIN), GlowBlurRadius.MIN, GlowBlurRadius.MAX));
-				y = slider(graphics, font, ix, y, iw, "Opacity", Math.round(config.mobGlowOpacity * 100) + "%", (config.mobGlowOpacity - 0.15f) / 0.75f, v -> config.mobGlowOpacity = VoidmarkConfig.clamp(0.15f + v * 0.75f, 0.15f, 0.90f));
 				colorRow(graphics, font, ix, y, iw, mouseX, mouseY, "Color", config.mobGlowRgb, PickerTarget.MOB);
 			}
 			case BLOCK -> {
-				y = slider(graphics, font, ix, y, iw, "Opacity", Math.round(config.blockOutlineOpacity * 100) + "%", (config.blockOutlineOpacity - 0.15f) / 0.75f, v -> config.blockOutlineOpacity = VoidmarkConfig.clamp(0.15f + v * 0.75f, 0.15f, 0.90f));
 				colorRow(graphics, font, ix, y, iw, mouseX, mouseY, "Color", config.blockOutlineRgb, PickerTarget.BLOCK);
 			}
 			case CHEST -> {
@@ -2297,7 +2299,6 @@ public class VoidmarkScreen extends Screen {
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Outline", config.boxOutline, v -> config.boxOutline = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Tracer", config.tracersEnabled, v -> config.tracersEnabled = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Through walls", config.throughWalls, v -> config.throughWalls = v);
-				y = slider(graphics, font, ix, y, iw, "Fill opacity", Math.round(config.fillOpacity * 100) + "%", (config.fillOpacity - 0.08f) / 0.77f, v -> config.fillOpacity = VoidmarkConfig.clamp(0.08f + v * 0.77f, 0.08f, 0.85f));
 				colorRow(graphics, font, ix, y, iw, mouseX, mouseY, "Color", config.colorRgb, PickerTarget.NODE);
 			}
 			case WATERMARK -> {
@@ -2676,7 +2677,7 @@ public class VoidmarkScreen extends Screen {
 		return FabricLoader.getInstance()
 			.getModContainer("voidmark")
 			.map(container -> container.getMetadata().getVersion().getFriendlyString())
-			.orElse("1.2.96");
+			.orElse("1.2.97");
 	}
 
 	@Override

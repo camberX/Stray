@@ -22,7 +22,7 @@ public final class ControlChrome {
 	public static final float WINDOW_R = 24f;
 	public static final float CARD_R = 18f;
 	public static final float RAIL_INSET = 10f;
-	public static final float RAIL_W = 44f;
+	public static final float RAIL_W = 56f;
 
 	private ControlChrome() {
 	}
