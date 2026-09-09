@@ -128,6 +128,12 @@ public final class StrayConfig {
 	public float heldItemShaderSmoke = 0.55f;
 	public String heldItemShaderStyle = "smoke";
 	public boolean playerFillEsp = false;
+	public boolean playerFillThroughWalls = true;
+	public boolean playerFillMobs = true;
+	public int playerFillRgb = 0x4FD6EA;
+	public float playerFillFill = 0.32f;
+	public float playerFillSmoke = 0.55f;
+	public String playerFillStyle = "smoke";
 	public int titaniumEspRange = 48;
 	public int titaniumEspRgb = 0xE8ECF2;
 	public float titaniumEspOpacity = 0.38f;
@@ -593,6 +599,12 @@ public final class StrayConfig {
 				if (!json.has("playerFillEsp")) {
 					loaded.playerFillEsp = false;
 				}
+				if (!json.has("playerFillThroughWalls")) {
+					loaded.playerFillThroughWalls = true;
+				}
+				if (!json.has("playerFillMobs")) {
+					loaded.playerFillMobs = true;
+				}
 				loaded.heldItemShaderFill = json.has("heldItemShaderFill")
 					? clamp(loaded.heldItemShaderFill, 0.08f, 0.85f)
 					: 0.32f;
@@ -603,6 +615,19 @@ public final class StrayConfig {
 					? clamp(loaded.heldItemShaderSmoke, 0.10f, 1.50f)
 					: 0.55f;
 				loaded.heldItemShaderStyle = normalizeHeldItemShaderStyle(loaded.heldItemShaderStyle);
+				loaded.playerFillRgb = loaded.playerFillRgb & 0xFFFFFF;
+				if (!json.has("playerFillRgb") || loaded.playerFillRgb == 0) {
+					loaded.playerFillRgb = loaded.heldItemShaderRgb == 0 ? 0x4FD6EA : loaded.heldItemShaderRgb & 0xFFFFFF;
+				}
+				loaded.playerFillFill = json.has("playerFillFill")
+					? clamp(loaded.playerFillFill, 0.08f, 0.85f)
+					: loaded.heldItemShaderFill;
+				loaded.playerFillSmoke = json.has("playerFillSmoke")
+					? clamp(loaded.playerFillSmoke, 0.10f, 1.50f)
+					: loaded.heldItemShaderSmoke;
+				loaded.playerFillStyle = json.has("playerFillStyle")
+					? normalizeHeldItemShaderStyle(loaded.playerFillStyle)
+					: loaded.heldItemShaderStyle;
 				loaded.triggerbotHumanize = json.has("triggerbotHumanize")
 					? clamp(loaded.triggerbotHumanize, 0f, 1f)
 					: 0.50f;
@@ -757,6 +782,18 @@ public final class StrayConfig {
 
 	public float heldItemShaderStyleIndex() {
 		return heldItemShaderStars() ? 1f : 0f;
+	}
+
+	public void cyclePlayerFillStyle() {
+		playerFillStyle = playerFillStars() ? "smoke" : "stars";
+	}
+
+	public String playerFillStyleLabel() {
+		return playerFillStars() ? "Stars" : "Smoke";
+	}
+
+	public boolean playerFillStars() {
+		return "stars".equals(playerFillStyle);
 	}
 
 	public static String normalizeHeldItemShaderStyle(String style) {

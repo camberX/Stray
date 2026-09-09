@@ -88,6 +88,10 @@ public final class StrayClient implements ClientModInitializer {
 		return menuKeyMatches(StrayConfig.get().openWardrobeKey, event);
 	}
 
+	public static boolean strayHotkeys(Minecraft client) {
+		return client != null && client.screen == null;
+	}
+
 	public static boolean menuKeyHeld(String keyName) {
 		return OdinClicks.isPressed(OdinClicks.parseKey(keyName));
 	}
@@ -309,13 +313,24 @@ public final class StrayClient implements ClientModInitializer {
 	}
 
 	private static boolean ignoreMenuBinds(Minecraft client) {
-		if (client.screen instanceof ChatScreen) {
+		var screen = client.screen;
+		if (screen == null) {
+			return false;
+		}
+		if (screen instanceof ChatScreen) {
 			return true;
 		}
-		if (client.screen instanceof StrayScreen screen && screen.shouldIgnoreMenuBinds()) {
+		if (screen instanceof StrayScreen stray && stray.shouldIgnoreMenuBinds()) {
 			return true;
 		}
-		return client.screen != null && client.screen.getFocused() instanceof EditBox;
+		if (screen.getFocused() instanceof EditBox) {
+			return true;
+		}
+		return !(screen instanceof StrayScreen
+			|| screen instanceof LoadoutsScreen
+			|| screen instanceof WardrobeScreen
+			|| screen instanceof HudEditorScreen
+			|| screen instanceof ItemEditScreen);
 	}
 
 	private static void handleOpenGui(Minecraft client) {

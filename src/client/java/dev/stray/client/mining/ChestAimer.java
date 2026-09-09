@@ -1,8 +1,8 @@
 package dev.stray.client.mining;
 
+import dev.stray.client.StrayClient;
 import dev.stray.client.combat.OdinClicks;
 import dev.stray.client.config.StrayConfig;
-import dev.stray.client.ui.StrayScreen;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.core.BlockPos;
@@ -59,7 +59,7 @@ public final class ChestAimer {
 
 	public static boolean keyHeld() {
 		Minecraft client = Minecraft.getInstance();
-		if (client.screen instanceof StrayScreen) {
+		if (!StrayClient.strayHotkeys(client)) {
 			return false;
 		}
 		return OdinClicks.isPressed(OdinClicks.parseKey(StrayConfig.get().chestAimKey));

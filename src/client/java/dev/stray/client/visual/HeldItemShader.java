@@ -111,6 +111,10 @@ public final class HeldItemShader {
 		return playerFillDepth > 0;
 	}
 
+	public static boolean playerFillThroughWalls() {
+		return playerFillActive() && StrayConfig.get().playerFillThroughWalls;
+	}
+
 	public static boolean shouldFillEntity(Entity entity) {
 		if (!playerFillActive() || entity == null || entity.isSpectator()) {
 			return false;
@@ -122,7 +126,11 @@ public final class HeldItemShader {
 		if (entity.getType() == EntityType.PLAYER) {
 			return true;
 		}
-		return MobGlowRenderer.listed(entity);
+		return StrayConfig.get().playerFillMobs && MobGlowRenderer.listed(entity);
+	}
+
+	public static boolean shouldFillThroughWalls(Entity entity) {
+		return playerFillThroughWalls() && shouldFillEntity(entity);
 	}
 
 	public static boolean shouldFillPlayer(LivingEntityRenderState state) {
@@ -204,7 +212,7 @@ public final class HeldItemShader {
 		}
 		Identifier atlas = atlas(original, quads);
 		if (playerFill()) {
-			return ESP_FILL_TYPES.apply(atlas);
+			return fillType(atlas);
 		}
 		return FILL_TYPES.apply(atlas);
 	}
@@ -234,7 +242,11 @@ public final class HeldItemShader {
 		if (original == null || isPipeline(original.pipeline()) || atlas == null) {
 			return original;
 		}
-		return ESP_FILL_TYPES.apply(atlas);
+		return fillType(atlas);
+	}
+
+	private static RenderType fillType(Identifier atlas) {
+		return playerFillThroughWalls() ? ESP_FILL_TYPES.apply(atlas) : FILL_TYPES.apply(atlas);
 	}
 
 	public static void submitArmMask(SubmitNodeCollector collector, PoseStack pose, int light, Identifier skin, ModelPart part) {
@@ -247,7 +259,7 @@ public final class HeldItemShader {
 
 	public static void beginFillEsp() {
 		espThisFrame = false;
-		if (!playerFillActive()) {
+		if (!playerFillThroughWalls()) {
 			return;
 		}
 		Minecraft client = Minecraft.getInstance();
@@ -400,17 +412,26 @@ public final class HeldItemShader {
 
 	public static Vector4fc colorModulator() {
 		StrayConfig config = StrayConfig.get();
-		int rgb = config.heldItemShaderRgb;
+		if (playerFill()) {
+			return packColor(config.playerFillRgb, config.playerFillFill);
+		}
+		return packColor(config.heldItemShaderRgb, config.heldItemShaderFill);
+	}
+
+	private static Vector4f packColor(int rgb, float fill) {
 		return new Vector4f(
 			((rgb >> 16) & 0xFF) / 255f,
 			((rgb >> 8) & 0xFF) / 255f,
 			(rgb & 0xFF) / 255f,
-			StrayConfig.clamp(config.heldItemShaderFill, 0.08f, 0.85f)
+			StrayConfig.clamp(fill, 0.08f, 0.85f)
 		);
 	}
 
 	public static Vector4fc outlineColorModulator() {
-		Vector4fc fill = colorModulator();
+		Vector4fc fill = packColor(
+			StrayConfig.get().heldItemShaderRgb,
+			StrayConfig.get().heldItemShaderFill
+		);
 		return new Vector4f(
 			fill.x() + (1f - fill.x()) * 0.62f,
 			fill.y() + (1f - fill.y()) * 0.62f,
@@ -421,6 +442,13 @@ public final class HeldItemShader {
 
 	public static Vector3fc modelOffset() {
 		StrayConfig config = StrayConfig.get();
+		if (playerFill()) {
+			return new Vector3f(
+				0.90f,
+				StrayConfig.clamp(config.playerFillSmoke, 0.10f, 1.50f),
+				config.playerFillStars() ? 1f : 0f
+			);
+		}
 		return new Vector3f(
 			StrayConfig.clamp(config.heldItemShaderOutline, 0.15f, 1.50f),
 			StrayConfig.clamp(config.heldItemShaderSmoke, 0.10f, 1.50f),

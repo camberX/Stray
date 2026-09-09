@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.125", new String[]{
+			"Hotkeys stay off inside chests and inventories. Player fill has its own color, style, and through-walls."
+		}),
 		new Entry("1.2.124", new String[]{
 			"Star mobs have their own glow color, radius, and through-walls. Tabs scroll when cards run off the window."
 		}),

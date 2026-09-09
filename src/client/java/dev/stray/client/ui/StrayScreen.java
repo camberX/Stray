@@ -121,6 +121,7 @@ public class StrayScreen extends Screen {
 		VIEW("Aspect", 3),
 		HITSOUND("Hitsound", 3),
 		HELD_ITEM("Held item", 5),
+		FILL("Player fill", 6),
 		AUTO_CLICKER("Auto clicker", 8),
 		AUTO_EXPERIMENTS("Auto experiments", 5),
 		MOB("Mob glow", 3),
@@ -152,7 +153,7 @@ public class StrayScreen extends Screen {
 	}
 
 	private enum PickerTarget {
-		WORLD, SKY, FOG, NODE, THEME, PANE, CONTROL, PILL, MOB, STAR, BLOCK, TITANIUM, CHEST, HELD_ITEM
+		WORLD, SKY, FOG, NODE, THEME, PANE, CONTROL, PILL, MOB, STAR, BLOCK, TITANIUM, CHEST, HELD_ITEM, FILL
 	}
 
 	private record SearchEntry(String label, Tab tab, String hint) {
@@ -192,6 +193,7 @@ public class StrayScreen extends Screen {
 		new SearchEntry("Ghost item", Tab.ESP, "Visuals"),
 		new SearchEntry("Player fill", Tab.ESP, "Visuals"),
 		new SearchEntry("Player fill ESP", Tab.ESP, "Visuals"),
+		new SearchEntry("Player fill color", Tab.ESP, "Visuals"),
 		new SearchEntry("Fill through walls", Tab.ESP, "Visuals"),
 		new SearchEntry("Mob fill", Tab.ESP, "Visuals"),
 		new SearchEntry("Held fill", Tab.ESP, "Visuals"),
@@ -782,7 +784,7 @@ public class StrayScreen extends Screen {
 			y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Star mobs", config.starMobEsp, v -> config.starMobEsp = v, Feature.STAR);
 			y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Block outline", config.blockOutlineGlow, v -> config.blockOutlineGlow = v, Feature.BLOCK);
 			y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Chest ESP", config.chestEspEnabled, v -> config.chestEspEnabled = v, Feature.CHEST);
-			y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Player fill", config.playerFillEsp, v -> config.playerFillEsp = v);
+			y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Player fill", config.playerFillEsp, v -> config.playerFillEsp = v, Feature.FILL);
 			y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Nametags", config.nametagsEnabled, v -> config.nametagsEnabled = v, Feature.NAMETAGS);
 			toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Own nametag", config.nametagSelf, v -> config.nametagSelf = v);
 			float heldTop = top + cardHeight(7) + 8;
@@ -802,9 +804,8 @@ public class StrayScreen extends Screen {
 		List<MobCatalog.Entry> entries = MobCatalog.filtered(mobQuery);
 		float mobTop = top;
 		if (controlCenter()) {
-			float fillH = cardHeight(0);
-			featureCard(graphics, font, right, top, col, fillH, "Player fill", config.playerFillEsp, v -> config.playerFillEsp = v, mouseX, mouseY);
-			float tagTop = top + fillH + 8;
+			y = controlCard(graphics, font, right, top, col, mouseX, mouseY, "Player fill", config.playerFillEsp, v -> config.playerFillEsp = v, Feature.FILL);
+			float tagTop = y;
 			float tagH = fitH(tagTop, cardHeight(Feature.NAMETAGS.rows + 1));
 			float tagY = featureCard(graphics, font, right, tagTop, col, tagH, "Nametags", config.nametagsEnabled, v -> config.nametagsEnabled = v, mouseX, mouseY);
 			tagY = toggle(graphics, font, rx, tagY, iw, mouseX, mouseY, "Own nametag", config.nametagSelf, v -> config.nametagSelf = v);
@@ -2498,6 +2499,14 @@ public class StrayScreen extends Screen {
 				y = slider(graphics, font, ix, y, iw, "Outline", Math.round(config.heldItemShaderOutline * 100) + "%", (config.heldItemShaderOutline - 0.15f) / 1.35f, v -> config.heldItemShaderOutline = StrayConfig.clamp(0.15f + v * 1.35f, 0.15f, 1.50f));
 				slider(graphics, font, ix, y, iw, config.heldItemShaderStyleLabel(), Math.round(config.heldItemShaderSmoke * 100) + "%", (config.heldItemShaderSmoke - 0.10f) / 1.40f, v -> config.heldItemShaderSmoke = StrayConfig.clamp(0.10f + v * 1.40f, 0.10f, 1.50f));
 			}
+			case FILL -> {
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Through walls", config.playerFillThroughWalls, v -> config.playerFillThroughWalls = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Fill ESP mobs", config.playerFillMobs, v -> config.playerFillMobs = v);
+				y = cycle(graphics, font, ix, y, iw, mouseX, mouseY, "Style", config.playerFillStyleLabel(), config::cyclePlayerFillStyle);
+				y = colorRow(graphics, font, ix, y, iw, mouseX, mouseY, "Color", config.playerFillRgb, PickerTarget.FILL);
+				y = slider(graphics, font, ix, y, iw, "Fill", Math.round(config.playerFillFill * 100) + "%", (config.playerFillFill - 0.08f) / 0.77f, v -> config.playerFillFill = StrayConfig.clamp(0.08f + v * 0.77f, 0.08f, 0.85f));
+				slider(graphics, font, ix, y, iw, config.playerFillStyleLabel(), Math.round(config.playerFillSmoke * 100) + "%", (config.playerFillSmoke - 0.10f) / 1.40f, v -> config.playerFillSmoke = StrayConfig.clamp(0.10f + v * 1.40f, 0.10f, 1.50f));
+			}
 			case AUTO_CLICKER -> {
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Whitelist only", config.autoClickerWhiteListOnly, v -> config.autoClickerWhiteListOnly = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Allow breaking", config.autoClickerAllowBreaking, v -> config.autoClickerAllowBreaking = v);
@@ -2903,6 +2912,7 @@ public class StrayScreen extends Screen {
 			case TITANIUM -> config.titaniumEspRgb = packed;
 			case CHEST -> config.chestEspRgb = packed;
 			case HELD_ITEM -> config.heldItemShaderRgb = packed;
+			case FILL -> config.playerFillRgb = packed;
 			case THEME -> Theme.applyCustom(packed);
 			case PANE -> Theme.applyPane(packed);
 			case CONTROL -> {
@@ -2921,7 +2931,7 @@ public class StrayScreen extends Screen {
 			case CONTROL, PILL -> 0.12f;
 			case PANE -> 0.20f;
 			case MOB, STAR, BLOCK -> 0.15f;
-			case NODE, HELD_ITEM, CHEST, TITANIUM -> 0.08f;
+			case NODE, HELD_ITEM, FILL, CHEST, TITANIUM -> 0.08f;
 			case THEME -> 1f;
 			default -> 0f;
 		};
@@ -2931,7 +2941,7 @@ public class StrayScreen extends Screen {
 		return switch (target) {
 			case CONTROL, PILL -> 0.78f;
 			case MOB, STAR, BLOCK -> 0.90f;
-			case NODE, HELD_ITEM, CHEST, TITANIUM -> 0.85f;
+			case NODE, HELD_ITEM, FILL, CHEST, TITANIUM -> 0.85f;
 			default -> 1f;
 		};
 	}
@@ -2949,6 +2959,7 @@ public class StrayScreen extends Screen {
 			case CHEST -> config.chestEspOpacity;
 			case TITANIUM -> config.titaniumEspOpacity;
 			case HELD_ITEM -> config.heldItemShaderFill;
+			case FILL -> config.playerFillFill;
 			case WORLD -> config.worldTintStrength;
 			case SKY -> config.skyTintStrength;
 			case FOG -> config.fogDensity;
@@ -2970,6 +2981,7 @@ public class StrayScreen extends Screen {
 			case CHEST -> config.chestEspOpacity = clamped;
 			case TITANIUM -> config.titaniumEspOpacity = clamped;
 			case HELD_ITEM -> config.heldItemShaderFill = clamped;
+			case FILL -> config.playerFillFill = clamped;
 			case WORLD -> config.worldTintStrength = clamped;
 			case SKY -> config.skyTintStrength = clamped;
 			case FOG -> config.fogDensity = clamped;
@@ -3030,7 +3042,7 @@ public class StrayScreen extends Screen {
 		return FabricLoader.getInstance()
 			.getModContainer("stray")
 			.map(container -> container.getMetadata().getVersion().getFriendlyString())
-			.orElse("1.2.124");
+			.orElse("1.2.125");
 	}
 
 	@Override
