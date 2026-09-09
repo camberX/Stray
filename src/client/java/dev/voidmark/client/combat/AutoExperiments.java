@@ -1,6 +1,8 @@
 package dev.voidmark.client.combat;
 
 import dev.voidmark.client.config.VoidmarkConfig;
+import net.fabricmc.fabric.api.client.screen.v1.ScreenEvents;
+import net.fabricmc.fabric.api.client.screen.v1.ScreenMouseEvents;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
@@ -25,6 +27,13 @@ public final class AutoExperiments {
 	private static long lastClick;
 
 	private AutoExperiments() {
+	}
+
+	public static void init() {
+		ScreenEvents.BEFORE_INIT.register((client, screen, scaledWidth, scaledHeight) -> {
+			ScreenMouseEvents.allowMouseClick(screen).register((opened, event) -> !blockMouse(opened));
+			ScreenMouseEvents.allowMouseRelease(screen).register((opened, event) -> !blockMouse(opened));
+		});
 	}
 
 	public static void reset() {

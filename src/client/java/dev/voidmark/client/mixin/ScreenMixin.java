@@ -1,17 +1,14 @@
 package dev.voidmark.client.mixin;
 
-import dev.voidmark.client.combat.AutoExperiments;
 import dev.voidmark.client.render.GuiDraw;
 import dev.voidmark.client.ui.MenuChrome;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.client.input.MouseButtonEvent;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(Screen.class)
 public abstract class ScreenMixin {
@@ -52,22 +49,6 @@ public abstract class ScreenMixin {
 	private void voidmark$noDirt(GuiGraphicsExtractor graphics, int x, int y, int w, int h, CallbackInfo ci) {
 		if (MenuChrome.applies((Screen) (Object) this)) {
 			ci.cancel();
-		}
-	}
-
-	@Inject(method = "mouseClicked", at = @At("HEAD"), cancellable = true)
-	private void voidmark$autoExperimentsClick(MouseButtonEvent event, boolean doubled, CallbackInfoReturnable<Boolean> cir) {
-		Screen self = (Screen) (Object) this;
-		if (AutoExperiments.blockMouse(self)) {
-			cir.setReturnValue(true);
-		}
-	}
-
-	@Inject(method = "mouseReleased", at = @At("HEAD"), cancellable = true)
-	private void voidmark$autoExperimentsRelease(MouseButtonEvent event, CallbackInfoReturnable<Boolean> cir) {
-		Screen self = (Screen) (Object) this;
-		if (AutoExperiments.blockMouse(self)) {
-			cir.setReturnValue(true);
 		}
 	}
 }

@@ -117,6 +117,7 @@ public final class VoidmarkClient implements ClientModInitializer {
 		NametagRenderer.init();
 		VanillaHud.init();
 		MediaSession.init();
+		AutoExperiments.init();
 
 		openGui = KeyMappingHelper.registerKeyMapping(new KeyMapping(
 			"key.voidmark.open",

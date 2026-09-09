@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.112", new String[]{
+			"Launch no longer crashes. Experiment mouse-block uses the same Fabric screen events as OdinClient."
+		}),
 		new Entry("1.2.111", new String[]{
 			"Auto clicker and Auto experiments match OdinClient, including Terminator CPS and experiment slot order."
 		}),
