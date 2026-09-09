@@ -67,25 +67,24 @@ public class VoidmarkScreen extends Screen {
 	private static final float COG_W = 14;
 
 	private enum Group {
-		WORLD("WORLD", "World"),
-		COMBAT("COMBAT", "Combat"),
-		ESP("ESP", "ESP"),
-		HUD("HUD", "HUD"),
-		BARS("BARS", "Bars"),
-		NODES("NODES", "Nodes"),
-		MINING("MINING", "Mining"),
-		FARMING("FARMING", "Farming"),
-		MENUS("MENUS", "Menus"),
-		STATUS("STATUS", "Status"),
-		PLAYER("PLAYER", "Player"),
-		THEME("THEME", "Theme");
+		WORLD("WORLD", "World", MenuFont.LANDSCAPE),
+		COMBAT("COMBAT", "Combat", MenuFont.SWORD),
+		ESP("ESP", "ESP", MenuFont.EYE),
+		HUD("HUD", "HUD", MenuFont.DISPLAY),
+		MINING("MINING", "Mining", MenuFont.DIAMOND),
+		FARMING("FARMING", "Farming", MenuFont.GRAIN),
+		MISC("MISC", "Misc", MenuFont.CATEGORY),
+		PLAYER("PLAYER", "Player", MenuFont.PERSON),
+		THEME("THEME", "Theme", MenuFont.PALETTE);
 
 		final String label;
 		final String caption;
+		final String glyph;
 
-		Group(String label, String caption) {
+		Group(String label, String caption, String glyph) {
 			this.label = label;
 			this.caption = caption;
+			this.glyph = glyph;
 		}
 	}
 
@@ -94,12 +93,12 @@ public class VoidmarkScreen extends Screen {
 		COMBAT("Combat", Group.COMBAT),
 		ESP("ESP", Group.ESP),
 		OVERLAY("Overlay", Group.HUD),
-		BARS("Bars", Group.BARS),
-		NODES("Nodes", Group.NODES),
+		BARS("Bars", Group.HUD),
 		MINING("Mining", Group.MINING),
+		NODES("Nodes", Group.MINING),
 		FARMING("Farming", Group.FARMING),
-		MENUS("Menus", Group.MENUS),
-		STATUS("Status", Group.STATUS),
+		MENUS("Menus", Group.MISC),
+		STATUS("Status", Group.MISC),
 		PLAYER("Player", Group.PLAYER),
 		SETTINGS("Theme", Group.THEME);
 
@@ -1033,8 +1032,8 @@ public class VoidmarkScreen extends Screen {
 		hits.add(new Hit(windowX, windowY, sidebarW(), windowH, mx -> startDrag(mx, lastClickY), true));
 
 		Group[] groups = {
-			Group.WORLD, Group.COMBAT, Group.ESP, Group.HUD, Group.BARS,
-			Group.NODES, Group.MINING, Group.FARMING, Group.MENUS, Group.STATUS, Group.THEME
+			Group.WORLD, Group.COMBAT, Group.ESP, Group.HUD,
+			Group.MINING, Group.FARMING, Group.MISC, Group.THEME
 		};
 		float top = 8f;
 		float slot = Math.min(36f, (railH - top * 2f) / groups.length);
@@ -1059,7 +1058,7 @@ public class VoidmarkScreen extends Screen {
 			int icon = on ? ControlChrome.text() : ControlChrome.muted();
 			float iconH = CATEGORY_ICON_LINE * CATEGORY_ICON;
 			float iconW = GuiDraw.iconWidth(font, glyph, CATEGORY_ICON);
-			float capH = 8f;
+			float capH = 10f;
 			float stack = iconH + 1.5f + capH;
 			float sy = iy + (slot - stack) * 0.5f;
 			GuiDraw.icon(
@@ -1088,12 +1087,7 @@ public class VoidmarkScreen extends Screen {
 	}
 
 	private static String groupGlyph(Group group) {
-		for (Tab value : Tab.values()) {
-			if (value.group == group) {
-				return tabGlyph(value);
-			}
-		}
-		return MenuFont.SETTINGS;
+		return group.glyph;
 	}
 
 	private static void drawRailCaption(
@@ -1105,7 +1099,7 @@ public class VoidmarkScreen extends Screen {
 		float maxW,
 		int color
 	) {
-		float scale = MenuFont.smallScale() * 0.78f;
+		float scale = MenuFont.smallScale() * 0.94f;
 		float width = font.width(MenuFont.small(label)) * scale;
 		if (width > maxW && width > 0.5f) {
 			scale *= maxW / width;
@@ -1216,13 +1210,13 @@ public class VoidmarkScreen extends Screen {
 	private static String tabGlyph(Tab value) {
 		return switch (value) {
 			case WORLD -> MenuFont.LANDSCAPE;
-			case COMBAT -> MenuFont.FLASH;
+			case COMBAT -> MenuFont.SWORD;
 			case ESP -> MenuFont.EYE;
-			case OVERLAY -> MenuFont.QUILT;
+			case OVERLAY -> MenuFont.DISPLAY;
 			case BARS -> MenuFont.BARS;
 			case NODES -> MenuFont.PIN;
 			case MINING -> MenuFont.DIAMOND;
-			case FARMING -> MenuFont.AGRICULTURE;
+			case FARMING -> MenuFont.GRAIN;
 			case MENUS -> MenuFont.HANGER;
 			case STATUS -> MenuFont.SPEED;
 			case PLAYER -> MenuFont.PERSON;
@@ -2677,7 +2671,7 @@ public class VoidmarkScreen extends Screen {
 		return FabricLoader.getInstance()
 			.getModContainer("voidmark")
 			.map(container -> container.getMetadata().getVersion().getFriendlyString())
-			.orElse("1.2.97");
+			.orElse("1.2.98");
 	}
 
 	@Override

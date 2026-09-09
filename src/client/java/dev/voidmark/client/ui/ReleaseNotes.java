@@ -8,6 +8,9 @@ public final class ReleaseNotes {
 	}
 
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.98", new String[]{
+			"Bars sit in HUD, Nodes in Mining, and Menus with Status in Misc. Combat is a sword, farming is wheat, and HUD uses a dashboard. Category names under the rail icons are a bit larger."
+		}),
 		new Entry("1.2.97", new String[]{
 			"Each Control category now has a small name under its rail icon.",
 			"Opacity lives on the color picker. Duplicate Opacity sliders next to those colors are gone."

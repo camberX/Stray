@@ -731,12 +731,12 @@ public final class VoidmarkConfig {
 			case "WORLD", "VIEW", "FOG", "CAMERA" -> "WORLD";
 			case "COMBAT", "HITSOUND", "TRIGGERBOT" -> "COMBAT";
 			case "ESP", "MOBS" -> "ESP";
-			case "OVERLAY", "DISPLAY", "INVENTORY" -> "OVERLAY";
-			case "BARS", "HUD" -> "BARS";
+			case "OVERLAY", "DISPLAY", "INVENTORY", "HUD" -> "OVERLAY";
+			case "BARS" -> "BARS";
 			case "NODES", "MARKERS" -> "NODES";
 			case "MINING" -> "MINING";
 			case "FARMING", "YAW", "PITCH" -> "FARMING";
-			case "MENUS", "LOADOUTS", "WARDROBE" -> "MENUS";
+			case "MENUS", "LOADOUTS", "WARDROBE", "MISC" -> "MENUS";
 			case "STATUS" -> "STATUS";
 			case "PLAYER", "NICK", "CAPE" -> "PLAYER";
 			case "SETTINGS", "THEME" -> "SETTINGS";
