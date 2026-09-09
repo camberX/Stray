@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.126", new String[]{
+			"Player fill color, style, and through-walls apply on their own. Duplicate Through walls switches no longer share one animation."
+		}),
 		new Entry("1.2.125", new String[]{
 			"Hotkeys stay off inside chests and inventories. Player fill has its own color, style, and through-walls."
 		}),

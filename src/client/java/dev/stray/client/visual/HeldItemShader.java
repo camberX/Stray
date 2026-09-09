@@ -62,6 +62,7 @@ public final class HeldItemShader {
 	private static final OutputTarget MASK_OUTPUT = new OutputTarget("stray_held_item_mask", HeldItemShader::maskTarget);
 	private static final OutputTarget ESP_OUTPUT = new OutputTarget("stray_fill_esp", HeldItemShader::espTarget);
 	private static final Function<Identifier, RenderType> FILL_TYPES = Util.memoize(HeldItemShader::createFillType);
+	private static final Function<Identifier, RenderType> PLAYER_FILL_TYPES = Util.memoize(HeldItemShader::createPlayerFillType);
 	private static final Function<Identifier, RenderType> ESP_FILL_TYPES = Util.memoize(HeldItemShader::createEspFillType);
 	private static final Function<Identifier, RenderType> MASK_TYPES = Util.memoize(HeldItemShader::createMaskType);
 	private static RenderPipeline fillPipeline;
@@ -147,6 +148,10 @@ public final class HeldItemShader {
 
 	public static void popPlayerFill() {
 		playerFillDepth = Math.max(0, playerFillDepth - 1);
+	}
+
+	public static boolean isPlayerFillPipeline(RenderPipeline value) {
+		return value != null && ESP_FILL_PIPELINE_ID.equals(value.getLocation());
 	}
 
 	public static boolean isFillPipeline(RenderPipeline value) {
@@ -246,7 +251,7 @@ public final class HeldItemShader {
 	}
 
 	private static RenderType fillType(Identifier atlas) {
-		return playerFillThroughWalls() ? ESP_FILL_TYPES.apply(atlas) : FILL_TYPES.apply(atlas);
+		return playerFillThroughWalls() ? ESP_FILL_TYPES.apply(atlas) : PLAYER_FILL_TYPES.apply(atlas);
 	}
 
 	public static void submitArmMask(SubmitNodeCollector collector, PoseStack pose, int light, Identifier skin, ModelPart part) {
@@ -411,8 +416,12 @@ public final class HeldItemShader {
 	}
 
 	public static Vector4fc colorModulator() {
+		return colorModulator(null);
+	}
+
+	public static Vector4fc colorModulator(RenderPipeline pipeline) {
 		StrayConfig config = StrayConfig.get();
-		if (playerFill()) {
+		if (playerFillUniforms(pipeline)) {
 			return packColor(config.playerFillRgb, config.playerFillFill);
 		}
 		return packColor(config.heldItemShaderRgb, config.heldItemShaderFill);
@@ -441,8 +450,12 @@ public final class HeldItemShader {
 	}
 
 	public static Vector3fc modelOffset() {
+		return modelOffset(null);
+	}
+
+	public static Vector3fc modelOffset(RenderPipeline pipeline) {
 		StrayConfig config = StrayConfig.get();
-		if (playerFill()) {
+		if (playerFillUniforms(pipeline)) {
 			return new Vector3f(
 				0.90f,
 				StrayConfig.clamp(config.playerFillSmoke, 0.10f, 1.50f),
@@ -454,6 +467,10 @@ public final class HeldItemShader {
 			StrayConfig.clamp(config.heldItemShaderSmoke, 0.10f, 1.50f),
 			config.heldItemShaderStyleIndex()
 		);
+	}
+
+	private static boolean playerFillUniforms(RenderPipeline pipeline) {
+		return isPlayerFillPipeline(pipeline) || playerFill();
 	}
 
 	private static RenderTarget maskTarget() {
@@ -519,6 +536,20 @@ public final class HeldItemShader {
 		return RenderType.create(
 			"stray_held_item",
 			RenderSetup.builder(fillPipeline)
+				.withTexture("Sampler0", atlas)
+				.withTexture("Sampler1", ItemFeatureRenderer.ENCHANTED_GLINT_ITEM)
+				.useLightmap()
+				.affectsCrumbling()
+				.setOutline(RenderSetup.OutlineProperty.NONE)
+				.createRenderSetup()
+		);
+	}
+
+	private static RenderType createPlayerFillType(Identifier atlas) {
+		ensureRegistered();
+		return RenderType.create(
+			"stray_player_fill",
+			RenderSetup.builder(espFillPipeline)
 				.withTexture("Sampler0", atlas)
 				.withTexture("Sampler1", ItemFeatureRenderer.ENCHANTED_GLINT_ITEM)
 				.useLightmap()

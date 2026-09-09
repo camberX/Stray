@@ -305,6 +305,7 @@ public class StrayScreen extends Screen {
 	private boolean searchOpen;
 	private boolean featureOpen;
 	private Feature featureId;
+	private String fieldScope = "";
 	private int bindListen;
 	private boolean capeFocused;
 	private boolean nickFocused;
@@ -530,6 +531,11 @@ public class StrayScreen extends Screen {
 		float next = Anim.exp(current, target, 16f, dt);
 		anims.put(key, next);
 		return next;
+	}
+
+	private String rowAnimKey(String label, float x, float y) {
+		String name = fieldScope.isEmpty() ? label : fieldScope + "/" + label;
+		return name + "@" + Math.round(x) + ":" + Math.round(y);
 	}
 
 	private boolean controlCenter() {
@@ -806,10 +812,12 @@ public class StrayScreen extends Screen {
 		if (controlCenter()) {
 			y = controlCard(graphics, font, right, top, col, mouseX, mouseY, "Player fill", config.playerFillEsp, v -> config.playerFillEsp = v, Feature.FILL);
 			float tagTop = y;
-			float tagH = fitH(tagTop, cardHeight(Feature.NAMETAGS.rows + 1));
+			float tagH = cardHeight(Feature.NAMETAGS.rows + 1);
 			float tagY = featureCard(graphics, font, right, tagTop, col, tagH, "Nametags", config.nametagsEnabled, v -> config.nametagsEnabled = v, mouseX, mouseY);
+			fieldScope = Feature.NAMETAGS.name();
 			tagY = toggle(graphics, font, rx, tagY, iw, mouseX, mouseY, "Own nametag", config.nametagSelf, v -> config.nametagSelf = v);
 			drawFeatureFields(graphics, font, mouseX, mouseY, rx, tagY, iw, Feature.NAMETAGS);
+			fieldScope = "";
 			mobTop = tagTop + tagH + 8;
 		}
 		float listH = Math.max(cardHeight(0), contentBottom() - mobTop);
@@ -2340,7 +2348,7 @@ public class StrayScreen extends Screen {
 				float trackH = 16;
 				float tx = x + w - cardPad() - trackW;
 				float ty = headY + (cardHead() - trackH) * 0.5f;
-				float t = anim("tog-" + title, value ? 1f : 0f);
+				float t = anim("tog-card-" + title + "@" + Math.round(x) + ":" + Math.round(y), value ? 1f : 0f);
 				ControlChrome.toggle(graphics, tx, ty, trackW, trackH, t);
 				hits.add(new Hit(tx - 2, headY, trackW + 4, cardHead(), () -> {
 					setter.accept(!value);
@@ -2363,14 +2371,15 @@ public class StrayScreen extends Screen {
 	private float toggle(GuiGraphicsExtractor graphics, Font font, float x, float y, float w, int mouseX, int mouseY, String label, boolean value, Consumer<Boolean> setter, Feature feature) {
 		float row = rowH();
 		boolean hovered = GuiDraw.hovered(mouseX, mouseY, x, y, w, row);
-		float hover = anim("hov-" + label, hovered ? 1f : 0f);
+		String animKey = rowAnimKey(label, x, y);
+		float hover = anim("hov-" + animKey, hovered ? 1f : 0f);
 		if (hover > 0.02f) {
 			GuiDraw.rounded(graphics, x - 3, y, w + 6, row, 6, Anim.fade(0x08FFFFFF, hover));
 		}
 		float labelY = GuiDraw.middle(y, row);
 		GuiDraw.menu(graphics, font, label, x + 1, labelY, ink());
 
-		float t = anim("tog-" + label, value ? 1f : 0f);
+		float t = anim("tog-" + animKey, value ? 1f : 0f);
 		float trackW = controlCenter() ? 28 : 22;
 		float trackH = controlCenter() ? 16 : 11;
 		float tx = x + w - trackW;
@@ -2456,6 +2465,10 @@ public class StrayScreen extends Screen {
 		Feature feature
 	) {
 		StrayConfig config = StrayConfig.get();
+		String previousScope = fieldScope;
+		if (fieldScope.isEmpty()) {
+			fieldScope = feature.name();
+		}
 		switch (feature) {
 			case WORLD -> {
 				y = cycle(graphics, font, ix, y, iw, mouseX, mouseY, "Mode", config.worldTintModeLabel(), config::cycleWorldTintMode);
@@ -2594,6 +2607,7 @@ public class StrayScreen extends Screen {
 				toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Particle hints", config.particleDetection, v -> config.particleDetection = v);
 			}
 		}
+		fieldScope = previousScope;
 	}
 
 	private float clickerHand(
@@ -3042,7 +3056,7 @@ public class StrayScreen extends Screen {
 		return FabricLoader.getInstance()
 			.getModContainer("stray")
 			.map(container -> container.getMetadata().getVersion().getFriendlyString())
-			.orElse("1.2.125");
+			.orElse("1.2.126");
 	}
 
 	@Override

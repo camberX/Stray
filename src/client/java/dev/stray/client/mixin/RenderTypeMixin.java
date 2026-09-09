@@ -24,7 +24,7 @@ public class RenderTypeMixin {
 			return HeldItemShader.outlineColorModulator();
 		}
 		if (HeldItemShader.isFillPipeline(pipeline)) {
-			return HeldItemShader.colorModulator();
+			return HeldItemShader.colorModulator(pipeline);
 		}
 		return color;
 	}
@@ -38,9 +38,10 @@ public class RenderTypeMixin {
 		index = 2
 	)
 	private Vector3fc stray$heldItemOffset(Vector3fc offset) {
-		if (!HeldItemShader.isPipeline(((RenderType) (Object) this).pipeline())) {
+		var pipeline = ((RenderType) (Object) this).pipeline();
+		if (!HeldItemShader.isPipeline(pipeline)) {
 			return offset;
 		}
-		return HeldItemShader.modelOffset();
+		return HeldItemShader.modelOffset(pipeline);
 	}
 }
