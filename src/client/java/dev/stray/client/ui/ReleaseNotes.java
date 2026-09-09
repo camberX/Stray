@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.122", new String[]{
+			"The mods-menu icon is the cat with the can."
+		}),
 		new Entry("1.2.121", new String[]{
 			"The Control rail shows a cat above the version."
 		}),
