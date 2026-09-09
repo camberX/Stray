@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.136", new String[]{
+			"Profile viewer uses the same menu size and scale as the other screens. It no longer stretches across the whole game window."
+		}),
 		new Entry("1.2.135", new String[]{
 			"Profile viewer Home uses item icons for level, purse, bank, networth, skills, and slayers. The Items grid fills the pane instead of sitting in the corner."
 		}),

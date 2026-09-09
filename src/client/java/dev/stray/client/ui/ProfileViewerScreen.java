@@ -32,6 +32,8 @@ import java.util.Locale;
  * from the public Hypixel profile host.
  */
 public class ProfileViewerScreen extends Screen {
+	private static final float MENU_W = 700;
+	private static final float MENU_H = 380;
 	private static final float RAIL = 84;
 	private static final float ROW = 16;
 	private static final float CHIP_H = 18;
@@ -64,8 +66,8 @@ public class ProfileViewerScreen extends Screen {
 	private boolean queryFocused;
 	private float windowX;
 	private float windowY;
-	private float windowW = 720;
-	private float windowH = 400;
+	private float windowW = MENU_W;
+	private float windowH = MENU_H;
 	private float viewScale = 1f;
 	private float viewCx;
 	private float viewCy;
@@ -1007,9 +1009,8 @@ public class ProfileViewerScreen extends Screen {
 	}
 
 	private void layout() {
-		float scale = Math.max(0.35f, (0.94f + 0.06f * appear) * StrayConfig.normalizeMenuScale(StrayConfig.get().menuScale));
-		windowW = Math.max(560f, (width - 18f) / scale);
-		windowH = Math.max(320f, (height - 18f) / scale);
+		windowW = Math.min(MENU_W, Math.max(360, width - 16));
+		windowH = Math.min(MENU_H, Math.max(220, height - 16));
 		if (!placed) {
 			windowX = (width - windowW) * 0.5f;
 			windowY = (height - windowH) * 0.5f;
