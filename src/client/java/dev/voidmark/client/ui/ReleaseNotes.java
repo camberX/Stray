@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.114", new String[]{
+			"Auto clicker and Player fill stay inside the menu instead of running off the bottom."
+		}),
 		new Entry("1.2.113", new String[]{
 			"Auto experiments lives in Misc. Auto clicker settings sit on the Combat card."
 		}),

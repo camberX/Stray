@@ -120,7 +120,7 @@ public class VoidmarkScreen extends Screen {
 		VIEW("Aspect", 3),
 		HITSOUND("Hitsound", 3),
 		HELD_ITEM("Held item", 5),
-		AUTO_CLICKER("Auto clicker", 10),
+		AUTO_CLICKER("Auto clicker", 8),
 		AUTO_EXPERIMENTS("Auto experiments", 5),
 		MOB("Mob glow", 3),
 		BLOCK("Block outline", 1),
@@ -708,7 +708,6 @@ public class VoidmarkScreen extends Screen {
 			y = controlCard(graphics, font, left, top, col, mouseX, mouseY, "Mob glow", config.mobGlowEnabled, v -> config.mobGlowEnabled = v, Feature.MOB);
 			y = controlCard(graphics, font, left, y, col, mouseX, mouseY, "Block outline", config.blockOutlineGlow, v -> config.blockOutlineGlow = v, Feature.BLOCK);
 			y = controlCard(graphics, font, left, y, col, mouseX, mouseY, "Chest ESP", config.chestEspEnabled, v -> config.chestEspEnabled = v, Feature.CHEST);
-			y = featureCard(graphics, font, left, y, col, cardHeight(0), "Player fill", config.playerFillEsp, v -> config.playerFillEsp = v, mouseX, mouseY);
 			namesTop = y;
 		} else {
 			y = featureCard(graphics, font, left, top, col, cardHeight(6), "Glow");
@@ -722,21 +721,26 @@ public class VoidmarkScreen extends Screen {
 		}
 
 		List<String> nametags = config.nametagEspLabels();
-		float namesH = Math.max(cardHeight(2), windowY + windowH - PAD - namesTop);
-		String namesTitle = nametags.isEmpty() ? "Nametag ESP" : "Nametag ESP  " + nametags.size();
-		float namesY = featureCard(graphics, font, left, namesTop, col, namesH, namesTitle);
-		drawNametagEspList(graphics, font, ix, namesY, iw, namesH - cardTop() - cardHead() - 4, mouseX, mouseY, true);
+		float namesH = fitH(namesTop, Math.max(cardHeight(2), contentBottom() - namesTop));
+		if (namesH >= cardHeight(0) + rowH()) {
+			String namesTitle = nametags.isEmpty() ? "Nametag ESP" : "Nametag ESP  " + nametags.size();
+			float namesY = featureCard(graphics, font, left, namesTop, col, namesH, namesTitle);
+			drawNametagEspList(graphics, font, ix, namesY, iw, namesH - cardTop() - cardHead() - 4, mouseX, mouseY, true);
+		}
 
 		List<MobCatalog.Entry> entries = MobCatalog.filtered(mobQuery);
 		float mobTop = top;
 		if (controlCenter()) {
-			float tagH = cardHeight(Feature.NAMETAGS.rows + 1);
-			float tagY = featureCard(graphics, font, right, top, col, tagH, "Nametags", config.nametagsEnabled, v -> config.nametagsEnabled = v, mouseX, mouseY);
+			float fillH = cardHeight(0);
+			featureCard(graphics, font, right, top, col, fillH, "Player fill", config.playerFillEsp, v -> config.playerFillEsp = v, mouseX, mouseY);
+			float tagTop = top + fillH + 8;
+			float tagH = fitH(tagTop, cardHeight(Feature.NAMETAGS.rows + 1));
+			float tagY = featureCard(graphics, font, right, tagTop, col, tagH, "Nametags", config.nametagsEnabled, v -> config.nametagsEnabled = v, mouseX, mouseY);
 			tagY = toggle(graphics, font, rx, tagY, iw, mouseX, mouseY, "Own nametag", config.nametagSelf, v -> config.nametagSelf = v);
 			drawFeatureFields(graphics, font, mouseX, mouseY, rx, tagY, iw, Feature.NAMETAGS);
-			mobTop = top + tagH + 8;
+			mobTop = tagTop + tagH + 8;
 		}
-		float listH = windowY + windowH - pad() - mobTop;
+		float listH = Math.max(cardHeight(0), contentBottom() - mobTop);
 		featureCard(graphics, font, right, mobTop, col, listH, entries.isEmpty() ? "Mobs" : "Mobs  " + entries.size());
 		float searchY = mobTop + cardTop() + cardHead();
 		mobFieldX = rx;
@@ -1690,31 +1694,29 @@ public class VoidmarkScreen extends Screen {
 				toggle(graphics, font, rx, y, iw, mouseX, mouseY, "Aspect ratio", config.aspectEnabled, v -> config.aspectEnabled = v, Feature.VIEW);
 			}
 			case COMBAT -> {
-				float hitsoundH = cardHeight(7);
-				float y = featureCard(graphics, font, left, top, col, hitsoundH, "Hitsound");
+				float y = featureCard(graphics, font, left, top, col, cardHeight(4), "Hitsound");
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Enable", config.hitsoundEnabled, v -> {
 					config.hitsoundEnabled = v;
 					if (v) {
 						Hitsound.playPreview();
 					}
-				});
+				}, Feature.HITSOUND);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Melee", config.hitsoundMelee, v -> config.hitsoundMelee = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Arrows", config.hitsoundArrows, v -> config.hitsoundArrows = v);
-				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Hitmarker", config.hitmarkerEnabled, v -> config.hitmarkerEnabled = v);
-				drawFeatureFields(graphics, font, mouseX, mouseY, ix, y, iw, Feature.HITSOUND);
+				toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Hitmarker", config.hitmarkerEnabled, v -> config.hitmarkerEnabled = v);
 
-				y = featureCard(graphics, font, left, top + hitsoundH + 8, col, cardHeight(1), "Held item");
+				y = featureCard(graphics, font, left, top + cardHeight(4) + 8, col, cardHeight(1), "Held item");
 				toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Shader", config.heldItemShaderEnabled, v -> config.heldItemShaderEnabled = v, Feature.HELD_ITEM);
 
-				float clickerH = cardHeight(1 + autoClickerFieldRows());
+				y = featureCard(graphics, font, left, top + cardHeight(4) + 8 + cardHeight(1) + 8, col, cardHeight(3), "Triggerbot");
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Enable", config.triggerbotEnabled, v -> config.triggerbotEnabled = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Players", config.triggerbotPlayers, v -> config.triggerbotPlayers = v);
+				slider(graphics, font, ix, y, iw, "Humanize", Math.round(config.triggerbotHumanize * 100) + "%", config.triggerbotHumanize, v -> config.triggerbotHumanize = VoidmarkConfig.clamp(v, 0f, 1f));
+
+				float clickerH = fitH(top, cardHeight(1 + autoClickerFieldRows()));
 				y = featureCard(graphics, font, right, top, col, clickerH, "Auto clicker");
 				y = toggle(graphics, font, rx, y, iw, mouseX, mouseY, "Enable", config.autoClickerEnabled, v -> config.autoClickerEnabled = v);
 				drawFeatureFields(graphics, font, mouseX, mouseY, rx, y, iw, Feature.AUTO_CLICKER);
-
-				y = featureCard(graphics, font, right, top + clickerH + 8, col, cardHeight(3), "Triggerbot");
-				y = toggle(graphics, font, rx, y, iw, mouseX, mouseY, "Enable", config.triggerbotEnabled, v -> config.triggerbotEnabled = v);
-				y = toggle(graphics, font, rx, y, iw, mouseX, mouseY, "Players", config.triggerbotPlayers, v -> config.triggerbotPlayers = v);
-				slider(graphics, font, rx, y, iw, "Humanize", Math.round(config.triggerbotHumanize * 100) + "%", config.triggerbotHumanize, v -> config.triggerbotHumanize = VoidmarkConfig.clamp(v, 0f, 1f));
 			}
 			case ESP -> drawMobsTab(graphics, font, mouseX, mouseY);
 			case OVERLAY -> {
@@ -1871,8 +1873,9 @@ public class VoidmarkScreen extends Screen {
 				y = toggle(graphics, font, rx, y, iw, mouseX, mouseY, "Players", config.triggerbotPlayers, v -> config.triggerbotPlayers = v);
 				slider(graphics, font, rx, y, iw, "Humanize", Math.round(config.triggerbotHumanize * 100) + "%", config.triggerbotHumanize, v -> config.triggerbotHumanize = VoidmarkConfig.clamp(v, 0f, 1f));
 
-				float clickerH = cardHeight(autoClickerFieldRows());
-				y = featureCard(graphics, font, right, top + cardHeight(3) + 8, col, clickerH, "Auto clicker", config.autoClickerEnabled, v -> config.autoClickerEnabled = v, mouseX, mouseY);
+				float clickerTop = top + cardHeight(3) + 8;
+				float clickerH = fitH(clickerTop, cardHeight(autoClickerFieldRows()));
+				y = featureCard(graphics, font, right, clickerTop, col, clickerH, "Auto clicker", config.autoClickerEnabled, v -> config.autoClickerEnabled = v, mouseX, mouseY);
 				drawFeatureFields(graphics, font, mouseX, mouseY, rx, y, iw, Feature.AUTO_CLICKER);
 			}
 			case ESP -> drawMobsTab(graphics, font, mouseX, mouseY);
@@ -2091,8 +2094,16 @@ public class VoidmarkScreen extends Screen {
 		return cardTop() + cardHead() + rows * rowH() + cardPad();
 	}
 
+	private float contentBottom() {
+		return windowY + windowH - pad();
+	}
+
+	private float fitH(float y, float h) {
+		return Math.min(h, Math.max(cardHeight(0), contentBottom() - y));
+	}
+
 	private int autoClickerFieldRows() {
-		return VoidmarkConfig.get().autoClickerTerminatorOnly ? 6 : 10;
+		return VoidmarkConfig.get().autoClickerTerminatorOnly ? 6 : 8;
 	}
 
 	private void drawNametagEspList(
@@ -2364,12 +2375,8 @@ public class VoidmarkScreen extends Screen {
 					y = slider(graphics, font, ix, y, iw, "CPS", cpsLabel(config.autoClickerCps), (config.autoClickerCps - 3.0f) / 12.0f, v -> config.autoClickerCps = snapCps(3.0f + v * 12.0f));
 					hint(graphics, font, ix, y, iw, "/autoclicker add left|right");
 				} else {
-					y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Enable left", config.autoClickerEnableLeftClick, v -> config.autoClickerEnableLeftClick = v);
-					y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Enable right", config.autoClickerEnableRightClick, v -> config.autoClickerEnableRightClick = v);
-					y = slider(graphics, font, ix, y, iw, "Left CPS", cpsLabel(config.autoClickerLeftCps), (config.autoClickerLeftCps - 3.0f) / 12.0f, v -> config.autoClickerLeftCps = snapCps(3.0f + v * 12.0f));
-					y = slider(graphics, font, ix, y, iw, "Right CPS", cpsLabel(config.autoClickerRightCps), (config.autoClickerRightCps - 3.0f) / 12.0f, v -> config.autoClickerRightCps = snapCps(3.0f + v * 12.0f));
-					y = bindRow(graphics, font, ix, y, iw, mouseX, mouseY, "Left bind", 1, AutoClicker.leftKey());
-					bindRow(graphics, font, ix, y, iw, mouseX, mouseY, "Right bind", 2, AutoClicker.rightKey());
+					y = clickerHand(graphics, font, ix, y, iw, mouseX, mouseY, "Left", config.autoClickerEnableLeftClick, v -> config.autoClickerEnableLeftClick = v, config.autoClickerLeftCps, v -> config.autoClickerLeftCps = snapCps(3.0f + v * 12.0f), 1, AutoClicker.leftKey());
+					clickerHand(graphics, font, ix, y, iw, mouseX, mouseY, "Right", config.autoClickerEnableRightClick, v -> config.autoClickerEnableRightClick = v, config.autoClickerRightCps, v -> config.autoClickerRightCps = snapCps(3.0f + v * 12.0f), 2, AutoClicker.rightKey());
 				}
 			}
 			case AUTO_EXPERIMENTS -> {
@@ -2438,6 +2445,28 @@ public class VoidmarkScreen extends Screen {
 				toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Particle hints", config.particleDetection, v -> config.particleDetection = v);
 			}
 		}
+	}
+
+	private float clickerHand(
+		GuiGraphicsExtractor graphics,
+		Font font,
+		float x,
+		float y,
+		float w,
+		int mouseX,
+		int mouseY,
+		String label,
+		boolean enabled,
+		Consumer<Boolean> setEnabled,
+		float cps,
+		Consumer<Float> setCps,
+		int bindWhich,
+		InputConstants.Key key
+	) {
+		float split = Math.min(w * 0.46f, w - 72f);
+		toggle(graphics, font, x, y, split, mouseX, mouseY, label, enabled, setEnabled);
+		slider(graphics, font, x + split + 4, y, Math.max(48f, w - split - 4), "CPS", cpsLabel(cps), (cps - 3.0f) / 12.0f, setCps);
+		return bindRow(graphics, font, x, y + rowH(), w, mouseX, mouseY, "Bind", bindWhich, key);
 	}
 
 	private float bindRow(
@@ -2827,7 +2856,7 @@ public class VoidmarkScreen extends Screen {
 		return FabricLoader.getInstance()
 			.getModContainer("voidmark")
 			.map(container -> container.getMetadata().getVersion().getFriendlyString())
-			.orElse("1.2.113");
+			.orElse("1.2.114");
 	}
 
 	@Override
