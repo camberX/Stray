@@ -2,6 +2,7 @@ package dev.stray.client;
 
 import com.mojang.blaze3d.platform.InputConstants;
 import com.mojang.brigadier.Command;
+import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import dev.stray.client.combat.AutoClicker;
 import dev.stray.client.combat.AutoClickerCommands;
@@ -52,6 +53,8 @@ import dev.stray.client.ui.HudEditorScreen;
 import dev.stray.client.ui.ItemEditScreen;
 import dev.stray.client.ui.LoadoutsCommands;
 import dev.stray.client.ui.LoadoutsScreen;
+import dev.stray.client.ui.ProfileCommands;
+import dev.stray.client.ui.ProfileViewerScreen;
 import dev.stray.client.ui.WardrobeCommands;
 import dev.stray.client.ui.WardrobeScreen;
 import dev.stray.client.ui.SystemFonts;
@@ -79,6 +82,7 @@ public final class StrayClient implements ClientModInitializer {
 	private static boolean wasGui;
 	private static boolean wasLoadouts;
 	private static boolean wasWardrobe;
+	private static boolean wasProfile;
 
 	public static boolean loadoutsKey(KeyEvent event) {
 		return menuKeyMatches(StrayConfig.get().openLoadoutsKey, event);
@@ -86,6 +90,10 @@ public final class StrayClient implements ClientModInitializer {
 
 	public static boolean wardrobeKey(KeyEvent event) {
 		return menuKeyMatches(StrayConfig.get().openWardrobeKey, event);
+	}
+
+	public static boolean profileKey(KeyEvent event) {
+		return menuKeyMatches(StrayConfig.get().openProfileKey, event);
 	}
 
 	public static boolean strayHotkeys(Minecraft client) {
@@ -101,6 +109,7 @@ public final class StrayClient implements ClientModInitializer {
 		wasGui = menuKeyHeld(config.openGuiKey);
 		wasLoadouts = menuKeyHeld(config.openLoadoutsKey);
 		wasWardrobe = menuKeyHeld(config.openWardrobeKey);
+		wasProfile = menuKeyHeld(config.openProfileKey);
 	}
 
 	public static boolean menuKeyMatches(String keyName, KeyEvent event) {
@@ -168,6 +177,7 @@ public final class StrayClient implements ClientModInitializer {
 			root.then(EspCommands.command());
 			root.then(LoadoutsCommands.command());
 			root.then(WardrobeCommands.command());
+			root.then(ProfileCommands.command());
 			var brand = dispatcher.register(root);
 			dispatcher.register(ClientCommands.literal("st").redirect(brand));
 			dispatcher.register(ClientCommands.literal("voidmark").redirect(brand));
@@ -181,12 +191,18 @@ public final class StrayClient implements ClientModInitializer {
 			vm.then(EspCommands.command());
 			vm.then(LoadoutsCommands.command());
 			vm.then(WardrobeCommands.command());
+			vm.then(ProfileCommands.command());
 			dispatcher.register(vm);
 			dispatcher.register(ClientCommands.literal("loadouts").executes(context -> LoadoutsCommands.open()));
 			dispatcher.register(ClientCommands.literal("loadout").executes(context -> LoadoutsCommands.open()));
 			dispatcher.register(ClientCommands.literal("ld").executes(context -> LoadoutsCommands.open()));
 			dispatcher.register(ClientCommands.literal("wardrobe").executes(context -> WardrobeCommands.open()));
 			dispatcher.register(ClientCommands.literal("wd").executes(context -> WardrobeCommands.open()));
+			dispatcher.register(ProfileCommands.command());
+			dispatcher.register(ClientCommands.literal("profile")
+				.executes(context -> ProfileCommands.open(""))
+				.then(ClientCommands.argument("player", StringArgumentType.word())
+					.executes(context -> ProfileCommands.open(StringArgumentType.getString(context, "player")))));
 			dispatcher.register(AutoClickerCommands.command());
 		});
 
@@ -288,6 +304,7 @@ public final class StrayClient implements ClientModInitializer {
 		boolean gui = menuKeyHeld(config.openGuiKey);
 		boolean loadouts = menuKeyHeld(config.openLoadoutsKey);
 		boolean wardrobe = menuKeyHeld(config.openWardrobeKey);
+		boolean profile = menuKeyHeld(config.openProfileKey);
 		if (!ignoreMenuBinds(client)) {
 			if (gui && !wasGui) {
 				handleOpenGui(client);
@@ -306,10 +323,18 @@ public final class StrayClient implements ClientModInitializer {
 					WardrobeCommands.open();
 				}
 			}
+			if (profile && !wasProfile && StrayConfig.get().profileViewerEnabled) {
+				if (client.screen instanceof ProfileViewerScreen screen) {
+					screen.onClose();
+				} else {
+					ProfileCommands.open("");
+				}
+			}
 		}
 		wasGui = gui;
 		wasLoadouts = loadouts;
 		wasWardrobe = wardrobe;
+		wasProfile = profile;
 	}
 
 	private static boolean ignoreMenuBinds(Minecraft client) {
@@ -323,12 +348,16 @@ public final class StrayClient implements ClientModInitializer {
 		if (screen instanceof StrayScreen stray && stray.shouldIgnoreMenuBinds()) {
 			return true;
 		}
+		if (screen instanceof ProfileViewerScreen viewer && viewer.queryFocused()) {
+			return true;
+		}
 		if (screen.getFocused() instanceof EditBox) {
 			return true;
 		}
 		return !(screen instanceof StrayScreen
 			|| screen instanceof LoadoutsScreen
 			|| screen instanceof WardrobeScreen
+			|| screen instanceof ProfileViewerScreen
 			|| screen instanceof HudEditorScreen
 			|| screen instanceof ItemEditScreen);
 	}

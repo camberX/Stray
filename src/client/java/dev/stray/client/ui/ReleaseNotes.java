@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.133", new String[]{
+			"Stray has its own Skyblock profile viewer. /pv or /pv name opens it."
+		}),
 		new Entry("1.2.132", new String[]{
 			"Loadouts and wardrobe models face forward and no longer spin."
 		}),

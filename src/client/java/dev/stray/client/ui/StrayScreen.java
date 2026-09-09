@@ -231,6 +231,9 @@ public class StrayScreen extends Screen {
 		new SearchEntry("Wardrobe", Tab.MENUS, "Menus"),
 		new SearchEntry("Wardrobe menu", Tab.MENUS, "Menus"),
 		new SearchEntry("Armor Sets", Tab.MENUS, "Menus"),
+		new SearchEntry("Profile viewer", Tab.MENUS, "Menus"),
+		new SearchEntry("Profile", Tab.MENUS, "Menus"),
+		new SearchEntry("/pv", Tab.MENUS, "Menus"),
 		new SearchEntry("Node HUD", Tab.NODES, "Nodes"),
 		new SearchEntry("Mining HUD", Tab.MINING, "Mining"),
 		new SearchEntry("Titanium ESP", Tab.MINING, "Mining"),
@@ -1843,24 +1846,26 @@ public class StrayScreen extends Screen {
 				toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Node ESP", config.boxFill, v -> config.boxFill = v, Feature.NODE_ESP);
 			}
 			case MENUS -> {
-				float y = featureCard(graphics, font, left, top, col, cardHeight(3), "Menus");
+				float y = featureCard(graphics, font, left, top, col, cardHeight(4), "Menus");
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Loadouts menu", config.loadoutsMenuEnabled, v -> config.loadoutsMenuEnabled = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Wardrobe menu", config.wardrobeMenuEnabled, v -> config.wardrobeMenuEnabled = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Profile viewer", config.profileViewerEnabled, v -> config.profileViewerEnabled = v);
 				toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Open animation", config.loadoutsOpenAnim, v -> config.loadoutsOpenAnim = v);
 
 				float experimentsH = cardHeight(1 + Feature.AUTO_EXPERIMENTS.rows);
-				y = featureCard(graphics, font, left, top + cardHeight(3) + 8, col, experimentsH, "Auto experiments");
+				y = featureCard(graphics, font, left, top + cardHeight(4) + 8, col, experimentsH, "Auto experiments");
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Enable", config.autoExperimentsEnabled, v -> config.autoExperimentsEnabled = v);
 				drawFeatureFields(graphics, font, mouseX, mouseY, ix, y, iw, Feature.AUTO_EXPERIMENTS);
 
-				float bindsH = cardHeight(3);
+				float bindsH = cardHeight(4);
 				y = featureCard(graphics, font, right, top, col, bindsH, "Keybinds");
 				y = drawMenuKeybinds(graphics, font, rx, y, iw, mouseX, mouseY);
-				y = featureCard(graphics, font, right, top + bindsH + 8, col, cardHeight(4), "Commands");
+				y = featureCard(graphics, font, right, top + bindsH + 8, col, cardHeight(5), "Commands");
 				GuiDraw.menu(graphics, font, "/loadouts  /ld", rx, y + 2, ink());
 				GuiDraw.menu(graphics, font, "/wardrobe  /wd", rx, y + 16, ink());
-				GuiDraw.menu(graphics, font, "/autoclicker add left", rx, y + 30, ink());
-				GuiDraw.menu(graphics, font, "1-9 equips and closes", rx, y + 44, fade());
+				GuiDraw.menu(graphics, font, "/pv  /profile", rx, y + 30, ink());
+				GuiDraw.menu(graphics, font, "/autoclicker add left", rx, y + 44, ink());
+				GuiDraw.menu(graphics, font, "1-9 equips and closes", rx, y + 58, fade());
 			}
 			case STATUS -> {
 				float y = featureCard(graphics, font, left, top, col, cardHeight(4), "Location");
@@ -2005,23 +2010,25 @@ public class StrayScreen extends Screen {
 				controlCard(graphics, font, right, top, col, mouseX, mouseY, "Node ESP", config.boxFill, v -> config.boxFill = v, Feature.NODE_ESP);
 			}
 			case MENUS -> {
-				float y = featureCard(graphics, font, left, top, col, cardHeight(3), "Menus");
+				float y = featureCard(graphics, font, left, top, col, cardHeight(4), "Menus");
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Loadouts menu", config.loadoutsMenuEnabled, v -> config.loadoutsMenuEnabled = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Wardrobe menu", config.wardrobeMenuEnabled, v -> config.wardrobeMenuEnabled = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Profile viewer", config.profileViewerEnabled, v -> config.profileViewerEnabled = v);
 				toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Open animation", config.loadoutsOpenAnim, v -> config.loadoutsOpenAnim = v);
 
 				float experimentsH = cardHeight(Feature.AUTO_EXPERIMENTS.rows);
-				y = featureCard(graphics, font, left, top + cardHeight(3) + 8, col, experimentsH, "Auto experiments", config.autoExperimentsEnabled, v -> config.autoExperimentsEnabled = v, mouseX, mouseY);
+				y = featureCard(graphics, font, left, top + cardHeight(4) + 8, col, experimentsH, "Auto experiments", config.autoExperimentsEnabled, v -> config.autoExperimentsEnabled = v, mouseX, mouseY);
 				drawFeatureFields(graphics, font, mouseX, mouseY, ix, y, iw, Feature.AUTO_EXPERIMENTS);
 
-				float bindsH = cardHeight(3);
+				float bindsH = cardHeight(4);
 				y = featureCard(graphics, font, right, top, col, bindsH, "Keybinds");
 				y = drawMenuKeybinds(graphics, font, rx, y, iw, mouseX, mouseY);
-				y = featureCard(graphics, font, right, top + bindsH + 8, col, cardHeight(4), "Commands");
+				y = featureCard(graphics, font, right, top + bindsH + 8, col, cardHeight(5), "Commands");
 				GuiDraw.menu(graphics, font, "/loadouts  /ld", rx, y + 2, ink());
 				GuiDraw.menu(graphics, font, "/wardrobe  /wd", rx, y + 16, ink());
-				GuiDraw.menu(graphics, font, "/autoclicker add left", rx, y + 30, ink());
-				GuiDraw.menu(graphics, font, "1-9 equips and closes", rx, y + 44, fade());
+				GuiDraw.menu(graphics, font, "/pv  /profile", rx, y + 30, ink());
+				GuiDraw.menu(graphics, font, "/autoclicker add left", rx, y + 44, ink());
+				GuiDraw.menu(graphics, font, "1-9 equips and closes", rx, y + 58, fade());
 			}
 			case STATUS -> {
 				float y = featureCard(graphics, font, left, top, col, cardHeight(4), "Location");
@@ -2626,7 +2633,8 @@ public class StrayScreen extends Screen {
 		StrayConfig config = StrayConfig.get();
 		y = bindRow(graphics, font, x, y, w, mouseX, mouseY, "Open menu", 3, OdinClicks.parseKey(config.openGuiKey));
 		y = bindRow(graphics, font, x, y, w, mouseX, mouseY, "Loadouts", 4, OdinClicks.parseKey(config.openLoadoutsKey));
-		return bindRow(graphics, font, x, y, w, mouseX, mouseY, "Wardrobe", 5, OdinClicks.parseKey(config.openWardrobeKey));
+		y = bindRow(graphics, font, x, y, w, mouseX, mouseY, "Wardrobe", 5, OdinClicks.parseKey(config.openWardrobeKey));
+		return bindRow(graphics, font, x, y, w, mouseX, mouseY, "Profile", 7, OdinClicks.parseKey(config.openProfileKey));
 	}
 
 	private float bindRow(
@@ -2685,6 +2693,7 @@ public class StrayScreen extends Screen {
 			case 4 -> config.openLoadoutsKey = name;
 			case 5 -> config.openWardrobeKey = name;
 			case 6 -> config.chestAimKey = name;
+			case 7 -> config.openProfileKey = name;
 		}
 		bindListen = 0;
 		config.save();
@@ -3038,7 +3047,7 @@ public class StrayScreen extends Screen {
 		return FabricLoader.getInstance()
 			.getModContainer("stray")
 			.map(container -> container.getMetadata().getVersion().getFriendlyString())
-			.orElse("1.2.132");
+			.orElse("1.2.133");
 	}
 
 	@Override

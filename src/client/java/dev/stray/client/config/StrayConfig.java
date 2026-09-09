@@ -85,12 +85,14 @@ public final class StrayConfig {
 	public String openGuiKey = "key.keyboard.right.shift";
 	public String openLoadoutsKey = "key.keyboard.unknown";
 	public String openWardrobeKey = "key.keyboard.unknown";
+	public String openProfileKey = "key.keyboard.unknown";
 	public String chestAimKey = "key.keyboard.unknown";
 	public int chestEspRgb = 0xF4C14E;
 	public float chestEspOpacity = 0.34f;
 	public boolean loadoutsMenuEnabled = false;
 	public boolean loadoutsOpenAnim = true;
 	public boolean wardrobeMenuEnabled = false;
+	public boolean profileViewerEnabled = true;
 	public boolean hitsoundEnabled = false;
 	public boolean hitsoundMelee = false;
 	public boolean hitsoundArrows = false;
@@ -585,7 +587,11 @@ public final class StrayConfig {
 				loaded.openGuiKey = blankKey(loaded.openGuiKey, "key.keyboard.right.shift");
 				loaded.openLoadoutsKey = blankKey(loaded.openLoadoutsKey, "key.keyboard.unknown");
 				loaded.openWardrobeKey = blankKey(loaded.openWardrobeKey, "key.keyboard.unknown");
+				loaded.openProfileKey = blankKey(loaded.openProfileKey, "key.keyboard.unknown");
 				loaded.chestAimKey = blankKey(loaded.chestAimKey, "key.keyboard.unknown");
+				if (!json.has("profileViewerEnabled")) {
+					loaded.profileViewerEnabled = true;
+				}
 				if (loaded.autoClickerLeftWhitelist == null) {
 					loaded.autoClickerLeftWhitelist = new java.util.ArrayList<>();
 				}
