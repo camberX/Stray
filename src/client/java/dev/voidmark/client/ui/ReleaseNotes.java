@@ -8,6 +8,9 @@ public final class ReleaseNotes {
 	}
 
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.91", new String[]{
+			"Category icons match the page: landscape, bolt, eye, widgets, bars, pin, diamond, tractor, hanger, speed, and palette."
+		}),
 		new Entry("1.2.90", new String[]{
 			"The click GUI has a category for each page — World, Combat, ESP, HUD, Bars, Nodes, Mining, Farming, Menus, Status, and Theme — so the rail is no longer four sparse icons."
 		}),

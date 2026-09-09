@@ -46,6 +46,16 @@ public final class MenuFont {
 	public static final String BAG = "\uE8CC";
 	public static final String HUD = "\uE871";
 	public static final String MOB = "\uE91D";
+	public static final String LANDSCAPE = "\uE3F7";
+	public static final String FLASH = "\uE3E7";
+	public static final String QUILT = "\uE8CB";
+	public static final String BARS = "\uE947";
+	public static final String PIN = "\uE55F";
+	public static final String DIAMOND = "\uEAD5";
+	public static final String AGRICULTURE = "\uEA79";
+	public static final String HANGER = "\uEF4F";
+	public static final String SPEED = "\uE9E1";
+	public static final String PALETTE = "\uE40A";
 
 	private static final int LABEL_CACHE = 128;
 	private static final String[] LABEL_TEXT = new String[LABEL_CACHE];

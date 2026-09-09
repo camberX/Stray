@@ -1168,18 +1168,18 @@ public class VoidmarkScreen extends Screen {
 
 	private static String tabGlyph(Tab value) {
 		return switch (value) {
-			case WORLD -> MenuFont.GLOBE;
-			case COMBAT -> MenuFont.FLAG;
-			case ESP -> MenuFont.MOB;
-			case OVERLAY -> MenuFont.MONITOR;
-			case BARS -> MenuFont.HUD;
-			case NODES -> MenuFont.CUBE;
-			case MINING -> MenuFont.SAVE;
-			case FARMING -> MenuFont.CLOUD;
-			case MENUS -> MenuFont.BAG;
-			case STATUS -> MenuFont.SIGNAL;
+			case WORLD -> MenuFont.LANDSCAPE;
+			case COMBAT -> MenuFont.FLASH;
+			case ESP -> MenuFont.EYE;
+			case OVERLAY -> MenuFont.QUILT;
+			case BARS -> MenuFont.BARS;
+			case NODES -> MenuFont.PIN;
+			case MINING -> MenuFont.DIAMOND;
+			case FARMING -> MenuFont.AGRICULTURE;
+			case MENUS -> MenuFont.HANGER;
+			case STATUS -> MenuFont.SPEED;
 			case PLAYER -> MenuFont.PERSON;
-			case SETTINGS -> MenuFont.SETTINGS;
+			case SETTINGS -> MenuFont.PALETTE;
 		};
 	}
 
@@ -2543,7 +2543,7 @@ public class VoidmarkScreen extends Screen {
 		return FabricLoader.getInstance()
 			.getModContainer("voidmark")
 			.map(container -> container.getMetadata().getVersion().getFriendlyString())
-			.orElse("1.2.90");
+			.orElse("1.2.91");
 	}
 
 	@Override
