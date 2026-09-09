@@ -15,6 +15,10 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.107", new String[]{
+			"Player fill ESP smoke and stars shrink with distance so they stay visible far away.",
+			"Empty second-skin and armor pixels no longer turn the fill black."
+		}),
 		new Entry("1.2.106", new String[]{
 			"Player fill ESP keeps a solid outer shell while still showing through walls."
 		}),

@@ -49,10 +49,22 @@ float starLayer(vec2 uv, float t, float threshold) {
     return (core + glow) * tw * present;
 }
 
+// Screen-space smoke/stars look right up close, but a distant player only
+// covers a few pixels of that same large pattern. Scale frequency with
+// camera distance so the animation stays readable far away.
+float animationScale() {
+    return clamp(max(sphericalVertexDistance, 0.25) / 6.0, 1.0, 16.0);
+}
+
 void main() {
     vec4 tex = texture(Sampler0, texCoord0);
 #ifdef ALPHA_CUTOUT
     if (tex.a < ALPHA_CUTOUT) {
+        discard;
+    }
+#endif
+#ifdef ESP_FILL
+    if (tex.a < 0.5) {
         discard;
     }
 #endif
@@ -67,12 +79,19 @@ void main() {
     float amount = clamp(ModelOffset.y, 0.10, 1.50);
     float style = ModelOffset.z;
     vec3 albedo = tex.rgb * vertexColor.rgb;
+#ifdef ESP_FILL
+    // Unused overlay/armor texels are often RGB 0 with high alpha. Keep the
+    // fill color there instead of multiplying into a black shell.
+    float albedoPeak = max(albedo.r, max(albedo.g, albedo.b));
+    albedo = mix(fill, albedo, step(0.04, albedoPeak));
+#endif
     vec3 tinted = mix(albedo, albedo * fill, tintAmount);
-    float glint = pow(clamp(texture(Sampler1, gl_FragCoord.xy * 0.010).r, 0.0, 1.0), 2.4);
+    float distScale = animationScale();
+    vec2 screen = gl_FragCoord.xy * distScale;
+    float glint = pow(clamp(texture(Sampler1, screen * 0.010).r, 0.0, 1.0), 2.4);
 
     if (style > 0.5) {
         float t = GameTime * 90.0;
-        vec2 screen = gl_FragCoord.xy;
         vec3 night = mix(tinted, fill * 0.16 + albedo * 0.10, tintAmount * 0.78);
         float far = starLayer(screen * 0.016 + vec2(t * 0.55, -t * 0.22), t, 0.84);
         float mid = starLayer(screen * 0.028 + vec2(-t * 0.90, t * 0.40), t * 1.25, 0.78);
@@ -86,12 +105,15 @@ void main() {
         body += vec3(1.0) * near * near * 0.55 * density;
         body += starCol * glint * near * 0.20;
         fragColor = vec4(body, tex.a);
+#ifdef ESP_FILL
+        fragColor.a = 1.0;
+#endif
         return;
     }
 
     float t = GameTime * 140.0 * (0.55 + amount * 0.45);
-    vec2 flowA = gl_FragCoord.xy * 0.012 + vec2(t * 1.10, -t * 1.65);
-    vec2 flowB = gl_FragCoord.xy * 0.018 + vec2(-t * 0.80, t * 1.20);
+    vec2 flowA = screen * 0.012 + vec2(t * 1.10, -t * 1.65);
+    vec2 flowB = screen * 0.018 + vec2(-t * 0.80, t * 1.20);
     float warp = fbm(flowA);
     float cloud = fbm(flowA + vec2(warp * 0.90, -warp * 0.55));
     float haze = fbm(flowB + vec2(warp * 0.35, cloud * 0.25));
@@ -106,4 +128,7 @@ void main() {
     body += smokeColor * bloom * mix(0.04, 0.16, amount / 1.50);
 
     fragColor = vec4(body, tex.a);
+#ifdef ESP_FILL
+    fragColor.a = 1.0;
+#endif
 }

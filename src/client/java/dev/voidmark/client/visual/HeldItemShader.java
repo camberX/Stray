@@ -53,6 +53,7 @@ import java.util.function.Function;
 
 public final class HeldItemShader {
 	private static final Identifier FILL_PIPELINE_ID = Voidmark.id("pipeline/held_item");
+	private static final Identifier ESP_FILL_PIPELINE_ID = Voidmark.id("pipeline/held_item_esp");
 	private static final Identifier MASK_PIPELINE_ID = Voidmark.id("pipeline/held_item_mask");
 	private static final Identifier FILL_SHADER_ID = Voidmark.id("core/held_item");
 	private static final Identifier SILHOUETTE_SHADER_ID = Voidmark.id("post/held_item_silhouette");
@@ -64,6 +65,7 @@ public final class HeldItemShader {
 	private static final Function<Identifier, RenderType> ESP_FILL_TYPES = Util.memoize(HeldItemShader::createEspFillType);
 	private static final Function<Identifier, RenderType> MASK_TYPES = Util.memoize(HeldItemShader::createMaskType);
 	private static RenderPipeline fillPipeline;
+	private static RenderPipeline espFillPipeline;
 	private static RenderPipeline maskPipeline;
 	private static RenderPipeline silhouettePipeline;
 	private static RenderPipeline rowDistPipeline;
@@ -140,7 +142,11 @@ public final class HeldItemShader {
 	}
 
 	public static boolean isFillPipeline(RenderPipeline value) {
-		return value != null && FILL_PIPELINE_ID.equals(value.getLocation());
+		if (value == null) {
+			return false;
+		}
+		Identifier location = value.getLocation();
+		return FILL_PIPELINE_ID.equals(location) || ESP_FILL_PIPELINE_ID.equals(location);
 	}
 
 	public static boolean isMaskPipeline(RenderPipeline value) {
@@ -162,6 +168,18 @@ public final class HeldItemShader {
 				.withFragmentShader(FILL_SHADER_ID)
 				.withSampler("Sampler1")
 				.withShaderDefine("ALPHA_CUTOUT", 0.1f)
+				.withColorTargetState(ColorTargetState.DEFAULT)
+				.withCull(false)
+				.build()
+		);
+		espFillPipeline = RenderPipelines.register(
+			RenderPipeline.builder(RenderPipelines.ITEM_SNIPPET, RenderPipelines.GLOBALS_SNIPPET)
+				.withLocation(ESP_FILL_PIPELINE_ID)
+				.withVertexShader(FILL_SHADER_ID)
+				.withFragmentShader(FILL_SHADER_ID)
+				.withSampler("Sampler1")
+				.withShaderDefine("ALPHA_CUTOUT", 0.5f)
+				.withShaderDefine("ESP_FILL")
 				.withColorTargetState(ColorTargetState.DEFAULT)
 				.withCull(false)
 				.build()
@@ -445,7 +463,7 @@ public final class HeldItemShader {
 		ensureRegistered();
 		return RenderType.create(
 			"voidmark_fill_esp",
-			RenderSetup.builder(fillPipeline)
+			RenderSetup.builder(espFillPipeline)
 				.withTexture("Sampler0", atlas)
 				.withTexture("Sampler1", ItemFeatureRenderer.ENCHANTED_GLINT_ITEM)
 				.useLightmap()
