@@ -8,6 +8,9 @@ public final class ReleaseNotes {
 	}
 
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.95", new String[]{
+			"Category icons are a bit smaller than the last build."
+		}),
 		new Entry("1.2.94", new String[]{
 			"Category icons on the click-GUI rail are larger."
 		}),

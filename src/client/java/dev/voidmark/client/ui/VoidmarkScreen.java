@@ -54,7 +54,7 @@ public class VoidmarkScreen extends Screen {
 	private static final float CARD_HEAD = 20;
 	private static final float ACTION_W = 54;
 	private static final float ICON_SLOT = 14;
-	private static final float CATEGORY_ICON = 1.85f;
+	private static final float CATEGORY_ICON = 1.55f;
 	private static final float CATEGORY_ICON_LINE = 9.0f;
 	private static final float PICKER_W = 132;
 	private static final float PICKER_H = 122;
@@ -2564,7 +2564,7 @@ public class VoidmarkScreen extends Screen {
 		return FabricLoader.getInstance()
 			.getModContainer("voidmark")
 			.map(container -> container.getMetadata().getVersion().getFriendlyString())
-			.orElse("1.2.94");
+			.orElse("1.2.95");
 	}
 
 	@Override
