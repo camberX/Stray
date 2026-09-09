@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.106", new String[]{
+			"Player fill ESP keeps a solid outer shell while still showing through walls."
+		}),
 		new Entry("1.2.105", new String[]{
 			"Player fill ESP shows the outside of the model instead of the hollow inside."
 		}),

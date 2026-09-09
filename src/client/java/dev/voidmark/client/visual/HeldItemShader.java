@@ -53,23 +53,26 @@ import java.util.function.Function;
 
 public final class HeldItemShader {
 	private static final Identifier FILL_PIPELINE_ID = Voidmark.id("pipeline/held_item");
-	private static final Identifier ESP_FILL_PIPELINE_ID = Voidmark.id("pipeline/held_item_esp");
 	private static final Identifier MASK_PIPELINE_ID = Voidmark.id("pipeline/held_item_mask");
 	private static final Identifier FILL_SHADER_ID = Voidmark.id("core/held_item");
 	private static final Identifier SILHOUETTE_SHADER_ID = Voidmark.id("post/held_item_silhouette");
 	private static final Identifier ROWDIST_SHADER_ID = Voidmark.id("post/held_item_rowdist");
+	private static final Identifier ESP_BLIT_SHADER_ID = Voidmark.id("post/fill_esp_blit");
 	private static final OutputTarget MASK_OUTPUT = new OutputTarget("voidmark_held_item_mask", HeldItemShader::maskTarget);
+	private static final OutputTarget ESP_OUTPUT = new OutputTarget("voidmark_fill_esp", HeldItemShader::espTarget);
 	private static final Function<Identifier, RenderType> FILL_TYPES = Util.memoize(HeldItemShader::createFillType);
 	private static final Function<Identifier, RenderType> ESP_FILL_TYPES = Util.memoize(HeldItemShader::createEspFillType);
 	private static final Function<Identifier, RenderType> MASK_TYPES = Util.memoize(HeldItemShader::createMaskType);
 	private static RenderPipeline fillPipeline;
-	private static RenderPipeline espFillPipeline;
 	private static RenderPipeline maskPipeline;
 	private static RenderPipeline silhouettePipeline;
 	private static RenderPipeline rowDistPipeline;
+	private static RenderPipeline espBlitPipeline;
 	private static RenderTarget maskTarget;
 	private static RenderTarget rowTarget;
+	private static RenderTarget espTarget;
 	private static boolean maskThisFrame;
+	private static boolean espThisFrame;
 	private static int playerFillDepth;
 
 	private HeldItemShader() {
@@ -137,11 +140,7 @@ public final class HeldItemShader {
 	}
 
 	public static boolean isFillPipeline(RenderPipeline value) {
-		if (value == null) {
-			return false;
-		}
-		Identifier location = value.getLocation();
-		return FILL_PIPELINE_ID.equals(location) || ESP_FILL_PIPELINE_ID.equals(location);
+		return value != null && FILL_PIPELINE_ID.equals(value.getLocation());
 	}
 
 	public static boolean isMaskPipeline(RenderPipeline value) {
@@ -165,18 +164,6 @@ public final class HeldItemShader {
 				.withShaderDefine("ALPHA_CUTOUT", 0.1f)
 				.withColorTargetState(ColorTargetState.DEFAULT)
 				.withCull(false)
-				.build()
-		);
-		espFillPipeline = RenderPipelines.register(
-			RenderPipeline.builder(RenderPipelines.ITEM_SNIPPET, RenderPipelines.GLOBALS_SNIPPET)
-				.withLocation(ESP_FILL_PIPELINE_ID)
-				.withVertexShader(FILL_SHADER_ID)
-				.withFragmentShader(FILL_SHADER_ID)
-				.withSampler("Sampler1")
-				.withShaderDefine("ALPHA_CUTOUT", 0.1f)
-				.withColorTargetState(ColorTargetState.DEFAULT)
-				.withDepthStencilState(new DepthStencilState(CompareOp.ALWAYS_PASS, false))
-				.withCull(true)
 				.build()
 		);
 		maskPipeline = RenderPipelines.register(
@@ -235,6 +222,58 @@ public final class HeldItemShader {
 		}
 		ensureRegistered();
 		collector.submitModelPart(part, pose, MASK_TYPES.apply(skin), light, OverlayTexture.NO_OVERLAY, null);
+	}
+
+	public static void beginFillEsp() {
+		espThisFrame = false;
+		if (!playerFillActive()) {
+			return;
+		}
+		Minecraft client = Minecraft.getInstance();
+		RenderTarget main = client.getMainRenderTarget();
+		if (main == null || main.width <= 0 || main.height <= 0) {
+			return;
+		}
+		if (espTarget == null) {
+			espTarget = new TextureTarget("voidmark fill esp", main.width, main.height, true);
+		} else if (espTarget.width != main.width || espTarget.height != main.height) {
+			espTarget.resize(main.width, main.height);
+		}
+		if (espTarget.getColorTexture() == null) {
+			return;
+		}
+		CommandEncoder encoder = RenderSystem.getDevice().createCommandEncoder();
+		if (espTarget.getDepthTexture() != null) {
+			encoder.clearColorAndDepthTextures(espTarget.getColorTexture(), 0, espTarget.getDepthTexture(), 1.0);
+		} else {
+			encoder.clearColorTexture(espTarget.getColorTexture(), 0);
+		}
+		espThisFrame = true;
+	}
+
+	public static void compositeFillEsp() {
+		if (!espThisFrame) {
+			return;
+		}
+		espThisFrame = false;
+		Minecraft client = Minecraft.getInstance();
+		RenderTarget main = client.getMainRenderTarget();
+		if (espTarget == null || main == null || espTarget.getColorTextureView() == null || main.getColorTextureView() == null) {
+			return;
+		}
+		ensureEspBlitPipeline();
+		GpuSampler nearest = RenderSystem.getSamplerCache().getClampToEdge(FilterMode.NEAREST);
+		CommandEncoder encoder = RenderSystem.getDevice().createCommandEncoder();
+		try (RenderPass pass = encoder.createRenderPass(
+			() -> "voidmark fill esp blit",
+			main.getColorTextureView(),
+			OptionalInt.empty()
+		)) {
+			pass.setPipeline(espBlitPipeline);
+			RenderSystem.bindDefaultUniforms(pass);
+			pass.bindTexture("InSampler", espTarget.getColorTextureView(), nearest);
+			pass.draw(0, 3);
+		}
 	}
 
 	public static void beginMask() {
@@ -372,6 +411,10 @@ public final class HeldItemShader {
 		return maskTarget;
 	}
 
+	private static RenderTarget espTarget() {
+		return espTarget;
+	}
+
 	private static Identifier atlas(RenderType original, Iterable<BakedQuad> quads) {
 		Identifier atlas = TextureAtlas.LOCATION_ITEMS;
 		if (quads != null) {
@@ -402,11 +445,12 @@ public final class HeldItemShader {
 		ensureRegistered();
 		return RenderType.create(
 			"voidmark_fill_esp",
-			RenderSetup.builder(espFillPipeline)
+			RenderSetup.builder(fillPipeline)
 				.withTexture("Sampler0", atlas)
 				.withTexture("Sampler1", ItemFeatureRenderer.ENCHANTED_GLINT_ITEM)
 				.useLightmap()
 				.affectsCrumbling()
+				.setOutputTarget(ESP_OUTPUT)
 				.setOutline(RenderSetup.OutlineProperty.NONE)
 				.createRenderSetup()
 		);
@@ -468,6 +512,21 @@ public final class HeldItemShader {
 			.withUniform("DynamicTransforms", UniformType.UNIFORM_BUFFER)
 			.withVertexFormat(DefaultVertexFormat.EMPTY, VertexFormat.Mode.TRIANGLES)
 			.withColorTargetState(new ColorTargetState(BlendFunction.ENTITY_OUTLINE_BLIT))
+			.withDepthStencilState(new DepthStencilState(CompareOp.ALWAYS_PASS, false))
+			.build();
+	}
+
+	private static synchronized void ensureEspBlitPipeline() {
+		if (espBlitPipeline != null) {
+			return;
+		}
+		espBlitPipeline = RenderPipeline.builder()
+			.withLocation(Voidmark.id("pipeline/fill_esp_blit"))
+			.withVertexShader(Identifier.withDefaultNamespace("core/screenquad"))
+			.withFragmentShader(ESP_BLIT_SHADER_ID)
+			.withSampler("InSampler")
+			.withVertexFormat(DefaultVertexFormat.EMPTY, VertexFormat.Mode.TRIANGLES)
+			.withColorTargetState(new ColorTargetState(BlendFunction.TRANSLUCENT))
 			.withDepthStencilState(new DepthStencilState(CompareOp.ALWAYS_PASS, false))
 			.build();
 	}
