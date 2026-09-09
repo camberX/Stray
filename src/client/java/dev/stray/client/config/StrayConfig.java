@@ -218,6 +218,10 @@ public final class StrayConfig {
 	public boolean starMobEsp = false;
 	public boolean starMobBats = true;
 	public boolean starMobFels = false;
+	public boolean starMobThroughWalls = true;
+	public float starMobRadius = GlowBlurRadius.DEFAULT;
+	public float starMobOpacity = 0.58f;
+	public int starMobRgb = 0xFFD84A;
 	public boolean mobGlowThroughWalls = true;
 	public boolean blockOutlineGlow = false;
 	public float blockOutlineOpacity = 0.58f;
@@ -453,6 +457,12 @@ public final class StrayConfig {
 				loaded.mobGlowRgb = loaded.mobGlowRgb & 0xFFFFFF;
 				if (loaded.mobGlowRgb == 0) {
 					loaded.mobGlowRgb = 0x2FB5FF;
+				}
+				loaded.starMobRadius = clamp(loaded.starMobRadius <= 0f ? GlowBlurRadius.DEFAULT : loaded.starMobRadius, GlowBlurRadius.MIN, GlowBlurRadius.MAX);
+				loaded.starMobOpacity = clamp(loaded.starMobOpacity <= 0f ? 0.58f : loaded.starMobOpacity, 0.15f, 0.90f);
+				loaded.starMobRgb = loaded.starMobRgb & 0xFFFFFF;
+				if (loaded.starMobRgb == 0) {
+					loaded.starMobRgb = 0xFFD84A;
 				}
 				loaded.blockOutlineOpacity = clamp(loaded.blockOutlineOpacity <= 0f ? 0.58f : loaded.blockOutlineOpacity, 0.15f, 0.90f);
 				loaded.blockOutlineRgb = loaded.blockOutlineRgb & 0xFFFFFF;

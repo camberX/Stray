@@ -1,13 +1,11 @@
 package dev.stray.client.mixin;
 
 import com.mojang.blaze3d.vertex.PoseStack;
-import dev.stray.client.config.StrayConfig;
 import dev.stray.client.render.MobGlowRenderer;
 import dev.stray.client.render.NametagRenderer;
 import dev.stray.client.visual.FillEspMarker;
 import dev.stray.client.visual.HeldItemShader;
 import dev.stray.client.visual.NickHider;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.client.renderer.entity.EntityRenderer;
 import net.minecraft.client.renderer.entity.state.EntityRenderState;
@@ -31,12 +29,8 @@ public class EntityRendererMixin {
 			cir.setReturnValue(false);
 			return;
 		}
-		StrayConfig config = StrayConfig.get();
-		if (MobGlowRenderer.glowEnabled() && config.mobGlowThroughWalls && MobGlowRenderer.listed(entity)) {
-			Minecraft client = Minecraft.getInstance();
-			if (client.player != null && entity != client.player) {
-				cir.setReturnValue(false);
-			}
+		if (MobGlowRenderer.shouldBypassCulling(entity)) {
+			cir.setReturnValue(false);
 		}
 	}
 

@@ -193,21 +193,48 @@ public final class MobGlowRenderer {
 		return color;
 	}
 
+	public static boolean shouldBypassCulling(Entity entity) {
+		Minecraft client = Minecraft.getInstance();
+		if (client.player == null || entity == null || entity == client.player) {
+			return false;
+		}
+		if (!isEspTarget(entity, client.player)) {
+			return false;
+		}
+		StrayConfig config = StrayConfig.get();
+		if (StarMobEsp.glowing(entity) && config.starMobThroughWalls) {
+			return true;
+		}
+		return config.mobGlowEnabled
+			&& config.mobGlowThroughWalls
+			&& (listed(entity.getType()) || nametagHit(entity));
+	}
+
 	private static int computeOutlineColor(StrayConfig config, Minecraft client, Entity entity) {
 		Vec3 camera = client.gameRenderer.getMainCamera().position();
 		if (entity.distanceToSqr(camera) > MAX_RANGE_SQ) {
 			return 0;
 		}
-		if (!config.mobGlowThroughWalls && occluded(client, camera, entity.getEyePosition())) {
+		boolean star = StarMobEsp.glowing(entity);
+		boolean mob = config.mobGlowEnabled && (listed(entity.getType()) || nametagHit(entity));
+		boolean through = (star && config.starMobThroughWalls) || (mob && config.mobGlowThroughWalls);
+		if (!through && occluded(client, camera, entity.getEyePosition())) {
 			return 0;
 		}
-		return packColor(config);
+		if (star) {
+			return packColor(config.starMobRgb, config.starMobOpacity);
+		}
+		return packColor(config.mobGlowRgb, config.mobGlowOpacity);
 	}
 
 	public static int packColor(StrayConfig config) {
-		float opacity = StrayConfig.clamp(config.mobGlowOpacity, 0.15f, 0.90f);
-		int alpha = Math.round(opacity * 255f);
-		return (alpha << 24) | (config.mobGlowRgb & 0xFFFFFF);
+		return packColor(config.mobGlowRgb, config.mobGlowOpacity);
+	}
+
+	public static int packColor(int rgb, float opacity) {
+		float clamped = StrayConfig.clamp(opacity, 0.15f, 0.90f);
+		int alpha = Math.round(clamped * 255f);
+		return (alpha << 24) | (rgb & 0xFFFFFF);
 	}
 
 	public static boolean listed(EntityType<?> type) {

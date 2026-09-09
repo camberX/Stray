@@ -31,6 +31,19 @@ public final class GlowBlurRadius {
 	private GlowBlurRadius() {
 	}
 
+	public static float current() {
+		StrayConfig config = StrayConfig.get();
+		float mob = StrayConfig.clamp(config.mobGlowRadius, MIN, MAX);
+		float star = StrayConfig.clamp(config.starMobRadius, MIN, MAX);
+		if (config.mobGlowEnabled && config.starMobEsp) {
+			return Math.max(mob, star);
+		}
+		if (config.starMobEsp) {
+			return star;
+		}
+		return mob;
+	}
+
 	public static boolean isGlowBlur(RenderPipeline pipeline) {
 		return pipeline != null && SHADER.equals(pipeline.getFragmentShader());
 	}
@@ -64,7 +77,7 @@ public final class GlowBlurRadius {
 		if (buffer == null || buffer.isClosed()) {
 			return;
 		}
-		float radius = StrayConfig.clamp(StrayConfig.get().mobGlowRadius, MIN, MAX);
+		float radius = current();
 		if (BlockOutlineGlow.cheapBlur()) {
 			radius = Math.min(radius, 5f);
 		}

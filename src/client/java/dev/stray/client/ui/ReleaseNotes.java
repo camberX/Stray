@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.124", new String[]{
+			"Star mobs have their own glow color, radius, and through-walls. Tabs scroll when cards run off the window."
+		}),
 		new Entry("1.2.123", new String[]{
 			"Star mob ESP glows starred dungeon mobs with the same outline as Mob glow."
 		}),

@@ -124,7 +124,7 @@ public class StrayScreen extends Screen {
 		AUTO_CLICKER("Auto clicker", 8),
 		AUTO_EXPERIMENTS("Auto experiments", 5),
 		MOB("Mob glow", 3),
-		STAR("Star mobs", 2),
+		STAR("Star mobs", 5),
 		BLOCK("Block outline", 1),
 		CHEST("Chest ESP", 5),
 		NODE_ESP("Node ESP", 4),
@@ -152,7 +152,7 @@ public class StrayScreen extends Screen {
 	}
 
 	private enum PickerTarget {
-		WORLD, SKY, FOG, NODE, THEME, PANE, CONTROL, PILL, MOB, BLOCK, TITANIUM, CHEST, HELD_ITEM
+		WORLD, SKY, FOG, NODE, THEME, PANE, CONTROL, PILL, MOB, STAR, BLOCK, TITANIUM, CHEST, HELD_ITEM
 	}
 
 	private record SearchEntry(String label, Tab tab, String hint) {
@@ -361,6 +361,14 @@ public class StrayScreen extends Screen {
 	private float nametagEspListY;
 	private float nametagEspListW;
 	private float nametagEspListH;
+	private float tabScroll;
+	private float tabScrollMax;
+	private float pageExtent;
+	private float pageClipX;
+	private float pageClipY;
+	private float pageClipW;
+	private float pageClipH;
+	private boolean contentHitMode;
 	private float previewYaw = 18f;
 	private float previewPitch = -8f;
 	private boolean previewDrag;
@@ -457,17 +465,29 @@ public class StrayScreen extends Screen {
 
 		drawSidebar(graphics, font, localMx, localMy);
 		drawToolbar(graphics, font, localMx, localMy);
-		boolean columnsClip = GuiDraw.scissor(graphics, windowX, windowY, windowW, windowH);
+		pageClipX = windowX + sidebarW();
+		pageClipY = windowY + toolbarH();
+		pageClipW = windowW - sidebarW();
+		pageClipH = windowH - toolbarH();
+		tabScroll = Mth.clamp(tabScroll, 0f, tabScrollMax);
+		pageExtent = pageClipY;
+		boolean columnsClip = GuiDraw.scissor(graphics, pageClipX, pageClipY, pageClipW, pageClipH);
 		int columnHits = hits.size();
+		contentHitMode = true;
 		graphics.pose().pushMatrix();
 		applyPageTransform(graphics);
-		drawColumns(graphics, font, localMx, localMy);
+		graphics.pose().translate(0f, -tabScroll);
+		drawColumns(graphics, font, localMx, Math.round(localMy + tabScroll));
 		graphics.pose().popMatrix();
-		if (pageT < 0.86f && hits.size() > columnHits) {
-			hits.subList(columnHits, hits.size()).clear();
-		}
+		contentHitMode = false;
+		tabScrollMax = Math.max(0f, pageExtent - contentBottom());
+		tabScroll = Mth.clamp(tabScroll, 0f, tabScrollMax);
 		if (columnsClip) {
 			GuiDraw.disableScissor(graphics);
+		}
+		drawPageScrollbar(graphics);
+		if (pageT < 0.86f && hits.size() > columnHits) {
+			hits.subList(columnHits, hits.size()).clear();
 		}
 		if (searchT > 0.02f && !searchQuery.isBlank()) {
 			drawSearchResults(graphics, font, localMx, localMy);
@@ -711,6 +731,8 @@ public class StrayScreen extends Screen {
 			}
 		}
 		tab = value;
+		tabScroll = 0f;
+		tabScrollMax = 0f;
 		pickerTarget = null;
 		searchOpen = false;
 		featureOpen = false;
@@ -770,7 +792,7 @@ public class StrayScreen extends Screen {
 		}
 
 		List<String> nametags = config.nametagEspLabels();
-		float namesH = fitH(namesTop, Math.max(cardHeight(2), contentBottom() - namesTop));
+		float namesH = Math.max(cardHeight(2), contentBottom() - namesTop);
 		if (namesH >= cardHeight(0) + rowH()) {
 			String namesTitle = nametags.isEmpty() ? "Nametag ESP" : "Nametag ESP  " + nametags.size();
 			float namesY = featureCard(graphics, font, left, namesTop, col, namesH, namesTitle);
@@ -2165,6 +2187,31 @@ public class StrayScreen extends Screen {
 		cycle(graphics, font, rx, y, iw, mouseX, mouseY, "Back", tab.label, () -> featureOpen = false);
 	}
 
+	private void drawPageScrollbar(GuiGraphicsExtractor graphics) {
+		if (tabScrollMax <= 1f || pageClipH < 24f) {
+			return;
+		}
+		float trackW = 3.2f;
+		float trackX = pageClipX + pageClipW - trackW - 3f;
+		float trackY = pageClipY + 8f;
+		float trackH = pageClipH - 16f;
+		if (trackH < 16f) {
+			return;
+		}
+		int track = controlCenter() ? ControlChrome.TRACK : Theme.TRACK;
+		GuiDraw.rounded(graphics, trackX, trackY, trackW, trackH, 1.6f, track);
+		float thumbH = Math.max(16f, trackH * pageClipH / (pageClipH + tabScrollMax));
+		float thumbY = trackY + (tabScrollMax <= 0f ? 0f : tabScroll / tabScrollMax) * (trackH - thumbH);
+		GuiDraw.rounded(graphics, trackX - 0.4f, thumbY, trackW + 0.8f, thumbH, 1.8f, Theme.ACCENT);
+	}
+
+	private boolean pageHover(double mx, double my, float x, float y, float w, float h) {
+		if (!GuiDraw.hovered(mx, my, pageClipX, pageClipY, pageClipW, pageClipH)) {
+			return false;
+		}
+		return GuiDraw.hovered(mx, my + tabScroll, x, y, w, h);
+	}
+
 	private float innerX(float cardX) {
 		return cardX + cardPad();
 	}
@@ -2284,6 +2331,7 @@ public class StrayScreen extends Screen {
 	) {
 		if (controlCenter()) {
 			ControlChrome.card(graphics, x, y, w, h);
+			pageExtent = Math.max(pageExtent, y + h);
 			float headY = y + cardTop();
 			GuiDraw.menu(graphics, font, title, x + cardPad(), GuiDraw.middle(headY, cardHead()), ControlChrome.cardText());
 			if (setter != null && value != null) {
@@ -2301,6 +2349,7 @@ public class StrayScreen extends Screen {
 			return headY + cardHead();
 		}
 		GuiDraw.panel(graphics, x, y, w, h, Math.min(14f, h / 2f), Theme.CARD, Theme.LINE);
+		pageExtent = Math.max(pageExtent, y + h);
 		GuiDraw.small(graphics, font, title, x + CARD_PAD, y + 5, Theme.HEADER);
 		GuiDraw.hline(graphics, x + CARD_PAD, y + 16, w - CARD_PAD * 2, Theme.LINE);
 		return y + CARD_HEAD;
@@ -2475,6 +2524,9 @@ public class StrayScreen extends Screen {
 				colorRow(graphics, font, ix, y, iw, mouseX, mouseY, "Color", config.mobGlowRgb, PickerTarget.MOB);
 			}
 			case STAR -> {
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Through walls", config.starMobThroughWalls, v -> config.starMobThroughWalls = v);
+				y = slider(graphics, font, ix, y, iw, "Radius", String.format(Locale.ROOT, "%.0f", config.starMobRadius), (config.starMobRadius - GlowBlurRadius.MIN) / (GlowBlurRadius.MAX - GlowBlurRadius.MIN), v -> config.starMobRadius = StrayConfig.clamp(GlowBlurRadius.MIN + v * (GlowBlurRadius.MAX - GlowBlurRadius.MIN), GlowBlurRadius.MIN, GlowBlurRadius.MAX));
+				y = colorRow(graphics, font, ix, y, iw, mouseX, mouseY, "Color", config.starMobRgb, PickerTarget.STAR);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Highlight bats", config.starMobBats, v -> config.starMobBats = v);
 				toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Highlight fels", config.starMobFels, v -> config.starMobFels = v);
 			}
@@ -2723,6 +2775,7 @@ public class StrayScreen extends Screen {
 		int swatch = Theme.withAlpha(rgb, Math.round(readOpacity(target) * 255f));
 		GuiDraw.rounded(graphics, px - 1, py - 1, pw + 2, ph + 2, 3, hover ? Theme.ACCENT : Theme.LINE);
 		GuiDraw.rounded(graphics, px, py, pw, ph, 2, swatch);
+		boolean fromPage = contentHitMode;
 		hits.add(new Hit(px - 2, y, pw + 4, row, () -> {
 			if (target == PickerTarget.SKY) {
 				StrayConfig.get().matchSkyToWorld = false;
@@ -2730,7 +2783,11 @@ public class StrayScreen extends Screen {
 			if (target == PickerTarget.FOG) {
 				StrayConfig.get().matchFogToWorld = false;
 			}
-			openPicker(target, rgb, px - PICKER_W + pw, y + row + 2);
+			float pickerAt = y + row + 2;
+			if (fromPage) {
+				pickerAt -= tabScroll;
+			}
+			openPicker(target, rgb, px - PICKER_W + pw, pickerAt);
 		}));
 		return y + row;
 	}
@@ -2841,6 +2898,7 @@ public class StrayScreen extends Screen {
 			case FOG -> config.fogRgb = packed;
 			case NODE -> config.colorRgb = packed;
 			case MOB -> config.mobGlowRgb = packed;
+			case STAR -> config.starMobRgb = packed;
 			case BLOCK -> config.blockOutlineRgb = packed;
 			case TITANIUM -> config.titaniumEspRgb = packed;
 			case CHEST -> config.chestEspRgb = packed;
@@ -2862,7 +2920,7 @@ public class StrayScreen extends Screen {
 		return switch (target) {
 			case CONTROL, PILL -> 0.12f;
 			case PANE -> 0.20f;
-			case MOB, BLOCK -> 0.15f;
+			case MOB, STAR, BLOCK -> 0.15f;
 			case NODE, HELD_ITEM, CHEST, TITANIUM -> 0.08f;
 			case THEME -> 1f;
 			default -> 0f;
@@ -2872,7 +2930,7 @@ public class StrayScreen extends Screen {
 	private static float opacityMax(PickerTarget target) {
 		return switch (target) {
 			case CONTROL, PILL -> 0.78f;
-			case MOB, BLOCK -> 0.90f;
+			case MOB, STAR, BLOCK -> 0.90f;
 			case NODE, HELD_ITEM, CHEST, TITANIUM -> 0.85f;
 			default -> 1f;
 		};
@@ -2885,6 +2943,7 @@ public class StrayScreen extends Screen {
 			case PILL -> config.controlPillOpacity;
 			case PANE -> config.themePaneOpacity;
 			case MOB -> config.mobGlowOpacity;
+			case STAR -> config.starMobOpacity;
 			case BLOCK -> config.blockOutlineOpacity;
 			case NODE -> config.fillOpacity;
 			case CHEST -> config.chestEspOpacity;
@@ -2905,6 +2964,7 @@ public class StrayScreen extends Screen {
 			case PILL -> config.controlPillOpacity = clamped;
 			case PANE -> config.themePaneOpacity = clamped;
 			case MOB -> config.mobGlowOpacity = clamped;
+			case STAR -> config.starMobOpacity = clamped;
 			case BLOCK -> config.blockOutlineOpacity = clamped;
 			case NODE -> config.fillOpacity = clamped;
 			case CHEST -> config.chestEspOpacity = clamped;
@@ -2970,7 +3030,7 @@ public class StrayScreen extends Screen {
 		return FabricLoader.getInstance()
 			.getModContainer("stray")
 			.map(container -> container.getMetadata().getVersion().getFriendlyString())
-			.orElse("1.2.123");
+			.orElse("1.2.124");
 	}
 
 	@Override
@@ -3089,15 +3149,19 @@ public class StrayScreen extends Screen {
 			fontScroll = Mth.clamp(fontScroll - (float) scrollY * FONT_ROW * 2.2f, 0f, maxScroll);
 			return true;
 		}
-		if (tab == Tab.ESP && scrollY != 0 && GuiDraw.hovered(lx, ly, nametagEspListX, nametagEspListY, nametagEspListW, nametagEspListH)) {
+		if (tab == Tab.ESP && scrollY != 0 && pageHover(lx, ly, nametagEspListX, nametagEspListY, nametagEspListW, nametagEspListH)) {
 			float maxScroll = Math.max(0f, StrayConfig.get().nametagEspLabels().size() * ROW - nametagEspListH);
 			nametagEspScroll = Mth.clamp(nametagEspScroll - (float) scrollY * ROW * 2.2f, 0f, maxScroll);
 			return true;
 		}
-		if (tab == Tab.ESP && scrollY != 0 && GuiDraw.hovered(lx, ly, mobFieldX, mobFieldY, mobListW, mobListY + mobListH - mobFieldY)) {
+		if (tab == Tab.ESP && scrollY != 0 && pageHover(lx, ly, mobFieldX, mobFieldY, mobListW, mobListY + mobListH - mobFieldY)) {
 			List<MobCatalog.Entry> entries = MobCatalog.filtered(mobQuery);
 			float maxScroll = Math.max(0f, entries.size() * ROW - mobListH);
 			mobScroll = Mth.clamp(mobScroll - (float) scrollY * ROW * 2.2f, 0f, maxScroll);
+			return true;
+		}
+		if (scrollY != 0 && tabScrollMax > 0.5f && GuiDraw.hovered(lx, ly, pageClipX, pageClipY, pageClipW, pageClipH)) {
+			tabScroll = Mth.clamp(tabScroll - (float) scrollY * 28f, 0f, tabScrollMax);
 			return true;
 		}
 		return super.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
@@ -3337,11 +3401,12 @@ public class StrayScreen extends Screen {
 		super.onClose();
 	}
 
-	private static final class Hit {
+	private final class Hit {
 		final float x, y, w, h;
 		final Runnable click;
 		final DoubleConsumer dragClick;
 		final boolean drag;
+		final boolean scrolled;
 
 		Hit(float x, float y, float w, float h, Runnable click) {
 			this.x = x;
@@ -3351,6 +3416,7 @@ public class StrayScreen extends Screen {
 			this.click = click;
 			this.dragClick = null;
 			this.drag = false;
+			this.scrolled = contentHitMode;
 		}
 
 		Hit(float x, float y, float w, float h, DoubleConsumer dragClick, boolean drag) {
@@ -3361,9 +3427,16 @@ public class StrayScreen extends Screen {
 			this.click = null;
 			this.dragClick = dragClick;
 			this.drag = drag;
+			this.scrolled = contentHitMode;
 		}
 
 		boolean contains(double mx, double my) {
+			if (scrolled) {
+				if (mx < pageClipX || mx > pageClipX + pageClipW || my < pageClipY || my > pageClipY + pageClipH) {
+					return false;
+				}
+				my += tabScroll;
+			}
 			return mx >= x && mx <= x + w && my >= y && my <= y + h;
 		}
 
