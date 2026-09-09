@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.116", new String[]{
+			"Loadouts outline the equipped slot, and 1-9 moves that outline when you pick a loadout."
+		}),
 		new Entry("1.2.115", new String[]{
 			"Auto clicker binds show [ Button 5 ] in accent, and [ ... ] while listening.",
 			"Switching categories now slides the page and the selected rail mark."

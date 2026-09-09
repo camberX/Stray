@@ -69,6 +69,8 @@ public class LoadoutsScreen extends Screen {
 	private float appear;
 	private ItemStack tooltip = ItemStack.EMPTY;
 	private LoadoutsMenus.Snapshot snapshot = LoadoutsMenus.Snapshot.empty();
+	private int selectedSlot = -1;
+	private int pendingSelectSlot = -1;
 
 	public LoadoutsScreen(AbstractContainerScreen<?> vanilla) {
 		super(vanilla.getTitle());
@@ -81,6 +83,7 @@ public class LoadoutsScreen extends Screen {
 		this.vanilla = null;
 		this.menu = null;
 		this.snapshot = cached;
+		syncSelectedSlot();
 	}
 
 	public static Screen wrap(Screen screen) {
@@ -414,7 +417,7 @@ public class LoadoutsScreen extends Screen {
 				continue;
 			}
 			LoadoutsMenus.Piece piece = i < loadouts.size() ? loadouts.get(i) : null;
-			boolean selected = piece != null && piece.selected();
+			boolean selected = loadoutSelected(piece);
 			boolean hover = GuiDraw.hovered(mouseX, mouseY, sx, sy, cell, cell);
 			GuiDraw.well(
 				graphics,
@@ -473,7 +476,7 @@ public class LoadoutsScreen extends Screen {
 			}
 			cx += WELL + 4;
 		}
-		GuiDraw.small(graphics, font, "1-9 equip and close · Right-click to edit", x + 8, y + h - 14, Theme.MUTED);
+		GuiDraw.small(graphics, font, "1-9 equip · Right-click to edit", x + 8, y + h - 14, Theme.MUTED);
 	}
 
 	private List<LoadoutsMenus.Piece> labeledContents() {
@@ -659,6 +662,7 @@ public class LoadoutsScreen extends Screen {
 		LoadoutsMenus.Snapshot next = LoadoutsMenus.read(menu, vanilla != null ? vanilla.getTitle() : getTitle());
 		if (next.hasItems() || !snapshot.hasItems()) {
 			snapshot = next;
+			syncSelectedSlot();
 		}
 		rememberCache();
 	}
@@ -693,6 +697,9 @@ public class LoadoutsScreen extends Screen {
 				return true;
 			}
 			if (hit.slot >= 0 && (event.button() == 0 || event.button() == 1)) {
+				if (event.button() == 0) {
+					markSelected(hit.slot);
+				}
 				clickSlot(hit.slot, event.button());
 				return true;
 			}
@@ -729,7 +736,7 @@ public class LoadoutsScreen extends Screen {
 		}
 		int index = hotkeyIndex(event.key());
 		if (index >= 0) {
-			equipAndClose(index);
+			equipLoadout(index);
 			return true;
 		}
 		return super.keyPressed(event);
@@ -745,7 +752,7 @@ public class LoadoutsScreen extends Screen {
 		return -1;
 	}
 
-	private void equipAndClose(int index) {
+	private void equipLoadout(int index) {
 		adoptMenu();
 		List<LoadoutsMenus.Piece> loadouts = snapshot.loadouts();
 		if (index < 0 || index >= loadouts.size()) {
@@ -755,8 +762,65 @@ public class LoadoutsScreen extends Screen {
 		if (piece == null || piece.slot() < 0) {
 			return;
 		}
+		markSelected(piece.slot());
 		clickSlot(piece.slot(), 0);
-		onClose();
+	}
+
+	private boolean loadoutSelected(LoadoutsMenus.Piece piece) {
+		if (piece == null) {
+			return false;
+		}
+		if (selectedSlot >= 0) {
+			return piece.slot() == selectedSlot;
+		}
+		return piece.selected();
+	}
+
+	private boolean isLoadoutSlot(int slot) {
+		for (LoadoutsMenus.Piece piece : snapshot.loadouts()) {
+			if (piece != null && piece.slot() == slot) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	private void markSelected(int slot) {
+		if (slot < 0 || !isLoadoutSlot(slot)) {
+			return;
+		}
+		selectedSlot = slot;
+		pendingSelectSlot = slot;
+		snapshot = snapshot.withSelectedSlot(slot);
+		rememberCache();
+	}
+
+	private void syncSelectedSlot() {
+		if (snapshot == null || snapshot.loadouts() == null) {
+			return;
+		}
+		if (pendingSelectSlot >= 0) {
+			selectedSlot = pendingSelectSlot;
+			boolean confirmed = false;
+			for (LoadoutsMenus.Piece piece : snapshot.loadouts()) {
+				if (piece != null && piece.slot() == pendingSelectSlot && piece.selected()) {
+					confirmed = true;
+					break;
+				}
+			}
+			if (confirmed) {
+				pendingSelectSlot = -1;
+			} else {
+				snapshot = snapshot.withSelectedSlot(pendingSelectSlot);
+			}
+			return;
+		}
+		for (LoadoutsMenus.Piece piece : snapshot.loadouts()) {
+			if (piece != null && piece.selected()) {
+				selectedSlot = piece.slot();
+				return;
+			}
+		}
 	}
 
 	@Override

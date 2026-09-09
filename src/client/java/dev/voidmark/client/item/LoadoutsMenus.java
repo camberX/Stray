@@ -105,6 +105,31 @@ public final class LoadoutsMenus {
 			);
 		}
 
+		public Snapshot withSelectedSlot(int slot) {
+			if (loadouts == null || loadouts.isEmpty()) {
+				return this;
+			}
+			List<Piece> nextLoadouts = new ArrayList<>(loadouts.size());
+			for (Piece piece : loadouts) {
+				nextLoadouts.add(new Piece(piece.slot(), piece.stack(), piece.kind(), piece.name(), piece.slot() == slot));
+			}
+			return new Snapshot(
+				title,
+				page,
+				List.copyOf(nextLoadouts),
+				contents,
+				next,
+				prev,
+				close,
+				helmet,
+				chest,
+				legs,
+				boots,
+				pet,
+				petName
+			);
+		}
+
 		public boolean hasLoadouts() {
 			return loadouts != null && !loadouts.isEmpty();
 		}
@@ -358,11 +383,22 @@ public final class LoadoutsMenus {
 	}
 
 	private static boolean selected(ItemStack stack, String name) {
-		if (Boolean.TRUE.equals(stack.get(DataComponents.ENCHANTMENT_GLINT_OVERRIDE))) {
-			return true;
-		}
 		String blob = blob(stack);
-		return contains(blob, "selected", "currently equipped", "currently active", "this loadout is", "equipped!")
+		if (contains(blob, "click to select", "left-click to select", "click to equip this", "left-click to equip")) {
+			return contains(blob, "currently selected", "currently equipped", "currently active", "already selected");
+		}
+		return contains(
+			blob,
+			"currently selected",
+			"currently equipped",
+			"currently active",
+			"this loadout is selected",
+			"this loadout is equipped",
+			"this loadout is active",
+			"already selected",
+			"click to deselect",
+			"equipped!"
+		)
 			|| name.contains("✔")
 			|| name.contains("✓");
 	}
