@@ -24,19 +24,16 @@ import java.util.function.UnaryOperator;
  * Analytic rounded shapes for GUI chrome. Every piece is one quad whose UVs
  * measure the distance from its outer edges in corner radii; the
  * {@code gui_round} fragment shader turns that into anti-aliased coverage.
- * <p>
- * This replaces scaled circle textures (which alias once minified) and
- * scanline fills (which pixel-snap) with edges that stay smooth at any radius
- * and GUI scale, using fewer draws than the texture approach.
  */
 public final class GuiShapes {
 	private static final Identifier SHADER = Voidmark.id("core/gui_round");
-	private static final Identifier DUMMY_TEXTURE = Voidmark.id("textures/gui/circle.png");
+	private static final Identifier DUMMY_TEXTURE = Voidmark.id("textures/gui/white.png");
 	private static RenderPipeline fill;
 	private static RenderPipeline invert;
+	private static RenderPipeline frost;
 	private static RenderPipeline ring;
 	private static RenderPipeline hairline;
-	private static RenderPipeline frost;
+	private static int ringScale = Integer.MIN_VALUE;
 
 	private GuiShapes() {
 	}
@@ -167,6 +164,14 @@ public final class GuiShapes {
 		return texture == null ? null : texture.getTextureView();
 	}
 
+	private static int guiScale() {
+		Minecraft client = Minecraft.getInstance();
+		if (client == null || client.getWindow() == null) {
+			return 1;
+		}
+		return Math.max(1, client.getWindow().getGuiScale());
+	}
+
 	private static synchronized RenderPipeline fillPipeline() {
 		if (fill == null) {
 			fill = build("gui_round_fill", builder -> builder);
@@ -181,20 +186,6 @@ public final class GuiShapes {
 		return invert;
 	}
 
-	private static synchronized RenderPipeline ringPipeline() {
-		if (ring == null) {
-			ring = build("gui_round_ring", builder -> builder.withShaderDefine("RING_GUI_PX", 1.0f));
-		}
-		return ring;
-	}
-
-	private static synchronized RenderPipeline hairlinePipeline() {
-		if (hairline == null) {
-			hairline = build("gui_round_hairline", builder -> builder.withShaderDefine("RING_GUI_PX", 0.5f));
-		}
-		return hairline;
-	}
-
 	private static synchronized RenderPipeline frostPipeline() {
 		if (frost == null) {
 			frost = build("gui_round_frost", builder -> builder.withShaderDefine("FROST"));
@@ -202,7 +193,33 @@ public final class GuiShapes {
 		return frost;
 	}
 
-	/** Mirrors vanilla's GUI_TEXTURED pipeline, swapping in the rounded fragment shader. */
+	private static synchronized RenderPipeline ringPipeline() {
+		ensureRingPipelines();
+		return ring;
+	}
+
+	private static synchronized RenderPipeline hairlinePipeline() {
+		ensureRingPipelines();
+		return hairline;
+	}
+
+	/**
+	 * {@code RING_GUI_PX} is framebuffer pixels. Multiplying the define by the
+	 * current GUI scale makes a 1 GUI-pixel rim one screen pixel at scale 1 and
+	 * two at scale 2, matching the old hairline. Rebuilt if the scale changes.
+	 */
+	private static void ensureRingPipelines() {
+		int scale = guiScale();
+		if (ring != null && scale == ringScale) {
+			return;
+		}
+		ringScale = scale;
+		float px = scale;
+		ring = build("gui_round_ring_" + scale, builder -> builder.withShaderDefine("RING_GUI_PX", px));
+		hairline = build("gui_round_hairline_" + scale, builder -> builder.withShaderDefine("RING_GUI_PX", px * 0.5f));
+	}
+
+	/** Same shape as vanilla GUI_TEXTURED, with only the uniforms that shader actually reads. */
 	private static RenderPipeline build(String name, UnaryOperator<RenderPipeline.Builder> extra) {
 		RenderPipeline.Builder builder = RenderPipeline.builder()
 			.withLocation(Voidmark.id("pipeline/" + name))
@@ -211,7 +228,6 @@ public final class GuiShapes {
 			.withSampler("Sampler0")
 			.withUniform("DynamicTransforms", UniformType.UNIFORM_BUFFER)
 			.withUniform("Projection", UniformType.UNIFORM_BUFFER)
-			.withUniform("Globals", UniformType.UNIFORM_BUFFER)
 			.withColorTargetState(new ColorTargetState(BlendFunction.TRANSLUCENT))
 			.withVertexFormat(DefaultVertexFormat.POSITION_TEX_COLOR, VertexFormat.Mode.QUADS);
 		return RenderPipelines.register(extra.apply(builder).build());

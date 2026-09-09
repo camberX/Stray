@@ -8,6 +8,9 @@ public final class ReleaseNotes {
 	}
 
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.85", new String[]{
+			"Rounded rims are a one-pixel outline again. The last build recovered GUI scale from the wrong matrix, so every corner drew as a filled circle."
+		}),
 		new Entry("1.2.84", new String[]{
 			"Rounded corners, rims, and frost edges are drawn by an analytic shader instead of scaled circle textures and scanline fills, so they stay smooth at any radius or GUI scale.",
 			"Outlines are a consistent one-pixel rim everywhere; the frost under glass uses four quads instead of hundreds of row blits."
