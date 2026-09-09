@@ -102,6 +102,7 @@ public final class VoidmarkConfig {
 	public float heldItemShaderOutline = 0.90f;
 	public float heldItemShaderSmoke = 0.55f;
 	public String heldItemShaderStyle = "smoke";
+	public boolean playerFillEsp = false;
 	public int titaniumEspRange = 48;
 	public int titaniumEspRgb = 0xE8ECF2;
 	public float titaniumEspOpacity = 0.38f;
@@ -509,6 +510,9 @@ public final class VoidmarkConfig {
 				}
 				if (!json.has("heldItemShaderEnabled")) {
 					loaded.heldItemShaderEnabled = false;
+				}
+				if (!json.has("playerFillEsp")) {
+					loaded.playerFillEsp = false;
 				}
 				loaded.heldItemShaderFill = json.has("heldItemShaderFill")
 					? clamp(loaded.heldItemShaderFill, 0.08f, 0.85f)

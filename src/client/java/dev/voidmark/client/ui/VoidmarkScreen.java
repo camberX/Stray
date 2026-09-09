@@ -176,7 +176,10 @@ public class VoidmarkScreen extends Screen {
 		new SearchEntry("Item smoke", Tab.COMBAT, "Combat"),
 		new SearchEntry("Ghost", Tab.COMBAT, "Combat"),
 		new SearchEntry("Ghost item", Tab.COMBAT, "Combat"),
-		new SearchEntry("Mob glow", Tab.ESP, "ESP"),
+		new SearchEntry("Player fill", Tab.ESP, "ESP"),
+		new SearchEntry("Player fill ESP", Tab.ESP, "ESP"),
+		new SearchEntry("Held fill", Tab.ESP, "ESP"),
+		new SearchEntry("Hand fill", Tab.ESP, "ESP"),
 		new SearchEntry("Nametag ESP", Tab.ESP, "ESP"),
 		new SearchEntry("Block outline", Tab.ESP, "ESP"),
 		new SearchEntry("Block outline color", Tab.ESP, "ESP"),
@@ -690,15 +693,17 @@ public class VoidmarkScreen extends Screen {
 			y = controlCard(graphics, font, left, top, col, mouseX, mouseY, "Mob glow", config.mobGlowEnabled, v -> config.mobGlowEnabled = v, Feature.MOB);
 			y = controlCard(graphics, font, left, y, col, mouseX, mouseY, "Block outline", config.blockOutlineGlow, v -> config.blockOutlineGlow = v, Feature.BLOCK);
 			y = controlCard(graphics, font, left, y, col, mouseX, mouseY, "Chest ESP", config.chestEspEnabled, v -> config.chestEspEnabled = v, Feature.CHEST);
+			y = featureCard(graphics, font, left, y, col, cardHeight(0), "Player fill", config.playerFillEsp, v -> config.playerFillEsp = v, mouseX, mouseY);
 			namesTop = y;
 		} else {
-			y = featureCard(graphics, font, left, top, col, cardHeight(5), "Glow");
+			y = featureCard(graphics, font, left, top, col, cardHeight(6), "Glow");
 			y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Mob glow", config.mobGlowEnabled, v -> config.mobGlowEnabled = v, Feature.MOB);
 			y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Block outline", config.blockOutlineGlow, v -> config.blockOutlineGlow = v, Feature.BLOCK);
 			y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Chest ESP", config.chestEspEnabled, v -> config.chestEspEnabled = v, Feature.CHEST);
+			y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Player fill", config.playerFillEsp, v -> config.playerFillEsp = v);
 			y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Nametags", config.nametagsEnabled, v -> config.nametagsEnabled = v, Feature.NAMETAGS);
 			toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Own nametag", config.nametagSelf, v -> config.nametagSelf = v);
-			namesTop = top + cardHeight(5) + 8;
+			namesTop = top + cardHeight(6) + 8;
 		}
 
 		List<String> nametags = config.nametagEspLabels();
@@ -2708,7 +2713,7 @@ public class VoidmarkScreen extends Screen {
 		return FabricLoader.getInstance()
 			.getModContainer("voidmark")
 			.map(container -> container.getMetadata().getVersion().getFriendlyString())
-			.orElse("1.2.102");
+			.orElse("1.2.103");
 	}
 
 	@Override

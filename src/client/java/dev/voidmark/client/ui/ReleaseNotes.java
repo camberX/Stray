@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.103", new String[]{
+			"Player fill ESP paints other players and their held items with the held-item fill, without the outline."
+		}),
 		new Entry("1.2.102", new String[]{
 			"HUD and bell icons sit in the center of their buttons.",
 			"What's new only lists the last 10 updates, as bullets."

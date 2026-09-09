@@ -45,7 +45,7 @@ public class ItemFeatureRendererMixin {
 	)
 	private RenderType voidmark$heldItemType(RenderType original) {
 		SubmitNodeStorage.ItemSubmit submit = this.voidmark$itemSubmit;
-		if (submit == null || !HeldItemShader.applies(submit.displayContext())) {
+		if (submit == null || !HeldItemShader.appliesFill(submit.displayContext())) {
 			return original;
 		}
 		return HeldItemShader.wrap(original, submit.quads());
@@ -58,7 +58,7 @@ public class ItemFeatureRendererMixin {
 		SubmitNodeStorage.ItemSubmit submit,
 		CallbackInfo ci
 	) {
-		if (HeldItemShader.applies(submit.displayContext())) {
+		if (HeldItemShader.appliesOutline(submit.displayContext())) {
 			this.quadInstance.setLightCoords(submit.lightCoords());
 			this.quadInstance.setOverlayCoords(submit.overlayCoords());
 			HeldItemShader.drawViewMask(bufferSource, submit.pose(), submit.quads(), this.quadInstance);

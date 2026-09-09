@@ -24,6 +24,8 @@ import net.minecraft.client.model.geom.ModelPart;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.client.renderer.SubmitNodeCollector;
+import net.minecraft.client.renderer.entity.state.AvatarRenderState;
+import net.minecraft.client.renderer.entity.state.LivingEntityRenderState;
 import net.minecraft.client.renderer.feature.ItemFeatureRenderer;
 import net.minecraft.client.renderer.rendertype.OutputTarget;
 import net.minecraft.client.renderer.rendertype.RenderSetup;
@@ -33,6 +35,7 @@ import net.minecraft.client.renderer.texture.TextureAtlas;
 import net.minecraft.client.resources.model.geometry.BakedQuad;
 import net.minecraft.resources.Identifier;
 import net.minecraft.util.Util;
+import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.item.ItemDisplayContext;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
@@ -60,6 +63,7 @@ public final class HeldItemShader {
 	private static RenderTarget maskTarget;
 	private static RenderTarget rowTarget;
 	private static boolean maskThisFrame;
+	private static int playerFillDepth;
 
 	private HeldItemShader() {
 	}
@@ -68,8 +72,50 @@ public final class HeldItemShader {
 		return VoidmarkConfig.get().heldItemShaderEnabled;
 	}
 
-	public static boolean applies(ItemDisplayContext context) {
+	public static boolean playerFillActive() {
+		return VoidmarkConfig.get().playerFillEsp;
+	}
+
+	public static boolean appliesFill(ItemDisplayContext context) {
+		if (context == null) {
+			return false;
+		}
+		if (context.firstPerson()) {
+			return active();
+		}
+		return playerFill() && (context == ItemDisplayContext.THIRD_PERSON_LEFT_HAND
+			|| context == ItemDisplayContext.THIRD_PERSON_RIGHT_HAND);
+	}
+
+	public static boolean appliesOutline(ItemDisplayContext context) {
 		return active() && context != null && context.firstPerson();
+	}
+
+	public static boolean applies(ItemDisplayContext context) {
+		return appliesFill(context);
+	}
+
+	public static boolean playerFill() {
+		return playerFillDepth > 0;
+	}
+
+	public static boolean shouldFillPlayer(LivingEntityRenderState state) {
+		if (!playerFillActive() || !(state instanceof AvatarRenderState avatar)) {
+			return false;
+		}
+		if (avatar.isSpectator || avatar.entityType != EntityType.PLAYER) {
+			return false;
+		}
+		Minecraft client = Minecraft.getInstance();
+		return client.player != null && avatar.id != client.player.getId();
+	}
+
+	public static void pushPlayerFill() {
+		playerFillDepth++;
+	}
+
+	public static void popPlayerFill() {
+		playerFillDepth = Math.max(0, playerFillDepth - 1);
 	}
 
 	public static boolean isFillPipeline(RenderPipeline value) {
@@ -124,7 +170,14 @@ public final class HeldItemShader {
 		if (!active() || original == null || isPipeline(original.pipeline()) || skin == null) {
 			return original;
 		}
-		return FILL_TYPES.apply(skin);
+		return wrapFill(original, skin);
+	}
+
+	public static RenderType wrapFill(RenderType original, Identifier atlas) {
+		if (original == null || isPipeline(original.pipeline()) || atlas == null) {
+			return original;
+		}
+		return FILL_TYPES.apply(atlas);
 	}
 
 	public static void submitArmMask(SubmitNodeCollector collector, PoseStack pose, int light, Identifier skin, ModelPart part) {
