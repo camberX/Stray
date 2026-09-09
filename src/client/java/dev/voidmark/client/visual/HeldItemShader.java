@@ -176,7 +176,7 @@ public final class HeldItemShader {
 				.withShaderDefine("ALPHA_CUTOUT", 0.1f)
 				.withColorTargetState(ColorTargetState.DEFAULT)
 				.withDepthStencilState(new DepthStencilState(CompareOp.ALWAYS_PASS, false))
-				.withCull(false)
+				.withCull(true)
 				.build()
 		);
 		maskPipeline = RenderPipelines.register(
