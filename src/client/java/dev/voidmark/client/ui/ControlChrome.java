@@ -12,7 +12,6 @@ import net.minecraft.world.entity.player.PlayerSkin;
  * Apple Control Center / visionOS glass tokens for the optional click-GUI design.
  */
 public final class ControlChrome {
-	public static final int BLUE = 0xFF0A84FF;
 	public static final int TEXT = 0xFF1C1C1E;
 	public static final int MUTED = 0x991C1C1E;
 	public static final int LIGHT_TEXT = 0xFFF5F5F7;
@@ -107,8 +106,15 @@ public final class ControlChrome {
 		return Math.max(8f, WINDOW_R - RAIL_INSET);
 	}
 
+	public static int accent() {
+		return Theme.ACCENT;
+	}
+
 	public static int selectedFill() {
-		return Theme.withAlpha(Theme.mix(paneRgb(), 0x000000, 0.44f), Math.round(Math.min(0.48f, paneOpacity() + 0.10f) * 255f));
+		int rgb = darkText()
+			? Theme.mix(paneRgb(), 0x000000, 0.22f)
+			: Theme.mix(paneRgb(), 0xFFFFFF, 0.22f);
+		return Theme.withAlpha(rgb, Math.round(Math.min(0.56f, paneOpacity() + 0.16f) * 255f));
 	}
 
 	public static int pillFill() {
@@ -120,7 +126,10 @@ public final class ControlChrome {
 	}
 
 	public static int searchFill() {
-		return Theme.withAlpha(Theme.mix(paneRgb(), 0x000000, 0.38f), Math.round(Math.min(0.82f, paneOpacity() + 0.28f) * 255f));
+		int rgb = darkText()
+			? Theme.mix(paneRgb(), 0x000000, 0.16f)
+			: Theme.mix(paneRgb(), 0xFFFFFF, 0.16f);
+		return Theme.withAlpha(rgb, Math.round(Math.min(0.70f, paneOpacity() + 0.18f) * 255f));
 	}
 
 	public static int clipFill() {
@@ -185,7 +194,7 @@ public final class ControlChrome {
 	}
 
 	public static void toggle(GuiGraphicsExtractor graphics, float x, float y, float w, float h, float t) {
-		int fill = t > 0.5f ? BLUE : TRACK;
+		int fill = t > 0.5f ? accent() : TRACK;
 		GuiDraw.pill(graphics, x, y, w, h, fill);
 		float knobR = h * 0.42f;
 		float knobX = x + knobR + 1.6f + t * (w - knobR * 2f - 3.2f);
@@ -194,7 +203,7 @@ public final class ControlChrome {
 
 	public static void slider(GuiGraphicsExtractor graphics, float x, float y, float w, float h, float t) {
 		GuiDraw.pill(graphics, x, y, w, h, TRACK);
-		GuiDraw.pill(graphics, x, y, Math.max(h, w * t), h, BLUE);
+		GuiDraw.pill(graphics, x, y, Math.max(h, w * t), h, accent());
 		GuiDraw.circle(graphics, x + w * t, y + h * 0.5f, h * 0.72f, KNOB);
 	}
 }
