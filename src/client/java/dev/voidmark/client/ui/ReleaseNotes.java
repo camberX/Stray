@@ -8,6 +8,9 @@ public final class ReleaseNotes {
 	}
 
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.99", new String[]{
+			"Triggerbot skips entities whose nametag includes CLICK, including hologram plates above them."
+		}),
 		new Entry("1.2.98", new String[]{
 			"Bars sit in HUD, Nodes in Mining, and Menus with Status in Misc. Combat is a sword, farming is wheat, and HUD uses a dashboard. Category names under the rail icons are a bit larger."
 		}),

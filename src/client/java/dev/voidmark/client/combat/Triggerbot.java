@@ -2,10 +2,12 @@ package dev.voidmark.client.combat;
 
 import dev.voidmark.client.config.VoidmarkConfig;
 import dev.voidmark.client.location.SkyblockLocation;
+import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.MultiPlayerGameMode;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.core.component.DataComponents;
+import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.Display;
@@ -20,9 +22,12 @@ import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.component.AttackRange;
+import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.EntityHitResult;
 import net.minecraft.world.phys.HitResult;
+import net.minecraft.world.scores.PlayerTeam;
 
+import java.util.Locale;
 import java.util.concurrent.ThreadLocalRandom;
 
 /**
@@ -31,9 +36,13 @@ import java.util.concurrent.ThreadLocalRandom;
  * movement packet. Fires only when Minecraft already resolved an entity hit
  * that is inside reach. Vanilla worlds wait for weapon charge; Skyblock waits
  * for tab Attack Speed. Humanize adds a short reaction wait, extra delay after
- * hits, and occasional one-tick hesitation.
+ * hits, and occasional one-tick hesitation. Entities whose nametag (or a
+ * hologram above them) includes {@code CLICK} are skipped.
  */
 public final class Triggerbot {
+	private static final double CLICK_XZ = 0.9;
+	private static final double CLICK_XZ_SQ = CLICK_XZ * CLICK_XZ;
+	private static final double CLICK_UP = 3.5;
 	private static int tick;
 	private static int lastHit = Integer.MIN_VALUE;
 	private static int extraWait;
@@ -89,7 +98,7 @@ public final class Triggerbot {
 		}
 		Entity target = entityHit.getEntity();
 		float humanize = VoidmarkConfig.clamp(VoidmarkConfig.get().triggerbotHumanize, 0f, 1f);
-		if (!isTarget(target, player, VoidmarkConfig.get().triggerbotPlayers)) {
+		if (!isTarget(client, target, player, VoidmarkConfig.get().triggerbotPlayers)) {
 			clearAim();
 			return;
 		}
@@ -167,7 +176,7 @@ public final class Triggerbot {
 		reactUntil = 0;
 	}
 
-	private static boolean isTarget(Entity entity, LocalPlayer player, boolean players) {
+	private static boolean isTarget(Minecraft client, Entity entity, LocalPlayer player, boolean players) {
 		if (entity == null || entity == player || entity.isRemoved()) {
 			return false;
 		}
@@ -180,10 +189,104 @@ public final class Triggerbot {
 		if (entity instanceof Interaction || entity instanceof Display) {
 			return false;
 		}
+		if (hasClickNametag(client, entity)) {
+			return false;
+		}
 		if (entity instanceof Player) {
 			return players && isCombatAlive(entity);
 		}
 		return entity instanceof LivingEntity && isCombatAlive(entity);
+	}
+
+	/**
+	 * Skyblock NPCs put {@code CLICK} on a hologram plate above the mob, not
+	 * always on the entity the crosshair actually hits.
+	 */
+	private static boolean hasClickNametag(Minecraft client, Entity entity) {
+		if (labelHasClick(entity) || passengerHasClick(entity)) {
+			return true;
+		}
+		Entity vehicle = entity.getVehicle();
+		if (vehicle != null && labelHasClick(vehicle)) {
+			return true;
+		}
+		if (client.level == null) {
+			return false;
+		}
+		AABB box = entity.getBoundingBox()
+			.inflate(CLICK_XZ, 0, CLICK_XZ)
+			.expandTowards(0, CLICK_UP, 0);
+		for (Entity other : client.level.getEntities(entity, box)) {
+			if (!isNameHologram(other) || other.getY() < entity.getY() - 0.1) {
+				continue;
+			}
+			double dx = other.getX() - entity.getX();
+			double dz = other.getZ() - entity.getZ();
+			if (dx * dx + dz * dz > CLICK_XZ_SQ) {
+				continue;
+			}
+			if (labelHasClick(other)) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	private static boolean passengerHasClick(Entity entity) {
+		for (Entity passenger : entity.getPassengers()) {
+			if (labelHasClick(passenger) || passengerHasClick(passenger)) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	private static boolean isNameHologram(Entity entity) {
+		return entity instanceof ArmorStand
+			|| entity instanceof Display.TextDisplay
+			|| entity.getType() == EntityType.ARMOR_STAND
+			|| entity.getType() == EntityType.TEXT_DISPLAY;
+	}
+
+	private static boolean labelHasClick(Entity entity) {
+		return plainName(entity).contains("CLICK");
+	}
+
+	private static String plainName(Entity entity) {
+		if (entity == null) {
+			return "";
+		}
+		StringBuilder out = new StringBuilder();
+		appendPlain(out, entity.getCustomName());
+		if (entity.hasCustomName()) {
+			appendPlain(out, entity.getDisplayName());
+		}
+		PlayerTeam team = entity.getTeam();
+		if (team != null) {
+			appendPlain(out, team.getPlayerPrefix());
+			appendPlain(out, team.getPlayerSuffix());
+		}
+		if (entity instanceof Display.TextDisplay display) {
+			Display.TextDisplay.TextRenderState state = display.textRenderState();
+			if (state != null) {
+				appendPlain(out, state.text());
+			}
+		}
+		return out.toString();
+	}
+
+	private static void appendPlain(StringBuilder out, Component text) {
+		if (text == null) {
+			return;
+		}
+		String raw = ChatFormatting.stripFormatting(text.getString());
+		if (raw == null || raw.isEmpty()) {
+			return;
+		}
+		if (!out.isEmpty()) {
+			out.append(' ');
+		}
+		out.append(raw.toUpperCase(Locale.ROOT));
 	}
 
 	private static boolean isCombatAlive(Entity entity) {
