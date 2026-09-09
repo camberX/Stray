@@ -1,6 +1,7 @@
 package dev.voidmark.client.ui;
 
 import com.mojang.blaze3d.platform.InputConstants;
+import dev.voidmark.client.VoidmarkClient;
 import dev.voidmark.client.combat.AutoClicker;
 import dev.voidmark.client.combat.Hitsound;
 import dev.voidmark.client.combat.OdinClicks;
@@ -124,7 +125,7 @@ public class VoidmarkScreen extends Screen {
 		AUTO_EXPERIMENTS("Auto experiments", 5),
 		MOB("Mob glow", 3),
 		BLOCK("Block outline", 1),
-		CHEST("Chest ESP", 4),
+		CHEST("Chest ESP", 5),
 		NODE_ESP("Node ESP", 4),
 		WATERMARK("Watermark", 4),
 		MUSIC("Music", 2),
@@ -1824,7 +1825,10 @@ public class VoidmarkScreen extends Screen {
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Enable", config.autoExperimentsEnabled, v -> config.autoExperimentsEnabled = v);
 				drawFeatureFields(graphics, font, mouseX, mouseY, ix, y, iw, Feature.AUTO_EXPERIMENTS);
 
-				y = featureCard(graphics, font, right, top, col, cardHeight(4), "Commands");
+				float bindsH = cardHeight(3);
+				y = featureCard(graphics, font, right, top, col, bindsH, "Keybinds");
+				y = drawMenuKeybinds(graphics, font, rx, y, iw, mouseX, mouseY);
+				y = featureCard(graphics, font, right, top + bindsH + 8, col, cardHeight(4), "Commands");
 				GuiDraw.menu(graphics, font, "/loadouts  /ld", rx, y + 2, ink());
 				GuiDraw.menu(graphics, font, "/wardrobe  /wd", rx, y + 16, ink());
 				GuiDraw.menu(graphics, font, "/autoclicker add left", rx, y + 30, ink());
@@ -1983,7 +1987,10 @@ public class VoidmarkScreen extends Screen {
 				y = featureCard(graphics, font, left, top + cardHeight(3) + 8, col, experimentsH, "Auto experiments", config.autoExperimentsEnabled, v -> config.autoExperimentsEnabled = v, mouseX, mouseY);
 				drawFeatureFields(graphics, font, mouseX, mouseY, ix, y, iw, Feature.AUTO_EXPERIMENTS);
 
-				y = featureCard(graphics, font, right, top, col, cardHeight(4), "Commands");
+				float bindsH = cardHeight(3);
+				y = featureCard(graphics, font, right, top, col, bindsH, "Keybinds");
+				y = drawMenuKeybinds(graphics, font, rx, y, iw, mouseX, mouseY);
+				y = featureCard(graphics, font, right, top + bindsH + 8, col, cardHeight(4), "Commands");
 				GuiDraw.menu(graphics, font, "/loadouts  /ld", rx, y + 2, ink());
 				GuiDraw.menu(graphics, font, "/wardrobe  /wd", rx, y + 16, ink());
 				GuiDraw.menu(graphics, font, "/autoclicker add left", rx, y + 30, ink());
@@ -2460,6 +2467,7 @@ public class VoidmarkScreen extends Screen {
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Tracers", config.chestEspTracers, v -> config.chestEspTracers = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Through walls", config.chestEspThroughWalls, v -> config.chestEspThroughWalls = v);
 				y = slider(graphics, font, ix, y, iw, "Speed", Math.round(config.chestAimSpeed * 100) + "%", (config.chestAimSpeed - 0.25f) / 1.75f, v -> config.chestAimSpeed = VoidmarkConfig.clamp(0.25f + v * 1.75f, 0.25f, 2.00f));
+				y = bindRow(graphics, font, ix, y, iw, mouseX, mouseY, "Chest Aim", 6, OdinClicks.parseKey(config.chestAimKey));
 				colorRow(graphics, font, ix, y, iw, mouseX, mouseY, "Color", config.chestEspRgb, PickerTarget.CHEST);
 			}
 			case NODE_ESP -> {
@@ -2531,6 +2539,21 @@ public class VoidmarkScreen extends Screen {
 		return bindRow(graphics, font, x, y + rowH(), w, mouseX, mouseY, "Bind", bindWhich, key);
 	}
 
+	private float drawMenuKeybinds(
+		GuiGraphicsExtractor graphics,
+		Font font,
+		float x,
+		float y,
+		float w,
+		int mouseX,
+		int mouseY
+	) {
+		VoidmarkConfig config = VoidmarkConfig.get();
+		y = bindRow(graphics, font, x, y, w, mouseX, mouseY, "Open menu", 3, OdinClicks.parseKey(config.openGuiKey));
+		y = bindRow(graphics, font, x, y, w, mouseX, mouseY, "Loadouts", 4, OdinClicks.parseKey(config.openLoadoutsKey));
+		return bindRow(graphics, font, x, y, w, mouseX, mouseY, "Wardrobe", 5, OdinClicks.parseKey(config.openWardrobeKey));
+	}
+
 	private float bindRow(
 		GuiGraphicsExtractor graphics,
 		Font font,
@@ -2580,14 +2603,18 @@ public class VoidmarkScreen extends Screen {
 	private void captureBind(InputConstants.Key key) {
 		VoidmarkConfig config = VoidmarkConfig.get();
 		String name = OdinClicks.keyName(key);
-		if (bindListen == 1) {
-			config.autoClickerLeftKey = name;
-		} else if (bindListen == 2) {
-			config.autoClickerRightKey = name;
+		switch (bindListen) {
+			case 1 -> config.autoClickerLeftKey = name;
+			case 2 -> config.autoClickerRightKey = name;
+			case 3 -> config.openGuiKey = name;
+			case 4 -> config.openLoadoutsKey = name;
+			case 5 -> config.openWardrobeKey = name;
+			case 6 -> config.chestAimKey = name;
 		}
 		bindListen = 0;
 		config.save();
 		UnloadState.markDirty();
+		VoidmarkClient.syncMenuBindEdges();
 	}
 
 	private float cycle(GuiGraphicsExtractor graphics, Font font, float x, float y, float w, int mouseX, int mouseY, String label, String value, Runnable next) {
@@ -2925,7 +2952,7 @@ public class VoidmarkScreen extends Screen {
 		return FabricLoader.getInstance()
 			.getModContainer("voidmark")
 			.map(container -> container.getMetadata().getVersion().getFriendlyString())
-			.orElse("1.2.116");
+			.orElse("1.2.117");
 	}
 
 	@Override
@@ -3251,6 +3278,14 @@ public class VoidmarkScreen extends Screen {
 			return true;
 		}
 		return super.charTyped(event);
+	}
+
+	public boolean isCapturingBind() {
+		return bindListen != 0;
+	}
+
+	public boolean shouldIgnoreMenuBinds() {
+		return bindListen != 0 || capeFocused || nickFocused || searchOpen || mobSearchFocused || fontSearchFocused;
 	}
 
 	public void requestClose() {

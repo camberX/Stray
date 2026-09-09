@@ -1,6 +1,7 @@
 package dev.voidmark.client.ui;
 
 import com.mojang.blaze3d.platform.InputConstants;
+import dev.voidmark.client.VoidmarkClient;
 import dev.voidmark.client.config.VoidmarkConfig;
 import dev.voidmark.client.item.WardrobeMenus;
 import dev.voidmark.client.mixin.AbstractContainerScreenInvoker;
@@ -657,7 +658,7 @@ public class WardrobeScreen extends Screen {
 
 	@Override
 	public boolean keyPressed(KeyEvent event) {
-		if (minecraft != null && minecraft.options.keyInventory.matches(event)) {
+		if (minecraft != null && (minecraft.options.keyInventory.matches(event) || VoidmarkClient.wardrobeKey(event))) {
 			onClose();
 			return true;
 		}

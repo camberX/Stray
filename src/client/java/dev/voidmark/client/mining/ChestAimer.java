@@ -1,7 +1,8 @@
 package dev.voidmark.client.mining;
 
+import dev.voidmark.client.combat.OdinClicks;
 import dev.voidmark.client.config.VoidmarkConfig;
-import net.minecraft.client.KeyMapping;
+import dev.voidmark.client.ui.VoidmarkScreen;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.core.BlockPos;
@@ -29,7 +30,6 @@ public final class ChestAimer {
 	private static final double SAME = 0.10;
 	private static final double AIM_NEAR = 0.40;
 
-	private static KeyMapping key;
 	private static boolean running;
 	private static boolean listening;
 	private static ChestEsp.Mark chest;
@@ -57,8 +57,12 @@ public final class ChestAimer {
 		listen(Minecraft.getInstance());
 	}
 
-	public static void bindKey(KeyMapping mapping) {
-		key = mapping;
+	public static boolean keyHeld() {
+		Minecraft client = Minecraft.getInstance();
+		if (client.screen instanceof VoidmarkScreen) {
+			return false;
+		}
+		return OdinClicks.isPressed(OdinClicks.parseKey(VoidmarkConfig.get().chestAimKey));
 	}
 
 	public static boolean running() {
@@ -91,7 +95,7 @@ public final class ChestAimer {
 			}
 			return;
 		}
-		if (key == null || !key.isDown()) {
+		if (!keyHeld()) {
 			if (running) {
 				stop(client, null);
 			}

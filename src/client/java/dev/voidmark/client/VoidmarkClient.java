@@ -3,12 +3,12 @@ package dev.voidmark.client;
 import com.mojang.blaze3d.platform.InputConstants;
 import com.mojang.brigadier.Command;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
-import dev.voidmark.Voidmark;
 import dev.voidmark.client.combat.AutoClicker;
 import dev.voidmark.client.combat.AutoClickerCommands;
 import dev.voidmark.client.combat.AutoExperiments;
 import dev.voidmark.client.combat.Hitmarker;
 import dev.voidmark.client.combat.Hitsound;
+import dev.voidmark.client.combat.OdinClicks;
 import dev.voidmark.client.combat.Triggerbot;
 import dev.voidmark.client.farming.FarmKeys;
 import dev.voidmark.client.farming.FarmingHud;
@@ -67,24 +67,47 @@ import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLevelEvents;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
-import net.fabricmc.fabric.api.client.keymapping.v1.KeyMappingHelper;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
-import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.components.EditBox;
+import net.minecraft.client.gui.screens.ChatScreen;
 import net.minecraft.client.input.KeyEvent;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.Identifier;
 
 public final class VoidmarkClient implements ClientModInitializer {
-	private static final KeyMapping.Category CATEGORY = KeyMapping.Category.register(Identifier.fromNamespaceAndPath(Voidmark.MOD_ID, "main"));
-	private static KeyMapping openGui;
-	private static KeyMapping openLoadouts;
-	private static KeyMapping openWardrobe;
-	private static KeyMapping chestAim;
 	private static boolean itemAppearancesLoaded;
+	private static boolean wasGui;
+	private static boolean wasLoadouts;
+	private static boolean wasWardrobe;
 
 	public static boolean loadoutsKey(KeyEvent event) {
-		return openLoadouts != null && event != null && openLoadouts.matches(event);
+		return menuKeyMatches(VoidmarkConfig.get().openLoadoutsKey, event);
+	}
+
+	public static boolean wardrobeKey(KeyEvent event) {
+		return menuKeyMatches(VoidmarkConfig.get().openWardrobeKey, event);
+	}
+
+	public static boolean menuKeyHeld(String keyName) {
+		return OdinClicks.isPressed(OdinClicks.parseKey(keyName));
+	}
+
+	public static void syncMenuBindEdges() {
+		VoidmarkConfig config = VoidmarkConfig.get();
+		wasGui = menuKeyHeld(config.openGuiKey);
+		wasLoadouts = menuKeyHeld(config.openLoadoutsKey);
+		wasWardrobe = menuKeyHeld(config.openWardrobeKey);
+	}
+
+	public static boolean menuKeyMatches(String keyName, KeyEvent event) {
+		if (event == null) {
+			return false;
+		}
+		InputConstants.Key mapped = OdinClicks.parseKey(keyName);
+		if (!OdinClicks.bound(mapped) || mapped.getType() != InputConstants.Type.KEYSYM) {
+			return false;
+		}
+		return event.key() == mapped.getValue();
 	}
 
 	@Override
@@ -119,31 +142,6 @@ public final class VoidmarkClient implements ClientModInitializer {
 		MediaSession.init();
 		AutoExperiments.init();
 
-		openGui = KeyMappingHelper.registerKeyMapping(new KeyMapping(
-			"key.voidmark.open",
-			InputConstants.Type.KEYSYM,
-			InputConstants.KEY_RSHIFT,
-			CATEGORY
-		));
-		openLoadouts = KeyMappingHelper.registerKeyMapping(new KeyMapping(
-			"key.voidmark.loadouts",
-			InputConstants.Type.KEYSYM,
-			InputConstants.UNKNOWN.getValue(),
-			CATEGORY
-		));
-		openWardrobe = KeyMappingHelper.registerKeyMapping(new KeyMapping(
-			"key.voidmark.wardrobe",
-			InputConstants.Type.KEYSYM,
-			InputConstants.UNKNOWN.getValue(),
-			CATEGORY
-		));
-		chestAim = KeyMappingHelper.registerKeyMapping(new KeyMapping(
-			"key.voidmark.chest_aim",
-			InputConstants.Type.KEYSYM,
-			InputConstants.UNKNOWN.getValue(),
-			CATEGORY
-		));
-		ChestAimer.bindKey(chestAim);
 		ClientCommandRegistrationCallback.EVENT.register((dispatcher, registryAccess) -> {
 			var root = ClientCommands.literal("voidmark").executes(context -> openScreen());
 			root.then(ClientCommands.literal("toggle").executes(context -> {
@@ -205,31 +203,7 @@ public final class VoidmarkClient implements ClientModInitializer {
 		});
 
 		ClientTickEvents.END_CLIENT_TICK.register(client -> {
-			while (openGui.consumeClick()) {
-				if (client.screen instanceof HudEditorScreen) {
-					client.setScreen(new VoidmarkScreen());
-				} else if (client.screen instanceof VoidmarkScreen screen) {
-					screen.requestClose();
-				} else if (client.screen instanceof ItemEditScreen) {
-					client.setScreen(null);
-				} else {
-					openScreen();
-				}
-			}
-			while (openLoadouts.consumeClick()) {
-				if (client.screen instanceof LoadoutsScreen screen) {
-					screen.onClose();
-				} else {
-					LoadoutsCommands.open();
-				}
-			}
-			while (openWardrobe.consumeClick()) {
-				if (client.screen instanceof WardrobeScreen screen) {
-					screen.onClose();
-				} else {
-					WardrobeCommands.open();
-				}
-			}
+			pollMenuKeys(client);
 			VoidmarkConfig running = VoidmarkConfig.get();
 			SpotifySmtc.tick(running.musicHudEnabled && running.spotifyEnabled);
 			SkyblockLocation.tick(client);
@@ -301,6 +275,57 @@ public final class VoidmarkClient implements ClientModInitializer {
 			.then(ClientCommands.literal("next").executes(context -> MediaChat.skip(true)))
 			.then(ClientCommands.literal("prev").executes(context -> MediaChat.skip(false)))
 			.then(ClientCommands.literal("np").executes(context -> MediaChat.nowPlaying()));
+	}
+
+	private static void pollMenuKeys(Minecraft client) {
+		VoidmarkConfig config = VoidmarkConfig.get();
+		boolean gui = menuKeyHeld(config.openGuiKey);
+		boolean loadouts = menuKeyHeld(config.openLoadoutsKey);
+		boolean wardrobe = menuKeyHeld(config.openWardrobeKey);
+		if (!ignoreMenuBinds(client)) {
+			if (gui && !wasGui) {
+				handleOpenGui(client);
+			}
+			if (loadouts && !wasLoadouts) {
+				if (client.screen instanceof LoadoutsScreen screen) {
+					screen.onClose();
+				} else {
+					LoadoutsCommands.open();
+				}
+			}
+			if (wardrobe && !wasWardrobe) {
+				if (client.screen instanceof WardrobeScreen screen) {
+					screen.onClose();
+				} else {
+					WardrobeCommands.open();
+				}
+			}
+		}
+		wasGui = gui;
+		wasLoadouts = loadouts;
+		wasWardrobe = wardrobe;
+	}
+
+	private static boolean ignoreMenuBinds(Minecraft client) {
+		if (client.screen instanceof ChatScreen) {
+			return true;
+		}
+		if (client.screen instanceof VoidmarkScreen screen && screen.shouldIgnoreMenuBinds()) {
+			return true;
+		}
+		return client.screen != null && client.screen.getFocused() instanceof EditBox;
+	}
+
+	private static void handleOpenGui(Minecraft client) {
+		if (client.screen instanceof HudEditorScreen) {
+			client.setScreen(new VoidmarkScreen());
+		} else if (client.screen instanceof VoidmarkScreen screen) {
+			screen.requestClose();
+		} else if (client.screen instanceof ItemEditScreen) {
+			client.setScreen(null);
+		} else {
+			openScreen();
+		}
 	}
 
 	private static int openScreen() {

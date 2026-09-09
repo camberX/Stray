@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.117", new String[]{
+			"Menu, loadouts, wardrobe, and chest-aim binds are set in Eisenmann instead of vanilla Controls."
+		}),
 		new Entry("1.2.116", new String[]{
 			"Loadouts outline the equipped slot, and 1-9 moves that outline when you pick a loadout."
 		}),

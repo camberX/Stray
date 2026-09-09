@@ -81,6 +81,10 @@ public final class VoidmarkConfig {
 	public boolean chestEspTracers = true;
 	public boolean chestEspThroughWalls = true;
 	public float chestAimSpeed = 1.00f;
+	public String openGuiKey = "key.keyboard.right.shift";
+	public String openLoadoutsKey = "key.keyboard.unknown";
+	public String openWardrobeKey = "key.keyboard.unknown";
+	public String chestAimKey = "key.keyboard.unknown";
 	public int chestEspRgb = 0xF4C14E;
 	public float chestEspOpacity = 0.34f;
 	public boolean loadoutsMenuEnabled = false;
@@ -549,6 +553,10 @@ public final class VoidmarkConfig {
 				if (loaded.autoClickerRightKey == null || loaded.autoClickerRightKey.isBlank()) {
 					loaded.autoClickerRightKey = "key.keyboard.unknown";
 				}
+				loaded.openGuiKey = blankKey(loaded.openGuiKey, "key.keyboard.right.shift");
+				loaded.openLoadoutsKey = blankKey(loaded.openLoadoutsKey, "key.keyboard.unknown");
+				loaded.openWardrobeKey = blankKey(loaded.openWardrobeKey, "key.keyboard.unknown");
+				loaded.chestAimKey = blankKey(loaded.chestAimKey, "key.keyboard.unknown");
 				if (loaded.autoClickerLeftWhitelist == null) {
 					loaded.autoClickerLeftWhitelist = new java.util.ArrayList<>();
 				}
@@ -852,6 +860,10 @@ public final class VoidmarkConfig {
 
 	public static int clamp(int value, int min, int max) {
 		return Math.max(min, Math.min(max, value));
+	}
+
+	private static String blankKey(String value, String fallback) {
+		return value == null || value.isBlank() ? fallback : value;
 	}
 
 	public static float clamp(float value, float min, float max) {
