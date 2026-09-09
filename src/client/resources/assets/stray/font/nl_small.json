@@ -1,0 +1,26 @@
+{
+	"providers": [
+		{
+			"type": "ttf",
+			"file": "stray:nunitosans.ttf",
+			"shift": [0, 0],
+			"size": 5.25,
+			"oversample": 12.0
+		},
+		{
+			"type": "reference",
+			"id": "minecraft:include/space"
+		},
+		{
+			"type": "reference",
+			"id": "minecraft:include/default",
+			"filter": {
+				"uniform": false
+			}
+		},
+		{
+			"type": "reference",
+			"id": "minecraft:include/unifont"
+		}
+	]
+}

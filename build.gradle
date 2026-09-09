@@ -7,7 +7,7 @@ version = project.version
 group = project.group
 
 base {
-	archivesName = 'eisenmann'
+	archivesName = 'stray'
 }
 
 repositories {
@@ -24,7 +24,7 @@ loom {
 	splitEnvironmentSourceSets()
 
 	mods {
-		"voidmark" {
+		"stray" {
 			sourceSet sourceSets.main
 			sourceSet sourceSets.client
 		}
@@ -79,21 +79,21 @@ tasks.register("syncWebMod") {
 	description = "Copy the built jar to the shop download path and write latest.json."
 	dependsOn "assemble"
 	inputs.property "version", project.version.toString()
-	inputs.file(layout.buildDirectory.file("libs/eisenmann-${project.version}.jar"))
-	outputs.file(webModDir.file("eisenmann.jar"))
+	inputs.file(layout.buildDirectory.file("libs/stray-${project.version}.jar"))
+	outputs.file(webModDir.file("stray.jar"))
 	outputs.file(webModDir.file("latest.json"))
 	doLast {
 		def libs = layout.buildDirectory.dir("libs").get().asFile
-		def jarFile = new File(libs, "eisenmann-${project.version}.jar")
+		def jarFile = new File(libs, "stray-${project.version}.jar")
 		if (!jarFile.file) {
 			throw new GradleException("Missing ${jarFile}")
 		}
 		def destDir = webModDir.asFile
 		destDir.mkdirs()
-		new File(destDir, "eisenmann.jar").bytes = jarFile.bytes
-		def versionedName = "eisenmann-${project.version}.jar"
+		new File(destDir, "stray.jar").bytes = jarFile.bytes
+		def versionedName = "stray-${project.version}.jar"
 		destDir.listFiles()?.each { f ->
-			if (f.name.endsWith(".jar") && f.name != "eisenmann.jar" && f.name != versionedName) {
+			if (f.name.endsWith(".jar") && f.name != "stray.jar" && f.name != versionedName) {
 				f.delete()
 			}
 		}

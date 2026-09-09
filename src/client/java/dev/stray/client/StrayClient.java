@@ -1,0 +1,346 @@
+package dev.stray.client;
+
+import com.mojang.blaze3d.platform.InputConstants;
+import com.mojang.brigadier.Command;
+import com.mojang.brigadier.builder.LiteralArgumentBuilder;
+import dev.stray.client.combat.AutoClicker;
+import dev.stray.client.combat.AutoClickerCommands;
+import dev.stray.client.combat.AutoExperiments;
+import dev.stray.client.combat.Hitmarker;
+import dev.stray.client.combat.Hitsound;
+import dev.stray.client.combat.OdinClicks;
+import dev.stray.client.combat.Triggerbot;
+import dev.stray.client.farming.FarmKeys;
+import dev.stray.client.farming.FarmingHud;
+import dev.stray.client.farming.JacobContestTracker;
+import dev.stray.client.config.StrayConfig;
+import dev.stray.client.location.SkyblockLocation;
+import dev.stray.client.net.ConnectionPing;
+import dev.stray.client.node.EnderNodeTracker;
+import dev.stray.client.item.ItemAppearance;
+import dev.stray.client.item.ItemIds;
+import dev.stray.client.item.RawmatsCommands;
+import dev.stray.client.item.RawmatsTracker;
+import dev.stray.client.item.SkyblockItems;
+import dev.stray.client.item.SkyblockProfileApi;
+import dev.stray.client.item.SkyblockRecipes;
+import dev.stray.client.media.MediaChat;
+import dev.stray.client.media.MediaSession;
+import dev.stray.client.media.SpotifySmtc;
+import dev.stray.client.mining.ChestAimer;
+import dev.stray.client.mining.ChestEsp;
+import dev.stray.client.mining.MiningTracker;
+import dev.stray.client.mining.TitaniumTracker;
+import dev.stray.client.render.ChestEspRenderer;
+import dev.stray.client.render.InventoryHudRenderer;
+import dev.stray.client.render.JacobContestHudRenderer;
+import dev.stray.client.render.MusicHudRenderer;
+import dev.stray.client.render.NametagRenderer;
+import dev.stray.client.render.NodeHudRenderer;
+import dev.stray.client.render.PickupLogRenderer;
+import dev.stray.client.render.RawmatsHudRenderer;
+import dev.stray.client.render.MiningHudRenderer;
+import dev.stray.client.render.MiningWorldRenderer;
+import dev.stray.client.render.BlockOutlineGlow;
+import dev.stray.client.render.EspCommands;
+import dev.stray.client.render.MobGlowRenderer;
+import dev.stray.client.render.NodeWorldRenderer;
+import dev.stray.client.render.VanillaHud;
+import dev.stray.client.render.WatermarkRenderer;
+import dev.stray.client.ui.HudEditorScreen;
+import dev.stray.client.ui.ItemEditScreen;
+import dev.stray.client.ui.LoadoutsCommands;
+import dev.stray.client.ui.LoadoutsScreen;
+import dev.stray.client.ui.WardrobeCommands;
+import dev.stray.client.ui.WardrobeScreen;
+import dev.stray.client.ui.SystemFonts;
+import dev.stray.client.ui.Theme;
+import dev.stray.client.ui.UiFontPack;
+import dev.stray.client.ui.StrayScreen;
+import dev.stray.client.visual.CustomCape;
+import dev.stray.client.visual.ShopCape;
+import net.fabricmc.api.ClientModInitializer;
+import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback;
+import net.fabricmc.fabric.api.client.command.v2.ClientCommands;
+import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource;
+import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLevelEvents;
+import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents;
+import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
+import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.components.EditBox;
+import net.minecraft.client.gui.screens.ChatScreen;
+import net.minecraft.client.input.KeyEvent;
+import net.minecraft.network.chat.Component;
+
+public final class StrayClient implements ClientModInitializer {
+	private static boolean itemAppearancesLoaded;
+	private static boolean wasGui;
+	private static boolean wasLoadouts;
+	private static boolean wasWardrobe;
+
+	public static boolean loadoutsKey(KeyEvent event) {
+		return menuKeyMatches(StrayConfig.get().openLoadoutsKey, event);
+	}
+
+	public static boolean wardrobeKey(KeyEvent event) {
+		return menuKeyMatches(StrayConfig.get().openWardrobeKey, event);
+	}
+
+	public static boolean menuKeyHeld(String keyName) {
+		return OdinClicks.isPressed(OdinClicks.parseKey(keyName));
+	}
+
+	public static void syncMenuBindEdges() {
+		StrayConfig config = StrayConfig.get();
+		wasGui = menuKeyHeld(config.openGuiKey);
+		wasLoadouts = menuKeyHeld(config.openLoadoutsKey);
+		wasWardrobe = menuKeyHeld(config.openWardrobeKey);
+	}
+
+	public static boolean menuKeyMatches(String keyName, KeyEvent event) {
+		if (event == null) {
+			return false;
+		}
+		InputConstants.Key mapped = OdinClicks.parseKey(keyName);
+		if (!OdinClicks.bound(mapped) || mapped.getType() != InputConstants.Type.KEYSYM) {
+			return false;
+		}
+		return event.key() == mapped.getValue();
+	}
+
+	@Override
+	public void onInitializeClient() {
+		StrayConfig.load();
+		Theme.refresh();
+		Thread fonts = new Thread(SystemFonts::families, "stray-fonts");
+		fonts.setDaemon(true);
+		fonts.start();
+		SkyblockItems.load();
+		SkyblockRecipes.load();
+		RawmatsTracker.init();
+		CustomCape.init();
+		NodeWorldRenderer.init();
+		MobGlowRenderer.init();
+		BlockOutlineGlow.init();
+		MiningWorldRenderer.init();
+		ChestEspRenderer.init();
+		ChestAimer.init();
+		Hitmarker.init();
+		FarmingHud.init();
+		JacobContestHudRenderer.init();
+		WatermarkRenderer.init();
+		InventoryHudRenderer.init();
+		NodeHudRenderer.init();
+		PickupLogRenderer.init();
+		MusicHudRenderer.init();
+		RawmatsHudRenderer.init();
+		MiningHudRenderer.init();
+		NametagRenderer.init();
+		VanillaHud.init();
+		MediaSession.init();
+		AutoExperiments.init();
+
+		ClientCommandRegistrationCallback.EVENT.register((dispatcher, registryAccess) -> {
+			var root = ClientCommands.literal("stray").executes(context -> openScreen());
+			root.then(ClientCommands.literal("toggle").executes(context -> {
+				StrayConfig config = StrayConfig.get();
+				config.markersEnabled = !config.markersEnabled;
+				config.save();
+				Minecraft client = Minecraft.getInstance();
+				if (client.player != null) {
+					client.player.sendSystemMessage(
+						Component.literal("Stray markers " + (config.markersEnabled ? "enabled" : "disabled"))
+					);
+				}
+				return Command.SINGLE_SUCCESS;
+			}));
+			root.then(ClientCommands.literal("edit").executes(context -> openItemEdit()));
+			root.then(ClientCommands.literal("farmkeys").executes(context -> FarmKeys.toggle()));
+			root.then(ClientCommands.literal("fk").executes(context -> FarmKeys.toggle()));
+			root.then(musicCommand());
+			root.then(RawmatsCommands.command());
+			root.then(EspCommands.command());
+			root.then(LoadoutsCommands.command());
+			root.then(WardrobeCommands.command());
+			var brand = dispatcher.register(root);
+			dispatcher.register(ClientCommands.literal("st").redirect(brand));
+			dispatcher.register(ClientCommands.literal("voidmark").redirect(brand));
+			dispatcher.register(ClientCommands.literal("eisenmann").redirect(brand));
+			var vm = ClientCommands.literal("vm").executes(context -> openScreen());
+			vm.then(ClientCommands.literal("edit").executes(context -> openItemEdit()));
+			vm.then(ClientCommands.literal("farmkeys").executes(context -> FarmKeys.toggle()));
+			vm.then(ClientCommands.literal("fk").executes(context -> FarmKeys.toggle()));
+			vm.then(musicCommand());
+			vm.then(RawmatsCommands.command());
+			vm.then(EspCommands.command());
+			vm.then(LoadoutsCommands.command());
+			vm.then(WardrobeCommands.command());
+			dispatcher.register(vm);
+			dispatcher.register(ClientCommands.literal("loadouts").executes(context -> LoadoutsCommands.open()));
+			dispatcher.register(ClientCommands.literal("loadout").executes(context -> LoadoutsCommands.open()));
+			dispatcher.register(ClientCommands.literal("ld").executes(context -> LoadoutsCommands.open()));
+			dispatcher.register(ClientCommands.literal("wardrobe").executes(context -> WardrobeCommands.open()));
+			dispatcher.register(ClientCommands.literal("wd").executes(context -> WardrobeCommands.open()));
+			dispatcher.register(AutoClickerCommands.command());
+		});
+
+		ClientTickEvents.START_CLIENT_TICK.register(client -> {
+			FarmKeys.tick(client);
+			ChestAimer.tick(client);
+			AutoClicker.tick(client);
+			AutoExperiments.tick(client);
+			if (itemAppearancesLoaded) {
+				return;
+			}
+			if (!ItemIds.componentsReady()) {
+				return;
+			}
+			try {
+				ItemAppearance.reload();
+				itemAppearancesLoaded = true;
+			} catch (RuntimeException ignored) {
+			}
+		});
+
+		ClientTickEvents.END_CLIENT_TICK.register(client -> {
+			pollMenuKeys(client);
+			StrayConfig running = StrayConfig.get();
+			SpotifySmtc.tick(running.musicHudEnabled && running.spotifyEnabled);
+			SkyblockLocation.tick(client);
+			LoadoutsScreen.tickSwap(client);
+			WardrobeScreen.tickSwap(client);
+			Hitsound.tick(client);
+			PickupLogRenderer.tick(client);
+			JacobContestTracker.tick(client);
+			EnderNodeTracker.get().tick(client);
+			ConnectionPing.tick(client);
+			RawmatsTracker.tick(client);
+			MiningTracker.tick(client);
+			TitaniumTracker.get().tick(client);
+			ChestEsp.get().tick(client);
+			ShopCape.tick();
+			UiFontPack.tick(client);
+		});
+
+		ClientLevelEvents.AFTER_CLIENT_LEVEL_CHANGE.register((client, level) -> {
+			MobGlowRenderer.reset();
+			ChestAimer.stop();
+			ChestEsp.get().clear();
+		});
+
+		ClientPlayConnectionEvents.JOIN.register((handler, sender, client) -> {
+			MobGlowRenderer.reset();
+			Hitsound.reset();
+			Hitmarker.reset();
+			Triggerbot.reset();
+			AutoClicker.reset();
+			AutoExperiments.reset();
+			PickupLogRenderer.clear();
+			JacobContestTracker.reset();
+			SkyblockProfileApi.refresh();
+			ShopCape.onJoin();
+		});
+
+		ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> {
+			SkyblockLocation.reset();
+			Hitsound.reset();
+			Hitmarker.reset();
+			Triggerbot.reset();
+			AutoClicker.reset();
+			AutoExperiments.reset();
+			PickupLogRenderer.clear();
+			JacobContestTracker.reset();
+			EnderNodeTracker.get().clear();
+			ConnectionPing.reset();
+			MiningTracker.reset();
+			TitaniumTracker.get().clear();
+			ChestEsp.get().clear();
+			ChestAimer.stop();
+			MobGlowRenderer.reset();
+			LoadoutsScreen.resetPending();
+			WardrobeScreen.resetPending();
+		});
+
+		ClientLifecycleEvents.CLIENT_STOPPING.register(client -> FarmKeys.restore());
+	}
+
+	private static LiteralArgumentBuilder<FabricClientCommandSource> musicCommand() {
+		return ClientCommands.literal("music")
+			.executes(context -> MediaChat.nowPlaying())
+			.then(ClientCommands.literal("play").executes(context -> MediaChat.toggle()))
+			.then(ClientCommands.literal("pause").executes(context -> MediaChat.toggle()))
+			.then(ClientCommands.literal("next").executes(context -> MediaChat.skip(true)))
+			.then(ClientCommands.literal("prev").executes(context -> MediaChat.skip(false)))
+			.then(ClientCommands.literal("np").executes(context -> MediaChat.nowPlaying()));
+	}
+
+	private static void pollMenuKeys(Minecraft client) {
+		StrayConfig config = StrayConfig.get();
+		boolean gui = menuKeyHeld(config.openGuiKey);
+		boolean loadouts = menuKeyHeld(config.openLoadoutsKey);
+		boolean wardrobe = menuKeyHeld(config.openWardrobeKey);
+		if (!ignoreMenuBinds(client)) {
+			if (gui && !wasGui) {
+				handleOpenGui(client);
+			}
+			if (loadouts && !wasLoadouts) {
+				if (client.screen instanceof LoadoutsScreen screen) {
+					screen.onClose();
+				} else {
+					LoadoutsCommands.open();
+				}
+			}
+			if (wardrobe && !wasWardrobe) {
+				if (client.screen instanceof WardrobeScreen screen) {
+					screen.onClose();
+				} else {
+					WardrobeCommands.open();
+				}
+			}
+		}
+		wasGui = gui;
+		wasLoadouts = loadouts;
+		wasWardrobe = wardrobe;
+	}
+
+	private static boolean ignoreMenuBinds(Minecraft client) {
+		if (client.screen instanceof ChatScreen) {
+			return true;
+		}
+		if (client.screen instanceof StrayScreen screen && screen.shouldIgnoreMenuBinds()) {
+			return true;
+		}
+		return client.screen != null && client.screen.getFocused() instanceof EditBox;
+	}
+
+	private static void handleOpenGui(Minecraft client) {
+		if (client.screen instanceof HudEditorScreen) {
+			client.setScreen(new StrayScreen());
+		} else if (client.screen instanceof StrayScreen screen) {
+			screen.requestClose();
+		} else if (client.screen instanceof ItemEditScreen) {
+			client.setScreen(null);
+		} else {
+			openScreen();
+		}
+	}
+
+	private static int openScreen() {
+		Minecraft client = Minecraft.getInstance();
+		client.execute(() -> {
+			if (client.screen instanceof StrayScreen screen) {
+				screen.requestClose();
+			} else {
+				client.setScreen(new StrayScreen());
+			}
+		});
+		return Command.SINGLE_SUCCESS;
+	}
+
+	private static int openItemEdit() {
+		Minecraft client = Minecraft.getInstance();
+		client.execute(() -> client.setScreen(new ItemEditScreen()));
+		return Command.SINGLE_SUCCESS;
+	}
+}

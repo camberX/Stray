@@ -1,0 +1,37 @@
+package dev.stray.client.mixin;
+
+import dev.stray.client.ui.MenuChrome;
+import net.minecraft.client.gui.ActiveTextCollector;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.gui.components.AbstractButton;
+import net.minecraft.client.gui.components.AbstractWidget;
+import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+
+@Mixin(AbstractButton.class)
+public abstract class AbstractButtonMixin {
+	@Inject(method = "extractDefaultSprite", at = @At("HEAD"), cancellable = true)
+	private void stray$button(GuiGraphicsExtractor graphics, CallbackInfo ci) {
+		if (!MenuChrome.enabled()) {
+			return;
+		}
+		MenuChrome.button(graphics, (AbstractWidget) (Object) this);
+		ci.cancel();
+	}
+
+	@Inject(method = "extractDefaultLabel", at = @At("HEAD"), cancellable = true)
+	private void stray$label(ActiveTextCollector collector, CallbackInfo ci) {
+		if (!MenuChrome.enabled()) {
+			return;
+		}
+		AbstractWidget self = (AbstractWidget) (Object) this;
+		((AbstractWidgetInvoker) (Object) this).stray$extractScrollingStringOverContents(
+			collector,
+			MenuChrome.bodyLabel(self.getMessage(), self.active),
+			2
+		);
+		ci.cancel();
+	}
+}

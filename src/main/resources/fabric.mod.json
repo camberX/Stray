@@ -1,36 +1,36 @@
 {
 	"schemaVersion": 1,
-	"id": "voidmark",
+	"id": "stray",
 	"version": "${version}",
-	"name": "Eisenmann",
+	"name": "Stray",
 	"description": "Hypixel Skyblock QoL for Minecraft 26.1.2. Marks Ender Nodes, tints the world and skybox, and ships a NEVERLOSE-style click GUI.",
 	"authors": [
-		"Eisenmann"
+		"Stray"
 	],
 	"contact": {
 		"sources": "https://github.com/camberX/Eisenmann"
 	},
 	"license": "CC0-1.0",
-	"icon": "assets/voidmark/icon.png",
+	"icon": "assets/stray/icon.png",
 	"environment": "client",
 	"entrypoints": {
 		"preLaunch": [
-			"dev.voidmark.update.AutoUpdate"
+			"dev.stray.update.AutoUpdate"
 		],
 		"main": [
-			"dev.voidmark.Voidmark"
+			"dev.stray.Stray"
 		],
 		"client": [
-			"dev.voidmark.client.VoidmarkClient"
+			"dev.stray.client.StrayClient"
 		]
 	},
 	"mixins": [
 		{
-			"config": "voidmark.client.mixins.json",
+			"config": "stray.client.mixins.json",
 			"environment": "client"
 		},
 		{
-			"config": "voidmark.sodium.mixins.json",
+			"config": "stray.sodium.mixins.json",
 			"environment": "client"
 		}
 	],

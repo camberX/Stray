@@ -1,0 +1,16 @@
+{
+	"required": false,
+	"package": "dev.stray.client.mixin.sodium",
+	"compatibilityLevel": "JAVA_25",
+	"plugin": "dev.stray.client.mixin.sodium.StraySodiumMixinPlugin",
+	"client": [
+		"SodiumShaderLoaderMixin",
+		"SodiumDefaultShaderInterfaceMixin"
+	],
+	"injectors": {
+		"defaultRequire": 1
+	},
+	"overwrites": {
+		"requireAnnotations": true
+	}
+}
