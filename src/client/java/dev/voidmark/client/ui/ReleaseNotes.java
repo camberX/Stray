@@ -8,6 +8,9 @@ public final class ReleaseNotes {
 	}
 
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.89", new String[]{
+			"The selected Control category is more transparent, so it no longer sits as a solid block on the rail."
+		}),
 		new Entry("1.2.88", new String[]{
 			"The bright dots at rounded-outline joins are gone. Sides and corners no longer overlap, so that pixel is not drawn twice."
 		}),
