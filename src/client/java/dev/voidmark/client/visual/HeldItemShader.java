@@ -19,9 +19,6 @@ import com.mojang.blaze3d.vertex.QuadInstance;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import dev.voidmark.Voidmark;
 import dev.voidmark.client.config.VoidmarkConfig;
-import dev.voidmark.client.mixin.RenderSetupAccessor;
-import dev.voidmark.client.mixin.RenderSetupTextureBindingAccessor;
-import dev.voidmark.client.mixin.RenderTypeAccessor;
 import dev.voidmark.client.render.MobGlowRenderer;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.model.geom.ModelPart;
@@ -207,17 +204,6 @@ public final class HeldItemShader {
 			return ESP_FILL_TYPES.apply(atlas);
 		}
 		return FILL_TYPES.apply(atlas);
-	}
-
-	public static RenderType wrapSubmitted(RenderType original) {
-		if (!playerFill() || original == null || original.isOutline() || isPipeline(original.pipeline())) {
-			return original;
-		}
-		Identifier atlas = sampler0(original);
-		if (atlas == null) {
-			return original;
-		}
-		return wrapFill(original, atlas);
 	}
 
 	public static RenderType wrapArm(RenderType original, Identifier skin) {
@@ -472,25 +458,6 @@ public final class HeldItemShader {
 				.setOutline(RenderSetup.OutlineProperty.AFFECTS_OUTLINE)
 				.createRenderSetup()
 		);
-	}
-
-	private static Identifier sampler0(RenderType original) {
-		if (original == null) {
-			return null;
-		}
-		RenderSetup setup = ((RenderTypeAccessor) (Object) original).voidmark$setup();
-		if (setup == null) {
-			return null;
-		}
-		var textures = ((RenderSetupAccessor) (Object) setup).voidmark$textures();
-		if (textures == null) {
-			return null;
-		}
-		Object sampler = textures.get("Sampler0");
-		if (sampler == null) {
-			return null;
-		}
-		return ((RenderSetupTextureBindingAccessor) sampler).voidmark$location();
 	}
 
 	private static RenderType createMaskType(Identifier atlas) {

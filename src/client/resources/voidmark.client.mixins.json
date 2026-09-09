@@ -38,11 +38,7 @@
 		"PlayerTabOverlayMixin",
 		"PostPassMixin",
 		"ProjectionMixin",
-		"RenderSetupAccessor",
-		"RenderSetupTextureBindingAccessor",
-		"RenderTypeAccessor",
 		"RenderTypeMixin",
-		"SubmitNodeCollectionMixin",
 		"ScreenMixin",
 		"SkyRendererMixin",
 		"StringWidgetMixin"

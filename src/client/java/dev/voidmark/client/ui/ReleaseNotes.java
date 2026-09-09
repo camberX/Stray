@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.109", new String[]{
+			"Player fill ESP no longer distorts armor, backpacks, or extra model layers."
+		}),
 		new Entry("1.2.108", new String[]{
 			"Mob glow still outlines the body when Player fill is on, not just the held item."
 		}),
