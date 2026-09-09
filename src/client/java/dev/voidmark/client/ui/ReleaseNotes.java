@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.110", new String[]{
+			"Player fill ESP covers armor again, without breaking backpacks or glint layers."
+		}),
 		new Entry("1.2.109", new String[]{
 			"Player fill ESP no longer distorts armor, backpacks, or extra model layers."
 		}),
