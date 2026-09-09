@@ -469,7 +469,7 @@ public final class HeldItemShader {
 				.useLightmap()
 				.affectsCrumbling()
 				.setOutputTarget(ESP_OUTPUT)
-				.setOutline(RenderSetup.OutlineProperty.NONE)
+				.setOutline(RenderSetup.OutlineProperty.AFFECTS_OUTLINE)
 				.createRenderSetup()
 		);
 	}
