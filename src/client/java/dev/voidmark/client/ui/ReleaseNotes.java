@@ -8,6 +8,9 @@ public final class ReleaseNotes {
 	}
 
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.93", new String[]{
+			"Aspect ratio now uses that FOV to cull the world, so terrain and entities outside it are not drawn. The black bars are gone."
+		}),
 		new Entry("1.2.92", new String[]{
 			"A narrower aspect ratio now cuts the world to what you can see and fills the sides with black bars.",
 			"The Music HUD is much cheaper: album art no longer rebuilds a huge key every frame, and the glass no longer paints hundreds of frost slices and stars."

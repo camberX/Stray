@@ -1,6 +1,5 @@
 package dev.voidmark.client.mixin;
 
-import dev.voidmark.client.render.AspectCrop;
 import dev.voidmark.client.render.GuiFrostBlur;
 import dev.voidmark.client.render.MobGlowRenderer;
 import dev.voidmark.client.visual.HeldItemShader;
@@ -18,16 +17,6 @@ public class GameRendererMixin {
 	@Inject(method = "render", at = @At("HEAD"))
 	private void voidmark$beginFrame(DeltaTracker deltaTracker, boolean renderLevel, CallbackInfo ci) {
 		MobGlowRenderer.beginFrame();
-	}
-
-	@Inject(method = "renderLevel", at = @At("HEAD"))
-	private void voidmark$beginAspectCrop(DeltaTracker deltaTracker, CallbackInfo ci) {
-		AspectCrop.beginWorld();
-	}
-
-	@Inject(method = "renderLevel", at = @At("RETURN"))
-	private void voidmark$endAspectCrop(DeltaTracker deltaTracker, CallbackInfo ci) {
-		AspectCrop.endWorld();
 	}
 
 	@Inject(method = "renderItemInHand", at = @At("HEAD"))

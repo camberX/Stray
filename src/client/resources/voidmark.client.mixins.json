@@ -12,6 +12,7 @@
 		"AbstractWidgetInvoker",
 		"AvatarRendererMixin",
 		"BossHealthOverlayAccessor",
+		"CameraMixin",
 		"ChatComponentMixin",
 		"ChatScreenMixin",
 		"ClientLevelAccessor",

@@ -28,7 +28,6 @@ import dev.voidmark.client.mining.ChestAimer;
 import dev.voidmark.client.mining.ChestEsp;
 import dev.voidmark.client.mining.MiningTracker;
 import dev.voidmark.client.mining.TitaniumTracker;
-import dev.voidmark.client.render.AspectCrop;
 import dev.voidmark.client.render.ChestEspRenderer;
 import dev.voidmark.client.render.InventoryHudRenderer;
 import dev.voidmark.client.render.JacobContestHudRenderer;
@@ -110,7 +109,6 @@ public final class VoidmarkClient implements ClientModInitializer {
 		NodeHudRenderer.init();
 		PickupLogRenderer.init();
 		MusicHudRenderer.init();
-		AspectCrop.init();
 		RawmatsHudRenderer.init();
 		MiningHudRenderer.init();
 		NametagRenderer.init();
