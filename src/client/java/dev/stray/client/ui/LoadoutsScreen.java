@@ -673,7 +673,11 @@ public class LoadoutsScreen extends Screen {
 	}
 
 	private static boolean shouldDiscardIncoming() {
-		return silentFlush || cancelIncoming || System.nanoTime() < suppressUntil;
+		long now = System.nanoTime();
+		if (now >= suppressUntil) {
+			cancelIncoming = false;
+		}
+		return silentFlush || cancelIncoming || now < suppressUntil;
 	}
 
 	private static void suppressReopen() {
@@ -685,15 +689,9 @@ public class LoadoutsScreen extends Screen {
 			silentFlush = false;
 			flushAgainst(chest);
 		}
-		cancelIncoming = false;
 		closeIncoming(chest);
-		Screen current = Minecraft.getInstance().screen;
-		if (current instanceof LoadoutsScreen
-			|| current instanceof AbstractContainerScreen<?> open
-				&& LoadoutsMenus.matches(open.getMenu(), open.getTitle())) {
-			return null;
-		}
-		return current;
+		suppressReopen();
+		return null;
 	}
 
 	private void adoptMenu() {
@@ -819,7 +817,7 @@ public class LoadoutsScreen extends Screen {
 		}
 		QUEUE.add(new QueuedClick(slot, 0));
 		silentFlush = true;
-		cancelIncoming = false;
+		suppressReopen();
 		rememberCache();
 		if (vanilla != null && minecraft != null) {
 			handingOff = true;

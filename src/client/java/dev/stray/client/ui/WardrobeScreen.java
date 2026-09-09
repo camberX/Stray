@@ -597,7 +597,11 @@ public class WardrobeScreen extends Screen {
 	}
 
 	private static boolean shouldDiscardIncoming() {
-		return silentFlush || cancelIncoming || System.nanoTime() < suppressUntil;
+		long now = System.nanoTime();
+		if (now >= suppressUntil) {
+			cancelIncoming = false;
+		}
+		return silentFlush || cancelIncoming || now < suppressUntil;
 	}
 
 	private static void suppressReopen() {
@@ -609,15 +613,9 @@ public class WardrobeScreen extends Screen {
 			silentFlush = false;
 			flushAgainst(chest);
 		}
-		cancelIncoming = false;
 		closeIncoming(chest);
-		Screen current = Minecraft.getInstance().screen;
-		if (current instanceof WardrobeScreen
-			|| current instanceof AbstractContainerScreen<?> open
-				&& WardrobeMenus.matches(open.getMenu(), open.getTitle())) {
-			return null;
-		}
-		return current;
+		suppressReopen();
+		return null;
 	}
 
 	private void rememberCache() {
@@ -729,7 +727,7 @@ public class WardrobeScreen extends Screen {
 		}
 		QUEUE.add(new QueuedClick(slot, 0));
 		silentFlush = true;
-		cancelIncoming = false;
+		suppressReopen();
 		rememberCache();
 		if (vanilla != null && minecraft != null) {
 			handingOff = true;
