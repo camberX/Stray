@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.104", new String[]{
+			"Player fill ESP goes through walls, covers armor, and also fills selected ESP mobs."
+		}),
 		new Entry("1.2.103", new String[]{
 			"Player fill ESP paints other players and their held items with the held-item fill, without the outline."
 		}),

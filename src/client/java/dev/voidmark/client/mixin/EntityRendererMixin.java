@@ -4,6 +4,8 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import dev.voidmark.client.config.VoidmarkConfig;
 import dev.voidmark.client.render.MobGlowRenderer;
 import dev.voidmark.client.render.NametagRenderer;
+import dev.voidmark.client.visual.FillEspMarker;
+import dev.voidmark.client.visual.HeldItemShader;
 import dev.voidmark.client.visual.NickHider;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.SubmitNodeCollector;
@@ -20,11 +22,15 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 @Mixin(EntityRenderer.class)
 public class EntityRendererMixin {
 	/**
-	 * Bypass frustum culling for entities that should glow through walls,
-	 * so the outline renders even when the entity is behind geometry.
+	 * Bypass frustum culling for fill ESP and for glow that should show
+	 * through walls, so those entities still submit when occluded.
 	 */
 	@Inject(method = "affectedByCulling", at = @At("HEAD"), cancellable = true)
 	private void voidmark$disableCulling(Entity entity, CallbackInfoReturnable<Boolean> cir) {
+		if (HeldItemShader.shouldFillEntity(entity)) {
+			cir.setReturnValue(false);
+			return;
+		}
 		VoidmarkConfig config = VoidmarkConfig.get();
 		if (config.mobGlowEnabled && config.mobGlowThroughWalls && MobGlowRenderer.listed(entity)) {
 			Minecraft client = Minecraft.getInstance();
@@ -39,6 +45,9 @@ public class EntityRendererMixin {
 		at = @At("RETURN")
 	)
 	private void voidmark$nickTag(Entity entity, EntityRenderState state, float tickDelta, CallbackInfo ci) {
+		if (state instanceof FillEspMarker marker) {
+			marker.voidmark$setFillEsp(HeldItemShader.shouldFillEntity(entity));
+		}
 		if (VoidmarkConfig.get().mobGlowEnabled) {
 			int glow = MobGlowRenderer.outlineColor(entity);
 			if (glow != 0 && !MobGlowRenderer.hasVanillaGlow(entity)) {

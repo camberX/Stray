@@ -178,6 +178,8 @@ public class VoidmarkScreen extends Screen {
 		new SearchEntry("Ghost item", Tab.COMBAT, "Combat"),
 		new SearchEntry("Player fill", Tab.ESP, "ESP"),
 		new SearchEntry("Player fill ESP", Tab.ESP, "ESP"),
+		new SearchEntry("Fill through walls", Tab.ESP, "ESP"),
+		new SearchEntry("Mob fill", Tab.ESP, "ESP"),
 		new SearchEntry("Held fill", Tab.ESP, "ESP"),
 		new SearchEntry("Hand fill", Tab.ESP, "ESP"),
 		new SearchEntry("Nametag ESP", Tab.ESP, "ESP"),
@@ -2713,7 +2715,7 @@ public class VoidmarkScreen extends Screen {
 		return FabricLoader.getInstance()
 			.getModContainer("voidmark")
 			.map(container -> container.getMetadata().getVersion().getFriendlyString())
-			.orElse("1.2.103");
+			.orElse("1.2.104");
 	}
 
 	@Override

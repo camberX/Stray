@@ -51,7 +51,7 @@ public abstract class LivingEntityRendererMixin {
 		CameraRenderState camera,
 		CallbackInfo ci
 	) {
-		if (HeldItemShader.shouldFillPlayer(state)) {
+		if (HeldItemShader.shouldFill(state)) {
 			HeldItemShader.pushPlayerFill();
 		}
 	}
@@ -67,7 +67,7 @@ public abstract class LivingEntityRendererMixin {
 		CameraRenderState camera,
 		CallbackInfo ci
 	) {
-		if (HeldItemShader.shouldFillPlayer(state)) {
+		if (HeldItemShader.shouldFill(state)) {
 			HeldItemShader.popPlayerFill();
 		}
 	}
@@ -80,7 +80,7 @@ public abstract class LivingEntityRendererMixin {
 		boolean glowing,
 		CallbackInfoReturnable<RenderType> cir
 	) {
-		if (!HeldItemShader.shouldFillPlayer(state) || (!visible && !translucent)) {
+		if (!HeldItemShader.shouldFill(state) || (!visible && !translucent)) {
 			return;
 		}
 		RenderType original = cir.getReturnValue();
