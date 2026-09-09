@@ -143,10 +143,10 @@ public final class WardrobeMenus {
 			ItemStack chestPiece = ItemStack.EMPTY;
 			ItemStack legs = ItemStack.EMPTY;
 			ItemStack boots = ItemStack.EMPTY;
-			int action = col;
+			int action = equipSlot(menu, chest, rows, col);
 			boolean selected = false;
 			boolean locked = false;
-			boolean useful = false;
+			boolean useful = action >= 0;
 			String name = "Set " + (col + 1);
 			for (int row = 0; row < rows; row++) {
 				int index = col + row * COLS;
@@ -176,7 +176,6 @@ public final class WardrobeMenus {
 						locked = true;
 					}
 					selected = selected || equippedButton(stack, blob, stackName);
-					action = index;
 					useful = true;
 					if (!stackName.isBlank()) {
 						name = stackName;
@@ -200,9 +199,6 @@ public final class WardrobeMenus {
 					boots = stack;
 				}
 				useful = true;
-				if (action == col) {
-					action = index;
-				}
 			}
 			if (!useful && chest < COLS) {
 				continue;
@@ -210,7 +206,7 @@ public final class WardrobeMenus {
 			ItemStack icon = firstArmor(helmet, chestPiece, legs, boots);
 			columns[col] = new ArmorSet(
 				col,
-				action,
+				action >= 0 ? action : col,
 				helmet,
 				chestPiece,
 				legs,
@@ -235,6 +231,22 @@ public final class WardrobeMenus {
 			prev,
 			close
 		);
+	}
+
+	private static int equipSlot(AbstractContainerMenu menu, int chest, int rows, int col) {
+		for (int row = rows - 1; row >= 4; row--) {
+			int index = col + row * COLS;
+			if (index < 0 || index >= chest) {
+				continue;
+			}
+			ItemStack stack = stackAt(menu, index);
+			String blob = blob(stack);
+			if (isClose(stack, blob) || isNext(stack, blob) || isPrev(stack, blob)) {
+				continue;
+			}
+			return index;
+		}
+		return -1;
 	}
 
 	private enum Kind {

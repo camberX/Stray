@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.128", new String[]{
+			"1-9 on loadouts and wardrobe sends the click first, then closes. Wardrobe clicks the whole set card, not a tiny spot."
+		}),
 		new Entry("1.2.127", new String[]{
 			"Wardrobe armor sets sit in one row. 1-9 still equips a set and closes. Loadouts and wardrobe have a Vanilla button for this chest."
 		}),

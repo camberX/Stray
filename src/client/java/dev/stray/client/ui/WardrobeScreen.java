@@ -39,6 +39,7 @@ public class WardrobeScreen extends Screen {
 	private static WardrobeMenus.Snapshot cache = WardrobeMenus.Snapshot.empty();
 	private static final List<QueuedClick> QUEUE = new ArrayList<>();
 	private static final long SUPPRESS_NS = 3_000_000_000L;
+	private static final int CLOSE_AFTER_TICKS = 5;
 	private static boolean silentFlush;
 	private static boolean cancelIncoming;
 	private static boolean skipCustomThisOpen;
@@ -58,9 +59,6 @@ public class WardrobeScreen extends Screen {
 	private float previewYaw = savedYaw;
 	private float previewPitch = savedPitch;
 	private boolean previewDrag;
-	private int pendingSlot = -1;
-	private int pendingButton;
-	private float dragDist;
 	private boolean placed;
 	private boolean closingMenu;
 	private boolean attaching;
@@ -70,6 +68,8 @@ public class WardrobeScreen extends Screen {
 	private float appear;
 	private ItemStack tooltip = ItemStack.EMPTY;
 	private WardrobeMenus.Snapshot snapshot = WardrobeMenus.Snapshot.empty();
+	private int closeAfterTicks;
+	private int pendingEquipSlot = -1;
 
 	public WardrobeScreen(AbstractContainerScreen<?> vanilla) {
 		super(vanilla.getTitle());
@@ -137,6 +137,7 @@ public class WardrobeScreen extends Screen {
 		if (skipCustomThisOpen) {
 			if (client.screen instanceof WardrobeScreen wardrobe) {
 				wardrobe.followServer();
+				wardrobe.tickPendingClose();
 				return;
 			}
 			boolean vanillaChest = client.screen instanceof AbstractContainerScreen<?> chest
@@ -155,6 +156,7 @@ public class WardrobeScreen extends Screen {
 		}
 		if (client.screen instanceof WardrobeScreen wardrobe) {
 			wardrobe.followServer();
+			wardrobe.tickPendingClose();
 			return;
 		}
 		if (client.screen instanceof LoadoutsScreen || !WardrobeMenus.enabled() || shouldDiscardIncoming()) {
@@ -409,7 +411,7 @@ public class WardrobeScreen extends Screen {
 				tooltip = hoverStack(set);
 			}
 		}
-		GuiDraw.small(graphics, font, "1-9 equip and close · Drag a model to rotate", x, y + h - 10, Theme.MUTED);
+		GuiDraw.small(graphics, font, "1-9 equip and close · Click a set to equip · Drag empty space to rotate", x, y + h - 10, Theme.MUTED);
 		drawVanillaButton(graphics, font, mouseX, mouseY);
 	}
 
@@ -637,8 +639,6 @@ public class WardrobeScreen extends Screen {
 		double lx = localX(event.x());
 		double ly = localY(event.y());
 		previewDrag = false;
-		pendingSlot = -1;
-		dragDist = 0f;
 		for (int i = hits.size() - 1; i >= 0; i--) {
 			Hit hit = hits.get(i);
 			if (!hit.contains(lx, ly)) {
@@ -657,11 +657,7 @@ public class WardrobeScreen extends Screen {
 				return true;
 			}
 			if (hit.slot >= 0 && (event.button() == 0 || event.button() == 1)) {
-				pendingSlot = hit.slot;
-				pendingButton = event.button();
-				if (event.button() == 0) {
-					previewDrag = true;
-				}
+				clickSlot(hit.slot, event.button());
 				return true;
 			}
 			if (hit.rotate && event.button() == 0) {
@@ -678,10 +674,6 @@ public class WardrobeScreen extends Screen {
 		if (previewDrag && event.button() == 0) {
 			previewYaw += (float) dx * 0.7f;
 			previewPitch = Mth.clamp(previewPitch - (float) dy * 0.45f, -35f, 35f);
-			dragDist += (float) (Math.abs(dx) + Math.abs(dy));
-			if (dragDist > 4f) {
-				pendingSlot = -1;
-			}
 			return true;
 		}
 		return true;
@@ -689,10 +681,6 @@ public class WardrobeScreen extends Screen {
 
 	@Override
 	public boolean mouseReleased(MouseButtonEvent event) {
-		if (pendingSlot >= 0 && event.button() == pendingButton) {
-			clickSlot(pendingSlot, pendingButton);
-		}
-		pendingSlot = -1;
 		if (event.button() == 0) {
 			previewDrag = false;
 			savedYaw = previewYaw;
@@ -734,11 +722,34 @@ public class WardrobeScreen extends Screen {
 			return;
 		}
 		WardrobeMenus.ArmorSet set = sets.get(index);
-		if (set == null || set.slot() < 0) {
+		if (set == null || set.slot() < 0 || set.locked()) {
 			return;
 		}
 		clickSlot(set.slot(), 0);
-		onClose();
+		pendingEquipSlot = set.slot();
+		closeAfterTicks = CLOSE_AFTER_TICKS;
+	}
+
+	private void tickPendingClose() {
+		if (closeAfterTicks <= 0) {
+			return;
+		}
+		if (menu != null) {
+			snapshot = WardrobeMenus.read(menu, vanilla != null ? vanilla.getTitle() : getTitle());
+			for (WardrobeMenus.ArmorSet set : snapshot.sets()) {
+				if (set != null && set.slot() == pendingEquipSlot && set.selected()) {
+					closeAfterTicks = 0;
+					pendingEquipSlot = -1;
+					onClose();
+					return;
+				}
+			}
+		}
+		closeAfterTicks--;
+		if (closeAfterTicks <= 0) {
+			pendingEquipSlot = -1;
+			onClose();
+		}
 	}
 
 	@Override
