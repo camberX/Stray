@@ -171,6 +171,10 @@ public final class ProfileViewer {
 		float skillAverage,
 		int fairySouls,
 		int secrets,
+		long firstJoin,
+		boolean cookie,
+		long kills,
+		long deaths,
 		List<Skill> skills,
 		List<Slayer> slayers,
 		Dungeon dungeons,
@@ -196,6 +200,10 @@ public final class ProfileViewer {
 				0f,
 				0,
 				0,
+				0L,
+				false,
+				0L,
+				0L,
 				List.of(),
 				List.of(),
 				Dungeon.empty(),
@@ -449,6 +457,32 @@ public final class ProfileViewer {
 			souls = (int) num(member, "fairy_souls_collected");
 		}
 
+		JsonObject profileMember = object(member, "profile");
+		long firstJoin = (long) num(profileMember, "first_join");
+		if (firstJoin == 0L) {
+			firstJoin = (long) num(member, "first_join");
+		}
+		if (firstJoin == 0L) {
+			firstJoin = (long) num(profile, "created_at");
+		}
+		boolean cookie = bool(currencies, "cookie_buff_active") || bool(profileMember, "cookie_buff_active");
+		if (!cookie) {
+			long expiry = (long) num(profileMember, "cookie_buff_expiry");
+			if (expiry == 0L) {
+				expiry = (long) num(currencies, "cookie_buff_expiry");
+			}
+			if (expiry > 0L && expiry < 10_000_000_000L) {
+				expiry *= 1000L;
+			}
+			cookie = expiry > System.currentTimeMillis();
+		}
+		JsonObject stats = object(member, "player_stats");
+		if (stats == null) {
+			stats = object(member, "stats");
+		}
+		long kills = statCount(stats, "kills");
+		long deaths = statCount(stats, "deaths");
+
 		Dungeon dungeons = parseDungeons(member);
 		List<Slayer> slayers = parseSlayers(member);
 		Mining mining = parseMining(member);
@@ -481,6 +515,10 @@ public final class ProfileViewer {
 			average,
 			souls,
 			dungeons.secrets(),
+			firstJoin,
+			cookie,
+			kills,
+			deaths,
 			List.copyOf(skills),
 			List.copyOf(slayers),
 			dungeons,
@@ -1119,6 +1157,35 @@ public final class ProfileViewer {
 		} catch (Exception ignored) {
 			return 0d;
 		}
+	}
+
+	private static long statCount(JsonObject stats, String key) {
+		if (stats == null || key == null || !stats.has(key)) {
+			return 0L;
+		}
+		JsonElement value = stats.get(key);
+		if (value == null || value.isJsonNull()) {
+			return 0L;
+		}
+		if (value.isJsonPrimitive()) {
+			return (long) num(stats, key);
+		}
+		if (!value.isJsonObject()) {
+			return 0L;
+		}
+		JsonObject object = value.getAsJsonObject();
+		double total = num(object, "total");
+		if (total > 0d) {
+			return (long) total;
+		}
+		double sum = 0d;
+		for (String name : object.keySet()) {
+			JsonElement child = object.get(name);
+			if (child != null && child.isJsonPrimitive()) {
+				sum += num(object, name);
+			}
+		}
+		return (long) sum;
 	}
 
 	private static boolean bool(JsonObject object, String key) {

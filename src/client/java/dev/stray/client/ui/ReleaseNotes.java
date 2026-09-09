@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.135", new String[]{
+			"Profile viewer Home uses item icons for level, purse, bank, networth, skills, and slayers. The Items grid fills the pane instead of sitting in the corner."
+		}),
 		new Entry("1.2.134", new String[]{
 			"Profile viewer tabs have icons. Items is the second tab and draws inventory, Ender Chest, and backpacks as slot grids. Skills also sit on Home."
 		}),
