@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.132", new String[]{
+			"Loadouts and wardrobe models face forward and no longer spin."
+		}),
 		new Entry("1.2.131", new String[]{
 			"The click GUI player faces forward instead of spinning. Menu scale starts at 75%."
 		}),

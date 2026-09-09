@@ -38,8 +38,6 @@ public class LoadoutsScreen extends Screen {
 	private static final float WELL = 20;
 	private static final float SLOTS_W = 128;
 	private static final float SLOTS_H = 148;
-	private static float savedYaw = 28f;
-	private static float savedPitch = 8f;
 	private static LoadoutsMenus.Snapshot cache = LoadoutsMenus.Snapshot.empty();
 	private static final List<QueuedClick> QUEUE = new ArrayList<>();
 	private static final long SUPPRESS_NS = 3_000_000_000L;
@@ -59,9 +57,6 @@ public class LoadoutsScreen extends Screen {
 	private float viewCx;
 	private float viewCy;
 	private float viewLift;
-	private float previewYaw = savedYaw;
-	private float previewPitch = savedPitch;
-	private boolean previewDrag;
 	private boolean placed;
 	private boolean closingMenu;
 	private boolean attaching;
@@ -308,7 +303,7 @@ public class LoadoutsScreen extends Screen {
 				Theme.ACCENT
 			);
 		}
-		hits.add(new Hit(windowX, windowY, windowW - 72, 22, -1, true, false));
+		hits.add(new Hit(windowX, windowY, windowW - 72, 22, -1, false, false));
 
 		float btnY = windowY + 7;
 		if (snapshot.prev() != null) {
@@ -354,12 +349,6 @@ public class LoadoutsScreen extends Screen {
 		float stageW = windowX + windowW - SLOTS_W - 20 - left;
 		float stageH = 148;
 		GuiDraw.panel(graphics, left, top, stageW, stageH, 8, Theme.PANEL, Theme.LINE);
-		if (!previewDrag) {
-			previewYaw += dt * 18f;
-			if (previewYaw > 360f || previewYaw < -360f) {
-				previewYaw %= 360f;
-			}
-		}
 		PlayerPreview.View view = new PlayerPreview.View(viewScale, viewCx, viewCy, viewLift);
 		boolean hasPet = !snapshot.pet().isEmpty();
 		float playerW = hasPet ? stageW * 0.58f : stageW;
@@ -369,8 +358,8 @@ public class LoadoutsScreen extends Screen {
 			top + 2,
 			playerW - 8,
 			stageH - 18,
-			previewYaw,
-			previewPitch,
+			0f,
+			0f,
 			view,
 			snapshot.helmet(),
 			snapshot.chest(),
@@ -385,10 +374,7 @@ public class LoadoutsScreen extends Screen {
 		} else {
 			GuiDraw.small(graphics, font, "No pet in this loadout", left + 10, top + stageH - 16, Theme.OFF);
 		}
-		if (GuiDraw.hovered(mouseX, mouseY, left, top, stageW, stageH)) {
-			GuiDraw.small(graphics, font, "Drag to rotate", left + 8, top + 6, Theme.MUTED);
-		}
-		hits.add(new Hit(left, top, stageW, stageH, -1, true, false));
+		hits.add(new Hit(left, top, stageW, stageH, -1, false, false));
 	}
 
 	private void drawFloatingPet(GuiGraphicsExtractor graphics, Font font, float x, float y, float w, float h) {
@@ -719,15 +705,10 @@ public class LoadoutsScreen extends Screen {
 	public boolean mouseClicked(MouseButtonEvent event, boolean doubled) {
 		double lx = localX(event.x());
 		double ly = localY(event.y());
-		previewDrag = false;
 		for (int i = hits.size() - 1; i >= 0; i--) {
 			Hit hit = hits.get(i);
 			if (!hit.contains(lx, ly)) {
 				continue;
-			}
-			if (hit.rotate && event.button() == 0) {
-				previewDrag = true;
-				return true;
 			}
 			if (hit.close) {
 				if (event.button() == 0) {
@@ -755,21 +736,11 @@ public class LoadoutsScreen extends Screen {
 
 	@Override
 	public boolean mouseDragged(MouseButtonEvent event, double dx, double dy) {
-		if (previewDrag && event.button() == 0) {
-			previewYaw += (float) dx * 0.7f;
-			previewPitch = Mth.clamp(previewPitch - (float) dy * 0.45f, -35f, 35f);
-			return true;
-		}
 		return true;
 	}
 
 	@Override
 	public boolean mouseReleased(MouseButtonEvent event) {
-		if (event.button() == 0) {
-			previewDrag = false;
-			savedYaw = previewYaw;
-			savedPitch = previewPitch;
-		}
 		return true;
 	}
 
@@ -912,8 +883,6 @@ public class LoadoutsScreen extends Screen {
 
 	@Override
 	public void removed() {
-		savedYaw = previewYaw;
-		savedPitch = previewPitch;
 		if (attaching || handingOff) {
 			return;
 		}

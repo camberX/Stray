@@ -34,8 +34,6 @@ public class WardrobeScreen extends Screen {
 	private static final float MENU_W = 640;
 	private static final float MENU_H = 236;
 	private static final float ARMOR_ICON = 12f;
-	private static float savedYaw = 28f;
-	private static float savedPitch = 8f;
 	private static WardrobeMenus.Snapshot cache = WardrobeMenus.Snapshot.empty();
 	private static final List<QueuedClick> QUEUE = new ArrayList<>();
 	private static final long SUPPRESS_NS = 3_000_000_000L;
@@ -55,9 +53,6 @@ public class WardrobeScreen extends Screen {
 	private float viewCx;
 	private float viewCy;
 	private float viewLift;
-	private float previewYaw = savedYaw;
-	private float previewPitch = savedPitch;
-	private boolean previewDrag;
 	private boolean placed;
 	private boolean closingMenu;
 	private boolean attaching;
@@ -297,7 +292,7 @@ public class WardrobeScreen extends Screen {
 				Theme.ACCENT
 			);
 		}
-		hits.add(new Hit(windowX, windowY, windowW - 72, 22, -1, true, false));
+		hits.add(new Hit(windowX, windowY, windowW - 72, 22, -1, false, false));
 
 		float btnY = windowY + 7;
 		if (snapshot.prev() != null) {
@@ -342,13 +337,7 @@ public class WardrobeScreen extends Screen {
 		float y = windowY + 28;
 		float w = windowW - 20;
 		float h = windowH - 48;
-		if (!previewDrag) {
-			previewYaw += dt * 18f;
-			if (previewYaw > 360f || previewYaw < -360f) {
-				previewYaw %= 360f;
-			}
-		}
-		hits.add(new Hit(x, y, w, h, -1, true, false));
+		hits.add(new Hit(x, y, w, h, -1, false, false));
 		List<WardrobeMenus.ArmorSet> sets = snapshot.sets();
 		int shown = Math.min(9, Math.max(sets.size(), 1));
 		int cols = shown;
@@ -392,8 +381,8 @@ public class WardrobeScreen extends Screen {
 					sy + 10,
 					cellW - 4,
 					cellH - 14 - iconRow,
-					previewYaw,
-					previewPitch,
+					0f,
+					0f,
 					view,
 					new PlayerPreview.Gear(helmet, chest, legs, boots)
 				);
@@ -406,7 +395,7 @@ public class WardrobeScreen extends Screen {
 				tooltip = hoverStack(set);
 			}
 		}
-		GuiDraw.small(graphics, font, "1-9 equip and close · Click a set to equip · Drag empty space to rotate", x, y + h - 10, Theme.MUTED);
+		GuiDraw.small(graphics, font, "1-9 equip and close · Click a set to equip", x, y + h - 10, Theme.MUTED);
 		drawVanillaButton(graphics, font, mouseX, mouseY);
 	}
 
@@ -631,7 +620,6 @@ public class WardrobeScreen extends Screen {
 	public boolean mouseClicked(MouseButtonEvent event, boolean doubled) {
 		double lx = localX(event.x());
 		double ly = localY(event.y());
-		previewDrag = false;
 		for (int i = hits.size() - 1; i >= 0; i--) {
 			Hit hit = hits.get(i);
 			if (!hit.contains(lx, ly)) {
@@ -653,10 +641,6 @@ public class WardrobeScreen extends Screen {
 				clickSlot(hit.slot, event.button());
 				return true;
 			}
-			if (hit.rotate && event.button() == 0) {
-				previewDrag = true;
-				return true;
-			}
 			return true;
 		}
 		return true;
@@ -664,21 +648,11 @@ public class WardrobeScreen extends Screen {
 
 	@Override
 	public boolean mouseDragged(MouseButtonEvent event, double dx, double dy) {
-		if (previewDrag && event.button() == 0) {
-			previewYaw += (float) dx * 0.7f;
-			previewPitch = Mth.clamp(previewPitch - (float) dy * 0.45f, -35f, 35f);
-			return true;
-		}
 		return true;
 	}
 
 	@Override
 	public boolean mouseReleased(MouseButtonEvent event) {
-		if (event.button() == 0) {
-			previewDrag = false;
-			savedYaw = previewYaw;
-			savedPitch = previewPitch;
-		}
 		return true;
 	}
 
@@ -765,8 +739,6 @@ public class WardrobeScreen extends Screen {
 
 	@Override
 	public void removed() {
-		savedYaw = previewYaw;
-		savedPitch = previewPitch;
 		if (attaching || handingOff) {
 			return;
 		}
