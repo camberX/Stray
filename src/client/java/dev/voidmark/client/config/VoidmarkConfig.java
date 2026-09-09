@@ -798,7 +798,7 @@ public final class VoidmarkConfig {
 		return switch (name) {
 			case "WORLD", "VIEW", "FOG", "CAMERA" -> "WORLD";
 			case "COMBAT", "HITSOUND", "TRIGGERBOT", "AUTOCLICKER", "AUTOEXPERIMENTS" -> "COMBAT";
-			case "ESP", "MOBS" -> "ESP";
+			case "ESP", "MOBS", "VISUALS", "HELDITEM", "SHADER" -> "ESP";
 			case "OVERLAY", "DISPLAY", "INVENTORY", "HUD" -> "OVERLAY";
 			case "BARS" -> "BARS";
 			case "NODES", "MARKERS" -> "NODES";

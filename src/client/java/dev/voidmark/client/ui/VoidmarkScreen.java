@@ -72,7 +72,7 @@ public class VoidmarkScreen extends Screen {
 	private enum Group {
 		WORLD("WORLD", "World", MenuFont.GLOBE),
 		COMBAT("COMBAT", "Combat", MenuFont.SWORD),
-		ESP("ESP", "ESP", MenuFont.EYE),
+		ESP("VISUALS", "Visuals", MenuFont.EYE),
 		HUD("HUD", "HUD", MenuFont.DISPLAY),
 		MINING("MINING", "Mining", MenuFont.DIAMOND),
 		FARMING("FARMING", "Farming", MenuFont.GRAIN),
@@ -94,7 +94,7 @@ public class VoidmarkScreen extends Screen {
 	private enum Tab {
 		WORLD("World", Group.WORLD),
 		COMBAT("Combat", Group.COMBAT),
-		ESP("ESP", Group.ESP),
+		ESP("Visuals", Group.ESP),
 		OVERLAY("Overlay", Group.HUD),
 		BARS("Bars", Group.HUD),
 		MINING("Mining", Group.MINING),
@@ -183,31 +183,31 @@ public class VoidmarkScreen extends Screen {
 		new SearchEntry("Ultrasequencer", Tab.MENUS, "Misc"),
 		new SearchEntry("Click delay", Tab.MENUS, "Misc"),
 		new SearchEntry("Serum count", Tab.MENUS, "Misc"),
-		new SearchEntry("Held item shader", Tab.COMBAT, "Combat"),
-		new SearchEntry("Item shader", Tab.COMBAT, "Combat"),
-		new SearchEntry("Held item outline", Tab.COMBAT, "Combat"),
-		new SearchEntry("Item smoke", Tab.COMBAT, "Combat"),
-		new SearchEntry("Ghost", Tab.COMBAT, "Combat"),
-		new SearchEntry("Ghost item", Tab.COMBAT, "Combat"),
-		new SearchEntry("Player fill", Tab.ESP, "ESP"),
-		new SearchEntry("Player fill ESP", Tab.ESP, "ESP"),
-		new SearchEntry("Fill through walls", Tab.ESP, "ESP"),
-		new SearchEntry("Mob fill", Tab.ESP, "ESP"),
-		new SearchEntry("Held fill", Tab.ESP, "ESP"),
-		new SearchEntry("Hand fill", Tab.ESP, "ESP"),
-		new SearchEntry("Nametag ESP", Tab.ESP, "ESP"),
-		new SearchEntry("Block outline", Tab.ESP, "ESP"),
-		new SearchEntry("Block outline color", Tab.ESP, "ESP"),
-		new SearchEntry("Chest ESP", Tab.ESP, "ESP"),
-		new SearchEntry("Chest tracers", Tab.ESP, "ESP"),
-		new SearchEntry("Chest aim speed", Tab.ESP, "ESP"),
-		new SearchEntry("Mobs", Tab.ESP, "ESP"),
+		new SearchEntry("Held item shader", Tab.ESP, "Visuals"),
+		new SearchEntry("Item shader", Tab.ESP, "Visuals"),
+		new SearchEntry("Held item outline", Tab.ESP, "Visuals"),
+		new SearchEntry("Item smoke", Tab.ESP, "Visuals"),
+		new SearchEntry("Ghost", Tab.ESP, "Visuals"),
+		new SearchEntry("Ghost item", Tab.ESP, "Visuals"),
+		new SearchEntry("Player fill", Tab.ESP, "Visuals"),
+		new SearchEntry("Player fill ESP", Tab.ESP, "Visuals"),
+		new SearchEntry("Fill through walls", Tab.ESP, "Visuals"),
+		new SearchEntry("Mob fill", Tab.ESP, "Visuals"),
+		new SearchEntry("Held fill", Tab.ESP, "Visuals"),
+		new SearchEntry("Hand fill", Tab.ESP, "Visuals"),
+		new SearchEntry("Nametag ESP", Tab.ESP, "Visuals"),
+		new SearchEntry("Block outline", Tab.ESP, "Visuals"),
+		new SearchEntry("Block outline color", Tab.ESP, "Visuals"),
+		new SearchEntry("Chest ESP", Tab.ESP, "Visuals"),
+		new SearchEntry("Chest tracers", Tab.ESP, "Visuals"),
+		new SearchEntry("Chest aim speed", Tab.ESP, "Visuals"),
+		new SearchEntry("Mobs", Tab.ESP, "Visuals"),
 		new SearchEntry("Node ESP", Tab.NODES, "Nodes"),
-		new SearchEntry("Nametags", Tab.ESP, "ESP"),
-		new SearchEntry("Nametag style", Tab.ESP, "ESP"),
-		new SearchEntry("Own nametag", Tab.ESP, "ESP"),
-		new SearchEntry("Nametag size", Tab.ESP, "ESP"),
-		new SearchEntry("Nametag opacity", Tab.ESP, "ESP"),
+		new SearchEntry("Nametags", Tab.ESP, "Visuals"),
+		new SearchEntry("Nametag style", Tab.ESP, "Visuals"),
+		new SearchEntry("Own nametag", Tab.ESP, "Visuals"),
+		new SearchEntry("Nametag size", Tab.ESP, "Visuals"),
+		new SearchEntry("Nametag opacity", Tab.ESP, "Visuals"),
 		new SearchEntry("Menu scale", Tab.OVERLAY, "Theme"),
 		new SearchEntry("HUD opacity", Tab.OVERLAY, "Theme"),
 		new SearchEntry("Menu stars", Tab.OVERLAY, "Theme"),
@@ -745,6 +745,7 @@ public class VoidmarkScreen extends Screen {
 			y = controlCard(graphics, font, left, top, col, mouseX, mouseY, "Mob glow", config.mobGlowEnabled, v -> config.mobGlowEnabled = v, Feature.MOB);
 			y = controlCard(graphics, font, left, y, col, mouseX, mouseY, "Block outline", config.blockOutlineGlow, v -> config.blockOutlineGlow = v, Feature.BLOCK);
 			y = controlCard(graphics, font, left, y, col, mouseX, mouseY, "Chest ESP", config.chestEspEnabled, v -> config.chestEspEnabled = v, Feature.CHEST);
+			y = controlCard(graphics, font, left, y, col, mouseX, mouseY, "Held item", config.heldItemShaderEnabled, v -> config.heldItemShaderEnabled = v, Feature.HELD_ITEM);
 			namesTop = y;
 		} else {
 			y = featureCard(graphics, font, left, top, col, cardHeight(6), "Glow");
@@ -754,7 +755,10 @@ public class VoidmarkScreen extends Screen {
 			y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Player fill", config.playerFillEsp, v -> config.playerFillEsp = v);
 			y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Nametags", config.nametagsEnabled, v -> config.nametagsEnabled = v, Feature.NAMETAGS);
 			toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Own nametag", config.nametagSelf, v -> config.nametagSelf = v);
-			namesTop = top + cardHeight(6) + 8;
+			float heldTop = top + cardHeight(6) + 8;
+			y = featureCard(graphics, font, left, heldTop, col, cardHeight(1), "Held item");
+			toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Shader", config.heldItemShaderEnabled, v -> config.heldItemShaderEnabled = v, Feature.HELD_ITEM);
+			namesTop = heldTop + cardHeight(1) + 8;
 		}
 
 		List<String> nametags = config.nametagEspLabels();
@@ -1768,10 +1772,7 @@ public class VoidmarkScreen extends Screen {
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Arrows", config.hitsoundArrows, v -> config.hitsoundArrows = v);
 				toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Hitmarker", config.hitmarkerEnabled, v -> config.hitmarkerEnabled = v);
 
-				y = featureCard(graphics, font, left, top + cardHeight(4) + 8, col, cardHeight(1), "Held item");
-				toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Shader", config.heldItemShaderEnabled, v -> config.heldItemShaderEnabled = v, Feature.HELD_ITEM);
-
-				y = featureCard(graphics, font, left, top + cardHeight(4) + 8 + cardHeight(1) + 8, col, cardHeight(3), "Triggerbot");
+				y = featureCard(graphics, font, left, top + cardHeight(4) + 8, col, cardHeight(3), "Triggerbot");
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Enable", config.triggerbotEnabled, v -> config.triggerbotEnabled = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Players", config.triggerbotPlayers, v -> config.triggerbotPlayers = v);
 				slider(graphics, font, ix, y, iw, "Humanize", Math.round(config.triggerbotHumanize * 100) + "%", config.triggerbotHumanize, v -> config.triggerbotHumanize = VoidmarkConfig.clamp(v, 0f, 1f));
@@ -1932,7 +1933,6 @@ public class VoidmarkScreen extends Screen {
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Arrows", config.hitsoundArrows, v -> config.hitsoundArrows = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Hitmarker", config.hitmarkerEnabled, v -> config.hitmarkerEnabled = v);
 				drawFeatureFields(graphics, font, mouseX, mouseY, ix, y, iw, Feature.HITSOUND);
-				y = controlCard(graphics, font, left, top + hitsoundH + 8, col, mouseX, mouseY, "Held item", config.heldItemShaderEnabled, v -> config.heldItemShaderEnabled = v, Feature.HELD_ITEM);
 
 				y = featureCard(graphics, font, right, top, col, cardHeight(3), "Triggerbot");
 				y = toggle(graphics, font, rx, y, iw, mouseX, mouseY, "Enable", config.triggerbotEnabled, v -> config.triggerbotEnabled = v);
@@ -2952,7 +2952,7 @@ public class VoidmarkScreen extends Screen {
 		return FabricLoader.getInstance()
 			.getModContainer("voidmark")
 			.map(container -> container.getMetadata().getVersion().getFriendlyString())
-			.orElse("1.2.117");
+			.orElse("1.2.118");
 	}
 
 	@Override

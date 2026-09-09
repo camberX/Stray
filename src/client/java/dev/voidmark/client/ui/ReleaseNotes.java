@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.118", new String[]{
+			"Held item shader sits in Visuals. The ESP category is now called Visuals."
+		}),
 		new Entry("1.2.117", new String[]{
 			"Menu, loadouts, wardrobe, and chest-aim binds are set in Eisenmann instead of vanilla Controls."
 		}),
