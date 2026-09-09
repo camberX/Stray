@@ -58,7 +58,6 @@ import dev.voidmark.client.ui.Theme;
 import dev.voidmark.client.ui.UiFontPack;
 import dev.voidmark.client.ui.VoidmarkScreen;
 import dev.voidmark.client.visual.CustomCape;
-import dev.voidmark.client.visual.FakeBan;
 import dev.voidmark.client.visual.ShopCape;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback;
@@ -219,7 +218,6 @@ public final class VoidmarkClient implements ClientModInitializer {
 			TitaniumTracker.get().tick(client);
 			ChestEsp.get().tick(client);
 			ShopCape.tick();
-			FakeBan.tick();
 			UiFontPack.tick(client);
 		});
 
@@ -238,7 +236,6 @@ public final class VoidmarkClient implements ClientModInitializer {
 			AutoExperiments.reset();
 			PickupLogRenderer.clear();
 			JacobContestTracker.reset();
-			FakeBan.onJoin();
 			SkyblockProfileApi.refresh();
 			ShopCape.onJoin();
 		});
@@ -258,7 +255,6 @@ public final class VoidmarkClient implements ClientModInitializer {
 			TitaniumTracker.get().clear();
 			ChestEsp.get().clear();
 			ChestAimer.stop();
-			FakeBan.reset();
 			MobGlowRenderer.reset();
 			LoadoutsScreen.resetPending();
 			WardrobeScreen.resetPending();

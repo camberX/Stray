@@ -17,8 +17,6 @@
 		"ChatScreenMixin",
 		"ClientLevelAccessor",
 		"ClientPacketListenerMixin",
-		"ConnectScreenInvoker",
-		"ConnectScreenMixin",
 		"ConnectionMixin",
 		"EditBoxMixin",
 		"EntityRendererMixin",

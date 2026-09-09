@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.119", new String[]{
+			"Fake boosting bans are gone."
+		}),
 		new Entry("1.2.118", new String[]{
 			"Held item shader sits in Visuals. The ESP category is now called Visuals."
 		}),
