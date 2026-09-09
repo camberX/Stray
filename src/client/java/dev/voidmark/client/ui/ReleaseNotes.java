@@ -8,6 +8,9 @@ public final class ReleaseNotes {
 	}
 
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.101", new String[]{
+			"Combat is a sword again, and World is back on the globe."
+		}),
 		new Entry("1.2.100", new String[]{
 			"The Control rail now shows the ♲ mark and version at the bottom in the accent color. Sliders and toggles follow the accent, and the search bar and selected category are a bit lighter."
 		}),

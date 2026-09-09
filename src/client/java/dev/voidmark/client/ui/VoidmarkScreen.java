@@ -67,7 +67,7 @@ public class VoidmarkScreen extends Screen {
 	private static final float COG_W = 14;
 
 	private enum Group {
-		WORLD("WORLD", "World", MenuFont.LANDSCAPE),
+		WORLD("WORLD", "World", MenuFont.GLOBE),
 		COMBAT("COMBAT", "Combat", MenuFont.SWORD),
 		ESP("ESP", "ESP", MenuFont.EYE),
 		HUD("HUD", "HUD", MenuFont.DISPLAY),
@@ -1221,7 +1221,7 @@ public class VoidmarkScreen extends Screen {
 
 	private static String tabGlyph(Tab value) {
 		return switch (value) {
-			case WORLD -> MenuFont.LANDSCAPE;
+			case WORLD -> MenuFont.GLOBE;
 			case COMBAT -> MenuFont.SWORD;
 			case ESP -> MenuFont.EYE;
 			case OVERLAY -> MenuFont.DISPLAY;
@@ -2683,7 +2683,7 @@ public class VoidmarkScreen extends Screen {
 		return FabricLoader.getInstance()
 			.getModContainer("voidmark")
 			.map(container -> container.getMetadata().getVersion().getFriendlyString())
-			.orElse("1.2.100");
+			.orElse("1.2.101");
 	}
 
 	@Override

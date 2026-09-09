@@ -49,7 +49,7 @@ public final class MenuFont {
 	public static final String MOB = "\uE91D";
 	public static final String LANDSCAPE = "\uE3F7";
 	public static final String FLASH = "\uE3E7";
-	public static final String SWORD = "\uE571";
+	public static final String SWORD = "\uF889";
 	public static final String QUILT = "\uE8CB";
 	public static final String BARS = "\uE947";
 	public static final String PIN = "\uE55F";
