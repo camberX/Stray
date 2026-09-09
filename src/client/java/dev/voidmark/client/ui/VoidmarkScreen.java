@@ -177,9 +177,11 @@ public class VoidmarkScreen extends Screen {
 		new SearchEntry("Auto clicker", Tab.COMBAT, "Combat"),
 		new SearchEntry("Autoclicker", Tab.COMBAT, "Combat"),
 		new SearchEntry("Terminator", Tab.COMBAT, "Combat"),
-		new SearchEntry("Auto experiments", Tab.COMBAT, "Combat"),
-		new SearchEntry("Chronomatron", Tab.COMBAT, "Combat"),
-		new SearchEntry("Ultrasequencer", Tab.COMBAT, "Combat"),
+		new SearchEntry("Auto experiments", Tab.MENUS, "Misc"),
+		new SearchEntry("Chronomatron", Tab.MENUS, "Misc"),
+		new SearchEntry("Ultrasequencer", Tab.MENUS, "Misc"),
+		new SearchEntry("Click delay", Tab.MENUS, "Misc"),
+		new SearchEntry("Serum count", Tab.MENUS, "Misc"),
 		new SearchEntry("Held item shader", Tab.COMBAT, "Combat"),
 		new SearchEntry("Item shader", Tab.COMBAT, "Combat"),
 		new SearchEntry("Held item outline", Tab.COMBAT, "Combat"),
@@ -1688,28 +1690,28 @@ public class VoidmarkScreen extends Screen {
 				toggle(graphics, font, rx, y, iw, mouseX, mouseY, "Aspect ratio", config.aspectEnabled, v -> config.aspectEnabled = v, Feature.VIEW);
 			}
 			case COMBAT -> {
-				float y = featureCard(graphics, font, left, top, col, cardHeight(4), "Hitsound");
+				float hitsoundH = cardHeight(7);
+				float y = featureCard(graphics, font, left, top, col, hitsoundH, "Hitsound");
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Enable", config.hitsoundEnabled, v -> {
 					config.hitsoundEnabled = v;
 					if (v) {
 						Hitsound.playPreview();
 					}
-				}, Feature.HITSOUND);
+				});
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Melee", config.hitsoundMelee, v -> config.hitsoundMelee = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Arrows", config.hitsoundArrows, v -> config.hitsoundArrows = v);
-				toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Hitmarker", config.hitmarkerEnabled, v -> config.hitmarkerEnabled = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Hitmarker", config.hitmarkerEnabled, v -> config.hitmarkerEnabled = v);
+				drawFeatureFields(graphics, font, mouseX, mouseY, ix, y, iw, Feature.HITSOUND);
 
-				y = featureCard(graphics, font, left, top + cardHeight(4) + 8, col, cardHeight(3), "Cheats");
-				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Held item", config.heldItemShaderEnabled, v -> config.heldItemShaderEnabled = v, Feature.HELD_ITEM);
-				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Auto clicker", config.autoClickerEnabled, v -> config.autoClickerEnabled = v, Feature.AUTO_CLICKER);
-				toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Auto experiments", config.autoExperimentsEnabled, v -> config.autoExperimentsEnabled = v, Feature.AUTO_EXPERIMENTS);
+				y = featureCard(graphics, font, left, top + hitsoundH + 8, col, cardHeight(1), "Held item");
+				toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Shader", config.heldItemShaderEnabled, v -> config.heldItemShaderEnabled = v, Feature.HELD_ITEM);
 
-				y = featureCard(graphics, font, right, top, col, cardHeight(3), "Mix");
-				y = slider(graphics, font, rx, y, iw, "Volume", Math.round(config.hitsoundVolume * 100) + "%", config.hitsoundVolume, v -> config.hitsoundVolume = VoidmarkConfig.clamp(v, 0f, 1f));
-				y = slider(graphics, font, rx, y, iw, "Pitch", String.format(Locale.ROOT, "%.2f", config.hitsoundPitch), (config.hitsoundPitch - 0.50f) / 1.00f, v -> config.hitsoundPitch = VoidmarkConfig.clamp(0.50f + v, 0.50f, 1.50f));
-				slider(graphics, font, rx, y, iw, "Marker", Math.round(config.hitmarkerScale * 100) + "%", (config.hitmarkerScale - 0.50f) / 1.50f, v -> config.hitmarkerScale = VoidmarkConfig.clampHudScale(0.50f + v * 1.50f));
+				float clickerH = cardHeight(1 + autoClickerFieldRows());
+				y = featureCard(graphics, font, right, top, col, clickerH, "Auto clicker");
+				y = toggle(graphics, font, rx, y, iw, mouseX, mouseY, "Enable", config.autoClickerEnabled, v -> config.autoClickerEnabled = v);
+				drawFeatureFields(graphics, font, mouseX, mouseY, rx, y, iw, Feature.AUTO_CLICKER);
 
-				y = featureCard(graphics, font, right, top + cardHeight(3) + 8, col, cardHeight(3), "Triggerbot");
+				y = featureCard(graphics, font, right, top + clickerH + 8, col, cardHeight(3), "Triggerbot");
 				y = toggle(graphics, font, rx, y, iw, mouseX, mouseY, "Enable", config.triggerbotEnabled, v -> config.triggerbotEnabled = v);
 				y = toggle(graphics, font, rx, y, iw, mouseX, mouseY, "Players", config.triggerbotPlayers, v -> config.triggerbotPlayers = v);
 				slider(graphics, font, rx, y, iw, "Humanize", Math.round(config.triggerbotHumanize * 100) + "%", config.triggerbotHumanize, v -> config.triggerbotHumanize = VoidmarkConfig.clamp(v, 0f, 1f));
@@ -1752,6 +1754,11 @@ public class VoidmarkScreen extends Screen {
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Loadouts menu", config.loadoutsMenuEnabled, v -> config.loadoutsMenuEnabled = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Wardrobe menu", config.wardrobeMenuEnabled, v -> config.wardrobeMenuEnabled = v);
 				toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Open animation", config.loadoutsOpenAnim, v -> config.loadoutsOpenAnim = v);
+
+				float experimentsH = cardHeight(1 + Feature.AUTO_EXPERIMENTS.rows);
+				y = featureCard(graphics, font, left, top + cardHeight(3) + 8, col, experimentsH, "Auto experiments");
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Enable", config.autoExperimentsEnabled, v -> config.autoExperimentsEnabled = v);
+				drawFeatureFields(graphics, font, mouseX, mouseY, ix, y, iw, Feature.AUTO_EXPERIMENTS);
 
 				y = featureCard(graphics, font, right, top, col, cardHeight(4), "Commands");
 				GuiDraw.menu(graphics, font, "/loadouts  /ld", rx, y + 2, ink());
@@ -1864,9 +1871,9 @@ public class VoidmarkScreen extends Screen {
 				y = toggle(graphics, font, rx, y, iw, mouseX, mouseY, "Players", config.triggerbotPlayers, v -> config.triggerbotPlayers = v);
 				slider(graphics, font, rx, y, iw, "Humanize", Math.round(config.triggerbotHumanize * 100) + "%", config.triggerbotHumanize, v -> config.triggerbotHumanize = VoidmarkConfig.clamp(v, 0f, 1f));
 
-				y = featureCard(graphics, font, right, top + cardHeight(3) + 8, col, cardHeight(2), "Cheats");
-				y = toggle(graphics, font, rx, y, iw, mouseX, mouseY, "Auto clicker", config.autoClickerEnabled, v -> config.autoClickerEnabled = v, Feature.AUTO_CLICKER);
-				toggle(graphics, font, rx, y, iw, mouseX, mouseY, "Auto experiments", config.autoExperimentsEnabled, v -> config.autoExperimentsEnabled = v, Feature.AUTO_EXPERIMENTS);
+				float clickerH = cardHeight(autoClickerFieldRows());
+				y = featureCard(graphics, font, right, top + cardHeight(3) + 8, col, clickerH, "Auto clicker", config.autoClickerEnabled, v -> config.autoClickerEnabled = v, mouseX, mouseY);
+				drawFeatureFields(graphics, font, mouseX, mouseY, rx, y, iw, Feature.AUTO_CLICKER);
 			}
 			case ESP -> drawMobsTab(graphics, font, mouseX, mouseY);
 			case OVERLAY -> {
@@ -1906,6 +1913,10 @@ public class VoidmarkScreen extends Screen {
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Loadouts menu", config.loadoutsMenuEnabled, v -> config.loadoutsMenuEnabled = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Wardrobe menu", config.wardrobeMenuEnabled, v -> config.wardrobeMenuEnabled = v);
 				toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Open animation", config.loadoutsOpenAnim, v -> config.loadoutsOpenAnim = v);
+
+				float experimentsH = cardHeight(Feature.AUTO_EXPERIMENTS.rows);
+				y = featureCard(graphics, font, left, top + cardHeight(3) + 8, col, experimentsH, "Auto experiments", config.autoExperimentsEnabled, v -> config.autoExperimentsEnabled = v, mouseX, mouseY);
+				drawFeatureFields(graphics, font, mouseX, mouseY, ix, y, iw, Feature.AUTO_EXPERIMENTS);
 
 				y = featureCard(graphics, font, right, top, col, cardHeight(4), "Commands");
 				GuiDraw.menu(graphics, font, "/loadouts  /ld", rx, y + 2, ink());
@@ -2080,6 +2091,10 @@ public class VoidmarkScreen extends Screen {
 		return cardTop() + cardHead() + rows * rowH() + cardPad();
 	}
 
+	private int autoClickerFieldRows() {
+		return VoidmarkConfig.get().autoClickerTerminatorOnly ? 6 : 10;
+	}
+
 	private void drawNametagEspList(
 		GuiGraphicsExtractor graphics,
 		Font font,
@@ -2216,7 +2231,7 @@ public class VoidmarkScreen extends Screen {
 		float trackH = controlCenter() ? 16 : 11;
 		float tx = x + w - trackW;
 		float ty = y + (row - trackH) / 2f;
-		boolean showCog = feature != null && (!controlCenter() || feature == Feature.AUTO_CLICKER || feature == Feature.AUTO_EXPERIMENTS);
+		boolean showCog = feature != null && !controlCenter();
 		if (showCog) {
 			float cogX = tx - COG_W - 2;
 			boolean cogOn = featureOpen && featureId == feature;
@@ -2812,7 +2827,7 @@ public class VoidmarkScreen extends Screen {
 		return FabricLoader.getInstance()
 			.getModContainer("voidmark")
 			.map(container -> container.getMetadata().getVersion().getFriendlyString())
-			.orElse("1.2.112");
+			.orElse("1.2.113");
 	}
 
 	@Override
