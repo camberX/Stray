@@ -8,6 +8,9 @@ public final class ReleaseNotes {
 	}
 
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.86", new String[]{
+			"Menu and HUD corners use the circle textures again. The last two builds tried a custom GUI shader that Minecraft never actually ran, so corners showed filled circles and then the missing-texture tile."
+		}),
 		new Entry("1.2.85", new String[]{
 			"Rounded rims are a one-pixel outline again. The last build recovered GUI scale from the wrong matrix, so every corner drew as a filled circle."
 		}),
