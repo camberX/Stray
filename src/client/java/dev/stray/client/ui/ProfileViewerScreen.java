@@ -32,17 +32,28 @@ import java.util.Locale;
  * from the public Hypixel profile host.
  */
 public class ProfileViewerScreen extends Screen {
-	private static final float MENU_W = 700;
-	private static final float MENU_H = 380;
+	private static final float MENU_W = 720;
+	private static final float MENU_H = 400;
 	private static final float RAIL = 84;
 	private static final float ROW = 16;
 	private static final float CHIP_H = 18;
+	private static final float SLOT_GAP = 3;
+	private static final String[][] HOTM_TREE = {
+		{null, "frozen_skin", "hungry_for_more", "surveyor", "mineshaft_mayhem", "warm_hearted", null},
+		{null, "strong_arm", "no_stone_unturned", "eager_adventurer", "miners_blessing", "steady_hand", null},
+		{"gemstone_infusion", "gifts_from_above", "dead_mans_chest", "subterranean_fisher", "occupation_of_the_mines", "daily_grind", "keep_it_cool"},
+		{"vein_seeker", "front_loaded", "sky_mall", "special_0", "goblin_killer", "maniac_miner", "precision_mining"},
+		{null, "speedy_mineman", null, "powder_buff", "fortunate_mineman", null, null},
+		{"mole", "professional", "lonesome_miner", "orbiter", "great_explorer", "blockhead", "old_school"},
+		{null, "efficient_miner", null, "seasoned_mineman", null, "crystallized", null},
+		{"luck_of_the_cave", "daily_powder", "pickobulus", null, "mining_speed_boost", "titanium_insanium", "mining_fortune"},
+		{null, null, null, "mining_speed", null, null, null}
+	};
 
 	private enum Tab {
 		HOME("Home", MenuFont.PERSON),
 		ITEMS("Items", MenuFont.BAG),
-		SKILLS("Skills", MenuFont.BARS),
-		COMBAT("Combat", MenuFont.SWORD),
+		DUNGEONS("Dungeons", MenuFont.SWORD),
 		MINING("Mining", MenuFont.DIAMOND),
 		FARMING("Farm", MenuFont.GRAIN),
 		PETS("Pets", MenuFont.CAT);
@@ -81,6 +92,7 @@ public class ProfileViewerScreen extends Screen {
 	private ItemStack hoverStack = ItemStack.EMPTY;
 	private ItemPane itemPane = ItemPane.INV;
 	private int itemPage;
+	private int selectedPet = -1;
 	private float slot = 22;
 
 	public ProfileViewerScreen(String name) {
@@ -233,6 +245,7 @@ public class ProfileViewerScreen extends Screen {
 				ProfileViewer.select(index);
 				listScroll = 0f;
 				itemPage = 0;
+				selectedPet = -1;
 			}));
 			chipX += w + 4;
 			if (chipX > windowX + windowW - 20) {
@@ -285,8 +298,7 @@ public class ProfileViewerScreen extends Screen {
 		switch (tab) {
 			case HOME -> drawHome(graphics, font, mouseX, mouseY, x, y, w, h, snap, profile);
 			case ITEMS -> drawItems(graphics, font, mouseX, mouseY, x, y, w, h, profile);
-			case SKILLS -> drawSkills(graphics, font, mouseX, mouseY, x, y, w, h, profile);
-			case COMBAT -> drawCombat(graphics, font, mouseX, mouseY, x, y, w, h, profile);
+			case DUNGEONS -> drawDungeons(graphics, font, mouseX, mouseY, x, y, w, h, profile);
 			case MINING -> drawMining(graphics, font, mouseX, mouseY, x, y, w, h, profile);
 			case FARMING -> drawFarming(graphics, font, mouseX, mouseY, x, y, w, h, profile);
 			case PETS -> drawPets(graphics, font, mouseX, mouseY, x, y, w, h, profile);
@@ -440,33 +452,7 @@ public class ProfileViewerScreen extends Screen {
 		slayerChips(graphics, font, mouseX, mouseY, x, cy, w, y + h, profile.slayers());
 	}
 
-	private void drawSkills(
-		GuiGraphicsExtractor graphics,
-		Font font,
-		int mouseX,
-		int mouseY,
-		float x,
-		float y,
-		float w,
-		float h,
-		ProfileViewer.Profile profile
-	) {
-		float left = x + 12;
-		float top = y + 12;
-		float col = (w - 32) * 0.5f;
-		List<ProfileViewer.Skill> skills = profile.skills();
-		for (int i = 0; i < skills.size(); i++) {
-			float sx = left + (i % 2) * (col + 8);
-			float sy = top + (i / 2) * 34f;
-			if (sy + 30 > y + h - 8) {
-				break;
-			}
-			ProfileViewer.Skill skill = skills.get(i);
-			skillBar(graphics, font, mouseX, mouseY, sx, sy, col, skill);
-		}
-	}
-
-	private void drawCombat(
+	private void drawDungeons(
 		GuiGraphicsExtractor graphics,
 		Font font,
 		int mouseX,
@@ -479,23 +465,64 @@ public class ProfileViewerScreen extends Screen {
 	) {
 		float left = x + 12;
 		float top = y + 10;
-		float col = (w - 32) * 0.5f;
+		float col = (w - 36) / 4f;
 		ProfileViewer.Dungeon dungeon = profile.dungeons();
 		infoRow(graphics, font, mouseX, mouseY, left, top, col, new ItemStack(Items.WITHER_SKELETON_SKULL), "Catacombs",
 			String.valueOf(dungeon.cata()), "Catacombs " + dungeon.cata());
-		infoRow(graphics, font, mouseX, mouseY, left + col + 8, top, col, new ItemStack(Items.CHEST), "Secrets",
+		infoRow(graphics, font, mouseX, mouseY, left + col + 4, top, col, new ItemStack(Items.CHEST), "Secrets",
 			compact(dungeon.secrets()), prettyNumber(dungeon.secrets()) + " secrets");
-		float y0 = top + 26;
+		infoRow(graphics, font, mouseX, mouseY, left + (col + 4) * 2, top, col, new ItemStack(Items.IRON_SWORD), "Runs",
+			compact(dungeon.runs()), prettyNumber(dungeon.runs()) + " floor completions");
+		String selected = dungeon.selectedClass().isBlank() ? "—" : dungeon.selectedClass();
+		infoRow(graphics, font, mouseX, mouseY, left + (col + 4) * 3, top, col, new ItemStack(Items.IRON_CHESTPLATE), "Class",
+			selected, "Selected class  " + selected);
+		float y0 = top + 24;
 		sectionTitle(graphics, font, left, y0, w - 24, new ItemStack(Items.IRON_CHESTPLATE), "Classes");
 		y0 += 16;
 		y0 = classChips(graphics, font, mouseX, mouseY, left, y0, w - 24, y + h, dungeon.classes());
-		y0 += 12;
-		if (y0 + 24 > y + h) {
-			return;
-		}
-		sectionTitle(graphics, font, left, y0, w - 24, new ItemStack(Items.ROTTEN_FLESH), "Slayers");
+		y0 += 10;
+		float floorW = (w - 36) * 0.5f;
+		sectionTitle(graphics, font, left, y0, floorW, new ItemStack(Items.STONE_BRICKS), "Catacombs");
+		sectionTitle(graphics, font, left + floorW + 12, y0, floorW, new ItemStack(Items.CRACKED_STONE_BRICKS), "Master");
 		y0 += 16;
-		slayerChips(graphics, font, mouseX, mouseY, left, y0, w - 24, y + h, profile.slayers());
+		drawFloors(graphics, font, mouseX, mouseY, left, y0, floorW, y + h - 8, dungeon.normal());
+		drawFloors(graphics, font, mouseX, mouseY, left + floorW + 12, y0, floorW, y + h - 8, dungeon.master());
+	}
+
+	private void drawFloors(
+		GuiGraphicsExtractor graphics,
+		Font font,
+		int mouseX,
+		int mouseY,
+		float x,
+		float y,
+		float w,
+		float maxY,
+		List<ProfileViewer.Floor> floors
+	) {
+		float row = 18;
+		for (int i = 0; i < floors.size(); i++) {
+			float fy = y + i * row;
+			if (fy + row > maxY) {
+				break;
+			}
+			ProfileViewer.Floor floor = floors.get(i);
+			boolean hover = GuiDraw.hovered(mouseX, mouseY, x, fy, w, row - 1);
+			if (hover) {
+				GuiDraw.rounded(graphics, x - 2, fy - 1, w + 4, row - 1, 4, 0x10FFFFFF);
+				tooltip = floor.name() + "  " + prettyNumber(floor.completions()) + " runs"
+					+ "\nS  " + clock(floor.bestS())
+					+ "\nS+  " + clock(floor.bestSPlus());
+			}
+			paintItem(graphics, font, new ItemStack(Items.STONE_BRICKS), x, fy, 12, false);
+			GuiDraw.small(graphics, font, floor.name(), x + 16, GuiDraw.middle(fy, 14), Theme.MUTED);
+			GuiDraw.menu(graphics, font, compact(floor.completions()), x + 42, GuiDraw.middle(fy, 14), Theme.TEXT);
+			String plus = clock(floor.bestSPlus());
+			if ("—".equals(plus)) {
+				plus = clock(floor.bestS());
+			}
+			GuiDraw.small(graphics, font, plus, x + w - GuiDraw.smallWidth(font, plus), GuiDraw.middle(fy, 14), Theme.MUTED);
+		}
 	}
 
 	private void drawMining(
@@ -509,19 +536,70 @@ public class ProfileViewerScreen extends Screen {
 		float h,
 		ProfileViewer.Profile profile
 	) {
-		float left = x + 12;
-		float top = y + 12;
-		float col = (w - 32) * 0.5f;
+		float left = x + 10;
+		float top = y + 10;
+		float side = 168;
 		ProfileViewer.Mining mining = profile.mining();
-		infoRow(graphics, font, mouseX, mouseY, left, top, col, new ItemStack(Items.DIAMOND_PICKAXE), "HOTM",
+		infoRow(graphics, font, mouseX, mouseY, left, top, side, new ItemStack(Items.DIAMOND_PICKAXE), "HOTM",
 			String.valueOf(mining.hotm()), "Heart of the Mountain " + mining.hotm());
-		infoRow(graphics, font, mouseX, mouseY, left + col + 8, top, col, new ItemStack(Items.IRON_INGOT), "Mithril",
+		infoRow(graphics, font, mouseX, mouseY, left, top + 20, side, new ItemStack(Items.IRON_INGOT), "Mithril",
 			compact(mining.mithril()), prettyNumber(mining.mithril()) + " mithril powder");
-		infoRow(graphics, font, mouseX, mouseY, left, top + 22, col, new ItemStack(Items.AMETHYST_SHARD), "Gemstone",
+		infoRow(graphics, font, mouseX, mouseY, left, top + 40, side, new ItemStack(Items.AMETHYST_SHARD), "Gemstone",
 			compact(mining.gemstone()), prettyNumber(mining.gemstone()) + " gemstone powder");
-		infoRow(graphics, font, mouseX, mouseY, left + col + 8, top + 22, col, new ItemStack(Items.BLUE_ICE), "Glacite",
+		infoRow(graphics, font, mouseX, mouseY, left, top + 60, side, new ItemStack(Items.BLUE_ICE), "Glacite",
 			compact(mining.glacite()), prettyNumber(mining.glacite()) + " glacite powder");
-		GuiDraw.small(graphics, font, "Powder is current plus spent.", left, top + 52, Theme.MUTED);
+		GuiDraw.small(graphics, font, "Powder is current plus spent.", left, top + 86, Theme.MUTED);
+
+		float treeX = left + side + 12;
+		float treeW = w - side - 28;
+		float treeH = h - 22;
+		sectionTitle(graphics, font, treeX, top, treeW, new ItemStack(Items.DIAMOND_PICKAXE), "HOTM tree");
+		drawHotmTree(graphics, font, mouseX, mouseY, treeX, top + 16, treeW, treeH - 16, mining);
+	}
+
+	private void drawHotmTree(
+		GuiGraphicsExtractor graphics,
+		Font font,
+		int mouseX,
+		int mouseY,
+		float x,
+		float y,
+		float w,
+		float h,
+		ProfileViewer.Mining mining
+	) {
+		int rows = HOTM_TREE.length;
+		int cols = HOTM_TREE[0].length;
+		float node = Math.min(22f, Math.min((w - 4) / cols, (h - 4) / rows));
+		float gridW = cols * node;
+		float gridH = rows * node;
+		float ox = x + Math.max(0f, (w - gridW) * 0.5f);
+		float oy = y + Math.max(0f, (h - gridH) * 0.1f);
+		for (int row = 0; row < rows; row++) {
+			for (int col = 0; col < cols; col++) {
+				String id = HOTM_TREE[row][col];
+				if (id == null) {
+					continue;
+				}
+				int level = mining.perk(id, aliasPerk(id));
+				float nx = ox + col * node;
+				float ny = oy + row * node;
+				float size = node - 2;
+				boolean on = level > 0;
+				boolean hover = GuiDraw.hovered(mouseX, mouseY, nx, ny, size, size);
+				int fill = on ? Theme.withAlpha(Theme.ACCENT, hover ? 56 : 32) : hover ? Theme.CARD_HOVER : Theme.CARD;
+				int line = on ? Theme.ACCENT : Theme.LINE;
+				GuiDraw.panel(graphics, nx, ny, size, size, 5, fill, line);
+				paintItem(graphics, font, perkIcon(id), nx + 2, ny + 1, Math.max(8f, size - 8f), false);
+				if (level > 1) {
+					String text = String.valueOf(level);
+					GuiDraw.small(graphics, font, text, nx + size - GuiDraw.smallWidth(font, text) - 2, ny + size - 9, Theme.TEXT);
+				}
+				if (hover) {
+					tooltip = perkName(id) + (on ? "  " + level : "  locked");
+				}
+			}
+		}
 	}
 
 	private void drawFarming(
@@ -536,16 +614,48 @@ public class ProfileViewerScreen extends Screen {
 		ProfileViewer.Profile profile
 	) {
 		float left = x + 12;
-		float top = y + 12;
-		float col = (w - 32) * 0.5f;
+		float top = y + 10;
+		float col = (w - 32) / 3f;
 		ProfileViewer.Skill farming = skill(profile, "Farming");
 		infoRow(graphics, font, mouseX, mouseY, left, top, col, new ItemStack(Items.WHEAT), "Farming",
 			farming.level() + " / " + farming.cap(), "Farming " + farming.level() + " / " + farming.cap());
 		infoRow(graphics, font, mouseX, mouseY, left + col + 8, top, col, new ItemStack(Items.OAK_SAPLING), "Garden",
 			String.valueOf(profile.farming().garden()), "Garden level " + profile.farming().garden());
-		infoRow(graphics, font, mouseX, mouseY, left, top + 22, col, new ItemStack(Items.PLAYER_HEAD), "Visitors",
+		infoRow(graphics, font, mouseX, mouseY, left + (col + 8) * 2, top, col, new ItemStack(Items.PLAYER_HEAD), "Visitors",
 			String.valueOf(profile.farming().visitors()), profile.farming().visitors() + " unique visitors");
-		GuiDraw.small(graphics, font, "Garden data is only there if the API sent it.", left, top + 52, Theme.MUTED);
+
+		List<ProfileViewer.Crop> crops = profile.farming().crops();
+		float gridY = top + 28;
+		float gridH = y + h - gridY - 8;
+		int columns = 5;
+		int rows = 2;
+		float cardW = (w - 28 - (columns - 1) * 6f) / columns;
+		float cardH = Math.min(72f, (gridH - (rows - 1) * 6f) / rows);
+		for (int i = 0; i < crops.size(); i++) {
+			int column = i % columns;
+			int row = i / columns;
+			if (row >= rows) {
+				break;
+			}
+			ProfileViewer.Crop crop = crops.get(i);
+			float cx = left + column * (cardW + 6);
+			float cy = gridY + row * (cardH + 6);
+			boolean hover = GuiDraw.hovered(mouseX, mouseY, cx, cy, cardW, cardH);
+			GuiDraw.panel(graphics, cx, cy, cardW, cardH, 7, hover ? Theme.CARD_HOVER : Theme.CARD, hover ? Theme.ACCENT : Theme.LINE);
+			paintItem(graphics, font, cropIcon(crop.name()), cx + 6, cy + 8, 16, false);
+			GuiDraw.small(graphics, font, crop.name(), cx + 26, cy + 8, Theme.MUTED);
+			GuiDraw.menu(graphics, font, crop.level() + " / " + crop.cap(), cx + 26, cy + 18, Theme.TEXT);
+			GuiDraw.small(graphics, font, compact(crop.amount()), cx + 26, cy + 30, Theme.MUTED);
+			float barW = cardW - 16;
+			GuiDraw.rounded(graphics, cx + 8, cy + cardH - 12, barW, 4, 2, Theme.TRACK);
+			float fill = Math.max(0f, Math.min(1f, crop.progress()));
+			if (fill > 0.01f) {
+				GuiDraw.rounded(graphics, cx + 8, cy + cardH - 12, Math.max(4f, barW * fill), 4, 2, Theme.ACCENT);
+			}
+			if (hover) {
+				tooltip = crop.name() + " milestone " + crop.level() + " / " + crop.cap() + "\n" + prettyNumber(crop.amount()) + " collected";
+			}
+		}
 	}
 
 	private void drawPets(
@@ -564,13 +674,62 @@ public class ProfileViewerScreen extends Screen {
 			GuiDraw.menu(graphics, font, "No pets on this profile.", x + 12, y + 14, Theme.MUTED);
 			return;
 		}
-		drawRows(graphics, font, mouseX, mouseY, x, y, w, h, pets.size(), (index, rx, ry, rw) -> {
-			ProfileViewer.Pet pet = pets.get(index);
-			String left = (pet.active() ? "● " : "") + pet.name();
-			String right = pet.tier() + "  " + pet.level();
-			GuiDraw.menu(graphics, font, clip(font, left, rw - 70), rx, GuiDraw.middle(ry, ROW), pet.active() ? Theme.ACCENT : Theme.TEXT);
-			GuiDraw.small(graphics, font, right, rx + rw - GuiDraw.smallWidth(font, right), GuiDraw.middle(ry, ROW), Theme.MUTED);
-		});
+		ProfileViewer.Pet shown = shownPetResolved(pets);
+		float previewW = 168;
+		float pad = 10;
+		float px = x + pad;
+		float py = y + pad;
+		float ph = h - pad * 2;
+		GuiDraw.panel(graphics, px, py, previewW, ph, 8, Theme.CARD, Theme.LINE);
+		if (shown != null) {
+			ItemStack icon = petIcon(shown);
+			paintItem(graphics, font, icon, px + (previewW - 48) * 0.5f, py + 18, 48, false);
+			GuiDraw.menu(graphics, font, clip(font, shown.name(), previewW - 16), px + 8, py + 78, Theme.TEXT);
+			GuiDraw.small(graphics, font, shown.tier() + "  " + shown.level(), px + 8, py + 92, tierColor(shown.tier()));
+			if (shown.active()) {
+				GuiDraw.small(graphics, font, "Active", px + 8, py + 106, Theme.ACCENT);
+			}
+			hoverStack = GuiDraw.hovered(mouseX, mouseY, px, py, previewW, ph) ? icon : hoverStack;
+		}
+
+		float gx = px + previewW + 10;
+		float gy = py;
+		float gw = w - previewW - pad * 3;
+		float gh = ph;
+		int cols = Math.max(4, (int) (gw / 36f));
+		float cell = Math.min(34f, gw / cols);
+		int rows = Math.max(1, (int) (gh / cell));
+		int first = (int) (listScroll / cell);
+		int visible = cols * rows;
+		listScroll = Mth.clamp(listScroll, 0f, Math.max(0f, (float) Math.ceil(pets.size() / (double) cols) * cell - gh));
+		for (int i = first * cols; i < pets.size() && i < first * cols + visible; i++) {
+			int local = i - first * cols;
+			int col = local % cols;
+			int row = local / cols;
+			ProfileViewer.Pet pet = pets.get(i);
+			float cx = gx + col * cell;
+			float cy = gy + row * cell;
+			boolean on = shown == pet;
+			boolean hover = GuiDraw.hovered(mouseX, mouseY, cx, cy, cell - 3, cell - 3);
+			GuiDraw.panel(
+				graphics,
+				cx,
+				cy,
+				cell - 3,
+				cell - 3,
+				6,
+				on || hover ? Theme.CARD_HOVER : Theme.CARD,
+				on ? Theme.ACCENT : Theme.LINE
+			);
+			paintItem(graphics, font, petIcon(pet), cx + 4, cy + 3, cell - 14, false);
+			GuiDraw.small(graphics, font, String.valueOf(pet.level()), cx + 4, cy + cell - 13, Theme.MUTED);
+			if (hover) {
+				tooltip = pet.name() + "\n" + pet.tier() + "  " + pet.level();
+				hoverStack = petIcon(pet);
+			}
+			int index = i;
+			hits.add(new Hit(cx, cy, cell - 3, cell - 3, () -> selectedPet = index));
+		}
 	}
 
 	private void drawItems(
@@ -639,23 +798,24 @@ public class ProfileViewerScreen extends Screen {
 		float top = paged ? y + 46 : y + 32;
 		float availW = w - 24;
 		float availH = y + h - top - 12;
-		float armorGap = armor ? 8f : 0f;
+		float armorGap = armor ? 10f : 0f;
 		float hotbarGap = playerInv && bag.size() >= 36 ? 8f : 0f;
 		float byWidth = (availW - armorGap) / (cols + (armor ? 1 : 0));
 		float byHeight = (availH - hotbarGap) / rows;
-		slot = Mth.clamp(Math.min(byWidth, byHeight), 20f, 40f);
+		slot = Mth.clamp(Math.min(byWidth, byHeight), 20f, 36f);
 
-		float gridW = (armor ? slot + armorGap : 0f) + cols * slot;
-		float gridH = rows * slot + hotbarGap;
+		float step = slot + SLOT_GAP;
+		float gridW = (armor ? slot + armorGap : 0f) + cols * slot + (cols - 1) * SLOT_GAP;
+		float gridH = rows * slot + (rows - 1) * SLOT_GAP + hotbarGap;
 		float gridX = x + (w - gridW) * 0.5f;
 		float gridY = top + Math.max(0f, (availH - gridH) * 0.35f);
 		if (playerInv && armor) {
-			drawArmor(graphics, font, mouseX, mouseY, gridX, gridY + (gridH - 4 * slot) * 0.5f, profile.armor());
+			drawArmor(graphics, font, mouseX, mouseY, gridX, gridY + (gridH - 4 * step + SLOT_GAP) * 0.5f, profile.armor());
 			gridX += slot + armorGap;
 		}
 		if (playerInv && bag.size() >= 36) {
 			drawGrid(graphics, font, mouseX, mouseY, gridX, gridY, 9, 3, bag, 9);
-			drawGrid(graphics, font, mouseX, mouseY, gridX, gridY + 3 * slot + hotbarGap, 9, 1, bag, 0);
+			drawGrid(graphics, font, mouseX, mouseY, gridX, gridY + 3 * step + hotbarGap - SLOT_GAP, 9, 1, bag, 0);
 		} else if (!bag.vacant() || bag.size() > 0) {
 			drawGrid(graphics, font, mouseX, mouseY, gridX, gridY, cols, rows, bag, 0);
 		} else {
@@ -702,7 +862,7 @@ public class ProfileViewerScreen extends Screen {
 		int[] order = {3, 2, 1, 0};
 		for (int i = 0; i < 4; i++) {
 			int index = i < armor.size() ? order[i] : i;
-			drawSlot(graphics, font, mouseX, mouseY, x, y + i * slot, armor.at(index));
+			drawSlot(graphics, font, mouseX, mouseY, x, y + i * (slot + SLOT_GAP), armor.at(index));
 		}
 	}
 
@@ -721,7 +881,7 @@ public class ProfileViewerScreen extends Screen {
 		for (int row = 0; row < rows; row++) {
 			for (int col = 0; col < cols; col++) {
 				int index = start + row * cols + col;
-				drawSlot(graphics, font, mouseX, mouseY, x + col * slot, y + row * slot, bag.at(index));
+				drawSlot(graphics, font, mouseX, mouseY, x + col * (slot + SLOT_GAP), y + row * (slot + SLOT_GAP), bag.at(index));
 			}
 		}
 	}
@@ -736,7 +896,7 @@ public class ProfileViewerScreen extends Screen {
 		ProfileViewer.SlotItem item
 	) {
 		boolean hover = GuiDraw.hovered(mouseX, mouseY, x, y, slot, slot);
-		GuiDraw.well(graphics, x, y, slot, hover ? Theme.CARD_HOVER : Theme.TRACK, hover ? Theme.ACCENT : Theme.LINE);
+		GuiDraw.panel(graphics, x, y, slot, slot, 6, hover ? Theme.CARD_HOVER : Theme.CARD, hover ? Theme.ACCENT : Theme.LINE);
 		if (item == null || item.empty()) {
 			return;
 		}
@@ -1037,6 +1197,7 @@ public class ProfileViewerScreen extends Screen {
 
 	private void load() {
 		listScroll = 0f;
+		selectedPet = -1;
 		if (query.isBlank()) {
 			ProfileViewer.openSelf();
 		} else {
@@ -1090,6 +1251,166 @@ public class ProfileViewerScreen extends Screen {
 			case "Tank" -> new ItemStack(Items.DIAMOND_CHESTPLATE);
 			default -> new ItemStack(Items.IRON_SWORD);
 		};
+	}
+
+	private ProfileViewer.Pet shownPetResolved(List<ProfileViewer.Pet> pets) {
+		if (pets == null || pets.isEmpty()) {
+			return null;
+		}
+		if (selectedPet >= 0 && selectedPet < pets.size()) {
+			return pets.get(selectedPet);
+		}
+		for (ProfileViewer.Pet pet : pets) {
+			if (pet.active()) {
+				return pet;
+			}
+		}
+		return pets.get(0);
+	}
+
+	private static String aliasPerk(String id) {
+		return switch (id) {
+			case "speedy_mineman" -> "mining_speed_2";
+			case "mining_speed_2" -> "speedy_mineman";
+			case "fortunate_mineman" -> "mining_fortune_2";
+			case "mining_fortune_2" -> "fortunate_mineman";
+			case "gifts_from_above" -> "gifts_from_the_departed";
+			default -> id;
+		};
+	}
+
+	private static String perkName(String id) {
+		if ("special_0".equals(id)) {
+			return "Core of the Mountain";
+		}
+		return prettyPerk(id);
+	}
+
+	private static String prettyPerk(String id) {
+		if (id == null || id.isBlank()) {
+			return "";
+		}
+		String cleaned = id.replace('_', ' ').trim();
+		StringBuilder out = new StringBuilder(cleaned.length());
+		boolean cap = true;
+		for (int i = 0; i < cleaned.length(); i++) {
+			char ch = cleaned.charAt(i);
+			if (ch == ' ') {
+				out.append(ch);
+				cap = true;
+				continue;
+			}
+			out.append(cap ? Character.toUpperCase(ch) : Character.toLowerCase(ch));
+			cap = false;
+		}
+		return out.toString();
+	}
+
+	private static ItemStack perkIcon(String id) {
+		return switch (id == null ? "" : id) {
+			case "mining_speed", "mining_speed_2", "speedy_mineman", "mining_speed_boost" -> new ItemStack(Items.GOLDEN_PICKAXE);
+			case "mining_fortune", "mining_fortune_2", "fortunate_mineman", "titanium_insanium" -> new ItemStack(Items.GOLD_INGOT);
+			case "efficient_miner", "mole", "vein_seeker" -> new ItemStack(Items.IRON_PICKAXE);
+			case "powder_buff", "daily_powder", "daily_grind" -> new ItemStack(Items.GUNPOWDER);
+			case "crystallized", "gemstone_infusion" -> new ItemStack(Items.AMETHYST_SHARD);
+			case "pickobulus", "maniac_miner", "professional" -> new ItemStack(Items.TNT);
+			case "luck_of_the_cave", "great_explorer", "surveyor" -> new ItemStack(Items.MAP);
+			case "sky_mall", "goblin_killer" -> new ItemStack(Items.EMERALD);
+			case "front_loaded", "precision_mining" -> new ItemStack(Items.SPYGLASS);
+			case "special_0" -> new ItemStack(Items.HEART_OF_THE_SEA);
+			case "blue_ice", "frozen_skin", "keep_it_cool", "steady_hand" -> new ItemStack(Items.BLUE_ICE);
+			default -> new ItemStack(Items.DIAMOND_PICKAXE);
+		};
+	}
+
+	private static ItemStack cropIcon(String name) {
+		return switch (name == null ? "" : name) {
+			case "Wheat" -> new ItemStack(Items.WHEAT);
+			case "Carrot" -> new ItemStack(Items.CARROT);
+			case "Potato" -> new ItemStack(Items.POTATO);
+			case "Pumpkin" -> new ItemStack(Items.PUMPKIN);
+			case "Melon" -> new ItemStack(Items.MELON_SLICE);
+			case "Mushroom" -> new ItemStack(Items.RED_MUSHROOM);
+			case "Cocoa" -> new ItemStack(Items.COCOA_BEANS);
+			case "Cactus" -> new ItemStack(Items.CACTUS);
+			case "Cane" -> new ItemStack(Items.SUGAR_CANE);
+			case "Wart" -> new ItemStack(Items.NETHER_WART);
+			default -> new ItemStack(Items.WHEAT);
+		};
+	}
+
+	private static ItemStack petIcon(ProfileViewer.Pet pet) {
+		String type = pet == null || pet.type() == null ? "" : pet.type().trim();
+		if (!type.isBlank()) {
+			ItemStack stack = ItemIds.resolve("sb:" + type).stack();
+			if (stack != null && !stack.isEmpty()) {
+				return stack;
+			}
+		}
+		String key = type.isBlank() && pet != null ? pet.name() : type;
+		return switch (key.toUpperCase(Locale.ROOT).replace(' ', '_')) {
+			case "WOLF", "DOG", "GRANDMA_WOLF" -> new ItemStack(Items.BONE);
+			case "CAT", "OCELOT", "BLACK_CAT" -> new ItemStack(Items.COD);
+			case "ENDERMAN", "ENDERMITE" -> new ItemStack(Items.ENDER_PEARL);
+			case "BLAZE", "PHOENIX" -> new ItemStack(Items.BLAZE_ROD);
+			case "SKELETON", "SKELETON_HORSE" -> new ItemStack(Items.BONE);
+			case "ZOMBIE" -> new ItemStack(Items.ROTTEN_FLESH);
+			case "SPIDER", "TARANTULA" -> new ItemStack(Items.SPIDER_EYE);
+			case "ENDER_DRAGON", "DRAGON" -> new ItemStack(Items.DRAGON_HEAD);
+			case "GOLDEN_DRAGON" -> new ItemStack(Items.GOLD_BLOCK);
+			case "WITHER_SKELETON", "WITHER" -> new ItemStack(Items.WITHER_SKELETON_SKULL);
+			case "TIGER", "LION" -> new ItemStack(Items.ORANGE_DYE);
+			case "RABBIT" -> new ItemStack(Items.RABBIT_FOOT);
+			case "CHICKEN" -> new ItemStack(Items.EGG);
+			case "PIG", "PIGMAN" -> new ItemStack(Items.PORKCHOP);
+			case "SHEEP" -> new ItemStack(Items.WHITE_WOOL);
+			case "COW", "MOOSHROOM" -> new ItemStack(Items.BEEF);
+			case "SQUID", "GLOW_SQUID" -> new ItemStack(Items.INK_SAC);
+			case "DOLPHIN", "FLYING_FISH" -> new ItemStack(Items.TROPICAL_FISH);
+			case "BLUE_WHALE" -> new ItemStack(Items.PRISMARINE_CRYSTALS);
+			case "TURTLE", "ARMADILLO" -> new ItemStack(Items.TURTLE_HELMET);
+			case "BEE" -> new ItemStack(Items.HONEYCOMB);
+			case "ELEPHANT" -> new ItemStack(Items.CLAY_BALL);
+			case "MONKEY" -> new ItemStack(Items.COCOA_BEANS);
+			case "ROCK" -> new ItemStack(Items.STONE);
+			case "MITHRIL_GOLEM", "GOLEM", "IRON_GOLEM" -> new ItemStack(Items.IRON_BLOCK);
+			case "AMMONITE" -> new ItemStack(Items.NAUTILUS_SHELL);
+			case "SNAIL", "SLIME", "JELLYFISH" -> new ItemStack(Items.SLIME_BALL);
+			case "MOLE" -> new ItemStack(Items.PODZOL);
+			case "SCATHA" -> new ItemStack(Items.GOLD_INGOT);
+			case "BABY_YETI", "YETI", "SNOWMAN" -> new ItemStack(Items.SNOWBALL);
+			case "RAT" -> new ItemStack(Items.BROWN_WOOL);
+			case "BAL" -> new ItemStack(Items.MAGMA_BLOCK);
+			case "WISP" -> new ItemStack(Items.SOUL_LANTERN);
+			case "HORSE" -> new ItemStack(Items.SADDLE);
+			case "PARROT" -> new ItemStack(Items.FEATHER);
+			case "BAT" -> new ItemStack(Items.COAL);
+			case "GHAST" -> new ItemStack(Items.GHAST_TEAR);
+			case "MAGMA_CUBE" -> new ItemStack(Items.MAGMA_CREAM);
+			case "CREEPER" -> new ItemStack(Items.GUNPOWDER);
+			default -> new ItemStack(Items.BONE);
+		};
+	}
+
+	private static int tierColor(String tier) {
+		return switch (tier == null ? "" : tier.toLowerCase(Locale.ROOT)) {
+			case "uncommon" -> 0xFF55FF55;
+			case "rare" -> 0xFF5555FF;
+			case "epic" -> 0xFFAA00AA;
+			case "legendary" -> 0xFFFFAA00;
+			case "mythic" -> 0xFFFF55FF;
+			default -> Theme.TEXT;
+		};
+	}
+
+	private static String clock(int ms) {
+		if (ms <= 0) {
+			return "—";
+		}
+		int total = ms / 1000;
+		int minutes = total / 60;
+		int seconds = total % 60;
+		return minutes + ":" + (seconds < 10 ? "0" + seconds : String.valueOf(seconds));
 	}
 
 	private static ProfileViewer.Skill skill(ProfileViewer.Profile profile, String name) {

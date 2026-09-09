@@ -75,6 +75,14 @@ public final class ProfileViewer {
 	private static final int[] SLAYER_ENDER = {10, 30, 250, 1500, 5000, 20000, 100000, 400000, 1000000};
 	private static final int[] SLAYER_BLAZE = {10, 30, 250, 1500, 5000, 20000, 100000, 400000, 1000000};
 	private static final int[] SLAYER_VAMP = {20, 75, 240, 840, 2400};
+	private static final long[] CROP_MILESTONE = {
+		0L,
+		30L, 50L, 100L, 250L, 500L, 1000L, 2500L, 5000L, 10000L, 25000L,
+		50000L, 100000L, 250000L, 500000L, 1000000L, 2500000L, 5000000L, 10000000L, 15000000L, 20000000L,
+		25000000L, 30000000L, 35000000L, 40000000L, 50000000L, 100000000L, 125000000L, 160000000L, 200000000L, 250000000L,
+		325000000L, 400000000L, 490000000L, 590000000L, 700000000L, 850000000L, 1000000000L, 1150000000L, 1300000000L, 1500000000L,
+		1700000000L, 1950000000L, 2200000000L, 2500000000L
+	};
 
 	public enum Status {
 		IDLE, LOADING, READY, ERROR
@@ -86,25 +94,57 @@ public final class ProfileViewer {
 	public record Slayer(String name, int level, double xp) {
 	}
 
-	public record Dungeon(int cata, float progress, int secrets, List<Skill> classes) {
+	public record Dungeon(
+		int cata,
+		float progress,
+		int secrets,
+		List<Skill> classes,
+		String selectedClass,
+		int runs,
+		List<Floor> normal,
+		List<Floor> master
+	) {
 		public static Dungeon empty() {
-			return new Dungeon(0, 0f, 0, List.of());
+			return new Dungeon(0, 0f, 0, List.of(), "", 0, List.of(), List.of());
 		}
 	}
 
-	public record Mining(int hotm, long mithril, long gemstone, long glacite) {
+	public record Floor(String name, int completions, int bestS, int bestSPlus) {
+	}
+
+	public record Perk(String id, String name, int level) {
+	}
+
+	public record Mining(int hotm, long mithril, long gemstone, long glacite, List<Perk> perks) {
 		public static Mining empty() {
-			return new Mining(0, 0L, 0L, 0L);
+			return new Mining(0, 0L, 0L, 0L, List.of());
+		}
+
+		public int perk(String... ids) {
+			if (perks == null || ids == null) {
+				return 0;
+			}
+			for (Perk perk : perks) {
+				for (String id : ids) {
+					if (id != null && perk.id().equalsIgnoreCase(id)) {
+						return perk.level();
+					}
+				}
+			}
+			return 0;
 		}
 	}
 
-	public record Farming(int visitors, int garden) {
+	public record Crop(String name, long amount, int level, int cap, float progress) {
+	}
+
+	public record Farming(int visitors, int garden, List<Crop> crops) {
 		public static Farming empty() {
-			return new Farming(0, 0);
+			return new Farming(0, 0, List.of());
 		}
 	}
 
-	public record Pet(String name, String tier, int level, boolean active) {
+	public record Pet(String name, String type, String tier, int level, boolean active) {
 	}
 
 	public record SlotItem(int slot, String id, String name, int count) {
@@ -537,6 +577,7 @@ public final class ProfileViewer {
 		JsonObject dungeons = object(member, "dungeons");
 		JsonObject types = object(dungeons, "dungeon_types");
 		JsonObject cata = object(types, "catacombs");
+		JsonObject master = object(types, "master_catacombs");
 		double xp = num(cata, "experience");
 		Skill level = skillFrom("Catacombs", xp, CATA_XP, 50);
 		int secrets = (int) num(dungeons, "secrets");
@@ -553,7 +594,60 @@ public final class ProfileViewer {
 		out.add(classSkill(classes, "berserk", "Berserk"));
 		out.add(classSkill(classes, "archer", "Archer"));
 		out.add(classSkill(classes, "tank", "Tank"));
-		return new Dungeon(level.level(), level.progress(), secrets, List.copyOf(out));
+		String selected = pretty(string(dungeons, "selected_dungeon_class"));
+		List<Floor> normal = parseFloors(cata, false);
+		List<Floor> masterFloors = parseFloors(master, true);
+		int runs = sumFloors(normal) + sumFloors(masterFloors);
+		if (runs == 0) {
+			runs = sumKeyed(object(cata, "times_played")) + sumKeyed(object(master, "times_played"));
+		}
+		return new Dungeon(level.level(), level.progress(), secrets, List.copyOf(out), selected, runs, List.copyOf(normal), List.copyOf(masterFloors));
+	}
+
+	private static List<Floor> parseFloors(JsonObject type, boolean master) {
+		List<Floor> out = new ArrayList<>();
+		JsonObject completions = object(type, "tier_completions");
+		if (completions == null) {
+			completions = object(type, "milestone_completions");
+		}
+		JsonObject bestS = object(type, "fastest_time_s");
+		JsonObject bestSPlus = object(type, "fastest_time_s_plus");
+		int start = master ? 1 : 0;
+		for (int i = start; i <= 7; i++) {
+			String name = master ? "M" + i : (i == 0 ? "E" : "F" + i);
+			out.add(new Floor(name, keyedInt(completions, i), keyedInt(bestS, i), keyedInt(bestSPlus, i)));
+		}
+		return out;
+	}
+
+	private static int sumFloors(List<Floor> floors) {
+		int total = 0;
+		for (Floor floor : floors) {
+			total += floor.completions();
+		}
+		return total;
+	}
+
+	private static int sumKeyed(JsonObject object) {
+		if (object == null) {
+			return 0;
+		}
+		int total = 0;
+		for (String key : object.keySet()) {
+			total += (int) num(object, key);
+		}
+		return total;
+	}
+
+	private static int keyedInt(JsonObject object, int key) {
+		if (object == null) {
+			return 0;
+		}
+		String raw = String.valueOf(key);
+		if (object.has(raw)) {
+			return (int) num(object, raw);
+		}
+		return (int) num(object, raw + ".0");
 	}
 
 	private static Skill classSkill(JsonObject classes, String key, String name) {
@@ -591,7 +685,39 @@ public final class ProfileViewer {
 		if (glacite == 0L) {
 			glacite = (long) num(core, "powder_glacite_total");
 		}
-		return new Mining(hotm, mithril, gemstone, glacite);
+		return new Mining(hotm, mithril, gemstone, glacite, parsePerks(object(core, "nodes")));
+	}
+
+	private static List<Perk> parsePerks(JsonObject nodes) {
+		List<Perk> out = new ArrayList<>();
+		if (nodes == null) {
+			return out;
+		}
+		for (String key : nodes.keySet()) {
+			if (key == null || key.startsWith("toggle") || key.endsWith("_toggle")) {
+				continue;
+			}
+			int level = nodeLevel(nodes, key);
+			if (level < 0) {
+				continue;
+			}
+			out.add(new Perk(key, pretty(key), level));
+		}
+		return List.copyOf(out);
+	}
+
+	private static int nodeLevel(JsonObject nodes, String key) {
+		if (nodes == null || key == null || !nodes.has(key)) {
+			return 0;
+		}
+		JsonElement value = nodes.get(key);
+		if (value == null || value.isJsonNull()) {
+			return 0;
+		}
+		if (value.isJsonPrimitive() && value.getAsJsonPrimitive().isBoolean()) {
+			return value.getAsBoolean() ? 1 : 0;
+		}
+		return (int) num(nodes, key);
 	}
 
 	private static Farming parseFarming(JsonObject member) {
@@ -604,7 +730,58 @@ public final class ProfileViewer {
 			visitors = (int) num(garden, "unique_visitors");
 		}
 		int level = skillFrom("Garden", num(garden, "garden_experience"), SKILL_XP, 15).level();
-		return new Farming(visitors, level);
+		JsonObject resources = object(garden, "resources_collected");
+		if (resources == null) {
+			resources = object(object(member, "garden"), "resources_collected");
+		}
+		JsonObject collection = object(member, "collection");
+		List<Crop> crops = new ArrayList<>();
+		crops.add(crop("Wheat", cropAmount(resources, collection, "wheat", "WHEAT")));
+		crops.add(crop("Carrot", cropAmount(resources, collection, "carrot", "CARROT_ITEM", "CARROT")));
+		crops.add(crop("Potato", cropAmount(resources, collection, "potato", "POTATO_ITEM", "POTATO")));
+		crops.add(crop("Pumpkin", cropAmount(resources, collection, "pumpkin", "PUMPKIN")));
+		crops.add(crop("Melon", cropAmount(resources, collection, "melon_slice", "melon", "MELON")));
+		crops.add(crop("Mushroom", cropAmount(resources, collection, "mushroom", "MUSHROOM_COLLECTION", "RED_MUSHROOM")));
+		crops.add(crop("Cocoa", cropAmount(resources, collection, "cocoa_beans", "INK_SACK:3", "COCOA")));
+		crops.add(crop("Cactus", cropAmount(resources, collection, "cactus", "CACTUS")));
+		crops.add(crop("Cane", cropAmount(resources, collection, "sugar_cane", "SUGAR_CANE")));
+		crops.add(crop("Wart", cropAmount(resources, collection, "nether_wart", "NETHER_STALK", "NETHER_WART")));
+		return new Farming(visitors, level, List.copyOf(crops));
+	}
+
+	private static long cropAmount(JsonObject resources, JsonObject collection, String gardenKey, String... collectionKeys) {
+		double amount = num(resources, gardenKey);
+		if (amount == 0d && gardenKey != null) {
+			amount = num(resources, gardenKey.toUpperCase(Locale.ROOT));
+		}
+		if (amount == 0d && collection != null) {
+			for (String key : collectionKeys) {
+				amount = num(collection, key);
+				if (amount > 0d) {
+					break;
+				}
+			}
+		}
+		return (long) amount;
+	}
+
+	private static Crop crop(String name, long amount) {
+		int level = 0;
+		for (int i = 1; i < CROP_MILESTONE.length; i++) {
+			if (amount >= CROP_MILESTONE[i]) {
+				level = i;
+			} else {
+				break;
+			}
+		}
+		int cap = CROP_MILESTONE.length - 1;
+		float progress = 1f;
+		if (level < cap) {
+			double from = CROP_MILESTONE[level];
+			double to = CROP_MILESTONE[level + 1];
+			progress = to <= from ? 1f : (float) Math.max(0d, Math.min(1d, (amount - from) / (to - from)));
+		}
+		return new Crop(name, amount, level, cap, progress);
 	}
 
 	private static List<Pet> parsePets(JsonObject member) {
@@ -621,13 +798,13 @@ public final class ProfileViewer {
 				continue;
 			}
 			JsonObject pet = element.getAsJsonObject();
-			String type = pretty(string(pet, "type"));
+			String type = string(pet, "type");
 			if (type.isBlank()) {
 				continue;
 			}
 			String tier = pretty(string(pet, "tier"));
 			int level = petLevel(num(pet, "exp"), tier);
-			out.add(new Pet(type, tier, level, bool(pet, "active")));
+			out.add(new Pet(pretty(type), type, tier, level, bool(pet, "active")));
 		}
 		out.sort(Comparator.comparing((Pet pet) -> !pet.active()).thenComparing(Pet::name));
 		return out;

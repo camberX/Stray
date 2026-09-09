@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.137", new String[]{
+			"Profile viewer drops the extra Skills tab. Combat is Dungeons with floors and classes. Mining shows the HOTM tree, Farm shows crop milestones, and Pets is a preview plus grid. Item slots use the menu theme."
+		}),
 		new Entry("1.2.136", new String[]{
 			"Profile viewer uses the same menu size and scale as the other screens. It no longer stretches across the whole game window."
 		}),
