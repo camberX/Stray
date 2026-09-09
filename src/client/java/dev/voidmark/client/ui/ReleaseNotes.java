@@ -8,6 +8,9 @@ public final class ReleaseNotes {
 	}
 
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.90", new String[]{
+			"The click GUI has a category for each page — World, Combat, ESP, HUD, Bars, Nodes, Mining, Farming, Menus, Status, and Theme — so the rail is no longer four sparse icons."
+		}),
 		new Entry("1.2.89", new String[]{
 			"The selected Control category is more transparent, so it no longer sits as a solid block on the rail."
 		}),

@@ -65,9 +65,16 @@ public class VoidmarkScreen extends Screen {
 	private static final float COG_W = 14;
 
 	private enum Group {
-		VISUALS("VISUALS"),
+		WORLD("WORLD"),
+		COMBAT("COMBAT"),
+		ESP("ESP"),
 		HUD("HUD"),
-		SKYBLOCK("SKYBLOCK"),
+		BARS("BARS"),
+		NODES("NODES"),
+		MINING("MINING"),
+		FARMING("FARMING"),
+		MENUS("MENUS"),
+		STATUS("STATUS"),
 		PLAYER("PLAYER"),
 		THEME("THEME");
 
@@ -79,16 +86,16 @@ public class VoidmarkScreen extends Screen {
 	}
 
 	private enum Tab {
-		WORLD("World", Group.VISUALS),
-		COMBAT("Combat", Group.VISUALS),
-		ESP("ESP", Group.VISUALS),
+		WORLD("World", Group.WORLD),
+		COMBAT("Combat", Group.COMBAT),
+		ESP("ESP", Group.ESP),
 		OVERLAY("Overlay", Group.HUD),
-		BARS("Bars", Group.HUD),
-		NODES("Nodes", Group.SKYBLOCK),
-		MINING("Mining", Group.SKYBLOCK),
-		FARMING("Farming", Group.SKYBLOCK),
-		MENUS("Menus", Group.SKYBLOCK),
-		STATUS("Status", Group.SKYBLOCK),
+		BARS("Bars", Group.BARS),
+		NODES("Nodes", Group.NODES),
+		MINING("Mining", Group.MINING),
+		FARMING("Farming", Group.FARMING),
+		MENUS("Menus", Group.MENUS),
+		STATUS("Status", Group.STATUS),
 		PLAYER("Player", Group.PLAYER),
 		SETTINGS("Theme", Group.THEME);
 
@@ -566,9 +573,13 @@ public class VoidmarkScreen extends Screen {
 				continue;
 			}
 			if (value.group != last) {
-				y += 4;
-				GuiDraw.small(graphics, font, value.group.label, windowX + 10, y, Theme.HEADER);
-				y += 9;
+				if (groupSize(value.group) > 1) {
+					y += 4;
+					GuiDraw.small(graphics, font, value.group.label, windowX + 10, y, Theme.HEADER);
+					y += 9;
+				} else if (last != null) {
+					y += 2;
+				}
 				last = value.group;
 			}
 			rowY[value.ordinal()] = y;
@@ -1006,32 +1017,54 @@ public class VoidmarkScreen extends Screen {
 		ControlChrome.rail(graphics, railX, railY, railW, railH);
 		hits.add(new Hit(windowX, windowY, sidebarW(), windowH, mx -> startDrag(mx, lastClickY), true));
 
-		Group[] groups = {Group.VISUALS, Group.HUD, Group.SKYBLOCK, Group.THEME};
-		String[] glyphs = {MenuFont.FLAG, MenuFont.EYE, MenuFont.CUBE, MenuFont.SETTINGS};
-		float slot = 38;
-		float iy = railY + 12;
-		for (int i = 0; i < groups.length; i++) {
-			Group group = groups[i];
+		Group[] groups = {
+			Group.WORLD, Group.COMBAT, Group.ESP, Group.HUD, Group.BARS,
+			Group.NODES, Group.MINING, Group.FARMING, Group.MENUS, Group.STATUS, Group.THEME
+		};
+		float top = 8f;
+		float slot = Math.min(36f, (railH - top * 2f) / groups.length);
+		float iy = railY + top;
+		for (Group group : groups) {
 			boolean on = tab.group == group;
 			boolean hover = GuiDraw.hovered(mouseX, mouseY, railX + 4, iy, railW - 8, slot);
 			float t = anim("cc-nav-" + group.name(), on || hover ? 1f : 0f);
 			if (t > 0.02f) {
 				float px = railX + 6;
-				float py = iy + 2;
+				float py = iy + 1;
 				float pw = railW - 12;
-				float ph = slot - 4;
-				float pr = 12;
+				float ph = slot - 2;
+				float pr = Math.min(11f, ph * 0.5f);
 				int fill = on ? ControlChrome.selectedFill() : Anim.fade(ControlChrome.selectedFill(), t * 0.45f);
 				GuiDraw.rounded(graphics, px, py, pw, ph, pr, fill);
 				if (on) {
 					ControlChrome.rim(graphics, px, py, pw, ph, pr);
 				}
 			}
+			String glyph = groupGlyph(group);
 			int icon = ControlChrome.text();
-			GuiDraw.icon(graphics, font, glyphs[i], railX + (railW - GuiDraw.iconWidth(font, glyphs[i])) * 0.5f, GuiDraw.middle(iy, slot), icon);
+			GuiDraw.icon(graphics, font, glyph, railX + (railW - GuiDraw.iconWidth(font, glyph)) * 0.5f, GuiDraw.middle(iy, slot), icon);
 			hits.add(new Hit(railX + 4, iy, railW - 8, slot, () -> openControlGroup(group)));
 			iy += slot;
 		}
+	}
+
+	private static int groupSize(Group group) {
+		int count = 0;
+		for (Tab value : Tab.values()) {
+			if (value.group == group) {
+				count++;
+			}
+		}
+		return count;
+	}
+
+	private static String groupGlyph(Group group) {
+		for (Tab value : Tab.values()) {
+			if (value.group == group) {
+				return tabGlyph(value);
+			}
+		}
+		return MenuFont.SETTINGS;
 	}
 
 	private void openControlGroup(Group group) {
@@ -1141,8 +1174,8 @@ public class VoidmarkScreen extends Screen {
 			case OVERLAY -> MenuFont.MONITOR;
 			case BARS -> MenuFont.HUD;
 			case NODES -> MenuFont.CUBE;
-			case MINING -> MenuFont.CUBE;
-			case FARMING -> MenuFont.CUBE;
+			case MINING -> MenuFont.SAVE;
+			case FARMING -> MenuFont.CLOUD;
 			case MENUS -> MenuFont.BAG;
 			case STATUS -> MenuFont.SIGNAL;
 			case PLAYER -> MenuFont.PERSON;
@@ -2510,7 +2543,7 @@ public class VoidmarkScreen extends Screen {
 		return FabricLoader.getInstance()
 			.getModContainer("voidmark")
 			.map(container -> container.getMetadata().getVersion().getFriendlyString())
-			.orElse("1.2.89");
+			.orElse("1.2.90");
 	}
 
 	@Override
