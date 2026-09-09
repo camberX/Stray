@@ -1,5 +1,6 @@
 package dev.voidmark.client.mixin;
 
+import dev.voidmark.client.combat.AutoExperiments;
 import dev.voidmark.client.combat.Triggerbot;
 import dev.voidmark.client.render.MobGlowRenderer;
 import dev.voidmark.client.ui.LoadoutsScreen;
@@ -24,6 +25,11 @@ public class MinecraftMixin {
 			return new VoidmarkTitleScreen();
 		}
 		return WardrobeScreen.wrap(LoadoutsScreen.wrap(screen));
+	}
+
+	@Inject(method = "setScreen", at = @At("HEAD"))
+	private void voidmark$autoExperimentsOpen(Screen screen, CallbackInfo ci) {
+		AutoExperiments.onOpen(screen);
 	}
 
 	/**

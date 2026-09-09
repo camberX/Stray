@@ -93,6 +93,26 @@ public final class VoidmarkConfig {
 	public boolean triggerbotEnabled = false;
 	public boolean triggerbotPlayers = false;
 	public float triggerbotHumanize = 0.50f;
+	public boolean autoClickerEnabled = false;
+	public boolean autoClickerWhiteListOnly = false;
+	public boolean autoClickerAllowBreaking = false;
+	public boolean autoClickerBlockBreaker = true;
+	public boolean autoClickerTerminatorOnly = true;
+	public float autoClickerCps = 5.0f;
+	public boolean autoClickerEnableLeftClick = true;
+	public boolean autoClickerEnableRightClick = true;
+	public float autoClickerLeftCps = 5.0f;
+	public float autoClickerRightCps = 5.0f;
+	public String autoClickerLeftKey = "key.keyboard.unknown";
+	public String autoClickerRightKey = "key.keyboard.unknown";
+	public java.util.List<String> autoClickerLeftWhitelist = new java.util.ArrayList<>();
+	public java.util.List<String> autoClickerRightWhitelist = new java.util.ArrayList<>();
+	public boolean autoExperimentsEnabled = false;
+	public int autoExperimentsClickDelay = 200;
+	public int autoExperimentsDelayVariety = 50;
+	public boolean autoExperimentsAutoClose = true;
+	public int autoExperimentsSerumCount = 0;
+	public boolean autoExperimentsGetMaxXp = false;
 	public float hitmarkerScale = 1.00f;
 	public float hitsoundVolume = 0.80f;
 	public float hitsoundPitch = 1.00f;
@@ -508,6 +528,42 @@ public final class VoidmarkConfig {
 				if (!json.has("triggerbotPlayers")) {
 					loaded.triggerbotPlayers = false;
 				}
+				if (!json.has("autoClickerEnabled")) {
+					loaded.autoClickerEnabled = false;
+				}
+				if (!json.has("autoExperimentsEnabled")) {
+					loaded.autoExperimentsEnabled = false;
+				}
+				loaded.autoClickerCps = json.has("autoClickerCps")
+					? clamp(loaded.autoClickerCps, 3.0f, 15.0f)
+					: 5.0f;
+				loaded.autoClickerLeftCps = json.has("autoClickerLeftCps")
+					? clamp(loaded.autoClickerLeftCps, 3.0f, 15.0f)
+					: 5.0f;
+				loaded.autoClickerRightCps = json.has("autoClickerRightCps")
+					? clamp(loaded.autoClickerRightCps, 3.0f, 15.0f)
+					: 5.0f;
+				if (loaded.autoClickerLeftKey == null || loaded.autoClickerLeftKey.isBlank()) {
+					loaded.autoClickerLeftKey = "key.keyboard.unknown";
+				}
+				if (loaded.autoClickerRightKey == null || loaded.autoClickerRightKey.isBlank()) {
+					loaded.autoClickerRightKey = "key.keyboard.unknown";
+				}
+				if (loaded.autoClickerLeftWhitelist == null) {
+					loaded.autoClickerLeftWhitelist = new java.util.ArrayList<>();
+				}
+				if (loaded.autoClickerRightWhitelist == null) {
+					loaded.autoClickerRightWhitelist = new java.util.ArrayList<>();
+				}
+				loaded.autoExperimentsClickDelay = json.has("autoExperimentsClickDelay")
+					? Math.round(clamp(loaded.autoExperimentsClickDelay, 100, 1000))
+					: 200;
+				loaded.autoExperimentsDelayVariety = json.has("autoExperimentsDelayVariety")
+					? Math.round(clamp(loaded.autoExperimentsDelayVariety, 0, 1000))
+					: 50;
+				loaded.autoExperimentsSerumCount = json.has("autoExperimentsSerumCount")
+					? Math.round(clamp(loaded.autoExperimentsSerumCount, 0, 3))
+					: 0;
 				if (!json.has("heldItemShaderEnabled")) {
 					loaded.heldItemShaderEnabled = false;
 				}
@@ -733,7 +789,7 @@ public final class VoidmarkConfig {
 		String name = tab.trim().toUpperCase(java.util.Locale.ROOT);
 		return switch (name) {
 			case "WORLD", "VIEW", "FOG", "CAMERA" -> "WORLD";
-			case "COMBAT", "HITSOUND", "TRIGGERBOT" -> "COMBAT";
+			case "COMBAT", "HITSOUND", "TRIGGERBOT", "AUTOCLICKER", "AUTOEXPERIMENTS" -> "COMBAT";
 			case "ESP", "MOBS" -> "ESP";
 			case "OVERLAY", "DISPLAY", "INVENTORY", "HUD" -> "OVERLAY";
 			case "BARS" -> "BARS";

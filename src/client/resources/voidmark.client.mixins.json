@@ -30,6 +30,7 @@
 		"ItemFeatureRendererMixin",
 		"ItemModelResolverMixin",
 		"ItemStackMixin",
+		"KeyMappingAccessor",
 		"LightmapRenderStateExtractorMixin",
 		"LivingEntityRendererMixin",
 		"MinecraftMixin",

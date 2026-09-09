@@ -4,6 +4,9 @@ import com.mojang.blaze3d.platform.InputConstants;
 import com.mojang.brigadier.Command;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import dev.voidmark.Voidmark;
+import dev.voidmark.client.combat.AutoClicker;
+import dev.voidmark.client.combat.AutoClickerCommands;
+import dev.voidmark.client.combat.AutoExperiments;
 import dev.voidmark.client.combat.Hitmarker;
 import dev.voidmark.client.combat.Hitsound;
 import dev.voidmark.client.combat.Triggerbot;
@@ -179,11 +182,14 @@ public final class VoidmarkClient implements ClientModInitializer {
 			dispatcher.register(ClientCommands.literal("ld").executes(context -> LoadoutsCommands.open()));
 			dispatcher.register(ClientCommands.literal("wardrobe").executes(context -> WardrobeCommands.open()));
 			dispatcher.register(ClientCommands.literal("wd").executes(context -> WardrobeCommands.open()));
+			dispatcher.register(AutoClickerCommands.command());
 		});
 
 		ClientTickEvents.START_CLIENT_TICK.register(client -> {
 			FarmKeys.tick(client);
 			ChestAimer.tick(client);
+			AutoClicker.tick(client);
+			AutoExperiments.tick(client);
 			if (itemAppearancesLoaded) {
 				return;
 			}
@@ -253,6 +259,8 @@ public final class VoidmarkClient implements ClientModInitializer {
 			Hitsound.reset();
 			Hitmarker.reset();
 			Triggerbot.reset();
+			AutoClicker.reset();
+			AutoExperiments.reset();
 			PickupLogRenderer.clear();
 			JacobContestTracker.reset();
 			FakeBan.onJoin();
@@ -265,6 +273,8 @@ public final class VoidmarkClient implements ClientModInitializer {
 			Hitsound.reset();
 			Hitmarker.reset();
 			Triggerbot.reset();
+			AutoClicker.reset();
+			AutoExperiments.reset();
 			PickupLogRenderer.clear();
 			JacobContestTracker.reset();
 			EnderNodeTracker.get().clear();

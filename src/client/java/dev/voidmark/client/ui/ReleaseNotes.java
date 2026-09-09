@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.111", new String[]{
+			"Auto clicker and Auto experiments match OdinClient, including Terminator CPS and experiment slot order."
+		}),
 		new Entry("1.2.110", new String[]{
 			"Player fill ESP covers armor again, without breaking backpacks or glint layers."
 		}),
