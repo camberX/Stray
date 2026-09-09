@@ -210,7 +210,8 @@ public final class StrayConfig {
 	public int nametagRange = 128;
 	public float nametagScale = 1.0f;
 	public float nametagOpacity = 1.0f;
-	public float menuScale = 1.0f;
+	public float menuScale = 0.75f;
+	public boolean menuScaleV2;
 	public boolean menuStarfield = false;
 	public boolean hudStarfield = false;
 	public String guiDesign = "stray";
@@ -427,6 +428,13 @@ public final class StrayConfig {
 				loaded.nametagOpacity = loaded.nametagOpacity <= 0f ? 1.0f : clamp(loaded.nametagOpacity, 0.15f, 1f);
 				loaded.nametagStyle = normalizeNametagStyle(loaded.nametagStyle);
 				loaded.menuScale = normalizeMenuScale(loaded.menuScale);
+				boolean migratedMenuScale = !loaded.menuScaleV2;
+				if (migratedMenuScale) {
+					if (!json.has("menuScale") || Math.abs(loaded.menuScale - 1.00f) < 0.01f) {
+						loaded.menuScale = 0.75f;
+					}
+					loaded.menuScaleV2 = true;
+				}
 				loaded.guiDesign = normalizeGuiDesign(loaded.guiDesign);
 				if (loaded.controlPaneRgb == 0) {
 					loaded.controlPaneRgb = 0xFFFFFF;
@@ -679,7 +687,7 @@ public final class StrayConfig {
 					? 0.90f
 					: clamp(loaded.hudOpacity, 0.20f, 1f);
 				instance = loaded;
-				if (dropCapeServerUrl || !path.equals(PATH)) {
+				if (dropCapeServerUrl || migratedMenuScale || !path.equals(PATH)) {
 					instance.save();
 				}
 			}
@@ -866,10 +874,10 @@ public final class StrayConfig {
 
 	public static float normalizeMenuScale(float value) {
 		if (value <= 0f) {
-			return 1.0f;
+			return 0.75f;
 		}
 		float[] steps = {1.00f, 0.90f, 0.75f, 0.50f};
-		float best = 1.00f;
+		float best = 0.75f;
 		float err = Float.MAX_VALUE;
 		for (float step : steps) {
 			float d = Math.abs(value - step);

@@ -372,9 +372,6 @@ public class StrayScreen extends Screen {
 	private float pageClipW;
 	private float pageClipH;
 	private boolean contentHitMode;
-	private float previewYaw = 18f;
-	private float previewPitch = -8f;
-	private boolean previewDrag;
 	private float previewX;
 	private float previewY;
 	private float previewW;
@@ -898,15 +895,6 @@ public class StrayScreen extends Screen {
 		}
 	}
 
-	private void spinPreview() {
-		if (!previewDrag) {
-			previewYaw += dt * 22f;
-			if (previewYaw > 360f || previewYaw < -360f) {
-				previewYaw %= 360f;
-			}
-		}
-	}
-
 	private void drawPlayerTab(GuiGraphicsExtractor graphics, Font font, int mouseX, int mouseY) {
 		float left = contentX();
 		float top = windowY + toolbarH() + 6;
@@ -917,20 +905,18 @@ public class StrayScreen extends Screen {
 		StrayConfig config = StrayConfig.get();
 		float modelH = windowY + windowH - PAD - top;
 		featureCard(graphics, font, left, top, col, modelH, "You");
-		spinPreview();
 		previewX = ix;
 		previewY = top + CARD_HEAD;
 		previewW = iw;
 		previewH = Math.max(48, modelH - cardTop() - cardHead() - cardPad());
-		boolean previewHover = GuiDraw.hovered(mouseX, mouseY, previewX, previewY, previewW, previewH);
 		PlayerPreview.Drawn drawn = PlayerPreview.draw(
 			graphics,
 			previewX,
 			previewY,
 			previewW,
 			previewH,
-			previewYaw,
-			previewPitch,
+			0f,
+			0f,
 			new PlayerPreview.View(viewScale, viewCx, viewCy, viewLift)
 		);
 		NickHider.suppress();
@@ -945,15 +931,11 @@ public class StrayScreen extends Screen {
 				PlayerFaceExtractor.extractRenderState(graphics, skin, fx, fy, face);
 				NametagRenderer.drawVanilla(graphics, font, previewX + previewW * 0.5f, fy - 12, tag);
 			} else {
-				GuiDraw.menu(graphics, font, "Join a world to rotate", previewX + 4, previewY + previewH - 16, Theme.MUTED);
+				GuiDraw.menu(graphics, font, "Join a world to preview", previewX + 4, previewY + previewH - 16, Theme.MUTED);
 			}
 		} else {
 			NametagRenderer.drawVanilla(graphics, font, drawn.nameX(), drawn.nameY(), tag);
 		}
-		if (previewHover) {
-			GuiDraw.small(graphics, font, "Drag to rotate", previewX + 4, previewY + previewH - 12, Theme.MUTED);
-		}
-		hits.add(new Hit(previewX, previewY, previewW, previewH, () -> previewDrag = true));
 
 		float nickH = cardHeight(1) + 56;
 		float y = featureCard(graphics, font, right, top, col, nickH, "Nick");
@@ -3056,7 +3038,7 @@ public class StrayScreen extends Screen {
 		return FabricLoader.getInstance()
 			.getModContainer("stray")
 			.map(container -> container.getMetadata().getVersion().getFriendlyString())
-			.orElse("1.2.130");
+			.orElse("1.2.131");
 	}
 
 	@Override
@@ -3124,11 +3106,6 @@ public class StrayScreen extends Screen {
 
 	@Override
 	public boolean mouseDragged(MouseButtonEvent event, double dx, double dy) {
-		if (event.button() == 0 && previewDrag) {
-			previewYaw += (float) dx * 0.7f;
-			previewPitch = Mth.clamp(previewPitch - (float) dy * 0.45f, -35f, 35f);
-			return true;
-		}
 		if (event.button() == 0 && dragging) {
 			windowX = localX(event.x()) - (float) dragOffX;
 			windowY = localY(event.y()) - (float) dragOffY;
@@ -3151,7 +3128,6 @@ public class StrayScreen extends Screen {
 
 	@Override
 	public boolean mouseReleased(MouseButtonEvent event) {
-		previewDrag = false;
 		if (dragging && moved) {
 			persistMenuPosition();
 		}
