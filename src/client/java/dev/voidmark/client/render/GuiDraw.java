@@ -671,7 +671,7 @@ public final class GuiDraw {
 	}
 
 	public static void text(GuiGraphicsExtractor graphics, Font font, Component value, float x, float y, float scale, int color, boolean shadow) {
-		if (scale >= 0.999f) {
+		if (Math.abs(scale - 1.0f) < 0.001f) {
 			text(graphics, font, value, x, y, color, shadow);
 			return;
 		}
@@ -711,7 +711,11 @@ public final class GuiDraw {
 	}
 
 	public static void icon(GuiGraphicsExtractor graphics, Font font, String glyph, float x, float y, int color) {
-		text(graphics, font, MenuFont.icon(glyph), x, y + 0.5f, color, false);
+		icon(graphics, font, glyph, x, y, 1.0f, color);
+	}
+
+	public static void icon(GuiGraphicsExtractor graphics, Font font, String glyph, float x, float y, float scale, int color) {
+		text(graphics, font, MenuFont.icon(glyph), x, y + 0.5f * scale, scale, color, false);
 	}
 
 	public static float middle(float y, float height) {
@@ -720,6 +724,10 @@ public final class GuiDraw {
 
 	public static int iconWidth(Font font, String glyph) {
 		return font.width(MenuFont.icon(glyph));
+	}
+
+	public static float iconWidth(Font font, String glyph, float scale) {
+		return iconWidth(font, glyph) * scale;
 	}
 
 	public static int menuWidth(Font font, String value) {

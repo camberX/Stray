@@ -8,6 +8,9 @@ public final class ReleaseNotes {
 	}
 
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.94", new String[]{
+			"Category icons on the click-GUI rail are larger."
+		}),
 		new Entry("1.2.93", new String[]{
 			"Aspect ratio now uses that FOV to cull the world, so terrain and entities outside it are not drawn. The black bars are gone."
 		}),

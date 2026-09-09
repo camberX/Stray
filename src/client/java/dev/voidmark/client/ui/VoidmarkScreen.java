@@ -54,6 +54,8 @@ public class VoidmarkScreen extends Screen {
 	private static final float CARD_HEAD = 20;
 	private static final float ACTION_W = 54;
 	private static final float ICON_SLOT = 14;
+	private static final float CATEGORY_ICON = 1.85f;
+	private static final float CATEGORY_ICON_LINE = 9.0f;
 	private static final float PICKER_W = 132;
 	private static final float PICKER_H = 122;
 	private static final float PANEL_W = 168;
@@ -610,8 +612,17 @@ public class VoidmarkScreen extends Screen {
 				GuiDraw.rounded(graphics, windowX + 6, row, SIDEBAR_W - 12, 16, 8, Anim.fade(0x18FFFFFF, hover));
 			}
 			float labelY = GuiDraw.middle(row, 16);
-			GuiDraw.icon(graphics, font, tabGlyph(value), windowX + 11, labelY, on ? Theme.TEXT : Theme.ACCENT);
-			GuiDraw.menu(graphics, font, value.label, windowX + 24, labelY, on ? Theme.TEXT : Theme.MUTED);
+			float iconH = CATEGORY_ICON_LINE * CATEGORY_ICON;
+			GuiDraw.icon(
+				graphics,
+				font,
+				tabGlyph(value),
+				windowX + 9,
+				row + (16 - iconH) * 0.5f,
+				CATEGORY_ICON,
+				on ? Theme.TEXT : Theme.ACCENT
+			);
+			GuiDraw.menu(graphics, font, value.label, windowX + 27, labelY, on ? Theme.TEXT : Theme.MUTED);
 		}
 
 		GuiDraw.fill(graphics, windowX + 8, footY - 5, SIDEBAR_W - 16, 1, Theme.ACCENT);
@@ -1042,7 +1053,17 @@ public class VoidmarkScreen extends Screen {
 			}
 			String glyph = groupGlyph(group);
 			int icon = ControlChrome.text();
-			GuiDraw.icon(graphics, font, glyph, railX + (railW - GuiDraw.iconWidth(font, glyph)) * 0.5f, GuiDraw.middle(iy, slot), icon);
+			float iconH = CATEGORY_ICON_LINE * CATEGORY_ICON;
+			float iconW = GuiDraw.iconWidth(font, glyph, CATEGORY_ICON);
+			GuiDraw.icon(
+				graphics,
+				font,
+				glyph,
+				railX + (railW - iconW) * 0.5f,
+				iy + (slot - iconH) * 0.5f,
+				CATEGORY_ICON,
+				icon
+			);
 			hits.add(new Hit(railX + 4, iy, railW - 8, slot, () -> openControlGroup(group)));
 			iy += slot;
 		}
@@ -2543,7 +2564,7 @@ public class VoidmarkScreen extends Screen {
 		return FabricLoader.getInstance()
 			.getModContainer("voidmark")
 			.map(container -> container.getMetadata().getVersion().getFriendlyString())
-			.orElse("1.2.93");
+			.orElse("1.2.94");
 	}
 
 	@Override
