@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.134", new String[]{
+			"Profile viewer tabs have icons. Items is the second tab and draws inventory, Ender Chest, and backpacks as slot grids. Skills also sit on Home."
+		}),
 		new Entry("1.2.133", new String[]{
 			"Stray has its own Skyblock profile viewer. /pv or /pv name opens it."
 		}),

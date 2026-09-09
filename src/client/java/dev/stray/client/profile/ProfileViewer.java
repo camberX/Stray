@@ -107,7 +107,53 @@ public final class ProfileViewer {
 	public record Pet(String name, String tier, int level, boolean active) {
 	}
 
-	public record SlotItem(String name, int count) {
+	public record SlotItem(int slot, String id, String name, int count) {
+		public static SlotItem empty(int slot) {
+			return new SlotItem(slot, "", "", 0);
+		}
+
+		public boolean empty() {
+			return (id == null || id.isBlank()) && (name == null || name.isBlank());
+		}
+	}
+
+	public record Bag(String name, int columns, List<SlotItem> slots) {
+		public int size() {
+			return slots == null ? 0 : slots.size();
+		}
+
+		public int rows() {
+			int cols = Math.max(1, columns);
+			return Math.max(1, (int) Math.ceil(size() / (double) cols));
+		}
+
+		public SlotItem at(int index) {
+			if (slots == null || index < 0 || index >= slots.size()) {
+				return SlotItem.empty(index);
+			}
+			SlotItem item = slots.get(index);
+			return item == null ? SlotItem.empty(index) : item;
+		}
+
+		public static Bag empty(String name, int columns, int size) {
+			List<SlotItem> slots = new ArrayList<>();
+			for (int i = 0; i < Math.max(0, size); i++) {
+				slots.add(SlotItem.empty(i));
+			}
+			return new Bag(name, columns, List.copyOf(slots));
+		}
+
+		public boolean vacant() {
+			if (slots == null) {
+				return true;
+			}
+			for (SlotItem item : slots) {
+				if (item != null && !item.empty()) {
+					return false;
+				}
+			}
+			return true;
+		}
 	}
 
 	public record Collection(String name, long amount) {
@@ -131,8 +177,10 @@ public final class ProfileViewer {
 		Mining mining,
 		Farming farming,
 		List<Pet> pets,
-		List<SlotItem> inventory,
-		List<SlotItem> armor,
+		Bag inventory,
+		Bag armor,
+		List<Bag> ender,
+		List<Bag> backpacks,
 		List<Collection> collections
 	) {
 		public static Profile empty(String cuteName) {
@@ -154,6 +202,8 @@ public final class ProfileViewer {
 				Mining.empty(),
 				Farming.empty(),
 				List.of(),
+				Bag.empty("Inventory", 9, 36),
+				Bag.empty("Armor", 1, 4),
 				List.of(),
 				List.of(),
 				List.of()
@@ -405,14 +455,10 @@ public final class ProfileViewer {
 		Farming farming = parseFarming(member);
 		List<Pet> pets = parsePets(member);
 		JsonObject inventory = object(member, "inventory");
-		List<SlotItem> inv = parseItems(inventory, "inv_contents");
-		if (inv.isEmpty()) {
-			inv = parseItems(member, "inv_contents");
-		}
-		List<SlotItem> armor = parseItems(inventory, "inv_armor");
-		if (armor.isEmpty()) {
-			armor = parseItems(member, "inv_armor");
-		}
+		Bag inv = parseBag("Inventory", first(inventory, member, "inv_contents"), 9, 36);
+		Bag armor = parseBag("Armor", first(inventory, member, "inv_armor"), 1, 4);
+		List<Bag> ender = parseEnder(inventory, member);
+		List<Bag> backpacks = parseBackpacks(inventory, member);
 		List<Collection> collections = parseCollections(member);
 
 		String cute = string(profile, "cute_name");
@@ -441,8 +487,10 @@ public final class ProfileViewer {
 			mining,
 			farming,
 			List.copyOf(pets),
-			List.copyOf(inv),
-			List.copyOf(armor),
+			inv,
+			armor,
+			List.copyOf(ender),
+			List.copyOf(backpacks),
 			List.copyOf(collections)
 		);
 	}
@@ -570,51 +618,267 @@ public final class ProfileViewer {
 		return out;
 	}
 
-	private static List<SlotItem> parseItems(JsonObject parent, String key) {
-		List<SlotItem> out = new ArrayList<>();
-		if (parent == null) {
-			return out;
+	private static JsonElement first(JsonObject primary, JsonObject fallback, String key) {
+		if (primary != null && primary.has(key)) {
+			return primary.get(key);
 		}
-		CompoundTag tag = readNbt(data(parent.get(key)));
-		if (tag == null) {
-			tag = readNbt(data(parent.get(key + "_data")));
+		if (fallback != null && fallback.has(key)) {
+			return fallback.get(key);
 		}
-		if (tag == null) {
-			return out;
+		if (primary != null && primary.has(key + "_data")) {
+			return primary.get(key + "_data");
 		}
-		walkItems(tag, out);
+		if (fallback != null && fallback.has(key + "_data")) {
+			return fallback.get(key + "_data");
+		}
+		return null;
+	}
+
+	private static List<Bag> parseEnder(JsonObject inventory, JsonObject member) {
+		JsonElement element = first(inventory, member, "ender_chest_contents");
+		if (element == null) {
+			element = first(inventory, member, "enderchest_contents");
+		}
+		if (element == null) {
+			element = named(inventory, member, "ender_chest", "enderchest");
+		}
+		Bag all = parseBag("Ender Chest", element, 9, 45);
+		if (all.vacant()) {
+			return List.of();
+		}
+		return paginate(all, 45, "Ender");
+	}
+
+	private static List<Bag> parseBackpacks(JsonObject inventory, JsonObject member) {
+		List<Bag> out = new ArrayList<>();
+		JsonObject bags = object(inventory, "backpack_contents");
+		if (bags == null) {
+			bags = object(member, "backpack_contents");
+		}
+		if (bags == null) {
+			bags = object(inventory, "backpacks");
+		}
+		if (bags == null) {
+			bags = object(member, "backpacks");
+		}
+		if (bags != null) {
+			List<String> keys = new ArrayList<>(bags.keySet());
+			keys.sort((a, b) -> Integer.compare(indexKey(a), indexKey(b)));
+			int n = 1;
+			for (String key : keys) {
+				if (key != null && key.toLowerCase(Locale.ROOT).contains("icon")) {
+					continue;
+				}
+				Bag bag = parseBag("Backpack " + n, bags.get(key), 9, 45);
+				if (!bag.vacant()) {
+					out.add(bag);
+					n++;
+				}
+			}
+		}
+		if (out.isEmpty()) {
+			for (JsonObject parent : new JsonObject[]{inventory, member}) {
+				if (parent == null) {
+					continue;
+				}
+				for (String key : parent.keySet()) {
+					if (!backpackKey(key)) {
+						continue;
+					}
+					Bag bag = parseBag("Backpack " + (out.size() + 1), parent.get(key), 9, 45);
+					if (!bag.vacant()) {
+						out.add(bag);
+					}
+				}
+			}
+		}
 		return out;
 	}
 
-	private static void walkItems(Tag tag, List<SlotItem> out) {
-		if (tag == null || out.size() >= 54) {
-			return;
-		}
-		if (tag instanceof ListTag list) {
-			for (Tag child : list) {
-				walkItems(child, out);
+	private static JsonElement named(JsonObject primary, JsonObject fallback, String... needles) {
+		for (JsonObject parent : new JsonObject[]{primary, fallback}) {
+			if (parent == null) {
+				continue;
 			}
-			return;
-		}
-		if (!(tag instanceof CompoundTag compound)) {
-			return;
-		}
-		if (looksLikeItem(compound)) {
-			String name = itemLabel(compound);
-			int count = Math.max(1, (int) num(compound, "Count"));
-			if (count == 1) {
-				count = Math.max(1, (int) num(compound, "count"));
-			}
-			if (!name.isBlank()) {
-				out.add(new SlotItem(name, count));
-			}
-			return;
-		}
-		for (String key : compound.keySet()) {
-			if ("i".equals(key) || "Items".equals(key) || "items".equals(key) || "inventory".equals(key)) {
-				walkItems(compound.get(key), out);
+			for (String key : parent.keySet()) {
+				String lower = key.toLowerCase(Locale.ROOT);
+				for (String needle : needles) {
+					if (lower.contains(needle) && !lower.contains("icon")) {
+						return parent.get(key);
+					}
+				}
 			}
 		}
+		return null;
+	}
+
+	private static boolean backpackKey(String key) {
+		if (key == null) {
+			return false;
+		}
+		String lower = key.toLowerCase(Locale.ROOT);
+		if (lower.contains("icon")) {
+			return false;
+		}
+		return lower.contains("backpack_contents")
+			|| lower.contains("backpack_content")
+			|| (lower.contains("backpack") && lower.contains("content"));
+	}
+
+	private static int indexKey(String key) {
+		if (key == null) {
+			return Integer.MAX_VALUE;
+		}
+		try {
+			return Integer.parseInt(key.replaceAll("[^0-9]", "").isBlank() ? "999" : key.replaceAll("[^0-9]", ""));
+		} catch (NumberFormatException ignored) {
+			return Integer.MAX_VALUE;
+		}
+	}
+
+	private static List<Bag> paginate(Bag bag, int pageSize, String label) {
+		int size = bag.size();
+		if (size <= pageSize) {
+			return List.of(new Bag(label, bag.columns(), bag.slots()));
+		}
+		List<Bag> pages = new ArrayList<>();
+		int pagesN = (int) Math.ceil(size / (double) pageSize);
+		for (int p = 0; p < pagesN; p++) {
+			List<SlotItem> slice = new ArrayList<>();
+			for (int i = 0; i < pageSize; i++) {
+				SlotItem item = bag.at(p * pageSize + i);
+				slice.add(new SlotItem(i, item.id(), item.name(), item.count()));
+			}
+			pages.add(new Bag(label + " " + (p + 1), bag.columns(), List.copyOf(slice)));
+		}
+		return pages;
+	}
+
+	private static Bag parseBag(String name, JsonElement element, int columns, int fallbackSize) {
+		if (element == null || element.isJsonNull()) {
+			return Bag.empty(name, columns, fallbackSize);
+		}
+		CompoundTag tag = readNbt(data(element));
+		if (tag == null && element.isJsonObject()) {
+			tag = readNbt(data(element.getAsJsonObject().get("data")));
+		}
+		List<SlotItem> raw = parseSlotList(tag);
+		int size = paddedSize(raw, fallbackSize, columns);
+		return new Bag(name, columns, padSlots(raw, size));
+	}
+
+	private static List<SlotItem> parseSlotList(CompoundTag root) {
+		List<SlotItem> out = new ArrayList<>();
+		if (root == null) {
+			return out;
+		}
+		Tag items = root.get("i");
+		if (items == null) {
+			items = root.get("Items");
+		}
+		if (items == null) {
+			items = root.get("items");
+		}
+		if (items == null && looksLikeItem(root)) {
+			SlotItem item = slotItem(root, 0);
+			if (!item.empty()) {
+				out.add(item);
+			}
+			return out;
+		}
+		if (!(items instanceof ListTag list)) {
+			for (String key : root.keySet()) {
+				if ("i".equals(key) || "Items".equals(key) || "items".equals(key) || "inventory".equals(key)) {
+					return parseSlotList(root.get(key) instanceof CompoundTag child ? child : root);
+				}
+			}
+			return out;
+		}
+		for (int i = 0; i < list.size() && i < 512; i++) {
+			Tag child = list.get(i);
+			if (!(child instanceof CompoundTag compound) || compound.isEmpty()) {
+				continue;
+			}
+			SlotItem item = slotItem(compound, i);
+			if (!item.empty()) {
+				out.add(item);
+			}
+		}
+		return out;
+	}
+
+	private static SlotItem slotItem(CompoundTag compound, int index) {
+		if (isAir(compound)) {
+			return SlotItem.empty(index);
+		}
+		int slot = index;
+		if (compound.contains("Slot")) {
+			slot = (int) num(compound, "Slot");
+		} else if (compound.contains("slot")) {
+			slot = (int) num(compound, "slot");
+		}
+		String id = itemId(compound);
+		String name = itemLabel(compound);
+		if ((id == null || id.isBlank()) && (name == null || name.isBlank())) {
+			return SlotItem.empty(slot);
+		}
+		int count = Math.max(1, (int) num(compound, "Count"));
+		if (count == 1) {
+			count = Math.max(1, (int) num(compound, "count"));
+		}
+		return new SlotItem(slot, id == null ? "" : id, name, count);
+	}
+
+	private static boolean isAir(CompoundTag tag) {
+		String id = tag.getStringOr("id", "");
+		return id.equalsIgnoreCase("minecraft:air") || id.equalsIgnoreCase("air");
+	}
+
+	private static String itemId(CompoundTag tag) {
+		CompoundTag extra = tag.getCompoundOrEmpty("tag").getCompoundOrEmpty("ExtraAttributes");
+		if (extra.isEmpty()) {
+			extra = tag.getCompoundOrEmpty("ExtraAttributes");
+		}
+		if (extra.isEmpty()) {
+			extra = tag.getCompoundOrEmpty("components").getCompoundOrEmpty("minecraft:custom_data");
+		}
+		String id = extra.getStringOr("id", "");
+		if (!id.isBlank()) {
+			return id;
+		}
+		return tag.getStringOr("id", "");
+	}
+
+	private static int paddedSize(List<SlotItem> raw, int fallback, int columns) {
+		int max = -1;
+		for (SlotItem item : raw) {
+			if (item != null && item.slot() > max) {
+				max = item.slot();
+			}
+		}
+		int size = max >= 0 ? max + 1 : 0;
+		if (size < fallback) {
+			size = fallback;
+		}
+		int cols = Math.max(1, columns);
+		if (size % cols != 0) {
+			size += cols - (size % cols);
+		}
+		return Math.min(512, size);
+	}
+
+	private static List<SlotItem> padSlots(List<SlotItem> raw, int size) {
+		SlotItem[] slots = new SlotItem[size];
+		for (int i = 0; i < size; i++) {
+			slots[i] = SlotItem.empty(i);
+		}
+		for (SlotItem item : raw) {
+			if (item == null || item.slot() < 0 || item.slot() >= size) {
+				continue;
+			}
+			slots[item.slot()] = item;
+		}
+		return List.of(slots);
 	}
 
 	private static boolean looksLikeItem(CompoundTag tag) {

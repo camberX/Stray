@@ -3,6 +3,7 @@ package dev.stray.client.ui;
 import com.mojang.blaze3d.platform.InputConstants;
 import dev.stray.client.StrayClient;
 import dev.stray.client.config.StrayConfig;
+import dev.stray.client.item.ItemIds;
 import dev.stray.client.profile.ProfileViewer;
 import dev.stray.client.render.GuiDraw;
 import dev.stray.client.render.NametagRenderer;
@@ -14,8 +15,10 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.input.CharacterEvent;
 import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.input.MouseButtonEvent;
+import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.Mth;
+import net.minecraft.world.item.ItemStack;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -26,25 +29,32 @@ import java.util.Locale;
  * from the public Hypixel profile host.
  */
 public class ProfileViewerScreen extends Screen {
-	private static final float MENU_W = 560;
-	private static final float MENU_H = 312;
-	private static final float RAIL = 78;
+	private static final float MENU_W = 580;
+	private static final float MENU_H = 328;
+	private static final float RAIL = 84;
 	private static final float ROW = 16;
+	private static final float SLOT = 18;
 
 	private enum Tab {
-		HOME("Home"),
-		SKILLS("Skills"),
-		COMBAT("Combat"),
-		MINING("Mining"),
-		FARMING("Farm"),
-		PETS("Pets"),
-		ITEMS("Items");
+		HOME("Home", MenuFont.PERSON),
+		ITEMS("Items", MenuFont.BAG),
+		SKILLS("Skills", MenuFont.BARS),
+		COMBAT("Combat", MenuFont.SWORD),
+		MINING("Mining", MenuFont.DIAMOND),
+		FARMING("Farm", MenuFont.GRAIN),
+		PETS("Pets", MenuFont.CAT);
 
 		final String label;
+		final String icon;
 
-		Tab(String label) {
+		Tab(String label, String icon) {
 			this.label = label;
+			this.icon = icon;
 		}
+	}
+
+	private enum ItemPane {
+		INV, ENDER, BAG
 	}
 
 	private final List<Hit> hits = new ArrayList<>();
@@ -65,6 +75,9 @@ public class ProfileViewerScreen extends Screen {
 	private float appear;
 	private float listScroll;
 	private String tooltip = "";
+	private ItemStack hoverStack = ItemStack.EMPTY;
+	private ItemPane itemPane = ItemPane.INV;
+	private int itemPage;
 
 	public ProfileViewerScreen(String name) {
 		super(Component.literal("Profile"));
@@ -122,6 +135,7 @@ public class ProfileViewerScreen extends Screen {
 		tickAnim();
 		hits.clear();
 		tooltip = "";
+		hoverStack = ItemStack.EMPTY;
 		Font font = minecraft.font;
 		layout();
 
@@ -161,7 +175,9 @@ public class ProfileViewerScreen extends Screen {
 
 		graphics.pose().popMatrix();
 
-		if (!tooltip.isBlank()) {
+		if (hoverStack != null && !hoverStack.isEmpty()) {
+			graphics.setTooltipForNextFrame(font, hoverStack, mouseX, mouseY);
+		} else if (!tooltip.isBlank()) {
 			graphics.setTooltipForNextFrame(font, Component.literal(tooltip), mouseX, mouseY);
 		}
 	}
@@ -212,6 +228,7 @@ public class ProfileViewerScreen extends Screen {
 			hits.add(new Hit(chipX, chipY, w, 14, () -> {
 				ProfileViewer.select(index);
 				listScroll = 0f;
+				itemPage = 0;
 			}));
 			chipX += w + 4;
 			if (chipX > windowX + windowW - 20) {
@@ -230,7 +247,9 @@ public class ProfileViewerScreen extends Screen {
 			int fill = on ? Theme.withAlpha(Theme.ACCENT, 38) : hover ? Theme.CARD_HOVER : Theme.CARD;
 			int line = on ? Theme.ACCENT : Theme.LINE;
 			GuiDraw.panel(graphics, x, y, w, 22, 6, fill, line);
-			GuiDraw.menu(graphics, font, value.label, x + 8, GuiDraw.middle(y, 22), on ? Theme.ACCENT : Theme.TEXT);
+			int color = on ? Theme.ACCENT : Theme.TEXT;
+			GuiDraw.icon(graphics, font, value.icon, x + 6, GuiDraw.middle(y, 22) - 1, color);
+			GuiDraw.menu(graphics, font, value.label, x + 22, GuiDraw.middle(y, 22), color);
 			Tab next = value;
 			hits.add(new Hit(x, y, w, 22, () -> {
 				tab = next;
@@ -261,12 +280,12 @@ public class ProfileViewerScreen extends Screen {
 		ProfileViewer.Profile profile = snap.current();
 		switch (tab) {
 			case HOME -> drawHome(graphics, font, x, y, w, h, snap, profile);
+			case ITEMS -> drawItems(graphics, font, mouseX, mouseY, x, y, w, h, profile);
 			case SKILLS -> drawSkills(graphics, font, x, y, w, h, profile);
 			case COMBAT -> drawCombat(graphics, font, x, y, w, h, profile);
 			case MINING -> drawMining(graphics, font, x, y, w, h, profile);
 			case FARMING -> drawFarming(graphics, font, x, y, w, h, profile);
 			case PETS -> drawPets(graphics, font, mouseX, mouseY, x, y, w, h, profile);
-			case ITEMS -> drawItems(graphics, font, mouseX, mouseY, x, y, w, h, profile);
 		}
 	}
 
@@ -280,17 +299,17 @@ public class ProfileViewerScreen extends Screen {
 		ProfileViewer.Snapshot snap,
 		ProfileViewer.Profile profile
 	) {
-		float stageW = 150;
+		float stageW = 128;
 		float stageH = h - 16;
 		GuiDraw.panel(graphics, x + 8, y + 8, stageW, stageH, 8, Theme.CARD, Theme.LINE);
 		boolean self = minecraft.player != null && snap.uuid() != null && minecraft.player.getUUID().equals(snap.uuid());
 		if (self) {
 			PlayerPreview.Drawn drawn = PlayerPreview.draw(
 				graphics,
-				x + 12,
-				y + 14,
-				stageW - 8,
-				stageH - 28,
+				x + 10,
+				y + 12,
+				stageW - 4,
+				Math.min(168, stageH - 36),
 				0f,
 				0f,
 				new PlayerPreview.View(viewScale, viewCx, viewCy, viewLift)
@@ -300,26 +319,36 @@ public class ProfileViewerScreen extends Screen {
 			}
 		} else {
 			String name = snap.name().isBlank() ? "?" : snap.name();
-			GuiDraw.title(graphics, font, name.substring(0, 1).toUpperCase(Locale.ROOT), x + 8 + (stageW - 12) * 0.5f - 6, y + stageH * 0.42f, Theme.ACCENT);
-			GuiDraw.menu(graphics, font, name, x + 16, y + stageH * 0.42f + 22, Theme.TEXT);
+			GuiDraw.title(graphics, font, name.substring(0, 1).toUpperCase(Locale.ROOT), x + 8 + (stageW - 12) * 0.5f - 6, y + 56, Theme.ACCENT);
+			GuiDraw.menu(graphics, font, name, x + 16, y + 80, Theme.TEXT);
 		}
+		GuiDraw.small(graphics, font, prettyMode(profile.gameMode()), x + 14, y + stageH - 8, Theme.MUTED);
 
-		float rx = x + stageW + 18;
-		float ry = y + 12;
-		float rw = w - stageW - 28;
-		stat(graphics, font, rx, ry, rw, "Skyblock", String.valueOf(profile.skyblockLevel()), profile.skyblockProgress());
-		ry += 28;
-		stat(graphics, font, rx, ry, rw, "Skill avg", trim(profile.skillAverage()), 1f);
-		ry += 28;
-		stat(graphics, font, rx, ry, rw, "Purse", compact(profile.purse()), 1f);
-		ry += 28;
-		stat(graphics, font, rx, ry, rw, "Bank", compact(profile.bank()), 1f);
-		ry += 28;
-		stat(graphics, font, rx, ry, rw, "Fairy souls", String.valueOf(profile.fairySouls()), 1f);
-		ry += 28;
-		stat(graphics, font, rx, ry, rw, "Secrets", compact(profile.secrets()), 1f);
-		ry += 28;
-		GuiDraw.small(graphics, font, prettyMode(profile.gameMode()), rx, ry + 4, Theme.MUTED);
+		float rx = x + stageW + 16;
+		float ry = y + 10;
+		float rw = w - stageW - 26;
+		float col = (rw - 8) * 0.5f;
+		stat(graphics, font, rx, ry, col, "Skyblock", String.valueOf(profile.skyblockLevel()), profile.skyblockProgress());
+		stat(graphics, font, rx + col + 8, ry, col, "Skill avg", trim(profile.skillAverage()), 1f);
+		ry += 24;
+		stat(graphics, font, rx, ry, col, "Purse", compact(profile.purse()), 1f);
+		stat(graphics, font, rx + col + 8, ry, col, "Bank", compact(profile.bank()), 1f);
+		ry += 24;
+		stat(graphics, font, rx, ry, col, "Souls", String.valueOf(profile.fairySouls()), 1f);
+		stat(graphics, font, rx + col + 8, ry, col, "Secrets", compact(profile.secrets()), 1f);
+		ry += 26;
+		GuiDraw.small(graphics, font, "Skills", rx, ry, Theme.ACCENT);
+		ry += 12;
+		List<ProfileViewer.Skill> skills = profile.skills();
+		for (int i = 0; i < skills.size(); i++) {
+			float sx = rx + (i % 2) * (col + 8);
+			float sy = ry + (i / 2) * 20f;
+			if (sy + 18 > y + h - 8) {
+				break;
+			}
+			ProfileViewer.Skill skill = skills.get(i);
+			stat(graphics, font, sx, sy, col, skill.name(), String.valueOf(skill.level()), skill.progress());
+		}
 	}
 
 	private void drawSkills(GuiGraphicsExtractor graphics, Font font, float x, float y, float w, float h, ProfileViewer.Profile profile) {
@@ -428,36 +457,186 @@ public class ProfileViewerScreen extends Screen {
 		float h,
 		ProfileViewer.Profile profile
 	) {
-		List<String> rows = new ArrayList<>();
-		if (!profile.armor().isEmpty()) {
-			rows.add("ARMOR");
-			for (ProfileViewer.SlotItem item : profile.armor()) {
-				rows.add(itemLine(item));
-			}
-		}
-		if (!profile.inventory().isEmpty()) {
-			rows.add("INVENTORY");
-			for (ProfileViewer.SlotItem item : profile.inventory()) {
-				rows.add(itemLine(item));
-			}
-		}
-		if (!profile.collections().isEmpty()) {
-			rows.add("TOP COLLECTIONS");
-			int n = Math.min(16, profile.collections().size());
-			for (int i = 0; i < n; i++) {
-				ProfileViewer.Collection collection = profile.collections().get(i);
-				rows.add(collection.name() + "  " + compact(collection.amount()));
-			}
-		}
-		if (rows.isEmpty()) {
+		if (profile.inventory().vacant() && profile.ender().isEmpty() && profile.backpacks().isEmpty()) {
 			GuiDraw.menu(graphics, font, "Inventory is hidden or empty.", x + 12, y + 14, Theme.MUTED);
 			return;
 		}
-		drawRows(graphics, font, mouseX, mouseY, x, y, w, h, rows.size(), (index, rx, ry, rw) -> {
-			String line = rows.get(index);
-			boolean head = line.equals("ARMOR") || line.equals("INVENTORY") || line.equals("TOP COLLECTIONS");
-			GuiDraw.small(graphics, font, clip(font, line, rw), rx, GuiDraw.middle(ry, ROW), head ? Theme.ACCENT : Theme.TEXT);
+		if (itemPane == ItemPane.ENDER && profile.ender().isEmpty()) {
+			itemPane = ItemPane.INV;
+		}
+		if (itemPane == ItemPane.BAG && profile.backpacks().isEmpty()) {
+			itemPane = ItemPane.INV;
+		}
+		float chipY = y + 8;
+		float chipX = x + 8;
+		chipX = paneChip(graphics, font, mouseX, mouseY, chipX, chipY, "Inventory", itemPane == ItemPane.INV, () -> {
+			itemPane = ItemPane.INV;
+			itemPage = 0;
 		});
+		if (!profile.ender().isEmpty()) {
+			chipX = paneChip(graphics, font, mouseX, mouseY, chipX, chipY, "Ender Chest", itemPane == ItemPane.ENDER, () -> {
+				itemPane = ItemPane.ENDER;
+				itemPage = 0;
+			});
+		}
+		if (!profile.backpacks().isEmpty()) {
+			paneChip(graphics, font, mouseX, mouseY, chipX, chipY, "Backpacks", itemPane == ItemPane.BAG, () -> {
+				itemPane = ItemPane.BAG;
+				itemPage = 0;
+			});
+		}
+
+		List<ProfileViewer.Bag> pages = itemPages(profile);
+		if (pages.size() > 1) {
+			float px = x + 8;
+			float py = y + 26;
+			for (int i = 0; i < pages.size(); i++) {
+				String label = String.valueOf(i + 1);
+				float pw = GuiDraw.smallWidth(font, label) + 10;
+				boolean on = i == itemPage;
+				boolean over = GuiDraw.hovered(mouseX, mouseY, px, py, pw, 13);
+				GuiDraw.panel(graphics, px, py, pw, 13, 4, on || over ? Theme.CARD_HOVER : Theme.CARD, on ? Theme.ACCENT : Theme.LINE);
+				GuiDraw.small(graphics, font, label, px + 5, GuiDraw.middle(py, 13), on ? Theme.ACCENT : Theme.TEXT);
+				int page = i;
+				hits.add(new Hit(px, py, pw, 13, () -> itemPage = page));
+				px += pw + 3;
+			}
+		}
+
+		ProfileViewer.Bag bag = pages.isEmpty() ? ProfileViewer.Bag.empty("Empty", 9, 0) : pages.get(Math.max(0, Math.min(itemPage, pages.size() - 1)));
+		boolean playerInv = itemPane == ItemPane.INV;
+		float gridY = y + (pages.size() > 1 ? 42 : 28);
+		float gridX = x + 10;
+		if (playerInv && !profile.armor().vacant()) {
+			drawArmor(graphics, font, mouseX, mouseY, gridX, gridY + 8, profile.armor());
+			gridX += SLOT + 8;
+		}
+		if (playerInv && bag.size() >= 36) {
+			drawGrid(graphics, font, mouseX, mouseY, gridX, gridY, 9, 3, bag, 9);
+			drawGrid(graphics, font, mouseX, mouseY, gridX, gridY + 3 * SLOT + 6, 9, 1, bag, 0);
+		} else if (!bag.vacant() || bag.size() > 0) {
+			drawGrid(graphics, font, mouseX, mouseY, gridX, gridY, bag.columns(), bag.rows(), bag, 0);
+		} else {
+			GuiDraw.small(graphics, font, "Nothing in this bag.", gridX, gridY + 6, Theme.MUTED);
+		}
+	}
+
+	private List<ProfileViewer.Bag> itemPages(ProfileViewer.Profile profile) {
+		return switch (itemPane) {
+			case INV -> List.of(profile.inventory());
+			case ENDER -> profile.ender();
+			case BAG -> profile.backpacks();
+		};
+	}
+
+	private float paneChip(
+		GuiGraphicsExtractor graphics,
+		Font font,
+		int mouseX,
+		int mouseY,
+		float x,
+		float y,
+		String label,
+		boolean on,
+		Runnable click
+	) {
+		float w = GuiDraw.smallWidth(font, label) + 12;
+		boolean over = GuiDraw.hovered(mouseX, mouseY, x, y, w, 14);
+		GuiDraw.panel(graphics, x, y, w, 14, 5, on || over ? Theme.CARD_HOVER : Theme.CARD, on ? Theme.ACCENT : Theme.LINE);
+		GuiDraw.small(graphics, font, label, x + 6, GuiDraw.middle(y, 14), on ? Theme.ACCENT : Theme.TEXT);
+		hits.add(new Hit(x, y, w, 14, click));
+		return x + w + 4;
+	}
+
+	private void drawArmor(
+		GuiGraphicsExtractor graphics,
+		Font font,
+		int mouseX,
+		int mouseY,
+		float x,
+		float y,
+		ProfileViewer.Bag armor
+	) {
+		int[] order = {3, 2, 1, 0};
+		for (int i = 0; i < 4; i++) {
+			int slot = i < armor.size() ? order[i] : i;
+			drawSlot(graphics, font, mouseX, mouseY, x, y + i * SLOT, armor.at(slot));
+		}
+	}
+
+	private void drawGrid(
+		GuiGraphicsExtractor graphics,
+		Font font,
+		int mouseX,
+		int mouseY,
+		float x,
+		float y,
+		int cols,
+		int rows,
+		ProfileViewer.Bag bag,
+		int start
+	) {
+		for (int row = 0; row < rows; row++) {
+			for (int col = 0; col < cols; col++) {
+				int index = start + row * cols + col;
+				drawSlot(graphics, font, mouseX, mouseY, x + col * SLOT, y + row * SLOT, bag.at(index));
+			}
+		}
+	}
+
+	private void drawSlot(
+		GuiGraphicsExtractor graphics,
+		Font font,
+		int mouseX,
+		int mouseY,
+		float x,
+		float y,
+		ProfileViewer.SlotItem item
+	) {
+		boolean hover = GuiDraw.hovered(mouseX, mouseY, x, y, SLOT, SLOT);
+		GuiDraw.well(graphics, x, y, SLOT, hover ? Theme.CARD_HOVER : Theme.TRACK, hover ? Theme.ACCENT : Theme.LINE);
+		if (item == null || item.empty()) {
+			return;
+		}
+		ItemStack stack = stackOf(item);
+		if (stack.isEmpty()) {
+			return;
+		}
+		LocalPlayer player = minecraft.player;
+		graphics.pose().pushMatrix();
+		graphics.pose().translate(x + 1, y + 1);
+		if (player == null) {
+			graphics.item(stack, 0, 0);
+		} else {
+			graphics.item(player, stack, 0, 0, 1);
+		}
+		graphics.itemDecorations(font, stack, 0, 0);
+		graphics.pose().popMatrix();
+		if (hover) {
+			hoverStack = stack;
+		}
+	}
+
+	private static ItemStack stackOf(ProfileViewer.SlotItem item) {
+		if (item == null || item.empty()) {
+			return ItemStack.EMPTY;
+		}
+		String raw = item.id() == null ? "" : item.id().trim();
+		ItemIds.Preview preview;
+		if (raw.isBlank()) {
+			preview = ItemIds.resolve(item.name());
+		} else if (raw.contains(":")) {
+			preview = ItemIds.resolve(raw);
+		} else {
+			preview = ItemIds.resolve("sb:" + raw);
+		}
+		ItemStack stack = preview.stack();
+		if (stack == null || stack.isEmpty()) {
+			return ItemStack.EMPTY;
+		}
+		stack = stack.copy();
+		stack.setCount(Math.max(1, item.count()));
+		return stack;
 	}
 
 	private void drawRows(
@@ -563,13 +742,6 @@ public class ProfileViewerScreen extends Screen {
 			}
 		}
 		return new ProfileViewer.Skill(name, 0, 60, 0, 0f);
-	}
-
-	private static String itemLine(ProfileViewer.SlotItem item) {
-		if (item.count() > 1) {
-			return item.count() + "×  " + item.name();
-		}
-		return item.name();
 	}
 
 	private static String prettyMode(String mode) {
