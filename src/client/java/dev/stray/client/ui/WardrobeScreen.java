@@ -31,8 +31,8 @@ import java.util.List;
  * One 3D armor model per slot — clicks go through the real chest's {@code slotClicked}.
  */
 public class WardrobeScreen extends Screen {
-	private static final float MENU_W = 412;
-	private static final float MENU_H = 318;
+	private static final float MENU_W = 640;
+	private static final float MENU_H = 236;
 	private static final float ARMOR_ICON = 12f;
 	private static float savedYaw = 28f;
 	private static float savedPitch = 8f;
@@ -41,6 +41,7 @@ public class WardrobeScreen extends Screen {
 	private static final long SUPPRESS_NS = 3_000_000_000L;
 	private static boolean silentFlush;
 	private static boolean cancelIncoming;
+	private static boolean skipCustomThisOpen;
 	private static long suppressUntil;
 
 	private AbstractContainerScreen<?> vanilla;
@@ -63,6 +64,7 @@ public class WardrobeScreen extends Screen {
 	private boolean placed;
 	private boolean closingMenu;
 	private boolean attaching;
+	private boolean handingOff;
 	private long lastNs = System.nanoTime();
 	private float dt = 0.016f;
 	private float appear;
@@ -91,6 +93,9 @@ public class WardrobeScreen extends Screen {
 			|| !WardrobeMenus.matches(chest.getMenu(), chest.getTitle())) {
 			return screen;
 		}
+		if (skipCustomThisOpen) {
+			return screen;
+		}
 		if (shouldDiscardIncoming()) {
 			return discardIncoming(chest);
 		}
@@ -114,6 +119,7 @@ public class WardrobeScreen extends Screen {
 	public static void allowReopen() {
 		suppressUntil = 0L;
 		cancelIncoming = false;
+		skipCustomThisOpen = false;
 	}
 
 	public static void resetPending() {
@@ -121,10 +127,23 @@ public class WardrobeScreen extends Screen {
 		silentFlush = false;
 		cancelIncoming = false;
 		suppressUntil = 0L;
+		skipCustomThisOpen = false;
 	}
 
 	public static void tickSwap(Minecraft client) {
 		if (client == null) {
+			return;
+		}
+		if (skipCustomThisOpen) {
+			if (client.screen instanceof WardrobeScreen wardrobe) {
+				wardrobe.followServer();
+				return;
+			}
+			boolean vanillaChest = client.screen instanceof AbstractContainerScreen<?> chest
+				&& WardrobeMenus.matches(chest.getMenu(), chest.getTitle());
+			if (!vanillaChest) {
+				skipCustomThisOpen = false;
+			}
 			return;
 		}
 		if (shouldDiscardIncoming()
@@ -335,17 +354,15 @@ public class WardrobeScreen extends Screen {
 		hits.add(new Hit(x, y, w, h, -1, true, false));
 		List<WardrobeMenus.ArmorSet> sets = snapshot.sets();
 		int shown = Math.min(9, Math.max(sets.size(), 1));
-		int cols = shown <= 4 ? Math.max(1, shown) : 3;
-		int rows = Math.max(1, (shown + cols - 1) / cols);
+		int cols = shown;
 		float gap = 6f;
+		float footer = 18f;
 		float cellW = (w - gap * (cols - 1)) / cols;
-		float cellH = (h - 14f - gap * (rows - 1)) / rows;
+		float cellH = h - footer;
 		PlayerPreview.View view = new PlayerPreview.View(viewScale, viewCx, viewCy, viewLift);
 		for (int i = 0; i < shown; i++) {
-			int col = i % cols;
-			int row = i / cols;
-			float sx = x + col * (cellW + gap);
-			float sy = y + row * (cellH + gap);
+			float sx = x + i * (cellW + gap);
+			float sy = y;
 			WardrobeMenus.ArmorSet set = i < sets.size() ? sets.get(i) : null;
 			boolean selected = set != null && set.selected() && !set.locked();
 			boolean locked = set != null && set.locked();
@@ -393,6 +410,7 @@ public class WardrobeScreen extends Screen {
 			}
 		}
 		GuiDraw.small(graphics, font, "1-9 equip and close · Drag a model to rotate", x, y + h - 10, Theme.MUTED);
+		drawVanillaButton(graphics, font, mouseX, mouseY);
 	}
 
 	private void drawArmorIcons(
@@ -441,6 +459,27 @@ public class WardrobeScreen extends Screen {
 		return set.boots();
 	}
 
+	private void drawVanillaButton(GuiGraphicsExtractor graphics, Font font, int mouseX, int mouseY) {
+		String label = "Vanilla";
+		float w = GuiDraw.menuWidth(font, label) + 12f;
+		float h = 16f;
+		float x = windowX + windowW - 10f - w;
+		float y = windowY + windowH - 8f - h;
+		boolean hover = GuiDraw.hovered(mouseX, mouseY, x, y, w, h);
+		GuiDraw.panel(graphics, x, y, w, h, 5, hover ? Theme.CARD_HOVER : Theme.CARD, hover ? Theme.ACCENT : Theme.LINE);
+		GuiDraw.menu(graphics, font, label, x + (w - GuiDraw.menuWidth(font, label)) * 0.5f, GuiDraw.middle(y, h), Theme.TEXT);
+		hits.add(new Hit(x, y, w, h, -1, false, false, true));
+	}
+
+	private void showVanillaMenu() {
+		skipCustomThisOpen = true;
+		if (vanilla == null || minecraft == null) {
+			return;
+		}
+		handingOff = true;
+		minecraft.setScreen(vanilla);
+	}
+
 	private void drawItem(GuiGraphicsExtractor graphics, ItemStack stack, float x, float y, float scale) {
 		if (stack == null || stack.isEmpty()) {
 			return;
@@ -460,8 +499,8 @@ public class WardrobeScreen extends Screen {
 	}
 
 	private void layout() {
-		windowW = Math.min(MENU_W, Math.max(300, width - 16));
-		windowH = Math.min(MENU_H, Math.max(220, height - 16));
+		windowW = Math.min(MENU_W, Math.max(360, width - 16));
+		windowH = Math.min(MENU_H, Math.max(180, height - 16));
 		if (!placed) {
 			windowX = (width - windowW) * 0.5f;
 			windowY = (height - windowH) * 0.5f;
@@ -611,6 +650,12 @@ public class WardrobeScreen extends Screen {
 				}
 				return true;
 			}
+			if (hit.vanillaMenu) {
+				if (event.button() == 0) {
+					showVanillaMenu();
+				}
+				return true;
+			}
 			if (hit.slot >= 0 && (event.button() == 0 || event.button() == 1)) {
 				pendingSlot = hit.slot;
 				pendingButton = event.button();
@@ -726,7 +771,7 @@ public class WardrobeScreen extends Screen {
 	public void removed() {
 		savedYaw = previewYaw;
 		savedPitch = previewPitch;
-		if (attaching) {
+		if (attaching || handingOff) {
 			return;
 		}
 		rememberCache();
@@ -743,8 +788,13 @@ public class WardrobeScreen extends Screen {
 		final int slot;
 		final boolean rotate;
 		final boolean close;
+		final boolean vanillaMenu;
 
 		Hit(float x, float y, float w, float h, int slot, boolean rotate, boolean close) {
+			this(x, y, w, h, slot, rotate, close, false);
+		}
+
+		Hit(float x, float y, float w, float h, int slot, boolean rotate, boolean close, boolean vanillaMenu) {
 			this.x = x;
 			this.y = y;
 			this.w = w;
@@ -752,6 +802,7 @@ public class WardrobeScreen extends Screen {
 			this.slot = slot;
 			this.rotate = rotate;
 			this.close = close;
+			this.vanillaMenu = vanillaMenu;
 		}
 
 		boolean contains(double mx, double my) {

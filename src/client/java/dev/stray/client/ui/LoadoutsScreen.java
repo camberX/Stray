@@ -45,6 +45,7 @@ public class LoadoutsScreen extends Screen {
 	private static final long SUPPRESS_NS = 3_000_000_000L;
 	private static boolean silentFlush;
 	private static boolean cancelIncoming;
+	private static boolean skipCustomThisOpen;
 	private static long suppressUntil;
 
 	private AbstractContainerScreen<?> vanilla;
@@ -64,6 +65,7 @@ public class LoadoutsScreen extends Screen {
 	private boolean placed;
 	private boolean closingMenu;
 	private boolean attaching;
+	private boolean handingOff;
 	private long lastNs = System.nanoTime();
 	private float dt = 0.016f;
 	private float appear;
@@ -95,6 +97,9 @@ public class LoadoutsScreen extends Screen {
 			|| !LoadoutsMenus.matches(chest.getMenu(), chest.getTitle())) {
 			return screen;
 		}
+		if (skipCustomThisOpen) {
+			return screen;
+		}
 		if (shouldDiscardIncoming()) {
 			return discardIncoming(chest);
 		}
@@ -122,6 +127,7 @@ public class LoadoutsScreen extends Screen {
 	public static void allowReopen() {
 		suppressUntil = 0L;
 		cancelIncoming = false;
+		skipCustomThisOpen = false;
 	}
 
 	public static void resetPending() {
@@ -129,10 +135,23 @@ public class LoadoutsScreen extends Screen {
 		silentFlush = false;
 		cancelIncoming = false;
 		suppressUntil = 0L;
+		skipCustomThisOpen = false;
 	}
 
 	public static void tickSwap(Minecraft client) {
 		if (client == null) {
+			return;
+		}
+		if (skipCustomThisOpen) {
+			if (client.screen instanceof LoadoutsScreen loadouts) {
+				loadouts.followServer();
+				return;
+			}
+			boolean vanillaChest = client.screen instanceof AbstractContainerScreen<?> chest
+				&& LoadoutsMenus.matches(chest.getMenu(), chest.getTitle());
+			if (!vanillaChest) {
+				skipCustomThisOpen = false;
+			}
 			return;
 		}
 		if (shouldDiscardIncoming()
@@ -267,6 +286,7 @@ public class LoadoutsScreen extends Screen {
 		drawPreview(graphics, font, localMx, localMy);
 		drawLoadouts(graphics, font, localMx, localMy);
 		drawContents(graphics, font, localMx, localMy);
+		drawVanillaButton(graphics, font, localMx, localMy);
 
 		graphics.pose().popMatrix();
 
@@ -507,6 +527,27 @@ public class LoadoutsScreen extends Screen {
 		return out;
 	}
 
+	private void drawVanillaButton(GuiGraphicsExtractor graphics, Font font, int mouseX, int mouseY) {
+		String label = "Vanilla";
+		float w = GuiDraw.menuWidth(font, label) + 12f;
+		float h = 16f;
+		float x = windowX + windowW - 10f - w;
+		float y = windowY + windowH - 8f - h;
+		boolean hover = GuiDraw.hovered(mouseX, mouseY, x, y, w, h);
+		GuiDraw.panel(graphics, x, y, w, h, 5, hover ? Theme.CARD_HOVER : Theme.CARD, hover ? Theme.ACCENT : Theme.LINE);
+		GuiDraw.menu(graphics, font, label, x + (w - GuiDraw.menuWidth(font, label)) * 0.5f, GuiDraw.middle(y, h), Theme.TEXT);
+		hits.add(new Hit(x, y, w, h, -1, false, false, true));
+	}
+
+	private void showVanillaMenu() {
+		skipCustomThisOpen = true;
+		if (vanilla == null || minecraft == null) {
+			return;
+		}
+		handingOff = true;
+		minecraft.setScreen(vanilla);
+	}
+
 	private void drawItem(GuiGraphicsExtractor graphics, ItemStack stack, float x, float y, float scale) {
 		if (stack == null || stack.isEmpty()) {
 			return;
@@ -696,6 +737,12 @@ public class LoadoutsScreen extends Screen {
 				}
 				return true;
 			}
+			if (hit.vanillaMenu) {
+				if (event.button() == 0) {
+					showVanillaMenu();
+				}
+				return true;
+			}
 			if (hit.slot >= 0 && (event.button() == 0 || event.button() == 1)) {
 				if (event.button() == 0) {
 					markSelected(hit.slot);
@@ -853,7 +900,7 @@ public class LoadoutsScreen extends Screen {
 	public void removed() {
 		savedYaw = previewYaw;
 		savedPitch = previewPitch;
-		if (attaching) {
+		if (attaching || handingOff) {
 			return;
 		}
 		LoadoutPreview.clear();
@@ -871,8 +918,13 @@ public class LoadoutsScreen extends Screen {
 		final int slot;
 		final boolean rotate;
 		final boolean close;
+		final boolean vanillaMenu;
 
 		Hit(float x, float y, float w, float h, int slot, boolean rotate, boolean close) {
+			this(x, y, w, h, slot, rotate, close, false);
+		}
+
+		Hit(float x, float y, float w, float h, int slot, boolean rotate, boolean close, boolean vanillaMenu) {
 			this.x = x;
 			this.y = y;
 			this.w = w;
@@ -880,6 +932,7 @@ public class LoadoutsScreen extends Screen {
 			this.slot = slot;
 			this.rotate = rotate;
 			this.close = close;
+			this.vanillaMenu = vanillaMenu;
 		}
 
 		boolean contains(double mx, double my) {
