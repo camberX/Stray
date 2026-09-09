@@ -162,9 +162,14 @@ public final class MobGlowRenderer {
 		return entity != null && entity.isCurrentlyGlowing();
 	}
 
+	public static boolean glowEnabled() {
+		StrayConfig config = StrayConfig.get();
+		return config.mobGlowEnabled || config.starMobEsp;
+	}
+
 	public static int outlineColor(Entity entity) {
 		StrayConfig config = StrayConfig.get();
-		if (!config.mobGlowEnabled || entity == null) {
+		if (!glowEnabled() || entity == null) {
 			return 0;
 		}
 		Minecraft client = Minecraft.getInstance();
@@ -222,6 +227,12 @@ public final class MobGlowRenderer {
 			return false;
 		}
 		if (entity instanceof LivingEntity living && !living.isAlive()) {
+			return false;
+		}
+		if (StarMobEsp.glowing(entity)) {
+			return true;
+		}
+		if (!StrayConfig.get().mobGlowEnabled) {
 			return false;
 		}
 		if (listed(entity.getType())) {

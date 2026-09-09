@@ -32,7 +32,7 @@ public class EntityRendererMixin {
 			return;
 		}
 		StrayConfig config = StrayConfig.get();
-		if (config.mobGlowEnabled && config.mobGlowThroughWalls && MobGlowRenderer.listed(entity)) {
+		if (MobGlowRenderer.glowEnabled() && config.mobGlowThroughWalls && MobGlowRenderer.listed(entity)) {
 			Minecraft client = Minecraft.getInstance();
 			if (client.player != null && entity != client.player) {
 				cir.setReturnValue(false);
@@ -48,7 +48,7 @@ public class EntityRendererMixin {
 		if (state instanceof FillEspMarker marker) {
 			marker.stray$setFillEsp(HeldItemShader.shouldFillEntity(entity));
 		}
-		if (StrayConfig.get().mobGlowEnabled) {
+		if (MobGlowRenderer.glowEnabled()) {
 			int glow = MobGlowRenderer.outlineColor(entity);
 			if (glow != 0 && !MobGlowRenderer.hasVanillaGlow(entity)) {
 				state.outlineColor = glow;

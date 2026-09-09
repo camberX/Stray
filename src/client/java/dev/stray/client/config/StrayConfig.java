@@ -215,6 +215,9 @@ public final class StrayConfig {
 	public float controlFrost = 0.62f;
 	public String uiFont = "";
 	public boolean mobGlowEnabled = false;
+	public boolean starMobEsp = false;
+	public boolean starMobBats = true;
+	public boolean starMobFels = false;
 	public boolean mobGlowThroughWalls = true;
 	public boolean blockOutlineGlow = false;
 	public float blockOutlineOpacity = 0.58f;

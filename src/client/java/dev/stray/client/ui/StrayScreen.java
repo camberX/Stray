@@ -124,6 +124,7 @@ public class StrayScreen extends Screen {
 		AUTO_CLICKER("Auto clicker", 8),
 		AUTO_EXPERIMENTS("Auto experiments", 5),
 		MOB("Mob glow", 3),
+		STAR("Star mobs", 2),
 		BLOCK("Block outline", 1),
 		CHEST("Chest ESP", 5),
 		NODE_ESP("Node ESP", 4),
@@ -196,6 +197,11 @@ public class StrayScreen extends Screen {
 		new SearchEntry("Held fill", Tab.ESP, "Visuals"),
 		new SearchEntry("Hand fill", Tab.ESP, "Visuals"),
 		new SearchEntry("Nametag ESP", Tab.ESP, "Visuals"),
+		new SearchEntry("Star mobs", Tab.ESP, "Visuals"),
+		new SearchEntry("Star mob ESP", Tab.ESP, "Visuals"),
+		new SearchEntry("Starred mobs", Tab.ESP, "Visuals"),
+		new SearchEntry("Highlight bats", Tab.ESP, "Visuals"),
+		new SearchEntry("Highlight fels", Tab.ESP, "Visuals"),
 		new SearchEntry("Block outline", Tab.ESP, "Visuals"),
 		new SearchEntry("Block outline color", Tab.ESP, "Visuals"),
 		new SearchEntry("Chest ESP", Tab.ESP, "Visuals"),
@@ -743,19 +749,21 @@ public class StrayScreen extends Screen {
 		float namesTop;
 		if (controlCenter()) {
 			y = controlCard(graphics, font, left, top, col, mouseX, mouseY, "Mob glow", config.mobGlowEnabled, v -> config.mobGlowEnabled = v, Feature.MOB);
+			y = controlCard(graphics, font, left, y, col, mouseX, mouseY, "Star mobs", config.starMobEsp, v -> config.starMobEsp = v, Feature.STAR);
 			y = controlCard(graphics, font, left, y, col, mouseX, mouseY, "Block outline", config.blockOutlineGlow, v -> config.blockOutlineGlow = v, Feature.BLOCK);
 			y = controlCard(graphics, font, left, y, col, mouseX, mouseY, "Chest ESP", config.chestEspEnabled, v -> config.chestEspEnabled = v, Feature.CHEST);
 			y = controlCard(graphics, font, left, y, col, mouseX, mouseY, "Held item", config.heldItemShaderEnabled, v -> config.heldItemShaderEnabled = v, Feature.HELD_ITEM);
 			namesTop = y;
 		} else {
-			y = featureCard(graphics, font, left, top, col, cardHeight(6), "Glow");
+			y = featureCard(graphics, font, left, top, col, cardHeight(7), "Glow");
 			y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Mob glow", config.mobGlowEnabled, v -> config.mobGlowEnabled = v, Feature.MOB);
+			y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Star mobs", config.starMobEsp, v -> config.starMobEsp = v, Feature.STAR);
 			y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Block outline", config.blockOutlineGlow, v -> config.blockOutlineGlow = v, Feature.BLOCK);
 			y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Chest ESP", config.chestEspEnabled, v -> config.chestEspEnabled = v, Feature.CHEST);
 			y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Player fill", config.playerFillEsp, v -> config.playerFillEsp = v);
 			y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Nametags", config.nametagsEnabled, v -> config.nametagsEnabled = v, Feature.NAMETAGS);
 			toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Own nametag", config.nametagSelf, v -> config.nametagSelf = v);
-			float heldTop = top + cardHeight(6) + 8;
+			float heldTop = top + cardHeight(7) + 8;
 			y = featureCard(graphics, font, left, heldTop, col, cardHeight(1), "Held item");
 			toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Shader", config.heldItemShaderEnabled, v -> config.heldItemShaderEnabled = v, Feature.HELD_ITEM);
 			namesTop = heldTop + cardHeight(1) + 8;
@@ -2466,6 +2474,10 @@ public class StrayScreen extends Screen {
 				y = slider(graphics, font, ix, y, iw, "Radius", String.format(Locale.ROOT, "%.0f", config.mobGlowRadius), (config.mobGlowRadius - GlowBlurRadius.MIN) / (GlowBlurRadius.MAX - GlowBlurRadius.MIN), v -> config.mobGlowRadius = StrayConfig.clamp(GlowBlurRadius.MIN + v * (GlowBlurRadius.MAX - GlowBlurRadius.MIN), GlowBlurRadius.MIN, GlowBlurRadius.MAX));
 				colorRow(graphics, font, ix, y, iw, mouseX, mouseY, "Color", config.mobGlowRgb, PickerTarget.MOB);
 			}
+			case STAR -> {
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Highlight bats", config.starMobBats, v -> config.starMobBats = v);
+				toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Highlight fels", config.starMobFels, v -> config.starMobFels = v);
+			}
 			case BLOCK -> {
 				colorRow(graphics, font, ix, y, iw, mouseX, mouseY, "Color", config.blockOutlineRgb, PickerTarget.BLOCK);
 			}
@@ -2958,7 +2970,7 @@ public class StrayScreen extends Screen {
 		return FabricLoader.getInstance()
 			.getModContainer("stray")
 			.map(container -> container.getMetadata().getVersion().getFriendlyString())
-			.orElse("1.2.122");
+			.orElse("1.2.123");
 	}
 
 	@Override

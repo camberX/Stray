@@ -44,6 +44,7 @@ import dev.stray.client.render.MiningWorldRenderer;
 import dev.stray.client.render.BlockOutlineGlow;
 import dev.stray.client.render.EspCommands;
 import dev.stray.client.render.MobGlowRenderer;
+import dev.stray.client.render.StarMobEsp;
 import dev.stray.client.render.NodeWorldRenderer;
 import dev.stray.client.render.VanillaHud;
 import dev.stray.client.render.WatermarkRenderer;
@@ -225,12 +226,14 @@ public final class StrayClient implements ClientModInitializer {
 
 		ClientLevelEvents.AFTER_CLIENT_LEVEL_CHANGE.register((client, level) -> {
 			MobGlowRenderer.reset();
+			StarMobEsp.reset();
 			ChestAimer.stop();
 			ChestEsp.get().clear();
 		});
 
 		ClientPlayConnectionEvents.JOIN.register((handler, sender, client) -> {
 			MobGlowRenderer.reset();
+			StarMobEsp.reset();
 			Hitsound.reset();
 			Hitmarker.reset();
 			Triggerbot.reset();
@@ -258,6 +261,7 @@ public final class StrayClient implements ClientModInitializer {
 			ChestEsp.get().clear();
 			ChestAimer.stop();
 			MobGlowRenderer.reset();
+			StarMobEsp.reset();
 			LoadoutsScreen.resetPending();
 			WardrobeScreen.resetPending();
 		});

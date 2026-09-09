@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.123", new String[]{
+			"Star mob ESP glows starred dungeon mobs with the same outline as Mob glow."
+		}),
 		new Entry("1.2.122", new String[]{
 			"The mods-menu icon is the cat with the can."
 		}),

@@ -1,6 +1,8 @@
 package dev.stray.client.net;
 
+import dev.stray.client.config.StrayConfig;
 import dev.stray.client.render.MobGlowRenderer;
+import dev.stray.client.render.StarMobEsp;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.Packet;
@@ -23,11 +25,18 @@ public final class EspNamePackets {
 	public static void onPacket(Packet<?> packet) {
 		if (packet instanceof ClientboundSetEntityDataPacket data) {
 			String label = labels(data);
-			if (label.isEmpty()) {
+			boolean named = !label.isEmpty();
+			boolean stars = StrayConfig.get().starMobEsp;
+			if (!named && !stars) {
 				return;
 			}
 			int id = data.id();
-			Minecraft.getInstance().execute(() -> MobGlowRenderer.onNamePacket(id, label));
+			Minecraft.getInstance().execute(() -> {
+				if (named) {
+					MobGlowRenderer.onNamePacket(id, label);
+				}
+				StarMobEsp.onEntityData(data);
+			});
 			return;
 		}
 		if (packet instanceof ClientboundSetPassengersPacket passengers) {
@@ -37,7 +46,11 @@ public final class EspNamePackets {
 			return;
 		}
 		if (packet instanceof ClientboundRemoveEntitiesPacket remove) {
-			Minecraft.getInstance().execute(() -> MobGlowRenderer.onRemoveEntities(remove.getEntityIds()));
+			var ids = remove.getEntityIds();
+			Minecraft.getInstance().execute(() -> {
+				MobGlowRenderer.onRemoveEntities(ids);
+				StarMobEsp.onRemoveEntities(ids);
+			});
 		}
 	}
 
