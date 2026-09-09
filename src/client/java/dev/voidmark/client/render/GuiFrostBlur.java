@@ -142,12 +142,15 @@ public final class GuiFrostBlur {
 		if (view == null) {
 			return;
 		}
-		GpuSampler sampler = RenderSystem.getSamplerCache().getClampToEdge(FilterMode.LINEAR);
-		float r = Math.min(radius, Math.min(w, h) / 2f);
-		blitRegion(graphics, view, sampler, x + r, y, w - 2f * r, h);
-		blitRegion(graphics, view, sampler, x, y + r, r, h - 2f * r);
-		blitRegion(graphics, view, sampler, x + w - r, y + r, r, h - 2f * r);
-		blitCornerPies(graphics, view, sampler, x, y, w, h, r);
+		float r = Math.max(0.75f, Math.min(radius, Math.min(w, h) / 2f));
+		float hw = w * 0.5f;
+		float hh = h * 0.5f;
+		// Four analytic quadrants: the shader samples the frost by screen position
+		// and clips it to the same anti-aliased silhouette as the glass on top.
+		GuiShapes.frostQuadrant(graphics, view, x, y, hw, hh, r, GuiShapes.Corner.TOP_LEFT);
+		GuiShapes.frostQuadrant(graphics, view, x + hw, y, w - hw, hh, r, GuiShapes.Corner.TOP_RIGHT);
+		GuiShapes.frostQuadrant(graphics, view, x + hw, y + hh, w - hw, h - hh, r, GuiShapes.Corner.BOTTOM_RIGHT);
+		GuiShapes.frostQuadrant(graphics, view, x, y + hh, hw, h - hh, r, GuiShapes.Corner.BOTTOM_LEFT);
 	}
 
 	/**
@@ -298,65 +301,6 @@ public final class GuiFrostBlur {
 			Math.max(UV_A.x, UV_B.x),
 			Math.max(UV_A.y, UV_B.y)
 		});
-	}
-
-	private static void blitCornerPies(
-		GuiGraphicsExtractor graphics,
-		GpuTextureView view,
-		GpuSampler sampler,
-		float x,
-		float y,
-		float w,
-		float h,
-		float r
-	) {
-		if (r < 0.75f) {
-			return;
-		}
-		int rows = Math.max(64, Math.round(r * 8f));
-		float rowH = r / rows;
-		for (int i = 0; i < rows; i++) {
-			float ly = i * rowH;
-			float dy = r - (ly + rowH * 0.5f);
-			float chord = (float) Math.sqrt(Math.max(0f, r * r - dy * dy));
-			if (chord <= 0.02f) {
-				continue;
-			}
-			float top = y + ly;
-			float bottom = y + h - ly - rowH;
-			blitRegion(graphics, view, sampler, x + r - chord, top, chord, rowH);
-			blitRegion(graphics, view, sampler, x + w - r, top, chord, rowH);
-			blitRegion(graphics, view, sampler, x + r - chord, bottom, chord, rowH);
-			blitRegion(graphics, view, sampler, x + w - r, bottom, chord, rowH);
-		}
-	}
-
-	private static void blitRegion(
-		GuiGraphicsExtractor graphics,
-		GpuTextureView view,
-		GpuSampler sampler,
-		float x,
-		float y,
-		float w,
-		float h
-	) {
-		if (w <= 0f || h <= 0f) {
-			return;
-		}
-		graphics.pose().transformPosition(x, y, UV_A);
-		graphics.pose().transformPosition(x + w, y + h, UV_B);
-		Minecraft client = Minecraft.getInstance();
-		float gw = Math.max(1, client.getWindow().getGuiScaledWidth());
-		float gh = Math.max(1, client.getWindow().getGuiScaledHeight());
-		float u0 = UV_A.x / gw;
-		float u1 = UV_B.x / gw;
-		float v0 = 1f - UV_A.y / gh;
-		float v1 = 1f - UV_B.y / gh;
-		graphics.pose().pushMatrix();
-		graphics.pose().translate(x, y);
-		graphics.pose().scale(w, h);
-		graphics.blit(view, sampler, 0, 0, 1, 1, u0, u1, v0, v1);
-		graphics.pose().popMatrix();
 	}
 
 	private static synchronized void ensureBlurPipeline() {

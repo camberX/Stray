@@ -20,14 +20,10 @@ import java.util.Locale;
 
 public final class GuiDraw {
 	private static final Identifier CIRCLE = Voidmark.id("textures/gui/circle.png");
-	private static final Identifier CIRCLE_HOLE = Voidmark.id("textures/gui/circle_hole.png");
-	private static final Identifier CIRCLE_AA = Voidmark.id("textures/gui/circle_aa.png");
-	private static final Identifier CIRCLE_RING = Voidmark.id("textures/gui/circle_ring.png");
 	private static final Identifier STROKE = Voidmark.id("textures/gui/stroke.png");
 	private static final int CIRCLE_TEX = 64;
-	private static final int CIRCLE_HALF = 32;
-	private static final int RING_TEX = 256;
-	private static final int RING_HALF = 128;
+	/** Below this the shape is drawn square; above it every edge goes through the analytic rounded shader. */
+	private static final float MIN_RADIUS = 0.75f;
 	private static final int STROKE_TEX_W = 64;
 	private static final int STROKE_TEX_H = 16;
 
@@ -220,34 +216,9 @@ public final class GuiDraw {
 		graphics.pose().popMatrix();
 	}
 
-	private static void corner(GuiGraphicsExtractor graphics, float x, float y, float radius, float u, float v, int color) {
-		if (radius <= 0) {
-			return;
-		}
-		graphics.pose().pushMatrix();
-		graphics.pose().translate(x, y);
-		graphics.pose().scale(radius, radius);
-		graphics.blit(RenderPipelines.GUI_TEXTURED, CIRCLE, 0, 0, u, v, 1, 1, CIRCLE_HALF, CIRCLE_HALF, CIRCLE_TEX, CIRCLE_TEX, color);
-		graphics.pose().popMatrix();
-	}
-
-	private static void hole(GuiGraphicsExtractor graphics, float x, float y, float radius, float u, float v, int color) {
-		if (radius <= 0 || (color >>> 24) < 2) {
-			return;
-		}
-		graphics.pose().pushMatrix();
-		graphics.pose().translate(x, y);
-		graphics.pose().scale(radius, radius);
-		graphics.blit(RenderPipelines.GUI_TEXTURED, CIRCLE_HOLE, 0, 0, u, v, 1, 1, CIRCLE_HALF, CIRCLE_HALF, CIRCLE_TEX, CIRCLE_TEX, color);
-		graphics.pose().popMatrix();
-	}
-
+	/** Cover everything outside an inscribed circle so a square blit reads as a disc. */
 	public static void circleClip(GuiGraphicsExtractor graphics, float x, float y, float size, int cover) {
-		float r = size * 0.5f;
-		hole(graphics, x, y, r, 0f, 0f, cover);
-		hole(graphics, x + r, y, r, CIRCLE_HALF, 0f, cover);
-		hole(graphics, x, y + r, r, 0f, CIRCLE_HALF, cover);
-		hole(graphics, x + r, y + r, r, CIRCLE_HALF, CIRCLE_HALF, cover);
+		paintRoundedEars(graphics, x, y, size, size, size * 0.5f, cover);
 	}
 
 	public static void blit(GuiGraphicsExtractor graphics, Identifier id, float x, float y, float w, float h, float u, float v, int regionW, int regionH, int texW, int texH) {
@@ -294,62 +265,29 @@ public final class GuiDraw {
 		int color
 	) {
 		float r = Math.min(radius, Math.min(w, h) / 2f);
-		if (r < 0.75f) {
+		if (r < MIN_RADIUS || (color >>> 24) == 0) {
 			return;
 		}
-		int rows = Math.max(8, Math.round(r * 4f));
-		float rowH = r / rows;
-		for (int i = 0; i < rows; i++) {
-			float ly = i * rowH;
-			float dy = r - (ly + rowH * 0.5f);
-			float chord = (float) Math.sqrt(Math.max(0f, r * r - dy * dy));
-			float ear = r - chord;
-			if (ear <= 0.02f) {
-				continue;
-			}
-			float top = y + ly;
-			float bottom = y + h - ly - rowH;
-			fill(graphics, x, top, ear, rowH + 0.2f, color);
-			fill(graphics, x + w - ear, top, ear, rowH + 0.2f, color);
-			fill(graphics, x, bottom, ear, rowH + 0.2f, color);
-			fill(graphics, x + w - ear, bottom, ear, rowH + 0.2f, color);
-		}
+		GuiShapes.ear(graphics, x, y, r, GuiShapes.Corner.TOP_LEFT, color);
+		GuiShapes.ear(graphics, x + w - r, y, r, GuiShapes.Corner.TOP_RIGHT, color);
+		GuiShapes.ear(graphics, x + w - r, y + h - r, r, GuiShapes.Corner.BOTTOM_RIGHT, color);
+		GuiShapes.ear(graphics, x, y + h - r, r, GuiShapes.Corner.BOTTOM_LEFT, color);
 	}
 
 	public static void rounded(GuiGraphicsExtractor graphics, float x, float y, float w, float h, float radius, int color) {
 		roundedSides(graphics, x, y, w, h, radius, radius, color);
 	}
 
-	/** Control chrome: 256px AA corners so large menu radii stay smooth. */
+	/** Same as {@link #rounded}; kept for callers that asked for the large-radius path. */
 	public static void roundedFine(GuiGraphicsExtractor graphics, float x, float y, float w, float h, float radius, int color) {
-		if (w <= 0 || h <= 0 || (color >>> 24) == 0) {
-			return;
-		}
-		float r = Math.min(Math.max(0f, radius), Math.min(w, h) / 2f);
-		if (r < 0.75f) {
-			fillSmooth(graphics, x, y, w, h, color);
-			return;
-		}
-		fillSmooth(graphics, x + r, y, w - 2f * r, h, color);
-		fillSmooth(graphics, x, y + r, r, h - 2f * r, color);
-		fillSmooth(graphics, x + w - r, y + r, r, h - 2f * r, color);
-		cornerFine(graphics, x, y, r, 0f, 0f, color);
-		cornerFine(graphics, x + w - r, y, r, RING_HALF, 0f, color);
-		cornerFine(graphics, x + w - r, y + h - r, r, RING_HALF, RING_HALF, color);
-		cornerFine(graphics, x, y + h - r, r, 0f, RING_HALF, color);
+		roundedSides(graphics, x, y, w, h, radius, radius, color);
 	}
 
-	private static void cornerFine(GuiGraphicsExtractor graphics, float x, float y, float radius, float u, float v, int color) {
-		if (radius <= 0) {
-			return;
-		}
-		graphics.pose().pushMatrix();
-		graphics.pose().translate(x, y);
-		graphics.pose().scale(radius, radius);
-		graphics.blit(RenderPipelines.GUI_TEXTURED, CIRCLE_AA, 0, 0, u, v, 1, 1, RING_HALF, RING_HALF, RING_TEX, RING_TEX, color);
-		graphics.pose().popMatrix();
-	}
-
+	/**
+	 * Rounded fill as four analytic quadrants. Every silhouette edge, straight
+	 * or curved, is anti-aliased by the same shader, so nothing pixel-snaps
+	 * against a smooth corner.
+	 */
 	public static void roundedSides(
 		GuiGraphicsExtractor graphics,
 		float x,
@@ -366,43 +304,28 @@ public final class GuiDraw {
 		float max = Math.min(w, h) / 2f;
 		float l = Math.min(Math.max(0f, leftRadius), max);
 		float r = Math.min(Math.max(0f, rightRadius), max);
-		if (l < 0.75f && r < 0.75f) {
+		if (l < MIN_RADIUS && r < MIN_RADIUS) {
 			fillSmooth(graphics, x, y, w, h, color);
 			return;
 		}
-		fillSmooth(graphics, x + l, y, w - l - r, h, color);
-		fillSmooth(graphics, x, y + l, l, h - 2f * l, color);
-		fillSmooth(graphics, x + w - r, y + r, r, h - 2f * r, color);
-		if (l >= 0.75f) {
-			corner(graphics, x, y, l, 0f, 0f, color);
-			corner(graphics, x, y + h - l, l, 0f, CIRCLE_HALF, color);
-		} else if (l > 0f) {
-			fillSmooth(graphics, x, y, l, l, color);
-			fillSmooth(graphics, x, y + h - l, l, l, color);
-		}
-		if (r >= 0.75f) {
-			corner(graphics, x + w - r, y, r, CIRCLE_HALF, 0f, color);
-			corner(graphics, x + w - r, y + h - r, r, CIRCLE_HALF, CIRCLE_HALF, color);
-		} else if (r > 0f) {
-			fillSmooth(graphics, x + w - r, y, r, r, color);
-			fillSmooth(graphics, x + w - r, y + h - r, r, r, color);
-		}
+		// A side asked to be square still goes through the shader (at the minimum
+		// radius) so its straight edges get the same anti-aliasing as the round side.
+		l = Math.max(l, MIN_RADIUS);
+		r = Math.max(r, MIN_RADIUS);
+		float hw = w * 0.5f;
+		float hh = h * 0.5f;
+		GuiShapes.quadrant(graphics, x, y, hw, hh, l, GuiShapes.Corner.TOP_LEFT, color);
+		GuiShapes.quadrant(graphics, x + hw, y, w - hw, hh, r, GuiShapes.Corner.TOP_RIGHT, color);
+		GuiShapes.quadrant(graphics, x + hw, y + hh, w - hw, h - hh, r, GuiShapes.Corner.BOTTOM_RIGHT, color);
+		GuiShapes.quadrant(graphics, x, y + hh, hw, h - hh, l, GuiShapes.Corner.BOTTOM_LEFT, color);
 	}
 
 	public static void roundLeft(GuiGraphicsExtractor graphics, float x, float y, float w, float h, float radius, int color) {
-		float r = Math.min(radius, Math.min(w, h) / 2f);
-		fillSmooth(graphics, x + r, y, w - r, h, color);
-		fillSmooth(graphics, x, y + r, r, h - 2f * r, color);
-		corner(graphics, x, y, r, 0f, 0f, color);
-		corner(graphics, x, y + h - r, r, 0f, CIRCLE_HALF, color);
+		roundedSides(graphics, x, y, w, h, radius, 0f, color);
 	}
 
 	public static void roundRight(GuiGraphicsExtractor graphics, float x, float y, float w, float h, float radius, int color) {
-		float r = Math.min(radius, Math.min(w, h) / 2f);
-		fillSmooth(graphics, x, y, w - r, h, color);
-		fillSmooth(graphics, x + w - r, y + r, r, h - 2f * r, color);
-		corner(graphics, x + w - r, y, r, CIRCLE_HALF, 0f, color);
-		corner(graphics, x + w - r, y + h - r, r, CIRCLE_HALF, CIRCLE_HALF, color);
+		roundedSides(graphics, x, y, w, h, 0f, radius, color);
 	}
 
 	public static void panel(GuiGraphicsExtractor graphics, float x, float y, float w, float h, float radius, int fill, int outline) {
@@ -464,24 +387,50 @@ public final class GuiDraw {
 			return;
 		}
 		float r = Math.min(radius, Math.min(w, h) / 2f);
-		float t = Math.max(0.9f, Math.min(1.35f, r * 0.055f));
 		int left = mixArgb(high, low, 0.28f);
 		int right = mixArgb(high, low, 0.62f);
-		if (r < 0.75f) {
-			fillSmooth(graphics, x, y, w, t, high);
-			fillSmooth(graphics, x, y + h - t, w, t, low);
-			fillSmooth(graphics, x, y, t, h, left);
-			fillSmooth(graphics, x + w - t, y, t, h, right);
+		if (r < MIN_RADIUS) {
+			fillSmooth(graphics, x, y, w, 1f, high);
+			fillSmooth(graphics, x, y + h - 1f, w, 1f, low);
+			fillSmooth(graphics, x, y, 1f, h, left);
+			fillSmooth(graphics, x + w - 1f, y, 1f, h, right);
 			return;
 		}
-		fillSmooth(graphics, x + r, y, w - 2f * r, t, high);
-		fillSmooth(graphics, x + r, y + h - t, w - 2f * r, t, low);
-		fillSmooth(graphics, x, y + r, t, h - 2f * r, left);
-		fillSmooth(graphics, x + w - t, y + r, t, h - 2f * r, right);
-		cornerRing(graphics, x, y, r, 0f, 0f, high);
-		cornerRing(graphics, x + w - r, y, r, RING_HALF, 0f, mixArgb(high, low, 0.45f));
-		cornerRing(graphics, x + w - r, y + h - r, r, RING_HALF, RING_HALF, low);
-		cornerRing(graphics, x, y + h - r, r, 0f, RING_HALF, mixArgb(high, low, 0.55f));
+		ringPieces(graphics, x, y, w, h, r, false, high, mixArgb(high, low, 0.45f), low, mixArgb(high, low, 0.55f), high, low, left, right);
+	}
+
+	/**
+	 * One-GUI-pixel rim inside the rounded silhouette: four corner squares and
+	 * four thin edge strips, all through the ring shader so the band is the
+	 * same width everywhere and anti-aliased on both sides.
+	 */
+	private static void ringPieces(
+		GuiGraphicsExtractor graphics,
+		float x,
+		float y,
+		float w,
+		float h,
+		float r,
+		boolean thin,
+		int topLeft,
+		int topRight,
+		int bottomRight,
+		int bottomLeft,
+		int top,
+		int bottom,
+		int left,
+		int right
+	) {
+		// Band tall enough for the rim plus its anti-aliased edge at any GUI scale.
+		float band = Math.min(2f, r);
+		GuiShapes.ringQuadrant(graphics, x, y, r, r, r, GuiShapes.Corner.TOP_LEFT, 0f, 0f, thin, topLeft);
+		GuiShapes.ringQuadrant(graphics, x + w - r, y, r, r, r, GuiShapes.Corner.TOP_RIGHT, 0f, 0f, thin, topRight);
+		GuiShapes.ringQuadrant(graphics, x + w - r, y + h - r, r, r, r, GuiShapes.Corner.BOTTOM_RIGHT, 0f, 0f, thin, bottomRight);
+		GuiShapes.ringQuadrant(graphics, x, y + h - r, r, r, r, GuiShapes.Corner.BOTTOM_LEFT, 0f, 0f, thin, bottomLeft);
+		GuiShapes.ringQuadrant(graphics, x + r, y, w - 2f * r, band, r, GuiShapes.Corner.TOP_LEFT, r, 0f, thin, top);
+		GuiShapes.ringQuadrant(graphics, x + r, y + h - band, w - 2f * r, band, r, GuiShapes.Corner.BOTTOM_LEFT, r, 0f, thin, bottom);
+		GuiShapes.ringQuadrant(graphics, x, y + r, band, h - 2f * r, r, GuiShapes.Corner.TOP_LEFT, 0f, r, thin, left);
+		GuiShapes.ringQuadrant(graphics, x + w - band, y + r, band, h - 2f * r, r, GuiShapes.Corner.TOP_RIGHT, 0f, r, thin, right);
 	}
 
 	private static int mixArgb(int from, int to, float t) {
@@ -493,56 +442,18 @@ public final class GuiDraw {
 		return (a << 24) | (r << 16) | (g << 8) | b;
 	}
 
-	private static void cornerRing(GuiGraphicsExtractor graphics, float x, float y, float radius, float u, float v, int color) {
-		if (radius <= 0 || (color >>> 24) < 2) {
-			return;
-		}
-		graphics.pose().pushMatrix();
-		graphics.pose().translate(x, y);
-		graphics.pose().scale(radius, radius);
-		graphics.blit(RenderPipelines.GUI_TEXTURED, CIRCLE_RING, 0, 0, u, v, 1, 1, RING_HALF, RING_HALF, RING_TEX, RING_TEX, color);
-		graphics.pose().popMatrix();
-	}
-
+	/** Rounded stroke: a 1px rim, or a 0.5px hairline when {@code thickness} asks for less than a pixel. */
 	public static void roundedOutline(GuiGraphicsExtractor graphics, float x, float y, float w, float h, float radius, int color, float thickness) {
 		if ((color & 0xFF000000) == 0 || w <= 0 || h <= 0) {
 			return;
 		}
 		float t = Math.max(0.5f, thickness);
 		float r = Math.min(radius, Math.min(w, h) / 2f);
-		if (r < 0.75f) {
+		if (r < MIN_RADIUS) {
 			border(graphics, x, y, w, h, color, t);
 			return;
 		}
-		fill(graphics, x + r, y, w - 2f * r, t, color);
-		fill(graphics, x + r, y + h - t, w - 2f * r, t, color);
-		fill(graphics, x, y + r, t, h - 2f * r, color);
-		fill(graphics, x + w - t, y + r, t, h - 2f * r, color);
-		cornerArc(graphics, x + r, y + r, r, t, Math.PI, Math.PI * 1.5, color);
-		cornerArc(graphics, x + w - r, y + r, r, t, Math.PI * 1.5, Math.PI * 2.0, color);
-		cornerArc(graphics, x + w - r, y + h - r, r, t, 0.0, Math.PI * 0.5, color);
-		cornerArc(graphics, x + r, y + h - r, r, t, Math.PI * 0.5, Math.PI, color);
-	}
-
-	private static void cornerArc(
-		GuiGraphicsExtractor graphics,
-		float cx,
-		float cy,
-		float radius,
-		float thickness,
-		double a0,
-		double a1,
-		int color
-	) {
-		int steps = Math.max(14, Math.round(radius * 6f));
-		float mid = radius - thickness * 0.5f;
-		float size = Math.max(0.55f, thickness * 0.55f);
-		for (int i = 0; i <= steps; i++) {
-			double a = a0 + (a1 - a0) * (i / (double) steps);
-			float px = cx + (float) Math.cos(a) * mid;
-			float py = cy + (float) Math.sin(a) * mid;
-			circle(graphics, px, py, size, color);
-		}
+		ringPieces(graphics, x, y, w, h, r, t < MIN_RADIUS, color, color, color, color, color, color, color, color);
 	}
 
 	/**
@@ -568,10 +479,10 @@ public final class GuiDraw {
 		float strip = Math.min(t, Math.max(1f, r - 0.35f));
 		float mid = h - 2f * r;
 		if (mid > 0.5f) {
-			fill(graphics, x, y + r, strip, mid, accent);
+			GuiShapes.quadrant(graphics, x, y + r, strip, mid, r, GuiShapes.Corner.TOP_LEFT, 0f, r, accent);
 		}
-		cornerBand(graphics, x, y, r, strip, 0f, 0f, accent);
-		cornerBand(graphics, x, y + h - r, r, strip, 0f, CIRCLE_HALF, accent);
+		GuiShapes.quadrant(graphics, x, y, strip, r, r, GuiShapes.Corner.TOP_LEFT, accent);
+		GuiShapes.quadrant(graphics, x, y + h - r, strip, r, r, GuiShapes.Corner.BOTTOM_LEFT, accent);
 	}
 
 	/**
@@ -597,48 +508,10 @@ public final class GuiDraw {
 		float strip = Math.min(t, Math.max(1f, r - 0.35f));
 		float mid = h - 2f * r;
 		if (mid > 0.5f) {
-			fill(graphics, x + w - strip, y + r, strip, mid, accent);
+			GuiShapes.quadrant(graphics, x + w - strip, y + r, strip, mid, r, GuiShapes.Corner.TOP_RIGHT, 0f, r, accent);
 		}
-		int regionU = Math.max(1, Math.round((strip / r) * CIRCLE_HALF));
-		float u = CIRCLE_TEX - regionU;
-		cornerBand(graphics, x + w - strip, y, r, strip, u, 0f, accent);
-		cornerBand(graphics, x + w - strip, y + h - r, r, strip, u, CIRCLE_HALF, accent);
-	}
-
-	/** Left {@code thickness} pixels of a quarter-circle so the rail follows the arc without wrapping. */
-	private static void cornerBand(
-		GuiGraphicsExtractor graphics,
-		float x,
-		float y,
-		float radius,
-		float thickness,
-		float u,
-		float v,
-		int color
-	) {
-		if (radius <= 0 || thickness <= 0) {
-			return;
-		}
-		graphics.pose().pushMatrix();
-		graphics.pose().translate(x, y);
-		graphics.pose().scale(thickness, radius);
-		int regionU = Math.max(1, Math.round((thickness / radius) * CIRCLE_HALF));
-		graphics.blit(
-			RenderPipelines.GUI_TEXTURED,
-			CIRCLE,
-			0,
-			0,
-			u,
-			v,
-			1,
-			1,
-			regionU,
-			CIRCLE_HALF,
-			CIRCLE_TEX,
-			CIRCLE_TEX,
-			color
-		);
-		graphics.pose().popMatrix();
+		GuiShapes.quadrant(graphics, x + w - strip, y, strip, r, r, GuiShapes.Corner.TOP_RIGHT, accent);
+		GuiShapes.quadrant(graphics, x + w - strip, y + h - r, strip, r, r, GuiShapes.Corner.BOTTOM_RIGHT, accent);
 	}
 
 	public static void text(GuiGraphicsExtractor graphics, Font font, String value, float x, float y, int color, boolean shadow) {
