@@ -1,13 +1,24 @@
 package dev.voidmark.client.ui;
 
 import dev.voidmark.client.config.VoidmarkConfig;
+import dev.voidmark.client.render.GuiDraw;
 import net.fabricmc.loader.api.FabricLoader;
+import net.minecraft.client.gui.Font;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 public final class ReleaseNotes {
 	public record Entry(String version, String[] lines) {
 	}
 
+	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.102", new String[]{
+			"HUD and bell icons sit in the center of their buttons.",
+			"What's new only lists the last 10 updates, as bullets."
+		}),
 		new Entry("1.2.101", new String[]{
 			"Combat is a sword again, and World is back on the globe."
 		}),
@@ -789,6 +800,11 @@ public final class ReleaseNotes {
 			.orElse(ENTRIES[0].version);
 	}
 
+	public static List<Entry> visible() {
+		int n = Math.min(VISIBLE, ENTRIES.length);
+		return Arrays.asList(ENTRIES).subList(0, n);
+	}
+
 	public static boolean unread() {
 		String seen = VoidmarkConfig.get().changelogSeen;
 		if (seen == null || seen.isBlank()) {
@@ -803,12 +819,60 @@ public final class ReleaseNotes {
 		config.save();
 	}
 
-	public static float contentHeight(float row) {
-		float h = 20f;
-		for (Entry entry : ENTRIES) {
-			h += 14f + entry.lines.length * row;
+	public static float contentHeight(Font font, float width, float row) {
+		float bullet = GuiDraw.menuWidth(font, "• ");
+		float wrapW = Math.max(8f, width - bullet);
+		float h = 0f;
+		for (Entry entry : visible()) {
+			h += 12f;
+			for (String line : entry.lines()) {
+				h += Math.max(1, wrapLine(font, line, wrapW).size()) * row;
+			}
 			h += 6f;
 		}
-		return h + 8f;
+		return h;
+	}
+
+	public static List<String> wrapLine(Font font, String text, float maxW) {
+		List<String> out = new ArrayList<>();
+		if (text == null || text.isBlank()) {
+			return out;
+		}
+		StringBuilder row = new StringBuilder();
+		for (String word : text.split(" ")) {
+			if (word.isEmpty()) {
+				continue;
+			}
+			String next = row.isEmpty() ? word : row + " " + word;
+			if (GuiDraw.menuWidth(font, next) <= maxW) {
+				row.setLength(0);
+				row.append(next);
+				continue;
+			}
+			if (!row.isEmpty()) {
+				out.add(row.toString());
+				row.setLength(0);
+			}
+			if (GuiDraw.menuWidth(font, word) <= maxW) {
+				row.append(word);
+			} else {
+				out.add(clipWord(font, word, maxW));
+			}
+		}
+		if (!row.isEmpty()) {
+			out.add(row.toString());
+		}
+		return out;
+	}
+
+	private static String clipWord(Font font, String word, float maxW) {
+		if (GuiDraw.menuWidth(font, word) <= maxW) {
+			return word;
+		}
+		String trimmed = word;
+		while (trimmed.length() > 1 && GuiDraw.menuWidth(font, trimmed + "..") > maxW) {
+			trimmed = trimmed.substring(0, trimmed.length() - 1);
+		}
+		return trimmed + "..";
 	}
 }

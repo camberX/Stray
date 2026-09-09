@@ -1191,7 +1191,7 @@ public class VoidmarkScreen extends Screen {
 		if (bellHover || notesOpen) {
 			GuiDraw.circle(graphics, bellX + 11, y + 11, 10, 0x33FFFFFF);
 		}
-		GuiDraw.icon(graphics, font, MenuFont.BELL, bellX + 4, GuiDraw.middle(y, 22), notesOpen ? ControlChrome.text() : ControlChrome.muted());
+		drawCenteredIcon(graphics, font, MenuFont.BELL, bellX, y, 22, notesOpen ? ControlChrome.text() : ControlChrome.muted());
 		if (ReleaseNotes.unread() && !notesOpen) {
 			GuiDraw.circle(graphics, bellX + 16, y + 5, 2.1f, Theme.ACCENT);
 		}
@@ -1209,7 +1209,7 @@ public class VoidmarkScreen extends Screen {
 		if (hudHover) {
 			GuiDraw.circle(graphics, hudX + 11, y + 11, 10, 0x33FFFFFF);
 		}
-		GuiDraw.icon(graphics, font, MenuFont.HUD, hudX + 4, GuiDraw.middle(y, 22), ControlChrome.text());
+		drawCenteredIcon(graphics, font, MenuFont.HUD, hudX, y, 22, ControlChrome.text());
 		hits.add(new Hit(hudX, y, 22, 22, () -> minecraft.setScreen(new HudEditorScreen())));
 
 		ControlChrome.face(graphics, faceX, y, face, playerSkin());
@@ -1312,8 +1312,23 @@ public class VoidmarkScreen extends Screen {
 		if (t > 0.02f) {
 			GuiDraw.rounded(graphics, x, y, ICON_SLOT, 14, 4, Anim.fade(Theme.withAlpha(Theme.ACCENT, 40), t));
 		}
-		GuiDraw.icon(graphics, font, glyph, x + 3, GuiDraw.middle(y, 14), active ? Theme.ACCENT : Theme.MUTED);
+		float iw = GuiDraw.iconWidth(font, glyph);
+		GuiDraw.icon(graphics, font, glyph, x + (ICON_SLOT - iw) * 0.5f, GuiDraw.middle(y, 14), active ? Theme.ACCENT : Theme.MUTED);
 		hits.add(new Hit(x, y, ICON_SLOT, 14, click));
+	}
+
+	private static void drawCenteredIcon(
+		GuiGraphicsExtractor graphics,
+		Font font,
+		String glyph,
+		float x,
+		float y,
+		float size,
+		int color
+	) {
+		float iw = GuiDraw.iconWidth(font, glyph);
+		float ih = 9.0f;
+		GuiDraw.icon(graphics, font, glyph, x + (size - iw) * 0.5f, y + (size - ih) * 0.5f, color);
 	}
 
 	private static String clip(Font font, String value, int maxWidth) {
@@ -1596,17 +1611,27 @@ public class VoidmarkScreen extends Screen {
 		float listY = notesY + 20;
 		float listW = PANEL_W - 16;
 		float listH = notesH - 28;
-		float contentH = ReleaseNotes.contentHeight(11);
+		float row = 11f;
+		float contentH = ReleaseNotes.contentHeight(font, listW, row);
 		float maxScroll = Math.max(0f, contentH - listH);
 		notesScroll = Mth.clamp(notesScroll, 0f, maxScroll);
 		boolean clipped = GuiDraw.scissor(graphics, listX, listY, listW, listH);
 		float y = listY - notesScroll;
-		for (ReleaseNotes.Entry entry : ReleaseNotes.ENTRIES) {
+		float bulletW = GuiDraw.menuWidth(font, "• ");
+		float wrapW = Math.max(8f, listW - bulletW);
+		for (ReleaseNotes.Entry entry : ReleaseNotes.visible()) {
 			GuiDraw.small(graphics, font, entry.version(), listX, y, Theme.ACCENT);
 			y += 12;
 			for (String line : entry.lines()) {
-				GuiDraw.menu(graphics, font, clip(font, line, (int) listW), listX, y, Theme.TEXT);
-				y += 11;
+				List<String> rows = ReleaseNotes.wrapLine(font, line, wrapW);
+				for (int i = 0; i < rows.size(); i++) {
+					if (i == 0) {
+						GuiDraw.menu(graphics, font, "• " + rows.get(i), listX, y, Theme.TEXT);
+					} else {
+						GuiDraw.menu(graphics, font, rows.get(i), listX + bulletW, y, Theme.TEXT);
+					}
+					y += row;
+				}
 			}
 			y += 6;
 		}
@@ -2683,7 +2708,7 @@ public class VoidmarkScreen extends Screen {
 		return FabricLoader.getInstance()
 			.getModContainer("voidmark")
 			.map(container -> container.getMetadata().getVersion().getFriendlyString())
-			.orElse("1.2.101");
+			.orElse("1.2.102");
 	}
 
 	@Override
@@ -2788,7 +2813,7 @@ public class VoidmarkScreen extends Screen {
 		double lx = localX(mouseX);
 		double ly = localY(mouseY);
 		if (notesOpen && scrollY != 0 && GuiDraw.hovered(lx, ly, notesX, notesY, PANEL_W, notesH)) {
-			float maxScroll = Math.max(0f, ReleaseNotes.contentHeight(11) - (notesH - 28));
+			float maxScroll = Math.max(0f, ReleaseNotes.contentHeight(font, PANEL_W - 16, 11f) - (notesH - 28));
 			notesScroll = Mth.clamp(notesScroll - (float) scrollY * 18f, 0f, maxScroll);
 			return true;
 		}
