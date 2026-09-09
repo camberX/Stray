@@ -504,14 +504,17 @@ public final class GuiDraw {
 			fillSmooth(graphics, x + w - band, y, band, h, right);
 			return;
 		}
-		float overlap = Math.min(1f, r * 0.05f);
-		float spanX = w - 2f * r + 2f * overlap;
-		float spanY = h - 2f * r + 2f * overlap;
+		// Keep sides and corners from sharing coverage. Overlap was a 1px src-over
+		// hit at each tangent, which showed up as a brighter dot. A half-framebuffer
+		// pixel gap stays off the ring enough to avoid that without opening a nick.
+		float seam = 0.5f / (float) Math.max(1.0, Minecraft.getInstance().getWindow().getGuiScale());
+		float spanX = Math.max(0f, w - 2f * r - 2f * seam);
+		float spanY = Math.max(0f, h - 2f * r - 2f * seam);
 		float pole = RING_HALF - RING_POLE * 0.5f;
-		ringPiece(graphics, x + r - overlap, y, spanX, band, pole, 0f, RING_POLE, RING_BAND, high);
-		ringPiece(graphics, x + r - overlap, y + h - band, spanX, band, pole, RING_TEX - RING_BAND, RING_POLE, RING_BAND, low);
-		ringPiece(graphics, x, y + r - overlap, band, spanY, 0f, pole, RING_BAND, RING_POLE, left);
-		ringPiece(graphics, x + w - band, y + r - overlap, band, spanY, RING_TEX - RING_BAND, pole, RING_BAND, RING_POLE, right);
+		ringPiece(graphics, x + r + seam, y, spanX, band, pole, 0f, RING_POLE, RING_BAND, high);
+		ringPiece(graphics, x + r + seam, y + h - band, spanX, band, pole, RING_TEX - RING_BAND, RING_POLE, RING_BAND, low);
+		ringPiece(graphics, x, y + r + seam, band, spanY, 0f, pole, RING_BAND, RING_POLE, left);
+		ringPiece(graphics, x + w - band, y + r + seam, band, spanY, RING_TEX - RING_BAND, pole, RING_BAND, RING_POLE, right);
 		ringPiece(graphics, x, y, r, r, 0f, 0f, RING_HALF, RING_HALF, high);
 		ringPiece(graphics, x + w - r, y, r, r, RING_HALF, 0f, RING_HALF, RING_HALF, mixArgb(high, low, 0.45f));
 		ringPiece(graphics, x + w - r, y + h - r, r, r, RING_HALF, RING_HALF, RING_HALF, RING_HALF, low);

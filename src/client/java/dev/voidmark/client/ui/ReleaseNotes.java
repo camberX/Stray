@@ -8,6 +8,9 @@ public final class ReleaseNotes {
 	}
 
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.88", new String[]{
+			"The bright dots at rounded-outline joins are gone. Sides and corners no longer overlap, so that pixel is not drawn twice."
+		}),
 		new Entry("1.2.87", new String[]{
 			"Rounded outlines keep one thickness all the way around. Sides and corners now come from the same ring, so the rim no longer steps or thins out at the join."
 		}),
