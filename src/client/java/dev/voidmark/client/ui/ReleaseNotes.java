@@ -8,6 +8,9 @@ public final class ReleaseNotes {
 	}
 
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.87", new String[]{
+			"Rounded outlines keep one thickness all the way around. Sides and corners now come from the same ring, so the rim no longer steps or thins out at the join."
+		}),
 		new Entry("1.2.86", new String[]{
 			"Menu and HUD corners use the circle textures again. The last two builds tried a custom GUI shader that Minecraft never actually ran, so corners showed filled circles and then the missing-texture tile."
 		}),

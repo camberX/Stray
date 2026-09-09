@@ -28,6 +28,9 @@ public final class GuiDraw {
 	private static final int CIRCLE_HALF = 32;
 	private static final int RING_TEX = 256;
 	private static final int RING_HALF = 128;
+	/** Texels from the outer edge that cover the ring stroke and its AA. */
+	private static final int RING_BAND = 12;
+	private static final int RING_POLE = 4;
 	private static final int STROKE_TEX_W = 64;
 	private static final int STROKE_TEX_H = 16;
 
@@ -460,28 +463,7 @@ public final class GuiDraw {
 		int high,
 		int low
 	) {
-		if (w <= 0 || h <= 0 || ((high | low) & 0xFF000000) == 0) {
-			return;
-		}
-		float r = Math.min(radius, Math.min(w, h) / 2f);
-		float t = Math.max(0.9f, Math.min(1.35f, r * 0.055f));
-		int left = mixArgb(high, low, 0.28f);
-		int right = mixArgb(high, low, 0.62f);
-		if (r < 0.75f) {
-			fillSmooth(graphics, x, y, w, t, high);
-			fillSmooth(graphics, x, y + h - t, w, t, low);
-			fillSmooth(graphics, x, y, t, h, left);
-			fillSmooth(graphics, x + w - t, y, t, h, right);
-			return;
-		}
-		fillSmooth(graphics, x + r, y, w - 2f * r, t, high);
-		fillSmooth(graphics, x + r, y + h - t, w - 2f * r, t, low);
-		fillSmooth(graphics, x, y + r, t, h - 2f * r, left);
-		fillSmooth(graphics, x + w - t, y + r, t, h - 2f * r, right);
-		cornerRing(graphics, x, y, r, 0f, 0f, high);
-		cornerRing(graphics, x + w - r, y, r, RING_HALF, 0f, mixArgb(high, low, 0.45f));
-		cornerRing(graphics, x + w - r, y + h - r, r, RING_HALF, RING_HALF, low);
-		cornerRing(graphics, x, y + h - r, r, 0f, RING_HALF, mixArgb(high, low, 0.55f));
+		ringOutline(graphics, x, y, w, h, radius, high, low);
 	}
 
 	private static int mixArgb(int from, int to, float t) {
@@ -493,14 +475,82 @@ public final class GuiDraw {
 		return (a << 24) | (r << 16) | (g << 8) | b;
 	}
 
-	private static void cornerRing(GuiGraphicsExtractor graphics, float x, float y, float radius, float u, float v, int color) {
-		if (radius <= 0 || (color >>> 24) < 2) {
+	/**
+	 * One texture for sides and corners so the rim keeps the same thickness and
+	 * the same outer edge. Hard-filled sides against a filtered ring were what
+	 * made every join step and every corner look thinner or thicker than the bar.
+	 */
+	private static void ringOutline(
+		GuiGraphicsExtractor graphics,
+		float x,
+		float y,
+		float w,
+		float h,
+		float radius,
+		int high,
+		int low
+	) {
+		if (w <= 0 || h <= 0 || ((high | low) & 0xFF000000) == 0) {
+			return;
+		}
+		float r = Math.min(Math.max(0f, radius), Math.min(w, h) / 2f);
+		int left = mixArgb(high, low, 0.28f);
+		int right = mixArgb(high, low, 0.62f);
+		float band = r < 0.75f ? Math.max(0.9f, Math.min(w, h) * 0.5f) : r * (float) RING_BAND / (float) RING_HALF;
+		if (r < 0.75f) {
+			fillSmooth(graphics, x, y, w, band, high);
+			fillSmooth(graphics, x, y + h - band, w, band, low);
+			fillSmooth(graphics, x, y, band, h, left);
+			fillSmooth(graphics, x + w - band, y, band, h, right);
+			return;
+		}
+		float overlap = Math.min(1f, r * 0.05f);
+		float spanX = w - 2f * r + 2f * overlap;
+		float spanY = h - 2f * r + 2f * overlap;
+		float pole = RING_HALF - RING_POLE * 0.5f;
+		ringPiece(graphics, x + r - overlap, y, spanX, band, pole, 0f, RING_POLE, RING_BAND, high);
+		ringPiece(graphics, x + r - overlap, y + h - band, spanX, band, pole, RING_TEX - RING_BAND, RING_POLE, RING_BAND, low);
+		ringPiece(graphics, x, y + r - overlap, band, spanY, 0f, pole, RING_BAND, RING_POLE, left);
+		ringPiece(graphics, x + w - band, y + r - overlap, band, spanY, RING_TEX - RING_BAND, pole, RING_BAND, RING_POLE, right);
+		ringPiece(graphics, x, y, r, r, 0f, 0f, RING_HALF, RING_HALF, high);
+		ringPiece(graphics, x + w - r, y, r, r, RING_HALF, 0f, RING_HALF, RING_HALF, mixArgb(high, low, 0.45f));
+		ringPiece(graphics, x + w - r, y + h - r, r, r, RING_HALF, RING_HALF, RING_HALF, RING_HALF, low);
+		ringPiece(graphics, x, y + h - r, r, r, 0f, RING_HALF, RING_HALF, RING_HALF, mixArgb(high, low, 0.55f));
+	}
+
+	private static void ringPiece(
+		GuiGraphicsExtractor graphics,
+		float x,
+		float y,
+		float w,
+		float h,
+		float u,
+		float v,
+		int regionW,
+		int regionH,
+		int color
+	) {
+		if (w <= 0 || h <= 0 || (color >>> 24) < 2) {
 			return;
 		}
 		graphics.pose().pushMatrix();
 		graphics.pose().translate(x, y);
-		graphics.pose().scale(radius, radius);
-		graphics.blit(RenderPipelines.GUI_TEXTURED, CIRCLE_RING, 0, 0, u, v, 1, 1, RING_HALF, RING_HALF, RING_TEX, RING_TEX, color);
+		graphics.pose().scale(w, h);
+		graphics.blit(
+			RenderPipelines.GUI_TEXTURED,
+			CIRCLE_RING,
+			0,
+			0,
+			u,
+			v,
+			1,
+			1,
+			regionW,
+			regionH,
+			RING_TEX,
+			RING_TEX,
+			color
+		);
 		graphics.pose().popMatrix();
 	}
 
@@ -508,41 +558,12 @@ public final class GuiDraw {
 		if ((color & 0xFF000000) == 0 || w <= 0 || h <= 0) {
 			return;
 		}
-		float t = Math.max(0.5f, thickness);
 		float r = Math.min(radius, Math.min(w, h) / 2f);
 		if (r < 0.75f) {
-			border(graphics, x, y, w, h, color, t);
+			border(graphics, x, y, w, h, color, Math.max(0.5f, thickness));
 			return;
 		}
-		fill(graphics, x + r, y, w - 2f * r, t, color);
-		fill(graphics, x + r, y + h - t, w - 2f * r, t, color);
-		fill(graphics, x, y + r, t, h - 2f * r, color);
-		fill(graphics, x + w - t, y + r, t, h - 2f * r, color);
-		cornerArc(graphics, x + r, y + r, r, t, Math.PI, Math.PI * 1.5, color);
-		cornerArc(graphics, x + w - r, y + r, r, t, Math.PI * 1.5, Math.PI * 2.0, color);
-		cornerArc(graphics, x + w - r, y + h - r, r, t, 0.0, Math.PI * 0.5, color);
-		cornerArc(graphics, x + r, y + h - r, r, t, Math.PI * 0.5, Math.PI, color);
-	}
-
-	private static void cornerArc(
-		GuiGraphicsExtractor graphics,
-		float cx,
-		float cy,
-		float radius,
-		float thickness,
-		double a0,
-		double a1,
-		int color
-	) {
-		int steps = Math.max(14, Math.round(radius * 6f));
-		float mid = radius - thickness * 0.5f;
-		float size = Math.max(0.55f, thickness * 0.55f);
-		for (int i = 0; i <= steps; i++) {
-			double a = a0 + (a1 - a0) * (i / (double) steps);
-			float px = cx + (float) Math.cos(a) * mid;
-			float py = cy + (float) Math.sin(a) * mid;
-			circle(graphics, px, py, size, color);
-		}
+		ringOutline(graphics, x, y, w, h, r, color, color);
 	}
 
 	/**
