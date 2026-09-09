@@ -15,6 +15,10 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.115", new String[]{
+			"Auto clicker binds show [ Button 5 ] in accent, and [ ... ] while listening.",
+			"Switching categories now slides the page and the selected rail mark."
+		}),
 		new Entry("1.2.114", new String[]{
 			"Auto clicker and Player fill stay inside the menu instead of running off the bottom."
 		}),

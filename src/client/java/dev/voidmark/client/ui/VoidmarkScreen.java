@@ -311,7 +311,12 @@ public class VoidmarkScreen extends Screen {
 	private float appear;
 	private boolean closing;
 	private boolean finishedClose;
+	private float pageT = 1f;
+	private float pageDir = 1f;
 	private float navY = -1f;
+	private float railNavY = -1f;
+	private float tabLineX = -1f;
+	private float tabLineW;
 	private float settingsT;
 	private float notesT;
 	private float searchT;
@@ -446,7 +451,14 @@ public class VoidmarkScreen extends Screen {
 		drawSidebar(graphics, font, localMx, localMy);
 		drawToolbar(graphics, font, localMx, localMy);
 		boolean columnsClip = GuiDraw.scissor(graphics, windowX, windowY, windowW, windowH);
+		int columnHits = hits.size();
+		graphics.pose().pushMatrix();
+		applyPageTransform(graphics);
 		drawColumns(graphics, font, localMx, localMy);
+		graphics.pose().popMatrix();
+		if (pageT < 0.86f && hits.size() > columnHits) {
+			hits.subList(columnHits, hits.size()).clear();
+		}
 		if (columnsClip) {
 			GuiDraw.disableScissor(graphics);
 		}
@@ -481,6 +493,7 @@ public class VoidmarkScreen extends Screen {
 		searchT = Anim.exp(searchT, searchOpen ? 1f : 0f, 18f, dt);
 		pickerT = Anim.exp(pickerT, pickerTarget != null ? 1f : 0f, 18f, dt);
 		featureT = Anim.exp(featureT, featureOpen && featureId != null ? 1f : 0f, 18f, dt);
+		pageT = Anim.exp(pageT, 1f, 14f, dt);
 	}
 
 	private float anim(String key, float target) {
@@ -632,6 +645,7 @@ public class VoidmarkScreen extends Screen {
 			if (hover > 0.02f) {
 				GuiDraw.rounded(graphics, windowX + 6, row, SIDEBAR_W - 12, 16, 8, Anim.fade(0x18FFFFFF, hover));
 			}
+			float onT = anim("navon-" + value.name(), on ? 1f : 0f);
 			float labelY = GuiDraw.middle(row, 16);
 			float iconH = CATEGORY_ICON_LINE * CATEGORY_ICON;
 			GuiDraw.icon(
@@ -641,9 +655,9 @@ public class VoidmarkScreen extends Screen {
 				windowX + 9,
 				row + (16 - iconH) * 0.5f,
 				CATEGORY_ICON,
-				on ? Theme.TEXT : Theme.ACCENT
+				Anim.mix(Theme.ACCENT, Theme.TEXT, onT)
 			);
-			GuiDraw.menu(graphics, font, value.label, windowX + 27, labelY, on ? Theme.TEXT : Theme.MUTED);
+			GuiDraw.menu(graphics, font, value.label, windowX + 27, labelY, Anim.mix(Theme.MUTED, Theme.TEXT, onT));
 		}
 
 		GuiDraw.fill(graphics, windowX + 8, footY - 5, SIDEBAR_W - 16, 1, Theme.ACCENT);
@@ -666,7 +680,29 @@ public class VoidmarkScreen extends Screen {
 		hits.add(new Hit(windowX + 6, footY - 2, SIDEBAR_W - 12, face + 4, () -> selectTab(Tab.PLAYER)));
 	}
 
+	private void applyPageTransform(GuiGraphicsExtractor graphics) {
+		float t = pageT;
+		if (t >= 0.995f) {
+			return;
+		}
+		float cx = contentX() + contentW() * 0.5f;
+		float cy = windowY + toolbarH() + Math.max(24f, (windowH - toolbarH()) * 0.5f);
+		float slide = (1f - t) * 14f * pageDir;
+		float lift = (1f - t) * 8f;
+		float scale = 0.975f + 0.025f * t;
+		graphics.pose().translate(cx + slide, cy + lift);
+		graphics.pose().scale(scale, scale);
+		graphics.pose().translate(-cx, -cy);
+	}
+
 	private void selectTab(Tab value) {
+		if (tab != value) {
+			pageDir = value.ordinal() > tab.ordinal() ? 1f : -1f;
+			pageT = 0f;
+			if (tab.group != value.group) {
+				tabLineX = -1f;
+			}
+		}
 		tab = value;
 		pickerTarget = null;
 		searchOpen = false;
@@ -1063,24 +1099,36 @@ public class VoidmarkScreen extends Screen {
 		float markH = 36f;
 		float slot = Math.min(36f, (railH - top - markH) / groups.length);
 		float iy = railY + top;
+		float selectedY = iy;
+		for (Group group : groups) {
+			if (tab.group == group) {
+				selectedY = iy;
+			}
+			iy += slot;
+		}
+		if (railNavY < 0f) {
+			railNavY = selectedY;
+		}
+		railNavY = Anim.exp(railNavY, selectedY, 18f, dt);
+		float px = railX + 6;
+		float py = railNavY + 1;
+		float pw = railW - 12;
+		float ph = slot - 2;
+		float pr = Math.min(11f, ph * 0.5f);
+		GuiDraw.rounded(graphics, px, py, pw, ph, pr, ControlChrome.selectedFill());
+		ControlChrome.rim(graphics, px, py, pw, ph, pr);
+
+		iy = railY + top;
 		for (Group group : groups) {
 			boolean on = tab.group == group;
 			boolean hover = GuiDraw.hovered(mouseX, mouseY, railX + 4, iy, railW - 8, slot);
-			float t = anim("cc-nav-" + group.name(), on || hover ? 1f : 0f);
+			float t = anim("cc-nav-" + group.name(), hover && !on ? 1f : 0f);
 			if (t > 0.02f) {
-				float px = railX + 6;
-				float py = iy + 1;
-				float pw = railW - 12;
-				float ph = slot - 2;
-				float pr = Math.min(11f, ph * 0.5f);
-				int fill = on ? ControlChrome.selectedFill() : Anim.fade(ControlChrome.selectedFill(), t * 0.45f);
-				GuiDraw.rounded(graphics, px, py, pw, ph, pr, fill);
-				if (on) {
-					ControlChrome.rim(graphics, px, py, pw, ph, pr);
-				}
+				GuiDraw.rounded(graphics, railX + 6, iy + 1, railW - 12, slot - 2, pr, Anim.fade(ControlChrome.selectedFill(), t * 0.45f));
 			}
 			String glyph = groupGlyph(group);
-			int icon = on ? ControlChrome.text() : ControlChrome.muted();
+			float onT = anim("cc-on-" + group.name(), on ? 1f : 0f);
+			int icon = Anim.mix(ControlChrome.muted(), ControlChrome.text(), onT);
 			float iconH = CATEGORY_ICON_LINE * CATEGORY_ICON;
 			float iconW = GuiDraw.iconWidth(font, glyph, CATEGORY_ICON);
 			float capH = 10f;
@@ -1177,6 +1225,8 @@ public class VoidmarkScreen extends Screen {
 		hits.add(new Hit(windowX + sidebarW(), windowY, windowW - sidebarW(), toolbarH(), mx -> startDrag(mx, lastClickY), true));
 
 		float tabX = x;
+		float activeX = x;
+		float activeW = 0f;
 		for (Tab value : Tab.values()) {
 			if (value.group != tab.group) {
 				continue;
@@ -1184,12 +1234,24 @@ public class VoidmarkScreen extends Screen {
 			boolean on = tab == value;
 			float textW = GuiDraw.menuWidth(font, value.label);
 			float tw = textW + 16;
-			GuiDraw.menu(graphics, font, value.label, tabX, GuiDraw.middle(y, 22), on ? ControlChrome.text() : ControlChrome.muted());
+			float onT = anim("hdr-" + value.name(), on ? 1f : 0f);
+			int color = Anim.mix(ControlChrome.muted(), ControlChrome.text(), onT);
+			GuiDraw.menu(graphics, font, value.label, tabX, GuiDraw.middle(y, 22), color);
 			if (on) {
-				GuiDraw.rounded(graphics, tabX, y + 19, textW, 1.4f, 0.7f, ControlChrome.text());
+				activeX = tabX;
+				activeW = textW;
 			}
 			hits.add(new Hit(tabX, y, tw, 22, () -> selectTab(value)));
 			tabX += tw + 6;
+		}
+		if (activeW > 0f) {
+			if (tabLineX < 0f) {
+				tabLineX = activeX;
+				tabLineW = activeW;
+			}
+			tabLineX = Anim.exp(tabLineX, activeX, 18f, dt);
+			tabLineW = Anim.exp(tabLineW, activeW, 18f, dt);
+			GuiDraw.rounded(graphics, tabLineX, y + 19, tabLineW, 1.4f, 0.7f, ControlChrome.text());
 		}
 
 		float face = 22;
@@ -2482,16 +2544,23 @@ public class VoidmarkScreen extends Screen {
 		InputConstants.Key key
 	) {
 		float row = rowH();
-		boolean hovered = GuiDraw.hovered(mouseX, mouseY, x, y, w, row);
-		if (hovered) {
-			GuiDraw.rounded(graphics, x - 3, y, w + 6, row, 6, 0x08FFFFFF);
+		boolean listening = bindListen == which;
+		String inner = listening ? "..." : OdinClicks.keyLabel(key);
+		String value = "[ " + inner + " ]";
+		float valueWidth = GuiDraw.menuWidth(font, value);
+		float chipW = valueWidth + 8;
+		float chipH = Math.min(row - 2f, controlCenter() ? 16f : 14f);
+		float chipX = x + w - chipW;
+		float chipY = y + (row - chipH) * 0.5f;
+		boolean hovered = GuiDraw.hovered(mouseX, mouseY, chipX, y, chipW, row);
+		float hot = anim("bind-" + which, hovered || listening ? 1f : 0f);
+		if (hot > 0.02f) {
+			GuiDraw.rounded(graphics, chipX, chipY, chipW, chipH, 4, Anim.fade(Theme.withAlpha(Theme.ACCENT, controlCenter() ? 48 : 32), hot));
 		}
 		float labelY = GuiDraw.middle(y, row);
 		GuiDraw.menu(graphics, font, label, x + 1, labelY, ink());
-		String value = bindListen == which ? "..." : OdinClicks.keyLabel(key);
-		int valueWidth = GuiDraw.menuWidth(font, value);
-		GuiDraw.menu(graphics, font, value, x + w - valueWidth, labelY, bindListen == which ? Theme.ACCENT : ink());
-		hits.add(new Hit(x, y, w, row, () -> bindListen = which));
+		GuiDraw.menu(graphics, font, value, chipX + 4, labelY, Theme.ACCENT);
+		hits.add(new Hit(chipX, y, chipW, row, () -> bindListen = which));
 		return y + row;
 	}
 
@@ -2856,7 +2925,7 @@ public class VoidmarkScreen extends Screen {
 		return FabricLoader.getInstance()
 			.getModContainer("voidmark")
 			.map(container -> container.getMetadata().getVersion().getFriendlyString())
-			.orElse("1.2.114");
+			.orElse("1.2.115");
 	}
 
 	@Override
