@@ -1156,12 +1156,18 @@ public class StrayScreen extends Screen {
 	}
 
 	private void drawControlMark(GuiGraphicsExtractor graphics, Font font, float railX, float y, float railW) {
-		String mark = "♲";
-		float scale = 1.40f;
-		var glyph = MenuFont.body(mark);
-		float gw = font.width(glyph) * scale;
+		float scale = 1.50f;
+		float gw = GuiDraw.iconWidth(font, MenuFont.CAT, scale);
 		float gy = y + 4f;
-		GuiDraw.text(graphics, font, glyph, railX + (railW - gw) * 0.5f, MenuFont.menuY(gy, scale), scale, ControlChrome.accent(), false);
+		GuiDraw.icon(
+			graphics,
+			font,
+			MenuFont.CAT,
+			railX + (railW - gw) * 0.5f,
+			gy,
+			scale,
+			ControlChrome.accent()
+		);
 		drawRailCaption(graphics, font, modVersion(), railX + railW * 0.5f, gy + 9f * scale + 1f, railW - 8f, ControlChrome.accent());
 	}
 
@@ -2952,7 +2958,7 @@ public class StrayScreen extends Screen {
 		return FabricLoader.getInstance()
 			.getModContainer("stray")
 			.map(container -> container.getMetadata().getVersion().getFriendlyString())
-			.orElse("1.2.120");
+			.orElse("1.2.121");
 	}
 
 	@Override

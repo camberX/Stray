@@ -1,6 +1,13 @@
 {
 	"providers": [
 		{
+			"type": "bitmap",
+			"file": "stray:font/cat.png",
+			"ascent": 7,
+			"height": 8,
+			"chars": ["\uE0C0"]
+		},
+		{
 			"type": "ttf",
 			"file": "stray:icons.ttf",
 			"shift": [0, 0.5],

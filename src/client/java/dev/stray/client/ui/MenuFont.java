@@ -60,6 +60,7 @@ public final class MenuFont {
 	public static final String SPEED = "\uE9E1";
 	public static final String CATEGORY = "\uE574";
 	public static final String PALETTE = "\uE40A";
+	public static final String CAT = "\uE0C0";
 
 	private static final int LABEL_CACHE = 128;
 	private static final String[] LABEL_TEXT = new String[LABEL_CACHE];

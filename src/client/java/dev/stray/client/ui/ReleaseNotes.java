@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.121", new String[]{
+			"The Control rail shows a cat above the version."
+		}),
 		new Entry("1.2.120", new String[]{
 			"The client is now called Stray. Capes and updates use https://stray.gay."
 		}),
