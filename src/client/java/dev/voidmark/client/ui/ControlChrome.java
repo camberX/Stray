@@ -56,6 +56,10 @@ public final class ControlChrome {
 		return VoidmarkConfig.clamp(VoidmarkConfig.get().controlPaneOpacity, 0.12f, 0.78f);
 	}
 
+	public static float pillOpacity() {
+		return VoidmarkConfig.clamp(VoidmarkConfig.get().controlPillOpacity, 0.12f, 0.78f);
+	}
+
 	public static boolean darkText() {
 		return darkText(paneRgb());
 	}
@@ -112,7 +116,7 @@ public final class ControlChrome {
 	}
 
 	private static int pillAlpha() {
-		return Math.round(Math.min(0.50f, paneOpacity() + 0.10f) * 255f);
+		return Math.round(pillOpacity() * 255f);
 	}
 
 	public static int searchFill() {

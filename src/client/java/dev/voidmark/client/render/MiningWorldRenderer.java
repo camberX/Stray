@@ -42,8 +42,9 @@ public final class MiningWorldRenderer {
 		}
 		boolean through = config.titaniumEspThroughWalls;
 		int rgb = config.titaniumEspRgb & 0xFFFFFF;
-		int fill = (Math.round(0.38f * 255f) << 24) | rgb;
-		int line = 0xFF000000 | rgb;
+		float opacity = VoidmarkConfig.clamp(config.titaniumEspOpacity, 0.08f, 0.85f);
+		int fill = (Math.round(opacity * 255f) << 24) | rgb;
+		int line = (Math.round(Math.min(1f, opacity + 0.45f) * 255f) << 24) | rgb;
 		Mesh mesh = mesh(blocks);
 		GizmoStyle fillStyle = GizmoStyle.fill(fill);
 		for (Face face : mesh.faces) {

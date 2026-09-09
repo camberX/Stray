@@ -8,6 +8,9 @@ public final class ReleaseNotes {
 	}
 
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.96", new String[]{
+			"Pills have their own opacity slider, and every color picker now sets opacity as well as hue."
+		}),
 		new Entry("1.2.95", new String[]{
 			"Category icons are a bit smaller than the last build."
 		}),

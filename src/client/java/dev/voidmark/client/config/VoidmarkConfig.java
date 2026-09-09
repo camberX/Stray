@@ -82,6 +82,7 @@ public final class VoidmarkConfig {
 	public boolean chestEspThroughWalls = true;
 	public float chestAimSpeed = 1.00f;
 	public int chestEspRgb = 0xF4C14E;
+	public float chestEspOpacity = 0.34f;
 	public boolean loadoutsMenuEnabled = false;
 	public boolean loadoutsOpenAnim = true;
 	public boolean wardrobeMenuEnabled = false;
@@ -103,6 +104,7 @@ public final class VoidmarkConfig {
 	public String heldItemShaderStyle = "smoke";
 	public int titaniumEspRange = 48;
 	public int titaniumEspRgb = 0xE8ECF2;
+	public float titaniumEspOpacity = 0.38f;
 	public boolean rawmatsEnchanted = false;
 	public String rawmatsItemId = "";
 	public boolean inventoryHudEnabled = false;
@@ -183,6 +185,7 @@ public final class VoidmarkConfig {
 	public int controlPaneRgb = 0xFFFFFF;
 	public int controlPillRgb = 0xFFFFFF;
 	public float controlPaneOpacity = 0.30f;
+	public float controlPillOpacity = 0.40f;
 	public float controlFrost = 0.62f;
 	public String uiFont = "";
 	public boolean mobGlowEnabled = false;
@@ -394,6 +397,9 @@ public final class VoidmarkConfig {
 				loaded.controlPaneOpacity = json.has("controlPaneOpacity")
 					? clamp(loaded.controlPaneOpacity, 0.12f, 0.78f)
 					: 0.30f;
+				loaded.controlPillOpacity = json.has("controlPillOpacity")
+					? clamp(loaded.controlPillOpacity, 0.12f, 0.78f)
+					: 0.40f;
 				loaded.controlFrost = json.has("controlFrost")
 					? clamp(loaded.controlFrost, 0f, 1f)
 					: 0.62f;
@@ -428,6 +434,9 @@ public final class VoidmarkConfig {
 				if (loaded.titaniumEspRgb == 0) {
 					loaded.titaniumEspRgb = 0xE8ECF2;
 				}
+				loaded.titaniumEspOpacity = json.has("titaniumEspOpacity")
+					? clamp(loaded.titaniumEspOpacity, 0.08f, 0.85f)
+					: 0.38f;
 				if (!json.has("chestEspEnabled")) {
 					loaded.chestEspEnabled = false;
 				}
@@ -442,6 +451,9 @@ public final class VoidmarkConfig {
 				if (loaded.chestEspRgb == 0) {
 					loaded.chestEspRgb = 0xF4C14E;
 				}
+				loaded.chestEspOpacity = json.has("chestEspOpacity")
+					? clamp(loaded.chestEspOpacity, 0.08f, 0.85f)
+					: 0.34f;
 				if (loaded.itemSkins == null) {
 					loaded.itemSkins = new java.util.ArrayList<>();
 				}

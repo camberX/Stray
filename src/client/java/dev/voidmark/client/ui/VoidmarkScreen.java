@@ -57,10 +57,10 @@ public class VoidmarkScreen extends Screen {
 	private static final float CATEGORY_ICON = 1.55f;
 	private static final float CATEGORY_ICON_LINE = 9.0f;
 	private static final float PICKER_W = 132;
-	private static final float PICKER_H = 122;
+	private static final float PICKER_H = 140;
 	private static final float PANEL_W = 168;
 	private static final float FEATURE_W = 176;
-	private static final float SETTINGS_H = 458;
+	private static final float SETTINGS_H = 474;
 	private static final float FONT_SEARCH_H = 14;
 	private static final float FONT_ROW = 16;
 	private static final int FONT_VISIBLE = 6;
@@ -243,6 +243,7 @@ public class VoidmarkScreen extends Screen {
 		new SearchEntry("Pane opacity", Tab.OVERLAY, "Theme"),
 		new SearchEntry("Control glass", Tab.SETTINGS, "Theme"),
 		new SearchEntry("Pills", Tab.SETTINGS, "Theme"),
+		new SearchEntry("Pills opacity", Tab.SETTINGS, "Theme"),
 		new SearchEntry("Category pills", Tab.SETTINGS, "Theme"),
 		new SearchEntry("Feature pills", Tab.SETTINGS, "Theme"),
 		new SearchEntry("Menu glass", Tab.SETTINGS, "Theme"),
@@ -268,6 +269,7 @@ public class VoidmarkScreen extends Screen {
 	private float pickerHue = 200f;
 	private float pickerSat = 0.82f;
 	private float pickerVal = 1f;
+	private float pickerAlpha = 1f;
 	private float pickerX;
 	private float pickerY;
 	private double lastClickY;
@@ -1358,12 +1360,16 @@ public class VoidmarkScreen extends Screen {
 		GuiDraw.menu(graphics, font, "Theme", settingsX + 8, settingsY + 6, Theme.HEADER);
 		float y = cycle(graphics, font, settingsX + 8, settingsY + 20, PANEL_W - 16, mouseX, mouseY, "GUI", VoidmarkConfig.get().guiDesignLabel(), VoidmarkConfig.get()::cycleGuiDesign);
 		y = colorRow(graphics, font, settingsX + 8, y, PANEL_W - 16, mouseX, mouseY, "Glass", VoidmarkConfig.get().controlPaneRgb, PickerTarget.CONTROL);
-		y = colorRow(graphics, font, settingsX + 8, y, PANEL_W - 16, mouseX, mouseY, "Pills", VoidmarkConfig.get().controlPillRgb, PickerTarget.PILL);
-		y = slider(graphics, font, settingsX + 8, y, PANEL_W - 16, "Frost", Math.round(VoidmarkConfig.get().controlFrost * 100) + "%", VoidmarkConfig.get().controlFrost, v -> VoidmarkConfig.get().controlFrost = VoidmarkConfig.clamp(v, 0f, 1f));
 		y = slider(graphics, font, settingsX + 8, y, PANEL_W - 16, "Opacity", Math.round(VoidmarkConfig.get().controlPaneOpacity * 100) + "%", (VoidmarkConfig.get().controlPaneOpacity - 0.12f) / 0.66f, v -> {
 			VoidmarkConfig.get().controlPaneOpacity = VoidmarkConfig.clamp(0.12f + v * 0.66f, 0.12f, 0.78f);
 			Theme.refresh();
 		});
+		y = colorRow(graphics, font, settingsX + 8, y, PANEL_W - 16, mouseX, mouseY, "Pills", VoidmarkConfig.get().controlPillRgb, PickerTarget.PILL);
+		y = slider(graphics, font, settingsX + 8, y, PANEL_W - 16, "Opacity", Math.round(VoidmarkConfig.get().controlPillOpacity * 100) + "%", (VoidmarkConfig.get().controlPillOpacity - 0.12f) / 0.66f, v -> {
+			VoidmarkConfig.get().controlPillOpacity = VoidmarkConfig.clamp(0.12f + v * 0.66f, 0.12f, 0.78f);
+			Theme.refresh();
+		});
+		y = slider(graphics, font, settingsX + 8, y, PANEL_W - 16, "Frost", Math.round(VoidmarkConfig.get().controlFrost * 100) + "%", VoidmarkConfig.get().controlFrost, v -> VoidmarkConfig.get().controlFrost = VoidmarkConfig.clamp(v, 0f, 1f));
 		GuiDraw.small(graphics, font, "Accent", settingsX + 8, y + 2, controlCenter() ? ControlChrome.muted() : Theme.MUTED);
 		y = swatchRow(graphics, mouseX, mouseY, settingsX + 10, y + 14, PANEL_W - 26, Theme.PRESETS, true);
 		y = colorRow(graphics, font, settingsX + 8, y, PANEL_W - 16, mouseX, mouseY, "Custom", VoidmarkConfig.get().themeAccentRgb, PickerTarget.THEME);
@@ -1934,7 +1940,7 @@ public class VoidmarkScreen extends Screen {
 		float iw
 	) {
 		VoidmarkConfig config = VoidmarkConfig.get();
-		float y = featureCard(graphics, font, left, top, col, cardHeight(8), "Control");
+		float y = featureCard(graphics, font, left, top, col, cardHeight(9), "Control");
 		y = cycle(graphics, font, ix, y, iw, mouseX, mouseY, "GUI", config.guiDesignLabel(), () -> {
 			config.cycleGuiDesign();
 			if (!config.guiDesignControl() && tab == Tab.SETTINGS) {
@@ -1942,12 +1948,16 @@ public class VoidmarkScreen extends Screen {
 			}
 		});
 		y = colorRow(graphics, font, ix, y, iw, mouseX, mouseY, "Glass", config.controlPaneRgb, PickerTarget.CONTROL);
-		y = colorRow(graphics, font, ix, y, iw, mouseX, mouseY, "Pills", config.controlPillRgb, PickerTarget.PILL);
-		y = slider(graphics, font, ix, y, iw, "Frost", Math.round(config.controlFrost * 100) + "%", config.controlFrost, v -> config.controlFrost = VoidmarkConfig.clamp(v, 0f, 1f));
 		y = slider(graphics, font, ix, y, iw, "Opacity", Math.round(config.controlPaneOpacity * 100) + "%", (config.controlPaneOpacity - 0.12f) / 0.66f, v -> {
 			config.controlPaneOpacity = VoidmarkConfig.clamp(0.12f + v * 0.66f, 0.12f, 0.78f);
 			Theme.refresh();
 		});
+		y = colorRow(graphics, font, ix, y, iw, mouseX, mouseY, "Pills", config.controlPillRgb, PickerTarget.PILL);
+		y = slider(graphics, font, ix, y, iw, "Opacity", Math.round(config.controlPillOpacity * 100) + "%", (config.controlPillOpacity - 0.12f) / 0.66f, v -> {
+			config.controlPillOpacity = VoidmarkConfig.clamp(0.12f + v * 0.66f, 0.12f, 0.78f);
+			Theme.refresh();
+		});
+		y = slider(graphics, font, ix, y, iw, "Frost", Math.round(config.controlFrost * 100) + "%", config.controlFrost, v -> config.controlFrost = VoidmarkConfig.clamp(v, 0f, 1f));
 		y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Menu stars", config.menuStarfield, v -> config.menuStarfield = v);
 		y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Animations", config.uiAnimations, v -> config.uiAnimations = v);
 		toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Auto update", config.autoUpdate, v -> config.autoUpdate = v);
@@ -2416,8 +2426,9 @@ public class VoidmarkScreen extends Screen {
 		float px = x + w - pw;
 		float py = y + (row - ph) / 2f;
 		boolean hover = GuiDraw.hovered(mouseX, mouseY, px - 1, y, pw + 2, row);
+		int swatch = Theme.withAlpha(rgb, Math.round(readOpacity(target) * 255f));
 		GuiDraw.rounded(graphics, px - 1, py - 1, pw + 2, ph + 2, 3, hover ? Theme.ACCENT : Theme.LINE);
-		GuiDraw.rounded(graphics, px, py, pw, ph, 2, 0xFF000000 | rgb);
+		GuiDraw.rounded(graphics, px, py, pw, ph, 2, swatch);
 		hits.add(new Hit(px - 2, y, pw + 4, row, () -> {
 			if (target == PickerTarget.SKY) {
 				VoidmarkConfig.get().matchSkyToWorld = false;
@@ -2453,7 +2464,7 @@ public class VoidmarkScreen extends Screen {
 		float x = pickerX;
 		float y = pickerY;
 		float w = PICKER_W;
-		float h = PICKER_H;
+		float h = pickerHeight();
 		GuiDraw.sheet(graphics, x, y, w, h, 8, Anim.fade(Theme.SHEET, pickerT), Anim.fade(Theme.ACCENT, pickerT));
 		if (pickerT < 0.7f) {
 			return;
@@ -2461,8 +2472,9 @@ public class VoidmarkScreen extends Screen {
 		GuiDraw.menu(graphics, font, "Color", x + 6, y + 5, Theme.MUTED);
 
 		int current = WorldTint.hsvToRgb(pickerHue, pickerSat, pickerVal);
+		int preview = Theme.withAlpha(current, Math.round(sliderToOpacity(pickerTarget, pickerAlpha) * 255f));
 		GuiDraw.rounded(graphics, x + w - 22, y + 5, 14, 10, 3, Theme.LINE);
-		GuiDraw.rounded(graphics, x + w - 21, y + 6, 12, 8, 2, 0xFF000000 | current);
+		GuiDraw.rounded(graphics, x + w - 21, y + 6, 12, 8, 2, preview);
 
 		float svX = x + 6;
 		float svY = y + 20;
@@ -2491,7 +2503,22 @@ public class VoidmarkScreen extends Screen {
 			commitPicker();
 		}, true));
 
-		GuiDraw.menu(graphics, font, hex(current), x + 6, y + h - 12, Theme.MUTED);
+		float alphaY = hueY + hueH + 4;
+		float alphaH = 6;
+		GuiDraw.alphaBar(graphics, svX, alphaY, svW, alphaH, current);
+		float alphaMark = svX + pickerAlpha * svW;
+		GuiDraw.fill(graphics, alphaMark - 1.2f, alphaY - 1, 2.4f, alphaH + 2, 0xFF000000);
+		GuiDraw.fill(graphics, alphaMark - 0.5f, alphaY - 1, 1f, alphaH + 2, 0xFFFFFFFF);
+		hits.add(new Hit(svX, alphaY, svW, alphaH, mx -> {
+			pickerAlpha = Mth.clamp((float) ((mx - svX) / svW), 0f, 1f);
+			commitPicker();
+		}, true));
+
+		GuiDraw.menu(graphics, font, hex(current) + "  " + Math.round(sliderToOpacity(pickerTarget, pickerAlpha) * 100f) + "%", x + 6, y + h - 12, Theme.MUTED);
+	}
+
+	private static float pickerHeight() {
+		return PICKER_H;
 	}
 
 	private void openPicker(PickerTarget target, int rgb, float x, float y) {
@@ -2500,12 +2527,15 @@ public class VoidmarkScreen extends Screen {
 		pickerHue = hsv[0];
 		pickerSat = hsv[1];
 		pickerVal = hsv[2];
+		pickerAlpha = opacityToSlider(target);
+		float h = pickerHeight();
 		pickerX = Mth.clamp(x, windowX + sidebarW() + 4, windowX + windowW - PICKER_W - 4);
-		pickerY = Mth.clamp(y, windowY + toolbarH(), windowY + windowH - PICKER_H - 4);
+		pickerY = Mth.clamp(y, windowY + toolbarH(), windowY + windowH - h - 4);
 	}
 
 	private void commitPicker() {
 		applyColor(pickerTarget, WorldTint.hsvToRgb(pickerHue, pickerSat, pickerVal));
+		writeOpacity(pickerTarget, sliderToOpacity(pickerTarget, pickerAlpha));
 	}
 
 	private void applyColor(PickerTarget target, int rgb) {
@@ -2532,6 +2562,88 @@ public class VoidmarkScreen extends Screen {
 				Theme.refresh();
 			}
 		}
+	}
+
+	private static float opacityMin(PickerTarget target) {
+		return switch (target) {
+			case CONTROL, PILL -> 0.12f;
+			case PANE -> 0.20f;
+			case MOB, BLOCK -> 0.15f;
+			case NODE, HELD_ITEM, CHEST, TITANIUM -> 0.08f;
+			case THEME -> 1f;
+			default -> 0f;
+		};
+	}
+
+	private static float opacityMax(PickerTarget target) {
+		return switch (target) {
+			case CONTROL, PILL -> 0.78f;
+			case MOB, BLOCK -> 0.90f;
+			case NODE, HELD_ITEM, CHEST, TITANIUM -> 0.85f;
+			default -> 1f;
+		};
+	}
+
+	private static float readOpacity(PickerTarget target) {
+		VoidmarkConfig config = VoidmarkConfig.get();
+		return switch (target) {
+			case CONTROL -> config.controlPaneOpacity;
+			case PILL -> config.controlPillOpacity;
+			case PANE -> config.themePaneOpacity;
+			case MOB -> config.mobGlowOpacity;
+			case BLOCK -> config.blockOutlineOpacity;
+			case NODE -> config.fillOpacity;
+			case CHEST -> config.chestEspOpacity;
+			case TITANIUM -> config.titaniumEspOpacity;
+			case HELD_ITEM -> config.heldItemShaderFill;
+			case WORLD -> config.worldTintStrength;
+			case SKY -> config.skyTintStrength;
+			case FOG -> config.fogDensity;
+			case THEME -> 1f;
+		};
+	}
+
+	private static void writeOpacity(PickerTarget target, float value) {
+		VoidmarkConfig config = VoidmarkConfig.get();
+		float clamped = VoidmarkConfig.clamp(value, opacityMin(target), opacityMax(target));
+		switch (target) {
+			case CONTROL -> config.controlPaneOpacity = clamped;
+			case PILL -> config.controlPillOpacity = clamped;
+			case PANE -> config.themePaneOpacity = clamped;
+			case MOB -> config.mobGlowOpacity = clamped;
+			case BLOCK -> config.blockOutlineOpacity = clamped;
+			case NODE -> config.fillOpacity = clamped;
+			case CHEST -> config.chestEspOpacity = clamped;
+			case TITANIUM -> config.titaniumEspOpacity = clamped;
+			case HELD_ITEM -> config.heldItemShaderFill = clamped;
+			case WORLD -> config.worldTintStrength = clamped;
+			case SKY -> config.skyTintStrength = clamped;
+			case FOG -> config.fogDensity = clamped;
+			case THEME -> {
+				return;
+			}
+		}
+		if (target == PickerTarget.CONTROL || target == PickerTarget.PILL || target == PickerTarget.PANE) {
+			Theme.refresh();
+		}
+	}
+
+	private static float opacityToSlider(PickerTarget target) {
+		float min = opacityMin(target);
+		float max = opacityMax(target);
+		if (max <= min) {
+			return 1f;
+		}
+		return Mth.clamp((readOpacity(target) - min) / (max - min), 0f, 1f);
+	}
+
+	private static float sliderToOpacity(PickerTarget target, float slider) {
+		float min = opacityMin(target);
+		float max = opacityMax(target);
+		if (max <= min) {
+			return min;
+		}
+		return min + Mth.clamp(slider, 0f, 1f) * (max - min);
 	}
 
 	private void startDrag(double mx, double my) {
@@ -2564,7 +2676,7 @@ public class VoidmarkScreen extends Screen {
 		return FabricLoader.getInstance()
 			.getModContainer("voidmark")
 			.map(container -> container.getMetadata().getVersion().getFriendlyString())
-			.orElse("1.2.95");
+			.orElse("1.2.96");
 	}
 
 	@Override
@@ -2600,7 +2712,7 @@ public class VoidmarkScreen extends Screen {
 				return true;
 			}
 		}
-		if (pickerTarget != null && !GuiDraw.hovered(lx, ly, pickerX, pickerY, PICKER_W, PICKER_H)) {
+		if (pickerTarget != null && !GuiDraw.hovered(lx, ly, pickerX, pickerY, PICKER_W, pickerHeight())) {
 			pickerTarget = null;
 			return true;
 		}

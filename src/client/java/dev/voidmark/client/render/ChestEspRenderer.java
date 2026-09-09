@@ -30,8 +30,9 @@ public final class ChestEspRenderer {
 		}
 		VoidmarkConfig config = VoidmarkConfig.get();
 		int rgb = config.chestEspRgb & 0xFFFFFF;
-		int fill = (Math.round(0.34f * 255f) << 24) | rgb;
-		int line = 0xFF000000 | rgb;
+		float opacity = VoidmarkConfig.clamp(config.chestEspOpacity, 0.08f, 0.85f);
+		int fill = (Math.round(opacity * 255f) << 24) | rgb;
+		int line = (Math.round(Math.min(1f, opacity + 0.45f) * 255f) << 24) | rgb;
 		boolean through = config.chestEspThroughWalls;
 		GizmoStyle chestStyle = GizmoStyle.strokeAndFill(line, 2.2f, fill);
 		GizmoStyle critStyle = GizmoStyle.strokeAndFill(line, 1.6f, fill);

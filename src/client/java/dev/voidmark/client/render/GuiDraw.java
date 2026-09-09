@@ -5,6 +5,7 @@ import dev.voidmark.client.config.VoidmarkConfig;
 import dev.voidmark.client.ui.ControlChrome;
 import dev.voidmark.client.ui.LoadoutsScreen;
 import dev.voidmark.client.ui.MenuFont;
+import dev.voidmark.client.ui.Theme;
 import dev.voidmark.client.visual.WorldTint;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
@@ -140,7 +141,20 @@ public final class GuiDraw {
 		}
 	}
 
-	/** Smooth hue strip: 1px columns of full-saturation color. */
+	/** Smooth alpha strip: current color from transparent to solid. */
+	public static void alphaBar(GuiGraphicsExtractor graphics, float x, float y, float w, float h, int rgb) {
+		int cols = Math.max(1, Math.round(w));
+		float cw = w / cols;
+		int light = 0xFFC8C8C8;
+		int dark = 0xFF8E8E8E;
+		for (int i = 0; i < cols; i++) {
+			float px = x + i * cw;
+			int check = ((i / 2) & 1) == 0 ? light : dark;
+			fill(graphics, px, y, cw + 0.35f, h, check);
+			float a = cols == 1 ? 1f : i / (float) (cols - 1);
+			fill(graphics, px, y, cw + 0.35f, h, Theme.withAlpha(rgb, Math.round(a * 255f)));
+		}
+	}
 	public static void hueBar(GuiGraphicsExtractor graphics, float x, float y, float w, float h) {
 		int cols = Math.max(1, Math.round(w));
 		float cw = w / cols;
