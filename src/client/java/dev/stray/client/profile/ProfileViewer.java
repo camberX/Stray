@@ -29,6 +29,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -206,6 +207,8 @@ public final class ProfileViewer {
 		boolean selected,
 		double purse,
 		double bank,
+		double itemWorth,
+		double networth,
 		int skyblockLevel,
 		float skyblockProgress,
 		float skillAverage,
@@ -233,6 +236,8 @@ public final class ProfileViewer {
 				cuteName,
 				"normal",
 				false,
+				0,
+				0,
 				0,
 				0,
 				0,
@@ -361,6 +366,7 @@ public final class ProfileViewer {
 				fail(gen, "HTTP " + response.statusCode());
 				return;
 			}
+			ensurePrices();
 			JsonObject root = JsonParser.parseString(response.body()).getAsJsonObject();
 			if (root.has("success") && root.get("success").isJsonPrimitive() && !root.get("success").getAsBoolean()) {
 				fail(gen, "profile lookup failed");
@@ -543,6 +549,16 @@ public final class ProfileViewer {
 		if (mode.isBlank()) {
 			mode = "normal";
 		}
+		double items = bagWorth(inv) + bagWorth(armor);
+		for (Bag bag : ender) {
+			items += bagWorth(bag);
+		}
+		for (Bag bag : backpacks) {
+			items += bagWorth(bag);
+		}
+		for (Pet pet : pets) {
+			items += priceOf(pet.type() + ";" + petTier(pet.tier()));
+		}
 		return new Profile(
 			string(profile, "profile_id"),
 			cute,
@@ -550,6 +566,8 @@ public final class ProfileViewer {
 			bool(profile, "selected"),
 			purse,
 			bank,
+			items,
+			purse + bank + items,
 			sbLevel,
 			sbProgress,
 			average,
@@ -1334,6 +1352,99 @@ public final class ProfileViewer {
 		} catch (Exception ignored) {
 			return 0d;
 		}
+	}
+
+	private static volatile Map<String, Double> PRICES = Map.of();
+	private static volatile long pricesAt;
+
+	private static void ensurePrices() {
+		if (!PRICES.isEmpty() && System.currentTimeMillis() - pricesAt < 30 * 60 * 1000L) {
+			return;
+		}
+		Map<String, Double> next = new HashMap<>(PRICES);
+		try {
+			HttpRequest request = HttpRequest.newBuilder(URI.create("https://api.hypixel.net/v2/skyblock/bazaar"))
+				.timeout(Duration.ofSeconds(12))
+				.header("User-Agent", "Stray/" + Stray.MOD_ID)
+				.GET()
+				.build();
+			HttpResponse<String> response = HTTP.send(request, HttpResponse.BodyHandlers.ofString());
+			if (response.statusCode() >= 200 && response.statusCode() < 300) {
+				JsonObject products = object(JsonParser.parseString(response.body()).getAsJsonObject(), "products");
+				if (products != null) {
+					for (String id : products.keySet()) {
+						JsonObject quick = object(object(products, id), "quick_status");
+						double sell = num(quick, "sellPrice");
+						double buy = num(quick, "buyPrice");
+						double value = sell > 0 ? sell : buy;
+						if (value > 0d) {
+							next.put(id.toUpperCase(Locale.ROOT), value);
+						}
+					}
+				}
+			}
+		} catch (Exception ignored) {
+		}
+		try {
+			HttpRequest request = HttpRequest.newBuilder(URI.create("https://moulberry.codes/lowestbin.json"))
+				.timeout(Duration.ofSeconds(12))
+				.header("User-Agent", "Stray/" + Stray.MOD_ID)
+				.GET()
+				.build();
+			HttpResponse<String> response = HTTP.send(request, HttpResponse.BodyHandlers.ofString());
+			if (response.statusCode() >= 200 && response.statusCode() < 300) {
+				JsonObject bins = JsonParser.parseString(response.body()).getAsJsonObject();
+				for (String id : bins.keySet()) {
+					double value = num(bins, id);
+					if (value <= 0d) {
+						continue;
+					}
+					String key = id.toUpperCase(Locale.ROOT);
+					Double current = next.get(key);
+					if (current == null || value > current) {
+						next.put(key, value);
+					}
+				}
+			}
+		} catch (Exception ignored) {
+		}
+		if (!next.isEmpty()) {
+			PRICES = Map.copyOf(next);
+			pricesAt = System.currentTimeMillis();
+		}
+	}
+
+	private static double bagWorth(Bag bag) {
+		if (bag == null || bag.slots() == null) {
+			return 0d;
+		}
+		double total = 0d;
+		for (SlotItem item : bag.slots()) {
+			if (item == null || item.empty()) {
+				continue;
+			}
+			total += priceOf(item.id()) * Math.max(1, item.count());
+		}
+		return total;
+	}
+
+	private static double priceOf(String id) {
+		if (id == null || id.isBlank() || PRICES.isEmpty()) {
+			return 0d;
+		}
+		Double value = PRICES.get(id.trim().toUpperCase(Locale.ROOT));
+		return value == null ? 0d : value;
+	}
+
+	private static int petTier(String tier) {
+		return switch (tier == null ? "" : tier.toLowerCase(Locale.ROOT)) {
+			case "uncommon" -> 1;
+			case "rare" -> 2;
+			case "epic" -> 3;
+			case "legendary" -> 4;
+			case "mythic" -> 5;
+			default -> 0;
+		};
 	}
 
 	private static long statCount(JsonObject stats, String key) {

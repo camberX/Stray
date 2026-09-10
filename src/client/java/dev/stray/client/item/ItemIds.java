@@ -17,6 +17,7 @@ import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.item.Rarity;
 import net.minecraft.world.item.component.CustomData;
 import net.minecraft.world.item.component.DyedItemColor;
@@ -311,6 +312,15 @@ public final class ItemIds {
 			return true;
 		}
 		return SkyblockLocation.onHypixel;
+	}
+
+	public static ItemStack skull(String id, String hash) {
+		if (hash == null || hash.isBlank()) {
+			return ItemStack.EMPTY;
+		}
+		ItemStack stack = new ItemStack(Items.PLAYER_HEAD);
+		applySkull(stack, id == null ? hash : id, hash);
+		return stack;
 	}
 
 	private static void applySkull(ItemStack stack, String id, String hash) {

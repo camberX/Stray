@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.138", new String[]{
+			"Profile viewer is a bit shorter. Home has a larger player, level in the nametag, and the Ironman icon on the window and profile chips. Networth includes item worth. Dungeons use boss heads, typed class names, Catacombs and class bars, and secret average. Pets and HOTM use Skyblock icons."
+		}),
 		new Entry("1.2.137", new String[]{
 			"Profile viewer drops the extra Skills tab. Combat is Dungeons with floors and classes. Mining shows the HOTM tree, Farm shows crop milestones, and Pets is a preview plus grid. Item slots use the menu theme."
 		}),

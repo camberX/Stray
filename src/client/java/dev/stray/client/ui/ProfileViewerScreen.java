@@ -24,8 +24,10 @@ import net.minecraft.world.item.Items;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 /**
  * Stray Skyblock profile viewer. Tabs and chrome are ours; the numbers come
@@ -33,7 +35,7 @@ import java.util.Locale;
  */
 public class ProfileViewerScreen extends Screen {
 	private static final float MENU_W = 720;
-	private static final float MENU_H = 400;
+	private static final float MENU_H = 348;
 	private static final float RAIL = 84;
 	private static final float ROW = 16;
 	private static final float CHIP_H = 18;
@@ -199,9 +201,14 @@ public class ProfileViewerScreen extends Screen {
 	}
 
 	private void drawHeader(GuiGraphicsExtractor graphics, Font font, int mouseX, int mouseY) {
-		GuiDraw.title(graphics, font, "PROFILE", windowX + 12, windowY + 8, Theme.TEXT);
+		float titleX = windowX + 12;
 		ProfileViewer.Snapshot snap = ProfileViewer.snapshot();
 		ProfileViewer.Profile profile = snap.current();
+		if (ironman(profile)) {
+			paintItem(graphics, font, new ItemStack(Items.IRON_INGOT), titleX, windowY + 6, 12, false);
+			titleX += 16;
+		}
+		GuiDraw.title(graphics, font, "PROFILE", titleX, windowY + 8, Theme.TEXT);
 		String sub = snap.name().isBlank() ? "Skyblock" : snap.name();
 		if (!profile.cuteName().isBlank()) {
 			sub = sub + " · " + profile.cuteName();
@@ -210,7 +217,7 @@ public class ProfileViewerScreen extends Screen {
 			graphics,
 			font,
 			sub,
-			windowX + 12 + GuiDraw.titleWidth(font, "PROFILE") + 6,
+			titleX + GuiDraw.titleWidth(font, "PROFILE") + 6,
 			windowY + 10,
 			Theme.ACCENT
 		);
@@ -235,11 +242,17 @@ public class ProfileViewerScreen extends Screen {
 		for (int i = 0; i < profiles.size(); i++) {
 			ProfileViewer.Profile next = profiles.get(i);
 			String label = next.cuteName().isBlank() ? "#" + (i + 1) : next.cuteName();
-			float w = GuiDraw.smallWidth(font, label) + 12;
+			boolean mode = ironman(next);
+			float w = GuiDraw.smallWidth(font, label) + 12 + (mode ? 12 : 0);
 			boolean on = i == snap.selected();
 			boolean over = GuiDraw.hovered(mouseX, mouseY, chipX, chipY, w, 14);
 			GuiDraw.panel(graphics, chipX, chipY, w, 14, 5, on || over ? Theme.CARD_HOVER : Theme.CARD, on ? Theme.ACCENT : Theme.LINE);
-			GuiDraw.small(graphics, font, label, chipX + 6, GuiDraw.middle(chipY, 14), on ? Theme.ACCENT : Theme.TEXT);
+			float textX = chipX + 6;
+			if (mode) {
+				paintItem(graphics, font, new ItemStack(Items.IRON_INGOT), chipX + 3, chipY + 1, 11, false);
+				textX += 12;
+			}
+			GuiDraw.small(graphics, font, label, textX, GuiDraw.middle(chipY, 14), on ? Theme.ACCENT : Theme.TEXT);
 			int index = i;
 			hits.add(new Hit(chipX, chipY, w, 14, () -> {
 				ProfileViewer.select(index);
@@ -320,10 +333,10 @@ public class ProfileViewerScreen extends Screen {
 		float pad = 10;
 		float innerW = w - pad * 2;
 		float innerH = h - pad * 2;
-		float playerW = Mth.clamp(innerW * 0.28f, 140f, 220f);
+		float playerW = Mth.clamp(innerW * 0.40f, 180f, 270f);
 		float sideW = (innerW - playerW - 16f) * 0.5f;
-		if (sideW < 168f) {
-			playerW = Math.max(120f, innerW * 0.26f);
+		if (sideW < 140f) {
+			playerW = Math.max(160f, innerW * 0.36f);
 			sideW = (innerW - playerW - 16f) * 0.5f;
 		}
 		float leftX = x + pad;
@@ -360,8 +373,8 @@ public class ProfileViewerScreen extends Screen {
 		infoRow(graphics, font, mouseX, mouseY, x, ry, w, new ItemStack(Items.GOLD_BLOCK), "Bank", compact(profile.bank()),
 			"Bank  " + prettyCoins(profile.bank()));
 		ry += row;
-		infoRow(graphics, font, mouseX, mouseY, x, ry, w, new ItemStack(Items.EMERALD), "Networth", compact(profile.purse() + profile.bank()),
-			"Purse + bank. Item prices are not included.");
+		infoRow(graphics, font, mouseX, mouseY, x, ry, w, new ItemStack(Items.EMERALD), "Networth", compact(profile.networth()),
+			"Purse " + prettyCoins(profile.purse()) + "\nBank " + prettyCoins(profile.bank()) + "\nItems " + prettyCoins(profile.itemWorth()));
 		ry += row;
 		infoRow(graphics, font, mouseX, mouseY, x, ry, w, new ItemStack(Items.COOKIE), "Cookie", profile.cookie() ? "Active" : "Inactive",
 			profile.cookie() ? "Cookie buff is active." : "Cookie buff is inactive.");
@@ -400,32 +413,34 @@ public class ProfileViewerScreen extends Screen {
 		ProfileViewer.Snapshot snap,
 		ProfileViewer.Profile profile
 	) {
-		float stageH = Math.min(h - 22, w * 1.15f);
+		float stageH = Math.min(h - 2, w * 1.55f);
 		GuiDraw.panel(graphics, x, y, w, stageH, 8, Theme.CARD, Theme.LINE);
+		if (ironman(profile)) {
+			paintItem(graphics, font, new ItemStack(Items.IRON_INGOT), x + 6, y + 6, 12, false);
+		}
+		Component tag = nametag(snap, profile);
 		boolean self = minecraft.player != null && snap.uuid() != null && minecraft.player.getUUID().equals(snap.uuid());
 		if (self) {
 			PlayerPreview.Drawn drawn = PlayerPreview.drawEquipped(
 				graphics,
-				x + 4,
-				y + 8,
-				w - 8,
-				stageH - 28,
+				x + 2,
+				y + 2,
+				w - 4,
+				stageH - 12,
 				0f,
 				0f,
 				new PlayerPreview.View(viewScale, viewCx, viewCy, viewLift),
-				gearOf(profile.armor())
+				gearOf(profile.armor()),
+				74f
 			);
 			if (drawn != null) {
-				NametagRenderer.drawVanilla(graphics, font, drawn.nameX(), drawn.nameY(), Component.literal(snap.name()));
+				NametagRenderer.drawVanilla(graphics, font, drawn.nameX(), drawn.nameY(), tag);
 			}
 		} else {
 			String name = snap.name().isBlank() ? "?" : snap.name();
 			GuiDraw.title(graphics, font, name.substring(0, 1).toUpperCase(Locale.ROOT), x + (w - 12) * 0.5f - 4, y + stageH * 0.38f, Theme.ACCENT);
-			GuiDraw.menu(graphics, font, clip(font, name, w - 16), x + 8, y + stageH * 0.38f + 22, Theme.TEXT);
+			NametagRenderer.drawVanilla(graphics, font, x + w * 0.5f, y + stageH * 0.38f + 22, tag);
 		}
-		GuiDraw.small(graphics, font, prettyMode(profile.gameMode()), x + 8, y + stageH - 12, Theme.MUTED);
-		String badge = "[" + profile.skyblockLevel() + "]  " + (snap.name().isBlank() ? "Player" : snap.name());
-		GuiDraw.small(graphics, font, clip(font, badge, w - 12), x + 8, y + stageH + 6, Theme.ACCENT);
 	}
 
 	private void drawChipColumn(
@@ -464,29 +479,41 @@ public class ProfileViewerScreen extends Screen {
 		ProfileViewer.Profile profile
 	) {
 		float left = x + 12;
-		float top = y + 10;
-		float col = (w - 36) / 4f;
+		float top = y + 8;
+		float col = (w - 36) / 3f;
 		ProfileViewer.Dungeon dungeon = profile.dungeons();
-		infoRow(graphics, font, mouseX, mouseY, left, top, col, new ItemStack(Items.WITHER_SKELETON_SKULL), "Catacombs",
-			String.valueOf(dungeon.cata()), "Catacombs " + dungeon.cata());
-		infoRow(graphics, font, mouseX, mouseY, left + col + 4, top, col, new ItemStack(Items.CHEST), "Secrets",
+		skillBar(graphics, font, mouseX, mouseY, left, top, w - 24, new ProfileViewer.Skill(
+			"Catacombs",
+			dungeon.cata(),
+			50,
+			0,
+			dungeon.progress()
+		));
+		float statsY = top + 30;
+		infoRow(graphics, font, mouseX, mouseY, left, statsY, col, new ItemStack(Items.CHEST), "Secrets",
 			compact(dungeon.secrets()), prettyNumber(dungeon.secrets()) + " secrets");
-		infoRow(graphics, font, mouseX, mouseY, left + (col + 4) * 2, top, col, new ItemStack(Items.IRON_SWORD), "Runs",
+		String avg = dungeon.runs() <= 0 ? "—" : trim(dungeon.secrets() / (double) dungeon.runs());
+		infoRow(graphics, font, mouseX, mouseY, left + col + 6, statsY, col, new ItemStack(Items.ENDER_EYE), "Secret avg",
+			avg, dungeon.runs() <= 0 ? "No runs yet." : avg + " secrets per run");
+		infoRow(graphics, font, mouseX, mouseY, left + (col + 6) * 2, statsY, col, new ItemStack(Items.IRON_SWORD), "Runs",
 			compact(dungeon.runs()), prettyNumber(dungeon.runs()) + " floor completions");
-		String selected = dungeon.selectedClass().isBlank() ? "—" : dungeon.selectedClass();
-		infoRow(graphics, font, mouseX, mouseY, left + (col + 4) * 3, top, col, new ItemStack(Items.IRON_CHESTPLATE), "Class",
-			selected, "Selected class  " + selected);
-		float y0 = top + 24;
+		float y0 = statsY + 20;
 		sectionTitle(graphics, font, left, y0, w - 24, new ItemStack(Items.IRON_CHESTPLATE), "Classes");
-		y0 += 16;
-		y0 = classChips(graphics, font, mouseX, mouseY, left, y0, w - 24, y + h, dungeon.classes());
-		y0 += 10;
+		y0 += 13;
+		float classW = (w - 32) * 0.5f;
+		List<ProfileViewer.Skill> classes = dungeon.classes();
+		for (int i = 0; i < classes.size(); i++) {
+			float cx = left + (i % 2) * (classW + 8);
+			float cy = y0 + (i / 2) * 24f;
+			skillBar(graphics, font, mouseX, mouseY, cx, cy, classW, classes.get(i));
+		}
+		y0 += 24 * ((classes.size() + 1) / 2) + 4;
 		float floorW = (w - 36) * 0.5f;
-		sectionTitle(graphics, font, left, y0, floorW, new ItemStack(Items.STONE_BRICKS), "Catacombs");
-		sectionTitle(graphics, font, left + floorW + 12, y0, floorW, new ItemStack(Items.CRACKED_STONE_BRICKS), "Master");
-		y0 += 16;
-		drawFloors(graphics, font, mouseX, mouseY, left, y0, floorW, y + h - 8, dungeon.normal());
-		drawFloors(graphics, font, mouseX, mouseY, left + floorW + 12, y0, floorW, y + h - 8, dungeon.master());
+		sectionTitle(graphics, font, left, y0, floorW, sky("GOLD_BONZO_HEAD"), "Catacombs");
+		sectionTitle(graphics, font, left + floorW + 12, y0, floorW, sky("DIAMOND_BONZO_HEAD"), "Master");
+		y0 += 14;
+		drawFloors(graphics, font, mouseX, mouseY, left, y0, floorW, y + h - 6, dungeon.normal(), false);
+		drawFloors(graphics, font, mouseX, mouseY, left + floorW + 12, y0, floorW, y + h - 6, dungeon.master(), true);
 	}
 
 	private void drawFloors(
@@ -498,9 +525,10 @@ public class ProfileViewerScreen extends Screen {
 		float y,
 		float w,
 		float maxY,
-		List<ProfileViewer.Floor> floors
+		List<ProfileViewer.Floor> floors,
+		boolean master
 	) {
-		float row = 18;
+		float row = 16;
 		for (int i = 0; i < floors.size(); i++) {
 			float fy = y + i * row;
 			if (fy + row > maxY) {
@@ -514,7 +542,7 @@ public class ProfileViewerScreen extends Screen {
 					+ "\nS  " + clock(floor.bestS())
 					+ "\nS+  " + clock(floor.bestSPlus());
 			}
-			paintItem(graphics, font, new ItemStack(Items.STONE_BRICKS), x, fy, 12, false);
+			paintItem(graphics, font, floorIcon(floor.name(), master), x, fy, 12, false);
 			GuiDraw.small(graphics, font, floor.name(), x + 16, GuiDraw.middle(fy, 14), Theme.MUTED);
 			GuiDraw.menu(graphics, font, compact(floor.completions()), x + 42, GuiDraw.middle(fy, 14), Theme.TEXT);
 			String plus = clock(floor.bestSPlus());
@@ -1021,18 +1049,18 @@ public class ProfileViewerScreen extends Screen {
 		float w,
 		ProfileViewer.Skill skill
 	) {
-		boolean hover = GuiDraw.hovered(mouseX, mouseY, x, y, w, 28);
+		boolean hover = GuiDraw.hovered(mouseX, mouseY, x, y, w, 22);
 		if (hover) {
 			tooltip = skill.name() + "  " + skill.level() + " / " + skill.cap() + "\n" + prettyNumber((long) skill.xp()) + " xp";
 		}
-		paintItem(graphics, font, skillIcon(skill.name()), x, y, 16, false);
-		GuiDraw.small(graphics, font, skill.name(), x + 20, y, Theme.MUTED);
+		paintItem(graphics, font, skillIcon(skill.name()), x, y, 14, false);
+		GuiDraw.small(graphics, font, skill.name(), x + 18, y, Theme.MUTED);
 		String value = skill.level() + " / " + skill.cap();
 		GuiDraw.menu(graphics, font, value, x + w - GuiDraw.menuWidth(font, value), y, Theme.TEXT);
-		GuiDraw.rounded(graphics, x + 20, y + 14, w - 20, 5, 2, Theme.TRACK);
+		GuiDraw.rounded(graphics, x + 18, y + 12, w - 18, 4, 2, Theme.TRACK);
 		float fill = Math.max(0f, Math.min(1f, skill.progress()));
 		if (fill > 0.01f) {
-			GuiDraw.rounded(graphics, x + 20, y + 14, Math.max(4f, (w - 20) * fill), 5, 2, Theme.ACCENT);
+			GuiDraw.rounded(graphics, x + 18, y + 12, Math.max(4f, (w - 18) * fill), 4, 2, Theme.ACCENT);
 		}
 	}
 
@@ -1226,6 +1254,8 @@ public class ProfileViewerScreen extends Screen {
 			case "Carpentry" -> new ItemStack(Items.CRAFTING_TABLE);
 			case "Runecrafting" -> new ItemStack(Items.END_CRYSTAL);
 			case "Social" -> new ItemStack(Items.CAKE);
+			case "Catacombs" -> sky("DUNGEON_STONE");
+			case "Healer", "Mage", "Berserk", "Archer", "Tank" -> classIcon(name);
 			default -> new ItemStack(Items.PAPER);
 		};
 	}
@@ -1308,18 +1338,42 @@ public class ProfileViewerScreen extends Screen {
 
 	private static ItemStack perkIcon(String id) {
 		return switch (id == null ? "" : id) {
-			case "mining_speed", "mining_speed_2", "speedy_mineman", "mining_speed_boost" -> new ItemStack(Items.GOLDEN_PICKAXE);
-			case "mining_fortune", "mining_fortune_2", "fortunate_mineman", "titanium_insanium" -> new ItemStack(Items.GOLD_INGOT);
-			case "efficient_miner", "mole", "vein_seeker" -> new ItemStack(Items.IRON_PICKAXE);
-			case "powder_buff", "daily_powder", "daily_grind" -> new ItemStack(Items.GUNPOWDER);
-			case "crystallized", "gemstone_infusion" -> new ItemStack(Items.AMETHYST_SHARD);
-			case "pickobulus", "maniac_miner", "professional" -> new ItemStack(Items.TNT);
-			case "luck_of_the_cave", "great_explorer", "surveyor" -> new ItemStack(Items.MAP);
-			case "sky_mall", "goblin_killer" -> new ItemStack(Items.EMERALD);
-			case "front_loaded", "precision_mining" -> new ItemStack(Items.SPYGLASS);
-			case "special_0" -> new ItemStack(Items.HEART_OF_THE_SEA);
-			case "blue_ice", "frozen_skin", "keep_it_cool", "steady_hand" -> new ItemStack(Items.BLUE_ICE);
-			default -> new ItemStack(Items.DIAMOND_PICKAXE);
+			case "mining_speed" -> sky("MITHRIL_PICKAXE");
+			case "mining_speed_2", "speedy_mineman" -> sky("MITHRIL_DRILL_1");
+			case "mining_speed_boost" -> sky("SUGAR");
+			case "mining_fortune", "front_loaded" -> sky("ENCHANTED_GOLD");
+			case "mining_fortune_2", "fortunate_mineman", "titanium_insanium" -> sky("ENCHANTED_TITANIUM");
+			case "efficient_miner", "strong_arm" -> sky("IRON_PICKAXE");
+			case "mole" -> sky("FINE_AMBER_GEM");
+			case "vein_seeker" -> sky("GEMSTONE_MIXTURE");
+			case "powder_buff", "occupation_of_the_mines" -> sky("MITHRIL_ORE");
+			case "daily_powder" -> sky("GLOWSTONE_DUST");
+			case "daily_grind", "no_stone_unturned", "blockhead" -> sky("COBBLESTONE");
+			case "crystallized", "great_explorer" -> sky("FINE_AMETHYST_GEM");
+			case "gemstone_infusion" -> sky("FINE_RUBY_GEM");
+			case "pickobulus" -> sky("TNT");
+			case "maniac_miner" -> sky("ENCHANTED_REDSTONE");
+			case "professional" -> sky("TITANIUM_PICKAXE");
+			case "luck_of_the_cave", "miners_blessing" -> sky("RABBIT_FOOT");
+			case "surveyor" -> sky("COMPASS");
+			case "eager_adventurer" -> new ItemStack(Items.MAP);
+			case "sky_mall" -> sky("EMERALD");
+			case "goblin_killer" -> sky("GOLD_INGOT");
+			case "precision_mining" -> sky("FINE_JADE_GEM");
+			case "special_0" -> sky("NETHER_STAR");
+			case "frozen_skin", "steady_hand" -> sky("PACKED_ICE");
+			case "keep_it_cool" -> sky("ICE");
+			case "warm_hearted" -> sky("MAGMA_CREAM");
+			case "hungry_for_more" -> sky("COOKED_BEEF");
+			case "mineshaft_mayhem" -> sky("MINECART");
+			case "gifts_from_above", "gifts_from_the_departed" -> sky("FINE_ONYX_GEM");
+			case "dead_mans_chest" -> new ItemStack(Items.CHEST);
+			case "subterranean_fisher" -> sky("FISHING_ROD");
+			case "lonesome_miner" -> sky("TITANIUM_DRILL_1");
+			case "orbiter" -> sky("ENDER_PEARL");
+			case "old_school" -> sky("IRON_PICKAXE");
+			case "seasoned_mineman" -> sky("ENCHANTED_COAL");
+			default -> sky("MITHRIL_ORE");
 		};
 	}
 
@@ -1339,57 +1393,151 @@ public class ProfileViewerScreen extends Screen {
 		};
 	}
 
-	private static ItemStack petIcon(ProfileViewer.Pet pet) {
-		String type = pet == null || pet.type() == null ? "" : pet.type().trim();
-		if (!type.isBlank()) {
-			ItemStack stack = ItemIds.resolve("sb:" + type).stack();
-			if (stack != null && !stack.isEmpty()) {
-				return stack;
-			}
+	private static boolean ironman(ProfileViewer.Profile profile) {
+		return profile != null && "ironman".equalsIgnoreCase(profile.gameMode());
+	}
+
+	private static Component nametag(ProfileViewer.Snapshot snap, ProfileViewer.Profile profile) {
+		String name = snap != null && snap.name() != null && !snap.name().isBlank() ? snap.name() : "?";
+		int level = profile == null ? 0 : profile.skyblockLevel();
+		return Component.literal(level > 0 ? "[" + level + "] " + name : name);
+	}
+
+	private static ItemStack sky(String id) {
+		ItemStack stack = ItemIds.resolve("sb:" + id).stack();
+		if (stack != null && !stack.isEmpty()) {
+			return stack;
 		}
-		String key = type.isBlank() && pet != null ? pet.name() : type;
-		return switch (key.toUpperCase(Locale.ROOT).replace(' ', '_')) {
-			case "WOLF", "DOG", "GRANDMA_WOLF" -> new ItemStack(Items.BONE);
-			case "CAT", "OCELOT", "BLACK_CAT" -> new ItemStack(Items.COD);
-			case "ENDERMAN", "ENDERMITE" -> new ItemStack(Items.ENDER_PEARL);
-			case "BLAZE", "PHOENIX" -> new ItemStack(Items.BLAZE_ROD);
-			case "SKELETON", "SKELETON_HORSE" -> new ItemStack(Items.BONE);
-			case "ZOMBIE" -> new ItemStack(Items.ROTTEN_FLESH);
-			case "SPIDER", "TARANTULA" -> new ItemStack(Items.SPIDER_EYE);
-			case "ENDER_DRAGON", "DRAGON" -> new ItemStack(Items.DRAGON_HEAD);
-			case "GOLDEN_DRAGON" -> new ItemStack(Items.GOLD_BLOCK);
-			case "WITHER_SKELETON", "WITHER" -> new ItemStack(Items.WITHER_SKELETON_SKULL);
-			case "TIGER", "LION" -> new ItemStack(Items.ORANGE_DYE);
-			case "RABBIT" -> new ItemStack(Items.RABBIT_FOOT);
-			case "CHICKEN" -> new ItemStack(Items.EGG);
-			case "PIG", "PIGMAN" -> new ItemStack(Items.PORKCHOP);
-			case "SHEEP" -> new ItemStack(Items.WHITE_WOOL);
-			case "COW", "MOOSHROOM" -> new ItemStack(Items.BEEF);
-			case "SQUID", "GLOW_SQUID" -> new ItemStack(Items.INK_SAC);
-			case "DOLPHIN", "FLYING_FISH" -> new ItemStack(Items.TROPICAL_FISH);
-			case "BLUE_WHALE" -> new ItemStack(Items.PRISMARINE_CRYSTALS);
-			case "TURTLE", "ARMADILLO" -> new ItemStack(Items.TURTLE_HELMET);
-			case "BEE" -> new ItemStack(Items.HONEYCOMB);
-			case "ELEPHANT" -> new ItemStack(Items.CLAY_BALL);
-			case "MONKEY" -> new ItemStack(Items.COCOA_BEANS);
-			case "ROCK" -> new ItemStack(Items.STONE);
-			case "MITHRIL_GOLEM", "GOLEM", "IRON_GOLEM" -> new ItemStack(Items.IRON_BLOCK);
-			case "AMMONITE" -> new ItemStack(Items.NAUTILUS_SHELL);
-			case "SNAIL", "SLIME", "JELLYFISH" -> new ItemStack(Items.SLIME_BALL);
-			case "MOLE" -> new ItemStack(Items.PODZOL);
-			case "SCATHA" -> new ItemStack(Items.GOLD_INGOT);
-			case "BABY_YETI", "YETI", "SNOWMAN" -> new ItemStack(Items.SNOWBALL);
-			case "RAT" -> new ItemStack(Items.BROWN_WOOL);
-			case "BAL" -> new ItemStack(Items.MAGMA_BLOCK);
-			case "WISP" -> new ItemStack(Items.SOUL_LANTERN);
-			case "HORSE" -> new ItemStack(Items.SADDLE);
-			case "PARROT" -> new ItemStack(Items.FEATHER);
-			case "BAT" -> new ItemStack(Items.COAL);
-			case "GHAST" -> new ItemStack(Items.GHAST_TEAR);
-			case "MAGMA_CUBE" -> new ItemStack(Items.MAGMA_CREAM);
-			case "CREEPER" -> new ItemStack(Items.GUNPOWDER);
-			default -> new ItemStack(Items.BONE);
+		return new ItemStack(Items.PAPER);
+	}
+
+	private static ItemStack floorIcon(String name, boolean master) {
+		String floor = name == null ? "" : name.trim().toUpperCase(Locale.ROOT);
+		if (floor.equals("E") || floor.equals("ENTRANCE")) {
+			return new ItemStack(Items.OAK_DOOR);
+		}
+		String boss = switch (floor) {
+			case "F1", "M1" -> "BONZO";
+			case "F2", "M2" -> "SCARF";
+			case "F3", "M3" -> "PROFESSOR";
+			case "F4", "M4" -> "THORN";
+			case "F5", "M5" -> "LIVID";
+			case "F6", "M6" -> "SADAN";
+			case "F7", "M7" -> "NECRON";
+			default -> "";
 		};
+		if (boss.isEmpty()) {
+			return sky("DUNGEON_STONE");
+		}
+		return sky((master || floor.startsWith("M") ? "DIAMOND_" : "GOLD_") + boss + "_HEAD");
+	}
+
+	private static ItemStack petIcon(ProfileViewer.Pet pet) {
+		String type = pet == null || pet.type() == null ? "" : pet.type().trim().toUpperCase(Locale.ROOT).replace(' ', '_');
+		if (type.isBlank() && pet != null && pet.name() != null) {
+			type = pet.name().trim().toUpperCase(Locale.ROOT).replace(' ', '_');
+		}
+		type = switch (type) {
+			case "CAT" -> "OCELOT";
+			case "DRAGON" -> "ENDER_DRAGON";
+			case "IRON_GOLEM" -> "GOLEM";
+			case "YETI" -> "BABY_YETI";
+			case "WISP" -> "DROPLET_WISP";
+			case "MONTEZUMA" -> "FRACTURED_MONTEZUMA_SOUL";
+			case "T_REX", "TREX", "T-REX" -> "TYRANNOSAURUS";
+			case "COW", "MOOSHROOM" -> "MOOSHROOM_COW";
+			case "DOG" -> "WOLF";
+			default -> type;
+		};
+		String hash = PET_HEADS.get(type);
+		if (hash != null && !hash.isBlank()) {
+			return ItemIds.skull(type, hash);
+		}
+		return sky("PET");
+	}
+
+	private static final Map<String, String> PET_HEADS = petHeads();
+
+	private static Map<String, String> petHeads() {
+		Map<String, String> heads = new HashMap<>();
+		heads.put("ARMADILLO", "c1eb6df4736ae24dd12a3d00f91e6e3aa7ade6bbefb0978afef2f0f92461018f");
+		heads.put("BAT", "382fc3f71b41769376a9e92fe3adbaac3772b999b219c9d6b4680ba9983e527");
+		heads.put("BLAZE", "b78ef2e4cf2c41a2d14bfde9caff10219f5b1bf5b35a49eb51c6467882cb5f0");
+		heads.put("CHICKEN", "7f37d524c3eed171ce149887ea1dee4ed399904727d521865688ece3bac75e");
+		heads.put("HORSE", "36fcd3ec3bc84bafb4123ea479471f9d2f42d8fb9c5f11cf5f4e0d93226");
+		heads.put("JERRY", "822d8e751c8f2fd4c8942c44bdb2f5ca4d8ae8e575ed3eb34c18a86e93b");
+		heads.put("OCELOT", "5657cd5c2989ff97570fec4ddcdc6926a68a3393250c1be1f0b114a1db1");
+		heads.put("PIGMAN", "63d9cb6513f2072e5d4e426d70a5557bc398554c880d4e7b7ec8ef4945eb02f2");
+		heads.put("RABBIT", "117bffc1972acd7f3b4a8f43b5b6c7534695b8fd62677e0306b2831574b");
+		heads.put("SHEEP", "64e22a46047d272e89a1cfa13e9734b7e12827e235c2012c1a95962874da0");
+		heads.put("SILVERFISH", "da91dab8391af5fda54acd2c0b18fbd819b865e1a8f1d623813fa761e924540");
+		heads.put("WITHER_SKELETON", "f5ec964645a8efac76be2f160d7c9956362f32b6517390c59c3085034f050cff");
+		heads.put("SKELETON_HORSE", "47effce35132c86ff72bcae77dfbb1d22587e94df3cbc2570ed17cf8973a");
+		heads.put("WOLF", "dc3dd984bb659849bd52994046964c22725f717e986b12d548fd169367d494");
+		heads.put("ENDERMAN", "6eab75eaa5c9f2c43a0d23cfdce35f4df632e9815001850377385f7b2f039ce1");
+		heads.put("PHOENIX", "23aaf7b1a778949696cb99d4f04ad1aa518ceee256c72e5ed65bfa5c2d88d9e");
+		heads.put("MAGMA_CUBE", "38957d5023c937c4c41aa2412d43410bda23cf79a9f6ab36b76fef2d7c429");
+		heads.put("FLYING_FISH", "40cd71fbbbbb66c7baf7881f415c64fa84f6504958a57ccdb8589252647ea");
+		heads.put("BLUE_WHALE", "dab779bbccc849f88273d844e8ca2f3a67a1699cb216c0a11b44326ce2cc20");
+		heads.put("TIGER", "fc42638744922b5fcf62cd9bf27eeab91b2e72d6c70e86cc5aa3883993e9d84");
+		heads.put("LION", "38ff473bd52b4db2c06f1ac87fe1367bce7574fac330ffac7956229f82efba1");
+		heads.put("PARROT", "5df4b3401a4d06ad66ac8b5c4d189618ae617f9c143071c8ac39a563cf4e4208");
+		heads.put("SNOWMAN", "11136616d8c4a87a54ce78a97b551610c2b2c8f6d410bc38b858f974b113b208");
+		heads.put("TURTLE", "212b58c841b394863dbcc54de1c2ad2648af8f03e648988c1f9cef0bc20ee23c");
+		heads.put("BEE", "7e941987e825a24ea7baafab9819344b6c247c75c54a691987cd296bc163c263");
+		heads.put("ENDER_DRAGON", "aec3ff563290b13ff3bcc36898af7eaa988b6cc18dc254147f58374afe9b21b9");
+		heads.put("GUARDIAN", "221025434045bda7025b3e514b316a4b770c6faa4ba9adb4be3809526db77f9d");
+		heads.put("SQUID", "01433be242366af126da434b8735df1eb5b3cb2cede39145974e9c483607bac");
+		heads.put("GIRAFFE", "176b4e390f2ecdb8a78dc611789ca0af1e7e09229319c3a7aa8209b63b9");
+		heads.put("ELEPHANT", "7071a76f669db5ed6d32b48bb2dba55d5317d7f45225cb3267ec435cfa514");
+		heads.put("MONKEY", "13cf8db84807c471d7c6922302261ac1b5a179f96d1191156ecf3e1b1d3ca");
+		heads.put("SPIDER", "cd541541daaff50896cd258bdbdd4cf80c3ba816735726078bfe393927e57f1");
+		heads.put("ENDERMITE", "5a1a0831aa03afb4212adcbb24e5dfaa7f476a1173fce259ef75a85855");
+		heads.put("GHOUL", "87934565bf522f6f4726cdfe127137be11d37c310db34d8c70253392b5ff5b");
+		heads.put("JELLYFISH", "913f086ccb56323f238ba3489ff2a1a34c0fdceeafc483acff0e5488cfd6c2f1");
+		heads.put("PIG", "621668ef7cb79dd9c22ce3d1f3f4cb6e2559893b6df4a469514e667c16aa4");
+		heads.put("ROCK", "cb2b5d48e57577563aca31735519cb622219bc058b1f34648b67b8e71bc0fa");
+		heads.put("SKELETON", "fca445749251bdd898fb83f667844e38a1dff79a1529f79a42447a0599310ea4");
+		heads.put("ZOMBIE", "56fc854bb84cf4b7697297973e02b79bc10698460b51a639c60e5e417734e11");
+		heads.put("DOLPHIN", "cefe7d803a45aa2af1993df2544a28df849a762663719bfefc58bf389ab7f5");
+		heads.put("BABY_YETI", "ab126814fc3fa846dad934c349628a7a1de5b415021a03ef4211d62514d5");
+		heads.put("MEGALODON", "a94ae433b301c7fb7c68cba625b0bd36b0b14190f20e34a7c8ee0d9de06d53b9");
+		heads.put("GOLEM", "89091d79ea0f59ef7ef94d7bba6e5f17f2f7d4572c44f90f76c4819a714");
+		heads.put("HOUND", "b7c8bef6beb77e29af8627ecdc38d86aa2fea7ccd163dc73c00f9f258f9a1457");
+		heads.put("TARANTULA", "8300986ed0a04ea79904f6ae53f49ed3a0ff5b1df62bba622ecbd3777f156df8");
+		heads.put("BLACK_CAT", "e4b45cbaa19fe3d68c856cd3846c03b5f59de81a480eec921ab4fa3cd81317");
+		heads.put("SPIRIT", "8d9ccc670677d0cebaad4058d6aaf9acfab09abea5d86379a059902f2fe22655");
+		heads.put("GRIFFIN", "4c27e3cb52a64968e60c861ef1ab84e0a0cb5f07be103ac78da67761731f00c8");
+		heads.put("MITHRIL_GOLEM", "c1b2dfe8ed5dffc5b1687bc1c249c39de2d8a6c3d90305c95f6d1a1a330a0b1");
+		heads.put("GRANDMA_WOLF", "4e794274c1bb197ad306540286a7aa952974f5661bccf2b725424f6ed79c7884");
+		heads.put("RAT", "a8abb471db0ab78703011979dc8b40798a941f3a4dec3ec61cbeec2af8cffe8");
+		heads.put("BAL", "c469ba2047122e0a2de3c7437ad3dd5d31f1ac2d27abde9f8841e1d92a8c5b75");
+		heads.put("SCATHA", "df03ad96092f3f789902436709cdf69de6b727c121b3c2daef9ffa1ccaed186c");
+		heads.put("GOLDEN_DRAGON", "2e9f9b1fc014166cb46a093e5349b2bf6edd201b680d62e48dbf3af9b0459116");
+		heads.put("AMMONITE", "a074a7bd976fe6aba1624161793be547d54c835cf422243a851ba09d1e650553");
+		heads.put("BINGO", "d4cd9c707c7092d4759fe2b2b6a713215b6e39919ec4e7afb1ae2b6f8576674c");
+		heads.put("MOOSHROOM_COW", "2b52841f2fd589e0bc84cbabf9e1c27cb70cac98f8d6b3dd065e55a4dcb70d77");
+		heads.put("SNAIL", "50a9933a3b10489d38f6950c4e628bfcf9f7a27f8d84666f04f14d5374252972");
+		heads.put("KUUDRA", "1f0239fb498e5907ede12ab32629ee95f0064574a9ffdff9fc3a1c8e2ec17587");
+		heads.put("DROPLET_WISP", "b412e70375ec99ee38ae94b30e9b10752d459662b54794dfe66fe6a183c672d3");
+		heads.put("FROST_WISP", "1d8ad9936d758c5ea30b0b7cc7c67c2bfcea829ecf2425c0b50fc92a26ae23d0");
+		heads.put("GLACIAL_WISP", "3e2018feebe1a99177b3cb196d4e44521268b4b3eb56e6419cb0253cdbf0456c");
+		heads.put("SUBZERO_WISP", "7a0eb37e58c942eca4d33ab44e26eb1910c783788510b0a53b6f4d18881e237e");
+		heads.put("REINDEER", "a2df65c6fd19a58bee38252192ac7ce2cf1dc8632c3547a9228b6b697240d098");
+		heads.put("RIFT_FERRET", "b6b11399448260185da1d17e54c984515faab6d8585f00972451ec2b43d46f94");
+		heads.put("FRACTURED_MONTEZUMA_SOUL", "df656c06e8a5cb4692564ee21748bddec9d785d1834284aaa1439601bba47d6b");
+		heads.put("EERIE", "c3af70c6ff76ba48f24ee8a2063a5b50bbfabf409f4795248a292f8289f47c98");
+		heads.put("SLUG", "7a79d0fd677b54530961117ef84adc206e2cc5045c1344d61d776bf8ac2fe1ba");
+		heads.put("OWL", "da3216da54e7368fb40b721239ad95e07ef4f97d93f1c42ff319bab9a53882af");
+		heads.put("TYRANNOSAURUS", "93f28ec96df59c67e9d2fc2e7e3d055fa31646e4111add9fe26a692801964126");
+		heads.put("SPINOSAURUS", "d3c9d479471a2f13f22548315159591720992e70c920fef83a901b7186720e3c");
+		heads.put("GOBLIN", "7309d8dc35a638a04b915a3b15a1452ceeae0d7ea42bcdadb21b03046987515c");
+		heads.put("ANKYLOSAURUS", "c1aa836b9096c417903299a6c5ab41738c19648ac439fed4bcbe6c32605338dc");
+		heads.put("PENGUIN", "37534e97f36e5a8335928e171ec99608bee7fb16e260afb301025b3b17eeefc4");
+		heads.put("MAMMOTH", "6b10715732cd1fd49fa1b6187947c307dd4687105cf033840607f9d6234743ad");
+		heads.put("MOLE", "727baaafc09978d4bda73e16afdde85ec13b0f95ad989524c5fcaa717cf06b4a");
+		heads.put("GLACITE_GOLEM", "af132a6593876d3c377d503fd66eca3fb938743251f7b16a9870c60b7388c8a3");
+		return Map.copyOf(heads);
 	}
 
 	private static int tierColor(String tier) {

@@ -73,7 +73,37 @@ public final class PlayerPreview {
 		View view,
 		Gear gear
 	) {
-		return draw(graphics, x, y, w, h, yaw, pitch, view, gear == null ? Gear.none() : gear, false);
+		return drawEquipped(graphics, x, y, w, h, yaw, pitch, view, gear, 62f);
+	}
+
+	public static Drawn drawEquipped(
+		GuiGraphicsExtractor graphics,
+		float x,
+		float y,
+		float w,
+		float h,
+		float yaw,
+		float pitch,
+		View view,
+		Gear gear,
+		float maxSize
+	) {
+		Minecraft client = Minecraft.getInstance();
+		LocalPlayer player = client.player;
+		if (player == null || view == null) {
+			return null;
+		}
+		float scale = Math.max(0.35f, view.scale);
+		if (w < 24f || h < 40f) {
+			return null;
+		}
+		EntityRenderDispatcher dispatcher = client.getEntityRenderDispatcher();
+		EntityRenderState state = dispatcher.extractEntity(player, 1f);
+		state.shadowPieces.clear();
+		state.outlineColor = 0;
+		state.nameTag = null;
+		freeze(state, yaw, pitch, gear == null ? Gear.none() : gear, false);
+		return paint(graphics, state, x, y, w, h, yaw, pitch, view, scale, 1.5f, maxSize, 16f, 10f, 44f);
 	}
 
 	public static Drawn draw(
