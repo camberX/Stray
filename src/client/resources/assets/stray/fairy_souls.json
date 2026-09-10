@@ -1,0 +1,1910 @@
+{
+ "texture": "b96923ad247310007f6ae5d326d847ad53864cf16c3565a181dc8e6b20be2387",
+ "source": "https://hypixelskyblock.minecraft.wiki/w/Fairy_Souls/List",
+ "souls": [
+  {
+   "island": "Hub",
+   "id": "1",
+   "x": 18,
+   "y": 68,
+   "z": -3
+  },
+  {
+   "island": "Hub",
+   "id": "2",
+   "x": 36,
+   "y": 66,
+   "z": -35
+  },
+  {
+   "island": "Hub",
+   "id": "3",
+   "x": 38,
+   "y": 67,
+   "z": -36
+  },
+  {
+   "island": "Hub",
+   "id": "4",
+   "x": -39,
+   "y": 56,
+   "z": -11
+  },
+  {
+   "island": "Hub",
+   "id": "5",
+   "x": -15,
+   "y": 87,
+   "z": -52
+  },
+  {
+   "island": "Hub",
+   "id": "6",
+   "x": -34,
+   "y": 86,
+   "z": -35
+  },
+  {
+   "island": "Hub",
+   "id": "7",
+   "x": -15,
+   "y": 101,
+   "z": -76
+  },
+  {
+   "island": "Hub",
+   "id": "8",
+   "x": 12,
+   "y": 87,
+   "z": -66
+  },
+  {
+   "island": "Hub",
+   "id": "9",
+   "x": 66,
+   "y": 98,
+   "z": -60
+  },
+  {
+   "island": "Hub",
+   "id": "10",
+   "x": 73,
+   "y": 59,
+   "z": 6
+  },
+  {
+   "island": "Hub",
+   "id": "11",
+   "x": 158,
+   "y": 92,
+   "z": 8
+  },
+  {
+   "island": "Hub",
+   "id": "12",
+   "x": 153,
+   "y": 64,
+   "z": 45
+  },
+  {
+   "island": "Hub",
+   "id": "13",
+   "x": 80,
+   "y": 66,
+   "z": 26
+  },
+  {
+   "island": "Hub",
+   "id": "14",
+   "x": -64,
+   "y": 77,
+   "z": -72
+  },
+  {
+   "island": "Hub",
+   "id": "15",
+   "x": -117,
+   "y": 73,
+   "z": -163
+  },
+  {
+   "island": "Hub",
+   "id": "16",
+   "x": -127,
+   "y": 75,
+   "z": -185
+  },
+  {
+   "island": "Hub",
+   "id": "17",
+   "x": -77,
+   "y": 74,
+   "z": -152
+  },
+  {
+   "island": "Hub",
+   "id": "18",
+   "x": -92,
+   "y": 59,
+   "z": -138
+  },
+  {
+   "island": "Hub",
+   "id": "19",
+   "x": 15,
+   "y": 82,
+   "z": -127
+  },
+  {
+   "island": "Hub",
+   "id": "20",
+   "x": 8,
+   "y": 64,
+   "z": -137
+  },
+  {
+   "island": "Hub",
+   "id": "21",
+   "x": -11,
+   "y": 73,
+   "z": -164
+  },
+  {
+   "island": "Hub",
+   "id": "22",
+   "x": -3,
+   "y": 79,
+   "z": -147
+  },
+  {
+   "island": "Hub",
+   "id": "23",
+   "x": 98,
+   "y": 76,
+   "z": -29
+  },
+  {
+   "island": "Hub",
+   "id": "24",
+   "x": 106,
+   "y": 64,
+   "z": -62
+  },
+  {
+   "island": "Hub",
+   "id": "25",
+   "x": 145,
+   "y": 84,
+   "z": -67
+  },
+  {
+   "island": "Hub",
+   "id": "26",
+   "x": 77,
+   "y": 102,
+   "z": -88
+  },
+  {
+   "island": "Hub",
+   "id": "27",
+   "x": 82,
+   "y": 97,
+   "z": -139
+  },
+  {
+   "island": "Hub",
+   "id": "28",
+   "x": 87,
+   "y": 68,
+   "z": -154
+  },
+  {
+   "island": "Hub",
+   "id": "29",
+   "x": 136,
+   "y": 74,
+   "z": -105
+  },
+  {
+   "island": "Hub",
+   "id": "30",
+   "x": 61,
+   "y": 80,
+   "z": -139
+  },
+  {
+   "island": "Hub",
+   "id": "31",
+   "x": 70,
+   "y": 73,
+   "z": -106
+  },
+  {
+   "island": "Hub",
+   "id": "32",
+   "x": -106,
+   "y": 85,
+   "z": -22
+  },
+  {
+   "island": "Hub",
+   "id": "33",
+   "x": -116,
+   "y": 73,
+   "z": -20
+  },
+  {
+   "island": "Hub",
+   "id": "34",
+   "x": -188,
+   "y": 79,
+   "z": -56
+  },
+  {
+   "island": "Hub",
+   "id": "35",
+   "x": 49,
+   "y": 77,
+   "z": 93
+  },
+  {
+   "island": "Hub",
+   "id": "36",
+   "x": 45,
+   "y": 117,
+   "z": 94
+  },
+  {
+   "island": "Hub",
+   "id": "37",
+   "x": 44,
+   "y": 121,
+   "z": 88
+  },
+  {
+   "island": "Hub",
+   "id": "38",
+   "x": 41,
+   "y": 106,
+   "z": 101
+  },
+  {
+   "island": "Hub",
+   "id": "39",
+   "x": 45,
+   "y": 148,
+   "z": 98
+  },
+  {
+   "island": "Hub",
+   "id": "40",
+   "x": 162,
+   "y": 46,
+   "z": 69
+  },
+  {
+   "island": "Hub",
+   "id": "41",
+   "x": 147,
+   "y": 53,
+   "z": 88
+  },
+  {
+   "island": "Hub",
+   "id": "42",
+   "x": 123,
+   "y": 68,
+   "z": 152
+  },
+  {
+   "island": "Hub",
+   "id": "43",
+   "x": 169,
+   "y": 60,
+   "z": 129
+  },
+  {
+   "island": "Hub",
+   "id": "44",
+   "x": 145,
+   "y": 69,
+   "z": 173
+  },
+  {
+   "island": "Hub",
+   "id": "45",
+   "x": 82,
+   "y": 61,
+   "z": 196
+  },
+  {
+   "island": "Hub",
+   "id": "46",
+   "x": 78,
+   "y": 109,
+   "z": 87
+  },
+  {
+   "island": "Hub",
+   "id": "47",
+   "x": 132,
+   "y": 144,
+   "z": 114
+  },
+  {
+   "island": "Hub",
+   "id": "48",
+   "x": 103,
+   "y": 67,
+   "z": 110
+  },
+  {
+   "island": "Hub",
+   "id": "49",
+   "x": 119,
+   "y": 119,
+   "z": 124
+  },
+  {
+   "island": "Hub",
+   "id": "50",
+   "x": -183,
+   "y": 80,
+   "z": 29
+  },
+  {
+   "island": "Hub",
+   "id": "51",
+   "x": -166,
+   "y": 79,
+   "z": 93
+  },
+  {
+   "island": "Hub",
+   "id": "52",
+   "x": -133,
+   "y": 74,
+   "z": 133
+  },
+  {
+   "island": "Hub",
+   "id": "53",
+   "x": -152,
+   "y": 67,
+   "z": 123
+  },
+  {
+   "island": "Hub",
+   "id": "54",
+   "x": -195,
+   "y": 55,
+   "z": 153
+  },
+  {
+   "island": "Hub",
+   "id": "55",
+   "x": -191,
+   "y": 102,
+   "z": 109
+  },
+  {
+   "island": "Hub",
+   "id": "56",
+   "x": -245,
+   "y": 75,
+   "z": 149
+  },
+  {
+   "island": "Hub",
+   "id": "57",
+   "x": -248,
+   "y": 74,
+   "z": 125
+  },
+  {
+   "island": "Hub",
+   "id": "58",
+   "x": -261,
+   "y": 56,
+   "z": 115
+  },
+  {
+   "island": "Hub",
+   "id": "59",
+   "x": -260,
+   "y": 96,
+   "z": 48
+  },
+  {
+   "island": "Hub",
+   "id": "60",
+   "x": -262,
+   "y": 102,
+   "z": 67
+  },
+  {
+   "island": "Hub",
+   "id": "61",
+   "x": -259,
+   "y": 114,
+   "z": 85
+  },
+  {
+   "island": "Hub",
+   "id": "62",
+   "x": -229,
+   "y": 123,
+   "z": 84
+  },
+  {
+   "island": "Hub",
+   "id": "63",
+   "x": -252,
+   "y": 132,
+   "z": 51
+  },
+  {
+   "island": "Hub",
+   "id": "64",
+   "x": -207,
+   "y": 100,
+   "z": 66
+  },
+  {
+   "island": "Hub",
+   "id": "65",
+   "x": -214,
+   "y": 103,
+   "z": 89
+  },
+  {
+   "island": "Hub",
+   "id": "66",
+   "x": -233,
+   "y": 86,
+   "z": 84
+  },
+  {
+   "island": "Hub",
+   "id": "67",
+   "x": -48,
+   "y": 117,
+   "z": 129
+  },
+  {
+   "island": "Hub",
+   "id": "68",
+   "x": -60,
+   "y": 107,
+   "z": 33
+  },
+  {
+   "island": "Hub",
+   "id": "69",
+   "x": -56,
+   "y": 115,
+   "z": 58
+  },
+  {
+   "island": "Hub",
+   "id": "70",
+   "x": -50,
+   "y": 132,
+   "z": 62
+  },
+  {
+   "island": "Hub",
+   "id": "71",
+   "x": 27,
+   "y": 84,
+   "z": 83
+  },
+  {
+   "island": "Hub",
+   "id": "72",
+   "x": 9,
+   "y": 104,
+   "z": 64
+  },
+  {
+   "island": "Hub",
+   "id": "73",
+   "x": 12,
+   "y": 134,
+   "z": 72
+  },
+  {
+   "island": "Hub",
+   "id": "74",
+   "x": -52,
+   "y": 161,
+   "z": 73
+  },
+  {
+   "island": "Hub",
+   "id": "75",
+   "x": -21,
+   "y": 156,
+   "z": 69
+  },
+  {
+   "island": "Hub",
+   "id": "76",
+   "x": -22,
+   "y": 167,
+   "z": 66
+  },
+  {
+   "island": "Hub",
+   "id": "77",
+   "x": 10,
+   "y": 178,
+   "z": 52
+  },
+  {
+   "island": "Hub",
+   "id": "78",
+   "x": -38,
+   "y": 194,
+   "z": 65
+  },
+  {
+   "island": "Hub",
+   "id": "79",
+   "x": -9,
+   "y": 188,
+   "z": 70
+  },
+  {
+   "island": "Hub",
+   "id": "80",
+   "x": -3,
+   "y": 193,
+   "z": 62
+  },
+  {
+   "island": "The Farming Islands",
+   "id": "Brn-1",
+   "x": 182,
+   "y": 99,
+   "z": -235
+  },
+  {
+   "island": "The Farming Islands",
+   "id": "Brn-2",
+   "x": 96,
+   "y": 96,
+   "z": -287
+  },
+  {
+   "island": "The Farming Islands",
+   "id": "Brn-3",
+   "x": 143,
+   "y": 90,
+   "z": -243
+  },
+  {
+   "island": "The Farming Islands",
+   "id": "Brn-4",
+   "x": 99,
+   "y": 112,
+   "z": -275
+  },
+  {
+   "island": "The Farming Islands",
+   "id": "Brn-5",
+   "x": 183,
+   "y": 99,
+   "z": -305
+  },
+  {
+   "island": "The Farming Islands",
+   "id": "Brn-6",
+   "x": 126,
+   "y": 91,
+   "z": -304
+  },
+  {
+   "island": "The Farming Islands",
+   "id": "Brn-7",
+   "x": 155,
+   "y": 23,
+   "z": -204
+  },
+  {
+   "island": "The Farming Islands",
+   "id": "MD-1",
+   "x": 152,
+   "y": 67,
+   "z": -361
+  },
+  {
+   "island": "The Farming Islands",
+   "id": "MD-2",
+   "x": 145,
+   "y": 77,
+   "z": -374
+  },
+  {
+   "island": "The Farming Islands",
+   "id": "MD-3",
+   "x": 111,
+   "y": 63,
+   "z": -447
+  },
+  {
+   "island": "The Farming Islands",
+   "id": "MD-4",
+   "x": 150,
+   "y": 60,
+   "z": -448
+  },
+  {
+   "island": "The Farming Islands",
+   "id": "MD-5",
+   "x": 138,
+   "y": 72,
+   "z": -587
+  },
+  {
+   "island": "The Farming Islands",
+   "id": "MD-6",
+   "x": 279,
+   "y": 112,
+   "z": -541
+  },
+  {
+   "island": "The Farming Islands",
+   "id": "MD-7",
+   "x": 387,
+   "y": 78,
+   "z": -365
+  },
+  {
+   "island": "The Farming Islands",
+   "id": "MD-8",
+   "x": 261,
+   "y": 133,
+   "z": -348
+  },
+  {
+   "island": "The Farming Islands",
+   "id": "MD-9",
+   "x": 273,
+   "y": 141,
+   "z": -467
+  },
+  {
+   "island": "The Farming Islands",
+   "id": "MD-10",
+   "x": 263,
+   "y": 177,
+   "z": -565
+  },
+  {
+   "island": "The Farming Islands",
+   "id": "MD-11",
+   "x": 254,
+   "y": 70,
+   "z": -493
+  },
+  {
+   "island": "The Farming Islands",
+   "id": "MD-12",
+   "x": 193,
+   "y": 66,
+   "z": -468
+  },
+  {
+   "island": "The Farming Islands",
+   "id": "MD-13",
+   "x": 271,
+   "y": 56,
+   "z": -361
+  },
+  {
+   "island": "Gold Mine",
+   "id": "GM-1",
+   "x": 21,
+   "y": 36,
+   "z": -320
+  },
+  {
+   "island": "Gold Mine",
+   "id": "GM-2",
+   "x": -19,
+   "y": 142,
+   "z": -364
+  },
+  {
+   "island": "Gold Mine",
+   "id": "GM-3",
+   "x": 19,
+   "y": 57,
+   "z": -341
+  },
+  {
+   "island": "Gold Mine",
+   "id": "GM-4",
+   "x": -37,
+   "y": 78,
+   "z": -308
+  },
+  {
+   "island": "Gold Mine",
+   "id": "GM-5",
+   "x": -47,
+   "y": 75,
+   "z": -298
+  },
+  {
+   "island": "Gold Mine",
+   "id": "GM-6",
+   "x": -62,
+   "y": 104,
+   "z": -289
+  },
+  {
+   "island": "Gold Mine",
+   "id": "GM-7",
+   "x": -44,
+   "y": 100,
+   "z": -344
+  },
+  {
+   "island": "Gold Mine",
+   "id": "GM-8",
+   "x": -26,
+   "y": 94,
+   "z": -340
+  },
+  {
+   "island": "Gold Mine",
+   "id": "GM-9",
+   "x": -23,
+   "y": 113,
+   "z": -353
+  },
+  {
+   "island": "Gold Mine",
+   "id": "GM-10",
+   "x": 17,
+   "y": 86,
+   "z": -312
+  },
+  {
+   "island": "Gold Mine",
+   "id": "GM-11",
+   "x": -1,
+   "y": 80,
+   "z": -337
+  },
+  {
+   "island": "Gold Mine",
+   "id": "GM-12",
+   "x": -11,
+   "y": 76,
+   "z": -395
+  },
+  {
+   "island": "Deep Caverns",
+   "id": "DC-1",
+   "x": 9,
+   "y": 170,
+   "z": 44
+  },
+  {
+   "island": "Deep Caverns",
+   "id": "DC-2",
+   "x": 3,
+   "y": 152,
+   "z": 85
+  },
+  {
+   "island": "Deep Caverns",
+   "id": "DC-3",
+   "x": 3,
+   "y": 182,
+   "z": 50
+  },
+  {
+   "island": "Deep Caverns",
+   "id": "DC-4",
+   "x": 71,
+   "y": 167,
+   "z": -12
+  },
+  {
+   "island": "Deep Caverns",
+   "id": "DC-5",
+   "x": -2,
+   "y": 255,
+   "z": -1
+  },
+  {
+   "island": "Deep Caverns",
+   "id": "DC-6",
+   "x": 57,
+   "y": 161,
+   "z": 19
+  },
+  {
+   "island": "Deep Caverns",
+   "id": "DC-7",
+   "x": 29,
+   "y": 149,
+   "z": 14
+  },
+  {
+   "island": "Deep Caverns",
+   "id": "DC-8",
+   "x": -18,
+   "y": 163,
+   "z": 26
+  },
+  {
+   "island": "Deep Caverns",
+   "id": "DC-9",
+   "x": 22,
+   "y": 156,
+   "z": -42
+  },
+  {
+   "island": "Deep Caverns",
+   "id": "DC-10",
+   "x": -35,
+   "y": 127,
+   "z": 28
+  },
+  {
+   "island": "Deep Caverns",
+   "id": "DC-11",
+   "x": 44,
+   "y": 98,
+   "z": 23
+  },
+  {
+   "island": "Deep Caverns",
+   "id": "DC-12",
+   "x": -11,
+   "y": 102,
+   "z": -16
+  },
+  {
+   "island": "Deep Caverns",
+   "id": "DC-13",
+   "x": 18,
+   "y": 74,
+   "z": 74
+  },
+  {
+   "island": "Deep Caverns",
+   "id": "DC-14",
+   "x": -39,
+   "y": 73,
+   "z": 1
+  },
+  {
+   "island": "Deep Caverns",
+   "id": "DC-15",
+   "x": 0,
+   "y": 65,
+   "z": 57
+  },
+  {
+   "island": "Deep Caverns",
+   "id": "DC-16",
+   "x": -8,
+   "y": 74,
+   "z": -44
+  },
+  {
+   "island": "Deep Caverns",
+   "id": "DC-17",
+   "x": -21,
+   "y": 25,
+   "z": 72
+  },
+  {
+   "island": "Deep Caverns",
+   "id": "DC-18",
+   "x": -60,
+   "y": 37,
+   "z": 52
+  },
+  {
+   "island": "Deep Caverns",
+   "id": "DC-19",
+   "x": -71,
+   "y": 13,
+   "z": 5
+  },
+  {
+   "island": "Deep Caverns",
+   "id": "DC-20",
+   "x": 3,
+   "y": 14,
+   "z": 51
+  },
+  {
+   "island": "Deep Caverns",
+   "id": "DC-21",
+   "x": -76,
+   "y": 13,
+   "z": 24
+  },
+  {
+   "island": "Dwarven Mines",
+   "id": "DM-1",
+   "x": -9,
+   "y": 230,
+   "z": -135
+  },
+  {
+   "island": "Dwarven Mines",
+   "id": "DM-2",
+   "x": 22,
+   "y": 127,
+   "z": 184
+  },
+  {
+   "island": "Dwarven Mines",
+   "id": "DM-3",
+   "x": -204,
+   "y": 131,
+   "z": 199
+  },
+  {
+   "island": "Dwarven Mines",
+   "id": "DM-4",
+   "x": -110,
+   "y": 142,
+   "z": 143
+  },
+  {
+   "island": "Dwarven Mines",
+   "id": "DM-5",
+   "x": -115,
+   "y": 141,
+   "z": 154
+  },
+  {
+   "island": "Dwarven Mines",
+   "id": "DM-6",
+   "x": 133,
+   "y": 104,
+   "z": 104
+  },
+  {
+   "island": "Dwarven Mines",
+   "id": "DM-7",
+   "x": -21,
+   "y": 208,
+   "z": -59
+  },
+  {
+   "island": "Dwarven Mines",
+   "id": "DM-8",
+   "x": 155,
+   "y": 189,
+   "z": 123
+  },
+  {
+   "island": "Dwarven Mines",
+   "id": "DM-9",
+   "x": -139,
+   "y": 220,
+   "z": -89
+  },
+  {
+   "island": "Dwarven Mines",
+   "id": "DM-10",
+   "x": 34,
+   "y": 102,
+   "z": 86
+  },
+  {
+   "island": "Dwarven Mines",
+   "id": "DM-11",
+   "x": -53,
+   "y": 205,
+   "z": 50
+  },
+  {
+   "island": "Dwarven Mines",
+   "id": "DM-12",
+   "x": -195,
+   "y": 124,
+   "z": -15
+  },
+  {
+   "island": "Dwarven Mines",
+   "id": "DM-13",
+   "x": 20,
+   "y": 121,
+   "z": 240
+  },
+  {
+   "island": "Dwarven Mines",
+   "id": "DM-14",
+   "x": -19,
+   "y": 121,
+   "z": 397
+  },
+  {
+   "island": "Dwarven Mines",
+   "id": "DM-15",
+   "x": 111,
+   "y": 160,
+   "z": 412
+  },
+  {
+   "island": "Spider's Den",
+   "id": "SD-1",
+   "x": -198,
+   "y": 160,
+   "z": -331
+  },
+  {
+   "island": "Spider's Den",
+   "id": "SD-2",
+   "x": -185,
+   "y": 135,
+   "z": -290
+  },
+  {
+   "island": "Spider's Den",
+   "id": "SD-3",
+   "x": -203,
+   "y": 169,
+   "z": -320
+  },
+  {
+   "island": "Spider's Den",
+   "id": "SD-4",
+   "x": -301,
+   "y": 92,
+   "z": -171
+  },
+  {
+   "island": "Spider's Den",
+   "id": "SD-5",
+   "x": -297,
+   "y": 90,
+   "z": -169
+  },
+  {
+   "island": "Spider's Den",
+   "id": "SD-6",
+   "x": -294,
+   "y": 36,
+   "z": -274
+  },
+  {
+   "island": "Spider's Den",
+   "id": "SD-7",
+   "x": -309,
+   "y": 63,
+   "z": -185
+  },
+  {
+   "island": "Spider's Den",
+   "id": "SD-8",
+   "x": -309,
+   "y": 66,
+   "z": -245
+  },
+  {
+   "island": "Spider's Den",
+   "id": "SD-9",
+   "x": -204,
+   "y": 94,
+   "z": -241
+  },
+  {
+   "island": "Spider's Den",
+   "id": "SD-10",
+   "x": -279,
+   "y": 127,
+   "z": -177
+  },
+  {
+   "island": "Spider's Den",
+   "id": "SD-11",
+   "x": -336,
+   "y": 82,
+   "z": -153
+  },
+  {
+   "island": "Spider's Den",
+   "id": "SD-12",
+   "x": -422,
+   "y": 106,
+   "z": -206
+  },
+  {
+   "island": "Spider's Den",
+   "id": "SD-13",
+   "x": -336,
+   "y": 111,
+   "z": -253
+  },
+  {
+   "island": "Spider's Den",
+   "id": "SD-14",
+   "x": -322,
+   "y": 95,
+   "z": -281
+  },
+  {
+   "island": "Spider's Den",
+   "id": "SD-15",
+   "x": -222,
+   "y": 74,
+   "z": -361
+  },
+  {
+   "island": "Spider's Den",
+   "id": "SD-16",
+   "x": -140,
+   "y": 85,
+   "z": -335
+  },
+  {
+   "island": "Spider's Den",
+   "id": "SD-17",
+   "x": -147,
+   "y": 78,
+   "z": -299
+  },
+  {
+   "island": "Spider's Den",
+   "id": "SD-18",
+   "x": -180,
+   "y": 68,
+   "z": -306
+  },
+  {
+   "island": "Spider's Den",
+   "id": "SD-19",
+   "x": -194,
+   "y": 67,
+   "z": -323
+  },
+  {
+   "island": "Crimson Isle",
+   "id": "CI-1",
+   "x": -361,
+   "y": 69,
+   "z": -425
+  },
+  {
+   "island": "Crimson Isle",
+   "id": "CI-2",
+   "x": -247,
+   "y": 44,
+   "z": -512
+  },
+  {
+   "island": "Crimson Isle",
+   "id": "CI-3",
+   "x": -342,
+   "y": 101,
+   "z": -484
+  },
+  {
+   "island": "Crimson Isle",
+   "id": "CI-4",
+   "x": -361,
+   "y": 133,
+   "z": -469
+  },
+  {
+   "island": "Crimson Isle",
+   "id": "CI-5",
+   "x": -352,
+   "y": 191,
+   "z": -553
+  },
+  {
+   "island": "Crimson Isle",
+   "id": "CI-6",
+   "x": -346,
+   "y": 75,
+   "z": -552
+  },
+  {
+   "island": "Crimson Isle",
+   "id": "CI-7",
+   "x": -462,
+   "y": 78,
+   "z": -698
+  },
+  {
+   "island": "Crimson Isle",
+   "id": "CI-8",
+   "x": -480,
+   "y": 104,
+   "z": -593
+  },
+  {
+   "island": "Crimson Isle",
+   "id": "CI-9",
+   "x": -383,
+   "y": 71,
+   "z": -883
+  },
+  {
+   "island": "Crimson Isle",
+   "id": "CI-10",
+   "x": -396,
+   "y": 108,
+   "z": -764
+  },
+  {
+   "island": "Crimson Isle",
+   "id": "CI-11",
+   "x": -343,
+   "y": 235,
+   "z": -780
+  },
+  {
+   "island": "Crimson Isle",
+   "id": "CI-12",
+   "x": -500,
+   "y": 127,
+   "z": -795
+  },
+  {
+   "island": "Crimson Isle",
+   "id": "CI-13",
+   "x": -690,
+   "y": 122,
+   "z": -752
+  },
+  {
+   "island": "Crimson Isle",
+   "id": "CI-14",
+   "x": -606,
+   "y": 154,
+   "z": -800
+  },
+  {
+   "island": "Crimson Isle",
+   "id": "CI-15",
+   "x": -644,
+   "y": 125,
+   "z": -689
+  },
+  {
+   "island": "Crimson Isle",
+   "id": "CI-16",
+   "x": -726,
+   "y": 144,
+   "z": -891
+  },
+  {
+   "island": "Crimson Isle",
+   "id": "CI-17",
+   "x": -721,
+   "y": 125,
+   "z": -811
+  },
+  {
+   "island": "Crimson Isle",
+   "id": "CI-18",
+   "x": -717,
+   "y": 164,
+   "z": -981
+  },
+  {
+   "island": "Crimson Isle",
+   "id": "CI-19",
+   "x": -297,
+   "y": 81,
+   "z": -835
+  },
+  {
+   "island": "Crimson Isle",
+   "id": "CI-20",
+   "x": -79,
+   "y": 139,
+   "z": -779
+  },
+  {
+   "island": "Crimson Isle",
+   "id": "CI-21",
+   "x": 14,
+   "y": 108,
+   "z": -769
+  },
+  {
+   "island": "Crimson Isle",
+   "id": "CI-22",
+   "x": -106,
+   "y": 89,
+   "z": -883
+  },
+  {
+   "island": "Crimson Isle",
+   "id": "CI-23",
+   "x": -31,
+   "y": 178,
+   "z": -907
+  },
+  {
+   "island": "Crimson Isle",
+   "id": "CI-24",
+   "x": -35,
+   "y": 116,
+   "z": -1055
+  },
+  {
+   "island": "Crimson Isle",
+   "id": "CI-25",
+   "x": -412,
+   "y": 58,
+   "z": -935
+  },
+  {
+   "island": "Crimson Isle",
+   "id": "CI-26",
+   "x": -310,
+   "y": 156,
+   "z": -1008
+  },
+  {
+   "island": "Crimson Isle",
+   "id": "CI-27",
+   "x": -380,
+   "y": 141,
+   "z": -1020
+  },
+  {
+   "island": "Crimson Isle",
+   "id": "CI-28",
+   "x": -445,
+   "y": 110,
+   "z": -1026
+  },
+  {
+   "island": "Crimson Isle",
+   "id": "CI-29",
+   "x": -479,
+   "y": 114,
+   "z": -972
+  },
+  {
+   "island": "The End",
+   "id": "End-1",
+   "x": -517,
+   "y": 100,
+   "z": -295
+  },
+  {
+   "island": "The End",
+   "id": "End-2",
+   "x": -583,
+   "y": 208,
+   "z": -272
+  },
+  {
+   "island": "The End",
+   "id": "End-3",
+   "x": -587,
+   "y": 122,
+   "z": -276
+  },
+  {
+   "island": "The End",
+   "id": "End-4",
+   "x": -696,
+   "y": 116,
+   "z": -256
+  },
+  {
+   "island": "The End",
+   "id": "End-5",
+   "x": -587,
+   "y": 48,
+   "z": -293
+  },
+  {
+   "island": "The End",
+   "id": "End-6",
+   "x": -657,
+   "y": 36,
+   "z": -201
+  },
+  {
+   "island": "The End",
+   "id": "End-7",
+   "x": -492,
+   "y": 21,
+   "z": -175
+  },
+  {
+   "island": "The End",
+   "id": "End-8",
+   "x": -492,
+   "y": 81,
+   "z": -275
+  },
+  {
+   "island": "The End",
+   "id": "End-9",
+   "x": -545,
+   "y": 92,
+   "z": -257
+  },
+  {
+   "island": "The End",
+   "id": "End-10",
+   "x": -609,
+   "y": 84,
+   "z": -230
+  },
+  {
+   "island": "The End",
+   "id": "End-11",
+   "x": -723,
+   "y": 75,
+   "z": -222
+  },
+  {
+   "island": "The End",
+   "id": "End-12",
+   "x": -748,
+   "y": 106,
+   "z": -284
+  },
+  {
+   "island": "The Park",
+   "id": "Park-1",
+   "x": -292,
+   "y": 69,
+   "z": 13
+  },
+  {
+   "island": "The Park",
+   "id": "Park-2",
+   "x": -305,
+   "y": 70,
+   "z": -34
+  },
+  {
+   "island": "The Park",
+   "id": "Park-3",
+   "x": -305,
+   "y": 75,
+   "z": -83
+  },
+  {
+   "island": "The Park",
+   "id": "Park-4",
+   "x": -339,
+   "y": 99,
+   "z": 67
+  },
+  {
+   "island": "The Park",
+   "id": "Park-5",
+   "x": -370,
+   "y": 89,
+   "z": -44
+  },
+  {
+   "island": "The Park",
+   "id": "Park-6",
+   "x": -434,
+   "y": 121,
+   "z": 56
+  },
+  {
+   "island": "The Park",
+   "id": "Park-7",
+   "x": -419,
+   "y": 90,
+   "z": 42
+  },
+  {
+   "island": "The Park",
+   "id": "Park-8",
+   "x": -482,
+   "y": 118,
+   "z": -33
+  },
+  {
+   "island": "The Park",
+   "id": "Park-9",
+   "x": -458,
+   "y": 118,
+   "z": -85
+  },
+  {
+   "island": "The Park",
+   "id": "Park-10",
+   "x": -479,
+   "y": 107,
+   "z": -60
+  },
+  {
+   "island": "The Park",
+   "id": "Park-11",
+   "x": -465,
+   "y": 108,
+   "z": -105
+  },
+  {
+   "island": "The Park",
+   "id": "Park-12",
+   "x": -412,
+   "y": 123,
+   "z": -118
+  },
+  {
+   "island": "Moonglade Marsh",
+   "id": "MM-1",
+   "x": -565,
+   "y": 95,
+   "z": 17
+  },
+  {
+   "island": "Moonglade Marsh",
+   "id": "MM-2",
+   "x": -601,
+   "y": 128,
+   "z": -20
+  },
+  {
+   "island": "Moonglade Marsh",
+   "id": "MM-3",
+   "x": -598,
+   "y": 107,
+   "z": 16
+  },
+  {
+   "island": "Moonglade Marsh",
+   "id": "MM-4",
+   "x": -556,
+   "y": 94,
+   "z": 60
+  },
+  {
+   "island": "Moonglade Marsh",
+   "id": "MM-5",
+   "x": -663,
+   "y": 64,
+   "z": 62
+  },
+  {
+   "island": "Moonglade Marsh",
+   "id": "MM-6",
+   "x": -737,
+   "y": 101,
+   "z": -17
+  },
+  {
+   "island": "Moonglade Marsh",
+   "id": "MM-7",
+   "x": -707,
+   "y": 131,
+   "z": 1
+  },
+  {
+   "island": "Moonglade Marsh",
+   "id": "MM-8",
+   "x": -702,
+   "y": 169,
+   "z": -2
+  },
+  {
+   "island": "Moonglade Marsh",
+   "id": "MM-9",
+   "x": -586,
+   "y": 90,
+   "z": -26
+  },
+  {
+   "island": "Moonglade Marsh",
+   "id": "MM-10",
+   "x": -620,
+   "y": 66,
+   "z": 32
+  },
+  {
+   "island": "Moonglade Marsh",
+   "id": "MM-11",
+   "x": -621,
+   "y": 108,
+   "z": -86
+  },
+  {
+   "island": "Moonglade Marsh",
+   "id": "MM-12",
+   "x": -696,
+   "y": 76,
+   "z": -44
+  },
+  {
+   "island": "Torrhus Canyon",
+   "id": "TC-1",
+   "x": -618,
+   "y": 125,
+   "z": 179
+  },
+  {
+   "island": "Torrhus Canyon",
+   "id": "TC-2",
+   "x": -603,
+   "y": 167,
+   "z": 234
+  },
+  {
+   "island": "Torrhus Canyon",
+   "id": "TC-3",
+   "x": -706,
+   "y": 98,
+   "z": 142
+  },
+  {
+   "island": "Torrhus Canyon",
+   "id": "TC-4",
+   "x": -565,
+   "y": 136,
+   "z": 243
+  },
+  {
+   "island": "Torrhus Canyon",
+   "id": "TC-5",
+   "x": -640,
+   "y": 90,
+   "z": 158
+  },
+  {
+   "island": "Torrhus Canyon",
+   "id": "TC-6",
+   "x": -677,
+   "y": 102,
+   "z": 262
+  },
+  {
+   "island": "Torrhus Canyon",
+   "id": "TC-7",
+   "x": -627,
+   "y": 122,
+   "z": 285
+  },
+  {
+   "island": "Torrhus Canyon",
+   "id": "TC-8",
+   "x": -567,
+   "y": 81,
+   "z": 272
+  },
+  {
+   "island": "Torrhus Canyon",
+   "id": "TC-9",
+   "x": -554,
+   "y": 94,
+   "z": 256
+  },
+  {
+   "island": "Torrhus Canyon",
+   "id": "TC-10",
+   "x": -678,
+   "y": 62,
+   "z": 258
+  },
+  {
+   "island": "Torrhus Canyon",
+   "id": "TC-11",
+   "x": -711,
+   "y": 59,
+   "z": 290
+  },
+  {
+   "island": "Torrhus Canyon",
+   "id": "TC-12",
+   "x": -727,
+   "y": 125,
+   "z": 152
+  },
+  {
+   "island": "Critter Safari",
+   "id": "SF-1",
+   "x": 5,
+   "y": 106,
+   "z": 18
+  },
+  {
+   "island": "Critter Safari",
+   "id": "SF-2",
+   "x": -162,
+   "y": 60,
+   "z": 63
+  },
+  {
+   "island": "Critter Safari",
+   "id": "SF-3",
+   "x": -75,
+   "y": 40,
+   "z": -32
+  },
+  {
+   "island": "Critter Safari",
+   "id": "SF-4",
+   "x": 40,
+   "y": 63,
+   "z": -14
+  },
+  {
+   "island": "Backwater Bayou",
+   "id": "BB-1",
+   "x": 2,
+   "y": 67,
+   "z": 10
+  },
+  {
+   "island": "Backwater Bayou",
+   "id": "BB-2",
+   "x": 16,
+   "y": 59,
+   "z": -7
+  },
+  {
+   "island": "Backwater Bayou",
+   "id": "BB-3",
+   "x": 33,
+   "y": 61,
+   "z": -46
+  },
+  {
+   "island": "Backwater Bayou",
+   "id": "BB-4",
+   "x": 62,
+   "y": 76,
+   "z": 5
+  },
+  {
+   "island": "Backwater Bayou",
+   "id": "BB-5",
+   "x": 72,
+   "y": 115,
+   "z": -12
+  },
+  {
+   "island": "Lotus Atoll",
+   "id": "LA-1",
+   "x": 86,
+   "y": 65,
+   "z": -12
+  },
+  {
+   "island": "Lotus Atoll",
+   "id": "LA-2",
+   "x": 12,
+   "y": 66,
+   "z": 28
+  },
+  {
+   "island": "Lotus Atoll",
+   "id": "LA-3",
+   "x": 24,
+   "y": 142,
+   "z": -68
+  },
+  {
+   "island": "Lotus Atoll",
+   "id": "LA-4",
+   "x": 70,
+   "y": 118,
+   "z": 8
+  },
+  {
+   "island": "Lotus Atoll",
+   "id": "LA-5",
+   "x": 1,
+   "y": 70,
+   "z": -15
+  },
+  {
+   "island": "Lotus Atoll",
+   "id": "LA-6",
+   "x": 89,
+   "y": 78,
+   "z": 27
+  },
+  {
+   "island": "Jerry's Workshop",
+   "id": "WI-1",
+   "x": -95,
+   "y": 77,
+   "z": 20
+  },
+  {
+   "island": "Jerry's Workshop",
+   "id": "WI-2",
+   "x": -44,
+   "y": 87,
+   "z": 76
+  },
+  {
+   "island": "Jerry's Workshop",
+   "id": "WI-3",
+   "x": -7,
+   "y": 108,
+   "z": 107
+  },
+  {
+   "island": "Jerry's Workshop",
+   "id": "WI-4",
+   "x": 56,
+   "y": 108,
+   "z": 64
+  },
+  {
+   "island": "Jerry's Workshop",
+   "id": "WI-5",
+   "x": 74,
+   "y": 109,
+   "z": -18
+  },
+  {
+   "island": "Rift Dimension",
+   "id": "RD-1",
+   "x": 253,
+   "y": 123,
+   "z": 90
+  },
+  {
+   "island": "Dungeon Hub",
+   "id": "DH-1",
+   "x": 17,
+   "y": 124,
+   "z": -58
+  },
+  {
+   "island": "Dungeon Hub",
+   "id": "DH-2",
+   "x": 1,
+   "y": 134,
+   "z": 75
+  },
+  {
+   "island": "Dungeon Hub",
+   "id": "DH-3",
+   "x": 10,
+   "y": 164,
+   "z": -10
+  },
+  {
+   "island": "Dungeon Hub",
+   "id": "DH-4",
+   "x": -139,
+   "y": 46,
+   "z": -1
+  },
+  {
+   "island": "Dungeon Hub",
+   "id": "DH-5",
+   "x": -55,
+   "y": 82,
+   "z": -10
+  },
+  {
+   "island": "Dungeon Hub",
+   "id": "DH-6",
+   "x": -4,
+   "y": 21,
+   "z": -17
+  },
+  {
+   "island": "Dungeon Hub",
+   "id": "DH-7",
+   "x": 14,
+   "y": 60,
+   "z": 99
+  }
+ ]
+}

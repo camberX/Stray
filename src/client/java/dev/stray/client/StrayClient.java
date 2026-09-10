@@ -13,6 +13,9 @@ import dev.stray.client.combat.OdinClicks;
 import dev.stray.client.combat.Triggerbot;
 import dev.stray.client.debug.StrayDebug;
 import dev.stray.client.farming.FarmKeys;
+import dev.stray.client.fairy.FairySoulCommands;
+import dev.stray.client.fairy.FairySoulRenderer;
+import dev.stray.client.fairy.FairySoulTracker;
 import dev.stray.client.farming.FarmingHud;
 import dev.stray.client.farming.ComposterTracker;
 import dev.stray.client.farming.JacobContestTracker;
@@ -139,6 +142,8 @@ public final class StrayClient implements ClientModInitializer {
 		BlockOutlineGlow.init();
 		MiningWorldRenderer.init();
 		ChestEspRenderer.init();
+		FairySoulRenderer.init();
+		FairySoulTracker.init();
 		ChestAimer.init();
 		Hitmarker.init();
 		FarmingHud.init();
@@ -177,6 +182,8 @@ public final class StrayClient implements ClientModInitializer {
 			root.then(musicCommand());
 			root.then(RawmatsCommands.command());
 			root.then(EspCommands.command());
+			root.then(FairySoulCommands.command());
+			root.then(FairySoulCommands.shortCommand());
 			root.then(LoadoutsCommands.command());
 			root.then(WardrobeCommands.command());
 			root.then(ProfileCommands.command());
@@ -191,6 +198,8 @@ public final class StrayClient implements ClientModInitializer {
 			vm.then(musicCommand());
 			vm.then(RawmatsCommands.command());
 			vm.then(EspCommands.command());
+			vm.then(FairySoulCommands.command());
+			vm.then(FairySoulCommands.shortCommand());
 			vm.then(LoadoutsCommands.command());
 			vm.then(WardrobeCommands.command());
 			vm.then(ProfileCommands.command());
@@ -244,6 +253,7 @@ public final class StrayClient implements ClientModInitializer {
 			MiningTracker.tick(client);
 			TitaniumTracker.get().tick(client);
 			ChestEsp.get().tick(client);
+			FairySoulTracker.tick(client);
 			ShopCape.tick();
 			UiFontPack.tick(client);
 			UpdateNotifier.tick();

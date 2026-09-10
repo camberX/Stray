@@ -1,5 +1,6 @@
 package dev.stray.client.mixin;
 
+import dev.stray.client.fairy.FairySoulTracker;
 import dev.stray.client.visual.NickHider;
 import dev.stray.client.mining.MiningTracker;
 import net.minecraft.client.gui.components.ChatComponent;
@@ -19,6 +20,7 @@ public class ChatComponentMixin {
 	private Component stray$nick(Component message) {
 		Component rewritten = NickHider.rewrite(message);
 		MiningTracker.onChat(rewritten);
+		FairySoulTracker.onChat(rewritten);
 		return rewritten;
 	}
 }

@@ -94,6 +94,9 @@ public final class StrayConfig {
 	public boolean chestEspEnabled = false;
 	public boolean chestEspTracers = false;
 	public boolean chestEspThroughWalls = false;
+	public boolean fairySoulEsp = false;
+	public boolean fairySoulThroughWalls = true;
+	public int fairySoulRgb = 0xE878FF;
 	public float chestAimSpeed = 1.00f;
 	public String openGuiKey = "key.keyboard.right.shift";
 	public String openLoadoutsKey = "key.keyboard.unknown";
@@ -570,6 +573,16 @@ public final class StrayConfig {
 				}
 				if (!json.has("chestEspThroughWalls")) {
 					loaded.chestEspThroughWalls = false;
+				}
+				if (!json.has("fairySoulEsp")) {
+					loaded.fairySoulEsp = false;
+				}
+				if (!json.has("fairySoulThroughWalls")) {
+					loaded.fairySoulThroughWalls = true;
+				}
+				loaded.fairySoulRgb = loaded.fairySoulRgb & 0xFFFFFF;
+				if (!json.has("fairySoulRgb") || loaded.fairySoulRgb == 0) {
+					loaded.fairySoulRgb = 0xE878FF;
 				}
 				loaded.chestAimSpeed = clamp(loaded.chestAimSpeed <= 0f ? 1.00f : loaded.chestAimSpeed, 0.25f, 2.00f);
 				loaded.chestEspRgb = loaded.chestEspRgb & 0xFFFFFF;

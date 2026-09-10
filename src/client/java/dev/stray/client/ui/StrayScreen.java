@@ -128,6 +128,7 @@ public class StrayScreen extends Screen {
 		STAR("Star mobs", 7),
 		BLOCK("Block outline", 1),
 		CHEST("Chest ESP", 5),
+		FAIRY("Fairy souls", 1),
 		NODE_ESP("Node ESP", 4),
 		WATERMARK("Watermark", 4),
 		MUSIC("Music", 3),
@@ -213,6 +214,9 @@ public class StrayScreen extends Screen {
 		new SearchEntry("Block outline", Tab.ESP, "Visuals"),
 		new SearchEntry("Block outline color", Tab.ESP, "Visuals"),
 		new SearchEntry("Chest ESP", Tab.ESP, "Visuals"),
+		new SearchEntry("Fairy souls", Tab.ESP, "Visuals"),
+		new SearchEntry("Fairy soul ESP", Tab.ESP, "Visuals"),
+		new SearchEntry("Fairy soul tracker", Tab.ESP, "Visuals"),
 		new SearchEntry("Chest tracers", Tab.ESP, "Visuals"),
 		new SearchEntry("Chest aim speed", Tab.ESP, "Visuals"),
 		new SearchEntry("Mobs", Tab.ESP, "Visuals"),
@@ -799,6 +803,7 @@ public class StrayScreen extends Screen {
 			y = sectionLabel(graphics, font, left, y, "World");
 			y = controlCard(graphics, font, left, y, col, mouseX, mouseY, "Block outline", config.blockOutlineGlow, v -> config.blockOutlineGlow = v, Feature.BLOCK);
 			y = controlCard(graphics, font, left, y, col, mouseX, mouseY, "Chest ESP", config.chestEspEnabled, v -> config.chestEspEnabled = v, Feature.CHEST);
+			y = controlCard(graphics, font, left, y, col, mouseX, mouseY, "Fairy souls", config.fairySoulEsp, v -> config.fairySoulEsp = v, Feature.FAIRY);
 			y = sectionLabel(graphics, font, left, y, "Items");
 			y = controlCard(graphics, font, left, y, col, mouseX, mouseY, "Held item", config.heldItemShaderEnabled, v -> config.heldItemShaderEnabled = v, Feature.HELD_ITEM);
 			namesTop = y;
@@ -2640,6 +2645,7 @@ public class StrayScreen extends Screen {
 				y = bindRow(graphics, font, ix, y, iw, mouseX, mouseY, "Chest Aim", 6, OdinClicks.parseKey(config.chestAimKey));
 				colorRow(graphics, font, ix, y, iw, mouseX, mouseY, "Color", config.chestEspRgb, PickerTarget.CHEST);
 			}
+			case FAIRY -> toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Through walls", config.fairySoulThroughWalls, v -> config.fairySoulThroughWalls = v);
 			case NODE_ESP -> {
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Outline", config.boxOutline, v -> config.boxOutline = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Tracer", config.tracersEnabled, v -> config.tracersEnabled = v);
@@ -3139,7 +3145,7 @@ public class StrayScreen extends Screen {
 		return FabricLoader.getInstance()
 			.getModContainer("stray")
 			.map(container -> container.getMetadata().getVersion().getFriendlyString())
-			.orElse("1.2.176");
+			.orElse("1.2.177");
 	}
 
 	@Override
