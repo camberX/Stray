@@ -47,7 +47,7 @@ public class MinecraftMixin {
 	 */
 	@Inject(method = "shouldEntityAppearGlowing", at = @At("HEAD"), cancellable = true)
 	private void stray$espGlow(Entity entity, CallbackInfoReturnable<Boolean> cir) {
-		if (MobGlowRenderer.hasVanillaGlow(entity)) {
+		if (!MobGlowRenderer.glowEnabled() || MobGlowRenderer.hasVanillaGlow(entity)) {
 			return;
 		}
 		if (MobGlowRenderer.shouldForceGlow(entity)) {

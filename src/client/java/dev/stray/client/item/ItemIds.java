@@ -22,11 +22,13 @@ import net.minecraft.world.item.Rarity;
 import net.minecraft.world.item.component.CustomData;
 import net.minecraft.world.item.component.DyedItemColor;
 import net.minecraft.world.item.component.ResolvableProfile;
+import net.minecraft.client.Minecraft;
 
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.HashMap;
+import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -103,6 +105,22 @@ public final class ItemIds {
 		}
 	}
 
+	private static final String MISSING = "";
+	private static int nbtTick = Integer.MIN_VALUE;
+	private static final IdentityHashMap<ItemStack, String> UUIDS = new IdentityHashMap<>();
+	private static final IdentityHashMap<ItemStack, String> SKYBLOCK_IDS = new IdentityHashMap<>();
+
+	private static void rotateNbtCache() {
+		Minecraft client = Minecraft.getInstance();
+		int tick = client.player == null ? -2 : client.player.tickCount;
+		if (tick == nbtTick) {
+			return;
+		}
+		nbtTick = tick;
+		UUIDS.clear();
+		SKYBLOCK_IDS.clear();
+	}
+
 	public static String idOf(ItemStack stack) {
 		if (stack == null || stack.isEmpty()) {
 			return "";
@@ -119,40 +137,66 @@ public final class ItemIds {
 		if (stack == null || stack.isEmpty()) {
 			return null;
 		}
-		CustomData data = stack.get(DataComponents.CUSTOM_DATA);
-		if (data == null || data.isEmpty()) {
-			return null;
+		rotateNbtCache();
+		String cached = UUIDS.get(stack);
+		if (cached != null) {
+			return cached.isEmpty() ? null : cached;
 		}
-		CompoundTag tag = data.copyTag();
-		String uuid = readUuid(tag);
-		if (uuid != null) {
-			return uuid;
-		}
-		uuid = readUuid(tag.getCompoundOrEmpty("ExtraAttributes"));
-		if (uuid != null) {
-			return uuid;
-		}
-		return readUuid(tag.getCompoundOrEmpty("PublicBukkitValues"));
+		String uuid = readUuidDeep(nbt(stack));
+		UUIDS.put(stack, uuid == null ? MISSING : uuid);
+		return uuid;
 	}
 
 	public static String skyblockId(ItemStack stack) {
 		if (stack == null || stack.isEmpty()) {
 			return null;
 		}
+		rotateNbtCache();
+		String cached = SKYBLOCK_IDS.get(stack);
+		if (cached != null) {
+			return cached.isEmpty() ? null : cached;
+		}
+		String id = readIdDeep(nbt(stack));
+		SKYBLOCK_IDS.put(stack, id == null ? MISSING : id);
+		return id;
+	}
+
+	private static CompoundTag nbt(ItemStack stack) {
 		CustomData data = stack.get(DataComponents.CUSTOM_DATA);
 		if (data == null || data.isEmpty()) {
 			return null;
 		}
-		CompoundTag tag = data.copyTag();
+		return data.copyTag();
+	}
+
+	private static String readIdDeep(CompoundTag tag) {
 		String id = readId(tag);
 		if (id != null) {
 			return id;
+		}
+		if (tag == null) {
+			return null;
 		}
 		id = readId(tag.getCompoundOrEmpty("ExtraAttributes"));
 		if (id != null) {
 			return id;
 		}
 		return readId(tag.getCompoundOrEmpty("PublicBukkitValues"));
+	}
+
+	private static String readUuidDeep(CompoundTag tag) {
+		String uuid = readUuid(tag);
+		if (uuid != null) {
+			return uuid;
+		}
+		if (tag == null) {
+			return null;
+		}
+		uuid = readUuid(tag.getCompoundOrEmpty("ExtraAttributes"));
+		if (uuid != null) {
+			return uuid;
+		}
+		return readUuid(tag.getCompoundOrEmpty("PublicBukkitValues"));
 	}
 
 	public static Preview resolve(String query) {

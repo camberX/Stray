@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.156", new String[]{
+			"HUD extract and item-model mixins are cheaper: item skins cache NBT and inventory ownership, Ghost/Fill skip mask work when they are off, and short Control HUD bars no longer frost."
+		}),
 		new Entry("1.2.155", new String[]{
 			"Control HUD glass (Music, Watermark, and the rest of the HUD) draws frost as one rounded blit instead of dozens of corner slices, which was the main HUD FPS cost."
 		}),

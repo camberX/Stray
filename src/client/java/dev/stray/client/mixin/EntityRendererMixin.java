@@ -25,6 +25,9 @@ public class EntityRendererMixin {
 	 */
 	@Inject(method = "affectedByCulling", at = @At("HEAD"), cancellable = true)
 	private void stray$disableCulling(Entity entity, CallbackInfoReturnable<Boolean> cir) {
+		if (!HeldItemShader.playerFillActive() && !MobGlowRenderer.glowEnabled()) {
+			return;
+		}
 		if (HeldItemShader.shouldFillThroughWalls(entity)) {
 			cir.setReturnValue(false);
 			return;

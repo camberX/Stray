@@ -154,7 +154,7 @@ public final class HeldItemShader {
 	}
 
 	public static boolean isFillItem(Object submit) {
-		return submit != null && FILL_ITEMS.contains(submit);
+		return submit != null && !FILL_ITEMS.isEmpty() && FILL_ITEMS.contains(submit);
 	}
 
 	public static void pushPlayerFill() {
@@ -430,7 +430,7 @@ public final class HeldItemShader {
 		runSilhouette("stray player fill", outlineColorModulator(true), silhouetteThickness(true));
 	}
 
-	private static boolean masking() {
+	public static boolean masking() {
 		return maskThisFrame || playerMaskThisFrame;
 	}
 
