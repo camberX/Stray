@@ -20,27 +20,6 @@ public final class VanillaHud {
 	}
 
 	static void extract(GuiGraphicsExtractor graphics, DeltaTracker delta) {
-		if (customHotbar()) {
-			HotbarHudRenderer.extract(graphics, delta);
-		}
-		if (customHealth()) {
-			StatusHudRenderer.extractHealth(graphics, delta);
-		}
-		if (customHunger()) {
-			StatusHudRenderer.extractHunger(graphics, delta);
-		}
-		if (customArmor()) {
-			StatusHudRenderer.extractArmor(graphics, delta);
-		}
-		if (customAir()) {
-			StatusHudRenderer.extractAir(graphics, delta);
-		}
-		if (customMount()) {
-			StatusHudRenderer.extractMount(graphics, delta);
-		}
-		if (customExperience()) {
-			StatusHudRenderer.extractExperience(graphics, delta);
-		}
 		if (customScoreboard()) {
 			ScoreboardHudRenderer.extract(graphics, delta);
 		}
@@ -80,31 +59,31 @@ public final class VanillaHud {
 	}
 
 	public static boolean customHotbar() {
-		return custom(StrayConfig.get().hudHotbar) && !spectator();
+		return false;
 	}
 
 	public static boolean customHealth() {
-		return custom(StrayConfig.get().hudHealth);
+		return false;
 	}
 
 	public static boolean customHunger() {
-		return custom(StrayConfig.get().hudHunger);
+		return false;
 	}
 
 	public static boolean customArmor() {
-		return custom(StrayConfig.get().hudArmor);
+		return false;
 	}
 
 	public static boolean customAir() {
-		return custom(StrayConfig.get().hudAir);
+		return false;
 	}
 
 	public static boolean customMount() {
-		return custom(StrayConfig.get().hudMountHealth);
+		return false;
 	}
 
 	public static boolean customExperience() {
-		return custom(StrayConfig.get().hudExperience) && !jumpBar();
+		return false;
 	}
 
 	public static boolean customScoreboard() {
@@ -139,9 +118,6 @@ public final class VanillaHud {
 	}
 
 	public static float hotbarTop(int guiH) {
-		if (StrayConfig.get().hudHotbar && !spectator()) {
-			return guiH - HotbarHudRenderer.HEIGHT - 3;
-		}
 		return guiH - 22;
 	}
 

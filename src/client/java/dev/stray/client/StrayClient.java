@@ -36,6 +36,8 @@ import dev.stray.client.media.MediaSession;
 import dev.stray.client.media.SpotifySmtc;
 import dev.stray.client.mining.ChestAimer;
 import dev.stray.client.mining.ChestEsp;
+import dev.stray.client.mining.CrystalHollows;
+import dev.stray.client.mining.CrystalHollowsRenderer;
 import dev.stray.client.mining.MiningTracker;
 import dev.stray.client.mining.TitaniumTracker;
 import dev.stray.client.render.ChestEspRenderer;
@@ -78,6 +80,7 @@ import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLevelEvents;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
+import net.fabricmc.fabric.api.client.message.v1.ClientReceiveMessageEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.components.EditBox;
@@ -146,6 +149,8 @@ public final class StrayClient implements ClientModInitializer {
 		ChestEspRenderer.init();
 		FairySoulRenderer.init();
 		FairySoulTracker.init();
+		CrystalHollowsRenderer.init();
+		ClientReceiveMessageEvents.ALLOW_GAME.register(CrystalHollows::allowChat);
 		ChestAimer.init();
 		Hitmarker.init();
 		FarmingHud.init();
@@ -258,6 +263,7 @@ public final class StrayClient implements ClientModInitializer {
 			TitaniumTracker.get().tick(client);
 			ChestEsp.get().tick(client);
 			FairySoulTracker.tick(client);
+			CrystalHollows.tick(client);
 			ShopCape.tick();
 			UiFontPack.tick(client);
 			UpdateNotifier.tick();
@@ -308,6 +314,7 @@ public final class StrayClient implements ClientModInitializer {
 			LoadoutsScreen.resetPending();
 			WardrobeScreen.resetPending();
 			MotionBlurShaders.invalidate();
+			CrystalHollows.reset();
 		});
 
 		ClientLifecycleEvents.CLIENT_STOPPING.register(client -> FarmKeys.restore());

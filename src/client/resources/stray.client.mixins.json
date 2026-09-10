@@ -38,6 +38,7 @@
 		"LevelRendererMixin",
 		"LightmapRenderStateExtractorMixin",
 		"LivingEntityRendererMixin",
+		"MinecraftAccessor",
 		"MinecraftMixin",
 		"ModelBlockRendererMixin",
 		"MultiPlayerGameModeMixin",

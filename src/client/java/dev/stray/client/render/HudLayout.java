@@ -78,9 +78,22 @@ public final class HudLayout {
 		return Minecraft.getInstance().screen instanceof HudEditorScreen;
 	}
 
+	public static boolean retired(Id id) {
+		return id == Id.HOTBAR
+			|| id == Id.HEALTH
+			|| id == Id.HUNGER
+			|| id == Id.ARMOR
+			|| id == Id.AIR
+			|| id == Id.EXPERIENCE
+			|| id == Id.MOUNT;
+	}
+
 	public static List<Box> boxes(Font font, int guiW, int guiH) {
 		List<Box> out = new ArrayList<>();
 		for (Id id : Id.values()) {
+			if (retired(id)) {
+				continue;
+			}
 			out.add(box(id, font, guiW, guiH));
 		}
 		return out;
@@ -369,13 +382,7 @@ public final class HudLayout {
 			case MINING -> config.miningHudEnabled;
 			case JACOB -> config.jacobContestHudEnabled;
 			case COMPOSTER -> config.composterHudEnabled;
-			case HOTBAR -> config.hudHotbar;
-			case HEALTH -> config.hudHealth;
-			case HUNGER -> config.hudHunger;
-			case ARMOR -> config.hudArmor;
-			case AIR -> config.hudAir;
-			case EXPERIENCE -> config.hudExperience;
-			case MOUNT -> config.hudMountHealth;
+			case HOTBAR, HEALTH, HUNGER, ARMOR, AIR, EXPERIENCE, MOUNT -> false;
 			case SCOREBOARD -> config.hudScoreboard;
 			case BOSS -> config.hudBossBar;
 			case EFFECTS -> config.hudEffects;

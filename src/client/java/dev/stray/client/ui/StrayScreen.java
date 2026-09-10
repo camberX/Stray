@@ -136,6 +136,7 @@ public class StrayScreen extends Screen {
 		RAWMATS("Raw mats", 1),
 		MINING("Mining HUD", 1),
 		TITANIUM("Titanium ESP", 3),
+		CRYSTAL("CH waypoints", 2),
 		FARMING("Yaw / Pitch", 1),
 		INVENTORY("Inventory", 3),
 		AUTO_DNA("Auto DNA", 5),
@@ -292,17 +293,18 @@ public class StrayScreen extends Screen {
 		new SearchEntry("Enchanted materials", Tab.OVERLAY, "Overlay"),
 		new SearchEntry("Spotify", Tab.OVERLAY, "Music"),
 		new SearchEntry("YouTube Music", Tab.OVERLAY, "Music"),
-		new SearchEntry("Hotbar", Tab.BARS, "Bars"),
-		new SearchEntry("Health", Tab.BARS, "Bars"),
-		new SearchEntry("Hunger", Tab.BARS, "Bars"),
-		new SearchEntry("Armor bar", Tab.BARS, "Bars"),
-		new SearchEntry("Air", Tab.BARS, "Bars"),
-		new SearchEntry("Experience", Tab.BARS, "Bars"),
 		new SearchEntry("Scoreboard", Tab.BARS, "Bars"),
 		new SearchEntry("Boss bar", Tab.BARS, "Bars"),
 		new SearchEntry("Effects", Tab.BARS, "Bars"),
 		new SearchEntry("Held item", Tab.BARS, "Bars"),
-		new SearchEntry("Mount health", Tab.BARS, "Bars"),
+		new SearchEntry("Crystal Hollows waypoints", Tab.MINING, "Mining"),
+		new SearchEntry("CH waypoints", Tab.MINING, "Mining"),
+		new SearchEntry("Jungle Temple", Tab.MINING, "Mining"),
+		new SearchEntry("Mines of Divan", Tab.MINING, "Mining"),
+		new SearchEntry("Goblin Queen", Tab.MINING, "Mining"),
+		new SearchEntry("Lost Precursor City", Tab.MINING, "Mining"),
+		new SearchEntry("Khazad-dum", Tab.MINING, "Mining"),
+		new SearchEntry("Fairy Grotto", Tab.MINING, "Mining"),
 		new SearchEntry("Inventory HUD", Tab.OVERLAY, "Overlay"),
 		new SearchEntry("Item count", Tab.OVERLAY, "Overlay"),
 		new SearchEntry("Pane opacity", Tab.SETTINGS, "Theme"),
@@ -1874,22 +1876,13 @@ public class StrayScreen extends Screen {
 				toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Inventory HUD", config.inventoryHudEnabled, v -> config.inventoryHudEnabled = v, Feature.INVENTORY);
 			}
 			case BARS -> {
-				float y = featureCard(graphics, font, left, top, col, cardHeight(7), "Bars");
-				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Hotbar", config.hudHotbar, v -> config.hudHotbar = v);
-				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Health", config.hudHealth, v -> config.hudHealth = v);
-				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Hunger", config.hudHunger, v -> config.hudHunger = v);
-				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Armor", config.hudArmor, v -> config.hudArmor = v);
-				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Air", config.hudAir, v -> config.hudAir = v);
-				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Experience", config.hudExperience, v -> config.hudExperience = v);
-				toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Mount health", config.hudMountHealth, v -> config.hudMountHealth = v);
-
-				y = featureCard(graphics, font, right, top, col, cardHeight(4) + 28, "Info");
-				y = toggle(graphics, font, rx, y, iw, mouseX, mouseY, "Scoreboard", config.hudScoreboard, v -> config.hudScoreboard = v);
-				y = toggle(graphics, font, rx, y, iw, mouseX, mouseY, "Boss bar", config.hudBossBar, v -> config.hudBossBar = v);
-				y = toggle(graphics, font, rx, y, iw, mouseX, mouseY, "Effects", config.hudEffects, v -> config.hudEffects = v);
-				y = toggle(graphics, font, rx, y, iw, mouseX, mouseY, "Held item", config.hudHeldItem, v -> config.hudHeldItem = v);
-				GuiDraw.menu(graphics, font, "Move and scale each piece", rx, y + 4, fade());
-				GuiDraw.menu(graphics, font, "from the toolbar HUD editor.", rx, y + 16, fade());
+				float y = featureCard(graphics, font, left, top, col, cardHeight(4) + 28, "Info");
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Scoreboard", config.hudScoreboard, v -> config.hudScoreboard = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Boss bar", config.hudBossBar, v -> config.hudBossBar = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Effects", config.hudEffects, v -> config.hudEffects = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Held item", config.hudHeldItem, v -> config.hudHeldItem = v);
+				GuiDraw.menu(graphics, font, "Move and scale each piece", ix, y + 4, fade());
+				GuiDraw.menu(graphics, font, "from the toolbar HUD editor.", ix, y + 16, fade());
 			}
 			case NODES -> {
 				float y = featureCard(graphics, font, left, top, col, cardHeight(3), "Markers");
@@ -1932,9 +1925,10 @@ public class StrayScreen extends Screen {
 				statRow(graphics, font, rx, y, iw, "Ping", HudStats.pingLabel());
 			}
 			case MINING -> {
-				float y = featureCard(graphics, font, left, top, col, cardHeight(2), "Mining");
+				float y = featureCard(graphics, font, left, top, col, cardHeight(3), "Mining");
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Mining HUD", config.miningHudEnabled, v -> config.miningHudEnabled = v, Feature.MINING);
-				toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Titanium ESP", config.titaniumEsp, v -> config.titaniumEsp = v, Feature.TITANIUM);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Titanium ESP", config.titaniumEsp, v -> config.titaniumEsp = v, Feature.TITANIUM);
+				toggle(graphics, font, ix, y, iw, mouseX, mouseY, "CH waypoints", config.crystalHollowsWaypoints, v -> config.crystalHollowsWaypoints = v, Feature.CRYSTAL);
 
 				y = featureCard(graphics, font, right, top, col, cardTop() + cardHead() + 54 + cardPad(), "Live");
 				var snap = MiningTracker.snapshot();
@@ -2051,24 +2045,14 @@ public class StrayScreen extends Screen {
 				controlCard(graphics, font, right, y, col, mouseX, mouseY, "Inventory HUD", config.inventoryHudEnabled, v -> config.inventoryHudEnabled = v, Feature.INVENTORY);
 			}
 			case BARS -> {
-				float y = sectionLabel(graphics, font, left, top, "Vanilla");
-				y = featureCard(graphics, font, left, y, col, cardHeight(7), "Bars");
-				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Hotbar", config.hudHotbar, v -> config.hudHotbar = v);
-				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Health", config.hudHealth, v -> config.hudHealth = v);
-				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Hunger", config.hudHunger, v -> config.hudHunger = v);
-				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Armor", config.hudArmor, v -> config.hudArmor = v);
-				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Air", config.hudAir, v -> config.hudAir = v);
-				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Experience", config.hudExperience, v -> config.hudExperience = v);
-				toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Mount health", config.hudMountHealth, v -> config.hudMountHealth = v);
-
-				y = sectionLabel(graphics, font, right, top, "Info");
-				y = featureCard(graphics, font, right, y, col, cardHeight(4) + 28, "Info");
-				y = toggle(graphics, font, rx, y, iw, mouseX, mouseY, "Scoreboard", config.hudScoreboard, v -> config.hudScoreboard = v);
-				y = toggle(graphics, font, rx, y, iw, mouseX, mouseY, "Boss bar", config.hudBossBar, v -> config.hudBossBar = v);
-				y = toggle(graphics, font, rx, y, iw, mouseX, mouseY, "Effects", config.hudEffects, v -> config.hudEffects = v);
-				y = toggle(graphics, font, rx, y, iw, mouseX, mouseY, "Held item", config.hudHeldItem, v -> config.hudHeldItem = v);
-				GuiDraw.menu(graphics, font, "Move and scale each piece", rx, y + 4, fade());
-				GuiDraw.menu(graphics, font, "from the toolbar HUD editor.", rx, y + 16, fade());
+				float y = sectionLabel(graphics, font, left, top, "Info");
+				y = featureCard(graphics, font, left, y, col, cardHeight(4) + 28, "Info");
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Scoreboard", config.hudScoreboard, v -> config.hudScoreboard = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Boss bar", config.hudBossBar, v -> config.hudBossBar = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Effects", config.hudEffects, v -> config.hudEffects = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Held item", config.hudHeldItem, v -> config.hudHeldItem = v);
+				GuiDraw.menu(graphics, font, "Move and scale each piece", ix, y + 4, fade());
+				GuiDraw.menu(graphics, font, "from the toolbar HUD editor.", ix, y + 16, fade());
 			}
 			case NODES -> {
 				float markersH = cardHeight(6);
@@ -2118,9 +2102,10 @@ public class StrayScreen extends Screen {
 				statRow(graphics, font, rx, y, iw, "Ping", HudStats.pingLabel());
 			}
 			case MINING -> {
-				float y = sectionLabel(graphics, font, left, top, "Tools");
+				float 				y = sectionLabel(graphics, font, left, top, "Tools");
 				y = controlCard(graphics, font, left, y, col, mouseX, mouseY, "Mining HUD", config.miningHudEnabled, v -> config.miningHudEnabled = v, Feature.MINING);
-				controlCard(graphics, font, left, y, col, mouseX, mouseY, "Titanium ESP", config.titaniumEsp, v -> config.titaniumEsp = v, Feature.TITANIUM);
+				y = controlCard(graphics, font, left, y, col, mouseX, mouseY, "Titanium ESP", config.titaniumEsp, v -> config.titaniumEsp = v, Feature.TITANIUM);
+				controlCard(graphics, font, left, y, col, mouseX, mouseY, "CH waypoints", config.crystalHollowsWaypoints, v -> config.crystalHollowsWaypoints = v, Feature.CRYSTAL);
 
 				y = sectionLabel(graphics, font, right, top, "Live");
 				y = featureCard(graphics, font, right, y, col, cardTop() + cardHead() + 54 + cardPad(), "Live");
@@ -2710,6 +2695,10 @@ public class StrayScreen extends Screen {
 				y = slider(graphics, font, ix, y, iw, "Range", config.titaniumEspRange + "m", (config.titaniumEspRange - 24) / 56f, v -> config.titaniumEspRange = StrayConfig.clamp(24 + Math.round(v * 56f), 24, 80));
 				colorRow(graphics, font, ix, y, iw, mouseX, mouseY, "Color", config.titaniumEspRgb, PickerTarget.TITANIUM);
 			}
+			case CRYSTAL -> {
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Find in chat", config.crystalHollowsFindChat, v -> config.crystalHollowsFindChat = v);
+				toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Through walls", config.crystalHollowsThroughWalls, v -> config.crystalHollowsThroughWalls = v);
+			}
 			case INVENTORY -> {
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Hotbar", config.inventoryHudHotbar, v -> config.inventoryHudHotbar = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Armor", config.inventoryHudArmor, v -> config.inventoryHudArmor = v);
@@ -3184,7 +3173,7 @@ public class StrayScreen extends Screen {
 		return FabricLoader.getInstance()
 			.getModContainer("stray")
 			.map(container -> container.getMetadata().getVersion().getFriendlyString())
-			.orElse("1.2.188");
+			.orElse("1.2.189");
 	}
 
 	@Override

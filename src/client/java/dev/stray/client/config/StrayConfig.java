@@ -99,6 +99,9 @@ public final class StrayConfig {
 	public int composterCostReduction = 0;
 	public long composterMaxOrganic = 0;
 	public long composterMaxFuel = 0;
+	public boolean crystalHollowsWaypoints = false;
+	public boolean crystalHollowsFindChat = false;
+	public boolean crystalHollowsThroughWalls = false;
 	public boolean titaniumEsp = false;
 	public boolean titaniumEspThroughWalls = false;
 	public boolean chestEspEnabled = false;

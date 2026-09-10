@@ -28,6 +28,7 @@ public final class SkyblockLocation {
 	public static int dungeonFloor;
 	public static String area = "";
 	public static String poi = "";
+	public static String server = "";
 	public static String serverBrand = "";
 
 	private static int lastTick = Integer.MIN_VALUE;
@@ -54,6 +55,10 @@ public final class SkyblockLocation {
 		Sidebar sidebar = readSidebar(client);
 		area = readArea(connection, sidebar);
 		poi = sidebar.poi;
+		String tabServer = readServer(connection);
+		if (!tabServer.isEmpty()) {
+			server = tabServer;
+		}
 		inSkyblock = onHypixel && (sidebar.skyblock || !area.isEmpty() || !poi.isEmpty());
 		inTheEnd = inSkyblock && isTheEnd(area, sidebar);
 		inDungeon = onHypixel && (sidebar.dungeon || dungeonTab(connection));
@@ -91,6 +96,7 @@ public final class SkyblockLocation {
 		dungeonFloor = 0;
 		area = "";
 		poi = "";
+		server = "";
 		serverBrand = "";
 		lastTick = Integer.MIN_VALUE;
 	}
@@ -101,6 +107,50 @@ public final class SkyblockLocation {
 		}
 		String brand = connection.serverBrand();
 		return brand == null ? "" : brand;
+	}
+
+	public static boolean inCrystalHollows() {
+		if (!inSkyblock) {
+			return false;
+		}
+		return crystalName(area) || crystalName(poi);
+	}
+
+	private static boolean crystalName(String name) {
+		if (name == null || name.isEmpty()) {
+			return false;
+		}
+		String a = name.toLowerCase();
+		return a.contains("crystal hollow")
+			|| a.contains("precursor")
+			|| a.contains("goblin holdout")
+			|| a.contains("mithril deposit")
+			|| a.contains("magma field")
+			|| a.contains("mines of divan")
+			|| a.contains("crystal nucleus")
+			|| a.contains("fairy grotto")
+			|| a.contains("khazad")
+			|| a.contains("jungle temple")
+			|| a.contains("goblin queen")
+			|| a.equals("jungle")
+			|| a.contains("lost precursor");
+	}
+
+	private static String readServer(ClientPacketListener connection) {
+		if (connection == null) {
+			return "";
+		}
+		for (PlayerInfo info : connection.getListedOnlinePlayers()) {
+			Component display = info.getTabListDisplayName();
+			if (display == null) {
+				continue;
+			}
+			String text = plain(display);
+			if (text.startsWith("Server: ")) {
+				return text.substring("Server: ".length()).trim();
+			}
+		}
+		return "";
 	}
 
 	private static String readArea(ClientPacketListener connection, Sidebar sidebar) {

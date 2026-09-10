@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.189", new String[]{
+			"Custom hotbar, health, food, XP, and mount bars are gone. Mining has Crystal Hollows structure waypoints that listen for Skyblocker shares and never send your finds."
+		}),
 		new Entry("1.2.188", new String[]{
 			"World / Camera has Motion blur from Natural Motion Blur: Velocity, Blend, Hybrid, and Accumulation, with strength and refresh-rate scaling."
 		}),
