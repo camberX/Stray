@@ -1,5 +1,6 @@
 package dev.stray.client.media;
 
+import dev.stray.client.config.StrayConfig;
 import dev.stray.client.ui.Theme;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.ClickEvent;
@@ -42,6 +43,9 @@ public final class MediaChat {
 	}
 
 	public static boolean songChanged(NowPlaying track) {
+		if (!StrayConfig.get().musicChatAnnounce) {
+			return false;
+		}
 		if (track == null || !track.present()) {
 			return false;
 		}

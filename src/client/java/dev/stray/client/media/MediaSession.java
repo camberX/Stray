@@ -1,5 +1,6 @@
 package dev.stray.client.media;
 
+import dev.stray.client.config.StrayConfig;
 import net.minecraft.client.Minecraft;
 
 public final class MediaSession {
@@ -142,6 +143,11 @@ public final class MediaSession {
 			return;
 		}
 		if (NowPlaying.titlesClose(lastAnnounced, next.title()) || NowPlaying.titlesClose(pendingAnnounce, next.title())) {
+			return;
+		}
+		if (!StrayConfig.get().musicChatAnnounce) {
+			lastAnnounced = next.title();
+			pendingAnnounce = "";
 			return;
 		}
 		pendingAnnounce = next.title();

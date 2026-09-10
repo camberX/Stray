@@ -27,7 +27,7 @@ public final class ControlChrome {
 	}
 
 	public static boolean on() {
-		return StrayConfig.get().guiDesignControl();
+		return true;
 	}
 
 	public static int hudFill() {
@@ -43,12 +43,12 @@ public final class ControlChrome {
 
 	public static int paneRgb() {
 		int rgb = StrayConfig.get().controlPaneRgb & 0xFFFFFF;
-		return rgb == 0 ? 0xFFFFFF : rgb;
+		return rgb == 0 ? 0x181818 : rgb;
 	}
 
 	public static int pillRgb() {
 		int rgb = StrayConfig.get().controlPillRgb & 0xFFFFFF;
-		return rgb == 0 ? 0xFFFFFF : rgb;
+		return rgb == 0 ? 0x808080 : rgb;
 	}
 
 	public static float paneOpacity() {
@@ -148,19 +148,16 @@ public final class ControlChrome {
 
 	public static void card(GuiGraphicsExtractor graphics, float x, float y, float w, float h) {
 		GuiDraw.roundedFine(graphics, x, y, w, h, CARD_R, cardFill());
-		rim(graphics, x, y, w, h, CARD_R);
 	}
 
 	public static void rail(GuiGraphicsExtractor graphics, float x, float y, float w, float h) {
 		float r = railRadius();
 		GuiDraw.roundedFine(graphics, x, y, w, h, r, railFill());
-		rim(graphics, x, y, w, h, r);
 	}
 
 	public static void search(GuiGraphicsExtractor graphics, float x, float y, float w, float h) {
 		float r = h * 0.5f;
 		GuiDraw.roundedFine(graphics, x, y, w, h, r, searchFill());
-		rim(graphics, x, y, w, h, r);
 	}
 
 	public static void rim(GuiGraphicsExtractor graphics, float x, float y, float w, float h, float radius) {
@@ -171,7 +168,6 @@ public final class ControlChrome {
 
 	public static void sheet(GuiGraphicsExtractor graphics, float x, float y, float w, float h) {
 		GuiDraw.roundedFine(graphics, x, y, w, h, 16f, Theme.withAlpha(paneRgb(), 210));
-		rim(graphics, x, y, w, h, 16f);
 	}
 
 	public static void face(GuiGraphicsExtractor graphics, float x, float y, float size, PlayerSkin skin) {

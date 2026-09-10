@@ -1,11 +1,8 @@
 package dev.stray.client.render;
 
-import dev.stray.Stray;
 import dev.stray.client.config.StrayConfig;
 import dev.stray.client.item.ItemIds;
 import dev.stray.client.ui.Theme;
-import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry;
-import net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
@@ -38,11 +35,6 @@ public final class PickupLogRenderer {
 	}
 
 	public static void init() {
-		HudElementRegistry.attachElementBefore(
-			VanillaHudElements.CHAT,
-			Stray.id("pickup_log"),
-			PickupLogRenderer::extract
-		);
 	}
 
 	public static void add(ItemStack stack, int amount) {
@@ -104,7 +96,7 @@ public final class PickupLogRenderer {
 		return count == 0 ? 0f : PAD * 2 + HEAD + count * ROW;
 	}
 
-	private static void extract(GuiGraphicsExtractor graphics, DeltaTracker deltaTracker) {
+	static void extract(GuiGraphicsExtractor graphics, DeltaTracker deltaTracker) {
 		Minecraft client = Minecraft.getInstance();
 		if (client.player == null || client.options.hideGui || !StrayConfig.get().pickupLogEnabled) {
 			return;

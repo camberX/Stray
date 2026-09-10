@@ -1,10 +1,7 @@
 package dev.stray.client.render;
 
-import dev.stray.Stray;
 import dev.stray.client.config.StrayConfig;
 import dev.stray.client.ui.Theme;
-import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry;
-import net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
@@ -22,11 +19,6 @@ public final class WatermarkRenderer {
 	}
 
 	public static void init() {
-		HudElementRegistry.attachElementBefore(
-			VanillaHudElements.CHAT,
-			Stray.id("watermark"),
-			WatermarkRenderer::extract
-		);
 	}
 
 	public static float occupiedHeight() {
@@ -34,7 +26,7 @@ public final class WatermarkRenderer {
 		return config.watermarkEnabled ? HEIGHT * HudLayout.scale(HudLayout.Id.WATERMARK) + 8 : 0;
 	}
 
-	private static void extract(GuiGraphicsExtractor graphics, DeltaTracker deltaTracker) {
+	static void extract(GuiGraphicsExtractor graphics, DeltaTracker deltaTracker) {
 		Minecraft client = Minecraft.getInstance();
 		if (client.player == null || client.options.hideGui) {
 			return;

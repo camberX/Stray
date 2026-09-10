@@ -29,13 +29,7 @@ import java.util.Optional;
  * retired, and this process exits so the next launch loads the new jar.
  */
 public final class AutoUpdate implements PreLaunchEntrypoint {
-	private static final String SHOP = "https://stray.gay";
-	private static final String META = SHOP + "/api/mod";
-	private static final String DOWNLOAD = SHOP + "/download";
-	private static final String GITHUB_META =
-		"https://raw.githubusercontent.com/camberX/Eisenmann/main/web/public/mod/latest.json";
-	private static final String LEGACY_GITHUB_META =
-		"https://raw.githubusercontent.com/camberX/voidmark/main/web/public/mod/latest.json";
+	private static final String DOWNLOAD = UpdateMeta.SHOP + "/download";
 	private static final long MAX_BYTES = 12L * 1024L * 1024L;
 
 	@Override
@@ -66,7 +60,7 @@ public final class AutoUpdate implements PreLaunchEntrypoint {
 				log("No update info. Continuing launch.");
 				return;
 			}
-			if (compare(remote.version, installed) <= 0) {
+			if (UpdateMeta.compare(remote.version, installed) <= 0) {
 				log("Already up to date (" + installed + ").");
 				return;
 			}
@@ -119,12 +113,12 @@ public final class AutoUpdate implements PreLaunchEntrypoint {
 			.followRedirects(HttpClient.Redirect.NORMAL)
 			.connectTimeout(Duration.ofSeconds(6))
 			.build();
-		JsonObject json = getJson(http, META, 12);
+		JsonObject json = UpdateMeta.getJson(http, UpdateMeta.META, 12);
 		if (json == null) {
-			json = getJson(http, GITHUB_META, 12);
+			json = UpdateMeta.getJson(http, UpdateMeta.GITHUB_META, 12);
 		}
 		if (json == null) {
-			json = getJson(http, LEGACY_GITHUB_META, 12);
+			json = UpdateMeta.getJson(http, UpdateMeta.LEGACY_GITHUB_META, 12);
 		}
 		if (json == null || !json.has("version")) {
 			return null;
@@ -143,14 +137,14 @@ public final class AutoUpdate implements PreLaunchEntrypoint {
 			if (url.startsWith("https://stray.gay/")) {
 				download = url;
 			} else if (url.startsWith("/")) {
-				download = SHOP + url;
+				download = UpdateMeta.SHOP + url;
 			}
 		}
 		List<String> urls = new ArrayList<>();
 		urls.add(download);
-		urls.add(SHOP + "/stray.jar");
-		urls.add(SHOP + "/eisenmann.jar");
-		urls.add(SHOP + "/voidmark.jar");
+		urls.add(UpdateMeta.SHOP + "/stray.jar");
+		urls.add(UpdateMeta.SHOP + "/eisenmann.jar");
+		urls.add(UpdateMeta.SHOP + "/voidmark.jar");
 		urls.add("https://raw.githubusercontent.com/camberX/Eisenmann/main/web/public/mod/" + file);
 		urls.add("https://raw.githubusercontent.com/camberX/voidmark/main/web/public/mod/" + file);
 		urls.add("https://raw.githubusercontent.com/camberX/Eisenmann/main/web/public/mod/stray.jar");
@@ -158,21 +152,6 @@ public final class AutoUpdate implements PreLaunchEntrypoint {
 		urls.add("https://raw.githubusercontent.com/camberX/Eisenmann/main/web/public/mod/eisenmann.jar");
 		urls.add("https://raw.githubusercontent.com/camberX/voidmark/main/web/public/mod/eisenmann.jar");
 		return new Remote(version, file, urls);
-	}
-
-	private static JsonObject getJson(HttpClient http, String url, int timeoutSec) {
-		try {
-			HttpResponse<String> response = http.send(
-				request(url, timeoutSec).build(),
-				HttpResponse.BodyHandlers.ofString()
-			);
-			if (response.statusCode() < 200 || response.statusCode() >= 300) {
-				return null;
-			}
-			return JsonParser.parseString(response.body()).getAsJsonObject();
-		} catch (Exception ignored) {
-			return null;
-		}
 	}
 
 	private static Path apply(Path current, Remote remote) throws Exception {
@@ -404,41 +383,6 @@ public final class AutoUpdate implements PreLaunchEntrypoint {
 		}
 		String name = path.getFileName().toString().toLowerCase(Locale.ROOT);
 		return name.startsWith("stray") || name.startsWith("eisenmann") || name.startsWith("voidmark");
-	}
-
-	private static int compare(String left, String right) {
-		int[] a = parts(left);
-		int[] b = parts(right);
-		int n = Math.max(a.length, b.length);
-		for (int i = 0; i < n; i++) {
-			int av = i < a.length ? a[i] : 0;
-			int bv = i < b.length ? b[i] : 0;
-			if (av != bv) {
-				return Integer.compare(av, bv);
-			}
-		}
-		return 0;
-	}
-
-	private static int[] parts(String version) {
-		String[] bits = version == null ? new String[0] : version.split("[^0-9]+");
-		int[] out = new int[Math.max(1, bits.length)];
-		int n = 0;
-		for (String bit : bits) {
-			if (bit.isEmpty()) {
-				continue;
-			}
-			try {
-				out[n++] = Integer.parseInt(bit);
-			} catch (NumberFormatException ignored) {
-			}
-		}
-		if (n == out.length) {
-			return out;
-		}
-		int[] trimmed = new int[n];
-		System.arraycopy(out, 0, trimmed, 0, n);
-		return trimmed;
 	}
 
 	private static void killGame() {

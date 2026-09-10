@@ -80,11 +80,11 @@ public abstract class LivingEntityRendererMixin {
 		boolean glowing,
 		CallbackInfoReturnable<RenderType> cir
 	) {
-		if (!HeldItemShader.shouldFill(state) || (!visible && !translucent)) {
+		if (!HeldItemShader.shouldFill(state) || (!visible && !translucent && !glowing)) {
 			return;
 		}
 		RenderType original = cir.getReturnValue();
-		if (original == null) {
+		if (original == null || original.isOutline()) {
 			return;
 		}
 		cir.setReturnValue(HeldItemShader.wrapFill(original, getTextureLocation(state)));

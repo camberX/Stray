@@ -1,13 +1,10 @@
 package dev.stray.client.farming;
 
-import dev.stray.Stray;
 import dev.stray.client.config.StrayConfig;
 import dev.stray.client.item.ItemAppearance;
 import dev.stray.client.render.GuiDraw;
 import dev.stray.client.ui.MenuFont;
 import dev.stray.client.ui.Theme;
-import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry;
-import net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
@@ -32,11 +29,6 @@ public final class FarmingHud {
 	}
 
 	public static void init() {
-		HudElementRegistry.attachElementAfter(
-			VanillaHudElements.CROSSHAIR,
-			Stray.id("farming_yaw"),
-			FarmingHud::extract
-		);
 	}
 
 	public static boolean holdingTool(Player player) {
@@ -72,7 +64,7 @@ public final class FarmingHud {
 		}
 	}
 
-	private static void extract(GuiGraphicsExtractor graphics, DeltaTracker deltaTracker) {
+	public static void extract(GuiGraphicsExtractor graphics, DeltaTracker deltaTracker) {
 		Minecraft client = Minecraft.getInstance();
 		if (client.player == null || client.options.hideGui || client.screen != null) {
 			return;

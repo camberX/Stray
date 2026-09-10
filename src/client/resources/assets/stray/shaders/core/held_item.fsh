@@ -67,15 +67,6 @@ float animationScale() {
 #endif
 }
 
-vec2 patternUv(float distScale) {
-#ifdef ESP_FILL
-    // Screen scale follows distance; model UVs keep thin limbs from going empty.
-    return gl_FragCoord.xy * distScale * 0.92 + texCoord0 * (12.0 + distScale * 0.70);
-#else
-    return gl_FragCoord.xy * distScale;
-#endif
-}
-
 void main() {
     vec4 tex = texture(Sampler0, texCoord0);
 #ifdef ALPHA_CUTOUT
@@ -107,14 +98,21 @@ void main() {
     albedo = mix(fill * light, albedo, step(0.04, albedoPeak));
 #endif
     vec3 tinted = mix(albedo, albedo * fill, tintAmount);
+#ifdef ESP_FILL
+    // Constant pixel frequency. Scaling by interpolated camera distance
+    // stretched the field from head to toe.
+    vec2 screen = gl_FragCoord.xy;
+    float glint = 0.0;
+#else
     float distScale = animationScale();
-    vec2 screen = patternUv(distScale);
+    vec2 screen = gl_FragCoord.xy * distScale;
     float glint = pow(clamp(texture(Sampler1, screen * 0.010).r, 0.0, 1.0), 2.4);
+#endif
 
     if (style > 0.5) {
         float t = GameTime * 90.0;
-        vec3 night = mix(tinted, (fill * 0.16 + tex.rgb * 0.10) * light, tintAmount * 0.78);
 #ifdef ESP_FILL
+        vec3 night = tinted;
         float far = starLayer(screen * 0.030 + vec2(t * 0.55, -t * 0.22), t, 0.50);
         float mid = starLayer(screen * 0.050 + vec2(-t * 0.90, t * 0.40), t * 1.25, 0.44);
         float near = starLayer(screen * 0.078 + vec2(t * 1.10, t * 0.16), t * 1.65, 0.54);
@@ -124,6 +122,7 @@ void main() {
         float nebula = pow(fbm(screen * 0.012 + vec2(t * 0.10, -t * 0.07)), 2.2);
         float density = mix(0.58, 1.0, (amount - 0.10) / 1.40);
 #else
+        vec3 night = mix(tinted, (fill * 0.16 + tex.rgb * 0.10) * light, tintAmount * 0.78);
         float far = starLayer(screen * 0.016 + vec2(t * 0.55, -t * 0.22), t, 0.84);
         float mid = starLayer(screen * 0.028 + vec2(-t * 0.90, t * 0.40), t * 1.25, 0.78);
         float near = starLayer(screen * 0.044 + vec2(t * 1.10, t * 0.16), t * 1.65, 0.90);

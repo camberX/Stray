@@ -15,14 +15,75 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.174", new String[]{
+			"Composter overlay reads Organic Matter and Fuel caps from the Composter pane lore (67,464/100k). /stray debug composter dumps chest slots 2 and 7 in chat.",
+			"HUD still draws as one layer after the vanilla bars (1.2.155–1.2.159), so overlays are not billed as Fabric chat/hotbar wraps."
+		}),
+		new Entry("1.2.173", new String[]{
+			"Player fill silhouette draws when Through walls is off. The outline follows the visible player and no longer needs that toggle."
+		}),
+		new Entry("1.2.172", new String[]{
+			"Theme has an Update notify toggle (on by default). When a newer jar is on stray.gay, chat shows a clickable line once per session."
+		}),
+		new Entry("1.2.171", new String[]{
+			"Pets tab loads skull textures from the current item repo, so newer pets like Hermit Crab and Rose Dragon show their real heads instead of a blank cube."
+		}),
+		new Entry("1.2.170", new String[]{
+			"Farm now loads Garden harvests, Garden level, and unique visitors from the Garden API, then applies the wiki milestone tables."
+		}),
+		new Entry("1.2.169", new String[]{
+			"Farm crop milestones use the current Garden wiki tables (46 per crop, different amounts per crop) and Garden harvests only, not island collection."
+		}),
+		new Entry("1.2.168", new String[]{
+			"Feature toggles start off. Inner options like Animations, Through walls, Spotify, and the custom HUD pieces are no longer on until you turn them on."
+		}),
+		new Entry("1.2.167", new String[]{
+			"Classic GUI is gone. Control is the only menu. Defaults are Glass #181818 at 64% and Pills #808080 at 17%. The menu uses the Minecraft font only."
+		}),
+		new Entry("1.2.166", new String[]{
+			"Search for Auto update, menu scale, fonts, and the rest of Theme opens the Theme tab instead of Overlay."
+		}),
+		new Entry("1.2.165", new String[]{
+			"Music HUD Song chat is labeled Song Notification."
+		}),
+		new Entry("1.2.164", new String[]{
+			"Song chat (the NOW PLAYING line when a track changes) defaults off. Turn it on in the Music card if you want those messages."
+		}),
+		new Entry("1.2.163", new String[]{
+			"Music HUD has a Song chat toggle for the NOW PLAYING line when the track changes. Existing configs keep it on."
+		}),
+		new Entry("1.2.162", new String[]{
+			"Control tabs go World, Visuals, Combat. Feature cards sit under category names. Star fill lives on Star mobs with its own Glow ESP toggle, so fill still tracks starred mobs when glow is off."
+		}),
+		new Entry("1.2.161", new String[]{
+			"Player fill keeps mob/star glow instead of replacing the outline pass. Fill star mobs is a separate toggle from Fill ESP mobs."
+		}),
+		new Entry("1.2.160", new String[]{
+			"Player fill skips Hypixel NPCs (UUID version 2, same as nametags). The silhouette outline only draws when Through walls is on, so it no longer shows through blocks when that toggle is off."
+		}),
+		new Entry("1.2.159", new String[]{
+			"Stray HUD is one layer after the vanilla bars instead of hanging off chat, hotbar, and scoreboard. Fabric's wrappers for those vanilla extracts no longer include Music, Watermark, and the rest of the overlay pass."
+		}),
+		new Entry("1.2.158", new String[]{
+			"The Mobs catalog is tall enough to show more than one name again after Player fill and Nametags were added above it. Control cards skip per-frame rim slices, and the color picker no longer draws a blit per pixel."
+		}),
+		new Entry("1.2.157", new String[]{
+			"Control frost covers the whole rounded pane again, including the watermark. Vanilla hotbar and scoreboard are no longer wrapped by Stray when those custom HUD pieces are off."
+		}),
+		new Entry("1.2.156", new String[]{
+			"HUD extract and item-model mixins are cheaper: item skins cache NBT and inventory ownership, Ghost/Fill skip mask work when they are off, and short Control HUD bars no longer frost."
+		}),
+		new Entry("1.2.155", new String[]{
+			"Control HUD glass (Music, Watermark, and the rest of the HUD) draws frost as one rounded blit instead of dozens of corner slices, which was the main HUD FPS cost."
+		}),
 		new Entry("1.2.154", new String[]{
-			"/stray debug toggles session debug flags. /stray debug composter prints lore for Composter chest slots 2 and 7 in chat."
+			"Held item and Player fill each have their own outline color picker. Existing configs keep the previous fill-derived outline color until you change it."
 		}),
 		new Entry("1.2.153", new String[]{
-			"Composter overlay reads Organic Matter and Fuel caps from the Composter pane lore (67,464/100k) and styled/NBT text, without generating item tooltips that could abort the parse."
+			"Player fill tints the player again instead of replacing the skin. Stars and smoke stay round in screen space and no longer stretch down the body."
 		}),
 		new Entry("1.2.152", new String[]{
-			"Composter overlay reads Organic Matter and Fuel caps from the Composter chest lore (for example 67,464/100k), not only from Composter Upgrades."
+			"Player fill stars and smoke no longer stretch with the skin texture. The pattern stays in screen space on the silhouette."
 		}),
 		new Entry("1.2.151", new String[]{
 			"Farming has a movable Composter overlay based on SkyHanni's composter data: organic matter, fuel, stored compost, next cycle, cycles left, production rate, and estimated empty time.",

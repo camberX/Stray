@@ -23,6 +23,8 @@ import dev.stray.client.mixin.RenderSetupAccessor;
 import dev.stray.client.mixin.RenderSetupTextureBindingAccessor;
 import dev.stray.client.mixin.RenderTypeAccessor;
 import dev.stray.client.render.MobGlowRenderer;
+import dev.stray.client.render.NametagRenderer;
+import dev.stray.client.render.StarMobEsp;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.model.geom.ModelPart;
 import net.minecraft.client.renderer.MultiBufferSource;
@@ -79,6 +81,7 @@ public final class HeldItemShader {
 	private static RenderTarget espTarget;
 	private static boolean maskThisFrame;
 	private static boolean playerMaskThisFrame;
+	private static boolean playerMaskDepthReady;
 	private static boolean espThisFrame;
 	private static int playerFillDepth;
 	private static final Set<Object> FILL_ITEMS = Collections.newSetFromMap(new IdentityHashMap<>());
@@ -91,7 +94,8 @@ public final class HeldItemShader {
 	}
 
 	public static boolean playerFillActive() {
-		return StrayConfig.get().playerFillEsp;
+		StrayConfig config = StrayConfig.get();
+		return config.playerFillEsp || config.playerFillStarMobs;
 	}
 
 	public static boolean appliesFill(ItemDisplayContext context) {
@@ -118,7 +122,11 @@ public final class HeldItemShader {
 	}
 
 	public static boolean playerFillThroughWalls() {
-		return playerFillActive() && StrayConfig.get().playerFillThroughWalls;
+		StrayConfig config = StrayConfig.get();
+		if (config.playerFillEsp && config.playerFillThroughWalls) {
+			return true;
+		}
+		return config.playerFillStarMobs && config.starMobThroughWalls;
 	}
 
 	public static boolean shouldFillEntity(Entity entity) {
@@ -129,10 +137,17 @@ public final class HeldItemShader {
 		if (client.player == null || entity == client.player) {
 			return false;
 		}
+		StrayConfig config = StrayConfig.get();
 		if (entity.getType() == EntityType.PLAYER) {
+			if (config.playerFillStarMobs && StarMobEsp.marked(entity)) {
+				return true;
+			}
+			return config.playerFillEsp && NametagRenderer.realAccount(entity);
+		}
+		if (config.playerFillStarMobs && StarMobEsp.marked(entity)) {
 			return true;
 		}
-		return StrayConfig.get().playerFillMobs && MobGlowRenderer.listed(entity);
+		return config.playerFillEsp && config.playerFillMobs && MobGlowRenderer.catalogOrNametag(entity);
 	}
 
 	public static boolean shouldFillThroughWalls(Entity entity) {
@@ -154,7 +169,7 @@ public final class HeldItemShader {
 	}
 
 	public static boolean isFillItem(Object submit) {
-		return submit != null && FILL_ITEMS.contains(submit);
+		return submit != null && !FILL_ITEMS.isEmpty() && FILL_ITEMS.contains(submit);
 	}
 
 	public static void pushPlayerFill() {
@@ -266,7 +281,7 @@ public final class HeldItemShader {
 	}
 
 	public static RenderType wrapFill(RenderType original, Identifier atlas) {
-		if (original == null || isPipeline(original.pipeline()) || atlas == null) {
+		if (original == null || original.isOutline() || isPipeline(original.pipeline()) || atlas == null) {
 			return original;
 		}
 		return fillType(atlas);
@@ -285,7 +300,7 @@ public final class HeldItemShader {
 	}
 
 	public static RenderType playerFillMask(RenderType original) {
-		if (!playerFill() || original == null || isMaskPipeline(original.pipeline()) || !isFillPipeline(original.pipeline())) {
+		if (!playerMaskThisFrame || !playerFill() || original == null || isMaskPipeline(original.pipeline()) || !isFillPipeline(original.pipeline())) {
 			return null;
 		}
 		Identifier atlas = sampler0(original);
@@ -363,6 +378,7 @@ public final class HeldItemShader {
 
 	public static void beginPlayerMask() {
 		playerMaskThisFrame = false;
+		playerMaskDepthReady = false;
 		if (!playerFillActive()) {
 			return;
 		}
@@ -370,6 +386,19 @@ public final class HeldItemShader {
 			return;
 		}
 		playerMaskThisFrame = true;
+	}
+
+	public static void capturePlayerMaskDepth() {
+		if (!playerMaskThisFrame || playerMaskDepthReady || playerFillThroughWalls()) {
+			return;
+		}
+		Minecraft client = Minecraft.getInstance();
+		RenderTarget main = client.getMainRenderTarget();
+		if (main == null || maskTarget == null || main.getDepthTexture() == null || maskTarget.getDepthTexture() == null) {
+			return;
+		}
+		maskTarget.copyDepthFrom(main);
+		playerMaskDepthReady = true;
 	}
 
 	private static boolean prepareMaskTarget() {
@@ -430,7 +459,7 @@ public final class HeldItemShader {
 		runSilhouette("stray player fill", outlineColorModulator(true), silhouetteThickness(true));
 	}
 
-	private static boolean masking() {
+	public static boolean masking() {
 		return maskThisFrame || playerMaskThisFrame;
 	}
 
@@ -512,13 +541,11 @@ public final class HeldItemShader {
 
 	private static Vector4fc outlineColorModulator(boolean playerFill) {
 		StrayConfig config = StrayConfig.get();
-		Vector4fc fill = playerFill
-			? packColor(config.playerFillRgb, config.playerFillFill)
-			: packColor(config.heldItemShaderRgb, config.heldItemShaderFill);
+		int rgb = playerFill ? config.playerFillOutlineRgb : config.heldItemShaderOutlineRgb;
 		return new Vector4f(
-			fill.x() + (1f - fill.x()) * 0.62f,
-			fill.y() + (1f - fill.y()) * 0.62f,
-			fill.z() + (1f - fill.z()) * 0.62f,
+			((rgb >> 16) & 0xFF) / 255f,
+			((rgb >> 8) & 0xFF) / 255f,
+			(rgb & 0xFF) / 255f,
 			1f
 		);
 	}
@@ -636,7 +663,7 @@ public final class HeldItemShader {
 				.withTexture("Sampler1", ItemFeatureRenderer.ENCHANTED_GLINT_ITEM)
 				.useLightmap()
 				.affectsCrumbling()
-				.setOutline(RenderSetup.OutlineProperty.NONE)
+				.setOutline(RenderSetup.OutlineProperty.AFFECTS_OUTLINE)
 				.createRenderSetup()
 		);
 	}

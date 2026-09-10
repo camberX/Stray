@@ -8,15 +8,20 @@ import dev.stray.Stray;
 import net.minecraft.util.Util;
 
 import java.net.URI;
+import java.net.URLEncoder;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Hypixel Skyblock item name and lore from the NotEnoughUpdates item repo.
@@ -34,10 +39,16 @@ public final class SkyblockLore {
 		.build();
 	private static final Map<String, Snapshot> READY = new ConcurrentHashMap<>();
 	private static final Map<String, Boolean> PENDING = new ConcurrentHashMap<>();
+	private static final Pattern SKIN = Pattern.compile("textures\\.minecraft\\.net/texture/([a-fA-F0-9]{32,64})");
+	private static final Pattern SKULL_VALUE = Pattern.compile("Value:\"([A-Za-z0-9+/=]+)\"");
 
-	public record Snapshot(String name, List<String> lore) {
+	public record Snapshot(String name, List<String> lore, String skinHash) {
+		public Snapshot(String name, List<String> lore) {
+			this(name, lore, "");
+		}
+
 		boolean present() {
-			return (name != null && !name.isBlank()) || (lore != null && !lore.isEmpty());
+			return (name != null && !name.isBlank()) || (lore != null && !lore.isEmpty()) || (skinHash != null && !skinHash.isBlank());
 		}
 
 		ItemText text(boolean maxed) {
@@ -80,6 +91,14 @@ public final class SkyblockLore {
 		return snapshot != null && !snapshot.present();
 	}
 
+	public static String skin(String id) {
+		Snapshot snapshot = snapshot(id);
+		if (snapshot == null || snapshot.skinHash() == null) {
+			return "";
+		}
+		return snapshot.skinHash();
+	}
+
 	public static void request(String id) {
 		if (id == null || id.isBlank()) {
 			return;
@@ -94,7 +113,7 @@ public final class SkyblockLore {
 	private static void fetch(String id) {
 		try {
 			for (String template : URLS) {
-				Snapshot snapshot = download(template.formatted(id));
+				Snapshot snapshot = download(template.formatted(encode(id)));
 				if (snapshot != null && snapshot.present()) {
 					READY.put(id, snapshot);
 					return;
@@ -135,7 +154,31 @@ public final class SkyblockLore {
 				lines.add(element.getAsString());
 			}
 		}
-		return new Snapshot(name, lines);
+		return new Snapshot(name, lines, skinHash(root));
+	}
+
+	private static String skinHash(JsonObject root) {
+		String nbt = string(root, "nbttag");
+		Matcher matcher = SKIN.matcher(nbt);
+		if (matcher.find()) {
+			return matcher.group(1).toLowerCase(Locale.ROOT);
+		}
+		Matcher value = SKULL_VALUE.matcher(nbt);
+		if (value.find()) {
+			try {
+				String decoded = new String(Base64.getDecoder().decode(value.group(1)), StandardCharsets.UTF_8);
+				matcher = SKIN.matcher(decoded);
+				if (matcher.find()) {
+					return matcher.group(1).toLowerCase(Locale.ROOT);
+				}
+			} catch (IllegalArgumentException ignored) {
+			}
+		}
+		return "";
+	}
+
+	private static String encode(String id) {
+		return URLEncoder.encode(id, StandardCharsets.UTF_8).replace("+", "%20");
 	}
 
 	private static String string(JsonObject root, String key) {

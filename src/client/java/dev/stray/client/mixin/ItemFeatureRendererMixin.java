@@ -45,7 +45,7 @@ public class ItemFeatureRendererMixin {
 	)
 	private RenderType stray$heldItemType(RenderType original) {
 		SubmitNodeStorage.ItemSubmit submit = this.stray$itemSubmit;
-		if (submit == null) {
+		if (submit == null || (!HeldItemShader.active() && !HeldItemShader.playerFill())) {
 			return original;
 		}
 		if (HeldItemShader.isFillItem(submit)) {
@@ -64,7 +64,8 @@ public class ItemFeatureRendererMixin {
 		SubmitNodeStorage.ItemSubmit submit,
 		CallbackInfo ci
 	) {
-		if (HeldItemShader.appliesOutline(submit.displayContext()) || HeldItemShader.isFillItem(submit)) {
+		if (HeldItemShader.masking()
+			&& (HeldItemShader.appliesOutline(submit.displayContext()) || HeldItemShader.isFillItem(submit))) {
 			this.quadInstance.setLightCoords(submit.lightCoords());
 			this.quadInstance.setOverlayCoords(submit.overlayCoords());
 			HeldItemShader.drawViewMask(bufferSource, submit.pose(), submit.quads(), this.quadInstance);

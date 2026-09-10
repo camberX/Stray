@@ -60,10 +60,10 @@ import dev.stray.client.ui.ProfileCommands;
 import dev.stray.client.ui.ProfileViewerScreen;
 import dev.stray.client.ui.WardrobeCommands;
 import dev.stray.client.ui.WardrobeScreen;
-import dev.stray.client.ui.SystemFonts;
 import dev.stray.client.ui.Theme;
 import dev.stray.client.ui.UiFontPack;
 import dev.stray.client.ui.StrayScreen;
+import dev.stray.client.update.UpdateNotifier;
 import dev.stray.client.visual.CustomCape;
 import dev.stray.client.visual.ShopCape;
 import net.fabricmc.api.ClientModInitializer;
@@ -130,9 +130,6 @@ public final class StrayClient implements ClientModInitializer {
 	public void onInitializeClient() {
 		StrayConfig.load();
 		Theme.refresh();
-		Thread fonts = new Thread(SystemFonts::families, "stray-fonts");
-		fonts.setDaemon(true);
-		fonts.start();
 		SkyblockItems.load();
 		SkyblockRecipes.load();
 		RawmatsTracker.init();
@@ -249,6 +246,7 @@ public final class StrayClient implements ClientModInitializer {
 			ChestEsp.get().tick(client);
 			ShopCape.tick();
 			UiFontPack.tick(client);
+			UpdateNotifier.tick();
 		});
 
 		ClientLevelEvents.AFTER_CLIENT_LEVEL_CHANGE.register((client, level) -> {

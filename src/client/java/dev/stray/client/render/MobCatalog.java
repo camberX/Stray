@@ -30,6 +30,8 @@ public final class MobCatalog {
 	);
 
 	private static List<Entry> cache = List.of();
+	private static String filteredQuery = null;
+	private static List<Entry> filteredCache = List.of();
 
 	private MobCatalog() {
 	}
@@ -44,7 +46,12 @@ public final class MobCatalog {
 	public static List<Entry> filtered(String query) {
 		List<Entry> all = all();
 		String q = query == null ? "" : query.trim().toLowerCase(Locale.ROOT);
+		if (q.equals(filteredQuery) && filteredCache != null) {
+			return filteredCache;
+		}
+		filteredQuery = q;
 		if (q.isEmpty()) {
+			filteredCache = all;
 			return all;
 		}
 		List<Entry> out = new ArrayList<>();
@@ -53,7 +60,8 @@ public final class MobCatalog {
 				out.add(entry);
 			}
 		}
-		return out;
+		filteredCache = List.copyOf(out);
+		return filteredCache;
 	}
 
 	public static EntityType<?> type(String id) {

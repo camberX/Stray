@@ -9,12 +9,16 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 
 import java.util.ArrayList;
+import java.util.IdentityHashMap;
 import java.util.Iterator;
 import java.util.List;
 
 public final class ItemAppearance {
 	private static final List<Skin> SKINS = new ArrayList<>();
 	private static final ThreadLocal<Boolean> APPLYING = ThreadLocal.withInitial(() -> false);
+	private static final IdentityHashMap<ItemStack, Boolean> OURS = new IdentityHashMap<>();
+	private static final IdentityHashMap<ItemStack, ItemStack> VISUAL = new IdentityHashMap<>();
+	private static int oursTick = Integer.MIN_VALUE;
 
 	private ItemAppearance() {
 	}
@@ -33,13 +37,20 @@ public final class ItemAppearance {
 		if (stack == null || stack.isEmpty() || SKINS.isEmpty() || Boolean.TRUE.equals(APPLYING.get())) {
 			return stack;
 		}
+		rotateOurs();
+		ItemStack cached = VISUAL.get(stack);
+		if (cached != null) {
+			return cached;
+		}
 		Skin skin = find(stack);
 		if (skin == null || skin.display.isEmpty()) {
+			VISUAL.put(stack, stack);
 			return stack;
 		}
 		if (skin.display.getCount() != stack.getCount()) {
 			skin.display.setCount(Math.max(1, stack.getCount()));
 		}
+		VISUAL.put(stack, skin.display);
 		return skin.display;
 	}
 
@@ -172,20 +183,42 @@ public final class ItemAppearance {
 		return null;
 	}
 
-	private static boolean ours(Player player, ItemStack stack) {
+	private static void rotateOurs() {
+		Minecraft client = Minecraft.getInstance();
+		Player player = client.player;
+		int tick = player == null ? -2 : player.tickCount;
+		if (tick == oursTick) {
+			return;
+		}
+		oursTick = tick;
+		OURS.clear();
+		VISUAL.clear();
+		if (player == null) {
+			return;
+		}
 		Inventory inventory = player.getInventory();
 		int size = inventory.getContainerSize();
 		for (int i = 0; i < size; i++) {
-			if (inventory.getItem(i) == stack) {
-				return true;
+			ItemStack item = inventory.getItem(i);
+			if (!item.isEmpty()) {
+				OURS.put(item, Boolean.TRUE);
 			}
 		}
 		for (EquipmentSlot slot : ARMOR) {
-			if (player.getItemBySlot(slot) == stack) {
-				return true;
+			ItemStack worn = player.getItemBySlot(slot);
+			if (!worn.isEmpty()) {
+				OURS.put(worn, Boolean.TRUE);
 			}
 		}
-		return player.getOffhandItem() == stack;
+		ItemStack offhand = player.getOffhandItem();
+		if (!offhand.isEmpty()) {
+			OURS.put(offhand, Boolean.TRUE);
+		}
+	}
+
+	private static boolean ours(Player player, ItemStack stack) {
+		rotateOurs();
+		return OURS.containsKey(stack);
 	}
 
 	private static boolean stillValid(ItemStack bound, Skin skin) {

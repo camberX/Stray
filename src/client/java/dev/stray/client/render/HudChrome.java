@@ -20,9 +20,8 @@ public final class HudChrome {
 		int outline,
 		int accent
 	) {
-		Theme.refresh();
 		if (StrayConfig.get().guiDesignControl()) {
-			float r = Math.max(8f, radius);
+			float r = Math.min(Math.max(6f, radius), Math.min(w, h) / 2f);
 			GuiFrostBlur.blitWindow(graphics, x, y, w, h, r);
 			ControlChrome.glass(graphics, x, y, w, h, r, ControlChrome.hudFill());
 			if (StrayConfig.get().hudStarfield && w >= 72f && h >= 52f) {
