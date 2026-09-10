@@ -43,7 +43,6 @@ public final class CrystalHollowsMap {
 	private static final float PAD = 6;
 	private static final float HEAD = 12;
 	private static final Identifier TEXTURE = Stray.id("dynamic/crystal_hollows_map");
-	private static final int PAPER = 0x7C7A70;
 	private static final int JUNGLE = 0x3F8F4E;
 	private static final int GOBLIN = 0xC47B2C;
 	private static final int MITHRIL = 0x3FA8A4;
@@ -57,7 +56,6 @@ public final class CrystalHollowsMap {
 	private static final int[] raw = new int[TEX * TEX];
 	private static final short[] height = new short[TEX * TEX];
 	private static final byte[] seen = new byte[TEX * TEX];
-	private static int cursor;
 	private static String lobby = "";
 
 	private CrystalHollowsMap() {
@@ -90,7 +88,7 @@ public final class CrystalHollowsMap {
 		String server = SkyblockLocation.server;
 		if (!server.isBlank() && !server.equals(lobby)) {
 			lobby = server;
-			fillZones();
+			fillIsland();
 		}
 		scan(client.level, client.player.position());
 		if (dirty) {
@@ -102,8 +100,7 @@ public final class CrystalHollowsMap {
 
 	public static void reset() {
 		lobby = "";
-		cursor = 0;
-		fillZones();
+		fillIsland();
 	}
 
 	public static void close() {
@@ -140,10 +137,9 @@ public final class CrystalHollowsMap {
 		plain(graphics, font, "N", WIDTH - PAD - font.width("N"), PAD, Theme.MUTED);
 		float mapX = PAD;
 		float mapY = PAD + HEAD;
-		GuiDraw.rounded(graphics, mapX - 1, mapY - 1, MAP + 2, MAP + 2, 3, 0x66000000);
+		GuiDraw.rounded(graphics, mapX - 1, mapY - 1, MAP + 2, MAP + 2, 3, 0xFF141412);
 		GuiDraw.blit(graphics, TEXTURE, mapX, mapY, MAP, MAP, 0f, 0f, TEX, TEX, TEX, TEX);
 		drawWalls(graphics, mapX, mapY);
-		drawZoneNames(graphics, font, mapX, mapY);
 		for (CrystalHollows.Mark mark : CrystalHollows.mapMarks()) {
 			if (mark.nucleus()) {
 				drawDot(graphics, mapX, mapY, mark.pos(), mark.rgb(), 1.6f);
@@ -169,21 +165,42 @@ public final class CrystalHollowsMap {
 		texture = new DynamicTexture(() -> "stray-ch-map", image);
 		client.getTextureManager().register(TEXTURE, texture);
 		registered = true;
-		fillZones();
+		fillIsland();
 		shade();
 		texture.upload();
 	}
 
-	private static void fillZones() {
+	private static void fillIsland() {
 		if (image == null) {
 			return;
 		}
 		for (int pz = 0; pz < TEX; pz++) {
 			for (int px = 0; px < TEX; px++) {
 				int i = pz * TEX + px;
-				seen[i] = 0;
-				height[i] = 0;
-				raw[i] = zonePaper(pixelWorldX(px), pixelWorldZ(pz));
+				int worldX = pixelWorldX(px);
+				int worldZ = pixelWorldZ(pz);
+				float hills = fbm(worldX * 0.028f, worldZ * 0.028f);
+				float ridge = fbm(worldX * 0.08f + 18f, worldZ * 0.08f - 9f);
+				float h01 = 0.28f + 0.50f * hills + 0.22f * ridge;
+				if (inNucleus(worldX, worldZ)) {
+					h01 = 0.40f + 0.10f * hills;
+				}
+				int y = 38 + Math.round(h01 * 118f);
+				int biome = zoneTint(worldX, worldZ);
+				int ground = mix(0x6A675C, biome, 0.42f);
+				if (hills > 0.58f) {
+					ground = mix(ground, biome, 0.28f);
+				}
+				if (ridge < 0.32f) {
+					ground = mix(ground, 0x4A4840, 0.35f);
+					y -= 12;
+				}
+				if (y < MAGMA_Y) {
+					ground = mix(ground, MAGMA, 0.24f);
+				}
+				raw[i] = ground;
+				height[i] = (short) Mth.clamp(y, SCAN_FLOOR, SCAN_TOP);
+				seen[i] = 2;
 			}
 		}
 		dirty = true;
@@ -193,7 +210,7 @@ public final class CrystalHollowsMap {
 		int playerPx = worldToPixel(feet.x);
 		int playerPz = worldToPixel(feet.z);
 		int spent = 0;
-		int radius = 18;
+		int radius = 28;
 		for (int r = 0; r <= radius && spent < BUDGET; r++) {
 			for (int dx = -r; dx <= r && spent < BUDGET; dx++) {
 				spent += sample(level, playerPx + dx, playerPz - r) ? 1 : 0;
@@ -206,14 +223,28 @@ public final class CrystalHollowsMap {
 				spent += sample(level, playerPx + r, playerPz + dz) ? 1 : 0;
 			}
 		}
-		int guard = TEX * TEX;
-		while (spent < BUDGET && guard-- > 0) {
-			int i = cursor++ % (TEX * TEX);
-			if (seen[i] != 0) {
-				continue;
-			}
-			if (sample(level, i % TEX, i / TEX)) {
-				spent++;
+		int minChunk = WORLD_MIN >> 4;
+		int maxChunk = WORLD_MAX >> 4;
+		for (int chunkZ = minChunk; chunkZ <= maxChunk && spent < BUDGET; chunkZ++) {
+			for (int chunkX = minChunk; chunkX <= maxChunk && spent < BUDGET; chunkX++) {
+				if (!level.hasChunk(chunkX, chunkZ)) {
+					continue;
+				}
+				int px0 = worldToPixel(chunkX << 4);
+				int px1 = worldToPixel((chunkX << 4) + 15);
+				int pz0 = worldToPixel(chunkZ << 4);
+				int pz1 = worldToPixel((chunkZ << 4) + 15);
+				for (int pz = pz0; pz <= pz1 && spent < BUDGET; pz++) {
+					for (int px = px0; px <= px1 && spent < BUDGET; px++) {
+						int i = pz * TEX + px;
+						if (i < 0 || i >= seen.length || seen[i] == 1) {
+							continue;
+						}
+						if (sample(level, px, pz)) {
+							spent++;
+						}
+					}
+				}
 			}
 		}
 	}
@@ -309,7 +340,43 @@ public final class CrystalHollowsMap {
 	}
 
 	private static int zonePaper(int worldX, int worldZ) {
-		return mix(paperNoise(worldX, worldZ), zoneTint(worldX, worldZ), 0.11f);
+		return mix(0x6A675C, zoneTint(worldX, worldZ), 0.40f);
+	}
+
+	private static float fbm(float x, float z) {
+		float value = 0f;
+		float amp = 0.5f;
+		float fx = x;
+		float fz = z;
+		for (int i = 0; i < 4; i++) {
+			value += valueNoise(fx, fz) * amp;
+			fx *= 2f;
+			fz *= 2f;
+			amp *= 0.5f;
+		}
+		return value;
+	}
+
+	private static float valueNoise(float x, float z) {
+		int x0 = (int) Math.floor(x);
+		int z0 = (int) Math.floor(z);
+		float tx = fade(x - x0);
+		float tz = fade(z - z0);
+		float a = hash(x0, z0);
+		float b = hash(x0 + 1, z0);
+		float c = hash(x0, z0 + 1);
+		float d = hash(x0 + 1, z0 + 1);
+		return Mth.lerp(tz, Mth.lerp(tx, a, b), Mth.lerp(tx, c, d));
+	}
+
+	private static float fade(float t) {
+		return t * t * (3f - 2f * t);
+	}
+
+	private static float hash(int x, int z) {
+		int n = x * 374761393 + z * 668265263;
+		n = (n ^ (n >> 13)) * 1274126177;
+		return ((n ^ (n >> 16)) & 0x7fffffff) / (float) Integer.MAX_VALUE;
 	}
 
 	private static int zoneTint(int worldX, int worldZ) {
@@ -340,12 +407,6 @@ public final class CrystalHollowsMap {
 		return dx * dx + dz * dz <= NUCLEUS_R * NUCLEUS_R;
 	}
 
-	private static int paperNoise(int x, int z) {
-		int n = (x * 374761393 + z * 668265263) ^ (x * 127) ^ (z * 311);
-		int d = (n >> 9 & 17) - 8;
-		return scale(PAPER, 220 + d);
-	}
-
 	private static void shade() {
 		if (image == null) {
 			return;
@@ -354,18 +415,17 @@ public final class CrystalHollowsMap {
 			for (int px = 0; px < TEX; px++) {
 				int i = pz * TEX + px;
 				int color = raw[i];
-				if (seen[i] != 0) {
-					int north = pz == 0 ? height[i] : height[(pz - 1) * TEX + px];
-					int bright = 220;
-					if (seen[i] != 0 && (pz == 0 || seen[(pz - 1) * TEX + px] != 0)) {
-						if (height[i] > north) {
-							bright = 255;
-						} else if (height[i] < north) {
-							bright = 172;
-						}
-					}
-					color = scale(color, bright);
+				int north = pz == 0 ? height[i] : height[(pz - 1) * TEX + px];
+				int bright = 220;
+				if (height[i] > north) {
+					bright = 255;
+				} else if (height[i] < north) {
+					bright = 168;
 				}
+				if (seen[i] == 1) {
+					bright = Math.min(255, bright + 12);
+				}
+				color = scale(color, bright);
 				image.setPixel(px, pz, 0xFF000000 | color);
 			}
 		}
@@ -449,20 +509,6 @@ public final class CrystalHollowsMap {
 			return;
 		}
 		GuiDraw.fill(graphics, Math.round(x), Math.round(y), Math.max(1, Math.round(w)), Math.max(1, Math.round(h)), color);
-	}
-
-	private static void drawZoneNames(GuiGraphicsExtractor graphics, Font font, float mapX, float mapY) {
-		label(graphics, font, mapX, mapY, 290, 290, "Jungle", 0xAA3F8F4E);
-		label(graphics, font, mapX, mapY, 290, 736, "Goblin", 0xAAC47B2C);
-		label(graphics, font, mapX, mapY, 736, 290, "Mithril", 0xAA3FA8A4);
-		label(graphics, font, mapX, mapY, 736, 736, "Precursor", 0xAA3A8FD4);
-		label(graphics, font, mapX, mapY, 513, 513, "Nucleus", 0xBBB24A4A);
-	}
-
-	private static void label(GuiGraphicsExtractor graphics, Font font, float mapX, float mapY, int worldX, int worldZ, String text, int color) {
-		int x = Math.round(mapX + worldToView(worldX) - font.width(text) * 0.5f);
-		int y = Math.round(mapY + worldToView(worldZ) - 4f);
-		plain(graphics, font, text, x, y, color);
 	}
 
 	private static void drawMark(GuiGraphicsExtractor graphics, Font font, float mapX, float mapY, CrystalHollows.Mark mark) {
