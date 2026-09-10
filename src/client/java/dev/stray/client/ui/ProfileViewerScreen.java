@@ -650,8 +650,8 @@ public class ProfileViewerScreen extends Screen {
 				boolean on = level > 0;
 				boolean hover = GuiDraw.hovered(mouseX, mouseY, nx, ny, size, size);
 				ItemStack icon = perkIcon(id, on, level);
-				paintItem(graphics, font, icon, nx + 1, ny + 1, Math.max(8f, size - 2f), true);
-				if (level > 99) {
+				paintItem(graphics, font, icon, nx + 1, ny + 1, Math.max(8f, size - 2f), false);
+				if (on && level > 1) {
 					String text = String.valueOf(level);
 					GuiDraw.small(graphics, font, text, nx + size - GuiDraw.smallWidth(font, text) - 1, ny + size - 9, Theme.TEXT);
 				}
@@ -1411,8 +1411,6 @@ public class ProfileViewerScreen extends Screen {
 		} else {
 			stack = new ItemStack(Items.COAL);
 		}
-		int count = unlocked ? Math.max(1, level) : ProfileViewer.perkTier(key);
-		stack.setCount(Math.max(1, Math.min(99, count)));
 		return stack;
 	}
 

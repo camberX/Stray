@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.144", new String[]{
+			"HOTM perk levels are drawn as text instead of item stack counts, so levels above 99 show correctly."
+		}),
 		new Entry("1.2.143", new String[]{
 			"Profile viewer HOTM reads the selected skill-tree loadout, so unlocked perks and their levels match the in-game tree."
 		}),
