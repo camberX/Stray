@@ -1,11 +1,8 @@
 package dev.stray.client.render;
 
-import dev.stray.Stray;
 import dev.stray.client.config.StrayConfig;
 import dev.stray.client.farming.ComposterTracker;
 import dev.stray.client.ui.Theme;
-import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry;
-import net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
@@ -25,11 +22,6 @@ public final class ComposterHudRenderer {
 	}
 
 	public static void init() {
-		HudElementRegistry.attachElementBefore(
-			VanillaHudElements.CHAT,
-			Stray.id("composter"),
-			ComposterHudRenderer::extract
-		);
 	}
 
 	public static float drawWidth() {
@@ -40,7 +32,7 @@ public final class ComposterHudRenderer {
 		return HEIGHT;
 	}
 
-	private static void extract(GuiGraphicsExtractor graphics, DeltaTracker deltaTracker) {
+	static void extract(GuiGraphicsExtractor graphics, DeltaTracker deltaTracker) {
 		Minecraft client = Minecraft.getInstance();
 		if (client.player == null || client.options.hideGui || !StrayConfig.get().composterHudEnabled) {
 			return;

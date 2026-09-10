@@ -1,14 +1,11 @@
 package dev.stray.client.render;
 
-import dev.stray.Stray;
 import dev.stray.client.config.StrayConfig;
 import dev.stray.client.item.ItemStorage;
 import dev.stray.client.item.RawmatsTracker;
 import dev.stray.client.item.SkyblockProfileApi;
 import dev.stray.client.ui.HudEditorScreen;
 import dev.stray.client.ui.Theme;
-import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry;
-import net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
@@ -35,11 +32,6 @@ public final class RawmatsHudRenderer {
 	}
 
 	public static void init() {
-		HudElementRegistry.attachElementBefore(
-			VanillaHudElements.CHAT,
-			Stray.id("rawmats"),
-			RawmatsHudRenderer::extract
-		);
 	}
 
 	public static float drawWidth() {
@@ -73,7 +65,7 @@ public final class RawmatsHudRenderer {
 		return false;
 	}
 
-	private static void extract(GuiGraphicsExtractor graphics, DeltaTracker deltaTracker) {
+	static void extract(GuiGraphicsExtractor graphics, DeltaTracker deltaTracker) {
 		Minecraft client = Minecraft.getInstance();
 		if (client.options.hideGui) {
 			modeHit = Rect.EMPTY;

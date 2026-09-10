@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.159", new String[]{
+			"Stray HUD is one layer after the vanilla bars instead of hanging off chat, hotbar, and scoreboard. Fabric's wrappers for those vanilla extracts no longer include Music, Watermark, and the rest of the overlay pass."
+		}),
 		new Entry("1.2.158", new String[]{
 			"The Mobs catalog is tall enough to show more than one name again after Player fill and Nametags were added above it. Control cards skip per-frame rim slices, and the color picker no longer draws a blit per pixel."
 		}),

@@ -1,14 +1,11 @@
 package dev.stray.client.render;
 
-import dev.stray.Stray;
 import dev.stray.client.config.StrayConfig;
 import dev.stray.client.ui.Anim;
 import dev.stray.client.ui.MenuFont;
 import dev.stray.client.ui.Theme;
 import dev.stray.client.visual.NickHider;
 import dev.stray.client.visual.ShopCape;
-import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry;
-import net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements;
 import net.minecraft.client.Camera;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
@@ -55,11 +52,6 @@ public final class NametagRenderer {
 	}
 
 	public static void init() {
-		HudElementRegistry.attachElementBefore(
-			VanillaHudElements.CHAT,
-			Stray.id("nametags"),
-			NametagRenderer::extract
-		);
 	}
 
 	public static boolean hidingVanilla(Entity entity) {
@@ -88,7 +80,7 @@ public final class NametagRenderer {
 		return StrayConfig.get().nametagsEnabled;
 	}
 
-	private static void extract(GuiGraphicsExtractor graphics, DeltaTracker deltaTracker) {
+	static void extract(GuiGraphicsExtractor graphics, DeltaTracker deltaTracker) {
 		Minecraft client = Minecraft.getInstance();
 		if (client.player == null || client.level == null || client.options.hideGui) {
 			return;

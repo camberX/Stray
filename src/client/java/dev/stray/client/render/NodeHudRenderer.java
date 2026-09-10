@@ -1,12 +1,9 @@
 package dev.stray.client.render;
 
-import dev.stray.Stray;
 import dev.stray.client.ui.Theme;
 import dev.stray.client.config.StrayConfig;
 import dev.stray.client.location.SkyblockLocation;
 import dev.stray.client.node.EnderNodeTracker;
-import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry;
-import net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
@@ -23,11 +20,6 @@ public final class NodeHudRenderer {
 	}
 
 	public static void init() {
-		HudElementRegistry.attachElementBefore(
-			VanillaHudElements.CHAT,
-			Stray.id("ender_nodes"),
-			NodeHudRenderer::extract
-		);
 	}
 
 	public static float drawWidth() {
@@ -43,7 +35,7 @@ public final class NodeHudRenderer {
 		return client.player != null && SkyblockLocation.shouldMarkNodes() && EnderNodeTracker.get().count() > 0;
 	}
 
-	private static void extract(GuiGraphicsExtractor graphics, DeltaTracker deltaTracker) {
+	static void extract(GuiGraphicsExtractor graphics, DeltaTracker deltaTracker) {
 		Minecraft client = Minecraft.getInstance();
 		if (client.player == null || client.options.hideGui) {
 			return;

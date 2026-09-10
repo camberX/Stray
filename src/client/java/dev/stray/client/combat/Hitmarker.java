@@ -1,11 +1,8 @@
 package dev.stray.client.combat;
 
-import dev.stray.Stray;
 import dev.stray.client.config.StrayConfig;
 import dev.stray.client.render.GuiDraw;
 import dev.stray.client.ui.Theme;
-import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry;
-import net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
@@ -25,11 +22,6 @@ public final class Hitmarker {
 	}
 
 	public static void init() {
-		HudElementRegistry.attachElementAfter(
-			VanillaHudElements.CROSSHAIR,
-			Stray.id("hitmarker"),
-			Hitmarker::extract
-		);
 	}
 
 	public static void flash() {
@@ -42,7 +34,7 @@ public final class Hitmarker {
 
 	private static long flashAt;
 
-	private static void extract(GuiGraphicsExtractor graphics, DeltaTracker deltaTracker) {
+	public static void extract(GuiGraphicsExtractor graphics, DeltaTracker deltaTracker) {
 		Minecraft client = Minecraft.getInstance();
 		if (client.player == null || client.options.hideGui || client.screen != null) {
 			return;
