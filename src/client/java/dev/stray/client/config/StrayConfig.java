@@ -76,6 +76,14 @@ public final class StrayConfig {
 	public boolean farmingYawPitch = false;
 	public float farmingYawPitchScale = 1.00f;
 	public boolean jacobContestHudEnabled = false;
+	public boolean composterHudEnabled = false;
+	public boolean composterUpgradesKnown = false;
+	public String composterProfile = "";
+	public int composterSpeed = 0;
+	public int composterMultiDrop = 0;
+	public int composterFuelCap = 0;
+	public int composterOrganicMatterCap = 0;
+	public int composterCostReduction = 0;
 	public boolean titaniumEsp = false;
 	public boolean titaniumEspThroughWalls = true;
 	public boolean chestEspEnabled = false;
@@ -177,6 +185,7 @@ public final class StrayConfig {
 	public float hudPickupScale = 1.0f;
 	public float hudMiningScale = 1.0f;
 	public float hudJacobScale = 1.0f;
+	public float hudComposterScale = 1.0f;
 	public float hudInventoryX = -1f;
 	public float hudInventoryY = -1f;
 	public float hudWatermarkX = -1f;
@@ -193,6 +202,8 @@ public final class StrayConfig {
 	public float hudMiningY = -1f;
 	public float hudJacobX = -1f;
 	public float hudJacobY = -1f;
+	public float hudComposterX = -1f;
+	public float hudComposterY = -1f;
 	public float menuX = -1f;
 	public float menuY = -1f;
 	public boolean menuPlaced = false;
@@ -673,6 +684,14 @@ public final class StrayConfig {
 				loaded.hudJacobScale = json.has("hudJacobScale")
 					? clampHudScale(loaded.hudJacobScale)
 					: 1.00f;
+				loaded.hudComposterScale = json.has("hudComposterScale")
+					? clampHudScale(loaded.hudComposterScale)
+					: 1.00f;
+				loaded.composterSpeed = clamp(loaded.composterSpeed, 0, 25);
+				loaded.composterMultiDrop = clamp(loaded.composterMultiDrop, 0, 25);
+				loaded.composterFuelCap = clamp(loaded.composterFuelCap, 0, 25);
+				loaded.composterOrganicMatterCap = clamp(loaded.composterOrganicMatterCap, 0, 25);
+				loaded.composterCostReduction = clamp(loaded.composterCostReduction, 0, 25);
 				if (!json.has("farmingYawPitch")) {
 					loaded.farmingYawPitch = false;
 				}

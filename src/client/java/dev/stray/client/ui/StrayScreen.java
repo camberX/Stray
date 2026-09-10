@@ -249,6 +249,9 @@ public class StrayScreen extends Screen {
 		new SearchEntry("Jacob contest HUD", Tab.FARMING, "Farming"),
 		new SearchEntry("Contest prediction", Tab.FARMING, "Farming"),
 		new SearchEntry("Crops per second", Tab.FARMING, "Farming"),
+		new SearchEntry("Composter overlay", Tab.FARMING, "Farming"),
+		new SearchEntry("Organic Matter", Tab.FARMING, "Farming"),
+		new SearchEntry("Composter Fuel", Tab.FARMING, "Farming"),
 		new SearchEntry("Filled box", Tab.NODES, "Nodes"),
 		new SearchEntry("Watermark", Tab.OVERLAY, "Overlay"),
 		new SearchEntry("Music HUD", Tab.OVERLAY, "Overlay"),
@@ -1906,9 +1909,10 @@ public class StrayScreen extends Screen {
 				GuiDraw.menu(graphics, font, clip(font, titanium, (int) iw - 4), rx, y + 38, titaniumColor);
 			}
 			case FARMING -> {
-				float y = featureCard(graphics, font, left, top, col, cardHeight(2), "Farming");
+				float y = featureCard(graphics, font, left, top, col, cardHeight(3), "Farming");
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Yaw / Pitch", config.farmingYawPitch, v -> config.farmingYawPitch = v, Feature.FARMING);
-				toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Jacob contest HUD", config.jacobContestHudEnabled, v -> config.jacobContestHudEnabled = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Jacob contest HUD", config.jacobContestHudEnabled, v -> config.jacobContestHudEnabled = v);
+				toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Composter overlay", config.composterHudEnabled, v -> config.composterHudEnabled = v);
 
 				y = featureCard(graphics, font, right, top, col, cardHeight(4), "Contest");
 				var contest = JacobContestTracker.snapshot();
@@ -2069,7 +2073,8 @@ public class StrayScreen extends Screen {
 			}
 			case FARMING -> {
 				float y = controlCard(graphics, font, left, top, col, mouseX, mouseY, "Yaw / Pitch", config.farmingYawPitch, v -> config.farmingYawPitch = v, Feature.FARMING);
-				featureCard(graphics, font, left, y, col, cardHeight(1), "Jacob contest HUD", config.jacobContestHudEnabled, v -> config.jacobContestHudEnabled = v, mouseX, mouseY);
+				y = featureCard(graphics, font, left, y, col, cardHeight(1), "Jacob contest HUD", config.jacobContestHudEnabled, v -> config.jacobContestHudEnabled = v, mouseX, mouseY);
+				featureCard(graphics, font, left, y, col, cardHeight(1), "Composter overlay", config.composterHudEnabled, v -> config.composterHudEnabled = v, mouseX, mouseY);
 
 				y = featureCard(graphics, font, right, top, col, cardHeight(4), "Contest");
 				var contest = JacobContestTracker.snapshot();
@@ -3062,7 +3067,7 @@ public class StrayScreen extends Screen {
 		return FabricLoader.getInstance()
 			.getModContainer("stray")
 			.map(container -> container.getMetadata().getVersion().getFriendlyString())
-			.orElse("1.2.150");
+			.orElse("1.2.151");
 	}
 
 	@Override

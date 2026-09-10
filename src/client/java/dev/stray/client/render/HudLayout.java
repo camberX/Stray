@@ -26,6 +26,7 @@ public final class HudLayout {
 		PICKUPS("Pickup log"),
 		MINING("Mining"),
 		JACOB("Jacob contest"),
+		COMPOSTER("Composter"),
 		HOTBAR("Hotbar"),
 		HEALTH("Health"),
 		HUNGER("Hunger"),
@@ -173,6 +174,20 @@ public final class HudLayout {
 					}
 					y = placed(config.hudJacobY) ? config.hudJacobY : MARGIN + below;
 				}
+				case COMPOSTER -> {
+					x = placed(config.hudComposterX) ? config.hudComposterX : MARGIN;
+					float below = WatermarkRenderer.occupiedHeight();
+					if (config.hudEnabled) {
+						below += NodeHudRenderer.drawHeight() * scale(Id.NODES) + 4;
+					}
+					if (config.miningHudEnabled) {
+						below += MiningHudRenderer.drawHeight() * scale(Id.MINING) + 4;
+					}
+					if (config.jacobContestHudEnabled) {
+						below += JacobContestHudRenderer.drawHeight() * scale(Id.JACOB) + 4;
+					}
+					y = placed(config.hudComposterY) ? config.hudComposterY : MARGIN + below;
+				}
 				default -> {
 					x = defaultX(id, font, guiW, w);
 					y = defaultY(id, font, guiH, h);
@@ -238,6 +253,10 @@ public final class HudLayout {
 				config.hudJacobX = x;
 				config.hudJacobY = y;
 			}
+			case COMPOSTER -> {
+				config.hudComposterX = x;
+				config.hudComposterY = y;
+			}
 			default -> {
 			}
 		}
@@ -258,6 +277,7 @@ public final class HudLayout {
 			case PICKUPS -> StrayConfig.clampHudScale(config.hudPickupScale);
 			case MINING -> StrayConfig.clampHudScale(config.hudMiningScale);
 			case JACOB -> StrayConfig.clampHudScale(config.hudJacobScale);
+			case COMPOSTER -> StrayConfig.clampHudScale(config.hudComposterScale);
 			default -> 1.0f;
 		};
 	}
@@ -280,6 +300,7 @@ public final class HudLayout {
 			case PICKUPS -> config.hudPickupScale = value;
 			case MINING -> config.hudMiningScale = value;
 			case JACOB -> config.hudJacobScale = value;
+			case COMPOSTER -> config.hudComposterScale = value;
 			default -> {
 			}
 		}
@@ -327,6 +348,10 @@ public final class HudLayout {
 				config.hudJacobX = -1f;
 				config.hudJacobY = -1f;
 			}
+			case COMPOSTER -> {
+				config.hudComposterX = -1f;
+				config.hudComposterY = -1f;
+			}
 			default -> {
 			}
 		}
@@ -343,6 +368,7 @@ public final class HudLayout {
 			case PICKUPS -> config.pickupLogEnabled;
 			case MINING -> config.miningHudEnabled;
 			case JACOB -> config.jacobContestHudEnabled;
+			case COMPOSTER -> config.composterHudEnabled;
 			case HOTBAR -> config.hudHotbar;
 			case HEALTH -> config.hudHealth;
 			case HUNGER -> config.hudHunger;
@@ -481,6 +507,7 @@ public final class HudLayout {
 			case PICKUPS -> PickupLogRenderer.drawWidth() * scale;
 			case MINING -> MiningHudRenderer.drawWidth() * scale;
 			case JACOB -> JacobContestHudRenderer.drawWidth() * scale;
+			case COMPOSTER -> ComposterHudRenderer.drawWidth() * scale;
 			case HOTBAR -> HotbarHudRenderer.drawWidth() * scale;
 			case HEALTH, HUNGER, ARMOR, AIR, MOUNT -> StatusHudRenderer.BAR_W * scale;
 			case EXPERIENCE -> StatusHudRenderer.xpWidth() * scale;
@@ -502,6 +529,7 @@ public final class HudLayout {
 			case PICKUPS -> PickupLogRenderer.drawHeight() * scale;
 			case MINING -> MiningHudRenderer.drawHeight() * scale;
 			case JACOB -> JacobContestHudRenderer.drawHeight() * scale;
+			case COMPOSTER -> ComposterHudRenderer.drawHeight() * scale;
 			case HOTBAR -> HotbarHudRenderer.HEIGHT * scale;
 			case HEALTH, HUNGER, ARMOR, AIR, MOUNT -> StatusHudRenderer.BAR_H * scale;
 			case EXPERIENCE -> StatusHudRenderer.XP_BOX_H * scale;
