@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.182", new String[]{
+			"Hub fairy souls stay on in Village, Mountain, Wilderness, and the other Hub spots. The catalog is 80/80; /stray fairysouls shows how many are left on this island."
+		}),
 		new Entry("1.2.181", new String[]{
 			"Fairy soul paths go around walls and through doors into buildings instead of giving up when the soul is behind a wall."
 		}),

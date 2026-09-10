@@ -5,6 +5,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import dev.stray.Stray;
+import dev.stray.client.location.SkyblockLocation;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.phys.Vec3;
 
@@ -60,6 +61,26 @@ public final class FairySouls {
 		return BY_ISLAND.getOrDefault(island.toLowerCase(Locale.ROOT), List.of());
 	}
 
+	public static List<Soul> current() {
+		ensureLoaded();
+		String island = islandOf(SkyblockLocation.area);
+		if (island.isEmpty()) {
+			island = islandOf(SkyblockLocation.poi);
+		}
+		if (island.isEmpty()) {
+			return List.of();
+		}
+		return BY_ISLAND.getOrDefault(island.toLowerCase(Locale.ROOT), List.of());
+	}
+
+	public static String currentIsland() {
+		String island = islandOf(SkyblockLocation.area);
+		if (island.isEmpty()) {
+			island = islandOf(SkyblockLocation.poi);
+		}
+		return island;
+	}
+
 	public static String islandOf(String area) {
 		if (area == null || area.isBlank()) {
 			return "";
@@ -92,7 +113,8 @@ public final class FairySouls {
 		if (a.contains("park") || a.contains("galatea")) {
 			return "the park";
 		}
-		if (a.contains("end")) {
+		if (a.equals("the end") || a.contains("end island") || a.contains("dragons nest") || a.contains("zealot")
+			|| a.contains("void sepulture")) {
 			return "the end";
 		}
 		if (a.contains("crimson")) {
@@ -113,10 +135,32 @@ public final class FairySouls {
 		if (a.contains("farming") || a.equals("the barn") || a.equals("barn") || a.contains("mushroom desert")) {
 			return "the farming islands";
 		}
-		if (a.equals("hub") || a.startsWith("hub ") || a.endsWith(" hub")) {
+		if (hubPlace(a)) {
 			return "hub";
 		}
 		return "";
+	}
+
+	private static final String[] HUB_PLACES = {
+		"hub", "village", "wilderness", "mountain", "graveyard", "ruins", "colosseum",
+		"wizard tower", "forest", "farm", "coal mine", "mining district", "fishing outpost",
+		"fishermans hut", "foraging camp", "thaumaturgist", "fashion shop", "rabbit house",
+		"pet care", "abiphone", "shen", "catacombs entrance", "dark auction", "auction house",
+		"community center", "bazaar", "library", "tavern", "museum", "hexatorum", "cannon",
+		"builders house", "weaponsmith", "high level", "unincorporated", "carnival",
+		"election", "city project", "bank", "flower house", "blacksmith"
+	};
+
+	private static boolean hubPlace(String a) {
+		if (a.equals("hub") || a.startsWith("hub ") || a.endsWith(" hub") || a.contains(" hub ")) {
+			return true;
+		}
+		for (String place : HUB_PLACES) {
+			if (a.equals(place) || a.contains(place)) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	private static void ensureLoaded() {

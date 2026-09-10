@@ -27,6 +27,7 @@ public final class SkyblockLocation {
 	public static boolean inBoss;
 	public static int dungeonFloor;
 	public static String area = "";
+	public static String poi = "";
 	public static String serverBrand = "";
 
 	private static int lastTick = Integer.MIN_VALUE;
@@ -52,7 +53,8 @@ public final class SkyblockLocation {
 
 		Sidebar sidebar = readSidebar(client);
 		area = readArea(connection, sidebar);
-		inSkyblock = onHypixel && (sidebar.skyblock || !area.isEmpty());
+		poi = sidebar.poi;
+		inSkyblock = onHypixel && (sidebar.skyblock || !area.isEmpty() || !poi.isEmpty());
 		inTheEnd = inSkyblock && isTheEnd(area, sidebar);
 		inDungeon = onHypixel && (sidebar.dungeon || dungeonTab(connection));
 		if (sidebar.floor > 0) {
@@ -88,6 +90,7 @@ public final class SkyblockLocation {
 		inBoss = false;
 		dungeonFloor = 0;
 		area = "";
+		poi = "";
 		serverBrand = "";
 		lastTick = Integer.MIN_VALUE;
 	}
@@ -136,10 +139,19 @@ public final class SkyblockLocation {
 	}
 
 	private static boolean isTheEnd(String currentArea, Sidebar sidebar) {
-		if (currentArea.equalsIgnoreCase("The End") || currentArea.toLowerCase().contains("end island")) {
+		if (endName(currentArea) || endName(sidebar.poi)) {
 			return true;
 		}
 		return sidebar.end;
+	}
+
+	private static boolean endName(String name) {
+		if (name == null || name.isEmpty()) {
+			return false;
+		}
+		String a = name.toLowerCase();
+		return a.equals("the end") || a.contains("end island") || a.contains("dragon's nest") || a.contains("zealot")
+			|| a.contains("void sepulture");
 	}
 
 	private static Sidebar readSidebar(Minecraft client) {
@@ -156,6 +168,7 @@ public final class SkyblockLocation {
 		boolean dungeon = false;
 		int floor = 0;
 		String endArea = "";
+		String poi = "";
 		String title = plain(sidebar.getDisplayName());
 		String titleKey = title.toUpperCase();
 		if (titleKey.contains("SKYBLOCK")) {
@@ -191,8 +204,15 @@ public final class SkyblockLocation {
 					floor = lineFloor;
 				}
 			}
+			int mark = text.indexOf('⏣');
+			if (mark >= 0) {
+				String place = text.substring(mark + 1).trim();
+				if (!place.isEmpty()) {
+					poi = place;
+				}
+			}
 		}
-		return new Sidebar(skyblock, end, endArea, dungeon, floor);
+		return new Sidebar(skyblock, end, endArea, dungeon, floor, poi);
 	}
 
 	private static boolean catacombsLine(String text) {
@@ -240,8 +260,8 @@ public final class SkyblockLocation {
 		return component == null ? "" : component.getString().replaceAll("§.", "");
 	}
 
-	private record Sidebar(boolean skyblock, boolean end, String endArea, boolean dungeon, int floor) {
-		private static final Sidebar EMPTY = new Sidebar(false, false, "", false, 0);
+	private record Sidebar(boolean skyblock, boolean end, String endArea, boolean dungeon, int floor, String poi) {
+		private static final Sidebar EMPTY = new Sidebar(false, false, "", false, 0, "");
 	}
 
 	/** NoammAddons boss-room AABBs, floors 1–7. */

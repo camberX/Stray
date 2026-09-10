@@ -2,6 +2,7 @@ package dev.stray.client.fairy;
 
 import com.mojang.brigadier.Command;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
+import dev.stray.client.location.SkyblockLocation;
 import dev.stray.client.ui.Theme;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommands;
 import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource;
@@ -29,15 +30,25 @@ public final class FairySoulCommands {
 	}
 
 	private static int status() {
-		int found = FairySoulProgress.count();
+		String island = FairySouls.currentIsland();
+		int total = FairySouls.current().size();
 		int left = FairySoulTracker.visible().size();
+		int foundHere = Math.max(0, total - left);
+		int found = FairySoulProgress.count();
+		String where = island.isEmpty() ? "unknown island" : island;
 		tell(brand()
 			.append(sep())
 			.append(Component.literal("FAIRY SOULS").withStyle(style(Theme.ACCENT).withBold(true)))
-			.append(Component.literal(" " + found + " saved").withStyle(style(Theme.TEXT)))
+			.append(Component.literal(" " + where + " " + foundHere + "/" + total).withStyle(style(Theme.TEXT)))
 			.append(Component.literal(left > 0 ? "  " + left + " left here" : "  none left here").withStyle(style(Theme.MUTED))));
+		tell(Component.literal("area " + empty(SkyblockLocation.area) + "  poi " + empty(SkyblockLocation.poi)
+			+ "  " + found + " saved").withStyle(style(Theme.MUTED)));
 		tell(Component.literal("/stray fairysouls reset shows them all again.").withStyle(style(Theme.MUTED)));
 		return Command.SINGLE_SUCCESS;
+	}
+
+	private static String empty(String value) {
+		return value == null || value.isBlank() ? "-" : value;
 	}
 
 	private static int reset() {

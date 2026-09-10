@@ -51,7 +51,7 @@ public final class FairySoulTracker {
 			return List.of();
 		}
 		List<FairySouls.Soul> out = new ArrayList<>();
-		for (FairySouls.Soul soul : FairySouls.forArea(SkyblockLocation.area)) {
+		for (FairySouls.Soul soul : FairySouls.current()) {
 			if (!FairySoulProgress.found(soul)) {
 				out.add(soul);
 			}
@@ -162,7 +162,7 @@ public final class FairySoulTracker {
 	private static FairySouls.Soul nearestUnfound(double x, double z, double range) {
 		FairySouls.Soul best = null;
 		double bestD = range;
-		for (FairySouls.Soul soul : FairySouls.forArea(SkyblockLocation.area)) {
+		for (FairySouls.Soul soul : FairySouls.current()) {
 			if (FairySoulProgress.found(soul)) {
 				continue;
 			}
@@ -200,7 +200,7 @@ public final class FairySoulTracker {
 		FairySouls.Soul best = null;
 		double bestD = range;
 		Vec3 at = new Vec3(x, y, z);
-		for (FairySouls.Soul soul : FairySouls.forArea(SkyblockLocation.area)) {
+		for (FairySouls.Soul soul : FairySouls.current()) {
 			if (FairySoulProgress.found(soul)) {
 				continue;
 			}
