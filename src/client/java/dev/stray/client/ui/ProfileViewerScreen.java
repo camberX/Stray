@@ -1395,23 +1395,40 @@ public class ProfileViewerScreen extends Screen {
 		};
 	}
 
+	private static int perkMax(String id) {
+		return switch (id == null ? "" : id) {
+			case "mole" -> 200;
+			case "professional" -> 140;
+			case "efficient_miner", "mining_experience", "seasoned_mineman", "gifts_from_the_departed",
+				"strong_arm", "steady_hand", "eager_adventurer" -> 100;
+			case "random_event", "luck_of_the_cave", "lonesome_miner" -> 45;
+			case "subterranean_fisher" -> 40;
+			case "old_school", "fortunate", "gem_lover", "forge_time", "quick_forge", "surveyor",
+				"metal_head", "blockhead", "great_explorer" -> 20;
+			case "special_0", "core_of_the_mountain", "mining_master" -> 10;
+			case "mining_speed_boost", "precision_mining", "pickaxe_toss", "pickobulus", "daily_effect",
+				"sky_mall", "front_loaded", "daily_grind", "daily_powder", "anomalous_desire",
+				"maniac_miner", "gemstone_infusion", "sheer_force", "miners_blessing", "mineshaft_mayhem" -> 1;
+			default -> 50;
+		};
+	}
+
+	private static boolean perkMaxed(String id, int level) {
+		return level > 0 && level >= perkMax(id);
+	}
+
 	private static ItemStack perkIcon(String id, boolean unlocked, int level) {
 		String key = id == null ? "" : id;
-		ItemStack stack;
 		if ("special_0".equals(key) || "core_of_the_mountain".equals(key)) {
-			stack = new ItemStack(unlocked ? Items.REDSTONE_BLOCK : Items.BEDROCK);
-		} else if (pickaxeAbility(key)) {
-			stack = new ItemStack(unlocked ? Items.BLAZE_ROD : Items.COAL_BLOCK);
-		} else if (unlocked && "precision_mining".equals(key)) {
-			stack = new ItemStack(Items.END_PORTAL_FRAME);
-		} else if (unlocked && ("mining_speed".equals(key) || "efficient_miner".equals(key) || "mole".equals(key))) {
-			stack = new ItemStack(Items.PRISMARINE_CRYSTALS);
-		} else if (unlocked) {
-			stack = new ItemStack(Items.EMERALD);
-		} else {
-			stack = new ItemStack(Items.COAL);
+			return new ItemStack(unlocked ? Items.REDSTONE_BLOCK : Items.BEDROCK);
 		}
-		return stack;
+		if (pickaxeAbility(key)) {
+			return new ItemStack(unlocked ? Items.BLAZE_ROD : Items.COAL_BLOCK);
+		}
+		if (!unlocked) {
+			return new ItemStack(Items.COAL);
+		}
+		return new ItemStack(perkMaxed(key, level) ? Items.DIAMOND : Items.EMERALD);
 	}
 
 	private static ItemStack perkTooltip(String id, int level, boolean on) {
@@ -1419,7 +1436,8 @@ public class ProfileViewerScreen extends Screen {
 		String title = (on ? "§a" : "§c") + perkName(id);
 		List<String> lore = new ArrayList<>();
 		if (on) {
-			lore.add("§7Level " + level);
+			int max = perkMax(id);
+			lore.add(perkMaxed(id, level) ? "§7Level " + level : "§7Level " + level + "§8/" + max);
 		} else {
 			lore.add("§cLocked");
 		}

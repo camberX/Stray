@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.145", new String[]{
+			"HOTM perks use emerald when unlocked and diamond when maxed, like the Skyblock chest."
+		}),
 		new Entry("1.2.144", new String[]{
 			"HOTM perk levels are drawn as text instead of item stack counts, so levels above 99 show correctly."
 		}),
