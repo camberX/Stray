@@ -20,6 +20,7 @@
 		"ConnectionMixin",
 		"EditBoxMixin",
 		"EntityRendererMixin",
+		"FeatureRenderDispatcherMixin",
 		"EntityRenderStateMixin",
 		"FogRendererMixin",
 		"FontMixin",

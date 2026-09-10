@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.173", new String[]{
+			"Player fill silhouette draws when Through walls is off. The outline follows the visible player and no longer needs that toggle."
+		}),
 		new Entry("1.2.172", new String[]{
 			"Theme has an Update notify toggle (on by default). When a newer jar is on stray.gay, chat shows a clickable line once per session."
 		}),

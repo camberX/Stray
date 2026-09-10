@@ -81,6 +81,7 @@ public final class HeldItemShader {
 	private static RenderTarget espTarget;
 	private static boolean maskThisFrame;
 	private static boolean playerMaskThisFrame;
+	private static boolean playerMaskDepthReady;
 	private static boolean espThisFrame;
 	private static int playerFillDepth;
 	private static final Set<Object> FILL_ITEMS = Collections.newSetFromMap(new IdentityHashMap<>());
@@ -377,13 +378,27 @@ public final class HeldItemShader {
 
 	public static void beginPlayerMask() {
 		playerMaskThisFrame = false;
-		if (!playerFillActive() || !playerFillThroughWalls()) {
+		playerMaskDepthReady = false;
+		if (!playerFillActive()) {
 			return;
 		}
 		if (!prepareMaskTarget()) {
 			return;
 		}
 		playerMaskThisFrame = true;
+	}
+
+	public static void capturePlayerMaskDepth() {
+		if (!playerMaskThisFrame || playerMaskDepthReady || playerFillThroughWalls()) {
+			return;
+		}
+		Minecraft client = Minecraft.getInstance();
+		RenderTarget main = client.getMainRenderTarget();
+		if (main == null || maskTarget == null || main.getDepthTexture() == null || maskTarget.getDepthTexture() == null) {
+			return;
+		}
+		maskTarget.copyDepthFrom(main);
+		playerMaskDepthReady = true;
 	}
 
 	private static boolean prepareMaskTarget() {
