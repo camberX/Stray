@@ -779,7 +779,6 @@ public class StrayScreen extends Screen {
 		float rx = innerX(right);
 		float iw = innerW(col);
 		StrayConfig config = StrayConfig.get();
-		config.normalizeMobGlowIds();
 
 		float y;
 		float namesTop;
@@ -826,7 +825,9 @@ public class StrayScreen extends Screen {
 			fieldScope = "";
 			mobTop = tagTop + tagH + 8;
 		}
-		float listH = Math.max(cardHeight(0), contentBottom() - mobTop);
+		// Player fill + Nametags sit above this list, so leftover window height is often
+		// negative. Floor the card at ~10 rows so the catalog is actually visible.
+		float listH = Math.max(cardHeight(10), contentBottom() - mobTop);
 		featureCard(graphics, font, right, mobTop, col, listH, entries.isEmpty() ? "Mobs" : "Mobs  " + entries.size());
 		float searchY = mobTop + cardTop() + cardHead();
 		mobFieldX = rx;
@@ -835,7 +836,7 @@ public class StrayScreen extends Screen {
 		boolean hoverSearch = GuiDraw.hovered(mouseX, mouseY, mobFieldX, mobFieldY, mobFieldW, 14);
 		GuiDraw.panel(graphics, mobFieldX, mobFieldY, mobFieldW, 14, 5, mobSearchFocused || hoverSearch ? Theme.CARD_HOVER : Theme.PANEL, mobSearchFocused ? Theme.ACCENT : Theme.LINE);
 		String shown = mobQuery.isEmpty() && !mobSearchFocused ? "Search mobs..." : mobQuery + (mobSearchFocused ? "|" : "");
-		GuiDraw.menu(graphics, font, clip(font, shown, (int) mobFieldW - 10), mobFieldX + 5, GuiDraw.middle(mobFieldY, 14), mobQuery.isEmpty() && !mobSearchFocused ? Theme.MUTED : Theme.TEXT);
+		GuiDraw.menu(graphics, font, clip(font, shown, (int) mobFieldW - 10), mobFieldX + 5, GuiDraw.middle(mobFieldY, 14), mobQuery.isEmpty() && !mobSearchFocused ? fade() : ink());
 		hits.add(new Hit(mobFieldX, mobFieldY, mobFieldW, 14, () -> {
 			mobSearchFocused = true;
 			capeFocused = false;
@@ -843,16 +844,17 @@ public class StrayScreen extends Screen {
 			searchOpen = false;
 		}));
 
+		float row = rowH();
 		mobListX = rx;
 		mobListY = searchY + 18;
 		mobListW = iw;
-		mobListH = Math.max(16, listH - cardTop() - cardHead() - 22);
-		float contentH = entries.size() * ROW;
+		mobListH = Math.max(row, listH - cardTop() - cardHead() - 22);
+		float contentH = entries.size() * row;
 		float maxScroll = Math.max(0f, contentH - mobListH);
 		if (ensureMobVisible) {
 			for (int i = 0; i < entries.size(); i++) {
 				if (config.isMobGlowSelected(entries.get(i).id().toString())) {
-					mobScroll = Mth.clamp(i * ROW - mobListH * 0.4f, 0f, maxScroll);
+					mobScroll = Mth.clamp(i * row - mobListH * 0.4f, 0f, maxScroll);
 					break;
 				}
 			}
@@ -862,25 +864,25 @@ public class StrayScreen extends Screen {
 
 		boolean clipped = GuiDraw.scissor(graphics, mobListX, mobListY, mobListW, mobListH);
 		if (entries.isEmpty()) {
-			GuiDraw.menu(graphics, font, "No matching mobs", mobListX + 2, GuiDraw.middle(mobListY, mobListH), Theme.MUTED);
+			GuiDraw.menu(graphics, font, "No matching mobs", mobListX + 2, GuiDraw.middle(mobListY, mobListH), fade());
 		} else {
-			int first = (int) (mobScroll / ROW);
-			int last = Math.min(entries.size() - 1, first + (int) (mobListH / ROW) + 1);
+			int first = (int) (mobScroll / row);
+			int last = Math.min(entries.size() - 1, first + (int) (mobListH / row) + 1);
 			for (int i = first; i <= last; i++) {
 				MobCatalog.Entry entry = entries.get(i);
-				float iy = mobListY + i * ROW - mobScroll;
+				float iy = mobListY + i * row - mobScroll;
 				boolean on = config.isMobGlowSelected(entry.id().toString());
-				boolean hover = GuiDraw.hovered(mouseX, mouseY, mobListX, iy, mobListW, ROW)
+				boolean hover = GuiDraw.hovered(mouseX, mouseY, mobListX, iy, mobListW, row)
 					&& GuiDraw.hovered(mouseX, mouseY, mobListX, mobListY, mobListW, mobListH);
 				if (on) {
-					GuiDraw.rounded(graphics, mobListX - 2, iy, mobListW + 4, ROW, 5, Theme.withAlpha(Theme.ACCENT, 38));
-					GuiDraw.rounded(graphics, mobListX - 2, iy + 3, 2, ROW - 6, 1, Theme.ACCENT);
+					GuiDraw.rounded(graphics, mobListX - 2, iy, mobListW + 4, row, 5, Theme.withAlpha(Theme.ACCENT, 38));
+					GuiDraw.rounded(graphics, mobListX - 2, iy + 3, 2, row - 6, 1, Theme.ACCENT);
 				} else if (hover) {
-					GuiDraw.rounded(graphics, mobListX - 2, iy, mobListW + 4, ROW, 5, 0x10FFFFFF);
+					GuiDraw.rounded(graphics, mobListX - 2, iy, mobListW + 4, row, 5, 0x10FFFFFF);
 				}
-				GuiDraw.menu(graphics, font, clip(font, entry.name(), (int) mobListW - 8), mobListX + 6, GuiDraw.middle(iy, ROW), on ? Theme.TEXT : Theme.HEADER);
+				GuiDraw.menu(graphics, font, clip(font, entry.name(), (int) mobListW - 8), mobListX + 6, GuiDraw.middle(iy, row), on ? ink() : fade());
 				float hitY = Math.max(iy, mobListY);
-				float hitB = Math.min(iy + ROW, mobListY + mobListH);
+				float hitB = Math.min(iy + row, mobListY + mobListH);
 				if (hitB - hitY >= 3f) {
 					hits.add(new Hit(mobListX, hitY, mobListW, hitB - hitY, () -> {
 						config.toggleMobGlow(entry.id().toString());
@@ -3073,7 +3075,7 @@ public class StrayScreen extends Screen {
 		return FabricLoader.getInstance()
 			.getModContainer("stray")
 			.map(container -> container.getMetadata().getVersion().getFriendlyString())
-			.orElse("1.2.157");
+			.orElse("1.2.158");
 	}
 
 	@Override
@@ -3193,8 +3195,9 @@ public class StrayScreen extends Screen {
 		}
 		if (tab == Tab.ESP && scrollY != 0 && pageHover(lx, ly, mobFieldX, mobFieldY, mobListW, mobListY + mobListH - mobFieldY)) {
 			List<MobCatalog.Entry> entries = MobCatalog.filtered(mobQuery);
-			float maxScroll = Math.max(0f, entries.size() * ROW - mobListH);
-			mobScroll = Mth.clamp(mobScroll - (float) scrollY * ROW * 2.2f, 0f, maxScroll);
+			float row = rowH();
+			float maxScroll = Math.max(0f, entries.size() * row - mobListH);
+			mobScroll = Mth.clamp(mobScroll - (float) scrollY * row * 2.2f, 0f, maxScroll);
 			return true;
 		}
 		if (scrollY != 0 && tabScrollMax > 0.5f && GuiDraw.hovered(lx, ly, pageClipX, pageClipY, pageClipW, pageClipH)) {

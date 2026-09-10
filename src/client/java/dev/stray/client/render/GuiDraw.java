@@ -34,6 +34,7 @@ public final class GuiDraw {
 	private static final int RING_POLE = 4;
 	private static final int STROKE_TEX_W = 64;
 	private static final int STROKE_TEX_H = 16;
+	private static final int PICKER_STRIPS = 24;
 
 	private GuiDraw() {
 	}
@@ -129,9 +130,9 @@ public final class GuiDraw {
 		graphics.pose().popMatrix();
 	}
 
-	/** Smooth HSV saturation/value square: 1px columns, vertical value gradient per column. */
+	/** HSV square as a handful of columns instead of one blit per pixel. */
 	public static void hsvSquare(GuiGraphicsExtractor graphics, float x, float y, float w, float h, float hue) {
-		int cols = Math.max(1, Math.round(w));
+		int cols = Math.max(1, Math.min(PICKER_STRIPS, Math.round(w)));
 		float cw = w / cols;
 		for (int i = 0; i < cols; i++) {
 			float sat = cols == 1 ? 1f : i / (float) (cols - 1);
@@ -141,22 +142,23 @@ public final class GuiDraw {
 		}
 	}
 
-	/** Smooth alpha strip: current color from transparent to solid. */
+	/** Alpha strip: checker + color, 24 columns instead of one blit per pixel. */
 	public static void alphaBar(GuiGraphicsExtractor graphics, float x, float y, float w, float h, int rgb) {
-		int cols = Math.max(1, Math.round(w));
+		int cols = Math.max(1, Math.min(PICKER_STRIPS, Math.round(w)));
 		float cw = w / cols;
 		int light = 0xFFC8C8C8;
 		int dark = 0xFF8E8E8E;
 		for (int i = 0; i < cols; i++) {
 			float px = x + i * cw;
-			int check = ((i / 2) & 1) == 0 ? light : dark;
+			int check = (i & 1) == 0 ? light : dark;
 			fill(graphics, px, y, cw + 0.35f, h, check);
 			float a = cols == 1 ? 1f : i / (float) (cols - 1);
 			fill(graphics, px, y, cw + 0.35f, h, Theme.withAlpha(rgb, Math.round(a * 255f)));
 		}
 	}
+
 	public static void hueBar(GuiGraphicsExtractor graphics, float x, float y, float w, float h) {
-		int cols = Math.max(1, Math.round(w));
+		int cols = Math.max(1, Math.min(PICKER_STRIPS, Math.round(w)));
 		float cw = w / cols;
 		for (int i = 0; i < cols; i++) {
 			float hue = cols == 1 ? 0f : (i / (float) (cols - 1)) * 360f;
@@ -430,7 +432,7 @@ public final class GuiDraw {
 		boolean accentRight
 	) {
 		if (StrayConfig.get().guiDesignControl()) {
-			ControlChrome.glass(graphics, x, y, w, h, radius, fill);
+			GuiDraw.roundedFine(graphics, x, y, w, h, radius, fill);
 			return;
 		}
 		rounded(graphics, x, y, w, h, radius, outline);

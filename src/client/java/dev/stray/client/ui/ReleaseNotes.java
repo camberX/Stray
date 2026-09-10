@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.158", new String[]{
+			"The Mobs catalog is tall enough to show more than one name again after Player fill and Nametags were added above it. Control cards skip per-frame rim slices, and the color picker no longer draws a blit per pixel."
+		}),
 		new Entry("1.2.157", new String[]{
 			"Control frost covers the whole rounded pane again, including the watermark. Vanilla hotbar and scoreboard are no longer wrapped by Stray when those custom HUD pieces are off."
 		}),
