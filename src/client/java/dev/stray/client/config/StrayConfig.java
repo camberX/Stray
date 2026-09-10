@@ -107,6 +107,8 @@ public final class StrayConfig {
 	public boolean crystalHollowsFindChat = false;
 	public boolean crystalHollowsThroughWalls = false;
 	public boolean crystalHollowsEntrances = false;
+	public boolean metalDetectorSolver = false;
+	public boolean metalDetectorToolTitle = false;
 	public boolean titaniumEsp = false;
 	public boolean titaniumEspThroughWalls = false;
 	public boolean chestEspEnabled = false;

@@ -39,6 +39,7 @@ import dev.stray.client.mining.ChestAimer;
 import dev.stray.client.mining.ChestEsp;
 import dev.stray.client.mining.CrystalHollows;
 import dev.stray.client.mining.CrystalHollowsRenderer;
+import dev.stray.client.mining.MetalDetector;
 import dev.stray.client.mining.MiningTracker;
 import dev.stray.client.mining.TitaniumTracker;
 import dev.stray.client.render.ChestEspRenderer;
@@ -151,7 +152,10 @@ public final class StrayClient implements ClientModInitializer {
 		FairySoulRenderer.init();
 		FairySoulTracker.init();
 		CrystalHollowsRenderer.init();
-		ClientReceiveMessageEvents.ALLOW_GAME.register(CrystalHollows::allowChat);
+		ClientReceiveMessageEvents.ALLOW_GAME.register((message, overlay) -> {
+			MetalDetector.onMessage(message, overlay);
+			return CrystalHollows.allowChat(message, overlay);
+		});
 		ChestAimer.init();
 		Hitmarker.init();
 		FarmingHud.init();
@@ -266,6 +270,7 @@ public final class StrayClient implements ClientModInitializer {
 			ChestEsp.get().tick(client);
 			FairySoulTracker.tick(client);
 			CrystalHollows.tick(client);
+			MetalDetector.tick(client);
 			ShopCape.tick();
 			UiFontPack.tick(client);
 			UpdateNotifier.tick();
@@ -277,10 +282,12 @@ public final class StrayClient implements ClientModInitializer {
 			ChestAimer.stop();
 			ChestEsp.get().clear();
 			CrystalHollows.onWorldChange();
+			MetalDetector.onWorldChange();
 		});
 
 		ClientPlayConnectionEvents.JOIN.register((handler, sender, client) -> {
 			CrystalHollows.onWorldChange();
+			MetalDetector.onWorldChange();
 			MobGlowRenderer.reset();
 			StarMobEsp.reset();
 			Hitsound.reset();
@@ -319,6 +326,7 @@ public final class StrayClient implements ClientModInitializer {
 			WardrobeScreen.resetPending();
 			MotionBlurShaders.invalidate();
 			CrystalHollows.reset();
+			MetalDetector.reset();
 		});
 
 		ClientLifecycleEvents.CLIENT_STOPPING.register(client -> FarmKeys.restore());

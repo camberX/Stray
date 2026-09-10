@@ -83,6 +83,7 @@ public final class CrystalHollowsRenderer {
 	}
 
 	private static void emitBoxes() {
+		MetalDetector.emitBoxes();
 		if (!CrystalHollows.active()) {
 			return;
 		}

@@ -138,6 +138,7 @@ public class StrayScreen extends Screen {
 		MINING("Mining HUD", 1),
 		TITANIUM("Titanium ESP", 3),
 		CRYSTAL("CH waypoints", 4),
+		METAL("Metal detector", 1),
 		FARMING("Yaw / Pitch", 1),
 		INVENTORY("Inventory", 3),
 		PLOTS("Garden plots", 1),
@@ -302,6 +303,9 @@ public class StrayScreen extends Screen {
 		new SearchEntry("Boss bar", Tab.BARS, "Bars"),
 		new SearchEntry("Effects", Tab.BARS, "Bars"),
 		new SearchEntry("Held item", Tab.BARS, "Bars"),
+		new SearchEntry("Metal detector", Tab.MINING, "Mining"),
+		new SearchEntry("TREASURE", Tab.MINING, "Mining"),
+		new SearchEntry("Scavenged", Tab.MINING, "Mining"),
 		new SearchEntry("Crystal Hollows waypoints", Tab.MINING, "Mining"),
 		new SearchEntry("CH waypoints", Tab.MINING, "Mining"),
 		new SearchEntry("Entrance zones", Tab.MINING, "Mining"),
@@ -1934,10 +1938,11 @@ public class StrayScreen extends Screen {
 				statRow(graphics, font, rx, y, iw, "Ping", HudStats.pingLabel());
 			}
 			case MINING -> {
-				float y = featureCard(graphics, font, left, top, col, cardHeight(3), "Mining");
+				float y = featureCard(graphics, font, left, top, col, cardHeight(4), "Mining");
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Mining HUD", config.miningHudEnabled, v -> config.miningHudEnabled = v, Feature.MINING);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Titanium ESP", config.titaniumEsp, v -> config.titaniumEsp = v, Feature.TITANIUM);
-				toggle(graphics, font, ix, y, iw, mouseX, mouseY, "CH waypoints", config.crystalHollowsWaypoints, v -> config.crystalHollowsWaypoints = v, Feature.CRYSTAL);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "CH waypoints", config.crystalHollowsWaypoints, v -> config.crystalHollowsWaypoints = v, Feature.CRYSTAL);
+				toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Metal detector", config.metalDetectorSolver, v -> config.metalDetectorSolver = v, Feature.METAL);
 
 				y = featureCard(graphics, font, right, top, col, cardTop() + cardHead() + 54 + cardPad(), "Live");
 				var snap = MiningTracker.snapshot();
@@ -2115,7 +2120,8 @@ public class StrayScreen extends Screen {
 				float 				y = sectionLabel(graphics, font, left, top, "Tools");
 				y = controlCard(graphics, font, left, y, col, mouseX, mouseY, "Mining HUD", config.miningHudEnabled, v -> config.miningHudEnabled = v, Feature.MINING);
 				y = controlCard(graphics, font, left, y, col, mouseX, mouseY, "Titanium ESP", config.titaniumEsp, v -> config.titaniumEsp = v, Feature.TITANIUM);
-				controlCard(graphics, font, left, y, col, mouseX, mouseY, "CH waypoints", config.crystalHollowsWaypoints, v -> config.crystalHollowsWaypoints = v, Feature.CRYSTAL, "Dump", CrystalHollows::dumpChat);
+				y = controlCard(graphics, font, left, y, col, mouseX, mouseY, "CH waypoints", config.crystalHollowsWaypoints, v -> config.crystalHollowsWaypoints = v, Feature.CRYSTAL, "Dump", CrystalHollows::dumpChat);
+				controlCard(graphics, font, left, y, col, mouseX, mouseY, "Metal detector", config.metalDetectorSolver, v -> config.metalDetectorSolver = v, Feature.METAL);
 
 				y = sectionLabel(graphics, font, right, top, "Live");
 				y = featureCard(graphics, font, right, y, col, cardTop() + cardHead() + 54 + cardPad(), "Live");
@@ -2782,6 +2788,7 @@ public class StrayScreen extends Screen {
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Through walls", config.crystalHollowsThroughWalls, v -> config.crystalHollowsThroughWalls = v);
 				clickRow(graphics, font, ix, y, iw, mouseX, mouseY, "Dump coords", CrystalHollows::dumpChat);
 			}
+			case METAL -> toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Tool title", config.metalDetectorToolTitle, v -> config.metalDetectorToolTitle = v);
 			case INVENTORY -> {
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Hotbar", config.inventoryHudHotbar, v -> config.inventoryHudHotbar = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Armor", config.inventoryHudArmor, v -> config.inventoryHudArmor = v);
@@ -3256,7 +3263,7 @@ public class StrayScreen extends Screen {
 		return FabricLoader.getInstance()
 			.getModContainer("stray")
 			.map(container -> container.getMetadata().getVersion().getFriendlyString())
-			.orElse("1.2.195");
+			.orElse("1.2.196");
 	}
 
 	@Override

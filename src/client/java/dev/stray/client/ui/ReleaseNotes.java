@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.196", new String[]{
+			"Mining has SkyHanni's Mines of Divan metal detector solver. It marks treasure chests from the TREASURE action-bar distance. Tool title shows a title when you dig up a scavenged tool, and ALL TOOLS when you are holding the detector with all four."
+		}),
 		new Entry("1.2.195", new String[]{
 			"Crystal Hollows waypoints clear and re-check on each lobby enter, so the last lobby's finds do not stick."
 		}),

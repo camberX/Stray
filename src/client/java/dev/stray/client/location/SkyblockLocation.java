@@ -137,6 +137,20 @@ public final class SkyblockLocation {
 		return crystalName(area) || crystalName(poi);
 	}
 
+	public static boolean inMinesOfDivan() {
+		if (!inSkyblock) {
+			return false;
+		}
+		return divanName(area) || divanName(poi);
+	}
+
+	private static boolean divanName(String name) {
+		if (name == null || name.isEmpty()) {
+			return false;
+		}
+		return name.toLowerCase().contains("divan");
+	}
+
 	private static boolean crystalName(String name) {
 		if (name == null || name.isEmpty()) {
 			return false;
