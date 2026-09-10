@@ -31,6 +31,7 @@ public final class CrystalHollows {
 		new StaticMark(new BlockPos(513, 106, 524), "Nucleus", 0xFF5555)
 	);
 	private static boolean locrawPending;
+	private static boolean inHollows;
 	private static String lastServer = "";
 
 	private CrystalHollows() {
@@ -42,30 +43,36 @@ public final class CrystalHollows {
 
 	public static void tick(Minecraft client) {
 		if (!StrayConfig.get().crystalHollowsWaypoints) {
-			return;
-		}
-		if (!SkyblockLocation.inCrystalHollows()) {
-			if (!lastServer.isEmpty()) {
-				CrystalHollowsSocket.disconnect();
-				lastServer = "";
+			if (inHollows) {
+				leave();
 			}
 			return;
 		}
-		if (client.player == null) {
+		boolean here = SkyblockLocation.inCrystalHollows();
+		if (here != inHollows) {
+			if (here) {
+				enter(client);
+			} else {
+				leave();
+			}
+		}
+		if (!here || client.player == null) {
 			return;
 		}
-		maybeRequestLocraw(client);
 		String server = SkyblockLocation.server;
-		if (!server.isBlank()) {
-			CrystalHollowsSocket.tick(server);
+		if (!server.isBlank() && !server.equals(lastServer)) {
+			WAYPOINTS.clear();
 			lastServer = server;
 		}
-		CrystalStructure here = CrystalStructure.fromLabel(SkyblockLocation.poi);
-		if (here == null) {
-			here = CrystalStructure.fromLabel(SkyblockLocation.area);
+		if (!server.isBlank()) {
+			CrystalHollowsSocket.tick(server);
 		}
-		if (here != null && !WAYPOINTS.containsKey(here)) {
-			add(here, client.player.blockPosition());
+		CrystalStructure spot = CrystalStructure.fromLabel(SkyblockLocation.poi);
+		if (spot == null) {
+			spot = CrystalStructure.fromLabel(SkyblockLocation.area);
+		}
+		if (spot != null && !WAYPOINTS.containsKey(spot)) {
+			add(spot, client.player.blockPosition());
 		}
 	}
 
@@ -147,15 +154,34 @@ public final class CrystalHollows {
 		}
 	}
 
+	public static void onWorldChange() {
+		leave();
+	}
+
 	public static void reset() {
+		leave();
+	}
+
+	private static void enter(Minecraft client) {
+		WAYPOINTS.clear();
+		lastServer = "";
+		locrawPending = false;
+		inHollows = true;
+		SkyblockLocation.locrawServer = "";
+		SkyblockLocation.server = "";
+		requestLocraw(client);
+	}
+
+	private static void leave() {
 		WAYPOINTS.clear();
 		locrawPending = false;
+		inHollows = false;
 		lastServer = "";
 		CrystalHollowsSocket.disconnect();
 	}
 
-	private static void maybeRequestLocraw(Minecraft client) {
-		if (!SkyblockLocation.server.isBlank() || locrawPending || client.player == null || client.player.connection == null) {
+	private static void requestLocraw(Minecraft client) {
+		if (client == null || client.player == null || client.player.connection == null) {
 			return;
 		}
 		locrawPending = true;

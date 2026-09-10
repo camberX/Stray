@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.195", new String[]{
+			"Crystal Hollows waypoints clear and re-check on each lobby enter, so the last lobby's finds do not stick."
+		}),
 		new Entry("1.2.194", new String[]{
 			"CH waypoint Dump lists stored structures only, not Nucleus zone doors."
 		}),

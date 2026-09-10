@@ -276,9 +276,11 @@ public final class StrayClient implements ClientModInitializer {
 			StarMobEsp.reset();
 			ChestAimer.stop();
 			ChestEsp.get().clear();
+			CrystalHollows.onWorldChange();
 		});
 
 		ClientPlayConnectionEvents.JOIN.register((handler, sender, client) -> {
+			CrystalHollows.onWorldChange();
 			MobGlowRenderer.reset();
 			StarMobEsp.reset();
 			Hitsound.reset();

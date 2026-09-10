@@ -57,6 +57,9 @@ public final class SkyblockLocation {
 		area = readArea(connection, sidebar);
 		poi = sidebar.poi;
 		String tabServer = readServer(connection);
+		if (!tabServer.isEmpty() && !locrawServer.isEmpty() && !tabServer.equalsIgnoreCase(locrawServer)) {
+			locrawServer = "";
+		}
 		if (!locrawServer.isEmpty()) {
 			server = locrawServer;
 		} else if (!tabServer.isEmpty()) {
