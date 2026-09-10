@@ -11,6 +11,7 @@ import dev.stray.client.combat.Hitmarker;
 import dev.stray.client.combat.Hitsound;
 import dev.stray.client.combat.OdinClicks;
 import dev.stray.client.combat.Triggerbot;
+import dev.stray.client.debug.StrayDebug;
 import dev.stray.client.farming.FarmKeys;
 import dev.stray.client.farming.FarmingHud;
 import dev.stray.client.farming.ComposterTracker;
@@ -172,6 +173,7 @@ public final class StrayClient implements ClientModInitializer {
 				}
 				return Command.SINGLE_SUCCESS;
 			}));
+			root.then(StrayDebug.command());
 			root.then(ClientCommands.literal("edit").executes(context -> openItemEdit()));
 			root.then(ClientCommands.literal("farmkeys").executes(context -> FarmKeys.toggle()));
 			root.then(ClientCommands.literal("fk").executes(context -> FarmKeys.toggle()));
@@ -238,6 +240,7 @@ public final class StrayClient implements ClientModInitializer {
 			PickupLogRenderer.tick(client);
 			JacobContestTracker.tick(client);
 			ComposterTracker.tick(client);
+			StrayDebug.tick(client);
 			EnderNodeTracker.get().tick(client);
 			ConnectionPing.tick(client);
 			RawmatsTracker.tick(client);

@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.154", new String[]{
+			"/stray debug toggles session debug flags. /stray debug composter prints lore for Composter chest slots 2 and 7 in chat."
+		}),
 		new Entry("1.2.153", new String[]{
 			"Composter overlay reads Organic Matter and Fuel caps from the Composter pane lore (67,464/100k) and styled/NBT text, without generating item tooltips that could abort the parse."
 		}),
