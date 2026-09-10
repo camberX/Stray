@@ -129,9 +129,6 @@ public final class CrystalHollows {
 		for (var entry : WAYPOINTS.entrySet()) {
 			lines.add(new Mark(entry.getKey().label, entry.getValue(), entry.getKey().rgb, false));
 		}
-		for (StaticMark nucleus : NUCLEUS) {
-			lines.add(new Mark(nucleus.label, nucleus.pos, nucleus.rgb, true));
-		}
 		client.gui.getChat().addClientSystemMessage(
 			Component.literal("Stray CH waypoints").withStyle(ChatFormatting.YELLOW)
 		);
@@ -143,12 +140,9 @@ public final class CrystalHollows {
 		}
 		for (Mark mark : lines) {
 			BlockPos pos = mark.pos();
-			String text = mark.label() + "  " + pos.getX() + " " + pos.getY() + " " + pos.getZ();
-			if (mark.nucleus()) {
-				text += "  (zone)";
-			}
 			client.gui.getChat().addClientSystemMessage(
-				Component.literal(text).withStyle(Style.EMPTY.withColor(mark.rgb() & 0xFFFFFF))
+				Component.literal(mark.label() + "  " + pos.getX() + " " + pos.getY() + " " + pos.getZ())
+					.withStyle(Style.EMPTY.withColor(mark.rgb() & 0xFFFFFF))
 			);
 		}
 	}

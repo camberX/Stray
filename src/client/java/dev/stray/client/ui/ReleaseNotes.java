@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.194", new String[]{
+			"CH waypoint Dump lists stored structures only, not Nucleus zone doors."
+		}),
 		new Entry("1.2.193", new String[]{
 			"CH waypoints has a Dump button that prints every stored structure and zone coordinate in client chat."
 		}),
