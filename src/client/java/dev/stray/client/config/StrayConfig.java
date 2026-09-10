@@ -107,6 +107,8 @@ public final class StrayConfig {
 	public boolean crystalHollowsFindChat = false;
 	public boolean crystalHollowsThroughWalls = false;
 	public boolean crystalHollowsEntrances = false;
+	public boolean crystalHollowsMap = false;
+	public boolean crystalHollowsMapLabels = true;
 	public boolean metalDetectorSolver = false;
 	public boolean metalDetectorToolTitle = false;
 	public boolean titaniumEsp = false;
@@ -217,6 +219,7 @@ public final class StrayConfig {
 	public float hudMiningScale = 1.0f;
 	public float hudJacobScale = 1.0f;
 	public float hudComposterScale = 1.0f;
+	public float hudCrystalMapScale = 1.0f;
 	public float hudInventoryX = -1f;
 	public float hudInventoryY = -1f;
 	public float hudWatermarkX = -1f;
@@ -235,6 +238,8 @@ public final class StrayConfig {
 	public float hudJacobY = -1f;
 	public float hudComposterX = -1f;
 	public float hudComposterY = -1f;
+	public float hudCrystalMapX = -1f;
+	public float hudCrystalMapY = -1f;
 	public float menuX = -1f;
 	public float menuY = -1f;
 	public boolean menuPlaced = false;
@@ -793,6 +798,9 @@ public final class StrayConfig {
 					: 1.00f;
 				loaded.hudComposterScale = json.has("hudComposterScale")
 					? clampHudScale(loaded.hudComposterScale)
+					: 1.00f;
+				loaded.hudCrystalMapScale = json.has("hudCrystalMapScale")
+					? clampHudScale(loaded.hudCrystalMapScale)
 					: 1.00f;
 				loaded.composterSpeed = clamp(loaded.composterSpeed, 0, 25);
 				loaded.composterMultiDrop = clamp(loaded.composterMultiDrop, 0, 25);

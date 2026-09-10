@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.197", new String[]{
+			"Mining has a Crystal Hollows map. It paints the cave under the hardstone roof like a vanilla map, washes the four zones and Nucleus on top, and drops the waypoints you grab onto it."
+		}),
 		new Entry("1.2.196", new String[]{
 			"Mining has SkyHanni's Mines of Divan metal detector solver. It marks treasure chests from the TREASURE action-bar distance. Tool title shows a title when you dig up a scavenged tool, and ALL TOOLS when you are holding the detector with all four."
 		}),

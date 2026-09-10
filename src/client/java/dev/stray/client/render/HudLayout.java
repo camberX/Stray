@@ -1,6 +1,7 @@
 package dev.stray.client.render;
 
 import dev.stray.client.config.StrayConfig;
+import dev.stray.client.mining.CrystalHollowsMap;
 import dev.stray.client.ui.HudEditorScreen;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
@@ -25,6 +26,7 @@ public final class HudLayout {
 		RAWMATS("Raw mats"),
 		PICKUPS("Pickup log"),
 		MINING("Mining"),
+		CRYSTAL_MAP("CH map"),
 		JACOB("Jacob contest"),
 		COMPOSTER("Composter"),
 		HOTBAR("Hotbar"),
@@ -176,6 +178,10 @@ public final class HudLayout {
 					}
 					y = placed(config.hudMiningY) ? config.hudMiningY : MARGIN + below;
 				}
+				case CRYSTAL_MAP -> {
+					x = placed(config.hudCrystalMapX) ? config.hudCrystalMapX : Math.max(MARGIN, guiW - w - MARGIN);
+					y = placed(config.hudCrystalMapY) ? config.hudCrystalMapY : MARGIN;
+				}
 				case JACOB -> {
 					x = placed(config.hudJacobX) ? config.hudJacobX : MARGIN;
 					float below = WatermarkRenderer.occupiedHeight();
@@ -262,6 +268,10 @@ public final class HudLayout {
 				config.hudMiningX = x;
 				config.hudMiningY = y;
 			}
+			case CRYSTAL_MAP -> {
+				config.hudCrystalMapX = x;
+				config.hudCrystalMapY = y;
+			}
 			case JACOB -> {
 				config.hudJacobX = x;
 				config.hudJacobY = y;
@@ -289,6 +299,7 @@ public final class HudLayout {
 			case RAWMATS -> StrayConfig.clampHudScale(config.hudRawmatsScale);
 			case PICKUPS -> StrayConfig.clampHudScale(config.hudPickupScale);
 			case MINING -> StrayConfig.clampHudScale(config.hudMiningScale);
+			case CRYSTAL_MAP -> StrayConfig.clampHudScale(config.hudCrystalMapScale);
 			case JACOB -> StrayConfig.clampHudScale(config.hudJacobScale);
 			case COMPOSTER -> StrayConfig.clampHudScale(config.hudComposterScale);
 			default -> 1.0f;
@@ -312,6 +323,7 @@ public final class HudLayout {
 			case RAWMATS -> config.hudRawmatsScale = value;
 			case PICKUPS -> config.hudPickupScale = value;
 			case MINING -> config.hudMiningScale = value;
+			case CRYSTAL_MAP -> config.hudCrystalMapScale = value;
 			case JACOB -> config.hudJacobScale = value;
 			case COMPOSTER -> config.hudComposterScale = value;
 			default -> {
@@ -357,6 +369,10 @@ public final class HudLayout {
 				config.hudMiningX = -1f;
 				config.hudMiningY = -1f;
 			}
+			case CRYSTAL_MAP -> {
+				config.hudCrystalMapX = -1f;
+				config.hudCrystalMapY = -1f;
+			}
 			case JACOB -> {
 				config.hudJacobX = -1f;
 				config.hudJacobY = -1f;
@@ -380,6 +396,7 @@ public final class HudLayout {
 			case RAWMATS -> config.rawmatsHudEnabled;
 			case PICKUPS -> config.pickupLogEnabled;
 			case MINING -> config.miningHudEnabled;
+			case CRYSTAL_MAP -> config.crystalHollowsMap;
 			case JACOB -> config.jacobContestHudEnabled;
 			case COMPOSTER -> config.composterHudEnabled;
 			case HOTBAR, HEALTH, HUNGER, ARMOR, AIR, EXPERIENCE, MOUNT -> false;
@@ -513,6 +530,7 @@ public final class HudLayout {
 			case RAWMATS -> RawmatsHudRenderer.drawWidth() * scale;
 			case PICKUPS -> PickupLogRenderer.drawWidth() * scale;
 			case MINING -> MiningHudRenderer.drawWidth() * scale;
+			case CRYSTAL_MAP -> CrystalHollowsMap.drawWidth() * scale;
 			case JACOB -> JacobContestHudRenderer.drawWidth() * scale;
 			case COMPOSTER -> ComposterHudRenderer.drawWidth() * scale;
 			case HOTBAR -> HotbarHudRenderer.drawWidth() * scale;
@@ -535,6 +553,7 @@ public final class HudLayout {
 			case RAWMATS -> RawmatsHudRenderer.drawHeight() * scale;
 			case PICKUPS -> PickupLogRenderer.drawHeight() * scale;
 			case MINING -> MiningHudRenderer.drawHeight() * scale;
+			case CRYSTAL_MAP -> CrystalHollowsMap.drawHeight() * scale;
 			case JACOB -> JacobContestHudRenderer.drawHeight() * scale;
 			case COMPOSTER -> ComposterHudRenderer.drawHeight() * scale;
 			case HOTBAR -> HotbarHudRenderer.HEIGHT * scale;

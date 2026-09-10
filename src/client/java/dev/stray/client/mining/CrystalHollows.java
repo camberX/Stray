@@ -41,8 +41,13 @@ public final class CrystalHollows {
 		return StrayConfig.get().crystalHollowsWaypoints && SkyblockLocation.inCrystalHollows();
 	}
 
+	public static boolean tracking() {
+		StrayConfig config = StrayConfig.get();
+		return (config.crystalHollowsWaypoints || config.crystalHollowsMap) && SkyblockLocation.inCrystalHollows();
+	}
+
 	public static void tick(Minecraft client) {
-		if (!StrayConfig.get().crystalHollowsWaypoints) {
+		if (!StrayConfig.get().crystalHollowsWaypoints && !StrayConfig.get().crystalHollowsMap) {
 			if (inHollows) {
 				leave();
 			}
@@ -89,7 +94,7 @@ public final class CrystalHollows {
 		if (text.startsWith("{\"server\":") && text.endsWith("}")) {
 			parseLocraw(text);
 		}
-		if (!active()) {
+		if (!tracking()) {
 			return true;
 		}
 		readNpc(text, Minecraft.getInstance());
@@ -100,7 +105,7 @@ public final class CrystalHollows {
 	}
 
 	public static void acceptSocket(List<CrystalHollowsSocket.Incoming> incoming) {
-		if (!StrayConfig.get().crystalHollowsWaypoints) {
+		if (!StrayConfig.get().crystalHollowsWaypoints && !StrayConfig.get().crystalHollowsMap) {
 			return;
 		}
 		for (CrystalHollowsSocket.Incoming item : incoming) {
@@ -112,10 +117,14 @@ public final class CrystalHollows {
 	}
 
 	public static List<Mark> marks() {
-		List<Mark> out = new ArrayList<>();
 		if (!active()) {
-			return out;
+			return List.of();
 		}
+		return mapMarks();
+	}
+
+	public static List<Mark> mapMarks() {
+		List<Mark> out = new ArrayList<>();
 		if (StrayConfig.get().crystalHollowsEntrances) {
 			for (StaticMark nucleus : NUCLEUS) {
 				out.add(new Mark(nucleus.label, nucleus.pos, nucleus.rgb, true));
@@ -169,6 +178,7 @@ public final class CrystalHollows {
 		inHollows = true;
 		SkyblockLocation.locrawServer = "";
 		SkyblockLocation.server = "";
+		CrystalHollowsMap.reset();
 		requestLocraw(client);
 	}
 
@@ -178,6 +188,7 @@ public final class CrystalHollows {
 		inHollows = false;
 		lastServer = "";
 		CrystalHollowsSocket.disconnect();
+		CrystalHollowsMap.reset();
 	}
 
 	private static void requestLocraw(Minecraft client) {

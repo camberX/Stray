@@ -39,6 +39,7 @@ import dev.stray.client.mining.ChestAimer;
 import dev.stray.client.mining.ChestEsp;
 import dev.stray.client.mining.CrystalHollows;
 import dev.stray.client.mining.CrystalHollowsRenderer;
+import dev.stray.client.mining.CrystalHollowsMap;
 import dev.stray.client.mining.MetalDetector;
 import dev.stray.client.mining.MiningTracker;
 import dev.stray.client.mining.TitaniumTracker;
@@ -270,6 +271,7 @@ public final class StrayClient implements ClientModInitializer {
 			ChestEsp.get().tick(client);
 			FairySoulTracker.tick(client);
 			CrystalHollows.tick(client);
+			CrystalHollowsMap.tick(client);
 			MetalDetector.tick(client);
 			ShopCape.tick();
 			UiFontPack.tick(client);
@@ -326,6 +328,7 @@ public final class StrayClient implements ClientModInitializer {
 			WardrobeScreen.resetPending();
 			MotionBlurShaders.invalidate();
 			CrystalHollows.reset();
+			CrystalHollowsMap.close();
 			MetalDetector.reset();
 		});
 

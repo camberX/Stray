@@ -138,6 +138,7 @@ public class StrayScreen extends Screen {
 		MINING("Mining HUD", 1),
 		TITANIUM("Titanium ESP", 3),
 		CRYSTAL("CH waypoints", 4),
+		CH_MAP("CH map", 1),
 		METAL("Metal detector", 1),
 		FARMING("Yaw / Pitch", 1),
 		INVENTORY("Inventory", 3),
@@ -303,6 +304,9 @@ public class StrayScreen extends Screen {
 		new SearchEntry("Boss bar", Tab.BARS, "Bars"),
 		new SearchEntry("Effects", Tab.BARS, "Bars"),
 		new SearchEntry("Held item", Tab.BARS, "Bars"),
+		new SearchEntry("CH map", Tab.MINING, "Mining"),
+		new SearchEntry("Crystal Hollows map", Tab.MINING, "Mining"),
+		new SearchEntry("Hollows map", Tab.MINING, "Mining"),
 		new SearchEntry("Metal detector", Tab.MINING, "Mining"),
 		new SearchEntry("TREASURE", Tab.MINING, "Mining"),
 		new SearchEntry("Scavenged", Tab.MINING, "Mining"),
@@ -1938,10 +1942,11 @@ public class StrayScreen extends Screen {
 				statRow(graphics, font, rx, y, iw, "Ping", HudStats.pingLabel());
 			}
 			case MINING -> {
-				float y = featureCard(graphics, font, left, top, col, cardHeight(4), "Mining");
+				float y = featureCard(graphics, font, left, top, col, cardHeight(5), "Mining");
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Mining HUD", config.miningHudEnabled, v -> config.miningHudEnabled = v, Feature.MINING);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Titanium ESP", config.titaniumEsp, v -> config.titaniumEsp = v, Feature.TITANIUM);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "CH waypoints", config.crystalHollowsWaypoints, v -> config.crystalHollowsWaypoints = v, Feature.CRYSTAL);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "CH map", config.crystalHollowsMap, v -> config.crystalHollowsMap = v, Feature.CH_MAP);
 				toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Metal detector", config.metalDetectorSolver, v -> config.metalDetectorSolver = v, Feature.METAL);
 
 				y = featureCard(graphics, font, right, top, col, cardTop() + cardHead() + 54 + cardPad(), "Live");
@@ -2121,6 +2126,7 @@ public class StrayScreen extends Screen {
 				y = controlCard(graphics, font, left, y, col, mouseX, mouseY, "Mining HUD", config.miningHudEnabled, v -> config.miningHudEnabled = v, Feature.MINING);
 				y = controlCard(graphics, font, left, y, col, mouseX, mouseY, "Titanium ESP", config.titaniumEsp, v -> config.titaniumEsp = v, Feature.TITANIUM);
 				y = controlCard(graphics, font, left, y, col, mouseX, mouseY, "CH waypoints", config.crystalHollowsWaypoints, v -> config.crystalHollowsWaypoints = v, Feature.CRYSTAL, "Dump", CrystalHollows::dumpChat);
+				y = controlCard(graphics, font, left, y, col, mouseX, mouseY, "CH map", config.crystalHollowsMap, v -> config.crystalHollowsMap = v, Feature.CH_MAP);
 				controlCard(graphics, font, left, y, col, mouseX, mouseY, "Metal detector", config.metalDetectorSolver, v -> config.metalDetectorSolver = v, Feature.METAL);
 
 				y = sectionLabel(graphics, font, right, top, "Live");
@@ -2788,6 +2794,7 @@ public class StrayScreen extends Screen {
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Through walls", config.crystalHollowsThroughWalls, v -> config.crystalHollowsThroughWalls = v);
 				clickRow(graphics, font, ix, y, iw, mouseX, mouseY, "Dump coords", CrystalHollows::dumpChat);
 			}
+			case CH_MAP -> toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Waypoint names", config.crystalHollowsMapLabels, v -> config.crystalHollowsMapLabels = v);
 			case METAL -> toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Tool title", config.metalDetectorToolTitle, v -> config.metalDetectorToolTitle = v);
 			case INVENTORY -> {
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Hotbar", config.inventoryHudHotbar, v -> config.inventoryHudHotbar = v);
@@ -3263,7 +3270,7 @@ public class StrayScreen extends Screen {
 		return FabricLoader.getInstance()
 			.getModContainer("stray")
 			.map(container -> container.getMetadata().getVersion().getFriendlyString())
-			.orElse("1.2.196");
+			.orElse("1.2.197");
 	}
 
 	@Override
