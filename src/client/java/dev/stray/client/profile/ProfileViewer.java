@@ -89,6 +89,9 @@ public final class ProfileViewer {
 	private static final int[] SLAYER_ENDER = {10, 30, 250, 1500, 5000, 20000, 100000, 400000, 1000000};
 	private static final int[] SLAYER_BLAZE = {10, 30, 250, 1500, 5000, 20000, 100000, 400000, 1000000};
 	private static final int[] SLAYER_VAMP = {20, 75, 240, 840, 2400};
+	private static final long[] GARDEN_XP = cropCum(
+		70, 70, 140, 240, 600, 1500, 2000, 2500, 3000, 10000, 10000, 10000, 10000, 10000
+	);
 	/** Cumulative harvests to reach each Garden crop milestone. Wiki tables, 46 tiers. */
 	private static final long[] CROP_WHEAT = cropCum(
 		30, 50, 80, 200, 350, 700, 1500, 2500, 3500, 5000,
@@ -125,7 +128,7 @@ public final class ProfileViewer {
 		2400000, 2400000, 2400000, 2400000, 2400000, 2400000, 2400000, 2400000, 2400000, 2400000,
 		2400000, 2400000, 2400000, 2400000, 2400000, 2400000
 	);
-	private static final String GARDEN = "https://hypixel.odtheking.com/v2/skyblock/garden?profile=";
+	private static final String ELITE_GARDEN = "https://api.elitebot.dev/garden/";
 
 	public enum Status {
 		IDLE, LOADING, READY, ERROR
@@ -1147,20 +1150,11 @@ public final class ProfileViewer {
 		if (id.isBlank()) {
 			return null;
 		}
-		JsonObject root = getJson(GARDEN + id);
-		JsonObject garden = object(root, "garden");
-		if (garden != null) {
-			return garden;
+		JsonObject elite = getJson(ELITE_GARDEN + id);
+		if (elite != null && (elite.has("crops") || elite.has("gardenLevel") || elite.has("experience"))) {
+			return elite;
 		}
-		if (object(root, "resources_collected") != null) {
-			return root;
-		}
-		root = getJson("https://sky.shiiyu.moe/api/v2/garden/" + id);
-		garden = object(root, "garden");
-		if (garden != null) {
-			return garden;
-		}
-		return object(root, "resources_collected") != null ? root : null;
+		return null;
 	}
 
 	private static Farming parseFarming(JsonObject member, JsonObject gardenApi) {
@@ -1169,33 +1163,45 @@ public final class ProfileViewer {
 			nested = object(member, "garden");
 		}
 		JsonObject garden = gardenApi != null ? gardenApi : nested;
-		int visitors = (int) num(object(garden, "commission_data"), "unique_npcs_served");
+		int visitors = (int) num(garden, "uniqueVisitors");
+		if (visitors == 0) {
+			visitors = (int) num(object(garden, "commission_data"), "unique_npcs_served");
+		}
 		if (visitors == 0) {
 			visitors = (int) num(object(nested, "commission_data"), "unique_npcs_served");
 		}
 		if (visitors == 0) {
 			visitors = (int) num(garden, "unique_visitors");
 		}
-		double gardenXp = num(garden, "garden_experience");
-		if (gardenXp == 0d) {
-			gardenXp = num(nested, "garden_experience");
+		int level = (int) num(garden, "gardenLevel");
+		if (level <= 0) {
+			double gardenXp = num(garden, "experience");
+			if (gardenXp == 0d) {
+				gardenXp = num(garden, "garden_experience");
+			}
+			if (gardenXp == 0d) {
+				gardenXp = num(nested, "garden_experience");
+			}
+			level = skillFrom("Garden", gardenXp, GARDEN_XP, 15).level();
 		}
-		int level = skillFrom("Garden", gardenXp, SKILL_XP, 15).level();
-		JsonObject resources = object(garden, "resources_collected");
+		JsonObject resources = object(garden, "crops");
+		if (resources == null) {
+			resources = object(garden, "resources_collected");
+		}
 		if (resources == null) {
 			resources = object(nested, "resources_collected");
 		}
 		List<Crop> crops = new ArrayList<>();
-		crops.add(crop("Wheat", CROP_WHEAT, cropAmount(resources, "WHEAT", "wheat")));
-		crops.add(crop("Carrot", CROP_CARROT, cropAmount(resources, "CARROT_ITEM", "CARROT", "carrot")));
-		crops.add(crop("Potato", CROP_CARROT, cropAmount(resources, "POTATO_ITEM", "POTATO", "potato")));
-		crops.add(crop("Pumpkin", CROP_WHEAT, cropAmount(resources, "PUMPKIN", "pumpkin")));
-		crops.add(crop("Melon", CROP_MELON, cropAmount(resources, "MELON", "MELON_SLICE", "melon", "melon_slice")));
-		crops.add(crop("Mushroom", CROP_WHEAT, cropAmount(resources, "MUSHROOM_COLLECTION", "MUSHROOM", "RED_MUSHROOM", "BROWN_MUSHROOM", "mushroom")));
-		crops.add(crop("Cocoa", CROP_WART, cropAmount(resources, "INK_SACK:3", "COCOA", "COCOA_BEANS", "cocoa_beans")));
-		crops.add(crop("Cactus", CROP_CANE, cropAmount(resources, "CACTUS", "cactus")));
-		crops.add(crop("Cane", CROP_CANE, cropAmount(resources, "SUGAR_CANE", "sugar_cane")));
-		crops.add(crop("Wart", CROP_WART, cropAmount(resources, "NETHER_STALK", "NETHER_WART", "nether_wart")));
+		crops.add(crop("Wheat", CROP_WHEAT, cropAmount(resources, "wheat", "WHEAT")));
+		crops.add(crop("Carrot", CROP_CARROT, cropAmount(resources, "carrot", "CARROT_ITEM", "CARROT")));
+		crops.add(crop("Potato", CROP_CARROT, cropAmount(resources, "potato", "POTATO_ITEM", "POTATO")));
+		crops.add(crop("Pumpkin", CROP_WHEAT, cropAmount(resources, "pumpkin", "PUMPKIN")));
+		crops.add(crop("Melon", CROP_MELON, cropAmount(resources, "melon", "MELON", "MELON_SLICE")));
+		crops.add(crop("Mushroom", CROP_WHEAT, cropAmount(resources, "mushroom", "MUSHROOM_COLLECTION", "MUSHROOM")));
+		crops.add(crop("Cocoa", CROP_WART, cropAmount(resources, "cocoaBeans", "cocoa_beans", "INK_SACK:3", "COCOA")));
+		crops.add(crop("Cactus", CROP_CANE, cropAmount(resources, "cactus", "CACTUS")));
+		crops.add(crop("Cane", CROP_CANE, cropAmount(resources, "sugarCane", "sugar_cane", "SUGAR_CANE")));
+		crops.add(crop("Wart", CROP_WART, cropAmount(resources, "netherWart", "nether_wart", "NETHER_STALK", "NETHER_WART")));
 		return new Farming(visitors, level, List.copyOf(crops));
 	}
 

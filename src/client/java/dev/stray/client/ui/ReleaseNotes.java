@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.170", new String[]{
+			"Farm now loads Garden harvests, Garden level, and unique visitors from the Garden API, then applies the wiki milestone tables."
+		}),
 		new Entry("1.2.169", new String[]{
 			"Farm crop milestones use the current Garden wiki tables (46 per crop, different amounts per crop) and Garden harvests only, not island collection."
 		}),
