@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.184", new String[]{
+			"Portal style on Player fill and Held item is the vanilla End portal shader. A Galaxy style adds dense star clusters, a Milky Way band, and a black hole."
+		}),
 		new Entry("1.2.183", new String[]{
 			"Player fill and Held item shader have a Portal style that uses the End portal look. Cycle Style to Portal."
 		}),

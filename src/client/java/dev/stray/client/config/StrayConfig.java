@@ -929,7 +929,8 @@ public final class StrayConfig {
 	private static String nextShaderStyle(String style) {
 		return switch (normalizeHeldItemShaderStyle(style)) {
 			case "stars" -> "portal";
-			case "portal" -> "smoke";
+			case "portal" -> "galaxy";
+			case "galaxy" -> "smoke";
 			default -> "stars";
 		};
 	}
@@ -938,6 +939,7 @@ public final class StrayConfig {
 		return switch (normalizeHeldItemShaderStyle(style)) {
 			case "stars" -> "Stars";
 			case "portal" -> "Portal";
+			case "galaxy" -> "Galaxy";
 			default -> "Smoke";
 		};
 	}
@@ -946,6 +948,7 @@ public final class StrayConfig {
 		return switch (normalizeHeldItemShaderStyle(style)) {
 			case "stars" -> 1f;
 			case "portal" -> 2f;
+			case "galaxy" -> 3f;
 			default -> 0f;
 		};
 	}
@@ -957,6 +960,7 @@ public final class StrayConfig {
 		return switch (style.toLowerCase(java.util.Locale.ROOT)) {
 			case "stars", "star", "starry", "sky" -> "stars";
 			case "portal", "end", "end_portal", "endportal", "end portal" -> "portal";
+			case "galaxy", "milky", "milkyway", "milky way", "blackhole", "black hole" -> "galaxy";
 			default -> "smoke";
 		};
 	}

@@ -193,6 +193,8 @@ public class StrayScreen extends Screen {
 		new SearchEntry("Item smoke", Tab.ESP, "Visuals"),
 		new SearchEntry("End portal shader", Tab.ESP, "Visuals"),
 		new SearchEntry("Portal shader", Tab.ESP, "Visuals"),
+		new SearchEntry("Galaxy shader", Tab.ESP, "Visuals"),
+		new SearchEntry("Black hole shader", Tab.ESP, "Visuals"),
 		new SearchEntry("Ghost", Tab.ESP, "Visuals"),
 		new SearchEntry("Ghost item", Tab.ESP, "Visuals"),
 		new SearchEntry("Player fill", Tab.ESP, "Visuals"),
@@ -3148,7 +3150,7 @@ public class StrayScreen extends Screen {
 		return FabricLoader.getInstance()
 			.getModContainer("stray")
 			.map(container -> container.getMetadata().getVersion().getFriendlyString())
-			.orElse("1.2.183");
+			.orElse("1.2.184");
 	}
 
 	@Override

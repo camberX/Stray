@@ -30,6 +30,7 @@ import net.minecraft.client.model.geom.ModelPart;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.client.renderer.SubmitNodeCollector;
+import net.minecraft.client.renderer.blockentity.AbstractEndPortalRenderer;
 import net.minecraft.client.renderer.entity.state.LivingEntityRenderState;
 import net.minecraft.client.renderer.feature.ItemFeatureRenderer;
 import net.minecraft.client.renderer.rendertype.OutputTarget;
@@ -210,7 +211,10 @@ public final class HeldItemShader {
 				.withVertexShader(FILL_SHADER_ID)
 				.withFragmentShader(FILL_SHADER_ID)
 				.withSampler("Sampler1")
+				.withSampler("Sampler3")
+				.withSampler("Sampler4")
 				.withShaderDefine("ALPHA_CUTOUT", 0.1f)
+				.withShaderDefine("PORTAL_LAYERS", 15)
 				.withColorTargetState(ColorTargetState.DEFAULT)
 				.withCull(false)
 				.build()
@@ -221,8 +225,11 @@ public final class HeldItemShader {
 				.withVertexShader(FILL_SHADER_ID)
 				.withFragmentShader(FILL_SHADER_ID)
 				.withSampler("Sampler1")
+				.withSampler("Sampler3")
+				.withSampler("Sampler4")
 				.withShaderDefine("ALPHA_CUTOUT", 0.5f)
 				.withShaderDefine("ESP_FILL")
+				.withShaderDefine("PORTAL_LAYERS", 15)
 				.withColorTargetState(ColorTargetState.DEFAULT)
 				.withCull(false)
 				.build()
@@ -233,6 +240,8 @@ public final class HeldItemShader {
 				.withVertexShader(FILL_SHADER_ID)
 				.withFragmentShader(FILL_SHADER_ID)
 				.withSampler("Sampler1")
+				.withSampler("Sampler3")
+				.withSampler("Sampler4")
 				.withShaderDefine("ALPHA_CUTOUT", 0.1f)
 				.withShaderDefine("COVERAGE_MASK")
 				.withColorTargetState(ColorTargetState.DEFAULT)
@@ -647,6 +656,8 @@ public final class HeldItemShader {
 			RenderSetup.builder(fillPipeline)
 				.withTexture("Sampler0", atlas)
 				.withTexture("Sampler1", ItemFeatureRenderer.ENCHANTED_GLINT_ITEM)
+				.withTexture("Sampler3", AbstractEndPortalRenderer.END_SKY_LOCATION)
+				.withTexture("Sampler4", AbstractEndPortalRenderer.END_PORTAL_LOCATION)
 				.useLightmap()
 				.affectsCrumbling()
 				.setOutline(RenderSetup.OutlineProperty.NONE)
@@ -661,6 +672,8 @@ public final class HeldItemShader {
 			RenderSetup.builder(espFillPipeline)
 				.withTexture("Sampler0", atlas)
 				.withTexture("Sampler1", ItemFeatureRenderer.ENCHANTED_GLINT_ITEM)
+				.withTexture("Sampler3", AbstractEndPortalRenderer.END_SKY_LOCATION)
+				.withTexture("Sampler4", AbstractEndPortalRenderer.END_PORTAL_LOCATION)
 				.useLightmap()
 				.affectsCrumbling()
 				.setOutline(RenderSetup.OutlineProperty.AFFECTS_OUTLINE)
@@ -675,6 +688,8 @@ public final class HeldItemShader {
 			RenderSetup.builder(espFillPipeline)
 				.withTexture("Sampler0", atlas)
 				.withTexture("Sampler1", ItemFeatureRenderer.ENCHANTED_GLINT_ITEM)
+				.withTexture("Sampler3", AbstractEndPortalRenderer.END_SKY_LOCATION)
+				.withTexture("Sampler4", AbstractEndPortalRenderer.END_PORTAL_LOCATION)
 				.useLightmap()
 				.affectsCrumbling()
 				.setOutputTarget(ESP_OUTPUT)
@@ -690,6 +705,8 @@ public final class HeldItemShader {
 			RenderSetup.builder(maskPipeline)
 				.withTexture("Sampler0", atlas)
 				.withTexture("Sampler1", ItemFeatureRenderer.ENCHANTED_GLINT_ITEM)
+				.withTexture("Sampler3", AbstractEndPortalRenderer.END_SKY_LOCATION)
+				.withTexture("Sampler4", AbstractEndPortalRenderer.END_PORTAL_LOCATION)
 				.useLightmap()
 				.setOutputTarget(MASK_OUTPUT)
 				.setOutline(RenderSetup.OutlineProperty.NONE)
