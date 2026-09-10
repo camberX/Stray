@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.168", new String[]{
+			"Feature toggles start off. Inner options like Animations, Through walls, Spotify, and the custom HUD pieces are no longer on until you turn them on."
+		}),
 		new Entry("1.2.167", new String[]{
 			"Classic GUI is gone. Control is the only menu. Defaults are Glass #181818 at 64% and Pills #808080 at 17%. The menu uses the Minecraft font only."
 		}),

@@ -24,10 +24,10 @@ public final class StrayConfig {
 	public boolean markersEnabled = false;
 	public boolean hudEnabled = false;
 	public boolean tracersEnabled = false;
-	public boolean boxFill = true;
-	public boolean boxOutline = true;
-	public boolean throughWalls = true;
-	public boolean onlyInTheEnd = true;
+	public boolean boxFill = false;
+	public boolean boxOutline = false;
+	public boolean throughWalls = false;
+	public boolean onlyInTheEnd = false;
 	public boolean forceEnable = false;
 	public boolean particleDetection = false;
 	public boolean blockScan = false;
@@ -41,7 +41,7 @@ public final class StrayConfig {
 	public boolean skyTintEnabled = false;
 	public int skyTintRgb = 0x1B4F8A;
 	public float skyTintStrength = 0.70f;
-	public boolean matchSkyToWorld = true;
+	public boolean matchSkyToWorld = false;
 	public boolean fogEnabled = false;
 	public int fogRgb = 0x8EC8FF;
 	public float fogStart = 0.12f;
@@ -53,7 +53,7 @@ public final class StrayConfig {
 	public int themeAccentRgb = 0x2FB5FF;
 	public int themePaneRgb = 0x0B0E14;
 	public String themePreset = "cyan";
-	public boolean uiAnimations = true;
+	public boolean uiAnimations = false;
 	public boolean autoUpdate = false;
 	public boolean watermarkEnabled = false;
 	public boolean watermarkFps = false;
@@ -64,7 +64,7 @@ public final class StrayConfig {
 	public boolean musicHideIdle = false;
 	public boolean musicChatAnnounce = false;
 	public boolean musicChatOffDefault = false;
-	public boolean spotifyEnabled = true;
+	public boolean spotifyEnabled = false;
 	public int musicApiPort = 0;
 	public String musicApiToken = "";
 	public String spotifyClientId = "";
@@ -87,10 +87,10 @@ public final class StrayConfig {
 	public int composterOrganicMatterCap = 0;
 	public int composterCostReduction = 0;
 	public boolean titaniumEsp = false;
-	public boolean titaniumEspThroughWalls = true;
+	public boolean titaniumEspThroughWalls = false;
 	public boolean chestEspEnabled = false;
-	public boolean chestEspTracers = true;
-	public boolean chestEspThroughWalls = true;
+	public boolean chestEspTracers = false;
+	public boolean chestEspThroughWalls = false;
 	public float chestAimSpeed = 1.00f;
 	public String openGuiKey = "key.keyboard.right.shift";
 	public String openLoadoutsKey = "key.keyboard.unknown";
@@ -100,9 +100,9 @@ public final class StrayConfig {
 	public int chestEspRgb = 0xF4C14E;
 	public float chestEspOpacity = 0.34f;
 	public boolean loadoutsMenuEnabled = false;
-	public boolean loadoutsOpenAnim = true;
+	public boolean loadoutsOpenAnim = false;
 	public boolean wardrobeMenuEnabled = false;
-	public boolean profileViewerEnabled = true;
+	public boolean profileViewerEnabled = false;
 	public boolean hitsoundEnabled = false;
 	public boolean hitsoundMelee = false;
 	public boolean hitsoundArrows = false;
@@ -113,11 +113,11 @@ public final class StrayConfig {
 	public boolean autoClickerEnabled = false;
 	public boolean autoClickerWhiteListOnly = false;
 	public boolean autoClickerAllowBreaking = false;
-	public boolean autoClickerBlockBreaker = true;
-	public boolean autoClickerTerminatorOnly = true;
+	public boolean autoClickerBlockBreaker = false;
+	public boolean autoClickerTerminatorOnly = false;
 	public float autoClickerCps = 5.0f;
-	public boolean autoClickerEnableLeftClick = true;
-	public boolean autoClickerEnableRightClick = true;
+	public boolean autoClickerEnableLeftClick = false;
+	public boolean autoClickerEnableRightClick = false;
 	public float autoClickerLeftCps = 5.0f;
 	public float autoClickerRightCps = 5.0f;
 	public String autoClickerLeftKey = "key.keyboard.unknown";
@@ -127,7 +127,7 @@ public final class StrayConfig {
 	public boolean autoExperimentsEnabled = false;
 	public int autoExperimentsClickDelay = 200;
 	public int autoExperimentsDelayVariety = 50;
-	public boolean autoExperimentsAutoClose = true;
+	public boolean autoExperimentsAutoClose = false;
 	public int autoExperimentsSerumCount = 0;
 	public boolean autoExperimentsGetMaxXp = false;
 	public float hitmarkerScale = 1.00f;
@@ -141,8 +141,8 @@ public final class StrayConfig {
 	public float heldItemShaderSmoke = 0.55f;
 	public String heldItemShaderStyle = "smoke";
 	public boolean playerFillEsp = false;
-	public boolean playerFillThroughWalls = true;
-	public boolean playerFillMobs = true;
+	public boolean playerFillThroughWalls = false;
+	public boolean playerFillMobs = false;
 	public boolean playerFillStarMobs = false;
 	public int playerFillRgb = 0x4FD6EA;
 	public int playerFillOutlineRgb = liftedOutlineRgb(0x4FD6EA);
@@ -156,20 +156,20 @@ public final class StrayConfig {
 	public boolean rawmatsEnchanted = false;
 	public String rawmatsItemId = "";
 	public boolean inventoryHudEnabled = false;
-	public boolean inventoryHudHotbar = true;
-	public boolean inventoryHudArmor = true;
-	public boolean inventoryHudCount = true;
-	public boolean hudHotbar = true;
-	public boolean hudHealth = true;
-	public boolean hudHunger = true;
-	public boolean hudArmor = true;
-	public boolean hudAir = true;
-	public boolean hudExperience = true;
-	public boolean hudScoreboard = true;
-	public boolean hudBossBar = true;
-	public boolean hudEffects = true;
-	public boolean hudHeldItem = true;
-	public boolean hudMountHealth = true;
+	public boolean inventoryHudHotbar = false;
+	public boolean inventoryHudArmor = false;
+	public boolean inventoryHudCount = false;
+	public boolean hudHotbar = false;
+	public boolean hudHealth = false;
+	public boolean hudHunger = false;
+	public boolean hudArmor = false;
+	public boolean hudAir = false;
+	public boolean hudExperience = false;
+	public boolean hudScoreboard = false;
+	public boolean hudBossBar = false;
+	public boolean hudEffects = false;
+	public boolean hudHeldItem = false;
+	public boolean hudMountHealth = false;
 	public HudSlot slotHotbar = new HudSlot();
 	public HudSlot slotHealth = new HudSlot();
 	public HudSlot slotHunger = new HudSlot();
@@ -240,16 +240,17 @@ public final class StrayConfig {
 	public float controlPillOpacity = 0.17f;
 	public float controlFrost = 0.62f;
 	public boolean controlPaletteV2;
+	public boolean featureTogglesOffV1;
 	public String uiFont = "Minecraft";
 	public boolean mobGlowEnabled = false;
 	public boolean starMobEsp = false;
-	public boolean starMobBats = true;
+	public boolean starMobBats = false;
 	public boolean starMobFels = false;
-	public boolean starMobThroughWalls = true;
+	public boolean starMobThroughWalls = false;
 	public float starMobRadius = GlowBlurRadius.DEFAULT;
 	public float starMobOpacity = 0.58f;
 	public int starMobRgb = 0xFFD84A;
-	public boolean mobGlowThroughWalls = true;
+	public boolean mobGlowThroughWalls = false;
 	public boolean blockOutlineGlow = false;
 	public float blockOutlineOpacity = 0.58f;
 	public int blockOutlineRgb = 0x2FB5FF;
@@ -420,7 +421,7 @@ public final class StrayConfig {
 					loaded.themeAccentRgb = 0x2FB5FF;
 					loaded.themePaneRgb = 0x0B0E14;
 					loaded.themePreset = "cyan";
-					loaded.uiAnimations = true;
+					loaded.uiAnimations = false;
 				} else {
 					loaded.themeAccentRgb = loaded.themeAccentRgb & 0xFFFFFF;
 					if (loaded.themeAccentRgb == 0) {
@@ -476,6 +477,45 @@ public final class StrayConfig {
 					? clamp(loaded.controlFrost, 0f, 1f)
 					: 0.62f;
 				loaded.uiFont = "Minecraft";
+				if (!json.has("featureTogglesOffV1")) {
+					loaded.boxFill = false;
+					loaded.boxOutline = false;
+					loaded.throughWalls = false;
+					loaded.onlyInTheEnd = false;
+					loaded.matchSkyToWorld = false;
+					loaded.uiAnimations = false;
+					loaded.spotifyEnabled = false;
+					loaded.titaniumEspThroughWalls = false;
+					loaded.chestEspTracers = false;
+					loaded.chestEspThroughWalls = false;
+					loaded.loadoutsOpenAnim = false;
+					loaded.profileViewerEnabled = false;
+					loaded.autoClickerBlockBreaker = false;
+					loaded.autoClickerTerminatorOnly = false;
+					loaded.autoClickerEnableLeftClick = false;
+					loaded.autoClickerEnableRightClick = false;
+					loaded.autoExperimentsAutoClose = false;
+					loaded.playerFillThroughWalls = false;
+					loaded.playerFillMobs = false;
+					loaded.inventoryHudHotbar = false;
+					loaded.inventoryHudArmor = false;
+					loaded.inventoryHudCount = false;
+					loaded.hudHotbar = false;
+					loaded.hudHealth = false;
+					loaded.hudHunger = false;
+					loaded.hudArmor = false;
+					loaded.hudAir = false;
+					loaded.hudExperience = false;
+					loaded.hudScoreboard = false;
+					loaded.hudBossBar = false;
+					loaded.hudEffects = false;
+					loaded.hudHeldItem = false;
+					loaded.hudMountHealth = false;
+					loaded.starMobBats = false;
+					loaded.starMobThroughWalls = false;
+					loaded.mobGlowThroughWalls = false;
+					loaded.featureTogglesOffV1 = true;
+				}
 				if (loaded.mobGlowName == null) {
 					loaded.mobGlowName = "";
 				}
@@ -520,10 +560,10 @@ public final class StrayConfig {
 					loaded.chestEspEnabled = false;
 				}
 				if (!json.has("chestEspTracers")) {
-					loaded.chestEspTracers = true;
+					loaded.chestEspTracers = false;
 				}
 				if (!json.has("chestEspThroughWalls")) {
-					loaded.chestEspThroughWalls = true;
+					loaded.chestEspThroughWalls = false;
 				}
 				loaded.chestAimSpeed = clamp(loaded.chestAimSpeed <= 0f ? 1.00f : loaded.chestAimSpeed, 0.25f, 2.00f);
 				loaded.chestEspRgb = loaded.chestEspRgb & 0xFFFFFF;
@@ -556,7 +596,7 @@ public final class StrayConfig {
 					loaded.musicChatOffDefault = true;
 				}
 				if (!json.has("spotifyEnabled")) {
-					loaded.spotifyEnabled = true;
+					loaded.spotifyEnabled = false;
 				}
 				if (loaded.spotifyClientId == null) {
 					loaded.spotifyClientId = "";
@@ -613,7 +653,7 @@ public final class StrayConfig {
 				loaded.openProfileKey = blankKey(loaded.openProfileKey, "key.keyboard.unknown");
 				loaded.chestAimKey = blankKey(loaded.chestAimKey, "key.keyboard.unknown");
 				if (!json.has("profileViewerEnabled")) {
-					loaded.profileViewerEnabled = true;
+					loaded.profileViewerEnabled = false;
 				}
 				if (loaded.autoClickerLeftWhitelist == null) {
 					loaded.autoClickerLeftWhitelist = new java.util.ArrayList<>();
@@ -637,10 +677,10 @@ public final class StrayConfig {
 					loaded.playerFillEsp = false;
 				}
 				if (!json.has("playerFillThroughWalls")) {
-					loaded.playerFillThroughWalls = true;
+					loaded.playerFillThroughWalls = false;
 				}
 				if (!json.has("playerFillMobs")) {
-					loaded.playerFillMobs = true;
+					loaded.playerFillMobs = false;
 				}
 				if (!json.has("playerFillStarMobs")) {
 					loaded.playerFillStarMobs = false;

@@ -3117,7 +3117,7 @@ public class StrayScreen extends Screen {
 		return FabricLoader.getInstance()
 			.getModContainer("stray")
 			.map(container -> container.getMetadata().getVersion().getFriendlyString())
-			.orElse("1.2.167");
+			.orElse("1.2.168");
 	}
 
 	@Override
