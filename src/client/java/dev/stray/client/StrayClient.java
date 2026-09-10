@@ -15,6 +15,7 @@ import dev.stray.client.debug.StrayDebug;
 import dev.stray.client.farming.AutoDna;
 import dev.stray.client.farming.PestEsp;
 import dev.stray.client.farming.GardenPlots;
+import dev.stray.client.menu.DisabledPotions;
 import dev.stray.client.farming.FarmKeys;
 import dev.stray.client.fairy.FairySoulCommands;
 import dev.stray.client.fairy.FairySoulRenderer;
@@ -178,6 +179,7 @@ public final class StrayClient implements ClientModInitializer {
 		AutoExperiments.init();
 		AutoDna.init();
 		GardenPlots.init();
+		DisabledPotions.init();
 
 		ClientCommandRegistrationCallback.EVENT.register((dispatcher, registryAccess) -> {
 			var root = ClientCommands.literal("stray").executes(context -> openScreen());
@@ -304,6 +306,7 @@ public final class StrayClient implements ClientModInitializer {
 			AutoExperiments.reset();
 			AutoDna.reset();
 			PestEsp.reset();
+			DisabledPotions.reset();
 			PickupLogRenderer.clear();
 			JacobContestTracker.reset();
 			ComposterTracker.reset();
@@ -320,6 +323,7 @@ public final class StrayClient implements ClientModInitializer {
 			AutoExperiments.reset();
 			AutoDna.reset();
 			PestEsp.reset();
+			DisabledPotions.reset();
 			PickupLogRenderer.clear();
 			JacobContestTracker.reset();
 			ComposterTracker.reset();

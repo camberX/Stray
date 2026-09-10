@@ -2,6 +2,7 @@ package dev.stray.client.mixin;
 
 import dev.stray.client.combat.AutoExperiments;
 import dev.stray.client.farming.AutoDna;
+import dev.stray.client.menu.DisabledPotions;
 import dev.stray.client.combat.Triggerbot;
 import dev.stray.client.render.MobGlowRenderer;
 import dev.stray.client.ui.LoadoutsScreen;
@@ -32,6 +33,7 @@ public class MinecraftMixin {
 	private void stray$autoExperimentsOpen(Screen screen, CallbackInfo ci) {
 		AutoExperiments.onOpen(screen);
 		AutoDna.onOpen(screen);
+		DisabledPotions.onOpen(screen);
 	}
 
 	/**
