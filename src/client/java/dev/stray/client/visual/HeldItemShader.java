@@ -512,13 +512,11 @@ public final class HeldItemShader {
 
 	private static Vector4fc outlineColorModulator(boolean playerFill) {
 		StrayConfig config = StrayConfig.get();
-		Vector4fc fill = playerFill
-			? packColor(config.playerFillRgb, config.playerFillFill)
-			: packColor(config.heldItemShaderRgb, config.heldItemShaderFill);
+		int rgb = playerFill ? config.playerFillOutlineRgb : config.heldItemShaderOutlineRgb;
 		return new Vector4f(
-			fill.x() + (1f - fill.x()) * 0.62f,
-			fill.y() + (1f - fill.y()) * 0.62f,
-			fill.z() + (1f - fill.z()) * 0.62f,
+			((rgb >> 16) & 0xFF) / 255f,
+			((rgb >> 8) & 0xFF) / 255f,
+			(rgb & 0xFF) / 255f,
 			1f
 		);
 	}

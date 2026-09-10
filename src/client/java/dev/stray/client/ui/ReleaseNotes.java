@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.154", new String[]{
+			"Held item and Player fill each have their own outline color picker. Existing configs keep the previous fill-derived outline color until you change it."
+		}),
 		new Entry("1.2.153", new String[]{
 			"Player fill tints the player again instead of replacing the skin. Stars and smoke stay round in screen space and no longer stretch down the body."
 		}),

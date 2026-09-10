@@ -120,8 +120,8 @@ public class StrayScreen extends Screen {
 		FOG("Fog", 5),
 		VIEW("Aspect", 3),
 		HITSOUND("Hitsound", 3),
-		HELD_ITEM("Held item", 5),
-		FILL("Player fill", 7),
+		HELD_ITEM("Held item", 6),
+		FILL("Player fill", 8),
 		AUTO_CLICKER("Auto clicker", 8),
 		AUTO_EXPERIMENTS("Auto experiments", 5),
 		MOB("Mob glow", 3),
@@ -153,7 +153,7 @@ public class StrayScreen extends Screen {
 	}
 
 	private enum PickerTarget {
-		WORLD, SKY, FOG, NODE, THEME, PANE, CONTROL, PILL, MOB, STAR, BLOCK, TITANIUM, CHEST, HELD_ITEM, FILL
+		WORLD, SKY, FOG, NODE, THEME, PANE, CONTROL, PILL, MOB, STAR, BLOCK, TITANIUM, CHEST, HELD_ITEM, HELD_ITEM_OUTLINE, FILL, FILL_OUTLINE
 	}
 
 	private record SearchEntry(String label, Tab tab, String hint) {
@@ -188,6 +188,7 @@ public class StrayScreen extends Screen {
 		new SearchEntry("Held item shader", Tab.ESP, "Visuals"),
 		new SearchEntry("Item shader", Tab.ESP, "Visuals"),
 		new SearchEntry("Held item outline", Tab.ESP, "Visuals"),
+		new SearchEntry("Held item outline color", Tab.ESP, "Visuals"),
 		new SearchEntry("Item smoke", Tab.ESP, "Visuals"),
 		new SearchEntry("Ghost", Tab.ESP, "Visuals"),
 		new SearchEntry("Ghost item", Tab.ESP, "Visuals"),
@@ -195,6 +196,7 @@ public class StrayScreen extends Screen {
 		new SearchEntry("Player fill ESP", Tab.ESP, "Visuals"),
 		new SearchEntry("Player fill color", Tab.ESP, "Visuals"),
 		new SearchEntry("Player fill outline", Tab.ESP, "Visuals"),
+		new SearchEntry("Player fill outline color", Tab.ESP, "Visuals"),
 		new SearchEntry("Fill through walls", Tab.ESP, "Visuals"),
 		new SearchEntry("Mob fill", Tab.ESP, "Visuals"),
 		new SearchEntry("Held fill", Tab.ESP, "Visuals"),
@@ -2515,18 +2517,20 @@ public class StrayScreen extends Screen {
 			}
 			case HELD_ITEM -> {
 				y = cycle(graphics, font, ix, y, iw, mouseX, mouseY, "Style", config.heldItemShaderStyleLabel(), config::cycleHeldItemShaderStyle);
-				y = colorRow(graphics, font, ix, y, iw, mouseX, mouseY, "Color", config.heldItemShaderRgb, PickerTarget.HELD_ITEM);
+				y = colorRow(graphics, font, ix, y, iw, mouseX, mouseY, "Fill", config.heldItemShaderRgb, PickerTarget.HELD_ITEM);
+				y = colorRow(graphics, font, ix, y, iw, mouseX, mouseY, "Outline", config.heldItemShaderOutlineRgb, PickerTarget.HELD_ITEM_OUTLINE);
 				y = slider(graphics, font, ix, y, iw, "Fill", Math.round(config.heldItemShaderFill * 100) + "%", (config.heldItemShaderFill - 0.08f) / 0.77f, v -> config.heldItemShaderFill = StrayConfig.clamp(0.08f + v * 0.77f, 0.08f, 0.85f));
-				y = slider(graphics, font, ix, y, iw, "Outline", Math.round(config.heldItemShaderOutline * 100) + "%", (config.heldItemShaderOutline - 0.15f) / 1.35f, v -> config.heldItemShaderOutline = StrayConfig.clamp(0.15f + v * 1.35f, 0.15f, 1.50f));
+				y = slider(graphics, font, ix, y, iw, "Thickness", Math.round(config.heldItemShaderOutline * 100) + "%", (config.heldItemShaderOutline - 0.15f) / 1.35f, v -> config.heldItemShaderOutline = StrayConfig.clamp(0.15f + v * 1.35f, 0.15f, 1.50f));
 				slider(graphics, font, ix, y, iw, config.heldItemShaderStyleLabel(), Math.round(config.heldItemShaderSmoke * 100) + "%", (config.heldItemShaderSmoke - 0.10f) / 1.40f, v -> config.heldItemShaderSmoke = StrayConfig.clamp(0.10f + v * 1.40f, 0.10f, 1.50f));
 			}
 			case FILL -> {
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Through walls", config.playerFillThroughWalls, v -> config.playerFillThroughWalls = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Fill ESP mobs", config.playerFillMobs, v -> config.playerFillMobs = v);
 				y = cycle(graphics, font, ix, y, iw, mouseX, mouseY, "Style", config.playerFillStyleLabel(), config::cyclePlayerFillStyle);
-				y = colorRow(graphics, font, ix, y, iw, mouseX, mouseY, "Color", config.playerFillRgb, PickerTarget.FILL);
+				y = colorRow(graphics, font, ix, y, iw, mouseX, mouseY, "Fill", config.playerFillRgb, PickerTarget.FILL);
+				y = colorRow(graphics, font, ix, y, iw, mouseX, mouseY, "Outline", config.playerFillOutlineRgb, PickerTarget.FILL_OUTLINE);
 				y = slider(graphics, font, ix, y, iw, "Fill", Math.round(config.playerFillFill * 100) + "%", (config.playerFillFill - 0.08f) / 0.77f, v -> config.playerFillFill = StrayConfig.clamp(0.08f + v * 0.77f, 0.08f, 0.85f));
-				y = slider(graphics, font, ix, y, iw, "Outline", Math.round(config.playerFillOutline * 100) + "%", (config.playerFillOutline - 0.15f) / 1.35f, v -> config.playerFillOutline = StrayConfig.clamp(0.15f + v * 1.35f, 0.15f, 1.50f));
+				y = slider(graphics, font, ix, y, iw, "Thickness", Math.round(config.playerFillOutline * 100) + "%", (config.playerFillOutline - 0.15f) / 1.35f, v -> config.playerFillOutline = StrayConfig.clamp(0.15f + v * 1.35f, 0.15f, 1.50f));
 				slider(graphics, font, ix, y, iw, config.playerFillStyleLabel(), Math.round(config.playerFillSmoke * 100) + "%", (config.playerFillSmoke - 0.10f) / 1.40f, v -> config.playerFillSmoke = StrayConfig.clamp(0.10f + v * 1.40f, 0.10f, 1.50f));
 			}
 			case AUTO_CLICKER -> {
@@ -2937,7 +2941,9 @@ public class StrayScreen extends Screen {
 			case TITANIUM -> config.titaniumEspRgb = packed;
 			case CHEST -> config.chestEspRgb = packed;
 			case HELD_ITEM -> config.heldItemShaderRgb = packed;
+			case HELD_ITEM_OUTLINE -> config.heldItemShaderOutlineRgb = packed;
 			case FILL -> config.playerFillRgb = packed;
+			case FILL_OUTLINE -> config.playerFillOutlineRgb = packed;
 			case THEME -> Theme.applyCustom(packed);
 			case PANE -> Theme.applyPane(packed);
 			case CONTROL -> {
@@ -2957,7 +2963,7 @@ public class StrayScreen extends Screen {
 			case PANE -> 0.20f;
 			case MOB, STAR, BLOCK -> 0.15f;
 			case NODE, HELD_ITEM, FILL, CHEST, TITANIUM -> 0.08f;
-			case THEME -> 1f;
+			case THEME, HELD_ITEM_OUTLINE, FILL_OUTLINE -> 1f;
 			default -> 0f;
 		};
 	}
@@ -2988,7 +2994,7 @@ public class StrayScreen extends Screen {
 			case WORLD -> config.worldTintStrength;
 			case SKY -> config.skyTintStrength;
 			case FOG -> config.fogDensity;
-			case THEME -> 1f;
+			case THEME, HELD_ITEM_OUTLINE, FILL_OUTLINE -> 1f;
 		};
 	}
 
@@ -3010,7 +3016,7 @@ public class StrayScreen extends Screen {
 			case WORLD -> config.worldTintStrength = clamped;
 			case SKY -> config.skyTintStrength = clamped;
 			case FOG -> config.fogDensity = clamped;
-			case THEME -> {
+			case THEME, HELD_ITEM_OUTLINE, FILL_OUTLINE -> {
 				return;
 			}
 		}
@@ -3067,7 +3073,7 @@ public class StrayScreen extends Screen {
 		return FabricLoader.getInstance()
 			.getModContainer("stray")
 			.map(container -> container.getMetadata().getVersion().getFriendlyString())
-			.orElse("1.2.153");
+			.orElse("1.2.154");
 	}
 
 	@Override

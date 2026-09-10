@@ -133,6 +133,7 @@ public final class StrayConfig {
 	public float hitsoundPitch = 1.00f;
 	public boolean heldItemShaderEnabled = false;
 	public int heldItemShaderRgb = 0x4FD6EA;
+	public int heldItemShaderOutlineRgb = liftedOutlineRgb(0x4FD6EA);
 	public float heldItemShaderFill = 0.32f;
 	public float heldItemShaderOutline = 0.90f;
 	public float heldItemShaderSmoke = 0.55f;
@@ -141,6 +142,7 @@ public final class StrayConfig {
 	public boolean playerFillThroughWalls = true;
 	public boolean playerFillMobs = true;
 	public int playerFillRgb = 0x4FD6EA;
+	public int playerFillOutlineRgb = liftedOutlineRgb(0x4FD6EA);
 	public float playerFillFill = 0.32f;
 	public float playerFillOutline = 0.90f;
 	public float playerFillSmoke = 0.55f;
@@ -641,9 +643,21 @@ public final class StrayConfig {
 					? clamp(loaded.heldItemShaderSmoke, 0.10f, 1.50f)
 					: 0.55f;
 				loaded.heldItemShaderStyle = normalizeHeldItemShaderStyle(loaded.heldItemShaderStyle);
+				loaded.heldItemShaderRgb = loaded.heldItemShaderRgb & 0xFFFFFF;
+				if (loaded.heldItemShaderRgb == 0) {
+					loaded.heldItemShaderRgb = 0x4FD6EA;
+				}
+				loaded.heldItemShaderOutlineRgb = loaded.heldItemShaderOutlineRgb & 0xFFFFFF;
+				if (!json.has("heldItemShaderOutlineRgb") || loaded.heldItemShaderOutlineRgb == 0) {
+					loaded.heldItemShaderOutlineRgb = liftedOutlineRgb(loaded.heldItemShaderRgb);
+				}
 				loaded.playerFillRgb = loaded.playerFillRgb & 0xFFFFFF;
 				if (!json.has("playerFillRgb") || loaded.playerFillRgb == 0) {
 					loaded.playerFillRgb = loaded.heldItemShaderRgb == 0 ? 0x4FD6EA : loaded.heldItemShaderRgb & 0xFFFFFF;
+				}
+				loaded.playerFillOutlineRgb = loaded.playerFillOutlineRgb & 0xFFFFFF;
+				if (!json.has("playerFillOutlineRgb") || loaded.playerFillOutlineRgb == 0) {
+					loaded.playerFillOutlineRgb = liftedOutlineRgb(loaded.playerFillRgb);
 				}
 				loaded.playerFillFill = json.has("playerFillFill")
 					? clamp(loaded.playerFillFill, 0.08f, 0.85f)
@@ -916,6 +930,17 @@ public final class StrayConfig {
 			}
 		}
 		return best;
+	}
+
+	public static int liftedOutlineRgb(int fillRgb) {
+		int rgb = fillRgb & 0xFFFFFF;
+		int r = (rgb >> 16) & 0xFF;
+		int g = (rgb >> 8) & 0xFF;
+		int b = rgb & 0xFF;
+		r = Math.min(255, r + Math.round((255 - r) * 0.62f));
+		g = Math.min(255, g + Math.round((255 - g) * 0.62f));
+		b = Math.min(255, b + Math.round((255 - b) * 0.62f));
+		return (r << 16) | (g << 8) | b;
 	}
 
 	public static float clampHudScale(float value) {
