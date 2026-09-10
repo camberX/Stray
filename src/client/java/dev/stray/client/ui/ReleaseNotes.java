@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.163", new String[]{
+			"Music HUD has a Song chat toggle for the NOW PLAYING line when the track changes. Existing configs keep it on."
+		}),
 		new Entry("1.2.162", new String[]{
 			"Control tabs go World, Visuals, Combat. Feature cards sit under category names. Star fill lives on Star mobs with its own Glow ESP toggle, so fill still tracks starred mobs when glow is off."
 		}),

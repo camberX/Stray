@@ -130,7 +130,7 @@ public class StrayScreen extends Screen {
 		CHEST("Chest ESP", 5),
 		NODE_ESP("Node ESP", 4),
 		WATERMARK("Watermark", 4),
-		MUSIC("Music", 2),
+		MUSIC("Music", 3),
 		RAWMATS("Raw mats", 1),
 		MINING("Mining HUD", 1),
 		TITANIUM("Titanium ESP", 3),
@@ -260,6 +260,8 @@ public class StrayScreen extends Screen {
 		new SearchEntry("Filled box", Tab.NODES, "Nodes"),
 		new SearchEntry("Watermark", Tab.OVERLAY, "Overlay"),
 		new SearchEntry("Music HUD", Tab.OVERLAY, "Overlay"),
+		new SearchEntry("Song chat", Tab.OVERLAY, "Overlay"),
+		new SearchEntry("Now playing chat", Tab.OVERLAY, "Overlay"),
 		new SearchEntry("Raw mats", Tab.OVERLAY, "Overlay"),
 		new SearchEntry("Pickup log", Tab.OVERLAY, "Overlay"),
 		new SearchEntry("Picked up items", Tab.OVERLAY, "Overlay"),
@@ -2630,6 +2632,7 @@ public class StrayScreen extends Screen {
 			}
 			case MUSIC -> {
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Hide when idle", config.musicHideIdle, v -> config.musicHideIdle = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Song chat", config.musicChatAnnounce, v -> config.musicChatAnnounce = v);
 				toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Spotify", config.spotifyEnabled, v -> config.spotifyEnabled = v);
 			}
 			case RAWMATS -> cycle(graphics, font, ix, y, iw, mouseX, mouseY, "Materials", config.rawmatsModeLabel(), config::cycleRawmatsMode);
@@ -3114,7 +3117,7 @@ public class StrayScreen extends Screen {
 		return FabricLoader.getInstance()
 			.getModContainer("stray")
 			.map(container -> container.getMetadata().getVersion().getFriendlyString())
-			.orElse("1.2.162");
+			.orElse("1.2.163");
 	}
 
 	@Override
