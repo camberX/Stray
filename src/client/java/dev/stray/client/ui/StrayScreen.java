@@ -2073,8 +2073,9 @@ public class StrayScreen extends Screen {
 			}
 			case FARMING -> {
 				float y = controlCard(graphics, font, left, top, col, mouseX, mouseY, "Yaw / Pitch", config.farmingYawPitch, v -> config.farmingYawPitch = v, Feature.FARMING);
-				y = featureCard(graphics, font, left, y, col, cardHeight(1), "Jacob contest HUD", config.jacobContestHudEnabled, v -> config.jacobContestHudEnabled = v, mouseX, mouseY);
-				featureCard(graphics, font, left, y, col, cardHeight(1), "Composter overlay", config.composterHudEnabled, v -> config.composterHudEnabled = v, mouseX, mouseY);
+				featureCard(graphics, font, left, y, col, cardHeight(1), "Jacob contest HUD", config.jacobContestHudEnabled, v -> config.jacobContestHudEnabled = v, mouseX, mouseY);
+				float composterY = y + cardHeight(1) + 8;
+				featureCard(graphics, font, left, composterY, col, cardHeight(1), "Composter overlay", config.composterHudEnabled, v -> config.composterHudEnabled = v, mouseX, mouseY);
 
 				y = featureCard(graphics, font, right, top, col, cardHeight(4), "Contest");
 				var contest = JacobContestTracker.snapshot();
