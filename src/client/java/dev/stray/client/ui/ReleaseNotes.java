@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.162", new String[]{
+			"Control tabs go World, Visuals, Combat. Feature cards sit under category names. Star fill lives on Star mobs with its own Glow ESP toggle, so fill still tracks starred mobs when glow is off."
+		}),
 		new Entry("1.2.161", new String[]{
 			"Player fill keeps mob/star glow instead of replacing the outline pass. Fill star mobs is a separate toggle from Fill ESP mobs."
 		}),

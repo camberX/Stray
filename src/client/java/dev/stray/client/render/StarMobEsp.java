@@ -61,7 +61,7 @@ public final class StarMobEsp {
 	}
 
 	public static void onEntityData(ClientboundSetEntityDataPacket packet) {
-		if (!active() || !SkyblockLocation.inDungeon || SkyblockLocation.inBoss) {
+		if (!tracking() || !SkyblockLocation.inDungeon || SkyblockLocation.inBoss) {
 			return;
 		}
 		Minecraft client = Minecraft.getInstance();
@@ -91,7 +91,11 @@ public final class StarMobEsp {
 	}
 
 	public static boolean glowing(Entity entity) {
-		if (entity == null || !active() || !SkyblockLocation.inDungeon || SkyblockLocation.inBoss) {
+		return StrayConfig.get().starMobEsp && marked(entity);
+	}
+
+	public static boolean marked(Entity entity) {
+		if (entity == null || !tracking() || !SkyblockLocation.inDungeon || SkyblockLocation.inBoss) {
 			return false;
 		}
 		if (STARRED.contains(entity.getId())) {
@@ -112,8 +116,9 @@ public final class StarMobEsp {
 		return false;
 	}
 
-	private static boolean active() {
-		return StrayConfig.get().starMobEsp;
+	public static boolean tracking() {
+		StrayConfig config = StrayConfig.get();
+		return config.starMobEsp || config.playerFillStarMobs;
 	}
 
 	private static boolean starredPlate(String name) {

@@ -71,8 +71,8 @@ public class StrayScreen extends Screen {
 
 	private enum Group {
 		WORLD("WORLD", "World", MenuFont.GLOBE),
-		COMBAT("COMBAT", "Combat", MenuFont.SWORD),
 		ESP("VISUALS", "Visuals", MenuFont.EYE),
+		COMBAT("COMBAT", "Combat", MenuFont.SWORD),
 		HUD("HUD", "HUD", MenuFont.DISPLAY),
 		MINING("MINING", "Mining", MenuFont.DIAMOND),
 		FARMING("FARMING", "Farming", MenuFont.GRAIN),
@@ -93,8 +93,8 @@ public class StrayScreen extends Screen {
 
 	private enum Tab {
 		WORLD("World", Group.WORLD),
-		COMBAT("Combat", Group.COMBAT),
 		ESP("Visuals", Group.ESP),
+		COMBAT("Combat", Group.COMBAT),
 		OVERLAY("Overlay", Group.HUD),
 		BARS("Bars", Group.HUD),
 		MINING("Mining", Group.MINING),
@@ -121,11 +121,11 @@ public class StrayScreen extends Screen {
 		VIEW("Aspect", 3),
 		HITSOUND("Hitsound", 3),
 		HELD_ITEM("Held item", 6),
-		FILL("Player fill", 9),
+		FILL("Player fill", 8),
 		AUTO_CLICKER("Auto clicker", 8),
 		AUTO_EXPERIMENTS("Auto experiments", 5),
 		MOB("Mob glow", 3),
-		STAR("Star mobs", 5),
+		STAR("Star mobs", 7),
 		BLOCK("Block outline", 1),
 		CHEST("Chest ESP", 5),
 		NODE_ESP("Node ESP", 4),
@@ -197,7 +197,8 @@ public class StrayScreen extends Screen {
 		new SearchEntry("Player fill color", Tab.ESP, "Visuals"),
 		new SearchEntry("Player fill outline", Tab.ESP, "Visuals"),
 		new SearchEntry("Player fill outline color", Tab.ESP, "Visuals"),
-		new SearchEntry("Fill star mobs", Tab.ESP, "Visuals"),
+		new SearchEntry("Fill star mobs", Tab.ESP, "Star mobs"),
+		new SearchEntry("Glow ESP", Tab.ESP, "Star mobs"),
 		new SearchEntry("Fill ESP mobs", Tab.ESP, "Visuals"),
 		new SearchEntry("Fill through walls", Tab.ESP, "Visuals"),
 		new SearchEntry("Mob fill", Tab.ESP, "Visuals"),
@@ -785,10 +786,16 @@ public class StrayScreen extends Screen {
 		float y;
 		float namesTop;
 		if (controlCenter()) {
-			y = controlCard(graphics, font, left, top, col, mouseX, mouseY, "Mob glow", config.mobGlowEnabled, v -> config.mobGlowEnabled = v, Feature.MOB);
-			y = controlCard(graphics, font, left, y, col, mouseX, mouseY, "Star mobs", config.starMobEsp, v -> config.starMobEsp = v, Feature.STAR);
+			y = sectionLabel(graphics, font, left, top, "Glow");
+			y = controlCard(graphics, font, left, y, col, mouseX, mouseY, "Mob glow", config.mobGlowEnabled, v -> config.mobGlowEnabled = v, Feature.MOB);
+			float starH = cardHeight(Feature.STAR.rows);
+			float starInner = featureCard(graphics, font, left, y, col, starH, "Star mobs");
+			drawFeatureFields(graphics, font, mouseX, mouseY, ix, starInner, iw, Feature.STAR);
+			y = y + starH + 8;
+			y = sectionLabel(graphics, font, left, y, "World");
 			y = controlCard(graphics, font, left, y, col, mouseX, mouseY, "Block outline", config.blockOutlineGlow, v -> config.blockOutlineGlow = v, Feature.BLOCK);
 			y = controlCard(graphics, font, left, y, col, mouseX, mouseY, "Chest ESP", config.chestEspEnabled, v -> config.chestEspEnabled = v, Feature.CHEST);
+			y = sectionLabel(graphics, font, left, y, "Items");
 			y = controlCard(graphics, font, left, y, col, mouseX, mouseY, "Held item", config.heldItemShaderEnabled, v -> config.heldItemShaderEnabled = v, Feature.HELD_ITEM);
 			namesTop = y;
 		} else {
@@ -817,7 +824,8 @@ public class StrayScreen extends Screen {
 		List<MobCatalog.Entry> entries = MobCatalog.filtered(mobQuery);
 		float mobTop = top;
 		if (controlCenter()) {
-			y = controlCard(graphics, font, right, top, col, mouseX, mouseY, "Player fill", config.playerFillEsp, v -> config.playerFillEsp = v, Feature.FILL);
+			y = sectionLabel(graphics, font, right, top, "Players");
+			y = controlCard(graphics, font, right, y, col, mouseX, mouseY, "Player fill", config.playerFillEsp, v -> config.playerFillEsp = v, Feature.FILL);
 			float tagTop = y;
 			float tagH = cardHeight(Feature.NAMETAGS.rows + 1);
 			float tagY = featureCard(graphics, font, right, tagTop, col, tagH, "Nametags", config.nametagsEnabled, v -> config.nametagsEnabled = v, mouseX, mouseY);
@@ -825,7 +833,7 @@ public class StrayScreen extends Screen {
 			tagY = toggle(graphics, font, rx, tagY, iw, mouseX, mouseY, "Own nametag", config.nametagSelf, v -> config.nametagSelf = v);
 			drawFeatureFields(graphics, font, mouseX, mouseY, rx, tagY, iw, Feature.NAMETAGS);
 			fieldScope = "";
-			mobTop = tagTop + tagH + 8;
+			mobTop = sectionLabel(graphics, font, right, tagTop + tagH + 8, "Catalog");
 		}
 		// Player fill + Nametags sit above this list, so leftover window height is often
 		// negative. Floor the card at ~10 rows so the catalog is actually visible.
@@ -1131,7 +1139,7 @@ public class StrayScreen extends Screen {
 		hits.add(new Hit(windowX, windowY, sidebarW(), windowH, mx -> startDrag(mx, lastClickY), true));
 
 		Group[] groups = {
-			Group.WORLD, Group.COMBAT, Group.ESP, Group.HUD,
+			Group.WORLD, Group.ESP, Group.COMBAT, Group.HUD,
 			Group.MINING, Group.FARMING, Group.MISC, Group.THEME
 		};
 		float top = 8f;
@@ -1959,14 +1967,17 @@ public class StrayScreen extends Screen {
 	) {
 		switch (tab) {
 			case WORLD -> {
-				float y = controlCard(graphics, font, left, top, col, mouseX, mouseY, "World tint", config.worldTintEnabled, v -> config.worldTintEnabled = v, Feature.WORLD);
+				float y = sectionLabel(graphics, font, left, top, "Atmosphere");
+				y = controlCard(graphics, font, left, y, col, mouseX, mouseY, "World tint", config.worldTintEnabled, v -> config.worldTintEnabled = v, Feature.WORLD);
 				controlCard(graphics, font, left, y, col, mouseX, mouseY, "Skybox", config.skyTintEnabled, v -> config.skyTintEnabled = v, Feature.SKY);
-				y = controlCard(graphics, font, right, top, col, mouseX, mouseY, "Fog", config.fogEnabled, v -> config.fogEnabled = v, Feature.FOG);
+				y = sectionLabel(graphics, font, right, top, "Camera");
+				y = controlCard(graphics, font, right, y, col, mouseX, mouseY, "Fog", config.fogEnabled, v -> config.fogEnabled = v, Feature.FOG);
 				controlCard(graphics, font, right, y, col, mouseX, mouseY, "Aspect ratio", config.aspectEnabled, v -> config.aspectEnabled = v, Feature.VIEW);
 			}
 			case COMBAT -> {
 				float hitsoundH = cardHeight(6);
-				float y = featureCard(graphics, font, left, top, col, hitsoundH, "Hitsound", config.hitsoundEnabled, v -> {
+				float y = sectionLabel(graphics, font, left, top, "Audio");
+				y = featureCard(graphics, font, left, y, col, hitsoundH, "Hitsound", config.hitsoundEnabled, v -> {
 					config.hitsoundEnabled = v;
 					if (v) {
 						Hitsound.playPreview();
@@ -1977,26 +1988,30 @@ public class StrayScreen extends Screen {
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Hitmarker", config.hitmarkerEnabled, v -> config.hitmarkerEnabled = v);
 				drawFeatureFields(graphics, font, mouseX, mouseY, ix, y, iw, Feature.HITSOUND);
 
-				y = featureCard(graphics, font, right, top, col, cardHeight(3), "Triggerbot");
+				float assistY = sectionLabel(graphics, font, right, top, "Assist");
+				y = featureCard(graphics, font, right, assistY, col, cardHeight(3), "Triggerbot");
 				y = toggle(graphics, font, rx, y, iw, mouseX, mouseY, "Enable", config.triggerbotEnabled, v -> config.triggerbotEnabled = v);
 				y = toggle(graphics, font, rx, y, iw, mouseX, mouseY, "Players", config.triggerbotPlayers, v -> config.triggerbotPlayers = v);
 				slider(graphics, font, rx, y, iw, "Humanize", Math.round(config.triggerbotHumanize * 100) + "%", config.triggerbotHumanize, v -> config.triggerbotHumanize = StrayConfig.clamp(v, 0f, 1f));
 
-				float clickerTop = top + cardHeight(3) + 8;
+				float clickerTop = assistY + cardHeight(3) + 8;
 				float clickerH = fitH(clickerTop, cardHeight(autoClickerFieldRows()));
 				y = featureCard(graphics, font, right, clickerTop, col, clickerH, "Auto clicker", config.autoClickerEnabled, v -> config.autoClickerEnabled = v, mouseX, mouseY);
 				drawFeatureFields(graphics, font, mouseX, mouseY, rx, y, iw, Feature.AUTO_CLICKER);
 			}
 			case ESP -> drawMobsTab(graphics, font, mouseX, mouseY);
 			case OVERLAY -> {
-				float y = controlCard(graphics, font, left, top, col, mouseX, mouseY, "Watermark", config.watermarkEnabled, v -> config.watermarkEnabled = v, Feature.WATERMARK);
+				float y = sectionLabel(graphics, font, left, top, "Widgets");
+				y = controlCard(graphics, font, left, y, col, mouseX, mouseY, "Watermark", config.watermarkEnabled, v -> config.watermarkEnabled = v, Feature.WATERMARK);
 				y = controlCard(graphics, font, left, y, col, mouseX, mouseY, "Raw mats", config.rawmatsHudEnabled, v -> config.rawmatsHudEnabled = v, Feature.RAWMATS);
 				featureCard(graphics, font, left, y, col, cardHeight(1), "Pickup log", config.pickupLogEnabled, v -> config.pickupLogEnabled = v, mouseX, mouseY);
-				y = controlCard(graphics, font, right, top, col, mouseX, mouseY, "Music", config.musicHudEnabled, v -> config.musicHudEnabled = v, Feature.MUSIC);
+				y = sectionLabel(graphics, font, right, top, "Media");
+				y = controlCard(graphics, font, right, y, col, mouseX, mouseY, "Music", config.musicHudEnabled, v -> config.musicHudEnabled = v, Feature.MUSIC);
 				controlCard(graphics, font, right, y, col, mouseX, mouseY, "Inventory HUD", config.inventoryHudEnabled, v -> config.inventoryHudEnabled = v, Feature.INVENTORY);
 			}
 			case BARS -> {
-				float y = featureCard(graphics, font, left, top, col, cardHeight(7), "Bars");
+				float y = sectionLabel(graphics, font, left, top, "Vanilla");
+				y = featureCard(graphics, font, left, y, col, cardHeight(7), "Bars");
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Hotbar", config.hudHotbar, v -> config.hudHotbar = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Health", config.hudHealth, v -> config.hudHealth = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Hunger", config.hudHunger, v -> config.hudHunger = v);
@@ -2005,7 +2020,8 @@ public class StrayScreen extends Screen {
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Experience", config.hudExperience, v -> config.hudExperience = v);
 				toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Mount health", config.hudMountHealth, v -> config.hudMountHealth = v);
 
-				y = featureCard(graphics, font, right, top, col, cardHeight(4) + 28, "Info");
+				y = sectionLabel(graphics, font, right, top, "Info");
+				y = featureCard(graphics, font, right, y, col, cardHeight(4) + 28, "Info");
 				y = toggle(graphics, font, rx, y, iw, mouseX, mouseY, "Scoreboard", config.hudScoreboard, v -> config.hudScoreboard = v);
 				y = toggle(graphics, font, rx, y, iw, mouseX, mouseY, "Boss bar", config.hudBossBar, v -> config.hudBossBar = v);
 				y = toggle(graphics, font, rx, y, iw, mouseX, mouseY, "Effects", config.hudEffects, v -> config.hudEffects = v);
@@ -2015,26 +2031,31 @@ public class StrayScreen extends Screen {
 			}
 			case NODES -> {
 				float markersH = cardHeight(6);
-				float y = featureCard(graphics, font, left, top, col, markersH, "Markers", config.markersEnabled, v -> config.markersEnabled = v, mouseX, mouseY);
+				float y = sectionLabel(graphics, font, left, top, "Markers");
+				y = featureCard(graphics, font, left, y, col, markersH, "Markers", config.markersEnabled, v -> config.markersEnabled = v, mouseX, mouseY);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Node HUD", config.hudEnabled, v -> config.hudEnabled = v);
 				drawFeatureFields(graphics, font, mouseX, mouseY, ix, y, iw, Feature.NODES);
-				controlCard(graphics, font, right, top, col, mouseX, mouseY, "Node ESP", config.boxFill, v -> config.boxFill = v, Feature.NODE_ESP);
+				y = sectionLabel(graphics, font, right, top, "ESP");
+				controlCard(graphics, font, right, y, col, mouseX, mouseY, "Node ESP", config.boxFill, v -> config.boxFill = v, Feature.NODE_ESP);
 			}
 			case MENUS -> {
-				float y = featureCard(graphics, font, left, top, col, cardHeight(4), "Menus");
+				float y = sectionLabel(graphics, font, left, top, "Skyblock");
+				y = featureCard(graphics, font, left, y, col, cardHeight(4), "Menus");
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Loadouts menu", config.loadoutsMenuEnabled, v -> config.loadoutsMenuEnabled = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Wardrobe menu", config.wardrobeMenuEnabled, v -> config.wardrobeMenuEnabled = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Profile viewer", config.profileViewerEnabled, v -> config.profileViewerEnabled = v);
 				toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Open animation", config.loadoutsOpenAnim, v -> config.loadoutsOpenAnim = v);
 
+				float menusY = top + 14f;
 				float experimentsH = cardHeight(Feature.AUTO_EXPERIMENTS.rows);
-				y = featureCard(graphics, font, left, top + cardHeight(4) + 8, col, experimentsH, "Auto experiments", config.autoExperimentsEnabled, v -> config.autoExperimentsEnabled = v, mouseX, mouseY);
+				y = featureCard(graphics, font, left, menusY + cardHeight(4) + 8, col, experimentsH, "Auto experiments", config.autoExperimentsEnabled, v -> config.autoExperimentsEnabled = v, mouseX, mouseY);
 				drawFeatureFields(graphics, font, mouseX, mouseY, ix, y, iw, Feature.AUTO_EXPERIMENTS);
 
 				float bindsH = cardHeight(4);
-				y = featureCard(graphics, font, right, top, col, bindsH, "Keybinds");
+				float shortcutY = sectionLabel(graphics, font, right, top, "Shortcuts");
+				y = featureCard(graphics, font, right, shortcutY, col, bindsH, "Keybinds");
 				y = drawMenuKeybinds(graphics, font, rx, y, iw, mouseX, mouseY);
-				y = featureCard(graphics, font, right, top + bindsH + 8, col, cardHeight(5), "Commands");
+				y = featureCard(graphics, font, right, shortcutY + bindsH + 8, col, cardHeight(5), "Commands");
 				GuiDraw.menu(graphics, font, "/loadouts  /ld", rx, y + 2, ink());
 				GuiDraw.menu(graphics, font, "/wardrobe  /wd", rx, y + 16, ink());
 				GuiDraw.menu(graphics, font, "/pv  /profile", rx, y + 30, ink());
@@ -2042,22 +2063,26 @@ public class StrayScreen extends Screen {
 				GuiDraw.menu(graphics, font, "1-9 equips and closes", rx, y + 58, fade());
 			}
 			case STATUS -> {
-				float y = featureCard(graphics, font, left, top, col, cardHeight(4), "Location");
+				float y = sectionLabel(graphics, font, left, top, "Location");
+				y = featureCard(graphics, font, left, y, col, cardHeight(4), "Location");
 				y = readout(graphics, font, ix, y, iw, "Hypixel", SkyblockLocation.onHypixel);
 				y = readout(graphics, font, ix, y, iw, "Skyblock", SkyblockLocation.inSkyblock);
 				y = readout(graphics, font, ix, y, iw, "The End", SkyblockLocation.inTheEnd);
 				String area = SkyblockLocation.area.isEmpty() ? "Unknown" : SkyblockLocation.area;
 				GuiDraw.menu(graphics, font, clip(font, area, (int) iw - 4), ix, GuiDraw.middle(y, ROW), fade());
 
-				y = featureCard(graphics, font, right, top, col, cardHeight(2), "Client");
+				y = sectionLabel(graphics, font, right, top, "Client");
+				y = featureCard(graphics, font, right, y, col, cardHeight(2), "Client");
 				y = statRow(graphics, font, rx, y, iw, "FPS", HudStats.fps() + "");
 				statRow(graphics, font, rx, y, iw, "Ping", HudStats.pingLabel());
 			}
 			case MINING -> {
-				float y = controlCard(graphics, font, left, top, col, mouseX, mouseY, "Mining HUD", config.miningHudEnabled, v -> config.miningHudEnabled = v, Feature.MINING);
+				float y = sectionLabel(graphics, font, left, top, "Tools");
+				y = controlCard(graphics, font, left, y, col, mouseX, mouseY, "Mining HUD", config.miningHudEnabled, v -> config.miningHudEnabled = v, Feature.MINING);
 				controlCard(graphics, font, left, y, col, mouseX, mouseY, "Titanium ESP", config.titaniumEsp, v -> config.titaniumEsp = v, Feature.TITANIUM);
 
-				y = featureCard(graphics, font, right, top, col, cardTop() + cardHead() + 54 + cardPad(), "Live");
+				y = sectionLabel(graphics, font, right, top, "Live");
+				y = featureCard(graphics, font, right, y, col, cardTop() + cardHead() + 54 + cardPad(), "Live");
 				var snap = MiningTracker.snapshot();
 				GuiDraw.menu(graphics, font, snap.ability(), rx, y + 2, ink());
 				GuiDraw.menu(graphics, font, snap.abilityReady() ? "Ready" : snap.abilityLabel(), rx, y + 14, snap.abilityReady() ? Theme.ACCENT : fade());
@@ -2078,11 +2103,13 @@ public class StrayScreen extends Screen {
 				GuiDraw.menu(graphics, font, clip(font, titanium, (int) iw - 4), rx, y + 38, titaniumColor);
 			}
 			case FARMING -> {
-				float y = controlCard(graphics, font, left, top, col, mouseX, mouseY, "Yaw / Pitch", config.farmingYawPitch, v -> config.farmingYawPitch = v, Feature.FARMING);
+				float y = sectionLabel(graphics, font, left, top, "HUD");
+				y = controlCard(graphics, font, left, y, col, mouseX, mouseY, "Yaw / Pitch", config.farmingYawPitch, v -> config.farmingYawPitch = v, Feature.FARMING);
 				y = featureCard(graphics, font, left, y, col, cardHeight(1), "Jacob contest HUD", config.jacobContestHudEnabled, v -> config.jacobContestHudEnabled = v, mouseX, mouseY);
 				featureCard(graphics, font, left, y, col, cardHeight(1), "Composter overlay", config.composterHudEnabled, v -> config.composterHudEnabled = v, mouseX, mouseY);
 
-				y = featureCard(graphics, font, right, top, col, cardHeight(4), "Contest");
+				y = sectionLabel(graphics, font, right, top, "Contest");
+				y = featureCard(graphics, font, right, y, col, cardHeight(4), "Contest");
 				var contest = JacobContestTracker.snapshot();
 				if (contest.present()) {
 					GuiDraw.menu(graphics, font, clip(font, contest.crop() + "  " + contest.remaining(), (int) iw - 4), rx, y + 2, ink());
@@ -2124,6 +2151,12 @@ public class StrayScreen extends Screen {
 		return y + h + 8;
 	}
 
+	private float sectionLabel(GuiGraphicsExtractor graphics, Font font, float x, float y, String title) {
+		GuiDraw.small(graphics, font, title.toUpperCase(Locale.ROOT), x + 2, y + 2, ControlChrome.muted());
+		pageExtent = Math.max(pageExtent, y + 14);
+		return y + 14;
+	}
+
 	private void drawControlSettings(
 		GuiGraphicsExtractor graphics,
 		Font font,
@@ -2138,7 +2171,8 @@ public class StrayScreen extends Screen {
 		float iw
 	) {
 		StrayConfig config = StrayConfig.get();
-		float y = featureCard(graphics, font, left, top, col, cardHeight(7), "Control");
+		float y = sectionLabel(graphics, font, left, top, "Window");
+		y = featureCard(graphics, font, left, y, col, cardHeight(7), "Control");
 		y = cycle(graphics, font, ix, y, iw, mouseX, mouseY, "GUI", config.guiDesignLabel(), () -> {
 			config.cycleGuiDesign();
 			if (!config.guiDesignControl() && tab == Tab.SETTINGS) {
@@ -2153,7 +2187,8 @@ public class StrayScreen extends Screen {
 		toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Auto update", config.autoUpdate, v -> config.autoUpdate = v);
 
 		float accentH = cardTop() + cardHead() + 14 + swatchBlockH(Theme.PRESETS.length, iw) + rowH() * 3 + cardPad();
-		y = featureCard(graphics, font, right, top, col, accentH, "Accent");
+		float lookY = sectionLabel(graphics, font, right, top, "Look");
+		y = featureCard(graphics, font, right, lookY, col, accentH, "Accent");
 		GuiDraw.small(graphics, font, "Preset", rx, y + 1, ControlChrome.muted());
 		y = swatchRow(graphics, mouseX, mouseY, rx + 2, y + 12, iw - 2, Theme.PRESETS, true);
 		y = colorRow(graphics, font, rx, y, iw, mouseX, mouseY, "Custom", config.themeAccentRgb, PickerTarget.THEME);
@@ -2163,7 +2198,7 @@ public class StrayScreen extends Screen {
 		});
 		toggle(graphics, font, rx, y, iw, mouseX, mouseY, "HUD stars", config.hudStarfield, v -> config.hudStarfield = v);
 
-		float scaleTop = top + accentH + 10;
+		float scaleTop = lookY + accentH + 10;
 		y = featureCard(graphics, font, right, scaleTop, col, cardHeight(3) + 18, "Scale");
 		GuiDraw.small(graphics, font, "Menu", rx, y + 1, ControlChrome.muted());
 		y += 12;
@@ -2530,7 +2565,6 @@ public class StrayScreen extends Screen {
 			case FILL -> {
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Through walls", config.playerFillThroughWalls, v -> config.playerFillThroughWalls = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Fill ESP mobs", config.playerFillMobs, v -> config.playerFillMobs = v);
-				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Fill star mobs", config.playerFillStarMobs, v -> config.playerFillStarMobs = v);
 				y = cycle(graphics, font, ix, y, iw, mouseX, mouseY, "Style", config.playerFillStyleLabel(), config::cyclePlayerFillStyle);
 				y = colorRow(graphics, font, ix, y, iw, mouseX, mouseY, "Fill", config.playerFillRgb, PickerTarget.FILL);
 				y = colorRow(graphics, font, ix, y, iw, mouseX, mouseY, "Outline", config.playerFillOutlineRgb, PickerTarget.FILL_OUTLINE);
@@ -2564,6 +2598,8 @@ public class StrayScreen extends Screen {
 				colorRow(graphics, font, ix, y, iw, mouseX, mouseY, "Color", config.mobGlowRgb, PickerTarget.MOB);
 			}
 			case STAR -> {
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Glow ESP", config.starMobEsp, v -> config.starMobEsp = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Fill", config.playerFillStarMobs, v -> config.playerFillStarMobs = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Through walls", config.starMobThroughWalls, v -> config.starMobThroughWalls = v);
 				y = slider(graphics, font, ix, y, iw, "Radius", String.format(Locale.ROOT, "%.0f", config.starMobRadius), (config.starMobRadius - GlowBlurRadius.MIN) / (GlowBlurRadius.MAX - GlowBlurRadius.MIN), v -> config.starMobRadius = StrayConfig.clamp(GlowBlurRadius.MIN + v * (GlowBlurRadius.MAX - GlowBlurRadius.MIN), GlowBlurRadius.MIN, GlowBlurRadius.MAX));
 				y = colorRow(graphics, font, ix, y, iw, mouseX, mouseY, "Color", config.starMobRgb, PickerTarget.STAR);
@@ -3078,7 +3114,7 @@ public class StrayScreen extends Screen {
 		return FabricLoader.getInstance()
 			.getModContainer("stray")
 			.map(container -> container.getMetadata().getVersion().getFriendlyString())
-			.orElse("1.2.161");
+			.orElse("1.2.162");
 	}
 
 	@Override

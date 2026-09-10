@@ -1,6 +1,5 @@
 package dev.stray.client.net;
 
-import dev.stray.client.config.StrayConfig;
 import dev.stray.client.render.MobGlowRenderer;
 import dev.stray.client.render.StarMobEsp;
 import net.minecraft.client.Minecraft;
@@ -26,7 +25,7 @@ public final class EspNamePackets {
 		if (packet instanceof ClientboundSetEntityDataPacket data) {
 			String label = labels(data);
 			boolean named = !label.isEmpty();
-			boolean stars = StrayConfig.get().starMobEsp;
+			boolean stars = StarMobEsp.tracking();
 			if (!named && !stars) {
 				return;
 			}

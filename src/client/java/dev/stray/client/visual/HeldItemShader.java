@@ -93,7 +93,8 @@ public final class HeldItemShader {
 	}
 
 	public static boolean playerFillActive() {
-		return StrayConfig.get().playerFillEsp;
+		StrayConfig config = StrayConfig.get();
+		return config.playerFillEsp || config.playerFillStarMobs;
 	}
 
 	public static boolean appliesFill(ItemDisplayContext context) {
@@ -120,7 +121,11 @@ public final class HeldItemShader {
 	}
 
 	public static boolean playerFillThroughWalls() {
-		return playerFillActive() && StrayConfig.get().playerFillThroughWalls;
+		StrayConfig config = StrayConfig.get();
+		if (config.playerFillEsp && config.playerFillThroughWalls) {
+			return true;
+		}
+		return config.playerFillStarMobs && config.starMobThroughWalls;
 	}
 
 	public static boolean shouldFillEntity(Entity entity) {
@@ -131,14 +136,17 @@ public final class HeldItemShader {
 		if (client.player == null || entity == client.player) {
 			return false;
 		}
-		if (entity.getType() == EntityType.PLAYER) {
-			return NametagRenderer.realAccount(entity);
-		}
 		StrayConfig config = StrayConfig.get();
-		if (config.playerFillStarMobs && StarMobEsp.glowing(entity)) {
+		if (entity.getType() == EntityType.PLAYER) {
+			if (config.playerFillStarMobs && StarMobEsp.marked(entity)) {
+				return true;
+			}
+			return config.playerFillEsp && NametagRenderer.realAccount(entity);
+		}
+		if (config.playerFillStarMobs && StarMobEsp.marked(entity)) {
 			return true;
 		}
-		return config.playerFillMobs && MobGlowRenderer.catalogOrNametag(entity);
+		return config.playerFillEsp && config.playerFillMobs && MobGlowRenderer.catalogOrNametag(entity);
 	}
 
 	public static boolean shouldFillThroughWalls(Entity entity) {
