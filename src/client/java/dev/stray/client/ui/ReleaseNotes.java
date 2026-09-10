@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.198", new String[]{
+			"The Crystal Hollows map is a stone cave sheet with a light zone wash, not four solid slabs. 1-pixel walls mark Jungle, Goblin, Mithril, Precursor, and the Nucleus ring. Waypoint names no longer smear."
+		}),
 		new Entry("1.2.197", new String[]{
 			"Mining has a Crystal Hollows map. It paints the cave under the hardstone roof like a vanilla map, washes the four zones and Nucleus on top, and drops the waypoints you grab onto it."
 		}),
