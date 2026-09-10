@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.152", new String[]{
+			"Player fill stars and smoke no longer stretch with the skin texture. The pattern stays in screen space on the silhouette."
+		}),
 		new Entry("1.2.151", new String[]{
 			"Farming has a movable Composter overlay based on SkyHanni's composter data: organic matter, fuel, stored compost, next cycle, cycles left, production rate, and estimated empty time.",
 			"Open Composter Upgrades once so Stray can read your five upgrade levels and calculate capacities, costs, speed, and Multi Drop."
