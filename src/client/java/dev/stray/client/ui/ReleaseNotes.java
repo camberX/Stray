@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.186", new String[]{
+			"Portal and Galaxy take the Fill color picker as a tint, not only the opacity slider."
+		}),
 		new Entry("1.2.185", new String[]{
 			"Portal and Galaxy on Player fill and Held item honor the Fill opacity slider."
 		}),
