@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.157", new String[]{
+			"Control frost covers the whole rounded pane again, including the watermark. Vanilla hotbar and scoreboard are no longer wrapped by Stray when those custom HUD pieces are off."
+		}),
 		new Entry("1.2.156", new String[]{
 			"HUD extract and item-model mixins are cheaper: item skins cache NBT and inventory ownership, Ghost/Fill skip mask work when they are off, and short Control HUD bars no longer frost."
 		}),

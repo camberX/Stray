@@ -21,13 +21,9 @@ public final class HudChrome {
 		int accent
 	) {
 		if (StrayConfig.get().guiDesignControl()) {
-			float r = Math.min(Math.max(6f, radius), Math.min(w, h) * 0.5f);
-			if (h >= 40f) {
-				GuiFrostBlur.blitWindow(graphics, x, y, w, h, Math.max(8f, radius));
-				ControlChrome.glass(graphics, x, y, w, h, Math.max(8f, radius), ControlChrome.hudFill());
-			} else {
-				GuiDraw.roundedFine(graphics, x, y, w, h, r, ControlChrome.hudFill());
-			}
+			float r = Math.min(Math.max(6f, radius), Math.min(w, h) / 2f);
+			GuiFrostBlur.blitWindow(graphics, x, y, w, h, r);
+			ControlChrome.glass(graphics, x, y, w, h, r, ControlChrome.hudFill());
 			if (StrayConfig.get().hudStarfield && w >= 72f && h >= 52f) {
 				Starfield.drawHud(graphics, x, y, w, h, Math.max(8f, radius));
 			}

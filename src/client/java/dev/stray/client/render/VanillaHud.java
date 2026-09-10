@@ -1,12 +1,15 @@
 package dev.stray.client.render;
 
+import dev.stray.Stray;
 import dev.stray.client.config.StrayConfig;
 import dev.stray.client.ui.LoadoutsScreen;
+import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElement;
 import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry;
 import net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.PlayerRideableJumping;
@@ -16,90 +19,65 @@ public final class VanillaHud {
 	}
 
 	public static void init() {
-		HudElementRegistry.replaceElement(VanillaHudElements.HOTBAR, original -> (graphics, delta) -> {
-			if (custom(StrayConfig.get().hudHotbar) && !spectator()) {
+		attach(VanillaHudElements.HOTBAR, "hud/hotbar", (graphics, delta) -> {
+			if (customHotbar()) {
 				HotbarHudRenderer.extract(graphics, delta);
-			} else {
-				original.extractRenderState(graphics, delta);
 			}
 		});
-		HudElementRegistry.replaceElement(VanillaHudElements.HEALTH_BAR, original -> (graphics, delta) -> {
-			if (custom(StrayConfig.get().hudHealth)) {
+		attach(VanillaHudElements.HEALTH_BAR, "hud/health", (graphics, delta) -> {
+			if (customHealth()) {
 				StatusHudRenderer.extractHealth(graphics, delta);
-			} else {
-				original.extractRenderState(graphics, delta);
 			}
 		});
-		HudElementRegistry.replaceElement(VanillaHudElements.FOOD_BAR, original -> (graphics, delta) -> {
-			if (custom(StrayConfig.get().hudHunger)) {
+		attach(VanillaHudElements.FOOD_BAR, "hud/hunger", (graphics, delta) -> {
+			if (customHunger()) {
 				StatusHudRenderer.extractHunger(graphics, delta);
-			} else {
-				original.extractRenderState(graphics, delta);
 			}
 		});
-		HudElementRegistry.replaceElement(VanillaHudElements.ARMOR_BAR, original -> (graphics, delta) -> {
-			if (custom(StrayConfig.get().hudArmor)) {
+		attach(VanillaHudElements.ARMOR_BAR, "hud/armor", (graphics, delta) -> {
+			if (customArmor()) {
 				StatusHudRenderer.extractArmor(graphics, delta);
-			} else {
-				original.extractRenderState(graphics, delta);
 			}
 		});
-		HudElementRegistry.replaceElement(VanillaHudElements.AIR_BAR, original -> (graphics, delta) -> {
-			if (custom(StrayConfig.get().hudAir)) {
+		attach(VanillaHudElements.AIR_BAR, "hud/air", (graphics, delta) -> {
+			if (customAir()) {
 				StatusHudRenderer.extractAir(graphics, delta);
-			} else {
-				original.extractRenderState(graphics, delta);
 			}
 		});
-		HudElementRegistry.replaceElement(VanillaHudElements.MOUNT_HEALTH, original -> (graphics, delta) -> {
-			if (custom(StrayConfig.get().hudMountHealth)) {
+		attach(VanillaHudElements.MOUNT_HEALTH, "hud/mount", (graphics, delta) -> {
+			if (customMount()) {
 				StatusHudRenderer.extractMount(graphics, delta);
-			} else {
-				original.extractRenderState(graphics, delta);
 			}
 		});
-		HudElementRegistry.replaceElement(VanillaHudElements.INFO_BAR, original -> (graphics, delta) -> {
-			if (custom(StrayConfig.get().hudExperience) && !jumpBar()) {
+		attach(VanillaHudElements.INFO_BAR, "hud/experience", (graphics, delta) -> {
+			if (customExperience()) {
 				StatusHudRenderer.extractExperience(graphics, delta);
-			} else {
-				original.extractRenderState(graphics, delta);
 			}
 		});
-		HudElementRegistry.replaceElement(VanillaHudElements.EXPERIENCE_LEVEL, original -> (graphics, delta) -> {
-			if (custom(StrayConfig.get().hudExperience) && !jumpBar()) {
-				StatusHudRenderer.extractExperienceLevel(graphics, delta);
-			} else {
-				original.extractRenderState(graphics, delta);
-			}
-		});
-		HudElementRegistry.replaceElement(VanillaHudElements.SCOREBOARD, original -> (graphics, delta) -> {
-			if (custom(StrayConfig.get().hudScoreboard)) {
+		attach(VanillaHudElements.SCOREBOARD, "hud/scoreboard", (graphics, delta) -> {
+			if (customScoreboard()) {
 				ScoreboardHudRenderer.extract(graphics, delta);
-			} else {
-				original.extractRenderState(graphics, delta);
 			}
 		});
-		HudElementRegistry.replaceElement(VanillaHudElements.BOSS_BAR, original -> (graphics, delta) -> {
-			if (custom(StrayConfig.get().hudBossBar)) {
+		attach(VanillaHudElements.BOSS_BAR, "hud/boss", (graphics, delta) -> {
+			if (customBossBar()) {
 				BossBarHudRenderer.extract(graphics, delta);
-			} else {
-				original.extractRenderState(graphics, delta);
 			}
 		});
-		HudElementRegistry.replaceElement(VanillaHudElements.MOB_EFFECTS, original -> (graphics, delta) -> {
-			if (custom(StrayConfig.get().hudEffects)) {
+		attach(VanillaHudElements.MOB_EFFECTS, "hud/effects", (graphics, delta) -> {
+			if (customEffects()) {
 				EffectsHudRenderer.extract(graphics, delta);
-			} else {
-				original.extractRenderState(graphics, delta);
 			}
 		});
-		HudElementRegistry.replaceElement(VanillaHudElements.HELD_ITEM_TOOLTIP, original -> (graphics, delta) -> {
-			if (custom(StrayConfig.get().hudHeldItem)) {
+		attach(VanillaHudElements.HELD_ITEM_TOOLTIP, "hud/held_item", (graphics, delta) -> {
+			if (customHeldItem()) {
 				HeldItemHudRenderer.extract(graphics, delta);
-			} else {
-				original.extractRenderState(graphics, delta);
 			}
 		});
+	}
+
+	private static void attach(Identifier vanilla, String path, HudElement element) {
+		HudElementRegistry.attachElementBefore(vanilla, Stray.id(path), element);
 	}
 
 	public static boolean hidden() {
@@ -124,6 +102,50 @@ public final class VanillaHud {
 	public static boolean hasExperience() {
 		Minecraft client = Minecraft.getInstance();
 		return client.gameMode != null && client.gameMode.hasExperience() && !spectator();
+	}
+
+	public static boolean customHotbar() {
+		return custom(StrayConfig.get().hudHotbar) && !spectator();
+	}
+
+	public static boolean customHealth() {
+		return custom(StrayConfig.get().hudHealth);
+	}
+
+	public static boolean customHunger() {
+		return custom(StrayConfig.get().hudHunger);
+	}
+
+	public static boolean customArmor() {
+		return custom(StrayConfig.get().hudArmor);
+	}
+
+	public static boolean customAir() {
+		return custom(StrayConfig.get().hudAir);
+	}
+
+	public static boolean customMount() {
+		return custom(StrayConfig.get().hudMountHealth);
+	}
+
+	public static boolean customExperience() {
+		return custom(StrayConfig.get().hudExperience) && !jumpBar();
+	}
+
+	public static boolean customScoreboard() {
+		return custom(StrayConfig.get().hudScoreboard);
+	}
+
+	public static boolean customBossBar() {
+		return custom(StrayConfig.get().hudBossBar);
+	}
+
+	public static boolean customEffects() {
+		return custom(StrayConfig.get().hudEffects);
+	}
+
+	public static boolean customHeldItem() {
+		return custom(StrayConfig.get().hudHeldItem);
 	}
 
 	public static LivingEntity mount() {
@@ -152,7 +174,7 @@ public final class VanillaHud {
 		return enabled && !hidden();
 	}
 
-	private static boolean jumpBar() {
+	public static boolean jumpBar() {
 		LocalPlayer player = Minecraft.getInstance().player;
 		if (player == null) {
 			return false;
