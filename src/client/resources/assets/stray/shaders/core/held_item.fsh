@@ -181,9 +181,10 @@ void main() {
         body *= 1.0 - holeMask;
         body += vec3(1.00, 0.78, 0.42) * smoothstep(0.014, 0.0, abs(r - rs * 1.20)) * 1.55;
         body *= max(light, vec3(0.40));
-        fragColor = vec4(body, tex.a);
+        float cover = clamp(tintAmount, 0.08, 0.85);
+        fragColor = vec4(mix(tinted, body, cover), tex.a * cover);
 #ifdef ESP_FILL
-        fragColor.a = 1.0;
+        fragColor.a = cover;
 #endif
         return;
     }
@@ -204,9 +205,10 @@ void main() {
             color += textureProj(Sampler4, texProj0 * layerMat).rgb * PORTAL_COLORS[i];
         }
         color *= mix(0.70, 1.20, (amount - 0.10) / 1.40);
-        fragColor = vec4(color, tex.a);
+        float cover = clamp(tintAmount, 0.08, 0.85);
+        fragColor = vec4(mix(tinted, color, cover), tex.a * cover);
 #ifdef ESP_FILL
-        fragColor.a = 1.0;
+        fragColor.a = cover;
 #endif
         return;
     }
