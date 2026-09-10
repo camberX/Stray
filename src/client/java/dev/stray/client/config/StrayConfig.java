@@ -84,6 +84,8 @@ public final class StrayConfig {
 	public int composterFuelCap = 0;
 	public int composterOrganicMatterCap = 0;
 	public int composterCostReduction = 0;
+	public long composterMaxOrganic = 0;
+	public long composterMaxFuel = 0;
 	public boolean titaniumEsp = false;
 	public boolean titaniumEspThroughWalls = true;
 	public boolean chestEspEnabled = false;
@@ -692,6 +694,8 @@ public final class StrayConfig {
 				loaded.composterFuelCap = clamp(loaded.composterFuelCap, 0, 25);
 				loaded.composterOrganicMatterCap = clamp(loaded.composterOrganicMatterCap, 0, 25);
 				loaded.composterCostReduction = clamp(loaded.composterCostReduction, 0, 25);
+				loaded.composterMaxOrganic = Math.max(0L, loaded.composterMaxOrganic);
+				loaded.composterMaxFuel = Math.max(0L, loaded.composterMaxFuel);
 				if (!json.has("farmingYawPitch")) {
 					loaded.farmingYawPitch = false;
 				}

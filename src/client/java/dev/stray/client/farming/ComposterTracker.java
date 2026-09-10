@@ -1,12 +1,16 @@
 package dev.stray.client.farming;
 
 import dev.stray.client.config.StrayConfig;
+import dev.stray.client.item.ItemAppearance;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.multiplayer.ClientPacketListener;
 import net.minecraft.client.multiplayer.PlayerInfo;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.inventory.Slot;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.component.ItemLore;
 import net.minecraft.world.level.GameType;
 import net.minecraft.world.scores.PlayerTeam;
 
@@ -24,6 +28,11 @@ public final class ComposterTracker {
 		Pattern.CASE_INSENSITIVE
 	);
 	private static final Pattern TIME = Pattern.compile("^Time Left:\\s*(.+)$", Pattern.CASE_INSENSITIVE);
+	/** Matches `67,464/100k` and Hypixel's `37,547.5§6/§e130k` lore. */
+	private static final Pattern RATIO = Pattern.compile(
+		"([\\d,.]+(?:\\.[\\d]+)?[kmb]?)\\s*(?:§[0-9a-fk-or])*\\s*/\\s*(?:§[0-9a-fk-or])*\\s*([\\d,.]+(?:\\.\\d+)?[kmb]?)",
+		Pattern.CASE_INSENSITIVE
+	);
 	private static final Pattern PROFILE = Pattern.compile("^Profile:\\s*(.+)$", Pattern.CASE_INSENSITIVE);
 	private static final Pattern UPGRADE = Pattern.compile(
 		"^(Composter Speed|Multi Drop|Fuel Cap|Organic Matter Cap|Cost Reduction)(?:\\s+([IVXLCDM]+|\\d+))?$",
@@ -60,6 +69,7 @@ public final class ComposterTracker {
 		}
 		parseTick = tick;
 		Parsed parsed = readWidget(client);
+		readCapacities(client);
 		readUpgrades(client, parsed == null ? "" : parsed.profile);
 		if (parsed == null) {
 			if (++missingTicks >= 8) {
@@ -149,15 +159,22 @@ public final class ComposterTracker {
 		boolean matchingProfile = parsed.profile.isBlank()
 			|| config.composterProfile.isBlank()
 			|| parsed.profile.equalsIgnoreCase(config.composterProfile);
-		if (!config.composterUpgradesKnown || !matchingProfile) {
+		boolean upgradesKnown = config.composterUpgradesKnown && matchingProfile;
+		long maxOrganic = config.composterMaxOrganic > 0
+			? config.composterMaxOrganic
+			: upgradesKnown ? 40_000L + config.composterOrganicMatterCap * 30_000L : -1;
+		long maxFuel = config.composterMaxFuel > 0
+			? config.composterMaxFuel
+			: upgradesKnown ? 100_000L + config.composterFuelCap * 30_000L : -1;
+		if (!upgradesKnown) {
 			return new Snapshot(
 				true,
 				active,
 				parsed.time.isEmpty() ? "?" : parsed.time,
 				parsed.organic,
-				-1,
+				maxOrganic,
 				parsed.fuel,
-				-1,
+				maxFuel,
 				parsed.stored,
 				-1,
 				"Open Composter Upgrades",
@@ -166,8 +183,8 @@ public final class ComposterTracker {
 			);
 		}
 
-		long maxOrganic = 40_000L + config.composterOrganicMatterCap * 30_000L;
-		long maxFuel = 100_000L + config.composterFuelCap * 30_000L;
+		maxOrganic = maxOrganic > 0 ? maxOrganic : 40_000L + config.composterOrganicMatterCap * 30_000L;
+		maxFuel = maxFuel > 0 ? maxFuel : 100_000L + config.composterFuelCap * 30_000L;
 		double speedFactor = 1d + config.composterSpeed * 0.2d;
 		double secondsPer = 600d / speedFactor;
 		double costFactor = 1d - config.composterCostReduction / 100d;
@@ -214,6 +231,111 @@ public final class ComposterTracker {
 	private static long cyclesAfterNext(long amount, double fraction, double required) {
 		double remaining = amount - fraction * required;
 		return Math.max(0L, (long) Math.floor(remaining / required));
+	}
+
+	private static void readCapacities(Minecraft client) {
+		if (!(client.screen instanceof AbstractContainerScreen<?> screen)) {
+			return;
+		}
+		String title = clean(screen.getTitle()).toLowerCase(Locale.ROOT);
+		if (!title.contains("composter") || title.contains("upgrade")) {
+			return;
+		}
+		long organicMax = -1;
+		long fuelMax = -1;
+		for (Slot slot : screen.getMenu().slots) {
+			if (client.player != null && slot.container == client.player.getInventory()) {
+				continue;
+			}
+			ItemStack stack = slot.getItem();
+			if (stack == null || stack.isEmpty()) {
+				continue;
+			}
+			String name = itemName(stack).toLowerCase(Locale.ROOT);
+			String blob = itemBlob(client, stack);
+			String lower = blob.toLowerCase(Locale.ROOT);
+			long total = firstRatioMax(blob);
+			if (total <= 0) {
+				continue;
+			}
+			int index = slot.index;
+			if (index == 46 || name.contains("organic") || lower.contains("organic")) {
+				organicMax = total;
+			} else if (index == 52 || name.contains("fuel") || lower.contains("fuel")) {
+				fuelMax = total;
+			}
+		}
+		if (organicMax <= 0 && fuelMax <= 0) {
+			return;
+		}
+		StrayConfig config = StrayConfig.get();
+		boolean changed = false;
+		if (organicMax > 0 && config.composterMaxOrganic != organicMax) {
+			config.composterMaxOrganic = organicMax;
+			config.composterOrganicMatterCap = capLevel(organicMax, 40_000L);
+			changed = true;
+		}
+		if (fuelMax > 0 && config.composterMaxFuel != fuelMax) {
+			config.composterMaxFuel = fuelMax;
+			config.composterFuelCap = capLevel(fuelMax, 100_000L);
+			changed = true;
+		}
+		if (changed) {
+			config.save();
+		}
+	}
+
+	static long firstRatioMax(String blob) {
+		if (blob == null || blob.isBlank()) {
+			return 0L;
+		}
+		Matcher ratio = RATIO.matcher(blob);
+		if (ratio.find()) {
+			return parseAmount(ratio.group(2));
+		}
+		Matcher cleaned = RATIO.matcher(stripCodes(blob));
+		return cleaned.find() ? parseAmount(cleaned.group(2)) : 0L;
+	}
+
+	private static int capLevel(long max, long base) {
+		return StrayConfig.clamp((int) Math.round((max - base) / 30_000d), 0, 25);
+	}
+
+	private static String itemName(ItemStack stack) {
+		boolean prior = ItemAppearance.suppress();
+		try {
+			return stack == null || stack.isEmpty() ? "" : clean(stack.getHoverName());
+		} finally {
+			ItemAppearance.resume(prior);
+		}
+	}
+
+	private static String itemBlob(Minecraft client, ItemStack stack) {
+		boolean prior = ItemAppearance.suppress();
+		try {
+			if (stack == null || stack.isEmpty()) {
+				return "";
+			}
+			StringBuilder out = new StringBuilder(raw(stack.getHoverName()));
+			ItemLore lore = stack.get(DataComponents.LORE);
+			if (lore != null) {
+				for (Component line : lore.lines()) {
+					out.append('\n').append(raw(line));
+				}
+			}
+			if (client.level != null) {
+				for (Component line : stack.getTooltipLines(
+					net.minecraft.world.item.Item.TooltipContext.of(client.level),
+					client.player,
+					net.minecraft.world.item.TooltipFlag.Default.NORMAL
+				)) {
+					out.append('\n').append(raw(line));
+				}
+			}
+			return out.toString();
+		} finally {
+			ItemAppearance.resume(prior);
+		}
 	}
 
 	private static void readUpgrades(Minecraft client, String profile) {
@@ -269,6 +391,8 @@ public final class ComposterTracker {
 		config.composterFuelCap = fuelCap;
 		config.composterOrganicMatterCap = organicCap;
 		config.composterCostReduction = cost;
+		config.composterMaxOrganic = 40_000L + organicCap * 30_000L;
+		config.composterMaxFuel = 100_000L + fuelCap * 30_000L;
 		config.save();
 	}
 
@@ -363,10 +487,18 @@ public final class ComposterTracker {
 			: PlayerTeam.formatNameForTeam(info.getTeam(), Component.literal(info.getProfile().name()));
 	}
 
+	private static String raw(Component component) {
+		return component == null ? "" : component.getString();
+	}
+
+	private static String stripCodes(String text) {
+		return text == null ? "" : text.replaceAll("§.", "").replaceAll("\u00A7.", "");
+	}
+
 	private static String clean(Component component) {
 		return component == null
 			? ""
-			: component.getString().replaceAll("§.", "").replace('\u00A0', ' ').replaceAll("\\s+", " ").trim();
+			: stripCodes(component.getString()).replace('\u00A0', ' ').replaceAll("\\s+", " ").trim();
 	}
 
 	public record Snapshot(
