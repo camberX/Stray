@@ -414,7 +414,7 @@ public final class NametagRenderer {
 	}
 
 	/** Larger up close, smaller far away. Anchored so ~12m reads as 1.0 before the Size slider. */
-	private static float distanceScale(double dist) {
+	public static float distanceScale(double dist) {
 		return Mth.clamp(24f / (12f + (float) dist), 0.52f, 1.35f);
 	}
 

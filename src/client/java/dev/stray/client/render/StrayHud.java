@@ -3,6 +3,7 @@ package dev.stray.client.render;
 import dev.stray.Stray;
 import dev.stray.client.combat.Hitmarker;
 import dev.stray.client.farming.FarmingHud;
+import dev.stray.client.mining.CrystalHollowsRenderer;
 import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry;
 import net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements;
 import net.minecraft.client.DeltaTracker;
@@ -30,6 +31,7 @@ public final class StrayHud {
 		Hitmarker.extract(graphics, delta);
 		FarmingHud.extract(graphics, delta);
 		NametagRenderer.extract(graphics, delta);
+		CrystalHollowsRenderer.extract(graphics, delta);
 		WatermarkRenderer.extract(graphics, delta);
 		MusicHudRenderer.extract(graphics, delta);
 		RawmatsHudRenderer.extract(graphics, delta);

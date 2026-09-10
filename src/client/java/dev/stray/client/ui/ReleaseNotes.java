@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.190", new String[]{
+			"Crystal Hollows waypoint names use the same screen-space distance scale as nametags: larger up close, smaller far away."
+		}),
 		new Entry("1.2.189", new String[]{
 			"Custom hotbar, health, food, XP, and mount bars are gone. Mining has Crystal Hollows structure waypoints that listen for Skyblocker shares and never send your finds."
 		}),
