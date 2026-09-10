@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.169", new String[]{
+			"Farm crop milestones use the current Garden wiki tables (46 per crop, different amounts per crop) and Garden harvests only, not island collection."
+		}),
 		new Entry("1.2.168", new String[]{
 			"Feature toggles start off. Inner options like Animations, Through walls, Spotify, and the custom HUD pieces are no longer on until you turn them on."
 		}),

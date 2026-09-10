@@ -89,14 +89,43 @@ public final class ProfileViewer {
 	private static final int[] SLAYER_ENDER = {10, 30, 250, 1500, 5000, 20000, 100000, 400000, 1000000};
 	private static final int[] SLAYER_BLAZE = {10, 30, 250, 1500, 5000, 20000, 100000, 400000, 1000000};
 	private static final int[] SLAYER_VAMP = {20, 75, 240, 840, 2400};
-	private static final long[] CROP_MILESTONE = {
-		0L,
-		30L, 50L, 100L, 250L, 500L, 1000L, 2500L, 5000L, 10000L, 25000L,
-		50000L, 100000L, 250000L, 500000L, 1000000L, 2500000L, 5000000L, 10000000L, 15000000L, 20000000L,
-		25000000L, 30000000L, 35000000L, 40000000L, 50000000L, 100000000L, 125000000L, 160000000L, 200000000L, 250000000L,
-		325000000L, 400000000L, 490000000L, 590000000L, 700000000L, 850000000L, 1000000000L, 1150000000L, 1300000000L, 1500000000L,
-		1700000000L, 1950000000L, 2200000000L, 2500000000L
-	};
+	/** Cumulative harvests to reach each Garden crop milestone. Wiki tables, 46 tiers. */
+	private static final long[] CROP_WHEAT = cropCum(
+		30, 50, 80, 200, 350, 700, 1500, 2500, 3500, 5000,
+		6500, 8000, 10000, 20000, 35000, 50000, 75000, 100000, 175000, 250000,
+		325000, 400000, 500000, 650000, 800000, 800000, 800000, 800000, 800000, 800000,
+		800000, 800000, 800000, 800000, 800000, 800000, 800000, 800000, 800000, 800000,
+		800000, 800000, 800000, 800000, 800000, 800000
+	);
+	private static final long[] CROP_CARROT = cropCum(
+		100, 150, 250, 500, 1000, 2000, 4500, 9000, 12000, 15000,
+		20000, 25000, 35000, 70000, 120000, 180000, 250000, 350000, 600000, 850000,
+		1100000, 1400000, 1800000, 2200000, 2600000, 2600000, 2600000, 2600000, 2600000, 2600000,
+		2600000, 2600000, 2600000, 2600000, 2600000, 2600000, 2600000, 2600000, 2600000, 2600000,
+		2600000, 2600000, 2600000, 2600000, 2600000, 2600000
+	);
+	private static final long[] CROP_MELON = cropCum(
+		150, 250, 400, 1000, 1800, 3500, 7500, 12500, 17500, 25000,
+		32500, 40000, 50000, 100000, 175000, 250000, 375000, 500000, 875000, 1200000,
+		1600000, 2000000, 2500000, 3200000, 4000000, 4000000, 4000000, 4000000, 4000000, 4000000,
+		4000000, 4000000, 4000000, 4000000, 4000000, 4000000, 4000000, 4000000, 4000000, 4000000,
+		4000000, 4000000, 4000000, 4000000, 4000000, 4000000
+	);
+	private static final long[] CROP_CANE = cropCum(
+		60, 100, 160, 400, 700, 1400, 3000, 5000, 7000, 10000,
+		13000, 16000, 20000, 40000, 70000, 100000, 150000, 200000, 350000, 500000,
+		650000, 800000, 1000000, 1300000, 1600000, 1600000, 1600000, 1600000, 1600000, 1600000,
+		1600000, 1600000, 1600000, 1600000, 1600000, 1600000, 1600000, 1600000, 1600000, 1600000,
+		1600000, 1600000, 1600000, 1600000, 1600000, 1600000
+	);
+	private static final long[] CROP_WART = cropCum(
+		90, 150, 250, 500, 1000, 2000, 4000, 7500, 10000, 15000,
+		20000, 25000, 30000, 50000, 100000, 150000, 200000, 300000, 500000, 750000,
+		1000000, 1300000, 1600000, 2000000, 2400000, 2400000, 2400000, 2400000, 2400000, 2400000,
+		2400000, 2400000, 2400000, 2400000, 2400000, 2400000, 2400000, 2400000, 2400000, 2400000,
+		2400000, 2400000, 2400000, 2400000, 2400000, 2400000
+	);
+	private static final String GARDEN = "https://hypixel.odtheking.com/v2/skyblock/garden?profile=";
 
 	public enum Status {
 		IDLE, LOADING, READY, ERROR
@@ -638,7 +667,7 @@ public final class ProfileViewer {
 		Dungeon dungeons = parseDungeons(member, soopyMember);
 		List<Slayer> slayers = parseSlayers(member, soopyMember);
 		Mining mining = parseMining(member, soopyMember);
-		Farming farming = parseFarming(member);
+		Farming farming = parseFarming(member, gardenData(string(profile, "profile_id")));
 		List<Pet> pets = parsePets(member);
 		JsonObject inventory = object(member, "inventory");
 		Bag inv = parseBag("Inventory", first(inventory, member, "inv_contents"), 9, 36);
@@ -1113,68 +1142,112 @@ public final class ProfileViewer {
 		return (int) num(nodes, key);
 	}
 
-	private static Farming parseFarming(JsonObject member) {
-		JsonObject garden = object(member, "garden_player_data");
-		if (garden == null) {
-			garden = object(member, "garden");
+	private static JsonObject gardenData(String profileId) {
+		String id = compact(profileId);
+		if (id.isBlank()) {
+			return null;
 		}
+		JsonObject root = getJson(GARDEN + id);
+		JsonObject garden = object(root, "garden");
+		if (garden != null) {
+			return garden;
+		}
+		if (object(root, "resources_collected") != null) {
+			return root;
+		}
+		root = getJson("https://sky.shiiyu.moe/api/v2/garden/" + id);
+		garden = object(root, "garden");
+		if (garden != null) {
+			return garden;
+		}
+		return object(root, "resources_collected") != null ? root : null;
+	}
+
+	private static Farming parseFarming(JsonObject member, JsonObject gardenApi) {
+		JsonObject nested = object(member, "garden_player_data");
+		if (nested == null) {
+			nested = object(member, "garden");
+		}
+		JsonObject garden = gardenApi != null ? gardenApi : nested;
 		int visitors = (int) num(object(garden, "commission_data"), "unique_npcs_served");
+		if (visitors == 0) {
+			visitors = (int) num(object(nested, "commission_data"), "unique_npcs_served");
+		}
 		if (visitors == 0) {
 			visitors = (int) num(garden, "unique_visitors");
 		}
-		int level = skillFrom("Garden", num(garden, "garden_experience"), SKILL_XP, 15).level();
+		double gardenXp = num(garden, "garden_experience");
+		if (gardenXp == 0d) {
+			gardenXp = num(nested, "garden_experience");
+		}
+		int level = skillFrom("Garden", gardenXp, SKILL_XP, 15).level();
 		JsonObject resources = object(garden, "resources_collected");
 		if (resources == null) {
-			resources = object(object(member, "garden"), "resources_collected");
+			resources = object(nested, "resources_collected");
 		}
-		JsonObject collection = object(member, "collection");
 		List<Crop> crops = new ArrayList<>();
-		crops.add(crop("Wheat", cropAmount(resources, collection, "wheat", "WHEAT")));
-		crops.add(crop("Carrot", cropAmount(resources, collection, "carrot", "CARROT_ITEM", "CARROT")));
-		crops.add(crop("Potato", cropAmount(resources, collection, "potato", "POTATO_ITEM", "POTATO")));
-		crops.add(crop("Pumpkin", cropAmount(resources, collection, "pumpkin", "PUMPKIN")));
-		crops.add(crop("Melon", cropAmount(resources, collection, "melon_slice", "melon", "MELON")));
-		crops.add(crop("Mushroom", cropAmount(resources, collection, "mushroom", "MUSHROOM_COLLECTION", "RED_MUSHROOM")));
-		crops.add(crop("Cocoa", cropAmount(resources, collection, "cocoa_beans", "INK_SACK:3", "COCOA")));
-		crops.add(crop("Cactus", cropAmount(resources, collection, "cactus", "CACTUS")));
-		crops.add(crop("Cane", cropAmount(resources, collection, "sugar_cane", "SUGAR_CANE")));
-		crops.add(crop("Wart", cropAmount(resources, collection, "nether_wart", "NETHER_STALK", "NETHER_WART")));
+		crops.add(crop("Wheat", CROP_WHEAT, cropAmount(resources, "WHEAT", "wheat")));
+		crops.add(crop("Carrot", CROP_CARROT, cropAmount(resources, "CARROT_ITEM", "CARROT", "carrot")));
+		crops.add(crop("Potato", CROP_CARROT, cropAmount(resources, "POTATO_ITEM", "POTATO", "potato")));
+		crops.add(crop("Pumpkin", CROP_WHEAT, cropAmount(resources, "PUMPKIN", "pumpkin")));
+		crops.add(crop("Melon", CROP_MELON, cropAmount(resources, "MELON", "MELON_SLICE", "melon", "melon_slice")));
+		crops.add(crop("Mushroom", CROP_WHEAT, cropAmount(resources, "MUSHROOM_COLLECTION", "MUSHROOM", "RED_MUSHROOM", "BROWN_MUSHROOM", "mushroom")));
+		crops.add(crop("Cocoa", CROP_WART, cropAmount(resources, "INK_SACK:3", "COCOA", "COCOA_BEANS", "cocoa_beans")));
+		crops.add(crop("Cactus", CROP_CANE, cropAmount(resources, "CACTUS", "cactus")));
+		crops.add(crop("Cane", CROP_CANE, cropAmount(resources, "SUGAR_CANE", "sugar_cane")));
+		crops.add(crop("Wart", CROP_WART, cropAmount(resources, "NETHER_STALK", "NETHER_WART", "nether_wart")));
 		return new Farming(visitors, level, List.copyOf(crops));
 	}
 
-	private static long cropAmount(JsonObject resources, JsonObject collection, String gardenKey, String... collectionKeys) {
-		double amount = num(resources, gardenKey);
-		if (amount == 0d && gardenKey != null) {
-			amount = num(resources, gardenKey.toUpperCase(Locale.ROOT));
+	private static long cropAmount(JsonObject resources, String... keys) {
+		if (resources == null) {
+			return 0L;
 		}
-		if (amount == 0d && collection != null) {
-			for (String key : collectionKeys) {
-				amount = num(collection, key);
-				if (amount > 0d) {
-					break;
-				}
+		for (String key : keys) {
+			if (key == null || key.isBlank()) {
+				continue;
+			}
+			double amount = num(resources, key);
+			if (amount == 0d) {
+				amount = num(resources, key.toUpperCase(Locale.ROOT));
+			}
+			if (amount == 0d) {
+				amount = num(resources, key.toLowerCase(Locale.ROOT));
+			}
+			if (amount > 0d) {
+				return (long) amount;
 			}
 		}
-		return (long) amount;
+		return 0L;
 	}
 
-	private static Crop crop(String name, long amount) {
+	private static Crop crop(String name, long[] table, long amount) {
+		int cap = table.length - 1;
 		int level = 0;
-		for (int i = 1; i < CROP_MILESTONE.length; i++) {
-			if (amount >= CROP_MILESTONE[i]) {
+		for (int i = 1; i < table.length; i++) {
+			if (amount >= table[i]) {
 				level = i;
 			} else {
 				break;
 			}
 		}
-		int cap = CROP_MILESTONE.length - 1;
 		float progress = 1f;
 		if (level < cap) {
-			double from = CROP_MILESTONE[level];
-			double to = CROP_MILESTONE[level + 1];
+			double from = table[level];
+			double to = table[level + 1];
 			progress = to <= from ? 1f : (float) Math.max(0d, Math.min(1d, (amount - from) / (to - from)));
 		}
 		return new Crop(name, amount, level, cap, progress);
+	}
+
+	private static long[] cropCum(long... steps) {
+		long[] out = new long[steps.length + 1];
+		long total = 0L;
+		for (int i = 0; i < steps.length; i++) {
+			total += steps[i];
+			out[i + 1] = total;
+		}
+		return out;
 	}
 
 	private static List<Pet> parsePets(JsonObject member) {

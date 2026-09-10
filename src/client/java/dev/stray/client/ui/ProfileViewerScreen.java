@@ -713,7 +713,8 @@ public class ProfileViewerScreen extends Screen {
 				GuiDraw.rounded(graphics, cx + 8, cy + cardH - 14, Math.max(4f, barW * fill), 5, 2, Theme.ACCENT);
 			}
 			if (hover) {
-				tooltip = crop.name() + " milestone " + crop.level() + " / " + crop.cap() + "\n" + prettyNumber(crop.amount()) + " collected";
+				tooltip = crop.name() + " milestone " + crop.level() + " / " + crop.cap()
+					+ "\n" + prettyNumber(crop.amount()) + " Garden harvests";
 			}
 		}
 	}
