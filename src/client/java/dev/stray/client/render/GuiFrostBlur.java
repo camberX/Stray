@@ -3,6 +3,7 @@ package dev.stray.client.render;
 import com.mojang.blaze3d.buffers.GpuBuffer;
 import com.mojang.blaze3d.buffers.Std140Builder;
 import com.mojang.blaze3d.buffers.Std140SizeCalculator;
+import com.mojang.blaze3d.pipeline.BlendFunction;
 import com.mojang.blaze3d.pipeline.ColorTargetState;
 import com.mojang.blaze3d.pipeline.DepthStencilState;
 import com.mojang.blaze3d.pipeline.RenderPipeline;
@@ -20,6 +21,7 @@ import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import dev.stray.Stray;
 import dev.stray.client.config.StrayConfig;
+import dev.stray.client.mixin.GuiGraphicsExtractorInvoker;
 import dev.stray.client.ui.StrayScreen;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
@@ -45,6 +47,7 @@ import java.util.OptionalInt;
  */
 public final class GuiFrostBlur {
 	private static final Identifier BLUR_SHADER = Stray.id("post/frost_blur");
+	private static final Identifier ROUNDED_BLIT_SHADER = Stray.id("core/gui_rounded_blit");
 	private static final int ROUNDS = 3;
 	private static final float REGION_PAD_GUI = 3f;
 	private static final int MAX_REGIONS = 24;
@@ -57,6 +60,7 @@ public final class GuiFrostBlur {
 	private static float lastFrost = -1f;
 	private static float writtenRadius = -1f;
 	private static RenderPipeline blurPipeline;
+	private static RenderPipeline roundedBlitPipeline;
 	private static GpuBuffer configH;
 	private static GpuBuffer configV;
 
@@ -135,7 +139,7 @@ public final class GuiFrostBlur {
 
 	public static void blitWindow(GuiGraphicsExtractor graphics, float x, float y, float w, float h, float radius) {
 		noteBlit(graphics, x, y, w, h);
-		if (!haveFrost || frost == null) {
+		if (!haveFrost || frost == null || w <= 0f || h <= 0f) {
 			return;
 		}
 		GpuTextureView view = frost.getColorTextureView();
@@ -144,10 +148,19 @@ public final class GuiFrostBlur {
 		}
 		GpuSampler sampler = RenderSystem.getSamplerCache().getClampToEdge(FilterMode.LINEAR);
 		float r = Math.min(radius, Math.min(w, h) / 2f);
-		blitRegion(graphics, view, sampler, x + r, y, w - 2f * r, h);
-		blitRegion(graphics, view, sampler, x, y + r, r, h - 2f * r);
-		blitRegion(graphics, view, sampler, x + w - r, y + r, r, h - 2f * r);
-		blitCornerPies(graphics, view, sampler, x, y, w, h, r);
+		if (r < 0.75f || !(graphics instanceof GuiGraphicsExtractorInvoker invoker)) {
+			blitRegion(graphics, view, sampler, x, y, w, h);
+			return;
+		}
+		ensureRoundedBlitPipeline();
+		int ru = Math.max(1, Math.min(255, Math.round(r / w * 255f)));
+		int rv = Math.max(1, Math.min(255, Math.round(r / h * 255f)));
+		int color = 0xFF000000 | (ru << 16) | (rv << 8) | 0xFF;
+		graphics.pose().pushMatrix();
+		graphics.pose().translate(x, y);
+		graphics.pose().scale(w, h);
+		invoker.stray$innerBlit(roundedBlitPipeline, view, sampler, 0, 0, 1, 1, 0f, 1f, 0f, 1f, color);
+		graphics.pose().popMatrix();
 	}
 
 	/**
@@ -300,37 +313,6 @@ public final class GuiFrostBlur {
 		});
 	}
 
-	private static void blitCornerPies(
-		GuiGraphicsExtractor graphics,
-		GpuTextureView view,
-		GpuSampler sampler,
-		float x,
-		float y,
-		float w,
-		float h,
-		float r
-	) {
-		if (r < 0.75f) {
-			return;
-		}
-		int rows = Math.max(12, Math.min(40, Math.round(r * 2f)));
-		float rowH = r / rows;
-		for (int i = 0; i < rows; i++) {
-			float ly = i * rowH;
-			float dy = r - (ly + rowH * 0.5f);
-			float chord = (float) Math.sqrt(Math.max(0f, r * r - dy * dy));
-			if (chord <= 0.02f) {
-				continue;
-			}
-			float top = y + ly;
-			float bottom = y + h - ly - rowH;
-			blitRegion(graphics, view, sampler, x + r - chord, top, chord, rowH);
-			blitRegion(graphics, view, sampler, x + w - r, top, chord, rowH);
-			blitRegion(graphics, view, sampler, x + r - chord, bottom, chord, rowH);
-			blitRegion(graphics, view, sampler, x + w - r, bottom, chord, rowH);
-		}
-	}
-
 	private static void blitRegion(
 		GuiGraphicsExtractor graphics,
 		GpuTextureView view,
@@ -357,6 +339,22 @@ public final class GuiFrostBlur {
 		graphics.pose().scale(w, h);
 		graphics.blit(view, sampler, 0, 0, 1, 1, u0, u1, v0, v1);
 		graphics.pose().popMatrix();
+	}
+
+	private static synchronized void ensureRoundedBlitPipeline() {
+		if (roundedBlitPipeline != null) {
+			return;
+		}
+		roundedBlitPipeline = RenderPipeline.builder()
+			.withLocation(Stray.id("pipeline/gui_rounded_blit"))
+			.withVertexShader(ROUNDED_BLIT_SHADER)
+			.withFragmentShader(ROUNDED_BLIT_SHADER)
+			.withSampler("Sampler0")
+			.withUniform("DynamicTransforms", UniformType.UNIFORM_BUFFER)
+			.withUniform("Projection", UniformType.UNIFORM_BUFFER)
+			.withColorTargetState(new ColorTargetState(BlendFunction.TRANSLUCENT))
+			.withVertexFormat(DefaultVertexFormat.POSITION_TEX_COLOR, VertexFormat.Mode.QUADS)
+			.build();
 	}
 
 	private static synchronized void ensureBlurPipeline() {

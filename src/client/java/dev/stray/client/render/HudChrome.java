@@ -20,7 +20,6 @@ public final class HudChrome {
 		int outline,
 		int accent
 	) {
-		Theme.refresh();
 		if (StrayConfig.get().guiDesignControl()) {
 			float r = Math.max(8f, radius);
 			GuiFrostBlur.blitWindow(graphics, x, y, w, h, r);

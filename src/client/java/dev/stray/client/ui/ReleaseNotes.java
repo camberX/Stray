@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.155", new String[]{
+			"Control HUD glass (Music, Watermark, and the rest of the HUD) draws frost as one rounded blit instead of dozens of corner slices, which was the main HUD FPS cost."
+		}),
 		new Entry("1.2.154", new String[]{
 			"Held item and Player fill each have their own outline color picker. Existing configs keep the previous fill-derived outline color until you change it."
 		}),
