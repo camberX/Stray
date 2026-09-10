@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.183", new String[]{
+			"Player fill and Held item shader have a Portal style that uses the End portal look. Cycle Style to Portal."
+		}),
 		new Entry("1.2.182", new String[]{
 			"Hub fairy souls stay on in Village, Mountain, Wilderness, and the other Hub spots. The catalog is 80/80; /stray fairysouls shows how many are left on this island."
 		}),

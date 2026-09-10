@@ -109,6 +109,50 @@ void main() {
     float glint = pow(clamp(texture(Sampler1, screen * 0.010).r, 0.0, 1.0), 2.4);
 #endif
 
+    if (style > 1.5) {
+        float t = GameTime * 18.0;
+        vec2 ndc = screen;
+#ifdef ESP_FILL
+        ndc *= 0.62;
+#else
+        ndc *= 0.48;
+#endif
+        ndc /= max(ScreenSize.y, 1.0);
+        vec3 acc = vec3(0.008, 0.018, 0.024);
+        for (int i = 0; i < 12; i++) {
+            float layer = float(i + 1);
+            float ang = (layer * layer * 4321.0 + layer * 9.0) * 0.034906 + t * (0.09 + layer * 0.007);
+            float cs = cos(ang);
+            float sn = sin(ang);
+            float sc = (4.5 - layer * 0.22) * 1.18;
+            vec2 uv = vec2(cs * ndc.x - sn * ndc.y, sn * ndc.x + cs * ndc.y) * sc;
+            uv.y += (2.0 + layer / 1.5) * t * 0.20;
+            uv.x += 17.0 / layer * 0.035;
+            float n = hash(floor(uv * 9.0));
+            vec2 f = fract(uv * 9.0) - 0.5;
+            vec2 jitter = 0.28 * (vec2(hash(floor(uv * 9.0) + 3.1), hash(floor(uv * 9.0) + 7.7)) - 0.5);
+            float star = smoothstep(0.16, 0.0, length(f - jitter)) * step(0.76, n);
+            float fog = noise(uv * 2.6 + vec2(t * 0.04, -t * 0.03));
+            vec3 layerCol = vec3(
+                0.018 + 0.11 * fract(layer * 0.17),
+                0.075 + 0.09 * fract(layer * 0.31),
+                0.088 + 0.12 * fract(layer * 0.53)
+            );
+            acc += layerCol * (0.20 + fog * 0.50) / (0.48 + layer * 0.11);
+            acc += vec3(0.48, 0.82, 0.58) * star * (1.55 / layer);
+        }
+        float density = mix(0.52, 1.18, (amount - 0.10) / 1.40);
+        acc *= density;
+        acc = mix(acc, acc * (fill * 0.82 + vec3(0.18)), 0.40);
+        vec3 body = acc * max(light, vec3(0.42));
+        body += fill * light * glint * 0.08;
+        fragColor = vec4(body, tex.a);
+#ifdef ESP_FILL
+        fragColor.a = 1.0;
+#endif
+        return;
+    }
+
     if (style > 0.5) {
         float t = GameTime * 90.0;
 #ifdef ESP_FILL

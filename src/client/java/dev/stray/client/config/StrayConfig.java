@@ -887,31 +887,67 @@ public final class StrayConfig {
 	}
 
 	public void cycleHeldItemShaderStyle() {
-		heldItemShaderStyle = heldItemShaderStars() ? "smoke" : "stars";
+		heldItemShaderStyle = nextShaderStyle(heldItemShaderStyle);
 	}
 
 	public String heldItemShaderStyleLabel() {
-		return heldItemShaderStars() ? "Stars" : "Smoke";
+		return shaderStyleLabel(heldItemShaderStyle);
 	}
 
 	public boolean heldItemShaderStars() {
 		return "stars".equals(heldItemShaderStyle);
 	}
 
+	public boolean heldItemShaderPortal() {
+		return "portal".equals(heldItemShaderStyle);
+	}
+
 	public float heldItemShaderStyleIndex() {
-		return heldItemShaderStars() ? 1f : 0f;
+		return shaderStyleIndex(heldItemShaderStyle);
 	}
 
 	public void cyclePlayerFillStyle() {
-		playerFillStyle = playerFillStars() ? "smoke" : "stars";
+		playerFillStyle = nextShaderStyle(playerFillStyle);
 	}
 
 	public String playerFillStyleLabel() {
-		return playerFillStars() ? "Stars" : "Smoke";
+		return shaderStyleLabel(playerFillStyle);
 	}
 
 	public boolean playerFillStars() {
 		return "stars".equals(playerFillStyle);
+	}
+
+	public boolean playerFillPortal() {
+		return "portal".equals(playerFillStyle);
+	}
+
+	public float playerFillStyleIndex() {
+		return shaderStyleIndex(playerFillStyle);
+	}
+
+	private static String nextShaderStyle(String style) {
+		return switch (normalizeHeldItemShaderStyle(style)) {
+			case "stars" -> "portal";
+			case "portal" -> "smoke";
+			default -> "stars";
+		};
+	}
+
+	private static String shaderStyleLabel(String style) {
+		return switch (normalizeHeldItemShaderStyle(style)) {
+			case "stars" -> "Stars";
+			case "portal" -> "Portal";
+			default -> "Smoke";
+		};
+	}
+
+	private static float shaderStyleIndex(String style) {
+		return switch (normalizeHeldItemShaderStyle(style)) {
+			case "stars" -> 1f;
+			case "portal" -> 2f;
+			default -> 0f;
+		};
 	}
 
 	public static String normalizeHeldItemShaderStyle(String style) {
@@ -920,6 +956,7 @@ public final class StrayConfig {
 		}
 		return switch (style.toLowerCase(java.util.Locale.ROOT)) {
 			case "stars", "star", "starry", "sky" -> "stars";
+			case "portal", "end", "end_portal", "endportal", "end portal" -> "portal";
 			default -> "smoke";
 		};
 	}

@@ -568,7 +568,7 @@ public final class HeldItemShader {
 			return new Vector3f(
 				StrayConfig.clamp(config.playerFillOutline, 0.15f, 1.50f),
 				StrayConfig.clamp(config.playerFillSmoke, 0.10f, 1.50f),
-				config.playerFillStars() ? 1f : 0f
+				config.playerFillStyleIndex()
 			);
 		}
 		return new Vector3f(
