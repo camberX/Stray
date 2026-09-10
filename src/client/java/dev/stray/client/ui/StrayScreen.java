@@ -150,7 +150,7 @@ public class StrayScreen extends Screen {
 		CH_MAP("CH map", 1),
 		METAL("Metal detector", 1),
 		FARMING("Yaw / Pitch", 1),
-		INVENTORY("Inventory", 3),
+		INVENTORY("Inventory", 5),
 		PLOTS("Garden plots", 1),
 		PEST("Pest ESP", 2),
 		AUTO_DNA("Auto DNA", 5),
@@ -341,6 +341,8 @@ public class StrayScreen extends Screen {
 		new SearchEntry("Khazad-dum", Tab.HOLLOWS, "Hollows"),
 		new SearchEntry("Fairy Grotto", Tab.HOLLOWS, "Hollows"),
 		new SearchEntry("Inventory HUD", Tab.OVERLAY, "Overlay"),
+		new SearchEntry("Minimal", Tab.OVERLAY, "Overlay"),
+		new SearchEntry("Blur", Tab.OVERLAY, "Overlay"),
 		new SearchEntry("Item count", Tab.OVERLAY, "Overlay"),
 		new SearchEntry("Pane opacity", Tab.SETTINGS, "Theme"),
 		new SearchEntry("Control glass", Tab.SETTINGS, "Theme"),
@@ -2963,6 +2965,8 @@ public class StrayScreen extends Screen {
 			case CH_MAP -> toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Waypoint names", config.crystalHollowsMapLabels, v -> config.crystalHollowsMapLabels = v);
 			case METAL -> toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Tool title", config.metalDetectorToolTitle, v -> config.metalDetectorToolTitle = v);
 			case INVENTORY -> {
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Minimal", config.inventoryHudMinimal, v -> config.inventoryHudMinimal = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Blur", config.inventoryHudBlur, v -> config.inventoryHudBlur = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Hotbar", config.inventoryHudHotbar, v -> config.inventoryHudHotbar = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Armor", config.inventoryHudArmor, v -> config.inventoryHudArmor = v);
 				toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Item count", config.inventoryHudCount, v -> config.inventoryHudCount = v);
@@ -3439,7 +3443,7 @@ public class StrayScreen extends Screen {
 		return FabricLoader.getInstance()
 			.getModContainer("stray")
 			.map(container -> container.getMetadata().getVersion().getFriendlyString())
-			.orElse("1.2.204");
+			.orElse("1.2.205");
 	}
 
 	@Override

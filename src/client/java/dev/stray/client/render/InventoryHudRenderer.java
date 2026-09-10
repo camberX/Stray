@@ -34,7 +34,7 @@ public final class InventoryHudRenderer {
 	}
 
 	public static float drawWidth() {
-		return PAD * 2 + COLS * SLOT + (COLS - 1) * GAP;
+		return metrics().panelW;
 	}
 
 	public static float drawHeight() {
@@ -92,14 +92,25 @@ public final class InventoryHudRenderer {
 			graphics.pose().scale(scale, scale);
 		}
 
-		HudChrome.panel(graphics, 0, 0, layout.panelW, layout.panelH, 6, Theme.WINDOW, Theme.LINE);
-		GuiDraw.small(graphics, font, "INVENTORY", PAD + 4, PAD + 1, Theme.ACCENT);
-		if (config.inventoryHudCount) {
-			String filled = filledLabel(player, inventory);
-			GuiDraw.small(graphics, font, filled, layout.panelW - PAD - GuiDraw.smallWidth(font, filled), PAD + 1, Theme.MUTED);
+		if (config.inventoryHudBlur) {
+			HudChrome.panel(graphics, 0, 0, layout.panelW, layout.panelH, 6, Theme.WINDOW, Theme.LINE);
+		}
+		if (!config.inventoryHudMinimal) {
+			GuiDraw.small(graphics, font, "INVENTORY", layout.pad + 4, layout.pad + 1, Theme.ACCENT);
+			if (config.inventoryHudCount) {
+				String filled = filledLabel(player, inventory);
+				GuiDraw.small(
+					graphics,
+					font,
+					filled,
+					layout.panelW - layout.pad - GuiDraw.smallWidth(font, filled),
+					layout.pad + 1,
+					Theme.MUTED
+				);
+			}
 		}
 
-		int gridX = PAD;
+		int gridX = layout.pad;
 		if (config.inventoryHudArmor) {
 			for (int i = 0; i < ARMOR.length; i++) {
 				ItemStack stack = player.getItemBySlot(ARMOR[i]);
@@ -128,9 +139,11 @@ public final class InventoryHudRenderer {
 
 	private static Metrics metrics() {
 		StrayConfig config = StrayConfig.get();
+		int pad = config.inventoryHudMinimal ? 2 : PAD;
+		int head = config.inventoryHudMinimal ? 0 : HEAD;
 		int gridW = COLS * SLOT + (COLS - 1) * GAP;
-		int panelW = PAD * 2 + gridW;
-		int y = PAD + HEAD;
+		int panelW = pad * 2 + gridW;
+		int y = pad + head;
 		int armorY = y;
 		if (config.inventoryHudArmor) {
 			y += SLOT + 5;
@@ -142,8 +155,8 @@ public final class InventoryHudRenderer {
 			y += 5 + SLOT;
 			hotbarY = y - SLOT;
 		}
-		int panelH = y + PAD;
-		return new Metrics(panelW, panelH, gridW, armorY, mainY, hotbarY);
+		int panelH = y + pad;
+		return new Metrics(panelW, panelH, gridW, pad, armorY, mainY, hotbarY);
 	}
 
 	private static void slot(
@@ -206,6 +219,6 @@ public final class InventoryHudRenderer {
 		return filledCache;
 	}
 
-	private record Metrics(int panelW, int panelH, int gridW, int armorY, int mainY, int hotbarY) {
+	private record Metrics(int panelW, int panelH, int gridW, int pad, int armorY, int mainY, int hotbarY) {
 	}
 }

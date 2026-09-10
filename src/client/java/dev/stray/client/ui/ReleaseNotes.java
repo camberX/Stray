@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.205", new String[]{
+			"Inventory HUD has Minimal (no INVENTORY title or top padding) and Blur toggles for the frosted panel."
+		}),
 		new Entry("1.2.204", new String[]{
 			"The click GUI sorts features into clearer tabs and sections: Atmosphere/Camera, Visuals ESP/Players/Mobs, Combat Hitsound/Assist, HUD Widgets/Media/Vanilla, Mining Dwarven/Hollows/Nodes, Farming HUD/Garden/DNA, and Misc Menus/Keys/Status."
 		}),
