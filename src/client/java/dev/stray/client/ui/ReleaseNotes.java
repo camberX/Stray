@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.181", new String[]{
+			"Fairy soul paths go around walls and through doors into buildings instead of giving up when the soul is behind a wall."
+		}),
 		new Entry("1.2.180", new String[]{
 			"Fairy soul pathfinding no longer reruns every tick, so it should not tank FPS while the line is up."
 		}),

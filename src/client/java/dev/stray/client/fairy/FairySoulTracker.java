@@ -5,7 +5,9 @@ import dev.stray.client.location.SkyblockLocation;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.network.chat.Component;
+import net.minecraft.tags.BlockTags;
 import net.minecraft.world.level.block.PlayerHeadBlock;
 import net.minecraft.world.level.block.PlayerWallHeadBlock;
 import net.minecraft.world.level.block.entity.SkullBlockEntity;
@@ -25,8 +27,8 @@ import java.util.PriorityQueue;
 public final class FairySoulTracker {
 	private static final double CLICK_RANGE = 4.5;
 	private static final double LOCK_RANGE = 10.0;
-	private static final int SEARCH = 16;
-	private static final int ASTAR_NODES = 1800;
+	private static final int SEARCH = 28;
+	private static final int ASTAR_NODES = 5000;
 	private static final Map<Long, Boolean> SOLID = new HashMap<>();
 	private static FairySouls.Soul locked;
 	private static List<Vec3> path = List.of();
@@ -84,20 +86,21 @@ public final class FairySoulTracker {
 		}
 		locked = target;
 		BlockPos start = BlockPos.containing(at.x, at.y, at.z);
-		if (start.equals(lastStart)) {
+		if (start.equals(lastStart) && !path.isEmpty()) {
 			return;
 		}
-		if (idle > 0 && !path.isEmpty()) {
+		if (idle > 0) {
 			idle--;
 			return;
 		}
 		List<Vec3> next = route(client.level, start, target);
 		lastStart = start;
-		idle = next.isEmpty() ? 8 : 3;
 		if (!next.isEmpty()) {
 			path = next;
-		} else if (path.isEmpty()) {
+			idle = 3;
+		} else {
 			path = List.of();
+			idle = 10;
 		}
 	}
 
@@ -238,12 +241,12 @@ public final class FairySoulTracker {
 		open.add(origin);
 		best.put(pack(origin.x, origin.y, origin.z), origin);
 		Node found = null;
-		int minY = Math.min(start.getY(), goal.getY()) - 4;
-		int maxY = Math.max(start.getY(), goal.getY()) + 6;
+		int minY = Math.min(start.getY(), goal.getY()) - 8;
+		int maxY = Math.max(start.getY(), goal.getY()) + 10;
 		int guard = 0;
 		while (!open.isEmpty() && guard++ < ASTAR_NODES) {
 			Node cur = open.poll();
-			if (cur.x == goal.getX() && cur.y == goal.getY() && cur.z == goal.getZ()) {
+			if (reached(cur.x, cur.y, cur.z, goal)) {
 				found = cur;
 				break;
 			}
@@ -344,8 +347,15 @@ public final class FairySoulTracker {
 		return dest || standable(level, to) || (dy < 0 && passable(level, to));
 	}
 
+	private static boolean reached(int x, int y, int z, BlockPos goal) {
+		if (x != goal.getX() || z != goal.getZ()) {
+			return false;
+		}
+		return y == goal.getY() || y == goal.getY() - 1;
+	}
+
 	private static boolean standable(ClientLevel level, BlockPos feet) {
-		return passable(level, feet) && blocked(level, feet.below());
+		return passable(level, feet) && floor(level, feet.below());
 	}
 
 	private static boolean passable(ClientLevel level, BlockPos feet) {
@@ -355,14 +365,33 @@ public final class FairySoulTracker {
 		return !blocked(level, feet.above());
 	}
 
+	private static boolean floor(ClientLevel level, BlockPos pos) {
+		BlockState state = level.getBlockState(pos);
+		if (state.is(BlockTags.TRAPDOORS) || state.is(BlockTags.SLABS) || state.is(BlockTags.STAIRS)) {
+			return true;
+		}
+		return blocked(level, pos);
+	}
+
+	private static boolean walkThrough(BlockState state) {
+		return state.is(BlockTags.DOORS) || state.is(BlockTags.FENCE_GATES) || state.is(BlockTags.TRAPDOORS)
+			|| state.is(BlockTags.CLIMBABLE);
+	}
+
 	private static boolean blocked(ClientLevel level, BlockPos pos) {
 		long key = pack(pos.getX(), pos.getY(), pos.getZ());
 		Boolean cached = SOLID.get(key);
 		if (cached != null) {
 			return cached;
 		}
-		VoxelShape shape = level.getBlockState(pos).getCollisionShape(level, pos);
-		boolean hit = shape != null && !shape.isEmpty();
+		BlockState state = level.getBlockState(pos);
+		boolean hit;
+		if (walkThrough(state)) {
+			hit = false;
+		} else {
+			VoxelShape shape = state.getCollisionShape(level, pos);
+			hit = shape != null && !shape.isEmpty() && shape.max(Direction.Axis.Y) > 0.2;
+		}
 		SOLID.put(key, hit);
 		return hit;
 	}
