@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.180", new String[]{
+			"Fairy soul pathfinding no longer reruns every tick, so it should not tank FPS while the line is up."
+		}),
 		new Entry("1.2.179", new String[]{
 			"Fairy soul path starts at 10 blocks horizontally (height is ignored), stays locked until that soul is found, redraws as you move, rounds corners, and does not clip through walls. Already-found chat also hides the nearest soul."
 		}),

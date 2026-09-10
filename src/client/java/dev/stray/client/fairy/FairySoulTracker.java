@@ -25,10 +25,13 @@ import java.util.PriorityQueue;
 public final class FairySoulTracker {
 	private static final double CLICK_RANGE = 4.5;
 	private static final double LOCK_RANGE = 10.0;
-	private static final int SEARCH = 28;
+	private static final int SEARCH = 16;
+	private static final int ASTAR_NODES = 1800;
+	private static final Map<Long, Boolean> SOLID = new HashMap<>();
 	private static FairySouls.Soul locked;
 	private static List<Vec3> path = List.of();
 	private static BlockPos lastStart;
+	private static int idle;
 
 	private FairySoulTracker() {
 	}
@@ -81,11 +84,19 @@ public final class FairySoulTracker {
 		}
 		locked = target;
 		BlockPos start = BlockPos.containing(at.x, at.y, at.z);
+		if (start.equals(lastStart)) {
+			return;
+		}
+		if (idle > 0 && !path.isEmpty()) {
+			idle--;
+			return;
+		}
 		List<Vec3> next = route(client.level, start, target);
+		lastStart = start;
+		idle = next.isEmpty() ? 8 : 3;
 		if (!next.isEmpty()) {
 			path = next;
-			lastStart = start;
-		} else if (path.isEmpty() || lastStart == null) {
+		} else if (path.isEmpty()) {
 			path = List.of();
 		}
 	}
@@ -141,6 +152,8 @@ public final class FairySoulTracker {
 		locked = null;
 		path = List.of();
 		lastStart = null;
+		idle = 0;
+		SOLID.clear();
 	}
 
 	private static FairySouls.Soul nearestUnfound(double x, double z, double range) {
@@ -198,6 +211,7 @@ public final class FairySoulTracker {
 	}
 
 	private static List<Vec3> route(ClientLevel level, BlockPos start, FairySouls.Soul soul) {
+		SOLID.clear();
 		BlockPos goal = soul.pos();
 		List<BlockPos> cells = astar(level, start, goal);
 		if (cells.isEmpty()) {
@@ -227,7 +241,7 @@ public final class FairySoulTracker {
 		int minY = Math.min(start.getY(), goal.getY()) - 4;
 		int maxY = Math.max(start.getY(), goal.getY()) + 6;
 		int guard = 0;
-		while (!open.isEmpty() && guard++ < 24000) {
+		while (!open.isEmpty() && guard++ < ASTAR_NODES) {
 			Node cur = open.poll();
 			if (cur.x == goal.getX() && cur.y == goal.getY() && cur.z == goal.getZ()) {
 				found = cur;
@@ -338,12 +352,19 @@ public final class FairySoulTracker {
 		if (blocked(level, feet)) {
 			return false;
 		}
-		return !blocked(level, feet.above()) || looksLikeSoul(level, feet.above());
+		return !blocked(level, feet.above());
 	}
 
 	private static boolean blocked(ClientLevel level, BlockPos pos) {
+		long key = pack(pos.getX(), pos.getY(), pos.getZ());
+		Boolean cached = SOLID.get(key);
+		if (cached != null) {
+			return cached;
+		}
 		VoxelShape shape = level.getBlockState(pos).getCollisionShape(level, pos);
-		return shape != null && !shape.isEmpty();
+		boolean hit = shape != null && !shape.isEmpty();
+		SOLID.put(key, hit);
+		return hit;
 	}
 
 	private static List<Vec3> pull(ClientLevel level, List<Vec3> raw, BlockPos goal) {
