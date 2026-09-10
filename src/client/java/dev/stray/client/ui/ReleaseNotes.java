@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.147", new String[]{
+			"Profile viewer uses more of the window: bigger chips, icons, HOTM nodes, item slots, and pet cells."
+		}),
 		new Entry("1.2.146", new String[]{
 			"/pv and /pv name always open Stray's profile viewer, even if another mod also uses that command."
 		}),
