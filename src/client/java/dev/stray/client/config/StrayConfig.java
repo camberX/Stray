@@ -78,6 +78,7 @@ public final class StrayConfig {
 	public boolean jacobContestHudEnabled = false;
 	public boolean composterHudEnabled = false;
 	public boolean composterUpgradesKnown = false;
+	public String composterProfile = "";
 	public int composterSpeed = 0;
 	public int composterMultiDrop = 0;
 	public int composterFuelCap = 0;

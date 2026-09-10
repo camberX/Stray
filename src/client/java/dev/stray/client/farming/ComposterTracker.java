@@ -24,6 +24,7 @@ public final class ComposterTracker {
 		Pattern.CASE_INSENSITIVE
 	);
 	private static final Pattern TIME = Pattern.compile("^Time Left:\\s*(.+)$", Pattern.CASE_INSENSITIVE);
+	private static final Pattern PROFILE = Pattern.compile("^Profile:\\s*(.+)$", Pattern.CASE_INSENSITIVE);
 	private static final Pattern UPGRADE = Pattern.compile(
 		"^(Composter Speed|Multi Drop|Fuel Cap|Organic Matter Cap|Cost Reduction)(?:\\s+([IVXLCDM]+|\\d+))?$",
 		Pattern.CASE_INSENSITIVE
@@ -58,8 +59,8 @@ public final class ComposterTracker {
 			return;
 		}
 		parseTick = tick;
-		readUpgrades(client);
 		Parsed parsed = readWidget(client);
+		readUpgrades(client, parsed == null ? "" : parsed.profile);
 		if (parsed == null) {
 			if (++missingTicks >= 8) {
 				snapshot = Snapshot.empty();
@@ -90,6 +91,14 @@ public final class ComposterTracker {
 		List<String> lines = new ArrayList<>(infos.size());
 		for (PlayerInfo info : infos) {
 			lines.add(clean(tabName(info)));
+		}
+		String profile = "";
+		for (String line : lines) {
+			Matcher matcher = PROFILE.matcher(line);
+			if (matcher.matches()) {
+				profile = matcher.group(1).trim();
+				break;
+			}
 		}
 		for (int i = 0; i < lines.size(); i++) {
 			if (!lines.get(i).equalsIgnoreCase("Composter:")) {
@@ -128,7 +137,7 @@ public final class ComposterTracker {
 				}
 			}
 			if (organic >= 0 || fuel >= 0 || stored >= 0 || !time.isEmpty()) {
-				return new Parsed(Math.max(0, organic), Math.max(0, fuel), Math.max(0, stored), time);
+				return new Parsed(Math.max(0, organic), Math.max(0, fuel), Math.max(0, stored), time, profile);
 			}
 		}
 		return null;
@@ -137,7 +146,9 @@ public final class ComposterTracker {
 	private static Snapshot calculate(Parsed parsed, StrayConfig config) {
 		boolean active = !parsed.time.equalsIgnoreCase("INACTIVE");
 		int nextSeconds = active ? parseDuration(parsed.time) : -1;
-		if (!config.composterUpgradesKnown) {
+		boolean matchingProfile = !parsed.profile.isBlank()
+			&& parsed.profile.equalsIgnoreCase(config.composterProfile);
+		if (!config.composterUpgradesKnown || !matchingProfile) {
 			return new Snapshot(
 				true,
 				active,
@@ -204,9 +215,11 @@ public final class ComposterTracker {
 		return Math.max(0L, (long) Math.floor(remaining / required));
 	}
 
-	private static void readUpgrades(Minecraft client) {
+	private static void readUpgrades(Minecraft client, String profile) {
 		if (!(client.screen instanceof AbstractContainerScreen<?> screen)
-			|| !"Composter Upgrades".equals(screen.getTitle().getString())) {
+			|| !"Composter Upgrades".equals(screen.getTitle().getString())
+			|| profile == null
+			|| profile.isBlank()) {
 			return;
 		}
 		int speed = -1;
@@ -238,6 +251,7 @@ public final class ComposterTracker {
 		}
 		StrayConfig config = StrayConfig.get();
 		boolean changed = !config.composterUpgradesKnown
+			|| !profile.equalsIgnoreCase(config.composterProfile)
 			|| config.composterSpeed != speed
 			|| config.composterMultiDrop != multi
 			|| config.composterFuelCap != fuelCap
@@ -247,6 +261,7 @@ public final class ComposterTracker {
 			return;
 		}
 		config.composterUpgradesKnown = true;
+		config.composterProfile = profile;
 		config.composterSpeed = speed;
 		config.composterMultiDrop = multi;
 		config.composterFuelCap = fuelCap;
@@ -371,6 +386,6 @@ public final class ComposterTracker {
 		}
 	}
 
-	private record Parsed(long organic, long fuel, long stored, String time) {
+	private record Parsed(long organic, long fuel, long stored, String time, String profile) {
 	}
 }
