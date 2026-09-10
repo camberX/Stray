@@ -24,11 +24,11 @@ import java.util.PriorityQueue;
 
 public final class FairySoulTracker {
 	private static final double CLICK_RANGE = 4.5;
-	private static final double PATH_RANGE = 5.0;
-	private static FairySouls.Soul lastClicked;
+	private static final double LOCK_RANGE = 10.0;
+	private static final int SEARCH = 28;
+	private static FairySouls.Soul locked;
 	private static List<Vec3> path = List.of();
-	private static BlockPos pathSoul;
-	private static int pathTick;
+	private static BlockPos lastStart;
 
 	private FairySoulTracker() {
 	}
@@ -59,40 +59,39 @@ public final class FairySoulTracker {
 	}
 
 	public static void tick(Minecraft client) {
-		if (!active() || client.player == null || client.level == null) {
-			path = List.of();
-			pathSoul = null;
+		if (client.player == null || client.level == null) {
+			clearPath();
 			return;
 		}
-		int t = client.player.tickCount;
-		if (pathTick != Integer.MIN_VALUE && t - pathTick < 3 && t >= pathTick) {
+		if (!StrayConfig.get().fairySoulEsp) {
+			clearPath();
 			return;
 		}
-		pathTick = t;
+		if (locked != null && FairySoulProgress.found(locked)) {
+			clearPath();
+		}
 		Vec3 at = client.player.position();
-		FairySouls.Soul near = null;
-		double best = PATH_RANGE;
-		for (FairySouls.Soul soul : visible()) {
-			double d = at.distanceTo(soul.center());
-			if (d <= best) {
-				best = d;
-				near = soul;
-			}
+		FairySouls.Soul target = locked;
+		if (target == null || FairySoulProgress.found(target)) {
+			target = nearestUnfound(at.x, at.z, LOCK_RANGE);
 		}
-		if (near == null) {
+		if (target == null) {
+			clearPath();
+			return;
+		}
+		locked = target;
+		BlockPos start = BlockPos.containing(at.x, at.y, at.z);
+		List<Vec3> next = route(client.level, start, target);
+		if (!next.isEmpty()) {
+			path = next;
+			lastStart = start;
+		} else if (path.isEmpty() || lastStart == null) {
 			path = List.of();
-			pathSoul = null;
-			return;
 		}
-		if (near.pos().equals(pathSoul) && !path.isEmpty()) {
-			return;
-		}
-		pathSoul = near.pos();
-		path = route(client.level, BlockPos.containing(at.x, at.y, at.z), near);
 	}
 
 	public static void onUseBlock(BlockHitResult hit) {
-		if (!active() || hit == null) {
+		if (hit == null) {
 			return;
 		}
 		Minecraft client = Minecraft.getInstance();
@@ -105,10 +104,7 @@ public final class FairySoulTracker {
 		if (soul == null) {
 			return;
 		}
-		lastClicked = soul;
-		FairySoulProgress.mark(soul);
-		path = List.of();
-		pathSoul = null;
+		markFound(soul);
 	}
 
 	public static void onChat(Component message) {
@@ -116,25 +112,40 @@ public final class FairySoulTracker {
 			return;
 		}
 		String text = message.getString().replaceAll("§.", "").toLowerCase(Locale.ROOT);
-		if (!text.contains("you found a fairy soul")) {
+		boolean found = text.contains("you found a fairy soul");
+		boolean already = text.contains("already found that fairy soul");
+		if (!found && !already) {
 			return;
 		}
 		Minecraft client = Minecraft.getInstance();
 		if (client.player == null) {
 			return;
 		}
-		FairySouls.Soul soul = nearestUnfound(client.player.getX(), client.player.getZ());
-		if (soul == null) {
-			return;
+		FairySouls.Soul soul = locked;
+		if (soul == null || FairySoulProgress.found(soul)) {
+			soul = nearestUnfound(client.player.getX(), client.player.getZ(), 16.0);
 		}
-		FairySoulProgress.mark(soul);
-		path = List.of();
-		pathSoul = null;
+		if (soul != null) {
+			markFound(soul);
+		}
 	}
 
-	private static FairySouls.Soul nearestUnfound(double x, double z) {
+	private static void markFound(FairySouls.Soul soul) {
+		FairySoulProgress.mark(soul);
+		if (locked != null && locked.key().equals(soul.key())) {
+			clearPath();
+		}
+	}
+
+	private static void clearPath() {
+		locked = null;
+		path = List.of();
+		lastStart = null;
+	}
+
+	private static FairySouls.Soul nearestUnfound(double x, double z, double range) {
 		FairySouls.Soul best = null;
-		double bestD = 16.0;
+		double bestD = range;
 		for (FairySouls.Soul soul : FairySouls.forArea(SkyblockLocation.area)) {
 			if (FairySoulProgress.found(soul)) {
 				continue;
@@ -173,7 +184,10 @@ public final class FairySoulTracker {
 		FairySouls.Soul best = null;
 		double bestD = range;
 		Vec3 at = new Vec3(x, y, z);
-		for (FairySouls.Soul soul : visible()) {
+		for (FairySouls.Soul soul : FairySouls.forArea(SkyblockLocation.area)) {
+			if (FairySoulProgress.found(soul)) {
+				continue;
+			}
 			double d = at.distanceTo(soul.center());
 			if (d <= bestD) {
 				bestD = d;
@@ -185,9 +199,23 @@ public final class FairySoulTracker {
 
 	private static List<Vec3> route(ClientLevel level, BlockPos start, FairySouls.Soul soul) {
 		BlockPos goal = soul.pos();
-		if (start.equals(goal)) {
-			return List.of(soul.center());
+		List<BlockPos> cells = astar(level, start, goal);
+		if (cells.isEmpty()) {
+			return List.of();
 		}
+		List<Vec3> points = new ArrayList<>();
+		for (BlockPos cell : cells) {
+			boolean dest = cell.equals(goal);
+			points.add(new Vec3(cell.getX() + 0.5, cell.getY() + (dest ? 0.45 : 0.12), cell.getZ() + 0.5));
+		}
+		if (points.get(points.size() - 1).distanceTo(soul.center()) > 0.2) {
+			points.add(soul.center());
+		}
+		points = pull(level, points, goal);
+		return roundCorners(level, points, goal);
+	}
+
+	private static List<BlockPos> astar(ClientLevel level, BlockPos start, BlockPos goal) {
 		record Node(int x, int y, int z, int g, int px, int py, int pz) {
 		}
 		PriorityQueue<Node> open = new PriorityQueue<>(Comparator.comparingInt(n -> n.g + heuristic(n.x, n.y, n.z, goal)));
@@ -196,32 +224,31 @@ public final class FairySoulTracker {
 		open.add(origin);
 		best.put(pack(origin.x, origin.y, origin.z), origin);
 		Node found = null;
+		int minY = Math.min(start.getY(), goal.getY()) - 4;
+		int maxY = Math.max(start.getY(), goal.getY()) + 6;
 		int guard = 0;
-		while (!open.isEmpty() && guard++ < 2500) {
+		while (!open.isEmpty() && guard++ < 24000) {
 			Node cur = open.poll();
 			if (cur.x == goal.getX() && cur.y == goal.getY() && cur.z == goal.getZ()) {
 				found = cur;
 				break;
 			}
-			if (dist(cur.x, cur.y, cur.z, goal) > PATH_RANGE + 1.5) {
-				continue;
-			}
-			for (int[] step : steps()) {
+			BlockPos from = new BlockPos(cur.x, cur.y, cur.z);
+			for (int[] step : STEPS) {
 				int nx = cur.x + step[0];
 				int ny = cur.y + step[1];
 				int nz = cur.z + step[2];
-				if (dist(nx, ny, nz, goal) > PATH_RANGE + 1.5) {
+				if (ny < minY || ny > maxY) {
 					continue;
 				}
-				BlockPos next = new BlockPos(nx, ny, nz);
-				boolean dest = nx == goal.getX() && ny == goal.getY() && nz == goal.getZ();
-				if (!dest && blocked(level, next)) {
+				if (xz(nx, nz, start) > SEARCH && xz(nx, nz, goal) > SEARCH) {
 					continue;
 				}
-				if (!dest && blocked(level, next.above()) && !looksLikeSoul(level, next.above())) {
+				BlockPos to = new BlockPos(nx, ny, nz);
+				if (!canStep(level, from, to, goal)) {
 					continue;
 				}
-				int g = cur.g + 1 + Math.abs(step[1]);
+				int g = cur.g + (step[0] != 0 && step[2] != 0 ? 14 : 10) + Math.abs(step[1]) * 4;
 				long key = pack(nx, ny, nz);
 				Node prev = best.get(key);
 				if (prev != null && prev.g <= g) {
@@ -233,12 +260,12 @@ public final class FairySoulTracker {
 			}
 		}
 		if (found == null) {
-			return List.of(new Vec3(start.getX() + 0.5, start.getY() + 0.2, start.getZ() + 0.5), soul.center());
+			return List.of();
 		}
-		List<Vec3> out = new ArrayList<>();
+		List<BlockPos> out = new ArrayList<>();
 		Node walk = found;
 		while (true) {
-			out.add(new Vec3(walk.x + 0.5, walk.y + 0.2, walk.z + 0.5));
+			out.add(new BlockPos(walk.x, walk.y, walk.z));
 			if (walk.x == walk.px && walk.y == walk.py && walk.z == walk.pz) {
 				break;
 			}
@@ -249,20 +276,69 @@ public final class FairySoulTracker {
 			walk = parent;
 		}
 		java.util.Collections.reverse(out);
-		if (out.isEmpty() || out.get(out.size() - 1).distanceTo(soul.center()) > 0.2) {
-			out.add(soul.center());
-		}
 		return out;
 	}
 
-	private static int[][] steps() {
-		return new int[][]{
-			{1, 0, 0}, {-1, 0, 0}, {0, 0, 1}, {0, 0, -1},
-			{1, 1, 0}, {-1, 1, 0}, {0, 1, 1}, {0, 1, -1},
-			{1, -1, 0}, {-1, -1, 0}, {0, -1, 1}, {0, -1, -1},
-			{0, 1, 0}, {0, -1, 0},
-			{1, 0, 1}, {1, 0, -1}, {-1, 0, 1}, {-1, 0, -1}
-		};
+	private static final int[][] STEPS = {
+		{1, 0, 0}, {-1, 0, 0}, {0, 0, 1}, {0, 0, -1},
+		{1, 1, 0}, {-1, 1, 0}, {0, 1, 1}, {0, 1, -1},
+		{1, -1, 0}, {-1, -1, 0}, {0, -1, 1}, {0, -1, -1},
+		{0, 1, 0}, {0, -1, 0},
+		{0, -2, 0}, {1, -2, 0}, {-1, -2, 0}, {0, -2, 1}, {0, -2, -1}
+	};
+
+	private static boolean canStep(ClientLevel level, BlockPos from, BlockPos to, BlockPos goal) {
+		int dx = to.getX() - from.getX();
+		int dy = to.getY() - from.getY();
+		int dz = to.getZ() - from.getZ();
+		if (Math.abs(dx) > 1 || Math.abs(dz) > 1 || dy > 1 || dy < -2) {
+			return false;
+		}
+		if (dx == 0 && dy == 0 && dz == 0) {
+			return false;
+		}
+		if (dx != 0 && dz != 0) {
+			return false;
+		}
+		boolean dest = to.equals(goal);
+		if (!dest && !passable(level, to)) {
+			return false;
+		}
+		if (dx != 0 || dz != 0) {
+			BlockPos side = from.offset(dx, 0, dz);
+			if (dy != 0 && !passable(level, side) && !side.equals(goal)) {
+				return false;
+			}
+			if (dy == 1 && blocked(level, from.above(2))) {
+				return false;
+			}
+			if (dy < 0) {
+				for (int drop = -1; drop > dy; drop--) {
+					BlockPos mid = from.offset(dx, drop, dz);
+					if (!passable(level, mid) && !mid.equals(goal)) {
+						return false;
+					}
+				}
+			}
+		}
+		if (dx == 0 && dz == 0) {
+			if (dy > 0 && blocked(level, from.above(2)) && !dest) {
+				return false;
+			}
+			return dest || passable(level, to);
+		}
+		return dest || standable(level, to) || (dy < 0 && passable(level, to));
+	}
+
+	private static boolean standable(ClientLevel level, BlockPos feet) {
+		return passable(level, feet) && blocked(level, feet.below());
+	}
+
+	private static boolean passable(ClientLevel level, BlockPos feet) {
+		if (blocked(level, feet)) {
+			return false;
+		}
+		return !blocked(level, feet.above()) || looksLikeSoul(level, feet.above());
 	}
 
 	private static boolean blocked(ClientLevel level, BlockPos pos) {
@@ -270,15 +346,84 @@ public final class FairySoulTracker {
 		return shape != null && !shape.isEmpty();
 	}
 
-	private static int heuristic(int x, int y, int z, BlockPos goal) {
-		return Math.abs(x - goal.getX()) + Math.abs(y - goal.getY()) + Math.abs(z - goal.getZ());
+	private static List<Vec3> pull(ClientLevel level, List<Vec3> raw, BlockPos goal) {
+		if (raw.size() < 3) {
+			return raw;
+		}
+		List<Vec3> out = new ArrayList<>();
+		out.add(raw.getFirst());
+		int last = 0;
+		for (int i = 2; i < raw.size(); i++) {
+			if (!clear(level, raw.get(last), raw.get(i), goal)) {
+				out.add(raw.get(i - 1));
+				last = i - 1;
+			}
+		}
+		out.add(raw.getLast());
+		return out;
 	}
 
-	private static double dist(int x, int y, int z, BlockPos goal) {
-		double dx = x + 0.5 - (goal.getX() + 0.5);
-		double dy = y + 0.5 - (goal.getY() + 0.5);
-		double dz = z + 0.5 - (goal.getZ() + 0.5);
-		return Math.sqrt(dx * dx + dy * dy + dz * dz);
+	private static List<Vec3> roundCorners(ClientLevel level, List<Vec3> raw, BlockPos goal) {
+		if (raw.size() < 3) {
+			return raw;
+		}
+		List<Vec3> out = new ArrayList<>();
+		out.add(raw.getFirst());
+		for (int i = 1; i < raw.size() - 1; i++) {
+			Vec3 prev = raw.get(i - 1);
+			Vec3 cur = raw.get(i);
+			Vec3 next = raw.get(i + 1);
+			Vec3 in = cur.subtract(prev);
+			Vec3 outv = next.subtract(cur);
+			boolean turn = Math.abs(in.x) > 0.05 && Math.abs(outv.z) > 0.05
+				|| Math.abs(in.z) > 0.05 && Math.abs(outv.x) > 0.05
+				|| Math.abs(in.y) > 0.05 && (Math.abs(outv.x) > 0.05 || Math.abs(outv.z) > 0.05)
+				|| (Math.abs(in.x) > 0.05 || Math.abs(in.z) > 0.05) && Math.abs(outv.y) > 0.05;
+			if (!turn) {
+				out.add(cur);
+				continue;
+			}
+			Vec3 a = prev.add(cur.subtract(prev).normalize().scale(Math.min(0.55, prev.distanceTo(cur) * 0.45)));
+			Vec3 b = cur.add(next.subtract(cur).normalize().scale(Math.min(0.55, cur.distanceTo(next) * 0.45)));
+			if (clear(level, a, b, goal)) {
+				out.add(a);
+				out.add(a.lerp(b, 0.5).lerp(cur, 0.22));
+				out.add(b);
+			} else {
+				out.add(cur);
+			}
+		}
+		out.add(raw.getLast());
+		return out;
+	}
+
+	private static boolean clear(ClientLevel level, Vec3 from, Vec3 to, BlockPos goal) {
+		double dist = from.distanceTo(to);
+		if (dist < 0.05) {
+			return true;
+		}
+		int steps = Math.max(2, (int) Math.ceil(dist * 4.0));
+		for (int i = 0; i <= steps; i++) {
+			Vec3 p = from.lerp(to, i / (double) steps);
+			BlockPos cell = BlockPos.containing(p.x, p.y, p.z);
+			if (cell.equals(goal) || looksLikeSoul(level, cell)) {
+				continue;
+			}
+			if (blocked(level, cell)) {
+				return false;
+			}
+		}
+		return true;
+	}
+
+	private static int heuristic(int x, int y, int z, BlockPos goal) {
+		return (Math.abs(x - goal.getX()) + Math.abs(z - goal.getZ())) * 10 + Math.abs(y - goal.getY()) * 6;
+	}
+
+	private static double xz(int x, int z, BlockPos at) {
+		double dx = x + 0.5 - (at.getX() + 0.5);
+		double dz = z + 0.5 - (at.getZ() + 0.5);
+		return Math.sqrt(dx * dx + dz * dz);
 	}
 
 	private static long pack(int x, int y, int z) {

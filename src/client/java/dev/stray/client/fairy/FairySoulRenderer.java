@@ -44,9 +44,12 @@ public final class FairySoulRenderer {
 			}
 		}
 		List<Vec3> path = FairySoulTracker.path();
-		for (int i = 1; i < path.size(); i++) {
-			GizmoProperties segment = Gizmos.line(path.get(i - 1), path.get(i), line, 2.4f);
-			if (through) {
+		if (!path.isEmpty()) {
+			Vec3 feet = client.player.position().add(0, 0.12, 0);
+			GizmoProperties first = Gizmos.line(feet, path.getFirst(), line, 2.6f);
+			first.setAlwaysOnTop();
+			for (int i = 1; i < path.size(); i++) {
+				GizmoProperties segment = Gizmos.line(path.get(i - 1), path.get(i), line, 2.6f);
 				segment.setAlwaysOnTop();
 			}
 		}
