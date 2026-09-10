@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.164", new String[]{
+			"Song chat (the NOW PLAYING line when a track changes) defaults off. Turn it on in the Music card if you want those messages."
+		}),
 		new Entry("1.2.163", new String[]{
 			"Music HUD has a Song chat toggle for the NOW PLAYING line when the track changes. Existing configs keep it on."
 		}),

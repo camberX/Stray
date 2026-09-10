@@ -62,7 +62,8 @@ public final class StrayConfig {
 	public boolean watermarkName = false;
 	public boolean musicHudEnabled = false;
 	public boolean musicHideIdle = false;
-	public boolean musicChatAnnounce = true;
+	public boolean musicChatAnnounce = false;
+	public boolean musicChatOffDefault = false;
 	public boolean spotifyEnabled = true;
 	public int musicApiPort = 0;
 	public String musicApiToken = "";
@@ -544,8 +545,9 @@ public final class StrayConfig {
 				if (loaded.musicApiToken == null) {
 					loaded.musicApiToken = "";
 				}
-				if (!json.has("musicChatAnnounce")) {
-					loaded.musicChatAnnounce = true;
+				if (!json.has("musicChatOffDefault")) {
+					loaded.musicChatAnnounce = false;
+					loaded.musicChatOffDefault = true;
 				}
 				if (!json.has("spotifyEnabled")) {
 					loaded.spotifyEnabled = true;
