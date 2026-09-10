@@ -150,7 +150,7 @@ public final class ProfileViewer {
 			for (Perk perk : perks) {
 				String have = normPerk(perk.id());
 				for (String id : ids) {
-					if (id != null && have.equals(normPerk(id))) {
+					if (samePerk(have, id)) {
 						return perk.level();
 					}
 				}
@@ -848,38 +848,102 @@ public final class ProfileViewer {
 	}
 
 	private static Mining parseMining(JsonObject member, JsonObject extra) {
+		JsonObject tree = firstSkillTree(member, extra);
 		JsonObject core = bestCore(miningCore(member), extra == null ? null : miningCore(extra));
 		if (core == null && extra != null) {
 			core = object(extra, "mining_core");
 		}
-		if (core == null) {
+		JsonObject nodes = miningNodes(tree);
+		if (!hasPerkLevels(nodes)) {
+			nodes = nodesOf(core);
+		}
+		double xp = miningXp(tree, core, extra);
+		List<Perk> perks = parsePerks(nodes);
+		if (core == null && perks.isEmpty() && xp <= 0d) {
 			return Mining.empty();
 		}
-		double xp = num(core, "experience");
+		int fromXp = xp > 0d ? skillFrom("HOTM", xp, HOTM_XP, 10).level() : 0;
+		int listed = (int) num(object(extra, "hotm_level"), "level");
+		int hotm = fromXp > 0 ? fromXp : Math.max(listed, Math.max(hotmFromPerks(perks), inferHotm(core)));
+		if (hotm == 0 && (bool(core, "received_free_tier") || !perks.isEmpty())) {
+			hotm = 1;
+		}
+		return new Mining(hotm, powder(core, "mithril"), powder(core, "gemstone"), powder(core, "glacite"), perks);
+	}
+
+	private static JsonObject firstSkillTree(JsonObject member, JsonObject extra) {
+		JsonObject tree = skillTree(member);
+		return hasPerkLevels(miningNodes(tree)) || num(object(tree, "experience"), "mining") > 0d ? tree : skillTree(extra);
+	}
+
+	private static JsonObject skillTree(JsonObject member) {
+		JsonObject tree = object(member, "skill_tree");
+		if (tree == null) {
+			tree = object(object(member, "player_data"), "skill_tree");
+		}
+		return tree;
+	}
+
+	private static JsonObject miningNodes(JsonObject tree) {
+		JsonObject nodes = object(tree, "nodes");
+		if (nodes == null) {
+			return null;
+		}
+		int slot = (int) num(object(tree, "selected_skill_tree_slot"), "mining");
+		String key = slot <= 1 ? "mining" : "mining_" + slot;
+		JsonObject selected = object(nodes, key);
+		if (hasPerkLevels(selected)) {
+			return selected;
+		}
+		JsonObject best = object(nodes, "mining");
+		int bestCount = perkCount(best);
+		for (String name : nodes.keySet()) {
+			if (name == null || !name.startsWith("mining")) {
+				continue;
+			}
+			JsonObject map = object(nodes, name);
+			int count = perkCount(map);
+			if (count > bestCount) {
+				best = map;
+				bestCount = count;
+			}
+		}
+		return best;
+	}
+
+	private static double miningXp(JsonObject tree, JsonObject core, JsonObject extra) {
+		double xp = num(object(tree, "experience"), "mining");
+		if (xp > 0d) {
+			return xp;
+		}
+		xp = num(core, "experience");
 		if (xp == 0d) {
 			xp = num(core, "hotm_experience");
 		}
 		if (xp == 0d) {
 			xp = num(object(core, "hotm"), "experience");
 		}
-		if (xp == 0d && extra != null) {
-			JsonObject level = object(extra, "hotm_level");
-			xp = num(level, "totalExp");
-			int listed = (int) num(level, "level");
-			if (listed > 0 && xp <= 0d) {
-				int hotm = listed;
-				List<Perk> perks = parsePerks(nodesOf(core));
-				return new Mining(hotm, powder(core, "mithril"), powder(core, "gemstone"), powder(core, "glacite"), perks);
+		if (xp == 0d) {
+			xp = num(object(extra, "hotm_level"), "totalExp");
+		}
+		return xp;
+	}
+
+	private static boolean hasPerkLevels(JsonObject nodes) {
+		return perkCount(nodes) > 0;
+	}
+
+	private static int perkCount(JsonObject nodes) {
+		if (nodes == null) {
+			return 0;
+		}
+		int count = 0;
+		for (String key : nodes.keySet()) {
+			if (key != null && !key.startsWith("toggle") && nodeLevel(nodes, key) > 0) {
+				count++;
 			}
 		}
-		JsonObject nodes = nodesOf(core);
-		List<Perk> perks = parsePerks(nodes);
-		int fromXp = xp > 0d ? skillFrom("HOTM", xp, HOTM_XP, 10).level() : 0;
-		int hotm = fromXp > 0 ? fromXp : Math.max(hotmFromPerks(perks), inferHotm(core));
-		if (hotm == 0 && (bool(core, "received_free_tier") || !perks.isEmpty())) {
-			hotm = 1;
-		}
-		return new Mining(hotm, powder(core, "mithril"), powder(core, "gemstone"), powder(core, "glacite"), perks);
+		return count;
 	}
 
 	private static JsonObject nodesOf(JsonObject core) {
@@ -1027,7 +1091,7 @@ public final class ProfileViewer {
 				continue;
 			}
 			int level = nodeLevel(nodes, key);
-			if (level < 0) {
+			if (level <= 0) {
 				continue;
 			}
 			out.add(new Perk(normPerk(key), pretty(key), level));
@@ -2142,6 +2206,45 @@ public final class ProfileViewer {
 		return id == null ? "" : id.trim().toLowerCase(Locale.ROOT).replace('-', '_').replace(' ', '_');
 	}
 
+	private static boolean samePerk(String have, String want) {
+		String left = normPerk(have);
+		String right = normPerk(want);
+		if (left.isEmpty() || right.isEmpty()) {
+			return false;
+		}
+		return left.equals(right) || perkAlias(left).equals(right) || perkAlias(right).equals(left);
+	}
+
+	public static String perkAlias(String id) {
+		return switch (normPerk(id)) {
+			case "speedy_mineman" -> "mining_speed_2";
+			case "mining_speed_2" -> "speedy_mineman";
+			case "fortunate_mineman" -> "mining_fortune_2";
+			case "mining_fortune_2" -> "fortunate_mineman";
+			case "gifts_from_above" -> "gifts_from_the_departed";
+			case "gifts_from_the_departed" -> "gifts_from_above";
+			case "pickobulus" -> "pickaxe_toss";
+			case "pickaxe_toss" -> "pickobulus";
+			case "sky_mall" -> "daily_effect";
+			case "daily_effect" -> "sky_mall";
+			case "luck_of_the_cave" -> "random_event";
+			case "random_event" -> "luck_of_the_cave";
+			case "seasoned_mineman" -> "mining_experience";
+			case "mining_experience" -> "seasoned_mineman";
+			case "gem_lover" -> "fortunate";
+			case "fortunate" -> "gem_lover";
+			case "special_0" -> "core_of_the_mountain";
+			case "core_of_the_mountain" -> "special_0";
+			case "quick_forge" -> "forge_time";
+			case "forge_time" -> "quick_forge";
+			case "warm_heart" -> "warm_hearted";
+			case "warm_hearted" -> "warm_heart";
+			case "dead_mans_chest" -> "hungry_for_more";
+			case "hungry_for_more" -> "dead_mans_chest";
+			default -> normPerk(id);
+		};
+	}
+
 	private static Map<String, Integer> hotmTiers() {
 		Map<String, Integer> out = new HashMap<>();
 		out.put("mining_speed", 1);
@@ -2155,6 +2258,7 @@ public final class ProfileViewer {
 		out.put("luck_of_the_cave", 3);
 		out.put("efficient_miner", 3);
 		out.put("forge_time", 3);
+		out.put("quick_forge", 3);
 		out.put("daily_effect", 4);
 		out.put("sky_mall", 4);
 		out.put("old_school", 4);
@@ -2186,6 +2290,7 @@ public final class ProfileViewer {
 		out.put("strong_arm", 8);
 		out.put("steady_hand", 8);
 		out.put("warm_hearted", 8);
+		out.put("warm_heart", 8);
 		out.put("surveyor", 8);
 		out.put("mineshaft_mayhem", 8);
 		out.put("metal_head", 9);
@@ -2197,6 +2302,7 @@ public final class ProfileViewer {
 		out.put("gifts_from_above", 10);
 		out.put("mining_master", 10);
 		out.put("hungry_for_more", 10);
+		out.put("dead_mans_chest", 10);
 		out.put("vanguard_seeker", 10);
 		out.put("sheer_force", 10);
 		return Map.copyOf(out);

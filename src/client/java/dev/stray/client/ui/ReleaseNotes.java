@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.143", new String[]{
+			"Profile viewer HOTM reads the selected skill-tree loadout, so unlocked perks and their levels match the in-game tree."
+		}),
 		new Entry("1.2.142", new String[]{
 			"Profile viewer skills use the real XP table and overflow past the cap, Catacombs can show 50+, slayers use cumulative XP, and HOTM no longer jumps a tier just because you have gemstone powder. The tree uses the Skyblock chest items."
 		}),

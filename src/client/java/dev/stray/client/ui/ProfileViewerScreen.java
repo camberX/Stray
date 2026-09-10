@@ -651,6 +651,10 @@ public class ProfileViewerScreen extends Screen {
 				boolean hover = GuiDraw.hovered(mouseX, mouseY, nx, ny, size, size);
 				ItemStack icon = perkIcon(id, on, level);
 				paintItem(graphics, font, icon, nx + 1, ny + 1, Math.max(8f, size - 2f), true);
+				if (level > 99) {
+					String text = String.valueOf(level);
+					GuiDraw.small(graphics, font, text, nx + size - GuiDraw.smallWidth(font, text) - 1, ny + size - 9, Theme.TEXT);
+				}
 				if (hover) {
 					hoverStack = perkTooltip(id, level, on);
 				}
@@ -1342,27 +1346,7 @@ public class ProfileViewerScreen extends Screen {
 	}
 
 	private static String aliasPerk(String id) {
-		return switch (id) {
-			case "speedy_mineman" -> "mining_speed_2";
-			case "mining_speed_2" -> "speedy_mineman";
-			case "fortunate_mineman" -> "mining_fortune_2";
-			case "mining_fortune_2" -> "fortunate_mineman";
-			case "gifts_from_above" -> "gifts_from_the_departed";
-			case "gifts_from_the_departed" -> "gifts_from_above";
-			case "pickobulus" -> "pickaxe_toss";
-			case "pickaxe_toss" -> "pickobulus";
-			case "sky_mall" -> "daily_effect";
-			case "daily_effect" -> "sky_mall";
-			case "luck_of_the_cave" -> "random_event";
-			case "random_event" -> "luck_of_the_cave";
-			case "seasoned_mineman" -> "mining_experience";
-			case "mining_experience" -> "seasoned_mineman";
-			case "gem_lover" -> "fortunate";
-			case "fortunate" -> "gem_lover";
-			case "special_0" -> "core_of_the_mountain";
-			case "core_of_the_mountain" -> "special_0";
-			default -> id;
-		};
+		return ProfileViewer.perkAlias(id);
 	}
 
 	private static String perkName(String id) {
@@ -1375,8 +1359,10 @@ public class ProfileViewerScreen extends Screen {
 			case "random_event" -> "Luck of the Cave";
 			case "mining_experience" -> "Seasoned Mineman";
 			case "fortunate" -> "Gem Lover";
-			case "forge_time" -> "Quick Forge";
+			case "forge_time", "quick_forge" -> "Quick Forge";
 			case "gifts_from_the_departed" -> "Gifts from the Departed";
+			case "hungry_for_more", "dead_mans_chest" -> "Dead Man's Chest";
+			case "warm_hearted", "warm_heart" -> "Warm Hearted";
 			default -> prettyPerk(id);
 		};
 	}
@@ -1492,8 +1478,8 @@ public class ProfileViewerScreen extends Screen {
 			case "gemstone_infusion" -> "Pickaxe Ability: stronger gemstone slots.";
 			case "crystalline" -> "More Gemstone Crystal Mineshafts.";
 			case "gifts_from_the_departed" -> "Extra loot from Frozen Corpses.";
+			case "hungry_for_more", "dead_mans_chest" -> "More treasure from Frozen Corpses and chests.";
 			case "mining_master" -> "Grants Pristine.";
-			case "hungry_for_more" -> "Chance for an extra Frozen Corpse.";
 			case "vanguard_seeker" -> "More Vanguard Corpse Mineshafts.";
 			case "sheer_force" -> "Pickaxe Ability: extra Mining Spread.";
 			default -> "";
