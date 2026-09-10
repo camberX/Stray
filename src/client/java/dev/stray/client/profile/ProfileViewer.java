@@ -145,16 +145,27 @@ public final class ProfileViewer {
 		}
 	}
 
-	public record Pet(String name, String type, String tier, int level, boolean active) {
+	public record Pet(String name, String type, String tier, int level, boolean active, String held, int candy) {
+		public Pet(String name, String type, String tier, int level, boolean active) {
+			this(name, type, tier, level, active, "", 0);
+		}
 	}
 
-	public record SlotItem(int slot, String id, String name, int count) {
+	public record SlotItem(int slot, String id, String name, int count, List<String> lore, String valueId) {
+		public SlotItem(int slot, String id, String name, int count) {
+			this(slot, id, name, count, List.of(), id == null ? "" : id);
+		}
+
 		public static SlotItem empty(int slot) {
-			return new SlotItem(slot, "", "", 0);
+			return new SlotItem(slot, "", "", 0, List.of(), "");
 		}
 
 		public boolean empty() {
 			return (id == null || id.isBlank()) && (name == null || name.isBlank());
+		}
+
+		public String priceId() {
+			return valueId == null || valueId.isBlank() ? (id == null ? "" : id) : valueId;
 		}
 	}
 
@@ -537,6 +548,15 @@ public final class ProfileViewer {
 		JsonObject inventory = object(member, "inventory");
 		Bag inv = parseBag("Inventory", first(inventory, member, "inv_contents"), 9, 36);
 		Bag armor = parseBag("Armor", first(inventory, member, "inv_armor"), 1, 4);
+		Bag equipment = parseBag("Equipment", first(inventory, member, "equipment_contents"), 1, 4);
+		Bag wardrobe = parseBag("Wardrobe", first(inventory, member, "wardrobe_contents"), 9, 36);
+		Bag accessories = parseBag("Accessories", bagOf(inventory, member, "talisman_bag"), 9, 45);
+		if (accessories.vacant()) {
+			accessories = parseBag("Accessories", first(inventory, member, "talisman_bag"), 9, 45);
+		}
+		Bag quiver = parseBag("Quiver", bagOf(inventory, member, "quiver"), 9, 36);
+		Bag potions = parseBag("Potions", bagOf(inventory, member, "potion_bag"), 9, 36);
+		Bag fishing = parseBag("Fishing", bagOf(inventory, member, "fishing_bag"), 9, 36);
 		List<Bag> ender = parseEnder(inventory, member);
 		List<Bag> backpacks = parseBackpacks(inventory, member);
 		List<Collection> collections = parseCollections(member);
@@ -549,13 +569,16 @@ public final class ProfileViewer {
 		if (mode.isBlank()) {
 			mode = "normal";
 		}
-		double items = bagWorth(inv) + bagWorth(armor);
+		double items = bagWorth(inv) + bagWorth(armor) + bagWorth(equipment) + bagWorth(wardrobe)
+			+ bagWorth(accessories) + bagWorth(quiver) + bagWorth(potions) + bagWorth(fishing);
 		for (Bag bag : ender) {
 			items += bagWorth(bag);
 		}
 		for (Bag bag : backpacks) {
 			items += bagWorth(bag);
 		}
+		items += sackWorth(member, inventory);
+		items += essenceWorth(currencies);
 		for (Pet pet : pets) {
 			items += priceOf(pet.type() + ";" + petTier(pet.tier()));
 		}
@@ -822,7 +845,9 @@ public final class ProfileViewer {
 			}
 			String tier = pretty(string(pet, "tier"));
 			int level = petLevel(num(pet, "exp"), tier);
-			out.add(new Pet(pretty(type), type, tier, level, bool(pet, "active")));
+			String held = string(pet, "heldItem");
+			int candy = (int) num(pet, "candyUsed");
+			out.add(new Pet(pretty(type), type, tier, level, bool(pet, "active"), held, candy));
 		}
 		out.sort(Comparator.comparing((Pet pet) -> !pet.active()).thenComparing(Pet::name));
 		return out;
@@ -849,6 +874,17 @@ public final class ProfileViewer {
 			return new ArrayList<>(out.subList(0, 48));
 		}
 		return out;
+	}
+
+	private static JsonElement bagOf(JsonObject inventory, JsonObject member, String name) {
+		JsonObject bags = object(inventory, "bag_contents");
+		if (bags == null) {
+			bags = object(member, "bag_contents");
+		}
+		if (bags != null && bags.has(name)) {
+			return bags.get(name);
+		}
+		return first(inventory, member, name);
 	}
 
 	private static JsonElement first(JsonObject primary, JsonObject fallback, String key) {
@@ -980,7 +1016,7 @@ public final class ProfileViewer {
 			List<SlotItem> slice = new ArrayList<>();
 			for (int i = 0; i < pageSize; i++) {
 				SlotItem item = bag.at(p * pageSize + i);
-				slice.add(new SlotItem(i, item.id(), item.name(), item.count()));
+				slice.add(new SlotItem(i, item.id(), item.name(), item.count(), item.lore(), item.valueId()));
 			}
 			pages.add(new Bag(label + " " + (p + 1), bag.columns(), List.copyOf(slice)));
 		}
@@ -1051,7 +1087,11 @@ public final class ProfileViewer {
 			slot = (int) num(compound, "slot");
 		}
 		String id = itemId(compound);
-		String name = itemLabel(compound);
+		List<String> lore = itemLore(compound);
+		String name = itemDisplayName(compound);
+		if (name.isBlank()) {
+			name = itemLabel(compound);
+		}
 		if ((id == null || id.isBlank()) && (name == null || name.isBlank())) {
 			return SlotItem.empty(slot);
 		}
@@ -1059,7 +1099,8 @@ public final class ProfileViewer {
 		if (count == 1) {
 			count = Math.max(1, (int) num(compound, "count"));
 		}
-		return new SlotItem(slot, id == null ? "" : id, name, count);
+		String valueId = valueId(id == null ? "" : id, extraAttributes(compound));
+		return new SlotItem(slot, id == null ? "" : id, name, count, lore, valueId);
 	}
 
 	private static boolean isAir(CompoundTag tag) {
@@ -1067,7 +1108,7 @@ public final class ProfileViewer {
 		return id.equalsIgnoreCase("minecraft:air") || id.equalsIgnoreCase("air");
 	}
 
-	private static String itemId(CompoundTag tag) {
+	private static CompoundTag extraAttributes(CompoundTag tag) {
 		CompoundTag extra = tag.getCompoundOrEmpty("tag").getCompoundOrEmpty("ExtraAttributes");
 		if (extra.isEmpty()) {
 			extra = tag.getCompoundOrEmpty("ExtraAttributes");
@@ -1075,11 +1116,147 @@ public final class ProfileViewer {
 		if (extra.isEmpty()) {
 			extra = tag.getCompoundOrEmpty("components").getCompoundOrEmpty("minecraft:custom_data");
 		}
+		if (extra.isEmpty()) {
+			extra = tag.getCompoundOrEmpty("tag").getCompoundOrEmpty("components").getCompoundOrEmpty("minecraft:custom_data");
+		}
+		return extra;
+	}
+
+	private static String itemId(CompoundTag tag) {
+		CompoundTag extra = extraAttributes(tag);
 		String id = extra.getStringOr("id", "");
 		if (!id.isBlank()) {
 			return id;
 		}
 		return tag.getStringOr("id", "");
+	}
+
+	private static String itemDisplayName(CompoundTag tag) {
+		CompoundTag display = tag.getCompoundOrEmpty("tag").getCompoundOrEmpty("display");
+		if (display.isEmpty()) {
+			display = tag.getCompoundOrEmpty("display");
+		}
+		String name = display.getStringOr("Name", "");
+		if (name.isBlank()) {
+			CompoundTag components = tag.getCompoundOrEmpty("components");
+			if (components.isEmpty()) {
+				components = tag.getCompoundOrEmpty("tag").getCompoundOrEmpty("components");
+			}
+			name = components.getStringOr("minecraft:custom_name", "");
+		}
+		return unwrapText(name);
+	}
+
+	private static List<String> itemLore(CompoundTag tag) {
+		List<String> out = new ArrayList<>();
+		CompoundTag display = tag.getCompoundOrEmpty("tag").getCompoundOrEmpty("display");
+		if (display.isEmpty()) {
+			display = tag.getCompoundOrEmpty("display");
+		}
+		addLore(out, display.get("Lore"));
+		if (out.isEmpty()) {
+			CompoundTag components = tag.getCompoundOrEmpty("components");
+			if (components.isEmpty()) {
+				components = tag.getCompoundOrEmpty("tag").getCompoundOrEmpty("components");
+			}
+			addLore(out, components.get("minecraft:lore"));
+		}
+		return List.copyOf(out);
+	}
+
+	private static void addLore(List<String> out, Tag lore) {
+		if (!(lore instanceof ListTag list)) {
+			return;
+		}
+		for (int i = 0; i < list.size() && out.size() < 64; i++) {
+			Tag line = list.get(i);
+			if (line == null) {
+				out.add("");
+				continue;
+			}
+			out.add(unwrapText(line.asString().orElse("")));
+		}
+	}
+
+	private static String unwrapText(String raw) {
+		if (raw == null || raw.isBlank()) {
+			return "";
+		}
+		String text = raw.trim();
+		if (text.startsWith("{") && text.contains("\"text\"")) {
+			try {
+				JsonElement element = JsonParser.parseString(text);
+				return unwrapJson(element);
+			} catch (Exception ignored) {
+			}
+		}
+		if (text.startsWith("\"") && text.endsWith("\"") && text.length() >= 2) {
+			text = text.substring(1, text.length() - 1);
+		}
+		return text.replace("\\u00a7", "§").replace("\\u00A7", "§");
+	}
+
+	private static String unwrapJson(JsonElement element) {
+		if (element == null || element.isJsonNull()) {
+			return "";
+		}
+		if (element.isJsonPrimitive()) {
+			return element.getAsString();
+		}
+		if (element.isJsonArray()) {
+			StringBuilder out = new StringBuilder();
+			for (JsonElement child : element.getAsJsonArray()) {
+				out.append(unwrapJson(child));
+			}
+			return out.toString();
+		}
+		if (!element.isJsonObject()) {
+			return "";
+		}
+		JsonObject object = element.getAsJsonObject();
+		StringBuilder out = new StringBuilder();
+		if (object.has("text")) {
+			out.append(string(object, "text"));
+		}
+		if (object.has("extra") && object.get("extra").isJsonArray()) {
+			for (JsonElement child : object.getAsJsonArray("extra")) {
+				out.append(unwrapJson(child));
+			}
+		}
+		return out.toString();
+	}
+
+	private static String valueId(String id, CompoundTag extra) {
+		String raw = id == null ? "" : id.trim();
+		if (extra != null && !extra.isEmpty()) {
+			if ("ENCHANTED_BOOK".equalsIgnoreCase(raw) || "minecraft:enchanted_book".equalsIgnoreCase(raw)) {
+				CompoundTag enchants = extra.getCompoundOrEmpty("enchantments");
+				String best = "";
+				int bestLevel = -1;
+				for (String key : enchants.keySet()) {
+					int level = (int) num(enchants, key);
+					if (level >= bestLevel && key != null && !key.isBlank()) {
+						bestLevel = level;
+						best = "ENCHANTMENT_" + key.toUpperCase(Locale.ROOT) + ";" + level;
+					}
+				}
+				if (!best.isBlank()) {
+					return best;
+				}
+			}
+			String petInfo = extra.getStringOr("petInfo", "");
+			if (!petInfo.isBlank()) {
+				try {
+					JsonObject pet = JsonParser.parseString(petInfo).getAsJsonObject();
+					String type = string(pet, "type");
+					if (!type.isBlank()) {
+						return type.toUpperCase(Locale.ROOT) + ";" + petTier(string(pet, "tier"));
+					}
+				} catch (Exception ignored) {
+				}
+			}
+		}
+		return raw;
 	}
 
 	private static int paddedSize(List<SlotItem> raw, int fallback, int columns) {
@@ -1385,32 +1562,42 @@ public final class ProfileViewer {
 			}
 		} catch (Exception ignored) {
 		}
+		mergePrices(next, "https://moulberry.codes/lowestbin.json");
+		mergePrices(next, "https://sky.coflnet.com/api/auctions/lowestbins");
+		if (!next.isEmpty()) {
+			PRICES = Map.copyOf(next);
+			pricesAt = System.currentTimeMillis();
+		}
+	}
+
+	private static void mergePrices(Map<String, Double> next, String url) {
 		try {
-			HttpRequest request = HttpRequest.newBuilder(URI.create("https://moulberry.codes/lowestbin.json"))
+			HttpRequest request = HttpRequest.newBuilder(URI.create(url))
 				.timeout(Duration.ofSeconds(12))
 				.header("User-Agent", "Stray/" + Stray.MOD_ID)
 				.GET()
 				.build();
 			HttpResponse<String> response = HTTP.send(request, HttpResponse.BodyHandlers.ofString());
-			if (response.statusCode() >= 200 && response.statusCode() < 300) {
-				JsonObject bins = JsonParser.parseString(response.body()).getAsJsonObject();
-				for (String id : bins.keySet()) {
-					double value = num(bins, id);
-					if (value <= 0d) {
-						continue;
-					}
-					String key = id.toUpperCase(Locale.ROOT);
-					Double current = next.get(key);
-					if (current == null || value > current) {
-						next.put(key, value);
-					}
+			if (response.statusCode() < 200 || response.statusCode() >= 300) {
+				return;
+			}
+			JsonElement root = JsonParser.parseString(response.body());
+			if (root == null || !root.isJsonObject()) {
+				return;
+			}
+			JsonObject bins = root.getAsJsonObject();
+			for (String id : bins.keySet()) {
+				double value = num(bins, id);
+				if (value <= 0d) {
+					continue;
+				}
+				String key = id.toUpperCase(Locale.ROOT);
+				Double current = next.get(key);
+				if (current == null || value > current) {
+					next.put(key, value);
 				}
 			}
 		} catch (Exception ignored) {
-		}
-		if (!next.isEmpty()) {
-			PRICES = Map.copyOf(next);
-			pricesAt = System.currentTimeMillis();
 		}
 	}
 
@@ -1423,7 +1610,46 @@ public final class ProfileViewer {
 			if (item == null || item.empty()) {
 				continue;
 			}
-			total += priceOf(item.id()) * Math.max(1, item.count());
+			total += priceOf(item.priceId()) * Math.max(1, item.count());
+		}
+		return total;
+	}
+
+	private static double sackWorth(JsonObject member, JsonObject inventory) {
+		JsonObject sacks = object(member, "sacks_counts");
+		if (sacks == null) {
+			sacks = object(inventory, "sacks_counts");
+		}
+		if (sacks == null) {
+			sacks = object(object(member, "sacks"), "counts");
+		}
+		if (sacks == null) {
+			return 0d;
+		}
+		double total = 0d;
+		for (String id : sacks.keySet()) {
+			total += priceOf(id) * Math.max(0d, num(sacks, id));
+		}
+		return total;
+	}
+
+	private static double essenceWorth(JsonObject currencies) {
+		JsonObject essence = object(currencies, "essence");
+		if (essence == null) {
+			return 0d;
+		}
+		double total = 0d;
+		for (String key : essence.keySet()) {
+			JsonObject entry = object(essence, key);
+			double amount = entry != null ? num(entry, "current") : num(essence, key);
+			if (amount <= 0d) {
+				continue;
+			}
+			String id = key.toUpperCase(Locale.ROOT);
+			if (!id.startsWith("ESSENCE")) {
+				id = "ESSENCE_" + id;
+			}
+			total += priceOf(id) * amount;
 		}
 		return total;
 	}
@@ -1432,8 +1658,28 @@ public final class ProfileViewer {
 		if (id == null || id.isBlank() || PRICES.isEmpty()) {
 			return 0d;
 		}
-		Double value = PRICES.get(id.trim().toUpperCase(Locale.ROOT));
-		return value == null ? 0d : value;
+		String key = id.trim().toUpperCase(Locale.ROOT);
+		if (key.startsWith("MINECRAFT:")) {
+			key = key.substring(10);
+		}
+		Double value = PRICES.get(key);
+		if (value != null) {
+			return value;
+		}
+		if (key.startsWith("STARRED_")) {
+			value = PRICES.get(key.substring(8));
+			if (value != null) {
+				return value;
+			}
+		}
+		int plus = key.indexOf('+');
+		if (plus > 0) {
+			value = PRICES.get(key.substring(0, plus));
+			if (value != null) {
+				return value;
+			}
+		}
+		return 0d;
 	}
 
 	private static int petTier(String tier) {

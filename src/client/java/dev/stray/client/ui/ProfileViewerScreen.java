@@ -1,9 +1,12 @@
 package dev.stray.client.ui;
 
+import com.mojang.authlib.GameProfile;
 import com.mojang.blaze3d.platform.InputConstants;
 import dev.stray.client.StrayClient;
 import dev.stray.client.config.StrayConfig;
 import dev.stray.client.item.ItemIds;
+import dev.stray.client.item.ItemText;
+import dev.stray.client.item.SkyblockLore;
 import dev.stray.client.profile.ProfileViewer;
 import dev.stray.client.render.GuiDraw;
 import dev.stray.client.render.NametagRenderer;
@@ -18,6 +21,7 @@ import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.Mth;
+import net.minecraft.world.entity.player.PlayerSkin;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 
@@ -40,16 +44,18 @@ public class ProfileViewerScreen extends Screen {
 	private static final float ROW = 16;
 	private static final float CHIP_H = 18;
 	private static final float SLOT_GAP = 3;
+	private static final String GLASS = "#";
 	private static final String[][] HOTM_TREE = {
-		{null, "frozen_skin", "hungry_for_more", "surveyor", "mineshaft_mayhem", "warm_hearted", null},
-		{null, "strong_arm", "no_stone_unturned", "eager_adventurer", "miners_blessing", "steady_hand", null},
-		{"gemstone_infusion", "gifts_from_above", "dead_mans_chest", "subterranean_fisher", "occupation_of_the_mines", "daily_grind", "keep_it_cool"},
-		{"vein_seeker", "front_loaded", "sky_mall", "special_0", "goblin_killer", "maniac_miner", "precision_mining"},
-		{null, "speedy_mineman", null, "powder_buff", "fortunate_mineman", null, null},
-		{"mole", "professional", "lonesome_miner", "orbiter", "great_explorer", "blockhead", "old_school"},
-		{null, "efficient_miner", null, "seasoned_mineman", null, "crystallized", null},
-		{"luck_of_the_cave", "daily_powder", "pickobulus", null, "mining_speed_boost", "titanium_insanium", "mining_fortune"},
-		{null, null, null, "mining_speed", null, null, null}
+		{null, "gemstone_infusion", "crystalline", "gifts_from_the_departed", "mining_master", "hungry_for_more", "vanguard_seeker", "sheer_force", null},
+		{null, null, "metal_head", GLASS, "rags_to_riches", GLASS, "eager_adventurer", null, null},
+		{null, "miners_blessing", "no_stone_unturned", "strong_arm", "steady_hand", "warm_hearted", "surveyor", "mineshaft_mayhem", null},
+		{null, null, "mining_speed_2", GLASS, "powder_buff", GLASS, "mining_fortune_2", null, null},
+		{null, "anomalous_desire", "blockhead", "subterranean_fisher", "keep_it_cool", "lonesome_miner", "great_explorer", "maniac_miner", null},
+		{null, null, "daily_grind", GLASS, "special_0", GLASS, "daily_powder", null, null},
+		{null, "daily_effect", "old_school", "professional", "mole", "fortunate", "mining_experience", "front_loaded", null},
+		{null, null, "random_event", GLASS, "efficient_miner", GLASS, "forge_time", null, null},
+		{null, null, "mining_speed_boost", "precision_mining", "mining_fortune", "titanium_insanium", "pickaxe_toss", null, null},
+		{null, null, null, null, "mining_speed", null, null, null, null}
 	};
 
 	private enum Tab {
@@ -374,7 +380,10 @@ public class ProfileViewerScreen extends Screen {
 			"Bank  " + prettyCoins(profile.bank()));
 		ry += row;
 		infoRow(graphics, font, mouseX, mouseY, x, ry, w, new ItemStack(Items.EMERALD), "Networth", compact(profile.networth()),
-			"Purse " + prettyCoins(profile.purse()) + "\nBank " + prettyCoins(profile.bank()) + "\nItems " + prettyCoins(profile.itemWorth()));
+			"Purse " + prettyCoins(profile.purse())
+				+ "\nBank " + prettyCoins(profile.bank())
+				+ "\nItems " + prettyCoins(profile.itemWorth())
+				+ "\nInv, armor, equipment, wardrobe, Ender, backpacks, accessories, pets, sacks, and essence.");
 		ry += row;
 		infoRow(graphics, font, mouseX, mouseY, x, ry, w, new ItemStack(Items.COOKIE), "Cookie", profile.cookie() ? "Active" : "Inactive",
 			profile.cookie() ? "Cookie buff is active." : "Cookie buff is inactive.");
@@ -419,28 +428,40 @@ public class ProfileViewerScreen extends Screen {
 			paintItem(graphics, font, new ItemStack(Items.IRON_INGOT), x + 6, y + 6, 12, false);
 		}
 		Component tag = nametag(snap, profile);
-		boolean self = minecraft.player != null && snap.uuid() != null && minecraft.player.getUUID().equals(snap.uuid());
-		if (self) {
-			PlayerPreview.Drawn drawn = PlayerPreview.drawEquipped(
-				graphics,
-				x + 2,
-				y + 2,
-				w - 4,
-				stageH - 12,
-				0f,
-				0f,
-				new PlayerPreview.View(viewScale, viewCx, viewCy, viewLift),
-				gearOf(profile.armor()),
-				74f
-			);
-			if (drawn != null) {
-				NametagRenderer.drawVanilla(graphics, font, drawn.nameX(), drawn.nameY(), tag);
-			}
+		PlayerPreview.Drawn drawn = PlayerPreview.drawEquipped(
+			graphics,
+			x + 2,
+			y + 2,
+			w - 4,
+			stageH - 12,
+			0f,
+			0f,
+			new PlayerPreview.View(viewScale, viewCx, viewCy, viewLift),
+			gearOf(profile.armor()),
+			74f,
+			skinOf(snap)
+		);
+		if (drawn != null) {
+			NametagRenderer.drawVanilla(graphics, font, drawn.nameX(), drawn.nameY(), tag);
 		} else {
 			String name = snap.name().isBlank() ? "?" : snap.name();
 			GuiDraw.title(graphics, font, name.substring(0, 1).toUpperCase(Locale.ROOT), x + (w - 12) * 0.5f - 4, y + stageH * 0.38f, Theme.ACCENT);
 			NametagRenderer.drawVanilla(graphics, font, x + w * 0.5f, y + stageH * 0.38f + 22, tag);
 		}
+	}
+
+	private PlayerSkin skinOf(ProfileViewer.Snapshot snap) {
+		if (minecraft == null) {
+			return null;
+		}
+		if (minecraft.player != null && snap.uuid() != null && minecraft.player.getUUID().equals(snap.uuid())) {
+			return minecraft.player.getSkin();
+		}
+		if (snap.uuid() == null) {
+			return null;
+		}
+		String name = snap.name() == null || snap.name().isBlank() ? "Player" : snap.name();
+		return minecraft.getSkinManager().createLookup(new GameProfile(snap.uuid(), name), true).get();
 	}
 
 	private void drawChipColumn(
@@ -564,25 +585,19 @@ public class ProfileViewerScreen extends Screen {
 		float h,
 		ProfileViewer.Profile profile
 	) {
-		float left = x + 10;
-		float top = y + 10;
-		float side = 168;
+		float left = x + 8;
+		float top = y + 6;
+		float barW = (w - 28) / 4f;
 		ProfileViewer.Mining mining = profile.mining();
-		infoRow(graphics, font, mouseX, mouseY, left, top, side, new ItemStack(Items.DIAMOND_PICKAXE), "HOTM",
+		infoRow(graphics, font, mouseX, mouseY, left, top, barW, new ItemStack(Items.DIAMOND_PICKAXE), "HOTM",
 			String.valueOf(mining.hotm()), "Heart of the Mountain " + mining.hotm());
-		infoRow(graphics, font, mouseX, mouseY, left, top + 20, side, new ItemStack(Items.IRON_INGOT), "Mithril",
+		infoRow(graphics, font, mouseX, mouseY, left + barW + 4, top, barW, new ItemStack(Items.PRISMARINE_CRYSTALS), "Mithril",
 			compact(mining.mithril()), prettyNumber(mining.mithril()) + " mithril powder");
-		infoRow(graphics, font, mouseX, mouseY, left, top + 40, side, new ItemStack(Items.AMETHYST_SHARD), "Gemstone",
+		infoRow(graphics, font, mouseX, mouseY, left + (barW + 4) * 2, top, barW, new ItemStack(Items.AMETHYST_SHARD), "Gemstone",
 			compact(mining.gemstone()), prettyNumber(mining.gemstone()) + " gemstone powder");
-		infoRow(graphics, font, mouseX, mouseY, left, top + 60, side, new ItemStack(Items.BLUE_ICE), "Glacite",
+		infoRow(graphics, font, mouseX, mouseY, left + (barW + 4) * 3, top, barW, new ItemStack(Items.BLUE_ICE), "Glacite",
 			compact(mining.glacite()), prettyNumber(mining.glacite()) + " glacite powder");
-		GuiDraw.small(graphics, font, "Powder is current plus spent.", left, top + 86, Theme.MUTED);
-
-		float treeX = left + side + 12;
-		float treeW = w - side - 28;
-		float treeH = h - 22;
-		sectionTitle(graphics, font, treeX, top, treeW, new ItemStack(Items.DIAMOND_PICKAXE), "HOTM tree");
-		drawHotmTree(graphics, font, mouseX, mouseY, treeX, top + 16, treeW, treeH - 16, mining);
+		drawHotmTree(graphics, font, mouseX, mouseY, left, top + 20, w - 16, h - 30, mining);
 	}
 
 	private void drawHotmTree(
@@ -598,36 +613,56 @@ public class ProfileViewerScreen extends Screen {
 	) {
 		int rows = HOTM_TREE.length;
 		int cols = HOTM_TREE[0].length;
-		float node = Math.min(22f, Math.min((w - 4) / cols, (h - 4) / rows));
+		float node = Math.min(26f, Math.min((w - 2) / cols, (h - 2) / rows));
 		float gridW = cols * node;
 		float gridH = rows * node;
 		float ox = x + Math.max(0f, (w - gridW) * 0.5f);
-		float oy = y + Math.max(0f, (h - gridH) * 0.1f);
+		float oy = y + Math.max(0f, (h - gridH) * 0.05f);
 		for (int row = 0; row < rows; row++) {
 			for (int col = 0; col < cols; col++) {
 				String id = HOTM_TREE[row][col];
 				if (id == null) {
 					continue;
 				}
-				int level = mining.perk(id, aliasPerk(id));
 				float nx = ox + col * node;
 				float ny = oy + row * node;
-				float size = node - 2;
+				float size = node - 1;
+				if (GLASS.equals(id)) {
+					boolean on = glassOn(mining, row, col);
+					ItemStack pane = new ItemStack(on ? Items.LIME_STAINED_GLASS_PANE : Items.GRAY_STAINED_GLASS_PANE);
+					paintItem(graphics, font, pane, nx + 1, ny + 1, Math.max(8f, size - 2f), false);
+					continue;
+				}
+				int level = mining.perk(id, aliasPerk(id));
 				boolean on = level > 0;
 				boolean hover = GuiDraw.hovered(mouseX, mouseY, nx, ny, size, size);
-				int fill = on ? Theme.withAlpha(Theme.ACCENT, hover ? 56 : 32) : hover ? Theme.CARD_HOVER : Theme.CARD;
-				int line = on ? Theme.ACCENT : Theme.LINE;
-				GuiDraw.panel(graphics, nx, ny, size, size, 5, fill, line);
-				paintItem(graphics, font, perkIcon(id), nx + 2, ny + 1, Math.max(8f, size - 8f), false);
+				ItemStack icon = perkIcon(id, on);
+				paintItem(graphics, font, icon, nx + 1, ny + 1, Math.max(8f, size - 2f), false);
 				if (level > 1) {
 					String text = String.valueOf(level);
-					GuiDraw.small(graphics, font, text, nx + size - GuiDraw.smallWidth(font, text) - 2, ny + size - 9, Theme.TEXT);
+					GuiDraw.small(graphics, font, text, nx + size - GuiDraw.smallWidth(font, text) - 1, ny + size - 9, Theme.TEXT);
 				}
 				if (hover) {
-					tooltip = perkName(id) + (on ? "  " + level : "  locked");
+					hoverStack = perkTooltip(id, level, on);
 				}
 			}
 		}
+	}
+
+	private static boolean glassOn(ProfileViewer.Mining mining, int row, int col) {
+		return perkOn(mining, row, col - 1) || perkOn(mining, row, col + 1)
+			|| perkOn(mining, row - 1, col) || perkOn(mining, row + 1, col);
+	}
+
+	private static boolean perkOn(ProfileViewer.Mining mining, int row, int col) {
+		if (row < 0 || col < 0 || row >= HOTM_TREE.length || col >= HOTM_TREE[0].length) {
+			return false;
+		}
+		String id = HOTM_TREE[row][col];
+		if (id == null || GLASS.equals(id)) {
+			return false;
+		}
+		return mining.perk(id, aliasPerk(id)) > 0;
 	}
 
 	private void drawFarming(
@@ -710,7 +745,7 @@ public class ProfileViewerScreen extends Screen {
 		float ph = h - pad * 2;
 		GuiDraw.panel(graphics, px, py, previewW, ph, 8, Theme.CARD, Theme.LINE);
 		if (shown != null) {
-			ItemStack icon = petIcon(shown);
+			ItemStack icon = petStack(shown);
 			paintItem(graphics, font, icon, px + (previewW - 48) * 0.5f, py + 18, 48, false);
 			GuiDraw.menu(graphics, font, clip(font, shown.name(), previewW - 16), px + 8, py + 78, Theme.TEXT);
 			GuiDraw.small(graphics, font, shown.tier() + "  " + shown.level(), px + 8, py + 92, tierColor(shown.tier()));
@@ -749,11 +784,10 @@ public class ProfileViewerScreen extends Screen {
 				on || hover ? Theme.CARD_HOVER : Theme.CARD,
 				on ? Theme.ACCENT : Theme.LINE
 			);
-			paintItem(graphics, font, petIcon(pet), cx + 4, cy + 3, cell - 14, false);
+			paintItem(graphics, font, petStack(pet), cx + 4, cy + 3, cell - 14, false);
 			GuiDraw.small(graphics, font, String.valueOf(pet.level()), cx + 4, cy + cell - 13, Theme.MUTED);
 			if (hover) {
-				tooltip = pet.name() + "\n" + pet.tier() + "  " + pet.level();
-				hoverStack = petIcon(pet);
+				hoverStack = petStack(pet);
 			}
 			int index = i;
 			hits.add(new Hit(cx, cy, cell - 3, cell - 3, () -> selectedPet = index));
@@ -958,6 +992,21 @@ public class ProfileViewerScreen extends Screen {
 		}
 		stack = stack.copy();
 		stack.setCount(Math.max(1, item.count()));
+		List<String> lore = item.lore();
+		if (lore != null && !lore.isEmpty()) {
+			ItemText.fromLegacy(item.name(), lore).apply(stack);
+		} else {
+			String loreId = raw.contains(":") ? raw.substring(raw.indexOf(':') + 1) : raw;
+			if (!loreId.isBlank()) {
+				SkyblockLore.request(loreId);
+				ItemText text = SkyblockLore.get(loreId);
+				if (text != null && text.present()) {
+					text.apply(stack);
+				} else if (item.name() != null && !item.name().isBlank()) {
+					ItemText.fromLegacy(item.name(), List.of()).apply(stack);
+				}
+			}
+		}
 		return stack;
 	}
 
@@ -1305,15 +1354,34 @@ public class ProfileViewerScreen extends Screen {
 			case "fortunate_mineman" -> "mining_fortune_2";
 			case "mining_fortune_2" -> "fortunate_mineman";
 			case "gifts_from_above" -> "gifts_from_the_departed";
+			case "pickobulus" -> "pickaxe_toss";
+			case "pickaxe_toss" -> "pickobulus";
+			case "sky_mall" -> "daily_effect";
+			case "daily_effect" -> "sky_mall";
+			case "luck_of_the_cave" -> "random_event";
+			case "random_event" -> "luck_of_the_cave";
+			case "seasoned_mineman" -> "mining_experience";
+			case "mining_experience" -> "seasoned_mineman";
+			case "gem_lover" -> "fortunate";
+			case "fortunate" -> "gem_lover";
 			default -> id;
 		};
 	}
 
 	private static String perkName(String id) {
-		if ("special_0".equals(id)) {
-			return "Core of the Mountain";
-		}
-		return prettyPerk(id);
+		return switch (id == null ? "" : id) {
+			case "special_0" -> "Peak of the Mountain";
+			case "mining_speed_2" -> "Speedy Mineman";
+			case "mining_fortune_2" -> "Fortunate Mineman";
+			case "pickaxe_toss" -> "Pickobulus";
+			case "daily_effect" -> "Sky Mall";
+			case "random_event" -> "Luck of the Cave";
+			case "mining_experience" -> "Seasoned Mineman";
+			case "fortunate" -> "Gem Lover";
+			case "forge_time" -> "Quick Forge";
+			case "gifts_from_the_departed" -> "Gifts from the Departed";
+			default -> prettyPerk(id);
+		};
 	}
 
 	private static String prettyPerk(String id) {
@@ -1336,44 +1404,132 @@ public class ProfileViewerScreen extends Screen {
 		return out.toString();
 	}
 
-	private static ItemStack perkIcon(String id) {
+	private static ItemStack perkIcon(String id, boolean unlocked) {
+		if (!unlocked) {
+			return switch (id == null ? "" : id) {
+				case "mining_speed_boost", "pickaxe_toss", "maniac_miner", "anomalous_desire",
+					"gemstone_infusion", "sheer_force" -> new ItemStack(Items.COAL_BLOCK);
+				case "special_0" -> new ItemStack(Items.BEDROCK);
+				default -> new ItemStack(Items.COAL);
+			};
+		}
 		return switch (id == null ? "" : id) {
-			case "mining_speed" -> sky("MITHRIL_PICKAXE");
-			case "mining_speed_2", "speedy_mineman" -> sky("MITHRIL_DRILL_1");
-			case "mining_speed_boost" -> sky("SUGAR");
-			case "mining_fortune", "front_loaded" -> sky("ENCHANTED_GOLD");
-			case "mining_fortune_2", "fortunate_mineman", "titanium_insanium" -> sky("ENCHANTED_TITANIUM");
-			case "efficient_miner", "strong_arm" -> sky("IRON_PICKAXE");
-			case "mole" -> sky("FINE_AMBER_GEM");
-			case "vein_seeker" -> sky("GEMSTONE_MIXTURE");
-			case "powder_buff", "occupation_of_the_mines" -> sky("MITHRIL_ORE");
-			case "daily_powder" -> sky("GLOWSTONE_DUST");
-			case "daily_grind", "no_stone_unturned", "blockhead" -> sky("COBBLESTONE");
-			case "crystallized", "great_explorer" -> sky("FINE_AMETHYST_GEM");
-			case "gemstone_infusion" -> sky("FINE_RUBY_GEM");
-			case "pickobulus" -> sky("TNT");
-			case "maniac_miner" -> sky("ENCHANTED_REDSTONE");
-			case "professional" -> sky("TITANIUM_PICKAXE");
-			case "luck_of_the_cave", "miners_blessing" -> sky("RABBIT_FOOT");
-			case "surveyor" -> sky("COMPASS");
-			case "eager_adventurer" -> new ItemStack(Items.MAP);
-			case "sky_mall" -> sky("EMERALD");
-			case "goblin_killer" -> sky("GOLD_INGOT");
-			case "precision_mining" -> sky("FINE_JADE_GEM");
-			case "special_0" -> sky("NETHER_STAR");
-			case "frozen_skin", "steady_hand" -> sky("PACKED_ICE");
-			case "keep_it_cool" -> sky("ICE");
-			case "warm_hearted" -> sky("MAGMA_CREAM");
-			case "hungry_for_more" -> sky("COOKED_BEEF");
-			case "mineshaft_mayhem" -> sky("MINECART");
-			case "gifts_from_above", "gifts_from_the_departed" -> sky("FINE_ONYX_GEM");
-			case "dead_mans_chest" -> new ItemStack(Items.CHEST);
-			case "subterranean_fisher" -> sky("FISHING_ROD");
-			case "lonesome_miner" -> sky("TITANIUM_DRILL_1");
-			case "orbiter" -> sky("ENDER_PEARL");
-			case "old_school" -> sky("IRON_PICKAXE");
-			case "seasoned_mineman" -> sky("ENCHANTED_COAL");
-			default -> sky("MITHRIL_ORE");
+			case "mining_speed", "mining_speed_boost" -> new ItemStack(Items.GOLDEN_PICKAXE);
+			case "mining_speed_2" -> new ItemStack(Items.DIAMOND_PICKAXE);
+			case "mining_fortune" -> new ItemStack(Items.GOLD_INGOT);
+			case "mining_fortune_2" -> new ItemStack(Items.GOLD_BLOCK);
+			case "titanium_insanium" -> new ItemStack(Items.IRON_INGOT);
+			case "precision_mining" -> new ItemStack(Items.DIAMOND);
+			case "pickaxe_toss" -> new ItemStack(Items.TNT);
+			case "random_event" -> new ItemStack(Items.RABBIT_FOOT);
+			case "efficient_miner" -> new ItemStack(Items.IRON_PICKAXE);
+			case "forge_time" -> new ItemStack(Items.ANVIL);
+			case "daily_effect" -> new ItemStack(Items.EMERALD);
+			case "old_school" -> new ItemStack(Items.COBBLESTONE);
+			case "professional" -> new ItemStack(Items.DIAMOND_PICKAXE);
+			case "mole" -> new ItemStack(Items.PRISMARINE_CRYSTALS);
+			case "fortunate" -> new ItemStack(Items.EMERALD);
+			case "mining_experience" -> new ItemStack(Items.EXPERIENCE_BOTTLE);
+			case "front_loaded" -> new ItemStack(Items.HOPPER);
+			case "daily_grind" -> new ItemStack(Items.COBBLESTONE);
+			case "special_0" -> new ItemStack(Items.REDSTONE_BLOCK);
+			case "daily_powder" -> new ItemStack(Items.CHEST);
+			case "anomalous_desire" -> new ItemStack(Items.EMERALD_BLOCK);
+			case "blockhead" -> new ItemStack(Items.STONE);
+			case "subterranean_fisher" -> new ItemStack(Items.FISHING_ROD);
+			case "keep_it_cool" -> new ItemStack(Items.BLUE_ICE);
+			case "lonesome_miner" -> new ItemStack(Items.IRON_CHESTPLATE);
+			case "great_explorer" -> new ItemStack(Items.MAP);
+			case "maniac_miner" -> new ItemStack(Items.REDSTONE);
+			case "powder_buff" -> new ItemStack(Items.GLOWSTONE);
+			case "miners_blessing" -> new ItemStack(Items.GOLDEN_APPLE);
+			case "no_stone_unturned" -> new ItemStack(Items.STONE);
+			case "strong_arm" -> new ItemStack(Items.IRON_INGOT);
+			case "steady_hand" -> new ItemStack(Items.ICE);
+			case "warm_hearted" -> new ItemStack(Items.MAGMA_CREAM);
+			case "surveyor" -> new ItemStack(Items.COMPASS);
+			case "mineshaft_mayhem" -> new ItemStack(Items.MINECART);
+			case "metal_head" -> new ItemStack(Items.IRON_HELMET);
+			case "rags_to_riches" -> new ItemStack(Items.GOLD_NUGGET);
+			case "eager_adventurer" -> new ItemStack(Items.LEATHER_BOOTS);
+			case "gemstone_infusion" -> new ItemStack(Items.AMETHYST_SHARD);
+			case "crystalline" -> new ItemStack(Items.PRISMARINE_SHARD);
+			case "gifts_from_the_departed" -> new ItemStack(Items.BONE);
+			case "mining_master" -> new ItemStack(Items.NETHER_STAR);
+			case "hungry_for_more" -> new ItemStack(Items.COOKED_BEEF);
+			case "vanguard_seeker" -> new ItemStack(Items.SPYGLASS);
+			case "sheer_force" -> new ItemStack(Items.IRON_BLOCK);
+			default -> new ItemStack(Items.COAL);
+		};
+	}
+
+	private static ItemStack perkTooltip(String id, int level, boolean on) {
+		ItemStack stack = perkIcon(id, true);
+		String title = (on ? "§a" : "§c") + perkName(id);
+		List<String> lore = new ArrayList<>();
+		if (on) {
+			lore.add("§7Level " + level);
+		} else {
+			lore.add("§cLocked");
+		}
+		String desc = perkDesc(id);
+		if (!desc.isBlank()) {
+			lore.add("");
+			lore.add("§7" + desc);
+		}
+		ItemText.fromLegacy(title, lore).apply(stack);
+		return stack;
+	}
+
+	private static String perkDesc(String id) {
+		return switch (id == null ? "" : id) {
+			case "mining_speed" -> "Grants Mining Speed.";
+			case "mining_fortune" -> "Grants Mining Fortune.";
+			case "titanium_insanium" -> "Chance for Mithril to drop Titanium.";
+			case "mining_speed_boost" -> "Pickaxe Ability: temporary Mining Speed.";
+			case "precision_mining" -> "Highlights the block you are looking at.";
+			case "pickaxe_toss" -> "Pickaxe Ability: throw your pickaxe.";
+			case "random_event" -> "Chance to trigger a special mining event.";
+			case "efficient_miner" -> "Grants Mining Spread.";
+			case "forge_time" -> "Reduces the time items take to forge.";
+			case "daily_effect" -> "Sky Mall perk changes every SkyBlock day.";
+			case "old_school" -> "Grants Ore Fortune.";
+			case "professional" -> "Grants Mining Speed.";
+			case "mole" -> "Grants Mining Spread.";
+			case "fortunate" -> "Grants Gemstone Fortune.";
+			case "mining_experience" -> "Grants Mining Wisdom.";
+			case "front_loaded" -> "First ores mined give more Powder and Fortune.";
+			case "daily_grind" -> "Daily commissions grant extra Mithril Powder.";
+			case "special_0" -> "Unlocks extra tokens, forge slots, and powder.";
+			case "daily_powder" -> "Gives Mithril Powder every SkyBlock day.";
+			case "anomalous_desire" -> "Pickaxe Ability: extra Powder and loot.";
+			case "blockhead" -> "Grants Block Fortune.";
+			case "subterranean_fisher" -> "Grants Fishing Fortune in the Glacite Tunnels.";
+			case "keep_it_cool" -> "Grants Heat Resistance.";
+			case "lonesome_miner" -> "Grants combat stats while in mining islands.";
+			case "great_explorer" -> "More treasure chests in the Crystal Hollows.";
+			case "maniac_miner" -> "Pickaxe Ability: extra Mining Speed and Fortune.";
+			case "powder_buff" -> "Gain more Powder from ores.";
+			case "mining_speed_2" -> "Grants more Mining Speed.";
+			case "mining_fortune_2" -> "Grants more Mining Fortune.";
+			case "miners_blessing" -> "Grants Magic Find while mining.";
+			case "no_stone_unturned" -> "Chance to find treasure in the Glacite Mineshafts.";
+			case "strong_arm" -> "Grants Mining Speed on Dwarven Metals.";
+			case "steady_hand" -> "Grants Gemstone Spread.";
+			case "warm_hearted" -> "Grants Cold Resistance.";
+			case "surveyor" -> "Increases Mineshaft chance.";
+			case "mineshaft_mayhem" -> "Bonus effect when you enter a Mineshaft.";
+			case "metal_head" -> "Grants Dwarven Metal Fortune.";
+			case "rags_to_riches" -> "Grants Mining Fortune in Mineshafts.";
+			case "eager_adventurer" -> "Grants Mining Speed in Mineshafts.";
+			case "gemstone_infusion" -> "Pickaxe Ability: stronger gemstone slots.";
+			case "crystalline" -> "More Gemstone Crystal Mineshafts.";
+			case "gifts_from_the_departed" -> "Extra loot from Frozen Corpses.";
+			case "mining_master" -> "Grants Pristine.";
+			case "hungry_for_more" -> "Chance for an extra Frozen Corpse.";
+			case "vanguard_seeker" -> "More Vanguard Corpse Mineshafts.";
+			case "sheer_force" -> "Pickaxe Ability: extra Mining Spread.";
+			default -> "";
 		};
 	}
 
@@ -1454,6 +1610,85 @@ public class ProfileViewerScreen extends Screen {
 			return ItemIds.skull(type, hash);
 		}
 		return sky("PET");
+	}
+
+	private static ItemStack petStack(ProfileViewer.Pet pet) {
+		ItemStack stack = petIcon(pet);
+		if (stack.isEmpty()) {
+			return stack;
+		}
+		int tier = petTierIndex(pet.tier());
+		String loreId = pet.type() == null ? "" : pet.type().trim().toUpperCase(Locale.ROOT) + ";" + tier;
+		if (!loreId.equals(";0") && !loreId.startsWith(";")) {
+			SkyblockLore.request(loreId);
+			ItemText neu = SkyblockLore.get(loreId);
+			if (neu != null && neu.present()) {
+				neu.apply(stack);
+				String color = tierCode(pet.tier());
+				stack.set(
+					net.minecraft.core.component.DataComponents.CUSTOM_NAME,
+					ItemText.styled("§7[Lvl " + pet.level() + "] " + color + pet.name(), true)
+				);
+				return stack;
+			}
+		}
+		String color = tierCode(pet.tier());
+		List<String> lore = new ArrayList<>();
+		lore.add("§8" + petFamily(pet.type()) + " Pet");
+		lore.add("");
+		if (pet.held() != null && !pet.held().isBlank()) {
+			lore.add("§7Held Item: §d" + prettyPerk(pet.held().replace("PET_ITEM_", "")));
+		}
+		if (pet.candy() > 0) {
+			lore.add("§7Candy Used: §e" + pet.candy());
+		}
+		if (pet.active()) {
+			lore.add("§aActive Pet");
+		}
+		lore.add("");
+		lore.add(color + (pet.tier() == null ? "COMMON" : pet.tier().toUpperCase(Locale.ROOT)) + " PET");
+		ItemText.fromLegacy("§7[Lvl " + pet.level() + "] " + color + pet.name(), lore).apply(stack);
+		return stack;
+	}
+
+	private static int petTierIndex(String tier) {
+		return switch (tier == null ? "" : tier.toLowerCase(Locale.ROOT)) {
+			case "uncommon" -> 1;
+			case "rare" -> 2;
+			case "epic" -> 3;
+			case "legendary" -> 4;
+			case "mythic" -> 5;
+			default -> 0;
+		};
+	}
+
+	private static String tierCode(String tier) {
+		return switch (tier == null ? "" : tier.toLowerCase(Locale.ROOT)) {
+			case "uncommon" -> "§a";
+			case "rare" -> "§9";
+			case "epic" -> "§5";
+			case "legendary" -> "§6";
+			case "mythic" -> "§d";
+			default -> "§f";
+		};
+	}
+
+	private static String petFamily(String type) {
+		return switch (type == null ? "" : type.toUpperCase(Locale.ROOT)) {
+			case "WOLF", "TIGER", "LION", "ENDERMAN", "ENDER_DRAGON", "GOLDEN_DRAGON", "BLAZE",
+				"SKELETON", "ZOMBIE", "SPIDER", "TARANTULA", "HOUND", "PHOENIX", "GRIFFIN",
+				"BLACK_CAT", "WITHER_SKELETON", "GOLEM", "IRON_GOLEM", "KUUDRA" -> "Combat";
+			case "RABBIT", "CHICKEN", "PIG", "MOOSHROOM_COW", "ELEPHANT", "SLUG", "BEE" -> "Farming";
+			case "ARMADILLO", "SILVERFISH", "ROCK", "MITHRIL_GOLEM", "SCATHA", "SNAIL",
+				"BAL", "MOLE", "GLACITE_GOLEM", "GOBLIN" -> "Mining";
+			case "SQUID", "DOLPHIN", "BLUE_WHALE", "FLYING_FISH", "MEGALODON", "BABY_YETI",
+				"AMMONITE", "PENGUIN", "REINDEER", "SPINOSAURUS" -> "Fishing";
+			case "OCELOT", "MONKEY", "GIRAFFE" -> "Foraging";
+			case "JELLYFISH", "PARROT", "SHEEP" -> "Alchemy";
+			case "GUARDIAN" -> "Enchanting";
+			case "OWL" -> "Taming";
+			default -> "Skyblock";
+		};
 	}
 
 	private static final Map<String, String> PET_HEADS = petHeads();

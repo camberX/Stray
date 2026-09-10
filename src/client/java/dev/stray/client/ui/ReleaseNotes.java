@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.139", new String[]{
+			"Profile viewer HOTM matches the Skyblock chest tree, with glass connectors and the same perk items. Item and pet hovers use the real lore. Other players show their skin and armor. Networth counts equipment, wardrobe, accessories, sacks, and essence."
+		}),
 		new Entry("1.2.138", new String[]{
 			"Profile viewer is a bit shorter. Home has a larger player, level in the nametag, and the Ironman icon on the window and profile chips. Networth includes item worth. Dungeons use boss heads, typed class names, Catacombs and class bars, and secret average. Pets and HOTM use Skyblock icons."
 		}),

@@ -11,6 +11,7 @@ import net.minecraft.client.renderer.entity.state.EntityRenderState;
 import net.minecraft.client.renderer.entity.state.HumanoidRenderState;
 import net.minecraft.client.renderer.entity.state.LivingEntityRenderState;
 import net.minecraft.world.entity.Pose;
+import net.minecraft.world.entity.player.PlayerSkin;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.SwingAnimationType;
 import org.joml.Quaternionf;
@@ -73,7 +74,7 @@ public final class PlayerPreview {
 		View view,
 		Gear gear
 	) {
-		return drawEquipped(graphics, x, y, w, h, yaw, pitch, view, gear, 62f);
+		return drawEquipped(graphics, x, y, w, h, yaw, pitch, view, gear, 62f, null);
 	}
 
 	public static Drawn drawEquipped(
@@ -87,6 +88,22 @@ public final class PlayerPreview {
 		View view,
 		Gear gear,
 		float maxSize
+	) {
+		return drawEquipped(graphics, x, y, w, h, yaw, pitch, view, gear, maxSize, null);
+	}
+
+	public static Drawn drawEquipped(
+		GuiGraphicsExtractor graphics,
+		float x,
+		float y,
+		float w,
+		float h,
+		float yaw,
+		float pitch,
+		View view,
+		Gear gear,
+		float maxSize,
+		PlayerSkin skin
 	) {
 		Minecraft client = Minecraft.getInstance();
 		LocalPlayer player = client.player;
@@ -103,6 +120,18 @@ public final class PlayerPreview {
 		state.outlineColor = 0;
 		state.nameTag = null;
 		freeze(state, yaw, pitch, gear == null ? Gear.none() : gear, false);
+		if (state instanceof AvatarRenderState avatar) {
+			if (skin != null) {
+				avatar.skin = skin;
+			}
+			avatar.showHat = true;
+			avatar.showJacket = true;
+			avatar.showLeftPants = true;
+			avatar.showRightPants = true;
+			avatar.showLeftSleeve = true;
+			avatar.showRightSleeve = true;
+			avatar.isSpectator = false;
+		}
 		return paint(graphics, state, x, y, w, h, yaw, pitch, view, scale, 1.5f, maxSize, 16f, 10f, 44f);
 	}
 
