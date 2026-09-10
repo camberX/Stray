@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.142", new String[]{
+			"Profile viewer skills use the real XP table and overflow past the cap, Catacombs can show 50+, slayers use cumulative XP, and HOTM no longer jumps a tier just because you have gemstone powder. The tree uses the Skyblock chest items."
+		}),
 		new Entry("1.2.141", new String[]{
 			"Profile viewer networth uses SkyHelper market value, HOTM reads powder when Hypixel omits the tree, other players use their real skin, and the nametag uses rank color plus Skyblock level color."
 		}),

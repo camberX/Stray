@@ -51,25 +51,36 @@ public final class ProfileViewer {
 		.connectTimeout(Duration.ofSeconds(10))
 		.build();
 
-	private static final int[] SKILL_XP = {
-		0, 50, 175, 375, 675, 1175, 1925, 2925, 4425, 6425,
-		9925, 14925, 22425, 32425, 47425, 67425, 97425, 147425, 222425, 322425,
-		472425, 672425, 972425, 1472425, 2222425, 3222425, 5222425, 8222425, 12222425, 17222425,
-		23222425, 30222425, 38222425, 47222425, 57222425, 68222425, 80222425, 93222425, 107222425, 122222425,
-		138222425, 155222425, 173222425, 192222425, 212222425, 233222425, 255222425, 278222425, 302222425, 327222425,
-		353222425, 380722425, 409222425, 438722425, 469222425, 500722425, 533222425, 566722425, 601222425, 636722425,
-		673222425
+	private static final long[] SKILL_XP = {
+		0L, 50L, 175L, 375L, 675L, 1175L, 1925L, 2925L, 4425L, 6425L,
+		9925L, 14925L, 22425L, 32425L, 47425L, 67425L, 97425L, 147425L, 222425L, 322425L,
+		522425L, 822425L, 1222425L, 1722425L, 2322425L, 3022425L, 3822425L, 4722425L, 5722425L, 6822425L,
+		8022425L, 9322425L, 10722425L, 12222425L, 13822425L, 15522425L, 17322425L, 19222425L, 21222425L, 23322425L,
+		25522425L, 27822425L, 30222425L, 32722425L, 35322425L, 38072425L, 40972425L, 44072425L, 47472425L, 51172425L,
+		55172425L, 59472425L, 64072425L, 68972425L, 74172425L, 79672425L, 85472425L, 91572425L, 97972425L, 104672425L,
+		111672425L
 	};
-	private static final int[] CATA_XP = {
-		0, 50, 125, 235, 395, 625, 955, 1425, 2095, 3045,
-		4385, 6275, 8940, 12700, 17960, 25340, 35640, 50040, 70040, 97640,
-		135640, 188140, 259640, 356640, 488640, 668640, 911640, 1239640, 1684640, 2284640,
-		3084640, 4149640, 5559640, 7459640, 9959640, 13259640, 17559640, 23159640, 30359640, 39559640,
-		51559640, 66559640, 85559640, 109559640, 139559640, 177559640, 225559640, 285559640, 360559640, 453559640,
-		569809640
+	private static final long[] RUNE_XP = {
+		0L, 50L, 150L, 275L, 435L, 635L, 885L, 1200L, 1600L, 2100L,
+		2725L, 3510L, 4510L, 5760L, 7360L, 9360L, 11825L, 14950L, 18950L, 23950L,
+		30150L, 37950L, 47750L, 59950L, 75250L, 94300L
 	};
-	private static final int[] HOTM_XP = {
-		0, 0, 3000, 12000, 37000, 97000, 197000, 347000, 557000, 847000, 1247000
+	private static final long[] SOCIAL_XP = {
+		0L, 50L, 150L, 300L, 550L, 1050L, 1800L, 2800L, 4050L, 5550L,
+		7550L, 10050L, 13050L, 16800L, 21300L, 27300L, 35300L, 45300L, 57800L, 72800L,
+		92800L, 117800L, 147800L, 182800L, 222800L, 272800L
+	};
+	private static final long[] CATA_XP = {
+		0L, 50L, 125L, 235L, 395L, 625L, 955L, 1425L, 2095L, 3045L,
+		4385L, 6275L, 8940L, 12700L, 17960L, 25340L, 35640L, 50040L, 70040L, 97640L,
+		135640L, 188140L, 259640L, 356640L, 488640L, 668640L, 911640L, 1239640L, 1684640L, 2284640L,
+		3084640L, 4149640L, 5559640L, 7459640L, 9959640L, 13259640L, 17559640L, 23159640L, 30359640L, 39559640L,
+		51559640L, 66559640L, 85559640L, 109559640L, 139559640L, 177559640L, 225559640L, 285559640L, 360559640L, 453559640L,
+		569809640L
+	};
+	private static final long CATA_OVERFLOW = 200_000_000L;
+	private static final long[] HOTM_XP = {
+		0L, 0L, 3000L, 12000L, 37000L, 97000L, 197000L, 347000L, 557000L, 847000L, 1247000L
 	};
 	private static final Map<String, Integer> HOTM_TIER = hotmTiers();
 	private static final int[] SLAYER_ZOMBIE = {5, 15, 200, 1000, 5000, 20000, 100000, 400000, 1000000};
@@ -89,6 +100,15 @@ public final class ProfileViewer {
 
 	public enum Status {
 		IDLE, LOADING, READY, ERROR
+	}
+
+	private enum Overflow {
+		NONE, SKILL, DUNGEON
+	}
+
+	public static int perkTier(String id) {
+		Integer tier = HOTM_TIER.get(normPerk(id));
+		return tier == null ? 1 : tier;
 	}
 
 	public record Skill(String name, int level, int cap, double xp, float progress) {
@@ -539,25 +559,27 @@ public final class ProfileViewer {
 	}
 
 	private static Profile parseMember(JsonObject profile, JsonObject member, String compact, JsonObject soopy) {
+		JsonObject soopyMember = soopyMember(soopy, string(profile, "profile_id"), string(profile, "cute_name"), compact);
+		JsonObject soopySkills = object(object(soopyMember, "skills"), "levels");
 		JsonObject playerData = object(member, "player_data");
 		JsonObject experience = object(playerData, "experience");
 		List<Skill> skills = new ArrayList<>();
-		skills.add(skill("Farming", skillXp(experience, member, "SKILL_FARMING", "experience_skill_farming"), 60));
-		skills.add(skill("Mining", skillXp(experience, member, "SKILL_MINING", "experience_skill_mining"), 60));
-		skills.add(skill("Combat", skillXp(experience, member, "SKILL_COMBAT", "experience_skill_combat"), 60));
-		skills.add(skill("Foraging", skillXp(experience, member, "SKILL_FORAGING", "experience_skill_foraging"), 60));
-		skills.add(skill("Fishing", skillXp(experience, member, "SKILL_FISHING", "experience_skill_fishing"), 50));
-		skills.add(skill("Enchanting", skillXp(experience, member, "SKILL_ENCHANTING", "experience_skill_enchanting"), 60));
-		skills.add(skill("Alchemy", skillXp(experience, member, "SKILL_ALCHEMY", "experience_skill_alchemy"), 50));
-		skills.add(skill("Taming", skillXp(experience, member, "SKILL_TAMING", "experience_skill_taming"), 60));
-		skills.add(skill("Carpentry", skillXp(experience, member, "SKILL_CARPENTRY", "experience_skill_carpentry"), 50));
-		skills.add(skill("Runecrafting", skillXp(experience, member, "SKILL_RUNECRAFTING", "experience_skill_runecrafting"), 25));
-		skills.add(skill("Social", skillXp(experience, member, "SKILL_SOCIAL", "experience_skill_social2"), 25));
+		skills.add(skill("Farming", skillXp(experience, member, soopySkills, "farming", "SKILL_FARMING", "experience_skill_farming"), 60, soopySkills));
+		skills.add(skill("Mining", skillXp(experience, member, soopySkills, "mining", "SKILL_MINING", "experience_skill_mining"), 60, soopySkills));
+		skills.add(skill("Combat", skillXp(experience, member, soopySkills, "combat", "SKILL_COMBAT", "experience_skill_combat"), 60, soopySkills));
+		skills.add(skill("Foraging", skillXp(experience, member, soopySkills, "foraging", "SKILL_FORAGING", "experience_skill_foraging"), 50, soopySkills));
+		skills.add(skill("Fishing", skillXp(experience, member, soopySkills, "fishing", "SKILL_FISHING", "experience_skill_fishing"), 50, soopySkills));
+		skills.add(skill("Enchanting", skillXp(experience, member, soopySkills, "enchanting", "SKILL_ENCHANTING", "experience_skill_enchanting"), 60, soopySkills));
+		skills.add(skill("Alchemy", skillXp(experience, member, soopySkills, "alchemy", "SKILL_ALCHEMY", "experience_skill_alchemy"), 50, soopySkills));
+		skills.add(skill("Taming", skillXp(experience, member, soopySkills, "taming", "SKILL_TAMING", "experience_skill_taming"), 50, soopySkills));
+		skills.add(skill("Carpentry", skillXp(experience, member, soopySkills, "carpentry", "SKILL_CARPENTRY", "experience_skill_carpentry"), 50, soopySkills));
+		skills.add(skill("Runecrafting", skillXp(experience, member, soopySkills, "runecrafting", "SKILL_RUNECRAFTING", "experience_skill_runecrafting"), 25, RUNE_XP, false, soopySkills));
+		skills.add(skill("Social", skillXp(experience, member, soopySkills, "social", "SKILL_SOCIAL", "experience_skill_social2"), 25, SOCIAL_XP, false, soopySkills));
 		float average = 0f;
 		int counted = 0;
 		for (Skill skill : skills) {
 			if (skill.cap() >= 50 && !"Runecrafting".equals(skill.name()) && !"Social".equals(skill.name())) {
-				average += skill.level();
+				average += Math.min(skill.level(), skill.cap());
 				counted++;
 			}
 		}
@@ -613,9 +635,8 @@ public final class ProfileViewer {
 		long kills = statCount(stats, "kills");
 		long deaths = statCount(stats, "deaths");
 
-		JsonObject soopyMember = soopyMember(soopy, string(profile, "profile_id"), string(profile, "cute_name"), compact);
-		Dungeon dungeons = parseDungeons(member);
-		List<Slayer> slayers = parseSlayers(member);
+		Dungeon dungeons = parseDungeons(member, soopyMember);
+		List<Slayer> slayers = parseSlayers(member, soopyMember);
 		Mining mining = parseMining(member, soopyMember);
 		Farming farming = parseFarming(member);
 		List<Pet> pets = parsePets(member);
@@ -721,13 +742,17 @@ public final class ProfileViewer {
 		);
 	}
 
-	private static Dungeon parseDungeons(JsonObject member) {
+	private static Dungeon parseDungeons(JsonObject member, JsonObject soopy) {
 		JsonObject dungeons = object(member, "dungeons");
 		JsonObject types = object(dungeons, "dungeon_types");
 		JsonObject cata = object(types, "catacombs");
 		JsonObject master = object(types, "master_catacombs");
+		JsonObject soopyDungeons = object(soopy, "dungeons");
 		double xp = num(cata, "experience");
-		Skill level = skillFrom("Catacombs", xp, CATA_XP, 50);
+		if (xp <= 0d) {
+			xp = num(soopyDungeons, "catacombs_xp");
+		}
+		Skill level = dungeonFrom("Catacombs", xp, soopyDungeons);
 		int secrets = (int) num(dungeons, "secrets");
 		if (secrets == 0) {
 			secrets = (int) num(object(object(member, "player_stats"), "dungeons"), "secrets_found");
@@ -799,22 +824,26 @@ public final class ProfileViewer {
 	}
 
 	private static Skill classSkill(JsonObject classes, String key, String name) {
-		return skillFrom(name, num(object(classes, key), "experience"), CATA_XP, 50);
+		return dungeonFrom(name, num(object(classes, key), "experience"), null);
 	}
 
-	private static List<Slayer> parseSlayers(JsonObject member) {
+	private static List<Slayer> parseSlayers(JsonObject member, JsonObject soopy) {
 		JsonObject slayer = object(member, "slayer");
 		JsonObject bosses = object(slayer, "slayer_bosses");
 		if (bosses == null) {
 			bosses = object(member, "slayer_bosses");
 		}
+		if (bosses == null) {
+			bosses = slayer;
+		}
+		JsonObject soopySlayer = object(soopy, "slayer");
 		List<Slayer> out = new ArrayList<>();
-		out.add(slayer("Zombie", num(object(bosses, "zombie"), "xp"), SLAYER_ZOMBIE));
-		out.add(slayer("Spider", num(object(bosses, "spider"), "xp"), SLAYER_SPIDER));
-		out.add(slayer("Wolf", num(object(bosses, "wolf"), "xp"), SLAYER_WOLF));
-		out.add(slayer("Enderman", num(object(bosses, "enderman"), "xp"), SLAYER_ENDER));
-		out.add(slayer("Blaze", num(object(bosses, "blaze"), "xp"), SLAYER_BLAZE));
-		out.add(slayer("Vampire", num(object(bosses, "vampire"), "xp"), SLAYER_VAMP));
+		out.add(slayer("Zombie", bosses, soopySlayer, "zombie", SLAYER_ZOMBIE));
+		out.add(slayer("Spider", bosses, soopySlayer, "spider", SLAYER_SPIDER));
+		out.add(slayer("Wolf", bosses, soopySlayer, "wolf", SLAYER_WOLF));
+		out.add(slayer("Enderman", bosses, soopySlayer, "enderman", SLAYER_ENDER));
+		out.add(slayer("Blaze", bosses, soopySlayer, "blaze", SLAYER_BLAZE));
+		out.add(slayer("Vampire", bosses, soopySlayer, "vampire", SLAYER_VAMP));
 		return out;
 	}
 
@@ -838,23 +867,17 @@ public final class ProfileViewer {
 			xp = num(level, "totalExp");
 			int listed = (int) num(level, "level");
 			if (listed > 0 && xp <= 0d) {
-				int hotm = Math.max(listed, inferHotm(core));
+				int hotm = listed;
 				List<Perk> perks = parsePerks(nodesOf(core));
-				if (perks.isEmpty()) {
-					perks = inferredPerks(hotm);
-				}
 				return new Mining(hotm, powder(core, "mithril"), powder(core, "gemstone"), powder(core, "glacite"), perks);
 			}
 		}
 		JsonObject nodes = nodesOf(core);
 		List<Perk> perks = parsePerks(nodes);
 		int fromXp = xp > 0d ? skillFrom("HOTM", xp, HOTM_XP, 10).level() : 0;
-		int hotm = Math.max(fromXp, Math.max(hotmFromPerks(perks), inferHotm(core)));
+		int hotm = fromXp > 0 ? fromXp : Math.max(hotmFromPerks(perks), inferHotm(core));
 		if (hotm == 0 && (bool(core, "received_free_tier") || !perks.isEmpty())) {
 			hotm = 1;
-		}
-		if (perks.isEmpty() && hotm > 0) {
-			perks = inferredPerks(hotm);
 		}
 		return new Mining(hotm, powder(core, "mithril"), powder(core, "gemstone"), powder(core, "glacite"), perks);
 	}
@@ -906,29 +929,13 @@ public final class ProfileViewer {
 		if (mithrilSpent >= 50_000L) {
 			hotm = Math.max(hotm, 5);
 		}
-		if (gemstone > 0L || gemSpent > 0L) {
-			hotm = Math.max(hotm, 6);
-		}
-		if (gemSpent >= 100_000L || gemstone >= 1_000_000L) {
+		if (glacite > 0L || glaciteSpent > 0L) {
 			hotm = Math.max(hotm, 7);
 		}
-		if (glacite > 0L || glaciteSpent > 0L) {
-			hotm = Math.max(hotm, 8);
-		}
-		if (glaciteSpent >= 50_000L || glacite >= 1_000_000L || gemSpent >= 1_000_000L) {
+		if (glaciteSpent >= 50_000L || glacite >= 1_000_000L) {
 			hotm = Math.max(hotm, 10);
 		}
 		return hotm;
-	}
-
-	private static List<Perk> inferredPerks(int hotm) {
-		List<Perk> out = new ArrayList<>();
-		for (Map.Entry<String, Integer> entry : HOTM_TIER.entrySet()) {
-			if (entry.getValue() != null && entry.getValue() <= hotm) {
-				out.add(new Perk(entry.getKey(), pretty(entry.getKey()), 1));
-			}
-		}
-		return List.copyOf(out);
 	}
 
 	private static JsonObject miningCore(JsonObject member) {
@@ -1605,47 +1612,156 @@ public final class ProfileViewer {
 		return pretty(id);
 	}
 
-	private static Skill skill(String name, double xp, int cap) {
-		return skillFrom(name, xp, SKILL_XP, cap);
+	private static Skill skill(String name, double xp, int cap, JsonObject soopySkills) {
+		return skill(name, xp, cap, SKILL_XP, true, soopySkills);
 	}
 
-	private static Skill skillFrom(String name, double xp, int[] table, int cap) {
+	private static Skill skill(String name, double xp, int cap, long[] table, boolean overflow, JsonObject soopySkills) {
+		Skill computed = skillFrom(name, xp, table, cap, overflow ? Overflow.SKILL : Overflow.NONE);
+		JsonObject soopy = object(soopySkills, name.toLowerCase(Locale.ROOT));
+		int soopyLevel = (int) num(object(soopy, "over60"), "level");
+		if (soopyLevel <= 0) {
+			soopyLevel = (int) num(soopy, "level");
+		}
+		if (soopyLevel > computed.level()) {
+			double soopyXp = num(soopy, "xp");
+			float progress = (float) num(object(soopy, "over60"), "progress");
+			if (progress <= 0f) {
+				progress = (float) num(soopy, "progress");
+			}
+			return new Skill(name, soopyLevel, cap, xp > 0d ? xp : soopyXp, Math.max(0f, Math.min(1f, progress)));
+		}
+		return computed;
+	}
+
+	private static Skill dungeonFrom(String name, double xp, JsonObject soopyDungeons) {
+		Skill computed = skillFrom(name, xp, CATA_XP, 50, Overflow.DUNGEON);
+		if ("Catacombs".equals(name)) {
+			double listed = num(soopyDungeons, "catacombs_level");
+			int soopyLevel = (int) Math.floor(listed);
+			if (soopyLevel > computed.level()) {
+				return new Skill(name, soopyLevel, 50, xp, (float) Math.max(0d, Math.min(1d, listed - soopyLevel)));
+			}
+		}
+		return computed;
+	}
+
+	private static Skill skillFrom(String name, double xp, long[] table, int cap) {
+		return skillFrom(name, xp, table, cap, Overflow.NONE);
+	}
+
+	private static Skill skillFrom(String name, double xp, long[] table, int cap, Overflow overflow) {
+		int highest = table == null ? 0 : table.length - 1;
 		int level = 0;
-		for (int i = 1; i < table.length && i <= cap; i++) {
+		for (int i = 1; i <= highest; i++) {
 			if (xp >= table[i]) {
 				level = i;
 			} else {
 				break;
 			}
 		}
-		level = Math.min(level, cap);
 		float progress = 1f;
-		if (level < cap && level + 1 < table.length) {
+		if (level < highest) {
 			double from = table[level];
 			double to = table[level + 1];
 			progress = to <= from ? 1f : (float) Math.max(0d, Math.min(1d, (xp - from) / (to - from)));
+		} else if (overflow == Overflow.DUNGEON) {
+			double extra = Math.max(0d, xp - table[highest]);
+			int more = (int) Math.floor(extra / CATA_OVERFLOW);
+			level += more;
+			progress = (float) ((extra - more * (double) CATA_OVERFLOW) / CATA_OVERFLOW);
+		} else if (overflow == Overflow.SKILL && highest >= 2) {
+			double extra = Math.max(0d, xp - table[highest]);
+			double step = table[highest] - table[highest - 1];
+			int safety = 0;
+			while (extra >= step && safety++ < 400) {
+				extra -= step;
+				level++;
+				step += 300_000d;
+			}
+			progress = step <= 0d ? 1f : (float) Math.max(0d, Math.min(1d, extra / step));
+		}
+		if (overflow == Overflow.NONE) {
+			level = Math.min(level, cap);
 		}
 		return new Skill(name, level, cap, xp, progress);
 	}
 
-	private static Slayer slayer(String name, double xp, int[] table) {
+	private static Slayer slayer(String name, JsonObject bosses, JsonObject soopySlayer, String key, int[] table) {
+		JsonObject boss = object(bosses, key);
+		double xp = num(boss, "xp");
+		if (xp <= 0d) {
+			xp = num(object(soopySlayer, key), "xp");
+		}
+		int level = slayerLevel(xp, table);
+		level = Math.max(level, claimedSlayer(boss));
+		JsonObject extra = object(soopySlayer, key);
+		level = Math.max(level, (int) num(extra, "level"));
+		level = Math.max(level, (int) num(extra, "claimed_level"));
+		return new Slayer(name, level, xp);
+	}
+
+	private static int slayerLevel(double xp, int[] table) {
 		int level = 0;
-		double need = 0d;
-		for (int step : table) {
-			need += step;
-			if (xp >= need) {
-				level++;
+		if (table == null) {
+			return 0;
+		}
+		for (int i = 0; i < table.length; i++) {
+			if (xp >= table[i]) {
+				level = i + 1;
 			} else {
 				break;
 			}
 		}
-		return new Slayer(name, level, xp);
+		return level;
 	}
 
-	private static double skillXp(JsonObject experience, JsonObject member, String modern, String legacy) {
+	private static int claimedSlayer(JsonObject boss) {
+		int best = (int) num(boss, "claimed_level");
+		JsonObject claimed = object(boss, "claimed_levels");
+		if (claimed == null) {
+			return best;
+		}
+		for (String key : claimed.keySet()) {
+			if (key == null || !claimedOn(claimed, key)) {
+				continue;
+			}
+			String digits = key.replaceAll("\\D+", "");
+			if (!digits.isEmpty()) {
+				try {
+					best = Math.max(best, Integer.parseInt(digits));
+				} catch (NumberFormatException ignored) {
+				}
+			}
+		}
+		return best;
+	}
+
+	private static boolean claimedOn(JsonObject claimed, String key) {
+		if (claimed == null || key == null || !claimed.has(key)) {
+			return false;
+		}
+		JsonElement value = claimed.get(key);
+		if (value == null || !value.isJsonPrimitive()) {
+			return false;
+		}
+		JsonPrimitive primitive = value.getAsJsonPrimitive();
+		if (primitive.isBoolean()) {
+			return primitive.getAsBoolean();
+		}
+		if (primitive.isNumber()) {
+			return primitive.getAsDouble() > 0d;
+		}
+		return "true".equalsIgnoreCase(primitive.getAsString());
+	}
+
+	private static double skillXp(JsonObject experience, JsonObject member, JsonObject soopySkills, String soopyKey, String modern, String legacy) {
 		double xp = num(experience, modern);
 		if (xp == 0d) {
 			xp = num(member, legacy);
+		}
+		if (xp == 0d) {
+			xp = num(object(soopySkills, soopyKey), "xp");
 		}
 		return xp;
 	}

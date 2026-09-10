@@ -644,41 +644,18 @@ public class ProfileViewerScreen extends Screen {
 				float ny = oy + row * node;
 				float size = node - 1;
 				if (GLASS.equals(id)) {
-					boolean on = glassOn(mining, row, col);
-					ItemStack pane = new ItemStack(on ? Items.LIME_STAINED_GLASS_PANE : Items.GRAY_STAINED_GLASS_PANE);
-					paintItem(graphics, font, pane, nx + 1, ny + 1, Math.max(8f, size - 2f), false);
 					continue;
 				}
 				int level = mining.perk(id, aliasPerk(id));
 				boolean on = level > 0;
 				boolean hover = GuiDraw.hovered(mouseX, mouseY, nx, ny, size, size);
-				ItemStack icon = perkIcon(id, on);
-				paintItem(graphics, font, icon, nx + 1, ny + 1, Math.max(8f, size - 2f), false);
-				if (level > 1) {
-					String text = String.valueOf(level);
-					GuiDraw.small(graphics, font, text, nx + size - GuiDraw.smallWidth(font, text) - 1, ny + size - 9, Theme.TEXT);
-				}
+				ItemStack icon = perkIcon(id, on, level);
+				paintItem(graphics, font, icon, nx + 1, ny + 1, Math.max(8f, size - 2f), true);
 				if (hover) {
 					hoverStack = perkTooltip(id, level, on);
 				}
 			}
 		}
-	}
-
-	private static boolean glassOn(ProfileViewer.Mining mining, int row, int col) {
-		return perkOn(mining, row, col - 1) || perkOn(mining, row, col + 1)
-			|| perkOn(mining, row - 1, col) || perkOn(mining, row + 1, col);
-	}
-
-	private static boolean perkOn(ProfileViewer.Mining mining, int row, int col) {
-		if (row < 0 || col < 0 || row >= HOTM_TREE.length || col >= HOTM_TREE[0].length) {
-			return false;
-		}
-		String id = HOTM_TREE[row][col];
-		if (id == null || GLASS.equals(id)) {
-			return false;
-		}
-		return mining.perk(id, aliasPerk(id)) > 0;
 	}
 
 	private void drawFarming(
@@ -1116,11 +1093,12 @@ public class ProfileViewerScreen extends Screen {
 	) {
 		boolean hover = GuiDraw.hovered(mouseX, mouseY, x, y, w, 22);
 		if (hover) {
-			tooltip = skill.name() + "  " + skill.level() + " / " + skill.cap() + "\n" + prettyNumber((long) skill.xp()) + " xp";
+			tooltip = skill.name() + "  " + skill.level() + (skill.level() > skill.cap() ? "" : " / " + skill.cap())
+				+ "\n" + prettyNumber((long) skill.xp()) + " xp";
 		}
 		paintItem(graphics, font, skillIcon(skill.name()), x, y, 14, false);
 		GuiDraw.small(graphics, font, skill.name(), x + 18, y, Theme.MUTED);
-		String value = skill.level() + " / " + skill.cap();
+		String value = skill.level() > skill.cap() ? String.valueOf(skill.level()) : skill.level() + " / " + skill.cap();
 		GuiDraw.menu(graphics, font, value, x + w - GuiDraw.menuWidth(font, value), y, Theme.TEXT);
 		GuiDraw.rounded(graphics, x + 18, y + 12, w - 18, 4, 2, Theme.TRACK);
 		float fill = Math.max(0f, Math.min(1f, skill.progress()));
@@ -1423,67 +1401,37 @@ public class ProfileViewerScreen extends Screen {
 		return out.toString();
 	}
 
-	private static ItemStack perkIcon(String id, boolean unlocked) {
-		if (!unlocked) {
-			return switch (id == null ? "" : id) {
-				case "mining_speed_boost", "pickaxe_toss", "maniac_miner", "anomalous_desire",
-					"gemstone_infusion", "sheer_force" -> new ItemStack(Items.COAL_BLOCK);
-				case "special_0" -> new ItemStack(Items.BEDROCK);
-				default -> new ItemStack(Items.COAL);
-			};
-		}
+	private static boolean pickaxeAbility(String id) {
 		return switch (id == null ? "" : id) {
-			case "mining_speed", "mining_speed_boost" -> new ItemStack(Items.GOLDEN_PICKAXE);
-			case "mining_speed_2" -> new ItemStack(Items.DIAMOND_PICKAXE);
-			case "mining_fortune" -> new ItemStack(Items.GOLD_INGOT);
-			case "mining_fortune_2" -> new ItemStack(Items.GOLD_BLOCK);
-			case "titanium_insanium" -> new ItemStack(Items.IRON_INGOT);
-			case "precision_mining" -> new ItemStack(Items.DIAMOND);
-			case "pickaxe_toss" -> new ItemStack(Items.TNT);
-			case "random_event" -> new ItemStack(Items.RABBIT_FOOT);
-			case "efficient_miner" -> new ItemStack(Items.IRON_PICKAXE);
-			case "forge_time" -> new ItemStack(Items.ANVIL);
-			case "daily_effect" -> new ItemStack(Items.EMERALD);
-			case "old_school" -> new ItemStack(Items.COBBLESTONE);
-			case "professional" -> new ItemStack(Items.DIAMOND_PICKAXE);
-			case "mole" -> new ItemStack(Items.PRISMARINE_CRYSTALS);
-			case "fortunate" -> new ItemStack(Items.EMERALD);
-			case "mining_experience" -> new ItemStack(Items.EXPERIENCE_BOTTLE);
-			case "front_loaded" -> new ItemStack(Items.HOPPER);
-			case "daily_grind" -> new ItemStack(Items.COBBLESTONE);
-			case "special_0" -> new ItemStack(Items.REDSTONE_BLOCK);
-			case "daily_powder" -> new ItemStack(Items.CHEST);
-			case "anomalous_desire" -> new ItemStack(Items.EMERALD_BLOCK);
-			case "blockhead" -> new ItemStack(Items.STONE);
-			case "subterranean_fisher" -> new ItemStack(Items.FISHING_ROD);
-			case "keep_it_cool" -> new ItemStack(Items.BLUE_ICE);
-			case "lonesome_miner" -> new ItemStack(Items.IRON_CHESTPLATE);
-			case "great_explorer" -> new ItemStack(Items.MAP);
-			case "maniac_miner" -> new ItemStack(Items.REDSTONE);
-			case "powder_buff" -> new ItemStack(Items.GLOWSTONE);
-			case "miners_blessing" -> new ItemStack(Items.GOLDEN_APPLE);
-			case "no_stone_unturned" -> new ItemStack(Items.STONE);
-			case "strong_arm" -> new ItemStack(Items.IRON_INGOT);
-			case "steady_hand" -> new ItemStack(Items.ICE);
-			case "warm_hearted" -> new ItemStack(Items.MAGMA_CREAM);
-			case "surveyor" -> new ItemStack(Items.COMPASS);
-			case "mineshaft_mayhem" -> new ItemStack(Items.MINECART);
-			case "metal_head" -> new ItemStack(Items.IRON_HELMET);
-			case "rags_to_riches" -> new ItemStack(Items.GOLD_NUGGET);
-			case "eager_adventurer" -> new ItemStack(Items.LEATHER_BOOTS);
-			case "gemstone_infusion" -> new ItemStack(Items.AMETHYST_SHARD);
-			case "crystalline" -> new ItemStack(Items.PRISMARINE_SHARD);
-			case "gifts_from_the_departed" -> new ItemStack(Items.BONE);
-			case "mining_master" -> new ItemStack(Items.NETHER_STAR);
-			case "hungry_for_more" -> new ItemStack(Items.COOKED_BEEF);
-			case "vanguard_seeker" -> new ItemStack(Items.SPYGLASS);
-			case "sheer_force" -> new ItemStack(Items.IRON_BLOCK);
-			default -> new ItemStack(Items.COAL);
+			case "mining_speed_boost", "pickaxe_toss", "pickobulus", "maniac_miner", "anomalous_desire",
+				"gemstone_infusion", "sheer_force", "vein_seeker" -> true;
+			default -> false;
 		};
 	}
 
+	private static ItemStack perkIcon(String id, boolean unlocked, int level) {
+		String key = id == null ? "" : id;
+		ItemStack stack;
+		if ("special_0".equals(key) || "core_of_the_mountain".equals(key)) {
+			stack = new ItemStack(unlocked ? Items.REDSTONE_BLOCK : Items.BEDROCK);
+		} else if (pickaxeAbility(key)) {
+			stack = new ItemStack(unlocked ? Items.BLAZE_ROD : Items.COAL_BLOCK);
+		} else if (unlocked && "precision_mining".equals(key)) {
+			stack = new ItemStack(Items.END_PORTAL_FRAME);
+		} else if (unlocked && ("mining_speed".equals(key) || "efficient_miner".equals(key) || "mole".equals(key))) {
+			stack = new ItemStack(Items.PRISMARINE_CRYSTALS);
+		} else if (unlocked) {
+			stack = new ItemStack(Items.EMERALD);
+		} else {
+			stack = new ItemStack(Items.COAL);
+		}
+		int count = unlocked ? Math.max(1, level) : ProfileViewer.perkTier(key);
+		stack.setCount(Math.max(1, Math.min(99, count)));
+		return stack;
+	}
+
 	private static ItemStack perkTooltip(String id, int level, boolean on) {
-		ItemStack stack = perkIcon(id, true);
+		ItemStack stack = perkIcon(id, on, level);
 		String title = (on ? "§a" : "§c") + perkName(id);
 		List<String> lore = new ArrayList<>();
 		if (on) {
