@@ -4,9 +4,11 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import dev.stray.client.config.StrayConfig;
 import dev.stray.client.location.SkyblockLocation;
+import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.Style;
 import net.minecraft.world.phys.Vec3;
 
 import java.util.ArrayList;
@@ -116,6 +118,39 @@ public final class CrystalHollows {
 			out.add(new Mark(entry.getKey().label, entry.getValue(), entry.getKey().rgb, false));
 		}
 		return out;
+	}
+
+	public static void dumpChat() {
+		Minecraft client = Minecraft.getInstance();
+		if (client.gui == null) {
+			return;
+		}
+		List<Mark> lines = new ArrayList<>();
+		for (var entry : WAYPOINTS.entrySet()) {
+			lines.add(new Mark(entry.getKey().label, entry.getValue(), entry.getKey().rgb, false));
+		}
+		for (StaticMark nucleus : NUCLEUS) {
+			lines.add(new Mark(nucleus.label, nucleus.pos, nucleus.rgb, true));
+		}
+		client.gui.getChat().addClientSystemMessage(
+			Component.literal("Stray CH waypoints").withStyle(ChatFormatting.YELLOW)
+		);
+		if (lines.isEmpty()) {
+			client.gui.getChat().addClientSystemMessage(
+				Component.literal("None stored.").withStyle(ChatFormatting.GRAY)
+			);
+			return;
+		}
+		for (Mark mark : lines) {
+			BlockPos pos = mark.pos();
+			String text = mark.label() + "  " + pos.getX() + " " + pos.getY() + " " + pos.getZ();
+			if (mark.nucleus()) {
+				text += "  (zone)";
+			}
+			client.gui.getChat().addClientSystemMessage(
+				Component.literal(text).withStyle(Style.EMPTY.withColor(mark.rgb() & 0xFFFFFF))
+			);
+		}
 	}
 
 	public static void reset() {

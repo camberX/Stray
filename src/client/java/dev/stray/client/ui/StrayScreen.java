@@ -10,6 +10,7 @@ import dev.stray.client.farming.FarmingHud;
 import dev.stray.client.farming.JacobContestTracker;
 import dev.stray.client.config.StrayConfig;
 import dev.stray.client.location.SkyblockLocation;
+import dev.stray.client.mining.CrystalHollows;
 import dev.stray.client.mining.MiningAreas;
 import dev.stray.client.mining.MiningTracker;
 import dev.stray.client.mining.TitaniumTracker;
@@ -136,7 +137,7 @@ public class StrayScreen extends Screen {
 		RAWMATS("Raw mats", 1),
 		MINING("Mining HUD", 1),
 		TITANIUM("Titanium ESP", 3),
-		CRYSTAL("CH waypoints", 3),
+		CRYSTAL("CH waypoints", 4),
 		FARMING("Yaw / Pitch", 1),
 		INVENTORY("Inventory", 3),
 		PLOTS("Garden plots", 1),
@@ -306,6 +307,7 @@ public class StrayScreen extends Screen {
 		new SearchEntry("Entrance zones", Tab.MINING, "Mining"),
 		new SearchEntry("Nucleus waypoints", Tab.MINING, "Mining"),
 		new SearchEntry("Zone doors", Tab.MINING, "Mining"),
+		new SearchEntry("Dump coords", Tab.MINING, "Mining"),
 		new SearchEntry("Jungle Temple", Tab.MINING, "Mining"),
 		new SearchEntry("Mines of Divan", Tab.MINING, "Mining"),
 		new SearchEntry("Goblin Queen", Tab.MINING, "Mining"),
@@ -2113,7 +2115,7 @@ public class StrayScreen extends Screen {
 				float 				y = sectionLabel(graphics, font, left, top, "Tools");
 				y = controlCard(graphics, font, left, y, col, mouseX, mouseY, "Mining HUD", config.miningHudEnabled, v -> config.miningHudEnabled = v, Feature.MINING);
 				y = controlCard(graphics, font, left, y, col, mouseX, mouseY, "Titanium ESP", config.titaniumEsp, v -> config.titaniumEsp = v, Feature.TITANIUM);
-				controlCard(graphics, font, left, y, col, mouseX, mouseY, "CH waypoints", config.crystalHollowsWaypoints, v -> config.crystalHollowsWaypoints = v, Feature.CRYSTAL);
+				controlCard(graphics, font, left, y, col, mouseX, mouseY, "CH waypoints", config.crystalHollowsWaypoints, v -> config.crystalHollowsWaypoints = v, Feature.CRYSTAL, "Dump", CrystalHollows::dumpChat);
 
 				y = sectionLabel(graphics, font, right, top, "Live");
 				y = featureCard(graphics, font, right, y, col, cardTop() + cardHead() + 54 + cardPad(), "Live");
@@ -2184,8 +2186,26 @@ public class StrayScreen extends Screen {
 		Consumer<Boolean> setter,
 		Feature feature
 	) {
+		return controlCard(graphics, font, x, y, w, mouseX, mouseY, title, enabled, setter, feature, null, null);
+	}
+
+	private float controlCard(
+		GuiGraphicsExtractor graphics,
+		Font font,
+		float x,
+		float y,
+		float w,
+		int mouseX,
+		int mouseY,
+		String title,
+		boolean enabled,
+		Consumer<Boolean> setter,
+		Feature feature,
+		String action,
+		Runnable onAction
+	) {
 		float h = cardHeight(feature.rows);
-		float iy = featureCard(graphics, font, x, y, w, h, title, enabled, setter, mouseX, mouseY);
+		float iy = featureCard(graphics, font, x, y, w, h, title, enabled, setter, mouseX, mouseY, action, onAction);
 		drawFeatureFields(graphics, font, mouseX, mouseY, innerX(x), iy, innerW(w), feature);
 		return y + h + 8;
 	}
@@ -2421,7 +2441,7 @@ public class StrayScreen extends Screen {
 	}
 
 	private float featureCard(GuiGraphicsExtractor graphics, Font font, float x, float y, float w, float h, String title) {
-		return featureCard(graphics, font, x, y, w, h, title, null, null, 0, 0);
+		return featureCard(graphics, font, x, y, w, h, title, null, null, 0, 0, null, null);
 	}
 
 	private float featureCard(
@@ -2437,15 +2457,34 @@ public class StrayScreen extends Screen {
 		int mouseX,
 		int mouseY
 	) {
+		return featureCard(graphics, font, x, y, w, h, title, value, setter, mouseX, mouseY, null, null);
+	}
+
+	private float featureCard(
+		GuiGraphicsExtractor graphics,
+		Font font,
+		float x,
+		float y,
+		float w,
+		float h,
+		String title,
+		Boolean value,
+		Consumer<Boolean> setter,
+		int mouseX,
+		int mouseY,
+		String action,
+		Runnable onAction
+	) {
 		if (controlCenter()) {
 			ControlChrome.card(graphics, x, y, w, h);
 			pageExtent = Math.max(pageExtent, y + h);
 			float headY = y + cardTop();
 			GuiDraw.menu(graphics, font, title, x + cardPad(), GuiDraw.middle(headY, cardHead()), ControlChrome.cardText());
+			float right = x + w - cardPad();
 			if (setter != null && value != null) {
 				float trackW = 28;
 				float trackH = 16;
-				float tx = x + w - cardPad() - trackW;
+				float tx = right - trackW;
 				float ty = headY + (cardHead() - trackH) * 0.5f;
 				float t = anim("tog-card-" + title + "@" + Math.round(x) + ":" + Math.round(y), value ? 1f : 0f);
 				ControlChrome.toggle(graphics, tx, ty, trackW, trackH, t);
@@ -2453,6 +2492,17 @@ public class StrayScreen extends Screen {
 					setter.accept(!value);
 					UnloadState.markDirty();
 				}));
+				right = tx - 6;
+			}
+			if (action != null && onAction != null) {
+				float aw = GuiDraw.menuWidth(font, action) + 10;
+				float ah = 16;
+				float ax = right - aw;
+				float ay = headY + (cardHead() - ah) * 0.5f;
+				boolean hover = GuiDraw.hovered(mouseX, mouseY, ax, ay, aw, ah);
+				ControlChrome.search(graphics, ax, ay, aw, ah);
+				GuiDraw.menu(graphics, font, action, ax + 5, GuiDraw.middle(ay, ah), hover ? Theme.ACCENT : ControlChrome.cardText());
+				hits.add(new Hit(ax, headY, aw, cardHead(), onAction));
 			}
 			return headY + cardHead();
 		}
@@ -2461,6 +2511,27 @@ public class StrayScreen extends Screen {
 		GuiDraw.small(graphics, font, title, x + CARD_PAD, y + 5, Theme.HEADER);
 		GuiDraw.hline(graphics, x + CARD_PAD, y + 16, w - CARD_PAD * 2, Theme.LINE);
 		return y + CARD_HEAD;
+	}
+
+	private float clickRow(
+		GuiGraphicsExtractor graphics,
+		Font font,
+		float x,
+		float y,
+		float w,
+		int mouseX,
+		int mouseY,
+		String label,
+		Runnable click
+	) {
+		float row = rowH();
+		boolean hovered = GuiDraw.hovered(mouseX, mouseY, x, y, w, row);
+		if (hovered) {
+			GuiDraw.rounded(graphics, x - 3, y, w + 6, row, 6, Anim.fade(0x08FFFFFF, 1f));
+		}
+		GuiDraw.menu(graphics, font, label, x + 1, GuiDraw.middle(y, row), hovered ? Theme.ACCENT : ink());
+		hits.add(new Hit(x, y, w, row, click));
+		return y + row;
 	}
 
 	private float toggle(GuiGraphicsExtractor graphics, Font font, float x, float y, float w, int mouseX, int mouseY, String label, boolean value, Consumer<Boolean> setter) {
@@ -2708,7 +2779,8 @@ public class StrayScreen extends Screen {
 			case CRYSTAL -> {
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Find in chat", config.crystalHollowsFindChat, v -> config.crystalHollowsFindChat = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Entrance zones", config.crystalHollowsEntrances, v -> config.crystalHollowsEntrances = v);
-				toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Through walls", config.crystalHollowsThroughWalls, v -> config.crystalHollowsThroughWalls = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Through walls", config.crystalHollowsThroughWalls, v -> config.crystalHollowsThroughWalls = v);
+				clickRow(graphics, font, ix, y, iw, mouseX, mouseY, "Dump coords", CrystalHollows::dumpChat);
 			}
 			case INVENTORY -> {
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Hotbar", config.inventoryHudHotbar, v -> config.inventoryHudHotbar = v);
@@ -3184,7 +3256,7 @@ public class StrayScreen extends Screen {
 		return FabricLoader.getInstance()
 			.getModContainer("stray")
 			.map(container -> container.getMetadata().getVersion().getFriendlyString())
-			.orElse("1.2.192");
+			.orElse("1.2.193");
 	}
 
 	@Override

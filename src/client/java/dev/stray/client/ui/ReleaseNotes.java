@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.193", new String[]{
+			"CH waypoints has a Dump button that prints every stored structure and zone coordinate in client chat."
+		}),
 		new Entry("1.2.192", new String[]{
 			"Garden plots show pest plot numbers in red, have hover tooltips, and sit under inventory tooltips. CH waypoints has an Entrance zones toggle for the Nucleus zone doors."
 		}),
