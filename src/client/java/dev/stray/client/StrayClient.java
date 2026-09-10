@@ -13,6 +13,7 @@ import dev.stray.client.combat.OdinClicks;
 import dev.stray.client.combat.Triggerbot;
 import dev.stray.client.farming.FarmKeys;
 import dev.stray.client.farming.FarmingHud;
+import dev.stray.client.farming.ComposterTracker;
 import dev.stray.client.farming.JacobContestTracker;
 import dev.stray.client.config.StrayConfig;
 import dev.stray.client.location.SkyblockLocation;
@@ -33,6 +34,7 @@ import dev.stray.client.mining.ChestEsp;
 import dev.stray.client.mining.MiningTracker;
 import dev.stray.client.mining.TitaniumTracker;
 import dev.stray.client.render.ChestEspRenderer;
+import dev.stray.client.render.ComposterHudRenderer;
 import dev.stray.client.render.InventoryHudRenderer;
 import dev.stray.client.render.JacobContestHudRenderer;
 import dev.stray.client.render.MusicHudRenderer;
@@ -143,6 +145,7 @@ public final class StrayClient implements ClientModInitializer {
 		Hitmarker.init();
 		FarmingHud.init();
 		JacobContestHudRenderer.init();
+		ComposterHudRenderer.init();
 		WatermarkRenderer.init();
 		InventoryHudRenderer.init();
 		NodeHudRenderer.init();
@@ -234,6 +237,7 @@ public final class StrayClient implements ClientModInitializer {
 			Hitsound.tick(client);
 			PickupLogRenderer.tick(client);
 			JacobContestTracker.tick(client);
+			ComposterTracker.tick(client);
 			EnderNodeTracker.get().tick(client);
 			ConnectionPing.tick(client);
 			RawmatsTracker.tick(client);
@@ -261,6 +265,7 @@ public final class StrayClient implements ClientModInitializer {
 			AutoExperiments.reset();
 			PickupLogRenderer.clear();
 			JacobContestTracker.reset();
+			ComposterTracker.reset();
 			SkyblockProfileApi.refresh();
 			ShopCape.onJoin();
 		});
@@ -274,6 +279,7 @@ public final class StrayClient implements ClientModInitializer {
 			AutoExperiments.reset();
 			PickupLogRenderer.clear();
 			JacobContestTracker.reset();
+			ComposterTracker.reset();
 			EnderNodeTracker.get().clear();
 			ConnectionPing.reset();
 			MiningTracker.reset();
