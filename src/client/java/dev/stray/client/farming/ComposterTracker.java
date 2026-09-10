@@ -8,8 +8,10 @@ import net.minecraft.client.multiplayer.ClientPacketListener;
 import net.minecraft.client.multiplayer.PlayerInfo;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.Style;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.component.CustomData;
 import net.minecraft.world.item.component.ItemLore;
 import net.minecraft.world.level.GameType;
 import net.minecraft.world.scores.PlayerTeam;
@@ -18,19 +20,20 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
+import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /** Reads Hypixel's Garden composter widget and applies SkyHanni's composter formulas. */
 public final class ComposterTracker {
 	private static final Pattern VALUE = Pattern.compile(
-		"^(Organic Matter|Fuel|Stored Compost):\\s*([\\d,.]+[kmb]?)$",
+		"^(Organic Matter|Fuel|Stored Compost):\\s*([\\d,.]+(?:\\.[\\d]+)?[kmb]?)(?:\\s*[/\\u2044\\u2215]\\s*([\\d,.]+(?:\\.[\\d]+)?[kmb]?))?$",
 		Pattern.CASE_INSENSITIVE
 	);
 	private static final Pattern TIME = Pattern.compile("^Time Left:\\s*(.+)$", Pattern.CASE_INSENSITIVE);
 	/** Matches `67,464/100k` and Hypixel's `37,547.5§6/§e130k` lore. */
 	private static final Pattern RATIO = Pattern.compile(
-		"([\\d,.]+(?:\\.[\\d]+)?[kmb]?)\\s*(?:§[0-9a-fk-or])*\\s*/\\s*(?:§[0-9a-fk-or])*\\s*([\\d,.]+(?:\\.\\d+)?[kmb]?)",
+		"([\\d,.]+(?:\\.[\\d]+)?[kmb]?)\\s*(?:§[0-9a-fk-or])*\\s*[/\\u2044\\u2215]\\s*(?:§[0-9a-fk-or])*\\s*([\\d,.]+(?:\\.[\\d]+)?[kmb]?)",
 		Pattern.CASE_INSENSITIVE
 	);
 	private static final Pattern PROFILE = Pattern.compile("^Profile:\\s*(.+)$", Pattern.CASE_INSENSITIVE);
@@ -69,8 +72,17 @@ public final class ComposterTracker {
 		}
 		parseTick = tick;
 		Parsed parsed = readWidget(client);
-		readCapacities(client);
-		readUpgrades(client, parsed == null ? "" : parsed.profile);
+		try {
+			readCapacities(client);
+		} catch (RuntimeException ignored) {
+		}
+		try {
+			readUpgrades(client, parsed == null ? "" : parsed.profile);
+		} catch (RuntimeException ignored) {
+		}
+		if (parsed != null) {
+			persistCaps(parsed.maxOrganic, parsed.maxFuel);
+		}
 		if (parsed == null) {
 			if (++missingTicks >= 8) {
 				snapshot = Snapshot.empty();
@@ -117,6 +129,8 @@ public final class ComposterTracker {
 			long organic = -1;
 			long fuel = -1;
 			long stored = -1;
+			long maxOrganic = -1;
+			long maxFuel = -1;
 			String time = "";
 			boolean started = false;
 			for (int j = i + 1; j < Math.min(lines.size(), i + 8); j++) {
@@ -131,9 +145,16 @@ public final class ComposterTracker {
 				if (value.matches()) {
 					started = true;
 					long amount = parseAmount(value.group(2));
+					long cap = value.group(3) == null ? -1 : parseAmount(value.group(3));
 					switch (value.group(1).toLowerCase(Locale.ROOT)) {
-						case "organic matter" -> organic = amount;
-						case "fuel" -> fuel = amount;
+						case "organic matter" -> {
+							organic = amount;
+							maxOrganic = cap;
+						}
+						case "fuel" -> {
+							fuel = amount;
+							maxFuel = cap;
+						}
 						case "stored compost" -> stored = amount;
 						default -> {
 						}
@@ -147,7 +168,15 @@ public final class ComposterTracker {
 				}
 			}
 			if (organic >= 0 || fuel >= 0 || stored >= 0 || !time.isEmpty()) {
-				return new Parsed(Math.max(0, organic), Math.max(0, fuel), Math.max(0, stored), time, profile);
+				return new Parsed(
+					Math.max(0, organic),
+					Math.max(0, fuel),
+					Math.max(0, stored),
+					time,
+					profile,
+					maxOrganic,
+					maxFuel
+				);
 			}
 		}
 		return null;
@@ -238,33 +267,46 @@ public final class ComposterTracker {
 			return;
 		}
 		String title = clean(screen.getTitle()).toLowerCase(Locale.ROOT);
-		if (!title.contains("composter") || title.contains("upgrade")) {
-			return;
-		}
+		boolean titled = title.contains("composter") && !title.contains("upgrade");
 		long organicMax = -1;
 		long fuelMax = -1;
+		boolean sawOrganic = false;
+		boolean sawFuel = false;
 		for (Slot slot : screen.getMenu().slots) {
-			if (client.player != null && slot.container == client.player.getInventory()) {
-				continue;
-			}
 			ItemStack stack = slot.getItem();
 			if (stack == null || stack.isEmpty()) {
 				continue;
 			}
-			String name = itemName(stack).toLowerCase(Locale.ROOT);
-			String blob = itemBlob(client, stack);
-			String lower = blob.toLowerCase(Locale.ROOT);
-			long total = firstRatioMax(blob);
-			if (total <= 0) {
-				continue;
-			}
-			int index = slot.index;
-			if (index == 46 || name.contains("organic") || lower.contains("organic")) {
-				organicMax = total;
-			} else if (index == 52 || name.contains("fuel") || lower.contains("fuel")) {
-				fuelMax = total;
+			try {
+				String name = itemName(stack).toLowerCase(Locale.ROOT);
+				String blob = itemBlob(stack);
+				String lower = blob.toLowerCase(Locale.ROOT);
+				long total = firstRatioMax(blob);
+				if (name.contains("organic")) {
+					sawOrganic = true;
+				}
+				if (name.contains("fuel") && !name.contains("organic")) {
+					sawFuel = true;
+				}
+				if (total <= 0) {
+					continue;
+				}
+				int index = slot.index;
+				if (index == 46 || name.contains("organic") || lower.contains("organic")) {
+					organicMax = total;
+				} else if (index == 52 || name.contains("fuel") || lower.contains("fuel")) {
+					fuelMax = total;
+				}
+			} catch (RuntimeException ignored) {
 			}
 		}
+		if (!titled && !(sawOrganic && sawFuel)) {
+			return;
+		}
+		persistCaps(organicMax, fuelMax);
+	}
+
+	private static void persistCaps(long organicMax, long fuelMax) {
 		if (organicMax <= 0 && fuelMax <= 0) {
 			return;
 		}
@@ -289,11 +331,15 @@ public final class ComposterTracker {
 		if (blob == null || blob.isBlank()) {
 			return 0L;
 		}
+		String normalized = stripCodes(blob).replaceAll("[\\p{Cf}]", "").replace('\u00A0', ' ');
 		Matcher ratio = RATIO.matcher(blob);
 		if (ratio.find()) {
-			return parseAmount(ratio.group(2));
+			long total = parseAmount(ratio.group(2));
+			if (total > 0) {
+				return total;
+			}
 		}
-		Matcher cleaned = RATIO.matcher(stripCodes(blob));
+		Matcher cleaned = RATIO.matcher(normalized);
 		return cleaned.find() ? parseAmount(cleaned.group(2)) : 0L;
 	}
 
@@ -304,38 +350,59 @@ public final class ComposterTracker {
 	private static String itemName(ItemStack stack) {
 		boolean prior = ItemAppearance.suppress();
 		try {
-			return stack == null || stack.isEmpty() ? "" : clean(stack.getHoverName());
+			if (stack == null || stack.isEmpty()) {
+				return "";
+			}
+			Component custom = stack.get(DataComponents.CUSTOM_NAME);
+			if (custom != null && !clean(custom).isBlank()) {
+				return clean(custom);
+			}
+			return clean(stack.getHoverName());
 		} finally {
 			ItemAppearance.resume(prior);
 		}
 	}
 
-	private static String itemBlob(Minecraft client, ItemStack stack) {
+	private static String itemBlob(ItemStack stack) {
 		boolean prior = ItemAppearance.suppress();
 		try {
 			if (stack == null || stack.isEmpty()) {
 				return "";
 			}
-			StringBuilder out = new StringBuilder(raw(stack.getHoverName()));
+			StringBuilder out = new StringBuilder();
+			append(out, stack.get(DataComponents.CUSTOM_NAME));
+			append(out, stack.get(DataComponents.ITEM_NAME));
+			append(out, stack.getHoverName());
 			ItemLore lore = stack.get(DataComponents.LORE);
 			if (lore != null) {
 				for (Component line : lore.lines()) {
-					out.append('\n').append(raw(line));
+					append(out, line);
+				}
+				for (Component line : lore.styledLines()) {
+					append(out, line);
 				}
 			}
-			if (client.level != null) {
-				for (Component line : stack.getTooltipLines(
-					net.minecraft.world.item.Item.TooltipContext.of(client.level),
-					client.player,
-					net.minecraft.world.item.TooltipFlag.Default.NORMAL
-				)) {
-					out.append('\n').append(raw(line));
-				}
+			CustomData data = stack.get(DataComponents.CUSTOM_DATA);
+			if (data != null && !data.isEmpty()) {
+				out.append('\n').append(data.copyTag());
 			}
 			return out.toString();
 		} finally {
 			ItemAppearance.resume(prior);
 		}
+	}
+
+	private static void append(StringBuilder out, Component component) {
+		if (component == null) {
+			return;
+		}
+		out.append('\n');
+		component.visit((style, text) -> {
+			if (text != null) {
+				out.append(text);
+			}
+			return Optional.empty();
+		}, Style.EMPTY);
 	}
 
 	private static void readUpgrades(Minecraft client, String profile) {
@@ -487,10 +554,6 @@ public final class ComposterTracker {
 			: PlayerTeam.formatNameForTeam(info.getTeam(), Component.literal(info.getProfile().name()));
 	}
 
-	private static String raw(Component component) {
-		return component == null ? "" : component.getString();
-	}
-
 	private static String stripCodes(String text) {
 		return text == null ? "" : text.replaceAll("§.", "").replaceAll("\u00A7.", "");
 	}
@@ -520,6 +583,14 @@ public final class ComposterTracker {
 		}
 	}
 
-	private record Parsed(long organic, long fuel, long stored, String time, String profile) {
+	private record Parsed(
+		long organic,
+		long fuel,
+		long stored,
+		String time,
+		String profile,
+		long maxOrganic,
+		long maxFuel
+	) {
 	}
 }

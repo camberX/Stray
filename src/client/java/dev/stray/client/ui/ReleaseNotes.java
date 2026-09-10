@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.153", new String[]{
+			"Composter overlay reads Organic Matter and Fuel caps from the Composter pane lore (67,464/100k) and styled/NBT text, without generating item tooltips that could abort the parse."
+		}),
 		new Entry("1.2.152", new String[]{
 			"Composter overlay reads Organic Matter and Fuel caps from the Composter chest lore (for example 67,464/100k), not only from Composter Upgrades."
 		}),
