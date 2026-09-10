@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.166", new String[]{
+			"Search for Auto update, menu scale, fonts, and the rest of Theme opens the Theme tab instead of Overlay."
+		}),
 		new Entry("1.2.165", new String[]{
 			"Music HUD Song chat is labeled Song Notification."
 		}),

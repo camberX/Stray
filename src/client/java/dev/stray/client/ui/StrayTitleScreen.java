@@ -294,7 +294,7 @@ public class StrayTitleScreen extends Screen {
 		return FabricLoader.getInstance()
 			.getModContainer("stray")
 			.map(container -> container.getMetadata().getVersion().getFriendlyString())
-			.orElse("1.2.165");
+			.orElse("1.2.166");
 	}
 
 	private record Hit(float x, float y, float w, float h, Runnable click) {

@@ -222,12 +222,13 @@ public class StrayScreen extends Screen {
 		new SearchEntry("Own nametag", Tab.ESP, "Visuals"),
 		new SearchEntry("Nametag size", Tab.ESP, "Visuals"),
 		new SearchEntry("Nametag opacity", Tab.ESP, "Visuals"),
-		new SearchEntry("Menu scale", Tab.OVERLAY, "Theme"),
-		new SearchEntry("HUD opacity", Tab.OVERLAY, "Theme"),
-		new SearchEntry("Menu stars", Tab.OVERLAY, "Theme"),
-		new SearchEntry("HUD stars", Tab.OVERLAY, "Theme"),
-		new SearchEntry("Auto update", Tab.OVERLAY, "Theme"),
-		new SearchEntry("Auto-update", Tab.OVERLAY, "Theme"),
+		new SearchEntry("Menu scale", Tab.SETTINGS, "Theme"),
+		new SearchEntry("HUD opacity", Tab.SETTINGS, "Theme"),
+		new SearchEntry("Menu stars", Tab.SETTINGS, "Theme"),
+		new SearchEntry("HUD stars", Tab.SETTINGS, "Theme"),
+		new SearchEntry("Auto update", Tab.SETTINGS, "Theme"),
+		new SearchEntry("Auto-update", Tab.SETTINGS, "Theme"),
+		new SearchEntry("Updater", Tab.SETTINGS, "Theme"),
 		new SearchEntry("Markers", Tab.NODES, "Nodes"),
 		new SearchEntry("Menus", Tab.MENUS, "Menus"),
 		new SearchEntry("Loadouts", Tab.MENUS, "Menus"),
@@ -282,7 +283,7 @@ public class StrayScreen extends Screen {
 		new SearchEntry("Mount health", Tab.BARS, "Bars"),
 		new SearchEntry("Inventory HUD", Tab.OVERLAY, "Overlay"),
 		new SearchEntry("Item count", Tab.OVERLAY, "Overlay"),
-		new SearchEntry("Pane opacity", Tab.OVERLAY, "Theme"),
+		new SearchEntry("Pane opacity", Tab.SETTINGS, "Theme"),
 		new SearchEntry("Control glass", Tab.SETTINGS, "Theme"),
 		new SearchEntry("Pills", Tab.SETTINGS, "Theme"),
 		new SearchEntry("Pills opacity", Tab.SETTINGS, "Theme"),
@@ -290,9 +291,9 @@ public class StrayScreen extends Screen {
 		new SearchEntry("Feature pills", Tab.SETTINGS, "Theme"),
 		new SearchEntry("Menu glass", Tab.SETTINGS, "Theme"),
 		new SearchEntry("Frost", Tab.SETTINGS, "Theme"),
-		new SearchEntry("Font", Tab.OVERLAY, "Theme"),
-		new SearchEntry("UI font", Tab.OVERLAY, "Theme"),
-		new SearchEntry("Minecraft font", Tab.OVERLAY, "Theme"),
+		new SearchEntry("Font", Tab.SETTINGS, "Theme"),
+		new SearchEntry("UI font", Tab.SETTINGS, "Theme"),
+		new SearchEntry("Minecraft font", Tab.SETTINGS, "Theme"),
 		new SearchEntry("Status", Tab.STATUS, "Status"),
 		new SearchEntry("FPS", Tab.STATUS, "Status"),
 		new SearchEntry("Ping", Tab.STATUS, "Status"),
@@ -1511,8 +1512,7 @@ public class StrayScreen extends Screen {
 			GuiDraw.menu(graphics, font, entry.label, searchFieldX + 8, GuiDraw.middle(iy, 16), hover ? Theme.ACCENT : Theme.TEXT);
 			GuiDraw.small(graphics, font, entry.hint, searchFieldX + searchFieldW - GuiDraw.smallWidth(font, entry.hint) - 8, GuiDraw.middle(iy, 16) + 1, Theme.MUTED);
 			hits.add(new Hit(searchFieldX, iy, searchFieldW, 16, () -> {
-				selectTab(entry.tab);
-				searchQuery = "";
+				openSearch(entry);
 			}));
 			iy += 16;
 		}
@@ -1530,6 +1530,18 @@ public class StrayScreen extends Screen {
 			}
 		}
 		return out;
+	}
+
+	private void openSearch(SearchEntry entry) {
+		searchQuery = "";
+		searchOpen = false;
+		if (entry.tab == Tab.SETTINGS && !controlCenter()) {
+			settingsOpen = true;
+			notesOpen = false;
+			featureOpen = false;
+			return;
+		}
+		selectTab(entry.tab);
 	}
 
 	private void drawSettings(GuiGraphicsExtractor graphics, Font font, int mouseX, int mouseY) {
@@ -3118,7 +3130,7 @@ public class StrayScreen extends Screen {
 		return FabricLoader.getInstance()
 			.getModContainer("stray")
 			.map(container -> container.getMetadata().getVersion().getFriendlyString())
-			.orElse("1.2.165");
+			.orElse("1.2.166");
 	}
 
 	@Override
