@@ -7,6 +7,7 @@ import com.google.gson.JsonParser;
 import com.google.gson.JsonPrimitive;
 import dev.stray.Stray;
 import dev.stray.client.item.SkyblockItems;
+import dev.stray.client.item.SkyblockPetLore;
 import net.minecraft.client.Minecraft;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
@@ -68,8 +69,9 @@ public final class ProfileViewer {
 		569809640
 	};
 	private static final int[] HOTM_XP = {
-		0, 3000, 9000, 25000, 60000, 100000, 150000, 210000, 290000, 400000
+		0, 0, 3000, 12000, 37000, 97000, 197000, 347000, 557000, 847000, 1247000
 	};
+	private static final Map<String, Integer> HOTM_TIER = hotmTiers();
 	private static final int[] SLAYER_ZOMBIE = {5, 15, 200, 1000, 5000, 20000, 100000, 400000, 1000000};
 	private static final int[] SLAYER_SPIDER = {5, 25, 200, 1000, 5000, 20000, 100000, 400000, 1000000};
 	private static final int[] SLAYER_WOLF = {10, 30, 250, 1500, 5000, 20000, 100000, 400000, 1000000};
@@ -126,8 +128,9 @@ public final class ProfileViewer {
 				return 0;
 			}
 			for (Perk perk : perks) {
+				String have = normPerk(perk.id());
 				for (String id : ids) {
-					if (id != null && perk.id().equalsIgnoreCase(id)) {
+					if (id != null && have.equals(normPerk(id))) {
 						return perk.level();
 					}
 				}
@@ -378,6 +381,7 @@ public final class ProfileViewer {
 				return;
 			}
 			ensurePrices();
+			SkyblockPetLore.ensure();
 			JsonObject root = JsonParser.parseString(response.body()).getAsJsonObject();
 			if (root.has("success") && root.get("success").isJsonPrimitive() && !root.get("success").getAsBoolean()) {
 				fail(gen, "profile lookup failed");
@@ -465,12 +469,12 @@ public final class ProfileViewer {
 			if (member == null) {
 				continue;
 			}
-			out.add(parseMember(object, member));
+			out.add(parseMember(object, member, compact));
 		}
 		return out;
 	}
 
-	private static Profile parseMember(JsonObject profile, JsonObject member) {
+	private static Profile parseMember(JsonObject profile, JsonObject member, String compact) {
 		JsonObject playerData = object(member, "player_data");
 		JsonObject experience = object(playerData, "experience");
 		List<Skill> skills = new ArrayList<>();
@@ -503,6 +507,11 @@ public final class ProfileViewer {
 			purse = num(member, "coin_purse");
 		}
 		double bank = num(object(profile, "banking"), "balance");
+		double personal = num(object(member, "profile"), "bank_account");
+		if (personal == 0d) {
+			personal = num(currencies, "personal_bank");
+		}
+		bank += personal;
 
 		JsonObject leveling = object(member, "leveling");
 		double sbXp = num(leveling, "experience");
@@ -582,6 +591,14 @@ public final class ProfileViewer {
 		for (Pet pet : pets) {
 			items += priceOf(pet.type() + ";" + petTier(pet.tier()));
 		}
+		double net = purse + bank + items;
+		if (bool(profile, "selected")) {
+			double remote = coflNetworth(profile, compact);
+			if (remote > net) {
+				items = Math.max(0d, remote - purse - bank);
+				net = remote;
+			}
+		}
 		return new Profile(
 			string(profile, "profile_id"),
 			cute,
@@ -590,7 +607,7 @@ public final class ProfileViewer {
 			purse,
 			bank,
 			items,
-			purse + bank + items,
+			net,
 			sbLevel,
 			sbProgress,
 			average,
@@ -712,21 +729,110 @@ public final class ProfileViewer {
 	}
 
 	private static Mining parseMining(JsonObject member) {
+		JsonObject core = miningCore(member);
+		if (core == null) {
+			return Mining.empty();
+		}
+		double xp = num(core, "experience");
+		if (xp == 0d) {
+			xp = num(core, "hotm_experience");
+		}
+		if (xp == 0d) {
+			xp = num(object(core, "hotm"), "experience");
+		}
+		int hotm = skillFrom("HOTM", xp, HOTM_XP, 10).level();
+		if (hotm == 0 && xp <= 0d && (core.has("nodes") || core.has("perks"))) {
+			hotm = 1;
+		}
+		JsonObject nodes = object(core, "nodes");
+		if (nodes == null) {
+			nodes = object(core, "perks");
+		}
+		if (nodes == null) {
+			nodes = object(object(core, "hotm"), "nodes");
+		}
+		List<Perk> perks = parsePerks(nodes);
+		hotm = Math.max(hotm, hotmFromPerks(perks));
+		return new Mining(hotm, powder(core, "mithril"), powder(core, "gemstone"), powder(core, "glacite"), perks);
+	}
+
+	private static JsonObject miningCore(JsonObject member) {
 		JsonObject core = object(member, "mining_core");
-		int hotm = skillFrom("HOTM", num(core, "experience"), HOTM_XP, 10).level();
-		long mithril = (long) (num(core, "powder_mithril") + num(core, "powder_spent_mithril"));
-		if (mithril == 0L) {
-			mithril = (long) num(core, "powder_mithril_total");
+		if (validMining(core)) {
+			return core;
 		}
-		long gemstone = (long) (num(core, "powder_gemstone") + num(core, "powder_spent_gemstone"));
-		if (gemstone == 0L) {
-			gemstone = (long) num(core, "powder_gemstone_total");
+		core = object(object(member, "player_data"), "mining_core");
+		if (validMining(core)) {
+			return core;
 		}
-		long glacite = (long) (num(core, "powder_glacite") + num(core, "powder_spent_glacite"));
-		if (glacite == 0L) {
-			glacite = (long) num(core, "powder_glacite_total");
+		core = object(member, "hotm");
+		if (validMining(core)) {
+			return core;
 		}
-		return new Mining(hotm, mithril, gemstone, glacite, parsePerks(object(core, "nodes")));
+		core = object(object(member, "player_data"), "hotm");
+		if (validMining(core)) {
+			return core;
+		}
+		return findMining(member, 0);
+	}
+
+	private static boolean validMining(JsonObject object) {
+		return object != null && (object.has("experience") || object.has("nodes") || object.has("perks")
+			|| object.has("powder_mithril") || object.has("powder") || object.has("hotm_experience"));
+	}
+
+	private static JsonObject findMining(JsonObject object, int depth) {
+		if (object == null || depth > 2) {
+			return null;
+		}
+		for (String key : object.keySet()) {
+			JsonObject child = object(object, key);
+			if (validMining(child) && ("mining_core".equals(key) || "hotm".equals(key) || child.has("nodes") || child.has("powder_mithril"))) {
+				return child;
+			}
+		}
+		for (String key : object.keySet()) {
+			JsonObject found = findMining(object(object, key), depth + 1);
+			if (found != null) {
+				return found;
+			}
+		}
+		return null;
+	}
+
+	private static long powder(JsonObject core, String kind) {
+		long available = (long) num(core, "powder_" + kind);
+		long spent = (long) num(core, "powder_spent_" + kind);
+		if (available + spent > 0L) {
+			return available + spent;
+		}
+		long total = (long) num(core, "powder_" + kind + "_total");
+		if (total > 0L) {
+			return total;
+		}
+		JsonObject nested = object(object(core, "powder"), kind);
+		total = (long) (num(nested, "available") + num(nested, "spent"));
+		if (total > 0L) {
+			return total;
+		}
+		return (long) num(nested, "total");
+	}
+
+	private static int hotmFromPerks(List<Perk> perks) {
+		int best = 0;
+		if (perks == null) {
+			return 0;
+		}
+		for (Perk perk : perks) {
+			if (perk == null || perk.level() <= 0) {
+				continue;
+			}
+			Integer tier = HOTM_TIER.get(normPerk(perk.id()));
+			if (tier != null) {
+				best = Math.max(best, tier);
+			}
+		}
+		return best;
 	}
 
 	private static List<Perk> parsePerks(JsonObject nodes) {
@@ -742,7 +848,7 @@ public final class ProfileViewer {
 			if (level < 0) {
 				continue;
 			}
-			out.add(new Perk(key, pretty(key), level));
+			out.add(new Perk(normPerk(key), pretty(key), level));
 		}
 		return List.copyOf(out);
 	}
@@ -844,7 +950,7 @@ public final class ProfileViewer {
 				continue;
 			}
 			String tier = pretty(string(pet, "tier"));
-			int level = petLevel(num(pet, "exp"), tier);
+			int level = SkyblockPetLore.level(type, string(pet, "tier"), num(pet, "exp"));
 			String held = string(pet, "heldItem");
 			int candy = (int) num(pet, "candyUsed");
 			out.add(new Pet(pretty(type), type, tier, level, bool(pet, "active"), held, candy));
@@ -1361,23 +1467,6 @@ public final class ProfileViewer {
 		return new Slayer(name, level, xp);
 	}
 
-	private static int petLevel(double xp, String tier) {
-		int[] table = switch (tier == null ? "" : tier.toLowerCase(Locale.ROOT)) {
-			case "common" -> new int[]{0, 100, 210, 330, 460, 605, 765, 940, 1130, 1340, 1570, 1820, 2095, 2395, 2725, 3085, 3485, 3925, 4415, 4955, 5555, 6215, 6945, 7745, 8625, 9595, 10655, 11815, 13085, 14475, 15995, 17655, 19465, 21435, 23575, 25895, 28405, 31115, 34035, 37175, 40545, 44155, 48015, 52135, 56525, 61195, 66155, 71415, 76985, 82875, 89095, 95655, 102565, 109835, 117475, 125495, 133905, 142715, 151935, 161575, 171645, 182155, 193115, 204535, 216425, 228795, 241655, 255015, 268885, 283275, 298195, 313655, 329665, 346235, 363375, 381095, 399405, 418315, 437835, 457975, 478745, 500155, 522215, 544935, 568325, 592395, 617155, 642615, 668785, 695675, 723295, 751655, 780765, 810635, 841275, 872695, 904905, 937915, 971735, 1006375};
-			case "uncommon" -> new int[]{0, 175, 365, 575, 805, 1055, 1330, 1630, 1960, 2320, 2715, 3145, 3615, 4130, 4690, 5300, 5965, 6685, 7465, 8310, 9225, 10215, 11285, 12440, 13685, 15025, 16465, 18010, 19665, 21435, 23325, 25340, 27485, 29765, 32185, 34750, 37465, 40335, 43365, 46560, 49925, 53465, 57185, 61090, 65185, 69475, 73965, 78660, 83565, 88685, 94025, 99590, 105385, 111415, 117685, 124200, 130965, 137985, 145265, 152810, 160625, 168715, 177085, 185740, 194685, 203925, 213465, 223310, 233465, 243935, 254725, 265840, 277285, 289065, 301185, 313650, 326465, 339635, 353165, 367060, 381325, 395965, 410985, 426390, 442185, 458375, 474965, 491960, 509365, 527185, 545425, 564090, 583185, 602715, 622685, 643100, 663965, 685285, 707065, 729310};
-			default -> new int[]{0, 660, 1390, 2190, 3070, 4040, 5110, 6290, 7590, 9020, 10590, 12310, 14190, 16240, 18470, 20890, 23510, 26340, 29390, 32670, 36190, 39960, 43990, 48290, 52870, 57740, 62910, 68390, 74190, 80320, 86790, 93610, 100790, 108340, 116270, 124590, 133310, 142440, 151990, 161970, 172390, 183260, 194590, 206390, 218670, 231440, 244710, 258490, 272790, 287620, 302990, 318910, 335390, 352440, 370070, 388290, 407110, 426540, 446590, 467270, 488590, 510560, 533190, 556490, 580470, 605140, 630510, 656590, 683390, 710920, 739190, 768210, 797990, 828540, 859870, 891990, 924910, 958640, 993190, 1028570, 1064690, 1101550, 1139160, 1177530, 1216670, 1256590, 1297300, 1338810, 1381130, 1424270, 1468240, 1513050, 1558710, 1605230, 1652620, 1700890, 1750050, 1800110, 1851080, 1902970};
-		};
-		int level = 1;
-		for (int i = 1; i < table.length && i < 100; i++) {
-			if (xp >= table[i]) {
-				level = i + 1;
-			} else {
-				break;
-			}
-		}
-		return Math.min(100, level);
-	}
-
 	private static double skillXp(JsonObject experience, JsonObject member, String modern, String legacy) {
 		double xp = num(experience, modern);
 		if (xp == 0d) {
@@ -1562,11 +1651,15 @@ public final class ProfileViewer {
 			}
 		} catch (Exception ignored) {
 		}
+		mergePrices(next, "https://sky.coflnet.com/api/prices/neu");
+		mergePrices(next, "https://lb.tricked.pro/lowestbins");
 		mergePrices(next, "https://moulberry.codes/lowestbin.json");
 		mergePrices(next, "https://sky.coflnet.com/api/auctions/lowestbins");
 		if (!next.isEmpty()) {
 			PRICES = Map.copyOf(next);
 			pricesAt = System.currentTimeMillis();
+		} else {
+			Stray.LOGGER.warn("Profile viewer price lookup returned no items");
 		}
 	}
 
@@ -1579,6 +1672,7 @@ public final class ProfileViewer {
 				.build();
 			HttpResponse<String> response = HTTP.send(request, HttpResponse.BodyHandlers.ofString());
 			if (response.statusCode() < 200 || response.statusCode() >= 300) {
+				Stray.LOGGER.warn("Price source {} returned HTTP {}", url, response.statusCode());
 				return;
 			}
 			JsonElement root = JsonParser.parseString(response.body());
@@ -1597,7 +1691,8 @@ public final class ProfileViewer {
 					next.put(key, value);
 				}
 			}
-		} catch (Exception ignored) {
+		} catch (Exception exception) {
+			Stray.LOGGER.warn("Price source {} failed", url, exception);
 		}
 	}
 
@@ -1662,24 +1757,158 @@ public final class ProfileViewer {
 		if (key.startsWith("MINECRAFT:")) {
 			key = key.substring(10);
 		}
-		Double value = PRICES.get(key);
+		if (key.startsWith("SB:")) {
+			key = key.substring(3);
+		}
+		Double value = lookupPrice(key);
 		if (value != null) {
 			return value;
 		}
 		if (key.startsWith("STARRED_")) {
-			value = PRICES.get(key.substring(8));
+			value = lookupPrice(key.substring(8));
 			if (value != null) {
 				return value;
 			}
 		}
 		int plus = key.indexOf('+');
 		if (plus > 0) {
-			value = PRICES.get(key.substring(0, plus));
+			value = lookupPrice(key.substring(0, plus));
+			if (value != null) {
+				return value;
+			}
+		}
+		int dash = key.indexOf('-');
+		if (dash > 0) {
+			value = lookupPrice(key.substring(0, dash));
 			if (value != null) {
 				return value;
 			}
 		}
 		return 0d;
+	}
+
+	private static Double lookupPrice(String key) {
+		if (key == null || key.isBlank()) {
+			return null;
+		}
+		Double value = PRICES.get(key);
+		if (value != null) {
+			return value;
+		}
+		if (key.contains(":")) {
+			value = PRICES.get(key.replace(':', ';'));
+			if (value != null) {
+				return value;
+			}
+		}
+		if (key.startsWith("PET_")) {
+			return PRICES.get(key.substring(4));
+		}
+		return PRICES.get("PET_" + key);
+	}
+
+	private static double coflNetworth(JsonObject profile, String compact) {
+		if (profile == null) {
+			return 0d;
+		}
+		try {
+			HttpRequest request = HttpRequest.newBuilder(URI.create("https://sky.coflnet.com/api/networth"))
+				.timeout(Duration.ofSeconds(10))
+				.header("User-Agent", "Stray/" + Stray.MOD_ID)
+				.header("Content-Type", "application/json")
+				.POST(HttpRequest.BodyPublishers.ofString(profile.toString()))
+				.build();
+			HttpResponse<String> response = HTTP.send(request, HttpResponse.BodyHandlers.ofString());
+			if (response.statusCode() < 200 || response.statusCode() >= 300) {
+				Stray.LOGGER.warn("Coflnet networth returned HTTP {}", response.statusCode());
+				return 0d;
+			}
+			JsonObject root = JsonParser.parseString(response.body()).getAsJsonObject();
+			JsonObject members = object(root, "member");
+			if (members != null && compact != null) {
+				JsonObject own = object(members, compact);
+				if (own == null) {
+					for (String key : members.keySet()) {
+						if (compact(key).equals(compact)) {
+							own = object(members, key);
+							break;
+						}
+					}
+				}
+				double value = own == null ? 0d : num(own, "fullValue");
+				if (value > 0d) {
+					return value;
+				}
+			}
+			return num(root, "fullValue");
+		} catch (Exception exception) {
+			Stray.LOGGER.warn("Coflnet networth lookup failed", exception);
+			return 0d;
+		}
+	}
+
+	private static String normPerk(String id) {
+		return id == null ? "" : id.trim().toLowerCase(Locale.ROOT).replace('-', '_').replace(' ', '_');
+	}
+
+	private static Map<String, Integer> hotmTiers() {
+		Map<String, Integer> out = new HashMap<>();
+		out.put("mining_speed", 1);
+		out.put("mining_speed_boost", 2);
+		out.put("precision_mining", 2);
+		out.put("mining_fortune", 2);
+		out.put("titanium_insanium", 2);
+		out.put("pickaxe_toss", 2);
+		out.put("pickobulus", 2);
+		out.put("random_event", 3);
+		out.put("luck_of_the_cave", 3);
+		out.put("efficient_miner", 3);
+		out.put("forge_time", 3);
+		out.put("daily_effect", 4);
+		out.put("sky_mall", 4);
+		out.put("old_school", 4);
+		out.put("professional", 4);
+		out.put("mole", 4);
+		out.put("fortunate", 4);
+		out.put("gem_lover", 4);
+		out.put("mining_experience", 4);
+		out.put("seasoned_mineman", 4);
+		out.put("front_loaded", 4);
+		out.put("daily_grind", 5);
+		out.put("special_0", 5);
+		out.put("core_of_the_mountain", 5);
+		out.put("daily_powder", 5);
+		out.put("anomalous_desire", 6);
+		out.put("blockhead", 6);
+		out.put("subterranean_fisher", 6);
+		out.put("keep_it_cool", 6);
+		out.put("lonesome_miner", 6);
+		out.put("great_explorer", 6);
+		out.put("maniac_miner", 6);
+		out.put("mining_speed_2", 7);
+		out.put("speedy_mineman", 7);
+		out.put("powder_buff", 7);
+		out.put("mining_fortune_2", 7);
+		out.put("fortunate_mineman", 7);
+		out.put("miners_blessing", 8);
+		out.put("no_stone_unturned", 8);
+		out.put("strong_arm", 8);
+		out.put("steady_hand", 8);
+		out.put("warm_hearted", 8);
+		out.put("surveyor", 8);
+		out.put("mineshaft_mayhem", 8);
+		out.put("metal_head", 9);
+		out.put("rags_to_riches", 9);
+		out.put("eager_adventurer", 9);
+		out.put("gemstone_infusion", 10);
+		out.put("crystalline", 10);
+		out.put("gifts_from_the_departed", 10);
+		out.put("gifts_from_above", 10);
+		out.put("mining_master", 10);
+		out.put("hungry_for_more", 10);
+		out.put("vanguard_seeker", 10);
+		out.put("sheer_force", 10);
+		return Map.copyOf(out);
 	}
 
 	private static int petTier(String tier) {

@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.140", new String[]{
+			"Profile viewer fills pet stats instead of {STRENGTH} placeholders, reads HOTM 10 and the maxed tree from the real XP table, and prices items from live BIN lists so networth is no longer just purse and bank."
+		}),
 		new Entry("1.2.139", new String[]{
 			"Profile viewer HOTM matches the Skyblock chest tree, with glass connectors and the same perk items. Item and pet hovers use the real lore. Other players show their skin and armor. Networth counts equipment, wardrobe, accessories, sacks, and essence."
 		}),

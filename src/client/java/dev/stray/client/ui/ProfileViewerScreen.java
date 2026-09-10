@@ -7,6 +7,7 @@ import dev.stray.client.config.StrayConfig;
 import dev.stray.client.item.ItemIds;
 import dev.stray.client.item.ItemText;
 import dev.stray.client.item.SkyblockLore;
+import dev.stray.client.item.SkyblockPetLore;
 import dev.stray.client.profile.ProfileViewer;
 import dev.stray.client.render.GuiDraw;
 import dev.stray.client.render.NametagRenderer;
@@ -1354,6 +1355,7 @@ public class ProfileViewerScreen extends Screen {
 			case "fortunate_mineman" -> "mining_fortune_2";
 			case "mining_fortune_2" -> "fortunate_mineman";
 			case "gifts_from_above" -> "gifts_from_the_departed";
+			case "gifts_from_the_departed" -> "gifts_from_above";
 			case "pickobulus" -> "pickaxe_toss";
 			case "pickaxe_toss" -> "pickobulus";
 			case "sky_mall" -> "daily_effect";
@@ -1364,6 +1366,8 @@ public class ProfileViewerScreen extends Screen {
 			case "mining_experience" -> "seasoned_mineman";
 			case "gem_lover" -> "fortunate";
 			case "fortunate" -> "gem_lover";
+			case "special_0" -> "core_of_the_mountain";
+			case "core_of_the_mountain" -> "special_0";
 			default -> id;
 		};
 	}
@@ -1619,35 +1623,22 @@ public class ProfileViewerScreen extends Screen {
 		}
 		int tier = petTierIndex(pet.tier());
 		String loreId = pet.type() == null ? "" : pet.type().trim().toUpperCase(Locale.ROOT) + ";" + tier;
+		SkyblockPetLore.request();
+		SkyblockLore.Snapshot snapshot = null;
 		if (!loreId.equals(";0") && !loreId.startsWith(";")) {
 			SkyblockLore.request(loreId);
-			ItemText neu = SkyblockLore.get(loreId);
-			if (neu != null && neu.present()) {
-				neu.apply(stack);
-				String color = tierCode(pet.tier());
-				stack.set(
-					net.minecraft.core.component.DataComponents.CUSTOM_NAME,
-					ItemText.styled("§7[Lvl " + pet.level() + "] " + color + pet.name(), true)
-				);
-				return stack;
-			}
+			snapshot = SkyblockLore.snapshot(loreId);
 		}
-		String color = tierCode(pet.tier());
-		List<String> lore = new ArrayList<>();
-		lore.add("§8" + petFamily(pet.type()) + " Pet");
-		lore.add("");
-		if (pet.held() != null && !pet.held().isBlank()) {
-			lore.add("§7Held Item: §d" + prettyPerk(pet.held().replace("PET_ITEM_", "")));
-		}
-		if (pet.candy() > 0) {
-			lore.add("§7Candy Used: §e" + pet.candy());
-		}
-		if (pet.active()) {
-			lore.add("§aActive Pet");
-		}
-		lore.add("");
-		lore.add(color + (pet.tier() == null ? "COMMON" : pet.tier().toUpperCase(Locale.ROOT)) + " PET");
-		ItemText.fromLegacy("§7[Lvl " + pet.level() + "] " + color + pet.name(), lore).apply(stack);
+		SkyblockPetLore.tooltip(
+			pet.type(),
+			pet.tier(),
+			pet.level(),
+			pet.name(),
+			pet.held(),
+			pet.candy(),
+			pet.active(),
+			snapshot
+		).apply(stack);
 		return stack;
 	}
 
