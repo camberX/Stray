@@ -524,10 +524,11 @@ public final class HeldItemShader {
 	}
 
 	private static float silhouetteThickness(boolean playerFill) {
+		StrayConfig config = StrayConfig.get();
 		if (playerFill) {
-			return 0.90f;
+			return StrayConfig.clamp(config.playerFillOutline, 0.15f, 1.50f);
 		}
-		return StrayConfig.clamp(StrayConfig.get().heldItemShaderOutline, 0.15f, 1.50f);
+		return StrayConfig.clamp(config.heldItemShaderOutline, 0.15f, 1.50f);
 	}
 
 	public static Vector3fc modelOffset() {
@@ -538,7 +539,7 @@ public final class HeldItemShader {
 		StrayConfig config = StrayConfig.get();
 		if (playerFillUniforms(pipeline)) {
 			return new Vector3f(
-				0.90f,
+				StrayConfig.clamp(config.playerFillOutline, 0.15f, 1.50f),
 				StrayConfig.clamp(config.playerFillSmoke, 0.10f, 1.50f),
 				config.playerFillStars() ? 1f : 0f
 			);

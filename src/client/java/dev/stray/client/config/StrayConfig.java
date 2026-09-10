@@ -134,6 +134,7 @@ public final class StrayConfig {
 	public boolean playerFillMobs = true;
 	public int playerFillRgb = 0x4FD6EA;
 	public float playerFillFill = 0.32f;
+	public float playerFillOutline = 0.90f;
 	public float playerFillSmoke = 0.55f;
 	public String playerFillStyle = "smoke";
 	public int titaniumEspRange = 48;
@@ -636,6 +637,9 @@ public final class StrayConfig {
 				loaded.playerFillFill = json.has("playerFillFill")
 					? clamp(loaded.playerFillFill, 0.08f, 0.85f)
 					: loaded.heldItemShaderFill;
+				loaded.playerFillOutline = json.has("playerFillOutline")
+					? clamp(loaded.playerFillOutline, 0.15f, 1.50f)
+					: loaded.heldItemShaderOutline;
 				loaded.playerFillSmoke = json.has("playerFillSmoke")
 					? clamp(loaded.playerFillSmoke, 0.10f, 1.50f)
 					: loaded.heldItemShaderSmoke;

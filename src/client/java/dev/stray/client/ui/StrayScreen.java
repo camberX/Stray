@@ -121,7 +121,7 @@ public class StrayScreen extends Screen {
 		VIEW("Aspect", 3),
 		HITSOUND("Hitsound", 3),
 		HELD_ITEM("Held item", 5),
-		FILL("Player fill", 6),
+		FILL("Player fill", 7),
 		AUTO_CLICKER("Auto clicker", 8),
 		AUTO_EXPERIMENTS("Auto experiments", 5),
 		MOB("Mob glow", 3),
@@ -194,6 +194,7 @@ public class StrayScreen extends Screen {
 		new SearchEntry("Player fill", Tab.ESP, "Visuals"),
 		new SearchEntry("Player fill ESP", Tab.ESP, "Visuals"),
 		new SearchEntry("Player fill color", Tab.ESP, "Visuals"),
+		new SearchEntry("Player fill outline", Tab.ESP, "Visuals"),
 		new SearchEntry("Fill through walls", Tab.ESP, "Visuals"),
 		new SearchEntry("Mob fill", Tab.ESP, "Visuals"),
 		new SearchEntry("Held fill", Tab.ESP, "Visuals"),
@@ -2520,6 +2521,7 @@ public class StrayScreen extends Screen {
 				y = cycle(graphics, font, ix, y, iw, mouseX, mouseY, "Style", config.playerFillStyleLabel(), config::cyclePlayerFillStyle);
 				y = colorRow(graphics, font, ix, y, iw, mouseX, mouseY, "Color", config.playerFillRgb, PickerTarget.FILL);
 				y = slider(graphics, font, ix, y, iw, "Fill", Math.round(config.playerFillFill * 100) + "%", (config.playerFillFill - 0.08f) / 0.77f, v -> config.playerFillFill = StrayConfig.clamp(0.08f + v * 0.77f, 0.08f, 0.85f));
+				y = slider(graphics, font, ix, y, iw, "Outline", Math.round(config.playerFillOutline * 100) + "%", (config.playerFillOutline - 0.15f) / 1.35f, v -> config.playerFillOutline = StrayConfig.clamp(0.15f + v * 1.35f, 0.15f, 1.50f));
 				slider(graphics, font, ix, y, iw, config.playerFillStyleLabel(), Math.round(config.playerFillSmoke * 100) + "%", (config.playerFillSmoke - 0.10f) / 1.40f, v -> config.playerFillSmoke = StrayConfig.clamp(0.10f + v * 1.40f, 0.10f, 1.50f));
 			}
 			case AUTO_CLICKER -> {
@@ -3060,7 +3062,7 @@ public class StrayScreen extends Screen {
 		return FabricLoader.getInstance()
 			.getModContainer("stray")
 			.map(container -> container.getMetadata().getVersion().getFriendlyString())
-			.orElse("1.2.148");
+			.orElse("1.2.149");
 	}
 
 	@Override

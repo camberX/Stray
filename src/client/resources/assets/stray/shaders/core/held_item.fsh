@@ -78,12 +78,13 @@ void main() {
     float tintAmount = ColorModulator.a;
     float amount = clamp(ModelOffset.y, 0.10, 1.50);
     float style = ModelOffset.z;
-    vec3 albedo = tex.rgb * vertexColor.rgb;
+    vec3 light = max(vertexColor.rgb, vec3(0.02));
+    vec3 albedo = tex.rgb * light;
 #ifdef ESP_FILL
     // Unused overlay/armor texels are often RGB 0 with high alpha. Keep the
     // fill color there instead of multiplying into a black shell.
-    float albedoPeak = max(albedo.r, max(albedo.g, albedo.b));
-    albedo = mix(fill, albedo, step(0.04, albedoPeak));
+    float albedoPeak = max(tex.r, max(tex.g, tex.b));
+    albedo = mix(fill * light, albedo, step(0.04, albedoPeak));
 #endif
     vec3 tinted = mix(albedo, albedo * fill, tintAmount);
     float distScale = animationScale();
@@ -92,17 +93,17 @@ void main() {
 
     if (style > 0.5) {
         float t = GameTime * 90.0;
-        vec3 night = mix(tinted, fill * 0.16 + albedo * 0.10, tintAmount * 0.78);
+        vec3 night = mix(tinted, (fill * 0.16 + tex.rgb * 0.10) * light, tintAmount * 0.78);
         float far = starLayer(screen * 0.016 + vec2(t * 0.55, -t * 0.22), t, 0.84);
         float mid = starLayer(screen * 0.028 + vec2(-t * 0.90, t * 0.40), t * 1.25, 0.78);
         float near = starLayer(screen * 0.044 + vec2(t * 1.10, t * 0.16), t * 1.65, 0.90);
         float field = far + mid * 0.85 + near;
         float nebula = pow(fbm(screen * 0.0075 + vec2(t * 0.10, -t * 0.07)), 2.4);
         float density = mix(0.32, 1.0, (amount - 0.10) / 1.40);
-        vec3 starCol = mix(fill, vec3(0.96, 0.97, 1.0), 0.72);
-        vec3 body = night + fill * nebula * mix(0.06, 0.22, density);
+        vec3 starCol = mix(fill, vec3(0.96, 0.97, 1.0), 0.72) * light;
+        vec3 body = night + fill * light * nebula * mix(0.06, 0.22, density);
         body += starCol * field * density;
-        body += vec3(1.0) * near * near * 0.55 * density;
+        body += light * near * near * 0.55 * density;
         body += starCol * glint * near * 0.20;
         fragColor = vec4(body, tex.a);
 #ifdef ESP_FILL
@@ -121,9 +122,9 @@ void main() {
     smoke = smoke * smoke * (3.0 - 2.0 * smoke);
     float bloom = smoothstep(0.55, 0.88, cloud);
     float strength = mix(0.24, 0.68, (amount - 0.10) / 1.40);
-    vec3 smokeColor = mix(fill * 0.78, fill * 1.18, haze);
-    smokeColor = mix(smokeColor, vec3(1.0), bloom * 0.22);
-    smokeColor += fill * glint * bloom * 0.12;
+    vec3 smokeColor = mix(fill * 0.78, fill * 1.18, haze) * light;
+    smokeColor = mix(smokeColor, light, bloom * 0.22);
+    smokeColor += fill * light * glint * bloom * 0.12;
     vec3 body = mix(tinted, smokeColor, smoke * strength);
     body += smokeColor * bloom * mix(0.04, 0.16, amount / 1.50);
 
