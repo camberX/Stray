@@ -34,6 +34,7 @@ public class GameRendererMixin {
 	)
 	private void stray$compositeFillEsp(DeltaTracker deltaTracker, CallbackInfo ci) {
 		HeldItemShader.compositeFillEsp();
+		HeldItemShader.compositePlayerSilhouette();
 	}
 
 	@Inject(method = "renderItemInHand", at = @At("HEAD"))

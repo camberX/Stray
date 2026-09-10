@@ -28,6 +28,7 @@
 		"ItemFeatureRendererMixin",
 		"ItemModelResolverMixin",
 		"ItemStackMixin",
+		"ItemSubmitMixin",
 		"KeyMappingAccessor",
 		"LightmapRenderStateExtractorMixin",
 		"LivingEntityRendererMixin",

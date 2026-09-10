@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.148", new String[]{
+			"Player fill uses the same silhouette outline as the held item shader. The click GUI scrollbar stays inside the rounded window corners."
+		}),
 		new Entry("1.2.147", new String[]{
 			"Profile viewer uses more of the window: bigger chips, icons, HOTM nodes, item slots, and pet cells."
 		}),

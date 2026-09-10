@@ -2189,10 +2189,16 @@ public class StrayScreen extends Screen {
 		if (tabScrollMax <= 1f || pageClipH < 24f) {
 			return;
 		}
+		float radius = controlCenter() ? ControlChrome.WINDOW_R : Theme.WINDOW_RADIUS;
 		float trackW = 3.2f;
-		float trackX = pageClipX + pageClipW - trackW - 3f;
-		float trackY = pageClipY + 8f;
-		float trackH = pageClipH - 16f;
+		float rightInset = Math.max(8f, radius * 0.36f);
+		float trackX = pageClipX + pageClipW - trackW - rightInset;
+		float edgeInset = (pageClipX + pageClipW) - (trackX + trackW);
+		float corner = cornerClearance(radius, edgeInset);
+		float topPad = 8f;
+		float botPad = Math.max(8f, corner + 3f);
+		float trackY = pageClipY + topPad;
+		float trackH = pageClipH - topPad - botPad;
 		if (trackH < 16f) {
 			return;
 		}
@@ -2200,7 +2206,14 @@ public class StrayScreen extends Screen {
 		GuiDraw.rounded(graphics, trackX, trackY, trackW, trackH, 1.6f, track);
 		float thumbH = Math.max(16f, trackH * pageClipH / (pageClipH + tabScrollMax));
 		float thumbY = trackY + (tabScrollMax <= 0f ? 0f : tabScroll / tabScrollMax) * (trackH - thumbH);
-		GuiDraw.rounded(graphics, trackX - 0.4f, thumbY, trackW + 0.8f, thumbH, 1.8f, Theme.ACCENT);
+		GuiDraw.rounded(graphics, trackX, thumbY, trackW, thumbH, 1.6f, Theme.ACCENT);
+	}
+
+	private static float cornerClearance(float radius, float edgeInset) {
+		float r = Math.max(1f, radius);
+		float inset = Mth.clamp(edgeInset, 0.5f, r);
+		float inner = r - inset;
+		return r - (float) Math.sqrt(Math.max(0f, r * r - inner * inner));
 	}
 
 	private boolean pageHover(double mx, double my, float x, float y, float w, float h) {
@@ -3047,7 +3060,7 @@ public class StrayScreen extends Screen {
 		return FabricLoader.getInstance()
 			.getModContainer("stray")
 			.map(container -> container.getMetadata().getVersion().getFriendlyString())
-			.orElse("1.2.147");
+			.orElse("1.2.148");
 	}
 
 	@Override

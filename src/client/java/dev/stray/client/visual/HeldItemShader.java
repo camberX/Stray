@@ -47,8 +47,11 @@ import org.joml.Vector3fc;
 import org.joml.Vector4f;
 import org.joml.Vector4fc;
 
+import java.util.Collections;
+import java.util.IdentityHashMap;
 import java.util.Optional;
 import java.util.OptionalInt;
+import java.util.Set;
 import java.util.function.Function;
 
 public final class HeldItemShader {
@@ -75,8 +78,10 @@ public final class HeldItemShader {
 	private static RenderTarget rowTarget;
 	private static RenderTarget espTarget;
 	private static boolean maskThisFrame;
+	private static boolean playerMaskThisFrame;
 	private static boolean espThisFrame;
 	private static int playerFillDepth;
+	private static final Set<Object> FILL_ITEMS = Collections.newSetFromMap(new IdentityHashMap<>());
 
 	private HeldItemShader() {
 	}
@@ -140,6 +145,16 @@ public final class HeldItemShader {
 
 	public static boolean shouldFill(LivingEntityRenderState state) {
 		return playerFillActive() && state instanceof FillEspMarker marker && marker.stray$fillEsp();
+	}
+
+	public static void markFillItem(Object submit) {
+		if (playerFill() && submit != null) {
+			FILL_ITEMS.add(submit);
+		}
+	}
+
+	public static boolean isFillItem(Object submit) {
+		return submit != null && FILL_ITEMS.contains(submit);
 	}
 
 	public static void pushPlayerFill() {
@@ -222,6 +237,13 @@ public final class HeldItemShader {
 		return FILL_TYPES.apply(atlas);
 	}
 
+	public static RenderType wrapPlayerItem(RenderType original, Iterable<BakedQuad> quads) {
+		if (original == null || isPipeline(original.pipeline())) {
+			return original;
+		}
+		return fillType(atlas(original, quads));
+	}
+
 	public static RenderType wrapSubmitted(RenderType original) {
 		if (!playerFill() || original == null || original.isOutline() || isPipeline(original.pipeline())) {
 			return original;
@@ -262,8 +284,22 @@ public final class HeldItemShader {
 		collector.submitModelPart(part, pose, MASK_TYPES.apply(skin), light, OverlayTexture.NO_OVERLAY, null);
 	}
 
+	public static RenderType playerFillMask(RenderType original) {
+		if (!playerFill() || original == null || isMaskPipeline(original.pipeline()) || !isFillPipeline(original.pipeline())) {
+			return null;
+		}
+		Identifier atlas = sampler0(original);
+		if (atlas == null) {
+			return null;
+		}
+		ensureRegistered();
+		return MASK_TYPES.apply(atlas);
+	}
+
 	public static void beginFillEsp() {
+		FILL_ITEMS.clear();
 		espThisFrame = false;
+		beginPlayerMask();
 		if (!playerFillThroughWalls()) {
 			return;
 		}
@@ -319,10 +355,28 @@ public final class HeldItemShader {
 		if (!active()) {
 			return;
 		}
+		if (!prepareMaskTarget()) {
+			return;
+		}
+		maskThisFrame = true;
+	}
+
+	public static void beginPlayerMask() {
+		playerMaskThisFrame = false;
+		if (!playerFillActive()) {
+			return;
+		}
+		if (!prepareMaskTarget()) {
+			return;
+		}
+		playerMaskThisFrame = true;
+	}
+
+	private static boolean prepareMaskTarget() {
 		Minecraft client = Minecraft.getInstance();
 		RenderTarget main = client.getMainRenderTarget();
 		if (main == null || main.width <= 0 || main.height <= 0) {
-			return;
+			return false;
 		}
 		if (maskTarget == null) {
 			maskTarget = new TextureTarget("stray held item mask", main.width, main.height, true);
@@ -330,7 +384,7 @@ public final class HeldItemShader {
 			maskTarget.resize(main.width, main.height);
 		}
 		if (maskTarget.getColorTexture() == null) {
-			return;
+			return false;
 		}
 		CommandEncoder encoder = RenderSystem.getDevice().createCommandEncoder();
 		if (maskTarget.getDepthTexture() != null) {
@@ -338,7 +392,7 @@ public final class HeldItemShader {
 		} else {
 			encoder.clearColorTexture(maskTarget.getColorTexture(), 0);
 		}
-		maskThisFrame = true;
+		return true;
 	}
 
 	public static void drawViewMask(
@@ -347,7 +401,7 @@ public final class HeldItemShader {
 		Iterable<BakedQuad> quads,
 		QuadInstance quadInstance
 	) {
-		if (!maskThisFrame || buffers == null || quads == null || pose == null || quadInstance == null) {
+		if (!masking() || buffers == null || quads == null || pose == null || quadInstance == null) {
 			return;
 		}
 		ensureRegistered();
@@ -365,6 +419,22 @@ public final class HeldItemShader {
 			return;
 		}
 		maskThisFrame = false;
+		runSilhouette("stray held item", outlineColorModulator(false), silhouetteThickness(false));
+	}
+
+	public static void compositePlayerSilhouette() {
+		if (!playerMaskThisFrame) {
+			return;
+		}
+		playerMaskThisFrame = false;
+		runSilhouette("stray player fill", outlineColorModulator(true), silhouetteThickness(true));
+	}
+
+	private static boolean masking() {
+		return maskThisFrame || playerMaskThisFrame;
+	}
+
+	private static void runSilhouette(String label, Vector4fc outline, float thickness) {
 		Minecraft client = Minecraft.getInstance();
 		RenderTarget main = client.getMainRenderTarget();
 		if (maskTarget == null || main == null || maskTarget.getColorTextureView() == null || main.getColorTextureView() == null) {
@@ -382,8 +452,8 @@ public final class HeldItemShader {
 		// Mapping a UBO is illegal while a RenderPass is open.
 		var transforms = RenderSystem.getDynamicUniforms().writeTransform(
 			new Matrix4f(),
-			outlineColorModulator(),
-			modelOffset(),
+			outline,
+			new Vector3f(thickness, 0f, 0f),
 			new Matrix4f()
 		);
 		GpuSampler nearest = RenderSystem.getSamplerCache().getClampToEdge(FilterMode.NEAREST);
@@ -391,7 +461,7 @@ public final class HeldItemShader {
 		// The disc dilation is separable: a per-row nearest-distance pass, then a
 		// vertical combine. 2 * (2r+1) reads per pixel instead of (2r+1)^2.
 		try (RenderPass pass = encoder.createRenderPass(
-			() -> "stray held item row distance",
+			() -> label + " row distance",
 			rowTarget.getColorTextureView(),
 			OptionalInt.empty()
 		)) {
@@ -402,7 +472,7 @@ public final class HeldItemShader {
 			pass.draw(0, 3);
 		}
 		try (RenderPass pass = encoder.createRenderPass(
-			() -> "stray held item silhouette",
+			() -> label + " silhouette",
 			main.getColorTextureView(),
 			OptionalInt.empty()
 		)) {
@@ -437,16 +507,27 @@ public final class HeldItemShader {
 	}
 
 	public static Vector4fc outlineColorModulator() {
-		Vector4fc fill = packColor(
-			StrayConfig.get().heldItemShaderRgb,
-			StrayConfig.get().heldItemShaderFill
-		);
+		return outlineColorModulator(playerFill());
+	}
+
+	private static Vector4fc outlineColorModulator(boolean playerFill) {
+		StrayConfig config = StrayConfig.get();
+		Vector4fc fill = playerFill
+			? packColor(config.playerFillRgb, config.playerFillFill)
+			: packColor(config.heldItemShaderRgb, config.heldItemShaderFill);
 		return new Vector4f(
 			fill.x() + (1f - fill.x()) * 0.62f,
 			fill.y() + (1f - fill.y()) * 0.62f,
 			fill.z() + (1f - fill.z()) * 0.62f,
 			1f
 		);
+	}
+
+	private static float silhouetteThickness(boolean playerFill) {
+		if (playerFill) {
+			return 0.90f;
+		}
+		return StrayConfig.clamp(StrayConfig.get().heldItemShaderOutline, 0.15f, 1.50f);
 	}
 
 	public static Vector3fc modelOffset() {
