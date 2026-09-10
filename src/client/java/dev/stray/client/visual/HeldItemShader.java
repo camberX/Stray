@@ -23,6 +23,7 @@ import dev.stray.client.mixin.RenderSetupAccessor;
 import dev.stray.client.mixin.RenderSetupTextureBindingAccessor;
 import dev.stray.client.mixin.RenderTypeAccessor;
 import dev.stray.client.render.MobGlowRenderer;
+import dev.stray.client.render.NametagRenderer;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.model.geom.ModelPart;
 import net.minecraft.client.renderer.MultiBufferSource;
@@ -130,7 +131,7 @@ public final class HeldItemShader {
 			return false;
 		}
 		if (entity.getType() == EntityType.PLAYER) {
-			return true;
+			return NametagRenderer.realAccount(entity);
 		}
 		return StrayConfig.get().playerFillMobs && MobGlowRenderer.listed(entity);
 	}
@@ -285,7 +286,7 @@ public final class HeldItemShader {
 	}
 
 	public static RenderType playerFillMask(RenderType original) {
-		if (!playerFill() || original == null || isMaskPipeline(original.pipeline()) || !isFillPipeline(original.pipeline())) {
+		if (!playerMaskThisFrame || !playerFill() || original == null || isMaskPipeline(original.pipeline()) || !isFillPipeline(original.pipeline())) {
 			return null;
 		}
 		Identifier atlas = sampler0(original);
@@ -363,7 +364,7 @@ public final class HeldItemShader {
 
 	public static void beginPlayerMask() {
 		playerMaskThisFrame = false;
-		if (!playerFillActive()) {
+		if (!playerFillActive() || !playerFillThroughWalls()) {
 			return;
 		}
 		if (!prepareMaskTarget()) {

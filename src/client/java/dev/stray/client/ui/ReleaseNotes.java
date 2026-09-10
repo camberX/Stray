@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.160", new String[]{
+			"Player fill skips Hypixel NPCs (UUID version 2, same as nametags). The silhouette outline only draws when Through walls is on, so it no longer shows through blocks when that toggle is off."
+		}),
 		new Entry("1.2.159", new String[]{
 			"Stray HUD is one layer after the vanilla bars instead of hanging off chat, hotbar, and scoreboard. Fabric's wrappers for those vanilla extracts no longer include Music, Watermark, and the rest of the overlay pass."
 		}),

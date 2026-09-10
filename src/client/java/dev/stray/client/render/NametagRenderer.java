@@ -176,12 +176,20 @@ public final class NametagRenderer {
 	}
 
 	/** Hypixel NPCs use UUID version 2. Real accounts use version 4. */
-	private static boolean realPlayer(AbstractClientPlayer player, LocalPlayer self) {
-		int version = player.getUUID().version();
+	public static boolean realAccount(Entity entity) {
+		if (entity == null) {
+			return false;
+		}
+		int version = entity.getUUID().version();
 		if (version == NPC_UUID_VERSION) {
 			return false;
 		}
-		return player == self || version == PLAYER_UUID_VERSION;
+		Minecraft client = Minecraft.getInstance();
+		return entity == client.player || version == PLAYER_UUID_VERSION;
+	}
+
+	private static boolean realPlayer(AbstractClientPlayer player, LocalPlayer self) {
+		return realAccount(player);
 	}
 
 	/**
