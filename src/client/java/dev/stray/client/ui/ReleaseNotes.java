@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.141", new String[]{
+			"Profile viewer networth uses SkyHelper market value, HOTM reads powder when Hypixel omits the tree, other players use their real skin, and the nametag uses rank color plus Skyblock level color."
+		}),
 		new Entry("1.2.140", new String[]{
 			"Profile viewer fills pet stats instead of {STRENGTH} placeholders, reads HOTM 10 and the maxed tree from the real XP table, and prices items from live BIN lists so networth is no longer just purse and bank."
 		}),

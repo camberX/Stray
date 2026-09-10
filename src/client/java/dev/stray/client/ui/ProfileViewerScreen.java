@@ -1,6 +1,9 @@
 package dev.stray.client.ui;
 
+import com.google.common.collect.ImmutableMultimap;
 import com.mojang.authlib.GameProfile;
+import com.mojang.authlib.properties.Property;
+import com.mojang.authlib.properties.PropertyMap;
 import com.mojang.blaze3d.platform.InputConstants;
 import dev.stray.client.StrayClient;
 import dev.stray.client.config.StrayConfig;
@@ -13,6 +16,7 @@ import dev.stray.client.render.GuiDraw;
 import dev.stray.client.render.NametagRenderer;
 import dev.stray.client.render.PlayerPreview;
 import dev.stray.client.render.Starfield;
+import dev.stray.client.visual.NickHider;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
@@ -384,7 +388,7 @@ public class ProfileViewerScreen extends Screen {
 			"Purse " + prettyCoins(profile.purse())
 				+ "\nBank " + prettyCoins(profile.bank())
 				+ "\nItems " + prettyCoins(profile.itemWorth())
-				+ "\nInv, armor, equipment, wardrobe, Ender, backpacks, accessories, pets, sacks, and essence.");
+				+ "\nMarket value of gear, storage, accessories, pets, sacks, and coins.");
 		ry += row;
 		infoRow(graphics, font, mouseX, mouseY, x, ry, w, new ItemStack(Items.COOKIE), "Cookie", profile.cookie() ? "Active" : "Inactive",
 			profile.cookie() ? "Cookie buff is active." : "Cookie buff is inactive.");
@@ -462,7 +466,18 @@ public class ProfileViewerScreen extends Screen {
 			return null;
 		}
 		String name = snap.name() == null || snap.name().isBlank() ? "Player" : snap.name();
-		return minecraft.getSkinManager().createLookup(new GameProfile(snap.uuid(), name), true).get();
+		String value = snap.skinValue();
+		if (value != null && !value.isBlank()) {
+			String signature = snap.skinSignature();
+			Property textures = signature == null || signature.isBlank()
+				? new Property("textures", value)
+				: new Property("textures", value, signature);
+			PropertyMap properties = new PropertyMap(ImmutableMultimap.of("textures", textures));
+			return minecraft.getSkinManager()
+				.createLookup(new GameProfile(snap.uuid(), name, properties), signature != null && !signature.isBlank())
+				.get();
+		}
+		return minecraft.getSkinManager().createLookup(new GameProfile(snap.uuid(), name), false).get();
 	}
 
 	private void drawChipColumn(
@@ -1558,9 +1573,55 @@ public class ProfileViewerScreen extends Screen {
 	}
 
 	private static Component nametag(ProfileViewer.Snapshot snap, ProfileViewer.Profile profile) {
+		if (snap != null && snap.taggedName() != null && !snap.taggedName().isBlank()) {
+			return NickHider.parseLegacy(snap.taggedName());
+		}
 		String name = snap != null && snap.name() != null && !snap.name().isBlank() ? snap.name() : "?";
 		int level = profile == null ? 0 : profile.skyblockLevel();
-		return Component.literal(level > 0 ? "[" + level + "] " + name : name);
+		if (level <= 0) {
+			return Component.literal(name);
+		}
+		return NickHider.parseLegacy("§8[" + levelColor(level) + level + "§8] §7" + name);
+	}
+
+	private static String levelColor(int level) {
+		if (level >= 480) {
+			return "§4";
+		}
+		if (level >= 440) {
+			return "§c";
+		}
+		if (level >= 400) {
+			return "§6";
+		}
+		if (level >= 360) {
+			return "§5";
+		}
+		if (level >= 320) {
+			return "§d";
+		}
+		if (level >= 280) {
+			return "§9";
+		}
+		if (level >= 240) {
+			return "§3";
+		}
+		if (level >= 200) {
+			return "§b";
+		}
+		if (level >= 160) {
+			return "§2";
+		}
+		if (level >= 120) {
+			return "§a";
+		}
+		if (level >= 80) {
+			return "§e";
+		}
+		if (level >= 40) {
+			return "§f";
+		}
+		return "§7";
 	}
 
 	private static ItemStack sky(String id) {

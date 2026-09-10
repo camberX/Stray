@@ -278,9 +278,18 @@ public final class ProfileViewer {
 		}
 	}
 
-	public record Snapshot(String name, UUID uuid, List<Profile> profiles, int selected, String error) {
+	public record Snapshot(
+		String name,
+		UUID uuid,
+		List<Profile> profiles,
+		int selected,
+		String error,
+		String taggedName,
+		String skinValue,
+		String skinSignature
+	) {
 		public static Snapshot empty() {
-			return new Snapshot("", null, List.of(), 0, "");
+			return new Snapshot("", null, List.of(), 0, "", "", "", "");
 		}
 
 		public Profile current() {
@@ -295,7 +304,16 @@ public final class ProfileViewer {
 			if (profiles.isEmpty()) {
 				return this;
 			}
-			return new Snapshot(name, uuid, profiles, Math.max(0, Math.min(index, profiles.size() - 1)), error);
+			return new Snapshot(
+				name,
+				uuid,
+				profiles,
+				Math.max(0, Math.min(index, profiles.size() - 1)),
+				error,
+				taggedName,
+				skinValue,
+				skinSignature
+			);
 		}
 	}
 
@@ -387,7 +405,10 @@ public final class ProfileViewer {
 				fail(gen, "profile lookup failed");
 				return;
 			}
-			List<Profile> profiles = parseProfiles(root, resolved.uuid());
+			String compact = compact(resolved.uuid());
+			JsonObject soopy = getJson("https://soopy.dev/api/v2/player_skyblock/" + compact);
+			JsonObject soopyPlayer = getJson("https://soopy.dev/api/v2/player/" + compact);
+			List<Profile> profiles = parseProfiles(root, resolved.uuid(), soopy);
 			if (profiles.isEmpty()) {
 				fail(gen, "no Skyblock profile");
 				return;
@@ -399,7 +420,16 @@ public final class ProfileViewer {
 					break;
 				}
 			}
-			snapshot = new Snapshot(resolved.name(), resolved.uuid(), List.copyOf(profiles), selected, "");
+			snapshot = new Snapshot(
+				resolved.name(),
+				resolved.uuid(),
+				List.copyOf(profiles),
+				selected,
+				"",
+				taggedName(resolved.name(), soopyPlayer, profiles.get(selected)),
+				resolved.skinValue(),
+				resolved.skinSignature()
+			);
 			error = "";
 			status = Status.READY;
 			query = resolved.name();
@@ -415,14 +445,14 @@ public final class ProfileViewer {
 		UUID local = uuidOf(client);
 		String localName = localName(client);
 		if (local != null && (name.isBlank() || name.equalsIgnoreCase(localName))) {
-			return new Resolved(localName.isBlank() ? name : localName, local);
+			return withSkin(new Resolved(localName.isBlank() ? name : localName, local, "", ""));
 		}
 		JsonObject mojang = getJson(MOJANG + encode(name));
 		if (mojang != null) {
 			UUID uuid = uuidOf(string(mojang, "id"));
 			String named = string(mojang, "name");
 			if (uuid != null) {
-				return new Resolved(named.isBlank() ? name : named, uuid);
+				return withSkin(new Resolved(named.isBlank() ? name : named, uuid, "", ""));
 			}
 		}
 		JsonObject ashcon = getJson(ASHCON + encode(name));
@@ -430,10 +460,44 @@ public final class ProfileViewer {
 			UUID uuid = uuidOf(string(ashcon, "uuid"));
 			String named = string(ashcon, "username");
 			if (uuid != null) {
-				return new Resolved(named.isBlank() ? name : named, uuid);
+				return withSkin(new Resolved(named.isBlank() ? name : named, uuid, "", ""), ashcon);
 			}
 		}
 		return null;
+	}
+
+	private static Resolved withSkin(Resolved resolved) {
+		return withSkin(resolved, null);
+	}
+
+	private static Resolved withSkin(Resolved resolved, JsonObject ashcon) {
+		if (resolved == null) {
+			return null;
+		}
+		JsonObject textures = ashcon != null ? object(object(ashcon, "textures"), "raw") : null;
+		if (textures == null) {
+			textures = object(object(getJson(ASHCON + encode(resolved.name())), "textures"), "raw");
+		}
+		String value = string(textures, "value");
+		String signature = string(textures, "signature");
+		if (value.isBlank()) {
+			JsonObject session = getJson("https://sessionserver.mojang.com/session/minecraft/profile/" + compact(resolved.uuid()) + "?unsigned=false");
+			JsonArray properties = array(session, "properties");
+			if (properties != null) {
+				for (JsonElement element : properties) {
+					if (element == null || !element.isJsonObject()) {
+						continue;
+					}
+					JsonObject property = element.getAsJsonObject();
+					if ("textures".equalsIgnoreCase(string(property, "name"))) {
+						value = string(property, "value");
+						signature = string(property, "signature");
+						break;
+					}
+				}
+			}
+		}
+		return new Resolved(resolved.name(), resolved.uuid(), value, signature);
 	}
 
 	private static JsonObject getJson(String url) {
@@ -454,7 +518,7 @@ public final class ProfileViewer {
 		}
 	}
 
-	private static List<Profile> parseProfiles(JsonObject root, UUID uuid) {
+	private static List<Profile> parseProfiles(JsonObject root, UUID uuid, JsonObject soopy) {
 		List<Profile> out = new ArrayList<>();
 		if (root == null || !root.has("profiles") || !root.get("profiles").isJsonArray()) {
 			return out;
@@ -469,12 +533,12 @@ public final class ProfileViewer {
 			if (member == null) {
 				continue;
 			}
-			out.add(parseMember(object, member, compact));
+			out.add(parseMember(object, member, compact, soopy));
 		}
 		return out;
 	}
 
-	private static Profile parseMember(JsonObject profile, JsonObject member, String compact) {
+	private static Profile parseMember(JsonObject profile, JsonObject member, String compact, JsonObject soopy) {
 		JsonObject playerData = object(member, "player_data");
 		JsonObject experience = object(playerData, "experience");
 		List<Skill> skills = new ArrayList<>();
@@ -549,9 +613,10 @@ public final class ProfileViewer {
 		long kills = statCount(stats, "kills");
 		long deaths = statCount(stats, "deaths");
 
+		JsonObject soopyMember = soopyMember(soopy, string(profile, "profile_id"), string(profile, "cute_name"), compact);
 		Dungeon dungeons = parseDungeons(member);
 		List<Slayer> slayers = parseSlayers(member);
-		Mining mining = parseMining(member);
+		Mining mining = parseMining(member, soopyMember);
 		Farming farming = parseFarming(member);
 		List<Pet> pets = parsePets(member);
 		JsonObject inventory = object(member, "inventory");
@@ -561,7 +626,17 @@ public final class ProfileViewer {
 		Bag wardrobe = parseBag("Wardrobe", first(inventory, member, "wardrobe_contents"), 9, 36);
 		Bag accessories = parseBag("Accessories", bagOf(inventory, member, "talisman_bag"), 9, 45);
 		if (accessories.vacant()) {
+			accessories = parseBag("Accessories", bagOf(inventory, member, "accessory_bag"), 9, 45);
+		}
+		if (accessories.vacant()) {
 			accessories = parseBag("Accessories", first(inventory, member, "talisman_bag"), 9, 45);
+		}
+		if (accessories.vacant()) {
+			accessories = parseBag("Accessories", first(inventory, member, "accessory_bag"), 9, 45);
+		}
+		Bag vault = parseBag("Vault", first(inventory, member, "personal_vault_contents"), 9, 36);
+		if (vault.vacant()) {
+			vault = parseBag("Vault", first(inventory, member, "personal_vault"), 9, 36);
 		}
 		Bag quiver = parseBag("Quiver", bagOf(inventory, member, "quiver"), 9, 36);
 		Bag potions = parseBag("Potions", bagOf(inventory, member, "potion_bag"), 9, 36);
@@ -578,8 +653,15 @@ public final class ProfileViewer {
 		if (mode.isBlank()) {
 			mode = "normal";
 		}
+		if (sbLevel <= 0 && soopyMember != null) {
+			double soopyLevel = num(soopyMember, "sbLvl");
+			if (soopyLevel > 0d) {
+				sbLevel = (int) Math.floor(soopyLevel);
+				sbProgress = (float) (soopyLevel - sbLevel);
+			}
+		}
 		double items = bagWorth(inv) + bagWorth(armor) + bagWorth(equipment) + bagWorth(wardrobe)
-			+ bagWorth(accessories) + bagWorth(quiver) + bagWorth(potions) + bagWorth(fishing);
+			+ bagWorth(accessories) + bagWorth(vault) + bagWorth(quiver) + bagWorth(potions) + bagWorth(fishing);
 		for (Bag bag : ender) {
 			items += bagWorth(bag);
 		}
@@ -592,6 +674,14 @@ public final class ProfileViewer {
 			items += priceOf(pet.type() + ";" + petTier(pet.tier()));
 		}
 		double net = purse + bank + items;
+		double helper = skyhelperNetworth(soopyMember);
+		if (helper > 0d) {
+			double helperNet = helper + (skyhelperHasCoins(soopyMember) ? 0d : purse + bank);
+			if (helperNet > net) {
+				items = Math.max(0d, helperNet - purse - bank);
+				net = helperNet;
+			}
+		}
 		if (bool(profile, "selected")) {
 			double remote = coflNetworth(profile, compact);
 			if (remote > net) {
@@ -728,8 +818,11 @@ public final class ProfileViewer {
 		return out;
 	}
 
-	private static Mining parseMining(JsonObject member) {
-		JsonObject core = miningCore(member);
+	private static Mining parseMining(JsonObject member, JsonObject extra) {
+		JsonObject core = bestCore(miningCore(member), extra == null ? null : miningCore(extra));
+		if (core == null && extra != null) {
+			core = object(extra, "mining_core");
+		}
 		if (core == null) {
 			return Mining.empty();
 		}
@@ -740,10 +833,33 @@ public final class ProfileViewer {
 		if (xp == 0d) {
 			xp = num(object(core, "hotm"), "experience");
 		}
-		int hotm = skillFrom("HOTM", xp, HOTM_XP, 10).level();
-		if (hotm == 0 && xp <= 0d && (core.has("nodes") || core.has("perks"))) {
+		if (xp == 0d && extra != null) {
+			JsonObject level = object(extra, "hotm_level");
+			xp = num(level, "totalExp");
+			int listed = (int) num(level, "level");
+			if (listed > 0 && xp <= 0d) {
+				int hotm = Math.max(listed, inferHotm(core));
+				List<Perk> perks = parsePerks(nodesOf(core));
+				if (perks.isEmpty()) {
+					perks = inferredPerks(hotm);
+				}
+				return new Mining(hotm, powder(core, "mithril"), powder(core, "gemstone"), powder(core, "glacite"), perks);
+			}
+		}
+		JsonObject nodes = nodesOf(core);
+		List<Perk> perks = parsePerks(nodes);
+		int fromXp = xp > 0d ? skillFrom("HOTM", xp, HOTM_XP, 10).level() : 0;
+		int hotm = Math.max(fromXp, Math.max(hotmFromPerks(perks), inferHotm(core)));
+		if (hotm == 0 && (bool(core, "received_free_tier") || !perks.isEmpty())) {
 			hotm = 1;
 		}
+		if (perks.isEmpty() && hotm > 0) {
+			perks = inferredPerks(hotm);
+		}
+		return new Mining(hotm, powder(core, "mithril"), powder(core, "gemstone"), powder(core, "glacite"), perks);
+	}
+
+	private static JsonObject nodesOf(JsonObject core) {
 		JsonObject nodes = object(core, "nodes");
 		if (nodes == null) {
 			nodes = object(core, "perks");
@@ -751,9 +867,68 @@ public final class ProfileViewer {
 		if (nodes == null) {
 			nodes = object(object(core, "hotm"), "nodes");
 		}
-		List<Perk> perks = parsePerks(nodes);
-		hotm = Math.max(hotm, hotmFromPerks(perks));
-		return new Mining(hotm, powder(core, "mithril"), powder(core, "gemstone"), powder(core, "glacite"), perks);
+		return nodes;
+	}
+
+	private static JsonObject bestCore(JsonObject primary, JsonObject extra) {
+		if (!validMining(primary)) {
+			return validMining(extra) ? extra : primary;
+		}
+		if (!validMining(extra)) {
+			return primary;
+		}
+		long primaryScore = powderScore(primary) + (nodesOf(primary) != null ? 1_000_000_000L : 0L);
+		long extraScore = powderScore(extra) + (nodesOf(extra) != null ? 1_000_000_000L : 0L);
+		return extraScore > primaryScore ? extra : primary;
+	}
+
+	private static long powderScore(JsonObject core) {
+		return powder(core, "mithril") + powder(core, "gemstone") + powder(core, "glacite");
+	}
+
+	private static int inferHotm(JsonObject core) {
+		if (core == null) {
+			return 0;
+		}
+		long mithril = powder(core, "mithril");
+		long gemstone = powder(core, "gemstone");
+		long glacite = powder(core, "glacite");
+		long mithrilSpent = (long) num(core, "powder_spent_mithril");
+		long gemSpent = (long) num(core, "powder_spent_gemstone");
+		long glaciteSpent = (long) num(core, "powder_spent_glacite");
+		int hotm = 0;
+		if (bool(core, "received_free_tier") || mithril > 0L || mithrilSpent > 0L) {
+			hotm = 1;
+		}
+		if (mithrilSpent >= 3_000L || mithril >= 12_000L) {
+			hotm = Math.max(hotm, 3);
+		}
+		if (mithrilSpent >= 50_000L) {
+			hotm = Math.max(hotm, 5);
+		}
+		if (gemstone > 0L || gemSpent > 0L) {
+			hotm = Math.max(hotm, 6);
+		}
+		if (gemSpent >= 100_000L || gemstone >= 1_000_000L) {
+			hotm = Math.max(hotm, 7);
+		}
+		if (glacite > 0L || glaciteSpent > 0L) {
+			hotm = Math.max(hotm, 8);
+		}
+		if (glaciteSpent >= 50_000L || glacite >= 1_000_000L || gemSpent >= 1_000_000L) {
+			hotm = Math.max(hotm, 10);
+		}
+		return hotm;
+	}
+
+	private static List<Perk> inferredPerks(int hotm) {
+		List<Perk> out = new ArrayList<>();
+		for (Map.Entry<String, Integer> entry : HOTM_TIER.entrySet()) {
+			if (entry.getValue() != null && entry.getValue() <= hotm) {
+				out.add(new Perk(entry.getKey(), pretty(entry.getKey()), 1));
+			}
+		}
+		return List.copyOf(out);
 	}
 
 	private static JsonObject miningCore(JsonObject member) {
@@ -1642,7 +1817,7 @@ public final class ProfileViewer {
 						JsonObject quick = object(object(products, id), "quick_status");
 						double sell = num(quick, "sellPrice");
 						double buy = num(quick, "buyPrice");
-						double value = sell > 0 ? sell : buy;
+						double value = buy > 0 ? buy : sell;
 						if (value > 0d) {
 							next.put(id.toUpperCase(Locale.ROOT), value);
 						}
@@ -2048,6 +2223,102 @@ public final class ProfileViewer {
 		status = Status.ERROR;
 	}
 
-	private record Resolved(String name, UUID uuid) {
+	private static JsonObject soopyMember(JsonObject soopy, String profileId, String cute, String compact) {
+		JsonObject profiles = object(object(soopy, "data"), "profiles");
+		if (profiles == null) {
+			return null;
+		}
+		JsonObject match = object(profiles, compact(profileId));
+		if (match == null && cute != null && !cute.isBlank()) {
+			for (String key : profiles.keySet()) {
+				JsonObject profile = object(profiles, key);
+				if (cute.equalsIgnoreCase(string(profile, "cute_name"))) {
+					match = profile;
+					break;
+				}
+			}
+		}
+		if (match == null) {
+			JsonObject stats = object(object(soopy, "data"), "stats");
+			match = object(profiles, string(stats, "currentProfileId"));
+		}
+		return object(object(match, "members"), compact);
+	}
+
+	private static double skyhelperNetworth(JsonObject member) {
+		JsonObject nw = object(member, "skyhelperNetworth");
+		if (nw == null) {
+			nw = object(member, "networth");
+		}
+		double total = num(nw, "total");
+		if (total <= 0d) {
+			total = num(nw, "networth");
+		}
+		return total;
+	}
+
+	private static boolean skyhelperHasCoins(JsonObject member) {
+		JsonObject cats = object(object(member, "skyhelperNetworth"), "categories");
+		return num(object(cats, "coins"), "total") > 0d;
+	}
+
+	private static String taggedName(String name, JsonObject soopyPlayer, Profile profile) {
+		String raw = name == null || name.isBlank() ? "?" : name;
+		JsonObject stats = object(object(soopyPlayer, "data"), "stats");
+		String prefix = string(stats, "nameWithPrefix");
+		if (prefix.isBlank()) {
+			prefix = string(stats, "prefixCalculated") + raw;
+		}
+		if (prefix.isBlank()) {
+			prefix = raw;
+		}
+		int level = profile == null ? 0 : profile.skyblockLevel();
+		if (level <= 0) {
+			return prefix;
+		}
+		return "§8[" + levelColor(level) + level + "§8] " + prefix;
+	}
+
+	private static String levelColor(int level) {
+		if (level >= 480) {
+			return "§4";
+		}
+		if (level >= 440) {
+			return "§c";
+		}
+		if (level >= 400) {
+			return "§6";
+		}
+		if (level >= 360) {
+			return "§5";
+		}
+		if (level >= 320) {
+			return "§d";
+		}
+		if (level >= 280) {
+			return "§9";
+		}
+		if (level >= 240) {
+			return "§3";
+		}
+		if (level >= 200) {
+			return "§b";
+		}
+		if (level >= 160) {
+			return "§2";
+		}
+		if (level >= 120) {
+			return "§a";
+		}
+		if (level >= 80) {
+			return "§e";
+		}
+		if (level >= 40) {
+			return "§f";
+		}
+		return "§7";
+	}
+
+	private record Resolved(String name, UUID uuid, String skinValue, String skinSignature) {
 	}
 }
