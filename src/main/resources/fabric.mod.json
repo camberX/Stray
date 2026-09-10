@@ -24,6 +24,7 @@
 			"dev.stray.client.StrayClient"
 		]
 	},
+	"accessWidener": "stray.accesswidener",
 	"mixins": [
 		{
 			"config": "stray.client.mixins.json",

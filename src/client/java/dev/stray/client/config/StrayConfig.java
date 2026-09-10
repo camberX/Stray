@@ -50,6 +50,10 @@ public final class StrayConfig {
 	public boolean matchFogToWorld = false;
 	public boolean aspectEnabled = false;
 	public float aspectRatio = 1.0f;
+	public boolean motionBlurEnabled = false;
+	public boolean motionBlurRefreshScale = true;
+	public float motionBlurStrength = 1.0f;
+	public String motionBlurAlgorithm = "velocity";
 	public int themeAccentRgb = 0x2FB5FF;
 	public int themePaneRgb = 0x0B0E14;
 	public String themePreset = "cyan";
@@ -428,6 +432,8 @@ public final class StrayConfig {
 				loaded.fogEnd = clamp(loaded.fogEnd, 0.05f, 1f);
 				loaded.fogDensity = clamp(loaded.fogDensity, 0f, 1f);
 				loaded.aspectRatio = clamp(loaded.aspectRatio, 0.50f, 1.20f);
+				loaded.motionBlurStrength = clamp(loaded.motionBlurStrength, 0f, 2f);
+				loaded.motionBlurAlgorithm = normalizeMotionBlurAlgorithm(loaded.motionBlurAlgorithm);
 				boolean legacyTheme = loaded.themePreset == null || loaded.themePreset.isBlank();
 				if (legacyTheme) {
 					loaded.themeAccentRgb = 0x2FB5FF;
@@ -905,6 +911,75 @@ public final class StrayConfig {
 
 	public String nametagStyleLabel() {
 		return nametagCustom() ? "Stray" : "Vanilla";
+	}
+
+	public enum MotionBlurAlgorithm {
+		VELOCITY_BASED,
+		FRAME_BLENDING,
+		HYBRID_BLENDING,
+		ACCUMULATION_MAX,
+		ACCUMULATION_MIX
+	}
+
+	private static final String[] MOTION_BLUR_IDS = {
+		"velocity", "blend", "hybrid", "accum_max", "accum_mix"
+	};
+	private static final String[] MOTION_BLUR_LABELS = {
+		"Velocity", "Blend", "Hybrid", "Accum max", "Accum mix"
+	};
+
+	public MotionBlurAlgorithm motionBlurAlgorithm() {
+		return switch (normalizeMotionBlurAlgorithm(motionBlurAlgorithm)) {
+			case "blend" -> MotionBlurAlgorithm.FRAME_BLENDING;
+			case "hybrid" -> MotionBlurAlgorithm.HYBRID_BLENDING;
+			case "accum_max" -> MotionBlurAlgorithm.ACCUMULATION_MAX;
+			case "accum_mix" -> MotionBlurAlgorithm.ACCUMULATION_MIX;
+			default -> MotionBlurAlgorithm.VELOCITY_BASED;
+		};
+	}
+
+	public boolean motionBlurUsesVelocity() {
+		MotionBlurAlgorithm algorithm = motionBlurAlgorithm();
+		return algorithm == MotionBlurAlgorithm.VELOCITY_BASED || algorithm == MotionBlurAlgorithm.HYBRID_BLENDING;
+	}
+
+	public boolean motionBlurAllowsRefreshScale() {
+		return motionBlurAlgorithm() == MotionBlurAlgorithm.VELOCITY_BASED;
+	}
+
+	public void cycleMotionBlurAlgorithm() {
+		int index = 0;
+		String current = normalizeMotionBlurAlgorithm(motionBlurAlgorithm);
+		for (int i = 0; i < MOTION_BLUR_IDS.length; i++) {
+			if (MOTION_BLUR_IDS[i].equals(current)) {
+				index = i;
+				break;
+			}
+		}
+		motionBlurAlgorithm = MOTION_BLUR_IDS[(index + 1) % MOTION_BLUR_IDS.length];
+	}
+
+	public String motionBlurAlgorithmLabel() {
+		String current = normalizeMotionBlurAlgorithm(motionBlurAlgorithm);
+		for (int i = 0; i < MOTION_BLUR_IDS.length; i++) {
+			if (MOTION_BLUR_IDS[i].equals(current)) {
+				return MOTION_BLUR_LABELS[i];
+			}
+		}
+		return MOTION_BLUR_LABELS[0];
+	}
+
+	public static String normalizeMotionBlurAlgorithm(String value) {
+		if (value == null) {
+			return "velocity";
+		}
+		return switch (value.toLowerCase()) {
+			case "blend", "frame", "frame_blending", "frame-blending" -> "blend";
+			case "hybrid", "hybrid_blending", "hybrid-blending" -> "hybrid";
+			case "accum_max", "accumulation_max", "max" -> "accum_max";
+			case "accum_mix", "accumulation_mix", "mix" -> "accum_mix";
+			default -> "velocity";
+		};
 	}
 
 	public void cycleHeldItemShaderStyle() {

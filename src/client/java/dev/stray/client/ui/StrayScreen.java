@@ -119,6 +119,7 @@ public class StrayScreen extends Screen {
 		SKY("Skybox", 3),
 		FOG("Fog", 5),
 		VIEW("Aspect", 3),
+		MOTION("Motion blur", 3),
 		HITSOUND("Hitsound", 3),
 		HELD_ITEM("Held item", 6),
 		FILL("Player fill", 8),
@@ -168,6 +169,11 @@ public class StrayScreen extends Screen {
 		new SearchEntry("Skybox tint", Tab.WORLD, "World"),
 		new SearchEntry("Aspect ratio", Tab.WORLD, "Camera"),
 		new SearchEntry("Custom fog", Tab.WORLD, "Camera"),
+		new SearchEntry("Motion blur", Tab.WORLD, "Camera"),
+		new SearchEntry("Velocity blur", Tab.WORLD, "Camera"),
+		new SearchEntry("Frame blending", Tab.WORLD, "Camera"),
+		new SearchEntry("Hybrid blur", Tab.WORLD, "Camera"),
+		new SearchEntry("Accumulation blur", Tab.WORLD, "Camera"),
 		new SearchEntry("Combat", Tab.COMBAT, "Combat"),
 		new SearchEntry("Hitsound", Tab.COMBAT, "Combat"),
 		new SearchEntry("Melee hitsound", Tab.COMBAT, "Combat"),
@@ -1831,9 +1837,10 @@ public class StrayScreen extends Screen {
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "World tint", config.worldTintEnabled, v -> config.worldTintEnabled = v, Feature.WORLD);
 				toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Skybox", config.skyTintEnabled, v -> config.skyTintEnabled = v, Feature.SKY);
 
-				y = featureCard(graphics, font, right, top, col, cardHeight(2), "Camera");
+				y = featureCard(graphics, font, right, top, col, cardHeight(3), "Camera");
 				y = toggle(graphics, font, rx, y, iw, mouseX, mouseY, "Fog", config.fogEnabled, v -> config.fogEnabled = v, Feature.FOG);
-				toggle(graphics, font, rx, y, iw, mouseX, mouseY, "Aspect ratio", config.aspectEnabled, v -> config.aspectEnabled = v, Feature.VIEW);
+				y = toggle(graphics, font, rx, y, iw, mouseX, mouseY, "Aspect ratio", config.aspectEnabled, v -> config.aspectEnabled = v, Feature.VIEW);
+				toggle(graphics, font, rx, y, iw, mouseX, mouseY, "Motion blur", config.motionBlurEnabled, v -> config.motionBlurEnabled = v, Feature.MOTION);
 			}
 			case COMBAT -> {
 				float y = featureCard(graphics, font, left, top, col, cardHeight(4), "Hitsound");
@@ -2005,7 +2012,8 @@ public class StrayScreen extends Screen {
 				controlCard(graphics, font, left, y, col, mouseX, mouseY, "Skybox", config.skyTintEnabled, v -> config.skyTintEnabled = v, Feature.SKY);
 				y = sectionLabel(graphics, font, right, top, "Camera");
 				y = controlCard(graphics, font, right, y, col, mouseX, mouseY, "Fog", config.fogEnabled, v -> config.fogEnabled = v, Feature.FOG);
-				controlCard(graphics, font, right, y, col, mouseX, mouseY, "Aspect ratio", config.aspectEnabled, v -> config.aspectEnabled = v, Feature.VIEW);
+				y = controlCard(graphics, font, right, y, col, mouseX, mouseY, "Aspect ratio", config.aspectEnabled, v -> config.aspectEnabled = v, Feature.VIEW);
+				controlCard(graphics, font, right, y, col, mouseX, mouseY, "Motion blur", config.motionBlurEnabled, v -> config.motionBlurEnabled = v, Feature.MOTION);
 			}
 			case COMBAT -> {
 				float hitsoundH = cardHeight(6);
@@ -2597,6 +2605,11 @@ public class StrayScreen extends Screen {
 					config.aspectRatio = values[index];
 				});
 			}
+			case MOTION -> {
+				y = cycle(graphics, font, ix, y, iw, mouseX, mouseY, "Algorithm", config.motionBlurAlgorithmLabel(), config::cycleMotionBlurAlgorithm);
+				y = slider(graphics, font, ix, y, iw, "Strength", String.format(Locale.ROOT, "%.1f", config.motionBlurStrength), config.motionBlurStrength / 2.0f, v -> config.motionBlurStrength = StrayConfig.clamp(v * 2.0f, 0f, 2f));
+				toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Refresh scale", config.motionBlurRefreshScale, v -> config.motionBlurRefreshScale = v);
+			}
 			case HITSOUND -> {
 				y = slider(graphics, font, ix, y, iw, "Volume", Math.round(config.hitsoundVolume * 100) + "%", config.hitsoundVolume, v -> config.hitsoundVolume = StrayConfig.clamp(v, 0f, 1f));
 				y = slider(graphics, font, ix, y, iw, "Pitch", String.format(Locale.ROOT, "%.2f", config.hitsoundPitch), (config.hitsoundPitch - 0.50f) / 1.00f, v -> config.hitsoundPitch = StrayConfig.clamp(0.50f + v, 0.50f, 1.50f));
@@ -3171,7 +3184,7 @@ public class StrayScreen extends Screen {
 		return FabricLoader.getInstance()
 			.getModContainer("stray")
 			.map(container -> container.getMetadata().getVersion().getFriendlyString())
-			.orElse("1.2.187");
+			.orElse("1.2.188");
 	}
 
 	@Override

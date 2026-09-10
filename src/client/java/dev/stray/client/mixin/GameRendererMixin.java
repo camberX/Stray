@@ -3,6 +3,7 @@ package dev.stray.client.mixin;
 import dev.stray.client.render.GuiFrostBlur;
 import dev.stray.client.render.MobGlowRenderer;
 import dev.stray.client.visual.HeldItemShader;
+import dev.stray.client.visual.motionblur.MotionBlurShaders;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.client.renderer.state.level.CameraRenderState;
@@ -52,6 +53,12 @@ public class GameRendererMixin {
 	)
 	private void stray$compositeHeldItemSilhouette(DeltaTracker deltaTracker, CallbackInfo ci) {
 		HeldItemShader.compositeSilhouette();
+	}
+
+	@Inject(method = "renderLevel", at = @At("TAIL"))
+	private void stray$motionBlurAfterLevel(DeltaTracker deltaTracker, CallbackInfo ci) {
+		MotionBlurShaders.applyDeferredTemporalBlur();
+		MotionBlurShaders.clearFrameAllocator();
 	}
 
 	@Inject(

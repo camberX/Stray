@@ -70,6 +70,7 @@ import dev.stray.client.ui.StrayScreen;
 import dev.stray.client.update.UpdateNotifier;
 import dev.stray.client.visual.CustomCape;
 import dev.stray.client.visual.ShopCape;
+import dev.stray.client.visual.motionblur.MotionBlurShaders;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommands;
@@ -306,6 +307,7 @@ public final class StrayClient implements ClientModInitializer {
 			StarMobEsp.reset();
 			LoadoutsScreen.resetPending();
 			WardrobeScreen.resetPending();
+			MotionBlurShaders.invalidate();
 		});
 
 		ClientLifecycleEvents.CLIENT_STOPPING.register(client -> FarmKeys.restore());

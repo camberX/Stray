@@ -6,6 +6,7 @@ public final class UnloadState {
 	private static boolean skyTint;
 	private static boolean fog;
 	private static boolean aspect;
+	private static boolean motionBlur;
 	private static boolean markers;
 
 	private UnloadState() {
@@ -29,11 +30,13 @@ public final class UnloadState {
 		skyTint = config.skyTintEnabled;
 		fog = config.fogEnabled;
 		aspect = config.aspectEnabled;
+		motionBlur = config.motionBlurEnabled;
 		markers = config.markersEnabled;
 		config.worldTintEnabled = false;
 		config.skyTintEnabled = false;
 		config.fogEnabled = false;
 		config.aspectEnabled = false;
+		config.motionBlurEnabled = false;
 		config.markersEnabled = false;
 		unloaded = true;
 		config.save();
@@ -45,6 +48,7 @@ public final class UnloadState {
 		config.skyTintEnabled = skyTint;
 		config.fogEnabled = fog;
 		config.aspectEnabled = aspect;
+		config.motionBlurEnabled = motionBlur;
 		config.markersEnabled = markers;
 		unloaded = false;
 		config.save();
