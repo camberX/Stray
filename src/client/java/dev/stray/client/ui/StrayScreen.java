@@ -121,7 +121,7 @@ public class StrayScreen extends Screen {
 		VIEW("Aspect", 3),
 		HITSOUND("Hitsound", 3),
 		HELD_ITEM("Held item", 6),
-		FILL("Player fill", 8),
+		FILL("Player fill", 9),
 		AUTO_CLICKER("Auto clicker", 8),
 		AUTO_EXPERIMENTS("Auto experiments", 5),
 		MOB("Mob glow", 3),
@@ -197,6 +197,8 @@ public class StrayScreen extends Screen {
 		new SearchEntry("Player fill color", Tab.ESP, "Visuals"),
 		new SearchEntry("Player fill outline", Tab.ESP, "Visuals"),
 		new SearchEntry("Player fill outline color", Tab.ESP, "Visuals"),
+		new SearchEntry("Fill star mobs", Tab.ESP, "Visuals"),
+		new SearchEntry("Fill ESP mobs", Tab.ESP, "Visuals"),
 		new SearchEntry("Fill through walls", Tab.ESP, "Visuals"),
 		new SearchEntry("Mob fill", Tab.ESP, "Visuals"),
 		new SearchEntry("Held fill", Tab.ESP, "Visuals"),
@@ -2528,6 +2530,7 @@ public class StrayScreen extends Screen {
 			case FILL -> {
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Through walls", config.playerFillThroughWalls, v -> config.playerFillThroughWalls = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Fill ESP mobs", config.playerFillMobs, v -> config.playerFillMobs = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Fill star mobs", config.playerFillStarMobs, v -> config.playerFillStarMobs = v);
 				y = cycle(graphics, font, ix, y, iw, mouseX, mouseY, "Style", config.playerFillStyleLabel(), config::cyclePlayerFillStyle);
 				y = colorRow(graphics, font, ix, y, iw, mouseX, mouseY, "Fill", config.playerFillRgb, PickerTarget.FILL);
 				y = colorRow(graphics, font, ix, y, iw, mouseX, mouseY, "Outline", config.playerFillOutlineRgb, PickerTarget.FILL_OUTLINE);
@@ -3075,7 +3078,7 @@ public class StrayScreen extends Screen {
 		return FabricLoader.getInstance()
 			.getModContainer("stray")
 			.map(container -> container.getMetadata().getVersion().getFriendlyString())
-			.orElse("1.2.160");
+			.orElse("1.2.161");
 	}
 
 	@Override

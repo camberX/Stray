@@ -246,6 +246,20 @@ public final class MobGlowRenderer {
 		return client.player != null && isEspTarget(entity, client.player);
 	}
 
+	/** Catalog / nametag glow targets, not starred dungeon mobs. */
+	public static boolean catalogOrNametag(Entity entity) {
+		if (entity == null || entity.isRemoved()) {
+			return false;
+		}
+		if (isHologram(entity)) {
+			return false;
+		}
+		if (entity instanceof LivingEntity living && !living.isAlive()) {
+			return false;
+		}
+		return listed(entity.getType()) || nametagHit(entity);
+	}
+
 	private static boolean isEspTarget(Entity entity, Entity player) {
 		if (entity == null || entity == player || entity.isRemoved() || hasVanillaGlow(entity)) {
 			return false;

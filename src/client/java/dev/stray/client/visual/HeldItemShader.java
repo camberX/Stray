@@ -24,6 +24,7 @@ import dev.stray.client.mixin.RenderSetupTextureBindingAccessor;
 import dev.stray.client.mixin.RenderTypeAccessor;
 import dev.stray.client.render.MobGlowRenderer;
 import dev.stray.client.render.NametagRenderer;
+import dev.stray.client.render.StarMobEsp;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.model.geom.ModelPart;
 import net.minecraft.client.renderer.MultiBufferSource;
@@ -133,7 +134,11 @@ public final class HeldItemShader {
 		if (entity.getType() == EntityType.PLAYER) {
 			return NametagRenderer.realAccount(entity);
 		}
-		return StrayConfig.get().playerFillMobs && MobGlowRenderer.listed(entity);
+		StrayConfig config = StrayConfig.get();
+		if (config.playerFillStarMobs && StarMobEsp.glowing(entity)) {
+			return true;
+		}
+		return config.playerFillMobs && MobGlowRenderer.catalogOrNametag(entity);
 	}
 
 	public static boolean shouldFillThroughWalls(Entity entity) {
@@ -267,7 +272,7 @@ public final class HeldItemShader {
 	}
 
 	public static RenderType wrapFill(RenderType original, Identifier atlas) {
-		if (original == null || isPipeline(original.pipeline()) || atlas == null) {
+		if (original == null || original.isOutline() || isPipeline(original.pipeline()) || atlas == null) {
 			return original;
 		}
 		return fillType(atlas);
@@ -635,7 +640,7 @@ public final class HeldItemShader {
 				.withTexture("Sampler1", ItemFeatureRenderer.ENCHANTED_GLINT_ITEM)
 				.useLightmap()
 				.affectsCrumbling()
-				.setOutline(RenderSetup.OutlineProperty.NONE)
+				.setOutline(RenderSetup.OutlineProperty.AFFECTS_OUTLINE)
 				.createRenderSetup()
 		);
 	}

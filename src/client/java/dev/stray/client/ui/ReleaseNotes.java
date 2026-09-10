@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.161", new String[]{
+			"Player fill keeps mob/star glow instead of replacing the outline pass. Fill star mobs is a separate toggle from Fill ESP mobs."
+		}),
 		new Entry("1.2.160", new String[]{
 			"Player fill skips Hypixel NPCs (UUID version 2, same as nametags). The silhouette outline only draws when Through walls is on, so it no longer shows through blocks when that toggle is off."
 		}),
