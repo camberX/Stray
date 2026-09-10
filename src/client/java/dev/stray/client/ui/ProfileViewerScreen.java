@@ -9,6 +9,7 @@ import dev.stray.client.StrayClient;
 import dev.stray.client.config.StrayConfig;
 import dev.stray.client.item.ItemIds;
 import dev.stray.client.item.ItemText;
+import dev.stray.client.item.SkyblockItems;
 import dev.stray.client.item.SkyblockLore;
 import dev.stray.client.item.SkyblockPetLore;
 import dev.stray.client.profile.ProfileViewer;
@@ -734,6 +735,9 @@ public class ProfileViewerScreen extends Screen {
 		if (pets.isEmpty()) {
 			GuiDraw.menu(graphics, font, "No pets on this profile.", x + 12, y + 14, Theme.MUTED);
 			return;
+		}
+		for (ProfileViewer.Pet pet : pets) {
+			SkyblockLore.request(petLoreId(pet));
 		}
 		ProfileViewer.Pet shown = shownPetResolved(pets);
 		float previewW = 200;
@@ -1605,11 +1609,44 @@ public class ProfileViewerScreen extends Screen {
 	}
 
 	private static ItemStack petIcon(ProfileViewer.Pet pet) {
+		String type = petType(pet);
+		String loreId = petLoreId(pet);
+		SkyblockLore.request(loreId);
+		if (!loreId.endsWith(";4")) {
+			SkyblockLore.request(type + ";4");
+		}
+		String hash = SkyblockLore.skin(loreId);
+		if (hash.isBlank()) {
+			hash = SkyblockLore.skin(type + ";4");
+		}
+		if (hash.isBlank()) {
+			SkyblockItems.Entry entry = SkyblockItems.get(loreId);
+			if (entry == null) {
+				entry = SkyblockItems.get(type);
+			}
+			if (entry != null && entry.skinHash() != null) {
+				hash = entry.skinHash();
+			}
+		}
+		if (hash.isBlank()) {
+			hash = PET_HEADS.get(type);
+		}
+		if (hash != null && hash.length() >= 32) {
+			return ItemIds.skull(type, hash);
+		}
+		return new ItemStack(Items.PAPER);
+	}
+
+	private static String petLoreId(ProfileViewer.Pet pet) {
+		return petType(pet) + ";" + petTierIndex(pet == null ? "" : pet.tier());
+	}
+
+	private static String petType(ProfileViewer.Pet pet) {
 		String type = pet == null || pet.type() == null ? "" : pet.type().trim().toUpperCase(Locale.ROOT).replace(' ', '_');
 		if (type.isBlank() && pet != null && pet.name() != null) {
 			type = pet.name().trim().toUpperCase(Locale.ROOT).replace(' ', '_');
 		}
-		type = switch (type) {
+		return switch (type) {
 			case "CAT" -> "OCELOT";
 			case "DRAGON" -> "ENDER_DRAGON";
 			case "IRON_GOLEM" -> "GOLEM";
@@ -1621,11 +1658,6 @@ public class ProfileViewerScreen extends Screen {
 			case "DOG" -> "WOLF";
 			default -> type;
 		};
-		String hash = PET_HEADS.get(type);
-		if (hash != null && !hash.isBlank()) {
-			return ItemIds.skull(type, hash);
-		}
-		return sky("PET");
 	}
 
 	private static ItemStack petStack(ProfileViewer.Pet pet) {

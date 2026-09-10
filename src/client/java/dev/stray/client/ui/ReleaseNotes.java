@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.171", new String[]{
+			"Pets tab loads skull textures from the current item repo, so newer pets like Hermit Crab and Rose Dragon show their real heads instead of a blank cube."
+		}),
 		new Entry("1.2.170", new String[]{
 			"Farm now loads Garden harvests, Garden level, and unique visitors from the Garden API, then applies the wiki milestone tables."
 		}),

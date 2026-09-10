@@ -7,6 +7,7 @@ import com.google.gson.JsonParser;
 import com.google.gson.JsonPrimitive;
 import dev.stray.Stray;
 import dev.stray.client.item.SkyblockItems;
+import dev.stray.client.item.SkyblockLore;
 import dev.stray.client.item.SkyblockPetLore;
 import net.minecraft.client.Minecraft;
 import net.minecraft.nbt.CompoundTag;
@@ -1279,6 +1280,15 @@ public final class ProfileViewer {
 			String held = string(pet, "heldItem");
 			int candy = (int) num(pet, "candyUsed");
 			out.add(new Pet(pretty(type), type, tier, level, bool(pet, "active"), held, candy));
+			int rarity = switch (string(pet, "tier").toUpperCase(Locale.ROOT)) {
+				case "UNCOMMON" -> 1;
+				case "RARE" -> 2;
+				case "EPIC" -> 3;
+				case "LEGENDARY" -> 4;
+				case "MYTHIC" -> 5;
+				default -> 0;
+			};
+			SkyblockLore.request(type.toUpperCase(Locale.ROOT).replace(' ', '_') + ";" + rarity);
 		}
 		out.sort(Comparator.comparing((Pet pet) -> !pet.active()).thenComparing(Pet::name));
 		return out;
