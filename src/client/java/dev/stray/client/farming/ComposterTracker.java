@@ -191,36 +191,35 @@ public final class ComposterTracker {
 		boolean upgradesKnown = config.composterUpgradesKnown && matchingProfile;
 		long maxOrganic = config.composterMaxOrganic > 0
 			? config.composterMaxOrganic
-			: upgradesKnown ? 40_000L + config.composterOrganicMatterCap * 30_000L : -1;
+			: 40_000L + config.composterOrganicMatterCap * 30_000L;
 		long maxFuel = config.composterMaxFuel > 0
 			? config.composterMaxFuel
-			: upgradesKnown ? 100_000L + config.composterFuelCap * 30_000L : -1;
-		if (!upgradesKnown) {
-			return new Snapshot(
-				true,
-				active,
-				parsed.time.isEmpty() ? "?" : parsed.time,
-				parsed.organic,
-				maxOrganic,
-				parsed.fuel,
-				maxFuel,
-				parsed.stored,
-				-1,
-				"Open Composter Upgrades",
-				0d,
-				false
-			);
+			: 100_000L + config.composterFuelCap * 30_000L;
+		if (config.composterMaxOrganic <= 0 && !upgradesKnown) {
+			maxOrganic = -1;
 		}
-
-		maxOrganic = maxOrganic > 0 ? maxOrganic : 40_000L + config.composterOrganicMatterCap * 30_000L;
-		maxFuel = maxFuel > 0 ? maxFuel : 100_000L + config.composterFuelCap * 30_000L;
+		if (config.composterMaxFuel <= 0 && !upgradesKnown) {
+			maxFuel = -1;
+		}
 		double speedFactor = 1d + config.composterSpeed * 0.2d;
 		double secondsPer = 600d / speedFactor;
 		double costFactor = 1d - config.composterCostReduction / 100d;
 		double organicPer = 4_000d * costFactor;
 		double fuelPer = 2_000d * costFactor;
-		long cycles = Math.max(0L, (long) Math.floor(Math.min(parsed.organic / organicPer, parsed.fuel / fuelPer)));
-		double perHour = 3_600d / secondsPer * (1d + config.composterMultiDrop * 0.03d);
+		double multi = 1d + config.composterMultiDrop * 0.03d;
+		double fraction = active && nextSeconds >= 0
+			? Math.max(0d, Math.min(1d, nextSeconds / secondsPer))
+			: 0d;
+		long extra = Math.min(
+			cyclesAfterNext(parsed.organic, fraction, organicPer),
+			cyclesAfterNext(parsed.fuel, fraction, fuelPer)
+		);
+		if (!active || nextSeconds < 0) {
+			extra = Math.max(0L, (long) Math.floor(Math.min(parsed.organic / organicPer, parsed.fuel / fuelPer)));
+		}
+		long remainingCycles = extra + (active && nextSeconds >= 0 ? 1 : 0);
+		long predicted = Math.max(0L, Math.round(remainingCycles * multi));
+		double perHour = 3_600d / secondsPer * multi;
 		String empty = !active
 			? "Inactive"
 			: nextSeconds < 0
@@ -235,10 +234,10 @@ public final class ComposterTracker {
 			parsed.fuel,
 			maxFuel,
 			parsed.stored,
-			cycles,
+			predicted,
 			empty,
 			perHour,
-			true
+			upgradesKnown
 		);
 	}
 
@@ -573,7 +572,7 @@ public final class ComposterTracker {
 		long fuel,
 		long maxFuel,
 		long storedCompost,
-		long cyclesLeft,
+		long predictedCompost,
 		String emptyIn,
 		double compostPerHour,
 		boolean upgradesKnown

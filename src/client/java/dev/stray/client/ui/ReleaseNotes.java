@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.175", new String[]{
+			"Composter overlay shows how long it stays busy on the leftover organic matter and fuel, and how much compost that remaining fill will produce."
+		}),
 		new Entry("1.2.174", new String[]{
 			"Composter overlay reads Organic Matter and Fuel caps from the Composter pane lore (67,464/100k). /stray debug composter dumps chest slots 2 and 7 in chat.",
 			"HUD still draws as one layer after the vanilla bars (1.2.155–1.2.159), so overlays are not billed as Fabric chat/hotbar wraps."

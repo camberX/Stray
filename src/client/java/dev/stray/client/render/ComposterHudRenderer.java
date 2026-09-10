@@ -78,12 +78,14 @@ public final class ComposterHudRenderer {
 
 		String stored = "Stored  " + amount(snapshot.storedCompost());
 		GuiDraw.small(graphics, font, stored, PAD + 1, 58, Theme.TEXT);
-		if (snapshot.cyclesLeft() >= 0) {
-			right(graphics, font, amount(snapshot.cyclesLeft()) + " cycles", 58, Theme.MUTED);
+		if (snapshot.predictedCompost() >= 0) {
+			right(graphics, font, amount(snapshot.predictedCompost()) + " compost", 58, Theme.ACCENT);
 		}
 
-		String empty = snapshot.upgradesKnown() ? "Empty in  " + snapshot.emptyIn() : snapshot.emptyIn();
-		GuiDraw.small(graphics, font, GuiDraw.ellipsize(font, empty, 103, true), PAD + 1, 70, Theme.MUTED);
+		String busy = snapshot.active()
+			? "Busy  " + snapshot.emptyIn()
+			: snapshot.emptyIn();
+		GuiDraw.small(graphics, font, GuiDraw.ellipsize(font, busy, 103, true), PAD + 1, 70, Theme.MUTED);
 		if (snapshot.compostPerHour() > 0d) {
 			right(graphics, font, String.format(Locale.ROOT, "%.1f/h", snapshot.compostPerHour()), 70, Theme.ACCENT);
 		}
