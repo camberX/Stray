@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.187", new String[]{
+			"Farming Auto DNA solves Greenhouse DNA analyzer boards the same way SkyHanni does, highlights the next swap, and clicks it. Off by default."
+		}),
 		new Entry("1.2.186", new String[]{
 			"Portal and Galaxy take the Fill color picker as a tint, not only the opacity slider."
 		}),

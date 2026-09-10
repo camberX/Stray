@@ -1,6 +1,7 @@
 package dev.stray.client.mixin;
 
 import dev.stray.client.combat.AutoExperiments;
+import dev.stray.client.farming.AutoDna;
 import dev.stray.client.combat.Triggerbot;
 import dev.stray.client.render.MobGlowRenderer;
 import dev.stray.client.ui.LoadoutsScreen;
@@ -30,6 +31,7 @@ public class MinecraftMixin {
 	@Inject(method = "setScreen", at = @At("HEAD"))
 	private void stray$autoExperimentsOpen(Screen screen, CallbackInfo ci) {
 		AutoExperiments.onOpen(screen);
+		AutoDna.onOpen(screen);
 	}
 
 	/**

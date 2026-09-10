@@ -12,6 +12,7 @@ import dev.stray.client.combat.Hitsound;
 import dev.stray.client.combat.OdinClicks;
 import dev.stray.client.combat.Triggerbot;
 import dev.stray.client.debug.StrayDebug;
+import dev.stray.client.farming.AutoDna;
 import dev.stray.client.farming.FarmKeys;
 import dev.stray.client.fairy.FairySoulCommands;
 import dev.stray.client.fairy.FairySoulRenderer;
@@ -160,6 +161,7 @@ public final class StrayClient implements ClientModInitializer {
 		VanillaHud.init();
 		MediaSession.init();
 		AutoExperiments.init();
+		AutoDna.init();
 
 		ClientCommandRegistrationCallback.EVENT.register((dispatcher, registryAccess) -> {
 			var root = ClientCommands.literal("stray").executes(context -> openScreen());
@@ -222,6 +224,7 @@ public final class StrayClient implements ClientModInitializer {
 			ChestAimer.tick(client);
 			AutoClicker.tick(client);
 			AutoExperiments.tick(client);
+			AutoDna.tick(client);
 			if (itemAppearancesLoaded) {
 				return;
 			}
@@ -274,6 +277,7 @@ public final class StrayClient implements ClientModInitializer {
 			Triggerbot.reset();
 			AutoClicker.reset();
 			AutoExperiments.reset();
+			AutoDna.reset();
 			PickupLogRenderer.clear();
 			JacobContestTracker.reset();
 			ComposterTracker.reset();
@@ -288,6 +292,7 @@ public final class StrayClient implements ClientModInitializer {
 			Triggerbot.reset();
 			AutoClicker.reset();
 			AutoExperiments.reset();
+			AutoDna.reset();
 			PickupLogRenderer.clear();
 			JacobContestTracker.reset();
 			ComposterTracker.reset();

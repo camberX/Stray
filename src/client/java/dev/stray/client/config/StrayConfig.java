@@ -78,6 +78,12 @@ public final class StrayConfig {
 	public boolean miningAbilityAlert = false;
 	public boolean farmingYawPitch = false;
 	public float farmingYawPitchScale = 1.00f;
+	public boolean autoDnaEnabled = false;
+	public int autoDnaClickDelay = 200;
+	public int autoDnaDelayVariety = 50;
+	public boolean autoDnaAllowEnds = true;
+	public boolean autoDnaBlockClose = true;
+	public boolean autoDnaMiddleClick = false;
 	public boolean jacobContestHudEnabled = false;
 	public boolean composterHudEnabled = false;
 	public boolean composterUpgradesKnown = false;
@@ -785,6 +791,21 @@ public final class StrayConfig {
 				loaded.farmingYawPitchScale = json.has("farmingYawPitchScale")
 					? clampHudScale(loaded.farmingYawPitchScale)
 					: 1.00f;
+				if (!json.has("autoDnaEnabled")) {
+					loaded.autoDnaEnabled = false;
+				}
+				loaded.autoDnaClickDelay = json.has("autoDnaClickDelay")
+					? Math.round(clamp(loaded.autoDnaClickDelay, 100, 1000))
+					: 200;
+				loaded.autoDnaDelayVariety = json.has("autoDnaDelayVariety")
+					? Math.round(clamp(loaded.autoDnaDelayVariety, 0, 1000))
+					: 50;
+				if (!json.has("autoDnaAllowEnds")) {
+					loaded.autoDnaAllowEnds = true;
+				}
+				if (!json.has("autoDnaBlockClose")) {
+					loaded.autoDnaBlockClose = true;
+				}
 				loaded.slotHotbar = hudSlot(loaded.slotHotbar);
 				loaded.slotHealth = hudSlot(loaded.slotHealth);
 				loaded.slotHunger = hudSlot(loaded.slotHunger);
