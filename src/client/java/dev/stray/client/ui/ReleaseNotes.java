@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.172", new String[]{
+			"Theme has an Update notify toggle (on by default). When a newer jar is on stray.gay, chat shows a clickable line once per session."
+		}),
 		new Entry("1.2.171", new String[]{
 			"Pets tab loads skull textures from the current item repo, so newer pets like Hermit Crab and Rose Dragon show their real heads instead of a blank cube."
 		}),

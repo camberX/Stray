@@ -55,6 +55,7 @@ public final class StrayConfig {
 	public String themePreset = "cyan";
 	public boolean uiAnimations = false;
 	public boolean autoUpdate = false;
+	public boolean updateNotify = true;
 	public boolean watermarkEnabled = false;
 	public boolean watermarkFps = false;
 	public boolean watermarkPing = false;
@@ -515,6 +516,9 @@ public final class StrayConfig {
 					loaded.starMobThroughWalls = false;
 					loaded.mobGlowThroughWalls = false;
 					loaded.featureTogglesOffV1 = true;
+				}
+				if (!json.has("updateNotify")) {
+					loaded.updateNotify = true;
 				}
 				if (loaded.mobGlowName == null) {
 					loaded.mobGlowName = "";

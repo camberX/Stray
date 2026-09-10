@@ -63,7 +63,7 @@ public class StrayScreen extends Screen {
 	private static final float PICKER_H = 140;
 	private static final float PANEL_W = 168;
 	private static final float FEATURE_W = 176;
-	private static final float SETTINGS_H = 426;
+	private static final float SETTINGS_H = 444;
 	private static final float FONT_SEARCH_H = 14;
 	private static final float FONT_ROW = 16;
 	private static final int FONT_VISIBLE = 6;
@@ -229,6 +229,9 @@ public class StrayScreen extends Screen {
 		new SearchEntry("Auto update", Tab.SETTINGS, "Theme"),
 		new SearchEntry("Auto-update", Tab.SETTINGS, "Theme"),
 		new SearchEntry("Updater", Tab.SETTINGS, "Theme"),
+		new SearchEntry("Update notify", Tab.SETTINGS, "Theme"),
+		new SearchEntry("Update notification", Tab.SETTINGS, "Theme"),
+		new SearchEntry("New version", Tab.SETTINGS, "Theme"),
 		new SearchEntry("Markers", Tab.NODES, "Nodes"),
 		new SearchEntry("Menus", Tab.MENUS, "Menus"),
 		new SearchEntry("Loadouts", Tab.MENUS, "Menus"),
@@ -1576,7 +1579,8 @@ public class StrayScreen extends Screen {
 		y = toggle(graphics, font, settingsX + 8, y, PANEL_W - 16, mouseX, mouseY, "Menu stars", StrayConfig.get().menuStarfield, v -> StrayConfig.get().menuStarfield = v);
 		y = toggle(graphics, font, settingsX + 8, y, PANEL_W - 16, mouseX, mouseY, "HUD stars", StrayConfig.get().hudStarfield, v -> StrayConfig.get().hudStarfield = v);
 		y = toggle(graphics, font, settingsX + 8, y, PANEL_W - 16, mouseX, mouseY, "Animations", StrayConfig.get().uiAnimations, v -> StrayConfig.get().uiAnimations = v);
-		toggle(graphics, font, settingsX + 8, y, PANEL_W - 16, mouseX, mouseY, "Auto update", StrayConfig.get().autoUpdate, v -> StrayConfig.get().autoUpdate = v);
+		y = toggle(graphics, font, settingsX + 8, y, PANEL_W - 16, mouseX, mouseY, "Auto update", StrayConfig.get().autoUpdate, v -> StrayConfig.get().autoUpdate = v);
+		toggle(graphics, font, settingsX + 8, y, PANEL_W - 16, mouseX, mouseY, "Update notify", StrayConfig.get().updateNotify, v -> StrayConfig.get().updateNotify = v);
 	}
 
 	private float settingsHeight() {
@@ -2181,13 +2185,14 @@ public class StrayScreen extends Screen {
 	) {
 		StrayConfig config = StrayConfig.get();
 		float y = sectionLabel(graphics, font, left, top, "Window");
-		y = featureCard(graphics, font, left, y, col, cardHeight(6), "Control");
+		y = featureCard(graphics, font, left, y, col, cardHeight(7), "Control");
 		y = colorRow(graphics, font, ix, y, iw, mouseX, mouseY, "Glass", config.controlPaneRgb, PickerTarget.CONTROL);
 		y = colorRow(graphics, font, ix, y, iw, mouseX, mouseY, "Pills", config.controlPillRgb, PickerTarget.PILL);
 		y = slider(graphics, font, ix, y, iw, "Frost", Math.round(config.controlFrost * 100) + "%", config.controlFrost, v -> config.controlFrost = StrayConfig.clamp(v, 0f, 1f));
 		y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Menu stars", config.menuStarfield, v -> config.menuStarfield = v);
 		y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Animations", config.uiAnimations, v -> config.uiAnimations = v);
-		toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Auto update", config.autoUpdate, v -> config.autoUpdate = v);
+		y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Auto update", config.autoUpdate, v -> config.autoUpdate = v);
+		toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Update notify", config.updateNotify, v -> config.updateNotify = v);
 
 		float accentH = cardTop() + cardHead() + 14 + swatchBlockH(Theme.PRESETS.length, iw) + rowH() * 3 + cardPad();
 		float lookY = sectionLabel(graphics, font, right, top, "Look");
@@ -3117,7 +3122,7 @@ public class StrayScreen extends Screen {
 		return FabricLoader.getInstance()
 			.getModContainer("stray")
 			.map(container -> container.getMetadata().getVersion().getFriendlyString())
-			.orElse("1.2.171");
+			.orElse("1.2.172");
 	}
 
 	@Override
