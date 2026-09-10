@@ -1,6 +1,8 @@
 package dev.stray.client.mixin;
 
 import dev.stray.client.farming.AutoDna;
+import dev.stray.client.farming.GardenPlots;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.world.inventory.ContainerInput;
 import net.minecraft.world.inventory.Slot;
@@ -16,5 +18,10 @@ public class AbstractContainerScreenMixin {
 		if (AutoDna.shouldBlock(slotId)) {
 			ci.cancel();
 		}
+	}
+
+	@Inject(method = "extractTooltip", at = @At("HEAD"))
+	private void stray$gardenPlots(GuiGraphicsExtractor graphics, int mouseX, int mouseY, CallbackInfo ci) {
+		GardenPlots.extract((AbstractContainerScreen<?>) (Object) this, graphics, mouseX, mouseY);
 	}
 }

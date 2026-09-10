@@ -13,13 +13,14 @@ import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.network.chat.Component;
-import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Optional;
 
 final class GardenPlotsWidget {
 	static final int[] PLOT_TO_SLOT = {
@@ -60,7 +61,8 @@ final class GardenPlotsWidget {
 	private int dragOffY;
 	private boolean dragging;
 	private long lastPestRead;
-	private final boolean[] pests = new boolean[25];
+	private final int[] pestPlot = new int[25];
+	private final int[] pestCount = new int[25];
 
 	GardenPlotsWidget(Bounds inventory) {
 		this.inventory = inventory;
@@ -98,8 +100,13 @@ final class GardenPlotsWidget {
 			if (stack != null && !stack.isEmpty()) {
 				paintItem(graphics, client.player, stack, slotX + 1, slotY + 1, over && !isGlass(stack) ? 18 : 16);
 			}
-			if (editing < 0 && pests[i] && (now & 512) != 0) {
-				GuiDraw.border(graphics, slotX + 1, slotY + 1, 16, 16, 0xFFFF5555, 1.2f);
+			if (editing < 0 && pestPlot[i] > 0) {
+				if ((now & 512) != 0) {
+					GuiDraw.border(graphics, slotX + 1, slotY + 1, 16, 16, 0xFFFF5555, 1.2f);
+				}
+				String number = Integer.toString(pestPlot[i]);
+				int nw = font.width(number);
+				graphics.text(font, number, slotX + 18 - nw, slotY + 10, 0xFFFF5555, true);
 			}
 			if (over) {
 				tip(graphics, font, tooltip(stack, i), mouseX, mouseY);
@@ -258,10 +265,15 @@ final class GardenPlotsWidget {
 		if (slot == BARN) {
 			lines.add(name);
 		} else {
-			lines.add(Component.literal("Plot ").append(name));
+			int plot = plotNumber(slot);
+			Component title = Component.literal(plot > 0 ? "Plot " + plot + " " : "Plot ").append(name);
+			lines.add(title);
 		}
-		if (pests[slot]) {
-			lines.add(Component.literal("Pests").withStyle(ChatFormatting.RED, ChatFormatting.BOLD));
+		if (pestPlot[slot] > 0) {
+			String pests = pestCount[slot] > 0
+				? pestCount[slot] + (pestCount[slot] == 1 ? " pest" : " pests")
+				: "Pests";
+			lines.add(Component.literal(pests).withStyle(ChatFormatting.RED, ChatFormatting.BOLD));
 		}
 		lines.add(Component.empty());
 		lines.add(Component.literal("Click to warp").withStyle(ChatFormatting.YELLOW, ChatFormatting.BOLD));
@@ -271,13 +283,23 @@ final class GardenPlotsWidget {
 		return lines;
 	}
 
+	private static int plotNumber(int slot) {
+		for (int plot = 0; plot < PLOT_TO_SLOT.length; plot++) {
+			if (PLOT_TO_SLOT[plot] == slot) {
+				return plot;
+			}
+		}
+		return -1;
+	}
+
 	private void refreshPests(Minecraft client) {
 		long now = System.currentTimeMillis();
 		if (now - lastPestRead < 3000) {
 			return;
 		}
 		lastPestRead = now;
-		java.util.Arrays.fill(pests, false);
+		Arrays.fill(pestPlot, 0);
+		Arrays.fill(pestCount, 0);
 		if (client.player == null || client.player.connection == null) {
 			return;
 		}
@@ -289,26 +311,52 @@ final class GardenPlotsWidget {
 				continue;
 			}
 			String line = ChatFormatting.stripFormatting(display.getString());
-			if (line == null || !line.startsWith("Plots:")) {
+			if (line == null) {
 				continue;
 			}
-			String[] parts = line.split(":", 2);
-			if (parts.length < 2) {
-				break;
-			}
-			for (String part : parts[1].split(",")) {
-				try {
-					int plot = Integer.parseInt(part.strip());
-					if (plot >= 0 && plot < PLOT_TO_SLOT.length) {
-						int slot = PLOT_TO_SLOT[plot];
-						if (slot >= 0 && slot < pests.length) {
-							pests[slot] = true;
-						}
-					}
-				} catch (NumberFormatException ignored) {
+			line = line.trim();
+			if (line.startsWith("Plots:")) {
+				String[] parts = line.split(":", 2);
+				if (parts.length < 2) {
+					continue;
 				}
+				for (String part : parts[1].split(",")) {
+					markPest(part.strip());
+				}
+			} else if (line.regionMatches(true, 0, "Plot ", 0, 5)) {
+				markPest(line.substring(5).strip());
 			}
-			break;
+		}
+	}
+
+	private void markPest(String raw) {
+		if (raw.isEmpty()) {
+			return;
+		}
+		java.util.regex.Matcher match = java.util.regex.Pattern.compile("(\\d+)\\s*(?:x|:)?\\s*(\\d+)?").matcher(raw);
+		if (!match.find()) {
+			return;
+		}
+		int plot;
+		int count = 0;
+		try {
+			plot = Integer.parseInt(match.group(1));
+			if (match.group(2) != null && !match.group(2).isEmpty()) {
+				count = Integer.parseInt(match.group(2));
+			}
+		} catch (NumberFormatException ignored) {
+			return;
+		}
+		if (plot <= 0 || plot >= PLOT_TO_SLOT.length) {
+			return;
+		}
+		int slot = PLOT_TO_SLOT[plot];
+		if (slot < 0 || slot >= pestPlot.length) {
+			return;
+		}
+		pestPlot[slot] = plot;
+		if (count > 0) {
+			pestCount[slot] = count;
 		}
 	}
 
@@ -393,11 +441,7 @@ final class GardenPlotsWidget {
 	}
 
 	private static void tip(GuiGraphicsExtractor graphics, Font font, List<Component> lines, int mouseX, int mouseY) {
-		List<FormattedCharSequence> ordered = new ArrayList<>(lines.size());
-		for (Component line : lines) {
-			ordered.add(line.getVisualOrderText());
-		}
-		graphics.setTooltipForNextFrame(font, ordered, mouseX, mouseY);
+		graphics.setTooltipForNextFrame(font, lines, Optional.empty(), mouseX, mouseY);
 	}
 
 	private static void command(String command) {

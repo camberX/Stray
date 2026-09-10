@@ -58,13 +58,6 @@ public final class GardenPlots {
 			}
 			widget = new GardenPlotsWidget(bounds(inventory));
 			ScreenEvents.remove(screen).register(closed -> widget = null);
-			ScreenEvents.afterExtract(screen).register((opened, graphics, mouseX, mouseY, tickDelta) -> {
-				if (widget == null || !visible() || !(opened instanceof InventoryScreen open)) {
-					return;
-				}
-				widget.setInventory(bounds(open));
-				widget.extract(graphics, mouseX, mouseY);
-			});
 			ScreenMouseEvents.allowMouseClick(screen).register((opened, event) -> {
 				if (widget == null || !visible()) {
 					return true;
@@ -85,6 +78,14 @@ public final class GardenPlots {
 			});
 		});
 		ClientLifecycleEvents.CLIENT_STOPPING.register(client -> save());
+	}
+
+	public static void extract(AbstractContainerScreen<?> screen, net.minecraft.client.gui.GuiGraphicsExtractor graphics, int mouseX, int mouseY) {
+		if (widget == null || !visible() || !(screen instanceof InventoryScreen inventory)) {
+			return;
+		}
+		widget.setInventory(bounds(inventory));
+		widget.extract(graphics, mouseX, mouseY);
 	}
 
 	static boolean visible() {

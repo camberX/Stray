@@ -136,7 +136,7 @@ public class StrayScreen extends Screen {
 		RAWMATS("Raw mats", 1),
 		MINING("Mining HUD", 1),
 		TITANIUM("Titanium ESP", 3),
-		CRYSTAL("CH waypoints", 2),
+		CRYSTAL("CH waypoints", 3),
 		FARMING("Yaw / Pitch", 1),
 		INVENTORY("Inventory", 3),
 		PLOTS("Garden plots", 1),
@@ -303,6 +303,9 @@ public class StrayScreen extends Screen {
 		new SearchEntry("Held item", Tab.BARS, "Bars"),
 		new SearchEntry("Crystal Hollows waypoints", Tab.MINING, "Mining"),
 		new SearchEntry("CH waypoints", Tab.MINING, "Mining"),
+		new SearchEntry("Entrance zones", Tab.MINING, "Mining"),
+		new SearchEntry("Nucleus waypoints", Tab.MINING, "Mining"),
+		new SearchEntry("Zone doors", Tab.MINING, "Mining"),
 		new SearchEntry("Jungle Temple", Tab.MINING, "Mining"),
 		new SearchEntry("Mines of Divan", Tab.MINING, "Mining"),
 		new SearchEntry("Goblin Queen", Tab.MINING, "Mining"),
@@ -2704,6 +2707,7 @@ public class StrayScreen extends Screen {
 			}
 			case CRYSTAL -> {
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Find in chat", config.crystalHollowsFindChat, v -> config.crystalHollowsFindChat = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Entrance zones", config.crystalHollowsEntrances, v -> config.crystalHollowsEntrances = v);
 				toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Through walls", config.crystalHollowsThroughWalls, v -> config.crystalHollowsThroughWalls = v);
 			}
 			case INVENTORY -> {
@@ -3180,7 +3184,7 @@ public class StrayScreen extends Screen {
 		return FabricLoader.getInstance()
 			.getModContainer("stray")
 			.map(container -> container.getMetadata().getVersion().getFriendlyString())
-			.orElse("1.2.191");
+			.orElse("1.2.192");
 	}
 
 	@Override

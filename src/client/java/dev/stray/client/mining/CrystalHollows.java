@@ -107,8 +107,10 @@ public final class CrystalHollows {
 		if (!active()) {
 			return out;
 		}
-		for (StaticMark nucleus : NUCLEUS) {
-			out.add(new Mark(nucleus.label, nucleus.pos, nucleus.rgb, true));
+		if (StrayConfig.get().crystalHollowsEntrances) {
+			for (StaticMark nucleus : NUCLEUS) {
+				out.add(new Mark(nucleus.label, nucleus.pos, nucleus.rgb, true));
+			}
 		}
 		for (var entry : WAYPOINTS.entrySet()) {
 			out.add(new Mark(entry.getKey().label, entry.getValue(), entry.getKey().rgb, false));
