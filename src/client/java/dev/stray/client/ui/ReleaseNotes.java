@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.178", new String[]{
+			"Chat SOUL! You found a Fairy Soul! marks the nearest unfound soul as done and hides its ESP."
+		}),
 		new Entry("1.2.177", new String[]{
 			"Visuals has Fairy souls ESP for the island you are on (wiki coords). Clicking one saves it to stray-fairy-souls.json and hides it. /stray fairysouls reset shows them all again. Within 5 blocks a path line walks the short route to that soul."
 		}),

@@ -112,27 +112,42 @@ public final class FairySoulTracker {
 	}
 
 	public static void onChat(Component message) {
-		if (!active() || message == null) {
+		if (message == null) {
 			return;
 		}
 		String text = message.getString().replaceAll("§.", "").toLowerCase(Locale.ROOT);
-		if (!text.contains("fairy soul")) {
-			return;
-		}
-		if (!text.contains("you found") && !text.contains("already found")) {
+		if (!text.contains("you found a fairy soul")) {
 			return;
 		}
 		Minecraft client = Minecraft.getInstance();
-		FairySouls.Soul soul = lastClicked;
-		if (soul == null && client.player != null) {
-			Vec3 at = client.player.position();
-			soul = nearest(at.x, at.y, at.z, 8.0);
+		if (client.player == null) {
+			return;
 		}
-		if (soul != null) {
-			FairySoulProgress.mark(soul);
-			path = List.of();
-			pathSoul = null;
+		FairySouls.Soul soul = nearestUnfound(client.player.getX(), client.player.getZ());
+		if (soul == null) {
+			return;
 		}
+		FairySoulProgress.mark(soul);
+		path = List.of();
+		pathSoul = null;
+	}
+
+	private static FairySouls.Soul nearestUnfound(double x, double z) {
+		FairySouls.Soul best = null;
+		double bestD = 16.0;
+		for (FairySouls.Soul soul : FairySouls.forArea(SkyblockLocation.area)) {
+			if (FairySoulProgress.found(soul)) {
+				continue;
+			}
+			double dx = soul.x() + 0.5 - x;
+			double dz = soul.z() + 0.5 - z;
+			double d = Math.sqrt(dx * dx + dz * dz);
+			if (d <= bestD) {
+				bestD = d;
+				best = soul;
+			}
+		}
+		return best;
 	}
 
 	public static boolean looksLikeSoul(ClientLevel level, BlockPos pos) {
