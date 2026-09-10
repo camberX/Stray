@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.176", new String[]{
+			"Farming HUD pills (Jacob contest HUD and Composter overlay) no longer overlap."
+		}),
 		new Entry("1.2.175", new String[]{
 			"Composter overlay shows how long it stays busy on the leftover organic matter and fuel, and how much compost that remaining fill will produce."
 		}),

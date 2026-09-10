@@ -2118,8 +2118,8 @@ public class StrayScreen extends Screen {
 			case FARMING -> {
 				float y = sectionLabel(graphics, font, left, top, "HUD");
 				y = controlCard(graphics, font, left, y, col, mouseX, mouseY, "Yaw / Pitch", config.farmingYawPitch, v -> config.farmingYawPitch = v, Feature.FARMING);
-				y = featureCard(graphics, font, left, y, col, cardHeight(1), "Jacob contest HUD", config.jacobContestHudEnabled, v -> config.jacobContestHudEnabled = v, mouseX, mouseY);
-				featureCard(graphics, font, left, y, col, cardHeight(1), "Composter overlay", config.composterHudEnabled, v -> config.composterHudEnabled = v, mouseX, mouseY);
+				y = toggleCard(graphics, font, left, y, col, mouseX, mouseY, "Jacob contest HUD", config.jacobContestHudEnabled, v -> config.jacobContestHudEnabled = v);
+				toggleCard(graphics, font, left, y, col, mouseX, mouseY, "Composter overlay", config.composterHudEnabled, v -> config.composterHudEnabled = v);
 
 				y = sectionLabel(graphics, font, right, top, "Contest");
 				y = featureCard(graphics, font, right, y, col, cardHeight(4), "Contest");
@@ -2161,6 +2161,23 @@ public class StrayScreen extends Screen {
 		float h = cardHeight(feature.rows);
 		float iy = featureCard(graphics, font, x, y, w, h, title, enabled, setter, mouseX, mouseY);
 		drawFeatureFields(graphics, font, mouseX, mouseY, innerX(x), iy, innerW(w), feature);
+		return y + h + 8;
+	}
+
+	private float toggleCard(
+		GuiGraphicsExtractor graphics,
+		Font font,
+		float x,
+		float y,
+		float w,
+		int mouseX,
+		int mouseY,
+		String title,
+		boolean enabled,
+		Consumer<Boolean> setter
+	) {
+		float h = cardHeight(0);
+		featureCard(graphics, font, x, y, w, h, title, enabled, setter, mouseX, mouseY);
 		return y + h + 8;
 	}
 
@@ -3122,7 +3139,7 @@ public class StrayScreen extends Screen {
 		return FabricLoader.getInstance()
 			.getModContainer("stray")
 			.map(container -> container.getMetadata().getVersion().getFriendlyString())
-			.orElse("1.2.175");
+			.orElse("1.2.176");
 	}
 
 	@Override
