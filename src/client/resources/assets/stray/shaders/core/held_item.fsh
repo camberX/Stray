@@ -90,17 +90,20 @@ void main() {
     float amount = clamp(ModelOffset.y, 0.10, 1.50);
     float style = ModelOffset.z;
     vec3 light = max(vertexColor.rgb, vec3(0.02));
+    vec3 albedo = tex.rgb * light;
 #ifdef ESP_FILL
-    // Skin / armor UVs are not uniform in world space, so using albedo or
-    // texCoord0 for the pattern stretches stars along the body. Paint the
-    // fill color and keep the pattern in screen pixels.
-    vec3 tinted = fill * light;
-    float distScale = animationScale();
-    vec2 screen = gl_FragCoord.xy * distScale;
+    // Unused overlay/armor texels are often RGB 0 with high alpha. Keep the
+    // fill color there instead of multiplying into a black shell.
+    float albedoPeak = max(tex.r, max(tex.g, tex.b));
+    albedo = mix(fill * light, albedo, step(0.04, albedoPeak));
+#endif
+    vec3 tinted = mix(albedo, albedo * fill, tintAmount);
+#ifdef ESP_FILL
+    // Constant pixel frequency. Scaling by interpolated camera distance
+    // stretched the field from head to toe.
+    vec2 screen = gl_FragCoord.xy;
     float glint = 0.0;
 #else
-    vec3 albedo = tex.rgb * light;
-    vec3 tinted = mix(albedo, albedo * fill, tintAmount);
     float distScale = animationScale();
     vec2 screen = gl_FragCoord.xy * distScale;
     float glint = pow(clamp(texture(Sampler1, screen * 0.010).r, 0.0, 1.0), 2.4);
@@ -109,7 +112,7 @@ void main() {
     if (style > 0.5) {
         float t = GameTime * 90.0;
 #ifdef ESP_FILL
-        vec3 night = fill * light * 0.18;
+        vec3 night = tinted;
         float far = starLayer(screen * 0.030 + vec2(t * 0.55, -t * 0.22), t, 0.50);
         float mid = starLayer(screen * 0.050 + vec2(-t * 0.90, t * 0.40), t * 1.25, 0.44);
         float near = starLayer(screen * 0.078 + vec2(t * 1.10, t * 0.16), t * 1.65, 0.54);
