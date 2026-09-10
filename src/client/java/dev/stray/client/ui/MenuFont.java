@@ -1,7 +1,6 @@
 package dev.stray.client.ui;
 
 import dev.stray.Stray;
-import dev.stray.client.config.StrayConfig;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.FontDescription;
@@ -75,12 +74,11 @@ public final class MenuFont {
 	}
 
 	public static boolean minecraft() {
-		return minecraftFamily(StrayConfig.get().uiFont);
+		return true;
 	}
 
 	public static boolean custom() {
-		String family = StrayConfig.get().uiFont;
-		return family != null && !family.isBlank() && !minecraftFamily(family) && UiFontPack.loaded();
+		return false;
 	}
 
 	public static Style bodyStyle() {

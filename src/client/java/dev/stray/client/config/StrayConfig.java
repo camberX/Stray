@@ -233,13 +233,14 @@ public final class StrayConfig {
 	public boolean menuScaleV2;
 	public boolean menuStarfield = false;
 	public boolean hudStarfield = false;
-	public String guiDesign = "stray";
-	public int controlPaneRgb = 0xFFFFFF;
-	public int controlPillRgb = 0xFFFFFF;
-	public float controlPaneOpacity = 0.30f;
-	public float controlPillOpacity = 0.40f;
+	public String guiDesign = "control";
+	public int controlPaneRgb = 0x181818;
+	public int controlPillRgb = 0x808080;
+	public float controlPaneOpacity = 0.64f;
+	public float controlPillOpacity = 0.17f;
 	public float controlFrost = 0.62f;
-	public String uiFont = "";
+	public boolean controlPaletteV2;
+	public String uiFont = "Minecraft";
 	public boolean mobGlowEnabled = false;
 	public boolean starMobEsp = false;
 	public boolean starMobBats = true;
@@ -454,22 +455,27 @@ public final class StrayConfig {
 					}
 					loaded.menuScaleV2 = true;
 				}
-				loaded.guiDesign = normalizeGuiDesign(loaded.guiDesign);
-				if (loaded.controlPaneRgb == 0) {
-					loaded.controlPaneRgb = 0xFFFFFF;
+				loaded.guiDesign = "control";
+				if (!json.has("controlPaletteV2")) {
+					loaded.controlPaneRgb = 0x181818;
+					loaded.controlPillRgb = 0x808080;
+					loaded.controlPaneOpacity = 0.64f;
+					loaded.controlPillOpacity = 0.17f;
+					loaded.controlPaletteV2 = true;
+				} else {
+					if (loaded.controlPaneRgb == 0) {
+						loaded.controlPaneRgb = 0x181818;
+					}
+					if (loaded.controlPillRgb == 0) {
+						loaded.controlPillRgb = 0x808080;
+					}
+					loaded.controlPaneOpacity = clamp(loaded.controlPaneOpacity, 0.12f, 0.78f);
+					loaded.controlPillOpacity = clamp(loaded.controlPillOpacity, 0.12f, 0.78f);
 				}
-				if (!json.has("controlPillRgb") || loaded.controlPillRgb == 0) {
-					loaded.controlPillRgb = 0xFFFFFF;
-				}
-				loaded.controlPaneOpacity = json.has("controlPaneOpacity")
-					? clamp(loaded.controlPaneOpacity, 0.12f, 0.78f)
-					: 0.30f;
-				loaded.controlPillOpacity = json.has("controlPillOpacity")
-					? clamp(loaded.controlPillOpacity, 0.12f, 0.78f)
-					: 0.40f;
 				loaded.controlFrost = json.has("controlFrost")
 					? clamp(loaded.controlFrost, 0f, 1f)
 					: 0.62f;
+				loaded.uiFont = "Minecraft";
 				if (loaded.mobGlowName == null) {
 					loaded.mobGlowName = "";
 				}
@@ -561,11 +567,7 @@ public final class StrayConfig {
 				if (loaded.spotifyAccessToken == null) {
 					loaded.spotifyAccessToken = "";
 				}
-				if (loaded.uiFont == null) {
-					loaded.uiFont = "";
-				} else if (loaded.uiFont.equalsIgnoreCase("minecraft")) {
-					loaded.uiFont = "Minecraft";
-				}
+				loaded.uiFont = "Minecraft";
 				if (!json.has("hitsoundEnabled")) {
 					loaded.hitsoundEnabled = false;
 				}
@@ -799,26 +801,20 @@ public final class StrayConfig {
 	}
 
 	public void cycleGuiDesign() {
-		guiDesign = guiDesignControl() ? "stray" : "control";
+		guiDesign = "control";
 		Theme.refresh();
 	}
 
 	public String guiDesignLabel() {
-		return guiDesignControl() ? "Control" : "Classic";
+		return "Control";
 	}
 
 	public boolean guiDesignControl() {
-		return "control".equals(guiDesign);
+		return true;
 	}
 
 	public static String normalizeGuiDesign(String style) {
-		if (style == null) {
-			return "stray";
-		}
-		return switch (style.toLowerCase(java.util.Locale.ROOT)) {
-			case "control", "control_center", "glass", "apple" -> "control";
-			default -> "stray";
-		};
+		return "control";
 	}
 
 	public void cycleNametagStyle() {

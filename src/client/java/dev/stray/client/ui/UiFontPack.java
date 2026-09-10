@@ -39,13 +39,7 @@ public final class UiFontPack {
 		if (client == null || busy || reloading) {
 			return;
 		}
-		String family = StrayConfig.get().uiFont;
-		boolean want = systemFont(family);
-		if (want && !loaded() && !family.equals(skipped)) {
-			apply(family);
-			return;
-		}
-		if (!want && !bootstrapped) {
+		if (!bootstrapped) {
 			bootstrapped = true;
 			disable(client);
 		}
@@ -56,33 +50,8 @@ public final class UiFontPack {
 		if (client == null || busy || reloading) {
 			return;
 		}
-		busy = true;
-		try {
-			if (!systemFont(family)) {
-				StrayConfig.get().uiFont = MenuFont.minecraftFamily(family) ? MenuFont.MINECRAFT_FAMILY : "";
-				StrayConfig.get().save();
-				skipped = null;
-				disable(client);
-				return;
-			}
-			Path file = SystemFonts.file(family);
-			if (file == null || !Files.isRegularFile(file)) {
-				Stray.LOGGER.warn("No installed font file for {}", family);
-				skipped = family;
-				return;
-			}
-			write(client, file);
-			StrayConfig.get().uiFont = family;
-			StrayConfig.get().save();
-			skipped = null;
-			enable(client);
-		} catch (Exception exception) {
-			Stray.LOGGER.warn("Could not apply UI font {}", family, exception);
-			skipped = family;
-		} finally {
-			busy = false;
-			bootstrapped = true;
-		}
+		StrayConfig.get().uiFont = MenuFont.MINECRAFT_FAMILY;
+		disable(client);
 	}
 
 	private static boolean systemFont(String family) {

@@ -291,9 +291,6 @@ public class StrayScreen extends Screen {
 		new SearchEntry("Feature pills", Tab.SETTINGS, "Theme"),
 		new SearchEntry("Menu glass", Tab.SETTINGS, "Theme"),
 		new SearchEntry("Frost", Tab.SETTINGS, "Theme"),
-		new SearchEntry("Font", Tab.SETTINGS, "Theme"),
-		new SearchEntry("UI font", Tab.SETTINGS, "Theme"),
-		new SearchEntry("Minecraft font", Tab.SETTINGS, "Theme"),
 		new SearchEntry("Status", Tab.STATUS, "Status"),
 		new SearchEntry("FPS", Tab.STATUS, "Status"),
 		new SearchEntry("Ping", Tab.STATUS, "Status"),
@@ -1557,8 +1554,7 @@ public class StrayScreen extends Screen {
 			return;
 		}
 		GuiDraw.menu(graphics, font, "Theme", settingsX + 8, settingsY + 6, Theme.HEADER);
-		float y = cycle(graphics, font, settingsX + 8, settingsY + 20, PANEL_W - 16, mouseX, mouseY, "GUI", StrayConfig.get().guiDesignLabel(), StrayConfig.get()::cycleGuiDesign);
-		y = colorRow(graphics, font, settingsX + 8, y, PANEL_W - 16, mouseX, mouseY, "Glass", StrayConfig.get().controlPaneRgb, PickerTarget.CONTROL);
+		float y = colorRow(graphics, font, settingsX + 8, settingsY + 20, PANEL_W - 16, mouseX, mouseY, "Glass", StrayConfig.get().controlPaneRgb, PickerTarget.CONTROL);
 		y = colorRow(graphics, font, settingsX + 8, y, PANEL_W - 16, mouseX, mouseY, "Pills", StrayConfig.get().controlPillRgb, PickerTarget.PILL);
 		y = slider(graphics, font, settingsX + 8, y, PANEL_W - 16, "Frost", Math.round(StrayConfig.get().controlFrost * 100) + "%", StrayConfig.get().controlFrost, v -> StrayConfig.get().controlFrost = StrayConfig.clamp(v, 0f, 1f));
 		GuiDraw.small(graphics, font, "Accent", settingsX + 8, y + 2, controlCenter() ? ControlChrome.muted() : Theme.MUTED);
@@ -1580,13 +1576,11 @@ public class StrayScreen extends Screen {
 		y = toggle(graphics, font, settingsX + 8, y, PANEL_W - 16, mouseX, mouseY, "Menu stars", StrayConfig.get().menuStarfield, v -> StrayConfig.get().menuStarfield = v);
 		y = toggle(graphics, font, settingsX + 8, y, PANEL_W - 16, mouseX, mouseY, "HUD stars", StrayConfig.get().hudStarfield, v -> StrayConfig.get().hudStarfield = v);
 		y = toggle(graphics, font, settingsX + 8, y, PANEL_W - 16, mouseX, mouseY, "Animations", StrayConfig.get().uiAnimations, v -> StrayConfig.get().uiAnimations = v);
-		y = toggle(graphics, font, settingsX + 8, y, PANEL_W - 16, mouseX, mouseY, "Auto update", StrayConfig.get().autoUpdate, v -> StrayConfig.get().autoUpdate = v);
-		drawFontPicker(graphics, font, settingsX + 8, y, PANEL_W - 16, mouseX, mouseY);
+		toggle(graphics, font, settingsX + 8, y, PANEL_W - 16, mouseX, mouseY, "Auto update", StrayConfig.get().autoUpdate, v -> StrayConfig.get().autoUpdate = v);
 	}
 
 	private float settingsHeight() {
-		float drop = 2 + FONT_SEARCH_H + 2 + FONT_VISIBLE * FONT_ROW + 6;
-		return SETTINGS_H + (fontPickerOpen ? drop : 0);
+		return SETTINGS_H;
 	}
 
 	private static String currentFontLabel() {
@@ -2187,13 +2181,7 @@ public class StrayScreen extends Screen {
 	) {
 		StrayConfig config = StrayConfig.get();
 		float y = sectionLabel(graphics, font, left, top, "Window");
-		y = featureCard(graphics, font, left, y, col, cardHeight(7), "Control");
-		y = cycle(graphics, font, ix, y, iw, mouseX, mouseY, "GUI", config.guiDesignLabel(), () -> {
-			config.cycleGuiDesign();
-			if (!config.guiDesignControl() && tab == Tab.SETTINGS) {
-				selectTab(Tab.WORLD);
-			}
-		});
+		y = featureCard(graphics, font, left, y, col, cardHeight(6), "Control");
 		y = colorRow(graphics, font, ix, y, iw, mouseX, mouseY, "Glass", config.controlPaneRgb, PickerTarget.CONTROL);
 		y = colorRow(graphics, font, ix, y, iw, mouseX, mouseY, "Pills", config.controlPillRgb, PickerTarget.PILL);
 		y = slider(graphics, font, ix, y, iw, "Frost", Math.round(config.controlFrost * 100) + "%", config.controlFrost, v -> config.controlFrost = StrayConfig.clamp(v, 0f, 1f));
@@ -2214,14 +2202,13 @@ public class StrayScreen extends Screen {
 		toggle(graphics, font, rx, y, iw, mouseX, mouseY, "HUD stars", config.hudStarfield, v -> config.hudStarfield = v);
 
 		float scaleTop = lookY + accentH + 10;
-		y = featureCard(graphics, font, right, scaleTop, col, cardHeight(3) + 18, "Scale");
+		y = featureCard(graphics, font, right, scaleTop, col, cardHeight(1) + 18, "Scale");
 		GuiDraw.small(graphics, font, "Menu", rx, y + 1, ControlChrome.muted());
 		y += 12;
 		y = chipRow(graphics, font, rx, y, iw, mouseX, mouseY, new String[]{"100%", "90%", "75%", "50%"}, menuScaleChip(), index -> {
 			float[] values = {1.00f, 0.90f, 0.75f, 0.50f};
 			config.menuScale = values[index];
 		});
-		drawFontPicker(graphics, font, rx, y, iw, mouseX, mouseY);
 	}
 
 	private void drawControlFeaturePage(
@@ -3004,11 +2991,11 @@ public class StrayScreen extends Screen {
 			case THEME -> Theme.applyCustom(packed);
 			case PANE -> Theme.applyPane(packed);
 			case CONTROL -> {
-				config.controlPaneRgb = packed == 0 ? 0xFFFFFF : packed;
+				config.controlPaneRgb = packed == 0 ? 0x181818 : packed;
 				Theme.refresh();
 			}
 			case PILL -> {
-				config.controlPillRgb = packed == 0 ? 0xFFFFFF : packed;
+				config.controlPillRgb = packed == 0 ? 0x808080 : packed;
 				Theme.refresh();
 			}
 		}
@@ -3130,7 +3117,7 @@ public class StrayScreen extends Screen {
 		return FabricLoader.getInstance()
 			.getModContainer("stray")
 			.map(container -> container.getMetadata().getVersion().getFriendlyString())
-			.orElse("1.2.166");
+			.orElse("1.2.167");
 	}
 
 	@Override

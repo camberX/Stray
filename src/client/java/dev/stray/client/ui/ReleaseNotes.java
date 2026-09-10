@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.167", new String[]{
+			"Classic GUI is gone. Control is the only menu. Defaults are Glass #181818 at 64% and Pills #808080 at 17%. The menu uses the Minecraft font only."
+		}),
 		new Entry("1.2.166", new String[]{
 			"Search for Auto update, menu scale, fonts, and the rest of Theme opens the Theme tab instead of Overlay."
 		}),

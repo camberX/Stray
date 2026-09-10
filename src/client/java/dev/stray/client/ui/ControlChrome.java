@@ -27,7 +27,7 @@ public final class ControlChrome {
 	}
 
 	public static boolean on() {
-		return StrayConfig.get().guiDesignControl();
+		return true;
 	}
 
 	public static int hudFill() {
@@ -43,12 +43,12 @@ public final class ControlChrome {
 
 	public static int paneRgb() {
 		int rgb = StrayConfig.get().controlPaneRgb & 0xFFFFFF;
-		return rgb == 0 ? 0xFFFFFF : rgb;
+		return rgb == 0 ? 0x181818 : rgb;
 	}
 
 	public static int pillRgb() {
 		int rgb = StrayConfig.get().controlPillRgb & 0xFFFFFF;
-		return rgb == 0 ? 0xFFFFFF : rgb;
+		return rgb == 0 ? 0x808080 : rgb;
 	}
 
 	public static float paneOpacity() {
