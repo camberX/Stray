@@ -42,17 +42,58 @@ public enum CrystalStructure {
 		if (text == null || text.isBlank()) {
 			return null;
 		}
-		String needle = text.toLowerCase(Locale.ROOT).replace('û', 'u').replace("'", "");
+		String needle = normalize(text);
+		if (needle.isEmpty() || zoneOnly(needle)) {
+			return null;
+		}
 		for (CrystalStructure structure : values()) {
 			if (structure == UNKNOWN) {
 				continue;
 			}
-			String label = structure.label.toLowerCase(Locale.ROOT).replace('û', 'u').replace("'", "");
-			if (needle.equals(label) || needle.contains(label) || label.contains(needle)) {
+			if (needle.equals(normalize(structure.label))) {
 				return structure;
 			}
 		}
-		return null;
+		return switch (needle) {
+			case "precursor city", "precursor ruins", "lost precursor", "lost precursor ruins" -> LOST_PRECURSOR_CITY;
+			case "goblin queen", "goblin queens den", "goblin hideout", "queens den" -> GOBLIN_QUEENS_DEN;
+			case "odawa shop", "odawas shop" -> ODAWA;
+			case "divan", "mines of divan", "divans mines" -> MINES_OF_DIVAN;
+			case "khazad dum", "khazaddum" -> KHAZAD_DUM;
+			case "dragon lair", "dragons lair" -> DRAGONS_LAIR;
+			case "yolkar", "king yolkar" -> KING_YOLKAR;
+			case "key guardian" -> KEY_GUARDIAN;
+			case "jungle temple", "kalhuiki" -> JUNGLE_TEMPLE;
+			default -> null;
+		};
+	}
+
+	private static String normalize(String text) {
+		return text.toLowerCase(Locale.ROOT)
+			.replace('û', 'u')
+			.replace('ú', 'u')
+			.replace("'", "")
+			.replace("-", " ")
+			.replaceAll("[^a-z0-9 ]", " ")
+			.replaceAll("\\s+", " ")
+			.trim();
+	}
+
+	private static boolean zoneOnly(String needle) {
+		return switch (needle) {
+			case "jungle",
+				"goblin holdout",
+				"precursor remnants",
+				"mithril deposits",
+				"mithril deposit",
+				"magma fields",
+				"magma field",
+				"crystal nucleus",
+				"nucleus",
+				"crystal hollows",
+				"crystal hollow" -> true;
+			default -> false;
+		};
 	}
 
 	public boolean matchesChat(String message) {

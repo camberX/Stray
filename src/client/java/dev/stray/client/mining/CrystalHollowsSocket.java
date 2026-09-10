@@ -196,15 +196,70 @@ final class CrystalHollowsSocket implements WebSocket.Listener {
 	}
 
 	private static Incoming parse(JsonObject object) {
-		CrystalStructure structure = CrystalStructure.fromWire(object.has("name") ? object.get("name").getAsString() : "");
-		if (structure == null || !object.has("coordinates") || !object.get("coordinates").isJsonObject()) {
+		String name = "";
+		if (object.has("name") && object.get("name").isJsonPrimitive()) {
+			name = object.get("name").getAsString();
+		} else if (object.has("location") && object.get("location").isJsonPrimitive()) {
+			name = object.get("location").getAsString();
+		}
+		CrystalStructure structure = CrystalStructure.fromWire(name);
+		if (structure == null) {
 			return null;
 		}
-		JsonObject pos = object.getAsJsonObject("coordinates");
-		if (!pos.has("x") || !pos.has("y") || !pos.has("z")) {
+		BlockPos pos = coordinates(object);
+		if (pos == null) {
 			return null;
 		}
-		return new Incoming(structure, new BlockPos(pos.get("x").getAsInt(), pos.get("y").getAsInt(), pos.get("z").getAsInt()));
+		return new Incoming(structure, pos);
+	}
+
+	private static BlockPos coordinates(JsonObject object) {
+		if (object.has("coordinates")) {
+			BlockPos pos = coordinates(object.get("coordinates"));
+			if (pos != null) {
+				return pos;
+			}
+		}
+		return coordinatesFromObject(object);
+	}
+
+	private static BlockPos coordinates(JsonElement element) {
+		if (element == null || element.isJsonNull()) {
+			return null;
+		}
+		if (element.isJsonArray()) {
+			JsonArray array = element.getAsJsonArray();
+			if (array.size() < 3) {
+				return null;
+			}
+			return new BlockPos(array.get(0).getAsInt(), array.get(1).getAsInt(), array.get(2).getAsInt());
+		}
+		if (element.isJsonObject()) {
+			return coordinatesFromObject(element.getAsJsonObject());
+		}
+		return null;
+	}
+
+	private static BlockPos coordinatesFromObject(JsonObject object) {
+		Integer x = coord(object, "x", "X");
+		Integer y = coord(object, "y", "Y");
+		Integer z = coord(object, "z", "Z");
+		if (x == null || y == null || z == null) {
+			return null;
+		}
+		return new BlockPos(x, y, z);
+	}
+
+	private static Integer coord(JsonObject object, String... keys) {
+		for (String key : keys) {
+			if (object.has(key) && object.get(key).isJsonPrimitive()) {
+				try {
+					return object.get(key).getAsInt();
+				} catch (Exception ignored) {
+				}
+			}
+		}
+		return null;
 	}
 
 	record Incoming(CrystalStructure structure, BlockPos pos) {

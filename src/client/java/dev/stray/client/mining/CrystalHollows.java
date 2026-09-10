@@ -135,7 +135,9 @@ public final class CrystalHollows {
 		try {
 			JsonObject json = JsonParser.parseString(text).getAsJsonObject();
 			if (json.has("server")) {
-				SkyblockLocation.server = json.get("server").getAsString();
+				String id = json.get("server").getAsString();
+				SkyblockLocation.locrawServer = id;
+				SkyblockLocation.server = id;
 			}
 		} catch (Exception ignored) {
 		}

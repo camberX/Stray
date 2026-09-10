@@ -11,4 +11,10 @@ public interface AbstractContainerScreenAccessor {
 
 	@Accessor("topPos")
 	int stray$topPos();
+
+	@Accessor("imageWidth")
+	int stray$imageWidth();
+
+	@Accessor("imageHeight")
+	int stray$imageHeight();
 }

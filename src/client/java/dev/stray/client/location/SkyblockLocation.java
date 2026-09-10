@@ -29,6 +29,7 @@ public final class SkyblockLocation {
 	public static String area = "";
 	public static String poi = "";
 	public static String server = "";
+	public static String locrawServer = "";
 	public static String serverBrand = "";
 
 	private static int lastTick = Integer.MIN_VALUE;
@@ -56,7 +57,9 @@ public final class SkyblockLocation {
 		area = readArea(connection, sidebar);
 		poi = sidebar.poi;
 		String tabServer = readServer(connection);
-		if (!tabServer.isEmpty()) {
+		if (!locrawServer.isEmpty()) {
+			server = locrawServer;
+		} else if (!tabServer.isEmpty()) {
 			server = tabServer;
 		}
 		inSkyblock = onHypixel && (sidebar.skyblock || !area.isEmpty() || !poi.isEmpty());
@@ -97,6 +100,7 @@ public final class SkyblockLocation {
 		area = "";
 		poi = "";
 		server = "";
+		locrawServer = "";
 		serverBrand = "";
 		lastTick = Integer.MIN_VALUE;
 	}
@@ -107,6 +111,20 @@ public final class SkyblockLocation {
 		}
 		String brand = connection.serverBrand();
 		return brand == null ? "" : brand;
+	}
+
+	public static boolean inGarden() {
+		if (!inSkyblock) {
+			return false;
+		}
+		return gardenName(area) || gardenName(poi);
+	}
+
+	private static boolean gardenName(String name) {
+		if (name == null || name.isEmpty()) {
+			return false;
+		}
+		return name.toLowerCase().contains("garden");
 	}
 
 	public static boolean inCrystalHollows() {

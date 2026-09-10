@@ -139,6 +139,7 @@ public class StrayScreen extends Screen {
 		CRYSTAL("CH waypoints", 2),
 		FARMING("Yaw / Pitch", 1),
 		INVENTORY("Inventory", 3),
+		PLOTS("Garden plots", 1),
 		AUTO_DNA("Auto DNA", 5),
 		NAMETAGS("Nametags", 6),
 		NODES("Nodes", 5);
@@ -276,6 +277,9 @@ public class StrayScreen extends Screen {
 		new SearchEntry("Contest prediction", Tab.FARMING, "Farming"),
 		new SearchEntry("Crops per second", Tab.FARMING, "Farming"),
 		new SearchEntry("Composter overlay", Tab.FARMING, "Farming"),
+		new SearchEntry("Garden plots", Tab.FARMING, "Farming"),
+		new SearchEntry("Plot widget", Tab.FARMING, "Farming"),
+		new SearchEntry("Configure Plots", Tab.FARMING, "Farming"),
 		new SearchEntry("Auto DNA", Tab.FARMING, "Farming"),
 		new SearchEntry("DNA analyzer", Tab.FARMING, "Farming"),
 		new SearchEntry("Greenhouse DNA", Tab.FARMING, "Farming"),
@@ -1951,12 +1955,13 @@ public class StrayScreen extends Screen {
 				GuiDraw.menu(graphics, font, clip(font, titanium, (int) iw - 4), rx, y + 38, titaniumColor);
 			}
 			case FARMING -> {
-				float farmingH = cardHeight(3);
+				float farmingH = cardHeight(4);
 				float dnaH = cardHeight(1 + Feature.AUTO_DNA.rows);
 				float y = featureCard(graphics, font, left, top, col, farmingH, "Farming");
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Yaw / Pitch", config.farmingYawPitch, v -> config.farmingYawPitch = v, Feature.FARMING);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Jacob contest HUD", config.jacobContestHudEnabled, v -> config.jacobContestHudEnabled = v);
-				toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Composter overlay", config.composterHudEnabled, v -> config.composterHudEnabled = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Composter overlay", config.composterHudEnabled, v -> config.composterHudEnabled = v);
+				toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Garden plots", config.gardenPlotsWidget, v -> config.gardenPlotsWidget = v, Feature.PLOTS);
 
 				y = featureCard(graphics, font, left, top + farmingH + 8, col, dnaH, "Auto DNA");
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Enable", config.autoDnaEnabled, v -> config.autoDnaEnabled = v);
@@ -2135,6 +2140,7 @@ public class StrayScreen extends Screen {
 				y = toggleCard(graphics, font, left, y, col, mouseX, mouseY, "Composter overlay", config.composterHudEnabled, v -> config.composterHudEnabled = v);
 
 				y = sectionLabel(graphics, font, left, y, "Garden");
+				y = controlCard(graphics, font, left, y, col, mouseX, mouseY, "Garden plots", config.gardenPlotsWidget, v -> config.gardenPlotsWidget = v, Feature.PLOTS);
 				y = featureCard(graphics, font, left, y, col, cardHeight(Feature.AUTO_DNA.rows), "Auto DNA", config.autoDnaEnabled, v -> config.autoDnaEnabled = v, mouseX, mouseY);
 				drawFeatureFields(graphics, font, mouseX, mouseY, ix, y, iw, Feature.AUTO_DNA);
 
@@ -2683,6 +2689,7 @@ public class StrayScreen extends Screen {
 			case RAWMATS -> cycle(graphics, font, ix, y, iw, mouseX, mouseY, "Materials", config.rawmatsModeLabel(), config::cycleRawmatsMode);
 			case MINING -> toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Ability alert", config.miningAbilityAlert, v -> config.miningAbilityAlert = v);
 			case FARMING -> slider(graphics, font, ix, y, iw, "Scale", Math.round(config.farmingYawPitchScale * 100) + "%", (config.farmingYawPitchScale - 0.50f) / 1.50f, v -> config.farmingYawPitchScale = StrayConfig.clampHudScale(0.50f + v * 1.50f));
+			case PLOTS -> toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Close on click", config.gardenPlotsCloseOnClick, v -> config.gardenPlotsCloseOnClick = v);
 			case AUTO_DNA -> {
 				y = slider(graphics, font, ix, y, iw, "Click delay", config.autoDnaClickDelay + "ms", (config.autoDnaClickDelay - 100) / 900f, v -> config.autoDnaClickDelay = snapInt(100 + v * 900f, 100, 1000, 10));
 				y = slider(graphics, font, ix, y, iw, "Delay variety", config.autoDnaDelayVariety + "ms", config.autoDnaDelayVariety / 1000f, v -> config.autoDnaDelayVariety = snapInt(v * 1000f, 0, 1000, 10));
@@ -3173,7 +3180,7 @@ public class StrayScreen extends Screen {
 		return FabricLoader.getInstance()
 			.getModContainer("stray")
 			.map(container -> container.getMetadata().getVersion().getFriendlyString())
-			.orElse("1.2.190");
+			.orElse("1.2.191");
 	}
 
 	@Override

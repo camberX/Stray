@@ -13,6 +13,7 @@ import dev.stray.client.combat.OdinClicks;
 import dev.stray.client.combat.Triggerbot;
 import dev.stray.client.debug.StrayDebug;
 import dev.stray.client.farming.AutoDna;
+import dev.stray.client.farming.GardenPlots;
 import dev.stray.client.farming.FarmKeys;
 import dev.stray.client.fairy.FairySoulCommands;
 import dev.stray.client.fairy.FairySoulRenderer;
@@ -168,6 +169,7 @@ public final class StrayClient implements ClientModInitializer {
 		MediaSession.init();
 		AutoExperiments.init();
 		AutoDna.init();
+		GardenPlots.init();
 
 		ClientCommandRegistrationCallback.EVENT.register((dispatcher, registryAccess) -> {
 			var root = ClientCommands.literal("stray").executes(context -> openScreen());

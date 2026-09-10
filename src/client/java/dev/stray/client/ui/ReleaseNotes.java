@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.191", new String[]{
+			"Farming has Skyblocker's Garden plots widget on the inventory, only while you are in the Garden. Open Configure Plots once to fill the grid. Crystal Hollows waypoints now mark structures such as Jungle Temple, Lost Precursor City, Goblin Queen's Den, and Odawa instead of the Nucleus zone doors."
+		}),
 		new Entry("1.2.190", new String[]{
 			"Crystal Hollows waypoint names use the same screen-space distance scale as nametags: larger up close, smaller far away."
 		}),

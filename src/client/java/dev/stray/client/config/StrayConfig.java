@@ -88,6 +88,10 @@ public final class StrayConfig {
 	public boolean autoDnaAllowEnds = true;
 	public boolean autoDnaBlockClose = true;
 	public boolean autoDnaMiddleClick = false;
+	public boolean gardenPlotsWidget = false;
+	public boolean gardenPlotsCloseOnClick = false;
+	public int gardenPlotsX = 0;
+	public int gardenPlotsY = 0;
 	public boolean jacobContestHudEnabled = false;
 	public boolean composterHudEnabled = false;
 	public boolean composterUpgradesKnown = false;
@@ -814,6 +818,12 @@ public final class StrayConfig {
 				}
 				if (!json.has("autoDnaBlockClose")) {
 					loaded.autoDnaBlockClose = true;
+				}
+				if (!json.has("gardenPlotsWidget")) {
+					loaded.gardenPlotsWidget = false;
+				}
+				if (!json.has("gardenPlotsCloseOnClick")) {
+					loaded.gardenPlotsCloseOnClick = false;
 				}
 				loaded.slotHotbar = hudSlot(loaded.slotHotbar);
 				loaded.slotHealth = hudSlot(loaded.slotHealth);
