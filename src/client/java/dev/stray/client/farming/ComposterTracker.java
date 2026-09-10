@@ -146,8 +146,9 @@ public final class ComposterTracker {
 	private static Snapshot calculate(Parsed parsed, StrayConfig config) {
 		boolean active = !parsed.time.equalsIgnoreCase("INACTIVE");
 		int nextSeconds = active ? parseDuration(parsed.time) : -1;
-		boolean matchingProfile = !parsed.profile.isBlank()
-			&& parsed.profile.equalsIgnoreCase(config.composterProfile);
+		boolean matchingProfile = parsed.profile.isBlank()
+			|| config.composterProfile.isBlank()
+			|| parsed.profile.equalsIgnoreCase(config.composterProfile);
 		if (!config.composterUpgradesKnown || !matchingProfile) {
 			return new Snapshot(
 				true,
@@ -217,11 +218,10 @@ public final class ComposterTracker {
 
 	private static void readUpgrades(Minecraft client, String profile) {
 		if (!(client.screen instanceof AbstractContainerScreen<?> screen)
-			|| !"Composter Upgrades".equals(screen.getTitle().getString())
-			|| profile == null
-			|| profile.isBlank()) {
+			|| !"Composter Upgrades".equalsIgnoreCase(clean(screen.getTitle()))) {
 			return;
 		}
+		String profileKey = profile == null ? "" : profile.trim();
 		int speed = -1;
 		int multi = -1;
 		int fuelCap = -1;
@@ -251,7 +251,7 @@ public final class ComposterTracker {
 		}
 		StrayConfig config = StrayConfig.get();
 		boolean changed = !config.composterUpgradesKnown
-			|| !profile.equalsIgnoreCase(config.composterProfile)
+			|| (!profileKey.isBlank() && !profileKey.equalsIgnoreCase(config.composterProfile))
 			|| config.composterSpeed != speed
 			|| config.composterMultiDrop != multi
 			|| config.composterFuelCap != fuelCap
@@ -261,7 +261,9 @@ public final class ComposterTracker {
 			return;
 		}
 		config.composterUpgradesKnown = true;
-		config.composterProfile = profile;
+		if (!profileKey.isBlank()) {
+			config.composterProfile = profileKey;
+		}
 		config.composterSpeed = speed;
 		config.composterMultiDrop = multi;
 		config.composterFuelCap = fuelCap;
