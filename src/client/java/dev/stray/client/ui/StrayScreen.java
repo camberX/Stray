@@ -126,7 +126,7 @@ public class StrayScreen extends Screen {
 
 	private enum Feature {
 		WORLD("World tint", 4),
-		SKY("Skybox", 3),
+		SKY("Skybox", 4),
 		FOG("Fog", 5),
 		VIEW("Aspect", 3),
 		MOTION("Motion blur", 3),
@@ -183,6 +183,8 @@ public class StrayScreen extends Screen {
 		new SearchEntry("Lightmap", Tab.WORLD, "World"),
 		new SearchEntry("Shader", Tab.WORLD, "World"),
 		new SearchEntry("Skybox tint", Tab.WORLD, "World"),
+		new SearchEntry("End sky", Tab.WORLD, "World"),
+		new SearchEntry("End skybox", Tab.WORLD, "World"),
 		new SearchEntry("Aspect ratio", Tab.CAMERA, "Camera"),
 		new SearchEntry("Custom fog", Tab.CAMERA, "Camera"),
 		new SearchEntry("Motion blur", Tab.CAMERA, "Camera"),
@@ -2859,6 +2861,7 @@ public class StrayScreen extends Screen {
 				}
 			}
 			case SKY -> {
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "End sky", config.endSkybox, v -> config.endSkybox = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Match world", config.matchSkyToWorld, v -> config.matchSkyToWorld = v);
 				int skyPreview = config.matchSkyToWorld ? config.worldTintRgb : config.skyTintRgb;
 				y = colorRow(graphics, font, ix, y, iw, mouseX, mouseY, "Color", skyPreview, PickerTarget.SKY);
@@ -3485,7 +3488,7 @@ public class StrayScreen extends Screen {
 		return FabricLoader.getInstance()
 			.getModContainer("stray")
 			.map(container -> container.getMetadata().getVersion().getFriendlyString())
-			.orElse("1.2.212");
+			.orElse("1.2.213");
 	}
 
 	@Override

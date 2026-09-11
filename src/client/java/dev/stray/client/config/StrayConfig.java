@@ -42,6 +42,7 @@ public final class StrayConfig {
 	public int skyTintRgb = 0x1B4F8A;
 	public float skyTintStrength = 0.70f;
 	public boolean matchSkyToWorld = false;
+	public boolean endSkybox = false;
 	public boolean fogEnabled = false;
 	public int fogRgb = 0x8EC8FF;
 	public float fogStart = 0.12f;
@@ -458,6 +459,9 @@ public final class StrayConfig {
 				loaded.worldTintStrength = clamp(loaded.worldTintStrength, 0f, 1f);
 				loaded.worldTintMode = normalizeWorldTintMode(loaded.worldTintMode);
 				loaded.skyTintStrength = clamp(loaded.skyTintStrength, 0f, 1f);
+				if (!json.has("endSkybox")) {
+					loaded.endSkybox = false;
+				}
 				loaded.fogStart = clamp(loaded.fogStart, 0f, 0.95f);
 				loaded.fogEnd = clamp(loaded.fogEnd, 0.05f, 1f);
 				loaded.fogDensity = clamp(loaded.fogDensity, 0f, 1f);

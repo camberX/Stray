@@ -10,6 +10,8 @@ import net.minecraft.util.ARGB;
 import net.minecraft.util.Mth;
 import org.joml.Vector3f;
 import org.joml.Vector3fc;
+import org.joml.Vector4f;
+import org.joml.Vector4fc;
 
 public final class WorldTint {
 	private static int lastMeshKey = Integer.MIN_VALUE;
@@ -76,6 +78,23 @@ public final class WorldTint {
 
 	public static boolean skyTintActive() {
 		return StrayConfig.get().skyTintEnabled;
+	}
+
+	public static boolean endSkyboxActive() {
+		return StrayConfig.get().endSkybox;
+	}
+
+	public static Vector4fc endSkyColor(Vector4fc original) {
+		StrayConfig config = StrayConfig.get();
+		if (!config.skyTintEnabled) {
+			return original;
+		}
+		int rgb = skyRgb(config);
+		float t = Mth.clamp(config.skyTintStrength, 0f, 1f);
+		float r = original.x() * (1f - t) + ((rgb >> 16) & 0xFF) / 255f * t;
+		float g = original.y() * (1f - t) + ((rgb >> 8) & 0xFF) / 255f * t;
+		float b = original.z() * (1f - t) + (rgb & 0xFF) / 255f * t;
+		return new Vector4f(r, g, b, original.w());
 	}
 
 	public static int tintSky(int skyColor) {

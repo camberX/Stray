@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.213", new String[]{
+			"Skybox has an End sky toggle that swaps in the End panorama. Color and Strength tint that texture instead of covering it."
+		}),
 		new Entry("1.2.212", new String[]{
 			"Skyblock health bars read HP from the hologram armor stand inside the mob. No health in that name means no bar. Menu scroll no longer sticks to the Mobs list after you leave that tab."
 		}),
