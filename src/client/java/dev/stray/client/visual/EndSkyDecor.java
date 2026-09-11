@@ -69,7 +69,7 @@ public final class EndSkyDecor {
 		GpuBufferSlice transform = RenderSystem.getDynamicUniforms().writeTransform(
 			modelView,
 			new Vector4f(pulse, pulse, pulse, 1f),
-			new Vector3f(),
+			new Vector3f(time * 0.012f, 0f, 0f),
 			new Matrix4f()
 		);
 		try (RenderPass pass = RenderSystem.getDevice().createCommandEncoder().createRenderPass(
@@ -108,7 +108,7 @@ public final class EndSkyDecor {
 				.withFragmentShader(Stray.id("core/end_galaxy"))
 				.withUniform("DynamicTransforms", UniformType.UNIFORM_BUFFER)
 				.withUniform("Projection", UniformType.UNIFORM_BUFFER)
-				.withColorTargetState(new ColorTargetState(BlendFunction.ADDITIVE))
+					.withColorTargetState(new ColorTargetState(BlendFunction.TRANSLUCENT))
 				.withDepthStencilState(new DepthStencilState(CompareOp.ALWAYS_PASS, false))
 				.withCull(false)
 				.withVertexFormat(DefaultVertexFormat.POSITION, VertexFormat.Mode.QUADS)

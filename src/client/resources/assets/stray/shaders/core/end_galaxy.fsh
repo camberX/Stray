@@ -62,8 +62,7 @@ float starLayer(vec3 dir, float scale, float threshold, float radius) {
     return (glow * 0.55 + core * 1.15) * (0.35 + 0.65 * hash13(id + 9.1));
 }
 
-void main() {
-    vec3 dir = normalize(worldDir);
+vec3 skyColor(vec3 dir, out float alpha) {
     vec3 pole = normalize(vec3(0.22, 0.86, 0.31));
     float nWide = fbm(dir * 2.4);
     float nMid = fbm(dir * 6.2 + 5.8);
@@ -96,6 +95,56 @@ void main() {
     col += mid * starTint * 0.95;
     col += bright * vec3(1.0, 0.97, 0.92) * 1.35;
 
-    float alpha = clamp(nebula * 1.55 + field * 0.45 + mid * 0.7 + bright, 0.0, 1.0);
-    fragColor = vec4(col, alpha) * ColorModulator;
+    alpha = clamp(nebula * 1.55 + field * 0.45 + mid * 0.7 + bright, 0.0, 1.0);
+    return col;
+}
+
+void main() {
+    vec3 dir = normalize(worldDir);
+    vec3 hole = normalize(vec3(0.74, 0.16, 0.65));
+    vec3 holeUp = normalize(vec3(0.26, 0.94, -0.22));
+    vec3 holeX = normalize(cross(holeUp, hole));
+    vec3 holeY = cross(hole, holeX);
+    float spin = ModelOffset.x;
+
+    float toward = clamp(dot(dir, hole), -1.0, 1.0);
+    float ang = acos(toward);
+    vec3 radial = dir - hole * toward;
+    float radialLen = length(radial);
+    vec3 away = radialLen > 1.0e-5 ? radial / radialLen : holeX;
+    float bend = 0.028 / max(pow(max(ang, 0.001), 1.45), 0.0005);
+    vec3 view = normalize(dir + away * bend * smoothstep(0.46, 0.05, ang));
+
+    float skyA = 0.0;
+    vec3 col = skyColor(view, skyA);
+
+    float horizon = 0.062;
+    float holeMask = 1.0 - smoothstep(horizon * 0.96, horizon * 1.14, ang);
+    float ring = exp(-pow((ang - horizon * 1.20) * 92.0, 2.0));
+    float halo = exp(-pow((ang - horizon * 1.55) * 18.0, 2.0)) * 0.22;
+
+    float height = dot(dir, holeUp);
+    float diskThin = exp(-pow(height * 20.0, 2.0));
+    float diskInner = horizon * 1.28;
+    float diskOuter = 0.26;
+    float diskRad = smoothstep(diskInner, diskInner + 0.018, ang) * (1.0 - smoothstep(diskOuter - 0.05, diskOuter, ang));
+    float az = atan(dot(dir, holeX), dot(dir, holeY));
+    float swirl = 0.42 + 0.58 * (0.5 + 0.5 * sin(az * 6.0 - spin * 7.5 + fbm(dir * 9.0) * 5.0));
+    float heat = exp(-pow((ang - diskInner * 1.35) * 9.0, 2.0));
+    float disk = diskThin * diskRad * swirl;
+    vec3 diskCol = mix(vec3(1.0, 0.28, 0.06), vec3(1.0, 0.84, 0.42), heat);
+    float approaching = 0.55 + 0.45 * clamp(dot(away, holeX), -1.0, 1.0);
+    diskCol *= approaching;
+
+    col += disk * diskCol * 1.15;
+    col += ring * vec3(1.0, 0.78, 0.42) * 1.7;
+    col += halo * vec3(1.0, 0.55, 0.22);
+
+    col *= 1.0 - holeMask;
+    col = mix(col, vec3(0.0), holeMask);
+
+    float alpha = max(skyA, max(disk * 1.1, max(ring, halo)));
+    alpha = mix(alpha, 1.0, holeMask);
+
+    fragColor = vec4(col * ColorModulator.rgb, alpha);
 }
