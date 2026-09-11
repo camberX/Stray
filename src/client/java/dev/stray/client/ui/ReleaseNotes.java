@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.220", new String[]{
+			"End sky Gargantua is rebuilt with a real geodesic ray march: pitch-black shadow, disk wrapped over and under the hole, Doppler-bright left side, and heavy movie-style bloom."
+		}),
 		new Entry("1.2.219", new String[]{
 			"The End sky black hole stays high in the sky and no longer smears extra rings across the horizon."
 		}),

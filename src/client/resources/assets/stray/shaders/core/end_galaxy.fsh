@@ -99,61 +99,127 @@ vec3 skyColor(vec3 dir, out float alpha) {
     return col;
 }
 
-vec4 gargantua(vec2 uv, float spin) {
-    vec3 pos = vec3(0.0, 0.34, -5.1);
-    vec3 rd = normalize(vec3(uv.x, uv.y, 1.35));
-    float rs = 0.48;
-    float closest = 100.0;
+// Schwarzschild units: M = 1, horizon r = 2, photon sphere r = 3.
+const float BH_HORIZON = 2.0;
+const float DISK_IN = 3.4;
+const float DISK_OUT = 14.0;
+const float CAM_DIST = 26.0;
+const float CAM_HEIGHT = 5.0;
+const float VIEW_SCALE = 1.35;
+const float CONE_COS = 0.93;
 
-    for (int i = 0; i < 48; i++) {
+vec3 diskSample(vec3 p, vec3 rd, float spin, out float alphaOut) {
+    float rho = length(p.xz);
+    float t = clamp((rho - DISK_IN) / (DISK_OUT - DISK_IN), 0.0, 1.0);
+    float az = atan(p.z, p.x);
+    float kepler = spin * pow(DISK_IN / rho, 1.5) * 2.6;
+    float n1 = fbm(vec3(az * 2.6 - kepler, log(rho) * 5.5, 3.1));
+    float n2 = fbm(vec3(az * 9.0 - kepler * 1.4, log(rho) * 16.0, 7.7));
+    float lanes = 0.55 + 0.45 * smoothstep(0.30, 0.75, n1);
+    lanes *= 0.7 + 0.3 * smoothstep(0.35, 0.70, n2);
+
+    float edgeIn = smoothstep(DISK_IN, DISK_IN + 0.9, rho);
+    float edgeOut = 1.0 - smoothstep(DISK_OUT - 5.0, DISK_OUT, rho);
+    float radial = pow(DISK_IN / rho, 1.9);
+    float emit = 9.0 * radial * edgeIn * edgeOut * lanes;
+
+    vec3 vel = normalize(vec3(-p.z, 0.0, p.x));
+    float beta = min(sqrt(1.0 / max(rho, 2.5)) * 1.15, 0.78);
+    float gamma = 1.0 / sqrt(max(1.0 - beta * beta, 0.05));
+    float doppler = 1.0 / (gamma * (1.0 - beta * dot(vel, -rd)));
+    float redshift = sqrt(max(1.0 - BH_HORIZON / length(p), 0.05));
+    float g = doppler * redshift;
+    float boost = pow(g, 3.0);
+
+    float heat = clamp(emit * boost, 0.0, 10.0);
+    vec3 ember = vec3(0.95, 0.30, 0.06);
+    vec3 amber = vec3(1.0, 0.62, 0.28);
+    vec3 white = vec3(1.0, 0.97, 0.93);
+    vec3 tint = mix(ember, amber, clamp(heat * 0.55, 0.0, 1.0));
+    tint = mix(tint, white, smoothstep(1.5, 4.5, heat));
+    vec3 col = tint * heat;
+
+    alphaOut = clamp(emit * 1.2, 0.0, 1.0);
+    return col;
+}
+
+vec4 gargantua(vec2 uv, float spin, out vec3 escaped, out bool didEscape) {
+    vec3 pos = vec3(0.0, CAM_HEIGHT, -CAM_DIST);
+    vec3 rd = normalize(vec3(uv.x * VIEW_SCALE, uv.y * VIEW_SCALE, 1.0));
+    float tilt = atan(CAM_HEIGHT, CAM_DIST);
+    float ct = cos(tilt);
+    float st = sin(tilt);
+    rd = vec3(rd.x, rd.y * ct - rd.z * st, rd.y * st + rd.z * ct);
+    vec3 rd0 = rd;
+
+    vec3 accum = vec3(0.0);
+    float trans = 1.0;
+    float closest = 1.0e9;
+    didEscape = false;
+    escaped = rd0;
+
+    vec3 h = cross(pos, rd);
+    float h2 = dot(h, h);
+
+    for (int i = 0; i < 110; i++) {
         float r = length(pos);
         closest = min(closest, r);
-        if (r < rs) {
-            return vec4(0.0, 0.0, 0.0, 1.0);
+        if (r < BH_HORIZON) {
+            return vec4(accum, 1.0);
         }
-        if (r > 12.0) {
+        if (r > CAM_DIST + 6.0 && dot(pos, rd) > 0.0) {
+            didEscape = true;
+            escaped = rd;
             break;
         }
-
-        float rho = length(pos.xz);
-        float thick = 0.008 * max(rho, 0.9);
-        if (abs(pos.y) < thick && rho > rs * 1.9 && rho < rs * 8.6) {
-            float t = clamp((rho - rs * 1.9) / (rs * 6.6), 0.0, 1.0);
-            float ang = atan(pos.z, pos.x);
-            float kepler = spin * pow(2.2 / max(rho, 0.25), 1.5);
-            float n1 = fbm(vec3(ang * 2.0 - kepler, rho * 0.82, 2.4));
-            float n2 = fbm(vec3(ang * 5.2 - kepler * 1.6, rho * 2.2, 8.1));
-            float lanes = smoothstep(0.22, 0.78, n1) * (0.45 + 0.55 * n2);
-            float inner = exp(-t * 5.0);
-            float fall = pow(max(1.0 - t, 0.0), 2.4) * inner * 2.2 + 0.05;
-            vec3 vel = normalize(vec3(-pos.z, 0.0, pos.x));
-            float dopp = pow(clamp(1.0 + 0.72 * dot(vel, -rd), 0.28, 1.85), 1.8);
-            vec3 cold = vec3(0.22, 0.10, 0.04);
-            vec3 ember = vec3(0.86, 0.42, 0.14);
-            vec3 white = vec3(1.0, 0.94, 0.82);
-            vec3 heat = mix(cold, ember, clamp(fall * 0.55, 0.0, 1.0));
-            heat = mix(heat, white, pow(clamp(fall * dopp * 0.16, 0.0, 1.0), 0.75));
-            vec3 col = heat * fall * dopp * (0.4 + 0.7 * lanes);
-            float alpha = clamp(0.2 + fall * 0.85, 0.0, 0.96);
-            return vec4(col, alpha);
+        float dt = clamp((r - 1.6) * 0.09, 0.045, 1.4);
+        vec3 next = pos + rd * dt;
+        if (pos.y * next.y < 0.0) {
+            float f = pos.y / (pos.y - next.y);
+            vec3 hit = mix(pos, next, f);
+            float rho = length(hit.xz);
+            if (rho > DISK_IN && rho < DISK_OUT) {
+                float a;
+                vec3 c = diskSample(hit, rd, spin, a);
+                accum += c * trans * a;
+                trans *= 1.0 - a;
+                if (trans < 0.03) {
+                    return vec4(accum, 1.0 - trans);
+                }
+            }
         }
-
-        float dt = clamp(r * 0.05, 0.02, 0.2);
-        pos += rd * dt;
-        rd = normalize(rd - 1.5 * rs * pos * dt / (r * r * r));
+        pos = next;
+        rd = normalize(rd - 1.5 * h2 * pos / pow(r, 5.0) * dt);
     }
 
-    float photon = exp(-pow((closest - rs * 1.52) * 38.0, 2.0));
-    if (photon > 0.08) {
-        return vec4(vec3(1.0, 0.9, 0.72) * photon * 1.15, photon * 0.65);
+    float ring = exp(-pow((closest - 3.0) * 6.0, 2.0));
+    accum += vec3(1.0, 0.86, 0.66) * ring * 0.9 * trans;
+    float a = clamp(1.0 - trans + ring * 0.8, 0.0, 1.0);
+    return vec4(accum, a);
+}
+
+vec3 tonemap(vec3 c) {
+    return 1.0 - exp(-c * 0.9);
+}
+
+// Movie-style bloom: a soft ring hugging the shadow, a broad warm halo, and a
+// smear along the disk plane, all heavier on the approaching (left) side.
+float bloom(vec2 uv, bool shadow) {
+    if (shadow) {
+        return 0.0;
     }
-    return vec4(0.0);
+    float d = length(uv);
+    float side = 0.55 + 0.75 * smoothstep(0.18, -0.22, uv.x);
+    float ring = exp(-pow(d - 0.13, 2.0) / (2.0 * 0.04 * 0.04)) * 0.55;
+    float wide = exp(-max(d - 0.12, 0.0) / 0.14) * 0.32;
+    float plane = exp(-(uv.y * uv.y) / (2.0 * 0.035 * 0.035)) * exp(-abs(uv.x) / 0.28) * 0.45;
+    return (ring + wide + plane) * side;
 }
 
 void main() {
     vec3 dir = normalize(worldDir);
     vec3 hole = normalize(ModelOffset);
-    if (length(hole) < 0.2) {
+    if (length(ModelOffset) < 0.2) {
         hole = normalize(vec3(0.18, 0.86, 0.48));
     }
     vec3 holeUp = vec3(0.0, 1.0, 0.0);
@@ -166,25 +232,45 @@ void main() {
     float spin = ColorModulator.w;
 
     float toward = clamp(dot(dir, hole), -1.0, 1.0);
-    vec3 radial = dir - hole * toward;
-    float radialLen = length(radial);
-    vec3 away = radialLen > 1.0e-5 ? radial / radialLen : holeX;
-    float ang = acos(toward);
-    float bend = 0.014 / max(pow(max(ang, 0.001), 1.4), 0.0006);
-    vec3 view = normalize(dir + away * bend * smoothstep(0.28, 0.06, ang));
 
-    float skyA = 0.0;
-    vec3 col = skyColor(view, skyA);
-    float alpha = skyA;
-
-    if (toward > 0.72) {
-        vec2 uv = vec2(dot(dir, holeX), dot(dir, holeY)) * (0.38 / max(toward, 0.72));
-        if (length(uv) < 0.95) {
-            vec4 bh = gargantua(uv, spin);
-            col = mix(col, bh.rgb, bh.a);
-            alpha = max(alpha * (1.0 - bh.a), bh.a);
-        }
+    if (toward <= CONE_COS) {
+        float skyA = 0.0;
+        vec3 col = skyColor(dir, skyA);
+        fragColor = vec4(col * ColorModulator.rgb, skyA);
+        return;
     }
 
-    fragColor = vec4(col * ColorModulator.rgb, alpha);
+    vec2 uv = vec2(dot(dir, holeX), dot(dir, holeY)) / toward;
+    vec3 escapedRd;
+    bool escaped;
+    vec4 bh = gargantua(uv, spin, escapedRd, escaped);
+
+    vec3 bg = vec3(0.0);
+    float bgA = 0.0;
+    if (escaped) {
+        vec2 ouv = escapedRd.xy / max(escapedRd.z, 0.15) / VIEW_SCALE;
+        vec3 bgDir = normalize(hole + holeX * ouv.x + holeY * ouv.y);
+        bg = skyColor(bgDir, bgA);
+    }
+
+    // Fade the End texture out around the hole so it reads as deep space.
+    float coneT = clamp((toward - CONE_COS) / (1.0 - CONE_COS), 0.0, 1.0);
+    float darkness = smoothstep(0.5, 0.95, coneT) * 0.3;
+    float lensFade = smoothstep(0.0, 0.35, coneT);
+
+    bool shadow = !escaped && max(bh.r, max(bh.g, bh.b)) < 0.05;
+    float glow = bloom(uv, shadow) * lensFade;
+    vec3 glowCol = vec3(1.0, 0.86, 0.66) * glow;
+
+    vec3 col = mix(bg, tonemap(bh.rgb) + bg * (1.0 - bh.a), bh.a);
+    col = mix(bg, col, lensFade);
+    col += glowCol;
+    float alpha = max(bgA, darkness);
+    alpha = max(alpha, bh.a * lensFade);
+    alpha = max(alpha, clamp(glow * 1.3, 0.0, 1.0));
+    if (!escaped) {
+        alpha = max(alpha, lensFade);
+    }
+
+    fragColor = vec4(col * ColorModulator.rgb, clamp(alpha, 0.0, 1.0));
 }
