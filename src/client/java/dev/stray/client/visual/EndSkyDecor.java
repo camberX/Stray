@@ -62,14 +62,21 @@ public final class EndSkyDecor {
 		pose.mulPose(Axis.YP.rotation(time * 0.0009f));
 		pose.mulPose(Axis.XP.rotation(0.42f));
 		float pulse = 0.92f + 0.08f * (0.5f + 0.5f * Mth.sin(time * 0.03f));
+		Vector3f worldHole = new Vector3f(0.18f, 0.86f, 0.48f).normalize();
+		Vector3f localHole = new Matrix4f(pose.last().pose()).invert().transformDirection(worldHole, new Vector3f());
+		if (!Float.isFinite(localHole.x) || localHole.lengthSquared() < 1.0e-6f) {
+			localHole.set(worldHole);
+		} else {
+			localHole.normalize();
+		}
 		var indexBuf = RenderSystem.getSequentialBuffer(VertexFormat.Mode.QUADS);
 		Matrix4fStack modelView = RenderSystem.getModelViewStack();
 		modelView.pushMatrix();
 		modelView.mul(pose.last().pose());
 		GpuBufferSlice transform = RenderSystem.getDynamicUniforms().writeTransform(
 			modelView,
-			new Vector4f(pulse, pulse, pulse, 1f),
-			new Vector3f(time * 0.012f, 0f, 0f),
+			new Vector4f(pulse, pulse, pulse, time * 0.012f),
+			localHole,
 			new Matrix4f()
 		);
 		try (RenderPass pass = RenderSystem.getDevice().createCommandEncoder().createRenderPass(

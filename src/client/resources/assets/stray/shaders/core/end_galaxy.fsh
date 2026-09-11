@@ -100,79 +100,86 @@ vec3 skyColor(vec3 dir, out float alpha) {
 }
 
 vec4 gargantua(vec2 uv, float spin) {
-    vec3 pos = vec3(0.0, 0.38, -4.7);
-    vec3 rd = normalize(vec3(uv.x, uv.y, 1.18));
-    float rs = 0.5;
+    vec3 pos = vec3(0.0, 0.34, -5.1);
+    vec3 rd = normalize(vec3(uv.x, uv.y, 1.35));
+    float rs = 0.48;
     float closest = 100.0;
 
-    for (int i = 0; i < 40; i++) {
+    for (int i = 0; i < 48; i++) {
         float r = length(pos);
         closest = min(closest, r);
         if (r < rs) {
             return vec4(0.0, 0.0, 0.0, 1.0);
         }
-        if (r > 13.5) {
+        if (r > 12.0) {
             break;
         }
 
         float rho = length(pos.xz);
-        float thick = 0.011 * max(rho, 0.8);
-        if (abs(pos.y) < thick && rho > rs * 1.82 && rho < rs * 10.8) {
-            float t = clamp((rho - rs * 1.82) / (rs * 8.8), 0.0, 1.0);
+        float thick = 0.008 * max(rho, 0.9);
+        if (abs(pos.y) < thick && rho > rs * 1.9 && rho < rs * 8.6) {
+            float t = clamp((rho - rs * 1.9) / (rs * 6.6), 0.0, 1.0);
             float ang = atan(pos.z, pos.x);
-            float kepler = spin * pow(2.3 / max(rho, 0.25), 1.5);
-            float n1 = fbm(vec3(ang * 2.1 - kepler, rho * 0.78, 2.4));
-            float n2 = fbm(vec3(ang * 5.4 - kepler * 1.7, rho * 2.3, 8.1));
-            float lanes = smoothstep(0.25, 0.82, n1) * (0.5 + 0.5 * n2);
-            float inner = exp(-t * 4.4);
-            float fall = pow(max(1.0 - t, 0.0), 2.15) * inner * 3.6 + 0.07;
+            float kepler = spin * pow(2.2 / max(rho, 0.25), 1.5);
+            float n1 = fbm(vec3(ang * 2.0 - kepler, rho * 0.82, 2.4));
+            float n2 = fbm(vec3(ang * 5.2 - kepler * 1.6, rho * 2.2, 8.1));
+            float lanes = smoothstep(0.22, 0.78, n1) * (0.45 + 0.55 * n2);
+            float inner = exp(-t * 5.0);
+            float fall = pow(max(1.0 - t, 0.0), 2.4) * inner * 2.2 + 0.05;
             vec3 vel = normalize(vec3(-pos.z, 0.0, pos.x));
-            float dopp = pow(clamp(1.0 + 1.05 * dot(vel, -rd), 0.18, 2.6), 2.7);
-            vec3 cold = vec3(0.28, 0.12, 0.05);
-            vec3 ember = vec3(0.95, 0.48, 0.16);
-            vec3 white = vec3(1.0, 0.97, 0.90);
-            vec3 heat = mix(cold, ember, clamp(fall * 0.42, 0.0, 1.0));
-            heat = mix(heat, white, pow(clamp(fall * dopp * 0.2, 0.0, 1.0), 0.62));
-            vec3 col = heat * fall * dopp * (0.5 + 0.75 * lanes);
-            float alpha = clamp(0.28 + fall * 0.95, 0.0, 1.0);
+            float dopp = pow(clamp(1.0 + 0.72 * dot(vel, -rd), 0.28, 1.85), 1.8);
+            vec3 cold = vec3(0.22, 0.10, 0.04);
+            vec3 ember = vec3(0.86, 0.42, 0.14);
+            vec3 white = vec3(1.0, 0.94, 0.82);
+            vec3 heat = mix(cold, ember, clamp(fall * 0.55, 0.0, 1.0));
+            heat = mix(heat, white, pow(clamp(fall * dopp * 0.16, 0.0, 1.0), 0.75));
+            vec3 col = heat * fall * dopp * (0.4 + 0.7 * lanes);
+            float alpha = clamp(0.2 + fall * 0.85, 0.0, 0.96);
             return vec4(col, alpha);
         }
 
-        float dt = clamp(r * 0.06, 0.028, 0.26);
+        float dt = clamp(r * 0.05, 0.02, 0.2);
         pos += rd * dt;
         rd = normalize(rd - 1.5 * rs * pos * dt / (r * r * r));
     }
 
-    float photon = exp(-pow((closest - rs * 1.5) * 16.0, 2.0));
-    if (photon > 0.03) {
-        return vec4(vec3(1.0, 0.93, 0.78) * photon * 2.0, clamp(photon * 1.2, 0.0, 1.0));
+    float photon = exp(-pow((closest - rs * 1.52) * 38.0, 2.0));
+    if (photon > 0.08) {
+        return vec4(vec3(1.0, 0.9, 0.72) * photon * 1.15, photon * 0.65);
     }
     return vec4(0.0);
 }
 
 void main() {
     vec3 dir = normalize(worldDir);
-    vec3 hole = normalize(vec3(0.68, 0.12, 0.72));
-    vec3 holeUp = normalize(vec3(0.08, 0.99, 0.06));
+    vec3 hole = normalize(ModelOffset);
+    if (length(hole) < 0.2) {
+        hole = normalize(vec3(0.18, 0.86, 0.48));
+    }
+    vec3 holeUp = vec3(0.0, 1.0, 0.0);
+    if (abs(dot(holeUp, hole)) > 0.94) {
+        holeUp = vec3(0.0, 0.0, 1.0);
+    }
+    holeUp = normalize(holeUp - hole * dot(holeUp, hole));
     vec3 holeX = normalize(cross(holeUp, hole));
     vec3 holeY = cross(hole, holeX);
-    float spin = ModelOffset.x;
+    float spin = ColorModulator.w;
 
     float toward = clamp(dot(dir, hole), -1.0, 1.0);
     vec3 radial = dir - hole * toward;
     float radialLen = length(radial);
     vec3 away = radialLen > 1.0e-5 ? radial / radialLen : holeX;
     float ang = acos(toward);
-    float bend = 0.02 / max(pow(max(ang, 0.001), 1.35), 0.0005);
-    vec3 view = normalize(dir + away * bend * smoothstep(0.5, 0.08, ang));
+    float bend = 0.014 / max(pow(max(ang, 0.001), 1.4), 0.0006);
+    vec3 view = normalize(dir + away * bend * smoothstep(0.28, 0.06, ang));
 
     float skyA = 0.0;
     vec3 col = skyColor(view, skyA);
     float alpha = skyA;
 
-    if (toward > 0.28) {
-        vec2 uv = vec2(dot(dir, holeX), dot(dir, holeY)) * (0.52 / max(toward, 0.32));
-        if (length(uv) < 1.85) {
+    if (toward > 0.72) {
+        vec2 uv = vec2(dot(dir, holeX), dot(dir, holeY)) * (0.38 / max(toward, 0.72));
+        if (length(uv) < 0.95) {
             vec4 bh = gargantua(uv, spin);
             col = mix(col, bh.rgb, bh.a);
             alpha = max(alpha * (1.0 - bh.a), bh.a);

@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.219", new String[]{
+			"The End sky black hole stays high in the sky and no longer smears extra rings across the horizon."
+		}),
 		new Entry("1.2.218", new String[]{
 			"The End sky black hole is Gargantua-style: edge-on disk, white-hot inner ring, Doppler glow, and the far side bent over the top."
 		}),
