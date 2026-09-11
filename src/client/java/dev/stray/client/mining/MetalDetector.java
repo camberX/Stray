@@ -176,7 +176,7 @@ public final class MetalDetector {
 		}
 		PREDICTIONS.clear();
 		plinged = false;
-		if (config.metalDetectorToolTitle) {
+		if (config.metalDetectorToolTitle && !config.nucleusAlertTools) {
 			Matcher tool = TOOL.matcher(text);
 			if (tool.find()) {
 				showTitle(Minecraft.getInstance(), "SCAVENGED " + tool.group(1).trim().toUpperCase(Locale.ROOT), "Metal Detector");

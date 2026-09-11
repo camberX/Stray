@@ -126,6 +126,14 @@ public final class StrayConfig {
 	public boolean blockMarksEnabled = false;
 	public boolean blockMarksTracers = true;
 	public int blockMarksRgb = 0x2FB5FF;
+	public String blockMarkEditKey = "key.keyboard.enter";
+	public boolean pathsEnabled = false;
+	public boolean pathThroughWalls = true;
+	public float pathWidth = 2.4f;
+	public int pathRgb = 0x2FB5FF;
+	public String pathRecordKey = "key.keyboard.unknown";
+	public boolean nucleusAlertParts = false;
+	public boolean nucleusAlertTools = false;
 	public boolean fairySoulThroughWalls = true;
 	public int fairySoulRgb = 0xE878FF;
 	public float chestAimSpeed = 1.00f;
@@ -659,6 +667,24 @@ public final class StrayConfig {
 				}
 				if (!json.has("blockMarksRgb") || (loaded.blockMarksRgb & 0xFFFFFF) == 0) {
 					loaded.blockMarksRgb = 0x2FB5FF;
+				}
+				loaded.blockMarkEditKey = blankKey(loaded.blockMarkEditKey, "key.keyboard.enter");
+				if (!json.has("pathsEnabled")) {
+					loaded.pathsEnabled = false;
+				}
+				if (!json.has("pathThroughWalls")) {
+					loaded.pathThroughWalls = true;
+				}
+				loaded.pathWidth = json.has("pathWidth") ? clamp(loaded.pathWidth, 1f, 6f) : 2.4f;
+				if (!json.has("pathRgb") || (loaded.pathRgb & 0xFFFFFF) == 0) {
+					loaded.pathRgb = 0x2FB5FF;
+				}
+				loaded.pathRecordKey = blankKey(loaded.pathRecordKey, "key.keyboard.unknown");
+				if (!json.has("nucleusAlertParts")) {
+					loaded.nucleusAlertParts = false;
+				}
+				if (!json.has("nucleusAlertTools")) {
+					loaded.nucleusAlertTools = false;
 				}
 				if (!json.has("fairySoulThroughWalls")) {
 					loaded.fairySoulThroughWalls = true;

@@ -44,6 +44,9 @@ import dev.stray.client.mining.CrystalHollows;
 import dev.stray.client.mining.CrystalHollowsRenderer;
 import dev.stray.client.mining.CrystalHollowsMap;
 import dev.stray.client.mining.MetalDetector;
+import dev.stray.client.mining.NucleusAlerts;
+import dev.stray.client.movement.PathCommands;
+import dev.stray.client.movement.PathRecorder;
 import dev.stray.client.mining.MiningTracker;
 import dev.stray.client.mining.TitaniumTracker;
 import dev.stray.client.render.PestEspRenderer;
@@ -156,6 +159,7 @@ public final class StrayClient implements ClientModInitializer {
 		MobGlowRenderer.init();
 		BlockOutlineGlow.init();
 		BlockMarks.init();
+		PathRecorder.init();
 		MiningWorldRenderer.init();
 		ChestEspRenderer.init();
 		PestEspRenderer.init();
@@ -216,6 +220,7 @@ public final class StrayClient implements ClientModInitializer {
 			root.then(LoadoutsCommands.command());
 			root.then(WardrobeCommands.command());
 			root.then(ProfileCommands.command());
+			root.then(PathCommands.command());
 			var brand = dispatcher.register(root);
 			dispatcher.register(ClientCommands.literal("st").redirect(brand));
 			dispatcher.register(ClientCommands.literal("voidmark").redirect(brand));
@@ -232,6 +237,7 @@ public final class StrayClient implements ClientModInitializer {
 			vm.then(LoadoutsCommands.command());
 			vm.then(WardrobeCommands.command());
 			vm.then(ProfileCommands.command());
+			vm.then(PathCommands.command());
 			dispatcher.register(vm);
 			dispatcher.register(ClientCommands.literal("loadouts").executes(context -> LoadoutsCommands.open()));
 			dispatcher.register(ClientCommands.literal("loadout").executes(context -> LoadoutsCommands.open()));
@@ -289,6 +295,9 @@ public final class StrayClient implements ClientModInitializer {
 			CrystalHollows.tick(client);
 			CrystalHollowsMap.tick(client);
 			MetalDetector.tick(client);
+			NucleusAlerts.tick(client);
+			BlockMarks.tick(client);
+			PathRecorder.tick(client);
 			ShopCape.tick();
 			UiFontPack.tick(client);
 			UpdateNotifier.tick();
@@ -303,6 +312,7 @@ public final class StrayClient implements ClientModInitializer {
 			CrystalHollows.onWorldChange();
 			MetalDetector.onWorldChange();
 			BlockMarks.onWorldChange();
+			NucleusAlerts.reset();
 		});
 
 		ClientPlayConnectionEvents.JOIN.register((handler, sender, client) -> {

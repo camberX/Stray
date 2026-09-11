@@ -15,6 +15,11 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.236", new String[]{
+			"Paths: record where you walk and draw it as a line in the world. Recordings save per island (Crystal Hollows routes never show in the Hub), each one can be shown or hidden, and there is a Record key. /stray path start|stop|list|rename|delete|toggle|showall|hideall.",
+			"Nucleus alerts: a title and ping when an Automaton part or a Divan scavenged tool lands in your inventory, and a level-up chime when you hold all six parts or all four tools.",
+			"Block marks: look at a mark and press Enter (rebindable) to give it a name and an item icon. Tracers start just in front of the camera so they no longer jitter or clip at the crosshair."
+		}),
 		new Entry("1.2.235", new String[]{
 			"Block marks: with the toggle on, middle-click any block to mark it. Marks draw through walls with a distance tag and an optional tracer; middle-click again to drop one. Clear button and color in the ESP tab. Marks reset when you change worlds."
 		}),
