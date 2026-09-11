@@ -1,10 +1,12 @@
 package dev.stray.client.render;
 
 import dev.stray.client.config.StrayConfig;
+import dev.stray.client.location.SkyblockLocation;
 import net.minecraft.client.Camera;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.network.chat.Component;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
@@ -19,19 +21,31 @@ import org.joml.Vector3fc;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Side-of-entity health bars. Height matches the mob on screen. Fill eases
- * toward real health and shifts green to red as it drops.
+ * toward real health and shifts green to red as it drops. Skyblock mobs use the
+ * hologram armor-stand name; no HP in that name means no bar.
  */
 public final class EntityHealthBars {
 	private static final float WIDTH_RATIO = 0.09f;
 	private static final float GAP_RATIO = 0.11f;
 	private static final int TRACK = 0xCC0B0E14;
 	private static final int LINE = 0x661C2430;
+	private static final String HEART = "❤";
+	private static final String HEART_ALT = "♥";
+	private static final Pattern SLASH_HP = Pattern.compile(
+		"(?i)(\\d{1,3}(?:,\\d{3})+|\\d+(?:\\.\\d+)?)\\s*([kmb])?\\s*/\\s*(\\d{1,3}(?:,\\d{3})+|\\d+(?:\\.\\d+)?)\\s*([kmb])?"
+	);
+	private static final Pattern HEART_HP = Pattern.compile(
+		"(?i)(\\d{1,3}(?:,\\d{3})+|\\d+(?:\\.\\d+)?)\\s*([kmb])?\\s*[❤♥]"
+	);
 	private static final Map<UUID, Bar> BARS = new HashMap<>();
 	private static long lastNs = System.nanoTime();
 
@@ -66,11 +80,17 @@ public final class EntityHealthBars {
 		boolean through = config.healthBarThroughWalls;
 		boolean players = config.healthBarPlayers;
 		boolean right = config.healthBarRight();
+		boolean skyblock = SkyblockLocation.inSkyblock;
+		Map<Integer, Float> holograms = skyblock ? hologramHealth(client, maxSq, camPos) : Map.of();
 		float guiW = graphics.guiWidth();
 		float guiH = graphics.guiHeight();
 		Set<UUID> seen = new HashSet<>();
 		for (Entity entity : client.level.entitiesForRendering()) {
-			if (!(entity instanceof LivingEntity living) || !include(client, living, players, maxSq, camPos)) {
+			if (!(entity instanceof LivingEntity living)) {
+				continue;
+			}
+			Float sky = skyblock ? holograms.get(living.getId()) : null;
+			if (!include(client, living, players, maxSq, camPos, skyblock, sky != null)) {
 				continue;
 			}
 			Vec3 feet = living.getPosition(partial);
@@ -88,8 +108,13 @@ public final class EntityHealthBars {
 			if (screen == null || screen.h() < 4f) {
 				continue;
 			}
-			float max = Math.max(0.001f, living.getMaxHealth());
-			float target = Mth.clamp(living.getHealth() / max, 0f, 1f);
+			float target;
+			if (sky != null) {
+				target = sky;
+			} else {
+				float max = Math.max(0.001f, living.getMaxHealth());
+				target = Mth.clamp(living.getHealth() / max, 0f, 1f);
+			}
 			UUID id = living.getUUID();
 			Bar bar = BARS.computeIfAbsent(id, ignored -> new Bar(target));
 			bar.tick(target, dt);
@@ -102,6 +127,124 @@ public final class EntityHealthBars {
 				it.remove();
 			}
 		}
+	}
+
+	private static Map<Integer, Float> hologramHealth(Minecraft client, double maxSq, Vec3 camPos) {
+		Map<Integer, Float> out = new HashMap<>();
+		double standSq = maxSq + 36.0;
+		for (Entity entity : client.level.entitiesForRendering()) {
+			if (!(entity instanceof ArmorStand stand) || stand.distanceToSqr(camPos) > standSq) {
+				continue;
+			}
+			String name = plate(stand);
+			float ratio = parseHealth(name);
+			if (Float.isNaN(ratio)) {
+				continue;
+			}
+			LivingEntity mob = bindStand(stand, name, client.player);
+			if (mob == null) {
+				continue;
+			}
+			out.put(mob.getId(), ratio);
+		}
+		return out;
+	}
+
+	private static String plate(ArmorStand stand) {
+		Component custom = stand.getCustomName();
+		if (custom != null) {
+			String raw = custom.getString();
+			if (!raw.isEmpty()) {
+				return raw;
+			}
+		}
+		return stand.getDisplayName().getString();
+	}
+
+	private static float parseHealth(String raw) {
+		if (raw == null || raw.isEmpty()) {
+			return Float.NaN;
+		}
+		String plain = raw.replaceAll("§.", "");
+		if (!hasHeart(plain) && plain.indexOf('/') < 0) {
+			return Float.NaN;
+		}
+		Matcher slash = SLASH_HP.matcher(plain);
+		if (slash.find()) {
+			float current = readAmount(slash.group(1), slash.group(2));
+			float max = readAmount(slash.group(3), slash.group(4));
+			if (max > 0f) {
+				return Mth.clamp(current / max, 0f, 1f);
+			}
+		}
+		if (!hasHeart(plain)) {
+			return Float.NaN;
+		}
+		Matcher heart = HEART_HP.matcher(plain);
+		if (heart.find()) {
+			float current = readAmount(heart.group(1), heart.group(2));
+			if (current >= 0f) {
+				return 1f;
+			}
+		}
+		return Float.NaN;
+	}
+
+	private static boolean hasHeart(String plain) {
+		return plain.contains(HEART) || plain.contains(HEART_ALT);
+	}
+
+	private static float readAmount(String raw, String suffix) {
+		if (raw == null || raw.isEmpty()) {
+			return Float.NaN;
+		}
+		float value = Float.parseFloat(raw.replace(",", ""));
+		if (suffix != null && !suffix.isEmpty()) {
+			char unit = Character.toLowerCase(suffix.charAt(0));
+			if (unit == 'k') {
+				value *= 1000f;
+			} else if (unit == 'm') {
+				value *= 1_000_000f;
+			} else if (unit == 'b') {
+				value *= 1_000_000_000f;
+			}
+		}
+		return value;
+	}
+
+	private static LivingEntity bindStand(ArmorStand stand, String name, Player self) {
+		String plain = name.replaceAll("§.", "").toUpperCase();
+		int offset = plain.contains("WITHERMANCER") ? 3 : 1;
+		Entity byId = stand.level().getEntity(stand.getId() - offset);
+		if (byId instanceof LivingEntity living && skyMob(living, self)) {
+			return living;
+		}
+		AABB box = stand.getBoundingBox().inflate(0.8, 1.8, 0.8).move(0.0, -1.2, 0.0);
+		List<Entity> nearby = stand.level().getEntities(stand, box, other -> other instanceof LivingEntity living && skyMob(living, self));
+		LivingEntity best = null;
+		double bestDist = Double.MAX_VALUE;
+		Vec3 at = stand.position().add(0.0, -1.0, 0.0);
+		for (Entity other : nearby) {
+			double dist = other.distanceToSqr(at);
+			if (dist < bestDist) {
+				bestDist = dist;
+				best = (LivingEntity) other;
+			}
+		}
+		return best;
+	}
+
+	private static boolean skyMob(LivingEntity living, Player self) {
+		if (living.isRemoved() || living.isDeadOrDying() || living instanceof ArmorStand) {
+			return false;
+		}
+		if (living == self) {
+			return false;
+		}
+		if (living instanceof Player player) {
+			return player.getUUID().version() == 2;
+		}
+		return true;
 	}
 
 	private static AABB bounds(LivingEntity living, Vec3 feet) {
@@ -143,9 +286,11 @@ public final class EntityHealthBars {
 		LivingEntity living,
 		boolean players,
 		double maxSq,
-		Vec3 camPos
+		Vec3 camPos,
+		boolean skyblock,
+		boolean hologram
 	) {
-		if (living.isRemoved() || living.isDeadOrDying() || living.getMaxHealth() <= 0f) {
+		if (living.isRemoved() || living.isDeadOrDying()) {
 			return false;
 		}
 		if (living instanceof ArmorStand) {
@@ -159,8 +304,15 @@ public final class EntityHealthBars {
 		}
 		if (living instanceof Player) {
 			if (!players || !NametagRenderer.realAccount(living)) {
-				return false;
+				return hologram;
 			}
+			return living.distanceToSqr(camPos) <= maxSq;
+		}
+		if (skyblock) {
+			return hologram && living.distanceToSqr(camPos) <= maxSq;
+		}
+		if (living.getMaxHealth() <= 0f) {
+			return false;
 		}
 		return living.distanceToSqr(camPos) <= maxSq;
 	}

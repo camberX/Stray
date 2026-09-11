@@ -830,6 +830,20 @@ public class StrayScreen extends Screen {
 		mobSearchFocused = false;
 		if (value == Tab.CATALOG) {
 			ensureMobVisible = true;
+		} else {
+			mobFieldX = 0f;
+			mobFieldY = 0f;
+			mobFieldW = 0f;
+			mobListX = 0f;
+			mobListY = 0f;
+			mobListW = 0f;
+			mobListH = 0f;
+		}
+		if (value != Tab.PLAYERS) {
+			nametagEspListX = 0f;
+			nametagEspListY = 0f;
+			nametagEspListW = 0f;
+			nametagEspListH = 0f;
 		}
 		commitCapeUrl();
 		StrayConfig config = StrayConfig.get();
@@ -2528,6 +2542,14 @@ public class StrayScreen extends Screen {
 		return GuiDraw.hovered(mx, my + tabScroll, x, y, w, h);
 	}
 
+	private boolean mobListLive() {
+		return mobListH >= 2f && mobListW >= 2f && (tab == Tab.CATALOG || !controlCenter() && tab == Tab.ESP);
+	}
+
+	private boolean nametagListLive() {
+		return nametagEspListH >= 2f && nametagEspListW >= 2f && (tab == Tab.PLAYERS || !controlCenter() && tab == Tab.ESP);
+	}
+
 	private float innerX(float cardX) {
 		return cardX + cardPad();
 	}
@@ -3463,7 +3485,7 @@ public class StrayScreen extends Screen {
 		return FabricLoader.getInstance()
 			.getModContainer("stray")
 			.map(container -> container.getMetadata().getVersion().getFriendlyString())
-			.orElse("1.2.211");
+			.orElse("1.2.212");
 	}
 
 	@Override
@@ -3576,12 +3598,12 @@ public class StrayScreen extends Screen {
 			fontScroll = Mth.clamp(fontScroll - (float) scrollY * FONT_ROW * 2.2f, 0f, maxScroll);
 			return true;
 		}
-		if ((tab == Tab.ESP || tab == Tab.PLAYERS) && scrollY != 0 && pageHover(lx, ly, nametagEspListX, nametagEspListY, nametagEspListW, nametagEspListH)) {
+		if (nametagListLive() && scrollY != 0 && pageHover(lx, ly, nametagEspListX, nametagEspListY, nametagEspListW, nametagEspListH)) {
 			float maxScroll = Math.max(0f, StrayConfig.get().nametagEspLabels().size() * ROW - nametagEspListH);
 			nametagEspScroll = Mth.clamp(nametagEspScroll - (float) scrollY * ROW * 2.2f, 0f, maxScroll);
 			return true;
 		}
-		if ((tab == Tab.ESP || tab == Tab.CATALOG) && scrollY != 0 && pageHover(lx, ly, mobFieldX, mobFieldY, mobListW, mobListY + mobListH - mobFieldY)) {
+		if (mobListLive() && scrollY != 0 && pageHover(lx, ly, mobFieldX, mobFieldY, mobListW, mobListY + mobListH - mobFieldY)) {
 			List<MobCatalog.Entry> entries = MobCatalog.filtered(mobQuery);
 			float row = rowH();
 			float maxScroll = Math.max(0f, entries.size() * row - mobListH);
