@@ -78,6 +78,7 @@ public final class CrystalHollows {
 		if (!server.isBlank()) {
 			CrystalHollowsSocket.tick(server);
 		}
+		dropNucleusHits();
 		CrystalHollowsScanner.tick(client);
 		CrystalStructure spot = CrystalStructure.fromLabel(SkyblockLocation.poi);
 		if (spot == null) {
@@ -281,6 +282,9 @@ public final class CrystalHollows {
 		if (structure != CrystalStructure.UNKNOWN && !inside(pos)) {
 			return;
 		}
+		if (CrystalHollowsScanner.nucleus(pos.getX(), pos.getZ())) {
+			return;
+		}
 		BlockPos current = WAYPOINTS.get(structure);
 		if (current != null && current.distManhattan(pos) < SNAP_MIN) {
 			if (lock) {
@@ -305,6 +309,9 @@ public final class CrystalHollows {
 		if (structure != CrystalStructure.UNKNOWN && !inside(pos)) {
 			return;
 		}
+		if (CrystalHollowsScanner.nucleus(pos.getX(), pos.getZ())) {
+			return;
+		}
 		if (structure != CrystalStructure.UNKNOWN) {
 			BlockPos unknown = WAYPOINTS.get(CrystalStructure.UNKNOWN);
 			if (unknown != null && Vec3.atCenterOf(unknown).distanceTo(Vec3.atCenterOf(pos)) < UNKNOWN_CLEAR) {
@@ -312,6 +319,19 @@ public final class CrystalHollows {
 			}
 		}
 		WAYPOINTS.put(structure, pos);
+	}
+
+	private static void dropNucleusHits() {
+		var it = WAYPOINTS.entrySet().iterator();
+		while (it.hasNext()) {
+			var entry = it.next();
+			BlockPos pos = entry.getValue();
+			if (pos == null || !CrystalHollowsScanner.nucleus(pos.getX(), pos.getZ())) {
+				continue;
+			}
+			LOCKED.remove(entry.getKey());
+			it.remove();
+		}
 	}
 
 	static boolean inside(BlockPos pos) {

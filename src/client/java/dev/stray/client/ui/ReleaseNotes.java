@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.240", new String[]{
+			"CH structure scanner ignores the Nucleus. Bedrock and stone in the core were matching temple/city/queen sequences and dragging every waypoint into the middle. Marks already snapped there are dropped so they can be found again."
+		}),
 		new Entry("1.2.239", new String[]{
 			"CH structure scanner is the Odin WorldScanner now: it matches the confirmed vertical block sequences on each loaded chunk and snaps the waypoint with that structure's offset (temple, Divan, city, queen, king, Bal, Corleone, Odawa, Xalx, Pete, key-guardian spots, dragon nest, fairy grotto)."
 		}),

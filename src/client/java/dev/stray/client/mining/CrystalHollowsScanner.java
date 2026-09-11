@@ -267,11 +267,17 @@ final class CrystalHollowsScanner {
 		if (!enabled()) {
 			return;
 		}
+		if (chunkInNucleus(chunk)) {
+			return;
+		}
 		BlockPos.MutableBlockPos cursor = new BlockPos.MutableBlockPos();
 		for (int x = 0; x < 16; x++) {
 			for (int z = 0; z < 16; z++) {
 				int worldX = chunk.getPos().getMinBlockX() + x;
 				int worldZ = chunk.getPos().getMinBlockZ() + z;
+				if (nucleus(worldX, worldZ)) {
+					continue;
+				}
 				for (int y = MIN_Y; y <= MAX_Y; y++) {
 					BlockState state = block(chunk, x, y, z);
 					if (state.isAir()) {
@@ -338,7 +344,7 @@ final class CrystalHollowsScanner {
 			return;
 		}
 		if ((block == Blocks.MAGENTA_STAINED_GLASS || block == Blocks.MAGENTA_STAINED_GLASS_PANE)
-			&& !Quarter.NUCLEUS.test(worldX, y, worldZ)
+			&& !nucleus(worldX, worldZ)
 			&& !CrystalHollows.locked(CrystalStructure.FAIRY_GROTTO)) {
 			CrystalHollows.refine(CrystalStructure.FAIRY_GROTTO, cursor.set(worldX, y, worldZ).immutable(), true);
 		}
@@ -354,7 +360,7 @@ final class CrystalHollowsScanner {
 		Structure structure,
 		BlockPos.MutableBlockPos cursor
 	) {
-		if (CrystalHollows.locked(structure.target)) {
+		if (CrystalHollows.locked(structure.target) || nucleus(worldX, worldZ)) {
 			return;
 		}
 		if (!structure.quarter.test(worldX, y, worldZ)) {
@@ -364,7 +370,22 @@ final class CrystalHollowsScanner {
 			return;
 		}
 		BlockPos found = cursor.set(worldX, y, worldZ).offset(structure.offset).immutable();
+		if (nucleus(found.getX(), found.getZ())) {
+			return;
+		}
 		CrystalHollows.refine(structure.target, found, true);
+	}
+
+	static boolean nucleus(int x, int z) {
+		return x >= 449 && x <= 576 && z >= 449 && z <= 576;
+	}
+
+	private static boolean chunkInNucleus(LevelChunk chunk) {
+		int minX = chunk.getPos().getMinBlockX();
+		int minZ = chunk.getPos().getMinBlockZ();
+		int maxX = minX + 15;
+		int maxZ = minZ + 15;
+		return nucleus(minX, minZ) && nucleus(maxX, maxZ);
 	}
 
 	private static boolean sequence(LevelChunk chunk, int x, int y, int z, List<Block> blocks) {
