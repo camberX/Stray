@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.234", new String[]{
+			"Metal detector predictions read Hypixel's TREASURE action-bar packet again. The old chat hook never saw that line, so the waypoint never appeared. It also keeps solving if you are in the Hollows with the detector out."
+		}),
 		new Entry("1.2.233", new String[]{
 			"Storage preview actually shows on hover in /storage. It reads the Ender Chest / backpack name on the slot, caches the page while it is open, and no longer waits for Shift. If you have not opened that page yet it says so instead of doing nothing."
 		}),

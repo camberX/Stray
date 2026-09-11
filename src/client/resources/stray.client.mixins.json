@@ -27,6 +27,7 @@
 		"FogRendererMixin",
 		"FontMixin",
 		"GameRendererMixin",
+		"GuiAccessor",
 		"GuiMixin",
 		"GuiGraphicsExtractorInvoker",
 		"GuiGraphicsExtractorMixin",

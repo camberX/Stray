@@ -3,6 +3,7 @@ package dev.stray.client.mining;
 import dev.stray.client.config.StrayConfig;
 import dev.stray.client.item.ItemIds;
 import dev.stray.client.location.SkyblockLocation;
+import dev.stray.client.mixin.GuiAccessor;
 import dev.stray.client.render.GuiDraw;
 import dev.stray.client.render.NametagRenderer;
 import dev.stray.client.ui.Anim;
@@ -42,8 +43,8 @@ import java.util.regex.Pattern;
  * action-bar TREASURE distance while standing still.
  */
 public final class MetalDetector {
-	private static final Pattern TREASURE = Pattern.compile("TREASURE:\\s*([\\d.,]+)m");
-	private static final Pattern FOUND = Pattern.compile("You found .*with your .*Metal Detector");
+	private static final Pattern TREASURE = Pattern.compile("TREASURE:\\s*([\\d.,]+)\\s*m", Pattern.CASE_INSENSITIVE);
+	private static final Pattern FOUND = Pattern.compile("You found .*with your .*Metal Detector", Pattern.CASE_INSENSITIVE);
 	private static final Pattern TOOL = Pattern.compile("Scavenged ([A-Za-z ]+?)(?:\\s+with your|$)");
 	private static final String DETECTOR = "DWARVEN_METAL_DETECTOR";
 	private static final String[] TOOLS = {
@@ -103,6 +104,7 @@ public final class MetalDetector {
 	private static boolean plinged;
 	private static boolean allToolsBeeped;
 	private static boolean inDivan;
+	private static long lastTreasureMs;
 
 	private MetalDetector() {
 	}
@@ -115,7 +117,7 @@ public final class MetalDetector {
 			}
 			return;
 		}
-		boolean here = SkyblockLocation.inMinesOfDivan();
+		boolean here = inDivanNow(client);
 		if (here != inDivan) {
 			if (!here) {
 				reset();
@@ -126,7 +128,11 @@ public final class MetalDetector {
 			return;
 		}
 		if (config.metalDetectorSolver) {
+			pollActionBar(client);
 			trimPredictions(client.player.position());
+			if (origin == null) {
+				findOrigin(client.level, client.player.blockPosition(), 1000L);
+			}
 		}
 		if (config.metalDetectorToolTitle && holdingDetector(client.player) && hasAllTools(client.player)) {
 			if (client.player.tickCount % 20 == 0) {
@@ -141,6 +147,10 @@ public final class MetalDetector {
 		}
 	}
 
+	public static void onActionBar(Component message) {
+		onMessage(message, true);
+	}
+
 	public static void onMessage(Component message, boolean overlay) {
 		if (message == null) {
 			return;
@@ -149,14 +159,16 @@ public final class MetalDetector {
 		if (!config.metalDetectorSolver && !config.metalDetectorToolTitle) {
 			return;
 		}
-		if (!SkyblockLocation.inMinesOfDivan()) {
-			return;
-		}
-		String text = message.getString().replace('\u00a7', ' ');
-		if (overlay) {
-			if (config.metalDetectorSolver) {
+		String text = plain(message);
+		if (overlay || TREASURE.matcher(text).find()) {
+			if (config.metalDetectorSolver && SkyblockLocation.inSkyblock) {
 				readTreasure(text);
 			}
+			if (overlay) {
+				return;
+			}
+		}
+		if (overlay || !inDivanNow(Minecraft.getInstance())) {
 			return;
 		}
 		if (!FOUND.matcher(text).find()) {
@@ -187,10 +199,11 @@ public final class MetalDetector {
 		plinged = false;
 		allToolsBeeped = false;
 		inDivan = false;
+		lastTreasureMs = 0L;
 	}
 
 	public static boolean active() {
-		return StrayConfig.get().metalDetectorSolver && SkyblockLocation.inMinesOfDivan() && !PREDICTIONS.isEmpty();
+		return StrayConfig.get().metalDetectorSolver && inDivanNow(Minecraft.getInstance()) && !PREDICTIONS.isEmpty();
 	}
 
 	public static List<BlockPos> predictions() {
@@ -266,11 +279,21 @@ public final class MetalDetector {
 		}
 	}
 
+	private static void pollActionBar(Minecraft client) {
+		if (client.gui instanceof GuiAccessor accessor) {
+			Component overlay = accessor.stray$overlayMessage();
+			if (overlay != null) {
+				readTreasure(plain(overlay));
+			}
+		}
+	}
+
 	private static void readTreasure(String text) {
 		Matcher matcher = TREASURE.matcher(text);
 		if (!matcher.find()) {
 			return;
 		}
+		lastTreasureMs = System.currentTimeMillis();
 		if (PREDICTIONS.size() == 1) {
 			return;
 		}
@@ -292,7 +315,7 @@ public final class MetalDetector {
 			plinged = false;
 		}
 		if (origin == null) {
-			findOrigin(level, player.blockPosition());
+			findOrigin(level, player.blockPosition(), 1000L);
 		}
 		if (origin == null) {
 			return;
@@ -302,10 +325,10 @@ public final class MetalDetector {
 			BlockPos loc = origin.offset(-offset.getX(), -offset.getY(), -offset.getZ());
 			if (ignore != null && ignore.equals(loc)) {
 				ignore = null;
-				return;
+				continue;
 			}
 			double measured = Vec3.atLowerCornerOf(loc).add(0, 1, 0).distanceTo(feet);
-			if (round1(measured) == distance) {
+			if (Math.abs(round1(measured) - round1(distance)) < 0.05) {
 				PREDICTIONS.add(loc);
 			}
 		}
@@ -313,6 +336,26 @@ public final class MetalDetector {
 			client.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.NOTE_BLOCK_PLING.value(), 1.0f, 1.0f));
 			plinged = true;
 		}
+	}
+
+	private static boolean inDivanNow(Minecraft client) {
+		if (SkyblockLocation.inMinesOfDivan()) {
+			return true;
+		}
+		if (System.currentTimeMillis() - lastTreasureMs < 20_000L) {
+			return SkyblockLocation.inSkyblock || SkyblockLocation.inCrystalHollows();
+		}
+		if (!SkyblockLocation.inCrystalHollows()) {
+			return false;
+		}
+		return client != null && client.player != null && holdingDetector(client.player);
+	}
+
+	private static String plain(Component message) {
+		if (message == null) {
+			return "";
+		}
+		return message.getString().replaceAll("§.", "").replace('\u00a7', ' ').trim();
 	}
 
 	private static void trimPredictions(Vec3 feet) {
@@ -329,12 +372,12 @@ public final class MetalDetector {
 		}
 	}
 
-	private static void findOrigin(ClientLevel level, BlockPos around) {
+	private static void findOrigin(ClientLevel level, BlockPos around, long cooldownMs) {
 		long now = System.currentTimeMillis();
 		if (now < nextOriginScan) {
 			return;
 		}
-		nextOriginScan = now + 15_000L;
+		nextOriginScan = now + Math.max(250L, cooldownMs);
 		for (int x = -50; x < 50; x++) {
 			for (int y = 30; y >= -30; y--) {
 				for (int z = -50; z < 50; z++) {
