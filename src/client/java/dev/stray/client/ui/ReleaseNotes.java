@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.225", new String[]{
+			"End sky is pure textures now: six pre-rendered 1024px sky faces plus eight 1536px black hole frames that cross-fade for the disk motion. No custom shader runs at all, so it costs the same as any skybox."
+		}),
 		new Entry("1.2.224", new String[]{
 			"End sky is an animated sky texture now: the galaxy and Gargantua bake into six 1280px faces, only the faces the black hole touches re-bake every few frames, and each frame just draws six textured quads. Full resolution, near-zero per-frame cost."
 		}),
