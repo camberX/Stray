@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.203", new String[]{
+			"When a newer GitHub release is out, an update card slides in at the bottom-right. It slides away on its own, or as soon as you click it. Update notify stays on by default."
+		}),
 		new Entry("1.2.202", new String[]{
 			"The Crystal Hollows map is just the map: no title, no padding, and the vanilla map player arrow. Motion blur no longer crashes when you turn it on (it was mapping a GPU buffer that is not writable)."
 		}),

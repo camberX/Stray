@@ -6,6 +6,7 @@ import dev.stray.client.farming.FarmingHud;
 import dev.stray.client.mining.CrystalHollowsMap;
 import dev.stray.client.mining.CrystalHollowsRenderer;
 import dev.stray.client.mining.MetalDetector;
+import dev.stray.client.update.UpdateToast;
 import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry;
 import net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements;
 import net.minecraft.client.DeltaTracker;
@@ -45,5 +46,6 @@ public final class StrayHud {
 		MiningHudRenderer.extract(graphics, delta);
 		JacobContestHudRenderer.extract(graphics, delta);
 		ComposterHudRenderer.extract(graphics, delta);
+		UpdateToast.extract(graphics);
 	}
 }

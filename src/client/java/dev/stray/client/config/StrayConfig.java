@@ -60,6 +60,7 @@ public final class StrayConfig {
 	public boolean uiAnimations = false;
 	public boolean autoUpdate = false;
 	public boolean updateNotify = true;
+	public String updateNotifiedVersion = "";
 	public boolean watermarkEnabled = false;
 	public boolean watermarkFps = false;
 	public boolean watermarkPing = false;
@@ -481,6 +482,9 @@ public final class StrayConfig {
 				}
 				if (loaded.changelogSeen == null) {
 					loaded.changelogSeen = "";
+				}
+				if (loaded.updateNotifiedVersion == null) {
+					loaded.updateNotifiedVersion = "";
 				}
 				loaded.nametagRange = clamp(loaded.nametagRange <= 0 ? 128 : loaded.nametagRange, 64, 256);
 				loaded.nametagScale = clampHudScale(loaded.nametagScale);

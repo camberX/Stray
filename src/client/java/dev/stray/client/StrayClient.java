@@ -180,6 +180,7 @@ public final class StrayClient implements ClientModInitializer {
 		AutoDna.init();
 		GardenPlots.init();
 		DisabledPotions.init();
+		UpdateNotifier.init();
 
 		ClientCommandRegistrationCallback.EVENT.register((dispatcher, registryAccess) -> {
 			var root = ClientCommands.literal("stray").executes(context -> openScreen());

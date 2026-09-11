@@ -118,6 +118,9 @@ public final class AutoUpdate implements PreLaunchEntrypoint {
 			json = UpdateMeta.getJson(http, UpdateMeta.GITHUB_META, 12);
 		}
 		if (json == null) {
+			json = UpdateMeta.getJson(http, UpdateMeta.EISENMANN_GITHUB_META, 12);
+		}
+		if (json == null) {
 			json = UpdateMeta.getJson(http, UpdateMeta.LEGACY_GITHUB_META, 12);
 		}
 		if (json == null || !json.has("version")) {
@@ -145,8 +148,10 @@ public final class AutoUpdate implements PreLaunchEntrypoint {
 		urls.add(UpdateMeta.SHOP + "/stray.jar");
 		urls.add(UpdateMeta.SHOP + "/eisenmann.jar");
 		urls.add(UpdateMeta.SHOP + "/voidmark.jar");
+		urls.add("https://raw.githubusercontent.com/camberX/Stray/main/web/public/mod/" + file);
 		urls.add("https://raw.githubusercontent.com/camberX/Eisenmann/main/web/public/mod/" + file);
 		urls.add("https://raw.githubusercontent.com/camberX/voidmark/main/web/public/mod/" + file);
+		urls.add("https://raw.githubusercontent.com/camberX/Stray/main/web/public/mod/stray.jar");
 		urls.add("https://raw.githubusercontent.com/camberX/Eisenmann/main/web/public/mod/stray.jar");
 		urls.add("https://raw.githubusercontent.com/camberX/voidmark/main/web/public/mod/stray.jar");
 		urls.add("https://raw.githubusercontent.com/camberX/Eisenmann/main/web/public/mod/eisenmann.jar");

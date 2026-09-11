@@ -3,6 +3,7 @@ package dev.stray.client.mixin;
 import dev.stray.client.media.MediaChat;
 import dev.stray.client.render.MusicHudRenderer;
 import dev.stray.client.render.RawmatsHudRenderer;
+import dev.stray.client.update.UpdateToast;
 import dev.stray.client.ui.ProfileCommands;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.ChatScreen;
@@ -17,7 +18,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 public class ChatScreenMixin {
 	@Inject(method = "mouseClicked", at = @At("HEAD"), cancellable = true)
 	private void stray$musicClick(MouseButtonEvent event, boolean doubled, CallbackInfoReturnable<Boolean> cir) {
-		if (MusicHudRenderer.mouseClicked(event) || RawmatsHudRenderer.mouseClicked(event)) {
+		if (UpdateToast.mouseClicked(event) || MusicHudRenderer.mouseClicked(event) || RawmatsHudRenderer.mouseClicked(event)) {
 			cir.setReturnValue(true);
 		}
 	}
