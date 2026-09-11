@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.241", new String[]{
+			"Auto-update reads every version mirror and keeps the newest one, and it no longer treats the first cached latest.json as gospel. That is why 1.2.240 sat on GitHub while the launcher still said 1.2.239 was current."
+		}),
 		new Entry("1.2.240", new String[]{
 			"CH structure scanner ignores the Nucleus. Bedrock and stone in the core were matching temple/city/queen sequences and dragging every waypoint into the middle. Marks already snapped there are dropped so they can be found again."
 		}),

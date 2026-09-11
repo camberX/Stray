@@ -113,21 +113,28 @@ public final class AutoUpdate implements PreLaunchEntrypoint {
 			.followRedirects(HttpClient.Redirect.NORMAL)
 			.connectTimeout(Duration.ofSeconds(6))
 			.build();
-		JsonObject json = UpdateMeta.getJson(http, UpdateMeta.META, 12);
-		if (json == null) {
-			json = UpdateMeta.getJson(http, UpdateMeta.GITHUB_META, 12);
+		JsonObject json = null;
+		String version = null;
+		for (String url : List.of(
+			UpdateMeta.META,
+			UpdateMeta.GITHUB_META,
+			UpdateMeta.EISENMANN_GITHUB_META,
+			UpdateMeta.LEGACY_GITHUB_META
+		)) {
+			JsonObject candidate = UpdateMeta.getJson(http, url, 12);
+			if (candidate == null || !candidate.has("version")) {
+				continue;
+			}
+			String next = candidate.get("version").getAsString().trim();
+			if (next.isEmpty()) {
+				continue;
+			}
+			if (version == null || UpdateMeta.compare(next, version) > 0) {
+				json = candidate;
+				version = next;
+			}
 		}
-		if (json == null) {
-			json = UpdateMeta.getJson(http, UpdateMeta.EISENMANN_GITHUB_META, 12);
-		}
-		if (json == null) {
-			json = UpdateMeta.getJson(http, UpdateMeta.LEGACY_GITHUB_META, 12);
-		}
-		if (json == null || !json.has("version")) {
-			return null;
-		}
-		String version = json.get("version").getAsString().trim();
-		if (version.isEmpty()) {
+		if (json == null || version == null) {
 			return null;
 		}
 		String file = json.has("file") ? json.get("file").getAsString().trim() : "stray-" + version + ".jar";

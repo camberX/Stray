@@ -61,10 +61,12 @@ public final class UpdateMeta {
 	static JsonObject getJson(HttpClient http, String url, int timeoutSec, String accept) {
 		try {
 			HttpResponse<String> response = http.send(
-				HttpRequest.newBuilder(URI.create(url))
+				HttpRequest.newBuilder(URI.create(cacheBust(url)))
 					.timeout(Duration.ofSeconds(timeoutSec))
 					.header("User-Agent", "Stray-Update (https://github.com/camberX/Stray)")
 					.header("Accept", accept)
+					.header("Cache-Control", "no-cache")
+					.header("Pragma", "no-cache")
 					.GET()
 					.build(),
 				HttpResponse.BodyHandlers.ofString()
@@ -90,6 +92,13 @@ public final class UpdateMeta {
 			}
 		}
 		return 0;
+	}
+
+	static String cacheBust(String url) {
+		if (url == null || url.isBlank()) {
+			return url;
+		}
+		return url + (url.contains("?") ? "&" : "?") + "t=" + System.currentTimeMillis();
 	}
 
 	private static String newer(String best, String candidate) {
