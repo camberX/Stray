@@ -162,6 +162,7 @@ public final class StrayConfig {
 	public boolean autoExperimentsAutoClose = false;
 	public int autoExperimentsSerumCount = 0;
 	public boolean autoExperimentsGetMaxXp = false;
+	public boolean disabledPotionsHighlight = false;
 	public float hitmarkerScale = 1.00f;
 	public float hitsoundVolume = 0.80f;
 	public float hitsoundPitch = 1.00f;
@@ -681,6 +682,9 @@ public final class StrayConfig {
 				}
 				if (!json.has("autoExperimentsEnabled")) {
 					loaded.autoExperimentsEnabled = false;
+				}
+				if (!json.has("disabledPotionsHighlight")) {
+					loaded.disabledPotionsHighlight = false;
 				}
 				loaded.autoClickerCps = json.has("autoClickerCps")
 					? clamp(loaded.autoClickerCps, 3.0f, 15.0f)

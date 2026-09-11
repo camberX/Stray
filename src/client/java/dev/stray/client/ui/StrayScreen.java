@@ -199,6 +199,9 @@ public class StrayScreen extends Screen {
 		new SearchEntry("Ultrasequencer", Tab.MENUS, "Misc"),
 		new SearchEntry("Click delay", Tab.MENUS, "Misc"),
 		new SearchEntry("Serum count", Tab.MENUS, "Misc"),
+		new SearchEntry("Disabled potions", Tab.MENUS, "Menus"),
+		new SearchEntry("Toggle Potion Effects", Tab.MENUS, "Menus"),
+		new SearchEntry("Potion effects", Tab.MENUS, "Menus"),
 		new SearchEntry("Held item shader", Tab.ESP, "Visuals"),
 		new SearchEntry("Item shader", Tab.ESP, "Visuals"),
 		new SearchEntry("Held item outline", Tab.ESP, "Visuals"),
@@ -1912,14 +1915,15 @@ public class StrayScreen extends Screen {
 				toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Node ESP", config.boxFill, v -> config.boxFill = v, Feature.NODE_ESP);
 			}
 			case MENUS -> {
-				float y = featureCard(graphics, font, left, top, col, cardHeight(4), "Menus");
+				float y = featureCard(graphics, font, left, top, col, cardHeight(5), "Menus");
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Loadouts menu", config.loadoutsMenuEnabled, v -> config.loadoutsMenuEnabled = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Wardrobe menu", config.wardrobeMenuEnabled, v -> config.wardrobeMenuEnabled = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Profile viewer", config.profileViewerEnabled, v -> config.profileViewerEnabled = v);
-				toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Open animation", config.loadoutsOpenAnim, v -> config.loadoutsOpenAnim = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Open animation", config.loadoutsOpenAnim, v -> config.loadoutsOpenAnim = v);
+				toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Disabled potions", config.disabledPotionsHighlight, v -> config.disabledPotionsHighlight = v);
 
 				float experimentsH = cardHeight(1 + Feature.AUTO_EXPERIMENTS.rows);
-				y = featureCard(graphics, font, left, top + cardHeight(4) + 8, col, experimentsH, "Auto experiments");
+				y = featureCard(graphics, font, left, top + cardHeight(5) + 8, col, experimentsH, "Auto experiments");
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Enable", config.autoExperimentsEnabled, v -> config.autoExperimentsEnabled = v);
 				drawFeatureFields(graphics, font, mouseX, mouseY, ix, y, iw, Feature.AUTO_EXPERIMENTS);
 
@@ -2090,15 +2094,16 @@ public class StrayScreen extends Screen {
 			}
 			case MENUS -> {
 				float y = sectionLabel(graphics, font, left, top, "Skyblock");
-				y = featureCard(graphics, font, left, y, col, cardHeight(4), "Menus");
+				y = featureCard(graphics, font, left, y, col, cardHeight(5), "Menus");
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Loadouts menu", config.loadoutsMenuEnabled, v -> config.loadoutsMenuEnabled = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Wardrobe menu", config.wardrobeMenuEnabled, v -> config.wardrobeMenuEnabled = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Profile viewer", config.profileViewerEnabled, v -> config.profileViewerEnabled = v);
-				toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Open animation", config.loadoutsOpenAnim, v -> config.loadoutsOpenAnim = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Open animation", config.loadoutsOpenAnim, v -> config.loadoutsOpenAnim = v);
+				toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Disabled potions", config.disabledPotionsHighlight, v -> config.disabledPotionsHighlight = v);
 
 				float menusY = top + 14f;
 				float experimentsH = cardHeight(Feature.AUTO_EXPERIMENTS.rows);
-				y = featureCard(graphics, font, left, menusY + cardHeight(4) + 8, col, experimentsH, "Auto experiments", config.autoExperimentsEnabled, v -> config.autoExperimentsEnabled = v, mouseX, mouseY);
+				y = featureCard(graphics, font, left, menusY + cardHeight(5) + 8, col, experimentsH, "Auto experiments", config.autoExperimentsEnabled, v -> config.autoExperimentsEnabled = v, mouseX, mouseY);
 				drawFeatureFields(graphics, font, mouseX, mouseY, ix, y, iw, Feature.AUTO_EXPERIMENTS);
 
 				float bindsH = cardHeight(4);
@@ -3283,7 +3288,7 @@ public class StrayScreen extends Screen {
 		return FabricLoader.getInstance()
 			.getModContainer("stray")
 			.map(container -> container.getMetadata().getVersion().getFriendlyString())
-			.orElse("1.2.200");
+			.orElse("1.2.201");
 	}
 
 	@Override

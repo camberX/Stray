@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.201", new String[]{
+			"Menus Disabled potions highlights slots with DISABLED in lore in Toggle Potion Effects. Lore is read only when that slot updates."
+		}),
 		new Entry("1.2.200", new String[]{
 			"Farming Pest ESP marks Garden pests the same way Skyblocker does (armor-stand pest heads). Holding a vacuum (lore contains VACUUM) draws tracers to them. Off by default."
 		}),
