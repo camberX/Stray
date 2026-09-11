@@ -1,9 +1,7 @@
 package dev.stray.client.visual.motionblur;
 
 import com.mojang.blaze3d.buffers.GpuBuffer;
-import com.mojang.blaze3d.buffers.Std140Builder;
 import com.mojang.blaze3d.resource.GraphicsResourceAllocator;
-import com.mojang.blaze3d.systems.RenderSystem;
 import dev.stray.Stray;
 import dev.stray.client.config.StrayConfig;
 import dev.stray.client.mixin.PostChainAccessor;
@@ -266,8 +264,7 @@ public final class MotionBlurShaders {
 		}
 		GpuBuffer ubo = managed.put(processor, uniforms, uboKey);
 		try {
-			try (GpuBuffer.MappedView view = RenderSystem.getDevice().createCommandEncoder().mapBuffer(ubo, false, true)) {
-				Std140Builder builder = Std140Builder.intoBuffer(view.data());
+			GpuBufferUtil.write(ubo, UBO_SIZE, builder -> {
 				builder.putMat4f(CAMERA.getMvInverse());
 				builder.putMat4f(CAMERA.getProjInverse());
 				builder.putMat4f(CAMERA.getPrevModelView());
@@ -278,13 +275,13 @@ public final class MotionBlurShaders {
 				builder.putInt(sampleAmount);
 				builder.putInt(blurAlgorithm);
 				builder.putInt(1);
-			}
+			});
 			processor.process(client.getMainRenderTarget(), frameAllocator);
 		} catch (RuntimeException e) {
 			if (managed.resetIfClosed(e)) {
 				return;
 			}
-			throw e;
+			Stray.LOGGER.warn("Motion blur skipped a frame", e);
 		}
 	}
 }

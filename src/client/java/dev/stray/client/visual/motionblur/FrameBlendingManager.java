@@ -1,7 +1,6 @@
 package dev.stray.client.visual.motionblur;
 
 import com.mojang.blaze3d.buffers.GpuBuffer;
-import com.mojang.blaze3d.buffers.Std140Builder;
 import com.mojang.blaze3d.framegraph.FramePass;
 import com.mojang.blaze3d.pipeline.MainTarget;
 import com.mojang.blaze3d.pipeline.RenderTarget;
@@ -428,18 +427,16 @@ public final class FrameBlendingManager {
 	}
 
 	private static void writeFloat(GpuBuffer ubo, float value) {
-		try (GpuBuffer.MappedView view = RenderSystem.getDevice().createCommandEncoder().mapBuffer(ubo, false, true)) {
-			Std140Builder builder = Std140Builder.intoBuffer(view.data());
+		GpuBufferUtil.write(ubo, ACCUM_UBO_SIZE, builder -> {
 			builder.putFloat(value);
 			builder.putInt(0);
 			builder.putInt(0);
 			builder.putInt(0);
-		}
+		});
 	}
 
 	private static void writeBlendParams(GpuBuffer ubo, float invTotalWeight, int sampleCount) {
-		try (GpuBuffer.MappedView view = RenderSystem.getDevice().createCommandEncoder().mapBuffer(ubo, false, true)) {
-			Std140Builder builder = Std140Builder.intoBuffer(view.data());
+		GpuBufferUtil.write(ubo, FRAME_BLEND_UBO_SIZE, builder -> {
 			builder.putFloat(invTotalWeight);
 			builder.putInt(sampleCount);
 			for (int i = 0; i < FRAME_BLEND_SAMPLE_LIMIT; i++) {
@@ -447,7 +444,7 @@ public final class FrameBlendingManager {
 			}
 			builder.putFloat(0.0f);
 			builder.putFloat(0.0f);
-		}
+		});
 	}
 
 	private static final class MutableTextureInput implements PostPass.Input {

@@ -5,9 +5,7 @@ import dev.stray.Stray;
 import dev.stray.client.config.StrayConfig;
 import dev.stray.client.location.SkyblockLocation;
 import dev.stray.client.render.GuiDraw;
-import dev.stray.client.render.HudChrome;
 import dev.stray.client.render.HudLayout;
-import dev.stray.client.ui.Theme;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
@@ -26,8 +24,8 @@ import net.minecraft.world.level.material.MapColor;
 import net.minecraft.world.phys.Vec3;
 
 public final class CrystalHollowsMap {
-	public static final float WIDTH = 148;
-	public static final float HEIGHT = 162;
+	public static final float WIDTH = 136;
+	public static final float HEIGHT = 136;
 	static final int WORLD_MIN = 202;
 	static final int WORLD_MAX = 823;
 	static final int WORLD_SPAN = WORLD_MAX - WORLD_MIN;
@@ -40,9 +38,8 @@ public final class CrystalHollowsMap {
 	private static final int SCAN_FLOOR = 31;
 	private static final int BUDGET = 720;
 	private static final float MAP = 136;
-	private static final float PAD = 6;
-	private static final float HEAD = 12;
 	private static final Identifier TEXTURE = Stray.id("dynamic/crystal_hollows_map");
+	private static final Identifier PLAYER = Identifier.withDefaultNamespace("textures/map/decorations/player.png");
 	private static final int JUNGLE = 0x3F8F4E;
 	private static final int GOBLIN = 0xC47B2C;
 	private static final int MITHRIL = 0x3FA8A4;
@@ -132,27 +129,21 @@ public final class CrystalHollowsMap {
 		if (scale != 1.0f) {
 			graphics.pose().scale(scale, scale);
 		}
-		HudChrome.panel(graphics, 0, 0, WIDTH, HEIGHT, 5, Theme.WINDOW, Theme.LINE);
-		plain(graphics, font, "Crystal Hollows", PAD, PAD, Theme.TEXT);
-		plain(graphics, font, "N", WIDTH - PAD - font.width("N"), PAD, Theme.MUTED);
-		float mapX = PAD;
-		float mapY = PAD + HEAD;
-		GuiDraw.rounded(graphics, mapX - 1, mapY - 1, MAP + 2, MAP + 2, 3, 0xFF141412);
-		GuiDraw.blit(graphics, TEXTURE, mapX, mapY, MAP, MAP, 0f, 0f, TEX, TEX, TEX, TEX);
-		drawWalls(graphics, mapX, mapY);
+		GuiDraw.blit(graphics, TEXTURE, 0, 0, MAP, MAP, 0f, 0f, TEX, TEX, TEX, TEX);
+		drawWalls(graphics, 0, 0);
 		for (CrystalHollows.Mark mark : CrystalHollows.mapMarks()) {
 			if (mark.nucleus()) {
-				drawDot(graphics, mapX, mapY, mark.pos(), mark.rgb(), 1.6f);
+				drawDot(graphics, 0, 0, mark.pos(), mark.rgb(), 1.6f);
 				continue;
 			}
 			if (StrayConfig.get().crystalHollowsMapLabels) {
-				drawMark(graphics, font, mapX, mapY, mark);
+				drawMark(graphics, font, 0, 0, mark);
 			} else {
-				drawDot(graphics, mapX, mapY, mark.pos(), mark.rgb(), 2.2f);
+				drawDot(graphics, 0, 0, mark.pos(), mark.rgb(), 2.2f);
 			}
 		}
 		if (client.player != null && SkyblockLocation.inCrystalHollows()) {
-			drawPlayer(graphics, mapX, mapY, client.player);
+			drawPlayer(graphics, 0, 0, client.player);
 		}
 		graphics.pose().popMatrix();
 	}
@@ -530,18 +521,14 @@ public final class CrystalHollowsMap {
 	}
 
 	private static void drawPlayer(GuiGraphicsExtractor graphics, float mapX, float mapY, LocalPlayer player) {
-		int x = Math.round(mapX + worldToView(player.getX()));
-		int y = Math.round(mapY + worldToView(player.getZ()));
-		int dir = Math.floorMod(Math.round(player.getYRot() / 45f), 8);
-		int[][] step = {
-			{0, 1}, {-1, 1}, {-1, 0}, {-1, -1},
-			{0, -1}, {1, -1}, {1, 0}, {1, 1}
-		};
-		int dx = step[dir][0];
-		int dy = step[dir][1];
-		GuiDraw.fill(graphics, x - 2, y - 2, 5, 5, 0xFF000000);
-		GuiDraw.fill(graphics, x - 1, y - 1, 3, 3, 0xFFFFFFFF);
-		GuiDraw.fill(graphics, x + dx * 3 - 1, y + dy * 3 - 1, 3, 3, 0xFFE7C56A);
+		float x = mapX + worldToView(player.getX());
+		float y = mapY + worldToView(player.getZ());
+		float size = 8f;
+		graphics.pose().pushMatrix();
+		graphics.pose().translate(x, y);
+		graphics.pose().rotate((player.getYRot() + 180f) * Mth.DEG_TO_RAD);
+		GuiDraw.blit(graphics, PLAYER, -size * 0.5f, -size * 0.5f, size, size, 0f, 0f, 8, 8, 8, 8);
+		graphics.pose().popMatrix();
 	}
 
 	private static void plain(GuiGraphicsExtractor graphics, Font font, String text, float x, float y, int color) {

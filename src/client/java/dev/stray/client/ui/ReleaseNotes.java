@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.202", new String[]{
+			"The Crystal Hollows map is just the map: no title, no padding, and the vanilla map player arrow. Motion blur no longer crashes when you turn it on (it was mapping a GPU buffer that is not writable)."
+		}),
 		new Entry("1.2.201", new String[]{
 			"Menus Disabled potions highlights slots with DISABLED in lore in Toggle Potion Effects. Lore is read only when that slot updates."
 		}),
