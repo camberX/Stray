@@ -12,6 +12,7 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.decoration.ArmorStand;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.ClipContext;
+import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Vector3fc;
@@ -24,13 +25,12 @@ import java.util.Set;
 import java.util.UUID;
 
 /**
- * Side-of-entity health bars. Fill eases toward the real health, and the color
- * shifts from green to red as the bar drops.
+ * Side-of-entity health bars. Height matches the mob on screen. Fill eases
+ * toward real health and shifts green to red as it drops.
  */
 public final class EntityHealthBars {
-	private static final float BAR_W = 4.5f;
-	private static final float BAR_H = 36f;
-	private static final float GAP = 8f;
+	private static final float BAR_W = 3.5f;
+	private static final float GAP = 4f;
 	private static final int TRACK = 0xCC0B0E14;
 	private static final int LINE = 0x661C2430;
 	private static final Map<UUID, Bar> BARS = new HashMap<>();
@@ -67,13 +67,15 @@ public final class EntityHealthBars {
 		boolean through = config.healthBarThroughWalls;
 		boolean players = config.healthBarPlayers;
 		boolean right = config.healthBarRight();
-		float userScale = StrayConfig.clampHudScale(config.nametagScale);
+		float guiW = graphics.guiWidth();
+		float guiH = graphics.guiHeight();
 		Set<UUID> seen = new HashSet<>();
 		for (Entity entity : client.level.entitiesForRendering()) {
 			if (!(entity instanceof LivingEntity living) || !include(client, living, players, maxSq, camPos)) {
 				continue;
 			}
-			Vec3 mid = living.getPosition(partial).add(0.0, living.getBbHeight() * 0.55, 0.0);
+			Vec3 feet = living.getPosition(partial);
+			Vec3 mid = feet.add(0.0, living.getBbHeight() * 0.5, 0.0);
 			Vec3 rel = mid.subtract(camPos);
 			double facing = rel.x * forward.x() + rel.y * forward.y() + rel.z * forward.z();
 			if (facing <= 0.12) {
@@ -82,8 +84,9 @@ public final class EntityHealthBars {
 			if (!through && occluded(client, camPos, mid)) {
 				continue;
 			}
-			Vec3 ndc = client.gameRenderer.projectPointToScreen(mid);
-			if (ndc.x < -1.2 || ndc.x > 1.2 || ndc.y < -1.2 || ndc.y > 1.2) {
+			AABB box = bounds(living, feet);
+			ScreenBox screen = project(client, box, guiW, guiH);
+			if (screen == null || screen.h() < 4f) {
 				continue;
 			}
 			float max = Math.max(0.001f, living.getMaxHealth());
@@ -92,10 +95,7 @@ public final class EntityHealthBars {
 			Bar bar = BARS.computeIfAbsent(id, ignored -> new Bar(target));
 			bar.tick(target, dt);
 			seen.add(id);
-			float sx = (float) ((ndc.x * 0.5 + 0.5) * graphics.guiWidth());
-			float sy = (float) ((-ndc.y * 0.5 + 0.5) * graphics.guiHeight());
-			double dist = Math.sqrt(living.distanceToSqr(camPos));
-			draw(graphics, sx, sy, bar.shown, NametagRenderer.distanceScale(dist) * userScale, right);
+			draw(graphics, screen, bar.shown, right);
 		}
 		Iterator<Map.Entry<UUID, Bar>> it = BARS.entrySet().iterator();
 		while (it.hasNext()) {
@@ -103,6 +103,40 @@ public final class EntityHealthBars {
 				it.remove();
 			}
 		}
+	}
+
+	private static AABB bounds(LivingEntity living, Vec3 feet) {
+		double hw = living.getBbWidth() * 0.5;
+		double h = living.getBbHeight();
+		return new AABB(feet.x - hw, feet.y, feet.z - hw, feet.x + hw, feet.y + h, feet.z + hw);
+	}
+
+	private static ScreenBox project(Minecraft client, AABB box, float guiW, float guiH) {
+		float minX = Float.POSITIVE_INFINITY;
+		float minY = Float.POSITIVE_INFINITY;
+		float maxX = Float.NEGATIVE_INFINITY;
+		float maxY = Float.NEGATIVE_INFINITY;
+		int hits = 0;
+		for (int i = 0; i < 8; i++) {
+			double x = (i & 1) == 0 ? box.minX : box.maxX;
+			double y = (i & 2) == 0 ? box.minY : box.maxY;
+			double z = (i & 4) == 0 ? box.minZ : box.maxZ;
+			Vec3 ndc = client.gameRenderer.projectPointToScreen(new Vec3(x, y, z));
+			if (ndc.x < -2.0 || ndc.x > 2.0 || ndc.y < -2.0 || ndc.y > 2.0) {
+				continue;
+			}
+			float sx = (float) ((ndc.x * 0.5 + 0.5) * guiW);
+			float sy = (float) ((-ndc.y * 0.5 + 0.5) * guiH);
+			minX = Math.min(minX, sx);
+			maxX = Math.max(maxX, sx);
+			minY = Math.min(minY, sy);
+			maxY = Math.max(maxY, sy);
+			hits++;
+		}
+		if (hits < 2 || maxX <= minX || maxY <= minY) {
+			return null;
+		}
+		return new ScreenBox(minX, minY, maxX - minX, maxY - minY);
 	}
 
 	private static boolean include(
@@ -146,29 +180,18 @@ public final class EntityHealthBars {
 		return hit.getLocation().distanceToSqr(from) + 0.36 < to.distanceToSqr(from);
 	}
 
-	private static void draw(
-		GuiGraphicsExtractor graphics,
-		float sx,
-		float sy,
-		float shown,
-		float scale,
-		boolean right
-	) {
-		graphics.pose().pushMatrix();
-		graphics.pose().translate(sx, sy);
-		if (scale != 1.0f) {
-			graphics.pose().scale(scale, scale);
-		}
-		float x = right ? GAP : -GAP - BAR_W;
-		float y = -BAR_H * 0.5f;
-		float fillH = BAR_H * Mth.clamp(shown, 0f, 1f);
+	private static void draw(GuiGraphicsExtractor graphics, ScreenBox box, float shown, boolean right) {
+		float h = box.h();
+		float x = right ? box.x + box.w + GAP : box.x - GAP - BAR_W;
+		float y = box.y;
+		float fillH = h * Mth.clamp(shown, 0f, 1f);
+		float radius = Math.min(1.8f, h * 0.12f);
 		int color = 0xFF000000 | healthColor(shown);
-		GuiDraw.rounded(graphics, x - 1f, y - 1f, BAR_W + 2f, BAR_H + 2f, 2.2f, LINE);
-		GuiDraw.rounded(graphics, x, y, BAR_W, BAR_H, 1.8f, TRACK);
+		GuiDraw.rounded(graphics, x - 1f, y - 1f, BAR_W + 2f, h + 2f, radius + 0.4f, LINE);
+		GuiDraw.rounded(graphics, x, y, BAR_W, h, radius, TRACK);
 		if (fillH >= 0.6f) {
-			GuiDraw.rounded(graphics, x, y + BAR_H - fillH, BAR_W, fillH, 1.8f, color);
+			GuiDraw.rounded(graphics, x, y + h - fillH, BAR_W, fillH, radius, color);
 		}
-		graphics.pose().popMatrix();
 	}
 
 	private static int healthColor(float t) {
@@ -177,6 +200,9 @@ public final class EntityHealthBars {
 			return Theme.mix(0xF5C16C, 0x34D399, (t - 0.5f) * 2f);
 		}
 		return Theme.mix(0xFB7185, 0xF5C16C, t * 2f);
+	}
+
+	private record ScreenBox(float x, float y, float w, float h) {
 	}
 
 	private static final class Bar {

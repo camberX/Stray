@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.209", new String[]{
+			"Health bars match the mob's on-screen height and sit beside the hitbox, not on the body."
+		}),
 		new Entry("1.2.208", new String[]{
 			"Visuals has a Health bar for mobs. It sits left or right of the entity, eases as health changes, and turns yellow then red as they drop. Players is a separate toggle. Size uses the same distance scale as nametags."
 		}),
