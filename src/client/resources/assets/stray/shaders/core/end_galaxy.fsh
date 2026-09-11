@@ -99,52 +99,85 @@ vec3 skyColor(vec3 dir, out float alpha) {
     return col;
 }
 
+vec4 gargantua(vec2 uv, float spin) {
+    vec3 pos = vec3(0.0, 0.38, -4.7);
+    vec3 rd = normalize(vec3(uv.x, uv.y, 1.18));
+    float rs = 0.5;
+    float closest = 100.0;
+
+    for (int i = 0; i < 40; i++) {
+        float r = length(pos);
+        closest = min(closest, r);
+        if (r < rs) {
+            return vec4(0.0, 0.0, 0.0, 1.0);
+        }
+        if (r > 13.5) {
+            break;
+        }
+
+        float rho = length(pos.xz);
+        float thick = 0.011 * max(rho, 0.8);
+        if (abs(pos.y) < thick && rho > rs * 1.82 && rho < rs * 10.8) {
+            float t = clamp((rho - rs * 1.82) / (rs * 8.8), 0.0, 1.0);
+            float ang = atan(pos.z, pos.x);
+            float kepler = spin * pow(2.3 / max(rho, 0.25), 1.5);
+            float n1 = fbm(vec3(ang * 2.1 - kepler, rho * 0.78, 2.4));
+            float n2 = fbm(vec3(ang * 5.4 - kepler * 1.7, rho * 2.3, 8.1));
+            float lanes = smoothstep(0.25, 0.82, n1) * (0.5 + 0.5 * n2);
+            float inner = exp(-t * 4.4);
+            float fall = pow(max(1.0 - t, 0.0), 2.15) * inner * 3.6 + 0.07;
+            vec3 vel = normalize(vec3(-pos.z, 0.0, pos.x));
+            float dopp = pow(clamp(1.0 + 1.05 * dot(vel, -rd), 0.18, 2.6), 2.7);
+            vec3 cold = vec3(0.28, 0.12, 0.05);
+            vec3 ember = vec3(0.95, 0.48, 0.16);
+            vec3 white = vec3(1.0, 0.97, 0.90);
+            vec3 heat = mix(cold, ember, clamp(fall * 0.42, 0.0, 1.0));
+            heat = mix(heat, white, pow(clamp(fall * dopp * 0.2, 0.0, 1.0), 0.62));
+            vec3 col = heat * fall * dopp * (0.5 + 0.75 * lanes);
+            float alpha = clamp(0.28 + fall * 0.95, 0.0, 1.0);
+            return vec4(col, alpha);
+        }
+
+        float dt = clamp(r * 0.06, 0.028, 0.26);
+        pos += rd * dt;
+        rd = normalize(rd - 1.5 * rs * pos * dt / (r * r * r));
+    }
+
+    float photon = exp(-pow((closest - rs * 1.5) * 16.0, 2.0));
+    if (photon > 0.03) {
+        return vec4(vec3(1.0, 0.93, 0.78) * photon * 2.0, clamp(photon * 1.2, 0.0, 1.0));
+    }
+    return vec4(0.0);
+}
+
 void main() {
     vec3 dir = normalize(worldDir);
-    vec3 hole = normalize(vec3(0.74, 0.16, 0.65));
-    vec3 holeUp = normalize(vec3(0.26, 0.94, -0.22));
+    vec3 hole = normalize(vec3(0.68, 0.12, 0.72));
+    vec3 holeUp = normalize(vec3(0.08, 0.99, 0.06));
     vec3 holeX = normalize(cross(holeUp, hole));
     vec3 holeY = cross(hole, holeX);
     float spin = ModelOffset.x;
 
     float toward = clamp(dot(dir, hole), -1.0, 1.0);
-    float ang = acos(toward);
     vec3 radial = dir - hole * toward;
     float radialLen = length(radial);
     vec3 away = radialLen > 1.0e-5 ? radial / radialLen : holeX;
-    float bend = 0.028 / max(pow(max(ang, 0.001), 1.45), 0.0005);
-    vec3 view = normalize(dir + away * bend * smoothstep(0.46, 0.05, ang));
+    float ang = acos(toward);
+    float bend = 0.02 / max(pow(max(ang, 0.001), 1.35), 0.0005);
+    vec3 view = normalize(dir + away * bend * smoothstep(0.5, 0.08, ang));
 
     float skyA = 0.0;
     vec3 col = skyColor(view, skyA);
+    float alpha = skyA;
 
-    float horizon = 0.062;
-    float holeMask = 1.0 - smoothstep(horizon * 0.96, horizon * 1.14, ang);
-    float ring = exp(-pow((ang - horizon * 1.20) * 92.0, 2.0));
-    float halo = exp(-pow((ang - horizon * 1.55) * 18.0, 2.0)) * 0.22;
-
-    float height = dot(dir, holeUp);
-    float diskThin = exp(-pow(height * 20.0, 2.0));
-    float diskInner = horizon * 1.28;
-    float diskOuter = 0.26;
-    float diskRad = smoothstep(diskInner, diskInner + 0.018, ang) * (1.0 - smoothstep(diskOuter - 0.05, diskOuter, ang));
-    float az = atan(dot(dir, holeX), dot(dir, holeY));
-    float swirl = 0.42 + 0.58 * (0.5 + 0.5 * sin(az * 6.0 - spin * 7.5 + fbm(dir * 9.0) * 5.0));
-    float heat = exp(-pow((ang - diskInner * 1.35) * 9.0, 2.0));
-    float disk = diskThin * diskRad * swirl;
-    vec3 diskCol = mix(vec3(1.0, 0.28, 0.06), vec3(1.0, 0.84, 0.42), heat);
-    float approaching = 0.55 + 0.45 * clamp(dot(away, holeX), -1.0, 1.0);
-    diskCol *= approaching;
-
-    col += disk * diskCol * 1.15;
-    col += ring * vec3(1.0, 0.78, 0.42) * 1.7;
-    col += halo * vec3(1.0, 0.55, 0.22);
-
-    col *= 1.0 - holeMask;
-    col = mix(col, vec3(0.0), holeMask);
-
-    float alpha = max(skyA, max(disk * 1.1, max(ring, halo)));
-    alpha = mix(alpha, 1.0, holeMask);
+    if (toward > 0.28) {
+        vec2 uv = vec2(dot(dir, holeX), dot(dir, holeY)) * (0.52 / max(toward, 0.32));
+        if (length(uv) < 1.85) {
+            vec4 bh = gargantua(uv, spin);
+            col = mix(col, bh.rgb, bh.a);
+            alpha = max(alpha * (1.0 - bh.a), bh.a);
+        }
+    }
 
     fragColor = vec4(col * ColorModulator.rgb, alpha);
 }

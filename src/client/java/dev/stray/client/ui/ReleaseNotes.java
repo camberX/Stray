@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.218", new String[]{
+			"The End sky black hole is Gargantua-style: edge-on disk, white-hot inner ring, Doppler glow, and the far side bent over the top."
+		}),
 		new Entry("1.2.217", new String[]{
 			"End sky has a black hole in the galaxy band: event horizon, photon ring, and a spinning accretion disk that lenses the stars around it."
 		}),
