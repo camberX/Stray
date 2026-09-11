@@ -4,8 +4,8 @@ import com.mojang.serialization.Codec;
 import dev.stray.Stray;
 import dev.stray.client.config.StrayConfig;
 import dev.stray.client.location.SkyblockLocation;
+import dev.stray.client.mixin.AbstractContainerScreenAccessor;
 import dev.stray.client.render.GuiDraw;
-import dev.stray.client.render.HudChrome;
 import dev.stray.client.ui.Theme;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents;
 import net.fabricmc.fabric.api.client.screen.v1.ScreenEvents;
@@ -17,6 +17,7 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.multiplayer.ClientPacketListener;
 import net.minecraft.client.multiplayer.PlayerInfo;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtIo;
 import net.minecraft.nbt.NbtOps;
@@ -27,6 +28,7 @@ import net.minecraft.util.Mth;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.component.ItemLore;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -39,13 +41,17 @@ import java.util.regex.Pattern;
 
 /**
  * Skyblocker-style storage preview: after you open an Ender Chest page or
- * backpack once, Shift-hover it in {@code /storage} to see the last contents.
- * Chrome matches the rest of Stray instead of the vanilla chest texture.
+ * backpack once, hover it in {@code /storage} to see the last contents.
  */
 public final class StoragePreview {
-	private static final Pattern ECHEST = Pattern.compile("Ender Chest.*\\((\\d+)/\\d+\\)", Pattern.CASE_INSENSITIVE);
-	private static final Pattern BACKPACK = Pattern.compile("Backpack.*\\(Slot #(\\d+)\\)", Pattern.CASE_INSENSITIVE);
-	private static final Pattern STORAGE = Pattern.compile("^Storage$", Pattern.CASE_INSENSITIVE);
+	private static final Pattern ECHEST = Pattern.compile(
+		"ender\\s*chests?\\s*(?:page\\s*)?\\(?\\s*(\\d+)\\s*(?:/\\s*\\d+)?\\s*\\)?",
+		Pattern.CASE_INSENSITIVE
+	);
+	private static final Pattern BACKPACK = Pattern.compile(
+		"backpack.*?slot\\s*#?\\s*(\\d+)|backpack\\s*(?:page\\s*)?#?\\s*(\\d+)",
+		Pattern.CASE_INSENSITIVE
+	);
 	private static final Pattern PROFILE = Pattern.compile("^Profile:\\s*(.+)$", Pattern.CASE_INSENSITIVE);
 	private static final Codec<List<ItemStack>> ITEMS = ItemStack.OPTIONAL_CODEC.listOf();
 	private static final int PAGES = 27;
@@ -66,18 +72,30 @@ public final class StoragePreview {
 
 	public static void init() {
 		ScreenEvents.AFTER_INIT.register((client, screen, width, height) -> {
-			if (screen instanceof AbstractContainerScreen<?> container) {
-				ScreenEvents.remove(screen).register(closed -> capture(container));
+			if (!(screen instanceof AbstractContainerScreen<?> container)) {
+				return;
 			}
+			ScreenEvents.remove(screen).register(closed -> capture(container, false));
+			ScreenEvents.afterExtract(screen).register((opened, graphics, mouseX, mouseY, tickDelta) -> {
+				if (opened instanceof AbstractContainerScreen<?> open) {
+					extract(open, graphics, mouseX, mouseY, hovered(open), false);
+				}
+			});
 		});
 		ClientLifecycleEvents.CLIENT_STOPPING.register(client -> flush());
 	}
 
 	public static void tick(Minecraft client) {
-		if (client == null || client.player == null || !SkyblockLocation.inSkyblock) {
+		if (client == null || client.player == null) {
 			return;
 		}
 		if (!StrayConfig.get().storagePreviewEnabled) {
+			return;
+		}
+		if (client.screen instanceof AbstractContainerScreen<?> container) {
+			capture(container, true);
+		}
+		if (!SkyblockLocation.inSkyblock) {
 			return;
 		}
 		String key = profileKey(client);
@@ -98,6 +116,10 @@ public final class StoragePreview {
 		}
 	}
 
+	public static boolean hideTooltip(AbstractContainerScreen<?> screen, Slot hovered) {
+		return extract(screen, null, 0, 0, hovered, true);
+	}
+
 	public static boolean extract(
 		AbstractContainerScreen<?> screen,
 		GuiGraphicsExtractor graphics,
@@ -105,33 +127,51 @@ public final class StoragePreview {
 		int mouseY,
 		Slot hovered
 	) {
-		if (!StrayConfig.get().storagePreviewEnabled || !SkyblockLocation.inSkyblock) {
+		return extract(screen, graphics, mouseX, mouseY, hovered, false);
+	}
+
+	private static boolean extract(
+		AbstractContainerScreen<?> screen,
+		GuiGraphicsExtractor graphics,
+		int mouseX,
+		int mouseY,
+		Slot hovered,
+		boolean probe
+	) {
+		if (!StrayConfig.get().storagePreviewEnabled) {
 			return false;
 		}
-		if (hovered == null || !STORAGE.matcher(title(screen)).matches()) {
+		if (hovered == null || hovered.getItem() == null || hovered.getItem().isEmpty()) {
 			return false;
 		}
-		if (StrayConfig.get().storagePreviewNeedShift && !Minecraft.getInstance().hasShiftDown()) {
+		if (!storageMenu(title(screen))) {
 			return false;
 		}
-		int index = pageFromSlot(hovered.index);
+		if (StrayConfig.get().storagePreviewHoldShift && !Minecraft.getInstance().hasShiftDown()) {
+			return false;
+		}
+		int index = pageOf(hovered);
 		if (index < 0) {
 			return false;
 		}
-		Page page = pages[index];
-		if (page == null || page.items.isEmpty()) {
-			return false;
+		if (probe) {
+			return true;
 		}
+		if (graphics == null) {
+			return true;
+		}
+		Page page = pages[index];
 		draw(graphics, screen, page, index, mouseX, mouseY);
 		return true;
 	}
 
-	private static void capture(AbstractContainerScreen<?> screen) {
-		if (!SkyblockLocation.inSkyblock) {
-			return;
-		}
+	private static Slot hovered(AbstractContainerScreen<?> screen) {
+		return ((AbstractContainerScreenAccessor) screen).stray$hoveredSlot();
+	}
+
+	private static void capture(AbstractContainerScreen<?> screen, boolean live) {
 		String name = title(screen);
-		int index = pageFromTitle(name);
+		int index = pageFromText(name);
 		if (index < 0) {
 			return;
 		}
@@ -140,16 +180,44 @@ public final class StoragePreview {
 			return;
 		}
 		int chest = Math.max(0, menu.slots.size() - 36);
-		if (chest < 18) {
+		if (chest < 9) {
 			return;
 		}
 		List<ItemStack> items = new ArrayList<>(chest);
+		int filled = 0;
 		for (int i = 0; i < chest; i++) {
 			ItemStack stack = menu.slots.get(i).getItem();
-			items.add(stack == null || stack.isEmpty() ? ItemStack.EMPTY : stack.copy());
+			if (stack == null || stack.isEmpty()) {
+				items.add(ItemStack.EMPTY);
+			} else {
+				items.add(stack.copy());
+				filled++;
+			}
+		}
+		if (live && filled == 0) {
+			return;
+		}
+		Page prior = pages[index];
+		if (filled == 0 && prior != null && !prior.empty()) {
+			return;
+		}
+		if (prior != null && sameItems(prior.items, items)) {
+			return;
 		}
 		pages[index] = new Page(name, items);
 		dirty = true;
+	}
+
+	private static boolean sameItems(List<ItemStack> left, List<ItemStack> right) {
+		if (left.size() != right.size()) {
+			return false;
+		}
+		for (int i = 0; i < left.size(); i++) {
+			if (!ItemStack.matches(left.get(i), right.get(i))) {
+				return false;
+			}
+		}
+		return true;
 	}
 
 	private static void draw(
@@ -162,12 +230,16 @@ public final class StoragePreview {
 	) {
 		Minecraft client = Minecraft.getInstance();
 		Font font = client.font;
-		int start = Math.min(9, page.items.size());
-		int count = Math.max(9, page.items.size() - start);
-		int rows = Math.max(1, Mth.ceil(count / (float) COLS));
+		boolean empty = page == null || page.empty();
+		int start = page == null ? 9 : Math.min(9, page.items.size());
+		int count = page == null ? 9 : Math.max(9, page.items.size() - start);
+		int rows = empty ? 1 : Math.max(1, Mth.ceil(count / (float) COLS));
 		float gridW = COLS * SLOT + (COLS - 1) * GAP;
 		float panelW = PAD * 2 + gridW;
 		float panelH = PAD + HEAD + rows * (SLOT + GAP) - GAP + PAD;
+		if (empty) {
+			panelH += 12f;
+		}
 		float x = mouseX + 8f;
 		if (x + panelW > screen.width - 4f) {
 			x = mouseX - panelW - 12f;
@@ -175,11 +247,14 @@ public final class StoragePreview {
 		x = Mth.clamp(x, 4f, Math.max(4f, screen.width - panelW - 4f));
 		float y = Mth.clamp(mouseY - 16f, 4f, Math.max(4f, screen.height - panelH - 4f));
 
-		HudChrome.panel(graphics, x, y, panelW, panelH, 6, Theme.HUD_WINDOW, Theme.HUD_LINE, Theme.ACCENT);
-		String label = displayName(page.name, index);
+		GuiDraw.panel(graphics, x, y, panelW, panelH, 6, Theme.HUD_WINDOW, Theme.HUD_LINE, Theme.ACCENT);
+		String label = displayName(page == null ? "" : page.name, index);
 		GuiDraw.small(graphics, font, label, x + PAD, y + PAD - 1, Theme.ACCENT);
-		int filled = filled(page, start);
-		String countLabel = filled + "/" + count;
+		if (empty) {
+			GuiDraw.small(graphics, font, "Open this page once", x + PAD, y + PAD + HEAD, Theme.MUTED);
+			return;
+		}
+		String countLabel = filled(page, start) + "/" + count;
 		GuiDraw.small(
 			graphics,
 			font,
@@ -223,7 +298,7 @@ public final class StoragePreview {
 
 	private static String displayName(String stored, int index) {
 		if (stored != null && !stored.isBlank()) {
-			return stored.replaceAll("§.", "").trim();
+			return strip(stored);
 		}
 		if (index < 9) {
 			return "Ender Chest " + (index + 1);
@@ -231,14 +306,58 @@ public final class StoragePreview {
 		return "Backpack " + (index - 8);
 	}
 
-	private static int pageFromTitle(String title) {
-		Matcher echest = ECHEST.matcher(title);
+	private static int pageOf(Slot slot) {
+		int fromItem = pageFromStack(slot.getItem());
+		if (fromItem >= 0) {
+			return fromItem;
+		}
+		int fromIndex = pageFromSlot(slot.getContainerSlot());
+		if (fromIndex >= 0) {
+			return fromIndex;
+		}
+		return pageFromSlot(slot.index);
+	}
+
+	private static int pageFromStack(ItemStack stack) {
+		if (stack == null || stack.isEmpty()) {
+			return -1;
+		}
+		int fromName = pageFromText(stack.getHoverName().getString());
+		if (fromName >= 0) {
+			return fromName;
+		}
+		ItemLore lore = stack.get(DataComponents.LORE);
+		if (lore == null) {
+			return -1;
+		}
+		for (Component line : lore.lines()) {
+			int page = pageFromText(line.getString());
+			if (page >= 0) {
+				return page;
+			}
+		}
+		for (Component line : lore.styledLines()) {
+			int page = pageFromText(line.getString());
+			if (page >= 0) {
+				return page;
+			}
+		}
+		return -1;
+	}
+
+	private static int pageFromText(String raw) {
+		String text = strip(raw);
+		if (text.isEmpty()) {
+			return -1;
+		}
+		Matcher echest = ECHEST.matcher(text);
 		if (echest.find()) {
 			return parsePage(echest.group(1), 1, 9) - 1;
 		}
-		Matcher backpack = BACKPACK.matcher(title);
+		Matcher backpack = BACKPACK.matcher(text);
 		if (backpack.find()) {
-			int slot = parsePage(backpack.group(1), 1, 18);
+			String group = backpack.group(1) != null ? backpack.group(1) : backpack.group(2);
+			int slot = parsePage(group, 1, 18);
 			return slot < 0 ? -1 : slot + 8;
 		}
 		return -1;
@@ -255,17 +374,29 @@ public final class StoragePreview {
 	}
 
 	private static int parsePage(String raw, int min, int max) {
+		if (raw == null || raw.isBlank()) {
+			return -1;
+		}
 		try {
-			int value = Integer.parseInt(raw);
+			int value = Integer.parseInt(raw.trim());
 			return value < min || value > max ? -1 : value;
 		} catch (NumberFormatException ignored) {
 			return -1;
 		}
 	}
 
+	private static boolean storageMenu(String title) {
+		String lower = strip(title).toLowerCase(Locale.ROOT);
+		return lower.equals("storage") || lower.startsWith("storage ") || lower.endsWith(" storage");
+	}
+
 	private static String title(Screen screen) {
 		Component title = screen.getTitle();
-		return title == null ? "" : title.getString().replaceAll("§.", "").trim();
+		return title == null ? "" : title.getString();
+	}
+
+	private static String strip(String raw) {
+		return raw == null ? "" : raw.replaceAll("§.", "").replaceAll("[\\p{C}]", "").trim();
 	}
 
 	private static String profileKey(Minecraft client) {
@@ -295,7 +426,7 @@ public final class StoragePreview {
 			if (display == null) {
 				continue;
 			}
-			Matcher matcher = PROFILE.matcher(display.getString().replaceAll("§.", "").trim());
+			Matcher matcher = PROFILE.matcher(strip(display.getString()));
 			if (matcher.matches()) {
 				return matcher.group(1).trim();
 			}
@@ -398,5 +529,16 @@ public final class StoragePreview {
 	}
 
 	private record Page(String name, List<ItemStack> items) {
+		private boolean empty() {
+			if (items == null || items.isEmpty()) {
+				return true;
+			}
+			for (ItemStack stack : items) {
+				if (stack != null && !stack.isEmpty()) {
+					return false;
+				}
+			}
+			return true;
+		}
 	}
 }

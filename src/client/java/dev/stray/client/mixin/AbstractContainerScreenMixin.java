@@ -29,7 +29,7 @@ public class AbstractContainerScreenMixin {
 	private void stray$containerOverlay(GuiGraphicsExtractor graphics, int mouseX, int mouseY, CallbackInfo ci) {
 		AbstractContainerScreen<?> screen = (AbstractContainerScreen<?>) (Object) this;
 		GardenPlots.extract(screen, graphics, mouseX, mouseY);
-		if (StoragePreview.extract(screen, graphics, mouseX, mouseY, hoveredSlot)) {
+		if (StoragePreview.hideTooltip(screen, hoveredSlot)) {
 			ci.cancel();
 		}
 	}

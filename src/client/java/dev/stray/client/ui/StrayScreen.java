@@ -2101,7 +2101,7 @@ public class StrayScreen extends Screen {
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Wardrobe menu", config.wardrobeMenuEnabled, v -> config.wardrobeMenuEnabled = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Profile viewer", config.profileViewerEnabled, v -> config.profileViewerEnabled = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Storage preview", config.storagePreviewEnabled, v -> config.storagePreviewEnabled = v);
-				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Preview needs Shift", config.storagePreviewNeedShift, v -> config.storagePreviewNeedShift = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Preview needs Shift", config.storagePreviewHoldShift, v -> config.storagePreviewHoldShift = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Open animation", config.loadoutsOpenAnim, v -> config.loadoutsOpenAnim = v);
 				toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Disabled potions", config.disabledPotionsHighlight, v -> config.disabledPotionsHighlight = v);
 
@@ -2321,7 +2321,7 @@ public class StrayScreen extends Screen {
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Wardrobe menu", config.wardrobeMenuEnabled, v -> config.wardrobeMenuEnabled = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Profile viewer", config.profileViewerEnabled, v -> config.profileViewerEnabled = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Storage preview", config.storagePreviewEnabled, v -> config.storagePreviewEnabled = v);
-				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Preview needs Shift", config.storagePreviewNeedShift, v -> config.storagePreviewNeedShift = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Preview needs Shift", config.storagePreviewHoldShift, v -> config.storagePreviewHoldShift = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Open animation", config.loadoutsOpenAnim, v -> config.loadoutsOpenAnim = v);
 				toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Disabled potions", config.disabledPotionsHighlight, v -> config.disabledPotionsHighlight = v);
 				y = sectionLabel(graphics, font, right, top, "Experiments");

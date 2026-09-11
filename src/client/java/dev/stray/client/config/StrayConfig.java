@@ -138,7 +138,7 @@ public final class StrayConfig {
 	public boolean wardrobeMenuEnabled = false;
 	public boolean profileViewerEnabled = false;
 	public boolean storagePreviewEnabled = false;
-	public boolean storagePreviewNeedShift = true;
+	public boolean storagePreviewHoldShift = false;
 	public boolean hitsoundEnabled = false;
 	public boolean hitsoundMelee = false;
 	public boolean hitsoundArrows = false;
@@ -763,8 +763,8 @@ public final class StrayConfig {
 				if (!json.has("storagePreviewEnabled")) {
 					loaded.storagePreviewEnabled = false;
 				}
-				if (!json.has("storagePreviewNeedShift")) {
-					loaded.storagePreviewNeedShift = true;
+				if (!json.has("storagePreviewHoldShift")) {
+					loaded.storagePreviewHoldShift = false;
 				}
 				if (loaded.autoClickerLeftWhitelist == null) {
 					loaded.autoClickerLeftWhitelist = new java.util.ArrayList<>();
