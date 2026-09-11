@@ -51,6 +51,7 @@ import dev.stray.client.render.ComposterHudRenderer;
 import dev.stray.client.render.InventoryHudRenderer;
 import dev.stray.client.render.JacobContestHudRenderer;
 import dev.stray.client.render.MusicHudRenderer;
+import dev.stray.client.render.EntityHealthBars;
 import dev.stray.client.render.NametagRenderer;
 import dev.stray.client.render.NodeHudRenderer;
 import dev.stray.client.render.PickupLogRenderer;
@@ -174,6 +175,7 @@ public final class StrayClient implements ClientModInitializer {
 		RawmatsHudRenderer.init();
 		MiningHudRenderer.init();
 		NametagRenderer.init();
+		EntityHealthBars.init();
 		VanillaHud.init();
 		MediaSession.init();
 		AutoExperiments.init();

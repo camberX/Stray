@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.208", new String[]{
+			"Visuals has a Health bar for mobs. It sits left or right of the entity, eases as health changes, and turns yellow then red as they drop. Players is a separate toggle. Size uses the same distance scale as nametags."
+		}),
 		new Entry("1.2.207", new String[]{
 			"Jacob contest HUD shows for the whole 20-minute contest. Tab times like 19m (no seconds) used to be ignored until the last 6 minutes."
 		}),

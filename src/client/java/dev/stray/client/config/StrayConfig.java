@@ -270,6 +270,11 @@ public final class StrayConfig {
 	public int nametagRange = 128;
 	public float nametagScale = 1.0f;
 	public float nametagOpacity = 1.0f;
+	public boolean healthBarEnabled = false;
+	public boolean healthBarPlayers = false;
+	public boolean healthBarThroughWalls = false;
+	public String healthBarSide = "right";
+	public int healthBarRange = 48;
 	public float menuScale = 0.75f;
 	public boolean menuScaleV2;
 	public boolean menuStarfield = false;
@@ -491,6 +496,20 @@ public final class StrayConfig {
 					loaded.updateNotifiedVersion = "";
 				}
 				loaded.nametagRange = clamp(loaded.nametagRange <= 0 ? 128 : loaded.nametagRange, 64, 256);
+				if (loaded.healthBarSide == null) {
+					loaded.healthBarSide = "right";
+				}
+				loaded.healthBarSide = normalizeHealthBarSide(loaded.healthBarSide);
+				loaded.healthBarRange = clamp(loaded.healthBarRange <= 0 ? 48 : loaded.healthBarRange, 16, 96);
+				if (!json.has("healthBarEnabled")) {
+					loaded.healthBarEnabled = false;
+				}
+				if (!json.has("healthBarPlayers")) {
+					loaded.healthBarPlayers = false;
+				}
+				if (!json.has("healthBarThroughWalls")) {
+					loaded.healthBarThroughWalls = false;
+				}
 				loaded.nametagScale = clampHudScale(loaded.nametagScale);
 				loaded.nametagOpacity = loaded.nametagOpacity <= 0f ? 1.0f : clamp(loaded.nametagOpacity, 0.15f, 1f);
 				loaded.nametagStyle = normalizeNametagStyle(loaded.nametagStyle);
@@ -970,6 +989,22 @@ public final class StrayConfig {
 
 	public String nametagStyleLabel() {
 		return nametagCustom() ? "Stray" : "Vanilla";
+	}
+
+	public boolean healthBarRight() {
+		return !"left".equalsIgnoreCase(healthBarSide);
+	}
+
+	public String healthBarSideLabel() {
+		return healthBarRight() ? "Right" : "Left";
+	}
+
+	public void cycleHealthBarSide() {
+		healthBarSide = healthBarRight() ? "left" : "right";
+	}
+
+	public static String normalizeHealthBarSide(String side) {
+		return "left".equalsIgnoreCase(side) ? "left" : "right";
 	}
 
 	public enum MotionBlurAlgorithm {

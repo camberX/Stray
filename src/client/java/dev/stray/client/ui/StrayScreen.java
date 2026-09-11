@@ -155,6 +155,7 @@ public class StrayScreen extends Screen {
 		PEST("Pest ESP", 2),
 		AUTO_DNA("Auto DNA", 5),
 		NAMETAGS("Nametags", 6),
+		HEALTH("Health bar", 4),
 		NODES("Nodes", 5);
 
 		final String title;
@@ -261,6 +262,10 @@ public class StrayScreen extends Screen {
 		new SearchEntry("Own nametag", Tab.PLAYERS, "Players"),
 		new SearchEntry("Nametag size", Tab.PLAYERS, "Players"),
 		new SearchEntry("Nametag opacity", Tab.PLAYERS, "Players"),
+		new SearchEntry("Health bar", Tab.ESP, "Health"),
+		new SearchEntry("Mob health", Tab.ESP, "Health"),
+		new SearchEntry("Player health", Tab.ESP, "Health"),
+		new SearchEntry("Health side", Tab.ESP, "Health"),
 		new SearchEntry("Menu scale", Tab.SETTINGS, "Theme"),
 		new SearchEntry("HUD opacity", Tab.SETTINGS, "Theme"),
 		new SearchEntry("Menu stars", Tab.SETTINGS, "Theme"),
@@ -2228,7 +2233,9 @@ public class StrayScreen extends Screen {
 				y = controlCard(graphics, font, left, y, col, mouseX, mouseY, "Chest ESP", config.chestEspEnabled, v -> config.chestEspEnabled = v, Feature.CHEST);
 				controlCard(graphics, font, left, y, col, mouseX, mouseY, "Fairy souls", config.fairySoulEsp, v -> config.fairySoulEsp = v, Feature.FAIRY);
 				y = sectionLabel(graphics, font, right, top, "Held item");
-				controlCard(graphics, font, right, y, col, mouseX, mouseY, "Held item", config.heldItemShaderEnabled, v -> config.heldItemShaderEnabled = v, Feature.HELD_ITEM);
+				y = controlCard(graphics, font, right, y, col, mouseX, mouseY, "Held item", config.heldItemShaderEnabled, v -> config.heldItemShaderEnabled = v, Feature.HELD_ITEM);
+				y = sectionLabel(graphics, font, right, y, "Health");
+				controlCard(graphics, font, right, y, col, mouseX, mouseY, "Health bar", config.healthBarEnabled, v -> config.healthBarEnabled = v, Feature.HEALTH);
 			}
 			case PLAYERS -> {
 				float y = sectionLabel(graphics, font, left, top, "Shader");
@@ -2978,6 +2985,12 @@ public class StrayScreen extends Screen {
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Armor", config.inventoryHudArmor, v -> config.inventoryHudArmor = v);
 				toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Item count", config.inventoryHudCount, v -> config.inventoryHudCount = v);
 			}
+			case HEALTH -> {
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Players", config.healthBarPlayers, v -> config.healthBarPlayers = v);
+				y = cycle(graphics, font, ix, y, iw, mouseX, mouseY, "Side", config.healthBarSideLabel(), config::cycleHealthBarSide);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Through walls", config.healthBarThroughWalls, v -> config.healthBarThroughWalls = v);
+				slider(graphics, font, ix, y, iw, "Range", config.healthBarRange + "m", (config.healthBarRange - 16) / 80f, v -> config.healthBarRange = StrayConfig.clamp(16 + Math.round(v * 80f), 16, 96));
+			}
 			case NAMETAGS -> {
 				y = cycle(graphics, font, ix, y, iw, mouseX, mouseY, "Style", config.nametagStyleLabel(), config::cycleNametagStyle);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Through walls", config.nametagThroughWalls, v -> config.nametagThroughWalls = v);
@@ -3450,7 +3463,7 @@ public class StrayScreen extends Screen {
 		return FabricLoader.getInstance()
 			.getModContainer("stray")
 			.map(container -> container.getMetadata().getVersion().getFriendlyString())
-			.orElse("1.2.207");
+			.orElse("1.2.208");
 	}
 
 	@Override
