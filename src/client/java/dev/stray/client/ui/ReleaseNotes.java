@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.222", new String[]{
+			"The lensing around the End sky black hole eases in smoothly instead of starting at a visible circle."
+		}),
 		new Entry("1.2.221", new String[]{
 			"End sky Gargantua is about twice as big and runs warmer orange. The sky fills in with teal and magenta nebula clouds, denser stars, a few giant stars, a distant galaxy, and a shaded planet with a moon."
 		}),

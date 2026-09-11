@@ -327,18 +327,25 @@ void main() {
     bool escaped;
     vec4 bh = gargantua(uv, spin, escapedRd, escaped);
 
+    float coneT = clamp((toward - CONE_COS) / (1.0 - CONE_COS), 0.0, 1.0);
+    float lensFade = smoothstep(0.0, 0.7, coneT);
+
     vec3 bg = vec3(0.0);
     float bgA = 0.0;
     if (escaped) {
-        vec2 ouv = escapedRd.xy / max(escapedRd.z, 0.15) / VIEW_SCALE;
-        vec3 bgDir = normalize(hole + holeX * ouv.x + holeY * ouv.y);
+        // Undo the camera tilt so an unbent ray maps back onto its own sky direction.
+        float tilt = -atan(CAM_HEIGHT, CAM_DIST);
+        float ct = cos(tilt);
+        float st = sin(tilt);
+        vec3 rd = vec3(escapedRd.x, escapedRd.y * ct - escapedRd.z * st, escapedRd.y * st + escapedRd.z * ct);
+        vec2 ouv = rd.xy / max(rd.z, 0.15) / VIEW_SCALE;
+        vec3 lensed = normalize(hole + holeX * ouv.x + holeY * ouv.y);
+        vec3 bgDir = normalize(mix(dir, lensed, lensFade));
         bg = skyColor(bgDir, bgA);
     }
 
     // Fade the End texture out around the hole so it reads as deep space.
-    float coneT = clamp((toward - CONE_COS) / (1.0 - CONE_COS), 0.0, 1.0);
-    float darkness = smoothstep(0.5, 0.95, coneT) * 0.3;
-    float lensFade = smoothstep(0.0, 0.35, coneT);
+    float darkness = smoothstep(0.35, 0.95, coneT) * 0.3;
 
     bool shadow = !escaped && max(bh.r, max(bh.g, bh.b)) < 0.05;
     float glow = bloom(uv, shadow) * lensFade;
