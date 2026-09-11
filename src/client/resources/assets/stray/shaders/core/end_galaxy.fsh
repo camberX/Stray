@@ -39,7 +39,18 @@ float vnoise(vec3 p) {
 float fbm(vec3 p) {
     float sum = 0.0;
     float amp = 0.52;
-    for (int i = 0; i < 5; i++) {
+    for (int i = 0; i < 4; i++) {
+        sum += amp * vnoise(p);
+        p = p * 2.11 + 14.7;
+        amp *= 0.5;
+    }
+    return sum;
+}
+
+float fbm3(vec3 p) {
+    float sum = 0.0;
+    float amp = 0.55;
+    for (int i = 0; i < 3; i++) {
         sum += amp * vnoise(p);
         p = p * 2.11 + 14.7;
         amp *= 0.5;
@@ -81,7 +92,7 @@ vec4 planet(vec3 dir, vec3 center, float radius, vec3 lightDir, vec3 dayCol, vec
     vec3 n = normalize(tx * uv.x + ty * uv.y - center * zz);
     float ndl = clamp(dot(n, lightDir), 0.0, 1.0);
     float terminator = smoothstep(0.0, 0.35, ndl);
-    float bands = 0.75 + 0.25 * fbm(n * 5.0 + 3.3);
+    float bands = 0.75 + 0.25 * fbm3(n * 5.0 + 3.3);
     vec3 surf = mix(nightCol, dayCol * bands, terminator);
     float rim = pow(1.0 - zz, 3.0) * (0.35 + 0.65 * ndl);
     surf += rimCol * rim * 1.4;
@@ -114,9 +125,9 @@ vec3 skyColor(vec3 dir, out float alpha) {
     vec3 col = mixC * nebula * 0.85;
 
     // Scattered nebula clouds so the sky away from the band is not empty.
-    float c1 = fbm(dir * 3.1 + 41.0);
-    float c2 = fbm(dir * 2.3 + 83.0);
-    float c3 = fbm(dir * 4.6 + 17.0);
+    float c1 = fbm3(dir * 3.1 + 41.0);
+    float c2 = fbm3(dir * 2.3 + 83.0);
+    float c3 = fbm3(dir * 4.6 + 17.0);
     float teal = smoothstep(0.52, 0.82, c1) * (0.5 + 0.5 * smoothstep(0.4, 0.8, nFine));
     float magenta = smoothstep(0.55, 0.86, c2) * (0.5 + 0.5 * smoothstep(0.35, 0.8, c3));
     float haze = smoothstep(0.42, 0.7, c3) * 0.35;
@@ -133,7 +144,7 @@ vec3 skyColor(vec3 dir, out float alpha) {
     vec3 goff = dir - galDir * dot(dir, galDir);
     vec2 guv = vec2(dot(goff, gx), dot(goff, gy) * 2.6);
     float gd = length(guv) / 0.075;
-    float galaxy = dot(dir, galDir) > 0.0 ? exp(-gd * gd * 1.6) * (0.6 + 0.4 * fbm(dir * 60.0)) : 0.0;
+    float galaxy = dot(dir, galDir) > 0.0 && gd < 3.0 ? exp(-gd * gd * 1.6) * (0.6 + 0.4 * fbm3(dir * 60.0)) : 0.0;
     galaxy += dot(dir, galDir) > 0.0 ? exp(-gd * gd * 12.0) * 0.8 : 0.0;
     col += vec3(0.95, 0.88, 0.80) * galaxy * 0.7;
 
@@ -185,8 +196,8 @@ const float DISK_IN = 3.4;
 const float DISK_OUT = 14.0;
 const float CAM_DIST = 26.0;
 const float CAM_HEIGHT = 5.0;
-const float VIEW_SCALE = 0.9;
-const float CONE_COS = 0.78;
+const float VIEW_SCALE = 0.5;
+const float CONE_COS = 0.45;
 const float BLOOM_UV = VIEW_SCALE / 1.35;
 
 vec3 diskSample(vec3 p, vec3 rd, float spin, out float alphaOut) {
@@ -195,7 +206,7 @@ vec3 diskSample(vec3 p, vec3 rd, float spin, out float alphaOut) {
     float az = atan(p.z, p.x);
     float kepler = spin * pow(DISK_IN / rho, 1.5) * 2.6;
     float n1 = fbm(vec3(az * 2.6 - kepler, log(rho) * 5.5, 3.1));
-    float n2 = fbm(vec3(az * 9.0 - kepler * 1.4, log(rho) * 16.0, 7.7));
+    float n2 = fbm3(vec3(az * 9.0 - kepler * 1.4, log(rho) * 16.0, 7.7));
     float lanes = 0.55 + 0.45 * smoothstep(0.30, 0.75, n1);
     lanes *= 0.7 + 0.3 * smoothstep(0.35, 0.70, n2);
 
@@ -242,7 +253,18 @@ vec4 gargantua(vec2 uv, float spin, out vec3 escaped, out bool didEscape) {
     vec3 h = cross(pos, rd);
     float h2 = dot(h, h);
 
-    for (int i = 0; i < 110; i++) {
+    // Rays that pass well outside the disk never hit anything: apply the
+    // weak-field deflection (4M / b toward the hole) and skip the march.
+    float b = sqrt(h2);
+    if (b > DISK_OUT + 1.5) {
+        vec3 perp = pos - rd * dot(pos, rd);
+        vec3 toCenter = -perp / max(length(perp), 1.0e-4);
+        didEscape = true;
+        escaped = normalize(rd + toCenter * (4.0 / b));
+        return vec4(0.0);
+    }
+
+    for (int i = 0; i < 90; i++) {
         float r = length(pos);
         closest = min(closest, r);
         if (r < BH_HORIZON) {
@@ -253,7 +275,7 @@ vec4 gargantua(vec2 uv, float spin, out vec3 escaped, out bool didEscape) {
             escaped = rd;
             break;
         }
-        float dt = clamp((r - 1.6) * 0.09, 0.045, 1.4);
+        float dt = clamp((r - 1.6) * 0.1, 0.05, 1.8);
         vec3 next = pos + rd * dt;
         if (pos.y * next.y < 0.0) {
             float f = pos.y / (pos.y - next.y);
@@ -286,16 +308,18 @@ vec3 tonemap(vec3 c) {
 // Movie-style bloom: a soft ring hugging the shadow, a broad warm halo, and a
 // smear along the disk plane, all heavier on the approaching (left) side.
 float bloom(vec2 uvIn, bool shadow) {
-    if (shadow) {
-        return 0.0;
-    }
     vec2 uv = uvIn * BLOOM_UV;
     float d = length(uv);
     float side = 0.55 + 0.75 * smoothstep(0.18, -0.22, uv.x);
-    float ring = exp(-pow(d - 0.13, 2.0) / (2.0 * 0.04 * 0.04)) * 0.55;
-    float wide = exp(-max(d - 0.12, 0.0) / 0.14) * 0.32;
-    float plane = exp(-(uv.y * uv.y) / (2.0 * 0.035 * 0.035)) * exp(-abs(uv.x) / 0.28) * 0.45;
-    return (ring + wide + plane) * side;
+    float ring = exp(-pow(d - 0.13, 2.0) / (2.0 * 0.045 * 0.045)) * 0.8;
+    float wide = exp(-max(d - 0.12, 0.0) / 0.16) * 0.5;
+    float plane = exp(-(uv.y * uv.y) / (2.0 * 0.035 * 0.035)) * exp(-abs(uv.x) / 0.30) * 0.6;
+    float glow = (ring + wide + plane) * side;
+    if (shadow) {
+        // Let the glow kiss the rim of the shadow, black by the center.
+        glow *= 0.4 * smoothstep(0.085, 0.125, d);
+    }
+    return glow;
 }
 
 void main() {

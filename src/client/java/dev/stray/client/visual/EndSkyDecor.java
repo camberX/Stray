@@ -7,10 +7,14 @@ import com.mojang.blaze3d.pipeline.ColorTargetState;
 import com.mojang.blaze3d.pipeline.DepthStencilState;
 import com.mojang.blaze3d.pipeline.RenderPipeline;
 import com.mojang.blaze3d.pipeline.RenderTarget;
+import com.mojang.blaze3d.pipeline.TextureTarget;
 import com.mojang.blaze3d.platform.CompareOp;
 import com.mojang.blaze3d.shaders.UniformType;
+import com.mojang.blaze3d.systems.CommandEncoder;
 import com.mojang.blaze3d.systems.RenderPass;
 import com.mojang.blaze3d.systems.RenderSystem;
+import com.mojang.blaze3d.textures.FilterMode;
+import com.mojang.blaze3d.textures.GpuSampler;
 import com.mojang.blaze3d.vertex.BufferBuilder;
 import com.mojang.blaze3d.vertex.ByteBufferBuilder;
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
@@ -21,20 +25,28 @@ import com.mojang.math.Axis;
 import dev.stray.Stray;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.RenderPipelines;
+import net.minecraft.resources.Identifier;
 import net.minecraft.util.Mth;
 import org.joml.Matrix4f;
 import org.joml.Matrix4fStack;
 import org.joml.Vector3f;
 import org.joml.Vector4f;
 
+import java.util.OptionalDouble;
+import java.util.OptionalInt;
+
 /**
- * Procedural galaxy + starfield over the End skybox. A fragment shader paints
- * noise nebula and hashed stars on a sky cube so it does not look like GUI
- * circles stamped on the dome.
+ * Procedural galaxy, starfield, and Gargantua over the End skybox. The sky
+ * shader is expensive (noise stacks plus a geodesic march), so it renders into a
+ * half-resolution target and is upscaled onto the frame with premultiplied alpha.
  */
 public final class EndSkyDecor {
 	private static final float RADIUS = 100f;
+	private static final int DOWNSCALE = 2;
+	private static final Identifier BLIT_SHADER = Stray.id("post/end_sky_blit");
 	private static RenderPipeline pipeline;
+	private static RenderPipeline blitPipeline;
+	private static TextureTarget lowRes;
 	private static GpuBuffer cube;
 	private static int indices;
 
@@ -51,13 +63,24 @@ public final class EndSkyDecor {
 			return;
 		}
 		ensure();
-		if (pipeline == null || cube == null || indices < 6) {
+		if (pipeline == null || blitPipeline == null || cube == null || indices < 6) {
 			return;
 		}
-		RenderTarget target = client.getMainRenderTarget();
-		if (target == null || target.getColorTextureView() == null) {
+		RenderTarget main = client.getMainRenderTarget();
+		if (main == null || main.getColorTextureView() == null || main.width <= 0 || main.height <= 0) {
 			return;
 		}
+		int w = Math.max(1, main.width / DOWNSCALE);
+		int h = Math.max(1, main.height / DOWNSCALE);
+		if (lowRes == null) {
+			lowRes = new TextureTarget("stray end sky", w, h, false);
+		} else if (lowRes.width != w || lowRes.height != h) {
+			lowRes.resize(w, h);
+		}
+		if (lowRes.getColorTexture() == null || lowRes.getColorTextureView() == null) {
+			return;
+		}
+
 		PoseStack pose = new PoseStack();
 		pose.mulPose(Axis.YP.rotation(time * 0.0009f));
 		pose.mulPose(Axis.XP.rotation(0.42f));
@@ -79,21 +102,37 @@ public final class EndSkyDecor {
 			localHole,
 			new Matrix4f()
 		);
-		try (RenderPass pass = RenderSystem.getDevice().createCommandEncoder().createRenderPass(
-			() -> "stray end galaxy",
-			target.getColorTextureView(),
-			java.util.OptionalInt.empty(),
-			target.getDepthTextureView(),
-			java.util.OptionalDouble.empty()
-		)) {
-			pass.setPipeline(pipeline);
-			RenderSystem.bindDefaultUniforms(pass);
-			pass.setUniform("DynamicTransforms", transform);
-			pass.setVertexBuffer(0, cube);
-			pass.setIndexBuffer(indexBuf.getBuffer(indices), indexBuf.type());
-			pass.drawIndexed(0, 0, indices, 1);
+		CommandEncoder encoder = RenderSystem.getDevice().createCommandEncoder();
+		try {
+			encoder.clearColorTexture(lowRes.getColorTexture(), 0);
+			try (RenderPass pass = encoder.createRenderPass(
+				() -> "stray end galaxy",
+				lowRes.getColorTextureView(),
+				OptionalInt.empty()
+			)) {
+				pass.setPipeline(pipeline);
+				RenderSystem.bindDefaultUniforms(pass);
+				pass.setUniform("DynamicTransforms", transform);
+				pass.setVertexBuffer(0, cube);
+				pass.setIndexBuffer(indexBuf.getBuffer(indices), indexBuf.type());
+				pass.drawIndexed(0, 0, indices, 1);
+			}
 		} finally {
 			modelView.popMatrix();
+		}
+
+		GpuSampler linear = RenderSystem.getSamplerCache().getClampToEdge(FilterMode.LINEAR);
+		try (RenderPass pass = encoder.createRenderPass(
+			() -> "stray end galaxy blit",
+			main.getColorTextureView(),
+			OptionalInt.empty(),
+			main.getDepthTextureView(),
+			OptionalDouble.empty()
+		)) {
+			pass.setPipeline(blitPipeline);
+			RenderSystem.bindDefaultUniforms(pass);
+			pass.bindTexture("InSampler", lowRes.getColorTextureView(), linear);
+			pass.draw(0, 3);
 		}
 	}
 
@@ -105,22 +144,34 @@ public final class EndSkyDecor {
 	}
 
 	private static synchronized void ensurePipeline() {
-		if (pipeline != null) {
-			return;
-		}
-		pipeline = RenderPipelines.register(
-			RenderPipeline.builder()
-				.withLocation(Stray.id("pipeline/end_galaxy"))
-				.withVertexShader(Stray.id("core/end_galaxy"))
-				.withFragmentShader(Stray.id("core/end_galaxy"))
-				.withUniform("DynamicTransforms", UniformType.UNIFORM_BUFFER)
-				.withUniform("Projection", UniformType.UNIFORM_BUFFER)
+		if (pipeline == null) {
+			pipeline = RenderPipelines.register(
+				RenderPipeline.builder()
+					.withLocation(Stray.id("pipeline/end_galaxy"))
+					.withVertexShader(Stray.id("core/end_galaxy"))
+					.withFragmentShader(Stray.id("core/end_galaxy"))
+					.withUniform("DynamicTransforms", UniformType.UNIFORM_BUFFER)
+					.withUniform("Projection", UniformType.UNIFORM_BUFFER)
 					.withColorTargetState(new ColorTargetState(BlendFunction.TRANSLUCENT))
-				.withDepthStencilState(new DepthStencilState(CompareOp.ALWAYS_PASS, false))
-				.withCull(false)
-				.withVertexFormat(DefaultVertexFormat.POSITION, VertexFormat.Mode.QUADS)
-				.build()
-		);
+					.withDepthStencilState(new DepthStencilState(CompareOp.ALWAYS_PASS, false))
+					.withCull(false)
+					.withVertexFormat(DefaultVertexFormat.POSITION, VertexFormat.Mode.QUADS)
+					.build()
+			);
+		}
+		if (blitPipeline == null) {
+			blitPipeline = RenderPipelines.register(
+				RenderPipeline.builder()
+					.withLocation(Stray.id("pipeline/end_sky_blit"))
+					.withVertexShader(Identifier.withDefaultNamespace("core/screenquad"))
+					.withFragmentShader(BLIT_SHADER)
+					.withSampler("InSampler")
+					.withVertexFormat(DefaultVertexFormat.EMPTY, VertexFormat.Mode.TRIANGLES)
+					.withColorTargetState(new ColorTargetState(BlendFunction.TRANSLUCENT_PREMULTIPLIED_ALPHA))
+					.withDepthStencilState(new DepthStencilState(CompareOp.ALWAYS_PASS, false))
+					.build()
+			);
+		}
 	}
 
 	private static GpuBuffer bakeCube() {

@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.223", new String[]{
+			"End sky is much cheaper: it renders at half resolution and upscales, uses fewer noise octaves, and skips the geodesic march for rays that miss the disk."
+		}),
 		new Entry("1.2.222", new String[]{
 			"The lensing around the End sky black hole eases in smoothly instead of starting at a visible circle."
 		}),
