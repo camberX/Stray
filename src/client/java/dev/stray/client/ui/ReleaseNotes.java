@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.229", new String[]{
+			"Auto experiments has a Superpairs toggle. It flips unknown cards, remembers every reveal, and pairs a card the moment its twin shows up. Enchanted books first (higher tier wins), then Titanic bottles, then the biggest Enchanting XP dye. Same click delay and delay variety as the other experiments. Off by default."
+		}),
 		new Entry("1.2.228", new String[]{
 			"End sky no longer pulses. The black hole frame cross-fade is an exact linear mix now instead of alpha-blending one frame over the other, which brightened the glow every few ticks."
 		}),

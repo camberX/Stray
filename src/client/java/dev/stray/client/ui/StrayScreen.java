@@ -134,7 +134,7 @@ public class StrayScreen extends Screen {
 		HELD_ITEM("Held item", 7),
 		FILL("Player shader", 10),
 		AUTO_CLICKER("Auto clicker", 8),
-		AUTO_EXPERIMENTS("Auto experiments", 5),
+		AUTO_EXPERIMENTS("Auto experiments", 6),
 		MOB("Mob glow", 3),
 		STAR("Star mobs", 6),
 		BLOCK("Block outline", 1),
@@ -207,6 +207,8 @@ public class StrayScreen extends Screen {
 		new SearchEntry("Autoclicker", Tab.ASSIST, "Assist"),
 		new SearchEntry("Terminator", Tab.ASSIST, "Assist"),
 		new SearchEntry("Auto experiments", Tab.MENUS, "Misc"),
+		new SearchEntry("Superpairs", Tab.MENUS, "Misc"),
+		new SearchEntry("Auto superpairs", Tab.MENUS, "Misc"),
 		new SearchEntry("Chronomatron", Tab.MENUS, "Misc"),
 		new SearchEntry("Ultrasequencer", Tab.MENUS, "Misc"),
 		new SearchEntry("Click delay", Tab.MENUS, "Misc"),
@@ -2932,7 +2934,8 @@ public class StrayScreen extends Screen {
 				y = slider(graphics, font, ix, y, iw, "Delay variety", config.autoExperimentsDelayVariety + "ms", config.autoExperimentsDelayVariety / 1000f, v -> config.autoExperimentsDelayVariety = snapInt(v * 1000f, 0, 1000, 10));
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Auto close", config.autoExperimentsAutoClose, v -> config.autoExperimentsAutoClose = v);
 				y = slider(graphics, font, ix, y, iw, "Serum count", String.valueOf(config.autoExperimentsSerumCount), config.autoExperimentsSerumCount / 3f, v -> config.autoExperimentsSerumCount = snapInt(v * 3f, 0, 3, 1));
-				toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Get max XP", config.autoExperimentsGetMaxXp, v -> config.autoExperimentsGetMaxXp = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Get max XP", config.autoExperimentsGetMaxXp, v -> config.autoExperimentsGetMaxXp = v);
+				toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Superpairs", config.autoExperimentsSuperpairs, v -> config.autoExperimentsSuperpairs = v);
 			}
 			case MOB -> {
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Through walls", config.mobGlowThroughWalls, v -> config.mobGlowThroughWalls = v);
@@ -3488,7 +3491,7 @@ public class StrayScreen extends Screen {
 		return FabricLoader.getInstance()
 			.getModContainer("stray")
 			.map(container -> container.getMetadata().getVersion().getFriendlyString())
-			.orElse("1.2.228");
+			.orElse("1.2.229");
 	}
 
 	@Override
