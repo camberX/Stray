@@ -4,6 +4,7 @@ import dev.stray.client.combat.AutoExperiments;
 import dev.stray.client.farming.AutoDna;
 import dev.stray.client.menu.DisabledPotions;
 import dev.stray.client.combat.Triggerbot;
+import dev.stray.client.render.BlockMarks;
 import dev.stray.client.render.MobGlowRenderer;
 import dev.stray.client.ui.LoadoutsScreen;
 import dev.stray.client.ui.StrayTitleScreen;
@@ -43,6 +44,14 @@ public class MinecraftMixin {
 	@Inject(method = "handleKeybinds", at = @At("HEAD"))
 	private void stray$triggerbot(CallbackInfo ci) {
 		Triggerbot.tick((Minecraft) (Object) this);
+	}
+
+	/** Middle-click (pick block) toggles a Stray block mark when that feature is on. */
+	@Inject(method = "pickBlockOrEntity", at = @At("HEAD"), cancellable = true)
+	private void stray$blockMark(CallbackInfo ci) {
+		if (BlockMarks.onPick((Minecraft) (Object) this)) {
+			ci.cancel();
+		}
 	}
 
 	/**

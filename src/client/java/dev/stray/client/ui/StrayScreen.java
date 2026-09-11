@@ -15,6 +15,7 @@ import dev.stray.client.mining.MiningAreas;
 import dev.stray.client.mining.MiningTracker;
 import dev.stray.client.mining.TitaniumTracker;
 import dev.stray.client.render.GlowBlurRadius;
+import dev.stray.client.render.BlockMarks;
 import dev.stray.client.render.GuiDraw;
 import dev.stray.client.render.HudStats;
 import dev.stray.client.render.EspMobPrint;
@@ -140,6 +141,7 @@ public class StrayScreen extends Screen {
 		BLOCK("Block outline", 1),
 		CHEST("Chest ESP", 5),
 		FAIRY("Fairy souls", 1),
+		MARKS("Block marks", 3),
 		NODE_ESP("Node ESP", 4),
 		WATERMARK("Watermark", 4),
 		MUSIC("Music", 3),
@@ -172,7 +174,7 @@ public class StrayScreen extends Screen {
 	}
 
 	private enum PickerTarget {
-		WORLD, SKY, FOG, NODE, THEME, PANE, CONTROL, PILL, MOB, STAR, BLOCK, TITANIUM, CHEST, PEST, HELD_ITEM, HELD_ITEM_OUTLINE, FILL, FILL_OUTLINE
+		WORLD, SKY, FOG, NODE, THEME, PANE, CONTROL, PILL, MOB, STAR, BLOCK, TITANIUM, CHEST, PEST, HELD_ITEM, HELD_ITEM_OUTLINE, FILL, FILL_OUTLINE, MARKS
 	}
 
 	private record SearchEntry(String label, Tab tab, String hint) {
@@ -260,6 +262,10 @@ public class StrayScreen extends Screen {
 		new SearchEntry("Block outline", Tab.ESP, "World"),
 		new SearchEntry("Block outline color", Tab.ESP, "World"),
 		new SearchEntry("Chest ESP", Tab.ESP, "World"),
+		new SearchEntry("Block marks", Tab.ESP, "World"),
+		new SearchEntry("Middle click waypoint", Tab.ESP, "World"),
+		new SearchEntry("Block waypoint", Tab.ESP, "World"),
+		new SearchEntry("Mark block", Tab.ESP, "World"),
 		new SearchEntry("Fairy souls", Tab.ESP, "World"),
 		new SearchEntry("Fairy soul ESP", Tab.ESP, "World"),
 		new SearchEntry("Fairy soul tracker", Tab.ESP, "World"),
@@ -895,19 +901,21 @@ public class StrayScreen extends Screen {
 			y = controlCard(graphics, font, left, y, col, mouseX, mouseY, "Block outline", config.blockOutlineGlow, v -> config.blockOutlineGlow = v, Feature.BLOCK);
 			y = controlCard(graphics, font, left, y, col, mouseX, mouseY, "Chest ESP", config.chestEspEnabled, v -> config.chestEspEnabled = v, Feature.CHEST);
 			y = controlCard(graphics, font, left, y, col, mouseX, mouseY, "Fairy souls", config.fairySoulEsp, v -> config.fairySoulEsp = v, Feature.FAIRY);
+			y = controlCard(graphics, font, left, y, col, mouseX, mouseY, "Block marks", config.blockMarksEnabled, v -> config.blockMarksEnabled = v, Feature.MARKS);
 			y = sectionLabel(graphics, font, left, y, "Items");
 			y = controlCard(graphics, font, left, y, col, mouseX, mouseY, "Held item", config.heldItemShaderEnabled, v -> config.heldItemShaderEnabled = v, Feature.HELD_ITEM);
 			namesTop = y;
 		} else {
-			y = featureCard(graphics, font, left, top, col, cardHeight(7), "Glow");
+			y = featureCard(graphics, font, left, top, col, cardHeight(8), "Glow");
 			y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Mob glow", config.mobGlowEnabled, v -> config.mobGlowEnabled = v, Feature.MOB);
 			y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Star mobs", config.starMobEsp, v -> config.starMobEsp = v, Feature.STAR);
 			y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Block outline", config.blockOutlineGlow, v -> config.blockOutlineGlow = v, Feature.BLOCK);
 			y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Chest ESP", config.chestEspEnabled, v -> config.chestEspEnabled = v, Feature.CHEST);
+			y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Block marks", config.blockMarksEnabled, v -> config.blockMarksEnabled = v, Feature.MARKS);
 			y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Player shader", config.playerFillEsp, v -> config.playerFillEsp = v, Feature.FILL);
 			y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Nametags", config.nametagsEnabled, v -> config.nametagsEnabled = v, Feature.NAMETAGS);
 			toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Own nametag", config.nametagSelf, v -> config.nametagSelf = v);
-			float heldTop = top + cardHeight(7) + 8;
+			float heldTop = top + cardHeight(8) + 8;
 			y = featureCard(graphics, font, left, heldTop, col, cardHeight(1), "Held item");
 			toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Shader", config.heldItemShaderEnabled, v -> config.heldItemShaderEnabled = v, Feature.HELD_ITEM);
 			namesTop = heldTop + cardHeight(1) + 8;
@@ -2260,7 +2268,8 @@ public class StrayScreen extends Screen {
 				y = sectionLabel(graphics, font, left, y, "World");
 				y = controlCard(graphics, font, left, y, col, mouseX, mouseY, "Block outline", config.blockOutlineGlow, v -> config.blockOutlineGlow = v, Feature.BLOCK);
 				y = controlCard(graphics, font, left, y, col, mouseX, mouseY, "Chest ESP", config.chestEspEnabled, v -> config.chestEspEnabled = v, Feature.CHEST);
-				controlCard(graphics, font, left, y, col, mouseX, mouseY, "Fairy souls", config.fairySoulEsp, v -> config.fairySoulEsp = v, Feature.FAIRY);
+				y = controlCard(graphics, font, left, y, col, mouseX, mouseY, "Fairy souls", config.fairySoulEsp, v -> config.fairySoulEsp = v, Feature.FAIRY);
+				controlCard(graphics, font, left, y, col, mouseX, mouseY, "Block marks", config.blockMarksEnabled, v -> config.blockMarksEnabled = v, Feature.MARKS);
 				y = sectionLabel(graphics, font, right, top, "Held item");
 				y = controlCard(graphics, font, right, y, col, mouseX, mouseY, "Held item", config.heldItemShaderEnabled, v -> config.heldItemShaderEnabled = v, Feature.HELD_ITEM);
 				y = sectionLabel(graphics, font, right, y, "Health");
@@ -2979,6 +2988,11 @@ public class StrayScreen extends Screen {
 				colorRow(graphics, font, ix, y, iw, mouseX, mouseY, "Color", config.chestEspRgb, PickerTarget.CHEST);
 			}
 			case FAIRY -> toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Through walls", config.fairySoulThroughWalls, v -> config.fairySoulThroughWalls = v);
+			case MARKS -> {
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Tracers", config.blockMarksTracers, v -> config.blockMarksTracers = v);
+				y = clickRow(graphics, font, ix, y, iw, mouseX, mouseY, BlockMarks.count() == 0 ? "Clear marks" : "Clear " + BlockMarks.count() + " mark" + (BlockMarks.count() == 1 ? "" : "s"), BlockMarks::clear);
+				colorRow(graphics, font, ix, y, iw, mouseX, mouseY, "Color", config.blockMarksRgb, PickerTarget.MARKS);
+			}
 			case NODE_ESP -> {
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Outline", config.boxOutline, v -> config.boxOutline = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Tracer", config.tracersEnabled, v -> config.tracersEnabled = v);
@@ -3378,6 +3392,7 @@ public class StrayScreen extends Screen {
 			case HELD_ITEM_OUTLINE -> config.heldItemShaderOutlineRgb = packed;
 			case FILL -> config.playerFillRgb = packed;
 			case FILL_OUTLINE -> config.playerFillOutlineRgb = packed;
+			case MARKS -> config.blockMarksRgb = packed == 0 ? 0x2FB5FF : packed;
 			case THEME -> Theme.applyCustom(packed);
 			case PANE -> Theme.applyPane(packed);
 			case CONTROL -> {
@@ -3397,7 +3412,7 @@ public class StrayScreen extends Screen {
 			case PANE -> 0.20f;
 			case MOB, STAR, BLOCK -> 0.15f;
 			case NODE, HELD_ITEM, FILL, CHEST, TITANIUM, PEST -> 0.08f;
-			case THEME, HELD_ITEM_OUTLINE, FILL_OUTLINE -> 1f;
+			case THEME, HELD_ITEM_OUTLINE, FILL_OUTLINE, MARKS -> 1f;
 			default -> 0f;
 		};
 	}
@@ -3429,7 +3444,7 @@ public class StrayScreen extends Screen {
 			case WORLD -> config.worldTintStrength;
 			case SKY -> config.skyTintStrength;
 			case FOG -> config.fogDensity;
-			case THEME, HELD_ITEM_OUTLINE, FILL_OUTLINE -> 1f;
+			case THEME, HELD_ITEM_OUTLINE, FILL_OUTLINE, MARKS -> 1f;
 		};
 	}
 
@@ -3452,7 +3467,7 @@ public class StrayScreen extends Screen {
 			case WORLD -> config.worldTintStrength = clamped;
 			case SKY -> config.skyTintStrength = clamped;
 			case FOG -> config.fogDensity = clamped;
-			case THEME, HELD_ITEM_OUTLINE, FILL_OUTLINE -> {
+			case THEME, HELD_ITEM_OUTLINE, FILL_OUTLINE, MARKS -> {
 				return;
 			}
 		}

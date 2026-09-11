@@ -38,6 +38,7 @@ public final class StrayHud {
 		CrystalHollowsRenderer.extract(graphics, delta);
 		CrystalHollowsMap.extract(graphics, delta);
 		MetalDetector.extract(graphics, delta);
+		BlockMarks.extract(graphics, delta);
 		WatermarkRenderer.extract(graphics, delta);
 		MusicHudRenderer.extract(graphics, delta);
 		RawmatsHudRenderer.extract(graphics, delta);

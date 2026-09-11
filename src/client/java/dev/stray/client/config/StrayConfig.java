@@ -123,6 +123,9 @@ public final class StrayConfig {
 	public boolean chestEspTracers = false;
 	public boolean chestEspThroughWalls = false;
 	public boolean fairySoulEsp = false;
+	public boolean blockMarksEnabled = false;
+	public boolean blockMarksTracers = true;
+	public int blockMarksRgb = 0x2FB5FF;
 	public boolean fairySoulThroughWalls = true;
 	public int fairySoulRgb = 0xE878FF;
 	public float chestAimSpeed = 1.00f;
@@ -647,6 +650,15 @@ public final class StrayConfig {
 				}
 				if (!json.has("fairySoulEsp")) {
 					loaded.fairySoulEsp = false;
+				}
+				if (!json.has("blockMarksEnabled")) {
+					loaded.blockMarksEnabled = false;
+				}
+				if (!json.has("blockMarksTracers")) {
+					loaded.blockMarksTracers = true;
+				}
+				if (!json.has("blockMarksRgb") || (loaded.blockMarksRgb & 0xFFFFFF) == 0) {
+					loaded.blockMarksRgb = 0x2FB5FF;
 				}
 				if (!json.has("fairySoulThroughWalls")) {
 					loaded.fairySoulThroughWalls = true;

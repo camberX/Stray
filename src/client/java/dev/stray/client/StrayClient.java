@@ -59,6 +59,7 @@ import dev.stray.client.render.PickupLogRenderer;
 import dev.stray.client.render.RawmatsHudRenderer;
 import dev.stray.client.render.MiningHudRenderer;
 import dev.stray.client.render.MiningWorldRenderer;
+import dev.stray.client.render.BlockMarks;
 import dev.stray.client.render.BlockOutlineGlow;
 import dev.stray.client.render.EspCommands;
 import dev.stray.client.render.MobGlowRenderer;
@@ -154,6 +155,7 @@ public final class StrayClient implements ClientModInitializer {
 		NodeWorldRenderer.init();
 		MobGlowRenderer.init();
 		BlockOutlineGlow.init();
+		BlockMarks.init();
 		MiningWorldRenderer.init();
 		ChestEspRenderer.init();
 		PestEspRenderer.init();
@@ -300,6 +302,7 @@ public final class StrayClient implements ClientModInitializer {
 			PestEsp.reset();
 			CrystalHollows.onWorldChange();
 			MetalDetector.onWorldChange();
+			BlockMarks.onWorldChange();
 		});
 
 		ClientPlayConnectionEvents.JOIN.register((handler, sender, client) -> {

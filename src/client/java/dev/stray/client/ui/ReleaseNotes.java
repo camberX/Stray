@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.235", new String[]{
+			"Block marks: with the toggle on, middle-click any block to mark it. Marks draw through walls with a distance tag and an optional tracer; middle-click again to drop one. Clear button and color in the ESP tab. Marks reset when you change worlds."
+		}),
 		new Entry("1.2.234", new String[]{
 			"Metal detector predictions read Hypixel's TREASURE action-bar packet again. The old chat hook never saw that line, so the waypoint never appeared. It also keeps solving if you are in the Hollows with the detector out."
 		}),
