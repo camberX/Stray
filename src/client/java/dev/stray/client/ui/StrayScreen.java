@@ -93,15 +93,24 @@ public class StrayScreen extends Screen {
 	}
 
 	private enum Tab {
-		WORLD("World", Group.WORLD),
-		ESP("Visuals", Group.ESP),
-		COMBAT("Combat", Group.COMBAT),
-		OVERLAY("Overlay", Group.HUD),
-		BARS("Bars", Group.HUD),
-		MINING("Mining", Group.MINING),
+		WORLD("Atmosphere", Group.WORLD),
+		CAMERA("Camera", Group.WORLD),
+		ESP("ESP", Group.ESP),
+		PLAYERS("Players", Group.ESP),
+		CATALOG("Mobs", Group.ESP),
+		COMBAT("Hitsound", Group.COMBAT),
+		ASSIST("Assist", Group.COMBAT),
+		OVERLAY("Widgets", Group.HUD),
+		MEDIA("Media", Group.HUD),
+		BARS("Vanilla", Group.HUD),
+		MINING("Dwarven", Group.MINING),
+		HOLLOWS("Hollows", Group.MINING),
 		NODES("Nodes", Group.MINING),
-		FARMING("Farming", Group.FARMING),
+		FARMING("HUD", Group.FARMING),
+		GARDEN("Garden", Group.FARMING),
+		GREENHOUSE("DNA", Group.FARMING),
 		MENUS("Menus", Group.MISC),
+		KEYS("Keys", Group.MISC),
 		STATUS("Status", Group.MISC),
 		PLAYER("Player", Group.PLAYER),
 		SETTINGS("Theme", Group.THEME);
@@ -173,27 +182,27 @@ public class StrayScreen extends Screen {
 		new SearchEntry("Lightmap", Tab.WORLD, "World"),
 		new SearchEntry("Shader", Tab.WORLD, "World"),
 		new SearchEntry("Skybox tint", Tab.WORLD, "World"),
-		new SearchEntry("Aspect ratio", Tab.WORLD, "Camera"),
-		new SearchEntry("Custom fog", Tab.WORLD, "Camera"),
-		new SearchEntry("Motion blur", Tab.WORLD, "Camera"),
-		new SearchEntry("Velocity blur", Tab.WORLD, "Camera"),
-		new SearchEntry("Frame blending", Tab.WORLD, "Camera"),
-		new SearchEntry("Hybrid blur", Tab.WORLD, "Camera"),
-		new SearchEntry("Accumulation blur", Tab.WORLD, "Camera"),
-		new SearchEntry("Combat", Tab.COMBAT, "Combat"),
-		new SearchEntry("Hitsound", Tab.COMBAT, "Combat"),
-		new SearchEntry("Melee hitsound", Tab.COMBAT, "Combat"),
-		new SearchEntry("Arrow hitsound", Tab.COMBAT, "Combat"),
-		new SearchEntry("Hitmarker", Tab.COMBAT, "Combat"),
-		new SearchEntry("Hitmarker scale", Tab.COMBAT, "Combat"),
-		new SearchEntry("Hit volume", Tab.COMBAT, "Combat"),
-		new SearchEntry("Hit pitch", Tab.COMBAT, "Combat"),
-		new SearchEntry("Triggerbot", Tab.COMBAT, "Combat"),
-		new SearchEntry("Triggerbot players", Tab.COMBAT, "Combat"),
-		new SearchEntry("Triggerbot humanize", Tab.COMBAT, "Combat"),
-		new SearchEntry("Auto clicker", Tab.COMBAT, "Combat"),
-		new SearchEntry("Autoclicker", Tab.COMBAT, "Combat"),
-		new SearchEntry("Terminator", Tab.COMBAT, "Combat"),
+		new SearchEntry("Aspect ratio", Tab.CAMERA, "Camera"),
+		new SearchEntry("Custom fog", Tab.CAMERA, "Camera"),
+		new SearchEntry("Motion blur", Tab.CAMERA, "Camera"),
+		new SearchEntry("Velocity blur", Tab.CAMERA, "Camera"),
+		new SearchEntry("Frame blending", Tab.CAMERA, "Camera"),
+		new SearchEntry("Hybrid blur", Tab.CAMERA, "Camera"),
+		new SearchEntry("Accumulation blur", Tab.CAMERA, "Camera"),
+		new SearchEntry("Combat", Tab.COMBAT, "Hitsound"),
+		new SearchEntry("Hitsound", Tab.COMBAT, "Hitsound"),
+		new SearchEntry("Melee hitsound", Tab.COMBAT, "Hitsound"),
+		new SearchEntry("Arrow hitsound", Tab.COMBAT, "Hitsound"),
+		new SearchEntry("Hitmarker", Tab.COMBAT, "Hitsound"),
+		new SearchEntry("Hitmarker scale", Tab.COMBAT, "Hitsound"),
+		new SearchEntry("Hit volume", Tab.COMBAT, "Hitsound"),
+		new SearchEntry("Hit pitch", Tab.COMBAT, "Hitsound"),
+		new SearchEntry("Triggerbot", Tab.ASSIST, "Assist"),
+		new SearchEntry("Triggerbot players", Tab.ASSIST, "Assist"),
+		new SearchEntry("Triggerbot humanize", Tab.ASSIST, "Assist"),
+		new SearchEntry("Auto clicker", Tab.ASSIST, "Assist"),
+		new SearchEntry("Autoclicker", Tab.ASSIST, "Assist"),
+		new SearchEntry("Terminator", Tab.ASSIST, "Assist"),
 		new SearchEntry("Auto experiments", Tab.MENUS, "Misc"),
 		new SearchEntry("Chronomatron", Tab.MENUS, "Misc"),
 		new SearchEntry("Ultrasequencer", Tab.MENUS, "Misc"),
@@ -202,51 +211,51 @@ public class StrayScreen extends Screen {
 		new SearchEntry("Disabled potions", Tab.MENUS, "Menus"),
 		new SearchEntry("Toggle Potion Effects", Tab.MENUS, "Menus"),
 		new SearchEntry("Potion effects", Tab.MENUS, "Menus"),
-		new SearchEntry("Held item shader", Tab.ESP, "Visuals"),
-		new SearchEntry("Item shader", Tab.ESP, "Visuals"),
-		new SearchEntry("Held item outline", Tab.ESP, "Visuals"),
-		new SearchEntry("Held item outline color", Tab.ESP, "Visuals"),
-		new SearchEntry("Item smoke", Tab.ESP, "Visuals"),
-		new SearchEntry("End portal shader", Tab.ESP, "Visuals"),
-		new SearchEntry("Portal shader", Tab.ESP, "Visuals"),
-		new SearchEntry("Galaxy shader", Tab.ESP, "Visuals"),
-		new SearchEntry("Black hole shader", Tab.ESP, "Visuals"),
-		new SearchEntry("Ghost", Tab.ESP, "Visuals"),
-		new SearchEntry("Ghost item", Tab.ESP, "Visuals"),
-		new SearchEntry("Player fill", Tab.ESP, "Visuals"),
-		new SearchEntry("Player fill ESP", Tab.ESP, "Visuals"),
-		new SearchEntry("Player fill color", Tab.ESP, "Visuals"),
-		new SearchEntry("Player fill outline", Tab.ESP, "Visuals"),
-		new SearchEntry("Player fill portal", Tab.ESP, "Visuals"),
-		new SearchEntry("Player fill outline color", Tab.ESP, "Visuals"),
+		new SearchEntry("Held item shader", Tab.ESP, "Held item"),
+		new SearchEntry("Item shader", Tab.ESP, "Held item"),
+		new SearchEntry("Held item outline", Tab.ESP, "Held item"),
+		new SearchEntry("Held item outline color", Tab.ESP, "Held item"),
+		new SearchEntry("Item smoke", Tab.ESP, "Held item"),
+		new SearchEntry("End portal shader", Tab.ESP, "Held item"),
+		new SearchEntry("Portal shader", Tab.ESP, "Held item"),
+		new SearchEntry("Galaxy shader", Tab.ESP, "Held item"),
+		new SearchEntry("Black hole shader", Tab.ESP, "Held item"),
+		new SearchEntry("Ghost", Tab.ESP, "Held item"),
+		new SearchEntry("Ghost item", Tab.ESP, "Held item"),
+		new SearchEntry("Player fill", Tab.PLAYERS, "Players"),
+		new SearchEntry("Player fill ESP", Tab.PLAYERS, "Players"),
+		new SearchEntry("Player fill color", Tab.PLAYERS, "Players"),
+		new SearchEntry("Player fill outline", Tab.PLAYERS, "Players"),
+		new SearchEntry("Player fill portal", Tab.PLAYERS, "Players"),
+		new SearchEntry("Player fill outline color", Tab.PLAYERS, "Players"),
 		new SearchEntry("Fill star mobs", Tab.ESP, "Star mobs"),
 		new SearchEntry("Glow ESP", Tab.ESP, "Star mobs"),
-		new SearchEntry("Fill ESP mobs", Tab.ESP, "Visuals"),
-		new SearchEntry("Fill through walls", Tab.ESP, "Visuals"),
-		new SearchEntry("Mob fill", Tab.ESP, "Visuals"),
-		new SearchEntry("Held fill", Tab.ESP, "Visuals"),
-		new SearchEntry("Hand fill", Tab.ESP, "Visuals"),
-		new SearchEntry("Nametag ESP", Tab.ESP, "Visuals"),
-		new SearchEntry("Star mobs", Tab.ESP, "Visuals"),
-		new SearchEntry("Star mob ESP", Tab.ESP, "Visuals"),
-		new SearchEntry("Starred mobs", Tab.ESP, "Visuals"),
-		new SearchEntry("Highlight bats", Tab.ESP, "Visuals"),
-		new SearchEntry("Highlight fels", Tab.ESP, "Visuals"),
-		new SearchEntry("Block outline", Tab.ESP, "Visuals"),
-		new SearchEntry("Block outline color", Tab.ESP, "Visuals"),
-		new SearchEntry("Chest ESP", Tab.ESP, "Visuals"),
-		new SearchEntry("Fairy souls", Tab.ESP, "Visuals"),
-		new SearchEntry("Fairy soul ESP", Tab.ESP, "Visuals"),
-		new SearchEntry("Fairy soul tracker", Tab.ESP, "Visuals"),
-		new SearchEntry("Chest tracers", Tab.ESP, "Visuals"),
-		new SearchEntry("Chest aim speed", Tab.ESP, "Visuals"),
-		new SearchEntry("Mobs", Tab.ESP, "Visuals"),
+		new SearchEntry("Fill ESP mobs", Tab.PLAYERS, "Players"),
+		new SearchEntry("Fill through walls", Tab.PLAYERS, "Players"),
+		new SearchEntry("Mob fill", Tab.PLAYERS, "Players"),
+		new SearchEntry("Held fill", Tab.ESP, "Held item"),
+		new SearchEntry("Hand fill", Tab.ESP, "Held item"),
+		new SearchEntry("Nametag ESP", Tab.PLAYERS, "Players"),
+		new SearchEntry("Star mobs", Tab.ESP, "Glow"),
+		new SearchEntry("Star mob ESP", Tab.ESP, "Glow"),
+		new SearchEntry("Starred mobs", Tab.ESP, "Glow"),
+		new SearchEntry("Highlight bats", Tab.ESP, "Glow"),
+		new SearchEntry("Highlight fels", Tab.ESP, "Glow"),
+		new SearchEntry("Block outline", Tab.ESP, "World"),
+		new SearchEntry("Block outline color", Tab.ESP, "World"),
+		new SearchEntry("Chest ESP", Tab.ESP, "World"),
+		new SearchEntry("Fairy souls", Tab.ESP, "World"),
+		new SearchEntry("Fairy soul ESP", Tab.ESP, "World"),
+		new SearchEntry("Fairy soul tracker", Tab.ESP, "World"),
+		new SearchEntry("Chest tracers", Tab.ESP, "World"),
+		new SearchEntry("Chest aim speed", Tab.ESP, "World"),
+		new SearchEntry("Mobs", Tab.CATALOG, "Mobs"),
 		new SearchEntry("Node ESP", Tab.NODES, "Nodes"),
-		new SearchEntry("Nametags", Tab.ESP, "Visuals"),
-		new SearchEntry("Nametag style", Tab.ESP, "Visuals"),
-		new SearchEntry("Own nametag", Tab.ESP, "Visuals"),
-		new SearchEntry("Nametag size", Tab.ESP, "Visuals"),
-		new SearchEntry("Nametag opacity", Tab.ESP, "Visuals"),
+		new SearchEntry("Nametags", Tab.PLAYERS, "Players"),
+		new SearchEntry("Nametag style", Tab.PLAYERS, "Players"),
+		new SearchEntry("Own nametag", Tab.PLAYERS, "Players"),
+		new SearchEntry("Nametag size", Tab.PLAYERS, "Players"),
+		new SearchEntry("Nametag opacity", Tab.PLAYERS, "Players"),
 		new SearchEntry("Menu scale", Tab.SETTINGS, "Theme"),
 		new SearchEntry("HUD opacity", Tab.SETTINGS, "Theme"),
 		new SearchEntry("Menu stars", Tab.SETTINGS, "Theme"),
@@ -258,6 +267,8 @@ public class StrayScreen extends Screen {
 		new SearchEntry("Update notification", Tab.SETTINGS, "Theme"),
 		new SearchEntry("New version", Tab.SETTINGS, "Theme"),
 		new SearchEntry("Markers", Tab.NODES, "Nodes"),
+		new SearchEntry("Keybinds", Tab.KEYS, "Keys"),
+		new SearchEntry("Open menu", Tab.KEYS, "Keys"),
 		new SearchEntry("Menus", Tab.MENUS, "Menus"),
 		new SearchEntry("Loadouts", Tab.MENUS, "Menus"),
 		new SearchEntry("Loadouts menu", Tab.MENUS, "Menus"),
@@ -284,51 +295,51 @@ public class StrayScreen extends Screen {
 		new SearchEntry("Contest prediction", Tab.FARMING, "Farming"),
 		new SearchEntry("Crops per second", Tab.FARMING, "Farming"),
 		new SearchEntry("Composter overlay", Tab.FARMING, "Farming"),
-		new SearchEntry("Garden plots", Tab.FARMING, "Farming"),
-		new SearchEntry("Pest ESP", Tab.FARMING, "Farming"),
-		new SearchEntry("Garden pests", Tab.FARMING, "Farming"),
-		new SearchEntry("Vacuum", Tab.FARMING, "Farming"),
-		new SearchEntry("Plot widget", Tab.FARMING, "Farming"),
-		new SearchEntry("Configure Plots", Tab.FARMING, "Farming"),
-		new SearchEntry("Auto DNA", Tab.FARMING, "Farming"),
-		new SearchEntry("DNA analyzer", Tab.FARMING, "Farming"),
-		new SearchEntry("Greenhouse DNA", Tab.FARMING, "Farming"),
+		new SearchEntry("Garden plots", Tab.GARDEN, "Garden"),
+		new SearchEntry("Pest ESP", Tab.GARDEN, "Garden"),
+		new SearchEntry("Garden pests", Tab.GARDEN, "Garden"),
+		new SearchEntry("Vacuum", Tab.GARDEN, "Garden"),
+		new SearchEntry("Plot widget", Tab.GARDEN, "Garden"),
+		new SearchEntry("Configure Plots", Tab.GARDEN, "Garden"),
+		new SearchEntry("Auto DNA", Tab.GREENHOUSE, "DNA"),
+		new SearchEntry("DNA analyzer", Tab.GREENHOUSE, "DNA"),
+		new SearchEntry("Greenhouse DNA", Tab.GREENHOUSE, "DNA"),
 		new SearchEntry("Organic Matter", Tab.FARMING, "Farming"),
 		new SearchEntry("Composter Fuel", Tab.FARMING, "Farming"),
 		new SearchEntry("Filled box", Tab.NODES, "Nodes"),
 		new SearchEntry("Watermark", Tab.OVERLAY, "Overlay"),
-		new SearchEntry("Music HUD", Tab.OVERLAY, "Overlay"),
-		new SearchEntry("Song Notification", Tab.OVERLAY, "Overlay"),
-		new SearchEntry("Song chat", Tab.OVERLAY, "Overlay"),
-		new SearchEntry("Now playing chat", Tab.OVERLAY, "Overlay"),
+		new SearchEntry("Music HUD", Tab.MEDIA, "Media"),
+		new SearchEntry("Song Notification", Tab.MEDIA, "Media"),
+		new SearchEntry("Song chat", Tab.MEDIA, "Media"),
+		new SearchEntry("Now playing chat", Tab.MEDIA, "Media"),
 		new SearchEntry("Raw mats", Tab.OVERLAY, "Overlay"),
 		new SearchEntry("Pickup log", Tab.OVERLAY, "Overlay"),
 		new SearchEntry("Picked up items", Tab.OVERLAY, "Overlay"),
 		new SearchEntry("Enchanted materials", Tab.OVERLAY, "Overlay"),
-		new SearchEntry("Spotify", Tab.OVERLAY, "Music"),
-		new SearchEntry("YouTube Music", Tab.OVERLAY, "Music"),
+		new SearchEntry("Spotify", Tab.MEDIA, "Media"),
+		new SearchEntry("YouTube Music", Tab.MEDIA, "Media"),
 		new SearchEntry("Scoreboard", Tab.BARS, "Bars"),
 		new SearchEntry("Boss bar", Tab.BARS, "Bars"),
 		new SearchEntry("Effects", Tab.BARS, "Bars"),
 		new SearchEntry("Held item", Tab.BARS, "Bars"),
-		new SearchEntry("CH map", Tab.MINING, "Mining"),
-		new SearchEntry("Crystal Hollows map", Tab.MINING, "Mining"),
-		new SearchEntry("Hollows map", Tab.MINING, "Mining"),
-		new SearchEntry("Metal detector", Tab.MINING, "Mining"),
-		new SearchEntry("TREASURE", Tab.MINING, "Mining"),
-		new SearchEntry("Scavenged", Tab.MINING, "Mining"),
-		new SearchEntry("Crystal Hollows waypoints", Tab.MINING, "Mining"),
-		new SearchEntry("CH waypoints", Tab.MINING, "Mining"),
-		new SearchEntry("Entrance zones", Tab.MINING, "Mining"),
-		new SearchEntry("Nucleus waypoints", Tab.MINING, "Mining"),
-		new SearchEntry("Zone doors", Tab.MINING, "Mining"),
-		new SearchEntry("Dump coords", Tab.MINING, "Mining"),
-		new SearchEntry("Jungle Temple", Tab.MINING, "Mining"),
-		new SearchEntry("Mines of Divan", Tab.MINING, "Mining"),
-		new SearchEntry("Goblin Queen", Tab.MINING, "Mining"),
-		new SearchEntry("Lost Precursor City", Tab.MINING, "Mining"),
-		new SearchEntry("Khazad-dum", Tab.MINING, "Mining"),
-		new SearchEntry("Fairy Grotto", Tab.MINING, "Mining"),
+		new SearchEntry("CH map", Tab.HOLLOWS, "Hollows"),
+		new SearchEntry("Crystal Hollows map", Tab.HOLLOWS, "Hollows"),
+		new SearchEntry("Hollows map", Tab.HOLLOWS, "Hollows"),
+		new SearchEntry("Metal detector", Tab.HOLLOWS, "Divan"),
+		new SearchEntry("TREASURE", Tab.HOLLOWS, "Divan"),
+		new SearchEntry("Scavenged", Tab.HOLLOWS, "Divan"),
+		new SearchEntry("Crystal Hollows waypoints", Tab.HOLLOWS, "Hollows"),
+		new SearchEntry("CH waypoints", Tab.HOLLOWS, "Hollows"),
+		new SearchEntry("Entrance zones", Tab.HOLLOWS, "Hollows"),
+		new SearchEntry("Nucleus waypoints", Tab.HOLLOWS, "Hollows"),
+		new SearchEntry("Zone doors", Tab.HOLLOWS, "Hollows"),
+		new SearchEntry("Dump coords", Tab.HOLLOWS, "Hollows"),
+		new SearchEntry("Jungle Temple", Tab.HOLLOWS, "Hollows"),
+		new SearchEntry("Mines of Divan", Tab.HOLLOWS, "Divan"),
+		new SearchEntry("Goblin Queen", Tab.HOLLOWS, "Hollows"),
+		new SearchEntry("Lost Precursor City", Tab.HOLLOWS, "Hollows"),
+		new SearchEntry("Khazad-dum", Tab.HOLLOWS, "Hollows"),
+		new SearchEntry("Fairy Grotto", Tab.HOLLOWS, "Hollows"),
 		new SearchEntry("Inventory HUD", Tab.OVERLAY, "Overlay"),
 		new SearchEntry("Item count", Tab.OVERLAY, "Overlay"),
 		new SearchEntry("Pane opacity", Tab.SETTINGS, "Theme"),
@@ -805,7 +816,7 @@ public class StrayScreen extends Screen {
 		capeFocused = tab == Tab.PLAYER;
 		nickFocused = tab == Tab.PLAYER;
 		mobSearchFocused = false;
-		if (value == Tab.ESP) {
+		if (value == Tab.CATALOG) {
 			ensureMobVisible = true;
 		}
 		commitCapeUrl();
@@ -963,6 +974,137 @@ public class StrayScreen extends Screen {
 			float thumbH = Math.max(14f, trackH * trackH / (trackH + maxScroll));
 			float thumbY = trackY + (mobScroll / maxScroll) * (trackH - thumbH);
 			GuiDraw.rounded(graphics, trackX - 0.4f, thumbY, 3.2f, thumbH, 1.6f, Theme.ACCENT);
+		}
+	}
+
+	private void drawCatalogTab(GuiGraphicsExtractor graphics, Font font, int mouseX, int mouseY) {
+		float left = contentX();
+		float top = windowY + toolbarH() + 6;
+		float col = colW();
+		float ix = innerX(left);
+		StrayConfig config = StrayConfig.get();
+		List<MobCatalog.Entry> entries = MobCatalog.filtered(mobQuery);
+
+		float y = sectionLabel(graphics, font, left, top, "Catalog");
+		float listH = Math.max(cardHeight(12), contentBottom() - y);
+		featureCard(graphics, font, left, y, col + COL_GAP + col, listH, entries.isEmpty() ? "Mobs" : "Mobs  " + entries.size());
+		float searchY = y + cardTop() + cardHead();
+		mobFieldX = ix;
+		mobFieldY = searchY;
+		mobFieldW = innerW(col + COL_GAP + col);
+		boolean hoverSearch = GuiDraw.hovered(mouseX, mouseY, mobFieldX, mobFieldY, mobFieldW, 14);
+		GuiDraw.panel(graphics, mobFieldX, mobFieldY, mobFieldW, 14, 5, mobSearchFocused || hoverSearch ? Theme.CARD_HOVER : Theme.PANEL, mobSearchFocused ? Theme.ACCENT : Theme.LINE);
+		String shown = mobQuery.isEmpty() && !mobSearchFocused ? "Search mobs..." : mobQuery + (mobSearchFocused ? "|" : "");
+		GuiDraw.menu(graphics, font, clip(font, shown, (int) mobFieldW - 10), mobFieldX + 5, GuiDraw.middle(mobFieldY, 14), mobQuery.isEmpty() && !mobSearchFocused ? fade() : ink());
+		hits.add(new Hit(mobFieldX, mobFieldY, mobFieldW, 14, () -> {
+			mobSearchFocused = true;
+			capeFocused = false;
+			nickFocused = false;
+			searchOpen = false;
+		}));
+
+		float row = rowH();
+		mobListX = ix;
+		mobListY = searchY + 18;
+		mobListW = mobFieldW;
+		mobListH = Math.max(row, listH - cardTop() - cardHead() - 22);
+		float contentH = entries.size() * row;
+		float maxScroll = Math.max(0f, contentH - mobListH);
+		if (ensureMobVisible) {
+			for (int i = 0; i < entries.size(); i++) {
+				if (config.isMobGlowSelected(entries.get(i).id().toString())) {
+					mobScroll = Mth.clamp(i * row - mobListH * 0.4f, 0f, maxScroll);
+					break;
+				}
+			}
+			ensureMobVisible = false;
+		}
+		mobScroll = Mth.clamp(mobScroll, 0f, maxScroll);
+
+		boolean clipped = GuiDraw.scissor(graphics, mobListX, mobListY, mobListW, mobListH);
+		if (entries.isEmpty()) {
+			GuiDraw.menu(graphics, font, "No matching mobs", mobListX + 2, GuiDraw.middle(mobListY, mobListH), fade());
+		} else {
+			int first = (int) (mobScroll / row);
+			int last = Math.min(entries.size() - 1, first + (int) (mobListH / row) + 1);
+			for (int i = first; i <= last; i++) {
+				MobCatalog.Entry entry = entries.get(i);
+				float iy = mobListY + i * row - mobScroll;
+				boolean on = config.isMobGlowSelected(entry.id().toString());
+				boolean hover = GuiDraw.hovered(mouseX, mouseY, mobListX, iy, mobListW, row)
+					&& GuiDraw.hovered(mouseX, mouseY, mobListX, mobListY, mobListW, mobListH);
+				if (on) {
+					GuiDraw.rounded(graphics, mobListX - 2, iy, mobListW + 4, row, 5, Theme.withAlpha(Theme.ACCENT, 38));
+					GuiDraw.rounded(graphics, mobListX - 2, iy + 3, 2, row - 6, 1, Theme.ACCENT);
+				} else if (hover) {
+					GuiDraw.rounded(graphics, mobListX - 2, iy, mobListW + 4, row, 5, 0x10FFFFFF);
+				}
+				GuiDraw.menu(graphics, font, clip(font, entry.name(), (int) mobListW - 8), mobListX + 6, GuiDraw.middle(iy, row), on ? ink() : fade());
+				float hitY = Math.max(iy, mobListY);
+				float hitB = Math.min(iy + row, mobListY + mobListH);
+				if (hitB - hitY >= 3f) {
+					hits.add(new Hit(mobListX, hitY, mobListW, hitB - hitY, () -> {
+						config.toggleMobGlow(entry.id().toString());
+						UnloadState.markDirty();
+					}));
+				}
+			}
+		}
+		if (clipped) {
+			GuiDraw.disableScissor(graphics);
+		}
+		if (maxScroll > 1f) {
+			float trackX = left + col + COL_GAP + col - 5;
+			float trackY = mobListY;
+			float trackH = mobListH;
+			GuiDraw.rounded(graphics, trackX, trackY, 2.4f, trackH, 1.2f, Theme.TRACK);
+			float thumbH = Math.max(14f, trackH * trackH / (trackH + maxScroll));
+			float thumbY = trackY + (mobScroll / maxScroll) * (trackH - thumbH);
+			GuiDraw.rounded(graphics, trackX - 0.4f, thumbY, 3.2f, thumbH, 1.6f, Theme.ACCENT);
+		}
+	}
+
+	private void drawMiningLive(GuiGraphicsExtractor graphics, Font font, float x, float top, float col, float ix, float iw) {
+		float y = sectionLabel(graphics, font, x, top, "Live");
+		y = featureCard(graphics, font, x, y, col, cardTop() + cardHead() + 54 + cardPad(), "Session");
+		var snap = MiningTracker.snapshot();
+		GuiDraw.menu(graphics, font, snap.ability(), ix, y + 2, ink());
+		GuiDraw.menu(graphics, font, snap.abilityReady() ? "Ready" : snap.abilityLabel(), ix, y + 14, snap.abilityReady() ? Theme.ACCENT : fade());
+		String jobs = snap.commissions().isEmpty() ? "No commissions" : snap.commissions().size() + " commission" + (snap.commissions().size() == 1 ? "" : "s");
+		GuiDraw.menu(graphics, font, jobs, ix, y + 26, fade());
+		String titanium;
+		int titaniumColor = fade();
+		if (!MiningTracker.hasTitaniumCommission()) {
+			titanium = "No titanium job";
+		} else {
+			MiningAreas.TitaniumFilter filter = MiningTracker.titaniumFilter();
+			int count = TitaniumTracker.get().count();
+			titanium = filter.unrestricted()
+				? count + " titanium"
+				: count + " in " + filter.label();
+			titaniumColor = Theme.ACCENT;
+		}
+		GuiDraw.menu(graphics, font, clip(font, titanium, (int) iw - 4), ix, y + 38, titaniumColor);
+	}
+
+	private void drawFarmingContest(GuiGraphicsExtractor graphics, Font font, float x, float top, float col, float ix, float iw) {
+		float y = sectionLabel(graphics, font, x, top, "Contest");
+		y = featureCard(graphics, font, x, y, col, cardHeight(4), "Jacob");
+		var contest = JacobContestTracker.snapshot();
+		if (contest.present()) {
+			GuiDraw.menu(graphics, font, clip(font, contest.crop() + "  " + contest.remaining(), (int) iw - 4), ix, y + 2, ink());
+			GuiDraw.menu(graphics, font, String.format(Locale.ROOT, "%,d collected", contest.score()), ix, y + 16, fade());
+			String projected = contest.projectedRank().name() + "  " + String.format(Locale.ROOT, "%,d", contest.projectedScore());
+			GuiDraw.menu(graphics, font, clip(font, projected, (int) iw - 4), ix, y + 30, Theme.ACCENT);
+			String rate = String.format(Locale.ROOT, "%,.0f/s · %,.0f/update", contest.perSecond(), contest.perUpdate());
+			GuiDraw.small(graphics, font, clip(font, rate, (int) iw - 4), ix, y + 44, fade());
+			return;
+		}
+		GuiDraw.menu(graphics, font, "No active Jacob contest", ix, y + 2, fade());
+		GuiDraw.small(graphics, font, "Reads the live player-list widget", ix, y + 16, fade());
+		if (minecraft.player != null && FarmingHud.holdingTool(minecraft.player)) {
+			GuiDraw.menu(graphics, font, "Yaw  " + FarmingHud.yawLabel(minecraft.player), ix, y + 32, ink());
+			GuiDraw.menu(graphics, font, "Pitch  " + FarmingHud.pitchLabel(minecraft.player), ix, y + 46, ink());
 		}
 	}
 
@@ -1410,15 +1552,15 @@ public class StrayScreen extends Screen {
 
 	private static String tabGlyph(Tab value) {
 		return switch (value) {
-			case WORLD -> MenuFont.GLOBE;
-			case COMBAT -> MenuFont.SWORD;
-			case ESP -> MenuFont.EYE;
-			case OVERLAY -> MenuFont.DISPLAY;
+			case WORLD, CAMERA -> MenuFont.GLOBE;
+			case COMBAT, ASSIST -> MenuFont.SWORD;
+			case ESP, PLAYERS, CATALOG -> MenuFont.EYE;
+			case OVERLAY, MEDIA -> MenuFont.DISPLAY;
 			case BARS -> MenuFont.BARS;
 			case NODES -> MenuFont.PIN;
-			case MINING -> MenuFont.DIAMOND;
-			case FARMING -> MenuFont.GRAIN;
-			case MENUS -> MenuFont.HANGER;
+			case MINING, HOLLOWS -> MenuFont.DIAMOND;
+			case FARMING, GARDEN, GREENHOUSE -> MenuFont.GRAIN;
+			case MENUS, KEYS -> MenuFont.HANGER;
 			case STATUS -> MenuFont.SPEED;
 			case PLAYER -> MenuFont.PERSON;
 			case SETTINGS -> MenuFont.PALETTE;
@@ -2011,6 +2153,7 @@ public class StrayScreen extends Screen {
 			}
 			case PLAYER -> drawPlayerTab(graphics, font, mouseX, mouseY);
 			case SETTINGS -> drawControlSettings(graphics, font, mouseX, mouseY, left, right, top, col, ix, rx, iw);
+			default -> drawControlColumns(graphics, font, mouseX, mouseY, left, right, top, col, ix, rx, iw, config);
 		}
 	}
 
@@ -2030,18 +2173,20 @@ public class StrayScreen extends Screen {
 	) {
 		switch (tab) {
 			case WORLD -> {
-				float y = sectionLabel(graphics, font, left, top, "Atmosphere");
+				float y = sectionLabel(graphics, font, left, top, "Tint");
 				y = controlCard(graphics, font, left, y, col, mouseX, mouseY, "World tint", config.worldTintEnabled, v -> config.worldTintEnabled = v, Feature.WORLD);
 				controlCard(graphics, font, left, y, col, mouseX, mouseY, "Skybox", config.skyTintEnabled, v -> config.skyTintEnabled = v, Feature.SKY);
-				y = sectionLabel(graphics, font, right, top, "Camera");
-				y = controlCard(graphics, font, right, y, col, mouseX, mouseY, "Fog", config.fogEnabled, v -> config.fogEnabled = v, Feature.FOG);
-				y = controlCard(graphics, font, right, y, col, mouseX, mouseY, "Aspect ratio", config.aspectEnabled, v -> config.aspectEnabled = v, Feature.VIEW);
+			}
+			case CAMERA -> {
+				float y = sectionLabel(graphics, font, left, top, "Lens");
+				y = controlCard(graphics, font, left, y, col, mouseX, mouseY, "Fog", config.fogEnabled, v -> config.fogEnabled = v, Feature.FOG);
+				y = controlCard(graphics, font, left, y, col, mouseX, mouseY, "Aspect ratio", config.aspectEnabled, v -> config.aspectEnabled = v, Feature.VIEW);
+				y = sectionLabel(graphics, font, right, top, "Motion");
 				controlCard(graphics, font, right, y, col, mouseX, mouseY, "Motion blur", config.motionBlurEnabled, v -> config.motionBlurEnabled = v, Feature.MOTION);
 			}
 			case COMBAT -> {
-				float hitsoundH = cardHeight(6);
-				float y = sectionLabel(graphics, font, left, top, "Audio");
-				y = featureCard(graphics, font, left, y, col, hitsoundH, "Hitsound", config.hitsoundEnabled, v -> {
+				float y = sectionLabel(graphics, font, left, top, "Feedback");
+				y = featureCard(graphics, font, left, y, col, cardHeight(6), "Hitsound", config.hitsoundEnabled, v -> {
 					config.hitsoundEnabled = v;
 					if (v) {
 						Hitsound.playPreview();
@@ -2051,31 +2196,66 @@ public class StrayScreen extends Screen {
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Arrows", config.hitsoundArrows, v -> config.hitsoundArrows = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Hitmarker", config.hitmarkerEnabled, v -> config.hitmarkerEnabled = v);
 				drawFeatureFields(graphics, font, mouseX, mouseY, ix, y, iw, Feature.HITSOUND);
+			}
+			case ASSIST -> {
+				float y = sectionLabel(graphics, font, left, top, "Aim");
+				y = featureCard(graphics, font, left, y, col, cardHeight(3), "Triggerbot");
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Enable", config.triggerbotEnabled, v -> config.triggerbotEnabled = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Players", config.triggerbotPlayers, v -> config.triggerbotPlayers = v);
+				slider(graphics, font, ix, y, iw, "Humanize", Math.round(config.triggerbotHumanize * 100) + "%", config.triggerbotHumanize, v -> config.triggerbotHumanize = StrayConfig.clamp(v, 0f, 1f));
 
-				float assistY = sectionLabel(graphics, font, right, top, "Assist");
-				y = featureCard(graphics, font, right, assistY, col, cardHeight(3), "Triggerbot");
-				y = toggle(graphics, font, rx, y, iw, mouseX, mouseY, "Enable", config.triggerbotEnabled, v -> config.triggerbotEnabled = v);
-				y = toggle(graphics, font, rx, y, iw, mouseX, mouseY, "Players", config.triggerbotPlayers, v -> config.triggerbotPlayers = v);
-				slider(graphics, font, rx, y, iw, "Humanize", Math.round(config.triggerbotHumanize * 100) + "%", config.triggerbotHumanize, v -> config.triggerbotHumanize = StrayConfig.clamp(v, 0f, 1f));
-
-				float clickerTop = assistY + cardHeight(3) + 8;
-				float clickerH = fitH(clickerTop, cardHeight(autoClickerFieldRows()));
-				y = featureCard(graphics, font, right, clickerTop, col, clickerH, "Auto clicker", config.autoClickerEnabled, v -> config.autoClickerEnabled = v, mouseX, mouseY);
+				y = sectionLabel(graphics, font, right, top, "Clicks");
+				float clickerH = fitH(y, cardHeight(autoClickerFieldRows()));
+				y = featureCard(graphics, font, right, y, col, clickerH, "Auto clicker", config.autoClickerEnabled, v -> config.autoClickerEnabled = v, mouseX, mouseY);
 				drawFeatureFields(graphics, font, mouseX, mouseY, rx, y, iw, Feature.AUTO_CLICKER);
 			}
-			case ESP -> drawMobsTab(graphics, font, mouseX, mouseY);
+			case ESP -> {
+				float y = sectionLabel(graphics, font, left, top, "Glow");
+				y = controlCard(graphics, font, left, y, col, mouseX, mouseY, "Mob glow", config.mobGlowEnabled, v -> config.mobGlowEnabled = v, Feature.MOB);
+				float starH = cardHeight(Feature.STAR.rows);
+				float starInner = featureCard(graphics, font, left, y, col, starH, "Star mobs");
+				drawFeatureFields(graphics, font, mouseX, mouseY, ix, starInner, iw, Feature.STAR);
+				y = y + starH + 8;
+				y = sectionLabel(graphics, font, left, y, "World");
+				y = controlCard(graphics, font, left, y, col, mouseX, mouseY, "Block outline", config.blockOutlineGlow, v -> config.blockOutlineGlow = v, Feature.BLOCK);
+				y = controlCard(graphics, font, left, y, col, mouseX, mouseY, "Chest ESP", config.chestEspEnabled, v -> config.chestEspEnabled = v, Feature.CHEST);
+				controlCard(graphics, font, left, y, col, mouseX, mouseY, "Fairy souls", config.fairySoulEsp, v -> config.fairySoulEsp = v, Feature.FAIRY);
+				y = sectionLabel(graphics, font, right, top, "Held item");
+				controlCard(graphics, font, right, y, col, mouseX, mouseY, "Held item", config.heldItemShaderEnabled, v -> config.heldItemShaderEnabled = v, Feature.HELD_ITEM);
+			}
+			case PLAYERS -> {
+				float y = sectionLabel(graphics, font, left, top, "Fill");
+				y = controlCard(graphics, font, left, y, col, mouseX, mouseY, "Player fill", config.playerFillEsp, v -> config.playerFillEsp = v, Feature.FILL);
+				y = sectionLabel(graphics, font, right, top, "Nametags");
+				float tagH = cardHeight(Feature.NAMETAGS.rows + 1);
+				float tagY = featureCard(graphics, font, right, y, col, tagH, "Nametags", config.nametagsEnabled, v -> config.nametagsEnabled = v, mouseX, mouseY);
+				fieldScope = Feature.NAMETAGS.name();
+				tagY = toggle(graphics, font, rx, tagY, iw, mouseX, mouseY, "Own nametag", config.nametagSelf, v -> config.nametagSelf = v);
+				drawFeatureFields(graphics, font, mouseX, mouseY, rx, tagY, iw, Feature.NAMETAGS);
+				fieldScope = "";
+				float namesTop = y + tagH + 8;
+				List<String> nametags = config.nametagEspLabels();
+				float namesH = Math.max(cardHeight(4), contentBottom() - namesTop);
+				String namesTitle = nametags.isEmpty() ? "Nametag ESP" : "Nametag ESP  " + nametags.size();
+				float namesY = featureCard(graphics, font, right, namesTop, col, namesH, namesTitle);
+				drawNametagEspList(graphics, font, rx, namesY, iw, namesH - cardTop() - cardHead() - 4, mouseX, mouseY, true);
+			}
+			case CATALOG -> drawCatalogTab(graphics, font, mouseX, mouseY);
 			case OVERLAY -> {
-				float y = sectionLabel(graphics, font, left, top, "Widgets");
+				float y = sectionLabel(graphics, font, left, top, "Info");
 				y = controlCard(graphics, font, left, y, col, mouseX, mouseY, "Watermark", config.watermarkEnabled, v -> config.watermarkEnabled = v, Feature.WATERMARK);
 				y = controlCard(graphics, font, left, y, col, mouseX, mouseY, "Raw mats", config.rawmatsHudEnabled, v -> config.rawmatsHudEnabled = v, Feature.RAWMATS);
-				featureCard(graphics, font, left, y, col, cardHeight(1), "Pickup log", config.pickupLogEnabled, v -> config.pickupLogEnabled = v, mouseX, mouseY);
-				y = sectionLabel(graphics, font, right, top, "Media");
-				y = controlCard(graphics, font, right, y, col, mouseX, mouseY, "Music", config.musicHudEnabled, v -> config.musicHudEnabled = v, Feature.MUSIC);
+				toggleCard(graphics, font, left, y, col, mouseX, mouseY, "Pickup log", config.pickupLogEnabled, v -> config.pickupLogEnabled = v);
+				y = sectionLabel(graphics, font, right, top, "Inventory");
 				controlCard(graphics, font, right, y, col, mouseX, mouseY, "Inventory HUD", config.inventoryHudEnabled, v -> config.inventoryHudEnabled = v, Feature.INVENTORY);
 			}
+			case MEDIA -> {
+				float y = sectionLabel(graphics, font, left, top, "Now playing");
+				controlCard(graphics, font, left, y, col, mouseX, mouseY, "Music", config.musicHudEnabled, v -> config.musicHudEnabled = v, Feature.MUSIC);
+			}
 			case BARS -> {
-				float y = sectionLabel(graphics, font, left, top, "Info");
-				y = featureCard(graphics, font, left, y, col, cardHeight(4) + 28, "Info");
+				float y = sectionLabel(graphics, font, left, top, "Vanilla HUD");
+				y = featureCard(graphics, font, left, y, col, cardHeight(4) + 28, "Show");
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Scoreboard", config.hudScoreboard, v -> config.hudScoreboard = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Boss bar", config.hudBossBar, v -> config.hudBossBar = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Effects", config.hudEffects, v -> config.hudEffects = v);
@@ -2084,9 +2264,8 @@ public class StrayScreen extends Screen {
 				GuiDraw.menu(graphics, font, "from the toolbar HUD editor.", ix, y + 16, fade());
 			}
 			case NODES -> {
-				float markersH = cardHeight(6);
-				float y = sectionLabel(graphics, font, left, top, "Markers");
-				y = featureCard(graphics, font, left, y, col, markersH, "Markers", config.markersEnabled, v -> config.markersEnabled = v, mouseX, mouseY);
+				float y = sectionLabel(graphics, font, left, top, "Scan");
+				y = featureCard(graphics, font, left, y, col, cardHeight(6), "Markers", config.markersEnabled, v -> config.markersEnabled = v, mouseX, mouseY);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Node HUD", config.hudEnabled, v -> config.hudEnabled = v);
 				drawFeatureFields(graphics, font, mouseX, mouseY, ix, y, iw, Feature.NODES);
 				y = sectionLabel(graphics, font, right, top, "ESP");
@@ -2100,17 +2279,16 @@ public class StrayScreen extends Screen {
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Profile viewer", config.profileViewerEnabled, v -> config.profileViewerEnabled = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Open animation", config.loadoutsOpenAnim, v -> config.loadoutsOpenAnim = v);
 				toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Disabled potions", config.disabledPotionsHighlight, v -> config.disabledPotionsHighlight = v);
-
-				float menusY = top + 14f;
-				float experimentsH = cardHeight(Feature.AUTO_EXPERIMENTS.rows);
-				y = featureCard(graphics, font, left, menusY + cardHeight(5) + 8, col, experimentsH, "Auto experiments", config.autoExperimentsEnabled, v -> config.autoExperimentsEnabled = v, mouseX, mouseY);
-				drawFeatureFields(graphics, font, mouseX, mouseY, ix, y, iw, Feature.AUTO_EXPERIMENTS);
-
-				float bindsH = cardHeight(4);
-				float shortcutY = sectionLabel(graphics, font, right, top, "Shortcuts");
-				y = featureCard(graphics, font, right, shortcutY, col, bindsH, "Keybinds");
-				y = drawMenuKeybinds(graphics, font, rx, y, iw, mouseX, mouseY);
-				y = featureCard(graphics, font, right, shortcutY + bindsH + 8, col, cardHeight(5), "Commands");
+				y = sectionLabel(graphics, font, right, top, "Experiments");
+				y = featureCard(graphics, font, right, y, col, cardHeight(Feature.AUTO_EXPERIMENTS.rows), "Auto experiments", config.autoExperimentsEnabled, v -> config.autoExperimentsEnabled = v, mouseX, mouseY);
+				drawFeatureFields(graphics, font, mouseX, mouseY, rx, y, iw, Feature.AUTO_EXPERIMENTS);
+			}
+			case KEYS -> {
+				float y = sectionLabel(graphics, font, left, top, "Binds");
+				y = featureCard(graphics, font, left, y, col, cardHeight(4), "Keybinds");
+				drawMenuKeybinds(graphics, font, ix, y, iw, mouseX, mouseY);
+				y = sectionLabel(graphics, font, right, top, "Chat");
+				y = featureCard(graphics, font, right, y, col, cardHeight(5), "Commands");
 				GuiDraw.menu(graphics, font, "/loadouts  /ld", rx, y + 2, ink());
 				GuiDraw.menu(graphics, font, "/wardrobe  /wd", rx, y + 16, ink());
 				GuiDraw.menu(graphics, font, "/pv  /profile", rx, y + 30, ink());
@@ -2118,81 +2296,53 @@ public class StrayScreen extends Screen {
 				GuiDraw.menu(graphics, font, "1-9 equips and closes", rx, y + 58, fade());
 			}
 			case STATUS -> {
-				float y = sectionLabel(graphics, font, left, top, "Location");
+				float y = sectionLabel(graphics, font, left, top, "Server");
 				y = featureCard(graphics, font, left, y, col, cardHeight(4), "Location");
 				y = readout(graphics, font, ix, y, iw, "Hypixel", SkyblockLocation.onHypixel);
 				y = readout(graphics, font, ix, y, iw, "Skyblock", SkyblockLocation.inSkyblock);
 				y = readout(graphics, font, ix, y, iw, "The End", SkyblockLocation.inTheEnd);
 				String area = SkyblockLocation.area.isEmpty() ? "Unknown" : SkyblockLocation.area;
 				GuiDraw.menu(graphics, font, clip(font, area, (int) iw - 4), ix, GuiDraw.middle(y, ROW), fade());
-
 				y = sectionLabel(graphics, font, right, top, "Client");
-				y = featureCard(graphics, font, right, y, col, cardHeight(2), "Client");
+				y = featureCard(graphics, font, right, y, col, cardHeight(2), "Performance");
 				y = statRow(graphics, font, rx, y, iw, "FPS", HudStats.fps() + "");
 				statRow(graphics, font, rx, y, iw, "Ping", HudStats.pingLabel());
 			}
 			case MINING -> {
-				float 				y = sectionLabel(graphics, font, left, top, "Tools");
+				float y = sectionLabel(graphics, font, left, top, "Dwarven mines");
 				y = controlCard(graphics, font, left, y, col, mouseX, mouseY, "Mining HUD", config.miningHudEnabled, v -> config.miningHudEnabled = v, Feature.MINING);
-				y = controlCard(graphics, font, left, y, col, mouseX, mouseY, "Titanium ESP", config.titaniumEsp, v -> config.titaniumEsp = v, Feature.TITANIUM);
+				controlCard(graphics, font, left, y, col, mouseX, mouseY, "Titanium ESP", config.titaniumEsp, v -> config.titaniumEsp = v, Feature.TITANIUM);
+				drawMiningLive(graphics, font, right, top, col, rx, iw);
+			}
+			case HOLLOWS -> {
+				float y = sectionLabel(graphics, font, left, top, "Crystal Hollows");
 				y = controlCard(graphics, font, left, y, col, mouseX, mouseY, "CH waypoints", config.crystalHollowsWaypoints, v -> config.crystalHollowsWaypoints = v, Feature.CRYSTAL, "Dump", CrystalHollows::dumpChat);
-				y = controlCard(graphics, font, left, y, col, mouseX, mouseY, "CH map", config.crystalHollowsMap, v -> config.crystalHollowsMap = v, Feature.CH_MAP);
-				controlCard(graphics, font, left, y, col, mouseX, mouseY, "Metal detector", config.metalDetectorSolver, v -> config.metalDetectorSolver = v, Feature.METAL);
-
-				y = sectionLabel(graphics, font, right, top, "Live");
-				y = featureCard(graphics, font, right, y, col, cardTop() + cardHead() + 54 + cardPad(), "Live");
-				var snap = MiningTracker.snapshot();
-				GuiDraw.menu(graphics, font, snap.ability(), rx, y + 2, ink());
-				GuiDraw.menu(graphics, font, snap.abilityReady() ? "Ready" : snap.abilityLabel(), rx, y + 14, snap.abilityReady() ? Theme.ACCENT : fade());
-				String jobs = snap.commissions().isEmpty() ? "No commissions" : snap.commissions().size() + " commission" + (snap.commissions().size() == 1 ? "" : "s");
-				GuiDraw.menu(graphics, font, jobs, rx, y + 26, fade());
-				String titanium;
-				int titaniumColor = fade();
-				if (!MiningTracker.hasTitaniumCommission()) {
-					titanium = "No titanium job";
-				} else {
-					MiningAreas.TitaniumFilter filter = MiningTracker.titaniumFilter();
-					int count = TitaniumTracker.get().count();
-					titanium = filter.unrestricted()
-						? count + " titanium"
-						: count + " in " + filter.label();
-					titaniumColor = Theme.ACCENT;
-				}
-				GuiDraw.menu(graphics, font, clip(font, titanium, (int) iw - 4), rx, y + 38, titaniumColor);
+				controlCard(graphics, font, left, y, col, mouseX, mouseY, "CH map", config.crystalHollowsMap, v -> config.crystalHollowsMap = v, Feature.CH_MAP);
+				y = sectionLabel(graphics, font, right, top, "Mines of Divan");
+				controlCard(graphics, font, right, y, col, mouseX, mouseY, "Metal detector", config.metalDetectorSolver, v -> config.metalDetectorSolver = v, Feature.METAL);
 			}
 			case FARMING -> {
-				float y = sectionLabel(graphics, font, left, top, "HUD");
+				float y = sectionLabel(graphics, font, left, top, "Overlays");
 				y = controlCard(graphics, font, left, y, col, mouseX, mouseY, "Yaw / Pitch", config.farmingYawPitch, v -> config.farmingYawPitch = v, Feature.FARMING);
 				y = toggleCard(graphics, font, left, y, col, mouseX, mouseY, "Jacob contest HUD", config.jacobContestHudEnabled, v -> config.jacobContestHudEnabled = v);
-				y = toggleCard(graphics, font, left, y, col, mouseX, mouseY, "Composter overlay", config.composterHudEnabled, v -> config.composterHudEnabled = v);
-
-				y = sectionLabel(graphics, font, left, y, "Garden");
-				y = controlCard(graphics, font, left, y, col, mouseX, mouseY, "Garden plots", config.gardenPlotsWidget, v -> config.gardenPlotsWidget = v, Feature.PLOTS);
-				y = controlCard(graphics, font, left, y, col, mouseX, mouseY, "Pest ESP", config.pestEspEnabled, v -> config.pestEspEnabled = v, Feature.PEST);
+				toggleCard(graphics, font, left, y, col, mouseX, mouseY, "Composter overlay", config.composterHudEnabled, v -> config.composterHudEnabled = v);
+				drawFarmingContest(graphics, font, right, top, col, rx, iw);
+			}
+			case GARDEN -> {
+				float y = sectionLabel(graphics, font, left, top, "Plots");
+				controlCard(graphics, font, left, y, col, mouseX, mouseY, "Garden plots", config.gardenPlotsWidget, v -> config.gardenPlotsWidget = v, Feature.PLOTS);
+				y = sectionLabel(graphics, font, right, top, "Pests");
+				controlCard(graphics, font, right, y, col, mouseX, mouseY, "Pest ESP", config.pestEspEnabled, v -> config.pestEspEnabled = v, Feature.PEST);
+			}
+			case GREENHOUSE -> {
+				float y = sectionLabel(graphics, font, left, top, "Analyzer");
 				y = featureCard(graphics, font, left, y, col, cardHeight(Feature.AUTO_DNA.rows), "Auto DNA", config.autoDnaEnabled, v -> config.autoDnaEnabled = v, mouseX, mouseY);
 				drawFeatureFields(graphics, font, mouseX, mouseY, ix, y, iw, Feature.AUTO_DNA);
-
-				y = sectionLabel(graphics, font, right, top, "Contest");
-				y = featureCard(graphics, font, right, y, col, cardHeight(4), "Contest");
-				var contest = JacobContestTracker.snapshot();
-				if (contest.present()) {
-					GuiDraw.menu(graphics, font, clip(font, contest.crop() + "  " + contest.remaining(), (int) iw - 4), rx, y + 2, ink());
-					GuiDraw.menu(graphics, font, String.format(Locale.ROOT, "%,d collected", contest.score()), rx, y + 16, fade());
-					String projected = contest.projectedRank().name() + "  " + String.format(Locale.ROOT, "%,d", contest.projectedScore());
-					GuiDraw.menu(graphics, font, clip(font, projected, (int) iw - 4), rx, y + 30, Theme.ACCENT);
-					String rate = String.format(Locale.ROOT, "%,.0f/s · %,.0f/update", contest.perSecond(), contest.perUpdate());
-					GuiDraw.small(graphics, font, clip(font, rate, (int) iw - 4), rx, y + 44, fade());
-				} else {
-					GuiDraw.menu(graphics, font, "No active Jacob contest", rx, y + 2, fade());
-					GuiDraw.small(graphics, font, "Reads the live player-list widget", rx, y + 16, fade());
-					if (minecraft.player != null && FarmingHud.holdingTool(minecraft.player)) {
-						GuiDraw.menu(graphics, font, "Yaw  " + FarmingHud.yawLabel(minecraft.player), rx, y + 32, ink());
-						GuiDraw.menu(graphics, font, "Pitch  " + FarmingHud.pitchLabel(minecraft.player), rx, y + 46, ink());
-					}
-				}
 			}
 			case PLAYER -> drawPlayerTab(graphics, font, mouseX, mouseY);
 			case SETTINGS -> drawControlSettings(graphics, font, mouseX, mouseY, left, right, top, col, ix, rx, iw);
+			default -> {
+			}
 		}
 	}
 
@@ -2251,9 +2401,10 @@ public class StrayScreen extends Screen {
 	}
 
 	private float sectionLabel(GuiGraphicsExtractor graphics, Font font, float x, float y, String title) {
-		GuiDraw.small(graphics, font, title.toUpperCase(Locale.ROOT), x + 2, y + 2, ControlChrome.muted());
-		pageExtent = Math.max(pageExtent, y + 14);
-		return y + 14;
+		GuiDraw.small(graphics, font, title.toUpperCase(Locale.ROOT), x + 2, y + 1, ControlChrome.muted());
+		GuiDraw.rounded(graphics, x + 2, y + 12, 14, 1.2f, 0.6f, Theme.withAlpha(Theme.ACCENT, 90));
+		pageExtent = Math.max(pageExtent, y + 18);
+		return y + 18;
 	}
 
 	private void drawControlSettings(
@@ -3288,7 +3439,7 @@ public class StrayScreen extends Screen {
 		return FabricLoader.getInstance()
 			.getModContainer("stray")
 			.map(container -> container.getMetadata().getVersion().getFriendlyString())
-			.orElse("1.2.203");
+			.orElse("1.2.204");
 	}
 
 	@Override
@@ -3401,12 +3552,12 @@ public class StrayScreen extends Screen {
 			fontScroll = Mth.clamp(fontScroll - (float) scrollY * FONT_ROW * 2.2f, 0f, maxScroll);
 			return true;
 		}
-		if (tab == Tab.ESP && scrollY != 0 && pageHover(lx, ly, nametagEspListX, nametagEspListY, nametagEspListW, nametagEspListH)) {
+		if ((tab == Tab.ESP || tab == Tab.PLAYERS) && scrollY != 0 && pageHover(lx, ly, nametagEspListX, nametagEspListY, nametagEspListW, nametagEspListH)) {
 			float maxScroll = Math.max(0f, StrayConfig.get().nametagEspLabels().size() * ROW - nametagEspListH);
 			nametagEspScroll = Mth.clamp(nametagEspScroll - (float) scrollY * ROW * 2.2f, 0f, maxScroll);
 			return true;
 		}
-		if (tab == Tab.ESP && scrollY != 0 && pageHover(lx, ly, mobFieldX, mobFieldY, mobListW, mobListY + mobListH - mobFieldY)) {
+		if ((tab == Tab.ESP || tab == Tab.CATALOG) && scrollY != 0 && pageHover(lx, ly, mobFieldX, mobFieldY, mobListW, mobListY + mobListH - mobFieldY)) {
 			List<MobCatalog.Entry> entries = MobCatalog.filtered(mobQuery);
 			float row = rowH();
 			float maxScroll = Math.max(0f, entries.size() * row - mobListH);

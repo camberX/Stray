@@ -1149,15 +1149,24 @@ public final class StrayConfig {
 		}
 		String name = tab.trim().toUpperCase(java.util.Locale.ROOT);
 		return switch (name) {
-			case "WORLD", "VIEW", "FOG", "CAMERA" -> "WORLD";
-			case "COMBAT", "HITSOUND", "TRIGGERBOT", "AUTOCLICKER", "AUTOEXPERIMENTS" -> "COMBAT";
-			case "ESP", "MOBS", "VISUALS", "HELDITEM", "SHADER" -> "ESP";
-			case "OVERLAY", "DISPLAY", "INVENTORY", "HUD" -> "OVERLAY";
-			case "BARS" -> "BARS";
+			case "WORLD", "ATMOSPHERE", "SKY", "TINT" -> "WORLD";
+			case "CAMERA", "VIEW", "FOG", "MOTION" -> "CAMERA";
+			case "COMBAT", "HITSOUND" -> "COMBAT";
+			case "ASSIST", "TRIGGERBOT", "AUTOCLICKER" -> "ASSIST";
+			case "ESP", "VISUALS", "GLOW", "WORLD_ESP", "ITEMS", "HELDITEM", "SHADER" -> "ESP";
+			case "PLAYERS", "NAMETAGS", "FILL" -> "PLAYERS";
+			case "CATALOG", "MOBS" -> "CATALOG";
+			case "OVERLAY", "DISPLAY", "INVENTORY", "WIDGETS" -> "OVERLAY";
+			case "MEDIA", "MUSIC" -> "MEDIA";
+			case "BARS", "VANILLA", "HUD" -> "BARS";
 			case "NODES", "MARKERS" -> "NODES";
-			case "MINING" -> "MINING";
+			case "MINING", "DWARVEN" -> "MINING";
+			case "HOLLOWS", "CH", "DIVAN" -> "HOLLOWS";
 			case "FARMING", "YAW", "PITCH" -> "FARMING";
-			case "MENUS", "LOADOUTS", "WARDROBE", "MISC" -> "MENUS";
+			case "GARDEN", "PEST", "PLOTS" -> "GARDEN";
+			case "GREENHOUSE", "DNA", "AUTODNA" -> "GREENHOUSE";
+			case "MENUS", "LOADOUTS", "WARDROBE", "MISC", "AUTOEXPERIMENTS" -> "MENUS";
+			case "KEYS", "KEYBINDS", "BINDS" -> "KEYS";
 			case "STATUS" -> "STATUS";
 			case "PLAYER", "NICK", "CAPE" -> "PLAYER";
 			case "SETTINGS", "THEME" -> "SETTINGS";

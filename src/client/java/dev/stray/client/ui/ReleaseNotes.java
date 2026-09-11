@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.204", new String[]{
+			"The click GUI sorts features into clearer tabs and sections: Atmosphere/Camera, Visuals ESP/Players/Mobs, Combat Hitsound/Assist, HUD Widgets/Media/Vanilla, Mining Dwarven/Hollows/Nodes, Farming HUD/Garden/DNA, and Misc Menus/Keys/Status."
+		}),
 		new Entry("1.2.203", new String[]{
 			"When a newer GitHub release is out, an update card slides in at the bottom-right. It slides away on its own, or as soon as you click it. Update notify stays on by default."
 		}),
