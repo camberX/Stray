@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.224", new String[]{
+			"End sky is an animated sky texture now: the galaxy and Gargantua bake into six 1280px faces, only the faces the black hole touches re-bake every few frames, and each frame just draws six textured quads. Full resolution, near-zero per-frame cost."
+		}),
 		new Entry("1.2.223", new String[]{
 			"End sky is much cheaper: it renders at half resolution and upscales, uses fewer noise octaves, and skips the geodesic march for rays that miss the disk. Gargantua is twice as big again with more bloom that just kisses the rim of the shadow."
 		}),

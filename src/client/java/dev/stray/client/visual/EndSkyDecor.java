@@ -25,7 +25,6 @@ import com.mojang.math.Axis;
 import dev.stray.Stray;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.RenderPipelines;
-import net.minecraft.resources.Identifier;
 import net.minecraft.util.Mth;
 import org.joml.Matrix4f;
 import org.joml.Matrix4fStack;
@@ -36,25 +35,45 @@ import java.util.OptionalDouble;
 import java.util.OptionalInt;
 
 /**
- * Procedural galaxy, starfield, and Gargantua over the End skybox. The sky
- * shader is expensive (noise stacks plus a geodesic march), so it renders into a
- * half-resolution target and is upscaled onto the frame with premultiplied alpha.
+ * Procedural galaxy, starfield, and Gargantua over the End skybox, baked into an
+ * animated six-face sky texture. The heavy shader only runs when a face is
+ * (re)baked: static faces once, faces the black hole touches every few frames
+ * for the disk animation. Each frame just draws six textured quads.
  */
 public final class EndSkyDecor {
 	private static final float RADIUS = 100f;
-	private static final int DOWNSCALE = 2;
-	private static final Identifier BLIT_SHADER = Stray.id("post/end_sky_blit");
-	private static RenderPipeline pipeline;
-	private static RenderPipeline blitPipeline;
-	private static TextureTarget lowRes;
-	private static GpuBuffer cube;
-	private static int indices;
+	private static final int FACE_SIZE = 1280;
+	private static final int ANIMATED_REBAKE_FRAMES = 3;
+	private static final float TILT = 0.42f;
+	private static final float CONE_COS = 0.45f;
+	private static final float FACE_HALF_DIAGONAL = 0.9553f;
+	private static final Vector3f WORLD_HOLE = new Vector3f(0.18f, 0.86f, 0.48f).normalize();
+
+	private static final Face[] FACES = {
+		new Face(new Vector3f(1f, 0f, 0f), new Vector3f(0f, 1f, 0f)),
+		new Face(new Vector3f(-1f, 0f, 0f), new Vector3f(0f, 1f, 0f)),
+		new Face(new Vector3f(0f, 1f, 0f), new Vector3f(0f, 0f, -1f)),
+		new Face(new Vector3f(0f, -1f, 0f), new Vector3f(0f, 0f, 1f)),
+		new Face(new Vector3f(0f, 0f, 1f), new Vector3f(0f, 1f, 0f)),
+		new Face(new Vector3f(0f, 0f, -1f), new Vector3f(0f, 1f, 0f))
+	};
+
+	private static RenderPipeline bakePipeline;
+	private static RenderPipeline drawPipeline;
+	private static GpuBuffer bakeCube;
+	private static int bakeIndices;
+	private static GpuBuffer drawQuads;
+	private static final TextureTarget[] TARGETS = new TextureTarget[6];
+	private static final boolean[] BAKED = new boolean[6];
+	private static final boolean[] ANIMATED = new boolean[6];
+	private static Vector3f localHole;
+	private static int frame;
 
 	private EndSkyDecor() {
 	}
 
 	public static void init() {
-		ensurePipeline();
+		ensurePipelines();
 	}
 
 	public static void render(float time) {
@@ -62,96 +81,136 @@ public final class EndSkyDecor {
 		if (client.level == null) {
 			return;
 		}
-		ensure();
-		if (pipeline == null || blitPipeline == null || cube == null || indices < 6) {
+		ensurePipelines();
+		ensureMeshes();
+		if (bakePipeline == null || drawPipeline == null || bakeCube == null || drawQuads == null) {
 			return;
 		}
 		RenderTarget main = client.getMainRenderTarget();
-		if (main == null || main.getColorTextureView() == null || main.width <= 0 || main.height <= 0) {
+		if (main == null || main.getColorTextureView() == null) {
 			return;
 		}
-		int w = Math.max(1, main.width / DOWNSCALE);
-		int h = Math.max(1, main.height / DOWNSCALE);
-		if (lowRes == null) {
-			lowRes = new TextureTarget("stray end sky", w, h, false);
-		} else if (lowRes.width != w || lowRes.height != h) {
-			lowRes.resize(w, h);
+		ensureTargets();
+		frame++;
+		boolean animateNow = frame % ANIMATED_REBAKE_FRAMES == 0;
+		CommandEncoder encoder = RenderSystem.getDevice().createCommandEncoder();
+		for (int i = 0; i < 6; i++) {
+			if (!BAKED[i] || (ANIMATED[i] && animateNow)) {
+				bakeFace(encoder, i, time);
+				BAKED[i] = true;
+			}
 		}
-		if (lowRes.getColorTexture() == null || lowRes.getColorTextureView() == null) {
-			return;
-		}
+		draw(encoder, main, time);
+	}
 
+	private static void bakeFace(CommandEncoder encoder, int index, float time) {
+		TextureTarget target = TARGETS[index];
+		if (target == null || target.getColorTexture() == null || target.getColorTextureView() == null) {
+			return;
+		}
+		Face face = FACES[index];
+		Matrix4f view = new Matrix4f().setLookAlong(face.normal, face.up);
+		Matrix4f proj = new Matrix4f().setPerspective(Mth.HALF_PI, 1f, 1f, 400f);
+		Matrix4f viewProj = proj.mul(view);
+		float pulse = 0.92f + 0.08f * (0.5f + 0.5f * Mth.sin(time * 0.03f));
+		GpuBufferSlice transform = RenderSystem.getDynamicUniforms().writeTransform(
+			viewProj,
+			new Vector4f(pulse, pulse, pulse, time * 0.012f),
+			localHole,
+			new Matrix4f()
+		);
+		var indexBuf = RenderSystem.getSequentialBuffer(VertexFormat.Mode.QUADS);
+		encoder.clearColorTexture(target.getColorTexture(), 0);
+		try (RenderPass pass = encoder.createRenderPass(
+			() -> "stray end sky bake",
+			target.getColorTextureView(),
+			OptionalInt.empty()
+		)) {
+			pass.setPipeline(bakePipeline);
+			RenderSystem.bindDefaultUniforms(pass);
+			pass.setUniform("DynamicTransforms", transform);
+			pass.setVertexBuffer(0, bakeCube);
+			pass.setIndexBuffer(indexBuf.getBuffer(bakeIndices), indexBuf.type());
+			pass.drawIndexed(0, 0, bakeIndices, 1);
+		}
+	}
+
+	private static void draw(CommandEncoder encoder, RenderTarget main, float time) {
 		PoseStack pose = new PoseStack();
 		pose.mulPose(Axis.YP.rotation(time * 0.0009f));
-		pose.mulPose(Axis.XP.rotation(0.42f));
-		float pulse = 0.92f + 0.08f * (0.5f + 0.5f * Mth.sin(time * 0.03f));
-		Vector3f worldHole = new Vector3f(0.18f, 0.86f, 0.48f).normalize();
-		Vector3f localHole = new Matrix4f(pose.last().pose()).invert().transformDirection(worldHole, new Vector3f());
-		if (!Float.isFinite(localHole.x) || localHole.lengthSquared() < 1.0e-6f) {
-			localHole.set(worldHole);
-		} else {
-			localHole.normalize();
-		}
-		var indexBuf = RenderSystem.getSequentialBuffer(VertexFormat.Mode.QUADS);
+		pose.mulPose(Axis.XP.rotation(TILT));
 		Matrix4fStack modelView = RenderSystem.getModelViewStack();
 		modelView.pushMatrix();
 		modelView.mul(pose.last().pose());
 		GpuBufferSlice transform = RenderSystem.getDynamicUniforms().writeTransform(
 			modelView,
-			new Vector4f(pulse, pulse, pulse, time * 0.012f),
-			localHole,
+			new Vector4f(1f, 1f, 1f, 1f),
+			new Vector3f(),
 			new Matrix4f()
 		);
-		CommandEncoder encoder = RenderSystem.getDevice().createCommandEncoder();
-		try {
-			encoder.clearColorTexture(lowRes.getColorTexture(), 0);
-			try (RenderPass pass = encoder.createRenderPass(
-				() -> "stray end galaxy",
-				lowRes.getColorTextureView(),
-				OptionalInt.empty()
-			)) {
-				pass.setPipeline(pipeline);
-				RenderSystem.bindDefaultUniforms(pass);
-				pass.setUniform("DynamicTransforms", transform);
-				pass.setVertexBuffer(0, cube);
-				pass.setIndexBuffer(indexBuf.getBuffer(indices), indexBuf.type());
-				pass.drawIndexed(0, 0, indices, 1);
-			}
-		} finally {
-			modelView.popMatrix();
-		}
-
+		var indexBuf = RenderSystem.getSequentialBuffer(VertexFormat.Mode.QUADS);
 		GpuSampler linear = RenderSystem.getSamplerCache().getClampToEdge(FilterMode.LINEAR);
 		try (RenderPass pass = encoder.createRenderPass(
-			() -> "stray end galaxy blit",
+			() -> "stray end sky",
 			main.getColorTextureView(),
 			OptionalInt.empty(),
 			main.getDepthTextureView(),
 			OptionalDouble.empty()
 		)) {
-			pass.setPipeline(blitPipeline);
+			pass.setPipeline(drawPipeline);
 			RenderSystem.bindDefaultUniforms(pass);
-			pass.bindTexture("InSampler", lowRes.getColorTextureView(), linear);
-			pass.draw(0, 3);
+			pass.setUniform("DynamicTransforms", transform);
+			pass.setVertexBuffer(0, drawQuads);
+			pass.setIndexBuffer(indexBuf.getBuffer(36), indexBuf.type());
+			for (int i = 0; i < 6; i++) {
+				TextureTarget target = TARGETS[i];
+				if (target == null || target.getColorTextureView() == null) {
+					continue;
+				}
+				pass.bindTexture("Sampler0", target.getColorTextureView(), linear);
+				pass.drawIndexed(0, i * 6, 6, 1);
+			}
+		} finally {
+			modelView.popMatrix();
 		}
 	}
 
-	private static void ensure() {
-		ensurePipeline();
-		if (cube == null) {
-			cube = bakeCube();
+	private static void ensureTargets() {
+		if (localHole == null) {
+			// The sky spins about Y after the X tilt, so a hole fixed in cube space
+			// keeps a constant elevation as it circles the zenith.
+			localHole = Axis.XP.rotation(-TILT).transform(new Vector3f(WORLD_HOLE)).normalize();
+			for (int i = 0; i < 6; i++) {
+				float cos = FACES[i].normal.dot(localHole);
+				float angle = (float) Math.acos(Mth.clamp(cos, -1f, 1f));
+				ANIMATED[i] = angle < (float) Math.acos(CONE_COS) + FACE_HALF_DIAGONAL;
+			}
+		}
+		for (int i = 0; i < 6; i++) {
+			if (TARGETS[i] == null) {
+				TARGETS[i] = new TextureTarget("stray end sky face " + i, FACE_SIZE, FACE_SIZE, false);
+				BAKED[i] = false;
+			}
 		}
 	}
 
-	private static synchronized void ensurePipeline() {
-		if (pipeline == null) {
-			pipeline = RenderPipelines.register(
+	private static void ensureMeshes() {
+		if (bakeCube == null) {
+			bakeCube = bakeCubeMesh();
+		}
+		if (drawQuads == null) {
+			drawQuads = bakeDrawQuads();
+		}
+	}
+
+	private static synchronized void ensurePipelines() {
+		if (bakePipeline == null) {
+			bakePipeline = RenderPipelines.register(
 				RenderPipeline.builder()
-					.withLocation(Stray.id("pipeline/end_galaxy"))
-					.withVertexShader(Stray.id("core/end_galaxy"))
+					.withLocation(Stray.id("pipeline/end_galaxy_bake"))
+					.withVertexShader(Stray.id("core/end_galaxy_bake"))
 					.withFragmentShader(Stray.id("core/end_galaxy"))
 					.withUniform("DynamicTransforms", UniformType.UNIFORM_BUFFER)
-					.withUniform("Projection", UniformType.UNIFORM_BUFFER)
 					.withColorTargetState(new ColorTargetState(BlendFunction.TRANSLUCENT))
 					.withDepthStencilState(new DepthStencilState(CompareOp.ALWAYS_PASS, false))
 					.withCull(false)
@@ -159,34 +218,38 @@ public final class EndSkyDecor {
 					.build()
 			);
 		}
-		if (blitPipeline == null) {
-			blitPipeline = RenderPipelines.register(
+		if (drawPipeline == null) {
+			drawPipeline = RenderPipelines.register(
 				RenderPipeline.builder()
-					.withLocation(Stray.id("pipeline/end_sky_blit"))
-					.withVertexShader(Identifier.withDefaultNamespace("core/screenquad"))
-					.withFragmentShader(BLIT_SHADER)
-					.withSampler("InSampler")
-					.withVertexFormat(DefaultVertexFormat.EMPTY, VertexFormat.Mode.TRIANGLES)
+					.withLocation(Stray.id("pipeline/end_sky_cube"))
+					.withVertexShader("core/position_tex_color")
+					.withFragmentShader("core/position_tex_color")
+					.withSampler("Sampler0")
+					.withUniform("DynamicTransforms", UniformType.UNIFORM_BUFFER)
+					.withUniform("Projection", UniformType.UNIFORM_BUFFER)
 					.withColorTargetState(new ColorTargetState(BlendFunction.TRANSLUCENT_PREMULTIPLIED_ALPHA))
 					.withDepthStencilState(new DepthStencilState(CompareOp.ALWAYS_PASS, false))
+					.withCull(false)
+					.withVertexFormat(DefaultVertexFormat.POSITION_TEX_COLOR, VertexFormat.Mode.QUADS)
 					.build()
 			);
 		}
 	}
 
-	private static GpuBuffer bakeCube() {
+	private static GpuBuffer bakeCubeMesh() {
 		try (ByteBufferBuilder bytes = ByteBufferBuilder.exactlySized(24 * DefaultVertexFormat.POSITION.getVertexSize())) {
 			BufferBuilder buf = new BufferBuilder(bytes, VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION);
-			face(buf, 1f, 0f, 0f);
-			face(buf, -1f, 0f, 0f);
-			face(buf, 0f, 1f, 0f);
-			face(buf, 0f, -1f, 0f);
-			face(buf, 0f, 0f, 1f);
-			face(buf, 0f, 0f, -1f);
+			for (Face face : FACES) {
+				Vector3f right = face.right();
+				corner(buf, face, right, -1f, -1f);
+				corner(buf, face, right, 1f, -1f);
+				corner(buf, face, right, 1f, 1f);
+				corner(buf, face, right, -1f, 1f);
+			}
 			try (MeshData mesh = buf.buildOrThrow()) {
-				indices = mesh.drawState().indexCount();
+				bakeIndices = mesh.drawState().indexCount();
 				return RenderSystem.getDevice().createBuffer(
-					() -> "stray end galaxy cube",
+					() -> "stray end sky bake cube",
 					GpuBuffer.USAGE_VERTEX,
 					mesh.vertexBuffer()
 				);
@@ -194,22 +257,47 @@ public final class EndSkyDecor {
 		}
 	}
 
-	private static void face(BufferBuilder buf, float nx, float ny, float nz) {
-		Vector3f n = new Vector3f(nx, ny, nz);
-		Vector3f t = Math.abs(ny) > 0.5f ? new Vector3f(1f, 0f, 0f) : new Vector3f(0f, 1f, 0f);
-		Vector3f b = new Vector3f(n).cross(t).normalize();
-		t = new Vector3f(b).cross(n).normalize();
-		vert(buf, n, t, b, -1f, -1f);
-		vert(buf, n, t, b, -1f, 1f);
-		vert(buf, n, t, b, 1f, 1f);
-		vert(buf, n, t, b, 1f, -1f);
+	private static GpuBuffer bakeDrawQuads() {
+		try (ByteBufferBuilder bytes = ByteBufferBuilder.exactlySized(24 * DefaultVertexFormat.POSITION_TEX_COLOR.getVertexSize())) {
+			BufferBuilder buf = new BufferBuilder(bytes, VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX_COLOR);
+			for (Face face : FACES) {
+				Vector3f right = face.right();
+				texCorner(buf, face, right, -1f, -1f, 0f, 0f);
+				texCorner(buf, face, right, 1f, -1f, 1f, 0f);
+				texCorner(buf, face, right, 1f, 1f, 1f, 1f);
+				texCorner(buf, face, right, -1f, 1f, 0f, 1f);
+			}
+			try (MeshData mesh = buf.buildOrThrow()) {
+				return RenderSystem.getDevice().createBuffer(
+					() -> "stray end sky quads",
+					GpuBuffer.USAGE_VERTEX,
+					mesh.vertexBuffer()
+				);
+			}
+		}
 	}
 
-	private static void vert(BufferBuilder buf, Vector3f n, Vector3f t, Vector3f b, float u, float v) {
-		buf.addVertex(
-			(n.x + t.x * u + b.x * v) * RADIUS,
-			(n.y + t.y * u + b.y * v) * RADIUS,
-			(n.z + t.z * u + b.z * v) * RADIUS
-		);
+	private static void corner(BufferBuilder buf, Face face, Vector3f right, float x, float y) {
+		Vector3f p = point(face, right, x, y);
+		buf.addVertex(p.x, p.y, p.z);
+	}
+
+	private static void texCorner(BufferBuilder buf, Face face, Vector3f right, float x, float y, float u, float v) {
+		Vector3f p = point(face, right, x, y);
+		buf.addVertex(p.x, p.y, p.z).setUv(u, v).setColor(0xFFFFFFFF);
+	}
+
+	private static Vector3f point(Face face, Vector3f right, float x, float y) {
+		return new Vector3f(face.normal)
+			.add(new Vector3f(right).mul(x))
+			.add(new Vector3f(face.up).mul(y))
+			.mul(RADIUS);
+	}
+
+	private record Face(Vector3f normal, Vector3f up) {
+		Vector3f right() {
+			// Same convention as JOML lookAlong: right = forward x up maps to +x.
+			return new Vector3f(normal).cross(up).normalize();
+		}
 	}
 }
