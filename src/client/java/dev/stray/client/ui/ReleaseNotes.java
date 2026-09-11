@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.200", new String[]{
+			"Farming Pest ESP marks Garden pests the same way Skyblocker does (armor-stand pest heads). Holding a vacuum (lore contains VACUUM) draws tracers to them. Off by default."
+		}),
 		new Entry("1.2.199", new String[]{
 			"The Crystal Hollows map fills the whole island instead of a speck around you. Unloaded areas use a shaded cave basemap; loaded chunks stamp real terrain under the roof."
 		}),

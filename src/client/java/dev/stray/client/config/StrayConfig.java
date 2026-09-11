@@ -92,6 +92,10 @@ public final class StrayConfig {
 	public boolean gardenPlotsCloseOnClick = false;
 	public int gardenPlotsX = 0;
 	public int gardenPlotsY = 0;
+	public boolean pestEspEnabled = false;
+	public boolean pestEspThroughWalls = true;
+	public int pestEspRgb = 0xB62F00;
+	public float pestEspOpacity = 0.38f;
 	public boolean jacobContestHudEnabled = false;
 	public boolean composterHudEnabled = false;
 	public boolean composterUpgradesKnown = false;
@@ -836,6 +840,16 @@ public final class StrayConfig {
 				if (!json.has("gardenPlotsCloseOnClick")) {
 					loaded.gardenPlotsCloseOnClick = false;
 				}
+				if (!json.has("pestEspEnabled")) {
+					loaded.pestEspEnabled = false;
+				}
+				loaded.pestEspRgb = loaded.pestEspRgb & 0xFFFFFF;
+				if (loaded.pestEspRgb == 0) {
+					loaded.pestEspRgb = 0xB62F00;
+				}
+				loaded.pestEspOpacity = json.has("pestEspOpacity")
+					? clamp(loaded.pestEspOpacity, 0.08f, 0.85f)
+					: 0.38f;
 				loaded.slotHotbar = hudSlot(loaded.slotHotbar);
 				loaded.slotHealth = hudSlot(loaded.slotHealth);
 				loaded.slotHunger = hudSlot(loaded.slotHunger);

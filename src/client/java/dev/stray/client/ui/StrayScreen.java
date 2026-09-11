@@ -143,6 +143,7 @@ public class StrayScreen extends Screen {
 		FARMING("Yaw / Pitch", 1),
 		INVENTORY("Inventory", 3),
 		PLOTS("Garden plots", 1),
+		PEST("Pest ESP", 2),
 		AUTO_DNA("Auto DNA", 5),
 		NAMETAGS("Nametags", 6),
 		NODES("Nodes", 5);
@@ -161,7 +162,7 @@ public class StrayScreen extends Screen {
 	}
 
 	private enum PickerTarget {
-		WORLD, SKY, FOG, NODE, THEME, PANE, CONTROL, PILL, MOB, STAR, BLOCK, TITANIUM, CHEST, HELD_ITEM, HELD_ITEM_OUTLINE, FILL, FILL_OUTLINE
+		WORLD, SKY, FOG, NODE, THEME, PANE, CONTROL, PILL, MOB, STAR, BLOCK, TITANIUM, CHEST, PEST, HELD_ITEM, HELD_ITEM_OUTLINE, FILL, FILL_OUTLINE
 	}
 
 	private record SearchEntry(String label, Tab tab, String hint) {
@@ -281,6 +282,9 @@ public class StrayScreen extends Screen {
 		new SearchEntry("Crops per second", Tab.FARMING, "Farming"),
 		new SearchEntry("Composter overlay", Tab.FARMING, "Farming"),
 		new SearchEntry("Garden plots", Tab.FARMING, "Farming"),
+		new SearchEntry("Pest ESP", Tab.FARMING, "Farming"),
+		new SearchEntry("Garden pests", Tab.FARMING, "Farming"),
+		new SearchEntry("Vacuum", Tab.FARMING, "Farming"),
 		new SearchEntry("Plot widget", Tab.FARMING, "Farming"),
 		new SearchEntry("Configure Plots", Tab.FARMING, "Farming"),
 		new SearchEntry("Auto DNA", Tab.FARMING, "Farming"),
@@ -1970,13 +1974,14 @@ public class StrayScreen extends Screen {
 				GuiDraw.menu(graphics, font, clip(font, titanium, (int) iw - 4), rx, y + 38, titaniumColor);
 			}
 			case FARMING -> {
-				float farmingH = cardHeight(4);
+				float farmingH = cardHeight(5);
 				float dnaH = cardHeight(1 + Feature.AUTO_DNA.rows);
 				float y = featureCard(graphics, font, left, top, col, farmingH, "Farming");
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Yaw / Pitch", config.farmingYawPitch, v -> config.farmingYawPitch = v, Feature.FARMING);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Jacob contest HUD", config.jacobContestHudEnabled, v -> config.jacobContestHudEnabled = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Composter overlay", config.composterHudEnabled, v -> config.composterHudEnabled = v);
-				toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Garden plots", config.gardenPlotsWidget, v -> config.gardenPlotsWidget = v, Feature.PLOTS);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Garden plots", config.gardenPlotsWidget, v -> config.gardenPlotsWidget = v, Feature.PLOTS);
+				toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Pest ESP", config.pestEspEnabled, v -> config.pestEspEnabled = v, Feature.PEST);
 
 				y = featureCard(graphics, font, left, top + farmingH + 8, col, dnaH, "Auto DNA");
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Enable", config.autoDnaEnabled, v -> config.autoDnaEnabled = v);
@@ -2158,6 +2163,7 @@ public class StrayScreen extends Screen {
 
 				y = sectionLabel(graphics, font, left, y, "Garden");
 				y = controlCard(graphics, font, left, y, col, mouseX, mouseY, "Garden plots", config.gardenPlotsWidget, v -> config.gardenPlotsWidget = v, Feature.PLOTS);
+				y = controlCard(graphics, font, left, y, col, mouseX, mouseY, "Pest ESP", config.pestEspEnabled, v -> config.pestEspEnabled = v, Feature.PEST);
 				y = featureCard(graphics, font, left, y, col, cardHeight(Feature.AUTO_DNA.rows), "Auto DNA", config.autoDnaEnabled, v -> config.autoDnaEnabled = v, mouseX, mouseY);
 				drawFeatureFields(graphics, font, mouseX, mouseY, ix, y, iw, Feature.AUTO_DNA);
 
@@ -2776,6 +2782,10 @@ public class StrayScreen extends Screen {
 			case MINING -> toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Ability alert", config.miningAbilityAlert, v -> config.miningAbilityAlert = v);
 			case FARMING -> slider(graphics, font, ix, y, iw, "Scale", Math.round(config.farmingYawPitchScale * 100) + "%", (config.farmingYawPitchScale - 0.50f) / 1.50f, v -> config.farmingYawPitchScale = StrayConfig.clampHudScale(0.50f + v * 1.50f));
 			case PLOTS -> toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Close on click", config.gardenPlotsCloseOnClick, v -> config.gardenPlotsCloseOnClick = v);
+			case PEST -> {
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Through walls", config.pestEspThroughWalls, v -> config.pestEspThroughWalls = v);
+				colorRow(graphics, font, ix, y, iw, mouseX, mouseY, "Color", config.pestEspRgb, PickerTarget.PEST);
+			}
 			case AUTO_DNA -> {
 				y = slider(graphics, font, ix, y, iw, "Click delay", config.autoDnaClickDelay + "ms", (config.autoDnaClickDelay - 100) / 900f, v -> config.autoDnaClickDelay = snapInt(100 + v * 900f, 100, 1000, 10));
 				y = slider(graphics, font, ix, y, iw, "Delay variety", config.autoDnaDelayVariety + "ms", config.autoDnaDelayVariety / 1000f, v -> config.autoDnaDelayVariety = snapInt(v * 1000f, 0, 1000, 10));
@@ -3136,6 +3146,7 @@ public class StrayScreen extends Screen {
 			case STAR -> config.starMobRgb = packed;
 			case BLOCK -> config.blockOutlineRgb = packed;
 			case TITANIUM -> config.titaniumEspRgb = packed;
+			case PEST -> config.pestEspRgb = packed;
 			case CHEST -> config.chestEspRgb = packed;
 			case HELD_ITEM -> config.heldItemShaderRgb = packed;
 			case HELD_ITEM_OUTLINE -> config.heldItemShaderOutlineRgb = packed;
@@ -3159,7 +3170,7 @@ public class StrayScreen extends Screen {
 			case CONTROL, PILL -> 0.12f;
 			case PANE -> 0.20f;
 			case MOB, STAR, BLOCK -> 0.15f;
-			case NODE, HELD_ITEM, FILL, CHEST, TITANIUM -> 0.08f;
+			case NODE, HELD_ITEM, FILL, CHEST, TITANIUM, PEST -> 0.08f;
 			case THEME, HELD_ITEM_OUTLINE, FILL_OUTLINE -> 1f;
 			default -> 0f;
 		};
@@ -3169,7 +3180,7 @@ public class StrayScreen extends Screen {
 		return switch (target) {
 			case CONTROL, PILL -> 0.78f;
 			case MOB, STAR, BLOCK -> 0.90f;
-			case NODE, HELD_ITEM, FILL, CHEST, TITANIUM -> 0.85f;
+			case NODE, HELD_ITEM, FILL, CHEST, TITANIUM, PEST -> 0.85f;
 			default -> 1f;
 		};
 	}
@@ -3186,6 +3197,7 @@ public class StrayScreen extends Screen {
 			case NODE -> config.fillOpacity;
 			case CHEST -> config.chestEspOpacity;
 			case TITANIUM -> config.titaniumEspOpacity;
+			case PEST -> config.pestEspOpacity;
 			case HELD_ITEM -> config.heldItemShaderFill;
 			case FILL -> config.playerFillFill;
 			case WORLD -> config.worldTintStrength;
@@ -3208,6 +3220,7 @@ public class StrayScreen extends Screen {
 			case NODE -> config.fillOpacity = clamped;
 			case CHEST -> config.chestEspOpacity = clamped;
 			case TITANIUM -> config.titaniumEspOpacity = clamped;
+			case PEST -> config.pestEspOpacity = clamped;
 			case HELD_ITEM -> config.heldItemShaderFill = clamped;
 			case FILL -> config.playerFillFill = clamped;
 			case WORLD -> config.worldTintStrength = clamped;
@@ -3270,7 +3283,7 @@ public class StrayScreen extends Screen {
 		return FabricLoader.getInstance()
 			.getModContainer("stray")
 			.map(container -> container.getMetadata().getVersion().getFriendlyString())
-			.orElse("1.2.199");
+			.orElse("1.2.200");
 	}
 
 	@Override
