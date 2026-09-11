@@ -54,7 +54,6 @@
 		"SubmitNodeCollectionMixin",
 		"ScreenMixin",
 		"ShaderManagerAccessor",
-		"SkyRendererInvoker",
 		"SkyRendererMixin",
 		"StringWidgetMixin"
 	],
