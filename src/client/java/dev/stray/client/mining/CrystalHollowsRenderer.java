@@ -29,6 +29,7 @@ public final class CrystalHollowsRenderer {
 
 	public static void init() {
 		LevelRenderEvents.BEFORE_GIZMOS.register(context -> emitBoxes());
+		CrystalHollowsScanner.init();
 	}
 
 	public static void extract(GuiGraphicsExtractor graphics, DeltaTracker delta) {

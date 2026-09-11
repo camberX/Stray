@@ -15,7 +15,8 @@ public enum CrystalStructure {
 	KING_YOLKAR("King Yolkar", 0xFF5555, "[NPC] King Yolkar:"),
 	ODAWA("Odawa", 0xFF55FF, "[NPC] Odawa:"),
 	KEY_GUARDIAN("Key Guardian", 0xAAAAAA, null),
-	XALX("Xalx", 0x55FF55, "[NPC] Xalx:");
+	XALX("Xalx", 0x55FF55, "[NPC] Xalx:"),
+	PETE("Professor Pete", 0xFFAA00, "[NPC] Professor Pete:");
 
 	public final String label;
 	public final int rgb;
@@ -55,15 +56,16 @@ public enum CrystalStructure {
 			}
 		}
 		return switch (needle) {
-			case "precursor city", "precursor ruins", "lost precursor", "lost precursor ruins" -> LOST_PRECURSOR_CITY;
-			case "goblin queen", "goblin queens den", "goblin hideout", "queens den" -> GOBLIN_QUEENS_DEN;
+			case "precursor city", "precursor ruins", "lost precursor", "lost precursor ruins", "city" -> LOST_PRECURSOR_CITY;
+			case "goblin queen", "goblin queens den", "goblin hideout", "queens den", "queen" -> GOBLIN_QUEENS_DEN;
 			case "odawa shop", "odawas shop" -> ODAWA;
 			case "divan", "mines of divan", "divans mines" -> MINES_OF_DIVAN;
-			case "khazad dum", "khazaddum" -> KHAZAD_DUM;
-			case "dragon lair", "dragons lair" -> DRAGONS_LAIR;
-			case "yolkar", "king yolkar" -> KING_YOLKAR;
+			case "khazad dum", "khazaddum", "bal" -> KHAZAD_DUM;
+			case "dragon lair", "dragons lair", "golden dragon" -> DRAGONS_LAIR;
+			case "yolkar", "king yolkar", "king" -> KING_YOLKAR;
 			case "key guardian" -> KEY_GUARDIAN;
-			case "jungle temple", "kalhuiki" -> JUNGLE_TEMPLE;
+			case "jungle temple", "kalhuiki", "temple" -> JUNGLE_TEMPLE;
+			case "pete", "professor pete" -> PETE;
 			default -> null;
 		};
 	}

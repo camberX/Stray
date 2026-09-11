@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.239", new String[]{
+			"CH structure scanner is the Odin WorldScanner now: it matches the confirmed vertical block sequences on each loaded chunk and snaps the waypoint with that structure's offset (temple, Divan, city, queen, king, Bal, Corleone, Odawa, Xalx, Pete, key-guardian spots, dragon nest, fairy grotto)."
+		}),
 		new Entry("1.2.238", new String[]{
 			"CH waypoints scan loaded chunks and NPC names and move a mark onto the real structure when the first coordinate was only an entrance, a compass guess, or a shared spot. Scan structures is on with waypoints; a lock stops the websocket from pulling a snapped mark back."
 		}),
