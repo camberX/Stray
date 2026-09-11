@@ -30,7 +30,7 @@ import java.util.Optional;
  */
 public final class AutoUpdate implements PreLaunchEntrypoint {
 	private static final String DOWNLOAD = UpdateMeta.SHOP + "/download";
-	private static final long MAX_BYTES = 12L * 1024L * 1024L;
+	private static final long MAX_BYTES = 96L * 1024L * 1024L;
 
 	@Override
 	public void onPreLaunch() {
@@ -184,7 +184,13 @@ public final class AutoUpdate implements PreLaunchEntrypoint {
 				break;
 			}
 		}
-		if (!downloaded || !validJar(part, remote)) {
+		if (!downloaded) {
+			log("Could not download " + remote.file + " from any mirror.");
+			Files.deleteIfExists(part);
+			return null;
+		}
+		if (!validJar(part, remote)) {
+			log("Downloaded " + remote.file + " did not validate as Stray " + remote.version + ".");
 			Files.deleteIfExists(part);
 			return null;
 		}
@@ -212,12 +218,15 @@ public final class AutoUpdate implements PreLaunchEntrypoint {
 			try (InputStream in = response.body()) {
 				Files.copy(in, part, StandardCopyOption.REPLACE_EXISTING);
 			}
-			if (Files.size(part) <= 64 || Files.size(part) > MAX_BYTES) {
+			long size = Files.size(part);
+			if (size <= 64 || size > MAX_BYTES) {
+				log("Rejected " + url + " (" + size + " bytes).");
 				Files.deleteIfExists(part);
 				return false;
 			}
 			return true;
-		} catch (Exception ignored) {
+		} catch (Exception exception) {
+			log("Download from " + url + " failed: " + exception.getMessage());
 			try {
 				Files.deleteIfExists(part);
 			} catch (Exception ignoredToo) {

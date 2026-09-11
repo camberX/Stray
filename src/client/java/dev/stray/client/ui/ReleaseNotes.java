@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.227", new String[]{
+			"Auto-update accepts jars up to 96 MB. The 12 MB cap silently rejected the texture-sized 1.2.225+ jars, which is why 1.2.226 never installed. It also logs why a download was rejected."
+		}),
 		new Entry("1.2.226", new String[]{
 			"Fixes the crash on first End sky frame in 1.2.225 (sky textures were uploaded inside an open render pass)."
 		}),
