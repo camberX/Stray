@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.210", new String[]{
+			"Health bar color is a saturated green at full and a normal red when low."
+		}),
 		new Entry("1.2.209", new String[]{
 			"Health bars match the mob's on-screen height and sit beside the hitbox, not on the body."
 		}),

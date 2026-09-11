@@ -1,7 +1,6 @@
 package dev.stray.client.render;
 
 import dev.stray.client.config.StrayConfig;
-import dev.stray.client.ui.Theme;
 import net.minecraft.client.Camera;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
@@ -196,10 +195,29 @@ public final class EntityHealthBars {
 
 	private static int healthColor(float t) {
 		t = Mth.clamp(t, 0f, 1f);
-		if (t >= 0.5f) {
-			return Theme.mix(0xF5C16C, 0x34D399, (t - 0.5f) * 2f);
+		return hsv(t * 120f, 0.90f, 0.92f);
+	}
+
+	private static int hsv(float hue, float sat, float val) {
+		float chroma = val * sat;
+		float x = chroma * (1f - Math.abs((hue / 60f) % 2f - 1f));
+		float m = val - chroma;
+		float r;
+		float g;
+		float b;
+		if (hue < 60f) {
+			r = chroma;
+			g = x;
+			b = 0f;
+		} else {
+			r = x;
+			g = chroma;
+			b = 0f;
 		}
-		return Theme.mix(0xFB7185, 0xF5C16C, t * 2f);
+		int ri = Math.round((r + m) * 255f);
+		int gi = Math.round((g + m) * 255f);
+		int bi = Math.round((b + m) * 255f);
+		return (ri << 16) | (gi << 8) | bi;
 	}
 
 	private record ScreenBox(float x, float y, float w, float h) {
