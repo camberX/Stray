@@ -13,16 +13,20 @@ import net.minecraft.world.phys.Vec3;
 
 import java.util.ArrayList;
 import java.util.EnumMap;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public final class CrystalHollows {
 	private static final Pattern COORDS = Pattern.compile("\\Dx?(\\d{3})(?=[, ]),? ?y?(\\d{2,3})(?=[, ]),? ?z?(\\d{3})\\D?(?!\\d)");
 	private static final int UNKNOWN_CLEAR = 50;
+	private static final int SNAP_MIN = 8;
 	private static final Map<CrystalStructure, BlockPos> WAYPOINTS = new EnumMap<>(CrystalStructure.class);
+	private static final Set<CrystalStructure> LOCKED = EnumSet.noneOf(CrystalStructure.class);
 	private static final List<StaticMark> NUCLEUS = List.of(
 		new StaticMark(new BlockPos(551, 116, 551), "Precursor Remnants", 0x55FFFF),
 		new StaticMark(new BlockPos(551, 116, 475), "Mithril Deposits", 0x55FF55),
@@ -67,16 +71,19 @@ public final class CrystalHollows {
 		String server = SkyblockLocation.server;
 		if (!server.isBlank() && !server.equals(lastServer)) {
 			WAYPOINTS.clear();
+			LOCKED.clear();
+			CrystalHollowsScanner.reset();
 			lastServer = server;
 		}
 		if (!server.isBlank()) {
 			CrystalHollowsSocket.tick(server);
 		}
+		CrystalHollowsScanner.tick(client);
 		CrystalStructure spot = CrystalStructure.fromLabel(SkyblockLocation.poi);
 		if (spot == null) {
 			spot = CrystalStructure.fromLabel(SkyblockLocation.area);
 		}
-		if (spot != null && !WAYPOINTS.containsKey(spot)) {
+		if (spot != null && !locked(spot) && !WAYPOINTS.containsKey(spot)) {
 			add(spot, client.player.blockPosition());
 		}
 	}
@@ -109,7 +116,7 @@ public final class CrystalHollows {
 			return;
 		}
 		for (CrystalHollowsSocket.Incoming item : incoming) {
-			if (item.structure() == null || item.pos() == null || WAYPOINTS.containsKey(item.structure())) {
+			if (item.structure() == null || item.pos() == null || locked(item.structure()) || WAYPOINTS.containsKey(item.structure())) {
 				continue;
 			}
 			add(item.structure(), item.pos());
@@ -173,6 +180,8 @@ public final class CrystalHollows {
 
 	private static void enter(Minecraft client) {
 		WAYPOINTS.clear();
+		LOCKED.clear();
+		CrystalHollowsScanner.reset();
 		lastServer = "";
 		locrawPending = false;
 		inHollows = true;
@@ -184,6 +193,8 @@ public final class CrystalHollows {
 
 	private static void leave() {
 		WAYPOINTS.clear();
+		LOCKED.clear();
+		CrystalHollowsScanner.reset();
 		locrawPending = false;
 		inHollows = false;
 		lastServer = "";
@@ -216,8 +227,8 @@ public final class CrystalHollows {
 			return;
 		}
 		for (CrystalStructure structure : CrystalStructure.values()) {
-			if (structure.matchesChat(text) && !WAYPOINTS.containsKey(structure)) {
-				add(structure, client.player.blockPosition());
+			if (structure.matchesChat(text)) {
+				refine(structure, client.player.blockPosition(), true);
 			}
 		}
 	}
@@ -258,9 +269,33 @@ public final class CrystalHollows {
 		if (named == null) {
 			named = CrystalStructure.UNKNOWN;
 		}
-		if (!WAYPOINTS.containsKey(named)) {
+		if (!locked(named) && !WAYPOINTS.containsKey(named)) {
 			add(named, pos);
 		}
+	}
+
+	static void refine(CrystalStructure structure, BlockPos pos, boolean lock) {
+		if (structure == null || pos == null) {
+			return;
+		}
+		if (structure != CrystalStructure.UNKNOWN && !inside(pos)) {
+			return;
+		}
+		BlockPos current = WAYPOINTS.get(structure);
+		if (current != null && current.distManhattan(pos) < SNAP_MIN) {
+			if (lock) {
+				LOCKED.add(structure);
+			}
+			return;
+		}
+		add(structure, pos);
+		if (lock) {
+			LOCKED.add(structure);
+		}
+	}
+
+	static boolean locked(CrystalStructure structure) {
+		return structure != null && LOCKED.contains(structure);
 	}
 
 	private static void add(CrystalStructure structure, BlockPos pos) {

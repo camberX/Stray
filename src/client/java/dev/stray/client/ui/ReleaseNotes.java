@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.238", new String[]{
+			"CH waypoints scan loaded chunks and NPC names and move a mark onto the real structure when the first coordinate was only an entrance, a compass guess, or a shared spot. Scan structures is on with waypoints; a lock stops the websocket from pulling a snapped mark back."
+		}),
 		new Entry("1.2.237", new String[]{
 			"Metal detector uses the NotEnoughUpdates solver now: stand still for two matching TREASURE readings, search y 65-75, then narrow with later spots and the known chest list once you walk up to a Keeper. The old quartz-stair offset list was guessing the wrong blocks."
 		}),

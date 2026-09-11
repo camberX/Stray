@@ -113,6 +113,7 @@ public final class StrayConfig {
 	public boolean crystalHollowsFindChat = false;
 	public boolean crystalHollowsThroughWalls = false;
 	public boolean crystalHollowsEntrances = false;
+	public boolean crystalHollowsScan = true;
 	public boolean crystalHollowsMap = false;
 	public boolean crystalHollowsMapLabels = true;
 	public boolean metalDetectorSolver = false;
@@ -803,6 +804,9 @@ public final class StrayConfig {
 				}
 				if (!json.has("storagePreviewHoldShift")) {
 					loaded.storagePreviewHoldShift = false;
+				}
+				if (!json.has("crystalHollowsScan")) {
+					loaded.crystalHollowsScan = true;
 				}
 				if (loaded.autoClickerLeftWhitelist == null) {
 					loaded.autoClickerLeftWhitelist = new java.util.ArrayList<>();

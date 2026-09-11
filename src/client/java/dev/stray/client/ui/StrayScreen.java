@@ -151,7 +151,7 @@ public class StrayScreen extends Screen {
 		RAWMATS("Raw mats", 1),
 		MINING("Mining HUD", 1),
 		TITANIUM("Titanium ESP", 3),
-		CRYSTAL("CH waypoints", 4),
+		CRYSTAL("CH waypoints", 5),
 		CH_MAP("CH map", 1),
 		METAL("Metal detector", 1),
 		FARMING("Yaw / Pitch", 1),
@@ -377,6 +377,7 @@ public class StrayScreen extends Screen {
 		new SearchEntry("Scavenged", Tab.HOLLOWS, "Divan"),
 		new SearchEntry("Crystal Hollows waypoints", Tab.HOLLOWS, "Hollows"),
 		new SearchEntry("CH waypoints", Tab.HOLLOWS, "Hollows"),
+		new SearchEntry("Structure scanner", Tab.HOLLOWS, "Hollows"),
 		new SearchEntry("Entrance zones", Tab.HOLLOWS, "Hollows"),
 		new SearchEntry("Nucleus waypoints", Tab.HOLLOWS, "Hollows"),
 		new SearchEntry("Zone doors", Tab.HOLLOWS, "Hollows"),
@@ -3082,6 +3083,7 @@ public class StrayScreen extends Screen {
 			}
 			case CRYSTAL -> {
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Find in chat", config.crystalHollowsFindChat, v -> config.crystalHollowsFindChat = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Scan structures", config.crystalHollowsScan, v -> config.crystalHollowsScan = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Entrance zones", config.crystalHollowsEntrances, v -> config.crystalHollowsEntrances = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Through walls", config.crystalHollowsThroughWalls, v -> config.crystalHollowsThroughWalls = v);
 				clickRow(graphics, font, ix, y, iw, mouseX, mouseY, "Dump coords", CrystalHollows::dumpChat);
