@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.228", new String[]{
+			"End sky no longer pulses. The black hole frame cross-fade is an exact linear mix now instead of alpha-blending one frame over the other, which brightened the glow every few ticks."
+		}),
 		new Entry("1.2.227", new String[]{
 			"Auto-update accepts jars up to 96 MB. The 12 MB cap silently rejected the texture-sized 1.2.225+ jars, which is why 1.2.226 never installed. It also logs why a download was rejected."
 		}),

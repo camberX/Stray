@@ -8,6 +8,8 @@ import com.mojang.blaze3d.pipeline.DepthStencilState;
 import com.mojang.blaze3d.pipeline.RenderPipeline;
 import com.mojang.blaze3d.pipeline.RenderTarget;
 import com.mojang.blaze3d.platform.CompareOp;
+import com.mojang.blaze3d.platform.DestFactor;
+import com.mojang.blaze3d.platform.SourceFactor;
 import com.mojang.blaze3d.shaders.UniformType;
 import com.mojang.blaze3d.systems.RenderPass;
 import com.mojang.blaze3d.systems.RenderSystem;
@@ -70,6 +72,7 @@ public final class EndSkyDecor {
 	}
 
 	private static RenderPipeline pipeline;
+	private static RenderPipeline addPipeline;
 	private static GpuBuffer quads;
 
 	private EndSkyDecor() {
@@ -88,7 +91,7 @@ public final class EndSkyDecor {
 		if (quads == null) {
 			quads = bakeQuads();
 		}
-		if (pipeline == null || quads == null) {
+		if (pipeline == null || addPipeline == null || quads == null) {
 			return;
 		}
 		RenderTarget main = client.getMainRenderTarget();
@@ -130,9 +133,19 @@ public final class EndSkyDecor {
 			new Matrix4f()
 		);
 
+		// Exact linear cross-fade: frame A keeps its full alpha (occlusion) but its
+		// colour is scaled by 1-t, then frame B's colour scaled by t is added on
+		// top. Blending B over A with alpha would brighten the glow mid-fade.
+		boolean fading = holeB != null;
+		GpuBufferSlice fadeA = RenderSystem.getDynamicUniforms().writeTransform(
+			modelView,
+			new Vector4f(1f - blend, 1f - blend, 1f - blend, 1f),
+			new Vector3f(),
+			new Matrix4f()
+		);
 		GpuBufferSlice fadeB = RenderSystem.getDynamicUniforms().writeTransform(
 			modelView,
-			new Vector4f(blend, blend, blend, blend),
+			new Vector4f(blend, blend, blend, 0f),
 			new Vector3f(),
 			new Matrix4f()
 		);
@@ -158,10 +171,17 @@ public final class EndSkyDecor {
 				}
 			}
 			if (holeA != null) {
+				if (fading) {
+					pass.setUniform("DynamicTransforms", fadeA);
+				}
 				pass.bindTexture("Sampler0", holeA, linear);
 				pass.drawIndexed(0, 6 * 6, 6, 1);
 			}
-			if (holeB != null) {
+			if (fading) {
+				pass.setPipeline(addPipeline);
+				RenderSystem.bindDefaultUniforms(pass);
+				pass.setVertexBuffer(0, quads);
+				pass.setIndexBuffer(indexBuf.getBuffer(7 * 6), indexBuf.type());
 				pass.setUniform("DynamicTransforms", fadeB);
 				pass.bindTexture("Sampler0", holeB, linear);
 				pass.drawIndexed(0, 6 * 6, 6, 1);
@@ -177,23 +197,31 @@ public final class EndSkyDecor {
 	}
 
 	private static synchronized void ensurePipeline() {
-		if (pipeline != null) {
-			return;
+		if (pipeline == null) {
+			pipeline = RenderPipelines.register(
+				texturedPipeline("pipeline/end_sky_textured", BlendFunction.TRANSLUCENT_PREMULTIPLIED_ALPHA)
+			);
 		}
-		pipeline = RenderPipelines.register(
-			RenderPipeline.builder()
-				.withLocation(Stray.id("pipeline/end_sky_textured"))
-				.withVertexShader("core/position_tex_color")
-				.withFragmentShader("core/position_tex_color")
-				.withSampler("Sampler0")
-				.withUniform("DynamicTransforms", UniformType.UNIFORM_BUFFER)
-				.withUniform("Projection", UniformType.UNIFORM_BUFFER)
-				.withColorTargetState(new ColorTargetState(BlendFunction.TRANSLUCENT_PREMULTIPLIED_ALPHA))
-				.withDepthStencilState(new DepthStencilState(CompareOp.ALWAYS_PASS, false))
-				.withCull(false)
-				.withVertexFormat(DefaultVertexFormat.POSITION_TEX_COLOR, VertexFormat.Mode.QUADS)
-				.build()
-		);
+		if (addPipeline == null) {
+			addPipeline = RenderPipelines.register(
+				texturedPipeline("pipeline/end_sky_additive", new BlendFunction(SourceFactor.ONE, DestFactor.ONE))
+			);
+		}
+	}
+
+	private static RenderPipeline texturedPipeline(String location, BlendFunction blend) {
+		return RenderPipeline.builder()
+			.withLocation(Stray.id(location))
+			.withVertexShader("core/position_tex_color")
+			.withFragmentShader("core/position_tex_color")
+			.withSampler("Sampler0")
+			.withUniform("DynamicTransforms", UniformType.UNIFORM_BUFFER)
+			.withUniform("Projection", UniformType.UNIFORM_BUFFER)
+			.withColorTargetState(new ColorTargetState(blend))
+			.withDepthStencilState(new DepthStencilState(CompareOp.ALWAYS_PASS, false))
+			.withCull(false)
+			.withVertexFormat(DefaultVertexFormat.POSITION_TEX_COLOR, VertexFormat.Mode.QUADS)
+			.build();
 	}
 
 	/** Six cube faces followed by the black hole patch quad. */
