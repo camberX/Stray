@@ -62,6 +62,34 @@ float starLayer(vec3 dir, float scale, float threshold, float radius) {
     return (glow * 0.55 + core * 1.15) * (0.35 + 0.65 * hash13(id + 9.1));
 }
 
+// Small shaded sphere on the sky. Returns coverage in .a.
+vec4 planet(vec3 dir, vec3 center, float radius, vec3 lightDir, vec3 dayCol, vec3 nightCol, vec3 rimCol) {
+    float c = dot(dir, center);
+    if (c < 0.0) {
+        return vec4(0.0);
+    }
+    vec3 off = dir - center * c;
+    float d = length(off) / radius;
+    if (d > 1.06) {
+        return vec4(0.0);
+    }
+    vec3 up = abs(center.y) > 0.9 ? vec3(1.0, 0.0, 0.0) : vec3(0.0, 1.0, 0.0);
+    vec3 tx = normalize(cross(up, center));
+    vec3 ty = cross(center, tx);
+    vec2 uv = vec2(dot(off, tx), dot(off, ty)) / radius;
+    float zz = sqrt(max(1.0 - dot(uv, uv), 0.0));
+    vec3 n = normalize(tx * uv.x + ty * uv.y - center * zz);
+    float ndl = clamp(dot(n, lightDir), 0.0, 1.0);
+    float terminator = smoothstep(0.0, 0.35, ndl);
+    float bands = 0.75 + 0.25 * fbm(n * 5.0 + 3.3);
+    vec3 surf = mix(nightCol, dayCol * bands, terminator);
+    float rim = pow(1.0 - zz, 3.0) * (0.35 + 0.65 * ndl);
+    surf += rimCol * rim * 1.4;
+    float cover = 1.0 - smoothstep(0.985, 1.06, d);
+    float atmo = exp(-max(d - 1.0, 0.0) * 22.0) * (0.25 + 0.75 * ndl) * 0.55;
+    return vec4(surf * cover + rimCol * atmo, max(cover, atmo));
+}
+
 vec3 skyColor(vec3 dir, out float alpha) {
     vec3 pole = normalize(vec3(0.22, 0.86, 0.31));
     float nWide = fbm(dir * 2.4);
@@ -85,17 +113,69 @@ vec3 skyColor(vec3 dir, out float alpha) {
 
     vec3 col = mixC * nebula * 0.85;
 
-    float field = starLayer(dir, 520.0, 0.976, 0.085);
-    float mid = starLayer(dir, 210.0, 0.988, 0.11);
-    float bright = starLayer(dir, 78.0, 0.995, 0.16);
+    // Scattered nebula clouds so the sky away from the band is not empty.
+    float c1 = fbm(dir * 3.1 + 41.0);
+    float c2 = fbm(dir * 2.3 + 83.0);
+    float c3 = fbm(dir * 4.6 + 17.0);
+    float teal = smoothstep(0.52, 0.82, c1) * (0.5 + 0.5 * smoothstep(0.4, 0.8, nFine));
+    float magenta = smoothstep(0.55, 0.86, c2) * (0.5 + 0.5 * smoothstep(0.35, 0.8, c3));
+    float haze = smoothstep(0.42, 0.7, c3) * 0.35;
+    col += vec3(0.18, 0.62, 0.78) * teal * 0.55;
+    col += vec3(0.82, 0.24, 0.66) * magenta * 0.5;
+    col += vec3(0.30, 0.22, 0.55) * haze * 0.45;
+    float clouds = clamp(teal * 0.9 + magenta * 0.85 + haze * 0.7, 0.0, 1.0);
+
+    // Faint distant galaxy smudge.
+    vec3 galDir = normalize(vec3(-0.62, 0.36, -0.70));
+    vec3 galUp = normalize(vec3(0.3, 0.9, 0.2));
+    vec3 gx = normalize(cross(galUp, galDir));
+    vec3 gy = cross(galDir, gx);
+    vec3 goff = dir - galDir * dot(dir, galDir);
+    vec2 guv = vec2(dot(goff, gx), dot(goff, gy) * 2.6);
+    float gd = length(guv) / 0.075;
+    float galaxy = dot(dir, galDir) > 0.0 ? exp(-gd * gd * 1.6) * (0.6 + 0.4 * fbm(dir * 60.0)) : 0.0;
+    galaxy += dot(dir, galDir) > 0.0 ? exp(-gd * gd * 12.0) * 0.8 : 0.0;
+    col += vec3(0.95, 0.88, 0.80) * galaxy * 0.7;
+
+    float field = starLayer(dir, 520.0, 0.962, 0.085);
+    float mid = starLayer(dir, 210.0, 0.982, 0.11);
+    float bright = starLayer(dir, 78.0, 0.994, 0.16);
+    float giant = starLayer(dir, 34.0, 0.997, 0.20);
     vec3 cool = vec3(0.78, 0.86, 1.0);
     vec3 warm = vec3(1.0, 0.90, 0.72);
     vec3 starTint = mix(cool, warm, hash13(floor(dir * 210.0)));
+    vec3 giantTint = mix(vec3(0.72, 0.82, 1.0), vec3(1.0, 0.78, 0.55), hash13(floor(dir * 34.0) + 2.7));
     col += field * cool * 0.55;
     col += mid * starTint * 0.95;
     col += bright * vec3(1.0, 0.97, 0.92) * 1.35;
+    col += giant * giantTint * 1.6;
 
-    alpha = clamp(nebula * 1.55 + field * 0.45 + mid * 0.7 + bright, 0.0, 1.0);
+    alpha = clamp(nebula * 1.55 + clouds + galaxy * 0.9 + field * 0.45 + mid * 0.7 + bright + giant, 0.0, 1.0);
+
+    // A shaded planet and its moon, lit from the black hole side.
+    vec3 lightDir = normalize(vec3(0.18, 0.86, 0.48));
+    vec4 p1 = planet(
+        dir,
+        normalize(vec3(-0.52, 0.34, 0.78)),
+        0.055,
+        lightDir,
+        vec3(0.42, 0.50, 0.70),
+        vec3(0.02, 0.02, 0.04),
+        vec3(0.55, 0.72, 1.0)
+    );
+    vec4 p2 = planet(
+        dir,
+        normalize(vec3(-0.40, 0.30, 0.86)),
+        0.016,
+        lightDir,
+        vec3(0.62, 0.58, 0.52),
+        vec3(0.02, 0.02, 0.02),
+        vec3(0.7, 0.65, 0.6)
+    );
+    col = mix(col, p1.rgb, p1.a);
+    alpha = max(alpha, p1.a);
+    col = mix(col, p2.rgb, p2.a);
+    alpha = max(alpha, p2.a);
     return col;
 }
 
@@ -105,8 +185,9 @@ const float DISK_IN = 3.4;
 const float DISK_OUT = 14.0;
 const float CAM_DIST = 26.0;
 const float CAM_HEIGHT = 5.0;
-const float VIEW_SCALE = 1.35;
-const float CONE_COS = 0.93;
+const float VIEW_SCALE = 0.9;
+const float CONE_COS = 0.78;
+const float BLOOM_UV = VIEW_SCALE / 1.35;
 
 vec3 diskSample(vec3 p, vec3 rd, float spin, out float alphaOut) {
     float rho = length(p.xz);
@@ -132,11 +213,11 @@ vec3 diskSample(vec3 p, vec3 rd, float spin, out float alphaOut) {
     float boost = pow(g, 3.0);
 
     float heat = clamp(emit * boost, 0.0, 10.0);
-    vec3 ember = vec3(0.95, 0.30, 0.06);
-    vec3 amber = vec3(1.0, 0.62, 0.28);
-    vec3 white = vec3(1.0, 0.97, 0.93);
-    vec3 tint = mix(ember, amber, clamp(heat * 0.55, 0.0, 1.0));
-    tint = mix(tint, white, smoothstep(1.5, 4.5, heat));
+    vec3 ember = vec3(0.95, 0.26, 0.04);
+    vec3 amber = vec3(1.0, 0.52, 0.16);
+    vec3 white = vec3(1.0, 0.90, 0.78);
+    vec3 tint = mix(ember, amber, clamp(heat * 0.45, 0.0, 1.0));
+    tint = mix(tint, white, smoothstep(2.2, 6.0, heat));
     vec3 col = tint * heat;
 
     alphaOut = clamp(emit * 1.2, 0.0, 1.0);
@@ -193,7 +274,7 @@ vec4 gargantua(vec2 uv, float spin, out vec3 escaped, out bool didEscape) {
     }
 
     float ring = exp(-pow((closest - 3.0) * 6.0, 2.0));
-    accum += vec3(1.0, 0.86, 0.66) * ring * 0.9 * trans;
+    accum += vec3(1.0, 0.72, 0.42) * ring * 0.9 * trans;
     float a = clamp(1.0 - trans + ring * 0.8, 0.0, 1.0);
     return vec4(accum, a);
 }
@@ -204,10 +285,11 @@ vec3 tonemap(vec3 c) {
 
 // Movie-style bloom: a soft ring hugging the shadow, a broad warm halo, and a
 // smear along the disk plane, all heavier on the approaching (left) side.
-float bloom(vec2 uv, bool shadow) {
+float bloom(vec2 uvIn, bool shadow) {
     if (shadow) {
         return 0.0;
     }
+    vec2 uv = uvIn * BLOOM_UV;
     float d = length(uv);
     float side = 0.55 + 0.75 * smoothstep(0.18, -0.22, uv.x);
     float ring = exp(-pow(d - 0.13, 2.0) / (2.0 * 0.04 * 0.04)) * 0.55;
@@ -260,7 +342,7 @@ void main() {
 
     bool shadow = !escaped && max(bh.r, max(bh.g, bh.b)) < 0.05;
     float glow = bloom(uv, shadow) * lensFade;
-    vec3 glowCol = vec3(1.0, 0.86, 0.66) * glow;
+    vec3 glowCol = vec3(1.0, 0.68, 0.36) * glow;
 
     vec3 col = mix(bg, tonemap(bh.rgb) + bg * (1.0 - bh.a), bh.a);
     col = mix(bg, col, lensFade);
