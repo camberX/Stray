@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.216", new String[]{
+			"End sky galaxy is a real nebula and starfield shader now, not stretched GUI circles."
+		}),
 		new Entry("1.2.215", new String[]{
 			"End sky now paints its own stars and galaxy clouds. Vanilla star overlay was invisible on the End texture."
 		}),

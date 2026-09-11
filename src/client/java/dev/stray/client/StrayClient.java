@@ -78,6 +78,7 @@ import dev.stray.client.ui.UiFontPack;
 import dev.stray.client.ui.StrayScreen;
 import dev.stray.client.update.UpdateNotifier;
 import dev.stray.client.visual.CustomCape;
+import dev.stray.client.visual.EndSkyDecor;
 import dev.stray.client.visual.ShopCape;
 import dev.stray.client.visual.motionblur.MotionBlurShaders;
 import net.fabricmc.api.ClientModInitializer;
@@ -176,6 +177,7 @@ public final class StrayClient implements ClientModInitializer {
 		MiningHudRenderer.init();
 		NametagRenderer.init();
 		EntityHealthBars.init();
+		EndSkyDecor.init();
 		VanillaHud.init();
 		MediaSession.init();
 		AutoExperiments.init();

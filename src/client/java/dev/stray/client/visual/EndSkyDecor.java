@@ -2,7 +2,13 @@ package dev.stray.client.visual;
 
 import com.mojang.blaze3d.buffers.GpuBuffer;
 import com.mojang.blaze3d.buffers.GpuBufferSlice;
+import com.mojang.blaze3d.pipeline.BlendFunction;
+import com.mojang.blaze3d.pipeline.ColorTargetState;
+import com.mojang.blaze3d.pipeline.DepthStencilState;
+import com.mojang.blaze3d.pipeline.RenderPipeline;
 import com.mojang.blaze3d.pipeline.RenderTarget;
+import com.mojang.blaze3d.platform.CompareOp;
+import com.mojang.blaze3d.shaders.UniformType;
 import com.mojang.blaze3d.systems.RenderPass;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.BufferBuilder;
@@ -15,48 +21,28 @@ import com.mojang.math.Axis;
 import dev.stray.Stray;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.RenderPipelines;
-import net.minecraft.client.renderer.texture.AbstractTexture;
-import net.minecraft.resources.Identifier;
 import net.minecraft.util.Mth;
-import net.minecraft.util.RandomSource;
-import org.joml.Matrix3f;
 import org.joml.Matrix4f;
 import org.joml.Matrix4fStack;
 import org.joml.Vector3f;
 import org.joml.Vector4f;
 
 /**
- * Stars and galaxy dust for the End skybox. Vanilla star draw uses overlay
- * blend, which vanishes on the End texture, so this uses the End sky
- * translucent pass with soft circle sprites.
+ * Procedural galaxy + starfield over the End skybox. A fragment shader paints
+ * noise nebula and hashed stars on a sky cube so it does not look like GUI
+ * circles stamped on the dome.
  */
 public final class EndSkyDecor {
-	private static final Identifier SPRITE = Stray.id("textures/gui/circle.png");
-	private static final float RADIUS = 82f;
-	private static final int[] STAR_COLORS = {
-		0xFFFFFFFF,
-		0xFFE8F2FF,
-		0xFFC8E6FF,
-		0xFFFFF0D4,
-		0xFFFFD0E8,
-		0xFFB8FFF0
-	};
-	private static final int[] GALAXY_COLORS = {
-		0x88C070FF,
-		0x7780A8FF,
-		0x90FF6BA8,
-		0x66FFE08A,
-		0x80A070FF,
-		0x70FF9AD4,
-		0x5C6EC8FF
-	};
-
-	private static GpuBuffer stars;
-	private static GpuBuffer galaxy;
-	private static int starIndices;
-	private static int galaxyIndices;
+	private static final float RADIUS = 100f;
+	private static RenderPipeline pipeline;
+	private static GpuBuffer cube;
+	private static int indices;
 
 	private EndSkyDecor() {
+	}
+
+	public static void init() {
+		ensurePipeline();
 	}
 
 	public static void render(float time) {
@@ -65,154 +51,107 @@ public final class EndSkyDecor {
 			return;
 		}
 		ensure();
-		if (stars == null || galaxy == null) {
-			return;
-		}
-		float twinkle = 0.88f + 0.12f * (0.5f + 0.5f * Mth.sin(time * 0.045f));
-		PoseStack pose = new PoseStack();
-		pose.mulPose(Axis.YP.rotation(time * 0.0014f));
-		pose.mulPose(Axis.XP.rotation(0.48f + time * 0.00022f));
-		draw(galaxy, galaxyIndices, pose, 1f);
-		pose.pushPose();
-		pose.mulPose(Axis.YP.rotation(1.85f));
-		pose.mulPose(Axis.XP.rotation(-0.55f));
-		draw(galaxy, galaxyIndices, pose, 0.72f);
-		pose.popPose();
-		pose.mulPose(Axis.ZP.rotation(0.18f));
-		draw(stars, starIndices, pose, twinkle);
-	}
-
-	private static void ensure() {
-		if (stars != null && galaxy != null) {
-			return;
-		}
-		Mesh starsMesh = bakeStars();
-		Mesh galaxyMesh = bakeGalaxy();
-		if (starsMesh == null || galaxyMesh == null) {
-			return;
-		}
-		stars = starsMesh.buffer();
-		starIndices = starsMesh.indices();
-		galaxy = galaxyMesh.buffer();
-		galaxyIndices = galaxyMesh.indices();
-	}
-
-	private static Mesh bakeStars() {
-		RandomSource random = RandomSource.create(0x51A4F1E1L);
-		int want = 1100;
-		try (ByteBufferBuilder bytes = ByteBufferBuilder.exactlySized(want * 4 * DefaultVertexFormat.POSITION_TEX_COLOR.getVertexSize())) {
-			BufferBuilder buf = new BufferBuilder(bytes, VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX_COLOR);
-			int made = 0;
-			int attempts = 0;
-			while (made < want && attempts < want * 8) {
-				attempts++;
-				float x = random.nextFloat() * 2f - 1f;
-				float y = random.nextFloat() * 2f - 1f;
-				float z = random.nextFloat() * 2f - 1f;
-				if (Mth.lengthSquared(x, y, z) < 0.08f || Mth.lengthSquared(x, y, z) > 1f) {
-					continue;
-				}
-				float size = 0.55f + random.nextFloat() * 2.1f;
-				if (random.nextFloat() < 0.08f) {
-					size *= 1.8f;
-				}
-				quad(buf, x, y, z, size, size, random.nextFloat() * Mth.TWO_PI, STAR_COLORS[random.nextInt(STAR_COLORS.length)]);
-				made++;
-			}
-			return upload(buf, "stray end sky stars");
-		}
-	}
-
-	private static Mesh bakeGalaxy() {
-		RandomSource random = RandomSource.create(0xC0FFEE11L);
-		int want = 220;
-		try (ByteBufferBuilder bytes = ByteBufferBuilder.exactlySized(want * 4 * DefaultVertexFormat.POSITION_TEX_COLOR.getVertexSize())) {
-			BufferBuilder buf = new BufferBuilder(bytes, VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX_COLOR);
-			for (int i = 0; i < want; i++) {
-				float t = i / (float) want;
-				float a = t * Mth.TWO_PI + random.nextFloat() * 0.18f;
-				float wobble = (random.nextFloat() - 0.5f) * 0.38f;
-				float x = Mth.cos(a);
-				float y = Mth.sin(a) * 0.28f + wobble;
-				float z = Mth.sin(a);
-				float wide = 9.5f + random.nextFloat() * 20f;
-				float tall = 2.8f + random.nextFloat() * 5.5f;
-				if (i % 11 == 0) {
-					wide *= 1.6f;
-					tall *= 1.35f;
-				}
-				quad(buf, x, y, z, wide, tall, a + 1.2f, GALAXY_COLORS[random.nextInt(GALAXY_COLORS.length)]);
-			}
-			return upload(buf, "stray end sky galaxy");
-		}
-	}
-
-	private static void quad(BufferBuilder buf, float x, float y, float z, float rx, float ry, float roll, int argb) {
-		Vector3f dir = new Vector3f(x, y, z).normalize(RADIUS);
-		Matrix3f basis = new Matrix3f()
-			.rotateTowards(new Vector3f(dir).negate(), new Vector3f(0f, 1f, 0f))
-			.rotateZ(-roll);
-		vert(buf, basis, dir, rx, -ry, 1f, 0f, argb);
-		vert(buf, basis, dir, rx, ry, 1f, 1f, argb);
-		vert(buf, basis, dir, -rx, ry, 0f, 1f, argb);
-		vert(buf, basis, dir, -rx, -ry, 0f, 0f, argb);
-	}
-
-	private static void vert(BufferBuilder buf, Matrix3f basis, Vector3f dir, float ox, float oy, float u, float v, int argb) {
-		Vector3f at = new Vector3f(ox, oy, 0f).mul(basis).add(dir);
-		buf.addVertex(at).setUv(u, v).setColor(argb);
-	}
-
-	private static Mesh upload(BufferBuilder buf, String label) {
-		try (MeshData mesh = buf.buildOrThrow()) {
-			int indices = mesh.drawState().indexCount();
-			GpuBuffer buffer = RenderSystem.getDevice().createBuffer(() -> label, GpuBuffer.USAGE_VERTEX, mesh.vertexBuffer());
-			return new Mesh(buffer, indices);
-		}
-	}
-
-	private static void draw(GpuBuffer buffer, int indices, PoseStack pose, float brightness) {
-		if (indices < 6) {
-			return;
-		}
-		Minecraft client = Minecraft.getInstance();
-		AbstractTexture texture = client.getTextureManager().getTexture(SPRITE);
-		if (texture == null || texture.getTextureView() == null) {
+		if (pipeline == null || cube == null || indices < 6) {
 			return;
 		}
 		RenderTarget target = client.getMainRenderTarget();
 		if (target == null || target.getColorTextureView() == null) {
 			return;
 		}
-		var indicesBuf = RenderSystem.getSequentialBuffer(VertexFormat.Mode.QUADS);
+		PoseStack pose = new PoseStack();
+		pose.mulPose(Axis.YP.rotation(time * 0.0009f));
+		pose.mulPose(Axis.XP.rotation(0.42f));
+		float pulse = 0.92f + 0.08f * (0.5f + 0.5f * Mth.sin(time * 0.03f));
+		var indexBuf = RenderSystem.getSequentialBuffer(VertexFormat.Mode.QUADS);
 		Matrix4fStack modelView = RenderSystem.getModelViewStack();
 		modelView.pushMatrix();
 		modelView.mul(pose.last().pose());
 		GpuBufferSlice transform = RenderSystem.getDynamicUniforms().writeTransform(
 			modelView,
-			new Vector4f(brightness, brightness, brightness, brightness),
+			new Vector4f(pulse, pulse, pulse, 1f),
 			new Vector3f(),
 			new Matrix4f()
 		);
 		try (RenderPass pass = RenderSystem.getDevice().createCommandEncoder().createRenderPass(
-			() -> "stray end sky decor",
+			() -> "stray end galaxy",
 			target.getColorTextureView(),
 			java.util.OptionalInt.empty(),
 			target.getDepthTextureView(),
 			java.util.OptionalDouble.empty()
 		)) {
-			pass.setPipeline(RenderPipelines.END_SKY);
+			pass.setPipeline(pipeline);
 			RenderSystem.bindDefaultUniforms(pass);
 			pass.setUniform("DynamicTransforms", transform);
-			pass.bindTexture("Sampler0", texture.getTextureView(), texture.getSampler());
-			pass.setVertexBuffer(0, buffer);
-			pass.setIndexBuffer(indicesBuf.getBuffer(indices), indicesBuf.type());
+			pass.setVertexBuffer(0, cube);
+			pass.setIndexBuffer(indexBuf.getBuffer(indices), indexBuf.type());
 			pass.drawIndexed(0, 0, indices, 1);
 		} finally {
 			modelView.popMatrix();
 		}
 	}
 
-	private record Mesh(GpuBuffer buffer, int indices) {
+	private static void ensure() {
+		ensurePipeline();
+		if (cube == null) {
+			cube = bakeCube();
+		}
+	}
+
+	private static synchronized void ensurePipeline() {
+		if (pipeline != null) {
+			return;
+		}
+		pipeline = RenderPipelines.register(
+			RenderPipeline.builder()
+				.withLocation(Stray.id("pipeline/end_galaxy"))
+				.withVertexShader(Stray.id("core/end_galaxy"))
+				.withFragmentShader(Stray.id("core/end_galaxy"))
+				.withUniform("DynamicTransforms", UniformType.UNIFORM_BUFFER)
+				.withUniform("Projection", UniformType.UNIFORM_BUFFER)
+				.withColorTargetState(new ColorTargetState(BlendFunction.ADDITIVE))
+				.withDepthStencilState(new DepthStencilState(CompareOp.ALWAYS_PASS, false))
+				.withCull(false)
+				.withVertexFormat(DefaultVertexFormat.POSITION, VertexFormat.Mode.QUADS)
+				.build()
+		);
+	}
+
+	private static GpuBuffer bakeCube() {
+		try (ByteBufferBuilder bytes = ByteBufferBuilder.exactlySized(24 * DefaultVertexFormat.POSITION.getVertexSize())) {
+			BufferBuilder buf = new BufferBuilder(bytes, VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION);
+			face(buf, 1f, 0f, 0f);
+			face(buf, -1f, 0f, 0f);
+			face(buf, 0f, 1f, 0f);
+			face(buf, 0f, -1f, 0f);
+			face(buf, 0f, 0f, 1f);
+			face(buf, 0f, 0f, -1f);
+			try (MeshData mesh = buf.buildOrThrow()) {
+				indices = mesh.drawState().indexCount();
+				return RenderSystem.getDevice().createBuffer(
+					() -> "stray end galaxy cube",
+					GpuBuffer.USAGE_VERTEX,
+					mesh.vertexBuffer()
+				);
+			}
+		}
+	}
+
+	private static void face(BufferBuilder buf, float nx, float ny, float nz) {
+		Vector3f n = new Vector3f(nx, ny, nz);
+		Vector3f t = Math.abs(ny) > 0.5f ? new Vector3f(1f, 0f, 0f) : new Vector3f(0f, 1f, 0f);
+		Vector3f b = new Vector3f(n).cross(t).normalize();
+		t = new Vector3f(b).cross(n).normalize();
+		vert(buf, n, t, b, -1f, -1f);
+		vert(buf, n, t, b, -1f, 1f);
+		vert(buf, n, t, b, 1f, 1f);
+		vert(buf, n, t, b, 1f, -1f);
+	}
+
+	private static void vert(BufferBuilder buf, Vector3f n, Vector3f t, Vector3f b, float u, float v) {
+		buf.addVertex(
+			(n.x + t.x * u + b.x * v) * RADIUS,
+			(n.y + t.y * u + b.y * v) * RADIUS,
+			(n.z + t.z * u + b.z * v) * RADIUS
+		);
 	}
 }
