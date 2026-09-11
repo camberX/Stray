@@ -13,6 +13,7 @@ import dev.stray.client.combat.OdinClicks;
 import dev.stray.client.combat.Triggerbot;
 import dev.stray.client.debug.StrayDebug;
 import dev.stray.client.farming.AutoDna;
+import dev.stray.client.farming.PestEsp;
 import dev.stray.client.farming.GardenPlots;
 import dev.stray.client.farming.FarmKeys;
 import dev.stray.client.fairy.FairySoulCommands;
@@ -43,6 +44,7 @@ import dev.stray.client.mining.CrystalHollowsMap;
 import dev.stray.client.mining.MetalDetector;
 import dev.stray.client.mining.MiningTracker;
 import dev.stray.client.mining.TitaniumTracker;
+import dev.stray.client.render.PestEspRenderer;
 import dev.stray.client.render.ChestEspRenderer;
 import dev.stray.client.render.ComposterHudRenderer;
 import dev.stray.client.render.InventoryHudRenderer;
@@ -150,6 +152,7 @@ public final class StrayClient implements ClientModInitializer {
 		BlockOutlineGlow.init();
 		MiningWorldRenderer.init();
 		ChestEspRenderer.init();
+		PestEspRenderer.init();
 		FairySoulRenderer.init();
 		FairySoulTracker.init();
 		CrystalHollowsRenderer.init();
@@ -269,6 +272,7 @@ public final class StrayClient implements ClientModInitializer {
 			MiningTracker.tick(client);
 			TitaniumTracker.get().tick(client);
 			ChestEsp.get().tick(client);
+			PestEsp.tick(client);
 			FairySoulTracker.tick(client);
 			CrystalHollows.tick(client);
 			CrystalHollowsMap.tick(client);
@@ -283,6 +287,7 @@ public final class StrayClient implements ClientModInitializer {
 			StarMobEsp.reset();
 			ChestAimer.stop();
 			ChestEsp.get().clear();
+			PestEsp.reset();
 			CrystalHollows.onWorldChange();
 			MetalDetector.onWorldChange();
 		});
@@ -298,6 +303,7 @@ public final class StrayClient implements ClientModInitializer {
 			AutoClicker.reset();
 			AutoExperiments.reset();
 			AutoDna.reset();
+			PestEsp.reset();
 			PickupLogRenderer.clear();
 			JacobContestTracker.reset();
 			ComposterTracker.reset();
@@ -313,6 +319,7 @@ public final class StrayClient implements ClientModInitializer {
 			AutoClicker.reset();
 			AutoExperiments.reset();
 			AutoDna.reset();
+			PestEsp.reset();
 			PickupLogRenderer.clear();
 			JacobContestTracker.reset();
 			ComposterTracker.reset();
@@ -321,6 +328,7 @@ public final class StrayClient implements ClientModInitializer {
 			MiningTracker.reset();
 			TitaniumTracker.get().clear();
 			ChestEsp.get().clear();
+			PestEsp.reset();
 			ChestAimer.stop();
 			MobGlowRenderer.reset();
 			StarMobEsp.reset();
