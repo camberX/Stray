@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.232", new String[]{
+			"Storage preview: open an Ender Chest page or backpack once, then hover it in /storage and hold Shift to see the last contents. Uses Stray HUD chrome instead of the vanilla chest texture. Optional Preview needs Shift toggle."
+		}),
 		new Entry("1.2.231", new String[]{
 			"Auto Superpairs has a Skip Guardian pet toggle. Guardian pets rank just under Titanic bottles when not skipped."
 		}),

@@ -137,6 +137,8 @@ public final class StrayConfig {
 	public boolean loadoutsOpenAnim = false;
 	public boolean wardrobeMenuEnabled = false;
 	public boolean profileViewerEnabled = false;
+	public boolean storagePreviewEnabled = false;
+	public boolean storagePreviewNeedShift = true;
 	public boolean hitsoundEnabled = false;
 	public boolean hitsoundMelee = false;
 	public boolean hitsoundArrows = false;
@@ -757,6 +759,12 @@ public final class StrayConfig {
 				loaded.chestAimKey = blankKey(loaded.chestAimKey, "key.keyboard.unknown");
 				if (!json.has("profileViewerEnabled")) {
 					loaded.profileViewerEnabled = false;
+				}
+				if (!json.has("storagePreviewEnabled")) {
+					loaded.storagePreviewEnabled = false;
+				}
+				if (!json.has("storagePreviewNeedShift")) {
+					loaded.storagePreviewNeedShift = true;
 				}
 				if (loaded.autoClickerLeftWhitelist == null) {
 					loaded.autoClickerLeftWhitelist = new java.util.ArrayList<>();
