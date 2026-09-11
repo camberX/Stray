@@ -9,6 +9,7 @@ import dev.stray.client.render.NametagRenderer;
 import dev.stray.client.ui.Anim;
 import dev.stray.client.ui.MenuFont;
 import dev.stray.client.ui.Theme;
+import net.minecraft.ChatFormatting;
 import net.minecraft.client.Camera;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
@@ -19,30 +20,49 @@ import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.gizmos.GizmoProperties;
 import net.minecraft.gizmos.GizmoStyle;
 import net.minecraft.gizmos.Gizmos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.sounds.SoundEvents;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.decoration.ArmorStand;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Vector3fc;
 
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * Mines of Divan metal-detector solver from SkyHanni: quartz-stair + barrier
- * origin, chest offsets from SkyHanni-REPO MetalDetectorChests.json, match the
- * action-bar TREASURE distance while standing still.
+ * Mines of Divan metal-detector solver from NotEnoughUpdates: stand still for
+ * two identical TREASURE readings, brute-force blocks at y 65–75, then narrow
+ * with later readings and the known chest offsets once a Keeper gives the
+ * mines center.
  */
 public final class MetalDetector {
+	private enum SolutionState {
+		NOT_STARTED,
+		MULTIPLE,
+		MULTIPLE_KNOWN,
+		FOUND,
+		FOUND_KNOWN,
+		FAILED,
+		INVALID
+	}
+
 	private static final Pattern TREASURE = Pattern.compile("TREASURE:\\s*([\\d.,]+)\\s*m", Pattern.CASE_INSENSITIVE);
 	private static final Pattern FOUND = Pattern.compile("You found .*with your .*Metal Detector", Pattern.CASE_INSENSITIVE);
 	private static final Pattern TOOL = Pattern.compile("Scavenged ([A-Za-z ]+?)(?:\\s+with your|$)");
@@ -53,54 +73,73 @@ public final class MetalDetector {
 		"DWARVEN_EMERALD_HAMMER",
 		"DWARVEN_GOLD_HAMMER"
 	};
-	private static final BlockPos[] OFFSETS = offsets(
-		"-7:38:-2",
-		"-15:38:31",
-		"-17:38:19",
-		"47:37:33",
-		"36:38:45",
-		"48:39:45",
-		"45:39:-13",
-		"-38:38:21",
-		"42:38:27",
-		"29:39:-7",
-		"22:38:-15",
-		"-7:39:-26",
-		"-2:38:-6",
-		"43:39:-21",
-		"10:38:-11",
-		"17:38:49",
-		"19:38:-17",
-		"-35:39:35",
-		"25:39:5",
-		"-37:36:46",
-		"-24:38:49",
-		"-7:38:48",
-		"-14:39:-24",
-		"-18:39:44",
-		"-1:38:-23",
-		"41:37:-37",
-		"19:38:-38",
-		"-7:39:27",
-		"42:38:19",
-		"-33:39:31",
-		"6:39:25",
-		"-2:38:-17",
-		"-15:39:5",
-		"-20:39:-12",
-		"-25:38:30",
-		"28:39:-35",
-		"-19:39:-22",
-		"4:38:-15",
-		"36:38:17"
+	private static final String KEEPER_OF = "keeper of ";
+	private static final Map<String, BlockPos> KEEPER_OFFSETS = Map.of(
+		"diamond", new BlockPos(33, 0, 3),
+		"lapis", new BlockPos(-33, 0, -3),
+		"emerald", new BlockPos(-3, 0, 33),
+		"gold", new BlockPos(3, 0, -33)
+	);
+	private static final Set<BlockPos> KNOWN_CHESTS = Set.of(
+		new BlockPos(-38, -22, 26),
+		new BlockPos(38, -22, -26),
+		new BlockPos(-40, -22, 18),
+		new BlockPos(-41, -20, 22),
+		new BlockPos(-5, -21, 16),
+		new BlockPos(40, -22, -30),
+		new BlockPos(-42, -20, -28),
+		new BlockPos(-43, -22, -40),
+		new BlockPos(42, -19, -41),
+		new BlockPos(43, -21, -16),
+		new BlockPos(-1, -22, -20),
+		new BlockPos(6, -21, 28),
+		new BlockPos(7, -21, 11),
+		new BlockPos(7, -21, 22),
+		new BlockPos(-12, -21, -44),
+		new BlockPos(12, -22, 31),
+		new BlockPos(12, -22, -22),
+		new BlockPos(12, -21, 7),
+		new BlockPos(12, -21, -43),
+		new BlockPos(-14, -21, 43),
+		new BlockPos(-14, -21, 22),
+		new BlockPos(-17, -21, 20),
+		new BlockPos(-20, -22, 0),
+		new BlockPos(1, -21, 20),
+		new BlockPos(19, -22, 29),
+		new BlockPos(20, -22, 0),
+		new BlockPos(20, -21, -26),
+		new BlockPos(-23, -22, 40),
+		new BlockPos(22, -21, -14),
+		new BlockPos(-24, -22, 12),
+		new BlockPos(23, -22, 26),
+		new BlockPos(23, -22, -39),
+		new BlockPos(24, -22, 27),
+		new BlockPos(25, -22, 17),
+		new BlockPos(29, -21, -44),
+		new BlockPos(-31, -21, -12),
+		new BlockPos(-31, -21, -40),
+		new BlockPos(30, -21, -25),
+		new BlockPos(-32, -21, -40),
+		new BlockPos(-36, -20, 42),
+		new BlockPos(-37, -21, -14),
+		new BlockPos(-37, -21, -22)
 	);
 	private static final float TAG_H = 14f;
 	private static final float PAD_X = 8f;
+
 	private static final List<BlockPos> PREDICTIONS = new ArrayList<>();
-	private static BlockPos origin;
-	private static BlockPos ignore;
-	private static Vec3 lastFeet;
-	private static long nextOriginScan;
+	private static final Set<BlockPos> POSSIBLE = new HashSet<>();
+	private static final Map<Vec3, Double> EVALUATED = new HashMap<>();
+	private static final Set<BlockPos> OPENED = new HashSet<>();
+
+	private static Vec3 prevPlayerPos;
+	private static double prevDist;
+	private static BlockPos minesCenter;
+	private static SolutionState state = SolutionState.NOT_STARTED;
+	private static SolutionState previousState = SolutionState.NOT_STARTED;
+	private static boolean chestRecentlyFound;
+	private static long chestLastFoundMillis;
+	private static boolean visitKeeperPrinted;
 	private static boolean plinged;
 	private static boolean allToolsBeeped;
 	private static boolean inDivan;
@@ -128,11 +167,8 @@ public final class MetalDetector {
 			return;
 		}
 		if (config.metalDetectorSolver) {
+			locateMinesCenter(client, false);
 			pollActionBar(client);
-			trimPredictions(client.player.position());
-			if (origin == null) {
-				findOrigin(client.level, client.player.blockPosition(), 1000L);
-			}
 		}
 		if (config.metalDetectorToolTitle && holdingDetector(client.player) && hasAllTools(client.player)) {
 			if (client.player.tickCount % 20 == 0) {
@@ -174,7 +210,7 @@ public final class MetalDetector {
 		if (!FOUND.matcher(text).find()) {
 			return;
 		}
-		PREDICTIONS.clear();
+		resetSolution(true);
 		plinged = false;
 		if (config.metalDetectorToolTitle && !config.nucleusAlertTools) {
 			Matcher tool = TOOL.matcher(text);
@@ -191,15 +227,20 @@ public final class MetalDetector {
 	}
 
 	public static void reset() {
+		resetSolution(false);
 		PREDICTIONS.clear();
-		origin = null;
-		ignore = null;
-		lastFeet = null;
-		nextOriginScan = 0L;
+		OPENED.clear();
+		minesCenter = null;
+		prevPlayerPos = null;
+		prevDist = 0;
+		chestLastFoundMillis = 0;
+		visitKeeperPrinted = false;
 		plinged = false;
 		allToolsBeeped = false;
 		inDivan = false;
 		lastTreasureMs = 0L;
+		state = SolutionState.NOT_STARTED;
+		previousState = SolutionState.NOT_STARTED;
 	}
 
 	public static boolean active() {
@@ -225,6 +266,7 @@ public final class MetalDetector {
 		Vec3 camPos = camera.position();
 		Vector3fc forward = camera.forwardVector();
 		Font font = client.font;
+		boolean unique = PREDICTIONS.size() == 1;
 		for (BlockPos pos : PREDICTIONS) {
 			Vec3 head = Vec3.atCenterOf(pos).add(0, 1.2, 0);
 			Vec3 rel = head.subtract(camPos);
@@ -240,13 +282,13 @@ public final class MetalDetector {
 			float y = (float) ((-ndc.y * 0.5 + 0.5) * graphics.guiHeight());
 			double dist = head.distanceTo(camPos);
 			float scale = NametagRenderer.distanceScale(dist);
-			Component name = MenuFont.vanilla("Treasure");
+			Component name = MenuFont.vanilla(unique ? "Treasure" : "Possible");
 			Component meters = MenuFont.vanilla(GuiDraw.meters(dist));
 			float nameW = font.width(name);
 			float distW = font.width(meters);
 			float inner = nameW + 5f + distW;
 			float w = inner + PAD_X * 2f;
-			int rgb = PREDICTIONS.size() == 1 ? 0x55FF55 : 0xFFAA00;
+			int rgb = unique ? 0x55FF55 : 0xFFAA00;
 			graphics.pose().pushMatrix();
 			graphics.pose().translate(x, y);
 			if (scale != 1.0f) {
@@ -294,13 +336,9 @@ public final class MetalDetector {
 			return;
 		}
 		lastTreasureMs = System.currentTimeMillis();
-		if (PREDICTIONS.size() == 1) {
-			return;
-		}
 		Minecraft client = Minecraft.getInstance();
 		LocalPlayer player = client.player;
-		ClientLevel level = client.level;
-		if (player == null || level == null) {
+		if (player == null || client.level == null) {
 			return;
 		}
 		double distance;
@@ -309,33 +347,261 @@ public final class MetalDetector {
 		} catch (NumberFormatException ignored) {
 			return;
 		}
-		Vec3 feet = player.position();
-		if (lastFeet == null || lastFeet.distanceToSqr(feet) > 1.0E-4) {
-			lastFeet = feet;
-			plinged = false;
+		if (chestRecentlyFound) {
+			long now = System.currentTimeMillis();
+			if (chestLastFoundMillis == 0L) {
+				chestLastFoundMillis = now;
+				return;
+			}
+			if (now - chestLastFoundMillis < 1000L && distance < 5.0) {
+				return;
+			}
+			chestLastFoundMillis = 0L;
+			chestRecentlyFound = false;
 		}
-		if (origin == null) {
-			findOrigin(level, player.blockPosition(), 1000L);
+		boolean centerNew = locateMinesCenter(client, true);
+		SolutionState before = state;
+		int beforeCount = POSSIBLE.size();
+		findPossibleSolutions(distance, adjustedFeet(player), centerNew);
+		if (state != before || POSSIBLE.size() != beforeCount) {
+			announce(client);
+			syncPredictions();
 		}
-		if (origin == null) {
+	}
+
+	private static void findPossibleSolutions(double distToTreasure, Vec3 playerPos, boolean centerNewlyDiscovered) {
+		if (prevPlayerPos != null
+			&& prevDist == distToTreasure
+			&& prevPlayerPos.equals(playerPos)
+			&& !EVALUATED.containsKey(playerPos)) {
+			EVALUATED.put(playerPos, distToTreasure);
+			if (POSSIBLE.isEmpty()) {
+				int minZ = (int) Math.floor(-distToTreasure);
+				int maxZ = (int) Math.ceil(distToTreasure);
+				int maxX = maxZ + 4;
+				int originX = (int) Math.floor(playerPos.x);
+				int originZ = (int) Math.floor(playerPos.z);
+				for (int zOffset = minZ; zOffset <= maxZ; zOffset++) {
+					for (int y = 65; y <= 75; y++) {
+						scanAxis(playerPos, distToTreasure, originX, y, originZ + zOffset, 1, maxX);
+						scanAxis(playerPos, distToTreasure, originX, y, originZ + zOffset, -1, maxX);
+					}
+				}
+				updateSolutionState();
+			} else if (POSSIBLE.size() != 1) {
+				Set<BlockPos> kept = new HashSet<>();
+				for (BlockPos pos : POSSIBLE) {
+					if (round1(playerPos.distanceTo(Vec3.atLowerCornerOf(pos).add(0, 1, 0))) == distToTreasure) {
+						kept.add(pos);
+					}
+				}
+				POSSIBLE.clear();
+				POSSIBLE.addAll(kept);
+				updateSolutionState();
+			} else {
+				BlockPos pos = POSSIBLE.iterator().next();
+				if (Math.abs(distToTreasure - playerPos.distanceTo(Vec3.atLowerCornerOf(pos))) > 5) {
+					state = SolutionState.INVALID;
+				}
+			}
+		} else if (centerNewlyDiscovered && POSSIBLE.size() > 1) {
+			updateSolutionState();
+		}
+		prevPlayerPos = playerPos;
+		prevDist = distToTreasure;
+	}
+
+	private static void scanAxis(Vec3 playerPos, double distToTreasure, int originX, int y, int z, int step, int maxOffset) {
+		double calculated = 0;
+		int offset = 0;
+		while (calculated < distToTreasure && offset <= maxOffset) {
+			BlockPos pos = new BlockPos(originX + offset * step, y, z);
+			calculated = playerPos.distanceTo(Vec3.atLowerCornerOf(pos).add(0, 1, 0));
+			if (round1(calculated) == distToTreasure && treasureAllowed(pos)) {
+				POSSIBLE.add(pos);
+			}
+			offset++;
+		}
+	}
+
+	private static void updateSolutionState() {
+		previousState = state;
+		if (POSSIBLE.isEmpty()) {
+			state = SolutionState.FAILED;
 			return;
 		}
+		if (POSSIBLE.size() == 1) {
+			state = SolutionState.FOUND;
+			return;
+		}
+		if (minesCenter == null) {
+			state = SolutionState.MULTIPLE;
+			return;
+		}
+		Set<BlockPos> known = new HashSet<>();
+		for (BlockPos pos : POSSIBLE) {
+			if (KNOWN_CHESTS.contains(pos.subtract(minesCenter))) {
+				known.add(pos);
+			}
+		}
+		if (known.isEmpty()) {
+			state = SolutionState.MULTIPLE;
+			return;
+		}
+		POSSIBLE.clear();
+		POSSIBLE.addAll(known);
+		state = known.size() == 1 ? SolutionState.FOUND_KNOWN : SolutionState.MULTIPLE_KNOWN;
+	}
+
+	private static void announce(Minecraft client) {
+		switch (state) {
+			case FOUND, FOUND_KNOWN -> {
+				if (!plinged) {
+					client.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.NOTE_BLOCK_PLING.value(), 1.0f, 1.0f));
+					plinged = true;
+				}
+				chat("Found treasure.", ChatFormatting.GREEN);
+			}
+			case MULTIPLE, MULTIPLE_KNOWN -> chat(
+				"Need another reading. " + POSSIBLE.size() + " possible.",
+				ChatFormatting.YELLOW
+			);
+			case INVALID -> {
+				chat("Previous solution is invalid.", ChatFormatting.RED);
+				resetSolution(false);
+			}
+			case FAILED -> {
+				chat("No treasure match. Stand still and take another reading.", ChatFormatting.RED);
+				resetSolution(false);
+			}
+			default -> {
+			}
+		}
+	}
+
+	private static void resetSolution(boolean chestFound) {
+		if (chestFound) {
+			prevPlayerPos = null;
+			prevDist = 0;
+			if (POSSIBLE.size() == 1) {
+				OPENED.add(POSSIBLE.iterator().next().immutable());
+			}
+		}
+		chestRecentlyFound = chestFound;
+		POSSIBLE.clear();
+		EVALUATED.clear();
 		PREDICTIONS.clear();
-		for (BlockPos offset : OFFSETS) {
-			BlockPos loc = origin.offset(-offset.getX(), -offset.getY(), -offset.getZ());
-			if (ignore != null && ignore.equals(loc)) {
-				ignore = null;
+		previousState = state;
+		state = SolutionState.NOT_STARTED;
+		plinged = false;
+	}
+
+	private static void syncPredictions() {
+		PREDICTIONS.clear();
+		PREDICTIONS.addAll(POSSIBLE);
+	}
+
+	private static boolean locateMinesCenter(Minecraft client, boolean announceMissing) {
+		if (minesCenter != null) {
+			return false;
+		}
+		if (client.level == null || client.player == null) {
+			return false;
+		}
+		ArmorStand keeper = findKeeper(client.level, client.player);
+		if (keeper == null) {
+			if (announceMissing && !visitKeeperPrinted) {
+				chat("Walk up to a Keeper to lock the mines center.", ChatFormatting.YELLOW);
+				visitKeeperPrinted = true;
+			}
+			return false;
+		}
+		String type = keeperType(keeper);
+		BlockPos offset = type == null ? null : KEEPER_OFFSETS.get(type);
+		if (offset == null) {
+			return false;
+		}
+		minesCenter = keeper.blockPosition().offset(offset);
+		chat("Keeper locked. Using known chest spots.", ChatFormatting.GREEN);
+		return true;
+	}
+
+	private static ArmorStand findKeeper(ClientLevel level, LocalPlayer player) {
+		ArmorStand best = null;
+		double bestSq = Double.MAX_VALUE;
+		for (Entity entity : level.entitiesForRendering()) {
+			if (!(entity instanceof ArmorStand stand)) {
 				continue;
 			}
-			double measured = Vec3.atLowerCornerOf(loc).add(0, 1, 0).distanceTo(feet);
-			if (Math.abs(round1(measured) - round1(distance)) < 0.05) {
-				PREDICTIONS.add(loc);
+			if (keeperType(stand) == null) {
+				continue;
+			}
+			double sq = stand.distanceToSqr(player);
+			if (sq < bestSq) {
+				bestSq = sq;
+				best = stand;
 			}
 		}
-		if (!PREDICTIONS.isEmpty() && !plinged) {
-			client.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.NOTE_BLOCK_PLING.value(), 1.0f, 1.0f));
-			plinged = true;
+		return best;
+	}
+
+	private static String keeperType(ArmorStand stand) {
+		String name = plain(stand.getCustomName());
+		if (name.isEmpty()) {
+			name = plain(stand.getDisplayName());
 		}
+		String lower = name.toLowerCase(Locale.ROOT);
+		int index = lower.indexOf(KEEPER_OF);
+		if (index < 0) {
+			return null;
+		}
+		String rest = lower.substring(index + KEEPER_OF.length()).trim();
+		for (String key : KEEPER_OFFSETS.keySet()) {
+			if (rest.contains(key)) {
+				return key;
+			}
+		}
+		return null;
+	}
+
+	private static boolean treasureAllowed(BlockPos pos) {
+		return isKnownOffset(pos) || (isAirAbove(pos) && allowedBlock(pos));
+	}
+
+	private static boolean isKnownOffset(BlockPos pos) {
+		return minesCenter != null && KNOWN_CHESTS.contains(pos.subtract(minesCenter));
+	}
+
+	private static boolean isAirAbove(BlockPos pos) {
+		Minecraft client = Minecraft.getInstance();
+		return client.level != null && client.level.getBlockState(pos.above()).isAir();
+	}
+
+	private static boolean allowedBlock(BlockPos pos) {
+		Minecraft client = Minecraft.getInstance();
+		if (client.level == null) {
+			return false;
+		}
+		BlockState state = client.level.getBlockState(pos);
+		if (state.is(Blocks.GOLD_BLOCK)
+			|| state.is(Blocks.CHEST)
+			|| state.is(Blocks.TRAPPED_CHEST)
+			|| state.is(Blocks.PRISMARINE)
+			|| state.is(Blocks.PRISMARINE_BRICKS)
+			|| state.is(Blocks.DARK_PRISMARINE)) {
+			return true;
+		}
+		String path = BuiltInRegistries.BLOCK.getKey(state.getBlock()).getPath();
+		return path.contains("stained_glass")
+			|| path.endsWith("_wool")
+			|| path.equals("wool")
+			|| path.endsWith("_terracotta")
+			|| path.equals("terracotta");
+	}
+
+	private static Vec3 adjustedFeet(LocalPlayer player) {
+		float extra = player.getEyeHeight() - player.getEyeHeight(net.minecraft.world.entity.Pose.STANDING);
+		return player.position().add(0, extra, 0);
 	}
 
 	private static boolean inDivanNow(Minecraft client) {
@@ -356,68 +622,6 @@ public final class MetalDetector {
 			return "";
 		}
 		return message.getString().replaceAll("§.", "").replace('\u00a7', ' ').trim();
-	}
-
-	private static void trimPredictions(Vec3 feet) {
-		if (PREDICTIONS.size() == 1) {
-			BlockPos only = PREDICTIONS.getFirst();
-			if (only.distToCenterSqr(feet) <= 25.0) {
-				ignore = only;
-				PREDICTIONS.clear();
-			}
-			return;
-		}
-		if (PREDICTIONS.isEmpty() && ignore != null && ignore.distToCenterSqr(feet) > 100.0) {
-			ignore = null;
-		}
-	}
-
-	private static void findOrigin(ClientLevel level, BlockPos around, long cooldownMs) {
-		long now = System.currentTimeMillis();
-		if (now < nextOriginScan) {
-			return;
-		}
-		nextOriginScan = now + Math.max(250L, cooldownMs);
-		for (int x = -50; x < 50; x++) {
-			for (int y = 30; y >= -30; y--) {
-				for (int z = -50; z < 50; z++) {
-					BlockPos stairs = around.offset(x, y, z);
-					if (!level.getBlockState(stairs).is(Blocks.QUARTZ_STAIRS)) {
-						continue;
-					}
-					BlockPos barrier = stairs.above(13);
-					if (!level.getBlockState(barrier).is(Blocks.BARRIER)) {
-						continue;
-					}
-					origin = walkBarrier(level, barrier);
-					return;
-				}
-			}
-		}
-	}
-
-	private static BlockPos walkBarrier(ClientLevel level, BlockPos start) {
-		BlockPos current = start;
-		boolean changed = true;
-		while (changed) {
-			changed = false;
-			BlockPos east = current.offset(1, 0, 0);
-			if (level.getBlockState(east).is(Blocks.BARRIER)) {
-				current = east;
-				changed = true;
-			}
-			BlockPos up = current.offset(0, 1, 0);
-			if (level.getBlockState(up).is(Blocks.BARRIER)) {
-				current = up;
-				changed = true;
-			}
-			BlockPos south = current.offset(0, 0, 1);
-			if (level.getBlockState(south).is(Blocks.BARRIER)) {
-				current = south;
-				changed = true;
-			}
-		}
-		return current;
 	}
 
 	private static void showTitle(Minecraft client, String title, String subtitle) {
@@ -466,12 +670,14 @@ public final class MetalDetector {
 		return Math.round(value * 10.0) / 10.0;
 	}
 
-	private static BlockPos[] offsets(String... raw) {
-		BlockPos[] out = new BlockPos[raw.length];
-		for (int i = 0; i < raw.length; i++) {
-			String[] parts = raw[i].split(":");
-			out[i] = new BlockPos(Integer.parseInt(parts[0]), Integer.parseInt(parts[1]), Integer.parseInt(parts[2]));
+	private static void chat(String text, ChatFormatting color) {
+		Minecraft client = Minecraft.getInstance();
+		if (client.gui == null) {
+			return;
 		}
-		return out;
+		client.gui.getChat().addClientSystemMessage(
+			Component.literal("Stray detector ").withStyle(ChatFormatting.AQUA)
+				.append(Component.literal(text).withStyle(color))
+		);
 	}
 }

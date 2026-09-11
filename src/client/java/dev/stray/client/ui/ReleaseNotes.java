@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.237", new String[]{
+			"Metal detector uses the NotEnoughUpdates solver now: stand still for two matching TREASURE readings, search y 65-75, then narrow with later spots and the known chest list once you walk up to a Keeper. The old quartz-stair offset list was guessing the wrong blocks."
+		}),
 		new Entry("1.2.236", new String[]{
 			"Paths: record where you walk and draw it as a line in the world. Recordings save per island (Crystal Hollows routes never show in the Hub), each one can be shown or hidden, and there is a Record key. /stray path start|stop|list|rename|delete|toggle|showall|hideall.",
 			"Nucleus alerts: a title and ping when an Automaton part or a Divan scavenged tool lands in your inventory, and a level-up chime when you hold all six parts or all four tools.",
