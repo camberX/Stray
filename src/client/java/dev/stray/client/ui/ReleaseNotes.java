@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.231", new String[]{
+			"Auto Superpairs has a Skip Guardian pet toggle. Guardian pets rank just under Titanic bottles when not skipped."
+		}),
 		new Entry("1.2.230", new String[]{
 			"Auto Superpairs has Skip books, Skip Titanic, Skip XP dyes, and Skip bottles toggles. Skipped rewards are never paired, so no clicks go to them, and exploring prefers cards you still want."
 		}),

@@ -134,7 +134,7 @@ public class StrayScreen extends Screen {
 		HELD_ITEM("Held item", 7),
 		FILL("Player shader", 10),
 		AUTO_CLICKER("Auto clicker", 8),
-		AUTO_EXPERIMENTS("Auto experiments", 10),
+		AUTO_EXPERIMENTS("Auto experiments", 11),
 		MOB("Mob glow", 3),
 		STAR("Star mobs", 6),
 		BLOCK("Block outline", 1),
@@ -213,6 +213,8 @@ public class StrayScreen extends Screen {
 		new SearchEntry("Skip Titanic", Tab.MENUS, "Misc"),
 		new SearchEntry("Skip XP dyes", Tab.MENUS, "Misc"),
 		new SearchEntry("Skip bottles", Tab.MENUS, "Misc"),
+		new SearchEntry("Skip Guardian pet", Tab.MENUS, "Misc"),
+		new SearchEntry("Guardian pet", Tab.MENUS, "Misc"),
 		new SearchEntry("Chronomatron", Tab.MENUS, "Misc"),
 		new SearchEntry("Ultrasequencer", Tab.MENUS, "Misc"),
 		new SearchEntry("Click delay", Tab.MENUS, "Misc"),
@@ -2943,7 +2945,8 @@ public class StrayScreen extends Screen {
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Skip books", config.superpairsSkipBooks, v -> config.superpairsSkipBooks = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Skip Titanic", config.superpairsSkipTitanic, v -> config.superpairsSkipTitanic = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Skip XP dyes", config.superpairsSkipXp, v -> config.superpairsSkipXp = v);
-				toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Skip bottles", config.superpairsSkipBottles, v -> config.superpairsSkipBottles = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Skip bottles", config.superpairsSkipBottles, v -> config.superpairsSkipBottles = v);
+				toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Skip Guardian pet", config.superpairsSkipPets, v -> config.superpairsSkipPets = v);
 			}
 			case MOB -> {
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Through walls", config.mobGlowThroughWalls, v -> config.mobGlowThroughWalls = v);
@@ -3499,7 +3502,7 @@ public class StrayScreen extends Screen {
 		return FabricLoader.getInstance()
 			.getModContainer("stray")
 			.map(container -> container.getMetadata().getVersion().getFriendlyString())
-			.orElse("1.2.230");
+			.orElse("1.2.231");
 	}
 
 	@Override

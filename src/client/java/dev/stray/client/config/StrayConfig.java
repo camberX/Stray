@@ -169,6 +169,7 @@ public final class StrayConfig {
 	public boolean superpairsSkipTitanic = false;
 	public boolean superpairsSkipXp = false;
 	public boolean superpairsSkipBottles = false;
+	public boolean superpairsSkipPets = false;
 	public boolean disabledPotionsHighlight = false;
 	public float hitmarkerScale = 1.00f;
 	public float hitsoundVolume = 0.80f;
@@ -727,6 +728,9 @@ public final class StrayConfig {
 					loaded.superpairsSkipTitanic = false;
 					loaded.superpairsSkipXp = false;
 					loaded.superpairsSkipBottles = false;
+				}
+				if (!json.has("superpairsSkipPets")) {
+					loaded.superpairsSkipPets = false;
 				}
 				if (!json.has("disabledPotionsHighlight")) {
 					loaded.disabledPotionsHighlight = false;

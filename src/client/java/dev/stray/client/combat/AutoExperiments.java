@@ -262,6 +262,7 @@ public final class AutoExperiments {
 		private static final long PERMANENT_MS = 1400;
 		private static final Pattern XP = Pattern.compile("([\\d,.]+)\\s*([kKmMbB])?\\s+Enchanting Exp", Pattern.CASE_INSENSITIVE);
 		private static final Pattern ROMAN = Pattern.compile("\\b(X|IX|VIII|VII|VI|V|IV|III|II|I)$");
+		private static final Pattern PET = Pattern.compile("\\[lvl \\d+]\\s*guardian|\\bguardian\\b");
 
 		private final java.util.Map<Integer, String> memory = new java.util.HashMap<>();
 		private final java.util.Map<Integer, Long> revealedSince = new java.util.HashMap<>();
@@ -409,12 +410,13 @@ public final class AutoExperiments {
 				case TITANIC -> config.superpairsSkipTitanic;
 				case XP -> config.superpairsSkipXp;
 				case BOTTLE -> config.superpairsSkipBottles;
+				case PET -> config.superpairsSkipPets;
 				default -> false;
 			};
 		}
 
 		private enum Category {
-			BOOK, TITANIC, XP, BOTTLE, POWERUP, OTHER
+			BOOK, TITANIC, PET, XP, BOTTLE, POWERUP, OTHER
 		}
 
 		private static Category category(String key) {
@@ -429,6 +431,9 @@ public final class AutoExperiments {
 			}
 			if (lower.contains("titanic")) {
 				return Category.TITANIC;
+			}
+			if (PET.matcher(lower).find()) {
+				return Category.PET;
 			}
 			if (XP.matcher(lower).find()) {
 				return Category.XP;
@@ -462,6 +467,9 @@ public final class AutoExperiments {
 			}
 			if (lower.contains("titanic")) {
 				return 3_000_000_000L;
+			}
+			if (PET.matcher(lower).find()) {
+				return 2_500_000_000L;
 			}
 			java.util.regex.Matcher xp = XP.matcher(name);
 			if (xp.find()) {
