@@ -134,7 +134,7 @@ public class StrayScreen extends Screen {
 		HELD_ITEM("Held item", 7),
 		FILL("Player shader", 10),
 		AUTO_CLICKER("Auto clicker", 8),
-		AUTO_EXPERIMENTS("Auto experiments", 6),
+		AUTO_EXPERIMENTS("Auto experiments", 10),
 		MOB("Mob glow", 3),
 		STAR("Star mobs", 6),
 		BLOCK("Block outline", 1),
@@ -209,6 +209,10 @@ public class StrayScreen extends Screen {
 		new SearchEntry("Auto experiments", Tab.MENUS, "Misc"),
 		new SearchEntry("Superpairs", Tab.MENUS, "Misc"),
 		new SearchEntry("Auto superpairs", Tab.MENUS, "Misc"),
+		new SearchEntry("Skip books", Tab.MENUS, "Misc"),
+		new SearchEntry("Skip Titanic", Tab.MENUS, "Misc"),
+		new SearchEntry("Skip XP dyes", Tab.MENUS, "Misc"),
+		new SearchEntry("Skip bottles", Tab.MENUS, "Misc"),
 		new SearchEntry("Chronomatron", Tab.MENUS, "Misc"),
 		new SearchEntry("Ultrasequencer", Tab.MENUS, "Misc"),
 		new SearchEntry("Click delay", Tab.MENUS, "Misc"),
@@ -2935,7 +2939,11 @@ public class StrayScreen extends Screen {
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Auto close", config.autoExperimentsAutoClose, v -> config.autoExperimentsAutoClose = v);
 				y = slider(graphics, font, ix, y, iw, "Serum count", String.valueOf(config.autoExperimentsSerumCount), config.autoExperimentsSerumCount / 3f, v -> config.autoExperimentsSerumCount = snapInt(v * 3f, 0, 3, 1));
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Get max XP", config.autoExperimentsGetMaxXp, v -> config.autoExperimentsGetMaxXp = v);
-				toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Superpairs", config.autoExperimentsSuperpairs, v -> config.autoExperimentsSuperpairs = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Superpairs", config.autoExperimentsSuperpairs, v -> config.autoExperimentsSuperpairs = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Skip books", config.superpairsSkipBooks, v -> config.superpairsSkipBooks = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Skip Titanic", config.superpairsSkipTitanic, v -> config.superpairsSkipTitanic = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Skip XP dyes", config.superpairsSkipXp, v -> config.superpairsSkipXp = v);
+				toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Skip bottles", config.superpairsSkipBottles, v -> config.superpairsSkipBottles = v);
 			}
 			case MOB -> {
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Through walls", config.mobGlowThroughWalls, v -> config.mobGlowThroughWalls = v);
@@ -3491,7 +3499,7 @@ public class StrayScreen extends Screen {
 		return FabricLoader.getInstance()
 			.getModContainer("stray")
 			.map(container -> container.getMetadata().getVersion().getFriendlyString())
-			.orElse("1.2.229");
+			.orElse("1.2.230");
 	}
 
 	@Override

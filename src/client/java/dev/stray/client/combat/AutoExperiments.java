@@ -350,7 +350,7 @@ public final class AutoExperiments {
 					break;
 				}
 			}
-			if (want != null) {
+			if (want != null && !skipped(want)) {
 				for (int slot : hidden) {
 					if (want.equals(memory.get(slot))) {
 						return slot;
@@ -364,7 +364,7 @@ public final class AutoExperiments {
 			java.util.Map<String, List<Integer>> known = new java.util.HashMap<>();
 			for (int slot : hidden) {
 				String key = memory.get(slot);
-				if (key != null && !isPowerup(key)) {
+				if (key != null && !isPowerup(key) && !skipped(key)) {
 					known.computeIfAbsent(key, ignored -> new ArrayList<>()).add(slot);
 				}
 			}
@@ -386,16 +386,57 @@ public final class AutoExperiments {
 			return explore(hidden);
 		}
 
-		/** Prefer cards never seen; fall back to any hidden card. */
+		/** Prefer cards never seen, then known cards we still care about, then anything. */
 		private Integer explore(List<Integer> hidden) {
 			List<Integer> unknown = new ArrayList<>();
+			List<Integer> wanted = new ArrayList<>();
 			for (int slot : hidden) {
-				if (!memory.containsKey(slot)) {
+				String key = memory.get(slot);
+				if (key == null) {
 					unknown.add(slot);
+				} else if (!skipped(key)) {
+					wanted.add(slot);
 				}
 			}
-			List<Integer> pool = unknown.isEmpty() ? hidden : unknown;
+			List<Integer> pool = !unknown.isEmpty() ? unknown : !wanted.isEmpty() ? wanted : hidden;
 			return pool.get(random.nextInt(pool.size()));
+		}
+
+		private static boolean skipped(String key) {
+			StrayConfig config = StrayConfig.get();
+			return switch (category(key)) {
+				case BOOK -> config.superpairsSkipBooks;
+				case TITANIC -> config.superpairsSkipTitanic;
+				case XP -> config.superpairsSkipXp;
+				case BOTTLE -> config.superpairsSkipBottles;
+				default -> false;
+			};
+		}
+
+		private enum Category {
+			BOOK, TITANIC, XP, BOTTLE, POWERUP, OTHER
+		}
+
+		private static Category category(String key) {
+			int split = key.indexOf('|');
+			String id = key.substring(0, split);
+			String lower = key.substring(split + 1).toLowerCase(java.util.Locale.ROOT);
+			if (isPowerup(key)) {
+				return Category.POWERUP;
+			}
+			if (id.endsWith("enchanted_book")) {
+				return Category.BOOK;
+			}
+			if (lower.contains("titanic")) {
+				return Category.TITANIC;
+			}
+			if (XP.matcher(lower).find()) {
+				return Category.XP;
+			}
+			if (lower.contains("experience bottle") || lower.contains("bottle o' enchanting") || lower.contains("colossal")) {
+				return Category.BOTTLE;
+			}
+			return Category.OTHER;
 		}
 
 		private static String identity(ItemStack stack, String name) {

@@ -165,6 +165,10 @@ public final class StrayConfig {
 	public int autoExperimentsSerumCount = 0;
 	public boolean autoExperimentsGetMaxXp = false;
 	public boolean autoExperimentsSuperpairs = false;
+	public boolean superpairsSkipBooks = false;
+	public boolean superpairsSkipTitanic = false;
+	public boolean superpairsSkipXp = false;
+	public boolean superpairsSkipBottles = false;
 	public boolean disabledPotionsHighlight = false;
 	public float hitmarkerScale = 1.00f;
 	public float hitsoundVolume = 0.80f;
@@ -717,6 +721,12 @@ public final class StrayConfig {
 				}
 				if (!json.has("autoExperimentsSuperpairs")) {
 					loaded.autoExperimentsSuperpairs = false;
+				}
+				if (!json.has("superpairsSkipBooks")) {
+					loaded.superpairsSkipBooks = false;
+					loaded.superpairsSkipTitanic = false;
+					loaded.superpairsSkipXp = false;
+					loaded.superpairsSkipBottles = false;
 				}
 				if (!json.has("disabledPotionsHighlight")) {
 					loaded.disabledPotionsHighlight = false;
