@@ -13,6 +13,7 @@ import com.mojang.blaze3d.systems.RenderPass;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.textures.FilterMode;
 import com.mojang.blaze3d.textures.GpuSampler;
+import com.mojang.blaze3d.textures.GpuTextureView;
 import com.mojang.blaze3d.vertex.BufferBuilder;
 import com.mojang.blaze3d.vertex.ByteBufferBuilder;
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
@@ -95,6 +96,27 @@ public final class EndSkyDecor {
 			return;
 		}
 
+		// Ping-pong through the hole frames and cross-fade neighbours.
+		float phase = time / FRAME_TICKS;
+		int span = FRAMES - 1;
+		float cycle = phase % (span * 2);
+		if (cycle < 0f) {
+			cycle += span * 2;
+		}
+		float pos = cycle <= span ? cycle : span * 2 - cycle;
+		int a = Mth.clamp((int) Math.floor(pos), 0, span);
+		int b = Math.min(a + 1, span);
+		float blend = Mth.clamp(pos - a, 0f, 1f);
+
+		// Resolve (and lazily upload) every texture before the render pass opens;
+		// the texture manager cannot write to the GPU while a pass is recording.
+		GpuTextureView[] faces = new GpuTextureView[6];
+		for (int i = 0; i < 6; i++) {
+			faces[i] = view(client, FACE_TEXTURES[i]);
+		}
+		GpuTextureView holeA = view(client, HOLE_TEXTURES[a]);
+		GpuTextureView holeB = b != a && blend > 0.002f ? view(client, HOLE_TEXTURES[b]) : null;
+
 		PoseStack pose = new PoseStack();
 		pose.mulPose(Axis.YP.rotation(time * 0.0009f));
 		pose.mulPose(Axis.XP.rotation(TILT));
@@ -108,17 +130,6 @@ public final class EndSkyDecor {
 			new Matrix4f()
 		);
 
-		// Ping-pong through the hole frames and cross-fade neighbours.
-		float phase = time / FRAME_TICKS;
-		int span = FRAMES - 1;
-		float cycle = phase % (span * 2);
-		if (cycle < 0f) {
-			cycle += span * 2;
-		}
-		float pos = cycle <= span ? cycle : span * 2 - cycle;
-		int a = Mth.clamp((int) Math.floor(pos), 0, span);
-		int b = Math.min(a + 1, span);
-		float blend = Mth.clamp(pos - a, 0f, 1f);
 		GpuBufferSlice fadeB = RenderSystem.getDynamicUniforms().writeTransform(
 			modelView,
 			new Vector4f(blend, blend, blend, blend),
@@ -141,15 +152,18 @@ public final class EndSkyDecor {
 			pass.setIndexBuffer(indexBuf.getBuffer(7 * 6), indexBuf.type());
 			pass.setUniform("DynamicTransforms", opaque);
 			for (int i = 0; i < 6; i++) {
-				if (bind(client, pass, FACE_TEXTURES[i], linear)) {
+				if (faces[i] != null) {
+					pass.bindTexture("Sampler0", faces[i], linear);
 					pass.drawIndexed(0, i * 6, 6, 1);
 				}
 			}
-			if (bind(client, pass, HOLE_TEXTURES[a], linear)) {
+			if (holeA != null) {
+				pass.bindTexture("Sampler0", holeA, linear);
 				pass.drawIndexed(0, 6 * 6, 6, 1);
 			}
-			if (b != a && blend > 0.002f && bind(client, pass, HOLE_TEXTURES[b], linear)) {
+			if (holeB != null) {
 				pass.setUniform("DynamicTransforms", fadeB);
+				pass.bindTexture("Sampler0", holeB, linear);
 				pass.drawIndexed(0, 6 * 6, 6, 1);
 			}
 		} finally {
@@ -157,13 +171,9 @@ public final class EndSkyDecor {
 		}
 	}
 
-	private static boolean bind(Minecraft client, RenderPass pass, Identifier id, GpuSampler sampler) {
+	private static GpuTextureView view(Minecraft client, Identifier id) {
 		AbstractTexture texture = client.getTextureManager().getTexture(id);
-		if (texture == null || texture.getTextureView() == null) {
-			return false;
-		}
-		pass.bindTexture("Sampler0", texture.getTextureView(), sampler);
-		return true;
+		return texture == null ? null : texture.getTextureView();
 	}
 
 	private static synchronized void ensurePipeline() {
