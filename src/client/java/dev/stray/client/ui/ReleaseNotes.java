@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.214", new String[]{
+			"End sky has a slow-spinning starfield over the panorama."
+		}),
 		new Entry("1.2.213", new String[]{
 			"Skybox has an End sky toggle that swaps in the End panorama. Color and Strength tint that texture instead of covering it."
 		}),
