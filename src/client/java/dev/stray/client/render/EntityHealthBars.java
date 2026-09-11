@@ -28,8 +28,8 @@ import java.util.UUID;
  * toward real health and shifts green to red as it drops.
  */
 public final class EntityHealthBars {
-	private static final float BAR_W = 3.5f;
-	private static final float GAP = 4f;
+	private static final float WIDTH_RATIO = 0.09f;
+	private static final float GAP_RATIO = 0.11f;
 	private static final int TRACK = 0xCC0B0E14;
 	private static final int LINE = 0x661C2430;
 	private static final Map<UUID, Bar> BARS = new HashMap<>();
@@ -181,15 +181,18 @@ public final class EntityHealthBars {
 
 	private static void draw(GuiGraphicsExtractor graphics, ScreenBox box, float shown, boolean right) {
 		float h = box.h();
-		float x = right ? box.x + box.w + GAP : box.x - GAP - BAR_W;
+		float w = Mth.clamp(h * WIDTH_RATIO, 1.1f, 4.5f);
+		float gap = Mth.clamp(h * GAP_RATIO, 1.5f, 5f);
+		float pad = Mth.clamp(h * 0.03f, 0.4f, 1f);
+		float x = right ? box.x + box.w + gap : box.x - gap - w;
 		float y = box.y;
 		float fillH = h * Mth.clamp(shown, 0f, 1f);
-		float radius = Math.min(1.8f, h * 0.12f);
+		float radius = Math.min(w * 0.45f, h * 0.12f);
 		int color = 0xFF000000 | healthColor(shown);
-		GuiDraw.rounded(graphics, x - 1f, y - 1f, BAR_W + 2f, h + 2f, radius + 0.4f, LINE);
-		GuiDraw.rounded(graphics, x, y, BAR_W, h, radius, TRACK);
+		GuiDraw.rounded(graphics, x - pad, y - pad, w + pad * 2f, h + pad * 2f, radius + pad * 0.4f, LINE);
+		GuiDraw.rounded(graphics, x, y, w, h, radius, TRACK);
 		if (fillH >= 0.6f) {
-			GuiDraw.rounded(graphics, x, y + h - fillH, BAR_W, fillH, radius, color);
+			GuiDraw.rounded(graphics, x, y + h - fillH, w, fillH, radius, color);
 		}
 	}
 

@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.211", new String[]{
+			"Health bar thickness scales with the mob's on-screen height so it stays slim at range."
+		}),
 		new Entry("1.2.210", new String[]{
 			"Health bar color is a saturated green at full and a normal red when low."
 		}),
