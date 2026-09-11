@@ -193,6 +193,8 @@ public final class StrayConfig {
 	public boolean inventoryHudHotbar = false;
 	public boolean inventoryHudArmor = false;
 	public boolean inventoryHudCount = false;
+	public boolean inventoryHudMinimal = false;
+	public boolean inventoryHudBlur = true;
 	public boolean hudHotbar = false;
 	public boolean hudHealth = false;
 	public boolean hudHunger = false;
@@ -799,6 +801,9 @@ public final class StrayConfig {
 				loaded.menuTab = normalizeMenuTab(loaded.menuTab);
 				loaded.inventoryHudAnchor = normalizeInventoryHudAnchor(loaded.inventoryHudAnchor);
 				loaded.inventoryHudScale = clampHudScale(loaded.inventoryHudScale);
+				if (!json.has("inventoryHudBlur")) {
+					loaded.inventoryHudBlur = true;
+				}
 				loaded.hudWatermarkScale = clampHudScale(loaded.hudWatermarkScale);
 				loaded.hudNodesScale = clampHudScale(loaded.hudNodesScale);
 				loaded.hudMusicScale = clampHudScale(loaded.hudMusicScale);
