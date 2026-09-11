@@ -23,7 +23,11 @@ public final class JacobContestTracker {
 	private static final int CONTEST_SECONDS = 20 * 60;
 	private static final int SAMPLE_WINDOW_SECONDS = 60;
 	private static final Pattern HEADER = Pattern.compile("^jacob'?s contest:?\\s*(.*)$", Pattern.CASE_INSENSITIVE);
-	private static final Pattern TIME = Pattern.compile("^(?:(\\d+)m\\s*)?(\\d+)s(?:\\s+left)?$", Pattern.CASE_INSENSITIVE);
+	/** Tab shows `19m` until ~6 minutes left, then `5m 59s`. Seconds-only `45s` also appears. */
+	private static final Pattern TIME = Pattern.compile(
+		"^(?:(\\d+)m(?:\\s*(\\d+)s)?|(\\d+)s)(?:\\s+left)?$",
+		Pattern.CASE_INSENSITIVE
+	);
 	private static final Pattern RANK = Pattern.compile(
 		"^(BRONZE|SILVER|GOLD|PLATINUM|DIAMOND)\\s+(?:with\\s+)?([\\d,.]+[kmb]?)$",
 		Pattern.CASE_INSENSITIVE
@@ -145,7 +149,7 @@ public final class JacobContestTracker {
 					}
 				}
 			}
-			if (remaining >= 0 && score >= 0 && rank != Medal.NONE) {
+			if (remaining >= 0 && score >= 0) {
 				return new Parsed(crop.isEmpty() ? "Farming" : crop, remaining, score, rank, cutoffs);
 			}
 		}
@@ -272,8 +276,11 @@ public final class JacobContestTracker {
 			return -1;
 		}
 		int minutes = matcher.group(1) == null ? 0 : Integer.parseInt(matcher.group(1));
-		int seconds = Integer.parseInt(matcher.group(2));
-		return Math.min(CONTEST_SECONDS, minutes * 60 + seconds);
+		int seconds = matcher.group(2) != null
+			? Integer.parseInt(matcher.group(2))
+			: matcher.group(3) != null ? Integer.parseInt(matcher.group(3)) : 0;
+		int total = minutes * 60 + seconds;
+		return total > CONTEST_SECONDS ? -1 : total;
 	}
 
 	private static int parseAmount(String value) {

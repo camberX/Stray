@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.207", new String[]{
+			"Jacob contest HUD shows for the whole 20-minute contest. Tab times like 19m (no seconds) used to be ignored until the last 6 minutes."
+		}),
 		new Entry("1.2.206", new String[]{
 			"Player fill is Player shader. Shader star mobs lives with it, not under Glow. Held item and Player shader have a Silhouette toggle for the outline."
 		}),
