@@ -174,10 +174,12 @@ public final class StrayConfig {
 	public float heldItemShaderOutline = 0.90f;
 	public float heldItemShaderSmoke = 0.55f;
 	public String heldItemShaderStyle = "smoke";
+	public boolean heldItemShaderSilhouette = true;
 	public boolean playerFillEsp = false;
 	public boolean playerFillThroughWalls = false;
 	public boolean playerFillMobs = false;
 	public boolean playerFillStarMobs = false;
+	public boolean playerFillSilhouette = true;
 	public int playerFillRgb = 0x4FD6EA;
 	public int playerFillOutlineRgb = liftedOutlineRgb(0x4FD6EA);
 	public float playerFillFill = 0.32f;
@@ -744,6 +746,12 @@ public final class StrayConfig {
 				}
 				if (!json.has("playerFillStarMobs")) {
 					loaded.playerFillStarMobs = false;
+				}
+				if (!json.has("heldItemShaderSilhouette")) {
+					loaded.heldItemShaderSilhouette = true;
+				}
+				if (!json.has("playerFillSilhouette")) {
+					loaded.playerFillSilhouette = true;
 				}
 				loaded.heldItemShaderFill = json.has("heldItemShaderFill")
 					? clamp(loaded.heldItemShaderFill, 0.08f, 0.85f)

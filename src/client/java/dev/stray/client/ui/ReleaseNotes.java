@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.206", new String[]{
+			"Player fill is Player shader. Shader star mobs lives with it, not under Glow. Held item and Player shader have a Silhouette toggle for the outline."
+		}),
 		new Entry("1.2.205", new String[]{
 			"Inventory HUD has Minimal (no INVENTORY title or top padding) and Blur toggles for the frosted panel."
 		}),

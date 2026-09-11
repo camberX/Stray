@@ -131,12 +131,12 @@ public class StrayScreen extends Screen {
 		VIEW("Aspect", 3),
 		MOTION("Motion blur", 3),
 		HITSOUND("Hitsound", 3),
-		HELD_ITEM("Held item", 6),
-		FILL("Player fill", 8),
+		HELD_ITEM("Held item", 7),
+		FILL("Player shader", 10),
 		AUTO_CLICKER("Auto clicker", 8),
 		AUTO_EXPERIMENTS("Auto experiments", 5),
 		MOB("Mob glow", 3),
-		STAR("Star mobs", 7),
+		STAR("Star mobs", 6),
 		BLOCK("Block outline", 1),
 		CHEST("Chest ESP", 5),
 		FAIRY("Fairy souls", 1),
@@ -222,16 +222,21 @@ public class StrayScreen extends Screen {
 		new SearchEntry("Black hole shader", Tab.ESP, "Held item"),
 		new SearchEntry("Ghost", Tab.ESP, "Held item"),
 		new SearchEntry("Ghost item", Tab.ESP, "Held item"),
-		new SearchEntry("Player fill", Tab.PLAYERS, "Players"),
-		new SearchEntry("Player fill ESP", Tab.PLAYERS, "Players"),
-		new SearchEntry("Player fill color", Tab.PLAYERS, "Players"),
-		new SearchEntry("Player fill outline", Tab.PLAYERS, "Players"),
-		new SearchEntry("Player fill portal", Tab.PLAYERS, "Players"),
-		new SearchEntry("Player fill outline color", Tab.PLAYERS, "Players"),
-		new SearchEntry("Fill star mobs", Tab.ESP, "Star mobs"),
+		new SearchEntry("Player fill", Tab.PLAYERS, "Shader"),
+		new SearchEntry("Player shader", Tab.PLAYERS, "Shader"),
+		new SearchEntry("Player fill ESP", Tab.PLAYERS, "Shader"),
+		new SearchEntry("Player fill color", Tab.PLAYERS, "Shader"),
+		new SearchEntry("Player fill outline", Tab.PLAYERS, "Shader"),
+		new SearchEntry("Player fill portal", Tab.PLAYERS, "Shader"),
+		new SearchEntry("Player fill outline color", Tab.PLAYERS, "Shader"),
+		new SearchEntry("Fill star mobs", Tab.PLAYERS, "Shader"),
+		new SearchEntry("Shader star mobs", Tab.PLAYERS, "Shader"),
 		new SearchEntry("Glow ESP", Tab.ESP, "Star mobs"),
-		new SearchEntry("Fill ESP mobs", Tab.PLAYERS, "Players"),
-		new SearchEntry("Fill through walls", Tab.PLAYERS, "Players"),
+		new SearchEntry("Fill ESP mobs", Tab.PLAYERS, "Shader"),
+		new SearchEntry("Shader mobs", Tab.PLAYERS, "Shader"),
+		new SearchEntry("Fill through walls", Tab.PLAYERS, "Shader"),
+		new SearchEntry("Silhouette", Tab.PLAYERS, "Shader"),
+		new SearchEntry("Held item silhouette", Tab.ESP, "Held item"),
 		new SearchEntry("Mob fill", Tab.PLAYERS, "Players"),
 		new SearchEntry("Held fill", Tab.ESP, "Held item"),
 		new SearchEntry("Hand fill", Tab.ESP, "Held item"),
@@ -867,7 +872,7 @@ public class StrayScreen extends Screen {
 			y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Star mobs", config.starMobEsp, v -> config.starMobEsp = v, Feature.STAR);
 			y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Block outline", config.blockOutlineGlow, v -> config.blockOutlineGlow = v, Feature.BLOCK);
 			y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Chest ESP", config.chestEspEnabled, v -> config.chestEspEnabled = v, Feature.CHEST);
-			y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Player fill", config.playerFillEsp, v -> config.playerFillEsp = v, Feature.FILL);
+			y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Player shader", config.playerFillEsp, v -> config.playerFillEsp = v, Feature.FILL);
 			y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Nametags", config.nametagsEnabled, v -> config.nametagsEnabled = v, Feature.NAMETAGS);
 			toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Own nametag", config.nametagSelf, v -> config.nametagSelf = v);
 			float heldTop = top + cardHeight(7) + 8;
@@ -888,7 +893,7 @@ public class StrayScreen extends Screen {
 		float mobTop = top;
 		if (controlCenter()) {
 			y = sectionLabel(graphics, font, right, top, "Players");
-			y = controlCard(graphics, font, right, y, col, mouseX, mouseY, "Player fill", config.playerFillEsp, v -> config.playerFillEsp = v, Feature.FILL);
+			y = controlCard(graphics, font, right, y, col, mouseX, mouseY, "Player shader", config.playerFillEsp, v -> config.playerFillEsp = v, Feature.FILL);
 			float tagTop = y;
 			float tagH = cardHeight(Feature.NAMETAGS.rows + 1);
 			float tagY = featureCard(graphics, font, right, tagTop, col, tagH, "Nametags", config.nametagsEnabled, v -> config.nametagsEnabled = v, mouseX, mouseY);
@@ -2226,8 +2231,8 @@ public class StrayScreen extends Screen {
 				controlCard(graphics, font, right, y, col, mouseX, mouseY, "Held item", config.heldItemShaderEnabled, v -> config.heldItemShaderEnabled = v, Feature.HELD_ITEM);
 			}
 			case PLAYERS -> {
-				float y = sectionLabel(graphics, font, left, top, "Fill");
-				y = controlCard(graphics, font, left, y, col, mouseX, mouseY, "Player fill", config.playerFillEsp, v -> config.playerFillEsp = v, Feature.FILL);
+				float y = sectionLabel(graphics, font, left, top, "Shader");
+				y = controlCard(graphics, font, left, y, col, mouseX, mouseY, "Player shader", config.playerFillEsp, v -> config.playerFillEsp = v, Feature.FILL);
 				y = sectionLabel(graphics, font, right, top, "Nametags");
 				float tagH = cardHeight(Feature.NAMETAGS.rows + 1);
 				float tagY = featureCard(graphics, font, right, y, col, tagH, "Nametags", config.nametagsEnabled, v -> config.nametagsEnabled = v, mouseX, mouseY);
@@ -2857,20 +2862,23 @@ public class StrayScreen extends Screen {
 				slider(graphics, font, ix, y, iw, "Marker", Math.round(config.hitmarkerScale * 100) + "%", (config.hitmarkerScale - 0.50f) / 1.50f, v -> config.hitmarkerScale = StrayConfig.clampHudScale(0.50f + v * 1.50f));
 			}
 			case HELD_ITEM -> {
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Silhouette", config.heldItemShaderSilhouette, v -> config.heldItemShaderSilhouette = v);
 				y = cycle(graphics, font, ix, y, iw, mouseX, mouseY, "Style", config.heldItemShaderStyleLabel(), config::cycleHeldItemShaderStyle);
-				y = colorRow(graphics, font, ix, y, iw, mouseX, mouseY, "Fill", config.heldItemShaderRgb, PickerTarget.HELD_ITEM);
+				y = colorRow(graphics, font, ix, y, iw, mouseX, mouseY, "Tint", config.heldItemShaderRgb, PickerTarget.HELD_ITEM);
 				y = colorRow(graphics, font, ix, y, iw, mouseX, mouseY, "Outline", config.heldItemShaderOutlineRgb, PickerTarget.HELD_ITEM_OUTLINE);
-				y = slider(graphics, font, ix, y, iw, "Fill", Math.round(config.heldItemShaderFill * 100) + "%", (config.heldItemShaderFill - 0.08f) / 0.77f, v -> config.heldItemShaderFill = StrayConfig.clamp(0.08f + v * 0.77f, 0.08f, 0.85f));
+				y = slider(graphics, font, ix, y, iw, "Tint", Math.round(config.heldItemShaderFill * 100) + "%", (config.heldItemShaderFill - 0.08f) / 0.77f, v -> config.heldItemShaderFill = StrayConfig.clamp(0.08f + v * 0.77f, 0.08f, 0.85f));
 				y = slider(graphics, font, ix, y, iw, "Thickness", Math.round(config.heldItemShaderOutline * 100) + "%", (config.heldItemShaderOutline - 0.15f) / 1.35f, v -> config.heldItemShaderOutline = StrayConfig.clamp(0.15f + v * 1.35f, 0.15f, 1.50f));
 				slider(graphics, font, ix, y, iw, config.heldItemShaderStyleLabel(), Math.round(config.heldItemShaderSmoke * 100) + "%", (config.heldItemShaderSmoke - 0.10f) / 1.40f, v -> config.heldItemShaderSmoke = StrayConfig.clamp(0.10f + v * 1.40f, 0.10f, 1.50f));
 			}
 			case FILL -> {
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Silhouette", config.playerFillSilhouette, v -> config.playerFillSilhouette = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Through walls", config.playerFillThroughWalls, v -> config.playerFillThroughWalls = v);
-				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Fill ESP mobs", config.playerFillMobs, v -> config.playerFillMobs = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Shader mobs", config.playerFillMobs, v -> config.playerFillMobs = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Shader star mobs", config.playerFillStarMobs, v -> config.playerFillStarMobs = v);
 				y = cycle(graphics, font, ix, y, iw, mouseX, mouseY, "Style", config.playerFillStyleLabel(), config::cyclePlayerFillStyle);
-				y = colorRow(graphics, font, ix, y, iw, mouseX, mouseY, "Fill", config.playerFillRgb, PickerTarget.FILL);
+				y = colorRow(graphics, font, ix, y, iw, mouseX, mouseY, "Tint", config.playerFillRgb, PickerTarget.FILL);
 				y = colorRow(graphics, font, ix, y, iw, mouseX, mouseY, "Outline", config.playerFillOutlineRgb, PickerTarget.FILL_OUTLINE);
-				y = slider(graphics, font, ix, y, iw, "Fill", Math.round(config.playerFillFill * 100) + "%", (config.playerFillFill - 0.08f) / 0.77f, v -> config.playerFillFill = StrayConfig.clamp(0.08f + v * 0.77f, 0.08f, 0.85f));
+				y = slider(graphics, font, ix, y, iw, "Tint", Math.round(config.playerFillFill * 100) + "%", (config.playerFillFill - 0.08f) / 0.77f, v -> config.playerFillFill = StrayConfig.clamp(0.08f + v * 0.77f, 0.08f, 0.85f));
 				y = slider(graphics, font, ix, y, iw, "Thickness", Math.round(config.playerFillOutline * 100) + "%", (config.playerFillOutline - 0.15f) / 1.35f, v -> config.playerFillOutline = StrayConfig.clamp(0.15f + v * 1.35f, 0.15f, 1.50f));
 				slider(graphics, font, ix, y, iw, config.playerFillStyleLabel(), Math.round(config.playerFillSmoke * 100) + "%", (config.playerFillSmoke - 0.10f) / 1.40f, v -> config.playerFillSmoke = StrayConfig.clamp(0.10f + v * 1.40f, 0.10f, 1.50f));
 			}
@@ -2901,7 +2909,6 @@ public class StrayScreen extends Screen {
 			}
 			case STAR -> {
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Glow ESP", config.starMobEsp, v -> config.starMobEsp = v);
-				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Fill", config.playerFillStarMobs, v -> config.playerFillStarMobs = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Through walls", config.starMobThroughWalls, v -> config.starMobThroughWalls = v);
 				y = slider(graphics, font, ix, y, iw, "Radius", String.format(Locale.ROOT, "%.0f", config.starMobRadius), (config.starMobRadius - GlowBlurRadius.MIN) / (GlowBlurRadius.MAX - GlowBlurRadius.MIN), v -> config.starMobRadius = StrayConfig.clamp(GlowBlurRadius.MIN + v * (GlowBlurRadius.MAX - GlowBlurRadius.MIN), GlowBlurRadius.MIN, GlowBlurRadius.MAX));
 				y = colorRow(graphics, font, ix, y, iw, mouseX, mouseY, "Color", config.starMobRgb, PickerTarget.STAR);
@@ -3443,7 +3450,7 @@ public class StrayScreen extends Screen {
 		return FabricLoader.getInstance()
 			.getModContainer("stray")
 			.map(container -> container.getMetadata().getVersion().getFriendlyString())
-			.orElse("1.2.205");
+			.orElse("1.2.206");
 	}
 
 	@Override

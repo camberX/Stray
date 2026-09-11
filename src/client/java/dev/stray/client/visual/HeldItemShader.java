@@ -376,7 +376,7 @@ public final class HeldItemShader {
 
 	public static void beginMask() {
 		maskThisFrame = false;
-		if (!active()) {
+		if (!active() || !StrayConfig.get().heldItemShaderSilhouette) {
 			return;
 		}
 		if (!prepareMaskTarget()) {
@@ -388,7 +388,7 @@ public final class HeldItemShader {
 	public static void beginPlayerMask() {
 		playerMaskThisFrame = false;
 		playerMaskDepthReady = false;
-		if (!playerFillActive()) {
+		if (!playerFillActive() || !StrayConfig.get().playerFillSilhouette) {
 			return;
 		}
 		if (!prepareMaskTarget()) {
