@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.243", new String[]{
+			"Health bars have Full and Empty color pickers. The fill lerps between them as HP drops, on both Stray and CS:GO styles."
+		}),
 		new Entry("1.2.242", new String[]{
 			"Health bar has a CS:GO style: square corners and an opaque black track. Style is on the Health bar card; Stray stays the rounded one."
 		}),

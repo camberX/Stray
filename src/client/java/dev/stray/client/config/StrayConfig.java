@@ -296,6 +296,8 @@ public final class StrayConfig {
 	public boolean healthBarThroughWalls = false;
 	public String healthBarSide = "right";
 	public String healthBarStyle = "stray";
+	public int healthBarFullRgb = 0x17EB17;
+	public int healthBarEmptyRgb = 0xEB1717;
 	public int healthBarRange = 48;
 	public float menuScale = 0.75f;
 	public boolean menuScaleV2;
@@ -526,6 +528,14 @@ public final class StrayConfig {
 				}
 				loaded.healthBarSide = normalizeHealthBarSide(loaded.healthBarSide);
 				loaded.healthBarStyle = normalizeHealthBarStyle(loaded.healthBarStyle);
+				loaded.healthBarFullRgb = loaded.healthBarFullRgb & 0xFFFFFF;
+				if (!json.has("healthBarFullRgb") || loaded.healthBarFullRgb == 0) {
+					loaded.healthBarFullRgb = 0x17EB17;
+				}
+				loaded.healthBarEmptyRgb = loaded.healthBarEmptyRgb & 0xFFFFFF;
+				if (!json.has("healthBarEmptyRgb") || loaded.healthBarEmptyRgb == 0) {
+					loaded.healthBarEmptyRgb = 0xEB1717;
+				}
 				loaded.healthBarRange = clamp(loaded.healthBarRange <= 0 ? 48 : loaded.healthBarRange, 16, 96);
 				if (!json.has("healthBarEnabled")) {
 					loaded.healthBarEnabled = false;

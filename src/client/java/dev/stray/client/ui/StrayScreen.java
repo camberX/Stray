@@ -160,7 +160,7 @@ public class StrayScreen extends Screen {
 		PEST("Pest ESP", 2),
 		AUTO_DNA("Auto DNA", 5),
 		NAMETAGS("Nametags", 6),
-		HEALTH("Health bar", 5),
+		HEALTH("Health bar", 7),
 		NODES("Nodes", 5);
 
 		final String title;
@@ -184,7 +184,7 @@ public class StrayScreen extends Screen {
 	}
 
 	private enum PickerTarget {
-		WORLD, SKY, FOG, NODE, THEME, PANE, CONTROL, PILL, MOB, STAR, BLOCK, TITANIUM, CHEST, PEST, HELD_ITEM, HELD_ITEM_OUTLINE, FILL, FILL_OUTLINE, MARKS, PATHS
+		WORLD, SKY, FOG, NODE, THEME, PANE, CONTROL, PILL, MOB, STAR, BLOCK, TITANIUM, CHEST, PEST, HELD_ITEM, HELD_ITEM_OUTLINE, FILL, FILL_OUTLINE, MARKS, PATHS, HEALTH_FULL, HEALTH_EMPTY
 	}
 
 	private record SearchEntry(String label, Tab tab, String hint) {
@@ -293,6 +293,7 @@ public class StrayScreen extends Screen {
 		new SearchEntry("Player health", Tab.ESP, "Health"),
 		new SearchEntry("Health side", Tab.ESP, "Health"),
 		new SearchEntry("CSGO health", Tab.ESP, "Health"),
+		new SearchEntry("Health color", Tab.ESP, "Health"),
 		new SearchEntry("Menu scale", Tab.SETTINGS, "Theme"),
 		new SearchEntry("HUD opacity", Tab.SETTINGS, "Theme"),
 		new SearchEntry("Menu stars", Tab.SETTINGS, "Theme"),
@@ -3103,7 +3104,9 @@ public class StrayScreen extends Screen {
 				y = cycle(graphics, font, ix, y, iw, mouseX, mouseY, "Style", config.healthBarStyleLabel(), config::cycleHealthBarStyle);
 				y = cycle(graphics, font, ix, y, iw, mouseX, mouseY, "Side", config.healthBarSideLabel(), config::cycleHealthBarSide);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Through walls", config.healthBarThroughWalls, v -> config.healthBarThroughWalls = v);
-				slider(graphics, font, ix, y, iw, "Range", config.healthBarRange + "m", (config.healthBarRange - 16) / 80f, v -> config.healthBarRange = StrayConfig.clamp(16 + Math.round(v * 80f), 16, 96));
+				y = slider(graphics, font, ix, y, iw, "Range", config.healthBarRange + "m", (config.healthBarRange - 16) / 80f, v -> config.healthBarRange = StrayConfig.clamp(16 + Math.round(v * 80f), 16, 96));
+				y = colorRow(graphics, font, ix, y, iw, mouseX, mouseY, "Full", config.healthBarFullRgb, PickerTarget.HEALTH_FULL);
+				colorRow(graphics, font, ix, y, iw, mouseX, mouseY, "Empty", config.healthBarEmptyRgb, PickerTarget.HEALTH_EMPTY);
 			}
 			case NAMETAGS -> {
 				y = cycle(graphics, font, ix, y, iw, mouseX, mouseY, "Style", config.nametagStyleLabel(), config::cycleNametagStyle);
@@ -3450,6 +3453,8 @@ public class StrayScreen extends Screen {
 			case FILL_OUTLINE -> config.playerFillOutlineRgb = packed;
 			case MARKS -> config.blockMarksRgb = packed == 0 ? 0x2FB5FF : packed;
 			case PATHS -> config.pathRgb = packed == 0 ? 0x2FB5FF : packed;
+			case HEALTH_FULL -> config.healthBarFullRgb = packed == 0 ? 0x17EB17 : packed;
+			case HEALTH_EMPTY -> config.healthBarEmptyRgb = packed == 0 ? 0xEB1717 : packed;
 			case THEME -> Theme.applyCustom(packed);
 			case PANE -> Theme.applyPane(packed);
 			case CONTROL -> {
@@ -3469,7 +3474,7 @@ public class StrayScreen extends Screen {
 			case PANE -> 0.20f;
 			case MOB, STAR, BLOCK -> 0.15f;
 			case NODE, HELD_ITEM, FILL, CHEST, TITANIUM, PEST -> 0.08f;
-			case THEME, HELD_ITEM_OUTLINE, FILL_OUTLINE, MARKS, PATHS -> 1f;
+			case THEME, HELD_ITEM_OUTLINE, FILL_OUTLINE, MARKS, PATHS, HEALTH_FULL, HEALTH_EMPTY -> 1f;
 			default -> 0f;
 		};
 	}
@@ -3501,7 +3506,7 @@ public class StrayScreen extends Screen {
 			case WORLD -> config.worldTintStrength;
 			case SKY -> config.skyTintStrength;
 			case FOG -> config.fogDensity;
-			case THEME, HELD_ITEM_OUTLINE, FILL_OUTLINE, MARKS, PATHS -> 1f;
+			case THEME, HELD_ITEM_OUTLINE, FILL_OUTLINE, MARKS, PATHS, HEALTH_FULL, HEALTH_EMPTY -> 1f;
 		};
 	}
 
@@ -3524,7 +3529,7 @@ public class StrayScreen extends Screen {
 			case WORLD -> config.worldTintStrength = clamped;
 			case SKY -> config.skyTintStrength = clamped;
 			case FOG -> config.fogDensity = clamped;
-			case THEME, HELD_ITEM_OUTLINE, FILL_OUTLINE, MARKS, PATHS -> {
+			case THEME, HELD_ITEM_OUTLINE, FILL_OUTLINE, MARKS, PATHS, HEALTH_FULL, HEALTH_EMPTY -> {
 				return;
 			}
 		}

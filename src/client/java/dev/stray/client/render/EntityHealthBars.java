@@ -119,7 +119,7 @@ public final class EntityHealthBars {
 			Bar bar = BARS.computeIfAbsent(id, ignored -> new Bar(target));
 			bar.tick(target, dt);
 			seen.add(id);
-			draw(graphics, screen, bar.shown, right, config.healthBarCsgo());
+			draw(graphics, screen, bar.shown, right, config);
 		}
 		Iterator<Map.Entry<UUID, Bar>> it = BARS.entrySet().iterator();
 		while (it.hasNext()) {
@@ -331,7 +331,8 @@ public final class EntityHealthBars {
 		return hit.getLocation().distanceToSqr(from) + 0.36 < to.distanceToSqr(from);
 	}
 
-	private static void draw(GuiGraphicsExtractor graphics, ScreenBox box, float shown, boolean right, boolean csgo) {
+	private static void draw(GuiGraphicsExtractor graphics, ScreenBox box, float shown, boolean right, StrayConfig config) {
+		boolean csgo = config.healthBarCsgo();
 		float h = box.h();
 		float w = Mth.clamp(h * WIDTH_RATIO, 1.1f, 4.5f);
 		float gap = Mth.clamp(h * GAP_RATIO, 1.5f, 5f);
@@ -339,7 +340,7 @@ public final class EntityHealthBars {
 		float x = right ? box.x + box.w + gap : box.x - gap - w;
 		float y = box.y;
 		float fillH = h * Mth.clamp(shown, 0f, 1f);
-		int color = 0xFF000000 | healthColor(shown);
+		int color = 0xFF000000 | healthColor(shown, config);
 		if (csgo) {
 			GuiDraw.fill(graphics, x - pad, y - pad, w + pad * 2f, h + pad * 2f, 0xFF000000);
 			if (fillH >= 0.5f) {
@@ -355,31 +356,14 @@ public final class EntityHealthBars {
 		}
 	}
 
-	private static int healthColor(float t) {
+	private static int healthColor(float t, StrayConfig config) {
 		t = Mth.clamp(t, 0f, 1f);
-		return hsv(t * 120f, 0.90f, 0.92f);
-	}
-
-	private static int hsv(float hue, float sat, float val) {
-		float chroma = val * sat;
-		float x = chroma * (1f - Math.abs((hue / 60f) % 2f - 1f));
-		float m = val - chroma;
-		float r;
-		float g;
-		float b;
-		if (hue < 60f) {
-			r = chroma;
-			g = x;
-			b = 0f;
-		} else {
-			r = x;
-			g = chroma;
-			b = 0f;
-		}
-		int ri = Math.round((r + m) * 255f);
-		int gi = Math.round((g + m) * 255f);
-		int bi = Math.round((b + m) * 255f);
-		return (ri << 16) | (gi << 8) | bi;
+		int start = config.healthBarFullRgb & 0xFFFFFF;
+		int end = config.healthBarEmptyRgb & 0xFFFFFF;
+		int r = Math.round(Mth.lerp(t, (end >> 16) & 0xFF, (start >> 16) & 0xFF));
+		int g = Math.round(Mth.lerp(t, (end >> 8) & 0xFF, (start >> 8) & 0xFF));
+		int b = Math.round(Mth.lerp(t, end & 0xFF, start & 0xFF));
+		return (r << 16) | (g << 8) | b;
 	}
 
 	private record ScreenBox(float x, float y, float w, float h) {
