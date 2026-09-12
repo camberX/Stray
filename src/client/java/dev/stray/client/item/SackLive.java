@@ -11,12 +11,12 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * Sack pickups never enter the inventory. Hypixel announces them in
- * {@code [Sacks]} chat (and the hover breakdown). Those deltas keep Raw Mats
- * current between profile API snapshots.
+ * Sack pickups never enter the inventory. Hypixel announces
+ * {@code [Sacks] +345 items.} and puts the breakdown on hover:
+ * {@code +345 Coal (Mining Sack, Lava Fishing Sack)}.
  */
 public final class SackLive {
-	private static final Pattern DELTA = Pattern.compile("([+-])\\s*([\\d,]+)\\s+([^,+\\n]+)");
+	private static final Pattern LINE = Pattern.compile("([+-])\\s*([\\d,]+)\\s+(.+)");
 	private static final Pattern MOVED = Pattern.compile(
 		"(?i)moved\\s+(?:([\\d,]+)x?\\s+)?(.+?)\\s+to your sacks"
 	);
@@ -34,9 +34,9 @@ public final class SackLive {
 		}
 		List<Change> changes = List.of();
 		if (isSackLine(text)) {
-			changes = parseDeltas(stripPrefix(text));
+			changes = parseDeltas(hoverText(message));
 			if (changes.isEmpty()) {
-				changes = parseDeltas(plain(hover(message)));
+				changes = parseDeltas(stripPrefix(text));
 			}
 		} else if (MOVED.matcher(text).find()) {
 			changes = parseMoved(text);
@@ -55,13 +55,10 @@ public final class SackLive {
 
 	private static boolean isSackLine(String text) {
 		String lower = text.toLowerCase(Locale.ROOT);
-		if (lower.contains("[sacks]")
+		return lower.contains("[sacks]")
 			|| lower.contains("sacks »")
 			|| lower.contains("sacks >")
-			|| lower.contains("sacks:")) {
-			return true;
-		}
-		return lower.contains("sack") && lower.matches(".*[+-]\\s*[\\d,].*");
+			|| lower.contains("sacks:");
 	}
 
 	private static String stripPrefix(String text) {
@@ -74,7 +71,7 @@ public final class SackLive {
 		if (matcher.find()) {
 			long amount = matcher.group(1) == null ? 1L : number(matcher.group(1));
 			String name = cleanName(matcher.group(2));
-			if (amount > 0L && !name.isEmpty()) {
+			if (amount > 0L && !skipName(name)) {
 				out.add(new Change(name, amount));
 			}
 		}
@@ -85,9 +82,16 @@ public final class SackLive {
 		if (text == null || text.isBlank()) {
 			return List.of();
 		}
-		Matcher matcher = DELTA.matcher(text);
 		List<Change> out = new ArrayList<>();
-		while (matcher.find()) {
+		for (String raw : text.split("\\R")) {
+			String line = raw.replaceAll("§.", "").trim();
+			if (line.isEmpty()) {
+				continue;
+			}
+			Matcher matcher = LINE.matcher(line);
+			if (!matcher.find()) {
+				continue;
+			}
 			String name = cleanName(matcher.group(3));
 			if (skipName(name)) {
 				continue;
@@ -112,7 +116,9 @@ public final class SackLive {
 		return lower.equals("item")
 			|| lower.equals("items")
 			|| lower.startsWith("from ")
-			|| lower.contains("sack");
+			|| lower.startsWith("added ")
+			|| lower.startsWith("this message")
+			|| lower.startsWith("last ");
 	}
 
 	private static String cleanName(String raw) {
@@ -120,7 +126,7 @@ public final class SackLive {
 			return "";
 		}
 		String name = raw.replaceAll("§.", "").trim();
-		name = name.replaceAll("\\s*\\([^)]*sack[^)]*\\)\\s*$", "");
+		name = name.replaceAll("(?i)\\s*\\([^)]*\\)\\s*$", "");
 		name = name.replaceAll("\\s+", " ").trim();
 		return name;
 	}
@@ -144,16 +150,39 @@ public final class SackLive {
 		return text == null ? "" : text.trim();
 	}
 
-	private static Component hover(Component message) {
-		if (message == null) {
-			return null;
+	private static String hoverText(Component message) {
+		StringBuilder out = new StringBuilder();
+		collectHover(message, out);
+		return out.toString();
+	}
+
+	private static void collectHover(Component node, StringBuilder out) {
+		if (node == null) {
+			return;
 		}
-		for (Component part : message.toFlatList()) {
-			if (part.getStyle().getHoverEvent() instanceof HoverEvent.ShowText show) {
-				return show.value();
+		if (node.getStyle().getHoverEvent() instanceof HoverEvent.ShowText show) {
+			String text = plain(show.value());
+			if (!text.isEmpty() && !out.toString().contains(text)) {
+				if (!out.isEmpty()) {
+					out.append('\n');
+				}
+				out.append(text);
 			}
 		}
-		return null;
+		for (Component part : node.toFlatList()) {
+			if (part != node && part.getStyle().getHoverEvent() instanceof HoverEvent.ShowText show) {
+				String text = plain(show.value());
+				if (!text.isEmpty() && !out.toString().contains(text)) {
+					if (!out.isEmpty()) {
+						out.append('\n');
+					}
+					out.append(text);
+				}
+			}
+		}
+		for (Component child : node.getSiblings()) {
+			collectHover(child, out);
+		}
 	}
 
 	private record Change(String name, long delta) {

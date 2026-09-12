@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.262", new String[]{
+			"Raw Mats reads the [Sacks] hover: +345 Coal (Mining Sack, …). The chat line is only +N items, so the old parser skipped it."
+		}),
 		new Entry("1.2.261", new String[]{
 			"Raw Mats reads Stored: 171/20.2k from an open sack, so compacting coal into Enchanted Coal updates the bar. Sack chat also matches Sacks » lines."
 		}),
