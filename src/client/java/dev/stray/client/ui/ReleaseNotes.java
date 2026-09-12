@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.258", new String[]{
+			"Raw Mats counts sacks from the same Skyblock profile API as Ender Chest and backpacks. Opening a sack still updates the snapshot if you pull items out."
+		}),
 		new Entry("1.2.257", new String[]{
 			"Ambience Snowy now draws snow. The old extract hook zeroed rain intensity, so the weather renderer skipped snow columns too."
 		}),

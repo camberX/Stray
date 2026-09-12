@@ -44,10 +44,11 @@ public final class RawmatsTracker {
 		long total,
 		boolean recipe,
 		boolean sawEnder,
-		boolean sawBackpack
+		boolean sawBackpack,
+		boolean sawSacks
 	) {
 		public static Snapshot none() {
-			return new Snapshot("", "", ItemStack.EMPTY, List.of(), 0L, 0L, false, false, false);
+			return new Snapshot("", "", ItemStack.EMPTY, List.of(), 0L, 0L, false, false, false, false);
 		}
 
 		public boolean present() {
@@ -182,7 +183,8 @@ public final class RawmatsTracker {
 			lines.size(),
 			recipe,
 			ItemStorage.sawEnder(),
-			ItemStorage.sawBackpack()
+			ItemStorage.sawBackpack(),
+			ItemStorage.sawSacks()
 		);
 	}
 

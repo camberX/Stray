@@ -208,13 +208,13 @@ public final class RawmatsHudRenderer {
 		}
 		SkyblockProfileApi.Status status = SkyblockProfileApi.status();
 		if (status == SkyblockProfileApi.Status.LOADING || status == SkyblockProfileApi.Status.IDLE) {
-			return "Loading Ender Chest and backpacks";
+			return "Loading Ender Chest, backpacks, and sacks";
 		}
 		if (status == SkyblockProfileApi.Status.ERROR) {
-			return "Couldn't load Ender Chest / backpacks";
+			return "Couldn't load Ender Chest / backpacks / sacks";
 		}
-		if (!snap.sawEnder() || !snap.sawBackpack()) {
-			return "Open Ender Chest and backpacks to count them";
+		if (!snap.sawEnder() || !snap.sawBackpack() || !snap.sawSacks()) {
+			return "Open Ender Chest, backpacks, and sacks to count them";
 		}
 		return null;
 	}

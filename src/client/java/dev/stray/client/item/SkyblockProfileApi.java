@@ -29,9 +29,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.zip.GZIPInputStream;
 
 /**
- * Pulls Ender Chest and backpack inventories from
+ * Pulls Ender Chest, backpack, and sack counts from
  * {@code https://hypixel.odtheking.com/get/(uuid)}. Fetches when you join a
- * server and when {@code /vm rawmats} runs. Live inventory stays client-side
+ * server and when {@code /st rawmats} runs. Live inventory stays client-side
  * so a profile refresh cannot wipe what you are holding.
  */
 public final class SkyblockProfileApi {
@@ -157,13 +157,162 @@ public final class SkyblockProfileApi {
 				sawBags |= found[1];
 			}
 		}
-		if (!sawEnder && !sawBags) {
+		Map<String, Long> sacks = new HashMap<>();
+		boolean sawSacks = ingestSacks(member, inventory, sacks);
+		if (!sawEnder && !sawBags && !sawSacks) {
 			fail("inventory hidden");
 			return false;
 		}
-		ItemStorage.applyApi(sawEnder ? ender : null, sawBags ? bags : null);
-		Stray.LOGGER.info("Skyblock storage: {} ender item ids, {} backpack item ids", ender.size(), bags.size());
+		ItemStorage.applyApi(sawEnder ? ender : null, sawBags ? bags : null, sawSacks ? sacks : null);
+		Stray.LOGGER.info(
+			"Skyblock storage: {} ender item ids, {} backpack item ids, {} sack item ids",
+			ender.size(),
+			bags.size(),
+			sacks.size()
+		);
 		return true;
+	}
+
+	private static boolean ingestSacks(JsonObject member, JsonObject inventory, Map<String, Long> dest) {
+		boolean saw = false;
+		for (JsonObject root : new JsonObject[]{inventory, member}) {
+			if (root == null) {
+				continue;
+			}
+			saw |= ingestSackObject(object(root, "sacks_counts"), dest);
+			JsonObject sacks = object(root, "sacks");
+			if (sacks == null) {
+				continue;
+			}
+			JsonObject counts = object(sacks, "counts");
+			if (counts != null) {
+				saw |= ingestSackObject(counts, dest);
+				for (Map.Entry<String, JsonElement> entry : sacks.entrySet()) {
+					if ("counts".equalsIgnoreCase(entry.getKey())) {
+						continue;
+					}
+					saw |= ingestSackEntry(entry.getKey(), entry.getValue(), dest);
+				}
+			} else {
+				saw |= ingestSackObject(sacks, dest);
+			}
+		}
+		return saw;
+	}
+
+	private static boolean ingestSackObject(JsonObject object, Map<String, Long> dest) {
+		if (object == null) {
+			return false;
+		}
+		boolean saw = false;
+		for (Map.Entry<String, JsonElement> entry : object.entrySet()) {
+			saw |= ingestSackEntry(entry.getKey(), entry.getValue(), dest);
+		}
+		return saw;
+	}
+
+	private static boolean ingestSackEntry(String key, JsonElement value, Map<String, Long> dest) {
+		if (value == null || value.isJsonNull() || skipSackKey(key)) {
+			return false;
+		}
+		if (value.isJsonPrimitive()) {
+			JsonPrimitive primitive = value.getAsJsonPrimitive();
+			if (!primitive.isNumber()) {
+				return false;
+			}
+			String id = sackItemId(key);
+			long count = primitive.getAsLong();
+			if (id == null || count <= 0L) {
+				return false;
+			}
+			dest.merge(id, count, Long::sum);
+			return true;
+		}
+		if (value.isJsonArray()) {
+			boolean saw = false;
+			for (JsonElement child : value.getAsJsonArray()) {
+				saw |= ingestSackEntry(key, child, dest);
+			}
+			return saw;
+		}
+		if (!value.isJsonObject()) {
+			return false;
+		}
+		JsonObject object = value.getAsJsonObject();
+		long stored = sackStored(object);
+		boolean saw = false;
+		if (stored > 0L) {
+			String id = sackItemId(key);
+			if (id != null) {
+				dest.merge(id, stored, Long::sum);
+				saw = true;
+			}
+		}
+		for (Map.Entry<String, JsonElement> entry : object.entrySet()) {
+			if (sackAmountKey(entry.getKey())) {
+				continue;
+			}
+			saw |= ingestSackEntry(entry.getKey(), entry.getValue(), dest);
+		}
+		return saw;
+	}
+
+	private static boolean skipSackKey(String key) {
+		if (key == null || key.isBlank()) {
+			return true;
+		}
+		String lower = key.toLowerCase(Locale.ROOT);
+		return lower.contains("icon")
+			|| lower.contains("unlock")
+			|| lower.endsWith("_time")
+			|| lower.equals("data")
+			|| lower.equals("type")
+			|| lower.equals("success")
+			|| lower.equals("value")
+			|| lower.equals("bytes")
+			|| lower.equals("item_bytes")
+			|| lower.equals("nbt")
+			|| lower.equals("contents");
+	}
+
+	private static boolean sackAmountKey(String key) {
+		if (key == null) {
+			return false;
+		}
+		return switch (key.toLowerCase(Locale.ROOT)) {
+			case "count", "amount", "stored", "current", "qty", "quantity" -> true;
+			default -> false;
+		};
+	}
+
+	private static long sackStored(JsonObject object) {
+		for (String key : new String[]{"stored", "amount", "count", "current", "qty", "quantity"}) {
+			JsonElement value = object.get(key);
+			if (value != null && value.isJsonPrimitive() && value.getAsJsonPrimitive().isNumber()) {
+				return Math.max(0L, value.getAsLong());
+			}
+		}
+		return 0L;
+	}
+
+	private static String sackItemId(String raw) {
+		if (raw == null || raw.isBlank()) {
+			return null;
+		}
+		String id = SkyblockRecipes.normalize(raw);
+		if (id.isBlank() || id.length() > 64) {
+			return null;
+		}
+		int colon = id.indexOf(':');
+		String base = colon < 0 ? id : id.substring(0, colon);
+		String suffix = colon < 0 ? "" : id.substring(colon + 1);
+		if (!base.matches("[A-Z][A-Z0-9_]*")) {
+			return null;
+		}
+		if (!suffix.isEmpty() && !suffix.matches("[0-9]+")) {
+			return null;
+		}
+		return id;
 	}
 
 	private static boolean ingestStorage(JsonObject parent, Map<String, Long> dest, boolean ender) {

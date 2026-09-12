@@ -135,8 +135,8 @@ public final class RawmatsCommands {
 			}
 			shown++;
 		}
-		if (!ItemStorage.hasApiStorage() && (!snap.sawEnder() || !snap.sawBackpack())) {
-			tell(muted("Ender Chest and backpacks load when you join a server or run /st rawmats."));
+		if (!ItemStorage.hasApiStorage() && (!snap.sawEnder() || !snap.sawBackpack() || !snap.sawSacks())) {
+			tell(muted("Ender Chest, backpacks, and sacks load when you join a server or run /st rawmats."));
 		}
 		return Command.SINGLE_SUCCESS;
 	}

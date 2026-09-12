@@ -23,7 +23,7 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Live inventory plus Ender Chest / backpack counts from the Skyblock profile API.
+ * Live inventory plus Ender Chest / backpack / sack counts from the Skyblock profile API.
  * <p>
  * API storage is a snapshot. Pulling a stack into your inventory would count it
  * twice if we added live inventory on top of that snapshot. While a bag or
@@ -48,10 +48,13 @@ public final class ItemStorage {
 	private static final Map<String, Map<String, Long>> PAGES = new HashMap<>();
 	private static volatile Map<String, Long> apiEnder = Map.of();
 	private static volatile Map<String, Long> apiBackpack = Map.of();
+	private static volatile Map<String, Long> apiSacks = Map.of();
 	private static volatile boolean apiEnderReady;
 	private static volatile boolean apiBackpackReady;
+	private static volatile boolean apiSacksReady;
 	private static final Map<String, Long> enderAdjust = new HashMap<>();
 	private static final Map<String, Long> backpackAdjust = new HashMap<>();
+	private static final Map<String, Long> sackAdjust = new HashMap<>();
 	private static String openKind;
 	private static String openTitle = "";
 	private static Map<String, Long> openCounts = Map.of();
@@ -95,7 +98,7 @@ public final class ItemStorage {
 		countTick = Integer.MIN_VALUE;
 	}
 
-	public static void applyApi(Map<String, Long> ender, Map<String, Long> backpacks) {
+	public static void applyApi(Map<String, Long> ender, Map<String, Long> backpacks, Map<String, Long> sacks) {
 		if (ender != null) {
 			apiEnder = Map.copyOf(ender);
 			apiEnderReady = true;
@@ -106,11 +109,16 @@ public final class ItemStorage {
 			apiBackpackReady = true;
 			backpackAdjust.clear();
 		}
+		if (sacks != null) {
+			apiSacks = Map.copyOf(sacks);
+			apiSacksReady = true;
+			sackAdjust.clear();
+		}
 		countTick = Integer.MIN_VALUE;
 	}
 
 	public static boolean hasApiStorage() {
-		return apiEnderReady || apiBackpackReady;
+		return apiEnderReady || apiBackpackReady || apiSacksReady;
 	}
 
 	public static boolean sawEnder() {
@@ -119,6 +127,10 @@ public final class ItemStorage {
 
 	public static boolean sawBackpack() {
 		return apiBackpackReady || hasPage("backpack");
+	}
+
+	public static boolean sawSacks() {
+		return apiSacksReady || hasPage("sack");
 	}
 
 	private static int countTick = Integer.MIN_VALUE;
@@ -157,6 +169,11 @@ public final class ItemStorage {
 		} else {
 			addPages(out, "backpack");
 		}
+		if (apiSacksReady) {
+			mergeAdjusted(out, apiSacks, sackAdjust);
+		} else {
+			addPages(out, "sack");
+		}
 		if (!apiEnderReady && !apiBackpackReady) {
 			addPages(out, "storage");
 		}
@@ -177,11 +194,15 @@ public final class ItemStorage {
 	}
 
 	private static boolean tracksMoves(String kind) {
-		return "ender".equals(kind) || "backpack".equals(kind);
+		return "ender".equals(kind) || "backpack".equals(kind) || "sack".equals(kind);
 	}
 
 	private static Map<String, Long> adjust(String kind) {
-		return "ender".equals(kind) ? enderAdjust : backpackAdjust;
+		return switch (kind) {
+			case "ender" -> enderAdjust;
+			case "sack" -> sackAdjust;
+			default -> backpackAdjust;
+		};
 	}
 
 	/** Positive delta = items left the container (usually into inventory). */
@@ -443,6 +464,9 @@ public final class ItemStorage {
 		}
 		if (lower.contains("backpack")) {
 			return "backpack";
+		}
+		if (lower.contains("sack")) {
+			return "sack";
 		}
 		if (lower.equals("storage") || lower.startsWith("storage ")) {
 			return "storage";
