@@ -123,6 +123,7 @@ public final class ItemStorage {
 			apiSacks = Map.copyOf(sacks);
 			apiSacksReady = true;
 			sackAdjust.clear();
+			SackLive.reset();
 		}
 		countTick = Integer.MIN_VALUE;
 	}
@@ -141,6 +142,7 @@ public final class ItemStorage {
 		sacksLive = true;
 		for (String id : seen.keySet()) {
 			sackAdjust.remove(id);
+			SackLive.forget(id);
 		}
 		countTick = Integer.MIN_VALUE;
 	}

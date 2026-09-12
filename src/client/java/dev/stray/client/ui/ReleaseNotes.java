@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.263", new String[]{
+			"Raw Mats no longer double-counts [Sacks] Last 2s batches. Compacting applies both hover + and - (coal out, enchanted in) and skips the +N items summary."
+		}),
 		new Entry("1.2.262", new String[]{
 			"Raw Mats reads the [Sacks] hover: +345 Coal (Mining Sack, …). The chat line is only +N items, so the old parser skipped it."
 		}),
