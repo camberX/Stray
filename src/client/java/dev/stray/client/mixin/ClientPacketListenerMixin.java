@@ -2,6 +2,7 @@ package dev.stray.client.mixin;
 
 import dev.stray.client.combat.Hitsound;
 import dev.stray.client.fairy.FairySoulTracker;
+import dev.stray.client.item.SackLive;
 import dev.stray.client.mining.MetalDetector;
 import dev.stray.client.ui.ProfileCommands;
 import net.minecraft.client.multiplayer.ClientPacketListener;
@@ -26,6 +27,7 @@ public class ClientPacketListenerMixin {
 	private void stray$fairySoulChat(ClientboundSystemChatPacket packet, CallbackInfo ci) {
 		if (packet != null) {
 			FairySoulTracker.onChat(packet.content());
+			SackLive.onChat(packet.content());
 			if (packet.overlay()) {
 				MetalDetector.onActionBar(packet.content());
 			}

@@ -28,6 +28,7 @@ public final class SkyblockItems {
 	}
 
 	private static final Map<String, Entry> BY_ID = new HashMap<>();
+	private static final Map<String, String> BY_NAME = new HashMap<>();
 	private static boolean loaded;
 
 	private SkyblockItems() {
@@ -52,6 +53,7 @@ public final class SkyblockItems {
 					Entry entry = parse(line);
 					if (entry != null) {
 						BY_ID.put(entry.id, entry);
+						indexName(entry);
 					}
 				}
 			}
@@ -71,6 +73,32 @@ public final class SkyblockItems {
 
 	public static boolean has(String id) {
 		return get(id) != null;
+	}
+
+	public static String idFromName(String raw) {
+		load();
+		if (raw == null || raw.isBlank()) {
+			return null;
+		}
+		String name = raw.replaceAll("§.", "").trim();
+		if (name.isEmpty()) {
+			return null;
+		}
+		String byName = BY_NAME.get(name.toLowerCase(Locale.ROOT));
+		if (byName != null) {
+			return byName;
+		}
+		String id = SkyblockRecipes.normalize(name);
+		if (BY_ID.containsKey(id)) {
+			return id;
+		}
+		if (id.endsWith("_GEMSTONE")) {
+			String gem = id.substring(0, id.length() - "STONE".length());
+			if (BY_ID.containsKey(gem)) {
+				return gem;
+			}
+		}
+		return null;
 	}
 
 	public static Entry match(String query) {
@@ -139,6 +167,24 @@ public final class SkyblockItems {
 			if (!out.contains(id)) {
 				out.add(id);
 			}
+		}
+	}
+
+	private static void indexName(Entry entry) {
+		if (entry.name != null && !entry.name.isBlank()) {
+			rememberName(entry.name, entry.id);
+		}
+		rememberName(entry.id.replace('_', ' '), entry.id);
+	}
+
+	private static void rememberName(String name, String id) {
+		String key = name.trim().toLowerCase(Locale.ROOT);
+		if (key.isEmpty()) {
+			return;
+		}
+		String existing = BY_NAME.get(key);
+		if (existing == null || existing.equals(id) || SkyblockRecipes.normalize(name).equals(id)) {
+			BY_NAME.put(key, id);
 		}
 	}
 

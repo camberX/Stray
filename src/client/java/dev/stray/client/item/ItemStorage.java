@@ -52,6 +52,7 @@ public final class ItemStorage {
 	private static volatile boolean apiEnderReady;
 	private static volatile boolean apiBackpackReady;
 	private static volatile boolean apiSacksReady;
+	private static volatile boolean sacksLive;
 	private static final Map<String, Long> enderAdjust = new HashMap<>();
 	private static final Map<String, Long> backpackAdjust = new HashMap<>();
 	private static final Map<String, Long> sackAdjust = new HashMap<>();
@@ -117,6 +118,30 @@ public final class ItemStorage {
 		countTick = Integer.MIN_VALUE;
 	}
 
+	public static boolean sackScreenOpen() {
+		return "sack".equals(openKind);
+	}
+
+	public static void applySackDelta(String id, long delta) {
+		if (id == null || id.isBlank() || delta == 0L) {
+			return;
+		}
+		String key = SkyblockRecipes.normalize(id);
+		if (key.isBlank()) {
+			return;
+		}
+		Map<String, Long> next = new HashMap<>(apiSacks);
+		long count = next.getOrDefault(key, 0L) + delta;
+		if (count > 0L) {
+			next.put(key, count);
+		} else {
+			next.remove(key);
+		}
+		apiSacks = Map.copyOf(next);
+		sacksLive = true;
+		countTick = Integer.MIN_VALUE;
+	}
+
 	public static boolean hasApiStorage() {
 		return apiEnderReady || apiBackpackReady || apiSacksReady;
 	}
@@ -130,7 +155,7 @@ public final class ItemStorage {
 	}
 
 	public static boolean sawSacks() {
-		return apiSacksReady || hasPage("sack");
+		return apiSacksReady || sacksLive || hasPage("sack");
 	}
 
 	private static int countTick = Integer.MIN_VALUE;
@@ -169,7 +194,7 @@ public final class ItemStorage {
 		} else {
 			addPages(out, "backpack");
 		}
-		if (apiSacksReady) {
+		if (apiSacksReady || sacksLive) {
 			mergeAdjusted(out, apiSacks, sackAdjust);
 		} else {
 			addPages(out, "sack");

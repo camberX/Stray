@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.259", new String[]{
+			"Raw Mats updates sack counts live from [Sacks] chat. Items that skip the inventory are added as soon as Hypixel announces them."
+		}),
 		new Entry("1.2.258", new String[]{
 			"Raw Mats counts sacks from the same Skyblock profile API as Ender Chest and backpacks. Opening a sack still updates the snapshot if you pull items out."
 		}),
