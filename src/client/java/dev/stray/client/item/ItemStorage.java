@@ -147,6 +147,14 @@ public final class ItemStorage {
 		countTick = Integer.MIN_VALUE;
 	}
 
+	public static long sackCount(String id) {
+		String key = SkyblockRecipes.normalize(id);
+		if (key.isBlank()) {
+			return 0L;
+		}
+		return Math.max(0L, apiSacks.getOrDefault(key, 0L) - sackAdjust.getOrDefault(key, 0L));
+	}
+
 	public static void applySackDelta(String id, long delta) {
 		if (id == null || id.isBlank() || delta == 0L) {
 			return;

@@ -6,8 +6,10 @@ import net.minecraft.network.chat.HoverEvent;
 
 import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -17,6 +19,9 @@ import java.util.regex.Pattern;
  * {@code +345 Coal (Mining Sack, …)}. Compacting is
  * {@code +8 items, -1,417 items} with added and removed hover rows.
  * {@code Last 2s} windows overlap, so later messages only apply the leftover.
+ * A line with both + and − is compacting (coal out of one sack, enchanted into
+ * another). That is the same materials changing form, so only convert raw we
+ * already counted — do not treat the +N enchanted as new loot.
  */
 public final class SackLive {
 	private static final Pattern CHUNK = Pattern.compile("([+-])\\s*([\\d,]+)\\s+([^-+]+?)(?=\\s*[+-]\\s*[\\d,]|$)");
@@ -63,21 +68,123 @@ public final class SackLive {
 		long now = System.currentTimeMillis();
 		prune(now);
 		SkyblockItems.load();
+		SkyblockRecipes.load();
+		Map<String, Long> net = new LinkedHashMap<>();
 		for (Change change : changes) {
 			String id = SkyblockItems.idFromName(change.name);
 			if (id == null) {
 				continue;
 			}
-			long delta = change.delta;
+			net.merge(id, change.delta, Long::sum);
+		}
+		if (net.isEmpty()) {
+			return;
+		}
+		boolean compact = false;
+		boolean gain = false;
+		for (long delta : net.values()) {
+			if (delta > 0L) {
+				gain = true;
+			} else if (delta < 0L) {
+				compact = true;
+			}
+		}
+		if (compact && gain) {
+			applyCompact(net);
+			return;
+		}
+		for (Map.Entry<String, Long> entry : net.entrySet()) {
+			long delta = entry.getValue();
 			if (windowMs > 0) {
-				delta -= already(id, now, windowMs);
+				delta -= already(entry.getKey(), now, windowMs);
 			}
 			if (delta == 0L) {
 				continue;
 			}
-			ItemStorage.applySackDelta(id, delta);
-			SEEN.add(new Seen(id, delta, now));
+			ItemStorage.applySackDelta(entry.getKey(), delta);
+			SEEN.add(new Seen(entry.getKey(), delta, now));
 		}
+	}
+
+	/**
+	 * Compacting pulls raw out of one sack and pushes the enchanted stack into
+	 * another. Raw Mats already counts that raw (and shows it as enchanted), so
+	 * crediting the full +N enchanted overshoots until you open the sack.
+	 * Only convert as many raw items as we currently have stored.
+	 */
+	private static void applyCompact(Map<String, Long> net) {
+		Map<String, Long> added = new LinkedHashMap<>();
+		Map<String, Long> removed = new LinkedHashMap<>();
+		for (Map.Entry<String, Long> entry : net.entrySet()) {
+			if (entry.getValue() > 0L) {
+				added.put(entry.getKey(), entry.getValue());
+			} else if (entry.getValue() < 0L) {
+				removed.put(entry.getKey(), -entry.getValue());
+			}
+		}
+		Iterator<Map.Entry<String, Long>> it = added.entrySet().iterator();
+		while (it.hasNext()) {
+			Map.Entry<String, Long> entry = it.next();
+			String outputId = entry.getKey();
+			long outputCount = entry.getValue();
+			String ingredient = compactIngredient(outputId, removed);
+			if (ingredient == null) {
+				continue;
+			}
+			long cost = compactCost(outputId, ingredient);
+			long producedEach = compactOutput(outputId);
+			long have = ItemStorage.sackCount(ingredient);
+			long take = Math.min(have, removed.getOrDefault(ingredient, 0L));
+			long produced = cost <= 0L ? 0L : (take / cost) * producedEach;
+			long credit = Math.min(outputCount, produced);
+			ItemStorage.applySackDelta(ingredient, -take);
+			ItemStorage.applySackDelta(outputId, credit);
+			removed.remove(ingredient);
+			it.remove();
+		}
+		for (Map.Entry<String, Long> entry : added.entrySet()) {
+			ItemStorage.applySackDelta(entry.getKey(), entry.getValue());
+		}
+		for (Map.Entry<String, Long> entry : removed.entrySet()) {
+			long take = Math.min(ItemStorage.sackCount(entry.getKey()), entry.getValue());
+			ItemStorage.applySackDelta(entry.getKey(), -take);
+		}
+	}
+
+	private static String compactIngredient(String outputId, Map<String, Long> removed) {
+		SkyblockRecipes.Recipe recipe = SkyblockRecipes.get(outputId);
+		if (recipe != null && recipe.ingredients().size() == 1) {
+			String ingredient = recipe.ingredients().keySet().iterator().next();
+			if (removed.containsKey(ingredient)) {
+				return ingredient;
+			}
+		}
+		if (SkyblockRecipes.enchantedCompact(outputId)) {
+			String raw = outputId.substring("ENCHANTED_".length());
+			if (removed.containsKey(raw)) {
+				return raw;
+			}
+		}
+		return null;
+	}
+
+	private static long compactCost(String outputId, String ingredient) {
+		SkyblockRecipes.Recipe recipe = SkyblockRecipes.get(outputId);
+		if (recipe != null) {
+			Long cost = recipe.ingredients().get(ingredient);
+			if (cost != null && cost > 0L) {
+				return cost;
+			}
+		}
+		return 160L;
+	}
+
+	private static long compactOutput(String outputId) {
+		SkyblockRecipes.Recipe recipe = SkyblockRecipes.get(outputId);
+		if (recipe == null) {
+			return 1L;
+		}
+		return Math.max(1L, recipe.output());
 	}
 
 	private static long already(String id, long now, int windowMs) {

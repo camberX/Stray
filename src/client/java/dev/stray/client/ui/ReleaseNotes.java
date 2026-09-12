@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.264", new String[]{
+			"Raw Mats treats [Sacks] +N, −N compact lines as a craft, not new loot. Enchanted coal from a Mining Sack no longer jumps the bar past Stored."
+		}),
 		new Entry("1.2.263", new String[]{
 			"Raw Mats no longer double-counts [Sacks] Last 2s batches. Compacting applies both hover + and - (coal out, enchanted in) and skips the +N items summary."
 		}),
