@@ -119,7 +119,7 @@ public final class EntityHealthBars {
 			Bar bar = BARS.computeIfAbsent(id, ignored -> new Bar(target));
 			bar.tick(target, dt);
 			seen.add(id);
-			draw(graphics, screen, bar.shown, right);
+			draw(graphics, screen, bar.shown, right, config.healthBarCsgo());
 		}
 		Iterator<Map.Entry<UUID, Bar>> it = BARS.entrySet().iterator();
 		while (it.hasNext()) {
@@ -331,7 +331,7 @@ public final class EntityHealthBars {
 		return hit.getLocation().distanceToSqr(from) + 0.36 < to.distanceToSqr(from);
 	}
 
-	private static void draw(GuiGraphicsExtractor graphics, ScreenBox box, float shown, boolean right) {
+	private static void draw(GuiGraphicsExtractor graphics, ScreenBox box, float shown, boolean right, boolean csgo) {
 		float h = box.h();
 		float w = Mth.clamp(h * WIDTH_RATIO, 1.1f, 4.5f);
 		float gap = Mth.clamp(h * GAP_RATIO, 1.5f, 5f);
@@ -339,8 +339,15 @@ public final class EntityHealthBars {
 		float x = right ? box.x + box.w + gap : box.x - gap - w;
 		float y = box.y;
 		float fillH = h * Mth.clamp(shown, 0f, 1f);
-		float radius = Math.min(w * 0.45f, h * 0.12f);
 		int color = 0xFF000000 | healthColor(shown);
+		if (csgo) {
+			GuiDraw.fill(graphics, x - pad, y - pad, w + pad * 2f, h + pad * 2f, 0xFF000000);
+			if (fillH >= 0.5f) {
+				GuiDraw.fill(graphics, x, y + h - fillH, w, fillH, color);
+			}
+			return;
+		}
+		float radius = Math.min(w * 0.45f, h * 0.12f);
 		GuiDraw.rounded(graphics, x - pad, y - pad, w + pad * 2f, h + pad * 2f, radius + pad * 0.4f, LINE);
 		GuiDraw.rounded(graphics, x, y, w, h, radius, TRACK);
 		if (fillH >= 0.6f) {

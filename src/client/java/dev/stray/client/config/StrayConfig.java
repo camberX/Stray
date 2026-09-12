@@ -295,6 +295,7 @@ public final class StrayConfig {
 	public boolean healthBarPlayers = false;
 	public boolean healthBarThroughWalls = false;
 	public String healthBarSide = "right";
+	public String healthBarStyle = "stray";
 	public int healthBarRange = 48;
 	public float menuScale = 0.75f;
 	public boolean menuScaleV2;
@@ -524,6 +525,7 @@ public final class StrayConfig {
 					loaded.healthBarSide = "right";
 				}
 				loaded.healthBarSide = normalizeHealthBarSide(loaded.healthBarSide);
+				loaded.healthBarStyle = normalizeHealthBarStyle(loaded.healthBarStyle);
 				loaded.healthBarRange = clamp(loaded.healthBarRange <= 0 ? 48 : loaded.healthBarRange, 16, 96);
 				if (!json.has("healthBarEnabled")) {
 					loaded.healthBarEnabled = false;
@@ -1075,8 +1077,31 @@ public final class StrayConfig {
 		healthBarSide = healthBarRight() ? "left" : "right";
 	}
 
+	public boolean healthBarCsgo() {
+		return "csgo".equalsIgnoreCase(healthBarStyle);
+	}
+
+	public String healthBarStyleLabel() {
+		return healthBarCsgo() ? "CS:GO" : "Stray";
+	}
+
+	public void cycleHealthBarStyle() {
+		healthBarStyle = healthBarCsgo() ? "stray" : "csgo";
+	}
+
 	public static String normalizeHealthBarSide(String side) {
 		return "left".equalsIgnoreCase(side) ? "left" : "right";
+	}
+
+	public static String normalizeHealthBarStyle(String style) {
+		if (style == null) {
+			return "stray";
+		}
+		String key = style.trim().toLowerCase();
+		if (key.equals("csgo") || key.equals("cs") || key.equals("source")) {
+			return "csgo";
+		}
+		return "stray";
 	}
 
 	public enum MotionBlurAlgorithm {

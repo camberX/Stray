@@ -160,7 +160,7 @@ public class StrayScreen extends Screen {
 		PEST("Pest ESP", 2),
 		AUTO_DNA("Auto DNA", 5),
 		NAMETAGS("Nametags", 6),
-		HEALTH("Health bar", 4),
+		HEALTH("Health bar", 5),
 		NODES("Nodes", 5);
 
 		final String title;
@@ -292,6 +292,7 @@ public class StrayScreen extends Screen {
 		new SearchEntry("Mob health", Tab.ESP, "Health"),
 		new SearchEntry("Player health", Tab.ESP, "Health"),
 		new SearchEntry("Health side", Tab.ESP, "Health"),
+		new SearchEntry("CSGO health", Tab.ESP, "Health"),
 		new SearchEntry("Menu scale", Tab.SETTINGS, "Theme"),
 		new SearchEntry("HUD opacity", Tab.SETTINGS, "Theme"),
 		new SearchEntry("Menu stars", Tab.SETTINGS, "Theme"),
@@ -3099,6 +3100,7 @@ public class StrayScreen extends Screen {
 			}
 			case HEALTH -> {
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Players", config.healthBarPlayers, v -> config.healthBarPlayers = v);
+				y = cycle(graphics, font, ix, y, iw, mouseX, mouseY, "Style", config.healthBarStyleLabel(), config::cycleHealthBarStyle);
 				y = cycle(graphics, font, ix, y, iw, mouseX, mouseY, "Side", config.healthBarSideLabel(), config::cycleHealthBarSide);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Through walls", config.healthBarThroughWalls, v -> config.healthBarThroughWalls = v);
 				slider(graphics, font, ix, y, iw, "Range", config.healthBarRange + "m", (config.healthBarRange - 16) / 80f, v -> config.healthBarRange = StrayConfig.clamp(16 + Math.round(v * 80f), 16, 96));
