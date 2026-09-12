@@ -306,6 +306,7 @@ public final class StrayConfig {
 	public int boxEspRgb = 0x2FB5FF;
 	public float boxEspOpacity = 0.90f;
 	public float boxEspFill = 0.12f;
+	public float boxEspWidth = 2f;
 	public float menuScale = 0.75f;
 	public boolean menuScaleV2;
 	public boolean menuStarfield = false;
@@ -560,6 +561,7 @@ public final class StrayConfig {
 				}
 				loaded.boxEspOpacity = clamp(loaded.boxEspOpacity <= 0f ? 0.90f : loaded.boxEspOpacity, 0.15f, 1f);
 				loaded.boxEspFill = clamp(loaded.boxEspFill < 0f ? 0.12f : loaded.boxEspFill, 0f, 0.55f);
+				loaded.boxEspWidth = clamp(loaded.boxEspWidth <= 0f ? 2f : loaded.boxEspWidth, 1f, 6f);
 				if (!json.has("healthBarEnabled")) {
 					loaded.healthBarEnabled = false;
 				}

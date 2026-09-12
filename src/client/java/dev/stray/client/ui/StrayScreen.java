@@ -161,7 +161,7 @@ public class StrayScreen extends Screen {
 		AUTO_DNA("Auto DNA", 5),
 		NAMETAGS("Nametags", 6),
 		HEALTH("Health bar", 7),
-		BOX("2D box", 5),
+		BOX("2D box", 6),
 		NODES("Nodes", 5);
 
 		final String title;
@@ -3116,6 +3116,7 @@ public class StrayScreen extends Screen {
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Players", config.boxEspPlayers, v -> config.boxEspPlayers = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Through walls", config.boxEspThroughWalls, v -> config.boxEspThroughWalls = v);
 				y = slider(graphics, font, ix, y, iw, "Range", config.boxEspRange + "m", (config.boxEspRange - 16) / 80f, v -> config.boxEspRange = StrayConfig.clamp(16 + Math.round(v * 80f), 16, 96));
+				y = slider(graphics, font, ix, y, iw, "Line", String.format(java.util.Locale.ROOT, "%.1f", config.boxEspWidth), (config.boxEspWidth - 1f) / 5f, v -> config.boxEspWidth = StrayConfig.clamp(1f + v * 5f, 1f, 6f));
 				y = slider(graphics, font, ix, y, iw, "Fill", Math.round(config.boxEspFill * 100) + "%", config.boxEspFill / 0.55f, v -> config.boxEspFill = StrayConfig.clamp(v * 0.55f, 0f, 0.55f));
 				colorRow(graphics, font, ix, y, iw, mouseX, mouseY, "Color", config.boxEspRgb, PickerTarget.BOX);
 			}
