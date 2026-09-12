@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.256", new String[]{
+			"Ambience no longer crashes on 26.1.2. Time uses the new client clock, and snow/rain hooks the weather renderer that actually exists."
+		}),
 		new Entry("1.2.255", new String[]{
 			"World has an Ambience pill for client weather and time: sunny, rain, snow, thunder, and clock presets, plus a precipitation gradient."
 		}),

@@ -22,11 +22,4 @@ public class LevelMixin {
 			cir.setReturnValue(CustomAmbience.thunderLevel(0f));
 		}
 	}
-
-	@Inject(method = "getDayTime", at = @At("HEAD"), cancellable = true)
-	private void stray$dayTime(CallbackInfoReturnable<Long> cir) {
-		if (CustomAmbience.overridesTime()) {
-			cir.setReturnValue(CustomAmbience.dayTime(0L));
-		}
-	}
 }

@@ -17,6 +17,7 @@
 		"CameraMixin",
 		"ChatComponentMixin",
 		"ChatScreenMixin",
+		"ClientClockManagerMixin",
 		"ClientLevelAccessor",
 		"ClientPacketListenerMixin",
 		"ConnectionMixin",
