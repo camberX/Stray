@@ -49,6 +49,11 @@ public final class StrayConfig {
 	public float fogEnd = 0.72f;
 	public float fogDensity = 1.0f;
 	public boolean matchFogToWorld = false;
+	public boolean ambienceEnabled = false;
+	public String ambienceWeather = "no_change";
+	public String ambienceTime = "no_change";
+	public boolean ambiencePrecipitation = true;
+	public float ambiencePrecipitationGradient = 0.70f;
 	public boolean aspectEnabled = false;
 	public float aspectRatio = 1.0f;
 	public boolean motionBlurEnabled = false;
@@ -1528,6 +1533,92 @@ public final class StrayConfig {
 		};
 	}
 
+	public enum Weather {
+		NO_CHANGE,
+		SUNNY,
+		RAINY,
+		SNOWY,
+		THUNDER
+	}
+
+	public enum Clock {
+		NO_CHANGE,
+		DAWN,
+		DAY,
+		NOON,
+		DUSK,
+		NIGHT,
+		MIDNIGHT
+	}
+
+	public Weather weather() {
+		return parseWeather(ambienceWeather);
+	}
+
+	public String weatherLabel() {
+		return switch (weather()) {
+			case SUNNY -> "Sunny";
+			case RAINY -> "Rainy";
+			case SNOWY -> "Snowy";
+			case THUNDER -> "Thunder";
+			case NO_CHANGE -> "No change";
+		};
+	}
+
+	public void cycleWeather() {
+		Weather[] values = Weather.values();
+		ambienceWeather = values[(weather().ordinal() + 1) % values.length].name().toLowerCase(java.util.Locale.ROOT);
+	}
+
+	public Clock clock() {
+		return parseClock(ambienceTime);
+	}
+
+	public String clockLabel() {
+		return switch (clock()) {
+			case DAWN -> "Dawn";
+			case DAY -> "Day";
+			case NOON -> "Noon";
+			case DUSK -> "Dusk";
+			case NIGHT -> "Night";
+			case MIDNIGHT -> "Midnight";
+			case NO_CHANGE -> "No change";
+		};
+	}
+
+	public void cycleTime() {
+		Clock[] values = Clock.values();
+		ambienceTime = values[(clock().ordinal() + 1) % values.length].name().toLowerCase(java.util.Locale.ROOT);
+	}
+
+	public static Weather parseWeather(String value) {
+		if (value == null) {
+			return Weather.NO_CHANGE;
+		}
+		return switch (value.trim().toLowerCase(java.util.Locale.ROOT)) {
+			case "sunny", "clear" -> Weather.SUNNY;
+			case "rainy", "rain" -> Weather.RAINY;
+			case "snowy", "snow" -> Weather.SNOWY;
+			case "thunder", "storm" -> Weather.THUNDER;
+			default -> Weather.NO_CHANGE;
+		};
+	}
+
+	public static Clock parseClock(String value) {
+		if (value == null) {
+			return Clock.NO_CHANGE;
+		}
+		return switch (value.trim().toLowerCase(java.util.Locale.ROOT)) {
+			case "dawn" -> Clock.DAWN;
+			case "day" -> Clock.DAY;
+			case "noon" -> Clock.NOON;
+			case "dusk" -> Clock.DUSK;
+			case "night" -> Clock.NIGHT;
+			case "midnight", "mid_night" -> Clock.MIDNIGHT;
+			default -> Clock.NO_CHANGE;
+		};
+	}
+
 	public static String normalizeWorldTintMode(String mode) {
 		return "lightmap".equalsIgnoreCase(mode) ? "lightmap" : "shader";
 	}
@@ -1540,6 +1631,7 @@ public final class StrayConfig {
 		return switch (name) {
 			case "WORLD", "ATMOSPHERE", "SKY", "TINT" -> "WORLD";
 			case "CAMERA", "VIEW", "FOG", "MOTION" -> "CAMERA";
+			case "AMBIENCE", "WEATHER", "TIME", "RAIN", "SNOW", "THUNDER", "PRECIPITATION" -> "AMBIENCE";
 			case "COMBAT", "HITSOUND" -> "COMBAT";
 			case "ASSIST", "TRIGGERBOT", "AUTOCLICKER" -> "ASSIST";
 			case "ESP", "VISUALS", "GLOW", "WORLD_ESP", "ITEMS", "HELDITEM", "SHADER" -> "ESP";

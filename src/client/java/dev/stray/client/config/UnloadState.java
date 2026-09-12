@@ -8,6 +8,7 @@ public final class UnloadState {
 	private static boolean aspect;
 	private static boolean motionBlur;
 	private static boolean markers;
+	private static boolean ambience;
 
 	private UnloadState() {
 	}
@@ -32,12 +33,14 @@ public final class UnloadState {
 		aspect = config.aspectEnabled;
 		motionBlur = config.motionBlurEnabled;
 		markers = config.markersEnabled;
+		ambience = config.ambienceEnabled;
 		config.worldTintEnabled = false;
 		config.skyTintEnabled = false;
 		config.fogEnabled = false;
 		config.aspectEnabled = false;
 		config.motionBlurEnabled = false;
 		config.markersEnabled = false;
+		config.ambienceEnabled = false;
 		unloaded = true;
 		config.save();
 	}
@@ -50,6 +53,7 @@ public final class UnloadState {
 		config.aspectEnabled = aspect;
 		config.motionBlurEnabled = motionBlur;
 		config.markersEnabled = markers;
+		config.ambienceEnabled = ambience;
 		unloaded = false;
 		config.save();
 	}

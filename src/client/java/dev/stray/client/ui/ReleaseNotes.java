@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.255", new String[]{
+			"World has an Ambience pill for client weather and time: sunny, rain, snow, thunder, and clock presets, plus a precipitation gradient."
+		}),
 		new Entry("1.2.254", new String[]{
 			"Jacob contest HUD remaining time comes from the scoreboard (Melon Slice 15m36s), which keeps seconds for the whole 20-minute contest."
 		}),

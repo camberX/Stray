@@ -99,6 +99,7 @@ public class StrayScreen extends Screen {
 	private enum Tab {
 		WORLD("Atmosphere", Group.WORLD),
 		CAMERA("Camera", Group.WORLD),
+		AMBIENCE("Ambience", Group.WORLD),
 		ESP("ESP", Group.ESP),
 		PLAYERS("Players", Group.ESP),
 		CATALOG("Mobs", Group.ESP),
@@ -132,6 +133,7 @@ public class StrayScreen extends Screen {
 	private enum Feature {
 		WORLD("World tint", 4),
 		SKY("Skybox", 4),
+		AMBIENCE("Ambience", 4),
 		FOG("Fog", 5),
 		VIEW("Aspect", 3),
 		MOTION("Motion blur", 3),
@@ -208,6 +210,16 @@ public class StrayScreen extends Screen {
 		new SearchEntry("Frame blending", Tab.CAMERA, "Camera"),
 		new SearchEntry("Hybrid blur", Tab.CAMERA, "Camera"),
 		new SearchEntry("Accumulation blur", Tab.CAMERA, "Camera"),
+		new SearchEntry("Ambience", Tab.AMBIENCE, "Ambience"),
+		new SearchEntry("Custom ambience", Tab.AMBIENCE, "Ambience"),
+		new SearchEntry("Weather", Tab.AMBIENCE, "Ambience"),
+		new SearchEntry("Time", Tab.AMBIENCE, "Ambience"),
+		new SearchEntry("Clock", Tab.AMBIENCE, "Ambience"),
+		new SearchEntry("Rain", Tab.AMBIENCE, "Ambience"),
+		new SearchEntry("Snow", Tab.AMBIENCE, "Ambience"),
+		new SearchEntry("Thunder", Tab.AMBIENCE, "Ambience"),
+		new SearchEntry("Precipitation", Tab.AMBIENCE, "Ambience"),
+		new SearchEntry("Rain gradient", Tab.AMBIENCE, "Ambience"),
 		new SearchEntry("Combat", Tab.COMBAT, "Hitsound"),
 		new SearchEntry("Hitsound", Tab.COMBAT, "Hitsound"),
 		new SearchEntry("Melee hitsound", Tab.COMBAT, "Hitsound"),
@@ -1598,6 +1610,7 @@ public class StrayScreen extends Screen {
 	private static String tabGlyph(Tab value) {
 		return switch (value) {
 			case WORLD, CAMERA -> MenuFont.GLOBE;
+			case AMBIENCE -> MenuFont.CLOUD;
 			case COMBAT, ASSIST -> MenuFont.SWORD;
 			case ESP, PLAYERS, CATALOG, STARS -> MenuFont.EYE;
 			case OVERLAY, MEDIA -> MenuFont.DISPLAY;
@@ -2233,6 +2246,10 @@ public class StrayScreen extends Screen {
 				y = controlCard(graphics, font, left, y, col, mouseX, mouseY, "Aspect ratio", config.aspectEnabled, v -> config.aspectEnabled = v, Feature.VIEW);
 				y = sectionLabel(graphics, font, right, top, "Motion");
 				controlCard(graphics, font, right, y, col, mouseX, mouseY, "Motion blur", config.motionBlurEnabled, v -> config.motionBlurEnabled = v, Feature.MOTION);
+			}
+			case AMBIENCE -> {
+				float y = sectionLabel(graphics, font, left, top, "World");
+				controlCard(graphics, font, left, y, col, mouseX, mouseY, "Ambience", config.ambienceEnabled, v -> config.ambienceEnabled = v, Feature.AMBIENCE);
 			}
 			case COMBAT -> {
 				float y = sectionLabel(graphics, font, left, top, "Feedback");
@@ -2893,6 +2910,22 @@ public class StrayScreen extends Screen {
 				int skyPreview = config.matchSkyToWorld ? config.worldTintRgb : config.skyTintRgb;
 				y = colorRow(graphics, font, ix, y, iw, mouseX, mouseY, "Color", skyPreview, PickerTarget.SKY);
 				slider(graphics, font, ix, y, iw, "Strength", String.format(Locale.ROOT, "%.0f", config.skyTintStrength * 100), config.skyTintStrength, v -> config.skyTintStrength = v);
+			}
+			case AMBIENCE -> {
+				y = cycle(graphics, font, ix, y, iw, mouseX, mouseY, "Weather", config.weatherLabel(), config::cycleWeather);
+				y = cycle(graphics, font, ix, y, iw, mouseX, mouseY, "Time", config.clockLabel(), config::cycleTime);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Precipitation", config.ambiencePrecipitation, v -> config.ambiencePrecipitation = v);
+				slider(
+					graphics,
+					font,
+					ix,
+					y,
+					iw,
+					"Gradient",
+					Math.round(StrayConfig.clamp(config.ambiencePrecipitationGradient, 0.1f, 1f) * 100) + "%",
+					(StrayConfig.clamp(config.ambiencePrecipitationGradient, 0.1f, 1f) - 0.1f) / 0.9f,
+					v -> config.ambiencePrecipitationGradient = StrayConfig.clamp(0.1f + v * 0.9f, 0.1f, 1f)
+				);
 			}
 			case FOG -> {
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Match world", config.matchFogToWorld, v -> config.matchFogToWorld = v);
