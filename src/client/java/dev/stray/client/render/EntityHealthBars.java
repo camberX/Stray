@@ -294,9 +294,9 @@ public final class EntityHealthBars {
 		float fillH = h * Mth.clamp(shown, 0f, 1f);
 		int color = 0xFF000000 | healthColor(shown, config);
 		if (csgo) {
-			GuiDraw.fill(graphics, x - pad, y - pad, w + pad * 2f, h + pad * 2f, 0xFF000000);
+			GuiDraw.fillSmooth(graphics, x - pad, y - pad, w + pad * 2f, h + pad * 2f, 0xFF000000);
 			if (fillH >= 0.5f) {
-				GuiDraw.fill(graphics, x, y + h - fillH, w, fillH, color);
+				GuiDraw.fillSmooth(graphics, x, y + h - fillH, w, fillH, color);
 			}
 			return;
 		}

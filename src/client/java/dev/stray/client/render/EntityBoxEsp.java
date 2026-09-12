@@ -87,11 +87,11 @@ public final class EntityBoxEsp {
 	private static void draw(GuiGraphicsExtractor graphics, EntityScreenBoxes.Box box, int line, int fill, float width) {
 		float t = Mth.clamp(width, 1f, 6f);
 		if ((fill >>> 24) != 0 && box.w() > t * 2f && box.h() > t * 2f) {
-			GuiDraw.fill(graphics, box.x() + t, box.y() + t, box.w() - t * 2f, box.h() - t * 2f, fill);
+			GuiDraw.fillSmooth(graphics, box.x() + t, box.y() + t, box.w() - t * 2f, box.h() - t * 2f, fill);
 		}
-		GuiDraw.fill(graphics, box.x(), box.y(), box.w(), t, line);
-		GuiDraw.fill(graphics, box.x(), box.y() + box.h() - t, box.w(), t, line);
-		GuiDraw.fill(graphics, box.x(), box.y(), t, box.h(), line);
-		GuiDraw.fill(graphics, box.x() + box.w() - t, box.y(), t, box.h(), line);
+		GuiDraw.fillSmooth(graphics, box.x(), box.y(), box.w(), t, line);
+		GuiDraw.fillSmooth(graphics, box.x(), box.y() + box.h() - t, box.w(), t, line);
+		GuiDraw.fillSmooth(graphics, box.x(), box.y(), t, box.h(), line);
+		GuiDraw.fillSmooth(graphics, box.x() + box.w() - t, box.y(), t, box.h(), line);
 	}
 }

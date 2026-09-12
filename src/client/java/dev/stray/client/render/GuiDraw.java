@@ -5,6 +5,7 @@ import dev.stray.client.config.StrayConfig;
 import dev.stray.client.ui.ControlChrome;
 import dev.stray.client.ui.LoadoutsScreen;
 import dev.stray.client.ui.MenuFont;
+import dev.stray.client.ui.StrayScreen;
 import dev.stray.client.ui.Theme;
 import dev.stray.client.visual.WorldTint;
 import net.minecraft.client.Minecraft;
@@ -77,11 +78,10 @@ public final class GuiDraw {
 	}
 
 	/**
-	 * Rounded chrome (HUD panes and menus). Pose scale so the three body rects
-	 * meet in float space — integer fills left seams, and overlapping them on
-	 * translucent HUD panes made darker bands.
+	 * Subpixel rects for world overlays (2D boxes, health bars). Integer
+	 * {@link #fill} snaps to the GUI grid and looks stair-stepped on those.
 	 */
-	private static void fillSmooth(GuiGraphicsExtractor graphics, float x, float y, float w, float h, int color) {
+	public static void fillSmooth(GuiGraphicsExtractor graphics, float x, float y, float w, float h, int color) {
 		if (w <= 0 || h <= 0 || (color >>> 24) == 0) {
 			return;
 		}
@@ -104,7 +104,7 @@ public final class GuiDraw {
 		if (screen instanceof LoadoutsScreen) {
 			return true;
 		}
-		if (screen.isInGameUi() || screen instanceof ChatScreen || screen instanceof AbstractContainerScreen) {
+		if (screen.isInGameUi() || screen instanceof StrayScreen || screen instanceof ChatScreen || screen instanceof AbstractContainerScreen) {
 			return false;
 		}
 		return true;

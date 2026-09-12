@@ -539,13 +539,14 @@ public class StrayScreen extends Screen {
 	}
 
 	@Override
+	public boolean isInGameUi() {
+		return true;
+	}
+
+	@Override
 	public void extractBackground(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float delta) {
-		if (controlCenter()) {
-			return;
-		}
-		if (minecraft.level != null) {
-			extractBlurredBackground(graphics);
-		}
+		// Keep the world HUD (health bars, 2D boxes) in the previous stratum
+		// unblurred. Vanilla menu blur runs on every stratum already extracted.
 	}
 
 	@Override
