@@ -18,13 +18,12 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.QuadInstance;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import dev.stray.Stray;
+import dev.stray.client.config.EntityKind;
+import dev.stray.client.config.EntityVisuals;
 import dev.stray.client.config.StrayConfig;
 import dev.stray.client.mixin.RenderSetupAccessor;
 import dev.stray.client.mixin.RenderSetupTextureBindingAccessor;
 import dev.stray.client.mixin.RenderTypeAccessor;
-import dev.stray.client.render.MobGlowRenderer;
-import dev.stray.client.render.NametagRenderer;
-import dev.stray.client.render.StarMobEsp;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.model.geom.ModelPart;
 import net.minecraft.client.renderer.MultiBufferSource;
@@ -42,7 +41,6 @@ import net.minecraft.client.resources.model.geometry.BakedQuad;
 import net.minecraft.resources.Identifier;
 import net.minecraft.util.Util;
 import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.item.ItemDisplayContext;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
@@ -85,6 +83,7 @@ public final class HeldItemShader {
 	private static boolean playerMaskDepthReady;
 	private static boolean espThisFrame;
 	private static int playerFillDepth;
+	private static EntityVisuals fillVisuals;
 	private static final Set<Object> FILL_ITEMS = Collections.newSetFromMap(new IdentityHashMap<>());
 
 	private HeldItemShader() {
@@ -95,8 +94,7 @@ public final class HeldItemShader {
 	}
 
 	public static boolean playerFillActive() {
-		StrayConfig config = StrayConfig.get();
-		return config.playerFillEsp || config.playerFillStarMobs;
+		return StrayConfig.get().anyShader();
 	}
 
 	public static boolean appliesFill(ItemDisplayContext context) {
@@ -123,11 +121,14 @@ public final class HeldItemShader {
 	}
 
 	public static boolean playerFillThroughWalls() {
-		StrayConfig config = StrayConfig.get();
-		if (config.playerFillEsp && config.playerFillThroughWalls) {
-			return true;
+		EntityVisuals visuals = fill();
+		if (visuals != null) {
+			return visuals.shaderThroughWalls;
 		}
-		return config.playerFillStarMobs && config.starVisuals.glowThroughWalls;
+		StrayConfig config = StrayConfig.get();
+		return config.playerVisuals.shaderEnabled && config.playerVisuals.shaderThroughWalls
+			|| config.mobVisuals.shaderEnabled && config.mobVisuals.shaderThroughWalls
+			|| config.starVisuals.shaderEnabled && config.starVisuals.shaderThroughWalls;
 	}
 
 	public static boolean shouldFillEntity(Entity entity) {
@@ -138,21 +139,15 @@ public final class HeldItemShader {
 		if (client.player == null || entity == client.player) {
 			return false;
 		}
-		StrayConfig config = StrayConfig.get();
-		if (entity.getType() == EntityType.PLAYER) {
-			if (config.playerFillStarMobs && StarMobEsp.marked(entity)) {
-				return true;
-			}
-			return config.playerFillEsp && NametagRenderer.realAccount(entity);
-		}
-		if (config.playerFillStarMobs && StarMobEsp.marked(entity)) {
-			return true;
-		}
-		return config.playerFillEsp && config.playerFillMobs && MobGlowRenderer.catalogOrNametag(entity);
+		EntityVisuals visuals = StrayConfig.get().visuals(EntityKind.of(entity));
+		return visuals.shaderEnabled && EntityKind.overlay(entity);
 	}
 
 	public static boolean shouldFillThroughWalls(Entity entity) {
-		return playerFillThroughWalls() && shouldFillEntity(entity);
+		if (!shouldFillEntity(entity)) {
+			return false;
+		}
+		return StrayConfig.get().visuals(EntityKind.of(entity)).shaderThroughWalls;
 	}
 
 	public static boolean shouldFillPlayer(LivingEntityRenderState state) {
@@ -174,11 +169,29 @@ public final class HeldItemShader {
 	}
 
 	public static void pushPlayerFill() {
+		pushPlayerFill(null);
+	}
+
+	public static void pushPlayerFill(LivingEntityRenderState state) {
+		if (state instanceof FillEspMarker marker && marker.stray$fillEsp()) {
+			fillVisuals = StrayConfig.get().visuals(marker.stray$fillKind());
+		}
 		playerFillDepth++;
 	}
 
 	public static void popPlayerFill() {
 		playerFillDepth = Math.max(0, playerFillDepth - 1);
+		if (playerFillDepth == 0) {
+			fillVisuals = null;
+		}
+	}
+
+	private static EntityVisuals fill() {
+		return fillVisuals;
+	}
+
+	private static EntityVisuals fillOrPlayer() {
+		return fillVisuals != null ? fillVisuals : StrayConfig.get().playerVisuals;
 	}
 
 	public static boolean isPlayerFillPipeline(RenderPipeline value) {
@@ -388,7 +401,7 @@ public final class HeldItemShader {
 	public static void beginPlayerMask() {
 		playerMaskThisFrame = false;
 		playerMaskDepthReady = false;
-		if (!playerFillActive() || !StrayConfig.get().playerFillSilhouette) {
+		if (!playerFillActive() || !StrayConfig.get().anyShaderSilhouette()) {
 			return;
 		}
 		if (!prepareMaskTarget()) {
@@ -530,7 +543,8 @@ public final class HeldItemShader {
 	public static Vector4fc colorModulator(RenderPipeline pipeline) {
 		StrayConfig config = StrayConfig.get();
 		if (playerFillUniforms(pipeline)) {
-			return packColor(config.playerFillRgb, config.playerFillFill);
+			EntityVisuals visuals = fillOrPlayer();
+			return packColor(visuals.shaderRgb, visuals.shaderFill);
 		}
 		return packColor(config.heldItemShaderRgb, config.heldItemShaderFill);
 	}
@@ -550,7 +564,7 @@ public final class HeldItemShader {
 
 	private static Vector4fc outlineColorModulator(boolean playerFill) {
 		StrayConfig config = StrayConfig.get();
-		int rgb = playerFill ? config.playerFillOutlineRgb : config.heldItemShaderOutlineRgb;
+		int rgb = playerFill ? fillOrPlayer().shaderOutlineRgb : config.heldItemShaderOutlineRgb;
 		return new Vector4f(
 			((rgb >> 16) & 0xFF) / 255f,
 			((rgb >> 8) & 0xFF) / 255f,
@@ -562,7 +576,7 @@ public final class HeldItemShader {
 	private static float silhouetteThickness(boolean playerFill) {
 		StrayConfig config = StrayConfig.get();
 		if (playerFill) {
-			return StrayConfig.clamp(config.playerFillOutline, 0.15f, 1.50f);
+			return StrayConfig.clamp(fillOrPlayer().shaderOutline, 0.15f, 1.50f);
 		}
 		return StrayConfig.clamp(config.heldItemShaderOutline, 0.15f, 1.50f);
 	}
@@ -574,10 +588,11 @@ public final class HeldItemShader {
 	public static Vector3fc modelOffset(RenderPipeline pipeline) {
 		StrayConfig config = StrayConfig.get();
 		if (playerFillUniforms(pipeline)) {
+			EntityVisuals visuals = fillOrPlayer();
 			return new Vector3f(
-				StrayConfig.clamp(config.playerFillOutline, 0.15f, 1.50f),
-				StrayConfig.clamp(config.playerFillSmoke, 0.10f, 1.50f),
-				config.playerFillStyleIndex()
+				StrayConfig.clamp(visuals.shaderOutline, 0.15f, 1.50f),
+				StrayConfig.clamp(visuals.shaderSmoke, 0.10f, 1.50f),
+				visuals.shaderStyleIndex()
 			);
 		}
 		return new Vector3f(

@@ -52,7 +52,7 @@ public abstract class LivingEntityRendererMixin {
 		CallbackInfo ci
 	) {
 		if (HeldItemShader.shouldFill(state)) {
-			HeldItemShader.pushPlayerFill();
+			HeldItemShader.pushPlayerFill(state);
 		}
 	}
 

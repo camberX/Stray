@@ -1,6 +1,7 @@
 package dev.stray.client.mixin;
 
 import com.mojang.blaze3d.vertex.PoseStack;
+import dev.stray.client.config.EntityKind;
 import dev.stray.client.render.MobGlowRenderer;
 import dev.stray.client.render.NametagRenderer;
 import dev.stray.client.visual.FillEspMarker;
@@ -43,7 +44,11 @@ public class EntityRendererMixin {
 	)
 	private void stray$nickTag(Entity entity, EntityRenderState state, float tickDelta, CallbackInfo ci) {
 		if (state instanceof FillEspMarker marker) {
-			marker.stray$setFillEsp(HeldItemShader.shouldFillEntity(entity));
+			boolean fill = HeldItemShader.shouldFillEntity(entity);
+			marker.stray$setFillEsp(fill);
+			if (fill) {
+				marker.stray$setFillKind(EntityKind.of(entity));
+			}
 		}
 		if (MobGlowRenderer.glowEnabled()) {
 			int glow = MobGlowRenderer.outlineColor(entity);

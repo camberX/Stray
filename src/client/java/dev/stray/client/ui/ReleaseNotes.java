@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.252", new String[]{
+			"Mobs and Stars have their own Shader cards now, same controls as Players. Star glow no longer stacks Color on top of Highlight bats."
+		}),
 		new Entry("1.2.251", new String[]{
 			"Visuals are split into Players, Mobs, and Stars. Each tab has its own Glow, Nametags, Health bar, and 2D box. The mob list stays on Mobs."
 		}),

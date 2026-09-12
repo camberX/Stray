@@ -374,6 +374,27 @@ public final class StrayConfig {
 		starVisuals.glowRadius = starMobRadius;
 		starVisuals.glowOpacity = starMobOpacity;
 		starVisuals.glowRgb = starMobRgb == 0 ? 0xFFD84A : starMobRgb;
+		copyShader(playerVisuals, playerFillEsp);
+		copyShader(mobVisuals, playerFillMobs && playerFillEsp);
+		copyShader(starVisuals, playerFillStarMobs);
+	}
+
+	private void migrateShaderVisuals() {
+		copyShader(playerVisuals, playerFillEsp);
+		copyShader(mobVisuals, playerFillMobs && playerFillEsp);
+		copyShader(starVisuals, playerFillStarMobs);
+	}
+
+	private void copyShader(EntityVisuals visuals, boolean enabled) {
+		visuals.shaderEnabled = enabled;
+		visuals.shaderThroughWalls = playerFillThroughWalls;
+		visuals.shaderSilhouette = playerFillSilhouette;
+		visuals.shaderRgb = playerFillRgb;
+		visuals.shaderOutlineRgb = playerFillOutlineRgb;
+		visuals.shaderFill = playerFillFill;
+		visuals.shaderOutline = playerFillOutline;
+		visuals.shaderSmoke = playerFillSmoke;
+		visuals.shaderStyle = playerFillStyle;
 	}
 
 	private void copyNametags(
@@ -454,6 +475,21 @@ public final class StrayConfig {
 		starMobRadius = starVisuals.glowRadius;
 		starMobOpacity = starVisuals.glowOpacity;
 		starMobRgb = starVisuals.glowRgb;
+		playerFillEsp = playerVisuals.shaderEnabled;
+		playerFillMobs = mobVisuals.shaderEnabled;
+		playerFillStarMobs = starVisuals.shaderEnabled;
+		playerFillThroughWalls = playerVisuals.shaderThroughWalls
+			|| mobVisuals.shaderThroughWalls
+			|| starVisuals.shaderThroughWalls;
+		playerFillSilhouette = playerVisuals.shaderSilhouette
+			|| mobVisuals.shaderSilhouette
+			|| starVisuals.shaderSilhouette;
+		playerFillRgb = playerVisuals.shaderRgb;
+		playerFillOutlineRgb = playerVisuals.shaderOutlineRgb;
+		playerFillFill = playerVisuals.shaderFill;
+		playerFillOutline = playerVisuals.shaderOutline;
+		playerFillSmoke = playerVisuals.shaderSmoke;
+		playerFillStyle = playerVisuals.shaderStyle;
 	}
 
 	public void normalizeMobGlowIds() {
@@ -1142,6 +1178,8 @@ public final class StrayConfig {
 				}
 				if (!json.has("playerVisuals")) {
 					loaded.migrateLegacyVisuals();
+				} else if (!json.getAsJsonObject("playerVisuals").has("shaderEnabled")) {
+					loaded.migrateShaderVisuals();
 				}
 				loaded.playerVisuals.clamp();
 				loaded.mobVisuals.clamp();
@@ -1226,6 +1264,16 @@ public final class StrayConfig {
 
 	public boolean anyBox() {
 		return playerVisuals.boxEnabled || mobVisuals.boxEnabled || starVisuals.boxEnabled;
+	}
+
+	public boolean anyShader() {
+		return playerVisuals.shaderEnabled || mobVisuals.shaderEnabled || starVisuals.shaderEnabled;
+	}
+
+	public boolean anyShaderSilhouette() {
+		return playerVisuals.shaderEnabled && playerVisuals.shaderSilhouette
+			|| mobVisuals.shaderEnabled && mobVisuals.shaderSilhouette
+			|| starVisuals.shaderEnabled && starVisuals.shaderSilhouette;
 	}
 
 	public boolean nametagCustomPlates() {
@@ -1409,7 +1457,7 @@ public final class StrayConfig {
 		return shaderStyleIndex(playerFillStyle);
 	}
 
-	private static String nextShaderStyle(String style) {
+	public static String nextShaderStyle(String style) {
 		return switch (normalizeHeldItemShaderStyle(style)) {
 			case "stars" -> "portal";
 			case "portal" -> "galaxy";
@@ -1418,7 +1466,7 @@ public final class StrayConfig {
 		};
 	}
 
-	private static String shaderStyleLabel(String style) {
+	public static String shaderStyleLabel(String style) {
 		return switch (normalizeHeldItemShaderStyle(style)) {
 			case "stars" -> "Stars";
 			case "portal" -> "Portal";
@@ -1427,7 +1475,7 @@ public final class StrayConfig {
 		};
 	}
 
-	private static float shaderStyleIndex(String style) {
+	public static float shaderStyleIndex(String style) {
 		return switch (normalizeHeldItemShaderStyle(style)) {
 			case "stars" -> 1f;
 			case "portal" -> 2f;

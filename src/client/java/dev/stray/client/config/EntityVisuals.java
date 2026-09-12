@@ -30,6 +30,15 @@ public final class EntityVisuals {
 	public float boxOpacity = 0.90f;
 	public float boxFill = 0.12f;
 	public float boxWidth = 2f;
+	public boolean shaderEnabled = false;
+	public boolean shaderThroughWalls = false;
+	public boolean shaderSilhouette = true;
+	public int shaderRgb = 0x4FD6EA;
+	public int shaderOutlineRgb = 0x7FEFFF;
+	public float shaderFill = 0.32f;
+	public float shaderOutline = 0.90f;
+	public float shaderSmoke = 0.55f;
+	public String shaderStyle = "smoke";
 
 	public void clamp() {
 		glowRadius = StrayConfig.clamp(glowRadius <= 0f ? GlowBlurRadius.DEFAULT : glowRadius, GlowBlurRadius.MIN, GlowBlurRadius.MAX);
@@ -62,6 +71,18 @@ public final class EntityVisuals {
 		boxOpacity = StrayConfig.clamp(boxOpacity <= 0f ? 0.90f : boxOpacity, 0.15f, 1f);
 		boxFill = StrayConfig.clamp(boxFill < 0f ? 0.12f : boxFill, 0f, 0.55f);
 		boxWidth = StrayConfig.clamp(boxWidth <= 0f ? 2f : boxWidth, 1f, 6f);
+		shaderRgb = shaderRgb & 0xFFFFFF;
+		if (shaderRgb == 0) {
+			shaderRgb = 0x4FD6EA;
+		}
+		shaderOutlineRgb = shaderOutlineRgb & 0xFFFFFF;
+		if (shaderOutlineRgb == 0) {
+			shaderOutlineRgb = StrayConfig.liftedOutlineRgb(shaderRgb);
+		}
+		shaderFill = StrayConfig.clamp(shaderFill <= 0f ? 0.32f : shaderFill, 0.08f, 0.85f);
+		shaderOutline = StrayConfig.clamp(shaderOutline <= 0f ? 0.90f : shaderOutline, 0.15f, 1.50f);
+		shaderSmoke = StrayConfig.clamp(shaderSmoke <= 0f ? 0.55f : shaderSmoke, 0.10f, 1.50f);
+		shaderStyle = StrayConfig.normalizeHeldItemShaderStyle(shaderStyle);
 	}
 
 	public boolean nametagCustom() {
@@ -100,7 +121,19 @@ public final class EntityVisuals {
 		healthStyle = healthCsgo() ? "stray" : "csgo";
 	}
 
+	public void cycleShaderStyle() {
+		shaderStyle = StrayConfig.nextShaderStyle(shaderStyle);
+	}
+
+	public String shaderStyleLabel() {
+		return StrayConfig.shaderStyleLabel(shaderStyle);
+	}
+
+	public float shaderStyleIndex() {
+		return StrayConfig.shaderStyleIndex(shaderStyle);
+	}
+
 	public boolean anyEnabled() {
-		return glowEnabled || nametagsEnabled || healthEnabled || boxEnabled;
+		return glowEnabled || nametagsEnabled || healthEnabled || boxEnabled || shaderEnabled;
 	}
 }
