@@ -160,7 +160,7 @@ public class StrayScreen extends Screen {
 		PEST("Pest ESP", 2),
 		AUTO_DNA("Auto DNA", 5),
 		NAMETAGS("Nametags", 6),
-		HEALTH("Health bar", 7),
+		HEALTH("Health bar", 8),
 		BOX("2D box", 6),
 		NODES("Nodes", 5);
 
@@ -3110,6 +3110,7 @@ public class StrayScreen extends Screen {
 				y = cycle(graphics, font, ix, y, iw, mouseX, mouseY, "Side", config.healthBarSideLabel(), config::cycleHealthBarSide);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Through walls", config.healthBarThroughWalls, v -> config.healthBarThroughWalls = v);
 				y = slider(graphics, font, ix, y, iw, "Range", config.healthBarRange + "m", (config.healthBarRange - 16) / 80f, v -> config.healthBarRange = StrayConfig.clamp(16 + Math.round(v * 80f), 16, 96));
+				y = slider(graphics, font, ix, y, iw, "Width", String.format(java.util.Locale.ROOT, "%.1f", config.healthBarWidth), (config.healthBarWidth - 1f) / 5f, v -> config.healthBarWidth = StrayConfig.clamp(1f + v * 5f, 1f, 6f));
 				y = colorRow(graphics, font, ix, y, iw, mouseX, mouseY, "Full", config.healthBarFullRgb, PickerTarget.HEALTH_FULL);
 				colorRow(graphics, font, ix, y, iw, mouseX, mouseY, "Empty", config.healthBarEmptyRgb, PickerTarget.HEALTH_EMPTY);
 			}

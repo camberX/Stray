@@ -299,6 +299,7 @@ public final class StrayConfig {
 	public int healthBarFullRgb = 0x17EB17;
 	public int healthBarEmptyRgb = 0xEB1717;
 	public int healthBarRange = 48;
+	public float healthBarWidth = 3f;
 	public boolean boxEspEnabled = false;
 	public boolean boxEspPlayers = false;
 	public boolean boxEspThroughWalls = false;
@@ -545,6 +546,7 @@ public final class StrayConfig {
 					loaded.healthBarEmptyRgb = 0xEB1717;
 				}
 				loaded.healthBarRange = clamp(loaded.healthBarRange <= 0 ? 48 : loaded.healthBarRange, 16, 96);
+				loaded.healthBarWidth = clamp(loaded.healthBarWidth <= 0f ? 3f : loaded.healthBarWidth, 1f, 6f);
 				if (!json.has("boxEspEnabled")) {
 					loaded.boxEspEnabled = false;
 				}

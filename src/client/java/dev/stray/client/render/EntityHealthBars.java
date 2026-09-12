@@ -286,7 +286,8 @@ public final class EntityHealthBars {
 	private static void draw(GuiGraphicsExtractor graphics, EntityScreenBoxes.Box box, float shown, boolean right, StrayConfig config) {
 		boolean csgo = config.healthBarCsgo();
 		float h = box.h();
-		float w = Mth.clamp(h * WIDTH_RATIO, 1.1f, 4.5f);
+		float want = Mth.clamp(config.healthBarWidth, 1f, 6f);
+		float w = Mth.clamp(h * WIDTH_RATIO * (want / 3f), 1f, want);
 		float gap = Mth.clamp(h * GAP_RATIO, 1.5f, 5f);
 		float pad = Mth.clamp(h * 0.03f, 0.4f, 1f);
 		float x = right ? box.x() + box.w() + gap : box.x() - gap - w;
