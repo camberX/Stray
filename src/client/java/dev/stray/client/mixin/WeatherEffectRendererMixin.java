@@ -16,17 +16,9 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(WeatherEffectRenderer.class)
 public class WeatherEffectRendererMixin {
-	@WrapOperation(
-		method = "extractRenderState",
-		at = @At(value = "INVOKE", target = "Lnet/minecraft/world/level/Level;getRainLevel(F)F")
-	)
-	private float stray$extractRain(Level level, float delta, Operation<Float> original) {
-		return CustomAmbience.extractRainLevel(original.call(level, delta));
-	}
-
 	@Inject(method = "getPrecipitationAt", at = @At("HEAD"), cancellable = true)
 	private void stray$snow(Level level, BlockPos pos, CallbackInfoReturnable<Biome.Precipitation> cir) {
-		if (CustomAmbience.active() && CustomAmbience.precipitation(Biome.Precipitation.NONE) == Biome.Precipitation.SNOW) {
+		if (CustomAmbience.snowy()) {
 			cir.setReturnValue(Biome.Precipitation.SNOW);
 		}
 	}

@@ -60,18 +60,12 @@ public final class CustomAmbience {
 		};
 	}
 
-	public static float extractRainLevel(float original) {
-		if (active() && StrayConfig.get().weather() == StrayConfig.Weather.SNOWY) {
-			return 0f;
-		}
-		return original;
+	public static boolean snowy() {
+		return active() && StrayConfig.get().weather() == StrayConfig.Weather.SNOWY;
 	}
 
 	public static Biome.Precipitation precipitation(Biome.Precipitation original) {
-		if (active() && StrayConfig.get().weather() == StrayConfig.Weather.SNOWY) {
-			return Biome.Precipitation.SNOW;
-		}
-		return original;
+		return snowy() ? Biome.Precipitation.SNOW : original;
 	}
 
 	public static float precipitationGradient(float original) {
