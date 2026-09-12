@@ -283,6 +283,9 @@ public final class StrayConfig {
 	public String capeShopKey = "";
 	public boolean nickEnabled = false;
 	public String nick = "";
+	public EntityVisuals playerVisuals = new EntityVisuals();
+	public EntityVisuals mobVisuals = new EntityVisuals();
+	public EntityVisuals starVisuals = starProfile();
 	public boolean nametagsEnabled = false;
 	public boolean nametagSelf = false;
 	public boolean nametagThroughWalls = false;
@@ -349,6 +352,110 @@ public final class StrayConfig {
 	private StrayConfig() {
 	}
 
+	private static EntityVisuals starProfile() {
+		EntityVisuals visuals = new EntityVisuals();
+		visuals.glowRgb = 0xFFD84A;
+		return visuals;
+	}
+
+	private void migrateLegacyVisuals() {
+		copyNametags(playerVisuals, nametagsEnabled, nametagThroughWalls, nametagDistance, nametagStyle, nametagRange, nametagScale, nametagOpacity);
+		copyHealth(playerVisuals, healthBarEnabled && healthBarPlayers);
+		copyHealth(mobVisuals, healthBarEnabled);
+		copyBox(playerVisuals, boxEspEnabled && boxEspPlayers);
+		copyBox(mobVisuals, boxEspEnabled);
+		mobVisuals.glowEnabled = mobGlowEnabled;
+		mobVisuals.glowThroughWalls = mobGlowThroughWalls;
+		mobVisuals.glowRadius = mobGlowRadius;
+		mobVisuals.glowOpacity = mobGlowOpacity;
+		mobVisuals.glowRgb = mobGlowRgb;
+		starVisuals.glowEnabled = starMobEsp;
+		starVisuals.glowThroughWalls = starMobThroughWalls;
+		starVisuals.glowRadius = starMobRadius;
+		starVisuals.glowOpacity = starMobOpacity;
+		starVisuals.glowRgb = starMobRgb == 0 ? 0xFFD84A : starMobRgb;
+	}
+
+	private void copyNametags(
+		EntityVisuals visuals,
+		boolean enabled,
+		boolean through,
+		boolean distance,
+		String style,
+		int range,
+		float scale,
+		float opacity
+	) {
+		visuals.nametagsEnabled = enabled;
+		visuals.nametagThroughWalls = through;
+		visuals.nametagDistance = distance;
+		visuals.nametagStyle = style;
+		visuals.nametagRange = range;
+		visuals.nametagScale = scale;
+		visuals.nametagOpacity = opacity;
+	}
+
+	private void copyHealth(EntityVisuals visuals, boolean enabled) {
+		visuals.healthEnabled = enabled;
+		visuals.healthThroughWalls = healthBarThroughWalls;
+		visuals.healthSide = healthBarSide;
+		visuals.healthStyle = healthBarStyle;
+		visuals.healthFullRgb = healthBarFullRgb;
+		visuals.healthEmptyRgb = healthBarEmptyRgb;
+		visuals.healthRange = healthBarRange;
+		visuals.healthWidth = healthBarWidth;
+	}
+
+	private void copyBox(EntityVisuals visuals, boolean enabled) {
+		visuals.boxEnabled = enabled;
+		visuals.boxThroughWalls = boxEspThroughWalls;
+		visuals.boxRange = boxEspRange;
+		visuals.boxRgb = boxEspRgb;
+		visuals.boxOpacity = boxEspOpacity;
+		visuals.boxFill = boxEspFill;
+		visuals.boxWidth = boxEspWidth;
+	}
+
+	void syncLegacyVisuals() {
+		if (playerVisuals == null || mobVisuals == null || starVisuals == null) {
+			return;
+		}
+		nametagsEnabled = playerVisuals.nametagsEnabled;
+		nametagThroughWalls = playerVisuals.nametagThroughWalls;
+		nametagDistance = playerVisuals.nametagDistance;
+		nametagStyle = playerVisuals.nametagStyle;
+		nametagRange = playerVisuals.nametagRange;
+		nametagScale = playerVisuals.nametagScale;
+		nametagOpacity = playerVisuals.nametagOpacity;
+		healthBarEnabled = anyHealth();
+		healthBarPlayers = playerVisuals.healthEnabled;
+		healthBarThroughWalls = playerVisuals.healthThroughWalls || mobVisuals.healthThroughWalls || starVisuals.healthThroughWalls;
+		healthBarSide = playerVisuals.healthSide;
+		healthBarStyle = playerVisuals.healthStyle;
+		healthBarFullRgb = playerVisuals.healthFullRgb;
+		healthBarEmptyRgb = playerVisuals.healthEmptyRgb;
+		healthBarRange = playerVisuals.healthRange;
+		healthBarWidth = playerVisuals.healthWidth;
+		boxEspEnabled = anyBox();
+		boxEspPlayers = playerVisuals.boxEnabled;
+		boxEspThroughWalls = playerVisuals.boxThroughWalls || mobVisuals.boxThroughWalls || starVisuals.boxThroughWalls;
+		boxEspRange = playerVisuals.boxRange;
+		boxEspRgb = playerVisuals.boxRgb;
+		boxEspOpacity = playerVisuals.boxOpacity;
+		boxEspFill = playerVisuals.boxFill;
+		boxEspWidth = playerVisuals.boxWidth;
+		mobGlowEnabled = mobVisuals.glowEnabled;
+		mobGlowThroughWalls = mobVisuals.glowThroughWalls;
+		mobGlowRadius = mobVisuals.glowRadius;
+		mobGlowOpacity = mobVisuals.glowOpacity;
+		mobGlowRgb = mobVisuals.glowRgb;
+		starMobEsp = starVisuals.glowEnabled;
+		starMobThroughWalls = starVisuals.glowThroughWalls;
+		starMobRadius = starVisuals.glowRadius;
+		starMobOpacity = starVisuals.glowOpacity;
+		starMobRgb = starVisuals.glowRgb;
+	}
+
 	public void normalizeMobGlowIds() {
 		mobGlowIds = new java.util.ArrayList<>(MobCatalog.normalizeIds(mobGlowIds));
 		mobGlowId = mobGlowIds.isEmpty() ? "" : mobGlowIds.get(0);
@@ -378,6 +485,9 @@ public final class StrayConfig {
 			next.remove(key);
 		} else {
 			next.add(key);
+			if (!mobVisuals.glowEnabled) {
+				mobVisuals.glowEnabled = true;
+			}
 			if (!mobGlowEnabled) {
 				mobGlowEnabled = true;
 			}
@@ -414,6 +524,9 @@ public final class StrayConfig {
 			mobGlowNames.remove(0);
 		}
 		mobGlowNames.add(label);
+		if (!mobVisuals.glowEnabled) {
+			mobVisuals.glowEnabled = true;
+		}
 		mobGlowEnabled = true;
 		syncNametagEsp();
 		return true;
@@ -1018,6 +1131,22 @@ public final class StrayConfig {
 				loaded.hudOpacity = loaded.hudOpacity <= 0f
 					? 0.90f
 					: clamp(loaded.hudOpacity, 0.20f, 1f);
+				if (loaded.playerVisuals == null) {
+					loaded.playerVisuals = new EntityVisuals();
+				}
+				if (loaded.mobVisuals == null) {
+					loaded.mobVisuals = new EntityVisuals();
+				}
+				if (loaded.starVisuals == null) {
+					loaded.starVisuals = starProfile();
+				}
+				if (!json.has("playerVisuals")) {
+					loaded.migrateLegacyVisuals();
+				}
+				loaded.playerVisuals.clamp();
+				loaded.mobVisuals.clamp();
+				loaded.starVisuals.clamp();
+				loaded.syncLegacyVisuals();
 				instance = loaded;
 				if (dropCapeServerUrl || migratedMenuScale || !path.equals(PATH)) {
 					instance.save();
@@ -1031,6 +1160,16 @@ public final class StrayConfig {
 
 	public void save() {
 		try {
+			if (playerVisuals != null) {
+				playerVisuals.clamp();
+			}
+			if (mobVisuals != null) {
+				mobVisuals.clamp();
+			}
+			if (starVisuals != null) {
+				starVisuals.clamp();
+			}
+			syncLegacyVisuals();
 			Files.createDirectories(PATH.getParent());
 			try (Writer writer = Files.newBufferedWriter(PATH)) {
 				GSON.toJson(this, writer);
@@ -1069,8 +1208,28 @@ public final class StrayConfig {
 		return rawmatsEnchanted ? "Enchanted" : "Raw";
 	}
 
+	public EntityVisuals visuals(EntityKind kind) {
+		return switch (kind) {
+			case PLAYER -> playerVisuals;
+			case MOB -> mobVisuals;
+			case STAR -> starVisuals;
+		};
+	}
+
+	public boolean anyGlow() {
+		return playerVisuals.glowEnabled || mobVisuals.glowEnabled || starVisuals.glowEnabled;
+	}
+
+	public boolean anyHealth() {
+		return playerVisuals.healthEnabled || mobVisuals.healthEnabled || starVisuals.healthEnabled;
+	}
+
+	public boolean anyBox() {
+		return playerVisuals.boxEnabled || mobVisuals.boxEnabled || starVisuals.boxEnabled;
+	}
+
 	public boolean nametagCustomPlates() {
-		return nametagsEnabled && nametagCustom();
+		return playerVisuals.nametagsEnabled && playerVisuals.nametagCustom();
 	}
 
 	public boolean nametagCustom() {
@@ -1336,8 +1495,9 @@ public final class StrayConfig {
 			case "COMBAT", "HITSOUND" -> "COMBAT";
 			case "ASSIST", "TRIGGERBOT", "AUTOCLICKER" -> "ASSIST";
 			case "ESP", "VISUALS", "GLOW", "WORLD_ESP", "ITEMS", "HELDITEM", "SHADER" -> "ESP";
-			case "PLAYERS", "NAMETAGS", "FILL" -> "PLAYERS";
-			case "CATALOG", "MOBS" -> "CATALOG";
+			case "PLAYERS", "NAMETAGS", "FILL", "PLAYER_VISUALS" -> "PLAYERS";
+			case "CATALOG", "MOBS", "MOB_VISUALS" -> "CATALOG";
+			case "STARS", "STAR", "STAR_MOBS", "STAR_VISUALS" -> "STARS";
 			case "OVERLAY", "DISPLAY", "INVENTORY", "WIDGETS" -> "OVERLAY";
 			case "MEDIA", "MUSIC" -> "MEDIA";
 			case "BARS", "VANILLA", "HUD" -> "BARS";

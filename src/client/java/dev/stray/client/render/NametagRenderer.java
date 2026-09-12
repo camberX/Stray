@@ -1,5 +1,7 @@
 package dev.stray.client.render;
 
+import dev.stray.client.config.EntityKind;
+import dev.stray.client.config.EntityVisuals;
 import dev.stray.client.config.StrayConfig;
 import dev.stray.client.ui.Anim;
 import dev.stray.client.ui.MenuFont;
@@ -19,6 +21,8 @@ import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Avatar;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.decoration.ArmorStand;
 import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
@@ -55,19 +59,24 @@ public final class NametagRenderer {
 	}
 
 	public static boolean hidingVanilla(Entity entity) {
-		if (!(entity instanceof Avatar)) {
-			return false;
-		}
 		StrayConfig config = StrayConfig.get();
 		Minecraft client = Minecraft.getInstance();
-		boolean self = client.player != null && entity == client.player;
-		if (self && !config.nametagSelf) {
-			return true;
+		if (entity instanceof Avatar) {
+			boolean self = client.player != null && entity == client.player;
+			if (self && !config.nametagSelf) {
+				return true;
+			}
+			if (config.playerVisuals.nametagsEnabled) {
+				return true;
+			}
+			return hasBadge(entity.getUUID()) && (!self || config.nametagSelf);
 		}
-		if (config.nametagsEnabled) {
-			return true;
+		if (!(entity instanceof LivingEntity) || entity instanceof ArmorStand) {
+			return false;
 		}
-		return hasBadge(entity.getUUID()) && (!self || config.nametagSelf);
+		EntityKind kind = EntityKind.of(entity);
+		EntityVisuals visuals = config.visuals(kind);
+		return visuals.nametagsEnabled && EntityKind.overlay(entity);
 	}
 
 	public static boolean hidingVanillaState(EntityRenderState state) {
@@ -77,7 +86,7 @@ public final class NametagRenderer {
 		if (state.entityType != EntityType.PLAYER && state.entityType != EntityType.MANNEQUIN) {
 			return false;
 		}
-		return StrayConfig.get().nametagsEnabled;
+		return StrayConfig.get().playerVisuals.nametagsEnabled;
 	}
 
 	static void extract(GuiGraphicsExtractor graphics, DeltaTracker deltaTracker) {
@@ -86,19 +95,20 @@ public final class NametagRenderer {
 			return;
 		}
 		StrayConfig config = StrayConfig.get();
-		boolean enabled = config.nametagsEnabled;
-		boolean plates = config.nametagCustomPlates();
+		EntityVisuals players = config.playerVisuals;
+		boolean enabled = players.nametagsEnabled;
+		boolean plates = players.nametagsEnabled && players.nametagCustom();
 		boolean own = config.nametagSelf;
 		float partial = deltaTracker.getGameTimeDeltaPartialTick(true);
 		Camera camera = client.gameRenderer.getMainCamera();
 		if (!camera.isInitialized()) {
 			return;
 		}
-		double maxRange = enabled ? StrayConfig.clamp(config.nametagRange, 64, 256) : 64;
+		double maxRange = enabled ? StrayConfig.clamp(players.nametagRange, 64, 256) : 64;
 		double maxSq = maxRange * maxRange;
 		Vec3 camPos = camera.position();
 		Vector3fc forward = camera.forwardVector();
-		boolean through = enabled && config.nametagThroughWalls;
+		boolean through = enabled && players.nametagThroughWalls;
 		List<Tag> tags = new ArrayList<>();
 		for (AbstractClientPlayer player : client.level.players()) {
 			boolean self = player == client.player;
@@ -111,47 +121,123 @@ public final class NametagRenderer {
 			if (!enabled && !branded && !titled) {
 				continue;
 			}
-			if (!include(client, player, through, maxSq, camPos)) {
+			if (!includePlayer(client, player, through, maxSq, camPos)) {
 				continue;
 			}
-			Vec3 head = player.getPosition(partial).add(0.0, player.getBbHeight() + 0.28, 0.0);
-			Vec3 rel = head.subtract(camPos);
-			double facing = rel.x * forward.x() + rel.y * forward.y() + rel.z * forward.z();
-			if (facing <= 0.12) {
-				continue;
-			}
-			if (!through && occludedThisTick(client, player, camPos, head)) {
-				continue;
-			}
-			Vec3 ndc = client.gameRenderer.projectPointToScreen(head);
-			if (ndc.x < -1.2 || ndc.x > 1.2 || ndc.y < -1.2 || ndc.y > 1.2) {
-				continue;
-			}
-			float x = (float) ((ndc.x * 0.5 + 0.5) * graphics.guiWidth());
-			float y = (float) ((-ndc.y * 0.5 + 0.5) * graphics.guiHeight());
-			double dist = Math.sqrt(player.distanceToSqr(camPos));
-			tags.add(new Tag(
-				label(player),
-				dist,
-				x,
-				y,
-				self,
-				branded,
-				title,
-				plates
-			));
+			collect(tags, client, player, camPos, forward, through, partial, graphics, label(player), self, branded, title, plates);
 		}
+		collectLiving(tags, client, config, camPos, forward, partial, graphics);
 		tags.sort(Comparator.comparingDouble((Tag tag) -> tag.dist).reversed());
 		Font font = client.font;
-		float userScale = enabled ? StrayConfig.clampHudScale(config.nametagScale) : 1f;
-		float opacity = enabled ? StrayConfig.clamp(config.nametagOpacity, 0.15f, 1f) : 1f;
-		boolean showDistance = enabled && config.nametagDistance;
 		for (Tag tag : tags) {
-			drawStack(graphics, font, tag, showDistance, userScale, opacity);
+			drawStack(graphics, font, tag, tag.showDistance, tag.scale, tag.opacity);
 		}
 	}
 
-	private static boolean include(
+	private static void collectLiving(
+		List<Tag> tags,
+		Minecraft client,
+		StrayConfig config,
+		Vec3 camPos,
+		Vector3fc forward,
+		float partial,
+		GuiGraphicsExtractor graphics
+	) {
+		for (Entity entity : client.level.entitiesForRendering()) {
+			if (!(entity instanceof LivingEntity living) || living instanceof ArmorStand) {
+				continue;
+			}
+			EntityKind kind = EntityKind.of(living);
+			if (kind == EntityKind.PLAYER) {
+				continue;
+			}
+			EntityVisuals visuals = config.visuals(kind);
+			if (!visuals.nametagsEnabled || !EntityKind.overlay(living)) {
+				continue;
+			}
+			if (living.isInvisibleTo(client.player) || living.isRemoved() || living.isDeadOrDying()) {
+				continue;
+			}
+			double maxSq = visuals.nametagRange * (double) visuals.nametagRange;
+			if (living.distanceToSqr(camPos) > maxSq) {
+				continue;
+			}
+			collect(
+				tags,
+				client,
+				living,
+				camPos,
+				forward,
+				visuals.nametagThroughWalls,
+				partial,
+				graphics,
+				livingName(living),
+				false,
+				false,
+				Component.empty(),
+				visuals.nametagCustom()
+			);
+		}
+	}
+
+	private static void collect(
+		List<Tag> tags,
+		Minecraft client,
+		LivingEntity living,
+		Vec3 camPos,
+		Vector3fc forward,
+		boolean through,
+		float partial,
+		GuiGraphicsExtractor graphics,
+		Component name,
+		boolean self,
+		boolean branded,
+		Component title,
+		boolean plates
+	) {
+		Vec3 head = living.getPosition(partial).add(0.0, living.getBbHeight() + 0.28, 0.0);
+		Vec3 rel = head.subtract(camPos);
+		double facing = rel.x * forward.x() + rel.y * forward.y() + rel.z * forward.z();
+		if (facing <= 0.12) {
+			return;
+		}
+		if (!through && occludedThisTick(client, living, camPos, head)) {
+			return;
+		}
+		Vec3 ndc = client.gameRenderer.projectPointToScreen(head);
+		if (ndc.x < -1.2 || ndc.x > 1.2 || ndc.y < -1.2 || ndc.y > 1.2) {
+			return;
+		}
+		float x = (float) ((ndc.x * 0.5 + 0.5) * graphics.guiWidth());
+		float y = (float) ((-ndc.y * 0.5 + 0.5) * graphics.guiHeight());
+		double dist = Math.sqrt(living.distanceToSqr(camPos));
+		StrayConfig config = StrayConfig.get();
+		EntityVisuals visuals = config.visuals(EntityKind.of(living));
+		tags.add(new Tag(
+			name,
+			dist,
+			x,
+			y,
+			self,
+			branded,
+			title,
+			plates,
+			visuals.nametagsEnabled ? StrayConfig.clampHudScale(visuals.nametagScale) : 1f,
+			visuals.nametagsEnabled ? StrayConfig.clamp(visuals.nametagOpacity, 0.15f, 1f) : 1f,
+			visuals.nametagsEnabled && visuals.nametagDistance
+		));
+	}
+
+	private static Component livingName(LivingEntity living) {
+		Component custom = living.getCustomName();
+		if (custom != null && !custom.getString().isBlank()) {
+			return custom;
+		}
+		Component display = living.getDisplayName();
+		return display == null ? Component.literal(living.getName().getString()) : display;
+	}
+
+	private static boolean includePlayer(
 		Minecraft client,
 		AbstractClientPlayer player,
 		boolean throughWalls,
@@ -196,7 +282,7 @@ public final class NametagRenderer {
 	 * One block raycast per player per tick instead of per frame. Lobbies hold
 	 * dozens of players, and a 50 ms occlusion refresh is not visible.
 	 */
-	private static boolean occludedThisTick(Minecraft client, AbstractClientPlayer player, Vec3 from, Vec3 to) {
+	private static boolean occludedThisTick(Minecraft client, LivingEntity player, Vec3 from, Vec3 to) {
 		int tick = client.player == null ? 0 : client.player.tickCount;
 		if (tick != occlusionTick) {
 			occlusionTick = tick;
@@ -418,7 +504,45 @@ public final class NametagRenderer {
 		return Mth.clamp(24f / (12f + (float) dist), 0.52f, 1.35f);
 	}
 
-	private record Tag(Component name, double dist, float x, float y, boolean self, boolean branded, Component title, boolean plates) {
+	private static final class Tag {
+		final Component name;
+		final double dist;
+		final float x;
+		final float y;
+		final boolean self;
+		final boolean branded;
+		final Component title;
+		final boolean plates;
+		float scale;
+		float opacity;
+		boolean showDistance;
+
+		Tag(
+			Component name,
+			double dist,
+			float x,
+			float y,
+			boolean self,
+			boolean branded,
+			Component title,
+			boolean plates,
+			float scale,
+			float opacity,
+			boolean showDistance
+		) {
+			this.name = name;
+			this.dist = dist;
+			this.x = x;
+			this.y = y;
+			this.self = self;
+			this.branded = branded;
+			this.title = title;
+			this.plates = plates;
+			this.scale = scale;
+			this.opacity = opacity;
+			this.showDistance = showDistance;
+		}
+
 		boolean titled() {
 			return title != null && !title.getString().isBlank();
 		}

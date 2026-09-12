@@ -1,5 +1,7 @@
 package dev.stray.client.render;
 
+import dev.stray.client.config.EntityKind;
+import dev.stray.client.config.EntityVisuals;
 import dev.stray.client.config.StrayConfig;
 import dev.stray.client.location.SkyblockLocation;
 import net.minecraft.client.Camera;
@@ -59,7 +61,7 @@ public final class EntityHealthBars {
 			return;
 		}
 		StrayConfig config = StrayConfig.get();
-		if (!config.healthBarEnabled) {
+		if (!config.anyHealth()) {
 			BARS.clear();
 			return;
 		}
@@ -70,14 +72,11 @@ public final class EntityHealthBars {
 		if (!camera.isInitialized()) {
 			return;
 		}
-		double range = StrayConfig.clamp(config.healthBarRange, 16, 96);
+		double range = maxHealthRange(config);
 		double maxSq = range * range;
 		Vec3 camPos = camera.position();
 		Vector3fc forward = camera.forwardVector();
 		float partial = delta.getGameTimeDeltaPartialTick(true);
-		boolean through = config.healthBarThroughWalls;
-		boolean players = config.healthBarPlayers;
-		boolean right = config.healthBarRight();
 		boolean skyblock = SkyblockLocation.inSkyblock;
 		Map<Integer, Float> holograms = skyblock ? hologramHealth(client, maxSq, camPos) : Map.of();
 		float guiW = graphics.guiWidth();
@@ -87,8 +86,13 @@ public final class EntityHealthBars {
 			if (!(entity instanceof LivingEntity living)) {
 				continue;
 			}
+			EntityKind kind = EntityKind.of(living);
+			EntityVisuals visuals = config.visuals(kind);
+			if (!visuals.healthEnabled || !EntityKind.overlay(living)) {
+				continue;
+			}
 			Float sky = skyblock ? holograms.get(living.getId()) : null;
-			if (!include(client, living, players, maxSq, camPos, skyblock, sky != null)) {
+			if (!include(client, living, kind, visuals, camPos, skyblock, sky != null)) {
 				continue;
 			}
 			Vec3 feet = living.getPosition(partial);
@@ -96,7 +100,7 @@ public final class EntityHealthBars {
 			if (!EntityScreenBoxes.facing(mid, camPos, forward)) {
 				continue;
 			}
-			if (!through && EntityScreenBoxes.occluded(client, camPos, mid)) {
+			if (!visuals.healthThroughWalls && EntityScreenBoxes.occluded(client, camPos, mid)) {
 				continue;
 			}
 			EntityScreenBoxes.Box screen = EntityScreenBoxes.project(
@@ -119,7 +123,7 @@ public final class EntityHealthBars {
 			Bar bar = BARS.computeIfAbsent(id, ignored -> new Bar(target));
 			bar.tick(target, dt);
 			seen.add(id);
-			draw(graphics, screen, bar.shown, right, config);
+			draw(graphics, screen, bar.shown, visuals);
 		}
 		Iterator<Map.Entry<UUID, Bar>> it = BARS.entrySet().iterator();
 		while (it.hasNext()) {
@@ -127,6 +131,20 @@ public final class EntityHealthBars {
 				it.remove();
 			}
 		}
+	}
+
+	private static double maxHealthRange(StrayConfig config) {
+		int range = 16;
+		if (config.playerVisuals.healthEnabled) {
+			range = Math.max(range, config.playerVisuals.healthRange);
+		}
+		if (config.mobVisuals.healthEnabled) {
+			range = Math.max(range, config.mobVisuals.healthRange);
+		}
+		if (config.starVisuals.healthEnabled) {
+			range = Math.max(range, config.starVisuals.healthRange);
+		}
+		return StrayConfig.clamp(range, 16, 96);
 	}
 
 	private static Map<Integer, Float> hologramHealth(Minecraft client, double maxSq, Vec3 camPos) {
@@ -250,8 +268,8 @@ public final class EntityHealthBars {
 	private static boolean include(
 		Minecraft client,
 		LivingEntity living,
-		boolean players,
-		double maxSq,
+		EntityKind kind,
+		EntityVisuals visuals,
 		Vec3 camPos,
 		boolean skyblock,
 		boolean hologram
@@ -268,10 +286,8 @@ public final class EntityHealthBars {
 		if (living == client.player) {
 			return false;
 		}
-		if (living instanceof Player) {
-			if (!players || !NametagRenderer.realAccount(living)) {
-				return hologram;
-			}
+		double maxSq = visuals.healthRange * (double) visuals.healthRange;
+		if (kind == EntityKind.PLAYER) {
 			return living.distanceToSqr(camPos) <= maxSq;
 		}
 		if (skyblock) {
@@ -283,17 +299,17 @@ public final class EntityHealthBars {
 		return living.distanceToSqr(camPos) <= maxSq;
 	}
 
-	private static void draw(GuiGraphicsExtractor graphics, EntityScreenBoxes.Box box, float shown, boolean right, StrayConfig config) {
-		boolean csgo = config.healthBarCsgo();
+	private static void draw(GuiGraphicsExtractor graphics, EntityScreenBoxes.Box box, float shown, EntityVisuals visuals) {
+		boolean csgo = visuals.healthCsgo();
 		float h = box.h();
-		float want = Mth.clamp(config.healthBarWidth, 1f, 6f);
+		float want = Mth.clamp(visuals.healthWidth, 1f, 6f);
 		float w = Mth.clamp(h * WIDTH_RATIO * (want / 3f), 1f, want);
 		float gap = Mth.clamp(h * GAP_RATIO, 1.5f, 5f);
 		float pad = Mth.clamp(h * 0.03f, 0.4f, 1f);
-		float x = right ? box.x() + box.w() + gap : box.x() - gap - w;
+		float x = visuals.healthRight() ? box.x() + box.w() + gap : box.x() - gap - w;
 		float y = box.y();
 		float fillH = h * Mth.clamp(shown, 0f, 1f);
-		int color = 0xFF000000 | healthColor(shown, config);
+		int color = 0xFF000000 | healthColor(shown, visuals);
 		if (csgo) {
 			GuiDraw.fillSmooth(graphics, x - pad, y - pad, w + pad * 2f, h + pad * 2f, 0xFF000000);
 			if (fillH >= 0.5f) {
@@ -309,10 +325,10 @@ public final class EntityHealthBars {
 		}
 	}
 
-	private static int healthColor(float t, StrayConfig config) {
+	private static int healthColor(float t, EntityVisuals visuals) {
 		t = Mth.clamp(t, 0f, 1f);
-		int start = config.healthBarFullRgb & 0xFFFFFF;
-		int end = config.healthBarEmptyRgb & 0xFFFFFF;
+		int start = visuals.healthFullRgb & 0xFFFFFF;
+		int end = visuals.healthEmptyRgb & 0xFFFFFF;
 		int r = Math.round(Mth.lerp(t, (end >> 16) & 0xFF, (start >> 16) & 0xFF));
 		int g = Math.round(Mth.lerp(t, (end >> 8) & 0xFF, (start >> 8) & 0xFF));
 		int b = Math.round(Mth.lerp(t, end & 0xFF, start & 0xFF));

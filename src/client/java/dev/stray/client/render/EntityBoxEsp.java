@@ -1,5 +1,7 @@
 package dev.stray.client.render;
 
+import dev.stray.client.config.EntityKind;
+import dev.stray.client.config.EntityVisuals;
 import dev.stray.client.config.StrayConfig;
 import dev.stray.client.ui.Theme;
 import net.minecraft.client.Camera;
@@ -10,7 +12,6 @@ import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.decoration.ArmorStand;
-import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Vector3fc;
 
@@ -28,26 +29,25 @@ public final class EntityBoxEsp {
 			return;
 		}
 		StrayConfig config = StrayConfig.get();
-		if (!config.boxEspEnabled) {
+		if (!config.anyBox()) {
 			return;
 		}
 		Camera camera = client.gameRenderer.getMainCamera();
 		if (!camera.isInitialized()) {
 			return;
 		}
-		double range = StrayConfig.clamp(config.boxEspRange, 16, 96);
-		double maxSq = range * range;
 		Vec3 camPos = camera.position();
 		Vector3fc forward = camera.forwardVector();
 		float partial = delta.getGameTimeDeltaPartialTick(true);
-		boolean through = config.boxEspThroughWalls;
-		boolean players = config.boxEspPlayers;
 		float guiW = graphics.guiWidth();
 		float guiH = graphics.guiHeight();
-		int line = Theme.withAlpha(config.boxEspRgb, Math.round(config.boxEspOpacity * 255f));
-		int fill = Theme.withAlpha(config.boxEspRgb, Math.round(config.boxEspFill * 255f));
+		float guiScale = (float) client.getWindow().getGuiScale();
 		for (Entity entity : client.level.entitiesForRendering()) {
-			if (!(entity instanceof LivingEntity living) || !include(client, living, players, maxSq, camPos)) {
+			if (!(entity instanceof LivingEntity living)) {
+				continue;
+			}
+			EntityVisuals visuals = config.visuals(EntityKind.of(living));
+			if (!visuals.boxEnabled || !include(client, living, visuals, camPos)) {
 				continue;
 			}
 			Vec3 feet = living.getPosition(partial);
@@ -55,7 +55,7 @@ public final class EntityBoxEsp {
 			if (!EntityScreenBoxes.facing(mid, camPos, forward)) {
 				continue;
 			}
-			if (!through && EntityScreenBoxes.occluded(client, camPos, mid)) {
+			if (!visuals.boxThroughWalls && EntityScreenBoxes.occluded(client, camPos, mid)) {
 				continue;
 			}
 			EntityScreenBoxes.Box box = EntityScreenBoxes.project(
@@ -67,20 +67,23 @@ public final class EntityBoxEsp {
 			if (box == null || box.h() < 4f) {
 				continue;
 			}
-			draw(graphics, box, line, fill, config.boxEspWidth, (float) client.getWindow().getGuiScale());
+			int line = Theme.withAlpha(visuals.boxRgb, Math.round(visuals.boxOpacity * 255f));
+			int fill = Theme.withAlpha(visuals.boxRgb, Math.round(visuals.boxFill * 255f));
+			draw(graphics, box, line, fill, visuals.boxWidth, guiScale);
 		}
 	}
 
-	private static boolean include(Minecraft client, LivingEntity living, boolean players, double maxSq, Vec3 camPos) {
+	private static boolean include(Minecraft client, LivingEntity living, EntityVisuals visuals, Vec3 camPos) {
 		if (living.isRemoved() || living.isDeadOrDying() || living instanceof ArmorStand) {
 			return false;
 		}
 		if (living.isInvisibleTo(client.player) || living == client.player) {
 			return false;
 		}
-		if (living instanceof Player) {
-			return players && NametagRenderer.realAccount(living) && living.distanceToSqr(camPos) <= maxSq;
+		if (!EntityKind.overlay(living)) {
+			return false;
 		}
+		double maxSq = visuals.boxRange * (double) visuals.boxRange;
 		return living.distanceToSqr(camPos) <= maxSq;
 	}
 

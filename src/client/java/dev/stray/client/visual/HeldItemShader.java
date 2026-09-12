@@ -127,7 +127,7 @@ public final class HeldItemShader {
 		if (config.playerFillEsp && config.playerFillThroughWalls) {
 			return true;
 		}
-		return config.playerFillStarMobs && config.starMobThroughWalls;
+		return config.playerFillStarMobs && config.starVisuals.glowThroughWalls;
 	}
 
 	public static boolean shouldFillEntity(Entity entity) {

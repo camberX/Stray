@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.251", new String[]{
+			"Visuals are split into Players, Mobs, and Stars. Each tab has its own Glow, Nametags, Health bar, and 2D box. The mob list stays on Mobs."
+		}),
 		new Entry("1.2.250", new String[]{
 			"Health bars have a Width slider, 1 to 6, next to Range on the ESP tab."
 		}),

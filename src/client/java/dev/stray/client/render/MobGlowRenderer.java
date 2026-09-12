@@ -11,6 +11,7 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.phys.AABB;
@@ -163,8 +164,7 @@ public final class MobGlowRenderer {
 	}
 
 	public static boolean glowEnabled() {
-		StrayConfig config = StrayConfig.get();
-		return config.mobGlowEnabled || config.starMobEsp;
+		return StrayConfig.get().anyGlow();
 	}
 
 	public static int outlineColor(Entity entity) {
@@ -202,11 +202,14 @@ public final class MobGlowRenderer {
 			return false;
 		}
 		StrayConfig config = StrayConfig.get();
-		if (StarMobEsp.glowing(entity) && config.starMobThroughWalls) {
+		if (StarMobEsp.glowing(entity) && config.starVisuals.glowThroughWalls) {
 			return true;
 		}
-		return config.mobGlowEnabled
-			&& config.mobGlowThroughWalls
+		if (playerGlow(entity) && config.playerVisuals.glowThroughWalls) {
+			return true;
+		}
+		return config.mobVisuals.glowEnabled
+			&& config.mobVisuals.glowThroughWalls
 			&& (listed(entity.getType()) || nametagHit(entity));
 	}
 
@@ -216,19 +219,25 @@ public final class MobGlowRenderer {
 			return 0;
 		}
 		boolean star = StarMobEsp.glowing(entity);
-		boolean mob = config.mobGlowEnabled && (listed(entity.getType()) || nametagHit(entity));
-		boolean through = (star && config.starMobThroughWalls) || (mob && config.mobGlowThroughWalls);
+		boolean player = playerGlow(entity);
+		boolean mob = config.mobVisuals.glowEnabled && (listed(entity.getType()) || nametagHit(entity));
+		boolean through = (star && config.starVisuals.glowThroughWalls)
+			|| (player && config.playerVisuals.glowThroughWalls)
+			|| (mob && config.mobVisuals.glowThroughWalls);
 		if (!through && occluded(client, camera, entity.getEyePosition())) {
 			return 0;
 		}
 		if (star) {
-			return packColor(config.starMobRgb, config.starMobOpacity);
+			return packColor(config.starVisuals.glowRgb, config.starVisuals.glowOpacity);
 		}
-		return packColor(config.mobGlowRgb, config.mobGlowOpacity);
+		if (player) {
+			return packColor(config.playerVisuals.glowRgb, config.playerVisuals.glowOpacity);
+		}
+		return packColor(config.mobVisuals.glowRgb, config.mobVisuals.glowOpacity);
 	}
 
 	public static int packColor(StrayConfig config) {
-		return packColor(config.mobGlowRgb, config.mobGlowOpacity);
+		return packColor(config.mobVisuals.glowRgb, config.mobVisuals.glowOpacity);
 	}
 
 	public static int packColor(int rgb, float opacity) {
@@ -273,13 +282,22 @@ public final class MobGlowRenderer {
 		if (StarMobEsp.glowing(entity)) {
 			return true;
 		}
-		if (!StrayConfig.get().mobGlowEnabled) {
+		if (playerGlow(entity)) {
+			return true;
+		}
+		if (!StrayConfig.get().mobVisuals.glowEnabled) {
 			return false;
 		}
 		if (listed(entity.getType())) {
 			return true;
 		}
 		return nametagHit(entity);
+	}
+
+	private static boolean playerGlow(Entity entity) {
+		return entity instanceof Player
+			&& StrayConfig.get().playerVisuals.glowEnabled
+			&& NametagRenderer.realAccount(entity);
 	}
 
 	private static Set<EntityType<?>> selectedTypes() {

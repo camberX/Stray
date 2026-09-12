@@ -33,15 +33,21 @@ public final class GlowBlurRadius {
 
 	public static float current() {
 		StrayConfig config = StrayConfig.get();
-		float mob = StrayConfig.clamp(config.mobGlowRadius, MIN, MAX);
-		float star = StrayConfig.clamp(config.starMobRadius, MIN, MAX);
-		if (config.mobGlowEnabled && config.starMobEsp) {
-			return Math.max(mob, star);
+		float radius = MIN;
+		boolean any = false;
+		if (config.playerVisuals.glowEnabled) {
+			radius = Math.max(radius, StrayConfig.clamp(config.playerVisuals.glowRadius, MIN, MAX));
+			any = true;
 		}
-		if (config.starMobEsp) {
-			return star;
+		if (config.mobVisuals.glowEnabled) {
+			radius = Math.max(radius, StrayConfig.clamp(config.mobVisuals.glowRadius, MIN, MAX));
+			any = true;
 		}
-		return mob;
+		if (config.starVisuals.glowEnabled) {
+			radius = Math.max(radius, StrayConfig.clamp(config.starVisuals.glowRadius, MIN, MAX));
+			any = true;
+		}
+		return any ? radius : StrayConfig.clamp(config.mobVisuals.glowRadius, MIN, MAX);
 	}
 
 	public static boolean isGlowBlur(RenderPipeline pipeline) {

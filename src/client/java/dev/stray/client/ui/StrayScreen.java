@@ -5,6 +5,8 @@ import dev.stray.client.StrayClient;
 import dev.stray.client.combat.AutoClicker;
 import dev.stray.client.combat.Hitsound;
 import dev.stray.client.combat.OdinClicks;
+import dev.stray.client.config.EntityKind;
+import dev.stray.client.config.EntityVisuals;
 import dev.stray.client.config.UnloadState;
 import dev.stray.client.farming.FarmingHud;
 import dev.stray.client.farming.JacobContestTracker;
@@ -100,6 +102,7 @@ public class StrayScreen extends Screen {
 		ESP("ESP", Group.ESP),
 		PLAYERS("Players", Group.ESP),
 		CATALOG("Mobs", Group.ESP),
+		STARS("Stars", Group.ESP),
 		COMBAT("Hitsound", Group.COMBAT),
 		ASSIST("Assist", Group.COMBAT),
 		OVERLAY("Widgets", Group.HUD),
@@ -160,8 +163,8 @@ public class StrayScreen extends Screen {
 		PEST("Pest ESP", 2),
 		AUTO_DNA("Auto DNA", 5),
 		NAMETAGS("Nametags", 6),
-		HEALTH("Health bar", 8),
-		BOX("2D box", 6),
+		HEALTH("Health bar", 7),
+		BOX("2D box", 5),
 		NODES("Nodes", 5);
 
 		final String title;
@@ -255,7 +258,7 @@ public class StrayScreen extends Screen {
 		new SearchEntry("Player fill outline color", Tab.PLAYERS, "Shader"),
 		new SearchEntry("Fill star mobs", Tab.PLAYERS, "Shader"),
 		new SearchEntry("Shader star mobs", Tab.PLAYERS, "Shader"),
-		new SearchEntry("Glow ESP", Tab.ESP, "Star mobs"),
+		new SearchEntry("Glow ESP", Tab.STARS, "Stars"),
 		new SearchEntry("Fill ESP mobs", Tab.PLAYERS, "Shader"),
 		new SearchEntry("Shader mobs", Tab.PLAYERS, "Shader"),
 		new SearchEntry("Fill through walls", Tab.PLAYERS, "Shader"),
@@ -265,11 +268,14 @@ public class StrayScreen extends Screen {
 		new SearchEntry("Held fill", Tab.ESP, "Held item"),
 		new SearchEntry("Hand fill", Tab.ESP, "Held item"),
 		new SearchEntry("Nametag ESP", Tab.PLAYERS, "Players"),
-		new SearchEntry("Star mobs", Tab.ESP, "Glow"),
-		new SearchEntry("Star mob ESP", Tab.ESP, "Glow"),
-		new SearchEntry("Starred mobs", Tab.ESP, "Glow"),
-		new SearchEntry("Highlight bats", Tab.ESP, "Glow"),
-		new SearchEntry("Highlight fels", Tab.ESP, "Glow"),
+		new SearchEntry("Star mobs", Tab.STARS, "Stars"),
+		new SearchEntry("Star mob ESP", Tab.STARS, "Stars"),
+		new SearchEntry("Starred mobs", Tab.STARS, "Stars"),
+		new SearchEntry("Highlight bats", Tab.STARS, "Stars"),
+		new SearchEntry("Highlight fels", Tab.STARS, "Stars"),
+		new SearchEntry("Player glow", Tab.PLAYERS, "Players"),
+		new SearchEntry("Mob glow", Tab.CATALOG, "Mobs"),
+		new SearchEntry("Star glow", Tab.STARS, "Stars"),
 		new SearchEntry("Block outline", Tab.ESP, "World"),
 		new SearchEntry("Block outline color", Tab.ESP, "World"),
 		new SearchEntry("Chest ESP", Tab.ESP, "World"),
@@ -289,14 +295,19 @@ public class StrayScreen extends Screen {
 		new SearchEntry("Own nametag", Tab.PLAYERS, "Players"),
 		new SearchEntry("Nametag size", Tab.PLAYERS, "Players"),
 		new SearchEntry("Nametag opacity", Tab.PLAYERS, "Players"),
-		new SearchEntry("Health bar", Tab.ESP, "Health"),
-		new SearchEntry("Mob health", Tab.ESP, "Health"),
-		new SearchEntry("Player health", Tab.ESP, "Health"),
-		new SearchEntry("Health side", Tab.ESP, "Health"),
-		new SearchEntry("CSGO health", Tab.ESP, "Health"),
-		new SearchEntry("Health color", Tab.ESP, "Health"),
-		new SearchEntry("2D box", Tab.ESP, "Box"),
-		new SearchEntry("Box ESP", Tab.ESP, "Box"),
+		new SearchEntry("Health bar", Tab.PLAYERS, "Players"),
+		new SearchEntry("Mob health", Tab.CATALOG, "Mobs"),
+		new SearchEntry("Player health", Tab.PLAYERS, "Players"),
+		new SearchEntry("Star health", Tab.STARS, "Stars"),
+		new SearchEntry("Health side", Tab.PLAYERS, "Players"),
+		new SearchEntry("CSGO health", Tab.PLAYERS, "Players"),
+		new SearchEntry("Health color", Tab.PLAYERS, "Players"),
+		new SearchEntry("2D box", Tab.PLAYERS, "Players"),
+		new SearchEntry("Box ESP", Tab.PLAYERS, "Players"),
+		new SearchEntry("Mob box", Tab.CATALOG, "Mobs"),
+		new SearchEntry("Star box", Tab.STARS, "Stars"),
+		new SearchEntry("Mob nametags", Tab.CATALOG, "Mobs"),
+		new SearchEntry("Star nametags", Tab.STARS, "Stars"),
 		new SearchEntry("Menu scale", Tab.SETTINGS, "Theme"),
 		new SearchEntry("HUD opacity", Tab.SETTINGS, "Theme"),
 		new SearchEntry("Menu stars", Tab.SETTINGS, "Theme"),
@@ -491,6 +502,8 @@ public class StrayScreen extends Screen {
 	private float nametagEspListY;
 	private float nametagEspListW;
 	private float nametagEspListH;
+	private EntityKind visualsKind = EntityKind.PLAYER;
+	private static EntityKind pickerKind = EntityKind.PLAYER;
 	private float tabScroll;
 	private float tabScrollMax;
 	private float pageExtent;
@@ -914,156 +927,117 @@ public class StrayScreen extends Screen {
 		StrayConfig config = StrayConfig.get();
 
 		float y;
-		float namesTop;
 		if (controlCenter()) {
-			y = sectionLabel(graphics, font, left, top, "Glow");
-			y = controlCard(graphics, font, left, y, col, mouseX, mouseY, "Mob glow", config.mobGlowEnabled, v -> config.mobGlowEnabled = v, Feature.MOB);
-			float starH = cardHeight(Feature.STAR.rows());
-			float starInner = featureCard(graphics, font, left, y, col, starH, "Star mobs");
-			drawFeatureFields(graphics, font, mouseX, mouseY, ix, starInner, iw, Feature.STAR);
-			y = y + starH + 8;
-			y = sectionLabel(graphics, font, left, y, "World");
+			y = sectionLabel(graphics, font, left, top, "World");
 			y = controlCard(graphics, font, left, y, col, mouseX, mouseY, "Block outline", config.blockOutlineGlow, v -> config.blockOutlineGlow = v, Feature.BLOCK);
 			y = controlCard(graphics, font, left, y, col, mouseX, mouseY, "Chest ESP", config.chestEspEnabled, v -> config.chestEspEnabled = v, Feature.CHEST);
 			y = controlCard(graphics, font, left, y, col, mouseX, mouseY, "Fairy souls", config.fairySoulEsp, v -> config.fairySoulEsp = v, Feature.FAIRY);
-			y = controlCard(graphics, font, left, y, col, mouseX, mouseY, "Block marks", config.blockMarksEnabled, v -> config.blockMarksEnabled = v, Feature.MARKS);
-			y = sectionLabel(graphics, font, left, y, "Items");
-			y = controlCard(graphics, font, left, y, col, mouseX, mouseY, "Held item", config.heldItemShaderEnabled, v -> config.heldItemShaderEnabled = v, Feature.HELD_ITEM);
-			namesTop = y;
-		} else {
-			y = featureCard(graphics, font, left, top, col, cardHeight(8), "Glow");
-			y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Mob glow", config.mobGlowEnabled, v -> config.mobGlowEnabled = v, Feature.MOB);
-			y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Star mobs", config.starMobEsp, v -> config.starMobEsp = v, Feature.STAR);
-			y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Block outline", config.blockOutlineGlow, v -> config.blockOutlineGlow = v, Feature.BLOCK);
-			y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Chest ESP", config.chestEspEnabled, v -> config.chestEspEnabled = v, Feature.CHEST);
-			y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Block marks", config.blockMarksEnabled, v -> config.blockMarksEnabled = v, Feature.MARKS);
-			y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Player shader", config.playerFillEsp, v -> config.playerFillEsp = v, Feature.FILL);
-			y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Nametags", config.nametagsEnabled, v -> config.nametagsEnabled = v, Feature.NAMETAGS);
-			toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Own nametag", config.nametagSelf, v -> config.nametagSelf = v);
-			float heldTop = top + cardHeight(8) + 8;
-			y = featureCard(graphics, font, left, heldTop, col, cardHeight(1), "Held item");
-			toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Shader", config.heldItemShaderEnabled, v -> config.heldItemShaderEnabled = v, Feature.HELD_ITEM);
-			namesTop = heldTop + cardHeight(1) + 8;
+			controlCard(graphics, font, left, y, col, mouseX, mouseY, "Block marks", config.blockMarksEnabled, v -> config.blockMarksEnabled = v, Feature.MARKS);
+			y = sectionLabel(graphics, font, right, top, "Items");
+			controlCard(graphics, font, right, y, col, mouseX, mouseY, "Held item", config.heldItemShaderEnabled, v -> config.heldItemShaderEnabled = v, Feature.HELD_ITEM);
+			return;
+		}
+		y = featureCard(graphics, font, left, top, col, cardHeight(5), "World");
+		y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Block outline", config.blockOutlineGlow, v -> config.blockOutlineGlow = v, Feature.BLOCK);
+		y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Chest ESP", config.chestEspEnabled, v -> config.chestEspEnabled = v, Feature.CHEST);
+		y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Block marks", config.blockMarksEnabled, v -> config.blockMarksEnabled = v, Feature.MARKS);
+		y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Fairy souls", config.fairySoulEsp, v -> config.fairySoulEsp = v, Feature.FAIRY);
+		toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Held item", config.heldItemShaderEnabled, v -> config.heldItemShaderEnabled = v, Feature.HELD_ITEM);
+	}
+
+	private void drawEntityVisualsTab(
+		GuiGraphicsExtractor graphics,
+		Font font,
+		int mouseX,
+		int mouseY,
+		float left,
+		float right,
+		float top,
+		float col,
+		float ix,
+		float rx,
+		float iw,
+		EntityKind kind
+	) {
+		visualsKind = kind;
+		StrayConfig config = StrayConfig.get();
+		EntityVisuals visuals = config.visuals(kind);
+		int glowRows = Feature.MOB.rows() + (kind == EntityKind.STAR ? 2 : 0);
+		int tagRows = Feature.NAMETAGS.rows() + (kind == EntityKind.PLAYER ? 1 : 0);
+
+		float y = sectionLabel(graphics, font, left, top, "Overlay");
+		float glowH = cardHeight(glowRows);
+		float glowInner = featureCard(graphics, font, left, y, col, glowH, "Glow", visuals.glowEnabled, v -> visuals.glowEnabled = v, mouseX, mouseY);
+		fieldScope = Feature.MOB.name();
+		drawFeatureFields(graphics, font, mouseX, mouseY, ix, glowInner, iw, Feature.MOB);
+		if (kind == EntityKind.STAR) {
+			float extraY = glowInner + Feature.MOB.rows() * ROW;
+			extraY = toggle(graphics, font, ix, extraY, iw, mouseX, mouseY, "Highlight bats", config.starMobBats, v -> config.starMobBats = v);
+			toggle(graphics, font, ix, extraY, iw, mouseX, mouseY, "Highlight fels", config.starMobFels, v -> config.starMobFels = v);
+		}
+		fieldScope = "";
+		y = y + glowH + 8;
+		y = controlCard(graphics, font, left, y, col, mouseX, mouseY, "Health bar", visuals.healthEnabled, v -> visuals.healthEnabled = v, Feature.HEALTH);
+		if (kind == EntityKind.PLAYER) {
+			y = sectionLabel(graphics, font, left, y, "Shader");
+			y = controlCard(graphics, font, left, y, col, mouseX, mouseY, "Player shader", config.playerFillEsp, v -> config.playerFillEsp = v, Feature.FILL);
 		}
 
-		List<String> nametags = config.nametagEspLabels();
-		float namesH = Math.max(cardHeight(2), contentBottom() - namesTop);
-		if (namesH >= cardHeight(0) + rowH()) {
+		float ry = sectionLabel(graphics, font, right, top, "Tags");
+		float tagH = cardHeight(tagRows);
+		float tagInner = featureCard(graphics, font, right, ry, col, tagH, "Nametags", visuals.nametagsEnabled, v -> visuals.nametagsEnabled = v, mouseX, mouseY);
+		fieldScope = Feature.NAMETAGS.name();
+		if (kind == EntityKind.PLAYER) {
+			tagInner = toggle(graphics, font, rx, tagInner, iw, mouseX, mouseY, "Own nametag", config.nametagSelf, v -> config.nametagSelf = v);
+		}
+		drawFeatureFields(graphics, font, mouseX, mouseY, rx, tagInner, iw, Feature.NAMETAGS);
+		fieldScope = "";
+		ry = ry + tagH + 8;
+		ry = controlCard(graphics, font, right, ry, col, mouseX, mouseY, "2D box", visuals.boxEnabled, v -> visuals.boxEnabled = v, Feature.BOX);
+
+		if (kind == EntityKind.PLAYER) {
+			List<String> nametags = config.nametagEspLabels();
+			float namesH = Math.max(cardHeight(4), contentBottom() - ry);
 			String namesTitle = nametags.isEmpty() ? "Nametag ESP" : "Nametag ESP  " + nametags.size();
-			float namesY = featureCard(graphics, font, left, namesTop, col, namesH, namesTitle);
-			drawNametagEspList(graphics, font, ix, namesY, iw, namesH - cardTop() - cardHead() - 4, mouseX, mouseY, true);
-		}
-
-		List<MobCatalog.Entry> entries = MobCatalog.filtered(mobQuery);
-		float mobTop = top;
-		if (controlCenter()) {
-			y = sectionLabel(graphics, font, right, top, "Players");
-			y = controlCard(graphics, font, right, y, col, mouseX, mouseY, "Player shader", config.playerFillEsp, v -> config.playerFillEsp = v, Feature.FILL);
-			float tagTop = y;
-			float tagH = cardHeight(Feature.NAMETAGS.rows() + 1);
-			float tagY = featureCard(graphics, font, right, tagTop, col, tagH, "Nametags", config.nametagsEnabled, v -> config.nametagsEnabled = v, mouseX, mouseY);
-			fieldScope = Feature.NAMETAGS.name();
-			tagY = toggle(graphics, font, rx, tagY, iw, mouseX, mouseY, "Own nametag", config.nametagSelf, v -> config.nametagSelf = v);
-			drawFeatureFields(graphics, font, mouseX, mouseY, rx, tagY, iw, Feature.NAMETAGS);
-			fieldScope = "";
-			mobTop = sectionLabel(graphics, font, right, tagTop + tagH + 8, "Catalog");
-		}
-		// Player fill + Nametags sit above this list, so leftover window height is often
-		// negative. Floor the card at ~10 rows so the catalog is actually visible.
-		float listH = Math.max(cardHeight(10), contentBottom() - mobTop);
-		featureCard(graphics, font, right, mobTop, col, listH, entries.isEmpty() ? "Mobs" : "Mobs  " + entries.size());
-		float searchY = mobTop + cardTop() + cardHead();
-		mobFieldX = rx;
-		mobFieldY = searchY;
-		mobFieldW = iw;
-		boolean hoverSearch = GuiDraw.hovered(mouseX, mouseY, mobFieldX, mobFieldY, mobFieldW, 14);
-		GuiDraw.panel(graphics, mobFieldX, mobFieldY, mobFieldW, 14, 5, mobSearchFocused || hoverSearch ? Theme.CARD_HOVER : Theme.PANEL, mobSearchFocused ? Theme.ACCENT : Theme.LINE);
-		String shown = mobQuery.isEmpty() && !mobSearchFocused ? "Search mobs..." : mobQuery + (mobSearchFocused ? "|" : "");
-		GuiDraw.menu(graphics, font, clip(font, shown, (int) mobFieldW - 10), mobFieldX + 5, GuiDraw.middle(mobFieldY, 14), mobQuery.isEmpty() && !mobSearchFocused ? fade() : ink());
-		hits.add(new Hit(mobFieldX, mobFieldY, mobFieldW, 14, () -> {
-			mobSearchFocused = true;
-			capeFocused = false;
-			nickFocused = false;
-			searchOpen = false;
-		}));
-
-		float row = rowH();
-		mobListX = rx;
-		mobListY = searchY + 18;
-		mobListW = iw;
-		mobListH = Math.max(row, listH - cardTop() - cardHead() - 22);
-		float contentH = entries.size() * row;
-		float maxScroll = Math.max(0f, contentH - mobListH);
-		if (ensureMobVisible) {
-			for (int i = 0; i < entries.size(); i++) {
-				if (config.isMobGlowSelected(entries.get(i).id().toString())) {
-					mobScroll = Mth.clamp(i * row - mobListH * 0.4f, 0f, maxScroll);
-					break;
-				}
-			}
-			ensureMobVisible = false;
-		}
-		mobScroll = Mth.clamp(mobScroll, 0f, maxScroll);
-
-		boolean clipped = GuiDraw.scissor(graphics, mobListX, mobListY, mobListW, mobListH);
-		if (entries.isEmpty()) {
-			GuiDraw.menu(graphics, font, "No matching mobs", mobListX + 2, GuiDraw.middle(mobListY, mobListH), fade());
-		} else {
-			int first = (int) (mobScroll / row);
-			int last = Math.min(entries.size() - 1, first + (int) (mobListH / row) + 1);
-			for (int i = first; i <= last; i++) {
-				MobCatalog.Entry entry = entries.get(i);
-				float iy = mobListY + i * row - mobScroll;
-				boolean on = config.isMobGlowSelected(entry.id().toString());
-				boolean hover = GuiDraw.hovered(mouseX, mouseY, mobListX, iy, mobListW, row)
-					&& GuiDraw.hovered(mouseX, mouseY, mobListX, mobListY, mobListW, mobListH);
-				if (on) {
-					GuiDraw.rounded(graphics, mobListX - 2, iy, mobListW + 4, row, 5, Theme.withAlpha(Theme.ACCENT, 38));
-					GuiDraw.rounded(graphics, mobListX - 2, iy + 3, 2, row - 6, 1, Theme.ACCENT);
-				} else if (hover) {
-					GuiDraw.rounded(graphics, mobListX - 2, iy, mobListW + 4, row, 5, 0x10FFFFFF);
-				}
-				GuiDraw.menu(graphics, font, clip(font, entry.name(), (int) mobListW - 8), mobListX + 6, GuiDraw.middle(iy, row), on ? ink() : fade());
-				float hitY = Math.max(iy, mobListY);
-				float hitB = Math.min(iy + row, mobListY + mobListH);
-				if (hitB - hitY >= 3f) {
-					hits.add(new Hit(mobListX, hitY, mobListW, hitB - hitY, () -> {
-						config.toggleMobGlow(entry.id().toString());
-						UnloadState.markDirty();
-					}));
-				}
-			}
-		}
-		if (clipped) {
-			GuiDraw.disableScissor(graphics);
-		}
-
-		if (maxScroll > 1f) {
-			float trackX = right + col - 5;
-			float trackY = mobListY;
-			float trackH = mobListH;
-			GuiDraw.rounded(graphics, trackX, trackY, 2.4f, trackH, 1.2f, Theme.TRACK);
-			float thumbH = Math.max(14f, trackH * trackH / (trackH + maxScroll));
-			float thumbY = trackY + (mobScroll / maxScroll) * (trackH - thumbH);
-			GuiDraw.rounded(graphics, trackX - 0.4f, thumbY, 3.2f, thumbH, 1.6f, Theme.ACCENT);
+			float namesY = featureCard(graphics, font, right, ry, col, namesH, namesTitle);
+			drawNametagEspList(graphics, font, rx, namesY, iw, namesH - cardTop() - cardHead() - 4, mouseX, mouseY, true);
+		} else if (kind == EntityKind.MOB) {
+			float listTop = Math.max(y, ry);
+			drawCatalogPanel(graphics, font, mouseX, mouseY, left, listTop, col + COL_GAP + col);
 		}
 	}
 
-	private void drawCatalogTab(GuiGraphicsExtractor graphics, Font font, int mouseX, int mouseY) {
-		float left = contentX();
-		float top = windowY + toolbarH() + 6;
-		float col = colW();
-		float ix = innerX(left);
+	private void drawCatalogPanel(
+		GuiGraphicsExtractor graphics,
+		Font font,
+		int mouseX,
+		int mouseY,
+		float x,
+		float y,
+		float w
+	) {
+		drawCatalogList(graphics, font, mouseX, mouseY, x, y, w, Math.max(cardHeight(8), contentBottom() - y));
+	}
+
+	private void drawCatalogList(
+		GuiGraphicsExtractor graphics,
+		Font font,
+		int mouseX,
+		int mouseY,
+		float left,
+		float top,
+		float width,
+		float listH
+	) {
 		StrayConfig config = StrayConfig.get();
 		List<MobCatalog.Entry> entries = MobCatalog.filtered(mobQuery);
-
-		float y = sectionLabel(graphics, font, left, top, "Catalog");
-		float listH = Math.max(cardHeight(12), contentBottom() - y);
-		featureCard(graphics, font, left, y, col + COL_GAP + col, listH, entries.isEmpty() ? "Mobs" : "Mobs  " + entries.size());
+		float ix = innerX(left);
+		float y = top;
+		featureCard(graphics, font, left, y, width, listH, entries.isEmpty() ? "Mobs" : "Mobs  " + entries.size());
 		float searchY = y + cardTop() + cardHead();
 		mobFieldX = ix;
 		mobFieldY = searchY;
-		mobFieldW = innerW(col + COL_GAP + col);
+		mobFieldW = innerW(width);
 		boolean hoverSearch = GuiDraw.hovered(mouseX, mouseY, mobFieldX, mobFieldY, mobFieldW, 14);
 		GuiDraw.panel(graphics, mobFieldX, mobFieldY, mobFieldW, 14, 5, mobSearchFocused || hoverSearch ? Theme.CARD_HOVER : Theme.PANEL, mobSearchFocused ? Theme.ACCENT : Theme.LINE);
 		String shown = mobQuery.isEmpty() && !mobSearchFocused ? "Search mobs..." : mobQuery + (mobSearchFocused ? "|" : "");
@@ -1126,7 +1100,7 @@ public class StrayScreen extends Screen {
 			GuiDraw.disableScissor(graphics);
 		}
 		if (maxScroll > 1f) {
-			float trackX = left + col + COL_GAP + col - 5;
+			float trackX = left + width - 5;
 			float trackY = mobListY;
 			float trackH = mobListH;
 			GuiDraw.rounded(graphics, trackX, trackY, 2.4f, trackH, 1.2f, Theme.TRACK);
@@ -1626,7 +1600,7 @@ public class StrayScreen extends Screen {
 		return switch (value) {
 			case WORLD, CAMERA -> MenuFont.GLOBE;
 			case COMBAT, ASSIST -> MenuFont.SWORD;
-			case ESP, PLAYERS, CATALOG -> MenuFont.EYE;
+			case ESP, PLAYERS, CATALOG, STARS -> MenuFont.EYE;
 			case OVERLAY, MEDIA -> MenuFont.DISPLAY;
 			case BARS -> MenuFont.BARS;
 			case NODES -> MenuFont.PIN;
@@ -2287,41 +2261,17 @@ public class StrayScreen extends Screen {
 				drawFeatureFields(graphics, font, mouseX, mouseY, rx, y, iw, Feature.AUTO_CLICKER);
 			}
 			case ESP -> {
-				float y = sectionLabel(graphics, font, left, top, "Glow");
-				y = controlCard(graphics, font, left, y, col, mouseX, mouseY, "Mob glow", config.mobGlowEnabled, v -> config.mobGlowEnabled = v, Feature.MOB);
-				float starH = cardHeight(Feature.STAR.rows());
-				float starInner = featureCard(graphics, font, left, y, col, starH, "Star mobs");
-				drawFeatureFields(graphics, font, mouseX, mouseY, ix, starInner, iw, Feature.STAR);
-				y = y + starH + 8;
-				y = sectionLabel(graphics, font, left, y, "World");
+				float y = sectionLabel(graphics, font, left, top, "World");
 				y = controlCard(graphics, font, left, y, col, mouseX, mouseY, "Block outline", config.blockOutlineGlow, v -> config.blockOutlineGlow = v, Feature.BLOCK);
 				y = controlCard(graphics, font, left, y, col, mouseX, mouseY, "Chest ESP", config.chestEspEnabled, v -> config.chestEspEnabled = v, Feature.CHEST);
 				y = controlCard(graphics, font, left, y, col, mouseX, mouseY, "Fairy souls", config.fairySoulEsp, v -> config.fairySoulEsp = v, Feature.FAIRY);
 				controlCard(graphics, font, left, y, col, mouseX, mouseY, "Block marks", config.blockMarksEnabled, v -> config.blockMarksEnabled = v, Feature.MARKS);
-				y = sectionLabel(graphics, font, right, top, "Held item");
-				y = controlCard(graphics, font, right, y, col, mouseX, mouseY, "Held item", config.heldItemShaderEnabled, v -> config.heldItemShaderEnabled = v, Feature.HELD_ITEM);
-				y = sectionLabel(graphics, font, right, y, "Health");
-				y = controlCard(graphics, font, right, y, col, mouseX, mouseY, "Health bar", config.healthBarEnabled, v -> config.healthBarEnabled = v, Feature.HEALTH);
-				controlCard(graphics, font, right, y, col, mouseX, mouseY, "2D box", config.boxEspEnabled, v -> config.boxEspEnabled = v, Feature.BOX);
+				y = sectionLabel(graphics, font, right, top, "Items");
+				controlCard(graphics, font, right, y, col, mouseX, mouseY, "Held item", config.heldItemShaderEnabled, v -> config.heldItemShaderEnabled = v, Feature.HELD_ITEM);
 			}
-			case PLAYERS -> {
-				float y = sectionLabel(graphics, font, left, top, "Shader");
-				y = controlCard(graphics, font, left, y, col, mouseX, mouseY, "Player shader", config.playerFillEsp, v -> config.playerFillEsp = v, Feature.FILL);
-				y = sectionLabel(graphics, font, right, top, "Nametags");
-				float tagH = cardHeight(Feature.NAMETAGS.rows() + 1);
-				float tagY = featureCard(graphics, font, right, y, col, tagH, "Nametags", config.nametagsEnabled, v -> config.nametagsEnabled = v, mouseX, mouseY);
-				fieldScope = Feature.NAMETAGS.name();
-				tagY = toggle(graphics, font, rx, tagY, iw, mouseX, mouseY, "Own nametag", config.nametagSelf, v -> config.nametagSelf = v);
-				drawFeatureFields(graphics, font, mouseX, mouseY, rx, tagY, iw, Feature.NAMETAGS);
-				fieldScope = "";
-				float namesTop = y + tagH + 8;
-				List<String> nametags = config.nametagEspLabels();
-				float namesH = Math.max(cardHeight(4), contentBottom() - namesTop);
-				String namesTitle = nametags.isEmpty() ? "Nametag ESP" : "Nametag ESP  " + nametags.size();
-				float namesY = featureCard(graphics, font, right, namesTop, col, namesH, namesTitle);
-				drawNametagEspList(graphics, font, rx, namesY, iw, namesH - cardTop() - cardHead() - 4, mouseX, mouseY, true);
-			}
-			case CATALOG -> drawCatalogTab(graphics, font, mouseX, mouseY);
+			case PLAYERS -> drawEntityVisualsTab(graphics, font, mouseX, mouseY, left, right, top, col, ix, rx, iw, EntityKind.PLAYER);
+			case CATALOG -> drawEntityVisualsTab(graphics, font, mouseX, mouseY, left, right, top, col, ix, rx, iw, EntityKind.MOB);
+			case STARS -> drawEntityVisualsTab(graphics, font, mouseX, mouseY, left, right, top, col, ix, rx, iw, EntityKind.STAR);
 			case OVERLAY -> {
 				float y = sectionLabel(graphics, font, left, top, "Info");
 				y = controlCard(graphics, font, left, y, col, mouseX, mouseY, "Watermark", config.watermarkEnabled, v -> config.watermarkEnabled = v, Feature.WATERMARK);
@@ -2906,6 +2856,7 @@ public class StrayScreen extends Screen {
 		Feature feature
 	) {
 		StrayConfig config = StrayConfig.get();
+		EntityVisuals visuals = config.visuals(visualsKind);
 		String previousScope = fieldScope;
 		if (fieldScope.isEmpty()) {
 			fieldScope = feature.name();
@@ -3000,9 +2951,9 @@ public class StrayScreen extends Screen {
 				toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Skip Guardian pet", config.superpairsSkipPets, v -> config.superpairsSkipPets = v);
 			}
 			case MOB -> {
-				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Through walls", config.mobGlowThroughWalls, v -> config.mobGlowThroughWalls = v);
-				y = slider(graphics, font, ix, y, iw, "Radius", String.format(Locale.ROOT, "%.0f", config.mobGlowRadius), (config.mobGlowRadius - GlowBlurRadius.MIN) / (GlowBlurRadius.MAX - GlowBlurRadius.MIN), v -> config.mobGlowRadius = StrayConfig.clamp(GlowBlurRadius.MIN + v * (GlowBlurRadius.MAX - GlowBlurRadius.MIN), GlowBlurRadius.MIN, GlowBlurRadius.MAX));
-				colorRow(graphics, font, ix, y, iw, mouseX, mouseY, "Color", config.mobGlowRgb, PickerTarget.MOB);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Through walls", visuals.glowThroughWalls, v -> visuals.glowThroughWalls = v);
+				y = slider(graphics, font, ix, y, iw, "Radius", String.format(Locale.ROOT, "%.0f", visuals.glowRadius), (visuals.glowRadius - GlowBlurRadius.MIN) / (GlowBlurRadius.MAX - GlowBlurRadius.MIN), v -> visuals.glowRadius = StrayConfig.clamp(GlowBlurRadius.MIN + v * (GlowBlurRadius.MAX - GlowBlurRadius.MIN), GlowBlurRadius.MIN, GlowBlurRadius.MAX));
+				colorRow(graphics, font, ix, y, iw, mouseX, mouseY, "Color", visuals.glowRgb, PickerTarget.MOB);
 			}
 			case STAR -> {
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Glow ESP", config.starMobEsp, v -> config.starMobEsp = v);
@@ -3105,30 +3056,28 @@ public class StrayScreen extends Screen {
 				toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Item count", config.inventoryHudCount, v -> config.inventoryHudCount = v);
 			}
 			case HEALTH -> {
-				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Players", config.healthBarPlayers, v -> config.healthBarPlayers = v);
-				y = cycle(graphics, font, ix, y, iw, mouseX, mouseY, "Style", config.healthBarStyleLabel(), config::cycleHealthBarStyle);
-				y = cycle(graphics, font, ix, y, iw, mouseX, mouseY, "Side", config.healthBarSideLabel(), config::cycleHealthBarSide);
-				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Through walls", config.healthBarThroughWalls, v -> config.healthBarThroughWalls = v);
-				y = slider(graphics, font, ix, y, iw, "Range", config.healthBarRange + "m", (config.healthBarRange - 16) / 80f, v -> config.healthBarRange = StrayConfig.clamp(16 + Math.round(v * 80f), 16, 96));
-				y = slider(graphics, font, ix, y, iw, "Width", String.format(java.util.Locale.ROOT, "%.1f", config.healthBarWidth), (config.healthBarWidth - 1f) / 5f, v -> config.healthBarWidth = StrayConfig.clamp(1f + v * 5f, 1f, 6f));
-				y = colorRow(graphics, font, ix, y, iw, mouseX, mouseY, "Full", config.healthBarFullRgb, PickerTarget.HEALTH_FULL);
-				colorRow(graphics, font, ix, y, iw, mouseX, mouseY, "Empty", config.healthBarEmptyRgb, PickerTarget.HEALTH_EMPTY);
+				y = cycle(graphics, font, ix, y, iw, mouseX, mouseY, "Style", visuals.healthStyleLabel(), visuals::cycleHealthStyle);
+				y = cycle(graphics, font, ix, y, iw, mouseX, mouseY, "Side", visuals.healthSideLabel(), visuals::cycleHealthSide);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Through walls", visuals.healthThroughWalls, v -> visuals.healthThroughWalls = v);
+				y = slider(graphics, font, ix, y, iw, "Range", visuals.healthRange + "m", (visuals.healthRange - 16) / 80f, v -> visuals.healthRange = StrayConfig.clamp(16 + Math.round(v * 80f), 16, 96));
+				y = slider(graphics, font, ix, y, iw, "Width", String.format(java.util.Locale.ROOT, "%.1f", visuals.healthWidth), (visuals.healthWidth - 1f) / 5f, v -> visuals.healthWidth = StrayConfig.clamp(1f + v * 5f, 1f, 6f));
+				y = colorRow(graphics, font, ix, y, iw, mouseX, mouseY, "Full", visuals.healthFullRgb, PickerTarget.HEALTH_FULL);
+				colorRow(graphics, font, ix, y, iw, mouseX, mouseY, "Empty", visuals.healthEmptyRgb, PickerTarget.HEALTH_EMPTY);
 			}
 			case BOX -> {
-				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Players", config.boxEspPlayers, v -> config.boxEspPlayers = v);
-				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Through walls", config.boxEspThroughWalls, v -> config.boxEspThroughWalls = v);
-				y = slider(graphics, font, ix, y, iw, "Range", config.boxEspRange + "m", (config.boxEspRange - 16) / 80f, v -> config.boxEspRange = StrayConfig.clamp(16 + Math.round(v * 80f), 16, 96));
-				y = slider(graphics, font, ix, y, iw, "Line", String.format(java.util.Locale.ROOT, "%.1f", config.boxEspWidth), (config.boxEspWidth - 1f) / 5f, v -> config.boxEspWidth = StrayConfig.clamp(1f + v * 5f, 1f, 6f));
-				y = slider(graphics, font, ix, y, iw, "Fill", Math.round(config.boxEspFill * 100) + "%", config.boxEspFill / 0.55f, v -> config.boxEspFill = StrayConfig.clamp(v * 0.55f, 0f, 0.55f));
-				colorRow(graphics, font, ix, y, iw, mouseX, mouseY, "Color", config.boxEspRgb, PickerTarget.BOX);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Through walls", visuals.boxThroughWalls, v -> visuals.boxThroughWalls = v);
+				y = slider(graphics, font, ix, y, iw, "Range", visuals.boxRange + "m", (visuals.boxRange - 16) / 80f, v -> visuals.boxRange = StrayConfig.clamp(16 + Math.round(v * 80f), 16, 96));
+				y = slider(graphics, font, ix, y, iw, "Line", String.format(java.util.Locale.ROOT, "%.1f", visuals.boxWidth), (visuals.boxWidth - 1f) / 5f, v -> visuals.boxWidth = StrayConfig.clamp(1f + v * 5f, 1f, 6f));
+				y = slider(graphics, font, ix, y, iw, "Fill", Math.round(visuals.boxFill * 100) + "%", visuals.boxFill / 0.55f, v -> visuals.boxFill = StrayConfig.clamp(v * 0.55f, 0f, 0.55f));
+				colorRow(graphics, font, ix, y, iw, mouseX, mouseY, "Color", visuals.boxRgb, PickerTarget.BOX);
 			}
 			case NAMETAGS -> {
-				y = cycle(graphics, font, ix, y, iw, mouseX, mouseY, "Style", config.nametagStyleLabel(), config::cycleNametagStyle);
-				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Through walls", config.nametagThroughWalls, v -> config.nametagThroughWalls = v);
-				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Show distance", config.nametagDistance, v -> config.nametagDistance = v);
-				y = slider(graphics, font, ix, y, iw, "Size", Math.round(config.nametagScale * 100) + "%", (config.nametagScale - 0.50f) / 1.50f, v -> config.nametagScale = StrayConfig.clamp(0.50f + v * 1.50f, 0.50f, 2.00f));
-				y = slider(graphics, font, ix, y, iw, "Opacity", Math.round(config.nametagOpacity * 100) + "%", (config.nametagOpacity - 0.15f) / 0.85f, v -> config.nametagOpacity = StrayConfig.clamp(0.15f + v * 0.85f, 0.15f, 1f));
-				slider(graphics, font, ix, y, iw, "Range", config.nametagRange + "m", (config.nametagRange - 64) / 192f, v -> config.nametagRange = StrayConfig.clamp(64 + Math.round(v * 192f), 64, 256));
+				y = cycle(graphics, font, ix, y, iw, mouseX, mouseY, "Style", visuals.nametagStyleLabel(), visuals::cycleNametagStyle);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Through walls", visuals.nametagThroughWalls, v -> visuals.nametagThroughWalls = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Show distance", visuals.nametagDistance, v -> visuals.nametagDistance = v);
+				y = slider(graphics, font, ix, y, iw, "Size", Math.round(visuals.nametagScale * 100) + "%", (visuals.nametagScale - 0.50f) / 1.50f, v -> visuals.nametagScale = StrayConfig.clamp(0.50f + v * 1.50f, 0.50f, 2.00f));
+				y = slider(graphics, font, ix, y, iw, "Opacity", Math.round(visuals.nametagOpacity * 100) + "%", (visuals.nametagOpacity - 0.15f) / 0.85f, v -> visuals.nametagOpacity = StrayConfig.clamp(0.15f + v * 0.85f, 0.15f, 1f));
+				slider(graphics, font, ix, y, iw, "Range", visuals.nametagRange + "m", (visuals.nametagRange - 64) / 192f, v -> visuals.nametagRange = StrayConfig.clamp(64 + Math.round(v * 192f), 64, 256));
 			}
 			case NODES -> {
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Only in The End", config.onlyInTheEnd, v -> config.onlyInTheEnd = v);
@@ -3431,6 +3380,7 @@ public class StrayScreen extends Screen {
 	}
 
 	private void openPicker(PickerTarget target, int rgb, float x, float y) {
+		pickerKind = visualsKind;
 		pickerTarget = target;
 		float[] hsv = WorldTint.rgbToHsv(rgb);
 		pickerHue = hsv[0];
@@ -3455,8 +3405,8 @@ public class StrayScreen extends Screen {
 			case SKY -> config.skyTintRgb = packed;
 			case FOG -> config.fogRgb = packed;
 			case NODE -> config.colorRgb = packed;
-			case MOB -> config.mobGlowRgb = packed;
-			case STAR -> config.starMobRgb = packed;
+			case MOB -> config.visuals(pickerKind).glowRgb = packed == 0 ? 0x2FB5FF : packed;
+			case STAR -> config.starVisuals.glowRgb = packed == 0 ? 0xFFD84A : packed;
 			case BLOCK -> config.blockOutlineRgb = packed;
 			case TITANIUM -> config.titaniumEspRgb = packed;
 			case PEST -> config.pestEspRgb = packed;
@@ -3467,9 +3417,9 @@ public class StrayScreen extends Screen {
 			case FILL_OUTLINE -> config.playerFillOutlineRgb = packed;
 			case MARKS -> config.blockMarksRgb = packed == 0 ? 0x2FB5FF : packed;
 			case PATHS -> config.pathRgb = packed == 0 ? 0x2FB5FF : packed;
-			case HEALTH_FULL -> config.healthBarFullRgb = packed == 0 ? 0x17EB17 : packed;
-			case HEALTH_EMPTY -> config.healthBarEmptyRgb = packed == 0 ? 0xEB1717 : packed;
-			case BOX -> config.boxEspRgb = packed == 0 ? 0x2FB5FF : packed;
+			case HEALTH_FULL -> config.visuals(pickerKind).healthFullRgb = packed == 0 ? 0x17EB17 : packed;
+			case HEALTH_EMPTY -> config.visuals(pickerKind).healthEmptyRgb = packed == 0 ? 0xEB1717 : packed;
+			case BOX -> config.visuals(pickerKind).boxRgb = packed == 0 ? 0x2FB5FF : packed;
 			case THEME -> Theme.applyCustom(packed);
 			case PANE -> Theme.applyPane(packed);
 			case CONTROL -> {
@@ -3509,13 +3459,13 @@ public class StrayScreen extends Screen {
 			case CONTROL -> config.controlPaneOpacity;
 			case PILL -> config.controlPillOpacity;
 			case PANE -> config.themePaneOpacity;
-			case MOB -> config.mobGlowOpacity;
-			case STAR -> config.starMobOpacity;
+			case MOB -> config.visuals(pickerKind).glowOpacity;
+			case STAR -> config.starVisuals.glowOpacity;
 			case BLOCK -> config.blockOutlineOpacity;
 			case NODE -> config.fillOpacity;
 			case CHEST -> config.chestEspOpacity;
 			case TITANIUM -> config.titaniumEspOpacity;
-			case BOX -> config.boxEspOpacity;
+			case BOX -> config.visuals(pickerKind).boxOpacity;
 			case PEST -> config.pestEspOpacity;
 			case HELD_ITEM -> config.heldItemShaderFill;
 			case FILL -> config.playerFillFill;
@@ -3533,13 +3483,13 @@ public class StrayScreen extends Screen {
 			case CONTROL -> config.controlPaneOpacity = clamped;
 			case PILL -> config.controlPillOpacity = clamped;
 			case PANE -> config.themePaneOpacity = clamped;
-			case MOB -> config.mobGlowOpacity = clamped;
-			case STAR -> config.starMobOpacity = clamped;
+			case MOB -> config.visuals(pickerKind).glowOpacity = clamped;
+			case STAR -> config.starVisuals.glowOpacity = clamped;
 			case BLOCK -> config.blockOutlineOpacity = clamped;
 			case NODE -> config.fillOpacity = clamped;
 			case CHEST -> config.chestEspOpacity = clamped;
 			case TITANIUM -> config.titaniumEspOpacity = clamped;
-			case BOX -> config.boxEspOpacity = clamped;
+			case BOX -> config.visuals(pickerKind).boxOpacity = clamped;
 			case PEST -> config.pestEspOpacity = clamped;
 			case HELD_ITEM -> config.heldItemShaderFill = clamped;
 			case FILL -> config.playerFillFill = clamped;

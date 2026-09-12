@@ -91,7 +91,7 @@ public final class StarMobEsp {
 	}
 
 	public static boolean glowing(Entity entity) {
-		return StrayConfig.get().starMobEsp && marked(entity);
+		return StrayConfig.get().starVisuals.glowEnabled && marked(entity);
 	}
 
 	public static boolean marked(Entity entity) {
@@ -118,7 +118,7 @@ public final class StarMobEsp {
 
 	public static boolean tracking() {
 		StrayConfig config = StrayConfig.get();
-		return config.starMobEsp || config.playerFillStarMobs;
+		return config.starVisuals.anyEnabled() || config.playerFillStarMobs;
 	}
 
 	private static boolean starredPlate(String name) {
