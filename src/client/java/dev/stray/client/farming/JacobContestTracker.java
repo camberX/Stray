@@ -5,7 +5,11 @@ import net.minecraft.client.multiplayer.ClientPacketListener;
 import net.minecraft.client.multiplayer.PlayerInfo;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.level.GameType;
+import net.minecraft.world.scores.DisplaySlot;
+import net.minecraft.world.scores.Objective;
+import net.minecraft.world.scores.PlayerScoreEntry;
 import net.minecraft.world.scores.PlayerTeam;
+import net.minecraft.world.scores.Scoreboard;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -18,14 +22,22 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-/** Reads Hypixel's Jacob widget from the player list and projects the contest result. */
+/** Reads Hypixel's Jacob widget from tab, and remaining time from the scoreboard. */
 public final class JacobContestTracker {
 	private static final int CONTEST_SECONDS = 20 * 60;
 	private static final int SAMPLE_WINDOW_SECONDS = 60;
 	private static final Pattern HEADER = Pattern.compile("^jacob'?s contest:?\\s*(.*)$", Pattern.CASE_INSENSITIVE);
-	/** Tab shows `19m` until ~6 minutes left, then `5m 59s`. Seconds-only `45s` also appears. */
+	/** Scoreboard uses `15m36s` for the whole contest; tab often drops seconds until ~6m left. */
 	private static final Pattern TIME = Pattern.compile(
 		"^(?:(\\d+)m(?:\\s*(\\d+)s)?|(\\d+)s)(?:\\s+left)?$",
+		Pattern.CASE_INSENSITIVE
+	);
+	private static final Pattern CROP_TIME = Pattern.compile(
+		"^(.+?)\\s+((?:\\d+m(?:\\s*\\d+s)?|\\d+s))$",
+		Pattern.CASE_INSENSITIVE
+	);
+	private static final Pattern COLLECTED = Pattern.compile(
+		"^Collected\\s+([\\d,.]+(?:\\.[\\d]+)?[kmb]?)$",
 		Pattern.CASE_INSENSITIVE
 	);
 	private static final Pattern RANK = Pattern.compile(
@@ -95,6 +107,20 @@ public final class JacobContestTracker {
 	}
 
 	private static Parsed read(Minecraft client) {
+		SidebarJacob sidebar = readSidebar(client);
+		Parsed tab = readTab(client);
+		int remaining = sidebar.remaining >= 0 ? sidebar.remaining : tab == null ? -1 : tab.remaining;
+		String crop = !sidebar.crop.isEmpty() ? sidebar.crop : tab == null ? "" : tab.crop;
+		int score = tab != null && tab.score >= 0 ? tab.score : sidebar.score;
+		Medal rank = tab != null ? tab.rank : Medal.NONE;
+		Map<Medal, Integer> cutoffs = tab != null ? tab.cutoffs : Map.of();
+		if (remaining >= 0 && score >= 0) {
+			return new Parsed(crop.isEmpty() ? "Farming" : crop, remaining, score, rank, cutoffs);
+		}
+		return null;
+	}
+
+	private static Parsed readTab(Minecraft client) {
 		ClientPacketListener connection = client.player.connection;
 		if (connection == null) {
 			return null;
@@ -149,11 +175,110 @@ public final class JacobContestTracker {
 					}
 				}
 			}
-			if (remaining >= 0 && score >= 0) {
-				return new Parsed(crop.isEmpty() ? "Farming" : crop, remaining, score, rank, cutoffs);
-			}
+			return new Parsed(crop, remaining, score, rank, cutoffs);
 		}
 		return null;
+	}
+
+	private static SidebarJacob readSidebar(Minecraft client) {
+		List<String> lines = sidebarLines(client);
+		boolean jacob = false;
+		for (String line : lines) {
+			if (jacobLine(line)) {
+				jacob = true;
+				break;
+			}
+		}
+		if (!jacob) {
+			return SidebarJacob.EMPTY;
+		}
+		String crop = "";
+		int remaining = -1;
+		int score = -1;
+		for (String line : lines) {
+			if (jacobLine(line)) {
+				Matcher header = HEADER.matcher(line);
+				if (header.matches()) {
+					int headerTime = parseTime(header.group(1));
+					if (headerTime >= 0 && remaining < 0) {
+						remaining = headerTime;
+					}
+				}
+				continue;
+			}
+			Matcher collected = COLLECTED.matcher(line);
+			if (collected.matches()) {
+				score = parseAmount(collected.group(1));
+				continue;
+			}
+			Matcher cropTime = CROP_TIME.matcher(line);
+			if (cropTime.matches()) {
+				int time = parseTime(cropTime.group(2));
+				if (time >= 0) {
+					remaining = time;
+					String name = cropTime.group(1).trim();
+					if (!name.isEmpty() && !isWidget(name) && !jacobLine(name)) {
+						crop = name;
+					}
+				}
+				continue;
+			}
+			if (remaining < 0) {
+				remaining = parseTime(line);
+			}
+		}
+		return new SidebarJacob(crop, remaining, score);
+	}
+
+	private static List<String> sidebarLines(Minecraft client) {
+		if (client.level == null || client.player == null) {
+			return List.of();
+		}
+		Scoreboard scoreboard = client.level.getScoreboard();
+		Objective objective = sidebarObjective(scoreboard, client.player.getScoreboardName());
+		if (objective == null) {
+			return List.of();
+		}
+		List<String> lines = new ArrayList<>();
+		String title = clean(objective.getDisplayName());
+		if (!title.isEmpty()) {
+			lines.add(title);
+		}
+		List<PlayerScoreEntry> entries = new ArrayList<>();
+		for (PlayerScoreEntry entry : scoreboard.listPlayerScores(objective)) {
+			if (!entry.isHidden()) {
+				entries.add(entry);
+			}
+		}
+		entries.sort(Comparator.comparingInt(PlayerScoreEntry::value).reversed());
+		for (PlayerScoreEntry entry : entries) {
+			Component raw = entry.display() != null ? entry.display() : Component.literal(entry.owner());
+			String text = clean(PlayerTeam.formatNameForTeam(scoreboard.getPlayersTeam(entry.owner()), raw));
+			if (!text.isEmpty()) {
+				lines.add(text);
+			}
+		}
+		return lines;
+	}
+
+	private static Objective sidebarObjective(Scoreboard scoreboard, String playerName) {
+		Objective objective = scoreboard.getDisplayObjective(DisplaySlot.SIDEBAR);
+		PlayerTeam team = scoreboard.getPlayersTeam(playerName);
+		if (team != null && team.getColor().isColor()) {
+			DisplaySlot colored = DisplaySlot.teamColorToSlot(team.getColor());
+			if (colored != null) {
+				Objective teamObjective = scoreboard.getDisplayObjective(colored);
+				if (teamObjective != null) {
+					return teamObjective;
+				}
+			}
+		}
+		return objective;
+	}
+
+	private static boolean jacobLine(String line) {
+		String key = line.toLowerCase(Locale.ROOT);
+		return key.contains("jacob's contest") || key.contains("jacobs contest");
 	}
 
 	private static void record(Parsed parsed) {
@@ -315,9 +440,18 @@ public final class JacobContestTracker {
 	}
 
 	private static String clean(Component component) {
-		return component == null
-			? ""
-			: component.getString().replaceAll("§.", "").replace('\u00A0', ' ').replaceAll("\\s+", " ").trim();
+		return component == null ? "" : clean(component.getString());
+	}
+
+	private static String clean(String text) {
+		if (text == null) {
+			return "";
+		}
+		return text.replaceAll("§.", "")
+			.replace('\u00A0', ' ')
+			.replaceAll("[^\\p{Alnum}\\p{Punct}\\s]+", " ")
+			.replaceAll("\\s+", " ")
+			.trim();
 	}
 
 	private static boolean isWidget(String value) {
@@ -359,6 +493,10 @@ public final class JacobContestTracker {
 	}
 
 	private record Parsed(String crop, int remaining, int score, Medal rank, Map<Medal, Integer> cutoffs) {
+	}
+
+	private record SidebarJacob(String crop, int remaining, int score) {
+		private static final SidebarJacob EMPTY = new SidebarJacob("", -1, -1);
 	}
 
 	private record ScoreSample(int remaining, int value) {
