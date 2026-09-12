@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.247", new String[]{
+			"Auto-update skips a download that is not the version it asked for and tries the next mirror, so a stale shop jar cannot block an update."
+		}),
 		new Entry("1.2.246", new String[]{
 			"Health bars and 2D box ESP keep the smoother subpixel outlines they had while the click GUI was open, instead of snapping to the GUI pixel grid in-game."
 		}),

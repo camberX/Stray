@@ -186,18 +186,19 @@ public final class AutoUpdate implements PreLaunchEntrypoint {
 			.build();
 		boolean downloaded = false;
 		for (String url : remote.urls) {
-			if (download(http, url, part)) {
+			if (!download(http, url, part)) {
+				continue;
+			}
+			if (validJar(part, remote)) {
 				downloaded = true;
 				break;
 			}
+			String found = jarVersion(part);
+			log("Skipped " + url + " (got " + (found == null ? "an invalid jar" : "Stray " + found) + ", wanted " + remote.version + ").");
+			Files.deleteIfExists(part);
 		}
 		if (!downloaded) {
-			log("Could not download " + remote.file + " from any mirror.");
-			Files.deleteIfExists(part);
-			return null;
-		}
-		if (!validJar(part, remote)) {
-			log("Downloaded " + remote.file + " did not validate as Stray " + remote.version + ".");
+			log("Could not download a valid " + remote.file + " from any mirror.");
 			Files.deleteIfExists(part);
 			return null;
 		}
@@ -216,7 +217,7 @@ public final class AutoUpdate implements PreLaunchEntrypoint {
 	private static boolean download(HttpClient http, String url, Path part) {
 		try {
 			HttpResponse<InputStream> response = http.send(
-				request(url, 90).header("Accept", "application/java-archive,application/octet-stream,*/*").build(),
+				request(UpdateMeta.cacheBust(url), 90).header("Accept", "application/java-archive,application/octet-stream,*/*").build(),
 				HttpResponse.BodyHandlers.ofInputStream()
 			);
 			if (response.statusCode() < 200 || response.statusCode() >= 300) {
@@ -250,20 +251,29 @@ public final class AutoUpdate implements PreLaunchEntrypoint {
 	}
 
 	private static boolean validJar(Path path, Remote remote) {
+		String version = jarVersion(path);
+		return version != null && remote.version.equals(version);
+	}
+
+	private static String jarVersion(Path path) {
 		try (java.util.zip.ZipFile zip = new java.util.zip.ZipFile(path.toFile())) {
 			java.util.zip.ZipEntry entry = zip.getEntry("fabric.mod.json");
 			if (entry == null) {
-				return false;
+				return null;
 			}
 			try (Reader reader = new java.io.InputStreamReader(zip.getInputStream(entry))) {
 				JsonObject metadata = JsonParser.parseReader(reader).getAsJsonObject();
-				return metadata.has("id")
-					&& Stray.MOD_ID.equals(metadata.get("id").getAsString())
-					&& metadata.has("version")
-					&& remote.version.equals(metadata.get("version").getAsString());
+				if (!metadata.has("id") || !Stray.MOD_ID.equals(metadata.get("id").getAsString())) {
+					return null;
+				}
+				if (!metadata.has("version")) {
+					return null;
+				}
+				String version = metadata.get("version").getAsString().trim();
+				return version.isEmpty() ? null : version;
 			}
 		} catch (Exception ignored) {
-			return false;
+			return null;
 		}
 	}
 
