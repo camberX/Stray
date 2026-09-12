@@ -1,5 +1,6 @@
 package dev.stray.client.item;
 
+import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
@@ -8,6 +9,7 @@ import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
+import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
@@ -15,12 +17,15 @@ import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.component.CustomData;
+import net.minecraft.world.item.component.ItemLore;
 
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Live inventory plus Ender Chest / backpack / sack counts from the Skyblock profile API.
@@ -45,6 +50,7 @@ public final class ItemStorage {
 		"personal_deletor_1"
 	};
 
+	private static final Pattern STORED = Pattern.compile("(?i)stored:\\s*([\\d,.]+\\s*[kmb]?)");
 	private static final Map<String, Map<String, Long>> PAGES = new HashMap<>();
 	private static volatile Map<String, Long> apiEnder = Map.of();
 	private static volatile Map<String, Long> apiBackpack = Map.of();
@@ -92,6 +98,9 @@ public final class ItemStorage {
 		if (tracksMoves(kind) && kind.equals(openKind) && title.equals(openTitle)) {
 			nudge(adjust(kind), openCounts, counts);
 		}
+		if ("sack".equals(kind)) {
+			commitSackSeen(counts);
+		}
 		openKind = kind;
 		openTitle = title;
 		openCounts = counts;
@@ -120,6 +129,20 @@ public final class ItemStorage {
 
 	public static boolean sackScreenOpen() {
 		return "sack".equals(openKind);
+	}
+
+	private static void commitSackSeen(Map<String, Long> seen) {
+		if (seen == null || seen.isEmpty()) {
+			return;
+		}
+		Map<String, Long> next = new HashMap<>(apiSacks);
+		next.putAll(seen);
+		apiSacks = Map.copyOf(next);
+		sacksLive = true;
+		for (String id : seen.keySet()) {
+			sackAdjust.remove(id);
+		}
+		countTick = Integer.MIN_VALUE;
 	}
 
 	public static void applySackDelta(String id, long delta) {
@@ -219,7 +242,7 @@ public final class ItemStorage {
 	}
 
 	private static boolean tracksMoves(String kind) {
-		return "ender".equals(kind) || "backpack".equals(kind) || "sack".equals(kind);
+		return "ender".equals(kind) || "backpack".equals(kind);
 	}
 
 	private static Map<String, Long> adjust(String kind) {
@@ -297,7 +320,14 @@ public final class ItemStorage {
 		}
 		String id = idOf(stack);
 		if (id != null) {
-			out.merge(id, (long) Math.max(1, stack.getCount()), Long::sum);
+			Long stored = storedAmount(stack);
+			if (stored != null) {
+				if (stored > 0L) {
+					out.merge(id, stored, Long::sum);
+				}
+			} else {
+				out.merge(id, (long) Math.max(1, stack.getCount()), Long::sum);
+			}
 			ItemIds.remember(stack);
 		}
 		addNested(extra(stack), out, depth + 1, nestStorage);
@@ -444,6 +474,47 @@ public final class ItemStorage {
 			return (int) Math.round(tag.getDoubleOr(key, fallback));
 		} catch (Exception exception) {
 			return fallback;
+		}
+	}
+
+	private static Long storedAmount(ItemStack stack) {
+		ItemLore lore = stack.get(DataComponents.LORE);
+		if (lore == null) {
+			return null;
+		}
+		for (Component line : lore.lines()) {
+			String text = ChatFormatting.stripFormatting(line.getString());
+			if (text == null) {
+				continue;
+			}
+			Matcher matcher = STORED.matcher(text);
+			if (matcher.find()) {
+				return parseStored(matcher.group(1));
+			}
+		}
+		return null;
+	}
+
+	private static long parseStored(String raw) {
+		if (raw == null) {
+			return 0L;
+		}
+		String value = raw.replace(",", "").replace(" ", "").toLowerCase(Locale.ROOT);
+		double scale = 1d;
+		if (value.endsWith("k")) {
+			scale = 1_000d;
+			value = value.substring(0, value.length() - 1);
+		} else if (value.endsWith("m")) {
+			scale = 1_000_000d;
+			value = value.substring(0, value.length() - 1);
+		} else if (value.endsWith("b")) {
+			scale = 1_000_000_000d;
+			value = value.substring(0, value.length() - 1);
+		}
+		try {
+			return Math.max(0L, Math.round(Double.parseDouble(value) * scale));
+		} catch (NumberFormatException ignored) {
+			return 0L;
 		}
 	}
 

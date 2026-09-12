@@ -54,11 +54,18 @@ public final class SackLive {
 	}
 
 	private static boolean isSackLine(String text) {
-		return text.toLowerCase(Locale.ROOT).contains("[sacks]");
+		String lower = text.toLowerCase(Locale.ROOT);
+		if (lower.contains("[sacks]")
+			|| lower.contains("sacks »")
+			|| lower.contains("sacks >")
+			|| lower.contains("sacks:")) {
+			return true;
+		}
+		return lower.contains("sack") && lower.matches(".*[+-]\\s*[\\d,].*");
 	}
 
 	private static String stripPrefix(String text) {
-		return text.replaceAll("(?i)\\[sacks\\]", " ").trim();
+		return text.replaceAll("(?i)\\[sacks\\]|sacks\\s*[»>]\\s*|sacks:\\s*", " ").trim();
 	}
 
 	private static List<Change> parseMoved(String text) {

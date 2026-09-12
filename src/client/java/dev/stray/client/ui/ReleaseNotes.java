@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.261", new String[]{
+			"Raw Mats reads Stored: 171/20.2k from an open sack, so compacting coal into Enchanted Coal updates the bar. Sack chat also matches Sacks » lines."
+		}),
 		new Entry("1.2.260", new String[]{
 			"2D box ESP is a bit wider and taller so the outline sits around the player or mob instead of inside the model."
 		}),
