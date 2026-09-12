@@ -12,9 +12,7 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.decoration.ArmorStand;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.phys.AABB;
-import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Vector3fc;
 
@@ -95,16 +93,18 @@ public final class EntityHealthBars {
 			}
 			Vec3 feet = living.getPosition(partial);
 			Vec3 mid = feet.add(0.0, living.getBbHeight() * 0.5, 0.0);
-			Vec3 rel = mid.subtract(camPos);
-			double facing = rel.x * forward.x() + rel.y * forward.y() + rel.z * forward.z();
-			if (facing <= 0.12) {
+			if (!EntityScreenBoxes.facing(mid, camPos, forward)) {
 				continue;
 			}
-			if (!through && occluded(client, camPos, mid)) {
+			if (!through && EntityScreenBoxes.occluded(client, camPos, mid)) {
 				continue;
 			}
-			AABB box = bounds(living, feet);
-			ScreenBox screen = project(client, box, guiW, guiH);
+			EntityScreenBoxes.Box screen = EntityScreenBoxes.project(
+				client,
+				EntityScreenBoxes.bounds(living, feet),
+				guiW,
+				guiH
+			);
 			if (screen == null || screen.h() < 4f) {
 				continue;
 			}
@@ -247,40 +247,6 @@ public final class EntityHealthBars {
 		return true;
 	}
 
-	private static AABB bounds(LivingEntity living, Vec3 feet) {
-		double hw = living.getBbWidth() * 0.5;
-		double h = living.getBbHeight();
-		return new AABB(feet.x - hw, feet.y, feet.z - hw, feet.x + hw, feet.y + h, feet.z + hw);
-	}
-
-	private static ScreenBox project(Minecraft client, AABB box, float guiW, float guiH) {
-		float minX = Float.POSITIVE_INFINITY;
-		float minY = Float.POSITIVE_INFINITY;
-		float maxX = Float.NEGATIVE_INFINITY;
-		float maxY = Float.NEGATIVE_INFINITY;
-		int hits = 0;
-		for (int i = 0; i < 8; i++) {
-			double x = (i & 1) == 0 ? box.minX : box.maxX;
-			double y = (i & 2) == 0 ? box.minY : box.maxY;
-			double z = (i & 4) == 0 ? box.minZ : box.maxZ;
-			Vec3 ndc = client.gameRenderer.projectPointToScreen(new Vec3(x, y, z));
-			if (ndc.x < -2.0 || ndc.x > 2.0 || ndc.y < -2.0 || ndc.y > 2.0) {
-				continue;
-			}
-			float sx = (float) ((ndc.x * 0.5 + 0.5) * guiW);
-			float sy = (float) ((-ndc.y * 0.5 + 0.5) * guiH);
-			minX = Math.min(minX, sx);
-			maxX = Math.max(maxX, sx);
-			minY = Math.min(minY, sy);
-			maxY = Math.max(maxY, sy);
-			hits++;
-		}
-		if (hits < 2 || maxX <= minX || maxY <= minY) {
-			return null;
-		}
-		return new ScreenBox(minX, minY, maxX - minX, maxY - minY);
-	}
-
 	private static boolean include(
 		Minecraft client,
 		LivingEntity living,
@@ -317,28 +283,14 @@ public final class EntityHealthBars {
 		return living.distanceToSqr(camPos) <= maxSq;
 	}
 
-	private static boolean occluded(Minecraft client, Vec3 from, Vec3 to) {
-		HitResult hit = client.level.clip(new ClipContext(
-			from,
-			to,
-			ClipContext.Block.VISUAL,
-			ClipContext.Fluid.NONE,
-			client.player
-		));
-		if (hit.getType() == HitResult.Type.MISS) {
-			return false;
-		}
-		return hit.getLocation().distanceToSqr(from) + 0.36 < to.distanceToSqr(from);
-	}
-
-	private static void draw(GuiGraphicsExtractor graphics, ScreenBox box, float shown, boolean right, StrayConfig config) {
+	private static void draw(GuiGraphicsExtractor graphics, EntityScreenBoxes.Box box, float shown, boolean right, StrayConfig config) {
 		boolean csgo = config.healthBarCsgo();
 		float h = box.h();
 		float w = Mth.clamp(h * WIDTH_RATIO, 1.1f, 4.5f);
 		float gap = Mth.clamp(h * GAP_RATIO, 1.5f, 5f);
 		float pad = Mth.clamp(h * 0.03f, 0.4f, 1f);
-		float x = right ? box.x + box.w + gap : box.x - gap - w;
-		float y = box.y;
+		float x = right ? box.x() + box.w() + gap : box.x() - gap - w;
+		float y = box.y();
 		float fillH = h * Mth.clamp(shown, 0f, 1f);
 		int color = 0xFF000000 | healthColor(shown, config);
 		if (csgo) {
@@ -364,9 +316,6 @@ public final class EntityHealthBars {
 		int g = Math.round(Mth.lerp(t, (end >> 8) & 0xFF, (start >> 8) & 0xFF));
 		int b = Math.round(Mth.lerp(t, end & 0xFF, start & 0xFF));
 		return (r << 16) | (g << 8) | b;
-	}
-
-	private record ScreenBox(float x, float y, float w, float h) {
 	}
 
 	private static final class Bar {

@@ -299,6 +299,13 @@ public final class StrayConfig {
 	public int healthBarFullRgb = 0x17EB17;
 	public int healthBarEmptyRgb = 0xEB1717;
 	public int healthBarRange = 48;
+	public boolean boxEspEnabled = false;
+	public boolean boxEspPlayers = false;
+	public boolean boxEspThroughWalls = false;
+	public int boxEspRange = 48;
+	public int boxEspRgb = 0x2FB5FF;
+	public float boxEspOpacity = 0.90f;
+	public float boxEspFill = 0.12f;
 	public float menuScale = 0.75f;
 	public boolean menuScaleV2;
 	public boolean menuStarfield = false;
@@ -537,6 +544,22 @@ public final class StrayConfig {
 					loaded.healthBarEmptyRgb = 0xEB1717;
 				}
 				loaded.healthBarRange = clamp(loaded.healthBarRange <= 0 ? 48 : loaded.healthBarRange, 16, 96);
+				if (!json.has("boxEspEnabled")) {
+					loaded.boxEspEnabled = false;
+				}
+				if (!json.has("boxEspPlayers")) {
+					loaded.boxEspPlayers = false;
+				}
+				if (!json.has("boxEspThroughWalls")) {
+					loaded.boxEspThroughWalls = false;
+				}
+				loaded.boxEspRange = clamp(loaded.boxEspRange <= 0 ? 48 : loaded.boxEspRange, 16, 96);
+				loaded.boxEspRgb = loaded.boxEspRgb & 0xFFFFFF;
+				if (!json.has("boxEspRgb") || loaded.boxEspRgb == 0) {
+					loaded.boxEspRgb = 0x2FB5FF;
+				}
+				loaded.boxEspOpacity = clamp(loaded.boxEspOpacity <= 0f ? 0.90f : loaded.boxEspOpacity, 0.15f, 1f);
+				loaded.boxEspFill = clamp(loaded.boxEspFill < 0f ? 0.12f : loaded.boxEspFill, 0f, 0.55f);
 				if (!json.has("healthBarEnabled")) {
 					loaded.healthBarEnabled = false;
 				}

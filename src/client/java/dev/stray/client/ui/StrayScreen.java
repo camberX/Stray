@@ -161,6 +161,7 @@ public class StrayScreen extends Screen {
 		AUTO_DNA("Auto DNA", 5),
 		NAMETAGS("Nametags", 6),
 		HEALTH("Health bar", 7),
+		BOX("2D box", 5),
 		NODES("Nodes", 5);
 
 		final String title;
@@ -184,7 +185,7 @@ public class StrayScreen extends Screen {
 	}
 
 	private enum PickerTarget {
-		WORLD, SKY, FOG, NODE, THEME, PANE, CONTROL, PILL, MOB, STAR, BLOCK, TITANIUM, CHEST, PEST, HELD_ITEM, HELD_ITEM_OUTLINE, FILL, FILL_OUTLINE, MARKS, PATHS, HEALTH_FULL, HEALTH_EMPTY
+		WORLD, SKY, FOG, NODE, THEME, PANE, CONTROL, PILL, MOB, STAR, BLOCK, TITANIUM, CHEST, PEST, HELD_ITEM, HELD_ITEM_OUTLINE, FILL, FILL_OUTLINE, MARKS, PATHS, HEALTH_FULL, HEALTH_EMPTY, BOX
 	}
 
 	private record SearchEntry(String label, Tab tab, String hint) {
@@ -294,6 +295,8 @@ public class StrayScreen extends Screen {
 		new SearchEntry("Health side", Tab.ESP, "Health"),
 		new SearchEntry("CSGO health", Tab.ESP, "Health"),
 		new SearchEntry("Health color", Tab.ESP, "Health"),
+		new SearchEntry("2D box", Tab.ESP, "Box"),
+		new SearchEntry("Box ESP", Tab.ESP, "Box"),
 		new SearchEntry("Menu scale", Tab.SETTINGS, "Theme"),
 		new SearchEntry("HUD opacity", Tab.SETTINGS, "Theme"),
 		new SearchEntry("Menu stars", Tab.SETTINGS, "Theme"),
@@ -2297,7 +2300,8 @@ public class StrayScreen extends Screen {
 				y = sectionLabel(graphics, font, right, top, "Held item");
 				y = controlCard(graphics, font, right, y, col, mouseX, mouseY, "Held item", config.heldItemShaderEnabled, v -> config.heldItemShaderEnabled = v, Feature.HELD_ITEM);
 				y = sectionLabel(graphics, font, right, y, "Health");
-				controlCard(graphics, font, right, y, col, mouseX, mouseY, "Health bar", config.healthBarEnabled, v -> config.healthBarEnabled = v, Feature.HEALTH);
+				y = controlCard(graphics, font, right, y, col, mouseX, mouseY, "Health bar", config.healthBarEnabled, v -> config.healthBarEnabled = v, Feature.HEALTH);
+				controlCard(graphics, font, right, y, col, mouseX, mouseY, "2D box", config.boxEspEnabled, v -> config.boxEspEnabled = v, Feature.BOX);
 			}
 			case PLAYERS -> {
 				float y = sectionLabel(graphics, font, left, top, "Shader");
@@ -3108,6 +3112,13 @@ public class StrayScreen extends Screen {
 				y = colorRow(graphics, font, ix, y, iw, mouseX, mouseY, "Full", config.healthBarFullRgb, PickerTarget.HEALTH_FULL);
 				colorRow(graphics, font, ix, y, iw, mouseX, mouseY, "Empty", config.healthBarEmptyRgb, PickerTarget.HEALTH_EMPTY);
 			}
+			case BOX -> {
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Players", config.boxEspPlayers, v -> config.boxEspPlayers = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Through walls", config.boxEspThroughWalls, v -> config.boxEspThroughWalls = v);
+				y = slider(graphics, font, ix, y, iw, "Range", config.boxEspRange + "m", (config.boxEspRange - 16) / 80f, v -> config.boxEspRange = StrayConfig.clamp(16 + Math.round(v * 80f), 16, 96));
+				y = slider(graphics, font, ix, y, iw, "Fill", Math.round(config.boxEspFill * 100) + "%", config.boxEspFill / 0.55f, v -> config.boxEspFill = StrayConfig.clamp(v * 0.55f, 0f, 0.55f));
+				colorRow(graphics, font, ix, y, iw, mouseX, mouseY, "Color", config.boxEspRgb, PickerTarget.BOX);
+			}
 			case NAMETAGS -> {
 				y = cycle(graphics, font, ix, y, iw, mouseX, mouseY, "Style", config.nametagStyleLabel(), config::cycleNametagStyle);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Through walls", config.nametagThroughWalls, v -> config.nametagThroughWalls = v);
@@ -3455,6 +3466,7 @@ public class StrayScreen extends Screen {
 			case PATHS -> config.pathRgb = packed == 0 ? 0x2FB5FF : packed;
 			case HEALTH_FULL -> config.healthBarFullRgb = packed == 0 ? 0x17EB17 : packed;
 			case HEALTH_EMPTY -> config.healthBarEmptyRgb = packed == 0 ? 0xEB1717 : packed;
+			case BOX -> config.boxEspRgb = packed == 0 ? 0x2FB5FF : packed;
 			case THEME -> Theme.applyCustom(packed);
 			case PANE -> Theme.applyPane(packed);
 			case CONTROL -> {
@@ -3473,7 +3485,7 @@ public class StrayScreen extends Screen {
 			case CONTROL, PILL -> 0.12f;
 			case PANE -> 0.20f;
 			case MOB, STAR, BLOCK -> 0.15f;
-			case NODE, HELD_ITEM, FILL, CHEST, TITANIUM, PEST -> 0.08f;
+			case NODE, HELD_ITEM, FILL, CHEST, TITANIUM, PEST, BOX -> 0.08f;
 			case THEME, HELD_ITEM_OUTLINE, FILL_OUTLINE, MARKS, PATHS, HEALTH_FULL, HEALTH_EMPTY -> 1f;
 			default -> 0f;
 		};
@@ -3483,7 +3495,7 @@ public class StrayScreen extends Screen {
 		return switch (target) {
 			case CONTROL, PILL -> 0.78f;
 			case MOB, STAR, BLOCK -> 0.90f;
-			case NODE, HELD_ITEM, FILL, CHEST, TITANIUM, PEST -> 0.85f;
+			case NODE, HELD_ITEM, FILL, CHEST, TITANIUM, PEST, BOX -> 0.85f;
 			default -> 1f;
 		};
 	}
@@ -3500,6 +3512,7 @@ public class StrayScreen extends Screen {
 			case NODE -> config.fillOpacity;
 			case CHEST -> config.chestEspOpacity;
 			case TITANIUM -> config.titaniumEspOpacity;
+			case BOX -> config.boxEspOpacity;
 			case PEST -> config.pestEspOpacity;
 			case HELD_ITEM -> config.heldItemShaderFill;
 			case FILL -> config.playerFillFill;
@@ -3523,6 +3536,7 @@ public class StrayScreen extends Screen {
 			case NODE -> config.fillOpacity = clamped;
 			case CHEST -> config.chestEspOpacity = clamped;
 			case TITANIUM -> config.titaniumEspOpacity = clamped;
+			case BOX -> config.boxEspOpacity = clamped;
 			case PEST -> config.pestEspOpacity = clamped;
 			case HELD_ITEM -> config.heldItemShaderFill = clamped;
 			case FILL -> config.playerFillFill = clamped;

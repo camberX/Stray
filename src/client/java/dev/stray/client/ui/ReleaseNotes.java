@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.244", new String[]{
+			"2D box ESP uses the same screen-space scaling as the health bar, so the outline hugs the mob the same way. Players, through walls, range, fill, and color are on the ESP tab."
+		}),
 		new Entry("1.2.243", new String[]{
 			"Health bars have Full and Empty color pickers. The fill lerps between them as HP drops, on both Stray and CS:GO styles."
 		}),
