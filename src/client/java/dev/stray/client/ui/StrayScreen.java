@@ -964,15 +964,17 @@ public class StrayScreen extends Screen {
 		visualsKind = kind;
 		StrayConfig config = StrayConfig.get();
 		EntityVisuals visuals = config.visuals(kind);
-		int glowRows = Feature.MOB.rows() + (kind == EntityKind.STAR ? 2 : 0);
-		int tagRows = Feature.NAMETAGS.rows() + (kind == EntityKind.PLAYER ? 1 : 0);
+		int glowRows = visuals.glowEnabled ? Feature.MOB.rows() + (kind == EntityKind.STAR ? 2 : 0) : 0;
+		int tagRows = visuals.nametagsEnabled ? Feature.NAMETAGS.rows() + (kind == EntityKind.PLAYER ? 1 : 0) : 0;
 
 		float y = sectionLabel(graphics, font, left, top, "Overlay");
 		float glowH = cardHeight(glowRows);
 		float glowInner = featureCard(graphics, font, left, y, col, glowH, "Glow", visuals.glowEnabled, v -> visuals.glowEnabled = v, mouseX, mouseY);
-		fieldScope = Feature.MOB.name();
-		drawFeatureFields(graphics, font, mouseX, mouseY, ix, glowInner, iw, Feature.MOB);
-		fieldScope = "";
+		if (visuals.glowEnabled) {
+			fieldScope = Feature.MOB.name();
+			drawFeatureFields(graphics, font, mouseX, mouseY, ix, glowInner, iw, Feature.MOB);
+			fieldScope = "";
+		}
 		y = y + glowH + 8;
 		y = controlCard(graphics, font, left, y, col, mouseX, mouseY, "Health bar", visuals.healthEnabled, v -> visuals.healthEnabled = v, Feature.HEALTH);
 		y = sectionLabel(graphics, font, left, y, "Shader");
@@ -981,12 +983,14 @@ public class StrayScreen extends Screen {
 		float ry = sectionLabel(graphics, font, right, top, "Tags");
 		float tagH = cardHeight(tagRows);
 		float tagInner = featureCard(graphics, font, right, ry, col, tagH, "Nametags", visuals.nametagsEnabled, v -> visuals.nametagsEnabled = v, mouseX, mouseY);
-		fieldScope = Feature.NAMETAGS.name();
-		if (kind == EntityKind.PLAYER) {
-			tagInner = toggle(graphics, font, rx, tagInner, iw, mouseX, mouseY, "Own nametag", config.nametagSelf, v -> config.nametagSelf = v);
+		if (visuals.nametagsEnabled) {
+			fieldScope = Feature.NAMETAGS.name();
+			if (kind == EntityKind.PLAYER) {
+				tagInner = toggle(graphics, font, rx, tagInner, iw, mouseX, mouseY, "Own nametag", config.nametagSelf, v -> config.nametagSelf = v);
+			}
+			drawFeatureFields(graphics, font, mouseX, mouseY, rx, tagInner, iw, Feature.NAMETAGS);
+			fieldScope = "";
 		}
-		drawFeatureFields(graphics, font, mouseX, mouseY, rx, tagInner, iw, Feature.NAMETAGS);
-		fieldScope = "";
 		ry = ry + tagH + 8;
 		ry = controlCard(graphics, font, right, ry, col, mouseX, mouseY, "2D box", visuals.boxEnabled, v -> visuals.boxEnabled = v, Feature.BOX);
 
@@ -2232,16 +2236,20 @@ public class StrayScreen extends Screen {
 			}
 			case COMBAT -> {
 				float y = sectionLabel(graphics, font, left, top, "Feedback");
-				y = featureCard(graphics, font, left, y, col, cardHeight(6), "Hitsound", config.hitsoundEnabled, v -> {
+				boolean hitsound = config.hitsoundEnabled;
+				float hitH = cardHeight(hitsound ? 6 : 0);
+				float hitInner = featureCard(graphics, font, left, y, col, hitH, "Hitsound", hitsound, v -> {
 					config.hitsoundEnabled = v;
 					if (v) {
 						Hitsound.playPreview();
 					}
 				}, mouseX, mouseY);
-				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Melee", config.hitsoundMelee, v -> config.hitsoundMelee = v);
-				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Arrows", config.hitsoundArrows, v -> config.hitsoundArrows = v);
-				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Hitmarker", config.hitmarkerEnabled, v -> config.hitmarkerEnabled = v);
-				drawFeatureFields(graphics, font, mouseX, mouseY, ix, y, iw, Feature.HITSOUND);
+				if (hitsound) {
+					hitInner = toggle(graphics, font, ix, hitInner, iw, mouseX, mouseY, "Melee", config.hitsoundMelee, v -> config.hitsoundMelee = v);
+					hitInner = toggle(graphics, font, ix, hitInner, iw, mouseX, mouseY, "Arrows", config.hitsoundArrows, v -> config.hitsoundArrows = v);
+					hitInner = toggle(graphics, font, ix, hitInner, iw, mouseX, mouseY, "Hitmarker", config.hitmarkerEnabled, v -> config.hitmarkerEnabled = v);
+					drawFeatureFields(graphics, font, mouseX, mouseY, ix, hitInner, iw, Feature.HITSOUND);
+				}
 			}
 			case ASSIST -> {
 				float y = sectionLabel(graphics, font, left, top, "Aim");
@@ -2251,9 +2259,11 @@ public class StrayScreen extends Screen {
 				slider(graphics, font, ix, y, iw, "Humanize", Math.round(config.triggerbotHumanize * 100) + "%", config.triggerbotHumanize, v -> config.triggerbotHumanize = StrayConfig.clamp(v, 0f, 1f));
 
 				y = sectionLabel(graphics, font, right, top, "Clicks");
-				float clickerH = fitH(y, cardHeight(autoClickerFieldRows()));
+				float clickerH = config.autoClickerEnabled ? fitH(y, cardHeight(autoClickerFieldRows())) : cardHeight(0);
 				y = featureCard(graphics, font, right, y, col, clickerH, "Auto clicker", config.autoClickerEnabled, v -> config.autoClickerEnabled = v, mouseX, mouseY);
-				drawFeatureFields(graphics, font, mouseX, mouseY, rx, y, iw, Feature.AUTO_CLICKER);
+				if (config.autoClickerEnabled) {
+					drawFeatureFields(graphics, font, mouseX, mouseY, rx, y, iw, Feature.AUTO_CLICKER);
+				}
 			}
 			case ESP -> {
 				float y = sectionLabel(graphics, font, left, top, "World");
@@ -2291,9 +2301,13 @@ public class StrayScreen extends Screen {
 			}
 			case NODES -> {
 				float y = sectionLabel(graphics, font, left, top, "Scan");
-				y = featureCard(graphics, font, left, y, col, cardHeight(6), "Markers", config.markersEnabled, v -> config.markersEnabled = v, mouseX, mouseY);
-				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Node HUD", config.hudEnabled, v -> config.hudEnabled = v);
-				drawFeatureFields(graphics, font, mouseX, mouseY, ix, y, iw, Feature.NODES);
+				boolean markers = config.markersEnabled;
+				float markH = cardHeight(markers ? 6 : 0);
+				float markInner = featureCard(graphics, font, left, y, col, markH, "Markers", markers, v -> config.markersEnabled = v, mouseX, mouseY);
+				if (markers) {
+					markInner = toggle(graphics, font, ix, markInner, iw, mouseX, mouseY, "Node HUD", config.hudEnabled, v -> config.hudEnabled = v);
+					drawFeatureFields(graphics, font, mouseX, mouseY, ix, markInner, iw, Feature.NODES);
+				}
 				y = sectionLabel(graphics, font, right, top, "ESP");
 				controlCard(graphics, font, right, y, col, mouseX, mouseY, "Node ESP", config.boxFill, v -> config.boxFill = v, Feature.NODE_ESP);
 			}
@@ -2308,8 +2322,11 @@ public class StrayScreen extends Screen {
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Open animation", config.loadoutsOpenAnim, v -> config.loadoutsOpenAnim = v);
 				toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Disabled potions", config.disabledPotionsHighlight, v -> config.disabledPotionsHighlight = v);
 				y = sectionLabel(graphics, font, right, top, "Experiments");
-				y = featureCard(graphics, font, right, y, col, cardHeight(Feature.AUTO_EXPERIMENTS.rows()), "Auto experiments", config.autoExperimentsEnabled, v -> config.autoExperimentsEnabled = v, mouseX, mouseY);
-				drawFeatureFields(graphics, font, mouseX, mouseY, rx, y, iw, Feature.AUTO_EXPERIMENTS);
+				float expH = cardHeight(config.autoExperimentsEnabled ? Feature.AUTO_EXPERIMENTS.rows() : 0);
+				y = featureCard(graphics, font, right, y, col, expH, "Auto experiments", config.autoExperimentsEnabled, v -> config.autoExperimentsEnabled = v, mouseX, mouseY);
+				if (config.autoExperimentsEnabled) {
+					drawFeatureFields(graphics, font, mouseX, mouseY, rx, y, iw, Feature.AUTO_EXPERIMENTS);
+				}
 			}
 			case KEYS -> {
 				float y = sectionLabel(graphics, font, left, top, "Binds");
@@ -2370,8 +2387,11 @@ public class StrayScreen extends Screen {
 			}
 			case GREENHOUSE -> {
 				float y = sectionLabel(graphics, font, left, top, "Analyzer");
-				y = featureCard(graphics, font, left, y, col, cardHeight(Feature.AUTO_DNA.rows()), "Auto DNA", config.autoDnaEnabled, v -> config.autoDnaEnabled = v, mouseX, mouseY);
-				drawFeatureFields(graphics, font, mouseX, mouseY, ix, y, iw, Feature.AUTO_DNA);
+				float dnaH = cardHeight(config.autoDnaEnabled ? Feature.AUTO_DNA.rows() : 0);
+				y = featureCard(graphics, font, left, y, col, dnaH, "Auto DNA", config.autoDnaEnabled, v -> config.autoDnaEnabled = v, mouseX, mouseY);
+				if (config.autoDnaEnabled) {
+					drawFeatureFields(graphics, font, mouseX, mouseY, ix, y, iw, Feature.AUTO_DNA);
+				}
 			}
 			case PLAYER -> drawPlayerTab(graphics, font, mouseX, mouseY);
 			case SETTINGS -> drawControlSettings(graphics, font, mouseX, mouseY, left, right, top, col, ix, rx, iw);
@@ -2411,9 +2431,11 @@ public class StrayScreen extends Screen {
 		String action,
 		Runnable onAction
 	) {
-		float h = cardHeight(feature.rows());
+		float h = cardHeight(enabled ? feature.rows() : 0);
 		float iy = featureCard(graphics, font, x, y, w, h, title, enabled, setter, mouseX, mouseY, action, onAction);
-		drawFeatureFields(graphics, font, mouseX, mouseY, innerX(x), iy, innerW(w), feature);
+		if (enabled) {
+			drawFeatureFields(graphics, font, mouseX, mouseY, innerX(x), iy, innerW(w), feature);
+		}
 		return y + h + 8;
 	}
 

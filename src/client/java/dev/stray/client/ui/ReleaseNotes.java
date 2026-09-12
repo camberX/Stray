@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.253", new String[]{
+			"Turning a feature off hides its settings and shrinks the card to the title pill."
+		}),
 		new Entry("1.2.252", new String[]{
 			"Mobs and Stars have their own Shader cards now, same controls as Players. Star glow no longer stacks Color on top of Highlight bats."
 		}),
