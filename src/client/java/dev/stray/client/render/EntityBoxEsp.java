@@ -67,7 +67,7 @@ public final class EntityBoxEsp {
 			if (box == null || box.h() < 4f) {
 				continue;
 			}
-			draw(graphics, box, line, fill, config.boxEspWidth);
+			draw(graphics, box, line, fill, config.boxEspWidth, (float) client.getWindow().getGuiScale());
 		}
 	}
 
@@ -84,8 +84,16 @@ public final class EntityBoxEsp {
 		return living.distanceToSqr(camPos) <= maxSq;
 	}
 
-	private static void draw(GuiGraphicsExtractor graphics, EntityScreenBoxes.Box box, int line, int fill, float width) {
-		float t = Mth.clamp(width, 1f, 6f);
+	private static void draw(
+		GuiGraphicsExtractor graphics,
+		EntityScreenBoxes.Box box,
+		int line,
+		int fill,
+		float width,
+		float guiScale
+	) {
+		float scale = Math.max(1f, guiScale);
+		float t = Mth.clamp(width, 1f, 6f) / scale;
 		if ((fill >>> 24) != 0 && box.w() > t * 2f && box.h() > t * 2f) {
 			GuiDraw.fillSmooth(graphics, box.x() + t, box.y() + t, box.w() - t * 2f, box.h() - t * 2f, fill);
 		}
