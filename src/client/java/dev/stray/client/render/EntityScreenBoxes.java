@@ -45,9 +45,26 @@ final class EntityScreenBoxes {
 	}
 
 	static AABB bounds(LivingEntity living, Vec3 feet) {
-		double hw = living.getBbWidth() * 0.5;
+		return bounds(living, feet, 1.0, 1.0);
+	}
+
+	/** Collision AABB grown so a 2D box sits around the model, not inside it. */
+	static AABB boxBounds(LivingEntity living, Vec3 feet) {
+		return bounds(living, feet, 1.28, 1.12);
+	}
+
+	static AABB bounds(LivingEntity living, Vec3 feet, double widthScale, double heightScale) {
+		double hw = living.getBbWidth() * 0.5 * widthScale;
 		double h = living.getBbHeight();
-		return new AABB(feet.x - hw, feet.y, feet.z - hw, feet.x + hw, feet.y + h, feet.z + hw);
+		double extra = Math.max(0.0, h * (heightScale - 1.0));
+		return new AABB(
+			feet.x - hw,
+			feet.y - extra * 0.30,
+			feet.z - hw,
+			feet.x + hw,
+			feet.y + h + extra * 0.70,
+			feet.z + hw
+		);
 	}
 
 	static boolean facing(Vec3 mid, Vec3 camPos, Vector3fc forward) {

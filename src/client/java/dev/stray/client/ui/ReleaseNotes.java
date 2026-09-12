@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.260", new String[]{
+			"2D box ESP is a bit wider and taller so the outline sits around the player or mob instead of inside the model."
+		}),
 		new Entry("1.2.259", new String[]{
 			"Raw Mats updates sack counts live from [Sacks] chat. Items that skip the inventory are added as soon as Hypixel announces them."
 		}),

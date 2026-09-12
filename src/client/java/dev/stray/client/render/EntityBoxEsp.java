@@ -60,7 +60,7 @@ public final class EntityBoxEsp {
 			}
 			EntityScreenBoxes.Box box = EntityScreenBoxes.project(
 				client,
-				EntityScreenBoxes.bounds(living, feet),
+				EntityScreenBoxes.boxBounds(living, feet),
 				guiW,
 				guiH
 			);
