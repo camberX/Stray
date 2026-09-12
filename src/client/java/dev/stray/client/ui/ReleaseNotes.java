@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.248", new String[]{
+			"2D box ESP corners are no longer brighter than the sides. The four outline strips used to overlap, so alpha stacked at each corner."
+		}),
 		new Entry("1.2.247", new String[]{
 			"Auto-update skips a download that is not the version it asked for and tries the next mirror, so a stale shop jar cannot block an update."
 		}),

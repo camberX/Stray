@@ -91,7 +91,10 @@ public final class EntityBoxEsp {
 		}
 		GuiDraw.fillSmooth(graphics, box.x(), box.y(), box.w(), t, line);
 		GuiDraw.fillSmooth(graphics, box.x(), box.y() + box.h() - t, box.w(), t, line);
-		GuiDraw.fillSmooth(graphics, box.x(), box.y(), t, box.h(), line);
-		GuiDraw.fillSmooth(graphics, box.x() + box.w() - t, box.y(), t, box.h(), line);
+		float side = box.h() - t * 2f;
+		if (side > 0f) {
+			GuiDraw.fillSmooth(graphics, box.x(), box.y() + t, t, side, line);
+			GuiDraw.fillSmooth(graphics, box.x() + box.w() - t, box.y() + t, t, side, line);
+		}
 	}
 }
