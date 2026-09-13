@@ -104,6 +104,7 @@ public final class StrayConfig {
 	public int pestEspRgb = 0xB62F00;
 	public float pestEspOpacity = 0.38f;
 	public boolean jacobContestHudEnabled = false;
+	public boolean skillProgressHudEnabled = false;
 	public boolean composterHudEnabled = false;
 	public boolean composterUpgradesKnown = false;
 	public String composterProfile = "";
@@ -257,6 +258,7 @@ public final class StrayConfig {
 	public float hudMiningScale = 1.0f;
 	public float hudJacobScale = 1.0f;
 	public float hudComposterScale = 1.0f;
+	public float hudSkillScale = 1.0f;
 	public float hudCrystalMapScale = 1.0f;
 	public float hudInventoryX = -1f;
 	public float hudInventoryY = -1f;
@@ -276,6 +278,8 @@ public final class StrayConfig {
 	public float hudJacobY = -1f;
 	public float hudComposterX = -1f;
 	public float hudComposterY = -1f;
+	public float hudSkillX = -1f;
+	public float hudSkillY = -1f;
 	public float hudCrystalMapX = -1f;
 	public float hudCrystalMapY = -1f;
 	public float menuX = -1f;
@@ -1119,6 +1123,9 @@ public final class StrayConfig {
 					: 1.00f;
 				loaded.hudComposterScale = json.has("hudComposterScale")
 					? clampHudScale(loaded.hudComposterScale)
+					: 1.00f;
+				loaded.hudSkillScale = json.has("hudSkillScale")
+					? clampHudScale(loaded.hudSkillScale)
 					: 1.00f;
 				loaded.hudCrystalMapScale = json.has("hudCrystalMapScale")
 					? clampHudScale(loaded.hudCrystalMapScale)
