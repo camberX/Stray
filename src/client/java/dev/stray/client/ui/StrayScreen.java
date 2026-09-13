@@ -17,6 +17,7 @@ import dev.stray.client.mining.MiningAreas;
 import dev.stray.client.mining.MiningTracker;
 import dev.stray.client.mining.TitaniumTracker;
 import dev.stray.client.render.GlowBlurRadius;
+import dev.stray.client.movement.CommandRings;
 import dev.stray.client.movement.PathRecorder;
 import dev.stray.client.render.BlockMarks;
 import dev.stray.client.render.GuiDraw;
@@ -150,6 +151,7 @@ public class StrayScreen extends Screen {
 		FAIRY("Fairy souls", 1),
 		MARKS("Block marks", 4),
 		PATHS("Paths", 5),
+		RINGS("Command rings", 3),
 		NUCLEUS("Nucleus alerts", 2),
 		NODE_ESP("Node ESP", 4),
 		WATERMARK("Watermark", 4),
@@ -191,7 +193,7 @@ public class StrayScreen extends Screen {
 	}
 
 	private enum PickerTarget {
-		WORLD, SKY, FOG, NODE, THEME, PANE, CONTROL, PILL, MOB, STAR, BLOCK, TITANIUM, CHEST, PEST, HELD_ITEM, HELD_ITEM_OUTLINE, FILL, FILL_OUTLINE, MARKS, PATHS, HEALTH_FULL, HEALTH_EMPTY, BOX
+		WORLD, SKY, FOG, NODE, THEME, PANE, CONTROL, PILL, MOB, STAR, BLOCK, TITANIUM, CHEST, PEST, HELD_ITEM, HELD_ITEM_OUTLINE, FILL, FILL_OUTLINE, MARKS, PATHS, RINGS, HEALTH_FULL, HEALTH_EMPTY, BOX
 	}
 
 	private record SearchEntry(String label, Tab tab, String hint) {
@@ -233,6 +235,9 @@ public class StrayScreen extends Screen {
 		new SearchEntry("Triggerbot players", Tab.ASSIST, "Assist"),
 		new SearchEntry("Triggerbot humanize", Tab.ASSIST, "Assist"),
 		new SearchEntry("Auto clicker", Tab.ASSIST, "Assist"),
+		new SearchEntry("Command rings", Tab.ASSIST, "Assist"),
+		new SearchEntry("Command ring", Tab.ASSIST, "Assist"),
+		new SearchEntry("/stray cmd", Tab.ASSIST, "Assist"),
 		new SearchEntry("Autoclicker", Tab.ASSIST, "Assist"),
 		new SearchEntry("Terminator", Tab.ASSIST, "Assist"),
 		new SearchEntry("Auto experiments", Tab.MENUS, "Misc"),
@@ -2332,6 +2337,8 @@ public class StrayScreen extends Screen {
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Enable", config.triggerbotEnabled, v -> config.triggerbotEnabled = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Players", config.triggerbotPlayers, v -> config.triggerbotPlayers = v);
 				slider(graphics, font, ix, y, iw, "Humanize", Math.round(config.triggerbotHumanize * 100) + "%", config.triggerbotHumanize, v -> config.triggerbotHumanize = StrayConfig.clamp(v, 0f, 1f));
+				y = sectionLabel(graphics, font, left, y, "Rings");
+				controlCard(graphics, font, left, y, col, mouseX, mouseY, "Command rings", config.commandRingsEnabled, v -> config.commandRingsEnabled = v, Feature.RINGS);
 
 				y = sectionLabel(graphics, font, right, top, "Clicks");
 				float clickerH = config.autoClickerEnabled ? fitH(y, cardHeight(autoClickerFieldRows())) : cardHeight(0);
@@ -3090,6 +3097,11 @@ public class StrayScreen extends Screen {
 				y = clickRow(graphics, font, ix, y, iw, mouseX, mouseY, BlockMarks.count() == 0 ? "Clear marks" : "Clear " + BlockMarks.count() + " mark" + (BlockMarks.count() == 1 ? "" : "s"), BlockMarks::clear);
 				colorRow(graphics, font, ix, y, iw, mouseX, mouseY, "Color", config.blockMarksRgb, PickerTarget.MARKS);
 			}
+			case RINGS -> {
+				y = colorRow(graphics, font, ix, y, iw, mouseX, mouseY, "Color", config.commandRingsRgb, PickerTarget.RINGS);
+				y = clickRow(graphics, font, ix, y, iw, mouseX, mouseY, CommandRings.count() == 0 ? "Clear rings" : "Clear " + CommandRings.count() + " ring" + (CommandRings.count() == 1 ? "" : "s"), CommandRings::clear);
+				GuiDraw.small(graphics, font, "/stray cmd \"warp hub\" 2", ix, y + 2, Theme.MUTED);
+			}
 			case PATHS -> {
 				boolean rec = PathRecorder.recording();
 				String recLabel = rec
@@ -3527,6 +3539,7 @@ public class StrayScreen extends Screen {
 			case FILL_OUTLINE -> config.visuals(pickerKind).shaderOutlineRgb = packed == 0 ? 0x7FEFFF : packed;
 			case MARKS -> config.blockMarksRgb = packed == 0 ? 0x2FB5FF : packed;
 			case PATHS -> config.pathRgb = packed == 0 ? 0x2FB5FF : packed;
+			case RINGS -> config.commandRingsRgb = packed == 0 ? 0x2FB5FF : packed;
 			case HEALTH_FULL -> config.visuals(pickerKind).healthFullRgb = packed == 0 ? 0x17EB17 : packed;
 			case HEALTH_EMPTY -> config.visuals(pickerKind).healthEmptyRgb = packed == 0 ? 0xEB1717 : packed;
 			case BOX -> config.visuals(pickerKind).boxRgb = packed == 0 ? 0x2FB5FF : packed;
@@ -3549,7 +3562,7 @@ public class StrayScreen extends Screen {
 			case PANE -> 0.20f;
 			case MOB, STAR, BLOCK -> 0.15f;
 			case NODE, HELD_ITEM, FILL, CHEST, TITANIUM, PEST, BOX -> 0.08f;
-			case THEME, HELD_ITEM_OUTLINE, FILL_OUTLINE, MARKS, PATHS, HEALTH_FULL, HEALTH_EMPTY -> 1f;
+			case THEME, HELD_ITEM_OUTLINE, FILL_OUTLINE, MARKS, PATHS, RINGS, HEALTH_FULL, HEALTH_EMPTY -> 1f;
 			default -> 0f;
 		};
 	}
@@ -3582,7 +3595,7 @@ public class StrayScreen extends Screen {
 			case WORLD -> config.worldTintStrength;
 			case SKY -> config.skyTintStrength;
 			case FOG -> config.fogDensity;
-			case THEME, HELD_ITEM_OUTLINE, FILL_OUTLINE, MARKS, PATHS, HEALTH_FULL, HEALTH_EMPTY -> 1f;
+			case THEME, HELD_ITEM_OUTLINE, FILL_OUTLINE, MARKS, PATHS, RINGS, HEALTH_FULL, HEALTH_EMPTY -> 1f;
 		};
 	}
 
@@ -3606,7 +3619,7 @@ public class StrayScreen extends Screen {
 			case WORLD -> config.worldTintStrength = clamped;
 			case SKY -> config.skyTintStrength = clamped;
 			case FOG -> config.fogDensity = clamped;
-			case THEME, HELD_ITEM_OUTLINE, FILL_OUTLINE, MARKS, PATHS, HEALTH_FULL, HEALTH_EMPTY -> {
+			case THEME, HELD_ITEM_OUTLINE, FILL_OUTLINE, MARKS, PATHS, RINGS, HEALTH_FULL, HEALTH_EMPTY -> {
 				return;
 			}
 		}

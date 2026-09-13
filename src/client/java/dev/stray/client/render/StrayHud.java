@@ -6,6 +6,7 @@ import dev.stray.client.farming.FarmingHud;
 import dev.stray.client.mining.CrystalHollowsMap;
 import dev.stray.client.mining.CrystalHollowsRenderer;
 import dev.stray.client.mining.MetalDetector;
+import dev.stray.client.movement.CommandRings;
 import dev.stray.client.update.UpdateToast;
 import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry;
 import net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements;
@@ -40,6 +41,7 @@ public final class StrayHud {
 		CrystalHollowsMap.extract(graphics, delta);
 		MetalDetector.extract(graphics, delta);
 		BlockMarks.extract(graphics, delta);
+		CommandRings.extract(graphics, delta);
 		WatermarkRenderer.extract(graphics, delta);
 		MusicHudRenderer.extract(graphics, delta);
 		RawmatsHudRenderer.extract(graphics, delta);

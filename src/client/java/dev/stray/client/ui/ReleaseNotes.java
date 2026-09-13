@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.273", new String[]{
+			"Command rings: /stray cmd \"warp hub\" 2 plants a ring at your feet. Walk in to run the command once; leave and re-enter to run it again. Assist tab toggle."
+		}),
 		new Entry("1.2.272", new String[]{
 			"Dungeon health bars move as hologram HP drops. Plates are often 2.1M❤ with no max, so the bar used to stay full; it now tracks the highest HP seen on that mob."
 		}),

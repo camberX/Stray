@@ -45,6 +45,8 @@ import dev.stray.client.mining.CrystalHollowsRenderer;
 import dev.stray.client.mining.CrystalHollowsMap;
 import dev.stray.client.mining.MetalDetector;
 import dev.stray.client.mining.NucleusAlerts;
+import dev.stray.client.movement.CommandRingCommands;
+import dev.stray.client.movement.CommandRings;
 import dev.stray.client.movement.PathCommands;
 import dev.stray.client.movement.PathRecorder;
 import dev.stray.client.mining.MiningTracker;
@@ -162,6 +164,7 @@ public final class StrayClient implements ClientModInitializer {
 		BlockOutlineGlow.init();
 		BlockMarks.init();
 		PathRecorder.init();
+		CommandRings.init();
 		MiningWorldRenderer.init();
 		ChestEspRenderer.init();
 		PestEspRenderer.init();
@@ -223,6 +226,7 @@ public final class StrayClient implements ClientModInitializer {
 			root.then(WardrobeCommands.command());
 			root.then(ProfileCommands.command());
 			root.then(PathCommands.command());
+			root.then(CommandRingCommands.command());
 			root.then(stealCommand());
 			var brand = dispatcher.register(root);
 			dispatcher.register(ClientCommands.literal("st").redirect(brand));
@@ -241,6 +245,7 @@ public final class StrayClient implements ClientModInitializer {
 			vm.then(WardrobeCommands.command());
 			vm.then(ProfileCommands.command());
 			vm.then(PathCommands.command());
+			vm.then(CommandRingCommands.command());
 			vm.then(stealCommand());
 			dispatcher.register(vm);
 			dispatcher.register(ClientCommands.literal("loadouts").executes(context -> LoadoutsCommands.open()));
@@ -302,6 +307,7 @@ public final class StrayClient implements ClientModInitializer {
 			NucleusAlerts.tick(client);
 			BlockMarks.tick(client);
 			PathRecorder.tick(client);
+			CommandRings.tick(client);
 			ShopCape.tick();
 			UiFontPack.tick(client);
 			UpdateNotifier.tick();
@@ -316,6 +322,7 @@ public final class StrayClient implements ClientModInitializer {
 			CrystalHollows.onWorldChange();
 			MetalDetector.onWorldChange();
 			BlockMarks.onWorldChange();
+			CommandRings.onWorldChange();
 			NucleusAlerts.reset();
 		});
 
@@ -337,6 +344,7 @@ public final class StrayClient implements ClientModInitializer {
 			ComposterTracker.reset();
 			SkyblockProfileApi.refresh();
 			ShopCape.onJoin();
+			CommandRings.onWorldChange();
 		});
 
 		ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> {
@@ -352,6 +360,7 @@ public final class StrayClient implements ClientModInitializer {
 			PickupLogRenderer.clear();
 			JacobContestTracker.reset();
 			ComposterTracker.reset();
+			CommandRings.onWorldChange();
 			EnderNodeTracker.get().clear();
 			ConnectionPing.reset();
 			MiningTracker.reset();

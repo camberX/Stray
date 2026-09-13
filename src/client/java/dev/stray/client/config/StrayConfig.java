@@ -133,6 +133,8 @@ public final class StrayConfig {
 	public boolean blockMarksTracers = true;
 	public int blockMarksRgb = 0x2FB5FF;
 	public String blockMarkEditKey = "key.keyboard.enter";
+	public boolean commandRingsEnabled = false;
+	public int commandRingsRgb = 0x2FB5FF;
 	public boolean pathsEnabled = false;
 	public boolean pathThroughWalls = true;
 	public float pathWidth = 2.4f;
@@ -867,6 +869,12 @@ public final class StrayConfig {
 					loaded.blockMarksRgb = 0x2FB5FF;
 				}
 				loaded.blockMarkEditKey = blankKey(loaded.blockMarkEditKey, "key.keyboard.enter");
+				if (!json.has("commandRingsEnabled")) {
+					loaded.commandRingsEnabled = false;
+				}
+				if (!json.has("commandRingsRgb") || (loaded.commandRingsRgb & 0xFFFFFF) == 0) {
+					loaded.commandRingsRgb = 0x2FB5FF;
+				}
 				if (!json.has("pathsEnabled")) {
 					loaded.pathsEnabled = false;
 				}
