@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.276", new String[]{
+			"Paths, block marks, and command rings save per Skyblock island. Hub setups come back when you warp home; Hollows stays in the Hollows."
+		}),
 		new Entry("1.2.275", new String[]{
 			"Command rings, path recorder, and block marks live under Misc → Tools."
 		}),

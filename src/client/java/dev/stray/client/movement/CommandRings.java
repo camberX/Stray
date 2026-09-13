@@ -1,11 +1,16 @@
 package dev.stray.client.movement;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import dev.stray.client.config.IslandSaves;
 import dev.stray.client.config.StrayConfig;
 import dev.stray.client.render.GuiDraw;
 import dev.stray.client.render.NametagRenderer;
 import dev.stray.client.ui.Anim;
 import dev.stray.client.ui.MenuFont;
 import dev.stray.client.ui.Theme;
+import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents;
 import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderEvents;
 import net.minecraft.client.Camera;
 import net.minecraft.client.DeltaTracker;
@@ -22,26 +27,36 @@ import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Vector3fc;
 
+import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 /**
  * Place a ring at your feet with {@code /stray cmd "warp hub" 2}. Walking
- * into it sends that command once; leaving arms it again.
+ * into it sends that command once; leaving arms it again. Saved per
+ * Skyblock island.
  */
 public final class CommandRings {
+	private static final Path FILE = IslandSaves.DIR.resolve("command-rings.json");
 	private static final int MAX = 32;
 	private static final int SEGMENTS = 48;
 	private static final float TAG_H = 14f;
 	private static final float PAD_X = 8f;
-	private static final List<Ring> RINGS = new ArrayList<>();
+	private static final Map<String, List<Ring>> SAVED = new LinkedHashMap<>();
+	private static boolean loaded;
+	private static boolean dirty;
+	private static String lastIsland = "";
 
 	private CommandRings() {
 	}
 
 	public static void init() {
+		load();
 		LevelRenderEvents.BEFORE_GIZMOS.register(context -> emit());
+		ClientLifecycleEvents.CLIENT_STOPPING.register(client -> save());
 	}
 
 	public static boolean enabled() {
@@ -49,19 +64,26 @@ public final class CommandRings {
 	}
 
 	public static int count() {
-		return RINGS.size();
+		return here().size();
 	}
 
 	public static List<Ring> rings() {
-		return RINGS;
+		return here();
 	}
 
 	public static void clear() {
-		RINGS.clear();
+		String island = IslandSaves.key();
+		List<Ring> rings = SAVED.get(island);
+		if (rings == null || rings.isEmpty()) {
+			return;
+		}
+		rings.clear();
+		SAVED.remove(island);
+		touch();
 	}
 
 	public static void onWorldChange() {
-		RINGS.clear();
+		lastIsland = "";
 	}
 
 	public static String place(String rawCommand, float radius) {
@@ -86,24 +108,36 @@ public final class CommandRings {
 			config.save();
 		}
 		float size = StrayConfig.clamp(radius, 0.5f, 16f);
-		if (RINGS.size() >= MAX) {
-			RINGS.removeFirst();
+		List<Ring> rings = mutableHere();
+		if (rings.size() >= MAX) {
+			rings.removeFirst();
 		}
 		Vec3 pos = player.position();
-		RINGS.add(new Ring(pos.x, pos.y, pos.z, size, command));
-		return "Ring " + RINGS.size() + ": /" + command + "  " + format(size) + "m";
+		rings.add(new Ring(pos.x, pos.y, pos.z, size, command, true));
+		touch();
+		return "Ring " + rings.size() + " on " + IslandSaves.label() + ": /" + command + "  " + format(size) + "m";
 	}
 
 	public static boolean remove(int index) {
-		if (index < 1 || index > RINGS.size()) {
+		List<Ring> rings = mutableHere();
+		if (index < 1 || index > rings.size()) {
 			return false;
 		}
-		RINGS.remove(index - 1);
+		rings.remove(index - 1);
+		if (rings.isEmpty()) {
+			SAVED.remove(IslandSaves.key());
+		}
+		touch();
 		return true;
 	}
 
 	public static void tick(Minecraft client) {
-		if (client.player == null || RINGS.isEmpty()) {
+		syncIsland();
+		if (dirty) {
+			save();
+		}
+		List<Ring> rings = here();
+		if (client.player == null || rings.isEmpty()) {
 			return;
 		}
 		LocalPlayer player = client.player;
@@ -111,7 +145,7 @@ public final class CommandRings {
 		double y = player.getY();
 		double z = player.getZ();
 		boolean allow = enabled() && client.level != null && client.screen == null;
-		for (Ring ring : RINGS) {
+		for (Ring ring : rings) {
 			double dx = x - ring.x;
 			double dz = z - ring.z;
 			boolean inside = dx * dx + dz * dz <= ring.radius * ring.radius && Math.abs(y - ring.y) <= 2.5;
@@ -133,7 +167,7 @@ public final class CommandRings {
 	}
 
 	public static void extract(GuiGraphicsExtractor graphics, DeltaTracker delta) {
-		if (!enabled() || RINGS.isEmpty()) {
+		if (!enabled() || here().isEmpty()) {
 			return;
 		}
 		Minecraft client = Minecraft.getInstance();
@@ -148,7 +182,7 @@ public final class CommandRings {
 		Vector3fc forward = camera.forwardVector();
 		Font font = client.font;
 		int rgb = StrayConfig.get().commandRingsRgb & 0xFFFFFF;
-		for (Ring ring : RINGS) {
+		for (Ring ring : here()) {
 			Vec3 head = new Vec3(ring.x, ring.y + 1.15, ring.z);
 			Vec3 rel = head.subtract(camPos);
 			double facing = rel.x * forward.x() + rel.y * forward.y() + rel.z * forward.z();
@@ -183,12 +217,12 @@ public final class CommandRings {
 	}
 
 	private static void emit() {
-		if (!enabled() || RINGS.isEmpty()) {
+		if (!enabled() || here().isEmpty()) {
 			return;
 		}
 		int rgb = StrayConfig.get().commandRingsRgb & 0xFFFFFF;
 		int line = 0xEB000000 | rgb;
-		for (Ring ring : RINGS) {
+		for (Ring ring : here()) {
 			double y = ring.y + 0.04;
 			int fill = (Math.round((ring.inside ? 0.38f : 0.22f) * 255f) << 24) | rgb;
 			drawDisk(ring, y, fill);
@@ -253,14 +287,115 @@ public final class CommandRings {
 		boolean inside;
 		boolean armed;
 
-		Ring(double x, double y, double z, float radius, String command) {
+		Ring(double x, double y, double z, float radius, String command, boolean placedNow) {
 			this.x = x;
 			this.y = y;
 			this.z = z;
 			this.radius = radius;
 			this.command = command;
-			this.inside = true;
+			this.inside = placedNow;
 			this.armed = false;
+		}
+	}
+
+	private static List<Ring> here() {
+		List<Ring> rings = SAVED.get(IslandSaves.key());
+		return rings == null ? List.of() : rings;
+	}
+
+	private static List<Ring> mutableHere() {
+		return SAVED.computeIfAbsent(IslandSaves.key(), ignored -> new ArrayList<>());
+	}
+
+	private static void syncIsland() {
+		String island = IslandSaves.key();
+		if (island.equals(lastIsland)) {
+			return;
+		}
+		lastIsland = island;
+		for (Ring ring : here()) {
+			ring.inside = false;
+			ring.armed = false;
+		}
+	}
+
+	private static void touch() {
+		dirty = true;
+		save();
+	}
+
+	private static void load() {
+		if (loaded) {
+			return;
+		}
+		loaded = true;
+		SAVED.clear();
+		JsonObject islands = IslandSaves.readIslands(FILE);
+		for (String island : islands.keySet()) {
+			JsonArray list = islands.getAsJsonArray(island);
+			if (list == null) {
+				continue;
+			}
+			List<Ring> rings = new ArrayList<>();
+			for (JsonElement element : list) {
+				Ring ring = read(element);
+				if (ring != null) {
+					rings.add(ring);
+				}
+			}
+			if (!rings.isEmpty()) {
+				SAVED.put(island, rings);
+			}
+		}
+	}
+
+	private static Ring read(JsonElement element) {
+		if (element == null || !element.isJsonObject()) {
+			return null;
+		}
+		JsonObject object = element.getAsJsonObject();
+		if (!object.has("x") || !object.has("y") || !object.has("z") || !object.has("command")) {
+			return null;
+		}
+		String command = object.get("command").getAsString().trim();
+		if (command.startsWith("/")) {
+			command = command.substring(1).trim();
+		}
+		if (command.isEmpty()) {
+			return null;
+		}
+		float radius = object.has("radius") ? object.get("radius").getAsFloat() : 2f;
+		radius = StrayConfig.clamp(radius, 0.5f, 16f);
+		return new Ring(
+			object.get("x").getAsDouble(),
+			object.get("y").getAsDouble(),
+			object.get("z").getAsDouble(),
+			radius,
+			command,
+			false
+		);
+	}
+
+	private static void save() {
+		JsonObject islands = new JsonObject();
+		for (Map.Entry<String, List<Ring>> entry : SAVED.entrySet()) {
+			if (entry.getValue().isEmpty()) {
+				continue;
+			}
+			JsonArray list = new JsonArray();
+			for (Ring ring : entry.getValue()) {
+				JsonObject object = new JsonObject();
+				object.addProperty("x", IslandSaves.coord(ring.x));
+				object.addProperty("y", IslandSaves.coord(ring.y));
+				object.addProperty("z", IslandSaves.coord(ring.z));
+				object.addProperty("radius", IslandSaves.coord(ring.radius));
+				object.addProperty("command", ring.command);
+				list.add(object);
+			}
+			islands.add(entry.getKey(), list);
+		}
+		if (IslandSaves.writeIslands(FILE, islands)) {
+			dirty = false;
 		}
 	}
 }

@@ -3100,13 +3100,13 @@ public class StrayScreen extends Screen {
 			case MARKS -> {
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Tracers", config.blockMarksTracers, v -> config.blockMarksTracers = v);
 				y = bindRow(graphics, font, ix, y, iw, mouseX, mouseY, "Edit mark", 8, OdinClicks.parseKey(config.blockMarkEditKey));
-				y = clickRow(graphics, font, ix, y, iw, mouseX, mouseY, BlockMarks.count() == 0 ? "Clear marks" : "Clear " + BlockMarks.count() + " mark" + (BlockMarks.count() == 1 ? "" : "s"), BlockMarks::clear);
+				y = clickRow(graphics, font, ix, y, iw, mouseX, mouseY, BlockMarks.count() == 0 ? "Clear marks on " + PathRecorder.islandLabel() : "Clear " + BlockMarks.count() + " mark" + (BlockMarks.count() == 1 ? "" : "s") + " on " + PathRecorder.islandLabel(), BlockMarks::clear);
 				colorRow(graphics, font, ix, y, iw, mouseX, mouseY, "Color", config.blockMarksRgb, PickerTarget.MARKS);
 			}
 			case RINGS -> {
 				y = colorRow(graphics, font, ix, y, iw, mouseX, mouseY, "Color", config.commandRingsRgb, PickerTarget.RINGS);
-				y = clickRow(graphics, font, ix, y, iw, mouseX, mouseY, CommandRings.count() == 0 ? "Clear rings" : "Clear " + CommandRings.count() + " ring" + (CommandRings.count() == 1 ? "" : "s"), CommandRings::clear);
-				GuiDraw.small(graphics, font, "/stray cmd \"warp hub\" 2", ix, y + 2, Theme.MUTED);
+				y = clickRow(graphics, font, ix, y, iw, mouseX, mouseY, CommandRings.count() == 0 ? "Clear rings on " + PathRecorder.islandLabel() : "Clear " + CommandRings.count() + " ring" + (CommandRings.count() == 1 ? "" : "s") + " on " + PathRecorder.islandLabel(), CommandRings::clear);
+				GuiDraw.small(graphics, font, "/stray cmd \"warp hub\" 2  ·  saved on this island", ix, y + 2, Theme.MUTED);
 			}
 			case PATHS -> {
 				boolean rec = PathRecorder.recording();

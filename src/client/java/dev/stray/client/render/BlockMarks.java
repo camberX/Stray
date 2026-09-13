@@ -1,14 +1,19 @@
 package dev.stray.client.render;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import com.mojang.blaze3d.platform.InputConstants;
 import dev.stray.client.StrayClient;
 import dev.stray.client.combat.OdinClicks;
+import dev.stray.client.config.IslandSaves;
 import dev.stray.client.config.StrayConfig;
 import dev.stray.client.item.ItemIds;
 import dev.stray.client.ui.Anim;
 import dev.stray.client.ui.BlockMarkEditScreen;
 import dev.stray.client.ui.MenuFont;
 import dev.stray.client.ui.Theme;
+import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents;
 import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderEvents;
 import net.minecraft.client.Camera;
 import net.minecraft.client.DeltaTracker;
@@ -30,6 +35,7 @@ import net.minecraft.world.phys.Vec3;
 import org.joml.Vector3f;
 import org.joml.Vector3fc;
 
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -39,22 +45,28 @@ import java.util.Optional;
 /**
  * Middle-click a block to mark it. Marks draw through walls with a tracer and
  * a tag; look at one and press the edit key (Enter) to give it a name and an
- * item icon. Middle-click again to drop it. Cleared on world change.
+ * item icon. Middle-click again to drop it. Saved per Skyblock island.
  */
 public final class BlockMarks {
+	private static final Path FILE = IslandSaves.DIR.resolve("block-marks.json");
 	private static final float TAG_H = 14f;
 	private static final float PAD_X = 8f;
 	private static final int MAX = 64;
 	private static final double HOVER_RANGE = 96.0;
-	private static final Map<BlockPos, Mark> MARKS = new LinkedHashMap<>();
+	private static final Map<String, Map<BlockPos, Mark>> SAVED = new LinkedHashMap<>();
 	private static boolean editWasDown;
+	private static boolean loaded;
+	private static boolean dirty;
+	private static String lastIsland = "";
 	private static BlockPos hovered;
 
 	private BlockMarks() {
 	}
 
 	public static void init() {
+		load();
 		LevelRenderEvents.BEFORE_GIZMOS.register(context -> emitBoxes());
+		ClientLifecycleEvents.CLIENT_STOPPING.register(client -> save());
 	}
 
 	/** Returns true when the click was consumed as a mark toggle. */
@@ -80,17 +92,19 @@ public final class BlockMarks {
 		if (pos == null) {
 			return false;
 		}
+		Map<BlockPos, Mark> marks = mutableHere();
 		boolean added;
-		if (MARKS.remove(pos) != null) {
+		if (marks.remove(pos) != null) {
 			added = false;
 		} else {
-			if (MARKS.size() >= MAX) {
-				BlockPos oldest = MARKS.keySet().iterator().next();
-				MARKS.remove(oldest);
+			if (marks.size() >= MAX) {
+				BlockPos oldest = marks.keySet().iterator().next();
+				marks.remove(oldest);
 			}
-			MARKS.put(pos, new Mark(pos, "", "", ItemStack.EMPTY));
+			marks.put(pos, new Mark(pos, "", "", ItemStack.EMPTY));
 			added = true;
 		}
+		touch();
 		client.getSoundManager().play(SimpleSoundInstance.forUI(
 			SoundEvents.NOTE_BLOCK_HAT.value(),
 			added ? 1.4f : 0.8f,
@@ -101,15 +115,20 @@ public final class BlockMarks {
 
 	public static void tick(Minecraft client) {
 		StrayConfig config = StrayConfig.get();
-		if (!config.blockMarksEnabled || client == null || client.player == null || client.level == null || MARKS.isEmpty()) {
+		syncIsland();
+		if (dirty) {
+			save();
+		}
+		Map<BlockPos, Mark> marks = here();
+		if (!config.blockMarksEnabled || client == null || client.player == null || client.level == null || marks.isEmpty()) {
 			hovered = null;
 			editWasDown = false;
 			return;
 		}
-		hovered = client.screen == null ? findHovered(client) : null;
+		hovered = client.screen == null ? findHovered(client, marks) : null;
 		boolean down = StrayClient.strayHotkeys(client) && OdinClicks.isPressed(OdinClicks.parseKey(config.blockMarkEditKey));
 		if (down && !editWasDown && hovered != null) {
-			Mark mark = MARKS.get(hovered);
+			Mark mark = marks.get(hovered);
 			if (mark != null) {
 				client.setScreen(new BlockMarkEditScreen(mark.pos, mark.name, mark.icon));
 			}
@@ -118,7 +137,8 @@ public final class BlockMarks {
 	}
 
 	public static void rename(BlockPos pos, String name, String icon) {
-		Mark prior = MARKS.get(pos);
+		Map<BlockPos, Mark> marks = mutableHere();
+		Mark prior = marks.get(pos);
 		if (prior == null) {
 			return;
 		}
@@ -134,35 +154,46 @@ public final class BlockMarks {
 				cleanIcon = "";
 			}
 		}
-		MARKS.put(pos, new Mark(pos, cleanName, cleanIcon, stack));
+		marks.put(pos, new Mark(pos, cleanName, cleanIcon, stack));
+		touch();
 	}
 
 	public static void remove(BlockPos pos) {
-		MARKS.remove(pos);
+		if (mutableHere().remove(pos) != null) {
+			touch();
+		}
 	}
 
 	public static void clear() {
-		MARKS.clear();
+		String island = IslandSaves.key();
+		Map<BlockPos, Mark> marks = SAVED.get(island);
+		if (marks == null || marks.isEmpty()) {
+			return;
+		}
+		marks.clear();
+		SAVED.remove(island);
+		hovered = null;
+		touch();
 	}
 
 	public static int count() {
-		return MARKS.size();
+		return here().size();
 	}
 
 	public static boolean active() {
-		return StrayConfig.get().blockMarksEnabled && !MARKS.isEmpty();
+		return StrayConfig.get().blockMarksEnabled && !here().isEmpty();
 	}
 
 	public static void onWorldChange() {
-		MARKS.clear();
 		hovered = null;
+		lastIsland = "";
 	}
 
 	public static List<BlockPos> marks() {
-		return List.copyOf(MARKS.keySet());
+		return List.copyOf(here().keySet());
 	}
 
-	private static BlockPos findHovered(Minecraft client) {
+	private static BlockPos findHovered(Minecraft client, Map<BlockPos, Mark> marks) {
 		Camera camera = client.gameRenderer.getMainCamera();
 		if (!camera.isInitialized()) {
 			return null;
@@ -173,7 +204,7 @@ public final class BlockMarks {
 		Vec3 end = origin.add(dir.scale(HOVER_RANGE));
 		BlockPos best = null;
 		double bestDist = Double.MAX_VALUE;
-		for (BlockPos pos : MARKS.keySet()) {
+		for (BlockPos pos : marks.keySet()) {
 			AABB box = new AABB(pos).inflate(0.12);
 			Optional<Vec3> clip = box.clip(origin, end);
 			if (clip.isEmpty()) {
@@ -204,7 +235,7 @@ public final class BlockMarks {
 		Vector3fc forward = camera.forwardVector();
 		Font font = client.font;
 		int rgb = StrayConfig.get().blockMarksRgb & 0xFFFFFF;
-		for (Mark mark : new ArrayList<>(MARKS.values())) {
+		for (Mark mark : new ArrayList<>(here().values())) {
 			BlockPos pos = mark.pos;
 			boolean hot = pos.equals(hovered);
 			Vec3 head = Vec3.atCenterOf(pos).add(0, 1.1, 0);
@@ -275,7 +306,7 @@ public final class BlockMarks {
 			Vec3 cam = camera.position();
 			start = cam.add(f.x() * 0.9, f.y() * 0.9, f.z() * 0.9).subtract(up.x * 0.28, up.y * 0.28, up.z * 0.28);
 		}
-		for (Mark mark : MARKS.values()) {
+		for (Mark mark : here().values()) {
 			BlockPos pos = mark.pos;
 			boolean hot = pos.equals(hovered);
 			GizmoProperties cuboid = Gizmos.cuboid(new AABB(pos).inflate(hot ? 0.04 : 0.01), GizmoStyle.strokeAndFill(hot ? 0xFFFFFFFF : line, hot ? 3.0f : 2.2f, fill));
@@ -284,6 +315,102 @@ public final class BlockMarks {
 				GizmoProperties tracer = Gizmos.line(start, Vec3.atCenterOf(pos), 0xB0000000 | rgb, 1.8f);
 				tracer.setAlwaysOnTop();
 			}
+		}
+	}
+
+	private static Map<BlockPos, Mark> here() {
+		Map<BlockPos, Mark> marks = SAVED.get(IslandSaves.key());
+		return marks == null ? Map.of() : marks;
+	}
+
+	private static Map<BlockPos, Mark> mutableHere() {
+		return SAVED.computeIfAbsent(IslandSaves.key(), ignored -> new LinkedHashMap<>());
+	}
+
+	private static void syncIsland() {
+		String island = IslandSaves.key();
+		if (!island.equals(lastIsland)) {
+			hovered = null;
+			lastIsland = island;
+		}
+	}
+
+	private static void touch() {
+		dirty = true;
+		save();
+	}
+
+	private static void load() {
+		if (loaded) {
+			return;
+		}
+		loaded = true;
+		SAVED.clear();
+		JsonObject islands = IslandSaves.readIslands(FILE);
+		for (String island : islands.keySet()) {
+			JsonArray list = islands.getAsJsonArray(island);
+			if (list == null) {
+				continue;
+			}
+			Map<BlockPos, Mark> marks = new LinkedHashMap<>();
+			for (JsonElement element : list) {
+				Mark mark = read(element);
+				if (mark != null) {
+					marks.put(mark.pos, mark);
+				}
+			}
+			if (!marks.isEmpty()) {
+				SAVED.put(island, marks);
+			}
+		}
+	}
+
+	private static Mark read(JsonElement element) {
+		if (element == null || !element.isJsonObject()) {
+			return null;
+		}
+		JsonObject object = element.getAsJsonObject();
+		if (!object.has("x") || !object.has("y") || !object.has("z")) {
+			return null;
+		}
+		BlockPos pos = new BlockPos(object.get("x").getAsInt(), object.get("y").getAsInt(), object.get("z").getAsInt());
+		String name = object.has("name") ? object.get("name").getAsString() : "";
+		String icon = object.has("icon") ? object.get("icon").getAsString() : "";
+		ItemStack stack = ItemStack.EMPTY;
+		if (!icon.isEmpty()) {
+			ItemIds.Preview preview = ItemIds.resolve(icon);
+			if (preview.kind() == ItemIds.Kind.VANILLA || preview.kind() == ItemIds.Kind.SKYBLOCK) {
+				stack = preview.stack();
+				icon = preview.canonical();
+			}
+		}
+		return new Mark(pos, name, icon, stack);
+	}
+
+	private static void save() {
+		JsonObject islands = new JsonObject();
+		for (Map.Entry<String, Map<BlockPos, Mark>> entry : SAVED.entrySet()) {
+			if (entry.getValue().isEmpty()) {
+				continue;
+			}
+			JsonArray list = new JsonArray();
+			for (Mark mark : entry.getValue().values()) {
+				JsonObject object = new JsonObject();
+				object.addProperty("x", mark.pos.getX());
+				object.addProperty("y", mark.pos.getY());
+				object.addProperty("z", mark.pos.getZ());
+				if (!mark.name.isEmpty()) {
+					object.addProperty("name", mark.name);
+				}
+				if (!mark.icon.isEmpty()) {
+					object.addProperty("icon", mark.icon);
+				}
+				list.add(object);
+			}
+			islands.add(entry.getKey(), list);
+		}
+		if (IslandSaves.writeIslands(FILE, islands)) {
+			dirty = false;
 		}
 	}
 

@@ -5,6 +5,7 @@ import com.mojang.brigadier.arguments.FloatArgumentType;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
+import dev.stray.client.config.IslandSaves;
 import dev.stray.client.config.StrayConfig;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommands;
 import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource;
@@ -46,16 +47,16 @@ public final class CommandRingCommands {
 
 	private static int usage() {
 		if (!StrayConfig.get().commandRingsEnabled) {
-			tell("Turn on Command rings in Assist first, or place one anyway to enable it.", ChatFormatting.YELLOW);
+			tell("Turn on Command rings in Misc → Tools first, or place one anyway to enable it.", ChatFormatting.YELLOW);
 		}
-		tell("/stray cmd \"warp hub\" 2   place a ring at your feet", ChatFormatting.AQUA);
+		tell("/stray cmd \"warp hub\" 2   place a ring at your feet (saved on this island)", ChatFormatting.AQUA);
 		tell("/stray cmd list | remove <n> | clear", ChatFormatting.GRAY);
 		return Command.SINGLE_SUCCESS;
 	}
 
 	private static int list() {
 		int n = CommandRings.count();
-		tell("Command rings (" + n + ")", ChatFormatting.AQUA);
+		tell("Command rings on " + IslandSaves.label() + " (" + n + ")", ChatFormatting.AQUA);
 		int i = 1;
 		for (CommandRings.Ring ring : CommandRings.rings()) {
 			tell("  " + i + ". /" + ring.command + "  " + String.format(java.util.Locale.ROOT, "%.1fm", ring.radius), ChatFormatting.YELLOW);

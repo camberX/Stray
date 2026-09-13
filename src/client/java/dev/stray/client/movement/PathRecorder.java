@@ -9,8 +9,8 @@ import com.google.gson.JsonParser;
 import dev.stray.Stray;
 import dev.stray.client.StrayClient;
 import dev.stray.client.combat.OdinClicks;
+import dev.stray.client.config.IslandSaves;
 import dev.stray.client.config.StrayConfig;
-import dev.stray.client.location.SkyblockLocation;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents;
 import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderEvents;
 import net.fabricmc.loader.api.FabricLoader;
@@ -77,29 +77,11 @@ public final class PathRecorder {
 	}
 
 	public static String island() {
-		if (SkyblockLocation.inSkyblock) {
-			String area = SkyblockLocation.area == null ? "" : SkyblockLocation.area.trim();
-			if (!area.isEmpty()) {
-				return area.toLowerCase(Locale.ROOT);
-			}
-			return "skyblock";
-		}
-		Minecraft client = Minecraft.getInstance();
-		if (client.level != null) {
-			return client.level.dimension().identifier().toString();
-		}
-		return "unknown";
+		return IslandSaves.key();
 	}
 
 	public static String islandLabel() {
-		String key = island();
-		if (key.contains(":")) {
-			key = key.substring(key.indexOf(':') + 1).replace('_', ' ');
-		}
-		if (key.isEmpty()) {
-			return "Unknown";
-		}
-		return Character.toUpperCase(key.charAt(0)) + key.substring(1);
+		return IslandSaves.label();
 	}
 
 	public static List<Recording> here() {
