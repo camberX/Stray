@@ -21,6 +21,8 @@ import dev.stray.client.movement.CommandRings;
 import dev.stray.client.movement.PathRecorder;
 import dev.stray.client.render.BlockMarks;
 import dev.stray.client.render.GuiDraw;
+import dev.stray.client.render.SkillProgressHudRenderer;
+import dev.stray.client.skill.SkillProgressTracker;
 import dev.stray.client.render.HudStats;
 import dev.stray.client.render.EspMobPrint;
 import dev.stray.client.render.MobCatalog;
@@ -165,6 +167,7 @@ public class StrayScreen extends Screen {
 		METAL("Metal detector", 1),
 		FARMING("Yaw / Pitch", 1),
 		INVENTORY("Inventory", 5),
+		SKILL("Skill progress", 3),
 		PLOTS("Garden plots", 1),
 		PEST("Pest ESP", 2),
 		AUTO_DNA("Auto DNA", 5),
@@ -2158,12 +2161,17 @@ public class StrayScreen extends Screen {
 			}
 			case ESP -> drawMobsTab(graphics, font, mouseX, mouseY);
 			case OVERLAY -> {
-				float y = featureCard(graphics, font, left, top, col, cardHeight(6), "HUD");
+				int extra = config.skillProgressHudEnabled ? Feature.SKILL.rows() : 0;
+				float y = featureCard(graphics, font, left, top, col, cardHeight(6 + extra), "HUD");
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Watermark", config.watermarkEnabled, v -> config.watermarkEnabled = v, Feature.WATERMARK);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Music", config.musicHudEnabled, v -> config.musicHudEnabled = v, Feature.MUSIC);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Raw mats", config.rawmatsHudEnabled, v -> config.rawmatsHudEnabled = v, Feature.RAWMATS);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Pickup log", config.pickupLogEnabled, v -> config.pickupLogEnabled = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Skill progress", config.skillProgressHudEnabled, v -> config.skillProgressHudEnabled = v);
+				if (config.skillProgressHudEnabled) {
+					drawFeatureFields(graphics, font, mouseX, mouseY, ix, y, iw, Feature.SKILL);
+					y += Feature.SKILL.rows() * rowH();
+				}
 				toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Inventory HUD", config.inventoryHudEnabled, v -> config.inventoryHudEnabled = v, Feature.INVENTORY);
 			}
 			case BARS -> {
@@ -2370,7 +2378,7 @@ public class StrayScreen extends Screen {
 				y = controlCard(graphics, font, left, y, col, mouseX, mouseY, "Watermark", config.watermarkEnabled, v -> config.watermarkEnabled = v, Feature.WATERMARK);
 				y = controlCard(graphics, font, left, y, col, mouseX, mouseY, "Raw mats", config.rawmatsHudEnabled, v -> config.rawmatsHudEnabled = v, Feature.RAWMATS);
 				y = toggleCard(graphics, font, left, y, col, mouseX, mouseY, "Pickup log", config.pickupLogEnabled, v -> config.pickupLogEnabled = v);
-				y = toggleCard(graphics, font, left, y, col, mouseX, mouseY, "Skill progress", config.skillProgressHudEnabled, v -> config.skillProgressHudEnabled = v);
+				y = controlCard(graphics, font, left, y, col, mouseX, mouseY, "Skill progress", config.skillProgressHudEnabled, v -> config.skillProgressHudEnabled = v, Feature.SKILL);
 				y = sectionLabel(graphics, font, right, top, "Inventory");
 				controlCard(graphics, font, right, y, col, mouseX, mouseY, "Inventory HUD", config.inventoryHudEnabled, v -> config.inventoryHudEnabled = v, Feature.INVENTORY);
 			}
@@ -3153,6 +3161,19 @@ public class StrayScreen extends Screen {
 				toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Spotify", config.spotifyEnabled, v -> config.spotifyEnabled = v);
 			}
 			case RAWMATS -> cycle(graphics, font, ix, y, iw, mouseX, mouseY, "Materials", config.rawmatsModeLabel(), config::cycleRawmatsMode);
+			case SKILL -> {
+				SkillProgressTracker.poll(minecraft);
+				SkillProgressHudRenderer.draw(
+					graphics,
+					font,
+					minecraft.player,
+					ix,
+					y,
+					1f,
+					SkillProgressTracker.snapshot()
+				);
+				GuiDraw.small(graphics, font, "From the action bar. HUD editor to move.", ix, y + SkillProgressHudRenderer.drawHeight() + 2, fade());
+			}
 			case MINING -> toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Ability alert", config.miningAbilityAlert, v -> config.miningAbilityAlert = v);
 			case FARMING -> slider(graphics, font, ix, y, iw, "Scale", Math.round(config.farmingYawPitchScale * 100) + "%", (config.farmingYawPitchScale - 0.50f) / 1.50f, v -> config.farmingYawPitchScale = StrayConfig.clampHudScale(0.50f + v * 1.50f));
 			case PLOTS -> toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Close on click", config.gardenPlotsCloseOnClick, v -> config.gardenPlotsCloseOnClick = v);
@@ -3687,7 +3708,7 @@ public class StrayScreen extends Screen {
 		return FabricLoader.getInstance()
 			.getModContainer("stray")
 			.map(container -> container.getMetadata().getVersion().getFriendlyString())
-			.orElse("1.2.278");
+			.orElse("1.2.279");
 	}
 
 	@Override
