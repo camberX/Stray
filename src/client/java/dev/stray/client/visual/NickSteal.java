@@ -60,6 +60,7 @@ public final class NickSteal {
 	private static volatile Pattern tagPattern;
 	private static volatile String tagPatternFor = "";
 	private static volatile String lastSeen = "";
+	private static int unmatchedLogged;
 	private static Supplier<PlayerSkin> skinLookup;
 	private static Stolen skinLookupFor;
 	private static int generation;
@@ -338,13 +339,16 @@ public final class NickSteal {
 			}
 			if (rankTag != null) {
 				out.append(current.prefix.isEmpty() ? "§7" : current.prefix + " ");
-			} else if (colorOnly != null) {
+			} else if (colorOnly != null || levelTag != null) {
 				out.append('§').append(current.rankColor);
 			}
 			out.append(current.name);
 			cursor = matcher.end();
 		}
 		if (out == null) {
+			if (legacy.indexOf('[') >= 0 && ++unmatchedLogged <= 20) {
+				Stray.LOGGER.info("Nick steal: no rank/level tag matched before name in: {}", legacy.replace('§', '&'));
+			}
 			return null;
 		}
 		out.append(legacy, cursor, legacy.length());
@@ -362,10 +366,13 @@ public final class NickSteal {
 		// counts as a boundary; otherwise the previous char must not be part
 		// of a username.
 		String codes = "(?:§[0-9a-fk-or])*";
+		String gap = codes + "\\s+" + codes;
+		// Level tag: [digits]. Rank tag: [LETTERS+]. Either may carry any
+		// colors; only the bracket structure is trusted.
 		Pattern pattern = Pattern.compile(
-			"(§8" + codes + "\\[" + codes + "\\d+" + codes + "\\]" + codes + "\\s)?"
-				+ "(" + codes + "§[0-9a-f]" + codes + "\\[(?:§[0-9a-fk-or]|[A-Za-z+])+\\]" + codes + "\\s)?"
-				+ "(?:(" + codes + "§[0-9a-f]" + codes + ")|(?<![A-Za-z0-9_]))"
+			"(" + codes + "\\[" + codes + "\\d+" + codes + "\\]" + gap + ")?"
+				+ "(" + codes + "\\[" + codes + "[A-Za-z][A-Za-z+§0-9a-fk-or]*\\]" + gap + ")?"
+				+ "(?:(" + codes + "§[0-9a-f]" + codes + ")|(?<![A-Za-z0-9_])|(?<=§[0-9a-fk-or]))"
 				+ quoted + "(?![A-Za-z0-9_])"
 		);
 		tagPattern = pattern;

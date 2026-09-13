@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.270", new String[]{
+			"Nick steal matches chat level and rank tags by bracket structure instead of exact colors, and logs any line it could not match to latest.log."
+		}),
 		new Entry("1.2.269", new String[]{
 			"Nametag backgrounds size to the stolen or nicked name. Width was measured on the real name before the text swap, so the box stayed as wide as your real username."
 		}),
