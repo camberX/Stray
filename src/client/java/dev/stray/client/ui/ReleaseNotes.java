@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.266", new String[]{
+			"Metal detector uses SoopyV2's solver: lock the quartz-stair / barrier origin, then match TREASURE distance to the known chest offsets while you stand still."
+		}),
 		new Entry("1.2.265", new String[]{
 			"Health bars use the same grown 2D box height as ESP, so the bar matches the outline instead of sitting on the collision hitbox."
 		}),
