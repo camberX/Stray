@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.278", new String[]{
+			"Skill progress HUD reads the live action bar, including percent pings like +9.2 Farming (22.49%), and turns them into current/needed XP from the wiki tables."
+		}),
 		new Entry("1.2.277", new String[]{
 			"Overlay Skill progress reads XP from the action bar and shows the skill item plus current/needed XP (hoe for Farming, sword for Combat, and so on)."
 		}),
