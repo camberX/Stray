@@ -9,4 +9,7 @@ import org.spongepowered.asm.mixin.gen.Accessor;
 public interface GuiAccessor {
 	@Accessor("overlayMessageString")
 	Component stray$overlayMessage();
+
+	@Accessor("overlayMessageTime")
+	int stray$overlayMessageTime();
 }

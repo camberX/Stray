@@ -175,6 +175,9 @@ public final class StrayClient implements ClientModInitializer {
 		CrystalHollowsRenderer.init();
 		ClientReceiveMessageEvents.ALLOW_GAME.register((message, overlay) -> {
 			MetalDetector.onMessage(message, overlay);
+			if (overlay) {
+				SkillProgressTracker.onActionBar(message);
+			}
 			return CrystalHollows.allowChat(message, overlay);
 		});
 		ChestAimer.init();
@@ -294,6 +297,7 @@ public final class StrayClient implements ClientModInitializer {
 			Hitsound.tick(client);
 			PickupLogRenderer.tick(client);
 			JacobContestTracker.tick(client);
+			SkillProgressTracker.tick(client);
 			ComposterTracker.tick(client);
 			StrayDebug.tick(client);
 			EnderNodeTracker.get().tick(client);

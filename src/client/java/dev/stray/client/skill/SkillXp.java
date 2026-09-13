@@ -61,4 +61,12 @@ public final class SkillXp {
 		}
 		return kind.toReach[nextLevel];
 	}
+
+	/** XP to reach the next level from {@code currentLevel}. */
+	public static long neededAfter(SkillKind kind, int currentLevel) {
+		if (kind == null || currentLevel < 0 || currentLevel >= kind.maxLevel()) {
+			return -1L;
+		}
+		return neededFor(kind, currentLevel + 1);
+	}
 }
