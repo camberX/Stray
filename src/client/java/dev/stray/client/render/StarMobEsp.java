@@ -122,7 +122,14 @@ public final class StarMobEsp {
 	}
 
 	private static boolean starredPlate(String name) {
-		return name.contains(STAR) && (name.endsWith(HEART) || name.endsWith("§c" + HEART));
+		if (name == null || !name.contains(STAR)) {
+			return false;
+		}
+		if (name.endsWith(HEART) || name.endsWith("§c" + HEART)) {
+			return true;
+		}
+		String plain = name.replaceAll("§.", "");
+		return plain.contains(HEART) || plain.contains("♥");
 	}
 
 	private static void bindStand(Entity stand, String name) {

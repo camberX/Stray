@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.271", new String[]{
+			"Health bars show on dungeon star mobs. Those mobs have 0 client HP, so the old dead check hid the bar even when the hologram had a reading."
+		}),
 		new Entry("1.2.270", new String[]{
 			"Nick steal matches chat level and rank tags by bracket structure instead of exact colors, and logs any line it could not match to latest.log."
 		}),

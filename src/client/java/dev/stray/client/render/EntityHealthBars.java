@@ -243,17 +243,21 @@ public final class EntityHealthBars {
 		double bestDist = Double.MAX_VALUE;
 		Vec3 at = stand.position().add(0.0, -1.0, 0.0);
 		for (Entity other : nearby) {
+			LivingEntity living = (LivingEntity) other;
 			double dist = other.distanceToSqr(at);
+			if (StarMobEsp.marked(living)) {
+				dist -= 1000.0;
+			}
 			if (dist < bestDist) {
 				bestDist = dist;
-				best = (LivingEntity) other;
+				best = living;
 			}
 		}
 		return best;
 	}
 
 	private static boolean skyMob(LivingEntity living, Player self) {
-		if (living.isRemoved() || living.isDeadOrDying() || living instanceof ArmorStand) {
+		if (living.isRemoved() || living instanceof ArmorStand) {
 			return false;
 		}
 		if (living == self) {
@@ -274,7 +278,7 @@ public final class EntityHealthBars {
 		boolean skyblock,
 		boolean hologram
 	) {
-		if (living.isRemoved() || living.isDeadOrDying()) {
+		if (living.isRemoved()) {
 			return false;
 		}
 		if (living instanceof ArmorStand) {
@@ -284,6 +288,11 @@ public final class EntityHealthBars {
 			return false;
 		}
 		if (living == client.player) {
+			return false;
+		}
+		// Hypixel dungeon / Skyblock mobs often have 0 client health. The
+		// hologram is the real HP; treating them as dead hid every star bar.
+		if (living.isDeadOrDying() && !(skyblock && hologram)) {
 			return false;
 		}
 		double maxSq = visuals.healthRange * (double) visuals.healthRange;
