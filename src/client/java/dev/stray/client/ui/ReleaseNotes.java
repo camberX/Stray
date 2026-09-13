@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.267", new String[]{
+			"Nick steal: type a username in the Nick card (or /st steal <name>) to wear their skin, cape, name, Hypixel rank, and Skyblock level. Chat, tab, and nametags swap the level and rank tags so the rank color follows. /st steal off stops."
+		}),
 		new Entry("1.2.266", new String[]{
 			"Metal detector uses SoopyV2's solver: lock the quartz-stair / barrier origin, then match TREASURE distance to the known chest offsets while you stand still."
 		}),

@@ -23,7 +23,7 @@ public final class NickHider {
 			return false;
 		}
 		StrayConfig config = StrayConfig.get();
-		if (!config.nickEnabled) {
+		if (!config.nickEnabled && !NickSteal.active()) {
 			return false;
 		}
 		return !realName().isEmpty();
@@ -79,6 +79,16 @@ public final class NickHider {
 		}
 		DEPTH.set(DEPTH.get() + 1);
 		try {
+			if (NickSteal.active()) {
+				// Rank and level tags live in sibling components before the
+				// name, so swap them in flat legacy text. Hover and click
+				// events on that line are dropped; only lines with a tag in
+				// front of our name take this path.
+				String tagged = NickSteal.rewriteTags(NickSteal.toLegacy(component), name);
+				if (tagged != null) {
+					return parseLegacy(replaceName(tagged, name, plainNick()));
+				}
+			}
 			return rewriteTree(component, name);
 		} finally {
 			resume();
@@ -116,7 +126,7 @@ public final class NickHider {
 	}
 
 	private static void refreshCache() {
-		String raw = StrayConfig.get().nick;
+		String raw = NickSteal.active() ? NickSteal.name() : StrayConfig.get().nick;
 		if (raw == null) {
 			raw = "";
 		}

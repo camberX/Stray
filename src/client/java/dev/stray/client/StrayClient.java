@@ -84,6 +84,7 @@ import dev.stray.client.ui.StrayScreen;
 import dev.stray.client.update.UpdateNotifier;
 import dev.stray.client.visual.CustomCape;
 import dev.stray.client.visual.EndSkyDecor;
+import dev.stray.client.visual.NickSteal;
 import dev.stray.client.visual.ShopCape;
 import dev.stray.client.visual.motionblur.MotionBlurShaders;
 import net.fabricmc.api.ClientModInitializer;
@@ -155,6 +156,7 @@ public final class StrayClient implements ClientModInitializer {
 		SkyblockRecipes.load();
 		RawmatsTracker.init();
 		CustomCape.init();
+		NickSteal.init();
 		NodeWorldRenderer.init();
 		MobGlowRenderer.init();
 		BlockOutlineGlow.init();
@@ -221,6 +223,7 @@ public final class StrayClient implements ClientModInitializer {
 			root.then(WardrobeCommands.command());
 			root.then(ProfileCommands.command());
 			root.then(PathCommands.command());
+			root.then(stealCommand());
 			var brand = dispatcher.register(root);
 			dispatcher.register(ClientCommands.literal("st").redirect(brand));
 			dispatcher.register(ClientCommands.literal("voidmark").redirect(brand));
@@ -238,6 +241,7 @@ public final class StrayClient implements ClientModInitializer {
 			vm.then(WardrobeCommands.command());
 			vm.then(ProfileCommands.command());
 			vm.then(PathCommands.command());
+			vm.then(stealCommand());
 			dispatcher.register(vm);
 			dispatcher.register(ClientCommands.literal("loadouts").executes(context -> LoadoutsCommands.open()));
 			dispatcher.register(ClientCommands.literal("loadout").executes(context -> LoadoutsCommands.open()));
@@ -366,6 +370,32 @@ public final class StrayClient implements ClientModInitializer {
 		});
 
 		ClientLifecycleEvents.CLIENT_STOPPING.register(client -> FarmKeys.restore());
+	}
+
+	private static LiteralArgumentBuilder<FabricClientCommandSource> stealCommand() {
+		return ClientCommands.literal("steal")
+			.executes(context -> {
+				stealChat(NickSteal.statusLabel());
+				return Command.SINGLE_SUCCESS;
+			})
+			.then(ClientCommands.literal("off").executes(context -> {
+				NickSteal.stop();
+				stealChat("Stopped stealing.");
+				return Command.SINGLE_SUCCESS;
+			}))
+			.then(ClientCommands.argument("player", StringArgumentType.word()).executes(context -> {
+				String name = StringArgumentType.getString(context, "player");
+				NickSteal.steal(name);
+				stealChat("Stealing " + name + "…");
+				return Command.SINGLE_SUCCESS;
+			}));
+	}
+
+	private static void stealChat(String text) {
+		Minecraft client = Minecraft.getInstance();
+		if (client.gui != null) {
+			client.gui.getChat().addClientSystemMessage(Component.literal("Stray | " + text));
+		}
 	}
 
 	private static LiteralArgumentBuilder<FabricClientCommandSource> musicCommand() {

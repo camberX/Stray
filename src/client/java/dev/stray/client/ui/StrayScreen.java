@@ -28,6 +28,7 @@ import dev.stray.client.render.PlayerPreview;
 import dev.stray.client.render.Starfield;
 import dev.stray.client.visual.CustomCape;
 import dev.stray.client.visual.NickHider;
+import dev.stray.client.visual.NickSteal;
 import dev.stray.client.visual.ShopCape;
 import dev.stray.client.visual.WorldTint;
 import net.fabricmc.loader.api.FabricLoader;
@@ -461,6 +462,8 @@ public class StrayScreen extends Screen {
 	private int bindListen;
 	private boolean capeFocused;
 	private boolean nickFocused;
+	private boolean stealFocused;
+	private String stealDraft = "";
 	private String searchQuery = "";
 	private String capeUrlDraft = "";
 	private boolean dragging;
@@ -500,6 +503,9 @@ public class StrayScreen extends Screen {
 	private float nickFieldX;
 	private float nickFieldY;
 	private float nickFieldW;
+	private float stealFieldX;
+	private float stealFieldY;
+	private float stealFieldW;
 	private boolean mobSearchFocused;
 	private String mobQuery = "";
 	private float mobScroll;
@@ -1207,7 +1213,7 @@ public class StrayScreen extends Screen {
 			NametagRenderer.drawVanilla(graphics, font, drawn.nameX(), drawn.nameY(), tag);
 		}
 
-		float nickH = cardHeight(1) + 56;
+		float nickH = cardHeight(1) + 56 + 12 + ROW + ROW + (NickSteal.status() == NickSteal.Status.OFF ? 0 : ROW);
 		float y = featureCard(graphics, font, right, top, col, nickH, "Nick");
 		float rx = innerX(right);
 		y = toggle(graphics, font, rx, y, iw, mouseX, mouseY, "Replace my name", config.nickEnabled, v -> config.nickEnabled = v);
@@ -1225,13 +1231,14 @@ public class StrayScreen extends Screen {
 		NickHider.resume();
 		hits.add(new Hit(rx, y, iw, 16, () -> {
 			nickFocused = true;
+			stealFocused = false;
 			capeFocused = false;
 			searchOpen = false;
 		}));
 		y += 22;
 		GuiDraw.rounded(graphics, rx, y, iw, 22, 5, Theme.PANEL);
 		NickHider.suppress();
-		Component preview = config.nickEnabled ? NickHider.formattedNick() : Component.literal(playerName());
+		Component preview = config.nickEnabled || NickSteal.active() ? NickHider.formattedNick() : Component.literal(playerName());
 		if (preview.getString().isEmpty()) {
 			GuiDraw.menu(graphics, font, "Name hidden", rx + 6, GuiDraw.middle(y, 22), Theme.MUTED);
 		} else {
@@ -1241,8 +1248,58 @@ public class StrayScreen extends Screen {
 			graphics.pose().popMatrix();
 		}
 		NickHider.resume();
+		y += 26;
+
+		GuiDraw.small(graphics, font, "Steal a player: skin, cape, name, rank, level.", rx, y + 1, Theme.MUTED);
+		y += 12;
+		if (!stealFocused) {
+			stealDraft = NickSteal.target();
+		}
+		stealFieldX = rx;
+		stealFieldY = y;
+		stealFieldW = iw;
+		boolean hoverSteal = GuiDraw.hovered(mouseX, mouseY, rx, y, iw, ROW);
+		GuiDraw.panel(graphics, rx, y, iw, ROW, 5, stealFocused || hoverSteal ? Theme.CARD_HOVER : Theme.CARD, stealFocused ? Theme.ACCENT : Theme.LINE);
+		NickHider.suppress();
+		String stealShown = stealDraft.isEmpty() && !stealFocused ? "Username, Enter to steal" : stealDraft + (stealFocused ? "|" : "");
+		GuiDraw.menu(graphics, font, clip(font, stealShown, (int) iw - 12), rx + 5, GuiDraw.middle(y, ROW), stealDraft.isEmpty() && !stealFocused ? Theme.MUTED : Theme.TEXT);
+		NickHider.resume();
+		hits.add(new Hit(rx, y, iw, ROW, () -> {
+			stealFocused = true;
+			nickFocused = false;
+			capeFocused = false;
+			searchOpen = false;
+		}));
+		y += ROW;
+		NickHider.suppress();
+		GuiDraw.small(graphics, font, clip(font, NickSteal.statusLabel(), (int) iw - 4), rx, y + 2, NickSteal.status() == NickSteal.Status.ERROR ? Theme.WARN : Theme.MUTED);
+		NickHider.resume();
+		y += ROW;
+		if (NickSteal.status() != NickSteal.Status.OFF) {
+			boolean hoverStop = GuiDraw.hovered(mouseX, mouseY, rx, y, iw, ROW);
+			GuiDraw.panel(graphics, rx, y + 1, iw, ROW - 2, 5, hoverStop ? Theme.CARD_HOVER : Theme.CARD, Theme.LINE);
+			GuiDraw.menu(graphics, font, "Stop stealing", rx + 5, GuiDraw.middle(y, ROW), Theme.TEXT);
+			hits.add(new Hit(rx, y, iw, ROW, () -> {
+				stealDraft = "";
+				NickSteal.stop();
+			}));
+		}
 
 		drawCapeColumn(graphics, font, mouseX, mouseY, right, top + nickH + 8, col);
+	}
+
+	private void commitSteal() {
+		String draft = stealDraft.trim();
+		if (draft.isEmpty()) {
+			if (!NickSteal.target().isEmpty()) {
+				NickSteal.stop();
+			}
+			return;
+		}
+		if (draft.equalsIgnoreCase(NickSteal.target()) && NickSteal.status() != NickSteal.Status.ERROR) {
+			return;
+		}
+		NickSteal.steal(draft);
 	}
 
 	private void drawCapeColumn(GuiGraphicsExtractor graphics, Font font, int mouseX, int mouseY, float right, float top, float col) {
@@ -1290,6 +1347,7 @@ public class StrayScreen extends Screen {
 		hits.add(new Hit(rx, y, iw, ROW, () -> {
 			capeFocused = true;
 			nickFocused = false;
+			stealFocused = false;
 			searchOpen = false;
 		}));
 		y += ROW;
@@ -3630,6 +3688,11 @@ public class StrayScreen extends Screen {
 		if (nickFocused && !onNick) {
 			nickFocused = false;
 		}
+		boolean onSteal = GuiDraw.hovered(lx, ly, stealFieldX, stealFieldY, stealFieldW, ROW);
+		if (stealFocused && !onSteal) {
+			stealFocused = false;
+			commitSteal();
+		}
 		boolean onMobSearch = GuiDraw.hovered(lx, ly, mobFieldX, mobFieldY, mobFieldW, 14);
 		if (mobSearchFocused && !onMobSearch) {
 			mobSearchFocused = false;
@@ -3769,6 +3832,11 @@ public class StrayScreen extends Screen {
 				nickFocused = false;
 				return true;
 			}
+			if (stealFocused) {
+				stealFocused = false;
+				stealDraft = NickSteal.target();
+				return true;
+			}
 			if (mobSearchFocused) {
 				if (!mobQuery.isEmpty()) {
 					mobQuery = "";
@@ -3825,6 +3893,24 @@ public class StrayScreen extends Screen {
 			String nick = StrayConfig.get().nick;
 			if (nick != null && !nick.isEmpty()) {
 				StrayConfig.get().nick = nick.substring(0, nick.length() - 1);
+			}
+			return true;
+		}
+		if (stealFocused && event.key() == InputConstants.KEY_BACKSPACE) {
+			if (!stealDraft.isEmpty()) {
+				stealDraft = stealDraft.substring(0, stealDraft.length() - 1);
+			}
+			return true;
+		}
+		if (stealFocused && event.key() == InputConstants.KEY_RETURN) {
+			stealFocused = false;
+			commitSteal();
+			return true;
+		}
+		if (stealFocused && event.key() == InputConstants.KEY_V && event.hasControlDown()) {
+			String clip = minecraft.keyboardHandler.getClipboard();
+			if (clip != null && !clip.isBlank()) {
+				stealDraft += clip.replace("\n", "").replace("\r", "").trim();
 			}
 			return true;
 		}
@@ -3887,6 +3973,7 @@ public class StrayScreen extends Screen {
 			featureOpen = false;
 			capeFocused = false;
 			nickFocused = false;
+			stealFocused = false;
 			mobSearchFocused = false;
 			fontPickerOpen = false;
 			fontSearchFocused = false;
@@ -3908,6 +3995,12 @@ public class StrayScreen extends Screen {
 			}
 			if (config.nick.length() < 48) {
 				config.nick += event.codepointAsString();
+			}
+			return true;
+		}
+		if (stealFocused && event.isAllowedChatCharacter()) {
+			if (stealDraft.length() < 16) {
+				stealDraft += event.codepointAsString();
 			}
 			return true;
 		}
@@ -3937,7 +4030,7 @@ public class StrayScreen extends Screen {
 	}
 
 	public boolean shouldIgnoreMenuBinds() {
-		return bindListen != 0 || capeFocused || nickFocused || searchOpen || mobSearchFocused || fontSearchFocused;
+		return bindListen != 0 || capeFocused || nickFocused || stealFocused || searchOpen || mobSearchFocused || fontSearchFocused;
 	}
 
 	public void requestClose() {
@@ -3953,6 +4046,10 @@ public class StrayScreen extends Screen {
 		}
 		StrayConfig.get().save();
 		commitCapeUrl();
+		if (stealFocused) {
+			stealFocused = false;
+			commitSteal();
+		}
 		if (!closing && StrayConfig.get().uiAnimations && appear > 0.04f) {
 			closing = true;
 			capeFocused = false;

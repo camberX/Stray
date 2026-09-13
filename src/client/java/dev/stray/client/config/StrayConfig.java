@@ -288,6 +288,7 @@ public final class StrayConfig {
 	public String capeShopKey = "";
 	public boolean nickEnabled = false;
 	public String nick = "";
+	public String nickStealTarget = "";
 	public EntityVisuals playerVisuals = new EntityVisuals();
 	public EntityVisuals mobVisuals = new EntityVisuals();
 	public EntityVisuals starVisuals = starProfile();
@@ -678,6 +679,9 @@ public final class StrayConfig {
 				}
 				if (loaded.nick == null) {
 					loaded.nick = "";
+				}
+				if (loaded.nickStealTarget == null) {
+					loaded.nickStealTarget = "";
 				}
 				if (loaded.changelogSeen == null) {
 					loaded.changelogSeen = "";

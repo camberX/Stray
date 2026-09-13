@@ -2590,7 +2590,7 @@ public final class ProfileViewer {
 		return "§8[" + levelColor(level) + level + "§8] " + prefix;
 	}
 
-	private static String levelColor(int level) {
+	public static String levelColor(int level) {
 		if (level >= 480) {
 			return "§4";
 		}
