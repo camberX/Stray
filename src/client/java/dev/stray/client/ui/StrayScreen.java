@@ -390,6 +390,9 @@ public class StrayScreen extends Screen {
 		new SearchEntry("Now playing chat", Tab.MEDIA, "Media"),
 		new SearchEntry("Raw mats", Tab.OVERLAY, "Overlay"),
 		new SearchEntry("Pickup log", Tab.OVERLAY, "Overlay"),
+		new SearchEntry("Skill progress", Tab.OVERLAY, "Overlay"),
+		new SearchEntry("Skill HUD", Tab.OVERLAY, "Overlay"),
+		new SearchEntry("Skill XP", Tab.OVERLAY, "Overlay"),
 		new SearchEntry("Picked up items", Tab.OVERLAY, "Overlay"),
 		new SearchEntry("Enchanted materials", Tab.OVERLAY, "Overlay"),
 		new SearchEntry("Spotify", Tab.MEDIA, "Media"),
@@ -2155,11 +2158,12 @@ public class StrayScreen extends Screen {
 			}
 			case ESP -> drawMobsTab(graphics, font, mouseX, mouseY);
 			case OVERLAY -> {
-				float y = featureCard(graphics, font, left, top, col, cardHeight(5), "HUD");
+				float y = featureCard(graphics, font, left, top, col, cardHeight(6), "HUD");
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Watermark", config.watermarkEnabled, v -> config.watermarkEnabled = v, Feature.WATERMARK);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Music", config.musicHudEnabled, v -> config.musicHudEnabled = v, Feature.MUSIC);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Raw mats", config.rawmatsHudEnabled, v -> config.rawmatsHudEnabled = v, Feature.RAWMATS);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Pickup log", config.pickupLogEnabled, v -> config.pickupLogEnabled = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Skill progress", config.skillProgressHudEnabled, v -> config.skillProgressHudEnabled = v);
 				toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Inventory HUD", config.inventoryHudEnabled, v -> config.inventoryHudEnabled = v, Feature.INVENTORY);
 			}
 			case BARS -> {
@@ -2365,7 +2369,8 @@ public class StrayScreen extends Screen {
 				float y = sectionLabel(graphics, font, left, top, "Info");
 				y = controlCard(graphics, font, left, y, col, mouseX, mouseY, "Watermark", config.watermarkEnabled, v -> config.watermarkEnabled = v, Feature.WATERMARK);
 				y = controlCard(graphics, font, left, y, col, mouseX, mouseY, "Raw mats", config.rawmatsHudEnabled, v -> config.rawmatsHudEnabled = v, Feature.RAWMATS);
-				toggleCard(graphics, font, left, y, col, mouseX, mouseY, "Pickup log", config.pickupLogEnabled, v -> config.pickupLogEnabled = v);
+				y = toggleCard(graphics, font, left, y, col, mouseX, mouseY, "Pickup log", config.pickupLogEnabled, v -> config.pickupLogEnabled = v);
+				y = toggleCard(graphics, font, left, y, col, mouseX, mouseY, "Skill progress", config.skillProgressHudEnabled, v -> config.skillProgressHudEnabled = v);
 				y = sectionLabel(graphics, font, right, top, "Inventory");
 				controlCard(graphics, font, right, y, col, mouseX, mouseY, "Inventory HUD", config.inventoryHudEnabled, v -> config.inventoryHudEnabled = v, Feature.INVENTORY);
 			}
@@ -3682,7 +3687,7 @@ public class StrayScreen extends Screen {
 		return FabricLoader.getInstance()
 			.getModContainer("stray")
 			.map(container -> container.getMetadata().getVersion().getFriendlyString())
-			.orElse("1.2.254");
+			.orElse("1.2.277");
 	}
 
 	@Override
