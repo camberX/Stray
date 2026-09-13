@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.272", new String[]{
+			"Dungeon health bars move as hologram HP drops. Plates are often 2.1M❤ with no max, so the bar used to stay full; it now tracks the highest HP seen on that mob."
+		}),
 		new Entry("1.2.271", new String[]{
 			"Health bars show on dungeon star mobs. Those mobs have 0 client HP, so the old dead check hid the bar even when the hologram had a reading."
 		}),

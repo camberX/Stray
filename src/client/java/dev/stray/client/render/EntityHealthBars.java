@@ -46,7 +46,11 @@ public final class EntityHealthBars {
 	private static final Pattern HEART_HP = Pattern.compile(
 		"(?i)(\\d{1,3}(?:,\\d{3})+|\\d+(?:\\.\\d+)?)\\s*([kmb])?\\s*[❤♥]"
 	);
+	private static final Pattern HEART_LEAD = Pattern.compile(
+		"(?i)[❤♥]\\s*(\\d{1,3}(?:,\\d{3})+|\\d+(?:\\.\\d+)?)\\s*([kmb])?"
+	);
 	private static final Map<UUID, Bar> BARS = new HashMap<>();
+	private static final Map<UUID, Float> PEAKS = new HashMap<>();
 	private static long lastNs = System.nanoTime();
 
 	private EntityHealthBars() {
@@ -63,6 +67,7 @@ public final class EntityHealthBars {
 		StrayConfig config = StrayConfig.get();
 		if (!config.anyHealth()) {
 			BARS.clear();
+			PEAKS.clear();
 			return;
 		}
 		long now = System.nanoTime();
@@ -127,8 +132,10 @@ public final class EntityHealthBars {
 		}
 		Iterator<Map.Entry<UUID, Bar>> it = BARS.entrySet().iterator();
 		while (it.hasNext()) {
-			if (!seen.contains(it.next().getKey())) {
+			UUID id = it.next().getKey();
+			if (!seen.contains(id)) {
 				it.remove();
+				PEAKS.remove(id);
 			}
 		}
 	}
@@ -155,15 +162,24 @@ public final class EntityHealthBars {
 				continue;
 			}
 			String name = plate(stand);
-			float ratio = parseHealth(name);
-			if (Float.isNaN(ratio)) {
+			Reading reading = parseHealth(name);
+			if (reading == null) {
 				continue;
 			}
 			LivingEntity mob = bindStand(stand, name, client.player);
 			if (mob == null) {
 				continue;
 			}
-			out.put(mob.getId(), ratio);
+			UUID id = mob.getUUID();
+			float max = reading.max;
+			if (!(max > 0f)) {
+				max = Math.max(reading.current, PEAKS.getOrDefault(id, reading.current));
+			}
+			if (max <= 0f) {
+				continue;
+			}
+			PEAKS.put(id, max);
+			out.put(mob.getId(), Mth.clamp(reading.current / max, 0f, 1f));
 		}
 		return out;
 	}
@@ -179,33 +195,40 @@ public final class EntityHealthBars {
 		return stand.getDisplayName().getString();
 	}
 
-	private static float parseHealth(String raw) {
+	private static Reading parseHealth(String raw) {
 		if (raw == null || raw.isEmpty()) {
-			return Float.NaN;
+			return null;
 		}
 		String plain = raw.replaceAll("§.", "");
 		if (!hasHeart(plain) && plain.indexOf('/') < 0) {
-			return Float.NaN;
+			return null;
 		}
 		Matcher slash = SLASH_HP.matcher(plain);
 		if (slash.find()) {
 			float current = readAmount(slash.group(1), slash.group(2));
 			float max = readAmount(slash.group(3), slash.group(4));
-			if (max > 0f) {
-				return Mth.clamp(current / max, 0f, 1f);
+			if (current >= 0f && max > 0f) {
+				return new Reading(current, max);
 			}
 		}
 		if (!hasHeart(plain)) {
-			return Float.NaN;
+			return null;
 		}
 		Matcher heart = HEART_HP.matcher(plain);
 		if (heart.find()) {
 			float current = readAmount(heart.group(1), heart.group(2));
 			if (current >= 0f) {
-				return 1f;
+				return new Reading(current, Float.NaN);
 			}
 		}
-		return Float.NaN;
+		Matcher lead = HEART_LEAD.matcher(plain);
+		if (lead.find()) {
+			float current = readAmount(lead.group(1), lead.group(2));
+			if (current >= 0f) {
+				return new Reading(current, Float.NaN);
+			}
+		}
+		return null;
 	}
 
 	private static boolean hasHeart(String plain) {
@@ -342,6 +365,9 @@ public final class EntityHealthBars {
 		int g = Math.round(Mth.lerp(t, (end >> 8) & 0xFF, (start >> 8) & 0xFF));
 		int b = Math.round(Mth.lerp(t, end & 0xFF, start & 0xFF));
 		return (r << 16) | (g << 8) | b;
+	}
+
+	private record Reading(float current, float max) {
 	}
 
 	private static final class Bar {
