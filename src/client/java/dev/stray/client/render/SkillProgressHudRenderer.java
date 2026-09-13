@@ -39,6 +39,7 @@ public final class SkillProgressHudRenderer {
 		if (client.player == null || client.options.hideGui || !StrayConfig.get().skillProgressHudEnabled) {
 			return;
 		}
+		SkillProgressTracker.poll(client);
 		SkillProgressTracker.Snapshot snap = SkillProgressTracker.snapshot();
 		if (!snap.present() && !HudLayout.editorOpen()) {
 			return;
@@ -70,20 +71,32 @@ public final class SkillProgressHudRenderer {
 		if (player != null && icon != null && !icon.isEmpty()) {
 			graphics.item(player, icon, Math.round(iconX), Math.round(iconY), 310);
 		}
-		String xp = AMOUNT.format(snap.current()) + "/" + AMOUNT.format(snap.needed());
+		String xp = xpText(snap);
 		GuiDraw.small(graphics, font, xp, PAD + ICON + 4, (HEIGHT - 8) * 0.5f, Theme.TEXT);
 		graphics.pose().popMatrix();
 	}
 
 	private static float widthOf(SkillProgressTracker.Snapshot snap) {
 		SkillProgressTracker.Snapshot value = snap.present() ? snap : sample();
-		String xp = AMOUNT.format(value.current()) + "/" + AMOUNT.format(value.needed());
 		Minecraft client = Minecraft.getInstance();
 		Font font = client.font;
-		return PAD + ICON + 4 + GuiDraw.smallWidth(font, xp) + PAD;
+		return PAD + ICON + 4 + GuiDraw.smallWidth(font, xpText(value)) + PAD;
+	}
+
+	private static String xpText(SkillProgressTracker.Snapshot snap) {
+		if (snap.needed() > 0L) {
+			return AMOUNT.format(snap.current()) + "/" + AMOUNT.format(snap.needed());
+		}
+		if (snap.percent() >= 0d) {
+			if (Math.abs(snap.percent() - Math.rint(snap.percent())) < 0.005d) {
+				return ((int) Math.rint(snap.percent())) + "%";
+			}
+			return String.format(Locale.US, "%.2f%%", snap.percent());
+		}
+		return "";
 	}
 
 	private static SkillProgressTracker.Snapshot sample() {
-		return new SkillProgressTracker.Snapshot(true, SkillKind.FARMING, 12_345L, 20_000L, 14, 15, System.currentTimeMillis());
+		return new SkillProgressTracker.Snapshot(true, SkillKind.FARMING, 12_345L, 20_000L, 14, 15, 61.73d, System.currentTimeMillis());
 	}
 }

@@ -20,6 +20,9 @@ public enum SkillKind {
 	SOCIAL("Social", Items.EMERALD, SkillXp.SOCIAL),
 	CATACOMBS("Catacombs", Items.WITHER_SKELETON_SKULL, SkillXp.DUNGEONEERING);
 
+	static final String ACTION_BAR_NAMES =
+		"Farming|Mining|Combat|Foraging|Fishing|Enchanting|Alchemy|Taming|Carpentry|Runecrafting|Social|Dungeoneering|Catacombs";
+
 	public final String label;
 	private final Item icon;
 	final long[] toReach;
