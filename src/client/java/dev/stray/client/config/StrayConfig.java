@@ -1659,6 +1659,7 @@ public final class StrayConfig {
 			case "FARMING", "YAW", "PITCH" -> "FARMING";
 			case "GARDEN", "PEST", "PLOTS" -> "GARDEN";
 			case "GREENHOUSE", "DNA", "AUTODNA" -> "GREENHOUSE";
+			case "TOOLS", "RINGS", "PATHS", "MARKS", "COMMANDRINGS", "PATHRECORDER", "BLOCKMARKS" -> "TOOLS";
 			case "MENUS", "LOADOUTS", "WARDROBE", "MISC", "AUTOEXPERIMENTS" -> "MENUS";
 			case "KEYS", "KEYBINDS", "BINDS" -> "KEYS";
 			case "STATUS" -> "STATUS";

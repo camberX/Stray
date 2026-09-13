@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.275", new String[]{
+			"Command rings, path recorder, and block marks live under Misc → Tools."
+		}),
 		new Entry("1.2.274", new String[]{
 			"Command rings have a translucent fill so the disk is easy to see, a bit stronger when you are standing in it."
 		}),

@@ -117,6 +117,7 @@ public class StrayScreen extends Screen {
 		FARMING("HUD", Group.FARMING),
 		GARDEN("Garden", Group.FARMING),
 		GREENHOUSE("DNA", Group.FARMING),
+		TOOLS("Tools", Group.MISC),
 		MENUS("Menus", Group.MISC),
 		KEYS("Keys", Group.MISC),
 		STATUS("Status", Group.MISC),
@@ -235,9 +236,9 @@ public class StrayScreen extends Screen {
 		new SearchEntry("Triggerbot players", Tab.ASSIST, "Assist"),
 		new SearchEntry("Triggerbot humanize", Tab.ASSIST, "Assist"),
 		new SearchEntry("Auto clicker", Tab.ASSIST, "Assist"),
-		new SearchEntry("Command rings", Tab.ASSIST, "Assist"),
-		new SearchEntry("Command ring", Tab.ASSIST, "Assist"),
-		new SearchEntry("/stray cmd", Tab.ASSIST, "Assist"),
+		new SearchEntry("Command rings", Tab.TOOLS, "Tools"),
+		new SearchEntry("Command ring", Tab.TOOLS, "Tools"),
+		new SearchEntry("/stray cmd", Tab.TOOLS, "Tools"),
 		new SearchEntry("Autoclicker", Tab.ASSIST, "Assist"),
 		new SearchEntry("Terminator", Tab.ASSIST, "Assist"),
 		new SearchEntry("Auto experiments", Tab.MENUS, "Misc"),
@@ -299,10 +300,10 @@ public class StrayScreen extends Screen {
 		new SearchEntry("Block outline", Tab.ESP, "World"),
 		new SearchEntry("Block outline color", Tab.ESP, "World"),
 		new SearchEntry("Chest ESP", Tab.ESP, "World"),
-		new SearchEntry("Block marks", Tab.ESP, "World"),
-		new SearchEntry("Middle click waypoint", Tab.ESP, "World"),
-		new SearchEntry("Block waypoint", Tab.ESP, "World"),
-		new SearchEntry("Mark block", Tab.ESP, "World"),
+		new SearchEntry("Block marks", Tab.TOOLS, "Tools"),
+		new SearchEntry("Middle click waypoint", Tab.TOOLS, "Tools"),
+		new SearchEntry("Block waypoint", Tab.TOOLS, "Tools"),
+		new SearchEntry("Mark block", Tab.TOOLS, "Tools"),
 		new SearchEntry("Fairy souls", Tab.ESP, "World"),
 		new SearchEntry("Fairy soul ESP", Tab.ESP, "World"),
 		new SearchEntry("Fairy soul tracker", Tab.ESP, "World"),
@@ -401,10 +402,10 @@ public class StrayScreen extends Screen {
 		new SearchEntry("Crystal Hollows map", Tab.HOLLOWS, "Hollows"),
 		new SearchEntry("Hollows map", Tab.HOLLOWS, "Hollows"),
 		new SearchEntry("Metal detector", Tab.HOLLOWS, "Divan"),
-		new SearchEntry("Paths", Tab.HOLLOWS, "Routes"),
-		new SearchEntry("Path recorder", Tab.HOLLOWS, "Routes"),
-		new SearchEntry("Movement recording", Tab.HOLLOWS, "Routes"),
-		new SearchEntry("Record route", Tab.HOLLOWS, "Routes"),
+		new SearchEntry("Paths", Tab.TOOLS, "Tools"),
+		new SearchEntry("Path recorder", Tab.TOOLS, "Tools"),
+		new SearchEntry("Movement recording", Tab.TOOLS, "Tools"),
+		new SearchEntry("Record route", Tab.TOOLS, "Tools"),
 		new SearchEntry("Robot part alert", Tab.HOLLOWS, "Nucleus"),
 		new SearchEntry("Automaton parts", Tab.HOLLOWS, "Nucleus"),
 		new SearchEntry("Divan tool alert", Tab.HOLLOWS, "Nucleus"),
@@ -957,15 +958,13 @@ public class StrayScreen extends Screen {
 			y = controlCard(graphics, font, left, y, col, mouseX, mouseY, "Block outline", config.blockOutlineGlow, v -> config.blockOutlineGlow = v, Feature.BLOCK);
 			y = controlCard(graphics, font, left, y, col, mouseX, mouseY, "Chest ESP", config.chestEspEnabled, v -> config.chestEspEnabled = v, Feature.CHEST);
 			y = controlCard(graphics, font, left, y, col, mouseX, mouseY, "Fairy souls", config.fairySoulEsp, v -> config.fairySoulEsp = v, Feature.FAIRY);
-			controlCard(graphics, font, left, y, col, mouseX, mouseY, "Block marks", config.blockMarksEnabled, v -> config.blockMarksEnabled = v, Feature.MARKS);
 			y = sectionLabel(graphics, font, right, top, "Items");
 			controlCard(graphics, font, right, y, col, mouseX, mouseY, "Held item", config.heldItemShaderEnabled, v -> config.heldItemShaderEnabled = v, Feature.HELD_ITEM);
 			return;
 		}
-		y = featureCard(graphics, font, left, top, col, cardHeight(5), "World");
+		y = featureCard(graphics, font, left, top, col, cardHeight(4), "World");
 		y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Block outline", config.blockOutlineGlow, v -> config.blockOutlineGlow = v, Feature.BLOCK);
 		y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Chest ESP", config.chestEspEnabled, v -> config.chestEspEnabled = v, Feature.CHEST);
-		y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Block marks", config.blockMarksEnabled, v -> config.blockMarksEnabled = v, Feature.MARKS);
 		y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Fairy souls", config.fairySoulEsp, v -> config.fairySoulEsp = v, Feature.FAIRY);
 		toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Held item", config.heldItemShaderEnabled, v -> config.heldItemShaderEnabled = v, Feature.HELD_ITEM);
 	}
@@ -1681,6 +1680,7 @@ public class StrayScreen extends Screen {
 			case NODES -> MenuFont.PIN;
 			case MINING, HOLLOWS -> MenuFont.DIAMOND;
 			case FARMING, GARDEN, GREENHOUSE -> MenuFont.GRAIN;
+			case TOOLS -> MenuFont.PIN;
 			case MENUS, KEYS -> MenuFont.HANGER;
 			case STATUS -> MenuFont.SPEED;
 			case PLAYER -> MenuFont.PERSON;
@@ -2177,6 +2177,12 @@ public class StrayScreen extends Screen {
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Node HUD", config.hudEnabled, v -> config.hudEnabled = v);
 				toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Node ESP", config.boxFill, v -> config.boxFill = v, Feature.NODE_ESP);
 			}
+			case TOOLS -> {
+				float y = featureCard(graphics, font, left, top, col, cardHeight(3), "Tools");
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Block marks", config.blockMarksEnabled, v -> config.blockMarksEnabled = v, Feature.MARKS);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Command rings", config.commandRingsEnabled, v -> config.commandRingsEnabled = v, Feature.RINGS);
+				toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Paths", config.pathsEnabled, v -> config.pathsEnabled = v, Feature.PATHS);
+			}
 			case MENUS -> {
 				float y = featureCard(graphics, font, left, top, col, cardHeight(7), "Menus");
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Loadouts menu", config.loadoutsMenuEnabled, v -> config.loadoutsMenuEnabled = v);
@@ -2215,13 +2221,12 @@ public class StrayScreen extends Screen {
 				statRow(graphics, font, rx, y, iw, "Ping", HudStats.pingLabel());
 			}
 			case MINING -> {
-				float y = featureCard(graphics, font, left, top, col, cardHeight(8), "Mining");
+				float 				y = featureCard(graphics, font, left, top, col, cardHeight(7), "Mining");
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Mining HUD", config.miningHudEnabled, v -> config.miningHudEnabled = v, Feature.MINING);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Titanium ESP", config.titaniumEsp, v -> config.titaniumEsp = v, Feature.TITANIUM);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "CH waypoints", config.crystalHollowsWaypoints, v -> config.crystalHollowsWaypoints = v, Feature.CRYSTAL);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "CH map", config.crystalHollowsMap, v -> config.crystalHollowsMap = v, Feature.CH_MAP);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Metal detector", config.metalDetectorSolver, v -> config.metalDetectorSolver = v, Feature.METAL);
-				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Paths", config.pathsEnabled, v -> config.pathsEnabled = v, Feature.PATHS);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Robot part alert", config.nucleusAlertParts, v -> config.nucleusAlertParts = v);
 				toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Divan tool alert", config.nucleusAlertTools, v -> config.nucleusAlertTools = v);
 
@@ -2337,8 +2342,6 @@ public class StrayScreen extends Screen {
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Enable", config.triggerbotEnabled, v -> config.triggerbotEnabled = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Players", config.triggerbotPlayers, v -> config.triggerbotPlayers = v);
 				slider(graphics, font, ix, y, iw, "Humanize", Math.round(config.triggerbotHumanize * 100) + "%", config.triggerbotHumanize, v -> config.triggerbotHumanize = StrayConfig.clamp(v, 0f, 1f));
-				y = sectionLabel(graphics, font, left, y, "Rings");
-				controlCard(graphics, font, left, y, col, mouseX, mouseY, "Command rings", config.commandRingsEnabled, v -> config.commandRingsEnabled = v, Feature.RINGS);
 
 				y = sectionLabel(graphics, font, right, top, "Clicks");
 				float clickerH = config.autoClickerEnabled ? fitH(y, cardHeight(autoClickerFieldRows())) : cardHeight(0);
@@ -2352,7 +2355,6 @@ public class StrayScreen extends Screen {
 				y = controlCard(graphics, font, left, y, col, mouseX, mouseY, "Block outline", config.blockOutlineGlow, v -> config.blockOutlineGlow = v, Feature.BLOCK);
 				y = controlCard(graphics, font, left, y, col, mouseX, mouseY, "Chest ESP", config.chestEspEnabled, v -> config.chestEspEnabled = v, Feature.CHEST);
 				y = controlCard(graphics, font, left, y, col, mouseX, mouseY, "Fairy souls", config.fairySoulEsp, v -> config.fairySoulEsp = v, Feature.FAIRY);
-				controlCard(graphics, font, left, y, col, mouseX, mouseY, "Block marks", config.blockMarksEnabled, v -> config.blockMarksEnabled = v, Feature.MARKS);
 				y = sectionLabel(graphics, font, right, top, "Items");
 				controlCard(graphics, font, right, y, col, mouseX, mouseY, "Held item", config.heldItemShaderEnabled, v -> config.heldItemShaderEnabled = v, Feature.HELD_ITEM);
 			}
@@ -2392,6 +2394,13 @@ public class StrayScreen extends Screen {
 				}
 				y = sectionLabel(graphics, font, right, top, "ESP");
 				controlCard(graphics, font, right, y, col, mouseX, mouseY, "Node ESP", config.boxFill, v -> config.boxFill = v, Feature.NODE_ESP);
+			}
+			case TOOLS -> {
+				float y = sectionLabel(graphics, font, left, top, "World");
+				y = controlCard(graphics, font, left, y, col, mouseX, mouseY, "Block marks", config.blockMarksEnabled, v -> config.blockMarksEnabled = v, Feature.MARKS);
+				controlCard(graphics, font, left, y, col, mouseX, mouseY, "Command rings", config.commandRingsEnabled, v -> config.commandRingsEnabled = v, Feature.RINGS);
+				y = sectionLabel(graphics, font, right, top, "Routes");
+				controlCard(graphics, font, right, y, col, mouseX, mouseY, "Paths", config.pathsEnabled, v -> config.pathsEnabled = v, Feature.PATHS);
 			}
 			case MENUS -> {
 				float y = sectionLabel(graphics, font, left, top, "Skyblock");
@@ -2450,9 +2459,6 @@ public class StrayScreen extends Screen {
 				y = sectionLabel(graphics, font, right, y, "Nucleus");
 				y = featureCard(graphics, font, right, y, col, cardHeight(Feature.NUCLEUS.rows()), "Alerts");
 				drawFeatureFields(graphics, font, mouseX, mouseY, rx, y, iw, Feature.NUCLEUS);
-				y = y + cardHeight(Feature.NUCLEUS.rows()) - cardTop() - cardHead() + 8;
-				y = sectionLabel(graphics, font, right, y, "Routes");
-				controlCard(graphics, font, right, y, col, mouseX, mouseY, "Paths", config.pathsEnabled, v -> config.pathsEnabled = v, Feature.PATHS);
 			}
 			case FARMING -> {
 				float y = sectionLabel(graphics, font, left, top, "Overlays");
