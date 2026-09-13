@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.274", new String[]{
+			"Command rings have a translucent fill so the disk is easy to see, a bit stronger when you are standing in it."
+		}),
 		new Entry("1.2.273", new String[]{
 			"Command rings: /stray cmd \"warp hub\" 2 plants a ring at your feet. Walk in to run the command once; leave and re-enter to run it again. Assist tab toggle."
 		}),

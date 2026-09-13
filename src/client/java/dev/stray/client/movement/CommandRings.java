@@ -15,6 +15,7 @@ import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.gizmos.GizmoProperties;
+import net.minecraft.gizmos.GizmoStyle;
 import net.minecraft.gizmos.Gizmos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.sounds.SoundEvents;
@@ -188,8 +189,26 @@ public final class CommandRings {
 		int rgb = StrayConfig.get().commandRingsRgb & 0xFFFFFF;
 		int line = 0xEB000000 | rgb;
 		for (Ring ring : RINGS) {
-			drawCircle(ring, ring.y + 0.04, ring.radius, line, 2.6f);
-			drawCircle(ring, ring.y + 0.04, Math.max(0.2, ring.radius * 0.92), 0x66000000 | rgb, 1.4f);
+			double y = ring.y + 0.04;
+			int fill = (Math.round((ring.inside ? 0.38f : 0.22f) * 255f) << 24) | rgb;
+			drawDisk(ring, y, fill);
+			drawCircle(ring, y, ring.radius, line, 2.6f);
+			drawCircle(ring, y, Math.max(0.2, ring.radius * 0.92), 0x66000000 | rgb, 1.4f);
+		}
+	}
+
+	private static void drawDisk(Ring ring, double y, int fill) {
+		GizmoStyle style = GizmoStyle.fill(fill);
+		Vec3 center = new Vec3(ring.x, y, ring.z);
+		Vec3 prev = null;
+		for (int i = 0; i <= SEGMENTS; i++) {
+			double angle = (i % SEGMENTS) * (Math.PI * 2.0 / SEGMENTS);
+			Vec3 point = new Vec3(ring.x + Math.cos(angle) * ring.radius, y, ring.z + Math.sin(angle) * ring.radius);
+			if (prev != null) {
+				GizmoProperties gizmo = Gizmos.rect(center, prev, point, center, style);
+				gizmo.setAlwaysOnTop();
+			}
+			prev = point;
 		}
 	}
 
