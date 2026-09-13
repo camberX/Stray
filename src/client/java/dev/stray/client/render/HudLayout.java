@@ -29,6 +29,7 @@ public final class HudLayout {
 		CRYSTAL_MAP("CH map"),
 		JACOB("Jacob contest"),
 		COMPOSTER("Composter"),
+		SKILL("Skill progress"),
 		HOTBAR("Hotbar"),
 		HEALTH("Health"),
 		HUNGER("Hunger"),
@@ -207,6 +208,23 @@ public final class HudLayout {
 					}
 					y = placed(config.hudComposterY) ? config.hudComposterY : MARGIN + below;
 				}
+				case SKILL -> {
+					x = placed(config.hudSkillX) ? config.hudSkillX : MARGIN;
+					float below = WatermarkRenderer.occupiedHeight();
+					if (config.hudEnabled) {
+						below += NodeHudRenderer.drawHeight() * scale(Id.NODES) + 4;
+					}
+					if (config.miningHudEnabled) {
+						below += MiningHudRenderer.drawHeight() * scale(Id.MINING) + 4;
+					}
+					if (config.jacobContestHudEnabled) {
+						below += JacobContestHudRenderer.drawHeight() * scale(Id.JACOB) + 4;
+					}
+					if (config.composterHudEnabled) {
+						below += ComposterHudRenderer.drawHeight() * scale(Id.COMPOSTER) + 4;
+					}
+					y = placed(config.hudSkillY) ? config.hudSkillY : MARGIN + below;
+				}
 				default -> {
 					x = defaultX(id, font, guiW, w);
 					y = defaultY(id, font, guiH, h);
@@ -280,6 +298,10 @@ public final class HudLayout {
 				config.hudComposterX = x;
 				config.hudComposterY = y;
 			}
+			case SKILL -> {
+				config.hudSkillX = x;
+				config.hudSkillY = y;
+			}
 			default -> {
 			}
 		}
@@ -302,6 +324,7 @@ public final class HudLayout {
 			case CRYSTAL_MAP -> StrayConfig.clampHudScale(config.hudCrystalMapScale);
 			case JACOB -> StrayConfig.clampHudScale(config.hudJacobScale);
 			case COMPOSTER -> StrayConfig.clampHudScale(config.hudComposterScale);
+			case SKILL -> StrayConfig.clampHudScale(config.hudSkillScale);
 			default -> 1.0f;
 		};
 	}
@@ -326,6 +349,7 @@ public final class HudLayout {
 			case CRYSTAL_MAP -> config.hudCrystalMapScale = value;
 			case JACOB -> config.hudJacobScale = value;
 			case COMPOSTER -> config.hudComposterScale = value;
+			case SKILL -> config.hudSkillScale = value;
 			default -> {
 			}
 		}
@@ -381,6 +405,10 @@ public final class HudLayout {
 				config.hudComposterX = -1f;
 				config.hudComposterY = -1f;
 			}
+			case SKILL -> {
+				config.hudSkillX = -1f;
+				config.hudSkillY = -1f;
+			}
 			default -> {
 			}
 		}
@@ -399,6 +427,7 @@ public final class HudLayout {
 			case CRYSTAL_MAP -> config.crystalHollowsMap;
 			case JACOB -> config.jacobContestHudEnabled;
 			case COMPOSTER -> config.composterHudEnabled;
+			case SKILL -> config.skillProgressHudEnabled;
 			case HOTBAR, HEALTH, HUNGER, ARMOR, AIR, EXPERIENCE, MOUNT -> false;
 			case SCOREBOARD -> config.hudScoreboard;
 			case BOSS -> config.hudBossBar;
@@ -533,6 +562,7 @@ public final class HudLayout {
 			case CRYSTAL_MAP -> CrystalHollowsMap.drawWidth() * scale;
 			case JACOB -> JacobContestHudRenderer.drawWidth() * scale;
 			case COMPOSTER -> ComposterHudRenderer.drawWidth() * scale;
+			case SKILL -> SkillProgressHudRenderer.drawWidth() * scale;
 			case HOTBAR -> HotbarHudRenderer.drawWidth() * scale;
 			case HEALTH, HUNGER, ARMOR, AIR, MOUNT -> StatusHudRenderer.BAR_W * scale;
 			case EXPERIENCE -> StatusHudRenderer.xpWidth() * scale;
@@ -556,6 +586,7 @@ public final class HudLayout {
 			case CRYSTAL_MAP -> CrystalHollowsMap.drawHeight() * scale;
 			case JACOB -> JacobContestHudRenderer.drawHeight() * scale;
 			case COMPOSTER -> ComposterHudRenderer.drawHeight() * scale;
+			case SKILL -> SkillProgressHudRenderer.drawHeight() * scale;
 			case HOTBAR -> HotbarHudRenderer.HEIGHT * scale;
 			case HEALTH, HUNGER, ARMOR, AIR, MOUNT -> StatusHudRenderer.BAR_H * scale;
 			case EXPERIENCE -> StatusHudRenderer.XP_BOX_H * scale;
