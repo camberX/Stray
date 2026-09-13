@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.269", new String[]{
+			"Nametag backgrounds size to the stolen or nicked name. Width was measured on the real name before the text swap, so the box stayed as wide as your real username."
+		}),
 		new Entry("1.2.268", new String[]{
 			"Nick steal rank and level tags tolerate Hypixel's resets and repeated colors between chat segments. /st steal debug prints the last chat line with your name so odd formats can be reported."
 		}),
