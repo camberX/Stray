@@ -31,7 +31,6 @@ import java.util.regex.Pattern;
  * {@code +9.2 Farming (22.49%)} and {@code +12.3 Farming (12,345/20,000)}.
  */
 public final class SkillProgressTracker {
-	private static final long SHOW_MS = 4_500L;
 	private static final String NAMES = SkillKind.ACTION_BAR_NAMES;
 	private static final Pattern GAIN = Pattern.compile(
 		"[+＋]\\s*([\\d,.]+(?:[kmb])?)\\s*(?:[^A-Za-z0-9]+\\s*)?"
@@ -115,12 +114,13 @@ public final class SkillProgressTracker {
 		if (kind == null) {
 			return;
 		}
+		String gained = formatGained(gain.group(1));
 		String progress = gain.group(3).trim();
 		if (progress.equalsIgnoreCase("MAXED") || progress.equalsIgnoreCase("MAX")) {
 			int cap = kind.maxLevel();
 			remember(kind, cap);
 			long needed = SkillXp.neededFor(kind, cap);
-			push(kind, Math.max(0L, needed), Math.max(0L, needed), cap, cap, 100d);
+			push(kind, Math.max(0L, needed), Math.max(0L, needed), cap, cap, 100d, gained);
 			return;
 		}
 		Matcher ratio = RATIO.matcher(progress);
@@ -136,25 +136,19 @@ public final class SkillProgressTracker {
 			lastKind = kind;
 			lastNeeded = needed;
 			double pct = needed > 0L ? (current * 100d) / needed : -1d;
-			push(kind, current, needed, level, next, pct);
+			push(kind, current, needed, level, next, pct, gained);
 			return;
 		}
 		Matcher percent = PERCENT.matcher(progress);
 		if (percent.matches()) {
 			try {
-				fromPercent(kind, Double.parseDouble(percent.group(1)));
+				fromPercent(kind, Double.parseDouble(percent.group(1)), gained);
 			} catch (NumberFormatException ignored) {
 			}
 		}
 	}
 
 	public static Snapshot snapshot() {
-		if (!snapshot.present()) {
-			return snapshot;
-		}
-		if (System.currentTimeMillis() - snapshot.atMs > SHOW_MS) {
-			snapshot = Snapshot.empty();
-		}
 		return snapshot;
 	}
 
@@ -166,7 +160,7 @@ public final class SkillProgressTracker {
 		lastLevelTick = Integer.MIN_VALUE;
 	}
 
-	private static void fromPercent(SkillKind kind, double pct) {
+	private static void fromPercent(SkillKind kind, double pct, String gained) {
 		int level = LEVELS.getOrDefault(kind, -1);
 		long needed = -1L;
 		int next = -1;
@@ -181,7 +175,7 @@ public final class SkillProgressTracker {
 			if (level >= kind.maxLevel()) {
 				remember(kind, kind.maxLevel());
 				long cap = SkillXp.neededFor(kind, kind.maxLevel());
-				push(kind, Math.max(0L, cap), Math.max(0L, cap), kind.maxLevel(), kind.maxLevel(), 100d);
+				push(kind, Math.max(0L, cap), Math.max(0L, cap), kind.maxLevel(), kind.maxLevel(), 100d, gained);
 				return;
 			}
 			needed = SkillXp.neededAfter(kind, level);
@@ -192,10 +186,10 @@ public final class SkillProgressTracker {
 			lastNeeded = needed;
 			long current = Math.round(Math.max(0d, Math.min(1d, pct / 100d)) * needed);
 			remember(kind, level);
-			push(kind, current, needed, level, next, pct);
+			push(kind, current, needed, level, next, pct, gained);
 			return;
 		}
-		push(kind, 0L, 0L, level, -1, pct);
+		push(kind, 0L, 0L, level, -1, pct, gained);
 	}
 
 	private static void refreshLevels(Minecraft client) {
@@ -341,8 +335,19 @@ public final class SkillProgressTracker {
 		LEVELS.put(kind, Math.min(level, kind.maxLevel()));
 	}
 
-	private static void push(SkillKind kind, long current, long needed, int level, int nextLevel, double percent) {
-		snapshot = new Snapshot(true, kind, current, needed, level, nextLevel, percent, System.currentTimeMillis());
+	private static void push(SkillKind kind, long current, long needed, int level, int nextLevel, double percent, String gained) {
+		snapshot = new Snapshot(true, kind, current, needed, level, nextLevel, percent, gained == null ? "" : gained, System.currentTimeMillis());
+	}
+
+	private static String formatGained(String raw) {
+		if (raw == null) {
+			return "";
+		}
+		String text = raw.replace(",", "").trim();
+		if (text.isEmpty()) {
+			return "";
+		}
+		return text.startsWith("+") ? text : "+" + text;
 	}
 
 	private static String plain(Component message) {
@@ -408,10 +413,11 @@ public final class SkillProgressTracker {
 		int level,
 		int nextLevel,
 		double percent,
+		String gained,
 		long atMs
 	) {
 		private static Snapshot empty() {
-			return new Snapshot(false, SkillKind.FARMING, 0L, 0L, -1, -1, -1d, 0L);
+			return new Snapshot(false, SkillKind.FARMING, 0L, 0L, -1, -1, -1d, "", 0L);
 		}
 	}
 }
