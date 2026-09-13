@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.268", new String[]{
+			"Nick steal rank and level tags tolerate Hypixel's resets and repeated colors between chat segments. /st steal debug prints the last chat line with your name so odd formats can be reported."
+		}),
 		new Entry("1.2.267", new String[]{
 			"Nick steal: type a username in the Nick card (or /st steal <name>) to wear their skin, cape, name, Hypixel rank, and Skyblock level. Chat, tab, and nametags swap the level and rank tags so the rank color follows. /st steal off stops."
 		}),

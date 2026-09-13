@@ -59,6 +59,7 @@ public final class NickSteal {
 	private static volatile Stolen stolen;
 	private static volatile Pattern tagPattern;
 	private static volatile String tagPatternFor = "";
+	private static volatile String lastSeen = "";
 	private static Supplier<PlayerSkin> skinLookup;
 	private static Stolen skinLookupFor;
 	private static int generation;
@@ -93,6 +94,11 @@ public final class NickSteal {
 	public static String name() {
 		Stolen current = stolen;
 		return current == null ? "" : current.name;
+	}
+
+	/** Last legacy line that contained the real name, § shown as &, for /st steal debug. */
+	public static String lastSeen() {
+		return lastSeen.replace('§', '&');
 	}
 
 	public static String statusLabel() {
@@ -308,6 +314,7 @@ public final class NickSteal {
 			return null;
 		}
 		Pattern pattern = patternFor(realName);
+		lastSeen = legacy;
 		Matcher matcher = pattern.matcher(legacy);
 		StringBuilder out = null;
 		int cursor = 0;
@@ -350,12 +357,15 @@ public final class NickSteal {
 			return cached;
 		}
 		String quoted = Pattern.quote(realName);
-		// A color code right before the name counts as a boundary; otherwise
-		// the previous char must not be part of a username.
+		// Hypixel sprinkles resets and repeated colors between segments, so
+		// allow any run of codes at every seam. A code right before the name
+		// counts as a boundary; otherwise the previous char must not be part
+		// of a username.
+		String codes = "(?:§[0-9a-fk-or])*";
 		Pattern pattern = Pattern.compile(
-			"(§8\\[(?:§r)?§[0-9a-f]\\d+(?:§r)?§8\\] )?"
-				+ "(§[0-9a-f]\\[(?:§[0-9a-fk-or]|[A-Za-z+])+\\] )?"
-				+ "(?:(§[0-9a-f])|(?<![A-Za-z0-9_]))"
+			"(§8" + codes + "\\[" + codes + "\\d+" + codes + "\\]" + codes + "\\s)?"
+				+ "(" + codes + "§[0-9a-f]" + codes + "\\[(?:§[0-9a-fk-or]|[A-Za-z+])+\\]" + codes + "\\s)?"
+				+ "(?:(" + codes + "§[0-9a-f]" + codes + ")|(?<![A-Za-z0-9_]))"
 				+ quoted + "(?![A-Za-z0-9_])"
 		);
 		tagPattern = pattern;

@@ -383,6 +383,11 @@ public final class StrayClient implements ClientModInitializer {
 				stealChat("Stopped stealing.");
 				return Command.SINGLE_SUCCESS;
 			}))
+			.then(ClientCommands.literal("debug").executes(context -> {
+				String seen = NickSteal.lastSeen();
+				stealChat(seen.isEmpty() ? "No chat line with your name seen yet." : "Last line: " + seen);
+				return Command.SINGLE_SUCCESS;
+			}))
 			.then(ClientCommands.argument("player", StringArgumentType.word()).executes(context -> {
 				String name = StringArgumentType.getString(context, "player");
 				NickSteal.steal(name);
