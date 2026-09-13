@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.265", new String[]{
+			"Health bars use the same grown 2D box height as ESP, so the bar matches the outline instead of sitting on the collision hitbox."
+		}),
 		new Entry("1.2.264", new String[]{
 			"Raw Mats treats [Sacks] +N, −N compact lines as a craft, not new loot. Enchanted coal from a Mining Sack no longer jumps the bar past Stored."
 		}),

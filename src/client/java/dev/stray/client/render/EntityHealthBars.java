@@ -105,7 +105,7 @@ public final class EntityHealthBars {
 			}
 			EntityScreenBoxes.Box screen = EntityScreenBoxes.project(
 				client,
-				EntityScreenBoxes.bounds(living, feet),
+				EntityScreenBoxes.boxBounds(living, feet),
 				guiW,
 				guiH
 			);
