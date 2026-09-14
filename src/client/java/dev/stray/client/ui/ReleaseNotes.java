@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.286", new String[]{
+			"Themed GUI panes are a bit tighter around chests and inventories."
+		}),
 		new Entry("1.2.285", new String[]{
 			"Themed GUIs grow the pane around the vanilla layout so rounded corners miss the helmet slot. The player stays where Minecraft puts it."
 		}),
