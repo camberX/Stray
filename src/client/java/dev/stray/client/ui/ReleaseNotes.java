@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.284", new String[]{
+			"Themed inventory player is larger and sits clear of the helmet slot. The pane outline is one gray instead of a mixed rim."
+		}),
 		new Entry("1.2.283", new String[]{
 			"Themed GUIs skip the vanilla inventory texture so corners stay clean, frost the pane, and keep the 3D player in survival inventory."
 		}),

@@ -19,11 +19,11 @@ import net.minecraft.world.inventory.Slot;
 public final class ContainerChrome {
 	private static final int SLOT = 18;
 	private static final int VANILLA_LABEL = 0xFF404040;
-	private static final int PLAYER_X1 = 26;
-	private static final int PLAYER_Y1 = 8;
-	private static final int PLAYER_X2 = 75;
-	private static final int PLAYER_Y2 = 78;
-	private static final int PLAYER_SCALE = 30;
+	private static final int PLAYER_X1 = 32;
+	private static final int PLAYER_Y1 = 4;
+	private static final int PLAYER_X2 = 80;
+	private static final int PLAYER_Y2 = 82;
+	private static final int PLAYER_SCALE = 38;
 
 	private static boolean hideVanilla;
 
@@ -59,7 +59,7 @@ public final class ContainerChrome {
 		float radius = Math.min(ControlChrome.WINDOW_R, Math.min(w, h) * 0.14f);
 		GuiFrostBlur.blitWindow(graphics, x, y, w, h, radius);
 		GuiDraw.roundedFine(graphics, x, y, w, h, radius, ControlChrome.windowFill());
-		ControlChrome.rim(graphics, x, y, w, h, radius);
+		GuiDraw.roundedOutline(graphics, x, y, w, h, radius, Theme.LINE, 1f);
 		for (Slot slot : container.getMenu().slots) {
 			if (slot == null || !slot.isActive()) {
 				continue;
