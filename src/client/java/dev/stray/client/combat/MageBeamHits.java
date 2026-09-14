@@ -21,10 +21,11 @@ import java.util.List;
  */
 public final class MageBeamHits {
 	private static final double POINT_SPACE_SQ = 1.15 * 1.15;
-	private static final double OURS_SQ = 8.0 * 8.0;
+	private static final double OURS_SQ = 3.5 * 3.5;
 	private static final double DUP_SQ = 1.0E-4;
 	private static final double HIT_INFLATE = 0.75;
 	private static final double COLINEAR = 0.94;
+	private static final double FALL_Y = 0.22;
 	private static final int WINDOW_TICKS = 20;
 	private static final int BEAM_GAP = 5;
 	private static final int BEAM_TTL = 24;
@@ -76,38 +77,30 @@ public final class MageBeamHits {
 			return;
 		}
 		int tick = Hitsound.gameTick();
-		boolean live = tick <= windowUntil || hasOurs(tick);
-		if (!live) {
-			return;
-		}
 		Vec3 point = new Vec3(x, y, z);
 		Beam beam = match(point, tick);
-		if (beam != null && beam.points.getLast().distanceToSqr(point) <= DUP_SQ) {
+		if (beam == null) {
+			if (tick > windowUntil || !fromStaff(player, point)) {
+				return;
+			}
+			beam = new Beam(point, tick, true);
+			BEAMS.add(beam);
+		} else if (beam.points.getLast().distanceToSqr(point) <= DUP_SQ) {
 			return;
-		}
-		if (beam != null) {
+		} else {
 			beam.points.add(point);
 			beam.updateTick = tick;
-			if (player.distanceToSqr(point) <= OURS_SQ) {
-				beam.ours = true;
-			}
-		} else {
-			beam = new Beam(point, tick, player.distanceToSqr(point) <= OURS_SQ);
-			BEAMS.add(beam);
 		}
 		if (beam.ours && beam.points.size() >= 2) {
 			hit(client, player, beam);
 		}
 	}
 
-	private static boolean hasOurs(int tick) {
-		for (int i = 0; i < BEAMS.size(); i++) {
-			Beam beam = BEAMS.get(i);
-			if (beam.ours && tick - beam.updateTick <= BEAM_GAP) {
-				return true;
-			}
+	private static boolean fromStaff(LocalPlayer player, Vec3 point) {
+		if (player.distanceToSqr(point) > OURS_SQ) {
+			return false;
 		}
-		return false;
+		return Math.abs(point.y - player.getEyeY()) <= 1.15;
 	}
 
 	private static Beam match(Vec3 point, int tick) {
@@ -171,6 +164,9 @@ public final class MageBeamHits {
 
 		private boolean inLine(Vec3 point) {
 			Vec3 last = points.getLast();
+			if (point.y < last.y - FALL_Y) {
+				return false;
+			}
 			if (point.distanceToSqr(last) > POINT_SPACE_SQ) {
 				return false;
 			}
@@ -182,7 +178,7 @@ public final class MageBeamHits {
 			if (along.lengthSqr() < 1.0E-8 || step.lengthSqr() < 1.0E-8) {
 				return true;
 			}
-			return Math.abs(along.normalize().dot(step.normalize())) >= COLINEAR;
+			return along.normalize().dot(step.normalize()) >= COLINEAR;
 		}
 	}
 }
