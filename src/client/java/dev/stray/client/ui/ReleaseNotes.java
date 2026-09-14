@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.303", new String[]{
+			"Mage beam hits use the full spark line, so a beam through a mob is not a coin flip. One left-click still plays once; a later shot on the same mob can play again."
+		}),
 		new Entry("1.2.302", new String[]{
 			"Mage beam still plays once per left-click. A second shot on the same high-HP mob plays again."
 		}),
