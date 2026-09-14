@@ -17,6 +17,7 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.ExperienceOrb;
 import net.minecraft.world.entity.Interaction;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.animal.sheep.Sheep;
 import net.minecraft.world.entity.decoration.ArmorStand;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Player;
@@ -198,7 +199,10 @@ public final class Hitsound {
 		if (!isMeleeTarget(entity, player)) {
 			return false;
 		}
-		return !(entity instanceof ArmorStand);
+		if (entity instanceof ArmorStand || entity instanceof Sheep) {
+			return false;
+		}
+		return true;
 	}
 
 	private static boolean isMeleeTarget(Entity entity, LocalPlayer player) {
