@@ -46,17 +46,23 @@ public final class Hitsound {
 	private Hitsound() {
 	}
 
+	static int gameTick() {
+		return gameTick;
+	}
+
 	public static void reset() {
 		ARROWS.clear();
 		LAST.clear();
 		gameTick = 0;
 		lastVanillaSuppressTick = Integer.MIN_VALUE;
 		AttackSpeed.reset();
+		MageBeamHits.reset();
 	}
 
 	public static void tick(Minecraft client) {
 		gameTick++;
 		AttackSpeed.tick(client);
+		MageBeamHits.tick(client);
 		if ((gameTick & 31) == 0) {
 			prune();
 		}
@@ -168,6 +174,31 @@ public final class Hitsound {
 		if (mark) {
 			Hitmarker.flash();
 		}
+	}
+
+	public static void onAbilityHit(Entity target) {
+		StrayConfig config = StrayConfig.get();
+		boolean sound = config.hitsoundEnabled && config.hitsoundMage;
+		boolean mark = config.hitmarkerEnabled;
+		if (!sound && !mark) {
+			return;
+		}
+		LocalPlayer player = Minecraft.getInstance().player;
+		if (player == null || target == null || player.isSpectator() || !isAbilityTarget(target, player)) {
+			return;
+		}
+		if (!entityReady(target.getId(), AttackSpeed.meleeDelay())) {
+			return;
+		}
+		stampEntity(target.getId());
+		land(config, sound, mark);
+	}
+
+	static boolean isAbilityTarget(Entity entity, LocalPlayer player) {
+		if (!isMeleeTarget(entity, player)) {
+			return false;
+		}
+		return !(entity instanceof ArmorStand);
 	}
 
 	private static boolean isMeleeTarget(Entity entity, LocalPlayer player) {

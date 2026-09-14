@@ -233,6 +233,8 @@ public class StrayScreen extends Screen {
 		new SearchEntry("Hitsound", Tab.COMBAT, "Hitsound"),
 		new SearchEntry("Melee hitsound", Tab.COMBAT, "Hitsound"),
 		new SearchEntry("Arrow hitsound", Tab.COMBAT, "Hitsound"),
+		new SearchEntry("Mage beam", Tab.COMBAT, "Hitsound"),
+		new SearchEntry("Mage hitsound", Tab.COMBAT, "Hitsound"),
 		new SearchEntry("Hitmarker", Tab.COMBAT, "Hitsound"),
 		new SearchEntry("Hitmarker scale", Tab.COMBAT, "Hitsound"),
 		new SearchEntry("Hit volume", Tab.COMBAT, "Hitsound"),
@@ -2155,7 +2157,7 @@ public class StrayScreen extends Screen {
 				toggle(graphics, font, rx, y, iw, mouseX, mouseY, "Motion blur", config.motionBlurEnabled, v -> config.motionBlurEnabled = v, Feature.MOTION);
 			}
 			case COMBAT -> {
-				float y = featureCard(graphics, font, left, top, col, cardHeight(4), "Hitsound");
+				float y = featureCard(graphics, font, left, top, col, cardHeight(5), "Hitsound");
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Enable", config.hitsoundEnabled, v -> {
 					config.hitsoundEnabled = v;
 					if (v) {
@@ -2164,9 +2166,10 @@ public class StrayScreen extends Screen {
 				}, Feature.HITSOUND);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Melee", config.hitsoundMelee, v -> config.hitsoundMelee = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Arrows", config.hitsoundArrows, v -> config.hitsoundArrows = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Mage beam", config.hitsoundMage, v -> config.hitsoundMage = v);
 				toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Hitmarker", config.hitmarkerEnabled, v -> config.hitmarkerEnabled = v);
 
-				y = featureCard(graphics, font, left, top + cardHeight(4) + 8, col, cardHeight(3), "Triggerbot");
+				y = featureCard(graphics, font, left, top + cardHeight(5) + 8, col, cardHeight(3), "Triggerbot");
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Enable", config.triggerbotEnabled, v -> config.triggerbotEnabled = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Players", config.triggerbotPlayers, v -> config.triggerbotPlayers = v);
 				slider(graphics, font, ix, y, iw, "Humanize", Math.round(config.triggerbotHumanize * 100) + "%", config.triggerbotHumanize, v -> config.triggerbotHumanize = StrayConfig.clamp(v, 0f, 1f));
@@ -2353,7 +2356,7 @@ public class StrayScreen extends Screen {
 			case COMBAT -> {
 				float y = sectionLabel(graphics, font, left, top, "Feedback");
 				boolean hitsound = config.hitsoundEnabled;
-				float hitH = cardHeight(hitsound ? 6 : 0);
+				float hitH = cardHeight(hitsound ? 7 : 0);
 				float hitInner = featureCard(graphics, font, left, y, col, hitH, "Hitsound", hitsound, v -> {
 					config.hitsoundEnabled = v;
 					if (v) {
@@ -2363,6 +2366,7 @@ public class StrayScreen extends Screen {
 				if (hitsound) {
 					hitInner = toggle(graphics, font, ix, hitInner, iw, mouseX, mouseY, "Melee", config.hitsoundMelee, v -> config.hitsoundMelee = v);
 					hitInner = toggle(graphics, font, ix, hitInner, iw, mouseX, mouseY, "Arrows", config.hitsoundArrows, v -> config.hitsoundArrows = v);
+					hitInner = toggle(graphics, font, ix, hitInner, iw, mouseX, mouseY, "Mage beam", config.hitsoundMage, v -> config.hitsoundMage = v);
 					hitInner = toggle(graphics, font, ix, hitInner, iw, mouseX, mouseY, "Hitmarker", config.hitmarkerEnabled, v -> config.hitmarkerEnabled = v);
 					drawFeatureFields(graphics, font, mouseX, mouseY, ix, hitInner, iw, Feature.HITSOUND);
 				}

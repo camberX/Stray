@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.293", new String[]{
+			"Hitsound Mage beam (off by default) treats dungeon staff firework sparks as hits. Mobs in or at the end of your left-click beam play the sound and hitmarker."
+		}),
 		new Entry("1.2.292", new String[]{
 			"Themed chat (off by default, Misc → Menus) puts chat on Stray glass instead of vanilla black bars, and the input row matches when chat is open."
 		}),

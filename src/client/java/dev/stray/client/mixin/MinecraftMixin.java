@@ -3,6 +3,7 @@ package dev.stray.client.mixin;
 import dev.stray.client.combat.AutoExperiments;
 import dev.stray.client.farming.AutoDna;
 import dev.stray.client.menu.DisabledPotions;
+import dev.stray.client.combat.MageBeamHits;
 import dev.stray.client.combat.Triggerbot;
 import dev.stray.client.render.BlockMarks;
 import dev.stray.client.render.MobGlowRenderer;
@@ -43,7 +44,9 @@ public class MinecraftMixin {
 	 */
 	@Inject(method = "handleKeybinds", at = @At("HEAD"))
 	private void stray$triggerbot(CallbackInfo ci) {
-		Triggerbot.tick((Minecraft) (Object) this);
+		Minecraft client = (Minecraft) (Object) this;
+		Triggerbot.tick(client);
+		MageBeamHits.onAttack(client);
 	}
 
 	/** Middle-click (pick block) toggles a Stray block mark when that feature is on. */
