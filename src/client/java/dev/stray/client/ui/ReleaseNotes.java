@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.311", new String[]{
+			"Themed chat no longer crashes when HUD chat draws. Keep only one Stray jar in mods."
+		}),
 		new Entry("1.2.310", new String[]{
 			"Themed chat types inside the glass input. The vanilla field was sitting through the bottom of the box."
 		}),
