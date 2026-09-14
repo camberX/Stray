@@ -39,15 +39,9 @@ public final class ClientPackets {
 			double y = particles.getY();
 			double z = particles.getZ();
 			var type = options.getType();
-			int count = particles.getCount();
-			float speed = particles.getMaxSpeed();
-			float dx = particles.getXDist();
-			float dy = particles.getYDist();
-			float dz = particles.getZDist();
-			boolean far = particles.alwaysShow() || particles.isOverrideLimiter();
 			Minecraft.getInstance().execute(() -> {
 				EnderNodeTracker.get().onParticle(x, y, z, type);
-				MageBeamHits.onParticle(x, y, z, type, count, speed, dx, dy, dz, far);
+				MageBeamHits.onParticle(x, y, z, type);
 			});
 		}
 		ChestEsp.onPacket(packet);

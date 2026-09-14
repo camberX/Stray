@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.296", new String[]{
+			"Mage beam hits freeze aim on the click, test the real hitbox, and no longer wait for attack-speed delay, so a beam through a mob is consistent."
+		}),
 		new Entry("1.2.295", new String[]{
 			"Mage beam hits use the firework line against the mob box again, so a direct hit registers even when sparks skip the model. Sheep are ignored."
 		}),
