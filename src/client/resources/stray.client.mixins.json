@@ -33,6 +33,7 @@
 		"GuiGraphicsExtractorInvoker",
 		"GuiGraphicsExtractorMixin",
 		"ItemFeatureRendererMixin",
+		"InventoryScreenAccessor",
 		"ItemModelResolverMixin",
 		"ItemStackMixin",
 		"ItemSubmitMixin",

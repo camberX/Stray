@@ -22,6 +22,7 @@ import com.mojang.blaze3d.vertex.VertexFormat;
 import dev.stray.Stray;
 import dev.stray.client.config.StrayConfig;
 import dev.stray.client.mixin.GuiGraphicsExtractorInvoker;
+import dev.stray.client.ui.ContainerChrome;
 import dev.stray.client.ui.StrayScreen;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
@@ -83,7 +84,7 @@ public final class GuiFrostBlur {
 			lastFrost = -1f;
 			return;
 		}
-		boolean menu = client.screen instanceof StrayScreen;
+		boolean menu = client.screen instanceof StrayScreen || ContainerChrome.applies(client.screen);
 		boolean hud = client.level != null && (client.options == null || !client.options.hideGui);
 		if (!menu && !hud) {
 			haveFrost = false;

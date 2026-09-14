@@ -20,11 +20,23 @@ public abstract class ScreenMixin {
 		method = "extractRenderStateWithTooltipAndSubtitles",
 		at = @At(
 			value = "INVOKE",
+			target = "Lnet/minecraft/client/gui/screens/Screen;extractBackground(Lnet/minecraft/client/gui/GuiGraphicsExtractor;IIF)V"
+		)
+	)
+	private void stray$hideVanillaContainer(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float delta, CallbackInfo ci) {
+		ContainerChrome.hideVanilla(ContainerChrome.applies((Screen) (Object) this));
+	}
+
+	@Inject(
+		method = "extractRenderStateWithTooltipAndSubtitles",
+		at = @At(
+			value = "INVOKE",
 			target = "Lnet/minecraft/client/gui/screens/Screen;extractBackground(Lnet/minecraft/client/gui/GuiGraphicsExtractor;IIF)V",
 			shift = At.Shift.AFTER
 		)
 	)
 	private void stray$containerChrome(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float delta, CallbackInfo ci) {
+		ContainerChrome.hideVanilla(false);
 		Screen self = (Screen) (Object) this;
 		if (ContainerChrome.applies(self)) {
 			ContainerChrome.cover(graphics, self);
