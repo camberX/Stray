@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.305", new String[]{
+			"Themed chat hides vanilla's black message bars. Those fills happen in a chat lambda, so the old skip never ran."
+		}),
 		new Entry("1.2.304", new String[]{
 			"Mage beam starts a new volley on each left-click, so a quick shot on the next mob still plays. Hypixel's duplicate packet is ignored only for that same click."
 		}),
