@@ -2,6 +2,7 @@ package dev.stray.client.update;
 
 import dev.stray.Stray;
 import dev.stray.client.config.StrayConfig;
+import dev.stray.update.AutoUpdate;
 import dev.stray.update.UpdateMeta;
 import net.fabricmc.fabric.api.client.screen.v1.ScreenEvents;
 import net.fabricmc.fabric.api.client.screen.v1.ScreenMouseEvents;
@@ -19,12 +20,9 @@ public final class UpdateNotifier {
 
 	public static void init() {
 		ScreenEvents.AFTER_INIT.register((client, screen, scaledWidth, scaledHeight) -> {
-			ScreenEvents.afterExtract(screen).register((opened, graphics, mouseX, mouseY, tickProgress) -> {
-				if (client.level != null) {
-					return;
-				}
-				UpdateToast.extract(graphics);
-			});
+			ScreenEvents.afterExtract(screen).register((opened, graphics, mouseX, mouseY, tickProgress) ->
+				UpdateToast.extract(graphics)
+			);
 			ScreenMouseEvents.allowMouseClick(screen).register((opened, event) -> {
 				if (event.button() != 0) {
 					return true;
@@ -37,7 +35,8 @@ public final class UpdateNotifier {
 	public static void tick() {
 		Minecraft client = Minecraft.getInstance();
 		UpdateToast.tickMouse(client);
-		if (!StrayConfig.get().updateNotify) {
+		StrayConfig config = StrayConfig.get();
+		if (!config.updateNotify && !config.autoUpdate) {
 			return;
 		}
 		if (checking) {
@@ -60,14 +59,21 @@ public final class UpdateNotifier {
 				nextAt = System.currentTimeMillis() + RETRY_MS;
 				return;
 			}
-			nextAt = System.currentTimeMillis() + POLL_MS;
-			String installed = installedVersion();
 			StrayConfig config = StrayConfig.get();
-			String seen = config.updateNotifiedVersion == null ? "" : config.updateNotifiedVersion;
+			nextAt = System.currentTimeMillis() + (config.autoUpdate ? 60_000L : POLL_MS);
+			String installed = installedVersion();
 			if (UpdateMeta.compare(remote, installed) <= 0) {
 				return;
 			}
-			if (!seen.isEmpty() && UpdateMeta.compare(remote, seen) <= 0) {
+			String downloaded = null;
+			if (config.autoUpdate) {
+				downloaded = AutoUpdate.installNewer(false);
+			}
+			String seen = config.updateNotifiedVersion == null ? "" : config.updateNotifiedVersion;
+			if (downloaded == null && !config.updateNotify) {
+				return;
+			}
+			if (!seen.isEmpty() && UpdateMeta.compare(remote, seen) <= 0 && downloaded == null) {
 				return;
 			}
 			config.updateNotifiedVersion = remote;

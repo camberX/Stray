@@ -1906,7 +1906,10 @@ public class StrayScreen extends Screen {
 		y = toggle(graphics, font, settingsX + 8, y, PANEL_W - 16, mouseX, mouseY, "Menu stars", StrayConfig.get().menuStarfield, v -> StrayConfig.get().menuStarfield = v);
 		y = toggle(graphics, font, settingsX + 8, y, PANEL_W - 16, mouseX, mouseY, "HUD stars", StrayConfig.get().hudStarfield, v -> StrayConfig.get().hudStarfield = v);
 		y = toggle(graphics, font, settingsX + 8, y, PANEL_W - 16, mouseX, mouseY, "Animations", StrayConfig.get().uiAnimations, v -> StrayConfig.get().uiAnimations = v);
-		y = toggle(graphics, font, settingsX + 8, y, PANEL_W - 16, mouseX, mouseY, "Auto update", StrayConfig.get().autoUpdate, v -> StrayConfig.get().autoUpdate = v);
+		y = toggle(graphics, font, settingsX + 8, y, PANEL_W - 16, mouseX, mouseY, "Auto update", StrayConfig.get().autoUpdate, v -> {
+			StrayConfig.get().autoUpdate = v;
+			StrayConfig.get().save();
+		});
 		toggle(graphics, font, settingsX + 8, y, PANEL_W - 16, mouseX, mouseY, "Update notify", StrayConfig.get().updateNotify, v -> StrayConfig.get().updateNotify = v);
 	}
 
@@ -2599,7 +2602,10 @@ public class StrayScreen extends Screen {
 		y = slider(graphics, font, ix, y, iw, "Frost", Math.round(config.controlFrost * 100) + "%", config.controlFrost, v -> config.controlFrost = StrayConfig.clamp(v, 0f, 1f));
 		y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Menu stars", config.menuStarfield, v -> config.menuStarfield = v);
 		y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Animations", config.uiAnimations, v -> config.uiAnimations = v);
-		y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Auto update", config.autoUpdate, v -> config.autoUpdate = v);
+		y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Auto update", config.autoUpdate, v -> {
+			config.autoUpdate = v;
+			config.save();
+		});
 		toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Update notify", config.updateNotify, v -> config.updateNotify = v);
 
 		float accentH = cardTop() + cardHead() + 14 + swatchBlockH(Theme.PRESETS.length, iw) + rowH() * 3 + cardPad();

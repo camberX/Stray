@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.289", new String[]{
+			"Auto-update checks for a new jar while the game is open, not only at launch. A jar already sitting in mods is kept instead of being swept."
+		}),
 		new Entry("1.2.288", new String[]{
 			"Themed GUI slots use cheap wells again. Rounded corners on every slot were dropping FPS from hundreds to ~100."
 		}),
