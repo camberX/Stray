@@ -67,9 +67,7 @@ public final class ChatChrome {
 		float y = graphics.guiHeight() - 40f - rows * lineH * scale - PAD;
 		float radius = Math.min(12f, Math.min(w, h) * 0.12f);
 		int fill = chatFill(focused, visible.alpha);
-		if (focused) {
-			GuiFrostBlur.blitWindow(graphics, x, y, w, h, radius);
-		}
+		GuiFrostBlur.blitWindow(graphics, x, y, w, h, radius);
 		GuiDraw.roundedFine(graphics, x, y, w, h, radius, fill);
 		GuiDraw.roundedOutline(graphics, x, y, w, h, radius, Theme.ACCENT, 1f);
 	}
