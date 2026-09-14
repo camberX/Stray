@@ -23,6 +23,7 @@ public final class MageBeamHits {
 	private static final double POINT_SPACE_SQ = 1.15 * 1.15;
 	private static final double OURS_SQ = 8.0 * 8.0;
 	private static final double DUP_SQ = 1.0E-4;
+	private static final double HIT_INFLATE = 0.75;
 	private static final double COLINEAR = 0.94;
 	private static final int WINDOW_TICKS = 20;
 	private static final int BEAM_GAP = 5;
@@ -132,10 +133,10 @@ public final class MageBeamHits {
 		}
 		Vec3 dir = along.normalize();
 		Vec3 from = player.distanceToSqr(first) <= OURS_SQ ? player.getEyePosition() : first;
-		Vec3 to = last.add(dir.scale(0.9));
-		AABB search = new AABB(from, to).inflate(0.5);
+		Vec3 to = last.add(dir.scale(1.15));
+		AABB search = new AABB(from, to).inflate(HIT_INFLATE + 0.35);
 		for (Entity other : client.level.getEntities(player, search, entity -> Hitsound.isAbilityTarget(entity, player))) {
-			AABB hitbox = other.getBoundingBox();
+			AABB hitbox = other.getBoundingBox().inflate(HIT_INFLATE);
 			if (!hitbox.contains(from) && !hitbox.contains(to) && hitbox.clip(from, to).isEmpty()) {
 				continue;
 			}
