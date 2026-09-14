@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.291", new String[]{
+			"Launch always asks stray.gay for a newer jar after config loads. PreLaunch no longer pretends it already checked when it never hit the network."
+		}),
 		new Entry("1.2.290", new String[]{
 			"Auto-update always checks stray.gay on launch when the toggle is on, even if Fabric does not expose a .jar origin. The log says when it is off."
 		}),

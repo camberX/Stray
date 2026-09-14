@@ -156,7 +156,7 @@ public final class StrayClient implements ClientModInitializer {
 	@Override
 	public void onInitializeClient() {
 		StrayConfig.load();
-		AutoUpdate.clientLaunchCheck();
+		AutoUpdate.clientLaunchCheck(StrayConfig.get().autoUpdate, StrayConfig.get().updateNotify);
 		Theme.refresh();
 		SkyblockItems.load();
 		SkyblockRecipes.load();
