@@ -11,21 +11,20 @@ import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 
 /**
- * Dungeon Mage Staff beams are long-distance firework sparks in a line from
- * the player after a left click. Hits use that spark line against the mob's
- * real box, not a fat look-ray and not a spark sitting inside the box
- * (Hypixel spaces sparks, so a direct hit often has none on the AABB).
+ * Dungeon Mage Staff beams are firework sparks after a left click. Aim is
+ * frozen on the click (not every held tick). A hit is that ray going through
+ * the mob's real hitbox.
  */
 public final class MageBeamHits {
 	private static final double MAX_RANGE = 32.0;
-	private static final double ARM_ALONG = 8.0;
-	private static final double RAY_RADIUS_SQ = 1.25 * 1.25;
-	private static final double HIT_INFLATE = 0.18;
-	private static final double MIN_BEAM = 2.5;
-	private static final int WINDOW_TICKS = 12;
+	private static final double RAY_RADIUS_SQ = 1.6 * 1.6;
+	private static final double END_PAD = 0.6;
+	private static final int WINDOW_TICKS = 14;
+	private static final int PULSE_GAP = 3;
 
 	private static int windowUntil;
-	private static boolean armed;
+	private static int lastNearTick = Integer.MIN_VALUE;
+	private static boolean wasAttack;
 	private static double beamEnd;
 	private static Vec3 origin = Vec3.ZERO;
 	private static Vec3 look = new Vec3(0.0, 0.0, 1.0);
@@ -35,7 +34,8 @@ public final class MageBeamHits {
 
 	public static void reset() {
 		windowUntil = 0;
-		armed = false;
+		lastNearTick = Integer.MIN_VALUE;
+		wasAttack = false;
 		beamEnd = 0.0;
 	}
 
@@ -43,52 +43,24 @@ public final class MageBeamHits {
 		if (client == null || client.player == null || client.options == null) {
 			return;
 		}
-		if (!client.options.keyAttack.isDown()) {
-			return;
+		boolean down = client.options.keyAttack.isDown();
+		if (down && !wasAttack && active(client) && !client.player.isSpectator()) {
+			aim(client.player);
+			windowUntil = Hitsound.gameTick() + WINDOW_TICKS;
+			beamEnd = 0.0;
 		}
-		if (!active(client)) {
-			return;
+		wasAttack = down;
+		if (down && active(client)) {
+			windowUntil = Math.max(windowUntil, Hitsound.gameTick() + WINDOW_TICKS);
 		}
-		LocalPlayer player = client.player;
-		if (player.isSpectator()) {
-			return;
-		}
-		origin = player.getEyePosition();
-		look = player.getLookAngle();
-		if (look.lengthSqr() < 1.0E-6) {
-			return;
-		}
-		look = look.normalize();
-		windowUntil = Math.max(windowUntil, Hitsound.gameTick() + WINDOW_TICKS);
 	}
 
 	public static void tick(Minecraft client) {
-		if (Hitsound.gameTick() > windowUntil) {
-			armed = false;
-			beamEnd = 0.0;
-		}
 		onAttack(client);
 	}
 
-	public static void onParticle(
-		double x,
-		double y,
-		double z,
-		ParticleType<?> type,
-		int count,
-		float speed,
-		float dx,
-		float dy,
-		float dz,
-		boolean far
-	) {
+	public static void onParticle(double x, double y, double z, ParticleType<?> type) {
 		if (type != ParticleTypes.FIREWORK) {
-			return;
-		}
-		if (count > 1 || speed > 0.02f) {
-			return;
-		}
-		if (Math.abs(dx) + Math.abs(dy) + Math.abs(dz) > 0.04f) {
 			return;
 		}
 		Minecraft client = Minecraft.getInstance();
@@ -99,41 +71,48 @@ public final class MageBeamHits {
 		if (player == null || client.level == null || player.isSpectator()) {
 			return;
 		}
-		Vec3 point = new Vec3(x, y, z);
-		Vec3 from = origin;
-		Vec3 dir = look;
-		if (dir.lengthSqr() < 1.0E-6) {
+		if (look.lengthSqr() < 1.0E-6) {
 			return;
 		}
-		Vec3 rel = point.subtract(from);
-		double along = rel.dot(dir);
-		if (along < 0.2 || along > MAX_RANGE) {
+		Vec3 point = new Vec3(x, y, z);
+		Vec3 rel = point.subtract(origin);
+		double along = rel.dot(look);
+		if (along < 0.15 || along > MAX_RANGE) {
 			return;
 		}
 		if (rel.lengthSqr() - along * along > RAY_RADIUS_SQ) {
 			return;
 		}
-		if (along <= ARM_ALONG) {
-			armed = true;
+		int tick = Hitsound.gameTick();
+		if (along < 3.0 && tick - lastNearTick >= PULSE_GAP) {
+			aim(player);
+			rel = point.subtract(origin);
+			along = rel.dot(look);
+			beamEnd = 0.0;
 		}
-		if (!armed) {
-			return;
+		if (along < 3.0) {
+			lastNearTick = tick;
 		}
 		if (along > beamEnd) {
 			beamEnd = along;
 		}
-		if (beamEnd < MIN_BEAM) {
-			return;
+		scan(client, player, origin, look, beamEnd + END_PAD);
+	}
+
+	private static void aim(LocalPlayer player) {
+		origin = player.getEyePosition();
+		Vec3 dir = player.getLookAngle();
+		if (dir.lengthSqr() > 1.0E-6) {
+			look = dir.normalize();
 		}
-		scan(client, player, from, dir, beamEnd);
 	}
 
 	private static void scan(Minecraft client, LocalPlayer player, Vec3 from, Vec3 dir, double range) {
-		Vec3 to = from.add(dir.scale(range));
-		AABB search = new AABB(from, to).inflate(HIT_INFLATE + 0.35);
+		Vec3 to = from.add(dir.scale(Math.min(MAX_RANGE, range)));
+		AABB search = new AABB(from, to).inflate(0.4);
 		for (Entity other : client.level.getEntities(player, search, entity -> Hitsound.isAbilityTarget(entity, player))) {
-			AABB hitbox = other.getBoundingBox().inflate(HIT_INFLATE);
-			if (hitbox.clip(from, to).isEmpty()) {
+			AABB hitbox = other.getBoundingBox();
+			if (!hitbox.contains(from) && !hitbox.contains(to) && hitbox.clip(from, to).isEmpty()) {
 				continue;
 			}
 			Hitsound.onAbilityHit(other);
