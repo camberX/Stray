@@ -11,20 +11,22 @@ import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 
 /**
- * Dungeon Mage Staff beams are firework sparks in a line from the player
- * after a left click. A hit is a spark on (or a few pixels into) a mob,
- * not merely a look-ray that passes near one.
+ * Dungeon Mage Staff beams are long-distance firework sparks in a line from
+ * the player after a left click. Hits use that spark line against the mob's
+ * real box, not a fat look-ray and not a spark sitting inside the box
+ * (Hypixel spaces sparks, so a direct hit often has none on the AABB).
  */
 public final class MageBeamHits {
-	private static final double MAX_RANGE = 40.0;
-	private static final double ARM_ALONG = 4.0;
-	private static final double RAY_RADIUS_SQ = 0.85 * 0.85;
-	private static final double HIT_MARGIN = 0.22;
-	private static final double HIT_MARGIN_SQ = HIT_MARGIN * HIT_MARGIN;
-	private static final int WINDOW_TICKS = 8;
+	private static final double MAX_RANGE = 32.0;
+	private static final double ARM_ALONG = 8.0;
+	private static final double RAY_RADIUS_SQ = 1.25 * 1.25;
+	private static final double HIT_INFLATE = 0.18;
+	private static final double MIN_BEAM = 2.5;
+	private static final int WINDOW_TICKS = 12;
 
 	private static int windowUntil;
 	private static boolean armed;
+	private static double beamEnd;
 	private static Vec3 origin = Vec3.ZERO;
 	private static Vec3 look = new Vec3(0.0, 0.0, 1.0);
 
@@ -34,6 +36,7 @@ public final class MageBeamHits {
 	public static void reset() {
 		windowUntil = 0;
 		armed = false;
+		beamEnd = 0.0;
 	}
 
 	public static void onAttack(Minecraft client) {
@@ -62,12 +65,30 @@ public final class MageBeamHits {
 	public static void tick(Minecraft client) {
 		if (Hitsound.gameTick() > windowUntil) {
 			armed = false;
+			beamEnd = 0.0;
 		}
 		onAttack(client);
 	}
 
-	public static void onParticle(double x, double y, double z, ParticleType<?> type) {
+	public static void onParticle(
+		double x,
+		double y,
+		double z,
+		ParticleType<?> type,
+		int count,
+		float speed,
+		float dx,
+		float dy,
+		float dz,
+		boolean far
+	) {
 		if (type != ParticleTypes.FIREWORK) {
+			return;
+		}
+		if (count > 1 || speed > 0.02f) {
+			return;
+		}
+		if (Math.abs(dx) + Math.abs(dy) + Math.abs(dz) > 0.04f) {
 			return;
 		}
 		Minecraft client = Minecraft.getInstance();
@@ -86,11 +107,10 @@ public final class MageBeamHits {
 		}
 		Vec3 rel = point.subtract(from);
 		double along = rel.dot(dir);
-		if (along < 0.25 || along > MAX_RANGE) {
+		if (along < 0.2 || along > MAX_RANGE) {
 			return;
 		}
-		double offSq = rel.lengthSqr() - along * along;
-		if (offSq > RAY_RADIUS_SQ) {
+		if (rel.lengthSqr() - along * along > RAY_RADIUS_SQ) {
 			return;
 		}
 		if (along <= ARM_ALONG) {
@@ -99,24 +119,25 @@ public final class MageBeamHits {
 		if (!armed) {
 			return;
 		}
-		hitAt(client, player, point);
+		if (along > beamEnd) {
+			beamEnd = along;
+		}
+		if (beamEnd < MIN_BEAM) {
+			return;
+		}
+		scan(client, player, from, dir, beamEnd);
 	}
 
-	private static void hitAt(Minecraft client, LocalPlayer player, Vec3 point) {
-		AABB search = new AABB(point, point).inflate(HIT_MARGIN + 0.05);
+	private static void scan(Minecraft client, LocalPlayer player, Vec3 from, Vec3 dir, double range) {
+		Vec3 to = from.add(dir.scale(range));
+		AABB search = new AABB(from, to).inflate(HIT_INFLATE + 0.35);
 		for (Entity other : client.level.getEntities(player, search, entity -> Hitsound.isAbilityTarget(entity, player))) {
-			if (distanceToBoxSq(point, other.getBoundingBox()) > HIT_MARGIN_SQ) {
+			AABB hitbox = other.getBoundingBox().inflate(HIT_INFLATE);
+			if (hitbox.clip(from, to).isEmpty()) {
 				continue;
 			}
 			Hitsound.onAbilityHit(other);
 		}
-	}
-
-	private static double distanceToBoxSq(Vec3 point, AABB box) {
-		double dx = Math.max(box.minX - point.x, Math.max(0.0, point.x - box.maxX));
-		double dy = Math.max(box.minY - point.y, Math.max(0.0, point.y - box.maxY));
-		double dz = Math.max(box.minZ - point.z, Math.max(0.0, point.z - box.maxZ));
-		return dx * dx + dy * dy + dz * dz;
 	}
 
 	private static boolean active(Minecraft client) {

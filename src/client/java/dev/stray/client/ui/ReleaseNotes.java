@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.295", new String[]{
+			"Mage beam hits use the firework line against the mob box again, so a direct hit registers even when sparks skip the model. Sheep are ignored."
+		}),
 		new Entry("1.2.294", new String[]{
 			"Mage beam hitsound only fires when a firework spark is on the mob, not when the beam merely passes nearby."
 		}),
