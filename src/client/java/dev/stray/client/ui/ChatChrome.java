@@ -71,10 +71,7 @@ public final class ChatChrome {
 			GuiFrostBlur.blitWindow(graphics, x, y, w, h, radius);
 		}
 		GuiDraw.roundedFine(graphics, x, y, w, h, radius, fill);
-		GuiDraw.roundedOutline(graphics, x, y, w, h, radius, Theme.withAlpha(Theme.LINE, focused ? 180 : 110), 1f);
-		if (focused) {
-			scrollbar(graphics, access, x, y, w, h, page);
-		}
+		GuiDraw.roundedOutline(graphics, x, y, w, h, radius, Theme.ACCENT, 1f);
 	}
 
 	public static void beginFills() {
@@ -110,28 +107,6 @@ public final class ChatChrome {
 		if (box.isBordered()) {
 			MenuChrome.field(graphics, box);
 		}
-	}
-
-	private static void scrollbar(
-		GuiGraphicsExtractor graphics,
-		ChatComponentAccessor access,
-		float x,
-		float y,
-		float w,
-		float h,
-		int page
-	) {
-		int total = access.stray$trimmedMessages().size();
-		if (total <= page) {
-			return;
-		}
-		float track = h - 8f;
-		float bar = Math.max(10f, track * page / (float) total);
-		float maxScroll = total - page;
-		float t = maxScroll <= 0 ? 0f : Mth.clamp(access.stray$scroll() / maxScroll, 0f, 1f);
-		float by = y + 4f + (track - bar) * (1f - t);
-		GuiDraw.fill(graphics, x + w - 4f, y + 4f, 2f, track, Theme.withAlpha(Theme.LINE, 90));
-		GuiDraw.fill(graphics, x + w - 4f, by, 2f, bar, Theme.ACCENT);
 	}
 
 	private static int chatFill(boolean focused, float fade) {
