@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.300", new String[]{
+			"Mage beam ignores firework sparks that fall off the line, so those no longer count as a second hit."
+		}),
 		new Entry("1.2.299", new String[]{
 			"Mage beam hits use a larger mob box, so a beam that clips the model still counts."
 		}),
