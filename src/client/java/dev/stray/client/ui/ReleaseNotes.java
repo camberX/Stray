@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.298", new String[]{
+			"Mage beam hits chain sparks across a few ticks and ignore Hypixel's duplicate send, so a line through a mob hitbox actually registers."
+		}),
 		new Entry("1.2.297", new String[]{
 			"Mage beam hits follow Hypixel's firework chain (~0.5 apart, often sent twice) instead of look direction. The spark line through a mob hitbox counts; sheep still do not."
 		}),
