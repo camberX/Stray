@@ -31,44 +31,16 @@ import java.util.Optional;
 public final class AutoUpdate implements PreLaunchEntrypoint {
 	private static final String DOWNLOAD = UpdateMeta.SHOP + "/download";
 	private static final long MAX_BYTES = 96L * 1024L * 1024L;
-	private static volatile boolean launchChecked;
+	private static volatile boolean fetched;
 
 	@Override
 	public void onPreLaunch() {
-		launchChecked = true;
-		boolean on = enabled();
-		if (!on) {
-			log("Auto-update is off.");
+		log("PreLaunch updater loaded.");
+		if (!enabled()) {
+			log("Auto-update is off in config, so PreLaunch will not download. Client launch still checks if the in-game toggle is on.");
 			return;
 		}
-		String installed = installedVersion();
-		log("Checking stray.gay for a newer jar (you have " + (installed.isEmpty() ? "unknown" : installed) + ")…");
-		Path mods = modsDir();
-		Path current = currentJar();
-		if (current == null) {
-			current = newestJar(mods);
-		}
-		Path newest = newestJar(mods);
-		if (newest != null && current != null && !newest.equals(current)) {
-			String onDisk = jarVersion(newest);
-			if (onDisk != null && UpdateMeta.compare(onDisk, installed) > 0) {
-				log("Newer jar " + onDisk + " is already in mods. Closing so it can load.");
-				try {
-					for (Path old : staleJars(mods, newest)) {
-						retire(old);
-					}
-				} catch (Exception ignored) {
-				}
-				killGame();
-				return;
-			}
-		}
-		String next = installNewer(true);
-		if (next == null) {
-			return;
-		}
-		log("Updated to " + next + ". Closing Minecraft.");
-		killGame();
+		checkAndInstall(true);
 	}
 
 	public static boolean enabled() {
@@ -98,20 +70,72 @@ public final class AutoUpdate implements PreLaunchEntrypoint {
 		}
 	}
 
-	/** Backup if PreLaunch never ran (some client-only loaders skip it). */
-	public static void clientLaunchCheck() {
-		if (launchChecked) {
+	/**
+	 * Always runs from client init after {@code stray.json} is loaded.
+	 * PreLaunch does not skip this unless a network fetch already finished.
+	 */
+	public static void clientLaunchCheck(boolean autoUpdate, boolean notify) {
+		log("Client launch: auto-update " + (autoUpdate ? "on" : "off") + ", notify " + (notify ? "on" : "off") + ".");
+		if (autoUpdate) {
+			if (fetched) {
+				log("Already queried stray.gay during PreLaunch.");
+				return;
+			}
+			checkAndInstall(true);
 			return;
 		}
-		launchChecked = true;
-		if (!enabled()) {
-			log("Auto-update is off.");
+		if (!notify) {
+			log("Not checking for a new jar (both toggles off).");
 			return;
 		}
+		if (fetched) {
+			return;
+		}
+		fetched = true;
 		String installed = installedVersion();
 		log("Checking stray.gay for a newer jar (you have " + (installed.isEmpty() ? "unknown" : installed) + ")…");
-		String next = installNewer(true);
-		if (next != null) {
+		try {
+			Remote remote = fetchRemote();
+			if (remote == null) {
+				log("No update info.");
+				return;
+			}
+			if (!installed.isEmpty() && UpdateMeta.compare(remote.version, installed) <= 0) {
+				log("Already up to date (" + installed + ").");
+				return;
+			}
+			log("Found " + remote.version + ". Turn on Auto update to install it, or restart after downloading.");
+		} catch (Exception exception) {
+			log("Update check failed: " + exception.getMessage());
+			Stray.LOGGER.warn("Update check failed", exception);
+		}
+	}
+
+	private static void checkAndInstall(boolean closeGame) {
+		String installed = installedVersion();
+		log("Checking stray.gay for a newer jar (you have " + (installed.isEmpty() ? "unknown" : installed) + ")…");
+		Path mods = modsDir();
+		Path current = currentJar();
+		if (current == null) {
+			current = newestJar(mods);
+		}
+		Path newest = newestJar(mods);
+		if (newest != null && current != null && !newest.equals(current)) {
+			String onDisk = jarVersion(newest);
+			if (onDisk != null && UpdateMeta.compare(onDisk, installed) > 0) {
+				log("Newer jar " + onDisk + " is already in mods. Closing so it can load.");
+				try {
+					for (Path old : staleJars(mods, newest)) {
+						retire(old);
+					}
+				} catch (Exception ignored) {
+				}
+				killGame();
+				return;
+			}
+		}
+		String next = installNewer(closeGame);
+		if (next != null && closeGame) {
 			log("Updated to " + next + ". Closing Minecraft.");
 			killGame();
 		}
@@ -123,6 +147,7 @@ public final class AutoUpdate implements PreLaunchEntrypoint {
 	 * @return the new version, or {@code null} if nothing was installed
 	 */
 	public static String installNewer(boolean closeGame) {
+		fetched = true;
 		Path mods = modsDir();
 		Path current = currentJar();
 		if (current == null) {
