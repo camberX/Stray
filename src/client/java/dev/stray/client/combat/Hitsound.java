@@ -188,7 +188,7 @@ public final class Hitsound {
 		if (player == null || target == null || player.isSpectator() || !isAbilityTarget(target, player)) {
 			return;
 		}
-		if (!entityReady(target.getId(), 2)) {
+		if (!entityReady(target.getId(), 8)) {
 			return;
 		}
 		stampEntity(target.getId());
@@ -196,10 +196,13 @@ public final class Hitsound {
 	}
 
 	static boolean isAbilityTarget(Entity entity, LocalPlayer player) {
-		if (!isMeleeTarget(entity, player)) {
+		if (!(entity instanceof LivingEntity) || entity == player || entity.isRemoved()) {
 			return false;
 		}
 		if (entity instanceof ArmorStand || entity instanceof Sheep) {
+			return false;
+		}
+		if (entity instanceof Player other && other.getUUID().version() == 4) {
 			return false;
 		}
 		return true;
