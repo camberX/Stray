@@ -3,6 +3,7 @@ package dev.stray.client.mixin;
 import dev.stray.client.farming.AutoDna;
 import dev.stray.client.farming.GardenPlots;
 import dev.stray.client.item.StoragePreview;
+import dev.stray.client.ui.ContainerChrome;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.world.inventory.ContainerInput;
@@ -23,6 +24,23 @@ public class AbstractContainerScreenMixin {
 		if (AutoDna.shouldBlock(slotId)) {
 			ci.cancel();
 		}
+	}
+
+	@Inject(method = "extractSlotHighlightBack", at = @At("HEAD"), cancellable = true)
+	private void stray$noHoverFill(GuiGraphicsExtractor graphics, CallbackInfo ci) {
+		if (ContainerChrome.applies((AbstractContainerScreen<?>) (Object) this)) {
+			ci.cancel();
+		}
+	}
+
+	@Inject(method = "extractSlotHighlightFront", at = @At("HEAD"), cancellable = true)
+	private void stray$hoverOutline(GuiGraphicsExtractor graphics, CallbackInfo ci) {
+		AbstractContainerScreen<?> screen = (AbstractContainerScreen<?>) (Object) this;
+		if (!ContainerChrome.applies(screen)) {
+			return;
+		}
+		ContainerChrome.hover(graphics, hoveredSlot);
+		ci.cancel();
 	}
 
 	@Inject(method = "extractTooltip", at = @At("HEAD"), cancellable = true)

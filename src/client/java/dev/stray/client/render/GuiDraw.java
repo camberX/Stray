@@ -119,6 +119,16 @@ public final class GuiDraw {
 		fill(graphics, x + 1f, y + 1f, size - 2f, size - 2f, fill);
 	}
 
+	public static void wellBorder(GuiGraphicsExtractor graphics, float x, float y, float size, int outline) {
+		if (size <= 1f) {
+			return;
+		}
+		fill(graphics, x, y, size, 1f, outline);
+		fill(graphics, x, y + size - 1f, size, 1f, outline);
+		fill(graphics, x, y, 1f, size, outline);
+		fill(graphics, x + size - 1f, y, 1f, size, outline);
+	}
+
 	public static void fillGradient(GuiGraphicsExtractor graphics, float x, float y, float w, float h, int top, int bottom) {
 		if (w <= 0 || h <= 0) {
 			return;
