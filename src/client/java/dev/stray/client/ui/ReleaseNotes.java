@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.310", new String[]{
+			"Themed chat types inside the glass input. The vanilla field was sitting through the bottom of the box."
+		}),
 		new Entry("1.2.309", new String[]{
 			"Themed chat slides new messages up and eases fading ones out with the glass, instead of popping in and vanishing."
 		}),

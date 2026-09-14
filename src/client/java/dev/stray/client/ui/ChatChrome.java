@@ -27,7 +27,9 @@ import java.util.Map;
  */
 public final class ChatChrome {
 	private static final float PAD = 6f;
-	private static final float INPUT_H = 16f;
+	private static final float INPUT_H = 20f;
+	private static final float INPUT_MARGIN = 4f;
+	private static final int FIELD_H = 12;
 	private static final int FADE_TICKS = 200;
 	private static final IdentityHashMap<GuiMessage.Line, Float> APPEAR = new IdentityHashMap<>();
 	private static final IdentityHashMap<FormattedCharSequence, Motion> MOTION = new IdentityHashMap<>();
@@ -103,13 +105,24 @@ public final class ChatChrome {
 		skipFill = false;
 	}
 
+	public static void placeInput(EditBox input, Screen screen) {
+		if (!enabled() || input == null || screen == null) {
+			return;
+		}
+		int barY = Math.round(screen.height - INPUT_MARGIN - INPUT_H);
+		int fieldY = barY + Math.round((INPUT_H - FIELD_H) * 0.5f);
+		int fieldX = 10;
+		int fieldW = Math.max(16, screen.width - 20);
+		input.setRectangle(fieldW, FIELD_H, fieldX, fieldY);
+	}
+
 	public static void inputBar(GuiGraphicsExtractor graphics, Screen screen) {
 		if (!enabled() || !(screen instanceof ChatScreen) || graphics == null) {
 			return;
 		}
 		Theme.refresh();
 		float x = 2f;
-		float y = screen.height - 2f - INPUT_H;
+		float y = screen.height - INPUT_MARGIN - INPUT_H;
 		float w = screen.width - 4f;
 		float radius = 8f;
 		GuiFrostBlur.blitWindow(graphics, x, y, w, INPUT_H, radius);
