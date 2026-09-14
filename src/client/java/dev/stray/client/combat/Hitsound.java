@@ -188,7 +188,7 @@ public final class Hitsound {
 		if (player == null || target == null || player.isSpectator() || !isAbilityTarget(target, player)) {
 			return;
 		}
-		if (!entityReady(target.getId(), 8)) {
+		if (!entityReady(target.getId(), 1)) {
 			return;
 		}
 		stampEntity(target.getId());
