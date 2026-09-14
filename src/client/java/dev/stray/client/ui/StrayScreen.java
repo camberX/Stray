@@ -155,6 +155,8 @@ public class StrayScreen extends Screen {
 		MARKS("Block marks", 4),
 		PATHS("Paths", 5),
 		RINGS("Command rings", 3),
+		LOADOUTS("Loadouts menu", 9),
+		WARDROBE("Wardrobe menu", 9),
 		NUCLEUS("Nucleus alerts", 2),
 		NODE_ESP("Node ESP", 4),
 		WATERMARK("Watermark", 4),
@@ -344,10 +346,10 @@ public class StrayScreen extends Screen {
 		new SearchEntry("New version", Tab.SETTINGS, "Theme"),
 		new SearchEntry("Markers", Tab.NODES, "Nodes"),
 		new SearchEntry("Keybinds", Tab.KEYS, "Keys"),
-		new SearchEntry("Slot keys", Tab.KEYS, "Keys"),
-		new SearchEntry("Loadout slots", Tab.KEYS, "Keys"),
-		new SearchEntry("Wardrobe slots", Tab.KEYS, "Keys"),
-		new SearchEntry("1-9", Tab.KEYS, "Keys"),
+		new SearchEntry("Slot keys", Tab.MENUS, "Menus"),
+		new SearchEntry("Loadout slots", Tab.MENUS, "Menus"),
+		new SearchEntry("Wardrobe slots", Tab.MENUS, "Menus"),
+		new SearchEntry("1-9", Tab.MENUS, "Menus"),
 		new SearchEntry("Open menu", Tab.KEYS, "Keys"),
 		new SearchEntry("Menus", Tab.MENUS, "Menus"),
 		new SearchEntry("Loadouts", Tab.MENUS, "Menus"),
@@ -2201,8 +2203,8 @@ public class StrayScreen extends Screen {
 			}
 			case MENUS -> {
 				float y = featureCard(graphics, font, left, top, col, cardHeight(7), "Menus");
-				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Loadouts menu", config.loadoutsMenuEnabled, v -> config.loadoutsMenuEnabled = v);
-				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Wardrobe menu", config.wardrobeMenuEnabled, v -> config.wardrobeMenuEnabled = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Loadouts menu", config.loadoutsMenuEnabled, v -> config.loadoutsMenuEnabled = v, Feature.LOADOUTS);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Wardrobe menu", config.wardrobeMenuEnabled, v -> config.wardrobeMenuEnabled = v, Feature.WARDROBE);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Profile viewer", config.profileViewerEnabled, v -> config.profileViewerEnabled = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Storage preview", config.storagePreviewEnabled, v -> config.storagePreviewEnabled = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Preview needs Shift", config.storagePreviewHoldShift, v -> config.storagePreviewHoldShift = v);
@@ -2215,12 +2217,9 @@ public class StrayScreen extends Screen {
 				drawFeatureFields(graphics, font, mouseX, mouseY, ix, y, iw, Feature.AUTO_EXPERIMENTS);
 
 				float bindsH = cardHeight(4);
-				float slotsH = cardHeight(9);
 				y = featureCard(graphics, font, right, top, col, bindsH, "Keybinds");
 				y = drawMenuKeybinds(graphics, font, rx, y, iw, mouseX, mouseY);
-				y = featureCard(graphics, font, right, top + bindsH + 8, col, slotsH, "Slots");
-				y = drawSlotKeybinds(graphics, font, rx, y, iw, mouseX, mouseY);
-				y = featureCard(graphics, font, right, top + bindsH + slotsH + 16, col, cardHeight(5), "Commands");
+				y = featureCard(graphics, font, right, top + bindsH + 8, col, cardHeight(5), "Commands");
 				GuiDraw.menu(graphics, font, "/loadouts  /ld", rx, y + 2, ink());
 				GuiDraw.menu(graphics, font, "/wardrobe  /wd", rx, y + 16, ink());
 				GuiDraw.menu(graphics, font, "/pv  /profile", rx, y + 30, ink());
@@ -2424,9 +2423,9 @@ public class StrayScreen extends Screen {
 			}
 			case MENUS -> {
 				float y = sectionLabel(graphics, font, left, top, "Skyblock");
-				y = featureCard(graphics, font, left, y, col, cardHeight(7), "Menus");
-				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Loadouts menu", config.loadoutsMenuEnabled, v -> config.loadoutsMenuEnabled = v);
-				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Wardrobe menu", config.wardrobeMenuEnabled, v -> config.wardrobeMenuEnabled = v);
+				y = controlCard(graphics, font, left, y, col, mouseX, mouseY, "Loadouts menu", config.loadoutsMenuEnabled, v -> config.loadoutsMenuEnabled = v, Feature.LOADOUTS);
+				y = controlCard(graphics, font, left, y, col, mouseX, mouseY, "Wardrobe menu", config.wardrobeMenuEnabled, v -> config.wardrobeMenuEnabled = v, Feature.WARDROBE);
+				y = featureCard(graphics, font, left, y, col, cardHeight(5), "Menus");
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Profile viewer", config.profileViewerEnabled, v -> config.profileViewerEnabled = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Storage preview", config.storagePreviewEnabled, v -> config.storagePreviewEnabled = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Preview needs Shift", config.storagePreviewHoldShift, v -> config.storagePreviewHoldShift = v);
@@ -2443,9 +2442,13 @@ public class StrayScreen extends Screen {
 				float y = sectionLabel(graphics, font, left, top, "Binds");
 				y = featureCard(graphics, font, left, y, col, cardHeight(4), "Keybinds");
 				drawMenuKeybinds(graphics, font, ix, y, iw, mouseX, mouseY);
-				y = sectionLabel(graphics, font, right, top, "Slots");
-				y = featureCard(graphics, font, right, y, col, cardHeight(9), "Loadouts / wardrobe");
-				drawSlotKeybinds(graphics, font, rx, y, iw, mouseX, mouseY);
+				y = sectionLabel(graphics, font, right, top, "Chat");
+				y = featureCard(graphics, font, right, y, col, cardHeight(5), "Commands");
+				GuiDraw.menu(graphics, font, "/loadouts  /ld", rx, y + 2, ink());
+				GuiDraw.menu(graphics, font, "/wardrobe  /wd", rx, y + 16, ink());
+				GuiDraw.menu(graphics, font, "/pv  /profile", rx, y + 30, ink());
+				GuiDraw.menu(graphics, font, "/autoclicker add left", rx, y + 44, ink());
+				GuiDraw.menu(graphics, font, MenuSlotBinds.hint() + " equips and closes", rx, y + 58, fade());
 			}
 			case STATUS -> {
 				float y = sectionLabel(graphics, font, left, top, "Server");
@@ -3235,6 +3238,9 @@ public class StrayScreen extends Screen {
 				y = slider(graphics, font, ix, y, iw, "Size", Math.round(visuals.nametagScale * 100) + "%", (visuals.nametagScale - 0.50f) / 1.50f, v -> visuals.nametagScale = StrayConfig.clamp(0.50f + v * 1.50f, 0.50f, 2.00f));
 				y = slider(graphics, font, ix, y, iw, "Opacity", Math.round(visuals.nametagOpacity * 100) + "%", (visuals.nametagOpacity - 0.15f) / 0.85f, v -> visuals.nametagOpacity = StrayConfig.clamp(0.15f + v * 0.85f, 0.15f, 1f));
 				slider(graphics, font, ix, y, iw, "Range", visuals.nametagRange + "m", (visuals.nametagRange - 64) / 192f, v -> visuals.nametagRange = StrayConfig.clamp(64 + Math.round(v * 192f), 64, 256));
+			}
+			case LOADOUTS, WARDROBE -> {
+				drawSlotKeybinds(graphics, font, ix, y, iw, mouseX, mouseY);
 			}
 			case NODES -> {
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Only in The End", config.onlyInTheEnd, v -> config.onlyInTheEnd = v);
