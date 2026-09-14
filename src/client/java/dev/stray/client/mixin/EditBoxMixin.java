@@ -3,9 +3,12 @@ package dev.stray.client.mixin;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import com.mojang.blaze3d.pipeline.RenderPipeline;
+import dev.stray.client.ui.ChatChrome;
 import dev.stray.client.ui.MenuChrome;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.EditBox;
+import net.minecraft.client.gui.screens.ChatScreen;
 import net.minecraft.resources.Identifier;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -17,7 +20,16 @@ public abstract class EditBoxMixin {
 	@Inject(method = "extractWidgetRenderState", at = @At("HEAD"))
 	private void stray$field(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float delta, CallbackInfo ci) {
 		EditBox self = (EditBox) (Object) this;
-		if (!MenuChrome.enabled() || !self.isVisible() || !self.isBordered()) {
+		if (!self.isVisible()) {
+			return;
+		}
+		if (ChatChrome.enabled()) {
+			ChatChrome.field(graphics, self);
+			if (Minecraft.getInstance().screen instanceof ChatScreen) {
+				return;
+			}
+		}
+		if (!MenuChrome.enabled() || !self.isBordered()) {
 			return;
 		}
 		MenuChrome.field(graphics, self);
