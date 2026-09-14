@@ -66,13 +66,12 @@ public final class ChatChrome {
 		float x = 4f * scale - PAD;
 		float y = graphics.guiHeight() - 40f - rows * lineH * scale - PAD;
 		float radius = Math.min(12f, Math.min(w, h) * 0.12f);
-		int fill = ControlChrome.windowFill();
-		if (!focused) {
-			fill = Theme.withAlpha(fill, Math.round(((fill >>> 24) & 0xFF) * visible.alpha));
+		int fill = chatFill(focused, visible.alpha);
+		if (focused) {
+			GuiFrostBlur.blitWindow(graphics, x, y, w, h, radius);
 		}
-		GuiFrostBlur.blitWindow(graphics, x, y, w, h, radius);
 		GuiDraw.roundedFine(graphics, x, y, w, h, radius, fill);
-		GuiDraw.roundedOutline(graphics, x, y, w, h, radius, Theme.LINE, 1f);
+		GuiDraw.roundedOutline(graphics, x, y, w, h, radius, Theme.withAlpha(Theme.LINE, focused ? 180 : 110), 1f);
 		if (focused) {
 			scrollbar(graphics, access, x, y, w, h, page);
 		}
@@ -135,17 +134,24 @@ public final class ChatChrome {
 		GuiDraw.fill(graphics, x + w - 4f, by, 2f, bar, Theme.ACCENT);
 	}
 
+	private static int chatFill(boolean focused, float fade) {
+		float opacity = ControlChrome.paneOpacity();
+		float alpha = focused ? opacity * 0.48f : opacity * 0.28f * Mth.clamp(fade, 0f, 1f);
+		alpha = Mth.clamp(alpha, focused ? 0.16f : 0.08f, focused ? 0.42f : 0.30f);
+		return Theme.withAlpha(ControlChrome.paneRgb(), Math.round(alpha * 255f));
+	}
+
 	private static Visible visible(ChatComponentAccessor access, int ticks, boolean focused, int page) {
 		List<GuiMessage.Line> lines = access.stray$trimmedMessages();
 		if (lines == null || lines.isEmpty()) {
 			return Visible.NONE;
 		}
-		int last = lines.size() - access.stray$scroll() - 1;
-		int first = last - page + 1;
+		int scroll = access.stray$scroll();
+		int slots = Math.min(Math.max(0, lines.size() - scroll), page);
 		int count = 0;
 		float alpha = 0f;
-		for (int i = Math.max(0, first); i <= last && i < lines.size(); i++) {
-			GuiMessage.Line line = lines.get(i);
+		for (int slot = 0; slot < slots; slot++) {
+			GuiMessage.Line line = lines.get(slot + scroll);
 			float next = focused ? 1f : timeAlpha(ticks - line.addedTime());
 			if (next > 1.0E-5f) {
 				count++;
