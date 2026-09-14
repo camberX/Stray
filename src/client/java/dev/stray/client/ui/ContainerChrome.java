@@ -18,7 +18,7 @@ import net.minecraft.world.inventory.Slot;
  */
 public final class ContainerChrome {
 	private static final int SLOT = 18;
-	private static final int PAD = 14;
+	private static final int PAD = 8;
 	private static final int VANILLA_LABEL = 0xFF404040;
 	private static final int PLAYER_X1 = 26;
 	private static final int PLAYER_Y1 = 8;
@@ -57,7 +57,7 @@ public final class ContainerChrome {
 		float y = box.stray$topPos() - PAD;
 		float w = box.stray$imageWidth() + PAD * 2;
 		float h = box.stray$imageHeight() + PAD * 2;
-		float radius = Math.min(16f, Math.min(w, h) * 0.1f);
+		float radius = Math.min(12f, Math.min(w, h) * 0.08f);
 		GuiFrostBlur.blitWindow(graphics, x, y, w, h, radius);
 		GuiDraw.roundedFine(graphics, x, y, w, h, radius, ControlChrome.windowFill());
 		GuiDraw.roundedOutline(graphics, x, y, w, h, radius, Theme.LINE, 1f);
