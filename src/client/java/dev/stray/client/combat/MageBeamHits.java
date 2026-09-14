@@ -36,6 +36,8 @@ public final class MageBeamHits {
 	private static final List<Beam> BEAMS = new ArrayList<>();
 	private static final IntOpenHashSet SHOT_HITS = new IntOpenHashSet();
 	private static int windowUntil;
+	private static int clickId;
+	private static boolean attackHeld;
 
 	private MageBeamHits() {
 	}
@@ -44,6 +46,8 @@ public final class MageBeamHits {
 		BEAMS.clear();
 		SHOT_HITS.clear();
 		windowUntil = 0;
+		clickId = 0;
+		attackHeld = false;
 	}
 
 	public static void onAttack(Minecraft client) {
@@ -51,9 +55,15 @@ public final class MageBeamHits {
 			return;
 		}
 		if (client.player.isSpectator() || !active(client)) {
+			attackHeld = false;
 			return;
 		}
-		if (client.options.keyAttack.isDown() || client.player.swinging) {
+		boolean key = client.options.keyAttack.isDown();
+		if (key && !attackHeld) {
+			clickId++;
+		}
+		attackHeld = key;
+		if (key || client.player.swinging) {
 			windowUntil = Hitsound.gameTick() + WINDOW_TICKS;
 		}
 	}
@@ -92,16 +102,14 @@ public final class MageBeamHits {
 			beam.updateTick = tick;
 		} else if (tick <= windowUntil && fromStaff(player, point)) {
 			Beam live = liveOurs(tick);
-			if (live != null) {
+			if (live != null && live.clickId == clickId) {
 				if (live.has(point)) {
 					return;
 				}
-				// Duplicate send restarts at the staff. Keep the live volley;
-				// do not open a second beam that would miss or double-play.
 				return;
 			}
 			SHOT_HITS.clear();
-			beam = new Beam(point, tick, true);
+			beam = new Beam(point, tick, clickId);
 			BEAMS.add(beam);
 		} else {
 			return;
@@ -137,7 +145,7 @@ public final class MageBeamHits {
 		double bestScore = Double.MAX_VALUE;
 		for (int i = BEAMS.size() - 1; i >= 0; i--) {
 			Beam beam = BEAMS.get(i);
-			if (tick - beam.updateTick > BEAM_GAP) {
+			if (tick - beam.updateTick > BEAM_GAP || beam.clickId != clickId) {
 				continue;
 			}
 			double score = beam.matchScore(point);
@@ -169,13 +177,14 @@ public final class MageBeamHits {
 		}
 		for (Entity other : client.level.getEntities(player, search, entity -> Hitsound.isAbilityTarget(entity, player))) {
 			int id = other.getId();
-			if (SHOT_HITS.contains(id)) {
+			if (SHOT_HITS.contains(id) || beam.hitIds.contains(id)) {
 				continue;
 			}
 			AABB hitbox = other.getBoundingBox().inflate(HIT_INFLATE);
 			if (!clips(beam, hitbox, from, to)) {
 				continue;
 			}
+			beam.hitIds.add(id);
 			SHOT_HITS.add(id);
 			Hitsound.onAbilityHit(other);
 		}
@@ -214,13 +223,15 @@ public final class MageBeamHits {
 
 	private static final class Beam {
 		private final List<Vec3> points = new ArrayList<>();
-		private boolean ours;
+		private final IntOpenHashSet hitIds = new IntOpenHashSet();
+		private final int clickId;
+		private boolean ours = true;
 		private int updateTick;
 
-		private Beam(Vec3 first, int tick, boolean ours) {
+		private Beam(Vec3 first, int tick, int clickId) {
 			this.points.add(first);
 			this.updateTick = tick;
-			this.ours = ours;
+			this.clickId = clickId;
 		}
 
 		private boolean has(Vec3 point) {
@@ -272,7 +283,7 @@ public final class MageBeamHits {
 				return point.distanceToSqr(last) <= GAP_SPACE_SQ;
 			}
 			double t = point.subtract(first).dot(along) / along.lengthSqr();
-			return t >= -0.15 && t <= 1.35;
+			return t >= 0.75 && t <= 1.45;
 		}
 
 		private double distToLineSq(Vec3 point) {
