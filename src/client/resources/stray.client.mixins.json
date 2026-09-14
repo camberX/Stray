@@ -15,6 +15,7 @@
 		"AvatarRendererMixin",
 		"BossHealthOverlayAccessor",
 		"CameraMixin",
+		"ChatComponentAccessor",
 		"ChatComponentMixin",
 		"ChatScreenMixin",
 		"ClientClockManagerMixin",

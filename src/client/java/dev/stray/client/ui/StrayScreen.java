@@ -366,6 +366,8 @@ public class StrayScreen extends Screen {
 		new SearchEntry("Backpack preview", Tab.MENUS, "Menus"),
 		new SearchEntry("Ender Chest preview", Tab.MENUS, "Menus"),
 		new SearchEntry("Themed GUIs", Tab.MENUS, "Menus"),
+		new SearchEntry("Themed chat", Tab.MENUS, "Menus"),
+		new SearchEntry("Custom chat", Tab.MENUS, "Menus"),
 		new SearchEntry("Stray GUIs", Tab.MENUS, "Menus"),
 		new SearchEntry("Inventory look", Tab.MENUS, "Menus"),
 		new SearchEntry("Chest theme", Tab.MENUS, "Menus"),
@@ -2211,18 +2213,19 @@ public class StrayScreen extends Screen {
 				toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Paths", config.pathsEnabled, v -> config.pathsEnabled = v, Feature.PATHS);
 			}
 			case MENUS -> {
-				float y = featureCard(graphics, font, left, top, col, cardHeight(8), "Menus");
+				float y = featureCard(graphics, font, left, top, col, cardHeight(9), "Menus");
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Loadouts menu", config.loadoutsMenuEnabled, v -> config.loadoutsMenuEnabled = v, Feature.LOADOUTS);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Wardrobe menu", config.wardrobeMenuEnabled, v -> config.wardrobeMenuEnabled = v, Feature.WARDROBE);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Profile viewer", config.profileViewerEnabled, v -> config.profileViewerEnabled = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Storage preview", config.storagePreviewEnabled, v -> config.storagePreviewEnabled = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Preview needs Shift", config.storagePreviewHoldShift, v -> config.storagePreviewHoldShift = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Themed GUIs", config.themedGuisEnabled, v -> config.themedGuisEnabled = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Themed chat", config.themedChatEnabled, v -> config.themedChatEnabled = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Open animation", config.loadoutsOpenAnim, v -> config.loadoutsOpenAnim = v);
 				toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Disabled potions", config.disabledPotionsHighlight, v -> config.disabledPotionsHighlight = v);
 
 				float experimentsH = cardHeight(1 + Feature.AUTO_EXPERIMENTS.rows());
-				y = featureCard(graphics, font, left, top + cardHeight(8) + 8, col, experimentsH, "Auto experiments");
+				y = featureCard(graphics, font, left, top + cardHeight(9) + 8, col, experimentsH, "Auto experiments");
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Enable", config.autoExperimentsEnabled, v -> config.autoExperimentsEnabled = v);
 				drawFeatureFields(graphics, font, mouseX, mouseY, ix, y, iw, Feature.AUTO_EXPERIMENTS);
 
@@ -2435,11 +2438,12 @@ public class StrayScreen extends Screen {
 				float y = sectionLabel(graphics, font, left, top, "Skyblock");
 				y = controlCard(graphics, font, left, y, col, mouseX, mouseY, "Loadouts menu", config.loadoutsMenuEnabled, v -> config.loadoutsMenuEnabled = v, Feature.LOADOUTS);
 				y = controlCard(graphics, font, left, y, col, mouseX, mouseY, "Wardrobe menu", config.wardrobeMenuEnabled, v -> config.wardrobeMenuEnabled = v, Feature.WARDROBE);
-				y = featureCard(graphics, font, left, y, col, cardHeight(6), "Menus");
+				y = featureCard(graphics, font, left, y, col, cardHeight(7), "Menus");
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Profile viewer", config.profileViewerEnabled, v -> config.profileViewerEnabled = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Storage preview", config.storagePreviewEnabled, v -> config.storagePreviewEnabled = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Preview needs Shift", config.storagePreviewHoldShift, v -> config.storagePreviewHoldShift = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Themed GUIs", config.themedGuisEnabled, v -> config.themedGuisEnabled = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Themed chat", config.themedChatEnabled, v -> config.themedChatEnabled = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Open animation", config.loadoutsOpenAnim, v -> config.loadoutsOpenAnim = v);
 				toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Disabled potions", config.disabledPotionsHighlight, v -> config.disabledPotionsHighlight = v);
 				y = sectionLabel(graphics, font, right, top, "Experiments");
