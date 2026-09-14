@@ -2,6 +2,7 @@ package dev.stray.client.combat;
 
 import dev.stray.client.config.StrayConfig;
 import dev.stray.client.location.SkyblockLocation;
+import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.core.particles.ParticleType;
@@ -31,6 +32,7 @@ public final class MageBeamHits {
 	private static final int BEAM_TTL = 24;
 
 	private static final List<Beam> BEAMS = new ArrayList<>();
+	private static final IntOpenHashSet SHOT_HITS = new IntOpenHashSet();
 	private static int windowUntil;
 
 	private MageBeamHits() {
@@ -38,6 +40,7 @@ public final class MageBeamHits {
 
 	public static void reset() {
 		BEAMS.clear();
+		SHOT_HITS.clear();
 		windowUntil = 0;
 	}
 
@@ -56,6 +59,9 @@ public final class MageBeamHits {
 	public static void tick(Minecraft client) {
 		onAttack(client);
 		int tick = Hitsound.gameTick();
+		if (tick > windowUntil) {
+			SHOT_HITS.clear();
+		}
 		Iterator<Beam> it = BEAMS.iterator();
 		while (it.hasNext()) {
 			if (tick - it.next().updateTick > BEAM_TTL) {
@@ -83,6 +89,9 @@ public final class MageBeamHits {
 			if (tick > windowUntil || !fromStaff(player, point)) {
 				return;
 			}
+			if (liveOurs(tick)) {
+				return;
+			}
 			beam = new Beam(point, tick, true);
 			BEAMS.add(beam);
 		} else if (beam.points.getLast().distanceToSqr(point) <= DUP_SQ) {
@@ -103,6 +112,16 @@ public final class MageBeamHits {
 		return Math.abs(point.y - player.getEyeY()) <= 1.15;
 	}
 
+	private static boolean liveOurs(int tick) {
+		for (int i = 0; i < BEAMS.size(); i++) {
+			Beam beam = BEAMS.get(i);
+			if (beam.ours && tick - beam.updateTick <= BEAM_GAP) {
+				return true;
+			}
+		}
+		return false;
+	}
+
 	private static Beam match(Vec3 point, int tick) {
 		Beam best = null;
 		for (int i = BEAMS.size() - 1; i >= 0; i--) {
@@ -118,21 +137,24 @@ public final class MageBeamHits {
 	}
 
 	private static void hit(Minecraft client, LocalPlayer player, Beam beam) {
-		Vec3 first = beam.points.getFirst();
-		Vec3 last = beam.points.getLast();
-		Vec3 along = last.subtract(first);
-		if (along.lengthSqr() < 0.04) {
-			return;
-		}
-		Vec3 dir = along.normalize();
-		Vec3 from = player.distanceToSqr(first) <= OURS_SQ ? player.getEyePosition() : first;
-		Vec3 to = last.add(dir.scale(1.15));
-		AABB search = new AABB(from, to).inflate(HIT_INFLATE + 0.35);
+		int n = beam.points.size();
+		Vec3 from = beam.points.get(n - 2);
+		Vec3 last = beam.points.get(n - 1);
+		Vec3 step = last.subtract(from);
+		Vec3 to = step.lengthSqr() < 1.0E-8 ? last : last.add(step.normalize().scale(0.35));
+		AABB search = new AABB(from, to).inflate(HIT_INFLATE);
 		for (Entity other : client.level.getEntities(player, search, entity -> Hitsound.isAbilityTarget(entity, player))) {
-			AABB hitbox = other.getBoundingBox().inflate(HIT_INFLATE);
-			if (!hitbox.contains(from) && !hitbox.contains(to) && hitbox.clip(from, to).isEmpty()) {
+			int id = other.getId();
+			if (SHOT_HITS.contains(id) || beam.hitIds.contains(id)) {
 				continue;
 			}
+			AABB hitbox = other.getBoundingBox().inflate(HIT_INFLATE);
+			if (!hitbox.contains(from) && !hitbox.contains(to) && !hitbox.contains(last)
+					&& hitbox.clip(from, to).isEmpty()) {
+				continue;
+			}
+			beam.hitIds.add(id);
+			SHOT_HITS.add(id);
 			Hitsound.onAbilityHit(other);
 		}
 	}
@@ -153,6 +175,7 @@ public final class MageBeamHits {
 
 	private static final class Beam {
 		private final List<Vec3> points = new ArrayList<>();
+		private final IntOpenHashSet hitIds = new IntOpenHashSet();
 		private boolean ours;
 		private int updateTick;
 
