@@ -18,12 +18,13 @@ import net.minecraft.world.inventory.Slot;
  */
 public final class ContainerChrome {
 	private static final int SLOT = 18;
+	private static final int PAD = 14;
 	private static final int VANILLA_LABEL = 0xFF404040;
-	private static final int PLAYER_X1 = 32;
-	private static final int PLAYER_Y1 = 4;
-	private static final int PLAYER_X2 = 80;
-	private static final int PLAYER_Y2 = 82;
-	private static final int PLAYER_SCALE = 38;
+	private static final int PLAYER_X1 = 26;
+	private static final int PLAYER_Y1 = 8;
+	private static final int PLAYER_X2 = 75;
+	private static final int PLAYER_Y2 = 78;
+	private static final int PLAYER_SCALE = 30;
 
 	private static boolean hideVanilla;
 
@@ -52,22 +53,24 @@ public final class ContainerChrome {
 		}
 		Theme.refresh();
 		AbstractContainerScreenAccessor box = (AbstractContainerScreenAccessor) container;
-		float x = box.stray$leftPos();
-		float y = box.stray$topPos();
-		float w = box.stray$imageWidth();
-		float h = box.stray$imageHeight();
-		float radius = Math.min(ControlChrome.WINDOW_R, Math.min(w, h) * 0.14f);
+		float x = box.stray$leftPos() - PAD;
+		float y = box.stray$topPos() - PAD;
+		float w = box.stray$imageWidth() + PAD * 2;
+		float h = box.stray$imageHeight() + PAD * 2;
+		float radius = Math.min(16f, Math.min(w, h) * 0.1f);
 		GuiFrostBlur.blitWindow(graphics, x, y, w, h, radius);
 		GuiDraw.roundedFine(graphics, x, y, w, h, radius, ControlChrome.windowFill());
 		GuiDraw.roundedOutline(graphics, x, y, w, h, radius, Theme.LINE, 1f);
+		int left = box.stray$leftPos();
+		int top = box.stray$topPos();
 		for (Slot slot : container.getMenu().slots) {
 			if (slot == null || !slot.isActive()) {
 				continue;
 			}
 			GuiDraw.well(
 				graphics,
-				x + slot.x - 1,
-				y + slot.y - 1,
+				left + slot.x - 1,
+				top + slot.y - 1,
 				SLOT,
 				Theme.TRACK,
 				Theme.LINE
