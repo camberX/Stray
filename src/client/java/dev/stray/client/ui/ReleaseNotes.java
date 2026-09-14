@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.283", new String[]{
+			"Themed GUIs skip the vanilla inventory texture so corners stay clean, frost the pane, and keep the 3D player in survival inventory."
+		}),
 		new Entry("1.2.282", new String[]{
 			"Themed GUIs (off by default, Misc → Menus) restyles chests and inventories to Stray. Hovered slots outline in accent instead of the vanilla white overlay."
 		}),
