@@ -31,25 +31,25 @@ import java.util.Optional;
 public final class AutoUpdate implements PreLaunchEntrypoint {
 	private static final String DOWNLOAD = UpdateMeta.SHOP + "/download";
 	private static final long MAX_BYTES = 96L * 1024L * 1024L;
+	private static volatile boolean launchChecked;
 
 	@Override
 	public void onPreLaunch() {
-		if (!enabled()) {
-			Path current = currentJar();
-			if (current != null && current.getParent() != null) {
-				sweep(current.getParent(), current);
-			}
+		launchChecked = true;
+		boolean on = enabled();
+		if (!on) {
+			log("Auto-update is off.");
 			return;
 		}
 		String installed = installedVersion();
+		log("Checking stray.gay for a newer jar (you have " + (installed.isEmpty() ? "unknown" : installed) + ")…");
+		Path mods = modsDir();
 		Path current = currentJar();
 		if (current == null) {
-			log("Auto-update skipped (dev run, not a jar).");
-			return;
+			current = newestJar(mods);
 		}
-		Path mods = current.getParent();
 		Path newest = newestJar(mods);
-		if (newest != null && !newest.equals(current)) {
+		if (newest != null && current != null && !newest.equals(current)) {
 			String onDisk = jarVersion(newest);
 			if (onDisk != null && UpdateMeta.compare(onDisk, installed) > 0) {
 				log("Newer jar " + onDisk + " is already in mods. Closing so it can load.");
@@ -63,8 +63,6 @@ public final class AutoUpdate implements PreLaunchEntrypoint {
 				return;
 			}
 		}
-		sweep(mods, current);
-		log("Checking stray.gay for a newer jar (you have " + installed + ")…");
 		String next = installNewer(true);
 		if (next == null) {
 			return;
@@ -84,9 +82,38 @@ public final class AutoUpdate implements PreLaunchEntrypoint {
 		}
 		try (Reader reader = Files.newBufferedReader(path)) {
 			JsonObject json = JsonParser.parseReader(reader).getAsJsonObject();
-			return json.has("autoUpdate") && json.get("autoUpdate").getAsBoolean();
+			if (!json.has("autoUpdate") || json.get("autoUpdate").isJsonNull()) {
+				return false;
+			}
+			var value = json.get("autoUpdate");
+			if (value.isJsonPrimitive() && value.getAsJsonPrimitive().isBoolean()) {
+				return value.getAsBoolean();
+			}
+			if (value.isJsonPrimitive() && value.getAsJsonPrimitive().isNumber()) {
+				return value.getAsInt() != 0;
+			}
+			return "true".equalsIgnoreCase(value.getAsString().trim());
 		} catch (Exception ignored) {
 			return false;
+		}
+	}
+
+	/** Backup if PreLaunch never ran (some client-only loaders skip it). */
+	public static void clientLaunchCheck() {
+		if (launchChecked) {
+			return;
+		}
+		launchChecked = true;
+		if (!enabled()) {
+			log("Auto-update is off.");
+			return;
+		}
+		String installed = installedVersion();
+		log("Checking stray.gay for a newer jar (you have " + (installed.isEmpty() ? "unknown" : installed) + ")…");
+		String next = installNewer(true);
+		if (next != null) {
+			log("Updated to " + next + ". Closing Minecraft.");
+			killGame();
 		}
 	}
 
@@ -96,9 +123,13 @@ public final class AutoUpdate implements PreLaunchEntrypoint {
 	 * @return the new version, or {@code null} if nothing was installed
 	 */
 	public static String installNewer(boolean closeGame) {
+		Path mods = modsDir();
 		Path current = currentJar();
 		if (current == null) {
-			return null;
+			current = newestJar(mods);
+		}
+		if (current == null) {
+			current = mods.resolve("stray.jar");
 		}
 		String installed = installedVersion();
 		try {
@@ -107,7 +138,7 @@ public final class AutoUpdate implements PreLaunchEntrypoint {
 				log("No update info.");
 				return null;
 			}
-			if (UpdateMeta.compare(remote.version, installed) <= 0) {
+			if (!installed.isEmpty() && UpdateMeta.compare(remote.version, installed) <= 0) {
 				log("Already up to date (" + installed + ").");
 				return null;
 			}
@@ -118,7 +149,7 @@ public final class AutoUpdate implements PreLaunchEntrypoint {
 			}
 			Path dest = apply(current, remote);
 			if (dest == null) {
-				log("Update failed. Continuing with " + installed + ".");
+				log("Update failed. Continuing with " + (installed.isEmpty() ? "this build" : installed) + ".");
 				return null;
 			}
 			return remote.version;
@@ -138,7 +169,20 @@ public final class AutoUpdate implements PreLaunchEntrypoint {
 
 	private static Path currentJar() {
 		Optional<ModContainer> container = FabricLoader.getInstance().getModContainer(Stray.MOD_ID);
-		return container.isEmpty() ? null : jarPath(container.get());
+		if (container.isEmpty()) {
+			return newestJar(modsDir());
+		}
+		Path path = jarPath(container.get());
+		return path != null ? path : newestJar(modsDir());
+	}
+
+	private static Path modsDir() {
+		Path mods = FabricLoader.getInstance().getGameDir().resolve("mods");
+		try {
+			Files.createDirectories(mods);
+		} catch (Exception ignored) {
+		}
+		return mods.toAbsolutePath().normalize();
 	}
 
 	private static Path newestJar(Path mods) {
@@ -172,11 +216,25 @@ public final class AutoUpdate implements PreLaunchEntrypoint {
 			return null;
 		}
 		Path path = paths.getFirst();
-		if (path == null || !Files.isRegularFile(path)) {
+		if (path == null) {
 			return null;
 		}
-		String name = path.getFileName().toString().toLowerCase(Locale.ROOT);
-		return name.endsWith(".jar") ? path.toAbsolutePath().normalize() : null;
+		path = path.toAbsolutePath().normalize();
+		if (Files.isRegularFile(path)) {
+			String name = path.getFileName().toString().toLowerCase(Locale.ROOT);
+			if (name.endsWith(".jar") || branded(path)) {
+				return path;
+			}
+		}
+		Path parent = path.getParent();
+		while (parent != null) {
+			String name = parent.getFileName() == null ? "" : parent.getFileName().toString().toLowerCase(Locale.ROOT);
+			if (name.endsWith(".jar") && Files.isRegularFile(parent)) {
+				return parent;
+			}
+			parent = parent.getParent();
+		}
+		return null;
 	}
 
 	private static Remote fetchRemote() {
@@ -238,7 +296,7 @@ public final class AutoUpdate implements PreLaunchEntrypoint {
 	}
 
 	private static Path apply(Path current, Remote remote) throws Exception {
-		Path mods = current.getParent() == null ? null : current.getParent().toAbsolutePath().normalize();
+		Path mods = current.getParent() == null ? modsDir() : current.getParent().toAbsolutePath().normalize();
 		if (mods == null) {
 			return null;
 		}
