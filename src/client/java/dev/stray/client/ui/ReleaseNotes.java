@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.280", new String[]{
+			"Loadout and wardrobe slots can use custom keys. Defaults stay 1-9; remap them under Misc → Keys."
+		}),
 		new Entry("1.2.279", new String[]{
 			"Skill progress HUD starts with the action-bar gain (+9.2), then the skill item and current/needed XP, and stays on while enabled."
 		}),

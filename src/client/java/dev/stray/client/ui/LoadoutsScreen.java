@@ -1,6 +1,5 @@
 package dev.stray.client.ui;
 
-import com.mojang.blaze3d.platform.InputConstants;
 import dev.stray.client.config.StrayConfig;
 import dev.stray.client.StrayClient;
 import dev.stray.client.item.LoadoutsMenus;
@@ -482,7 +481,7 @@ public class LoadoutsScreen extends Screen {
 			}
 			cx += WELL + 4;
 		}
-		GuiDraw.small(graphics, font, "1-9 equip · Right-click to edit", x + 8, y + h - 14, Theme.MUTED);
+		GuiDraw.small(graphics, font, MenuSlotBinds.hint() + " equip · Right-click to edit", x + 8, y + h - 14, Theme.MUTED);
 	}
 
 	private List<LoadoutsMenus.Piece> labeledContents() {
@@ -750,22 +749,12 @@ public class LoadoutsScreen extends Screen {
 			onClose();
 			return true;
 		}
-		int index = hotkeyIndex(event.key());
+		int index = MenuSlotBinds.index(event.key());
 		if (index >= 0) {
 			equipLoadout(index);
 			return true;
 		}
 		return super.keyPressed(event);
-	}
-
-	private static int hotkeyIndex(int key) {
-		if (key >= InputConstants.KEY_1 && key <= InputConstants.KEY_9) {
-			return key - InputConstants.KEY_1;
-		}
-		if (key >= InputConstants.KEY_NUMPAD1 && key <= InputConstants.KEY_NUMPAD9) {
-			return key - InputConstants.KEY_NUMPAD1;
-		}
-		return -1;
 	}
 
 	private void equipLoadout(int index) {
