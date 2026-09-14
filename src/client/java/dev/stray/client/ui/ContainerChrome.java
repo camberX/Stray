@@ -18,7 +18,6 @@ import net.minecraft.world.inventory.Slot;
  */
 public final class ContainerChrome {
 	private static final int SLOT = 16;
-	private static final float SLOT_R = 4f;
 	private static final int PAD = 8;
 	private static final int VANILLA_LABEL = 0xFF404040;
 	private static final int PLAYER_X1 = 26;
@@ -68,10 +67,7 @@ public final class ContainerChrome {
 			if (slot == null || !slot.isActive()) {
 				continue;
 			}
-			int sx = left + slot.x;
-			int sy = top + slot.y;
-			GuiDraw.rounded(graphics, sx, sy, SLOT, SLOT, SLOT_R, Theme.PANEL);
-			GuiDraw.roundedOutline(graphics, sx, sy, SLOT, SLOT, SLOT_R, Theme.LINE, 1f);
+			GuiDraw.well(graphics, left + slot.x, top + slot.y, SLOT, Theme.PANEL, Theme.LINE);
 		}
 		player(graphics, container, box);
 	}
@@ -81,7 +77,7 @@ public final class ContainerChrome {
 			return;
 		}
 		Theme.refresh();
-		GuiDraw.roundedOutline(graphics, hovered.x, hovered.y, SLOT, SLOT, SLOT_R, Theme.ACCENT, 1f);
+		GuiDraw.wellBorder(graphics, hovered.x, hovered.y, SLOT, Theme.ACCENT);
 	}
 
 	public static int labelColor(int color) {
