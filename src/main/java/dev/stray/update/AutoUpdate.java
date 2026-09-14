@@ -34,51 +34,46 @@ public final class AutoUpdate implements PreLaunchEntrypoint {
 
 	@Override
 	public void onPreLaunch() {
-		Optional<ModContainer> container = FabricLoader.getInstance().getModContainer(Stray.MOD_ID);
-		if (container.isEmpty()) {
+		if (!enabled()) {
+			Path current = currentJar();
+			if (current != null && current.getParent() != null) {
+				sweep(current.getParent(), current);
+			}
 			return;
 		}
-		Path current = jarPath(container.get());
+		String installed = installedVersion();
+		Path current = currentJar();
 		if (current == null) {
-			if (enabled()) {
-				log("Auto-update skipped (dev run, not a jar).");
-			}
+			log("Auto-update skipped (dev run, not a jar).");
 			return;
 		}
 		Path mods = current.getParent();
-		if (mods != null) {
-			sweep(mods, current);
+		Path newest = newestJar(mods);
+		if (newest != null && !newest.equals(current)) {
+			String onDisk = jarVersion(newest);
+			if (onDisk != null && UpdateMeta.compare(onDisk, installed) > 0) {
+				log("Newer jar " + onDisk + " is already in mods. Closing so it can load.");
+				try {
+					for (Path old : staleJars(mods, newest)) {
+						retire(old);
+					}
+				} catch (Exception ignored) {
+				}
+				killGame();
+				return;
+			}
 		}
-		if (!enabled()) {
+		sweep(mods, current);
+		log("Checking stray.gay for a newer jar (you have " + installed + ")…");
+		String next = installNewer(true);
+		if (next == null) {
 			return;
 		}
-		String installed = container.get().getMetadata().getVersion().getFriendlyString();
-		log("Checking stray.gay for a newer jar (you have " + installed + ")…");
-		try {
-			Remote remote = fetchRemote();
-			if (remote == null) {
-				log("No update info. Continuing launch.");
-				return;
-			}
-			if (UpdateMeta.compare(remote.version, installed) <= 0) {
-				log("Already up to date (" + installed + ").");
-				return;
-			}
-			log("Found " + remote.version + ". Downloading and closing Minecraft so the new jar can load.");
-			Path dest = apply(current, remote);
-			if (dest == null) {
-				log("Update failed. Continuing with " + installed + ".");
-				return;
-			}
-			log("Updated to " + remote.version + " at " + dest.getFileName() + ". Closing Minecraft.");
-			killGame();
-		} catch (Exception exception) {
-			log("Update check failed: " + exception.getMessage());
-			Stray.LOGGER.warn("Auto-update failed", exception);
-		}
+		log("Updated to " + next + ". Closing Minecraft.");
+		killGame();
 	}
 
-	private static boolean enabled() {
+	public static boolean enabled() {
 		Path dir = FabricLoader.getInstance().getConfigDir();
 		Path path = dir.resolve("stray.json");
 		if (!Files.isRegularFile(path)) {
@@ -93,6 +88,82 @@ public final class AutoUpdate implements PreLaunchEntrypoint {
 		} catch (Exception ignored) {
 			return false;
 		}
+	}
+
+	/**
+	 * Download a newer jar into {@code mods} when one exists.
+	 *
+	 * @return the new version, or {@code null} if nothing was installed
+	 */
+	public static String installNewer(boolean closeGame) {
+		Path current = currentJar();
+		if (current == null) {
+			return null;
+		}
+		String installed = installedVersion();
+		try {
+			Remote remote = fetchRemote();
+			if (remote == null) {
+				log("No update info.");
+				return null;
+			}
+			if (UpdateMeta.compare(remote.version, installed) <= 0) {
+				log("Already up to date (" + installed + ").");
+				return null;
+			}
+			if (closeGame) {
+				log("Found " + remote.version + ". Downloading and closing Minecraft so the new jar can load.");
+			} else {
+				log("Found " + remote.version + ". Downloading. Restart Minecraft to load it.");
+			}
+			Path dest = apply(current, remote);
+			if (dest == null) {
+				log("Update failed. Continuing with " + installed + ".");
+				return null;
+			}
+			return remote.version;
+		} catch (Exception exception) {
+			log("Update check failed: " + exception.getMessage());
+			Stray.LOGGER.warn("Auto-update failed", exception);
+			return null;
+		}
+	}
+
+	private static String installedVersion() {
+		return FabricLoader.getInstance()
+			.getModContainer(Stray.MOD_ID)
+			.map(container -> container.getMetadata().getVersion().getFriendlyString())
+			.orElse("");
+	}
+
+	private static Path currentJar() {
+		Optional<ModContainer> container = FabricLoader.getInstance().getModContainer(Stray.MOD_ID);
+		return container.isEmpty() ? null : jarPath(container.get());
+	}
+
+	private static Path newestJar(Path mods) {
+		if (mods == null || !Files.isDirectory(mods)) {
+			return null;
+		}
+		Path best = null;
+		String version = null;
+		try (DirectoryStream<Path> stream = Files.newDirectoryStream(mods, "*.jar")) {
+			for (Path path : stream) {
+				if (!branded(path)) {
+					continue;
+				}
+				String next = jarVersion(path);
+				if (next == null) {
+					continue;
+				}
+				if (version == null || UpdateMeta.compare(next, version) > 0) {
+					best = path.toAbsolutePath().normalize();
+					version = next;
+				}
+			}
+		} catch (Exception ignored) {
+		}
+		return best;
 	}
 
 	private static Path jarPath(ModContainer container) {
