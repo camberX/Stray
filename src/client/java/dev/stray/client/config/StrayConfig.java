@@ -165,6 +165,7 @@ public final class StrayConfig {
 	public boolean hitsoundEnabled = false;
 	public boolean hitsoundMelee = false;
 	public boolean hitsoundArrows = false;
+	public boolean hitsoundMage = false;
 	public boolean hitmarkerEnabled = false;
 	public boolean triggerbotEnabled = false;
 	public boolean triggerbotPlayers = false;
@@ -957,6 +958,9 @@ public final class StrayConfig {
 				}
 				if (!json.has("hitsoundArrows")) {
 					loaded.hitsoundArrows = false;
+				}
+				if (!json.has("hitsoundMage")) {
+					loaded.hitsoundMage = false;
 				}
 				if (!json.has("hitmarkerEnabled")) {
 					loaded.hitmarkerEnabled = false;

@@ -1,6 +1,7 @@
 package dev.stray.client.net;
 
 import dev.stray.client.combat.AutoExperiments;
+import dev.stray.client.combat.MageBeamHits;
 import dev.stray.client.farming.AutoDna;
 import dev.stray.client.menu.DisabledPotions;
 import dev.stray.client.mining.ChestEsp;
@@ -37,9 +38,10 @@ public final class ClientPackets {
 			double x = particles.getX();
 			double y = particles.getY();
 			double z = particles.getZ();
-			Minecraft.getInstance().execute(() ->
-				EnderNodeTracker.get().onParticle(x, y, z, options.getType())
-			);
+			Minecraft.getInstance().execute(() -> {
+				EnderNodeTracker.get().onParticle(x, y, z, options.getType());
+				MageBeamHits.onParticle(x, y, z, options.getType());
+			});
 		}
 		ChestEsp.onPacket(packet);
 		EspNamePackets.onPacket(packet);
