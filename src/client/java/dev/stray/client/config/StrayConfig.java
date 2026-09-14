@@ -151,6 +151,7 @@ public final class StrayConfig {
 	public String openWardrobeKey = "key.keyboard.unknown";
 	public String openProfileKey = "key.keyboard.unknown";
 	public String chestAimKey = "key.keyboard.unknown";
+	public String[] menuSlotKeys = defaultMenuSlotKeys();
 	public int chestEspRgb = 0xF4C14E;
 	public float chestEspOpacity = 0.34f;
 	public boolean loadoutsMenuEnabled = false;
@@ -1005,6 +1006,7 @@ public final class StrayConfig {
 				loaded.openWardrobeKey = blankKey(loaded.openWardrobeKey, "key.keyboard.unknown");
 				loaded.openProfileKey = blankKey(loaded.openProfileKey, "key.keyboard.unknown");
 				loaded.chestAimKey = blankKey(loaded.chestAimKey, "key.keyboard.unknown");
+				loaded.menuSlotKeys = normalizeMenuSlotKeys(loaded.menuSlotKeys);
 				if (!json.has("profileViewerEnabled")) {
 					loaded.profileViewerEnabled = false;
 				}
@@ -1636,6 +1638,43 @@ public final class StrayConfig {
 			case "midnight", "mid_night" -> Clock.MIDNIGHT;
 			default -> Clock.NO_CHANGE;
 		};
+	}
+
+	public static String[] defaultMenuSlotKeys() {
+		String[] keys = new String[9];
+		for (int i = 0; i < 9; i++) {
+			keys[i] = "key.keyboard." + (i + 1);
+		}
+		return keys;
+	}
+
+	public static String[] normalizeMenuSlotKeys(String[] raw) {
+		String[] keys = defaultMenuSlotKeys();
+		if (raw == null) {
+			return keys;
+		}
+		for (int i = 0; i < 9 && i < raw.length; i++) {
+			if (raw[i] != null && !raw[i].isBlank()) {
+				keys[i] = raw[i].trim();
+			}
+		}
+		return keys;
+	}
+
+	public String menuSlotKey(int index) {
+		String[] keys = normalizeMenuSlotKeys(menuSlotKeys);
+		if (index < 0 || index >= keys.length) {
+			return "key.keyboard.unknown";
+		}
+		return keys[index];
+	}
+
+	public void setMenuSlotKey(int index, String name) {
+		menuSlotKeys = normalizeMenuSlotKeys(menuSlotKeys);
+		if (index < 0 || index >= menuSlotKeys.length) {
+			return;
+		}
+		menuSlotKeys[index] = name == null || name.isBlank() ? "key.keyboard.unknown" : name;
 	}
 
 	public static String normalizeWorldTintMode(String mode) {

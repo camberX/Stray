@@ -344,6 +344,10 @@ public class StrayScreen extends Screen {
 		new SearchEntry("New version", Tab.SETTINGS, "Theme"),
 		new SearchEntry("Markers", Tab.NODES, "Nodes"),
 		new SearchEntry("Keybinds", Tab.KEYS, "Keys"),
+		new SearchEntry("Slot keys", Tab.KEYS, "Keys"),
+		new SearchEntry("Loadout slots", Tab.KEYS, "Keys"),
+		new SearchEntry("Wardrobe slots", Tab.KEYS, "Keys"),
+		new SearchEntry("1-9", Tab.KEYS, "Keys"),
 		new SearchEntry("Open menu", Tab.KEYS, "Keys"),
 		new SearchEntry("Menus", Tab.MENUS, "Menus"),
 		new SearchEntry("Loadouts", Tab.MENUS, "Menus"),
@@ -2211,14 +2215,17 @@ public class StrayScreen extends Screen {
 				drawFeatureFields(graphics, font, mouseX, mouseY, ix, y, iw, Feature.AUTO_EXPERIMENTS);
 
 				float bindsH = cardHeight(4);
+				float slotsH = cardHeight(9);
 				y = featureCard(graphics, font, right, top, col, bindsH, "Keybinds");
 				y = drawMenuKeybinds(graphics, font, rx, y, iw, mouseX, mouseY);
-				y = featureCard(graphics, font, right, top + bindsH + 8, col, cardHeight(5), "Commands");
+				y = featureCard(graphics, font, right, top + bindsH + 8, col, slotsH, "Slots");
+				y = drawSlotKeybinds(graphics, font, rx, y, iw, mouseX, mouseY);
+				y = featureCard(graphics, font, right, top + bindsH + slotsH + 16, col, cardHeight(5), "Commands");
 				GuiDraw.menu(graphics, font, "/loadouts  /ld", rx, y + 2, ink());
 				GuiDraw.menu(graphics, font, "/wardrobe  /wd", rx, y + 16, ink());
 				GuiDraw.menu(graphics, font, "/pv  /profile", rx, y + 30, ink());
 				GuiDraw.menu(graphics, font, "/autoclicker add left", rx, y + 44, ink());
-				GuiDraw.menu(graphics, font, "1-9 equips and closes", rx, y + 58, fade());
+				GuiDraw.menu(graphics, font, MenuSlotBinds.hint() + " equips and closes", rx, y + 58, fade());
 			}
 			case STATUS -> {
 				float y = featureCard(graphics, font, left, top, col, cardHeight(4), "Location");
@@ -2436,13 +2443,9 @@ public class StrayScreen extends Screen {
 				float y = sectionLabel(graphics, font, left, top, "Binds");
 				y = featureCard(graphics, font, left, y, col, cardHeight(4), "Keybinds");
 				drawMenuKeybinds(graphics, font, ix, y, iw, mouseX, mouseY);
-				y = sectionLabel(graphics, font, right, top, "Chat");
-				y = featureCard(graphics, font, right, y, col, cardHeight(5), "Commands");
-				GuiDraw.menu(graphics, font, "/loadouts  /ld", rx, y + 2, ink());
-				GuiDraw.menu(graphics, font, "/wardrobe  /wd", rx, y + 16, ink());
-				GuiDraw.menu(graphics, font, "/pv  /profile", rx, y + 30, ink());
-				GuiDraw.menu(graphics, font, "/autoclicker add left", rx, y + 44, ink());
-				GuiDraw.menu(graphics, font, "1-9 equips and closes", rx, y + 58, fade());
+				y = sectionLabel(graphics, font, right, top, "Slots");
+				y = featureCard(graphics, font, right, y, col, cardHeight(9), "Loadouts / wardrobe");
+				drawSlotKeybinds(graphics, font, rx, y, iw, mouseX, mouseY);
 			}
 			case STATUS -> {
 				float y = sectionLabel(graphics, font, left, top, "Server");
@@ -3282,6 +3285,22 @@ public class StrayScreen extends Screen {
 		return bindRow(graphics, font, x, y, w, mouseX, mouseY, "Profile", 7, OdinClicks.parseKey(config.openProfileKey));
 	}
 
+	private float drawSlotKeybinds(
+		GuiGraphicsExtractor graphics,
+		Font font,
+		float x,
+		float y,
+		float w,
+		int mouseX,
+		int mouseY
+	) {
+		StrayConfig config = StrayConfig.get();
+		for (int i = 0; i < 9; i++) {
+			y = bindRow(graphics, font, x, y, w, mouseX, mouseY, "Slot " + (i + 1), 20 + i, OdinClicks.parseKey(config.menuSlotKey(i)));
+		}
+		return y;
+	}
+
 	private float bindRow(
 		GuiGraphicsExtractor graphics,
 		Font font,
@@ -3341,6 +3360,7 @@ public class StrayScreen extends Screen {
 			case 7 -> config.openProfileKey = name;
 			case 8 -> config.blockMarkEditKey = name;
 			case 9 -> config.pathRecordKey = name;
+			case 20, 21, 22, 23, 24, 25, 26, 27, 28 -> config.setMenuSlotKey(bindListen - 20, name);
 		}
 		bindListen = 0;
 		config.save();
