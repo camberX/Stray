@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.308", new String[]{
+			"Themed chat while the screen is closed uses Theme frost. The slider at 0 leaves it clear; turning it up blurs the world under incoming messages."
+		}),
 		new Entry("1.2.307", new String[]{
 			"Themed chat outline is accent. The scrollbar is gone; mouse wheel still scrolls."
 		}),
