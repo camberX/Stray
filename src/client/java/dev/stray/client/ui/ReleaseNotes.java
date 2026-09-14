@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.307", new String[]{
+			"Themed chat outline is accent. The scrollbar is gone; mouse wheel still scrolls."
+		}),
 		new Entry("1.2.306", new String[]{
 			"Themed chat covers incoming HUD messages and uses a lighter glass while chat is closed. It was sizing the pane from the oldest lines, so new messages often had no chrome."
 		}),
