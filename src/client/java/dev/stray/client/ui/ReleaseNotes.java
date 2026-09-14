@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.302", new String[]{
+			"Mage beam still plays once per left-click. A second shot on the same high-HP mob plays again."
+		}),
 		new Entry("1.2.301", new String[]{
 			"Mage beam scores each spark segment once against living mobs, so extra sparks and nametag entities no longer play three more hits after the first."
 		}),
