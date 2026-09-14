@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.294", new String[]{
+			"Mage beam hitsound only fires when a firework spark is on the mob, not when the beam merely passes nearby."
+		}),
 		new Entry("1.2.293", new String[]{
 			"Hitsound Mage beam (off by default) treats dungeon staff firework sparks as hits. Mobs in or at the end of your left-click beam play the sound and hitmarker."
 		}),
