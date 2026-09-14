@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.297", new String[]{
+			"Mage beam hits follow Hypixel's firework chain (~0.5 apart, often sent twice) instead of look direction. The spark line through a mob hitbox counts; sheep still do not."
+		}),
 		new Entry("1.2.296", new String[]{
 			"Mage beam hits freeze aim on the click, test the real hitbox, and no longer wait for attack-speed delay, so a beam through a mob is consistent."
 		}),
