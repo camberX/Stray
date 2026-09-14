@@ -1,5 +1,6 @@
 package dev.stray.client.mixin;
 
+import dev.stray.client.ui.ContainerChrome;
 import dev.stray.client.visual.NickHider;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.network.chat.Component;
@@ -27,5 +28,25 @@ public class GuiGraphicsExtractorMixin {
 	)
 	private Component stray$nickComponent(Component text) {
 		return NickHider.rewrite(text);
+	}
+
+	@ModifyVariable(
+		method = "text(Lnet/minecraft/client/gui/Font;Lnet/minecraft/network/chat/Component;IIIZ)V",
+		at = @At("HEAD"),
+		argsOnly = true,
+		ordinal = 2
+	)
+	private int stray$containerLabel(int color) {
+		return ContainerChrome.labelColor(color);
+	}
+
+	@ModifyVariable(
+		method = "text(Lnet/minecraft/client/gui/Font;Ljava/lang/String;IIIZ)V",
+		at = @At("HEAD"),
+		argsOnly = true,
+		ordinal = 2
+	)
+	private int stray$containerLabelString(int color) {
+		return ContainerChrome.labelColor(color);
 	}
 }
