@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.3.6", new String[]{
+			"/stray farmkeys turns off when you change worlds, restoring Attack/Destroy, Jump, and sensitivity."
+		}),
 		new Entry("1.3.5", new String[]{
 			"Jacob contest HUD only shows while Jacob's Contest is on the scoreboard, not from the tab widget alone."
 		}),
