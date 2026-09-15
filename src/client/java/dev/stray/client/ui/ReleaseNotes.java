@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.3.0", new String[]{
+			"Version numbering rolls over every 100 patches. 1.2.320 is now 1.3.0; the next hundred lands on 1.4.0."
+		}),
 		new Entry("1.2.320", new String[]{
 			"Optional accent outlines. Theme can paint GUI and HUD panel rims in the accent color. Off by default."
 		}),
