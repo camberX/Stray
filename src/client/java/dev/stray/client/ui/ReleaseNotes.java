@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.3.8", new String[]{
+			"Accounts has space under Switch/Remove. Restore and login status sits under the title instead of on the buttons."
+		}),
 		new Entry("1.3.7", new String[]{
 			"Title Accounts manager. Microsoft device-code login, saved accounts, session tokens, and switch without leaving the menu."
 		}),
