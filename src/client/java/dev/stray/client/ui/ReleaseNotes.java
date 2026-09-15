@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.3.7", new String[]{
+			"Title Accounts manager. Microsoft device-code login, saved accounts, session tokens, and switch without leaving the menu."
+		}),
 		new Entry("1.3.6", new String[]{
 			"/stray farmkeys turns off when you change worlds, restoring Attack/Destroy, Jump, and sensitivity."
 		}),

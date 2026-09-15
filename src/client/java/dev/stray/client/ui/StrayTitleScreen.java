@@ -1,6 +1,7 @@
 package dev.stray.client.ui;
 
 import com.mojang.realmsclient.RealmsMainScreen;
+import dev.stray.client.account.AccountStore;
 import dev.stray.client.render.GuiDraw;
 import dev.stray.client.render.TitleBackdrop;
 import net.fabricmc.loader.api.FabricLoader;
@@ -50,6 +51,7 @@ public class StrayTitleScreen extends Screen {
 		Theme.refresh();
 		appear = 0f;
 		status = "";
+		AccountStore.rememberLauncher(minecraft);
 	}
 
 	@Override
@@ -86,7 +88,7 @@ public class StrayTitleScreen extends Screen {
 
 		float colW = BUTTON_W;
 		float colX = (width - colW) * 0.5f;
-		float stackH = BUTTON_H * 3 + BUTTON_GAP * 2 + 14 + BUTTON_H;
+		float stackH = BUTTON_H * 4 + BUTTON_GAP * 3 + 14 + BUTTON_H;
 		float colY = Mth.clamp((height - stackH) * 0.42f, 56, height - stackH - 48);
 
 		if (ControlChrome.on()) {
@@ -113,6 +115,7 @@ public class StrayTitleScreen extends Screen {
 		y = button(graphics, font, mouseX, mouseY, colX, y, colW, "Singleplayer", true, fade, this::openSingleplayer);
 		y = button(graphics, font, mouseX, mouseY, colX, y, colW, "Multiplayer", multiplayerOpen(), fade, this::openMultiplayer);
 		y = button(graphics, font, mouseX, mouseY, colX, y, colW, "Realms", multiplayerOpen(), fade, this::openRealms);
+		y = button(graphics, font, mouseX, mouseY, colX, y, colW, "Accounts", true, fade, this::openAccounts);
 		y += 6;
 		float half = (colW - SPLIT_GAP) * 0.5f;
 		button(graphics, font, mouseX, mouseY, colX, y, half, "Options", true, fade, this::openOptions);
@@ -120,7 +123,11 @@ public class StrayTitleScreen extends Screen {
 
 		String user = minecraft.getUser() == null ? "" : minecraft.getUser().getName();
 		if (!user.isBlank()) {
-			GuiDraw.small(graphics, font, user, width - 12 - GuiDraw.smallWidth(font, user), 10, Anim.fade(Theme.MUTED, fade));
+			float userW = GuiDraw.smallWidth(font, user);
+			float userX = width - 12 - userW;
+			boolean userHover = GuiDraw.hovered(mouseX, mouseY, userX - 2, 8, userW + 4, 12);
+			GuiDraw.small(graphics, font, user, userX, 10, Anim.fade(userHover ? Theme.ACCENT : Theme.MUTED, fade));
+			hits.add(new Hit(userX - 2, 8, userW + 4, 12, this::openAccounts));
 		}
 		if (!status.isBlank()) {
 			GuiDraw.small(graphics, font, status, colX, y + BUTTON_H + 10, Anim.fade(Theme.WARN, fade));
@@ -233,6 +240,11 @@ public class StrayTitleScreen extends Screen {
 		}
 		clickSound();
 		minecraft.setScreen(new RealmsMainScreen(this));
+	}
+
+	private void openAccounts() {
+		clickSound();
+		minecraft.setScreen(new AccountScreen(this));
 	}
 
 	private void openOptions() {

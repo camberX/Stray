@@ -24,6 +24,7 @@ import dev.stray.client.farming.FarmingHud;
 import dev.stray.client.farming.ComposterTracker;
 import dev.stray.client.farming.JacobContestTracker;
 import dev.stray.client.skill.SkillProgressTracker;
+import dev.stray.client.account.AccountStore;
 import dev.stray.client.config.StrayConfig;
 import dev.stray.update.AutoUpdate;
 import dev.stray.client.location.SkyblockLocation;
@@ -156,6 +157,7 @@ public final class StrayClient implements ClientModInitializer {
 	@Override
 	public void onInitializeClient() {
 		StrayConfig.load();
+		AccountStore.load();
 		AutoUpdate.clientLaunchCheck(StrayConfig.get().autoUpdate, StrayConfig.get().updateNotify);
 		Theme.refresh();
 		SkyblockItems.load();
