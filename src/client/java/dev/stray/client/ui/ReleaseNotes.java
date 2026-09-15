@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.315", new String[]{
+			"Themed chat lines pop off instead of fading. Vanilla's fade was still showing after the glass dropped the row."
+		}),
 		new Entry("1.2.314", new String[]{
 			"Themed chat drops a fading line in a few ticks. The glass no longer holds the row through vanilla's long fade."
 		}),

@@ -43,7 +43,10 @@ public class ChatComponentFillMixin {
 		float handleOpacity,
 		FormattedCharSequence text
 	) {
-		return original.call(parameters, opacity * ChatChrome.lineAlpha(text));
+		if (ChatChrome.enabled()) {
+			return original.call(parameters, ChatChrome.lineAlpha(text));
+		}
+		return original.call(parameters, opacity);
 	}
 
 	@WrapOperation(

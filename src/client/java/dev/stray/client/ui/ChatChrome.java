@@ -24,8 +24,8 @@ import java.util.Map;
  * black bars, and a glass input when chat is open. Message text stays vanilla
  * so Hypixel colors and clicks still work.
  *
- * Motion matches LiquidBounce HUD chat: new lines ease-out-expo from the left,
- * the stack bumps down then settles, and fading lines slide back out.
+ * Motion matches LiquidBounce HUD chat: new lines ease-out-expo from the left
+ * and the stack bumps down then settles. Lines pop off instead of fading.
  */
 public final class ChatChrome {
 	private static final float PAD = 8f;
@@ -33,7 +33,6 @@ public final class ChatChrome {
 	private static final float INPUT_MARGIN = 4f;
 	private static final int FIELD_H = 12;
 	private static final int FADE_START = 180;
-	private static final int LEAVE_TICKS = 6;
 	private static final float SLIDE_MS = 400f;
 	private static final IdentityHashMap<GuiMessage.Line, Long> BORN = new IdentityHashMap<>();
 	private static final IdentityHashMap<FormattedCharSequence, Motion> MOTION = new IdentityHashMap<>();
@@ -66,8 +65,7 @@ public final class ChatChrome {
 	}
 
 	public static int lineShift(FormattedCharSequence text) {
-		Motion motion = MOTION.get(text);
-		return (motion == null ? 0 : motion.shiftY) + bumpY;
+		return bumpY;
 	}
 
 	public static float lineAlpha(FormattedCharSequence text) {
@@ -94,7 +92,7 @@ public final class ChatChrome {
 		float scale = (float) Math.max(0.01d, access.stray$chatScale());
 		int lineH = Math.max(1, access.stray$lineHeight());
 		int page = Math.max(1, chat.getLinesPerPage());
-		int live = tickLines(access, ticks, focused, page, lineH);
+		int live = tickLines(access, ticks, focused, page);
 		bumpY = focused || access.stray$scroll() != 0 ? 0 : messageBump(lineH);
 		if (live <= 0 && !focused) {
 			bumpY = 0;
@@ -106,8 +104,7 @@ public final class ChatChrome {
 		float x = 4f * scale - PAD;
 		float y = graphics.guiHeight() - 40f - rows * lineH * scale - PAD + bumpY;
 		float radius = paneRadius(w, h);
-		float paneFade = focused ? 1f : visibleAlpha(access, ticks, page);
-		int fill = chatFill(focused, paneFade);
+		int fill = chatFill(focused, 1f);
 		GuiFrostBlur.blitWindow(graphics, x, y, w, h, radius);
 		GuiDraw.roundedFine(graphics, x, y, w, h, radius, fill);
 		GuiDraw.roundedOutline(graphics, x, y, w, h, radius, Theme.ACCENT, 1f);
@@ -163,8 +160,7 @@ public final class ChatChrome {
 		ChatComponentAccessor access,
 		int ticks,
 		boolean focused,
-		int page,
-		int lineH
+		int page
 	) {
 		MOTION.clear();
 		List<GuiMessage.Line> lines = access.stray$trimmedMessages();
@@ -182,14 +178,12 @@ public final class ChatChrome {
 		for (int slot = 0; slot < slots; slot++) {
 			GuiMessage.Line line = lines.get(slot + scroll);
 			int age = ticks - line.addedTime();
-			float leave = focused ? 0f : leaveAmount(age);
-			if (leave >= 1f) {
+			if (!focused && age >= FADE_START) {
+				MOTION.put(line.content(), new Motion(0, 0f));
 				continue;
 			}
 			seen.put(line, Boolean.TRUE);
-			if (leave <= 0f) {
-				count++;
-			}
+			count++;
 			if (slot == 0 && line != newest) {
 				newest = line;
 				lastMessageMs = now;
@@ -197,12 +191,8 @@ public final class ChatChrome {
 			long born = BORN.containsKey(line) ? BORN.get(line) : now;
 			BORN.put(line, born);
 			float t = focused ? 1f : Mth.clamp((now - born) / SLIDE_MS, 0f, 1f);
-			float in = easeOutExpo(t);
-			float out = easeOutExpo(leave);
-			int shiftX = Math.round((in - 1f) * width - out * width);
-			int shiftY = Math.round(out * lineH * 0.35f);
-			float alpha = 1f - out;
-			MOTION.put(line.content(), new Motion(shiftX, shiftY, alpha));
+			int shiftX = Math.round((easeOutExpo(t) - 1f) * width);
+			MOTION.put(line.content(), new Motion(shiftX, 1f));
 		}
 		Iterator<Map.Entry<GuiMessage.Line, Long>> it = BORN.entrySet().iterator();
 		while (it.hasNext()) {
@@ -226,24 +216,6 @@ public final class ChatChrome {
 		return Math.min(8f, max - 0.5f);
 	}
 
-	private static float visibleAlpha(ChatComponentAccessor access, int ticks, int page) {
-		List<GuiMessage.Line> lines = access.stray$trimmedMessages();
-		if (lines == null || lines.isEmpty()) {
-			return 0f;
-		}
-		int scroll = access.stray$scroll();
-		int slots = Math.min(Math.max(0, lines.size() - scroll), page);
-		float alpha = 0f;
-		for (int slot = 0; slot < slots; slot++) {
-			int age = ticks - lines.get(slot + scroll).addedTime();
-			if (leaveAmount(age) > 0f) {
-				continue;
-			}
-			alpha = Math.max(alpha, timeAlpha(age));
-		}
-		return alpha;
-	}
-
 	private static int chatFill(boolean focused, float fade) {
 		float opacity = ControlChrome.paneOpacity();
 		float t = Mth.clamp(fade, 0f, 1f);
@@ -252,20 +224,6 @@ public final class ChatChrome {
 		float hi = focused ? 0.42f : 0.30f;
 		alpha = Mth.clamp(alpha, lo, hi);
 		return Theme.withAlpha(ControlChrome.paneRgb(), Math.round(alpha * 255f));
-	}
-
-	private static float timeAlpha(int age) {
-		if (age >= FADE_START) {
-			return 0f;
-		}
-		return 1f;
-	}
-
-	private static float leaveAmount(int age) {
-		if (age < FADE_START) {
-			return 0f;
-		}
-		return Mth.clamp((age - FADE_START) / (float) LEAVE_TICKS, 0f, 1f);
 	}
 
 	private static float easeOutExpo(float x) {
@@ -278,6 +236,6 @@ public final class ChatChrome {
 		return 1f - (float) Math.pow(2.0, -10.0 * x);
 	}
 
-	private record Motion(int shiftX, int shiftY, float alpha) {
+	private record Motion(int shiftX, float alpha) {
 	}
 }
