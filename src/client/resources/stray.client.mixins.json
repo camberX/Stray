@@ -45,6 +45,7 @@
 		"LevelMixin",
 		"LevelRendererMixin",
 		"LightmapRenderStateExtractorMixin",
+		"LivingEntityMixin",
 		"LivingEntityRendererMixin",
 		"MinecraftAccessor",
 		"MinecraftMixin",
