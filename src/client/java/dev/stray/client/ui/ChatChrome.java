@@ -32,7 +32,8 @@ public final class ChatChrome {
 	private static final float INPUT_H = 20f;
 	private static final float INPUT_MARGIN = 4f;
 	private static final int FIELD_H = 12;
-	private static final int FADE_TICKS = 200;
+	private static final int FADE_START = 180;
+	private static final int LEAVE_TICKS = 6;
 	private static final float SLIDE_MS = 400f;
 	private static final IdentityHashMap<GuiMessage.Line, Long> BORN = new IdentityHashMap<>();
 	private static final IdentityHashMap<FormattedCharSequence, Motion> MOTION = new IdentityHashMap<>();
@@ -70,7 +71,8 @@ public final class ChatChrome {
 	}
 
 	public static float lineAlpha(FormattedCharSequence text) {
-		return 1f;
+		Motion motion = MOTION.get(text);
+		return motion == null ? 1f : motion.alpha;
 	}
 
 	public static void extract(
@@ -175,16 +177,19 @@ public final class ChatChrome {
 		int slots = Math.min(Math.max(0, lines.size() - scroll), page);
 		int width = Math.max(8, access.stray$chatWidth());
 		long now = System.currentTimeMillis();
-		IdentityHashMap<GuiMessage.Line, Boolean> live = new IdentityHashMap<>();
+		IdentityHashMap<GuiMessage.Line, Boolean> seen = new IdentityHashMap<>();
 		int count = 0;
 		for (int slot = 0; slot < slots; slot++) {
 			GuiMessage.Line line = lines.get(slot + scroll);
-			float vanilla = focused ? 1f : timeAlpha(ticks - line.addedTime());
-			if (vanilla <= 1.0E-5f) {
+			int age = ticks - line.addedTime();
+			float leave = focused ? 0f : leaveAmount(age);
+			if (leave >= 1f) {
 				continue;
 			}
-			live.put(line, Boolean.TRUE);
-			count++;
+			seen.put(line, Boolean.TRUE);
+			if (leave <= 0f) {
+				count++;
+			}
 			if (slot == 0 && line != newest) {
 				newest = line;
 				lastMessageMs = now;
@@ -193,18 +198,15 @@ public final class ChatChrome {
 			BORN.put(line, born);
 			float t = focused ? 1f : Mth.clamp((now - born) / SLIDE_MS, 0f, 1f);
 			float in = easeOutExpo(t);
-			int shiftX = Math.round((in - 1f) * width);
-			int shiftY = 0;
-			if (!focused && vanilla < 0.999f && ticks - line.addedTime() >= FADE_TICKS - 24) {
-				float out = easeOutExpo(1f - vanilla);
-				shiftX = Math.round(-out * width);
-				shiftY = Math.round(out * lineH * 0.35f);
-			}
-			MOTION.put(line.content(), new Motion(shiftX, shiftY));
+			float out = easeOutExpo(leave);
+			int shiftX = Math.round((in - 1f) * width - out * width);
+			int shiftY = Math.round(out * lineH * 0.35f);
+			float alpha = 1f - out;
+			MOTION.put(line.content(), new Motion(shiftX, shiftY, alpha));
 		}
 		Iterator<Map.Entry<GuiMessage.Line, Long>> it = BORN.entrySet().iterator();
 		while (it.hasNext()) {
-			if (!live.containsKey(it.next().getKey())) {
+			if (!seen.containsKey(it.next().getKey())) {
 				it.remove();
 			}
 		}
@@ -233,7 +235,11 @@ public final class ChatChrome {
 		int slots = Math.min(Math.max(0, lines.size() - scroll), page);
 		float alpha = 0f;
 		for (int slot = 0; slot < slots; slot++) {
-			alpha = Math.max(alpha, timeAlpha(ticks - lines.get(slot + scroll).addedTime()));
+			int age = ticks - lines.get(slot + scroll).addedTime();
+			if (leaveAmount(age) > 0f) {
+				continue;
+			}
+			alpha = Math.max(alpha, timeAlpha(age));
 		}
 		return alpha;
 	}
@@ -249,12 +255,17 @@ public final class ChatChrome {
 	}
 
 	private static float timeAlpha(int age) {
-		if (age >= FADE_TICKS) {
+		if (age >= FADE_START) {
 			return 0f;
 		}
-		double fade = 1.0 - age / (double) FADE_TICKS;
-		fade = Mth.clamp(fade * 10.0, 0.0, 1.0);
-		return (float) (fade * fade);
+		return 1f;
+	}
+
+	private static float leaveAmount(int age) {
+		if (age < FADE_START) {
+			return 0f;
+		}
+		return Mth.clamp((age - FADE_START) / (float) LEAVE_TICKS, 0f, 1f);
 	}
 
 	private static float easeOutExpo(float x) {
@@ -267,6 +278,6 @@ public final class ChatChrome {
 		return 1f - (float) Math.pow(2.0, -10.0 * x);
 	}
 
-	private record Motion(int shiftX, int shiftY) {
+	private record Motion(int shiftX, int shiftY, float alpha) {
 	}
 }

@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.314", new String[]{
+			"Themed chat drops a fading line in a few ticks. The glass no longer holds the row through vanilla's long fade."
+		}),
 		new Entry("1.2.313", new String[]{
 			"Themed chat uses LiquidBounce-style slide-in. A single message keeps a real outline instead of a crushed ring."
 		}),
