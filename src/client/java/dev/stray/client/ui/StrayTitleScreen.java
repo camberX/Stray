@@ -2,7 +2,7 @@ package dev.stray.client.ui;
 
 import com.mojang.realmsclient.RealmsMainScreen;
 import dev.stray.client.render.GuiDraw;
-import dev.stray.client.render.Starfield;
+import dev.stray.client.render.TitleBackdrop;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.SharedConstants;
 import net.minecraft.client.gui.Font;
@@ -69,22 +69,7 @@ public class StrayTitleScreen extends Screen {
 
 	@Override
 	public void extractBackground(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float delta) {
-		Theme.refresh();
-		int pane = ControlChrome.on() ? ControlChrome.paneRgb() : (Theme.WINDOW_SOLID & 0xFFFFFF);
-		int top;
-		int bot;
-		if (ControlChrome.on()) {
-			top = 0xFF000000 | Theme.mix(0x1C1E24, pane, 0.55f);
-			bot = 0xFF000000 | Theme.mix(0x0B0D12, pane, 0.38f);
-		} else {
-			top = 0xFF05070D;
-			bot = 0xFF000000 | Theme.mix(pane, Theme.ACCENT & 0xFFFFFF, 0.08f);
-		}
-		GuiDraw.fillGradient(graphics, 0, 0, width, height, top, bot);
-		try {
-			Starfield.drawSky(graphics, width, height);
-		} catch (Throwable ignored) {
-		}
+		TitleBackdrop.draw(graphics, width, height);
 		if (!ControlChrome.on()) {
 			GuiDraw.fill(graphics, 0, 0, width, 48, 0x66000000);
 			GuiDraw.fill(graphics, 0, height - 36, width, 36, 0x88000000);
