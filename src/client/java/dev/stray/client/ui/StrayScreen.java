@@ -354,6 +354,10 @@ public class StrayScreen extends Screen {
 		new SearchEntry("New version", Tab.SETTINGS, "Theme"),
 		new SearchEntry("Markers", Tab.NODES, "Nodes"),
 		new SearchEntry("Keybinds", Tab.KEYS, "Keys"),
+		new SearchEntry("Command shortcuts", Tab.KEYS, "Keys"),
+		new SearchEntry("Shortcuts", Tab.KEYS, "Keys"),
+		new SearchEntry("Command alias", Tab.KEYS, "Keys"),
+		new SearchEntry("Pass arguments", Tab.KEYS, "Keys"),
 		new SearchEntry("Slot keys", Tab.MENUS, "Menus"),
 		new SearchEntry("Loadout slots", Tab.MENUS, "Menus"),
 		new SearchEntry("Wardrobe slots", Tab.MENUS, "Menus"),
@@ -2475,13 +2479,45 @@ public class StrayScreen extends Screen {
 				float y = sectionLabel(graphics, font, left, top, "Binds");
 				y = featureCard(graphics, font, left, y, col, cardHeight(4), "Keybinds");
 				drawMenuKeybinds(graphics, font, ix, y, iw, mouseX, mouseY);
-				y = sectionLabel(graphics, font, right, top, "Chat");
-				y = featureCard(graphics, font, right, y, col, cardHeight(5), "Commands");
+				float chatY = sectionLabel(graphics, font, right, top, "Chat");
+				float commandsH = cardHeight(5);
+				y = featureCard(graphics, font, right, chatY, col, commandsH, "Commands");
 				GuiDraw.menu(graphics, font, "/loadouts  /ld", rx, y + 2, ink());
 				GuiDraw.menu(graphics, font, "/wardrobe  /wd", rx, y + 16, ink());
 				GuiDraw.menu(graphics, font, "/pv  /profile", rx, y + 30, ink());
 				GuiDraw.menu(graphics, font, "/autoclicker add left", rx, y + 44, ink());
 				GuiDraw.menu(graphics, font, MenuSlotBinds.hint() + " equips and closes", rx, y + 58, fade());
+				float shortcutsY = chatY + commandsH + 8;
+				float shortcutsH = cardHeight(config.commandShortcutsEnabled ? 1 : 0);
+				y = featureCard(
+					graphics,
+					font,
+					right,
+					shortcutsY,
+					col,
+					shortcutsH,
+					"Shortcuts",
+					config.commandShortcutsEnabled,
+					v -> config.commandShortcutsEnabled = v,
+					mouseX,
+					mouseY,
+					"Edit",
+					() -> minecraft.setScreen(new CommandShortcutScreen(this))
+				);
+				if (config.commandShortcutsEnabled) {
+					toggle(
+						graphics,
+						font,
+						rx,
+						y,
+						iw,
+						mouseX,
+						mouseY,
+						"Pass arguments",
+						config.commandShortcutsPassArgs,
+						v -> config.commandShortcutsPassArgs = v
+					);
+				}
 			}
 			case STATUS -> {
 				float y = sectionLabel(graphics, font, left, top, "Server");
@@ -3774,7 +3810,7 @@ public class StrayScreen extends Screen {
 		return FabricLoader.getInstance()
 			.getModContainer("stray")
 			.map(container -> container.getMetadata().getVersion().getFriendlyString())
-			.orElse("1.3.6");
+			.orElse("1.3.14");
 	}
 
 	@Override
