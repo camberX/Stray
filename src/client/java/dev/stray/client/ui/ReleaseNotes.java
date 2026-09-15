@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.320", new String[]{
+			"Optional accent outlines. Theme can paint GUI and HUD panel rims in the accent color. Off by default."
+		}),
 		new Entry("1.2.319", new String[]{
 			"Optional backwards-walk rotation from Animatium. Bodies turn sideways when walking back, like 1.11. Off by default under Camera."
 		}),
