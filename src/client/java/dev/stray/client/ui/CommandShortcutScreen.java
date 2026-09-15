@@ -123,7 +123,7 @@ public class CommandShortcutScreen extends Screen {
 		button(graphics, font, mouseX, mouseY, x, by, bw, bh, "Add", Theme.ACCENT, this::add);
 		button(graphics, font, mouseX, mouseY, x + bw + 6, by, bw, bh, "Clear", Theme.TEXT, this::clearFields);
 		button(graphics, font, mouseX, mouseY, x + windowW - 24 - bw, by, bw, bh, "Done", Theme.TEXT, this::onClose);
-		GuiDraw.small(graphics, font, "Enter adds · Tab switches · Esc closes", x, by - 12, Theme.MUTED);
+		GuiDraw.small(graphics, font, "Enter adds · Tab switches · Chat Tab completes", x, by - 12, Theme.MUTED);
 	}
 
 	private void drawList(GuiGraphicsExtractor graphics, Font font, int mouseX, int mouseY, StrayConfig config) {

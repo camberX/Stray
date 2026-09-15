@@ -1,6 +1,9 @@
 package dev.stray.client.ui;
 
 import com.mojang.brigadier.Command;
+import com.mojang.brigadier.LiteralMessage;
+import com.mojang.brigadier.suggestion.Suggestions;
+import com.mojang.brigadier.suggestion.SuggestionsBuilder;
 import dev.stray.client.config.StrayConfig;
 import net.minecraft.client.Minecraft;
 
@@ -60,6 +63,53 @@ public final class CommandShortcuts {
 			return false;
 		}
 		return send(expanded);
+	}
+
+	public static boolean suggests() {
+		StrayConfig config = StrayConfig.get();
+		return config.commandShortcutsEnabled
+			&& config.commandShortcuts != null
+			&& !config.commandShortcuts.isEmpty();
+	}
+
+	public static Suggestions mergeSuggestions(String input, int cursor, Suggestions original) {
+		Suggestions extra = suggestions(input, cursor);
+		if (extra == null || extra.isEmpty()) {
+			return original == null ? Suggestions.empty().join() : original;
+		}
+		if (original == null || original.isEmpty()) {
+			return extra;
+		}
+		return Suggestions.merge(input, List.of(original, extra));
+	}
+
+	public static Suggestions suggestions(String input, int cursor) {
+		if (!suggests() || input == null || cursor <= 0 || !input.startsWith("/")) {
+			return Suggestions.empty().join();
+		}
+		int end = 1;
+		while (end < input.length() && !Character.isWhitespace(input.charAt(end))) {
+			end++;
+		}
+		if (cursor < 1 || cursor > end) {
+			return Suggestions.empty().join();
+		}
+		String typed = input.substring(0, cursor);
+		SuggestionsBuilder builder = new SuggestionsBuilder(typed, 1);
+		boolean any = false;
+		for (StrayConfig.CommandShortcut row : StrayConfig.get().commandShortcuts) {
+			if (row == null) {
+				continue;
+			}
+			String alias = normalizeAlias(row.alias);
+			if (alias.isEmpty()) {
+				continue;
+			}
+			String command = normalizeCommand(row.command);
+			builder.suggest(alias, new LiteralMessage(command.isEmpty() ? "/" + alias : "/" + command));
+			any = true;
+		}
+		return any ? builder.build() : Suggestions.empty().join();
 	}
 
 	public static int open() {
