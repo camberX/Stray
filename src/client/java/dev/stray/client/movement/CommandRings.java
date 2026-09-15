@@ -43,6 +43,20 @@ public final class CommandRings {
 	private static final Path FILE = IslandSaves.DIR.resolve("command-rings.json");
 	private static final int MAX = 32;
 	private static final int SEGMENTS = 48;
+	private static final int SEGMENTS_FAR = 24;
+	private static final double DRAW_RANGE = 96.0;
+	private static final double DRAW_RANGE_SQ = DRAW_RANGE * DRAW_RANGE;
+	private static final double FAR_SQ = 24.0 * 24.0;
+	private static final double[] COS = new double[SEGMENTS + 1];
+	private static final double[] SIN = new double[SEGMENTS + 1];
+
+	static {
+		for (int i = 0; i <= SEGMENTS; i++) {
+			double angle = (i % SEGMENTS) * (Math.PI * 2.0 / SEGMENTS);
+			COS[i] = Math.cos(angle);
+			SIN[i] = Math.sin(angle);
+		}
+	}
 	private static final float TAG_H = 14f;
 	private static final float PAD_X = 8f;
 	private static final Map<String, List<Ring>> SAVED = new LinkedHashMap<>();
@@ -183,22 +197,27 @@ public final class CommandRings {
 		Font font = client.font;
 		int rgb = StrayConfig.get().commandRingsRgb & 0xFFFFFF;
 		for (Ring ring : here()) {
-			Vec3 head = new Vec3(ring.x, ring.y + 1.15, ring.z);
-			Vec3 rel = head.subtract(camPos);
-			double facing = rel.x * forward.x() + rel.y * forward.y() + rel.z * forward.z();
+			double relX = ring.x - camPos.x;
+			double relY = ring.y + 1.15 - camPos.y;
+			double relZ = ring.z - camPos.z;
+			double distSq = relX * relX + relY * relY + relZ * relZ;
+			if (distSq > DRAW_RANGE_SQ) {
+				continue;
+			}
+			double facing = relX * forward.x() + relY * forward.y() + relZ * forward.z();
 			if (facing <= 0.12) {
 				continue;
 			}
+			Vec3 head = new Vec3(ring.x, ring.y + 1.15, ring.z);
 			Vec3 ndc = client.gameRenderer.projectPointToScreen(head);
 			if (ndc.x < -1.2 || ndc.x > 1.2 || ndc.y < -1.2 || ndc.y > 1.2) {
 				continue;
 			}
 			float sx = (float) ((ndc.x * 0.5 + 0.5) * graphics.guiWidth());
 			float sy = (float) ((-ndc.y * 0.5 + 0.5) * graphics.guiHeight());
-			double dist = head.distanceTo(camPos);
-			float scale = NametagRenderer.distanceScale(dist);
-			Component name = MenuFont.vanilla("/" + ring.command);
-			Component meters = MenuFont.vanilla(format(ring.radius) + "m");
+			float scale = NametagRenderer.distanceScale(Math.sqrt(distSq));
+			Component name = ring.nameLabel();
+			Component meters = ring.metersLabel();
 			float nameW = font.width(name);
 			float distW = font.width(meters);
 			float w = nameW + 5f + distW + PAD_X * 2f;
@@ -220,24 +239,40 @@ public final class CommandRings {
 		if (!enabled() || here().isEmpty()) {
 			return;
 		}
+		Minecraft client = Minecraft.getInstance();
+		Camera camera = client.gameRenderer.getMainCamera();
+		Vec3 camPos = camera.isInitialized() ? camera.position() : null;
 		int rgb = StrayConfig.get().commandRingsRgb & 0xFFFFFF;
 		int line = 0xEB000000 | rgb;
 		for (Ring ring : here()) {
+			int segments = SEGMENTS;
+			if (camPos != null) {
+				double dx = ring.x - camPos.x;
+				double dy = ring.y - camPos.y;
+				double dz = ring.z - camPos.z;
+				double distSq = dx * dx + dy * dy + dz * dz;
+				if (distSq > DRAW_RANGE_SQ) {
+					continue;
+				}
+				if (distSq > FAR_SQ) {
+					segments = SEGMENTS_FAR;
+				}
+			}
 			double y = ring.y + 0.04;
 			int fill = (Math.round((ring.inside ? 0.38f : 0.22f) * 255f) << 24) | rgb;
-			drawDisk(ring, y, fill);
-			drawCircle(ring, y, ring.radius, line, 2.6f);
-			drawCircle(ring, y, Math.max(0.2, ring.radius * 0.92), 0x66000000 | rgb, 1.4f);
+			drawDisk(ring, y, fill, segments);
+			drawCircle(ring, y, ring.radius, line, 2.6f, segments);
+			drawCircle(ring, y, Math.max(0.2, ring.radius * 0.92), 0x66000000 | rgb, 1.4f, segments);
 		}
 	}
 
-	private static void drawDisk(Ring ring, double y, int fill) {
+	private static void drawDisk(Ring ring, double y, int fill, int segments) {
 		GizmoStyle style = GizmoStyle.fill(fill);
 		Vec3 center = new Vec3(ring.x, y, ring.z);
 		Vec3 prev = null;
-		for (int i = 0; i <= SEGMENTS; i++) {
-			double angle = (i % SEGMENTS) * (Math.PI * 2.0 / SEGMENTS);
-			Vec3 point = new Vec3(ring.x + Math.cos(angle) * ring.radius, y, ring.z + Math.sin(angle) * ring.radius);
+		int step = SEGMENTS / segments;
+		for (int i = 0; i <= SEGMENTS; i += step) {
+			Vec3 point = new Vec3(ring.x + COS[i] * ring.radius, y, ring.z + SIN[i] * ring.radius);
 			if (prev != null) {
 				GizmoProperties gizmo = Gizmos.rect(center, prev, point, center, style);
 				gizmo.setAlwaysOnTop();
@@ -246,11 +281,11 @@ public final class CommandRings {
 		}
 	}
 
-	private static void drawCircle(Ring ring, double y, double radius, int color, float width) {
+	private static void drawCircle(Ring ring, double y, double radius, int color, float width, int segments) {
 		Vec3 prev = null;
-		for (int i = 0; i <= SEGMENTS; i++) {
-			double angle = (i % SEGMENTS) * (Math.PI * 2.0 / SEGMENTS);
-			Vec3 point = new Vec3(ring.x + Math.cos(angle) * radius, y, ring.z + Math.sin(angle) * radius);
+		int step = SEGMENTS / segments;
+		for (int i = 0; i <= SEGMENTS; i += step) {
+			Vec3 point = new Vec3(ring.x + COS[i] * radius, y, ring.z + SIN[i] * radius);
 			if (prev != null) {
 				GizmoProperties gizmo = Gizmos.line(prev, point, color, width);
 				gizmo.setAlwaysOnTop();
@@ -286,6 +321,8 @@ public final class CommandRings {
 		public final String command;
 		boolean inside;
 		boolean armed;
+		private Component nameLabel;
+		private Component metersLabel;
 
 		Ring(double x, double y, double z, float radius, String command, boolean placedNow) {
 			this.x = x;
@@ -295,6 +332,20 @@ public final class CommandRings {
 			this.command = command;
 			this.inside = placedNow;
 			this.armed = false;
+		}
+
+		Component nameLabel() {
+			if (nameLabel == null) {
+				nameLabel = MenuFont.vanilla("/" + command);
+			}
+			return nameLabel;
+		}
+
+		Component metersLabel() {
+			if (metersLabel == null) {
+				metersLabel = MenuFont.vanilla(format(radius) + "m");
+			}
+			return metersLabel;
 		}
 	}
 

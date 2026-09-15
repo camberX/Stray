@@ -15,6 +15,10 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.316", new String[]{
+			"HUD render time trimmed. Composter, effects, boss bar, held item, and scoreboard text is formatted once per tick instead of every frame.",
+			"Motion blur skips its velocity passes while the camera is still. Command rings are culled past 96 blocks and use fewer segments far away."
+		}),
 		new Entry("1.2.315", new String[]{
 			"Themed chat lines pop off instead of fading. Vanilla's fade was still showing after the glass dropped the row."
 		}),

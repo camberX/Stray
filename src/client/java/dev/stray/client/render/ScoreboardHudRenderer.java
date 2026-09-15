@@ -58,8 +58,8 @@ public final class ScoreboardHudRenderer {
 		float ly = y + PAD + HEAD + 2;
 		for (Line line : layout.lines) {
 			GuiDraw.hud(graphics, font, line.name, x + PAD + 4, ly, 0xFFFFFFFF);
-			if (line.score != null && GuiDraw.hudWidth(font, line.score) > 0 && !line.score.getString().isBlank()) {
-				float sx = x + layout.w - PAD - GuiDraw.hudWidth(font, line.score);
+			if (line.scoreWidth > 0) {
+				float sx = x + layout.w - PAD - line.scoreWidth;
 				GuiDraw.hud(graphics, font, line.score, sx, ly, 0xFFFFFFFF);
 			}
 			ly += ROW;
@@ -129,13 +129,14 @@ public final class ScoreboardHudRenderer {
 			Component raw = entry.display() != null ? entry.display() : Component.literal(entry.owner());
 			Component name = MenuFont.applyBody(PlayerTeam.formatNameForTeam(scoreboard.getPlayersTeam(entry.owner()), raw));
 			Component score = MenuFont.applyBody(entry.formatValue(objective.numberFormatOrDefault(StyledFormat.SIDEBAR_DEFAULT)));
-			float width = GuiDraw.hudWidth(font, name) + 8 + GuiDraw.hudWidth(font, score);
-			out.add(new Line(name, score, width));
+			int scoreWidth = score.getString().isBlank() ? 0 : GuiDraw.hudWidth(font, score);
+			float width = GuiDraw.hudWidth(font, name) + 8 + scoreWidth;
+			out.add(new Line(name, score, width, scoreWidth));
 		}
 		return out;
 	}
 
-	private record Line(Component name, Component score, float width) {
+	private record Line(Component name, Component score, float width, int scoreWidth) {
 	}
 
 	private record Layout(Component title, List<Line> lines, float w, float h) {

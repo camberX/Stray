@@ -30,6 +30,10 @@ public final class MotionBlurShaders {
 
 	private static GraphicsResourceAllocator frameAllocator;
 	private static boolean deferredTemporalApplied;
+	private static boolean cameraStill;
+	private static final Identifier PRE_ID = Stray.id("velocity_pre");
+	private static final Identifier F5_ID = Stray.id("velocity_f5");
+	private static final Identifier POST_ID = Stray.id("velocity_post");
 	private static PostChain cachedPre;
 	private static PostChain cachedF5;
 	private static PostChain cachedPost;
@@ -79,6 +83,11 @@ public final class MotionBlurShaders {
 		float dz
 	) {
 		CAMERA.setFrame(modelView, prevModelView, projection, prevProjection, dx, dy, dz);
+		cameraStill = Math.abs(dx) < 1.0E-5f
+			&& Math.abs(dy) < 1.0E-5f
+			&& Math.abs(dz) < 1.0E-5f
+			&& modelView.equals(prevModelView, 1.0E-6f)
+			&& projection.equals(prevProjection, 1.0E-6f);
 	}
 
 	public static void applyPreEntityBlur() {
@@ -137,6 +146,11 @@ public final class MotionBlurShaders {
 		} else if (!config.motionBlurUsesVelocity()) {
 			return;
 		}
+		// Velocity blur reprojects against last frame's camera. A still camera
+		// gives zero-length samples, so the fullscreen pass would only copy pixels.
+		if (cameraStill) {
+			return;
+		}
 
 		BlurStrengthCalculator.Result blur = velocityBlur(config);
 		float viewW = client.getMainRenderTarget().width;
@@ -144,19 +158,19 @@ public final class MotionBlurShaders {
 		int algo = config.motionBlurAlgorithm().ordinal();
 		switch (pass) {
 			case NORMAL_PRE -> {
-				PostChain chain = load("velocity_pre", cachedPre, v -> cachedPre = v);
+				PostChain chain = cachedPre = loadProcessor(client, PRE_ID, "velocity_pre");
 				if (chain != null) {
 					writeAndRun(chain, "PreEntityBlurUniforms", PRE_UBO, blur.strength(), viewW, viewH, algo, blur.sampleAmount(), client);
 				}
 			}
 			case SPECIAL_F5 -> {
-				PostChain chain = load("velocity_f5", cachedF5, v -> cachedF5 = v);
+				PostChain chain = cachedF5 = loadProcessor(client, F5_ID, "velocity_f5");
 				if (chain != null) {
 					writeAndRun(chain, "PreEntityBlurUniforms", F5_UBO, blur.strength(), viewW, viewH, algo, blur.sampleAmount(), client);
 				}
 			}
 			case NORMAL_POST -> {
-				PostChain chain = load("velocity_post", cachedPost, v -> cachedPost = v);
+				PostChain chain = cachedPost = loadProcessor(client, POST_ID, "velocity_post");
 				if (chain != null) {
 					writeAndRun(chain, "PostRenderBlurUniforms", POST_UBO, blur.strength(), viewW, viewH, algo, blur.sampleAmount(), client);
 				}
@@ -193,18 +207,6 @@ public final class MotionBlurShaders {
 			refresh,
 			config.motionBlurRefreshScale && config.motionBlurAllowsRefreshScale()
 		);
-	}
-
-	private static PostChain load(String name, PostChain cached, java.util.function.Consumer<PostChain> store) {
-		PostChain result = loadProcessor(Minecraft.getInstance(), name);
-		if (result == null) {
-			store.accept(null);
-			return null;
-		}
-		if (result != cached) {
-			store.accept(result);
-		}
-		return result;
 	}
 
 	static PostChain loadProcessor(Minecraft client, String shaderName) {

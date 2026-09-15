@@ -13,6 +13,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.util.Mth;
 
 import java.util.ArrayList;
+import java.util.IdentityHashMap;
 import java.util.List;
 
 public final class BossBarHudRenderer {
@@ -22,6 +23,7 @@ public final class BossBarHudRenderer {
 	private static final int MAX = 5;
 	private static int eventsTick = Integer.MIN_VALUE;
 	private static List<LerpingBossEvent> eventsCache = List.of();
+	private static final IdentityHashMap<LerpingBossEvent, Label> LABELS = new IdentityHashMap<>();
 
 	private BossBarHudRenderer() {
 	}
@@ -85,7 +87,21 @@ public final class BossBarHudRenderer {
 			}
 		}
 		eventsCache = out;
+		LABELS.keySet().retainAll(out);
 		return eventsCache;
+	}
+
+	/** Boss names are styled Components; rebuilding and measuring them each frame showed in Spark. */
+	private static Label label(Font font, LerpingBossEvent event) {
+		Label cached = LABELS.get(event);
+		Component raw = event.getName();
+		if (cached != null && cached.source == raw) {
+			return cached;
+		}
+		Component name = MenuFont.applyBody(raw);
+		Label made = new Label(raw, name, GuiDraw.hudWidth(font, name));
+		LABELS.put(event, made);
+		return made;
 	}
 
 	private static void drawEmpty(GuiGraphicsExtractor graphics, Font font, float x, float y) {
@@ -100,9 +116,12 @@ public final class BossBarHudRenderer {
 		if (t > 0.01f) {
 			GuiDraw.rounded(graphics, x + 8, y + BAR_H - 4, Math.max(2f, (BAR_W - 16f) * t), 2.5f, 1.2f, fill);
 		}
-		Component name = MenuFont.applyBody(event.getName());
-		float nx = x + (BAR_W - GuiDraw.hudWidth(font, name)) * 0.5f;
-		GuiDraw.hud(graphics, font, name, nx, y + 2, 0xFFFFFFFF);
+		Label label = label(font, event);
+		float nx = x + (BAR_W - label.width) * 0.5f;
+		GuiDraw.hud(graphics, font, label.name, nx, y + 2, 0xFFFFFFFF);
+	}
+
+	private record Label(Component source, Component name, int width) {
 	}
 
 	private static int barColor(LerpingBossEvent event) {

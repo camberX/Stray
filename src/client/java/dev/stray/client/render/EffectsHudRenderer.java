@@ -24,101 +24,98 @@ public final class EffectsHudRenderer {
 	private static final int MAX = 8;
 
 	private static int cacheTick = Integer.MIN_VALUE;
-	private static List<MobEffectInstance> cache = List.of();
+	private static List<Chip> cache = List.of();
+	private static float cacheWidth = MIN_W;
 
 	private EffectsHudRenderer() {
 	}
 
 	public static void extract(GuiGraphicsExtractor graphics, DeltaTracker deltaTracker) {
-		List<MobEffectInstance> effects = visible();
-		if (effects.isEmpty() && !HudLayout.editorOpen()) {
+		Font font = Minecraft.getInstance().font;
+		List<Chip> chips = chips(font);
+		if (chips.isEmpty() && !HudLayout.editorOpen()) {
 			return;
 		}
-		Font font = Minecraft.getInstance().font;
-		float boxW = drawWidth(font);
+		float boxW = cacheWidth;
 		HudLayout.apply(graphics, font, HudLayout.Id.EFFECTS, () -> {
-			if (effects.isEmpty()) {
+			if (chips.isEmpty()) {
 				HudChrome.panel(graphics, 0, 0, boxW, CHIP_H, 5, Theme.WINDOW, Theme.LINE);
 				GuiDraw.small(graphics, font, "EFFECTS", 8, 4, Theme.MUTED);
 				return;
 			}
 			float y = 0;
-			for (MobEffectInstance instance : effects) {
-				float w = chipWidth(font, instance);
-				drawChip(graphics, font, instance, boxW - w, y, w);
+			for (Chip chip : chips) {
+				drawChip(graphics, font, chip, boxW - chip.width, y);
 				y += CHIP_H + 3;
 			}
 		});
 	}
 
 	public static float drawWidth(Font font) {
-		float max = MIN_W;
-		for (MobEffectInstance instance : visible()) {
-			max = Math.max(max, chipWidth(font, instance));
-		}
-		return max;
+		chips(font);
+		return cacheWidth;
 	}
 
 	public static float drawHeight() {
-		int n = Math.max(1, visible().size());
+		int n = Math.max(1, chips(Minecraft.getInstance().font).size());
 		return n * CHIP_H + (n - 1) * 3;
 	}
 
 	public static float stackHeight() {
-		int n = visible().size();
+		int n = chips(Minecraft.getInstance().font).size();
 		if (n == 0) {
 			return 0;
 		}
 		return n * CHIP_H + (n - 1) * 3;
 	}
 
-	private static List<MobEffectInstance> visible() {
+	/** Names, suffixes, and widths change at most once a tick, so they are built once a tick. */
+	private static List<Chip> chips(Font font) {
 		Minecraft client = Minecraft.getInstance();
 		int tick = client.player != null ? client.player.tickCount : -1;
 		if (tick == cacheTick) {
 			return cache;
 		}
 		LocalPlayer player = client.player;
-		List<MobEffectInstance> out = new ArrayList<>();
+		cacheTick = tick;
 		if (player == null) {
-			cacheTick = tick;
 			cache = List.of();
+			cacheWidth = MIN_W;
 			return cache;
 		}
+		List<Chip> out = new ArrayList<>();
+		float max = MIN_W;
 		for (MobEffectInstance instance : player.getActiveEffects()) {
-			if (instance.showIcon()) {
-				out.add(instance);
+			if (!instance.showIcon()) {
+				continue;
 			}
+			MobEffect effect = instance.getEffect().value();
+			Component name = MenuFont.applyBody(effect.getDisplayName());
+			String extra = extra(instance);
+			int nameW = GuiDraw.hudWidth(font, name);
+			float width = ICON + 14 + nameW + GuiDraw.smallWidth(font, extra);
+			max = Math.max(max, width);
+			out.add(new Chip(instance, name, extra, nameW, width));
 			if (out.size() >= MAX) {
 				break;
 			}
 		}
-		cacheTick = tick;
 		cache = out;
+		cacheWidth = max;
 		return out;
 	}
 
-	private static float chipWidth(Font font, MobEffectInstance instance) {
-		MobEffect effect = instance.getEffect().value();
-		Component name = MenuFont.applyBody(effect.getDisplayName());
-		String extra = extra(instance);
-		return ICON + 14 + GuiDraw.hudWidth(font, name) + GuiDraw.smallWidth(font, extra);
-	}
-
-	private static void drawChip(GuiGraphicsExtractor graphics, Font font, MobEffectInstance instance, float x, float y, float w) {
-		MobEffect effect = instance.getEffect().value();
-		Component name = MenuFont.applyBody(effect.getDisplayName());
-		String extra = extra(instance);
-		HudChrome.panel(graphics, x, y, w, CHIP_H, 5, Theme.WINDOW, Theme.LINE);
+	private static void drawChip(GuiGraphicsExtractor graphics, Font font, Chip chip, float x, float y) {
+		HudChrome.panel(graphics, x, y, chip.width, CHIP_H, 5, Theme.WINDOW, Theme.LINE);
 		graphics.pose().pushMatrix();
 		graphics.pose().translate(x + 6, y + 2);
 		graphics.pose().scale(ICON / 18f, ICON / 18f);
-		graphics.blitSprite(RenderPipelines.GUI_TEXTURED, Gui.getMobEffectSprite(instance.getEffect()), 0, 0, 18, 18);
+		graphics.blitSprite(RenderPipelines.GUI_TEXTURED, Gui.getMobEffectSprite(chip.instance.getEffect()), 0, 0, 18, 18);
 		graphics.pose().popMatrix();
 		float tx = x + 6 + ICON + 3;
-		GuiDraw.hud(graphics, font, name, tx, y + 3, 0xFFFFFFFF);
-		if (!extra.isEmpty()) {
-			GuiDraw.small(graphics, font, extra, tx + GuiDraw.hudWidth(font, name), y + 4, Theme.MUTED);
+		GuiDraw.hud(graphics, font, chip.name, tx, y + 3, 0xFFFFFFFF);
+		if (!chip.extra.isEmpty()) {
+			GuiDraw.small(graphics, font, chip.extra, tx + chip.nameWidth, y + 4, Theme.MUTED);
 		}
 	}
 
@@ -153,5 +150,8 @@ public final class EffectsHudRenderer {
 			case 10 -> "X";
 			default -> Integer.toString(value);
 		};
+	}
+
+	private record Chip(MobEffectInstance instance, Component name, String extra, int nameWidth, float width) {
 	}
 }
