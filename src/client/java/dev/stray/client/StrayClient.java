@@ -323,6 +323,7 @@ public final class StrayClient implements ClientModInitializer {
 		});
 
 		ClientLevelEvents.AFTER_CLIENT_LEVEL_CHANGE.register((client, level) -> {
+			FarmKeys.onWorldChange();
 			MobGlowRenderer.reset();
 			StarMobEsp.reset();
 			ChestAimer.stop();
@@ -358,6 +359,7 @@ public final class StrayClient implements ClientModInitializer {
 		});
 
 		ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> {
+			FarmKeys.restore();
 			SkyblockLocation.reset();
 			Hitsound.reset();
 			Hitmarker.reset();
