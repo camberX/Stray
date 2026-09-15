@@ -24,6 +24,7 @@
 		"ClientLevelAccessor",
 		"ClientPacketListenerMixin",
 		"ConnectionMixin",
+		"DynamicUniformsMixin",
 		"EditBoxMixin",
 		"EntityRendererMixin",
 		"FeatureRenderDispatcherMixin",
