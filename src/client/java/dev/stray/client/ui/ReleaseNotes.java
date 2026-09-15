@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.317", new String[]{
+			"Optional 1.8 skull hold. First-person heads use Animatium's 1.8 pose. Off by default under Camera."
+		}),
 		new Entry("1.2.316", new String[]{
 			"HUD render time trimmed. Composter, effects, boss bar, held item, and scoreboard text is formatted once per tick instead of every frame.",
 			"Motion blur skips its velocity passes while the camera is still. Command rings are culled past 96 blocks and use fewer segments far away."
