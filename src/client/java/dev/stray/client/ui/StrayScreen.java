@@ -354,6 +354,8 @@ public class StrayScreen extends Screen {
 		new SearchEntry("New version", Tab.SETTINGS, "Theme"),
 		new SearchEntry("Markers", Tab.NODES, "Nodes"),
 		new SearchEntry("Keybinds", Tab.KEYS, "Keys"),
+		new SearchEntry("Chat peek", Tab.KEYS, "Keys"),
+		new SearchEntry("Peek chat", Tab.KEYS, "Keys"),
 		new SearchEntry("Slot keys", Tab.MENUS, "Menus"),
 		new SearchEntry("Loadout slots", Tab.MENUS, "Menus"),
 		new SearchEntry("Wardrobe slots", Tab.MENUS, "Menus"),
@@ -2244,7 +2246,7 @@ public class StrayScreen extends Screen {
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Enable", config.autoExperimentsEnabled, v -> config.autoExperimentsEnabled = v);
 				drawFeatureFields(graphics, font, mouseX, mouseY, ix, y, iw, Feature.AUTO_EXPERIMENTS);
 
-				float bindsH = cardHeight(4);
+				float bindsH = cardHeight(5);
 				y = featureCard(graphics, font, right, top, col, bindsH, "Keybinds");
 				y = drawMenuKeybinds(graphics, font, rx, y, iw, mouseX, mouseY);
 				y = featureCard(graphics, font, right, top + bindsH + 8, col, cardHeight(5), "Commands");
@@ -2473,7 +2475,7 @@ public class StrayScreen extends Screen {
 			}
 			case KEYS -> {
 				float y = sectionLabel(graphics, font, left, top, "Binds");
-				y = featureCard(graphics, font, left, y, col, cardHeight(4), "Keybinds");
+				y = featureCard(graphics, font, left, y, col, cardHeight(5), "Keybinds");
 				drawMenuKeybinds(graphics, font, ix, y, iw, mouseX, mouseY);
 				y = sectionLabel(graphics, font, right, top, "Chat");
 				y = featureCard(graphics, font, right, y, col, cardHeight(5), "Commands");
@@ -3328,7 +3330,8 @@ public class StrayScreen extends Screen {
 		y = bindRow(graphics, font, x, y, w, mouseX, mouseY, "Open menu", 3, OdinClicks.parseKey(config.openGuiKey));
 		y = bindRow(graphics, font, x, y, w, mouseX, mouseY, "Loadouts", 4, OdinClicks.parseKey(config.openLoadoutsKey));
 		y = bindRow(graphics, font, x, y, w, mouseX, mouseY, "Wardrobe", 5, OdinClicks.parseKey(config.openWardrobeKey));
-		return bindRow(graphics, font, x, y, w, mouseX, mouseY, "Profile", 7, OdinClicks.parseKey(config.openProfileKey));
+		y = bindRow(graphics, font, x, y, w, mouseX, mouseY, "Profile", 7, OdinClicks.parseKey(config.openProfileKey));
+		return bindRow(graphics, font, x, y, w, mouseX, mouseY, "Chat peek", 10, OdinClicks.parseKey(config.chatPeekKey));
 	}
 
 	private float drawSlotKeybinds(
@@ -3406,6 +3409,7 @@ public class StrayScreen extends Screen {
 			case 7 -> config.openProfileKey = name;
 			case 8 -> config.blockMarkEditKey = name;
 			case 9 -> config.pathRecordKey = name;
+			case 10 -> config.chatPeekKey = name;
 			case 20, 21, 22, 23, 24, 25, 26, 27, 28 -> config.setMenuSlotKey(bindListen - 20, name);
 		}
 		bindListen = 0;
@@ -3774,7 +3778,7 @@ public class StrayScreen extends Screen {
 		return FabricLoader.getInstance()
 			.getModContainer("stray")
 			.map(container -> container.getMetadata().getVersion().getFriendlyString())
-			.orElse("1.3.6");
+			.orElse("1.3.14");
 	}
 
 	@Override

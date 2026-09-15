@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.3.14", new String[]{
+			"Hold Chat peek to read chat without opening it, like Patcher. The history stays unfaded at focused height, and the wheel scrolls it until you let go."
+		}),
 		new Entry("1.3.13", new String[]{
 			"Chest menus skip black stained glass panes. The filler items no longer cover the glass; those slots stay empty and translucent."
 		}),

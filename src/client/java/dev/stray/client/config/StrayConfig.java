@@ -151,6 +151,7 @@ public final class StrayConfig {
 	public String openWardrobeKey = "key.keyboard.unknown";
 	public String openProfileKey = "key.keyboard.unknown";
 	public String chestAimKey = "key.keyboard.unknown";
+	public String chatPeekKey = "key.keyboard.unknown";
 	public String[] menuSlotKeys = defaultMenuSlotKeys();
 	public int chestEspRgb = 0xF4C14E;
 	public float chestEspOpacity = 0.34f;
@@ -1015,6 +1016,7 @@ public final class StrayConfig {
 				loaded.openWardrobeKey = blankKey(loaded.openWardrobeKey, "key.keyboard.unknown");
 				loaded.openProfileKey = blankKey(loaded.openProfileKey, "key.keyboard.unknown");
 				loaded.chestAimKey = blankKey(loaded.chestAimKey, "key.keyboard.unknown");
+				loaded.chatPeekKey = blankKey(loaded.chatPeekKey, "key.keyboard.unknown");
 				loaded.menuSlotKeys = normalizeMenuSlotKeys(loaded.menuSlotKeys);
 				if (!json.has("profileViewerEnabled")) {
 					loaded.profileViewerEnabled = false;

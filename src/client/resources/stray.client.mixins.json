@@ -49,6 +49,7 @@
 		"LivingEntityRendererMixin",
 		"MinecraftAccessor",
 		"MinecraftMixin",
+		"MouseHandlerMixin",
 		"ModelBlockRendererMixin",
 		"MultiPlayerGameModeMixin",
 		"PlayerTabOverlayMixin",
