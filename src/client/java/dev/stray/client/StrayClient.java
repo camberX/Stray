@@ -76,6 +76,8 @@ import dev.stray.client.render.StarMobEsp;
 import dev.stray.client.render.NodeWorldRenderer;
 import dev.stray.client.render.VanillaHud;
 import dev.stray.client.render.WatermarkRenderer;
+import dev.stray.client.ui.CommandShortcutScreen;
+import dev.stray.client.ui.CommandShortcuts;
 import dev.stray.client.ui.HudEditorScreen;
 import dev.stray.client.ui.ItemEditScreen;
 import dev.stray.client.ui.LoadoutsCommands;
@@ -237,6 +239,7 @@ public final class StrayClient implements ClientModInitializer {
 			root.then(ProfileCommands.command());
 			root.then(PathCommands.command());
 			root.then(CommandRingCommands.command());
+			root.then(ClientCommands.literal("shortcuts").executes(context -> CommandShortcuts.open()));
 			root.then(stealCommand());
 			var brand = dispatcher.register(root);
 			dispatcher.register(ClientCommands.literal("st").redirect(brand));
@@ -256,6 +259,7 @@ public final class StrayClient implements ClientModInitializer {
 			vm.then(ProfileCommands.command());
 			vm.then(PathCommands.command());
 			vm.then(CommandRingCommands.command());
+			vm.then(ClientCommands.literal("shortcuts").executes(context -> CommandShortcuts.open()));
 			vm.then(stealCommand());
 			dispatcher.register(vm);
 			dispatcher.register(ClientCommands.literal("loadouts").executes(context -> LoadoutsCommands.open()));
@@ -497,12 +501,15 @@ public final class StrayClient implements ClientModInitializer {
 			|| screen instanceof WardrobeScreen
 			|| screen instanceof ProfileViewerScreen
 			|| screen instanceof HudEditorScreen
-			|| screen instanceof ItemEditScreen);
+			|| screen instanceof ItemEditScreen
+			|| screen instanceof CommandShortcutScreen);
 	}
 
 	private static void handleOpenGui(Minecraft client) {
 		if (client.screen instanceof HudEditorScreen) {
 			client.setScreen(new StrayScreen());
+		} else if (client.screen instanceof CommandShortcutScreen screen) {
+			screen.onClose();
 		} else if (client.screen instanceof StrayScreen screen) {
 			screen.requestClose();
 		} else if (client.screen instanceof ItemEditScreen) {
