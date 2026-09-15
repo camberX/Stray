@@ -201,6 +201,7 @@ public final class StrayConfig {
 	public float hitsoundVolume = 0.80f;
 	public float hitsoundPitch = 1.00f;
 	public boolean legacySkullHold = false;
+	public boolean legacyBackwardsWalk = false;
 	public boolean heldItemShaderEnabled = false;
 	public int heldItemShaderRgb = 0x4FD6EA;
 	public int heldItemShaderOutlineRgb = liftedOutlineRgb(0x4FD6EA);
@@ -1049,6 +1050,9 @@ public final class StrayConfig {
 					: 0;
 				if (!json.has("legacySkullHold")) {
 					loaded.legacySkullHold = false;
+				}
+				if (!json.has("legacyBackwardsWalk")) {
+					loaded.legacyBackwardsWalk = false;
 				}
 				if (!json.has("heldItemShaderEnabled")) {
 					loaded.heldItemShaderEnabled = false;
