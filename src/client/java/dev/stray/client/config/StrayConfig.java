@@ -200,6 +200,7 @@ public final class StrayConfig {
 	public float hitmarkerScale = 1.00f;
 	public float hitsoundVolume = 0.80f;
 	public float hitsoundPitch = 1.00f;
+	public boolean legacySkullHold = false;
 	public boolean heldItemShaderEnabled = false;
 	public int heldItemShaderRgb = 0x4FD6EA;
 	public int heldItemShaderOutlineRgb = liftedOutlineRgb(0x4FD6EA);
@@ -1046,6 +1047,9 @@ public final class StrayConfig {
 				loaded.autoExperimentsSerumCount = json.has("autoExperimentsSerumCount")
 					? Math.round(clamp(loaded.autoExperimentsSerumCount, 0, 3))
 					: 0;
+				if (!json.has("legacySkullHold")) {
+					loaded.legacySkullHold = false;
+				}
 				if (!json.has("heldItemShaderEnabled")) {
 					loaded.heldItemShaderEnabled = false;
 				}
