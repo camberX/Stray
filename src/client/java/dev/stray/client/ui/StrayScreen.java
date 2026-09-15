@@ -358,6 +358,7 @@ public class StrayScreen extends Screen {
 		new SearchEntry("Shortcuts", Tab.KEYS, "Keys"),
 		new SearchEntry("Command alias", Tab.KEYS, "Keys"),
 		new SearchEntry("Pass arguments", Tab.KEYS, "Keys"),
+		new SearchEntry("Shortcut autocomplete", Tab.KEYS, "Keys"),
 		new SearchEntry("Slot keys", Tab.MENUS, "Menus"),
 		new SearchEntry("Loadout slots", Tab.MENUS, "Menus"),
 		new SearchEntry("Wardrobe slots", Tab.MENUS, "Menus"),
@@ -3810,7 +3811,7 @@ public class StrayScreen extends Screen {
 		return FabricLoader.getInstance()
 			.getModContainer("stray")
 			.map(container -> container.getMetadata().getVersion().getFriendlyString())
-			.orElse("1.3.14");
+			.orElse("1.3.15");
 	}
 
 	@Override

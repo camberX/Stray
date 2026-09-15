@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.3.15", new String[]{
+			"Command shortcuts autocomplete in chat. Tab and the suggestion list include your aliases while you type the first word."
+		}),
 		new Entry("1.3.14", new String[]{
 			"Command shortcuts in Keys. Add aliases in the Edit menu, and Pass arguments keeps extra chat words on the expanded command."
 		}),
