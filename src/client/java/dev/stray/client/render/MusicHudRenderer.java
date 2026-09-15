@@ -204,17 +204,15 @@ public final class MusicHudRenderer {
 		boolean forageClock = StrayConfig.get().spotifyEnabled && smtc.active();
 		String clock = forageClock ? smtc.timeLabel() : track.clockLine();
 		float progress = forageClock ? smtc.progress() : track.progress();
-		float clockW = GuiDraw.smallWidth(font, clock);
-		if (clockW < 4f) {
-			clockW = GuiDraw.menuWidth(font, clock);
-		}
+		float smallClockW = GuiDraw.smallWidth(font, clock);
+		float clockW = smallClockW >= 4f ? smallClockW : GuiDraw.menuWidth(font, clock);
 		float barX = textX;
 		float barW = Math.max(24f, WIDTH - textX - clockW - 14);
 		float barY = 28;
 		GuiDraw.rounded(graphics, barX, barY, barW, 3, 1.5f, Theme.HUD_TRACK);
 		float filled = Math.max(live ? 2f : 0f, barW * progress);
 		GuiDraw.rounded(graphics, barX, barY, filled, 3, 1.5f, Theme.ACCENT);
-		if (GuiDraw.smallWidth(font, clock) >= 4f) {
+		if (smallClockW >= 4f) {
 			GuiDraw.small(graphics, font, clock, barX + barW + 5, barY - 3, Theme.TEXT);
 		} else {
 			GuiDraw.menu(graphics, font, clock, barX + barW + 5, barY - 5, Theme.TEXT);

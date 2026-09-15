@@ -17,6 +17,9 @@ public final class ComposterHudRenderer {
 	private static final float PAD = 6f;
 	private static final float BAR_W = WIDTH - PAD * 2f;
 	private static final float BAR_H = 2.4f;
+	private static final NumberFormat INTEGER = NumberFormat.getIntegerInstance(Locale.US);
+	private static ComposterTracker.Snapshot textSource;
+	private static Text textCache;
 
 	private ComposterHudRenderer() {
 	}
@@ -54,6 +57,7 @@ public final class ComposterHudRenderer {
 		ComposterTracker.Snapshot value
 	) {
 		ComposterTracker.Snapshot snapshot = value.present() ? value : sample();
+		Text text = text(font, snapshot);
 		graphics.pose().pushMatrix();
 		graphics.pose().translate(x, y);
 		if (scale != 1f) {
@@ -62,47 +66,67 @@ public final class ComposterHudRenderer {
 
 		HudChrome.panel(graphics, 0, 0, WIDTH, HEIGHT, 5, Theme.HUD_WINDOW, Theme.HUD_LINE);
 		GuiDraw.small(graphics, font, "COMPOSTER", PAD + 1, PAD, Theme.ACCENT);
-		String next = snapshot.active() ? snapshot.nextCompost() : "INACTIVE";
-		right(graphics, font, next, PAD, snapshot.active() ? Theme.TEXT : 0xFFF87171);
+		right(graphics, font, text.next, PAD, snapshot.active() ? Theme.TEXT : 0xFFF87171);
 
 		resource(
 			graphics,
 			font,
 			"Organic Matter",
+			text.organic,
 			snapshot.organicMatter(),
 			snapshot.maxOrganicMatter(),
 			18,
 			0xFFF5C16C
 		);
-		resource(graphics, font, "Fuel", snapshot.fuel(), snapshot.maxFuel(), 38, 0xFF75D69C);
+		resource(graphics, font, "Fuel", text.fuel, snapshot.fuel(), snapshot.maxFuel(), 38, 0xFF75D69C);
 
-		String stored = "Stored  " + amount(snapshot.storedCompost());
-		GuiDraw.small(graphics, font, stored, PAD + 1, 58, Theme.TEXT);
-		if (snapshot.predictedCompost() >= 0) {
-			right(graphics, font, amount(snapshot.predictedCompost()) + " compost", 58, Theme.ACCENT);
+		GuiDraw.small(graphics, font, text.stored, PAD + 1, 58, Theme.TEXT);
+		if (text.predicted != null) {
+			right(graphics, font, text.predicted, 58, Theme.ACCENT);
 		}
 
-		String busy = snapshot.active()
-			? "Busy  " + snapshot.emptyIn()
-			: snapshot.emptyIn();
-		GuiDraw.small(graphics, font, GuiDraw.ellipsize(font, busy, 103, true), PAD + 1, 70, Theme.MUTED);
-		if (snapshot.compostPerHour() > 0d) {
-			right(graphics, font, String.format(Locale.ROOT, "%.1f/h", snapshot.compostPerHour()), 70, Theme.ACCENT);
+		GuiDraw.small(graphics, font, text.busy, PAD + 1, 70, Theme.MUTED);
+		if (text.perHour != null) {
+			right(graphics, font, text.perHour, 70, Theme.ACCENT);
 		}
 		graphics.pose().popMatrix();
+	}
+
+	/** Formats once per snapshot. NumberFormat lookups and String.format each frame showed in Spark. */
+	private static Text text(Font font, ComposterTracker.Snapshot snapshot) {
+		if (snapshot == textSource && textCache != null) {
+			return textCache;
+		}
+		String next = snapshot.active() ? snapshot.nextCompost() : "INACTIVE";
+		String organic = ratio(snapshot.organicMatter(), snapshot.maxOrganicMatter());
+		String fuel = ratio(snapshot.fuel(), snapshot.maxFuel());
+		String stored = "Stored  " + amount(snapshot.storedCompost());
+		String predicted = snapshot.predictedCompost() >= 0 ? amount(snapshot.predictedCompost()) + " compost" : null;
+		String busyRaw = snapshot.active() ? "Busy  " + snapshot.emptyIn() : snapshot.emptyIn();
+		String busy = GuiDraw.ellipsize(font, busyRaw, 103, true);
+		String perHour = snapshot.compostPerHour() > 0d
+			? String.format(Locale.ROOT, "%.1f/h", snapshot.compostPerHour())
+			: null;
+		textSource = snapshot;
+		textCache = new Text(next, organic, fuel, stored, predicted, busy, perHour);
+		return textCache;
+	}
+
+	private static String ratio(long current, long maximum) {
+		return maximum > 0 ? shortAmount(current) + "/" + shortAmount(maximum) : shortAmount(current) + "/?";
 	}
 
 	private static void resource(
 		GuiGraphicsExtractor graphics,
 		Font font,
 		String label,
+		String value,
 		long current,
 		long maximum,
 		float y,
 		int color
 	) {
 		GuiDraw.small(graphics, font, label, PAD + 1, y, Theme.TEXT);
-		String value = maximum > 0 ? shortAmount(current) + "/" + shortAmount(maximum) : shortAmount(current) + "/?";
 		right(graphics, font, value, y, Theme.MUTED);
 		float barY = y + 11;
 		GuiDraw.rounded(graphics, PAD, barY, BAR_W, BAR_H, BAR_H * 0.5f, Theme.HUD_TRACK);
@@ -137,10 +161,30 @@ public final class ComposterHudRenderer {
 	}
 
 	private static String amount(long value) {
-		return NumberFormat.getIntegerInstance(Locale.US).format(Math.max(0L, value));
+		return INTEGER.format(Math.max(0L, value));
 	}
 
+	private record Text(
+		String next,
+		String organic,
+		String fuel,
+		String stored,
+		String predicted,
+		String busy,
+		String perHour
+	) {
+	}
+
+	private static ComposterTracker.Snapshot sampleCache;
+
 	private static ComposterTracker.Snapshot sample() {
+		if (sampleCache == null) {
+			sampleCache = makeSample();
+		}
+		return sampleCache;
+	}
+
+	private static ComposterTracker.Snapshot makeSample() {
 		return new ComposterTracker.Snapshot(
 			true,
 			true,
