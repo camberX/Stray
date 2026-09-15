@@ -3,6 +3,7 @@ package dev.stray.client.mixin;
 import dev.stray.client.farming.AutoDna;
 import dev.stray.client.farming.GardenPlots;
 import dev.stray.client.item.StoragePreview;
+import dev.stray.client.ui.ChestFillers;
 import dev.stray.client.ui.ContainerChrome;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
@@ -26,9 +27,16 @@ public class AbstractContainerScreenMixin {
 		}
 	}
 
+	@Inject(method = "extractSlot", at = @At("HEAD"), cancellable = true)
+	private void stray$hideBlackGlass(GuiGraphicsExtractor graphics, Slot slot, int mouseX, int mouseY, CallbackInfo ci) {
+		if (ChestFillers.hide(slot)) {
+			ci.cancel();
+		}
+	}
+
 	@Inject(method = "extractSlotHighlightBack", at = @At("HEAD"), cancellable = true)
 	private void stray$noHoverFill(GuiGraphicsExtractor graphics, CallbackInfo ci) {
-		if (ContainerChrome.applies((AbstractContainerScreen<?>) (Object) this)) {
+		if (ContainerChrome.applies((AbstractContainerScreen<?>) (Object) this) || ChestFillers.hide(hoveredSlot)) {
 			ci.cancel();
 		}
 	}
@@ -47,7 +55,7 @@ public class AbstractContainerScreenMixin {
 	private void stray$containerOverlay(GuiGraphicsExtractor graphics, int mouseX, int mouseY, CallbackInfo ci) {
 		AbstractContainerScreen<?> screen = (AbstractContainerScreen<?>) (Object) this;
 		GardenPlots.extract(screen, graphics, mouseX, mouseY);
-		if (StoragePreview.hideTooltip(screen, hoveredSlot)) {
+		if (ChestFillers.hide(hoveredSlot) || StoragePreview.hideTooltip(screen, hoveredSlot)) {
 			ci.cancel();
 		}
 	}
