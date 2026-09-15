@@ -27,7 +27,7 @@ public final class FarmKeys {
 	public static int toggle() {
 		Minecraft client = Minecraft.getInstance();
 		if (enabled) {
-			disable(client, true);
+			disable(client, "Farm keys disabled · controls and sensitivity restored");
 		} else {
 			enable(client);
 		}
@@ -48,7 +48,13 @@ public final class FarmKeys {
 
 	public static void restore() {
 		if (enabled) {
-			disable(Minecraft.getInstance(), false);
+			disable(Minecraft.getInstance(), null);
+		}
+	}
+
+	public static void onWorldChange() {
+		if (enabled) {
+			disable(Minecraft.getInstance(), "Farm keys disabled · world change");
 		}
 	}
 
@@ -69,22 +75,24 @@ public final class FarmKeys {
 		message(client, "Farm keys enabled · controls swapped · attack toggles · sensitivity minimum");
 	}
 
-	private static void disable(Minecraft client, boolean notify) {
-		client.options.keyAttack.setDown(false);
-		client.options.keyJump.setDown(false);
-		client.options.keyAttack.setKey(attackKey);
-		client.options.keyJump.setKey(jumpKey);
-		client.options.sensitivity().set(sensitivity);
-		KeyMapping.resetMapping();
-		client.options.save();
+	private static void disable(Minecraft client, String chat) {
+		if (client != null && client.options != null && attackKey != null && jumpKey != null) {
+			client.options.keyAttack.setDown(false);
+			client.options.keyJump.setDown(false);
+			client.options.keyAttack.setKey(attackKey);
+			client.options.keyJump.setKey(jumpKey);
+			client.options.sensitivity().set(sensitivity);
+			KeyMapping.resetMapping();
+			client.options.save();
+		}
 
 		enabled = false;
 		attackLatched = false;
 		physicalWasDown = false;
 		attackKey = null;
 		jumpKey = null;
-		if (notify) {
-			message(client, "Farm keys disabled · controls and sensitivity restored");
+		if (chat != null && client != null) {
+			message(client, chat);
 		}
 	}
 
