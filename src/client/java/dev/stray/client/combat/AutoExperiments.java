@@ -1,21 +1,28 @@
 package dev.stray.client.combat;
 
 import dev.stray.client.config.StrayConfig;
+import dev.stray.client.item.ItemAppearance;
 import net.fabricmc.fabric.api.client.screen.v1.ScreenEvents;
 import net.fabricmc.fabric.api.client.screen.v1.ScreenMouseEvents;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
+import net.minecraft.core.component.DataComponents;
+import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.Packet;
+import net.minecraft.network.protocol.game.ClientboundContainerSetContentPacket;
 import net.minecraft.network.protocol.game.ClientboundContainerSetSlotPacket;
 import net.minecraft.world.inventory.ContainerInput;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.item.component.ItemLore;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
@@ -23,8 +30,13 @@ import java.util.regex.Pattern;
  */
 public final class AutoExperiments {
 	private static final Pattern DIGITS = Pattern.compile("\\d+");
+	private static final Pattern ROUND_LINE = Pattern.compile("(?i)round:\\s*(\\d+)");
+	private static final Pattern SERIES = Pattern.compile("(?i)(?:chains?|series)\\s+of\\s+(\\d+)");
+	private static final int ROUND_SLOT = 4;
 	private static ExperimentHandler handler;
 	private static long lastClick;
+	private static int clickedChronoRounds;
+	private static int clickedUltraRounds;
 
 	private AutoExperiments() {
 	}
@@ -39,6 +51,40 @@ public final class AutoExperiments {
 	public static void reset() {
 		handler = null;
 		lastClick = 0;
+		clickedChronoRounds = 0;
+		clickedUltraRounds = 0;
+	}
+
+	public static void onSlotClick(AbstractContainerScreen<?> screen, Slot slot) {
+		if (!StrayConfig.get().autoExperimentsEnabled) {
+			return;
+		}
+		if (screen == null || slot == null || !slot.hasItem()) {
+			return;
+		}
+		String title = screen.getTitle().getString();
+		if (!isStartMenu(title)) {
+			return;
+		}
+		ItemStack stack = slot.getItem();
+		int rounds = roundsFromItem(stack);
+		if (rounds <= 0) {
+			return;
+		}
+		String blob = itemPlain(stack).toLowerCase(Locale.ROOT);
+		if (title.equals("Experimentation Table")) {
+			if (blob.contains("chronomatron")) {
+				clickedChronoRounds = rounds;
+			} else if (blob.contains("ultrasequencer")) {
+				clickedUltraRounds = rounds;
+			}
+			return;
+		}
+		if (title.contains("Chronomatron")) {
+			clickedChronoRounds = rounds;
+		} else if (title.contains("Ultrasequencer")) {
+			clickedUltraRounds = rounds;
+		}
 	}
 
 	public static void onOpen(Screen screen) {
@@ -77,8 +123,13 @@ public final class AutoExperiments {
 		if (handler == null) {
 			return;
 		}
-		if (packet instanceof ClientboundContainerSetSlotPacket) {
-			handler.onSlotUpdate();
+		if (packet instanceof ClientboundContainerSetSlotPacket
+			|| packet instanceof ClientboundContainerSetContentPacket) {
+			Minecraft.getInstance().execute(() -> {
+				if (handler != null) {
+					handler.onSlotUpdate();
+				}
+			});
 		}
 	}
 
@@ -123,6 +174,98 @@ public final class AutoExperiments {
 		return (long) (clickDelay + extra);
 	}
 
+	private static boolean isStartMenu(String title) {
+		return "Experimentation Table".equals(title) || title.contains("Stakes");
+	}
+
+	private static int chronoTarget() {
+		StrayConfig config = StrayConfig.get();
+		if (config.autoExperimentsGetMaxXp) {
+			return 15;
+		}
+		if (clickedChronoRounds > 0) {
+			return clickedChronoRounds;
+		}
+		return Math.max(1, 12 - config.autoExperimentsSerumCount);
+	}
+
+	private static int ultraTarget() {
+		StrayConfig config = StrayConfig.get();
+		if (config.autoExperimentsGetMaxXp) {
+			return 20;
+		}
+		if (clickedUltraRounds > 0) {
+			return clickedUltraRounds;
+		}
+		return Math.max(1, 9 - config.autoExperimentsSerumCount);
+	}
+
+	private static int roundsFromItem(ItemStack stack) {
+		int max = 0;
+		Matcher matcher = SERIES.matcher(itemPlain(stack));
+		while (matcher.find()) {
+			max = Math.max(max, Integer.parseInt(matcher.group(1)));
+		}
+		return max;
+	}
+
+	private static int readRound(List<Slot> slots, int fallback) {
+		if (slots == null || slots.size() <= ROUND_SLOT) {
+			return fallback;
+		}
+		Matcher matcher = ROUND_LINE.matcher(itemPlain(slots.get(ROUND_SLOT).getItem()));
+		if (matcher.find()) {
+			return Integer.parseInt(matcher.group(1));
+		}
+		return fallback;
+	}
+
+	private static boolean finishedTargetRound(int sequenceLength, int target, List<Slot> slots) {
+		if (sequenceLength <= 0 || target <= 0) {
+			return false;
+		}
+		int round = Math.max(sequenceLength, readRound(slots, sequenceLength));
+		return round >= target;
+	}
+
+	private static List<Slot> menuSlots() {
+		Minecraft client = Minecraft.getInstance();
+		if (!(client.screen instanceof AbstractContainerScreen<?> screen)) {
+			return List.of();
+		}
+		return screen.getMenu().slots;
+	}
+
+	private static String itemPlain(ItemStack stack) {
+		if (stack == null || stack.isEmpty()) {
+			return "";
+		}
+		boolean prior = ItemAppearance.suppress();
+		try {
+			StringBuilder out = new StringBuilder();
+			appendPlain(out, stack.getHoverName());
+			ItemLore lore = stack.get(DataComponents.LORE);
+			if (lore != null) {
+				for (Component line : lore.lines()) {
+					appendPlain(out, line);
+				}
+			}
+			return OdinClicks.noControlCodes(out.toString());
+		} finally {
+			ItemAppearance.resume(prior);
+		}
+	}
+
+	private static void appendPlain(StringBuilder out, Component component) {
+		if (component == null) {
+			return;
+		}
+		if (!out.isEmpty()) {
+			out.append('\n');
+		}
+		out.append(component.getString());
+	}
+
 	private static abstract class ExperimentHandler {
 		protected int clicks;
 		protected boolean hasData;
@@ -156,8 +299,7 @@ public final class AutoExperiments {
 				center.getItem() == Items.GLOWSTONE &&
 				!OdinClicks.hasGlint(slots.get(lastAddedSlot).getItem())
 			) {
-				int serum = StrayConfig.get().autoExperimentsSerumCount;
-				close = order.size() > (StrayConfig.get().autoExperimentsGetMaxXp ? 15 : 11 - serum);
+				close = finishedTargetRound(order.size(), chronoTarget(), slots);
 				hasData = false;
 				return;
 			}
@@ -190,10 +332,13 @@ public final class AutoExperiments {
 
 		@Override
 		boolean shouldClose(boolean autoClose) {
-			if (!autoClose || !close) {
+			if (!autoClose) {
 				return false;
 			}
 			if (clicks < order.size()) {
+				return false;
+			}
+			if (!close && !finishedTargetRound(order.size(), chronoTarget(), menuSlots())) {
 				return false;
 			}
 			close = false;
@@ -240,13 +385,26 @@ public final class AutoExperiments {
 
 		@Override
 		Integer nextClick() {
-			return !hasData ? order.get(clicks++) : null;
+			if (hasData) {
+				return null;
+			}
+			Integer slot = order.get(clicks);
+			if (slot == null) {
+				return null;
+			}
+			clicks++;
+			return slot;
 		}
 
 		@Override
 		boolean shouldClose(boolean autoClose) {
-			int serum = StrayConfig.get().autoExperimentsSerumCount;
-			return autoClose && order.size() > (StrayConfig.get().autoExperimentsGetMaxXp ? 20 : 9 - serum);
+			if (!autoClose || hasData) {
+				return false;
+			}
+			if (clicks < order.size()) {
+				return false;
+			}
+			return finishedTargetRound(order.size(), ultraTarget(), menuSlots());
 		}
 	}
 

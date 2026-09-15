@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.3.14", new String[]{
+			"Experiment auto close actually leaves after the last rewarded round. Round count comes from the Chronomatron / Ultrasequencer item you click (Chain of / Series of), not a guessed serum cutoff."
+		}),
 		new Entry("1.3.13", new String[]{
 			"Chest menus skip black stained glass panes. The filler items no longer cover the glass; those slots stay empty and translucent."
 		}),
