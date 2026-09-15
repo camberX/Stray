@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.318", new String[]{
+			"Fixed the launch crash from 1.8 skull hold. 26.1.2 still calls renderArmWithItem, not 26.2's submitArmWithItem."
+		}),
 		new Entry("1.2.317", new String[]{
 			"Optional 1.8 skull hold. First-person heads use Animatium's 1.8 pose. Off by default under Camera."
 		}),
