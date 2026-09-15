@@ -22,9 +22,10 @@ import java.util.List;
  */
 public class AccountScreen extends Screen {
 	private static final float MENU_W = 360;
-	private static final float MENU_H = 268;
+	private static final float MENU_H = 300;
 	private static final float ROW_H = 28;
 	private static final float BTN_H = 22;
+	private static final float PAD = 16;
 	private static final int VISIBLE = 5;
 
 	private final Screen parent;
@@ -82,16 +83,24 @@ public class AccountScreen extends Screen {
 		} else {
 			GuiDraw.panel(graphics, x, y, MENU_W, MENU_H, Theme.WINDOW_RADIUS, Theme.WINDOW, Theme.LINE);
 		}
-		GuiDraw.title(graphics, font, "ACCOUNTS", x + 16, y + 12, ControlChrome.on() ? ControlChrome.text() : Theme.TEXT);
+		GuiDraw.title(graphics, font, "ACCOUNTS", x + PAD, y + 12, ControlChrome.on() ? ControlChrome.text() : Theme.TEXT);
 		String current = AccountStore.currentName();
 		if (!current.isBlank()) {
-			GuiDraw.small(graphics, font, current, x + MENU_W - 16 - GuiDraw.smallWidth(font, current), y + 16, Theme.ACCENT);
+			GuiDraw.small(graphics, font, current, x + MENU_W - PAD - GuiDraw.smallWidth(font, current), y + 16, Theme.ACCENT);
+		}
+		String note = status;
+		String url = AccountStore.deviceUrl();
+		if (url != null && !url.isBlank() && note.isBlank()) {
+			note = "Open microsoft.com/link";
+		}
+		if (!note.isBlank()) {
+			GuiDraw.small(graphics, font, note, x + PAD, y + 28, Theme.WARN);
 		}
 
 		List<AccountStore.Entry> accounts = AccountStore.accounts();
-		float listX = x + 16;
-		float listY = y + 36;
-		float listW = MENU_W - 32;
+		float listX = x + PAD;
+		float listY = y + 44;
+		float listW = MENU_W - PAD * 2;
 		float listH = ROW_H * VISIBLE;
 		int maxScroll = Math.max(0, accounts.size() - VISIBLE);
 		scroll = Mth.clamp(scroll, 0, maxScroll);
@@ -111,7 +120,7 @@ public class AccountScreen extends Screen {
 			GuiDraw.small(graphics, font, "No saved accounts yet.", listX, listY + 8, Theme.MUTED);
 		}
 
-		float actionsY = listY + listH + 10;
+		float actionsY = listY + listH + 12;
 		float half = (listW - 8) * 0.5f;
 		button(graphics, font, mouseX, mouseY, listX, actionsY, half, "Microsoft", !AccountStore.busy(), this::microsoft);
 		button(graphics, font, mouseX, mouseY, listX + half + 8, actionsY, half, "Launcher", !AccountStore.busy(), this::launcher);
@@ -123,14 +132,6 @@ public class AccountScreen extends Screen {
 		float rowY = fieldY + BTN_H + 8;
 		button(graphics, font, mouseX, mouseY, listX, rowY, half, "Switch", canSwitch(), this::switchSelected);
 		button(graphics, font, mouseX, mouseY, listX + half + 8, rowY, half, "Remove", selectedValid(), this::removeSelected);
-
-		if (!status.isBlank()) {
-			GuiDraw.small(graphics, font, status, listX, y + MENU_H - 18, Theme.WARN);
-		}
-		String url = AccountStore.deviceUrl();
-		if (url != null && !url.isBlank()) {
-			GuiDraw.small(graphics, font, "microsoft.com/link", listX + listW - GuiDraw.smallWidth(font, "microsoft.com/link"), y + MENU_H - 18, Theme.ACCENT);
-		}
 	}
 
 	private void row(
