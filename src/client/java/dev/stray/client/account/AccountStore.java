@@ -144,6 +144,78 @@ public final class AccountStore {
 		thread.start();
 	}
 
+	public static void importPrism(Consumer<String> status) {
+		if (!BUSY.compareAndSet(false, true)) {
+			status.accept("A sign-in is already running.");
+			return;
+		}
+		Minecraft client = Minecraft.getInstance();
+		Path file = PrismAccounts.file(client);
+		if (file == null) {
+			BUSY.set(false);
+			status.accept("No Prism accounts.json found.");
+			return;
+		}
+		status.accept("Importing Prism accounts…");
+		Thread thread = new Thread(() -> {
+			try {
+				List<PrismAccounts.Candidate> found = PrismAccounts.load(file);
+				if (found.isEmpty()) {
+					status.accept("Prism has no Microsoft accounts.");
+					return;
+				}
+				int ok = 0;
+				int fail = 0;
+				MicrosoftAuth.Session play = null;
+				for (PrismAccounts.Candidate candidate : found) {
+					try {
+						MicrosoftAuth.Session session = importOne(candidate);
+						if (candidate.active() || play == null) {
+							play = session;
+						}
+						ok++;
+						status.accept("Imported " + session.name() + " (" + ok + "/" + found.size() + ")");
+					} catch (Exception exception) {
+						fail++;
+						Stray.LOGGER.warn("Could not import Prism account {}", candidate.name(), exception);
+					}
+				}
+				save();
+				if (play != null) {
+					login(play, status);
+				}
+				String done = "Imported " + ok + " from Prism.";
+				if (fail > 0) {
+					done += " " + fail + " failed.";
+				}
+				status.accept(done);
+			} catch (Exception exception) {
+				status.accept(fail(exception));
+			} finally {
+				BUSY.set(false);
+			}
+		}, "stray-prism-import");
+		thread.setDaemon(true);
+		thread.start();
+	}
+
+	private static MicrosoftAuth.Session importOne(PrismAccounts.Candidate candidate) throws Exception {
+		if (candidate.microsoft()) {
+			try {
+				MicrosoftAuth.Session session = MicrosoftAuth.loginRefreshToken(candidate.refreshToken(), candidate.clientId());
+				replace(session, Kind.MICROSOFT, false);
+				return session;
+			} catch (Exception first) {
+				MicrosoftAuth.Session session = MicrosoftAuth.loginRefreshToken(candidate.refreshToken());
+				replace(session, Kind.MICROSOFT, false);
+				return session;
+			}
+		}
+		MicrosoftAuth.Session session = MicrosoftAuth.fromAccessToken(candidate.accessToken());
+		replace(session, Kind.SESSION, false);
+		return session;
+	}
+
 	public static void addToken(String raw, Consumer<String> status) {
 		String token = raw == null ? "" : raw.trim();
 		if (token.isEmpty()) {
@@ -240,25 +312,33 @@ public final class AccountStore {
 	}
 
 	private static void putMicrosoft(MicrosoftAuth.Session session) {
-		replace(session, Kind.MICROSOFT);
+		replace(session, Kind.MICROSOFT, true);
 	}
 
 	private static void putSession(MicrosoftAuth.Session session) {
-		replace(session, Kind.SESSION);
+		replace(session, Kind.SESSION, true);
 	}
 
 	private static void replace(MicrosoftAuth.Session session, Kind kind) {
+		replace(session, kind, true);
+	}
+
+	private static void replace(MicrosoftAuth.Session session, Kind kind, boolean write) {
 		Entry next = new Entry(kind, session.name(), session.uuid(), session.accessToken(), session.authManager());
 		for (int i = 0; i < ACCOUNTS.size(); i++) {
 			Entry existing = ACCOUNTS.get(i);
 			if (existing.uuid.equals(session.uuid()) || existing.name.equalsIgnoreCase(session.name())) {
 				ACCOUNTS.set(i, next);
-				save();
+				if (write) {
+					save();
+				}
 				return;
 			}
 		}
 		ACCOUNTS.add(next);
-		save();
+		if (write) {
+			save();
+		}
 	}
 
 	private static void save() {

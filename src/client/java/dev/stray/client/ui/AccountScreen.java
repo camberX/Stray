@@ -21,7 +21,7 @@ import java.util.List;
  * Title-screen account list: Microsoft device code, session token, switch.
  */
 public class AccountScreen extends Screen {
-	private static final float MENU_W = 360;
+	private static final float MENU_W = 384;
 	private static final float MENU_H = 300;
 	private static final float ROW_H = 28;
 	private static final float BTN_H = 22;
@@ -121,15 +121,17 @@ public class AccountScreen extends Screen {
 		}
 
 		float actionsY = listY + listH + 12;
-		float half = (listW - 8) * 0.5f;
-		button(graphics, font, mouseX, mouseY, listX, actionsY, half, "Microsoft", !AccountStore.busy(), this::microsoft);
-		button(graphics, font, mouseX, mouseY, listX + half + 8, actionsY, half, "Launcher", !AccountStore.busy(), this::launcher);
+		float third = (listW - 16) * (1f / 3f);
+		button(graphics, font, mouseX, mouseY, listX, actionsY, third, "Microsoft", !AccountStore.busy(), this::microsoft);
+		button(graphics, font, mouseX, mouseY, listX + third + 8, actionsY, third, "Prism", !AccountStore.busy(), this::prism);
+		button(graphics, font, mouseX, mouseY, listX + (third + 8) * 2, actionsY, third, "Launcher", !AccountStore.busy(), this::launcher);
 
 		float fieldY = actionsY + BTN_H + 8;
 		field(graphics, font, mouseX, mouseY, listX, fieldY, listW - 72, "Session token");
 		button(graphics, font, mouseX, mouseY, listX + listW - 64, fieldY, 64, "Add", !AccountStore.busy() && !token.isBlank(), this::addToken);
 
 		float rowY = fieldY + BTN_H + 8;
+		float half = (listW - 8) * 0.5f;
 		button(graphics, font, mouseX, mouseY, listX, rowY, half, "Switch", canSwitch(), this::switchSelected);
 		button(graphics, font, mouseX, mouseY, listX + half + 8, rowY, half, "Remove", selectedValid(), this::removeSelected);
 	}
@@ -213,6 +215,11 @@ public class AccountScreen extends Screen {
 	private void microsoft() {
 		click();
 		AccountStore.addMicrosoft(this::setStatus);
+	}
+
+	private void prism() {
+		click();
+		AccountStore.importPrism(this::setStatus);
 	}
 
 	private void launcher() {
