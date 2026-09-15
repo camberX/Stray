@@ -161,8 +161,16 @@ public final class ControlChrome {
 	}
 
 	public static void rim(GuiGraphicsExtractor graphics, float x, float y, float w, float h, float radius) {
-		int hi = Theme.withAlpha(0xFFFFFF, darkText() ? 58 : 40);
-		int lo = Theme.withAlpha(0xFFFFFF, darkText() ? 16 : 11);
+		int hi;
+		int lo;
+		if (StrayConfig.get().accentOutlines) {
+			int accent = Theme.ACCENT & 0xFFFFFF;
+			hi = Theme.withAlpha(accent, darkText() ? 210 : 190);
+			lo = Theme.withAlpha(accent, darkText() ? 78 : 58);
+		} else {
+			hi = Theme.withAlpha(0xFFFFFF, darkText() ? 58 : 40);
+			lo = Theme.withAlpha(0xFFFFFF, darkText() ? 16 : 11);
+		}
 		GuiDraw.gradientRim(graphics, x, y, w, h, radius, hi, lo);
 	}
 

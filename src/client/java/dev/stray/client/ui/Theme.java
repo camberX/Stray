@@ -92,6 +92,7 @@ public final class Theme {
 			HEADER = TEXT;
 			NAV_PILL = ControlChrome.selectedFill();
 			SIDEBAR = ControlChrome.railFill();
+			applyAccentOutlines(accent);
 			return;
 		}
 		TEXT = 0xFFF2F4F7;
@@ -114,6 +115,17 @@ public final class Theme {
 		HEADER = 0xFF000000 | mix(0xC4CED8, pane, 0.10f);
 		NAV_PILL = withAlpha(mix(pane, accent, 0.55f), Math.round(230 * opacity));
 		SIDEBAR = withAlpha(mix(0x101820, pane, 0.45f), Math.round(185 * opacity));
+		applyAccentOutlines(accent);
+	}
+
+	private static void applyAccentOutlines(int accent) {
+		if (!StrayConfig.get().accentOutlines) {
+			return;
+		}
+		int lineA = Math.max((LINE >>> 24) & 0xFF, 150);
+		int hudA = Math.max((HUD_LINE >>> 24) & 0xFF, 150);
+		LINE = withAlpha(accent, lineA);
+		HUD_LINE = withAlpha(accent, hudA);
 	}
 
 	public static void applyPreset(Swatch swatch) {

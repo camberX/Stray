@@ -333,6 +333,7 @@ public final class StrayConfig {
 	public boolean menuScaleV2;
 	public boolean menuStarfield = false;
 	public boolean hudStarfield = false;
+	public boolean accentOutlines = false;
 	public String guiDesign = "control";
 	public int controlPaneRgb = 0x181818;
 	public int controlPillRgb = 0x808080;
@@ -1053,6 +1054,9 @@ public final class StrayConfig {
 				}
 				if (!json.has("legacyBackwardsWalk")) {
 					loaded.legacyBackwardsWalk = false;
+				}
+				if (!json.has("accentOutlines")) {
+					loaded.accentOutlines = false;
 				}
 				if (!json.has("heldItemShaderEnabled")) {
 					loaded.heldItemShaderEnabled = false;

@@ -72,7 +72,7 @@ public class StrayScreen extends Screen {
 	private static final float PICKER_H = 140;
 	private static final float PANEL_W = 168;
 	private static final float FEATURE_W = 176;
-	private static final float SETTINGS_H = 444;
+	private static final float SETTINGS_H = 460;
 	private static final float FONT_SEARCH_H = 14;
 	private static final float FONT_ROW = 16;
 	private static final int FONT_VISIBLE = 6;
@@ -344,6 +344,8 @@ public class StrayScreen extends Screen {
 		new SearchEntry("HUD opacity", Tab.SETTINGS, "Theme"),
 		new SearchEntry("Menu stars", Tab.SETTINGS, "Theme"),
 		new SearchEntry("HUD stars", Tab.SETTINGS, "Theme"),
+		new SearchEntry("Accent outlines", Tab.SETTINGS, "Theme"),
+		new SearchEntry("GUI outlines", Tab.SETTINGS, "Theme"),
 		new SearchEntry("Auto update", Tab.SETTINGS, "Theme"),
 		new SearchEntry("Auto-update", Tab.SETTINGS, "Theme"),
 		new SearchEntry("Updater", Tab.SETTINGS, "Theme"),
@@ -1913,6 +1915,10 @@ public class StrayScreen extends Screen {
 		});
 		y = toggle(graphics, font, settingsX + 8, y, PANEL_W - 16, mouseX, mouseY, "Menu stars", StrayConfig.get().menuStarfield, v -> StrayConfig.get().menuStarfield = v);
 		y = toggle(graphics, font, settingsX + 8, y, PANEL_W - 16, mouseX, mouseY, "HUD stars", StrayConfig.get().hudStarfield, v -> StrayConfig.get().hudStarfield = v);
+		y = toggle(graphics, font, settingsX + 8, y, PANEL_W - 16, mouseX, mouseY, "Accent outlines", StrayConfig.get().accentOutlines, v -> {
+			StrayConfig.get().accentOutlines = v;
+			Theme.refresh();
+		});
 		y = toggle(graphics, font, settingsX + 8, y, PANEL_W - 16, mouseX, mouseY, "Animations", StrayConfig.get().uiAnimations, v -> StrayConfig.get().uiAnimations = v);
 		y = toggle(graphics, font, settingsX + 8, y, PANEL_W - 16, mouseX, mouseY, "Auto update", StrayConfig.get().autoUpdate, v -> {
 			StrayConfig.get().autoUpdate = v;
@@ -2624,7 +2630,7 @@ public class StrayScreen extends Screen {
 		});
 		toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Update notify", config.updateNotify, v -> config.updateNotify = v);
 
-		float accentH = cardTop() + cardHead() + 14 + swatchBlockH(Theme.PRESETS.length, iw) + rowH() * 3 + cardPad();
+		float accentH = cardTop() + cardHead() + 14 + swatchBlockH(Theme.PRESETS.length, iw) + rowH() * 4 + cardPad();
 		float lookY = sectionLabel(graphics, font, right, top, "Look");
 		y = featureCard(graphics, font, right, lookY, col, accentH, "Accent");
 		GuiDraw.small(graphics, font, "Preset", rx, y + 1, ControlChrome.muted());
@@ -2634,7 +2640,11 @@ public class StrayScreen extends Screen {
 			config.hudOpacity = StrayConfig.clamp(0.20f + v * 0.80f, 0.20f, 1f);
 			Theme.refresh();
 		});
-		toggle(graphics, font, rx, y, iw, mouseX, mouseY, "HUD stars", config.hudStarfield, v -> config.hudStarfield = v);
+		y = toggle(graphics, font, rx, y, iw, mouseX, mouseY, "HUD stars", config.hudStarfield, v -> config.hudStarfield = v);
+		toggle(graphics, font, rx, y, iw, mouseX, mouseY, "Accent outlines", config.accentOutlines, v -> {
+			config.accentOutlines = v;
+			Theme.refresh();
+		});
 
 		float scaleTop = lookY + accentH + 10;
 		y = featureCard(graphics, font, right, scaleTop, col, cardHeight(1) + 18, "Scale");
