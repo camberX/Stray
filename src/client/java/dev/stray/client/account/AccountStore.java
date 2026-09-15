@@ -166,33 +166,55 @@ public final class AccountStore {
 					status.accept("Prism has no Microsoft accounts.");
 					return;
 				}
-				int ok = 0;
-				int fail = 0;
+				int added = 0;
+				int retried = 0;
+				int skipped = 0;
+				int checked = 0;
 				MicrosoftAuth.Session play = null;
 				List<String> missed = new ArrayList<>();
 				List<String> clientIds = clientIds(found);
+				List<PrismAccounts.Candidate> work = new ArrayList<>();
 				for (PrismAccounts.Candidate candidate : found) {
-					if (ok + fail > 0) {
+					Entry existing = existing(candidate);
+					if (existing != null && existing.kind == Kind.MICROSOFT) {
+						skipped++;
+						continue;
+					}
+					work.add(candidate);
+				}
+				if (work.isEmpty()) {
+					status.accept("Prism is up to date. " + skipped + " already saved.");
+					return;
+				}
+				status.accept("Checking " + work.size() + " Prism account" + (work.size() == 1 ? "" : "s") + "…");
+				for (PrismAccounts.Candidate candidate : work) {
+					if (checked > 0) {
 						Thread.sleep(800L);
 					}
+					checked++;
+					Entry existing = existing(candidate);
 					try {
 						MicrosoftAuth.Session session = importOne(candidate, clientIds);
-						if (candidate.active() || play == null) {
-							play = session;
+						if (existing == null) {
+							added++;
+							if (candidate.active() || play == null) {
+								play = session;
+							}
+						} else {
+							retried++;
 						}
-						ok++;
-						status.accept("Imported " + session.name() + " (" + ok + "/" + found.size() + ")");
+						status.accept((existing == null ? "Added " : "Updated ") + session.name()
+							+ " (" + checked + "/" + work.size() + ")");
 					} catch (Exception exception) {
-						fail++;
 						missed.add(candidate.name());
 						Stray.LOGGER.warn("Could not import Prism account {}", candidate.name(), exception);
 					}
 				}
 				save();
-				if (play != null) {
+				if (play != null && skipped == 0) {
 					login(play, status);
 				}
-				String done = "Imported " + ok + "/" + found.size() + " from Prism.";
+				String done = prismSummary(added, retried, skipped, work.size());
 				if (!missed.isEmpty()) {
 					done += " Missed " + String.join(", ", missed) + ".";
 				}
@@ -205,6 +227,32 @@ public final class AccountStore {
 		}, "stray-prism-import");
 		thread.setDaemon(true);
 		thread.start();
+	}
+
+	private static Entry existing(PrismAccounts.Candidate candidate) {
+		for (Entry entry : ACCOUNTS) {
+			if (entry.uuid.equals(candidate.uuid()) || entry.name.equalsIgnoreCase(candidate.name())) {
+				return entry;
+			}
+		}
+		return null;
+	}
+
+	private static String prismSummary(int added, int retried, int skipped, int checked) {
+		List<String> parts = new ArrayList<>();
+		if (added > 0) {
+			parts.add("added " + added);
+		}
+		if (retried > 0) {
+			parts.add("retried " + retried + " session");
+		}
+		if (skipped > 0) {
+			parts.add("skipped " + skipped);
+		}
+		if (parts.isEmpty()) {
+			return "Checked " + checked + " from Prism.";
+		}
+		return "Prism " + String.join(", ", parts) + ".";
 	}
 
 	private static List<String> clientIds(List<PrismAccounts.Candidate> found) {
