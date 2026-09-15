@@ -116,7 +116,10 @@ final class PrismAccounts {
 		}
 		String clientId = text(json, "msa-client-id");
 		if (clientId == null || clientId.isBlank()) {
-			clientId = DEFAULT_CLIENT_ID;
+			clientId = text(object(msa, "extra"), "client_id");
+		}
+		if (clientId == null) {
+			clientId = "";
 		}
 		return new Candidate(name, uuid, refresh, access, msaAccess, msaExp, clientId, json.has("active") && json.get("active").getAsBoolean());
 	}

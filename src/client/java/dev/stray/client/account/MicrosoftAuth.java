@@ -37,20 +37,25 @@ final class MicrosoftAuth {
 	}
 
 	static Session loginRefreshToken(String refreshToken) throws Exception {
-		return loginRefreshToken(refreshToken, null);
+		return loginRefreshToken(refreshToken, null, null, null);
 	}
 
 	static Session loginRefreshToken(String refreshToken, String clientId) throws Exception {
-		return loginRefreshToken(refreshToken, clientId, null);
+		return loginRefreshToken(refreshToken, clientId, null, null);
 	}
 
 	static Session loginRefreshToken(String refreshToken, String clientId, MsaEnvironment environment) throws Exception {
+		return loginRefreshToken(refreshToken, clientId, environment, null);
+	}
+
+	static Session loginRefreshToken(String refreshToken, String clientId, MsaEnvironment environment, String scope) throws Exception {
 		JavaAuthManager.Builder builder = JavaAuthManager.create(HTTP);
 		if (clientId != null && !clientId.isBlank()) {
-			MsaApplicationConfig config = new MsaApplicationConfig(clientId, MsaConstants.SCOPE_OFFLINE_ACCESS);
+			String usedScope = scope == null || scope.isBlank() ? scopeFor(clientId) : scope;
+			MsaApplicationConfig config = new MsaApplicationConfig(clientId, usedScope);
 			if (environment != null) {
 				config = config.withEnvironment(environment);
-			} else if (clientId.contains("-")) {
+			} else if (!titleClient(clientId)) {
 				config = config.withEnvironment(MsaEnvironment.MICROSOFT_ONLINE_CONSUMERS);
 			}
 			builder = builder.msaApplicationConfig(config);
@@ -60,12 +65,30 @@ final class MicrosoftAuth {
 	}
 
 	static Session loginMsa(String clientId, long expireTimeMs, String accessToken, String refreshToken) throws Exception {
-		MsaApplicationConfig config = new MsaApplicationConfig(clientId, MsaConstants.SCOPE_OFFLINE_ACCESS)
-			.withEnvironment(clientId != null && clientId.contains("-")
-				? MsaEnvironment.MICROSOFT_ONLINE_CONSUMERS
-				: MsaEnvironment.LIVE);
+		String id = clientId == null || clientId.isBlank() ? MsaConstants.JAVA_TITLE_ID : clientId;
+		MsaApplicationConfig config = new MsaApplicationConfig(id, scopeFor(id))
+			.withEnvironment(titleClient(id) ? MsaEnvironment.LIVE : MsaEnvironment.MICROSOFT_ONLINE_CONSUMERS);
 		MsaToken token = new MsaToken(expireTimeMs <= 0 ? Long.MAX_VALUE : expireTimeMs, accessToken, refreshToken);
 		return fromManager(withRetry(() -> JavaAuthManager.create(HTTP).msaApplicationConfig(config).login(token)));
+	}
+
+	static boolean titleClient(String clientId) {
+		return clientId != null && !clientId.contains("-");
+	}
+
+	static String scopeFor(String clientId) {
+		return titleClient(clientId) ? MsaConstants.SCOPE_TITLE_AUTH : MsaConstants.SCOPE_OFFLINE_ACCESS;
+	}
+
+	static boolean wrongClientId(Throwable exception) {
+		while (exception != null) {
+			String message = exception.getMessage();
+			if (message != null && message.toLowerCase(Locale.ROOT).contains("different client id")) {
+				return true;
+			}
+			exception = exception.getCause();
+		}
+		return false;
 	}
 
 	static Session fromAccessToken(String accessToken) throws Exception {
@@ -81,7 +104,7 @@ final class MicrosoftAuth {
 				return call.get();
 			} catch (Exception exception) {
 				last = exception;
-				if (!rateLimited(exception) || attempt == 3) {
+				if (!rateLimited(exception) || attempt == 3 || wrongClientId(exception)) {
 					throw exception;
 				}
 				Thread.sleep(2_500L * (attempt + 1));
