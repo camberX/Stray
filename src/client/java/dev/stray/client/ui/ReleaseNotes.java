@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.3.10", new String[]{
+			"Prism import was dropping most accounts. It now refreshes against Microsoft consumers, retries rate limits, and keeps Prism's Minecraft token if refresh fails."
+		}),
 		new Entry("1.3.9", new String[]{
 			"Accounts can import every Microsoft account Prism has saved. Prism reads accounts.json next to the instance or from the usual Prism data folder."
 		}),
