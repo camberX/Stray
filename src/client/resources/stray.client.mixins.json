@@ -19,6 +19,7 @@
 		"ChatComponentFillMixin",
 		"ChatComponentMixin",
 		"ChatScreenMixin",
+		"CommandSuggestionsMixin",
 		"ClientClockManagerMixin",
 		"ClientLevelAccessor",
 		"ClientPacketListenerMixin",

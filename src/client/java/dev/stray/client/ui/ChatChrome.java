@@ -48,6 +48,13 @@ public final class ChatChrome {
 		return skipFill && enabled();
 	}
 
+	public static int usageLift() {
+		if (!enabled()) {
+			return 0;
+		}
+		return Math.round(INPUT_MARGIN + INPUT_H) - 12;
+	}
+
 	public static int lineShift(FormattedCharSequence text) {
 		Motion motion = MOTION.get(text);
 		return motion == null ? 0 : motion.shift;
@@ -79,18 +86,25 @@ public final class ChatChrome {
 		int page = Math.max(1, chat.getLinesPerPage());
 		float dt = dt();
 		int live = tickLines(access, ticks, focused, page, lineH, dt);
-		if (live <= 0 && !focused && paneRows < 0.04f) {
+		if (live <= 0 && !focused) {
+			paneRows = 0f;
 			return;
 		}
 		float targetRows = focused ? page : live;
-		paneRows = ease(paneRows, targetRows, live > paneRows ? 16f : 12f, dt);
-		float rows = focused ? page : Math.max(live, paneRows);
+		if (focused) {
+			paneRows = page;
+		} else if (targetRows >= paneRows) {
+			paneRows = ease(paneRows, targetRows, 16f, dt);
+		} else {
+			paneRows = targetRows;
+		}
+		float rows = focused ? page : paneRows;
 		float w = access.stray$chatWidth() + PAD * 2f;
 		float h = rows * lineH * scale + PAD * 2f;
 		float x = 4f * scale - PAD;
 		float y = graphics.guiHeight() - 40f - rows * lineH * scale - PAD;
 		float radius = Math.min(12f, Math.min(w, h) * 0.12f);
-		float paneFade = focused ? 1f : Mth.clamp(Math.max(visibleAlpha(access, ticks, page), paneRows / Math.max(1f, targetRows)), 0f, 1f);
+		float paneFade = focused ? 1f : visibleAlpha(access, ticks, page);
 		int fill = chatFill(focused, paneFade);
 		GuiFrostBlur.blitWindow(graphics, x, y, w, h, radius);
 		GuiDraw.roundedFine(graphics, x, y, w, h, radius, fill);
@@ -110,7 +124,7 @@ public final class ChatChrome {
 			return;
 		}
 		int barY = Math.round(screen.height - INPUT_MARGIN - INPUT_H);
-		int fieldY = barY + Math.round((INPUT_H - FIELD_H) * 0.5f);
+		int fieldY = barY + Math.round((INPUT_H - FIELD_H) * 0.5f) + 3;
 		int fieldX = 10;
 		int fieldW = Math.max(16, screen.width - 20);
 		input.setRectangle(fieldW, FIELD_H, fieldX, fieldY);
@@ -202,8 +216,11 @@ public final class ChatChrome {
 
 	private static int chatFill(boolean focused, float fade) {
 		float opacity = ControlChrome.paneOpacity();
-		float alpha = focused ? opacity * 0.48f : opacity * 0.28f * Mth.clamp(fade, 0f, 1f);
-		alpha = Mth.clamp(alpha, focused ? 0.16f : 0.08f, focused ? 0.42f : 0.30f);
+		float t = Mth.clamp(fade, 0f, 1f);
+		float alpha = focused ? opacity * 0.48f : opacity * 0.28f * t;
+		float lo = focused ? 0.16f : 0.08f * t;
+		float hi = focused ? 0.42f : 0.30f;
+		alpha = Mth.clamp(alpha, lo, hi);
 		return Theme.withAlpha(ControlChrome.paneRgb(), Math.round(alpha * 255f));
 	}
 
