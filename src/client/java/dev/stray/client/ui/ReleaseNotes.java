@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.3.9", new String[]{
+			"Accounts can import every Microsoft account Prism has saved. Prism reads accounts.json next to the instance or from the usual Prism data folder."
+		}),
 		new Entry("1.3.8", new String[]{
 			"Accounts has space under Switch/Remove. Restore and login status sits under the title instead of on the buttons."
 		}),

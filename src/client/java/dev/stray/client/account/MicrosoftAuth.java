@@ -7,6 +7,8 @@ import net.raphimc.minecraftauth.java.JavaAuthManager;
 import net.raphimc.minecraftauth.java.model.MinecraftProfile;
 import net.raphimc.minecraftauth.java.model.MinecraftToken;
 import net.raphimc.minecraftauth.java.request.MinecraftProfileRequest;
+import net.raphimc.minecraftauth.msa.data.MsaConstants;
+import net.raphimc.minecraftauth.msa.model.MsaApplicationConfig;
 import net.raphimc.minecraftauth.msa.model.MsaDeviceCode;
 import net.raphimc.minecraftauth.msa.service.impl.DeviceCodeMsaAuthService;
 
@@ -32,8 +34,15 @@ final class MicrosoftAuth {
 	}
 
 	static Session loginRefreshToken(String refreshToken) throws Exception {
-		JavaAuthManager manager = JavaAuthManager.create(HTTP).login(refreshToken);
-		return fromManager(manager);
+		return loginRefreshToken(refreshToken, null);
+	}
+
+	static Session loginRefreshToken(String refreshToken, String clientId) throws Exception {
+		var builder = JavaAuthManager.create(HTTP);
+		if (clientId != null && !clientId.isBlank()) {
+			builder = builder.msaApplicationConfig(new MsaApplicationConfig(clientId, MsaConstants.SCOPE_OFFLINE_ACCESS));
+		}
+		return fromManager(builder.login(refreshToken));
 	}
 
 	static Session restore(JsonObject stored) throws Exception {
