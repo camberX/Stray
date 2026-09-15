@@ -1,6 +1,5 @@
 package dev.stray.client.ui;
 
-import com.mojang.realmsclient.RealmsMainScreen;
 import dev.stray.client.account.AccountStore;
 import dev.stray.client.render.GuiDraw;
 import dev.stray.client.render.TitleBackdrop;
@@ -88,7 +87,7 @@ public class StrayTitleScreen extends Screen {
 
 		float colW = BUTTON_W;
 		float colX = (width - colW) * 0.5f;
-		float stackH = BUTTON_H * 4 + BUTTON_GAP * 3 + 14 + BUTTON_H;
+		float stackH = BUTTON_H * 3 + BUTTON_GAP * 2 + 14 + BUTTON_H;
 		float colY = Mth.clamp((height - stackH) * 0.42f, 56, height - stackH - 48);
 
 		if (ControlChrome.on()) {
@@ -114,7 +113,6 @@ public class StrayTitleScreen extends Screen {
 		float y = colY;
 		y = button(graphics, font, mouseX, mouseY, colX, y, colW, "Singleplayer", true, fade, this::openSingleplayer);
 		y = button(graphics, font, mouseX, mouseY, colX, y, colW, "Multiplayer", multiplayerOpen(), fade, this::openMultiplayer);
-		y = button(graphics, font, mouseX, mouseY, colX, y, colW, "Realms", multiplayerOpen(), fade, this::openRealms);
 		y = button(graphics, font, mouseX, mouseY, colX, y, colW, "Accounts", true, fade, this::openAccounts);
 		y += 6;
 		float half = (colW - SPLIT_GAP) * 0.5f;
@@ -231,15 +229,6 @@ public class StrayTitleScreen extends Screen {
 		}
 		clickSound();
 		minecraft.setScreen(new JoinMultiplayerScreen(this));
-	}
-
-	private void openRealms() {
-		if (!multiplayerOpen()) {
-			status = "Realms needs multiplayer enabled.";
-			return;
-		}
-		clickSound();
-		minecraft.setScreen(new RealmsMainScreen(this));
 	}
 
 	private void openAccounts() {
