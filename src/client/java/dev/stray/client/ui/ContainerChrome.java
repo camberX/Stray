@@ -64,7 +64,7 @@ public final class ContainerChrome {
 		int left = box.stray$leftPos();
 		int top = box.stray$topPos();
 		for (Slot slot : container.getMenu().slots) {
-			if (slot == null || !slot.isActive()) {
+			if (slot == null || !slot.isActive() || ChestFillers.hide(slot)) {
 				continue;
 			}
 			GuiDraw.well(graphics, left + slot.x, top + slot.y, SLOT, Theme.PANEL, Theme.LINE);
@@ -73,7 +73,7 @@ public final class ContainerChrome {
 	}
 
 	public static void hover(GuiGraphicsExtractor graphics, Slot hovered) {
-		if (hovered == null || !hovered.isHighlightable()) {
+		if (hovered == null || !hovered.isHighlightable() || ChestFillers.hide(hovered)) {
 			return;
 		}
 		Theme.refresh();
