@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.3.16", new String[]{
+			"Prism import only retries Session accounts and adds names that are not already saved. Microsoft entries are left alone."
+		}),
 		new Entry("1.3.15", new String[]{
 			"Command shortcuts autocomplete in chat. Tab and the suggestion list include your aliases while you type the first word."
 		}),
