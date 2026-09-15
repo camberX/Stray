@@ -7,6 +7,7 @@ import dev.stray.client.render.MusicHudRenderer;
 import dev.stray.client.render.RawmatsHudRenderer;
 import dev.stray.client.update.UpdateToast;
 import dev.stray.client.ui.ChatChrome;
+import dev.stray.client.ui.CommandShortcuts;
 import dev.stray.client.ui.ProfileCommands;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
@@ -66,7 +67,9 @@ public class ChatScreenMixin {
 
 	@Inject(method = "handleChatInput", at = @At("HEAD"), cancellable = true)
 	private void stray$musicChat(String message, boolean addToHistory, CallbackInfo ci) {
-		if (MediaChat.handleTyped(message) || ProfileCommands.handleTyped(message)) {
+		if (MediaChat.handleTyped(message)
+			|| ProfileCommands.handleTyped(message)
+			|| (message != null && message.startsWith("/") && CommandShortcuts.handleTyped(message))) {
 			if (addToHistory && message != null && !message.isBlank()) {
 				Minecraft.getInstance().gui.getChat().addRecentChat(message);
 			}
