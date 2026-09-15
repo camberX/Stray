@@ -10,9 +10,7 @@ import java.io.Reader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -68,17 +66,17 @@ final class PrismAccounts {
 			if (list == null) {
 				return List.of();
 			}
-			Map<UUID, Candidate> unique = new LinkedHashMap<>();
+			List<Candidate> found = new ArrayList<>();
 			for (JsonElement element : list) {
 				if (!element.isJsonObject()) {
 					continue;
 				}
 				Candidate candidate = parse(element.getAsJsonObject());
 				if (candidate != null) {
-					unique.put(candidate.uuid, candidate);
+					found.add(candidate);
 				}
 			}
-			return List.copyOf(unique.values());
+			return found;
 		}
 	}
 
@@ -95,8 +93,14 @@ final class PrismAccounts {
 		JsonObject msa = object(json, "msa");
 		String refresh = token(msa, "refresh_token");
 		if (refresh.isBlank() && msa != null) {
-			refresh = token(object(msa, "extra"), "refresh_token");
+			JsonObject extra = object(msa, "extra");
+			refresh = token(extra, "refresh_token");
+			if (refresh.isBlank()) {
+				refresh = token(extra, "refreshToken");
+			}
 		}
+		String msaAccess = token(msa, "token");
+		long msaExp = millis(msa, "exp");
 		String access = token(object(json, "ygg"), "token");
 		if ("0".equals(access) || "offline".equalsIgnoreCase(access)) {
 			access = "";
@@ -114,7 +118,7 @@ final class PrismAccounts {
 		if (clientId == null || clientId.isBlank()) {
 			clientId = DEFAULT_CLIENT_ID;
 		}
-		return new Candidate(name, uuid, refresh, access, clientId, json.has("active") && json.get("active").getAsBoolean());
+		return new Candidate(name, uuid, refresh, access, msaAccess, msaExp, clientId, json.has("active") && json.get("active").getAsBoolean());
 	}
 
 	private static void add(List<Path> seen, Path path) {
@@ -165,7 +169,28 @@ final class PrismAccounts {
 		}
 	}
 
-	record Candidate(String name, UUID uuid, String refreshToken, String accessToken, String clientId, boolean active) {
+	private static long millis(JsonObject object, String key) {
+		if (object == null || !object.has(key) || object.get(key).isJsonNull()) {
+			return 0L;
+		}
+		try {
+			long value = object.get(key).getAsLong();
+			return value < 10_000_000_000L ? value * 1000L : value;
+		} catch (Exception ignored) {
+			return 0L;
+		}
+	}
+
+	record Candidate(
+		String name,
+		UUID uuid,
+		String refreshToken,
+		String accessToken,
+		String msaAccess,
+		long msaExpireMs,
+		String clientId,
+		boolean active
+	) {
 		boolean microsoft() {
 			return refreshToken != null && !refreshToken.isBlank();
 		}

@@ -10,6 +10,7 @@ import dev.stray.Stray;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.User;
+import net.raphimc.minecraftauth.msa.data.MsaEnvironment;
 import net.raphimc.minecraftauth.msa.model.MsaDeviceCode;
 
 import java.io.IOException;
@@ -167,7 +168,11 @@ public final class AccountStore {
 				int ok = 0;
 				int fail = 0;
 				MicrosoftAuth.Session play = null;
+				List<String> missed = new ArrayList<>();
 				for (PrismAccounts.Candidate candidate : found) {
+					if (ok + fail > 0) {
+						Thread.sleep(800L);
+					}
 					try {
 						MicrosoftAuth.Session session = importOne(candidate);
 						if (candidate.active() || play == null) {
@@ -177,6 +182,7 @@ public final class AccountStore {
 						status.accept("Imported " + session.name() + " (" + ok + "/" + found.size() + ")");
 					} catch (Exception exception) {
 						fail++;
+						missed.add(candidate.name());
 						Stray.LOGGER.warn("Could not import Prism account {}", candidate.name(), exception);
 					}
 				}
@@ -184,9 +190,9 @@ public final class AccountStore {
 				if (play != null) {
 					login(play, status);
 				}
-				String done = "Imported " + ok + " from Prism.";
-				if (fail > 0) {
-					done += " " + fail + " failed.";
+				String done = "Imported " + ok + "/" + found.size() + " from Prism.";
+				if (!missed.isEmpty()) {
+					done += " Missed " + String.join(", ", missed) + ".";
 				}
 				status.accept(done);
 			} catch (Exception exception) {
@@ -200,20 +206,57 @@ public final class AccountStore {
 	}
 
 	private static MicrosoftAuth.Session importOne(PrismAccounts.Candidate candidate) throws Exception {
+		Exception last = null;
 		if (candidate.microsoft()) {
+			for (MsaEnvironment environment : List.of(MsaEnvironment.MICROSOFT_ONLINE_CONSUMERS, MsaEnvironment.LIVE)) {
+				try {
+					MicrosoftAuth.Session session = MicrosoftAuth.loginRefreshToken(
+						candidate.refreshToken(),
+						candidate.clientId(),
+						environment
+					);
+					replace(session, Kind.MICROSOFT, false);
+					return session;
+				} catch (Exception exception) {
+					last = exception;
+				}
+			}
+			if (candidate.msaAccess() != null && !candidate.msaAccess().isBlank()) {
+				try {
+					MicrosoftAuth.Session session = MicrosoftAuth.loginMsa(
+						candidate.clientId(),
+						candidate.msaExpireMs(),
+						candidate.msaAccess(),
+						candidate.refreshToken()
+					);
+					replace(session, Kind.MICROSOFT, false);
+					return session;
+				} catch (Exception exception) {
+					last = exception;
+				}
+			}
+		}
+		if (candidate.accessToken() != null && !candidate.accessToken().isBlank()) {
 			try {
-				MicrosoftAuth.Session session = MicrosoftAuth.loginRefreshToken(candidate.refreshToken(), candidate.clientId());
-				replace(session, Kind.MICROSOFT, false);
+				MicrosoftAuth.Session session = MicrosoftAuth.fromAccessToken(candidate.accessToken());
+				replace(session, Kind.SESSION, false);
 				return session;
-			} catch (Exception first) {
-				MicrosoftAuth.Session session = MicrosoftAuth.loginRefreshToken(candidate.refreshToken());
-				replace(session, Kind.MICROSOFT, false);
+			} catch (Exception exception) {
+				last = exception;
+				MicrosoftAuth.Session session = new MicrosoftAuth.Session(
+					candidate.name(),
+					candidate.uuid(),
+					candidate.accessToken(),
+					null
+				);
+				replace(session, Kind.SESSION, false);
 				return session;
 			}
 		}
-		MicrosoftAuth.Session session = MicrosoftAuth.fromAccessToken(candidate.accessToken());
-		replace(session, Kind.SESSION, false);
-		return session;
+		if (last != null) {
+			throw last;
+		}
+		throw new IllegalStateException("Prism account " + candidate.name() + " has no usable token");
 	}
 
 	public static void addToken(String raw, Consumer<String> status) {
