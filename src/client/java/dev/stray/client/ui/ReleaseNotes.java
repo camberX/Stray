@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.2.312", new String[]{
+			"Themed chat glass fades with the messages instead of lingering. Command usage sits above the input, and typed text sits a bit lower in the bar."
+		}),
 		new Entry("1.2.311", new String[]{
 			"Themed chat no longer crashes when HUD chat draws. Keep only one Stray jar in mods."
 		}),
