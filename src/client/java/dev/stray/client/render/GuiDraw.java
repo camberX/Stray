@@ -280,13 +280,31 @@ public final class GuiDraw {
 	}
 
 	public static void blit(GuiGraphicsExtractor graphics, Identifier id, float x, float y, float w, float h, float u, float v, int regionW, int regionH, int texW, int texH) {
-		if (w <= 0 || h <= 0) {
+		blit(graphics, id, x, y, w, h, u, v, regionW, regionH, texW, texH, 0xFFFFFFFF);
+	}
+
+	public static void blit(
+		GuiGraphicsExtractor graphics,
+		Identifier id,
+		float x,
+		float y,
+		float w,
+		float h,
+		float u,
+		float v,
+		int regionW,
+		int regionH,
+		int texW,
+		int texH,
+		int color
+	) {
+		if (w <= 0 || h <= 0 || id == null || (color >>> 24) == 0) {
 			return;
 		}
 		graphics.pose().pushMatrix();
 		graphics.pose().translate(x, y);
 		graphics.pose().scale(w, h);
-		graphics.blit(RenderPipelines.GUI_TEXTURED, id, 0, 0, u, v, 1, 1, regionW, regionH, texW, texH, 0xFFFFFFFF);
+		graphics.blit(RenderPipelines.GUI_TEXTURED, id, 0, 0, u, v, 1, 1, regionW, regionH, texW, texH, color);
 		graphics.pose().popMatrix();
 	}
 

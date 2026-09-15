@@ -2,6 +2,7 @@ package dev.stray.client.ui;
 
 import dev.stray.client.render.GuiDraw;
 import dev.stray.client.render.Starfield;
+import dev.stray.client.render.TitleBackdrop;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.AbstractWidget;
@@ -47,6 +48,10 @@ public final class MenuChrome {
 	}
 
 	public static void sky(GuiGraphicsExtractor graphics, int width, int height) {
+		if (outOfWorld()) {
+			TitleBackdrop.draw(graphics, width, height);
+			return;
+		}
 		Theme.refresh();
 		int top;
 		int bot;
