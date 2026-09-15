@@ -62,6 +62,13 @@ public class ChatComponentFillMixin {
 		FormattedCharSequence text,
 		Operation<Void> original
 	) {
-		original.call(collector, alignment, x, y + ChatChrome.lineShift(text), parameters, text);
+		original.call(
+			collector,
+			alignment,
+			x + ChatChrome.lineX(text),
+			y + ChatChrome.lineShift(text),
+			parameters,
+			text
+		);
 	}
 }
