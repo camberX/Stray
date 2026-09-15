@@ -10,6 +10,7 @@ import dev.stray.Stray;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.User;
+import net.raphimc.minecraftauth.msa.data.MsaConstants;
 import net.raphimc.minecraftauth.msa.data.MsaEnvironment;
 import net.raphimc.minecraftauth.msa.model.MsaDeviceCode;
 
@@ -169,12 +170,13 @@ public final class AccountStore {
 				int fail = 0;
 				MicrosoftAuth.Session play = null;
 				List<String> missed = new ArrayList<>();
+				List<String> clientIds = clientIds(found);
 				for (PrismAccounts.Candidate candidate : found) {
 					if (ok + fail > 0) {
 						Thread.sleep(800L);
 					}
 					try {
-						MicrosoftAuth.Session session = importOne(candidate);
+						MicrosoftAuth.Session session = importOne(candidate, clientIds);
 						if (candidate.active() || play == null) {
 							play = session;
 						}
@@ -205,34 +207,82 @@ public final class AccountStore {
 		thread.start();
 	}
 
-	private static MicrosoftAuth.Session importOne(PrismAccounts.Candidate candidate) throws Exception {
-		Exception last = null;
-		if (candidate.microsoft()) {
-			for (MsaEnvironment environment : List.of(MsaEnvironment.MICROSOFT_ONLINE_CONSUMERS, MsaEnvironment.LIVE)) {
-				try {
-					MicrosoftAuth.Session session = MicrosoftAuth.loginRefreshToken(
-						candidate.refreshToken(),
-						candidate.clientId(),
-						environment
-					);
-					replace(session, Kind.MICROSOFT, false);
-					return session;
-				} catch (Exception exception) {
-					last = exception;
-				}
+	private static List<String> clientIds(List<PrismAccounts.Candidate> found) {
+		List<String> ids = new ArrayList<>();
+		for (PrismAccounts.Candidate candidate : found) {
+			addClientId(ids, candidate.clientId());
+		}
+		addClientId(ids, PrismAccounts.DEFAULT_CLIENT_ID);
+		addClientId(ids, MsaConstants.JAVA_TITLE_ID);
+		return ids;
+	}
+
+	private static void addClientId(List<String> ids, String id) {
+		if (id == null || id.isBlank()) {
+			return;
+		}
+		for (String existing : ids) {
+			if (existing.equalsIgnoreCase(id)) {
+				return;
 			}
-			if (candidate.msaAccess() != null && !candidate.msaAccess().isBlank()) {
-				try {
-					MicrosoftAuth.Session session = MicrosoftAuth.loginMsa(
-						candidate.clientId(),
-						candidate.msaExpireMs(),
-						candidate.msaAccess(),
-						candidate.refreshToken()
-					);
-					replace(session, Kind.MICROSOFT, false);
-					return session;
-				} catch (Exception exception) {
-					last = exception;
+		}
+		ids.add(id);
+	}
+
+	private static MicrosoftAuth.Session importOne(PrismAccounts.Candidate candidate, List<String> clientIds) throws Exception {
+		Exception last = null;
+		if (candidate.msaAccess() != null && !candidate.msaAccess().isBlank()
+			&& (candidate.msaExpireMs() <= 0L || candidate.msaExpireMs() > System.currentTimeMillis() + 30_000L)) {
+			try {
+				MicrosoftAuth.Session session = MicrosoftAuth.loginMsa(
+					candidate.clientId(),
+					candidate.msaExpireMs(),
+					candidate.msaAccess(),
+					candidate.refreshToken()
+				);
+				replace(session, Kind.MICROSOFT, false);
+				return session;
+			} catch (Exception exception) {
+				last = exception;
+			}
+		}
+		if (candidate.microsoft()) {
+			List<String> ids = new ArrayList<>();
+			addClientId(ids, candidate.clientId());
+			for (String id : clientIds) {
+				addClientId(ids, id);
+			}
+			for (String clientId : ids) {
+				boolean wrongId = false;
+				List<String> scopes = MicrosoftAuth.titleClient(clientId)
+					? List.of(MsaConstants.SCOPE_TITLE_AUTH, MsaConstants.SCOPE_OFFLINE_ACCESS)
+					: List.of(MsaConstants.SCOPE_OFFLINE_ACCESS, MsaConstants.SCOPE_TITLE_AUTH);
+				List<MsaEnvironment> environments = MicrosoftAuth.titleClient(clientId)
+					? List.of(MsaEnvironment.LIVE, MsaEnvironment.MICROSOFT_ONLINE_CONSUMERS)
+					: List.of(MsaEnvironment.MICROSOFT_ONLINE_CONSUMERS, MsaEnvironment.LIVE);
+				outer:
+				for (String scope : scopes) {
+					for (MsaEnvironment environment : environments) {
+						try {
+							MicrosoftAuth.Session session = MicrosoftAuth.loginRefreshToken(
+								candidate.refreshToken(),
+								clientId,
+								environment,
+								scope
+							);
+							replace(session, Kind.MICROSOFT, false);
+							return session;
+						} catch (Exception exception) {
+							last = exception;
+							if (MicrosoftAuth.wrongClientId(exception)) {
+								wrongId = true;
+								break outer;
+							}
+						}
+					}
+				}
+				if (wrongId) {
+					continue;
 				}
 			}
 		}

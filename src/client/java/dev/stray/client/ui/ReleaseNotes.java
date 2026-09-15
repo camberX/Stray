@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.3.11", new String[]{
+			"Prism import matches each account's Microsoft app id. Tokens from the official launcher were being refreshed as Prism's app, which Microsoft rejects."
+		}),
 		new Entry("1.3.10", new String[]{
 			"Prism import was dropping most accounts. It now refreshes against Microsoft consumers, retries rate limits, and keeps Prism's Minecraft token if refresh fails."
 		}),
