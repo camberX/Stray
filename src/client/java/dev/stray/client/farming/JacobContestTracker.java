@@ -108,6 +108,9 @@ public final class JacobContestTracker {
 
 	private static Parsed read(Minecraft client) {
 		SidebarJacob sidebar = readSidebar(client);
+		if (!sidebar.present()) {
+			return null;
+		}
 		Parsed tab = readTab(client);
 		int remaining = sidebar.remaining >= 0 ? sidebar.remaining : tab == null ? -1 : tab.remaining;
 		String crop = !sidebar.crop.isEmpty() ? sidebar.crop : tab == null ? "" : tab.crop;
@@ -227,7 +230,7 @@ public final class JacobContestTracker {
 				remaining = parseTime(line);
 			}
 		}
-		return new SidebarJacob(crop, remaining, score);
+		return new SidebarJacob(true, crop, remaining, score);
 	}
 
 	private static List<String> sidebarLines(Minecraft client) {
@@ -495,8 +498,8 @@ public final class JacobContestTracker {
 	private record Parsed(String crop, int remaining, int score, Medal rank, Map<Medal, Integer> cutoffs) {
 	}
 
-	private record SidebarJacob(String crop, int remaining, int score) {
-		private static final SidebarJacob EMPTY = new SidebarJacob("", -1, -1);
+	private record SidebarJacob(boolean present, String crop, int remaining, int score) {
+		private static final SidebarJacob EMPTY = new SidebarJacob(false, "", -1, -1);
 	}
 
 	private record ScoreSample(int remaining, int value) {
