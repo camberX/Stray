@@ -298,13 +298,32 @@ public final class GuiDraw {
 		int texH,
 		int color
 	) {
-		if (w <= 0 || h <= 0 || id == null || (color >>> 24) == 0) {
+		blit(graphics, RenderPipelines.GUI_TEXTURED, id, x, y, w, h, u, v, regionW, regionH, texW, texH, color);
+	}
+
+	public static void blit(
+		GuiGraphicsExtractor graphics,
+		com.mojang.blaze3d.pipeline.RenderPipeline pipeline,
+		Identifier id,
+		float x,
+		float y,
+		float w,
+		float h,
+		float u,
+		float v,
+		int regionW,
+		int regionH,
+		int texW,
+		int texH,
+		int color
+	) {
+		if (w <= 0 || h <= 0 || id == null || pipeline == null || (color >>> 24) == 0) {
 			return;
 		}
 		graphics.pose().pushMatrix();
 		graphics.pose().translate(x, y);
 		graphics.pose().scale(w, h);
-		graphics.blit(RenderPipelines.GUI_TEXTURED, id, 0, 0, u, v, 1, 1, regionW, regionH, texW, texH, color);
+		graphics.blit(pipeline, id, 0, 0, u, v, 1, 1, regionW, regionH, texW, texH, color);
 		graphics.pose().popMatrix();
 	}
 

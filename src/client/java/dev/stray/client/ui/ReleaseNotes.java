@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.3.2", new String[]{
+			"The title marble slowly flows. Accent tint stays, and the surface keeps a small liquid warp."
+		}),
 		new Entry("1.3.1", new String[]{
 			"The title screen uses the liquid marble backdrop. It tints to the accent color instead of staying pink."
 		}),
