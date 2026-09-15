@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.3.5", new String[]{
+			"Jacob contest HUD only shows while Jacob's Contest is on the scoreboard, not from the tab widget alone."
+		}),
 		new Entry("1.3.3", new String[]{
 			"The title marble actually drifts now. The last build warped in a shader that never got the clock, so it looked still."
 		}),
