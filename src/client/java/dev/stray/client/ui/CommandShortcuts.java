@@ -1,11 +1,17 @@
 package dev.stray.client.ui;
 
 import com.mojang.brigadier.Command;
+import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.LiteralMessage;
+import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.suggestion.Suggestions;
 import com.mojang.brigadier.suggestion.SuggestionsBuilder;
 import dev.stray.client.config.StrayConfig;
+import net.fabricmc.fabric.api.client.command.v2.ClientCommands;
+import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource;
+import net.fabricmc.fabric.impl.command.client.ClientCommandInternals;
 import net.minecraft.client.Minecraft;
+import net.minecraft.network.protocol.game.ServerboundChatCommandPacket;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -20,14 +26,38 @@ public final class CommandShortcuts {
 	public static final int MAX_COMMAND = 256;
 
 	private static boolean sending;
+	private static CommandDispatcher<FabricClientCommandSource> clientDispatcher;
 
 	private CommandShortcuts() {
+	}
+
+	public static void register(CommandDispatcher<FabricClientCommandSource> dispatcher) {
+		clientDispatcher = dispatcher;
+		installAll();
+	}
+
+	public static void sync() {
+		installAll();
+		refreshMerged();
 	}
 
 	public static boolean handleTyped(String raw) {
 		if (sending) {
 			return false;
 		}
+		return expandAndSend(raw);
+	}
+
+	public static int execute(String alias, String args) {
+		String rest = args == null ? "" : args.trim();
+		String raw = rest.isEmpty() ? alias : alias + " " + rest;
+		if (expandAndSend(raw)) {
+			return Command.SINGLE_SUCCESS;
+		}
+		return send(raw) ? Command.SINGLE_SUCCESS : 0;
+	}
+
+	private static boolean expandAndSend(String raw) {
 		StrayConfig config = StrayConfig.get();
 		if (!config.commandShortcutsEnabled) {
 			return false;
@@ -59,10 +89,33 @@ public final class CommandShortcuts {
 		if (config.commandShortcutsPassArgs && !rest.isEmpty()) {
 			expanded = expanded + " " + rest;
 		}
-		if (expanded.equals(message)) {
+		if (expanded.equalsIgnoreCase(message)) {
 			return false;
 		}
 		return send(expanded);
+	}
+
+	public static String usageHint(String input) {
+		if (!suggests() || input == null || !input.startsWith("/")) {
+			return null;
+		}
+		String message = input.substring(1).trim();
+		if (message.isEmpty()) {
+			return null;
+		}
+		int split = -1;
+		for (int i = 0; i < message.length(); i++) {
+			if (Character.isWhitespace(message.charAt(i))) {
+				split = i;
+				break;
+			}
+		}
+		String alias = (split < 0 ? message : message.substring(0, split));
+		StrayConfig.CommandShortcut match = find(StrayConfig.get(), alias);
+		if (match == null) {
+			return null;
+		}
+		return "/" + match.alias + "  →  /" + match.command;
 	}
 
 	public static boolean suggests() {
@@ -150,6 +203,7 @@ public final class CommandShortcuts {
 			if (key.equals(row.alias.toLowerCase(Locale.ROOT))) {
 				row.command = command;
 				config.save();
+				sync();
 				return true;
 			}
 		}
@@ -161,6 +215,7 @@ public final class CommandShortcuts {
 		row.command = command;
 		config.commandShortcuts.add(row);
 		config.save();
+		sync();
 		return true;
 	}
 
@@ -172,6 +227,7 @@ public final class CommandShortcuts {
 		}
 		config.commandShortcuts.remove(index);
 		config.save();
+		sync();
 		return true;
 	}
 
@@ -240,14 +296,77 @@ public final class CommandShortcuts {
 		return value;
 	}
 
+	private static void installAll() {
+		if (clientDispatcher == null) {
+			return;
+		}
+		StrayConfig config = StrayConfig.get();
+		if (!config.commandShortcutsEnabled) {
+			return;
+		}
+		normalize(config);
+		for (StrayConfig.CommandShortcut row : config.commandShortcuts) {
+			if (row != null) {
+				install(row.alias);
+			}
+		}
+	}
+
+	private static void install(String aliasRaw) {
+		if (clientDispatcher == null) {
+			return;
+		}
+		String alias = normalizeAlias(aliasRaw).toLowerCase(Locale.ROOT);
+		if (!safeLiteral(alias) || clientDispatcher.getRoot().getChild(alias) != null) {
+			return;
+		}
+		try {
+			clientDispatcher.register(
+				ClientCommands.literal(alias)
+					.executes(context -> execute(alias, ""))
+					.then(ClientCommands.argument("args", StringArgumentType.greedyString())
+						.executes(context -> execute(alias, StringArgumentType.getString(context, "args"))))
+			);
+		} catch (RuntimeException ignored) {
+		}
+	}
+
+	private static boolean safeLiteral(String alias) {
+		if (alias.isEmpty()) {
+			return false;
+		}
+		for (int i = 0; i < alias.length(); i++) {
+			char c = alias.charAt(i);
+			if (c != '_' && c != '-' && (c < '0' || c > '9') && (c < 'a' || c > 'z')) {
+				return false;
+			}
+		}
+		return true;
+	}
+
+	@SuppressWarnings("unchecked")
+	private static void refreshMerged() {
+		Minecraft client = Minecraft.getInstance();
+		if (client.getConnection() == null || ClientCommandInternals.getActiveDispatcher() == null) {
+			return;
+		}
+		try {
+			ClientCommandInternals.addCommands(
+				(CommandDispatcher<FabricClientCommandSource>) (CommandDispatcher<?>) client.getConnection().getCommands(),
+				(FabricClientCommandSource) client.getConnection().getSuggestionsProvider()
+			);
+		} catch (RuntimeException ignored) {
+		}
+	}
+
 	private static boolean send(String command) {
 		Minecraft client = Minecraft.getInstance();
-		if (client.player == null || client.player.connection == null) {
+		if (client.getConnection() == null || command == null || command.isBlank()) {
 			return false;
 		}
 		sending = true;
 		try {
-			client.player.connection.sendCommand(command);
+			client.getConnection().send(new ServerboundChatCommandPacket(command));
 			return true;
 		} catch (RuntimeException ignored) {
 			return false;

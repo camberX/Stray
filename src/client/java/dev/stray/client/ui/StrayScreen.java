@@ -2499,7 +2499,10 @@ public class StrayScreen extends Screen {
 					shortcutsH,
 					"Shortcuts",
 					config.commandShortcutsEnabled,
-					v -> config.commandShortcutsEnabled = v,
+					v -> {
+						config.commandShortcutsEnabled = v;
+						CommandShortcuts.sync();
+					},
 					mouseX,
 					mouseY,
 					"Edit",
@@ -3811,7 +3814,7 @@ public class StrayScreen extends Screen {
 		return FabricLoader.getInstance()
 			.getModContainer("stray")
 			.map(container -> container.getMetadata().getVersion().getFriendlyString())
-			.orElse("1.3.15");
+			.orElse("1.3.16");
 	}
 
 	@Override

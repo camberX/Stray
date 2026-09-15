@@ -273,6 +273,7 @@ public final class StrayClient implements ClientModInitializer {
 				.then(ClientCommands.argument("player", StringArgumentType.greedyString())
 					.executes(context -> ProfileCommands.open(StringArgumentType.getString(context, "player")))));
 			dispatcher.register(AutoClickerCommands.command());
+			CommandShortcuts.register(dispatcher);
 		});
 
 		ClientTickEvents.START_CLIENT_TICK.register(client -> {
@@ -362,6 +363,7 @@ public final class StrayClient implements ClientModInitializer {
 			SkyblockProfileApi.refresh();
 			ShopCape.onJoin();
 			CommandRings.onWorldChange();
+			client.execute(CommandShortcuts::sync);
 		});
 
 		ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> {

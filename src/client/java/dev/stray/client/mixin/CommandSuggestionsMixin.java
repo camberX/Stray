@@ -11,12 +11,16 @@ import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.CommandSuggestions;
 import net.minecraft.client.gui.components.EditBox;
+import net.minecraft.network.chat.Component;
 import net.minecraft.util.FormattedCharSequence;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 @Mixin(CommandSuggestions.class)
@@ -24,6 +28,25 @@ public class CommandSuggestionsMixin {
 	@Shadow
 	@Final
 	private EditBox input;
+
+	@Shadow
+	@Final
+	private List<FormattedCharSequence> commandUsage;
+
+	@Shadow
+	private void recomputeUsageBoxWidth() {
+	}
+
+	@Inject(method = "updateUsageInfo", at = @At("RETURN"))
+	private void stray$shortcutUsage(ParseResults<?> parse, Suggestions suggestions, CallbackInfo ci) {
+		String hint = CommandShortcuts.usageHint(input.getValue());
+		if (hint == null) {
+			return;
+		}
+		commandUsage.clear();
+		commandUsage.add(Component.literal(hint).withStyle(CommandSuggestions.USAGE_FORMAT).getVisualOrderText());
+		recomputeUsageBoxWidth();
+	}
 
 	@WrapOperation(
 		method = "updateCommandInfo",
