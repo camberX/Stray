@@ -5,6 +5,7 @@ import dev.stray.client.fairy.FairySoulTracker;
 import dev.stray.client.item.SackLive;
 import dev.stray.client.mining.MetalDetector;
 import dev.stray.client.skill.SkillProgressTracker;
+import dev.stray.client.ui.CommandShortcuts;
 import dev.stray.client.ui.ProfileCommands;
 import net.minecraft.client.multiplayer.ClientPacketListener;
 import net.minecraft.network.protocol.game.ClientboundGameEventPacket;
@@ -19,7 +20,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public class ClientPacketListenerMixin {
 	@Inject(method = "sendCommand", at = @At("HEAD"), cancellable = true)
 	private void stray$stealProfileCommand(String command, CallbackInfo ci) {
-		if (ProfileCommands.handleTyped(command)) {
+		if (ProfileCommands.handleTyped(command) || CommandShortcuts.handleTyped(command)) {
 			ci.cancel();
 		}
 	}

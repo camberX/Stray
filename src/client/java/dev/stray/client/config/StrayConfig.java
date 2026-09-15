@@ -8,6 +8,7 @@ import dev.stray.Stray;
 import dev.stray.client.render.GlowBlurRadius;
 import dev.stray.client.render.MobCatalog;
 import dev.stray.client.ui.Theme;
+import dev.stray.client.ui.CommandShortcuts;
 import net.fabricmc.loader.api.FabricLoader;
 
 import java.io.IOException;
@@ -136,6 +137,9 @@ public final class StrayConfig {
 	public String blockMarkEditKey = "key.keyboard.enter";
 	public boolean commandRingsEnabled = false;
 	public int commandRingsRgb = 0x2FB5FF;
+	public boolean commandShortcutsEnabled = false;
+	public boolean commandShortcutsPassArgs = true;
+	public java.util.List<CommandShortcut> commandShortcuts = new java.util.ArrayList<>();
 	public boolean pathsEnabled = false;
 	public boolean pathThroughWalls = true;
 	public float pathWidth = 2.4f;
@@ -886,6 +890,16 @@ public final class StrayConfig {
 				if (!json.has("commandRingsRgb") || (loaded.commandRingsRgb & 0xFFFFFF) == 0) {
 					loaded.commandRingsRgb = 0x2FB5FF;
 				}
+				if (!json.has("commandShortcutsEnabled")) {
+					loaded.commandShortcutsEnabled = false;
+				}
+				if (!json.has("commandShortcutsPassArgs")) {
+					loaded.commandShortcutsPassArgs = true;
+				}
+				if (loaded.commandShortcuts == null) {
+					loaded.commandShortcuts = new java.util.ArrayList<>();
+				}
+				CommandShortcuts.normalize(loaded);
 				if (!json.has("pathsEnabled")) {
 					loaded.pathsEnabled = false;
 				}
@@ -1812,6 +1826,11 @@ public final class StrayConfig {
 		public float x = -1f;
 		public float y = -1f;
 		public float scale = 1f;
+	}
+
+	public static final class CommandShortcut {
+		public String alias = "";
+		public String command = "";
 	}
 
 	public static final class ItemSkin {

@@ -33,7 +33,8 @@ public final class MenuChrome {
 			|| screen instanceof ItemEditScreen
 			|| screen instanceof HudEditorScreen
 			|| screen instanceof CapeCreatorScreen
-			|| screen instanceof LoadoutsScreen) {
+			|| screen instanceof LoadoutsScreen
+			|| screen instanceof CommandShortcutScreen) {
 			return false;
 		}
 		if (screen.isInGameUi() || screen instanceof AbstractContainerScreen || screen instanceof ChatScreen) {
