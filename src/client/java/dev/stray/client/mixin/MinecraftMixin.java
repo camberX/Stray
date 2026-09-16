@@ -5,6 +5,7 @@ import dev.stray.client.farming.AutoDna;
 import dev.stray.client.menu.DisabledPotions;
 import dev.stray.client.combat.MageBeamHits;
 import dev.stray.client.combat.Triggerbot;
+import dev.stray.client.movement.MovementRings;
 import dev.stray.client.render.BlockMarks;
 import dev.stray.client.render.MobGlowRenderer;
 import dev.stray.client.ui.LoadoutsScreen;
@@ -45,6 +46,7 @@ public class MinecraftMixin {
 	@Inject(method = "handleKeybinds", at = @At("HEAD"))
 	private void stray$triggerbot(CallbackInfo ci) {
 		Minecraft client = (Minecraft) (Object) this;
+		MovementRings.preKeybinds(client);
 		Triggerbot.tick(client);
 		MageBeamHits.onAttack(client);
 	}

@@ -17,9 +17,9 @@ import java.nio.file.Path;
 import java.util.Locale;
 
 /**
- * Shared Skyblock-island key and JSON helpers for paths, block marks, and
- * command rings. Public islands use the tab {@code Area:} name so Hub marks
- * never load in the Hollows.
+ * Shared Skyblock-island key and JSON helpers for paths, block marks,
+ * command rings, and movement rings. Public islands use the tab {@code Area:}
+ * name so Hub marks never load in the Hollows.
  */
 public final class IslandSaves {
 	public static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();

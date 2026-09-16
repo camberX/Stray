@@ -137,6 +137,9 @@ public final class StrayConfig {
 	public String blockMarkEditKey = "key.keyboard.enter";
 	public boolean commandRingsEnabled = false;
 	public int commandRingsRgb = 0x2FB5FF;
+	public boolean movementRingsEnabled = false;
+	public int movementRingsRgb = 0xFF8A4A;
+	public String movementRecordKey = "key.keyboard.unknown";
 	public boolean commandShortcutsEnabled = false;
 	public boolean commandShortcutsPassArgs = true;
 	public java.util.List<CommandShortcut> commandShortcuts = new java.util.ArrayList<>();
@@ -890,6 +893,13 @@ public final class StrayConfig {
 				if (!json.has("commandRingsRgb") || (loaded.commandRingsRgb & 0xFFFFFF) == 0) {
 					loaded.commandRingsRgb = 0x2FB5FF;
 				}
+				if (!json.has("movementRingsEnabled")) {
+					loaded.movementRingsEnabled = false;
+				}
+				if (!json.has("movementRingsRgb") || (loaded.movementRingsRgb & 0xFFFFFF) == 0) {
+					loaded.movementRingsRgb = 0xFF8A4A;
+				}
+				loaded.movementRecordKey = blankKey(loaded.movementRecordKey, "key.keyboard.unknown");
 				if (!json.has("commandShortcutsEnabled")) {
 					loaded.commandShortcutsEnabled = false;
 				}
