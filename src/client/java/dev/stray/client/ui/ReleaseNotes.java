@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.3.29", new String[]{
+			"Movement ring replay snaps you to the recorded start and clears leftover speed before the tape runs, so walk-in no longer starts from a random edge."
+		}),
 		new Entry("1.3.28", new String[]{
 			"Movement rings only start replay when you are on the ground. Jumping through one stays armed until you land."
 		}),

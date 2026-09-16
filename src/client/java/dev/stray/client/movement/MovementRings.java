@@ -31,6 +31,7 @@ import net.minecraft.gizmos.GizmoProperties;
 import net.minecraft.gizmos.GizmoStyle;
 import net.minecraft.gizmos.Gizmos;
 import net.minecraft.network.chat.Component;
+import net.minecraft.client.server.IntegratedServer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.player.Input;
@@ -44,6 +45,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.UUID;
 
 /**
  * Place a ring with {@code /stray move 2}. Stand in it and press the record
@@ -504,6 +506,9 @@ public final class MovementRings {
 			return;
 		}
 		inside.frames.clear();
+		inside.startX = client.player.getX();
+		inside.startY = client.player.getY();
+		inside.startZ = client.player.getZ();
 		inside.invalidateLabels();
 		recordingRing = inside;
 		inside.armed = false;
@@ -569,6 +574,9 @@ public final class MovementRings {
 		playTickNanos = 0L;
 		lastPlaySyncNanos = 0L;
 		Frame first = ring.frames.getFirst();
+		if (player != null) {
+			snapToStart(client, player, ring, first);
+		}
 		aimFromYaw = player == null ? first.yaw : player.getYRot();
 		aimFromPitch = player == null ? first.pitch : player.getXRot();
 		aimToYaw = first.yaw;
@@ -594,6 +602,30 @@ public final class MovementRings {
 			aimMs = Math.max(80L, Math.min(800L, Math.round((140.0 + span * 2.8) / speed)));
 		}
 		client.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.NOTE_BLOCK_HAT.value(), 1.2f, 0.45f));
+	}
+
+	private static void snapToStart(Minecraft client, LocalPlayer player, Ring ring, Frame first) {
+		double x = ring.startX;
+		double y = ring.startY;
+		double z = ring.startZ;
+		player.snapTo(x, y, z, first.yaw, first.pitch);
+		player.setDeltaMovement(Vec3.ZERO);
+		player.resetFallDistance();
+		player.setOldPosAndRot();
+		player.setSprinting((first.flags & F_SPRINT) != 0);
+		IntegratedServer server = client.getSingleplayerServer();
+		if (server == null) {
+			return;
+		}
+		UUID id = player.getUUID();
+		server.execute(() -> {
+			var sp = server.getPlayerList().getPlayer(id);
+			if (sp != null) {
+				sp.snapTo(x, y, z, first.yaw, first.pitch);
+				sp.setDeltaMovement(Vec3.ZERO);
+				sp.resetFallDistance();
+			}
+		});
 	}
 
 	private static void capture(Minecraft client) {
@@ -927,6 +959,9 @@ public final class MovementRings {
 		public final double y;
 		public final double z;
 		public final float radius;
+		double startX;
+		double startY;
+		double startZ;
 		final List<Frame> frames;
 		boolean inside;
 		boolean armed;
@@ -938,6 +973,9 @@ public final class MovementRings {
 			this.y = y;
 			this.z = z;
 			this.radius = radius;
+			this.startX = x;
+			this.startY = y;
+			this.startZ = z;
 			this.frames = frames;
 			this.inside = placedNow;
 			this.armed = false;
@@ -1068,7 +1106,7 @@ public final class MovementRings {
 				}
 			}
 		}
-		return new Ring(
+		Ring ring = new Ring(
 			object.get("x").getAsDouble(),
 			object.get("y").getAsDouble(),
 			object.get("z").getAsDouble(),
@@ -1076,6 +1114,14 @@ public final class MovementRings {
 			frames,
 			false
 		);
+		ring.startX = coordOr(object, "startX", ring.x);
+		ring.startY = coordOr(object, "startY", ring.y);
+		ring.startZ = coordOr(object, "startZ", ring.z);
+		return ring;
+	}
+
+	private static double coordOr(JsonObject object, String key, double fallback) {
+		return object.has(key) ? object.get(key).getAsDouble() : fallback;
 	}
 
 	private static void save() {
@@ -1091,6 +1137,9 @@ public final class MovementRings {
 				object.addProperty("y", IslandSaves.coord(ring.y));
 				object.addProperty("z", IslandSaves.coord(ring.z));
 				object.addProperty("radius", IslandSaves.coord(ring.radius));
+				object.addProperty("startX", IslandSaves.coord(ring.startX));
+				object.addProperty("startY", IslandSaves.coord(ring.startY));
+				object.addProperty("startZ", IslandSaves.coord(ring.startZ));
 				JsonArray frames = new JsonArray();
 				for (Frame frame : ring.frames) {
 					JsonArray row = new JsonArray();
