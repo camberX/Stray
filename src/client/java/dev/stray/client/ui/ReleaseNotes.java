@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.3.30", new String[]{
+			"Movement ring replay now follows the recorded position every tick, not just keys. Re-record a ring once; after that the path matches the tape."
+		}),
 		new Entry("1.3.29", new String[]{
 			"Movement ring replay snaps you to the recorded start and clears leftover speed before the tape runs, so walk-in no longer starts from a random edge."
 		}),
