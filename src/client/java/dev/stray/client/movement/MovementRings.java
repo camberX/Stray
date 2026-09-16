@@ -13,6 +13,7 @@ import dev.stray.client.render.GuiDraw;
 import dev.stray.client.render.NametagRenderer;
 import dev.stray.client.ui.Anim;
 import dev.stray.client.ui.MenuFont;
+import dev.stray.client.mining.SmoothRotate;
 import dev.stray.client.ui.Theme;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents;
 import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderEvents;
@@ -31,6 +32,7 @@ import net.minecraft.gizmos.GizmoStyle;
 import net.minecraft.gizmos.Gizmos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.sounds.SoundEvents;
+import net.minecraft.util.Mth;
 import net.minecraft.world.entity.player.Input;
 import net.minecraft.world.phys.Vec2;
 import net.minecraft.world.phys.Vec3;
@@ -89,6 +91,16 @@ public final class MovementRings {
 	private static int playIndex;
 	private static boolean playAttack;
 	private static boolean playUse;
+	private static boolean aiming;
+	private static long aimStart;
+	private static long aimMs;
+	private static float aimFromYaw;
+	private static float aimFromPitch;
+	private static float aimToYaw;
+	private static float aimToPitch;
+	private static float lookYaw;
+	private static float lookPitch;
+	private static long lookNanos;
 	private static long lastServerTime = Long.MIN_VALUE;
 	private static long lastServerNano;
 	private static long lastServerDeltaTicks = 1L;
@@ -241,7 +253,10 @@ public final class MovementRings {
 			toggleRecord(client);
 		}
 		recordWasDown = down;
-		boolean step = serverStep(client);
+		boolean step = false;
+		if (recordingRing != null || (playingRing != null && !aiming)) {
+			step = serverStep(client);
+		}
 		if (recordingRing != null) {
 			if (step && client.screen == null) {
 				capture(client);
@@ -255,7 +270,7 @@ public final class MovementRings {
 		} else if (playingRing != null) {
 			if (client.screen != null) {
 				stopPlayback();
-			} else if (step) {
+			} else if (!aiming && step) {
 				playIndex++;
 				if (playIndex >= playingRing.frames.size()) {
 					stopPlayback();
@@ -276,18 +291,27 @@ public final class MovementRings {
 			stopPlayback();
 			return;
 		}
+		applyCamera(client);
+		if (aiming) {
+			Frame first = playingRing.frames.getFirst();
+			int slot = first.slot & 0xFF;
+			if (slot >= 0 && slot < 9 && client.player.getInventory().getSelectedSlot() != slot) {
+				client.player.getInventory().setSelectedSlot(slot);
+			}
+			setClick(client.options.keyAttack, false, playAttack);
+			setClick(client.options.keyUse, false, playUse);
+			playAttack = false;
+			playUse = false;
+			return;
+		}
 		Frame frame = currentFrame();
 		if (frame == null) {
 			stopPlayback();
 			return;
 		}
-		LocalPlayer player = client.player;
-		player.setYRot(frame.yaw);
-		player.setXRot(frame.pitch);
-		player.yHeadRot = frame.yaw;
 		int slot = frame.slot & 0xFF;
-		if (slot >= 0 && slot < 9 && player.getInventory().getSelectedSlot() != slot) {
-			player.getInventory().setSelectedSlot(slot);
+		if (slot >= 0 && slot < 9 && client.player.getInventory().getSelectedSlot() != slot) {
+			client.player.getInventory().setSelectedSlot(slot);
 		}
 		boolean attack = (frame.flags & F_ATTACK) != 0;
 		boolean use = (frame.flags & F_USE) != 0;
@@ -297,9 +321,56 @@ public final class MovementRings {
 		playUse = use;
 	}
 
+	public static void applyCamera(Minecraft client) {
+		if (playingRing == null || client == null || client.player == null) {
+			return;
+		}
+		LocalPlayer player = client.player;
+		long now = System.nanoTime();
+		float dt = lookNanos == 0L ? 0.016f : (float) Mth.clamp((now - lookNanos) / 1_000_000_000.0, 0.0, 0.05);
+		lookNanos = now;
+		float yaw;
+		float pitch;
+		if (aiming) {
+			double progress = aimMs <= 0L ? 1.0 : Math.min((now - aimStart) / (aimMs * 1_000_000.0), 1.0);
+			float ease = SmoothRotate.easeInOutCubic(progress);
+			yaw = SmoothRotate.interpolateYaw(aimFromYaw, aimToYaw, ease);
+			pitch = SmoothRotate.lerp(aimFromPitch, aimToPitch, ease);
+			if (progress >= 1.0) {
+				aiming = false;
+				tickBudget = 0f;
+				yaw = aimToYaw;
+				pitch = aimToPitch;
+			}
+		} else {
+			float index = playIndex + Mth.clamp(tickBudget, 0f, 1f);
+			yaw = tapeYaw(index);
+			pitch = tapePitch(index);
+			float follow = 1f - (float) Math.pow(0.02, dt / 0.05);
+			yaw = SmoothRotate.interpolateYaw(lookYaw, yaw, follow);
+			pitch = SmoothRotate.lerp(lookPitch, pitch, follow);
+		}
+		lookYaw = yaw;
+		lookPitch = SmoothRotate.normalizePitch(pitch);
+		if (aiming) {
+			SmoothRotate.apply(player, lookYaw, lookPitch);
+		} else {
+			player.forceSetRotation(lookYaw, false, lookPitch, false);
+			player.setYHeadRot(lookYaw);
+		}
+	}
+
 	public static void applyInput(ClientInput input) {
+		if (input == null) {
+			return;
+		}
+		if (aiming) {
+			input.keyPresses = Input.EMPTY;
+			((ClientInputAccessor) input).stray$setMoveVector(Vec2.ZERO);
+			return;
+		}
 		Frame frame = currentFrame();
-		if (frame == null || input == null) {
+		if (frame == null) {
 			return;
 		}
 		Input keys = new Input(
@@ -425,6 +496,8 @@ public final class MovementRings {
 		playIndex = 0;
 		playAttack = false;
 		playUse = false;
+		aiming = false;
+		lookNanos = 0L;
 		Minecraft client = Minecraft.getInstance();
 		if (client.options == null) {
 			return;
@@ -437,12 +510,38 @@ public final class MovementRings {
 		if (ring.frames.size() < 2) {
 			return;
 		}
+		Minecraft client = Minecraft.getInstance();
+		LocalPlayer player = client.player;
 		playingRing = ring;
 		playIndex = 0;
 		playAttack = false;
 		playUse = false;
 		tickBudget = 0f;
-		Minecraft.getInstance().getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.NOTE_BLOCK_HAT.value(), 1.2f, 0.45f));
+		lookNanos = 0L;
+		Frame first = ring.frames.getFirst();
+		aimFromYaw = player == null ? first.yaw : player.getYRot();
+		aimFromPitch = player == null ? first.pitch : player.getXRot();
+		aimToYaw = first.yaw;
+		aimToPitch = first.pitch;
+		lookYaw = aimFromYaw;
+		lookPitch = aimFromPitch;
+		float span = Math.max(
+			Math.abs(SmoothRotate.normalizeYaw(aimToYaw - aimFromYaw)),
+			Math.abs(aimToPitch - aimFromPitch)
+		);
+		if (span < 1.25f || player == null) {
+			aiming = false;
+			lookYaw = aimToYaw;
+			lookPitch = aimToPitch;
+			if (player != null) {
+				SmoothRotate.apply(player, lookYaw, lookPitch);
+			}
+		} else {
+			aiming = true;
+			aimStart = System.nanoTime();
+			aimMs = Math.max(140L, Math.min(650L, 140L + Math.round(span * 2.8f)));
+		}
+		client.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.NOTE_BLOCK_HAT.value(), 1.2f, 0.45f));
 	}
 
 	private static void capture(Minecraft client) {
@@ -536,6 +635,52 @@ public final class MovementRings {
 			return null;
 		}
 		return playingRing.frames.get(playIndex);
+	}
+
+	private static float tapeYaw(float index) {
+		List<Frame> frames = playingRing.frames;
+		int i = Mth.floor(index);
+		float t = index - i;
+		float ref = sampleYaw(i);
+		return catmull(
+			unwrapYaw(sampleYaw(i - 1), ref),
+			ref,
+			unwrapYaw(sampleYaw(i + 1), ref),
+			unwrapYaw(sampleYaw(i + 2), ref),
+			t
+		);
+	}
+
+	private static float tapePitch(float index) {
+		int i = Mth.floor(index);
+		float t = index - i;
+		return SmoothRotate.normalizePitch(catmull(
+			samplePitch(i - 1),
+			samplePitch(i),
+			samplePitch(i + 1),
+			samplePitch(i + 2),
+			t
+		));
+	}
+
+	private static float sampleYaw(int index) {
+		List<Frame> frames = playingRing.frames;
+		return frames.get(Mth.clamp(index, 0, frames.size() - 1)).yaw;
+	}
+
+	private static float samplePitch(int index) {
+		List<Frame> frames = playingRing.frames;
+		return frames.get(Mth.clamp(index, 0, frames.size() - 1)).pitch;
+	}
+
+	private static float unwrapYaw(float yaw, float ref) {
+		return ref + SmoothRotate.normalizeYaw(yaw - ref);
+	}
+
+	private static float catmull(float p0, float p1, float p2, float p3, float t) {
+		float t2 = t * t;
+		float t3 = t2 * t;
+		return 0.5f * ((2f * p1) + (-p0 + p2) * t + (2f * p0 - 5f * p1 + 4f * p2 - p3) * t2 + (-p0 + 3f * p1 - 3f * p2 + p3) * t3);
 	}
 
 	private static void setClick(KeyMapping mapping, boolean down, boolean wasDown) {
@@ -700,7 +845,7 @@ public final class MovementRings {
 				if (this == recordingRing) {
 					nameLabel = MenuFont.vanilla("REC " + frames.size());
 				} else if (this == playingRing) {
-					nameLabel = MenuFont.vanilla("PLAY " + Math.min(playIndex + 1, frames.size()) + "/" + frames.size());
+					nameLabel = MenuFont.vanilla((aiming ? "AIM " : "PLAY ") + Math.min(playIndex + 1, frames.size()) + "/" + frames.size());
 				} else if (frames.isEmpty()) {
 					nameLabel = MenuFont.vanilla("empty");
 				} else {

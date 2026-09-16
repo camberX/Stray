@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.3.18", new String[]{
+			"Movement ring replay turns to the recording's first look before it starts walking, and camera turns are interpolated so they don't snap tick to tick."
+		}),
 		new Entry("1.3.17", new String[]{
 			"Movement recorder rings. /stray move 2 plants a ring; stand in it, press the record key to capture look, WASD, clicks, and hotbar, press again to save. Walking in plays it back. Record and replay follow server TPS, so lag stretches the tape instead of running ahead."
 		}),
