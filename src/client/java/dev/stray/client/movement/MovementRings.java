@@ -658,17 +658,64 @@ public final class MovementRings {
 	}
 
 	private static float tapeYaw(float index) {
-		int i = Mth.floor(index);
-		float t = index - i;
-		float from = sampleYaw(i);
-		float to = sampleYaw(i + 1);
-		return SmoothRotate.interpolateYaw(from, to, t);
+		return tapeAngle(index, true);
 	}
 
 	private static float tapePitch(float index) {
+		return SmoothRotate.normalizePitch(tapeAngle(index, false));
+	}
+
+	private static float tapeAngle(float index, boolean yaw) {
 		int i = Mth.floor(index);
 		float t = index - i;
-		return SmoothRotate.normalizePitch(SmoothRotate.lerp(samplePitch(i), samplePitch(i + 1), t));
+		int last = playingRing.frames.size() - 1;
+		float y1 = yaw ? sampleYaw(i) : samplePitch(i);
+		float y2 = yaw ? unwrapYaw(sampleYaw(i + 1), y1) : samplePitch(i + 1);
+		float y0;
+		float y3;
+		if (i <= 0) {
+			y0 = y1 - (y2 - y1);
+		} else {
+			y0 = yaw ? unwrapYaw(sampleYaw(i - 1), y1) : samplePitch(i - 1);
+		}
+		if (i >= last) {
+			y3 = y2 + (y2 - y1);
+		} else {
+			y3 = yaw ? unwrapYaw(sampleYaw(i + 2), y2) : samplePitch(i + 2);
+		}
+		return pchip(y0, y1, y2, y3, t);
+	}
+
+	private static float unwrapYaw(float yaw, float ref) {
+		return ref + SmoothRotate.normalizeYaw(yaw - ref);
+	}
+
+	/** Fritsch–Carlson cubic Hermite: hits y1 at t=0 and y2 at t=1, no overshoot. */
+	private static float pchip(float y0, float y1, float y2, float y3, float t) {
+		float d1 = hermiteSlope(y0, y1, y2);
+		float d2 = hermiteSlope(y1, y2, y3);
+		float t2 = t * t;
+		float t3 = t2 * t;
+		return (2f * t3 - 3f * t2 + 1f) * y1
+			+ (t3 - 2f * t2 + t) * d1
+			+ (-2f * t3 + 3f * t2) * y2
+			+ (t3 - t2) * d2;
+	}
+
+	private static float hermiteSlope(float ym, float y, float yp) {
+		float left = y - ym;
+		float right = yp - y;
+		if (left == 0f || right == 0f || Math.signum(left) != Math.signum(right)) {
+			return 0f;
+		}
+		float d = (left + right) * 0.5f;
+		float a = d / left;
+		float b = d / right;
+		float sum = a * a + b * b;
+		if (sum > 9f) {
+			d *= 3f / (float) Math.sqrt(sum);
+		}
+		return d;
 	}
 
 	private static float sampleYaw(int index) {

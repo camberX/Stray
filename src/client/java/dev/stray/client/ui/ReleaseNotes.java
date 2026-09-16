@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.3.22", new String[]{
+			"Movement ring replay look is a monotone cubic through every recorded sample. It stays 1:1 at each tick and only curves between them, with no lag or overshoot."
+		}),
 		new Entry("1.3.21", new String[]{
 			"Movement ring replay look follows the recorded yaw and pitch again. Extra smoothing was lagging behind the tape."
 		}),
