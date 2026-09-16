@@ -30,6 +30,13 @@ public abstract class CameraMixin {
 		}
 	}
 
+	@Inject(method = "update", at = @At("RETURN"))
+	private void stray$replayLookTail(DeltaTracker delta, CallbackInfo ci) {
+		if (MovementRings.playing()) {
+			this.setRotation(MovementRings.cameraYaw(), MovementRings.cameraPitch());
+		}
+	}
+
 	@ModifyArg(
 		method = "createProjectionMatrixForCulling",
 		at = @At(

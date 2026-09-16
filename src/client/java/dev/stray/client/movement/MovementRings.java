@@ -280,7 +280,6 @@ public final class MovementRings {
 			}
 			if (playingRing != null) {
 				playingRing.invalidateLabels();
-				playTickNanos = System.nanoTime();
 			}
 		}
 		updateInside(client);
@@ -333,14 +332,18 @@ public final class MovementRings {
 	}
 
 	/**
-	 * Sample the tape (or aim ease) for this render frame. Camera rotation is
-	 * applied after {@code Camera.alignWithEntity} so look is not stuck at 20 Hz.
+	 * Sample look for this render frame and write it onto the local player so
+	 * {@code Camera.alignWithEntity} and the view matrix both move at display rate.
 	 */
 	public static boolean sampleCameraLook() {
 		if (playingRing == null) {
 			return false;
 		}
 		computeLook(true);
+		Minecraft client = Minecraft.getInstance();
+		if (client.player != null) {
+			applyLook(client.player);
+		}
 		return true;
 	}
 
@@ -348,12 +351,13 @@ public final class MovementRings {
 		if (playingRing == null || client == null || client.player == null) {
 			return;
 		}
-		LocalPlayer player = client.player;
 		computeLook(false);
-		if (aiming) {
-			SmoothRotate.apply(player, lookYaw, lookPitch);
-			return;
-		}
+		applyLook(client.player);
+	}
+
+	private static void applyLook(LocalPlayer player) {
+		player.setYRot(lookYaw);
+		player.setXRot(lookPitch);
 		player.forceSetRotation(lookYaw, false, lookPitch, false);
 		player.setYHeadRot(lookYaw);
 	}
@@ -376,13 +380,19 @@ public final class MovementRings {
 				pitch = aimToPitch;
 			}
 		} else if (subTick) {
-			float extra = 0f;
+			float index = playIndex;
 			if (playTickNanos != 0L) {
-				extra = (float) ((now - playTickNanos) / 1_000_000_000.0 * serverTps);
+				index = (float) ((now - playTickNanos) / 1_000_000_000.0 * serverTps);
 			}
-			float index = playIndex + Mth.clamp(tickBudget + extra, 0f, 0.999f);
-			yaw = tapeYaw(index);
-			pitch = tapePitch(index);
+			int last = playingRing.frames.size() - 1;
+			if (last < 1) {
+				yaw = tapeYaw(0f);
+				pitch = tapePitch(0f);
+			} else {
+				index = Mth.clamp(index, 0f, last - 0.0001f);
+				yaw = tapeYaw(index);
+				pitch = tapePitch(index);
+			}
 		} else {
 			yaw = tapeYaw(playIndex);
 			pitch = tapePitch(playIndex);
@@ -579,8 +589,9 @@ public final class MovementRings {
 			aiming = false;
 			lookYaw = aimToYaw;
 			lookPitch = aimToPitch;
+			playTickNanos = System.nanoTime();
 			if (player != null) {
-				SmoothRotate.apply(player, lookYaw, lookPitch);
+				applyLook(player);
 			}
 		} else {
 			aiming = true;
@@ -693,56 +704,20 @@ public final class MovementRings {
 	}
 
 	private static float tapeAngle(float index, boolean yaw) {
-		int i = Mth.floor(index);
-		float t = index - i;
 		int last = playingRing.frames.size() - 1;
+		if (last <= 0) {
+			return yaw ? sampleYaw(0) : samplePitch(0);
+		}
+		float clamped = Mth.clamp(index, 0f, last);
+		int i = Math.min(Mth.floor(clamped), last - 1);
+		float t = clamped - i;
 		float y1 = yaw ? sampleYaw(i) : samplePitch(i);
 		float y2 = yaw ? unwrapYaw(sampleYaw(i + 1), y1) : samplePitch(i + 1);
-		float y0;
-		float y3;
-		if (i <= 0) {
-			y0 = y1 - (y2 - y1);
-		} else {
-			y0 = yaw ? unwrapYaw(sampleYaw(i - 1), y1) : samplePitch(i - 1);
-		}
-		if (i >= last) {
-			y3 = y2 + (y2 - y1);
-		} else {
-			y3 = yaw ? unwrapYaw(sampleYaw(i + 2), y2) : samplePitch(i + 2);
-		}
-		return pchip(y0, y1, y2, y3, t);
+		return y1 + (y2 - y1) * t;
 	}
 
 	private static float unwrapYaw(float yaw, float ref) {
 		return ref + SmoothRotate.normalizeYaw(yaw - ref);
-	}
-
-	/** Fritsch–Carlson cubic Hermite: hits y1 at t=0 and y2 at t=1, no overshoot. */
-	private static float pchip(float y0, float y1, float y2, float y3, float t) {
-		float d1 = hermiteSlope(y0, y1, y2);
-		float d2 = hermiteSlope(y1, y2, y3);
-		float t2 = t * t;
-		float t3 = t2 * t;
-		return (2f * t3 - 3f * t2 + 1f) * y1
-			+ (t3 - 2f * t2 + t) * d1
-			+ (-2f * t3 + 3f * t2) * y2
-			+ (t3 - t2) * d2;
-	}
-
-	private static float hermiteSlope(float ym, float y, float yp) {
-		float left = y - ym;
-		float right = yp - y;
-		if (left == 0f || right == 0f || Math.signum(left) != Math.signum(right)) {
-			return 0f;
-		}
-		float d = (left + right) * 0.5f;
-		float a = d / left;
-		float b = d / right;
-		float sum = a * a + b * b;
-		if (sum > 9f) {
-			d *= 3f / (float) Math.sqrt(sum);
-		}
-		return d;
 	}
 
 	private static float sampleYaw(int index) {
