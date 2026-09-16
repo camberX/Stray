@@ -101,6 +101,8 @@ public final class MovementRings {
 	private static float lookYaw;
 	private static float lookPitch;
 	private static long lookNanos;
+	private static long playTickNanos;
+	private static final Component PLAYING_LABEL = MenuFont.body("Playing Recording");
 	private static long lastServerTime = Long.MIN_VALUE;
 	private static long lastServerNano;
 	private static long lastServerDeltaTicks = 1L;
@@ -278,6 +280,7 @@ public final class MovementRings {
 			}
 			if (playingRing != null) {
 				playingRing.invalidateLabels();
+				playTickNanos = System.nanoTime();
 			}
 		}
 		updateInside(client);
@@ -339,14 +342,19 @@ public final class MovementRings {
 			if (progress >= 1.0) {
 				aiming = false;
 				tickBudget = 0f;
+				playTickNanos = now;
 				yaw = aimToYaw;
 				pitch = aimToPitch;
 			}
 		} else {
-			float index = playIndex + Mth.clamp(tickBudget, 0f, 1f);
+			float extra = 0f;
+			if (playTickNanos != 0L) {
+				extra = (float) ((now - playTickNanos) / 1_000_000_000.0 * serverTps);
+			}
+			float index = playIndex + Mth.clamp(tickBudget + extra, 0f, 0.999f);
 			yaw = tapeYaw(index);
 			pitch = tapePitch(index);
-			float follow = 1f - (float) Math.pow(0.02, dt / 0.05);
+			float follow = 1f - (float) Math.exp(-dt / 0.10);
 			yaw = SmoothRotate.interpolateYaw(lookYaw, yaw, follow);
 			pitch = SmoothRotate.lerp(lookPitch, pitch, follow);
 		}
@@ -389,11 +397,17 @@ public final class MovementRings {
 	}
 
 	public static void extract(GuiGraphicsExtractor graphics, DeltaTracker delta) {
-		if (!enabled() || here().isEmpty()) {
+		if (!enabled()) {
 			return;
 		}
 		Minecraft client = Minecraft.getInstance();
 		if (client.player == null || client.options.hideGui) {
+			return;
+		}
+		if (playing()) {
+			drawPlaying(graphics, client.font);
+		}
+		if (here().isEmpty()) {
 			return;
 		}
 		Camera camera = client.gameRenderer.getMainCamera();
@@ -442,6 +456,13 @@ public final class MovementRings {
 			GuiDraw.text(graphics, font, meters, left + PAD_X + nameW + 5f, GuiDraw.middle(top, TAG_H), Anim.fade(Theme.MUTED, 1f), false);
 			graphics.pose().popMatrix();
 		}
+	}
+
+	private static void drawPlaying(GuiGraphicsExtractor graphics, Font font) {
+		float w = GuiDraw.menuWidth(font, "Playing Recording");
+		float x = graphics.guiWidth() * 0.5f - w * 0.5f;
+		float y = graphics.guiHeight() * 0.5f - 28f;
+		GuiDraw.hud(graphics, font, PLAYING_LABEL, x, y, Theme.ACCENT);
 	}
 
 	private static void toggleRecord(Minecraft client) {
@@ -498,6 +519,7 @@ public final class MovementRings {
 		playUse = false;
 		aiming = false;
 		lookNanos = 0L;
+		playTickNanos = 0L;
 		Minecraft client = Minecraft.getInstance();
 		if (client.options == null) {
 			return;
@@ -518,6 +540,7 @@ public final class MovementRings {
 		playUse = false;
 		tickBudget = 0f;
 		lookNanos = 0L;
+		playTickNanos = 0L;
 		Frame first = ring.frames.getFirst();
 		aimFromYaw = player == null ? first.yaw : player.getYRot();
 		aimFromPitch = player == null ? first.pitch : player.getXRot();
