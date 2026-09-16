@@ -1,7 +1,6 @@
 package dev.stray.client.mixin;
 
 import dev.stray.client.movement.MovementRings;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.MouseHandler;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -13,7 +12,6 @@ public class MouseHandlerMixin {
 	@Inject(method = "turnPlayer", at = @At("HEAD"), cancellable = true)
 	private void stray$lockLook(double movementTime, CallbackInfo ci) {
 		if (MovementRings.playing()) {
-			MovementRings.applyCamera(Minecraft.getInstance());
 			ci.cancel();
 		}
 	}

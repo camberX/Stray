@@ -324,11 +324,41 @@ public final class MovementRings {
 		playUse = use;
 	}
 
+	public static float cameraYaw() {
+		return lookYaw;
+	}
+
+	public static float cameraPitch() {
+		return lookPitch;
+	}
+
+	/**
+	 * Sample the tape (or aim ease) for this render frame. Camera rotation is
+	 * applied after {@code Camera.alignWithEntity} so look is not stuck at 20 Hz.
+	 */
+	public static boolean sampleCameraLook() {
+		if (playingRing == null) {
+			return false;
+		}
+		computeLook(true);
+		return true;
+	}
+
 	public static void applyCamera(Minecraft client) {
 		if (playingRing == null || client == null || client.player == null) {
 			return;
 		}
 		LocalPlayer player = client.player;
+		computeLook(false);
+		if (aiming) {
+			SmoothRotate.apply(player, lookYaw, lookPitch);
+			return;
+		}
+		player.forceSetRotation(lookYaw, false, lookPitch, false);
+		player.setYHeadRot(lookYaw);
+	}
+
+	private static void computeLook(boolean subTick) {
 		long now = System.nanoTime();
 		lookNanos = now;
 		float yaw;
@@ -345,7 +375,7 @@ public final class MovementRings {
 				yaw = aimToYaw;
 				pitch = aimToPitch;
 			}
-		} else {
+		} else if (subTick) {
 			float extra = 0f;
 			if (playTickNanos != 0L) {
 				extra = (float) ((now - playTickNanos) / 1_000_000_000.0 * serverTps);
@@ -353,15 +383,12 @@ public final class MovementRings {
 			float index = playIndex + Mth.clamp(tickBudget + extra, 0f, 0.999f);
 			yaw = tapeYaw(index);
 			pitch = tapePitch(index);
+		} else {
+			yaw = tapeYaw(playIndex);
+			pitch = tapePitch(playIndex);
 		}
 		lookYaw = yaw;
 		lookPitch = SmoothRotate.normalizePitch(pitch);
-		if (aiming) {
-			SmoothRotate.apply(player, lookYaw, lookPitch);
-		} else {
-			player.forceSetRotation(lookYaw, false, lookPitch, false);
-			player.setYHeadRot(lookYaw);
-		}
 	}
 
 	public static void applyInput(ClientInput input) {
