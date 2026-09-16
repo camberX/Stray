@@ -370,7 +370,7 @@ public final class MovementRings {
 	}
 
 	private static void applyTapePose(LocalPlayer player, boolean subTick) {
-		if (playingRing == null) {
+		if (!localWorld() || playingRing == null) {
 			return;
 		}
 		List<Frame> frames = playingRing.frames;
@@ -558,9 +558,22 @@ public final class MovementRings {
 		if (playingRing != null) {
 			stopPlayback();
 		}
+		if (here().isEmpty()) {
+			chat("No movement ring on " + IslandSaves.label() + ". /stray move 0.1", ChatFormatting.YELLOW);
+			return;
+		}
 		Ring inside = insideRing(client.player);
 		if (inside == null) {
-			chat("Stand in a movement ring first. /stray move 2", ChatFormatting.YELLOW);
+			Ring near = nearestRing(client.player);
+			if (near == null) {
+				chat("Stand in a movement ring first. /stray move 0.1", ChatFormatting.YELLOW);
+			} else {
+				double dist = Math.sqrt(
+					(client.player.getX() - near.x) * (client.player.getX() - near.x)
+						+ (client.player.getZ() - near.z) * (client.player.getZ() - near.z)
+				);
+				chat("Get in the ring. Nearest is " + format((float) dist) + "m away.", ChatFormatting.YELLOW);
+			}
 			return;
 		}
 		inside.frames.clear();
@@ -674,7 +687,16 @@ public final class MovementRings {
 		client.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.NOTE_BLOCK_HAT.value(), 1.2f, 0.45f));
 	}
 
+	private static boolean localWorld() {
+		Minecraft client = Minecraft.getInstance();
+		return client != null && client.isLocalServer() && client.getSingleplayerServer() != null;
+	}
+
 	private static void snapToStart(Minecraft client, LocalPlayer player, Ring ring, Frame first) {
+		if (!localWorld()) {
+			applyLook(player);
+			return;
+		}
 		double x = ring.startX;
 		double y = ring.startY;
 		double z = ring.startZ;
@@ -761,14 +783,9 @@ public final class MovementRings {
 			return;
 		}
 		LocalPlayer player = client.player;
-		double x = player.getX();
-		double y = player.getY();
-		double z = player.getZ();
 		boolean allow = client.screen == null && recordingRing == null && playingRing == null;
 		for (Ring ring : rings) {
-			double dx = x - ring.x;
-			double dz = z - ring.z;
-			boolean inside = dx * dx + dz * dz <= ring.radius * ring.radius && Math.abs(y - ring.y) <= 2.5;
+			boolean inside = occupying(player, ring);
 			if (!inside) {
 				ring.armed = true;
 				ring.inside = false;
@@ -788,19 +805,47 @@ public final class MovementRings {
 	private static Ring insideRing(LocalPlayer player) {
 		Ring best = null;
 		double bestDist = Double.MAX_VALUE;
-		double x = player.getX();
-		double y = player.getY();
-		double z = player.getZ();
 		for (Ring ring : here()) {
-			double dx = x - ring.x;
-			double dz = z - ring.z;
+			if (!occupying(player, ring)) {
+				continue;
+			}
+			double dx = player.getX() - ring.x;
+			double dz = player.getZ() - ring.z;
 			double dist = dx * dx + dz * dz;
-			if (dist <= ring.radius * ring.radius && Math.abs(y - ring.y) <= 2.5 && dist < bestDist) {
+			if (dist < bestDist) {
 				best = ring;
 				bestDist = dist;
 			}
 		}
 		return best;
+	}
+
+	private static Ring nearestRing(LocalPlayer player) {
+		Ring best = null;
+		double bestDist = Double.MAX_VALUE;
+		for (Ring ring : here()) {
+			double dx = player.getX() - ring.x;
+			double dz = player.getZ() - ring.z;
+			double dist = dx * dx + dz * dz;
+			if (dist < bestDist) {
+				best = ring;
+				bestDist = dist;
+			}
+		}
+		return best;
+	}
+
+	/** True if the player's hitbox overlaps the ring cylinder. */
+	private static boolean occupying(LocalPlayer player, Ring ring) {
+		double reach = ring.radius + player.getBbWidth() * 0.5;
+		double dx = player.getX() - ring.x;
+		double dz = player.getZ() - ring.z;
+		if (dx * dx + dz * dz > reach * reach) {
+			return false;
+		}
+		double feet = player.getY();
+		double head = feet + player.getBbHeight();
+		return head >= ring.y - 0.5 && feet <= ring.y + 2.5;
 	}
 
 	private static Frame currentFrame() {
