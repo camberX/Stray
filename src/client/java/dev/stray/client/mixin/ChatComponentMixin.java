@@ -6,7 +6,9 @@ import dev.stray.client.fairy.FairySoulTracker;
 import dev.stray.client.mining.CrystalHollows;
 import dev.stray.client.mining.MiningTracker;
 import dev.stray.client.ui.ChatChrome;
+import dev.stray.client.ui.ChatPeek;
 import dev.stray.client.visual.NickHider;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.ChatComponent;
@@ -16,6 +18,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.ModifyVariable;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(ChatComponent.class)
 public class ChatComponentMixin {
@@ -31,6 +34,18 @@ public class ChatComponentMixin {
 		FairySoulTracker.onChat(rewritten);
 		CrystalHollows.allowChat(rewritten, false);
 		return rewritten;
+	}
+
+	@Inject(method = "getHeight()I", at = @At("HEAD"), cancellable = true)
+	private void stray$peekHeight(CallbackInfoReturnable<Integer> cir) {
+		if (!ChatPeek.holding()) {
+			return;
+		}
+		Minecraft client = Minecraft.getInstance();
+		if (client == null || client.options == null) {
+			return;
+		}
+		cir.setReturnValue(ChatComponent.getHeight(client.options.chatHeightFocused().get()));
 	}
 
 	@Inject(
