@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.3.32", new String[]{
+			"Movement rings are marked WORK IN PROGRESS / DO NOT USE."
+		}),
 		new Entry("1.3.31", new String[]{
 			"Movement ring replay no longer teleports or writes motion on servers, so Grim Simulation/SprintE stops from the tape. Position lock is singleplayer-only. Tiny rings also count if your hitbox overlaps them."
 		}),

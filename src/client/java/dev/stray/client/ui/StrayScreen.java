@@ -156,7 +156,7 @@ public class StrayScreen extends Screen {
 		MARKS("Block marks", 4),
 		PATHS("Paths", 5),
 		RINGS("Command rings", 3),
-		MOVE("Movement rings", 6),
+		MOVE("WIP — DO NOT USE", 6),
 		LOADOUTS("Loadouts menu", 9),
 		WARDROBE("Wardrobe menu", 9),
 		NUCLEUS("Nucleus alerts", 2),
@@ -253,6 +253,7 @@ public class StrayScreen extends Screen {
 		new SearchEntry("Command ring", Tab.TOOLS, "Tools"),
 		new SearchEntry("/stray cmd", Tab.TOOLS, "Tools"),
 		new SearchEntry("Movement rings", Tab.TOOLS, "Tools"),
+		new SearchEntry("WIP DO NOT USE", Tab.TOOLS, "Tools"),
 		new SearchEntry("Movement recorder", Tab.TOOLS, "Tools"),
 		new SearchEntry("/stray move", Tab.TOOLS, "Tools"),
 		new SearchEntry("AOTV", Tab.TOOLS, "Tools"),
@@ -2238,7 +2239,7 @@ public class StrayScreen extends Screen {
 				float y = featureCard(graphics, font, left, top, col, cardHeight(5), "Tools");
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Block marks", config.blockMarksEnabled, v -> config.blockMarksEnabled = v, Feature.MARKS);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Command rings", config.commandRingsEnabled, v -> config.commandRingsEnabled = v, Feature.RINGS);
-				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Movement rings", config.movementRingsEnabled, v -> config.movementRingsEnabled = v, Feature.MOVE);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "WIP — DO NOT USE", config.movementRingsEnabled, v -> config.movementRingsEnabled = v, Feature.MOVE);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "AOTV sim (singleplayer)", config.aotvSimEnabled, v -> config.aotvSimEnabled = v);
 				toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Paths", config.pathsEnabled, v -> config.pathsEnabled = v, Feature.PATHS);
 			}
@@ -2464,7 +2465,7 @@ public class StrayScreen extends Screen {
 				float y = sectionLabel(graphics, font, left, top, "World");
 				y = controlCard(graphics, font, left, y, col, mouseX, mouseY, "Block marks", config.blockMarksEnabled, v -> config.blockMarksEnabled = v, Feature.MARKS);
 				y = controlCard(graphics, font, left, y, col, mouseX, mouseY, "Command rings", config.commandRingsEnabled, v -> config.commandRingsEnabled = v, Feature.RINGS);
-				y = controlCard(graphics, font, left, y, col, mouseX, mouseY, "Movement rings", config.movementRingsEnabled, v -> config.movementRingsEnabled = v, Feature.MOVE);
+				y = controlCard(graphics, font, left, y, col, mouseX, mouseY, "WIP — DO NOT USE", config.movementRingsEnabled, v -> config.movementRingsEnabled = v, Feature.MOVE);
 				toggleCard(graphics, font, left, y, col, mouseX, mouseY, "AOTV sim (singleplayer)", config.aotvSimEnabled, v -> config.aotvSimEnabled = v);
 				y = sectionLabel(graphics, font, right, top, "Routes");
 				controlCard(graphics, font, right, y, col, mouseX, mouseY, "Paths", config.pathsEnabled, v -> config.pathsEnabled = v, Feature.PATHS);
@@ -3223,8 +3224,8 @@ public class StrayScreen extends Screen {
 				y = colorRow(graphics, font, ix, y, iw, mouseX, mouseY, "Color", config.movementRingsRgb, PickerTarget.MOVE);
 				y = clickRow(graphics, font, ix, y, iw, mouseX, mouseY, MovementRings.count() == 0 ? "Clear rings on " + PathRecorder.islandLabel() : "Clear " + MovementRings.count() + " ring" + (MovementRings.count() == 1 ? "" : "s") + " on " + PathRecorder.islandLabel(), MovementRings::clear);
 				String hint = MovementRings.recording()
-					? "Recording " + MovementRings.liveFrames() + " ticks · " + String.format(java.util.Locale.ROOT, "%.1f TPS", MovementRings.serverTps())
-					: "/stray move 2  ·  stand in, press key, walk in to play";
+					? "WIP / DO NOT USE  ·  Recording " + MovementRings.liveFrames() + " ticks"
+					: "WORK IN PROGRESS / DO NOT USE";
 				GuiDraw.small(graphics, font, hint, ix, y + 2, Theme.MUTED);
 			}
 			case PATHS -> {
