@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.3.19", new String[]{
+			"Movement ring replay shows Playing Recording in the accent color above the crosshair. Camera turns follow the tape more smoothly."
+		}),
 		new Entry("1.3.18", new String[]{
 			"Movement ring replay turns to the recording's first look before it starts walking, and camera turns are interpolated so they don't snap tick to tick."
 		}),
