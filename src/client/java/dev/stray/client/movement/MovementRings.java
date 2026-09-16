@@ -102,6 +102,7 @@ public final class MovementRings {
 	private static float lookPitch;
 	private static long lookNanos;
 	private static long playTickNanos;
+	private static long lastPlaySyncNanos;
 	private static final Component PLAYING_LABEL = MenuFont.body("Playing Recording");
 	private static long lastServerTime = Long.MIN_VALUE;
 	private static long lastServerNano;
@@ -258,12 +259,8 @@ public final class MovementRings {
 			toggleRecord(client);
 		}
 		recordWasDown = down;
-		boolean step = false;
-		if (recordingRing != null || (playingRing != null && !aiming)) {
-			step = serverStep(client);
-		}
 		if (recordingRing != null) {
-			if (step && client.screen == null) {
+			if (serverStep(client) && client.screen == null) {
 				capture(client);
 				if (recordingRing.frames.size() >= MAX_FRAMES) {
 					stopRecording(true);
@@ -275,12 +272,8 @@ public final class MovementRings {
 		} else if (playingRing != null) {
 			if (client.screen != null) {
 				stopPlayback();
-			} else if (!aiming && step) {
-				playIndex++;
-				playTickNanos = System.nanoTime();
-				if (playIndex >= playingRing.frames.size()) {
-					stopPlayback();
-				}
+			} else if (!aiming) {
+				syncTape(client);
 			}
 			if (playingRing != null) {
 				playingRing.invalidateLabels();
@@ -550,6 +543,7 @@ public final class MovementRings {
 		aiming = false;
 		lookNanos = 0L;
 		playTickNanos = 0L;
+		lastPlaySyncNanos = 0L;
 		Minecraft client = Minecraft.getInstance();
 		if (client.options == null) {
 			return;
@@ -571,6 +565,7 @@ public final class MovementRings {
 		tickBudget = 0f;
 		lookNanos = 0L;
 		playTickNanos = 0L;
+		lastPlaySyncNanos = 0L;
 		Frame first = ring.frames.getFirst();
 		aimFromYaw = player == null ? first.yaw : player.getYRot();
 		aimFromPitch = player == null ? first.pitch : player.getXRot();
@@ -686,29 +681,80 @@ public final class MovementRings {
 		if (playingRing == null) {
 			return null;
 		}
-		if (playIndex < 0 || playIndex >= playingRing.frames.size()) {
+		int index = currentTapeTick();
+		if (index < 0 || index >= playingRing.frames.size()) {
 			return null;
 		}
-		return playingRing.frames.get(playIndex);
+		return playingRing.frames.get(index);
 	}
 
-	/**
-	 * Look is captured at the end of each recorded tick with that tick's WASD.
-	 * During playback tick {@code i}, keys are sample {@code i} while look lerps
-	 * from sample {@code i-1} to {@code i} so a key-up is not held through the
-	 * next turn.
-	 */
-	private static float visualTapeIndex(int last) {
-		float extra = 0f;
-		if (playTickNanos != 0L) {
-			extra = (float) ((System.nanoTime() - playTickNanos) / 1_000_000_000.0 * playbackRate());
+	private static int currentTapeTick() {
+		if (playingRing == null) {
+			return -1;
 		}
-		extra = Mth.clamp(extra, 0f, 1f);
-		return Mth.clamp(playIndex + extra - 1f, 0f, last - 0.0001f);
+		if (playTickNanos == 0L) {
+			return playIndex;
+		}
+		int last = playingRing.frames.size();
+		int index = Mth.floor(rawTapeTime());
+		if (index < 0) {
+			return 0;
+		}
+		if (index >= last) {
+			return last - 1;
+		}
+		return index;
+	}
+
+	private static float rawTapeTime() {
+		if (playTickNanos == 0L) {
+			return 0f;
+		}
+		return (float) ((System.nanoTime() - playTickNanos) / 1_000_000_000.0 * playbackRate());
+	}
+
+	private static float visualTapeIndex(int last) {
+		return Mth.clamp(rawTapeTime(), 0f, last - 0.0001f);
 	}
 
 	private static float playbackRate() {
 		return serverTps >= 19.5f ? 20f : serverTps;
+	}
+
+	private static void syncTape(Minecraft client) {
+		pollServerTps();
+		long now = System.nanoTime();
+		boolean frozen = client.level != null && !client.level.tickRateManager().runsNormally();
+		if (frozen) {
+			if (playTickNanos != 0L && lastPlaySyncNanos != 0L) {
+				playTickNanos += now - lastPlaySyncNanos;
+			}
+			lastPlaySyncNanos = now;
+			return;
+		}
+		lastPlaySyncNanos = now;
+		if (playTickNanos == 0L) {
+			return;
+		}
+		int size = playingRing.frames.size();
+		if (rawTapeTime() >= size) {
+			stopPlayback();
+			return;
+		}
+		playIndex = Mth.clamp(Mth.floor(rawTapeTime()), 0, size - 1);
+	}
+
+	private static void pollServerTps() {
+		long now = System.nanoTime();
+		if (lastServerNano != 0L && lastServerDeltaTicks <= 2L) {
+			double silence = (now - lastServerNano) / 1_000_000_000.0;
+			if (silence > 0.08) {
+				float starved = (float) Math.min(20.0, 1.0 / silence);
+				if (starved < serverTps) {
+					serverTps = serverTps * 0.45f + starved * 0.55f;
+				}
+			}
+		}
 	}
 
 	private static float tapeYaw(float index) {
@@ -758,16 +804,7 @@ public final class MovementRings {
 	}
 
 	private static boolean serverStep(Minecraft client) {
-		long now = System.nanoTime();
-		if (lastServerNano != 0L && lastServerDeltaTicks <= 2L) {
-			double silence = (now - lastServerNano) / 1_000_000_000.0;
-			if (silence > 0.08) {
-				float starved = (float) Math.min(20.0, 1.0 / silence);
-				if (starved < serverTps) {
-					serverTps = serverTps * 0.45f + starved * 0.55f;
-				}
-			}
-		}
+		pollServerTps();
 		float rate = 20f;
 		if (client.level != null) {
 			var ticks = client.level.tickRateManager();
