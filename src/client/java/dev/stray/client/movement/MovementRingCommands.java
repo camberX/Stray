@@ -45,6 +45,7 @@ public final class MovementRingCommands {
 	}
 
 	private static int list() {
+		tell("WORK IN PROGRESS / DO NOT USE", ChatFormatting.RED);
 		if (!StrayConfig.get().movementRingsEnabled) {
 			tell("Turn on Movement rings in Misc → Tools first, or place one anyway to enable it.", ChatFormatting.YELLOW);
 		}

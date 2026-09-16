@@ -218,7 +218,7 @@ public final class MovementRings {
 		Vec3 pos = player.position();
 		rings.add(new Ring(pos.x, pos.y, pos.z, size, new ArrayList<>(), true));
 		touch();
-		return "Movement ring " + rings.size() + " on " + IslandSaves.label() + "  " + format(size) + "m";
+		return "WIP / DO NOT USE  ·  Movement ring " + rings.size() + " on " + IslandSaves.label() + "  " + format(size) + "m";
 	}
 
 	public static boolean remove(int index) {
