@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.3.33", new String[]{
+			"Chat peek in Keys. Hold the bind to show the focused chat history without opening the box; the wheel scrolls while it is down."
+		}),
 		new Entry("1.3.32", new String[]{
 			"Movement rings are marked WORK IN PROGRESS / DO NOT USE."
 		}),
