@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.3.26", new String[]{
+			"Movement ring replay look is back on the smooth tape clock. WASD follows that same clock so keys and camera stay together without delaying the turns."
+		}),
 		new Entry("1.3.25", new String[]{
 			"Movement ring replay releases WASD on the same tick as the recording. Look no longer runs a tick ahead of the keys, and healthy ~20 TPS no longer adds extra hold from measurement noise."
 		}),
