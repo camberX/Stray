@@ -2,6 +2,7 @@ package dev.stray.client.mixin;
 
 import dev.stray.client.combat.Hitsound;
 import dev.stray.client.fairy.FairySoulTracker;
+import dev.stray.client.movement.AotvSim;
 import net.minecraft.client.multiplayer.MultiPlayerGameMode;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.world.InteractionHand;
@@ -29,6 +30,10 @@ public class MultiPlayerGameModeMixin {
 		BlockHitResult hit,
 		CallbackInfoReturnable<InteractionResult> cir
 	) {
+		if (AotvSim.use(net.minecraft.client.Minecraft.getInstance())) {
+			cir.setReturnValue(InteractionResult.SUCCESS);
+			return;
+		}
 		FairySoulTracker.onUseBlock(hit);
 	}
 }

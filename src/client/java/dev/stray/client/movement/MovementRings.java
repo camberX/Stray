@@ -562,7 +562,8 @@ public final class MovementRings {
 		} else {
 			aiming = true;
 			aimStart = System.nanoTime();
-			aimMs = Math.max(140L, Math.min(650L, 140L + Math.round(span * 2.8f)));
+			float speed = StrayConfig.clamp(StrayConfig.get().movementAimSpeed, 0.25f, 2.00f);
+			aimMs = Math.max(80L, Math.min(800L, Math.round((140.0 + span * 2.8) / speed)));
 		}
 		client.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.NOTE_BLOCK_HAT.value(), 1.2f, 0.45f));
 	}

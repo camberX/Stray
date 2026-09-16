@@ -48,6 +48,7 @@ import dev.stray.client.mining.CrystalHollowsRenderer;
 import dev.stray.client.mining.CrystalHollowsMap;
 import dev.stray.client.mining.MetalDetector;
 import dev.stray.client.mining.NucleusAlerts;
+import dev.stray.client.movement.AotvSim;
 import dev.stray.client.movement.CommandRingCommands;
 import dev.stray.client.movement.CommandRings;
 import dev.stray.client.movement.MovementRingCommands;
@@ -329,6 +330,7 @@ public final class StrayClient implements ClientModInitializer {
 			PathRecorder.tick(client);
 			CommandRings.tick(client);
 			MovementRings.tick(client);
+			AotvSim.tick();
 			ShopCape.tick();
 			UiFontPack.tick(client);
 			UpdateNotifier.tick();

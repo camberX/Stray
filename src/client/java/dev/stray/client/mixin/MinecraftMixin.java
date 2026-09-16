@@ -5,6 +5,7 @@ import dev.stray.client.farming.AutoDna;
 import dev.stray.client.menu.DisabledPotions;
 import dev.stray.client.combat.MageBeamHits;
 import dev.stray.client.combat.Triggerbot;
+import dev.stray.client.movement.AotvSim;
 import dev.stray.client.movement.MovementRings;
 import dev.stray.client.render.BlockMarks;
 import dev.stray.client.render.MobGlowRenderer;
@@ -49,6 +50,13 @@ public class MinecraftMixin {
 		MovementRings.preKeybinds(client);
 		Triggerbot.tick(client);
 		MageBeamHits.onAttack(client);
+	}
+
+	@Inject(method = "startUseItem", at = @At("HEAD"), cancellable = true)
+	private void stray$aotvSim(CallbackInfo ci) {
+		if (AotvSim.use((Minecraft) (Object) this)) {
+			ci.cancel();
+		}
 	}
 
 	/** Middle-click (pick block) toggles a Stray block mark when that feature is on. */
