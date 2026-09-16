@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.3.27", new String[]{
+			"Movement rings can be as small as 0.1m. /stray move 0.1 plants a tight stand-in so walk-in replay starts more consistently."
+		}),
 		new Entry("1.3.26", new String[]{
 			"Movement ring replay look is back on the smooth tape clock. WASD follows that same clock so keys and camera stay together without delaying the turns."
 		}),
