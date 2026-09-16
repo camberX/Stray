@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.3.23", new String[]{
+			"Movement ring camera samples the recorded look every render frame instead of once per tick, so turns stay 1:1 without 20 Hz faceting."
+		}),
 		new Entry("1.3.22", new String[]{
 			"Movement ring replay look is a monotone cubic through every recorded sample. It stays 1:1 at each tick and only curves between them, with no lag or overshoot."
 		}),
