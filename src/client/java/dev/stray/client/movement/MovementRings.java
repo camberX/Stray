@@ -53,6 +53,8 @@ import java.util.Map;
 public final class MovementRings {
 	private static final Path FILE = IslandSaves.DIR.resolve("movement-rings.json");
 	private static final int MAX = 32;
+	private static final float MIN_RADIUS = 0.1f;
+	private static final float MAX_RADIUS = 16f;
 	private static final int MAX_FRAMES = 12_000;
 	private static final int SEGMENTS = 48;
 	private static final int SEGMENTS_FAR = 24;
@@ -205,7 +207,7 @@ public final class MovementRings {
 			config.movementRingsEnabled = true;
 			config.save();
 		}
-		float size = StrayConfig.clamp(radius, 0.5f, 16f);
+		float size = StrayConfig.clamp(radius, MIN_RADIUS, MAX_RADIUS);
 		List<Ring> rings = mutableHere();
 		if (rings.size() >= MAX) {
 			rings.removeFirst();
@@ -869,8 +871,8 @@ public final class MovementRings {
 			boolean hot = ring == recordingRing || ring == playingRing || ring.inside;
 			int fill = (Math.round((hot ? 0.40f : 0.22f) * 255f) << 24) | rgb;
 			drawDisk(ring, y, fill, segments);
-			drawCircle(ring, y, ring.radius, line, 2.6f, segments);
-			drawCircle(ring, y, Math.max(0.2, ring.radius * 0.92), 0x66000000 | rgb, 1.4f, segments);
+			drawCircle(ring, y, ring.radius, line, ring.radius < 0.5f ? 1.4f : 2.6f, segments);
+			drawCircle(ring, y, Math.max(MIN_RADIUS * 0.7f, ring.radius * 0.92), 0x66000000 | rgb, 1.4f, segments);
 		}
 	}
 
@@ -1048,7 +1050,7 @@ public final class MovementRings {
 			return null;
 		}
 		float radius = object.has("radius") ? object.get("radius").getAsFloat() : 2f;
-		radius = StrayConfig.clamp(radius, 0.5f, 16f);
+		radius = StrayConfig.clamp(radius, MIN_RADIUS, MAX_RADIUS);
 		List<Frame> frames = new ArrayList<>();
 		JsonArray raw = object.getAsJsonArray("frames");
 		if (raw != null) {

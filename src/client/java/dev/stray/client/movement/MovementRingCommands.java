@@ -37,7 +37,7 @@ public final class MovementRingCommands {
 						tell(MovementRings.remove(index) ? "Removed ring " + index + "." : "No ring " + index + ".", ChatFormatting.YELLOW);
 						return Command.SINGLE_SUCCESS;
 					})))
-			.then(ClientCommands.argument("size", FloatArgumentType.floatArg(0.5f, 16f))
+			.then(ClientCommands.argument("size", FloatArgumentType.floatArg(0.1f, 16f))
 				.executes(context -> {
 					tell(MovementRings.place(FloatArgumentType.getFloat(context, "size")), ChatFormatting.GREEN);
 					return Command.SINGLE_SUCCESS;
