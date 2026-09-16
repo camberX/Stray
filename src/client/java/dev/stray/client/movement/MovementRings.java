@@ -74,6 +74,7 @@ public final class MovementRings {
 	private static final int F_SPRINT = 1 << 6;
 	private static final int F_ATTACK = 1 << 7;
 	private static final int F_USE = 1 << 8;
+	private static final int F_GROUND = 1 << 9;
 
 	static {
 		for (int i = 0; i <= SEGMENTS; i++) {
@@ -278,6 +279,9 @@ public final class MovementRings {
 				stopPlayback();
 			} else if (!aiming) {
 				syncTape(client);
+				if (playingRing != null && client.player != null) {
+					applyTapePose(client.player, false);
+				}
 			}
 			if (playingRing != null) {
 				playingRing.invalidateLabels();
@@ -343,6 +347,7 @@ public final class MovementRings {
 		computeLook();
 		Minecraft client = Minecraft.getInstance();
 		if (client.player != null) {
+			applyTapePose(client.player, true);
 			applyLook(client.player);
 		}
 		return true;
@@ -353,6 +358,7 @@ public final class MovementRings {
 			return;
 		}
 		computeLook();
+		applyTapePose(client.player, false);
 		applyLook(client.player);
 	}
 
@@ -361,6 +367,58 @@ public final class MovementRings {
 		player.setXRot(lookPitch);
 		player.forceSetRotation(lookYaw, false, lookPitch, false);
 		player.setYHeadRot(lookYaw);
+	}
+
+	private static void applyTapePose(LocalPlayer player, boolean subTick) {
+		if (playingRing == null) {
+			return;
+		}
+		List<Frame> frames = playingRing.frames;
+		if (frames.isEmpty() || !frames.getFirst().posed) {
+			return;
+		}
+		int last = frames.size() - 1;
+		float index = 0f;
+		if (!aiming) {
+			index = subTick ? visualTapeIndex(last) : Mth.clamp(currentTapeTick(), 0, last);
+		}
+		int i = Math.min(Math.max(Mth.floor(index), 0), last);
+		Frame a = frames.get(i);
+		if (!a.posed) {
+			return;
+		}
+		double x = a.x;
+		double y = a.y;
+		double z = a.z;
+		double mx = a.mx;
+		double my = a.my;
+		double mz = a.mz;
+		if (!aiming && subTick && i < last) {
+			Frame b = frames.get(i + 1);
+			if (b.posed) {
+				float t = index - i;
+				x = a.x + (b.x - a.x) * t;
+				y = a.y + (b.y - a.y) * t;
+				z = a.z + (b.z - a.z) * t;
+				mx = a.mx + (b.mx - a.mx) * t;
+				my = a.my + (b.my - a.my) * t;
+				mz = a.mz + (b.mz - a.mz) * t;
+			}
+		}
+		player.setPos(x, y, z);
+		player.setDeltaMovement(mx, my, mz);
+		player.setOnGround((a.flags & F_GROUND) != 0);
+		if ((a.flags & F_GROUND) != 0) {
+			player.resetFallDistance();
+		}
+		player.setSprinting((a.flags & F_SPRINT) != 0);
+		player.xo = x;
+		player.yo = y;
+		player.zo = z;
+		player.setOldPosAndRot();
+		if (!subTick) {
+			snapServer(Minecraft.getInstance(), x, y, z, lookYaw, lookPitch, mx, my, mz);
+		}
 	}
 
 	private static void computeLook() {
@@ -574,6 +632,18 @@ public final class MovementRings {
 		playTickNanos = 0L;
 		lastPlaySyncNanos = 0L;
 		Frame first = ring.frames.getFirst();
+		lookYaw = first.yaw;
+		lookPitch = first.pitch;
+		aimToYaw = first.yaw;
+		aimToPitch = first.pitch;
+		if (player != null && first.posed) {
+			aiming = false;
+			playTickNanos = System.nanoTime();
+			applyTapePose(player, false);
+			applyLook(player);
+			client.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.NOTE_BLOCK_HAT.value(), 1.2f, 0.45f));
+			return;
+		}
 		if (player != null) {
 			snapToStart(client, player, ring, first);
 		}
@@ -613,16 +683,23 @@ public final class MovementRings {
 		player.resetFallDistance();
 		player.setOldPosAndRot();
 		player.setSprinting((first.flags & F_SPRINT) != 0);
+		snapServer(client, x, y, z, first.yaw, first.pitch, 0, 0, 0);
+	}
+
+	private static void snapServer(Minecraft client, double x, double y, double z, float yaw, float pitch, double mx, double my, double mz) {
 		IntegratedServer server = client.getSingleplayerServer();
 		if (server == null) {
 			return;
 		}
-		UUID id = player.getUUID();
+		UUID id = client.player == null ? null : client.player.getUUID();
+		if (id == null) {
+			return;
+		}
 		server.execute(() -> {
 			var sp = server.getPlayerList().getPlayer(id);
 			if (sp != null) {
-				sp.snapTo(x, y, z, first.yaw, first.pitch);
-				sp.setDeltaMovement(Vec3.ZERO);
+				sp.snapTo(x, y, z, yaw, pitch);
+				sp.setDeltaMovement(mx, my, mz);
 				sp.resetFallDistance();
 			}
 		});
@@ -659,7 +736,22 @@ public final class MovementRings {
 		if (client.options.keyUse.isDown()) {
 			flags |= F_USE;
 		}
-		recordingRing.frames.add(new Frame(player.getYRot(), player.getXRot(), player.getInventory().getSelectedSlot(), flags));
+		if (player.onGround()) {
+			flags |= F_GROUND;
+		}
+		Vec3 motion = player.getDeltaMovement();
+		recordingRing.frames.add(new Frame(
+			player.getYRot(),
+			player.getXRot(),
+			player.getInventory().getSelectedSlot(),
+			flags,
+			player.getX(),
+			player.getY(),
+			player.getZ(),
+			motion.x,
+			motion.y,
+			motion.z
+		));
 		recordingRing.invalidateLabels();
 	}
 
@@ -1017,12 +1109,34 @@ public final class MovementRings {
 		final float pitch;
 		final int slot;
 		final int flags;
+		final boolean posed;
+		final double x;
+		final double y;
+		final double z;
+		final double mx;
+		final double my;
+		final double mz;
 
 		Frame(float yaw, float pitch, int slot, int flags) {
+			this(yaw, pitch, slot, flags, false, 0, 0, 0, 0, 0, 0);
+		}
+
+		Frame(float yaw, float pitch, int slot, int flags, double x, double y, double z, double mx, double my, double mz) {
+			this(yaw, pitch, slot, flags, true, x, y, z, mx, my, mz);
+		}
+
+		private Frame(float yaw, float pitch, int slot, int flags, boolean posed, double x, double y, double z, double mx, double my, double mz) {
 			this.yaw = yaw;
 			this.pitch = pitch;
 			this.slot = Math.max(0, Math.min(8, slot));
 			this.flags = flags;
+			this.posed = posed;
+			this.x = x;
+			this.y = y;
+			this.z = z;
+			this.mx = mx;
+			this.my = my;
+			this.mz = mz;
 		}
 	}
 
@@ -1100,7 +1214,7 @@ public final class MovementRings {
 				if (row.size() < 4) {
 					continue;
 				}
-				frames.add(new Frame(row.get(0).getAsFloat(), row.get(1).getAsFloat(), row.get(2).getAsInt(), row.get(3).getAsInt()));
+				frames.add(readFrame(row));
 				if (frames.size() >= MAX_FRAMES) {
 					break;
 				}
@@ -1118,6 +1232,32 @@ public final class MovementRings {
 		ring.startY = coordOr(object, "startY", ring.y);
 		ring.startZ = coordOr(object, "startZ", ring.z);
 		return ring;
+	}
+
+	private static Frame readFrame(JsonArray row) {
+		float yaw = row.get(0).getAsFloat();
+		float pitch = row.get(1).getAsFloat();
+		int slot = row.get(2).getAsInt();
+		int flags = row.get(3).getAsInt();
+		if (row.size() < 10) {
+			return new Frame(yaw, pitch, slot, flags);
+		}
+		return new Frame(
+			yaw,
+			pitch,
+			slot,
+			flags,
+			row.get(4).getAsDouble(),
+			row.get(5).getAsDouble(),
+			row.get(6).getAsDouble(),
+			row.get(7).getAsDouble(),
+			row.get(8).getAsDouble(),
+			row.get(9).getAsDouble()
+		);
+	}
+
+	private static double poseCoord(double value) {
+		return Math.round(value * 100000.0) / 100000.0;
 	}
 
 	private static double coordOr(JsonObject object, String key, double fallback) {
@@ -1147,6 +1287,14 @@ public final class MovementRings {
 					row.add(IslandSaves.coord(frame.pitch));
 					row.add(frame.slot);
 					row.add(frame.flags);
+					if (frame.posed) {
+						row.add(poseCoord(frame.x));
+						row.add(poseCoord(frame.y));
+						row.add(poseCoord(frame.z));
+						row.add(poseCoord(frame.mx));
+						row.add(poseCoord(frame.my));
+						row.add(poseCoord(frame.mz));
+					}
 					frames.add(row);
 				}
 				object.add("frames", frames);
