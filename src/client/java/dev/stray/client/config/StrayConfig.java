@@ -140,6 +140,8 @@ public final class StrayConfig {
 	public boolean movementRingsEnabled = false;
 	public int movementRingsRgb = 0xFF8A4A;
 	public String movementRecordKey = "key.keyboard.unknown";
+	public float movementAimSpeed = 1.00f;
+	public boolean aotvSimEnabled = true;
 	public boolean commandShortcutsEnabled = false;
 	public boolean commandShortcutsPassArgs = true;
 	public java.util.List<CommandShortcut> commandShortcuts = new java.util.ArrayList<>();
@@ -900,6 +902,10 @@ public final class StrayConfig {
 					loaded.movementRingsRgb = 0xFF8A4A;
 				}
 				loaded.movementRecordKey = blankKey(loaded.movementRecordKey, "key.keyboard.unknown");
+				loaded.movementAimSpeed = json.has("movementAimSpeed") ? clamp(loaded.movementAimSpeed <= 0f ? 1.00f : loaded.movementAimSpeed, 0.25f, 2.00f) : 1.00f;
+				if (!json.has("aotvSimEnabled")) {
+					loaded.aotvSimEnabled = true;
+				}
 				if (!json.has("commandShortcutsEnabled")) {
 					loaded.commandShortcutsEnabled = false;
 				}

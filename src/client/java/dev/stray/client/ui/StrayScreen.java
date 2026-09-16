@@ -156,7 +156,7 @@ public class StrayScreen extends Screen {
 		MARKS("Block marks", 4),
 		PATHS("Paths", 5),
 		RINGS("Command rings", 3),
-		MOVE("Movement rings", 5),
+		MOVE("Movement rings", 6),
 		LOADOUTS("Loadouts menu", 9),
 		WARDROBE("Wardrobe menu", 9),
 		NUCLEUS("Nucleus alerts", 2),
@@ -255,6 +255,9 @@ public class StrayScreen extends Screen {
 		new SearchEntry("Movement rings", Tab.TOOLS, "Tools"),
 		new SearchEntry("Movement recorder", Tab.TOOLS, "Tools"),
 		new SearchEntry("/stray move", Tab.TOOLS, "Tools"),
+		new SearchEntry("AOTV", Tab.TOOLS, "Tools"),
+		new SearchEntry("Etherwarp", Tab.TOOLS, "Tools"),
+		new SearchEntry("Diamond shovel", Tab.TOOLS, "Tools"),
 		new SearchEntry("Autoclicker", Tab.ASSIST, "Assist"),
 		new SearchEntry("Terminator", Tab.ASSIST, "Assist"),
 		new SearchEntry("Auto experiments", Tab.MENUS, "Misc"),
@@ -2232,10 +2235,11 @@ public class StrayScreen extends Screen {
 				toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Node ESP", config.boxFill, v -> config.boxFill = v, Feature.NODE_ESP);
 			}
 			case TOOLS -> {
-				float y = featureCard(graphics, font, left, top, col, cardHeight(4), "Tools");
+				float y = featureCard(graphics, font, left, top, col, cardHeight(5), "Tools");
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Block marks", config.blockMarksEnabled, v -> config.blockMarksEnabled = v, Feature.MARKS);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Command rings", config.commandRingsEnabled, v -> config.commandRingsEnabled = v, Feature.RINGS);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Movement rings", config.movementRingsEnabled, v -> config.movementRingsEnabled = v, Feature.MOVE);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "AOTV sim (singleplayer)", config.aotvSimEnabled, v -> config.aotvSimEnabled = v);
 				toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Paths", config.pathsEnabled, v -> config.pathsEnabled = v, Feature.PATHS);
 			}
 			case MENUS -> {
@@ -2460,7 +2464,8 @@ public class StrayScreen extends Screen {
 				float y = sectionLabel(graphics, font, left, top, "World");
 				y = controlCard(graphics, font, left, y, col, mouseX, mouseY, "Block marks", config.blockMarksEnabled, v -> config.blockMarksEnabled = v, Feature.MARKS);
 				y = controlCard(graphics, font, left, y, col, mouseX, mouseY, "Command rings", config.commandRingsEnabled, v -> config.commandRingsEnabled = v, Feature.RINGS);
-				controlCard(graphics, font, left, y, col, mouseX, mouseY, "Movement rings", config.movementRingsEnabled, v -> config.movementRingsEnabled = v, Feature.MOVE);
+				y = controlCard(graphics, font, left, y, col, mouseX, mouseY, "Movement rings", config.movementRingsEnabled, v -> config.movementRingsEnabled = v, Feature.MOVE);
+				toggleCard(graphics, font, left, y, col, mouseX, mouseY, "AOTV sim (singleplayer)", config.aotvSimEnabled, v -> config.aotvSimEnabled = v);
 				y = sectionLabel(graphics, font, right, top, "Routes");
 				controlCard(graphics, font, right, y, col, mouseX, mouseY, "Paths", config.pathsEnabled, v -> config.pathsEnabled = v, Feature.PATHS);
 			}
@@ -3214,6 +3219,7 @@ public class StrayScreen extends Screen {
 			case MOVE -> {
 				y = clickRow(graphics, font, ix, y, iw, mouseX, mouseY, "Place ring at feet", () -> MovementRings.place(2f));
 				y = bindRow(graphics, font, ix, y, iw, mouseX, mouseY, "Record key", 10, OdinClicks.parseKey(config.movementRecordKey));
+				y = slider(graphics, font, ix, y, iw, "Aim speed", Math.round(config.movementAimSpeed * 100) + "%", (config.movementAimSpeed - 0.25f) / 1.75f, v -> config.movementAimSpeed = StrayConfig.clamp(0.25f + v * 1.75f, 0.25f, 2.00f));
 				y = colorRow(graphics, font, ix, y, iw, mouseX, mouseY, "Color", config.movementRingsRgb, PickerTarget.MOVE);
 				y = clickRow(graphics, font, ix, y, iw, mouseX, mouseY, MovementRings.count() == 0 ? "Clear rings on " + PathRecorder.islandLabel() : "Clear " + MovementRings.count() + " ring" + (MovementRings.count() == 1 ? "" : "s") + " on " + PathRecorder.islandLabel(), MovementRings::clear);
 				String hint = MovementRings.recording()
