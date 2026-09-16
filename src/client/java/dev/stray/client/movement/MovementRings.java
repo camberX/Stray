@@ -330,7 +330,6 @@ public final class MovementRings {
 		}
 		LocalPlayer player = client.player;
 		long now = System.nanoTime();
-		float dt = lookNanos == 0L ? 0.016f : (float) Mth.clamp((now - lookNanos) / 1_000_000_000.0, 0.0, 0.05);
 		lookNanos = now;
 		float yaw;
 		float pitch;
@@ -354,9 +353,6 @@ public final class MovementRings {
 			float index = playIndex + Mth.clamp(tickBudget + extra, 0f, 0.999f);
 			yaw = tapeYaw(index);
 			pitch = tapePitch(index);
-			float follow = 1f - (float) Math.exp(-dt / 0.10);
-			yaw = SmoothRotate.interpolateYaw(lookYaw, yaw, follow);
-			pitch = SmoothRotate.lerp(lookPitch, pitch, follow);
 		}
 		lookYaw = yaw;
 		lookPitch = SmoothRotate.normalizePitch(pitch);
@@ -662,29 +658,17 @@ public final class MovementRings {
 	}
 
 	private static float tapeYaw(float index) {
-		List<Frame> frames = playingRing.frames;
 		int i = Mth.floor(index);
 		float t = index - i;
-		float ref = sampleYaw(i);
-		return catmull(
-			unwrapYaw(sampleYaw(i - 1), ref),
-			ref,
-			unwrapYaw(sampleYaw(i + 1), ref),
-			unwrapYaw(sampleYaw(i + 2), ref),
-			t
-		);
+		float from = sampleYaw(i);
+		float to = sampleYaw(i + 1);
+		return SmoothRotate.interpolateYaw(from, to, t);
 	}
 
 	private static float tapePitch(float index) {
 		int i = Mth.floor(index);
 		float t = index - i;
-		return SmoothRotate.normalizePitch(catmull(
-			samplePitch(i - 1),
-			samplePitch(i),
-			samplePitch(i + 1),
-			samplePitch(i + 2),
-			t
-		));
+		return SmoothRotate.normalizePitch(SmoothRotate.lerp(samplePitch(i), samplePitch(i + 1), t));
 	}
 
 	private static float sampleYaw(int index) {
@@ -695,16 +679,6 @@ public final class MovementRings {
 	private static float samplePitch(int index) {
 		List<Frame> frames = playingRing.frames;
 		return frames.get(Mth.clamp(index, 0, frames.size() - 1)).pitch;
-	}
-
-	private static float unwrapYaw(float yaw, float ref) {
-		return ref + SmoothRotate.normalizeYaw(yaw - ref);
-	}
-
-	private static float catmull(float p0, float p1, float p2, float p3, float t) {
-		float t2 = t * t;
-		float t3 = t2 * t;
-		return 0.5f * ((2f * p1) + (-p0 + p2) * t + (2f * p0 - 5f * p1 + 4f * p2 - p3) * t2 + (-p0 + 3f * p1 - 3f * p2 + p3) * t3);
 	}
 
 	private static void setClick(KeyMapping mapping, boolean down, boolean wasDown) {

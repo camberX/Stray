@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.3.21", new String[]{
+			"Movement ring replay look follows the recorded yaw and pitch again. Extra smoothing was lagging behind the tape."
+		}),
 		new Entry("1.3.20", new String[]{
 			"Movement rings have an Aim speed slider for the turn onto the recording's first look.",
 			"Singleplayer AOTV sim: a diamond shovel right-click teleports 8 blocks onto the block center. Sneak right-click etherwarps onto the aimed block up to 72 blocks if you fit. Off on servers."
