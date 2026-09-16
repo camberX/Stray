@@ -651,11 +651,11 @@ public final class MovementRings {
 				continue;
 			}
 			ring.inside = true;
-			if (allow && ring.armed && ring.frames.size() >= 2) {
+			if (allow && ring.armed && ring.frames.size() >= 2 && player.onGround()) {
 				ring.armed = false;
 				startPlayback(ring);
 				allow = false;
-			} else {
+			} else if (!(ring.armed && !player.onGround())) {
 				ring.armed = false;
 			}
 		}
