@@ -182,6 +182,9 @@ public final class MovementRings {
 				if (sample > 20.5f) {
 					sample = 20f;
 				}
+				if (sample >= 19.5f) {
+					sample = 20f;
+				}
 				sample = StrayConfig.clamp(sample, 1f, 20f);
 				serverTps = serverTps * 0.65f + sample * 0.35f;
 			}
@@ -274,6 +277,7 @@ public final class MovementRings {
 				stopPlayback();
 			} else if (!aiming && step) {
 				playIndex++;
+				playTickNanos = System.nanoTime();
 				if (playIndex >= playingRing.frames.size()) {
 					stopPlayback();
 				}
@@ -339,7 +343,7 @@ public final class MovementRings {
 		if (playingRing == null) {
 			return false;
 		}
-		computeLook(true);
+		computeLook();
 		Minecraft client = Minecraft.getInstance();
 		if (client.player != null) {
 			applyLook(client.player);
@@ -351,7 +355,7 @@ public final class MovementRings {
 		if (playingRing == null || client == null || client.player == null) {
 			return;
 		}
-		computeLook(false);
+		computeLook();
 		applyLook(client.player);
 	}
 
@@ -362,7 +366,7 @@ public final class MovementRings {
 		player.setYHeadRot(lookYaw);
 	}
 
-	private static void computeLook(boolean subTick) {
+	private static void computeLook() {
 		long now = System.nanoTime();
 		lookNanos = now;
 		float yaw;
@@ -379,23 +383,16 @@ public final class MovementRings {
 				yaw = aimToYaw;
 				pitch = aimToPitch;
 			}
-		} else if (subTick) {
-			float index = playIndex;
-			if (playTickNanos != 0L) {
-				index = (float) ((now - playTickNanos) / 1_000_000_000.0 * serverTps);
-			}
+		} else {
 			int last = playingRing.frames.size() - 1;
 			if (last < 1) {
 				yaw = tapeYaw(0f);
 				pitch = tapePitch(0f);
 			} else {
-				index = Mth.clamp(index, 0f, last - 0.0001f);
+				float index = visualTapeIndex(last);
 				yaw = tapeYaw(index);
 				pitch = tapePitch(index);
 			}
-		} else {
-			yaw = tapeYaw(playIndex);
-			pitch = tapePitch(playIndex);
 		}
 		lookYaw = yaw;
 		lookPitch = SmoothRotate.normalizePitch(pitch);
@@ -695,6 +692,25 @@ public final class MovementRings {
 		return playingRing.frames.get(playIndex);
 	}
 
+	/**
+	 * Look is captured at the end of each recorded tick with that tick's WASD.
+	 * During playback tick {@code i}, keys are sample {@code i} while look lerps
+	 * from sample {@code i-1} to {@code i} so a key-up is not held through the
+	 * next turn.
+	 */
+	private static float visualTapeIndex(int last) {
+		float extra = 0f;
+		if (playTickNanos != 0L) {
+			extra = (float) ((System.nanoTime() - playTickNanos) / 1_000_000_000.0 * playbackRate());
+		}
+		extra = Mth.clamp(extra, 0f, 1f);
+		return Mth.clamp(playIndex + extra - 1f, 0f, last - 0.0001f);
+	}
+
+	private static float playbackRate() {
+		return serverTps >= 19.5f ? 20f : serverTps;
+	}
+
 	private static float tapeYaw(float index) {
 		return tapeAngle(index, true);
 	}
@@ -760,7 +776,8 @@ public final class MovementRings {
 			}
 			rate = ticks.tickrate();
 		}
-		float effective = Math.min(serverTps, 20f) * (rate / 20f);
+		float tps = playbackRate();
+		float effective = Math.min(tps, 20f) * (rate / 20f);
 		effective = StrayConfig.clamp(effective, 0.5f, 20f);
 		tickBudget += effective / 20f;
 		if (tickBudget < 1f) {

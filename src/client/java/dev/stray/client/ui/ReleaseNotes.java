@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.3.25", new String[]{
+			"Movement ring replay releases WASD on the same tick as the recording. Look no longer runs a tick ahead of the keys, and healthy ~20 TPS no longer adds extra hold from measurement noise."
+		}),
 		new Entry("1.3.24", new String[]{
 			"Movement ring replay look lerps between recorded poses every display frame, including 120 FPS, instead of easing to a stop on each tick."
 		}),
