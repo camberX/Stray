@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.3.24", new String[]{
+			"Movement ring replay look lerps between recorded poses every display frame, including 120 FPS, instead of easing to a stop on each tick."
+		}),
 		new Entry("1.3.23", new String[]{
 			"Movement ring camera samples the recorded look every render frame instead of once per tick, so turns stay 1:1 without 20 Hz faceting."
 		}),
