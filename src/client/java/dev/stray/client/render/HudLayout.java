@@ -23,6 +23,7 @@ public final class HudLayout {
 		INVENTORY("Inventory"),
 		NODES("Nodes"),
 		MUSIC("Music"),
+		PIP("Picture in picture"),
 		RAWMATS("Raw mats"),
 		PICKUPS("Pickup log"),
 		MINING("Mining"),
@@ -160,6 +161,10 @@ public final class HudLayout {
 					x = placed(config.hudMusicX) ? config.hudMusicX : MARGIN;
 					y = placed(config.hudMusicY) ? config.hudMusicY : Math.max(MARGIN, guiH - h - 40);
 				}
+				case PIP -> {
+					x = placed(config.hudPipX) ? config.hudPipX : Math.max(MARGIN, guiW - w - MARGIN);
+					y = placed(config.hudPipY) ? config.hudPipY : Math.max(MARGIN, guiH - h - 48);
+				}
 				case RAWMATS -> {
 					x = placed(config.hudRawmatsX) ? config.hudRawmatsX : Math.max(MARGIN, guiW - w - MARGIN);
 					y = placed(config.hudRawmatsY) ? config.hudRawmatsY : MARGIN;
@@ -274,6 +279,10 @@ public final class HudLayout {
 				config.hudMusicX = x;
 				config.hudMusicY = y;
 			}
+			case PIP -> {
+				config.hudPipX = x;
+				config.hudPipY = y;
+			}
 			case RAWMATS -> {
 				config.hudRawmatsX = x;
 				config.hudRawmatsY = y;
@@ -318,6 +327,7 @@ public final class HudLayout {
 			case INVENTORY -> StrayConfig.clampHudScale(config.inventoryHudScale);
 			case NODES -> StrayConfig.clampHudScale(config.hudNodesScale);
 			case MUSIC -> StrayConfig.clampHudScale(config.hudMusicScale);
+			case PIP -> StrayConfig.clampHudScale(config.hudPipScale);
 			case RAWMATS -> StrayConfig.clampHudScale(config.hudRawmatsScale);
 			case PICKUPS -> StrayConfig.clampHudScale(config.hudPickupScale);
 			case MINING -> StrayConfig.clampHudScale(config.hudMiningScale);
@@ -343,6 +353,7 @@ public final class HudLayout {
 			case INVENTORY -> config.inventoryHudScale = value;
 			case NODES -> config.hudNodesScale = value;
 			case MUSIC -> config.hudMusicScale = value;
+			case PIP -> config.hudPipScale = value;
 			case RAWMATS -> config.hudRawmatsScale = value;
 			case PICKUPS -> config.hudPickupScale = value;
 			case MINING -> config.hudMiningScale = value;
@@ -380,6 +391,10 @@ public final class HudLayout {
 			case MUSIC -> {
 				config.hudMusicX = -1f;
 				config.hudMusicY = -1f;
+			}
+			case PIP -> {
+				config.hudPipX = -1f;
+				config.hudPipY = -1f;
 			}
 			case RAWMATS -> {
 				config.hudRawmatsX = -1f;
@@ -421,6 +436,7 @@ public final class HudLayout {
 			case INVENTORY -> config.inventoryHudEnabled;
 			case NODES -> config.hudEnabled;
 			case MUSIC -> config.musicHudEnabled;
+			case PIP -> config.pipEnabled;
 			case RAWMATS -> config.rawmatsHudEnabled;
 			case PICKUPS -> config.pickupLogEnabled;
 			case MINING -> config.miningHudEnabled;
@@ -556,6 +572,7 @@ public final class HudLayout {
 			case INVENTORY -> InventoryHudRenderer.drawWidth() * scale;
 			case NODES -> NodeHudRenderer.drawWidth() * scale;
 			case MUSIC -> MusicHudRenderer.drawWidth() * scale;
+			case PIP -> PipHudRenderer.drawWidth() * scale;
 			case RAWMATS -> RawmatsHudRenderer.drawWidth() * scale;
 			case PICKUPS -> PickupLogRenderer.drawWidth() * scale;
 			case MINING -> MiningHudRenderer.drawWidth() * scale;
@@ -580,6 +597,7 @@ public final class HudLayout {
 			case INVENTORY -> InventoryHudRenderer.drawHeight() * scale;
 			case NODES -> NodeHudRenderer.drawHeight() * scale;
 			case MUSIC -> MusicHudRenderer.drawHeight() * scale;
+			case PIP -> PipHudRenderer.drawHeight() * scale;
 			case RAWMATS -> RawmatsHudRenderer.drawHeight() * scale;
 			case PICKUPS -> PickupLogRenderer.drawHeight() * scale;
 			case MINING -> MiningHudRenderer.drawHeight() * scale;

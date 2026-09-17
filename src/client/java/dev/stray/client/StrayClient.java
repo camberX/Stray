@@ -55,6 +55,7 @@ import dev.stray.client.movement.MovementRingCommands;
 import dev.stray.client.movement.MovementRings;
 import dev.stray.client.movement.PathCommands;
 import dev.stray.client.movement.PathRecorder;
+import dev.stray.client.pip.PipCapture;
 import dev.stray.client.mining.MiningTracker;
 import dev.stray.client.mining.TitaniumTracker;
 import dev.stray.client.render.PestEspRenderer;
@@ -64,6 +65,7 @@ import dev.stray.client.render.InventoryHudRenderer;
 import dev.stray.client.render.JacobContestHudRenderer;
 import dev.stray.client.render.SkillProgressHudRenderer;
 import dev.stray.client.render.MusicHudRenderer;
+import dev.stray.client.render.PipHudRenderer;
 import dev.stray.client.render.EntityHealthBars;
 import dev.stray.client.render.NametagRenderer;
 import dev.stray.client.render.NodeHudRenderer;
@@ -201,6 +203,7 @@ public final class StrayClient implements ClientModInitializer {
 		NodeHudRenderer.init();
 		PickupLogRenderer.init();
 		MusicHudRenderer.init();
+		PipHudRenderer.init();
 		RawmatsHudRenderer.init();
 		MiningHudRenderer.init();
 		NametagRenderer.init();
@@ -330,6 +333,7 @@ public final class StrayClient implements ClientModInitializer {
 			PathRecorder.tick(client);
 			CommandRings.tick(client);
 			MovementRings.tick(client);
+			PipCapture.tick(client);
 			AotvSim.tick();
 			ShopCape.tick();
 			UiFontPack.tick(client);
@@ -408,7 +412,10 @@ public final class StrayClient implements ClientModInitializer {
 			MetalDetector.reset();
 		});
 
-		ClientLifecycleEvents.CLIENT_STOPPING.register(client -> FarmKeys.restore());
+		ClientLifecycleEvents.CLIENT_STOPPING.register(client -> {
+			FarmKeys.restore();
+			PipCapture.stop();
+		});
 	}
 
 	private static LiteralArgumentBuilder<FabricClientCommandSource> stealCommand() {
