@@ -15,8 +15,14 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
-		new Entry("1.3.51", new String[]{
+		new Entry("1.3.53", new String[]{
 			"Garden overlays: next Jacob contest, visitor timer, hoe level, crop milestone, and visitor shopping list. Off by default on the Garden tab; drag them in the HUD editor."
+		}),
+		new Entry("1.3.52", new String[]{
+			"Butterfly wings are smaller and painted with veins, a bright upper sheen, and spots on the lower lobe."
+		}),
+		new Entry("1.3.51", new String[]{
+			"Butterfly wings. The shop desk can grant a Morpho-style pair traced from the reference: two lobes per side, pixel cutout, tinted to the desk color."
 		}),
 		new Entry("1.3.50", new String[]{
 			"Wings are no longer upside down. The long primaries sit at the top; the short coverts hang at the bottom."
