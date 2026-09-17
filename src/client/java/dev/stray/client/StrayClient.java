@@ -22,6 +22,7 @@ import dev.stray.client.fairy.FairySoulRenderer;
 import dev.stray.client.fairy.FairySoulTracker;
 import dev.stray.client.farming.FarmingHud;
 import dev.stray.client.farming.ComposterTracker;
+import dev.stray.client.farming.GardenHud;
 import dev.stray.client.farming.JacobContestTracker;
 import dev.stray.client.skill.SkillProgressTracker;
 import dev.stray.client.account.AccountStore;
@@ -62,6 +63,7 @@ import dev.stray.client.mining.TitaniumTracker;
 import dev.stray.client.render.PestEspRenderer;
 import dev.stray.client.render.ChestEspRenderer;
 import dev.stray.client.render.ComposterHudRenderer;
+import dev.stray.client.render.GardenHudRenderer;
 import dev.stray.client.render.InventoryHudRenderer;
 import dev.stray.client.render.JacobContestHudRenderer;
 import dev.stray.client.render.SkillProgressHudRenderer;
@@ -200,6 +202,7 @@ public final class StrayClient implements ClientModInitializer {
 		JacobContestHudRenderer.init();
 		SkillProgressHudRenderer.init();
 		ComposterHudRenderer.init();
+		GardenHudRenderer.init();
 		WatermarkRenderer.init();
 		InventoryHudRenderer.init();
 		NodeHudRenderer.init();
@@ -318,6 +321,7 @@ public final class StrayClient implements ClientModInitializer {
 			JacobContestTracker.tick(client);
 			SkillProgressTracker.tick(client);
 			ComposterTracker.tick(client);
+			GardenHud.tick(client);
 			StrayDebug.tick(client);
 			EnderNodeTracker.get().tick(client);
 			ConnectionPing.tick(client);
@@ -376,6 +380,7 @@ public final class StrayClient implements ClientModInitializer {
 			JacobContestTracker.reset();
 			SkillProgressTracker.reset();
 			ComposterTracker.reset();
+			GardenHud.reset();
 			SkyblockProfileApi.refresh();
 			ShopCape.onJoin();
 			CommandRings.onWorldChange();
@@ -397,6 +402,7 @@ public final class StrayClient implements ClientModInitializer {
 			JacobContestTracker.reset();
 			SkillProgressTracker.reset();
 			ComposterTracker.reset();
+			GardenHud.reset();
 			CommandRings.onWorldChange();
 			MovementRings.onWorldChange();
 			EnderNodeTracker.get().clear();
