@@ -3,6 +3,9 @@ package dev.stray.client.farming;
 import dev.stray.client.config.StrayConfig;
 import dev.stray.client.item.ItemAppearance;
 import dev.stray.client.item.ItemIds;
+import dev.stray.client.item.ItemStorage;
+import dev.stray.client.item.SkyblockItems;
+import dev.stray.client.visual.NickSteal;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.multiplayer.ClientPacketListener;
@@ -36,6 +39,7 @@ import java.util.regex.Pattern;
  */
 public final class GardenHud {
 	private static final int INFO_SLOT = 13;
+	private static final int ACCEPT_SLOT = 29;
 	private static final int HOE_OVERFLOW = 200_000;
 	private static final int SAMPLE_MS = 10_000;
 	/** XP to go from level n to n+1. Index 0 is level 1. */
@@ -93,20 +97,29 @@ public final class GardenHud {
 		"^(?:jacob'?s contest:\\s*)?(.+?)\\s+left$",
 		Pattern.CASE_INSENSITIVE
 	);
+	/** SkyHanni TabWidget.VISITORS: `Visitors: (2)` — count is in parentheses. */
 	private static final Pattern VISITORS_HEADER = Pattern.compile(
-		"^visitors?:\\s*(.*)$",
+		"^(?:[^\\p{Alnum}]*)visitors?:\\s*(?:\\((\\d+)\\)|(.+))$",
 		Pattern.CASE_INSENSITIVE
 	);
 	private static final Pattern NEXT_VISITOR = Pattern.compile(
 		"^next visitor:\\s*(.+)$",
 		Pattern.CASE_INSENSITIVE
 	);
-	private static final Pattern DURATION = Pattern.compile(
-		"(?:(\\d+)d\\s*)?(?:(\\d+)h\\s*)?(?:(\\d+)m\\s*)?(?:(\\d+)s)?",
+	/** SkyHanni visitorNamePattern on colored tab text: ` §r§aEmissary Carlton`. */
+	private static final Pattern VISITOR_NAME = Pattern.compile(
+		"^\\s*(?:§.)+(§.[^§]+).*"
+	);
+	private static final Pattern OFFERS_ACCEPTED = Pattern.compile(
+		"^offers accepted:\\s*",
 		Pattern.CASE_INSENSITIVE
 	);
 	private static final Pattern ITEM_AMOUNT = Pattern.compile(
 		"^(?:[-•]\\s*)?(?:(\\d[\\d,]*)x\\s+)?(.+?)(?:\\s+x(\\d[\\d,]*))?$",
+		Pattern.CASE_INSENSITIVE
+	);
+	private static final Pattern DURATION = Pattern.compile(
+		"(?:(\\d+)d\\s*)?(?:(\\d+)h\\s*)?(?:(\\d+)m\\s*)?(?:(\\d+)s)?",
 		Pattern.CASE_INSENSITIVE
 	);
 	private static final Pattern OVERFLOW_CHAT = Pattern.compile(
@@ -228,9 +241,9 @@ public final class GardenHud {
 	}
 
 	private static void readTab(Minecraft client) {
-		List<String> lines = tabLines(client);
-		parseContest(lines);
-		parseVisitors(lines);
+		TabLines lines = tabLines(client);
+		parseContest(lines.clean());
+		parseVisitors(lines.clean(), lines.raw());
 	}
 
 	private static void parseContest(List<String> lines) {
@@ -301,7 +314,7 @@ public final class GardenHud {
 		contest = new ContestSnap(true, active, List.copyOf(crops), boosted, time.isEmpty() ? "?" : time);
 	}
 
-	private static void parseVisitors(List<String> lines) {
+	private static void parseVisitors(List<String> cleaned, List<String> raw) {
 		int count = -1;
 		boolean locked = false;
 		boolean queueFull = false;
@@ -309,12 +322,19 @@ public final class GardenHud {
 		List<String> names = new ArrayList<>();
 		boolean inList = false;
 		int remaining = 0;
-		for (String line : lines) {
+		int size = Math.min(cleaned.size(), raw.size());
+		for (int i = 0; i < size; i++) {
+			String line = cleaned.get(i);
+			String colored = raw.get(i);
 			Matcher header = VISITORS_HEADER.matcher(line);
 			if (header.matches()) {
 				inList = true;
-				String info = header.group(1) == null ? "" : header.group(1).trim();
-				if (info.equalsIgnoreCase("Not Unlocked!")) {
+				String parens = header.group(1);
+				String info = header.group(2) == null ? "" : header.group(2).trim();
+				if (parens != null) {
+					count = parseInt(parens);
+					remaining = Math.max(0, count);
+				} else if (info.equalsIgnoreCase("Not Unlocked!")) {
 					locked = true;
 					count = 0;
 					remaining = 0;
@@ -341,11 +361,18 @@ public final class GardenHud {
 			if (!inList) {
 				continue;
 			}
-			if (line.isEmpty() || widget(line) || remaining <= 0) {
+			if (remaining <= 0 || widget(line)) {
 				inList = false;
 				continue;
 			}
-			names.add(line);
+			if (line.isEmpty()) {
+				remaining--;
+				continue;
+			}
+			String name = visitorName(colored, line);
+			if (!name.isEmpty()) {
+				names.add(name);
+			}
 			remaining--;
 		}
 		if (count < 0 && names.isEmpty() && next.isEmpty() && !locked) {
@@ -484,45 +511,72 @@ public final class GardenHud {
 		if (!(client.screen instanceof AbstractContainerScreen<?> screen)) {
 			return;
 		}
-		String title = clean(screen.getTitle());
-		if (title.isEmpty() || title.equalsIgnoreCase("Chest") || title.toLowerCase(Locale.ROOT).contains("skyblock menu")) {
+		ItemStack info = slotItem(screen, INFO_SLOT);
+		if (info == null || info.isEmpty() || !visitorInfo(info)) {
 			return;
 		}
-		ItemStack info = ItemStack.EMPTY;
+		ItemStack offer = slotItem(screen, ACCEPT_SLOT);
+		if (offer == null || offer.isEmpty()) {
+			return;
+		}
+		String offerName = clean(offer.getHoverName().getString());
+		if (!offerName.equalsIgnoreCase("Accept Offer")) {
+			return;
+		}
+		String name = visitorNpcName(info, screen.getTitle());
+		if (name.isEmpty()) {
+			return;
+		}
+		List<Need> needs = readRequired(offer);
+		if (needs.isEmpty()) {
+			needs = readRequired(info);
+		}
+		SHOPPING.put(name, List.copyOf(needs));
+	}
+
+	private static ItemStack slotItem(AbstractContainerScreen<?> screen, int index) {
 		for (Slot slot : screen.getMenu().slots) {
-			if (slot.index == INFO_SLOT) {
-				info = slot.getItem();
-				break;
+			if (slot.index == index) {
+				return slot.getItem();
 			}
 		}
-		if (info == null || info.isEmpty()) {
-			return;
-		}
-		List<String> lore = lore(info);
-		boolean visitor = false;
-		for (String line : lore) {
-			if (line.toLowerCase(Locale.ROOT).startsWith("offers accepted")) {
-				visitor = true;
-				break;
+		return ItemStack.EMPTY;
+	}
+
+	private static boolean visitorInfo(ItemStack stack) {
+		List<String> lore = lore(stack);
+		if (lore.size() != 4) {
+			for (String line : lore) {
+				if (OFFERS_ACCEPTED.matcher(clean(line)).find()) {
+					return true;
+				}
 			}
+			return false;
 		}
-		if (!visitor) {
-			return;
+		return OFFERS_ACCEPTED.matcher(clean(lore.get(3))).find();
+	}
+
+	private static String visitorNpcName(ItemStack info, Component title) {
+		String named = clean(info.getHoverName().getString());
+		if (!named.isEmpty() && !named.equalsIgnoreCase("Chest")) {
+			return named;
 		}
+		return clean(title);
+	}
+
+	private static List<Need> readRequired(ItemStack stack) {
 		List<Need> needs = new ArrayList<>();
 		boolean required = false;
-		for (String line : lore) {
+		for (String line : lore(stack)) {
 			String plain = clean(line);
-			if (plain.equalsIgnoreCase("Items Required:")) {
+			if (plain.equalsIgnoreCase("Items Required") || plain.equalsIgnoreCase("Items Required:")) {
 				required = true;
 				continue;
 			}
 			if (!required) {
 				continue;
 			}
-			if (plain.isEmpty() || plain.toLowerCase(Locale.ROOT).startsWith("rewards")
-				|| plain.toLowerCase(Locale.ROOT).startsWith("copper")
-				|| plain.toLowerCase(Locale.ROOT).startsWith("garden experience")) {
+			if (plain.isEmpty() || plain.toLowerCase(Locale.ROOT).startsWith("rewards")) {
 				break;
 			}
 			Need need = parseNeed(plain);
@@ -530,7 +584,7 @@ public final class GardenHud {
 				needs.add(need);
 			}
 		}
-		SHOPPING.put(title, List.copyOf(needs));
+		return needs;
 	}
 
 	private static void countShopping(LocalPlayer player) {
@@ -539,41 +593,46 @@ public final class GardenHud {
 			shopping = ShoppingSnap.empty();
 			return;
 		}
-		Map<String, Integer> having = inventoryCounts(player);
+		HeldCounts having = inventoryCounts(player);
 		Map<String, Integer> totals = new LinkedHashMap<>();
+		Map<String, String> ids = new LinkedHashMap<>();
 		List<String> known = new ArrayList<>();
 		List<String> fresh = new ArrayList<>();
 		if (live.present()) {
 			for (String name : live.names()) {
-				List<Need> needs = SHOPPING.get(name);
-				if (needs == null) {
-					needs = matchShopping(name);
-				}
+				List<Need> needs = matchShopping(name);
 				if (needs == null || needs.isEmpty()) {
 					fresh.add(shortName(name));
 					continue;
 				}
 				known.add(shortName(name));
-				for (Need need : needs) {
-					totals.merge(need.name(), need.required(), Integer::sum);
-				}
+				addNeeds(totals, ids, needs);
 			}
 		} else {
 			for (Map.Entry<String, List<Need>> entry : SHOPPING.entrySet()) {
 				known.add(shortName(entry.getKey()));
-				for (Need need : entry.getValue()) {
-					totals.merge(need.name(), need.required(), Integer::sum);
-				}
+				addNeeds(totals, ids, entry.getValue());
 			}
 		}
 		List<Need> items = new ArrayList<>();
 		for (Map.Entry<String, Integer> entry : totals.entrySet()) {
-			items.add(new Need(entry.getKey(), entry.getValue(), having.getOrDefault(fold(entry.getKey()), 0)));
+			String name = entry.getKey();
+			String id = ids.get(name);
+			items.add(new Need(name, id == null ? "" : id, entry.getValue(), having.of(name, id)));
 		}
 		boolean present = live.present() || !items.isEmpty();
 		List<String> names = new ArrayList<>(known);
 		names.addAll(fresh);
 		shopping = new ShoppingSnap(present, List.copyOf(items), List.copyOf(names), List.copyOf(fresh));
+	}
+
+	private static void addNeeds(Map<String, Integer> totals, Map<String, String> ids, List<Need> needs) {
+		for (Need need : needs) {
+			totals.merge(need.name(), need.required(), Integer::sum);
+			if (need.id() != null && !need.id().isBlank()) {
+				ids.putIfAbsent(need.name(), need.id());
+			}
+		}
 	}
 
 	private static List<Need> matchShopping(String name) {
@@ -612,8 +671,9 @@ public final class GardenHud {
 		SHOPPING.keySet().retainAll(keep);
 	}
 
-	private static Map<String, Integer> inventoryCounts(LocalPlayer player) {
-		Map<String, Integer> counts = new LinkedHashMap<>();
+	private static HeldCounts inventoryCounts(LocalPlayer player) {
+		Map<String, Integer> byId = new LinkedHashMap<>();
+		Map<String, Integer> byName = new LinkedHashMap<>();
 		Inventory inventory = player.getInventory();
 		boolean prior = ItemAppearance.suppress();
 		try {
@@ -621,16 +681,20 @@ public final class GardenHud {
 				if (stack == null || stack.isEmpty()) {
 					continue;
 				}
-				String name = fold(clean(stack.getHoverName().getString()));
-				if (name.isEmpty()) {
-					continue;
+				int count = stack.getCount();
+				String id = ItemStorage.idOf(stack);
+				if (id != null && !id.isBlank()) {
+					byId.merge(id, count, Integer::sum);
 				}
-				counts.merge(name, stack.getCount(), Integer::sum);
+				String name = fold(clean(stack.getHoverName().getString()));
+				if (!name.isEmpty()) {
+					byName.merge(name, count, Integer::sum);
+				}
 			}
 		} finally {
 			ItemAppearance.resume(prior);
 		}
-		return counts;
+		return new HeldCounts(byId, byName);
 	}
 
 	private static Need parseNeed(String line) {
@@ -642,14 +706,15 @@ public final class GardenHud {
 		String name = matcher.group(2) == null ? "" : matcher.group(2).trim();
 		String right = matcher.group(3);
 		int amount = parseInt(left != null ? left : right);
-		if (name.isEmpty() || amount <= 0) {
-			return null;
+		if (amount <= 0) {
+			amount = 1;
 		}
 		name = name.replaceAll("\\s+", " ").trim();
-		if (name.equalsIgnoreCase("Items Required") || name.length() < 2) {
+		if (name.isEmpty() || name.equalsIgnoreCase("Items Required") || name.length() < 2) {
 			return null;
 		}
-		return new Need(name, amount, 0);
+		String id = SkyblockItems.idFromName(name);
+		return new Need(name, id == null ? "" : id, amount, 0);
 	}
 
 	private static CropMark cropLine(String line) {
@@ -744,21 +809,39 @@ public final class GardenHud {
 		return new Milestone(cap + overflow, cap + overflow + 1, have, step, false);
 	}
 
-	private static List<String> tabLines(Minecraft client) {
+	private static TabLines tabLines(Minecraft client) {
 		ClientPacketListener connection = client.player.connection;
 		if (connection == null) {
-			return List.of();
+			return new TabLines(List.of(), List.of());
 		}
 		List<PlayerInfo> infos = new ArrayList<>(connection.getListedOnlinePlayers());
 		infos.sort(TAB_ORDER);
-		List<String> lines = new ArrayList<>(infos.size());
+		List<String> raw = new ArrayList<>(infos.size());
+		List<String> clean = new ArrayList<>(infos.size());
 		for (PlayerInfo info : infos) {
-			String line = clean(tabName(info));
-			if (!line.isEmpty()) {
-				lines.add(line);
+			Component component = tabName(info);
+			String colored = component == null ? "" : NickSteal.toLegacy(component);
+			String line = clean(colored);
+			if (line.isEmpty()) {
+				continue;
+			}
+			raw.add(colored);
+			clean.add(line);
+		}
+		return new TabLines(clean, raw);
+	}
+
+	private static String visitorName(String colored, String cleaned) {
+		if (colored != null) {
+			Matcher matcher = VISITOR_NAME.matcher(colored);
+			if (matcher.matches()) {
+				String named = clean(matcher.group(1));
+				if (!named.isEmpty()) {
+					return named;
+				}
 			}
 		}
-		return lines;
+		return cleaned == null ? "" : cleaned;
 	}
 
 	private static Component tabName(PlayerInfo info) {
@@ -826,13 +909,18 @@ public final class GardenHud {
 			|| key.startsWith("profile:")
 			|| key.startsWith("skills:")
 			|| key.startsWith("collections")
+			|| key.startsWith("crop milestone")
+			|| key.startsWith("garden level")
+			|| key.startsWith("copper:")
 			|| key.startsWith("pets:")
 			|| key.startsWith("composter")
 			|| key.startsWith("pests:")
 			|| key.startsWith("plots:")
 			|| key.startsWith("event:")
+			|| key.startsWith("jacob")
 			|| key.equals("farming")
-			|| key.equals("garden");
+			|| key.equals("garden")
+			|| key.equals("info");
 	}
 
 	private static int parseDuration(String value) {
@@ -979,7 +1067,28 @@ public final class GardenHud {
 		}
 	}
 
-	public record Need(String name, int required, int having) {
+	public record Need(String name, String id, int required, int having) {
+	}
+
+	private record TabLines(List<String> clean, List<String> raw) {
+	}
+
+	private record HeldCounts(Map<String, Integer> byId, Map<String, Integer> byName) {
+		private int of(String name, String id) {
+			int have = 0;
+			if (id != null && !id.isBlank()) {
+				have += byId.getOrDefault(id, 0);
+				long sack = ItemStorage.openedSackCount(id);
+				if (sack > Integer.MAX_VALUE) {
+					have = Integer.MAX_VALUE;
+				} else {
+					have += (int) sack;
+				}
+			} else {
+				have += byName.getOrDefault(fold(name), 0);
+			}
+			return have;
+		}
 	}
 
 	private enum CropKind {

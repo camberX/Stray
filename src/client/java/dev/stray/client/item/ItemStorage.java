@@ -155,6 +155,28 @@ public final class ItemStorage {
 		return Math.max(0L, apiSacks.getOrDefault(key, 0L) - sackAdjust.getOrDefault(key, 0L));
 	}
 
+	/**
+	 * Sack amounts from GUIs the player has opened, plus live sack chat after
+	 * that. Does not fetch the profile API.
+	 */
+	public static long openedSackCount(String id) {
+		String key = SkyblockRecipes.normalize(id);
+		if (key.isBlank()) {
+			return 0L;
+		}
+		long n = 0L;
+		String prefix = "sack:";
+		for (Map.Entry<String, Map<String, Long>> page : PAGES.entrySet()) {
+			if (page.getKey().startsWith(prefix)) {
+				n += page.getValue().getOrDefault(key, 0L);
+			}
+		}
+		if (sacksLive) {
+			n = Math.max(n, sackCount(key));
+		}
+		return Math.max(0L, n);
+	}
+
 	public static void applySackDelta(String id, long delta) {
 		if (id == null || id.isBlank() || delta == 0L) {
 			return;

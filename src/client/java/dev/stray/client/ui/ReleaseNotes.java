@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.4.1", new String[]{
+			"Visitor shopping list uses SkyHanni's tab and NPC detection. It shows how many you have, including sacks you've opened, with no price. Click an item to run /recipe."
+		}),
 		new Entry("1.4.0", new String[]{
 			"1.4.0. Garden overlays: next contest, visitors, hoe level, crop milestone, and shopping list."
 		}),

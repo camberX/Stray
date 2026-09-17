@@ -9,13 +9,18 @@ import dev.stray.client.farming.GardenHud.Need;
 import dev.stray.client.farming.GardenHud.ShoppingSnap;
 import dev.stray.client.farming.GardenHud.VisitorSnap;
 import dev.stray.client.location.SkyblockLocation;
+import dev.stray.client.ui.HudEditorScreen;
 import dev.stray.client.ui.Theme;
+import net.fabricmc.fabric.api.client.screen.v1.ScreenEvents;
+import net.fabricmc.fabric.api.client.screen.v1.ScreenMouseEvents;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.input.MouseButtonEvent;
 
 import java.text.NumberFormat;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
@@ -28,11 +33,38 @@ public final class GardenHudRenderer {
 	private static final float PAD = 6f;
 	private static final float LINE = 11f;
 	private static final NumberFormat INTEGER = NumberFormat.getIntegerInstance(Locale.US);
+	private static final List<Hit> ITEM_HITS = new ArrayList<>();
 
 	private GardenHudRenderer() {
 	}
 
 	public static void init() {
+		ScreenEvents.AFTER_INIT.register((client, screen, scaledWidth, scaledHeight) -> {
+			if (screen instanceof HudEditorScreen) {
+				return;
+			}
+			ScreenMouseEvents.allowMouseClick(screen).register((opened, event) -> !mouseClicked(event));
+		});
+	}
+
+	public static boolean mouseClicked(MouseButtonEvent event) {
+		if (event.button() != 0 || !StrayConfig.get().gardenShoppingHudEnabled) {
+			return false;
+		}
+		Minecraft client = Minecraft.getInstance();
+		if (client.screen instanceof HudEditorScreen) {
+			return false;
+		}
+		if (client.screen == null) {
+			return false;
+		}
+		for (Hit hit : ITEM_HITS) {
+			if (hit.contains(event.x(), event.y())) {
+				openRecipe(hit.query);
+				return true;
+			}
+		}
+		return false;
 	}
 
 	public static float contestWidth() {
@@ -77,6 +109,7 @@ public final class GardenHudRenderer {
 	}
 
 	static void extract(GuiGraphicsExtractor graphics, DeltaTracker deltaTracker) {
+		ITEM_HITS.clear();
 		Minecraft client = Minecraft.getInstance();
 		if (client.player == null || client.options.hideGui) {
 			return;
@@ -227,6 +260,7 @@ public final class GardenHudRenderer {
 	) {
 		ShoppingSnap snap = value.present() ? value : sampleShopping();
 		float height = shoppingHeightOf(snap);
+		ITEM_HITS.clear();
 		begin(graphics, x, y, scale, WIDTH, height);
 		GuiDraw.small(graphics, font, "SHOPPING LIST", PAD + 1, PAD, Theme.ACCENT);
 		float cursor = PAD + LINE + 4;
@@ -251,6 +285,15 @@ public final class GardenHudRenderer {
 					cursor,
 					ready ? 0xFF75D69C : Theme.MUTED
 				);
+				if (value.present() && !HudLayout.editorOpen()) {
+					ITEM_HITS.add(new Hit(
+						x + PAD * scale,
+						y + cursor * scale,
+						(WIDTH - PAD * 2) * scale,
+						LINE * scale,
+						need.name()
+					));
+				}
 				cursor += LINE;
 			}
 		}
@@ -302,9 +345,23 @@ public final class GardenHudRenderer {
 	private static ShoppingSnap sampleShopping() {
 		return new ShoppingSnap(
 			true,
-			List.of(new Need("Enchanted Bread", 64, 12), new Need("Enchanted Sugar", 32, 32)),
+			List.of(new Need("Enchanted Bread", "ENCHANTED_BREAD", 64, 12), new Need("Enchanted Sugar", "ENCHANTED_SUGAR", 32, 32)),
 			List.of("Carlton", "Spaceman"),
 			List.of()
 		);
+	}
+
+	private static void openRecipe(String name) {
+		Minecraft client = Minecraft.getInstance();
+		if (client.player == null || client.player.connection == null || name == null || name.isBlank()) {
+			return;
+		}
+		client.player.connection.sendCommand("recipe " + name.trim());
+	}
+
+	private record Hit(float x, float y, float w, float h, String query) {
+		private boolean contains(double mx, double my) {
+			return w > 0 && h > 0 && mx >= x && mx <= x + w && my >= y && my <= y + h;
+		}
 	}
 }
