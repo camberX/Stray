@@ -1,9 +1,11 @@
 package dev.stray.client.chat;
 
 import dev.stray.client.config.StrayConfig;
+import dev.stray.client.mixin.ChatComponentAccessor;
 import dev.stray.client.ui.Theme;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.multiplayer.chat.GuiMessage;
 import net.minecraft.network.chat.ClickEvent;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.HoverEvent;
@@ -35,6 +37,7 @@ public final class StashChat {
 
 	private static boolean reentry;
 	private static Pending pending;
+	private static Component heldBlank;
 	private static long lastCompactAt;
 
 	private StashChat() {
@@ -47,12 +50,25 @@ public final class StashChat {
 		}
 		String plain = plain(message);
 		if (plain.isEmpty()) {
-			return dropBlank() ? null : message;
+			if (dropBlank() || heldBlank != null) {
+				return null;
+			}
+			heldBlank = message;
+			return null;
+		}
+		boolean stashish = isStashLine(plain);
+		if (heldBlank != null) {
+			if (stashish) {
+				heldBlank = null;
+			} else {
+				flushHeldBlank();
+			}
 		}
 		Parsed complete = parseComplete(plain);
 		if (complete != null) {
 			flushPending();
 			lastCompactAt = now();
+			stripTrailingBlanks();
 			return compact(complete, message);
 		}
 		if (isHeaderOnly(plain)) {
@@ -78,6 +94,7 @@ public final class StashChat {
 				Parsed parsed = pending.parsed;
 				pending = null;
 				lastCompactAt = now();
+				stripTrailingBlanks();
 				return compact(parsed, message);
 			}
 		}
@@ -140,8 +157,7 @@ public final class StashChat {
 			hover = new HoverEvent.ShowText(Component.literal("Click to pick up your stash"));
 		}
 		int countColor = parsed.materials ? 0x55FFFF : 0xFFAA00;
-		MutableComponent line = Component.empty();
-		line.append(bit("Stash", style(Theme.ACCENT).withBold(true), click, hover));
+		MutableComponent line = bit("Stash", style(Theme.ACCENT).withBold(true), click, hover);
 		line.append(bit("  ·  ", style(Theme.MUTED), click, hover));
 		line.append(bit(parsed.count, style(countColor).withBold(true), click, hover));
 		line.append(bit(parsed.materials ? " materials" : " items", style(Theme.TEXT), click, hover));
@@ -152,6 +168,50 @@ public final class StashChat {
 		}
 		line.append(bit("  [PICK UP]", style(Theme.ACCENT).withBold(true), click, hover));
 		return line;
+	}
+
+	private static boolean isStashLine(String plain) {
+		return HEADER.matcher(plain).find()
+			|| TYPES.matcher(plain).find()
+			|| CLICK.matcher(plain).find();
+	}
+
+	private static void flushHeldBlank() {
+		Component blank = heldBlank;
+		heldBlank = null;
+		if (blank == null) {
+			return;
+		}
+		Minecraft client = Minecraft.getInstance();
+		if (client.gui == null) {
+			return;
+		}
+		reentry = true;
+		try {
+			client.gui.getChat().addClientSystemMessage(blank);
+		} finally {
+			reentry = false;
+		}
+	}
+
+	private static void stripTrailingBlanks() {
+		Minecraft client = Minecraft.getInstance();
+		if (client == null || client.gui == null) {
+			return;
+		}
+		ChatComponentAccessor access = (ChatComponentAccessor) client.gui.getChat();
+		List<GuiMessage> all = access.stray$allMessages();
+		if (all == null || all.isEmpty()) {
+			return;
+		}
+		boolean removed = false;
+		while (!all.isEmpty() && plain(all.getFirst().content()).isEmpty()) {
+			all.removeFirst();
+			removed = true;
+		}
+		if (removed) {
+			access.stray$refreshTrimmedMessages();
+		}
 	}
 
 	private static boolean dropBlank() {
