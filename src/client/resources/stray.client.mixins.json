@@ -13,6 +13,8 @@
 		"AbstractSliderButtonMixin",
 		"AbstractWidgetInvoker",
 		"AvatarRendererMixin",
+		"AvatarRenderStateMixin",
+		"LivingEntityRendererInvoker",
 		"BossHealthOverlayAccessor",
 		"CameraMixin",
 		"ChatComponentAccessor",
