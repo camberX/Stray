@@ -5,6 +5,7 @@ import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import dev.stray.client.chat.StashChat;
 import dev.stray.client.fairy.FairySoulTracker;
+import dev.stray.client.farming.GardenHud;
 import dev.stray.client.mining.CrystalHollows;
 import dev.stray.client.mining.MiningTracker;
 import dev.stray.client.ui.ChatChrome;
@@ -39,6 +40,7 @@ public class ChatComponentMixin {
 		Component rewritten = NickHider.rewrite(message);
 		MiningTracker.onChat(rewritten);
 		FairySoulTracker.onChat(rewritten);
+		GardenHud.onChat(rewritten);
 		CrystalHollows.allowChat(rewritten, false);
 		Component stash = StashChat.filter(rewritten);
 		if (stash != null) {
