@@ -53,8 +53,8 @@ public final class WingsLayer extends RenderLayer<AvatarRenderState, PlayerModel
 		float beatRate = 0.09f + walk * 0.16f + glide * 0.22f;
 		float beatAmp = 5f + walk * 16f + glide * 24f;
 		float beat = Mth.sin(state.ageInTicks * beatRate) * beatAmp;
-		float open = 32f + walk * 18f + glide * 26f + beat;
-		float lift = -6f - walk * 6f - glide * 10f + beat * 0.35f;
+		float open = 34f + walk * 18f + glide * 26f + beat;
+		float lift = 12f + walk * 6f + glide * 12f + beat * 0.4f;
 
 		pose.pushPose();
 		getParentModel().body.translateAndRotate(pose);
@@ -80,7 +80,9 @@ public final class WingsLayer extends RenderLayer<AvatarRenderState, PlayerModel
 		int n = style.feathers;
 		pose.pushPose();
 		pose.translate(side * 0.08f, 0f, 0f);
-		pose.mulPose(Axis.YP.rotationDegrees(side * open));
+		// +x is the player's left after the model flip; rotating -side*open sweeps
+		// both wings toward +z (behind the back) instead of into the chest.
+		pose.mulPose(Axis.YP.rotationDegrees(-side * open));
 		pose.mulPose(Axis.ZP.rotationDegrees(-side * lift));
 		for (int i = 0; i < n; i++) {
 			float t = n == 1 ? 0f : i / (float) (n - 1);
@@ -113,12 +115,12 @@ public final class WingsLayer extends RenderLayer<AvatarRenderState, PlayerModel
 		float y1 = width * 0.65f;
 		float u0 = side > 0 ? 0f : 1f;
 		float u1 = side > 0 ? 1f : 0f;
-		quad(p, consumer, x0, y0, x1, y1, u0, u1, color, light, false);
-		quad(p, consumer, x0, y0, x1, y1, u0, u1, color, light, true);
+		quad(p, consumer, x0, y0, x1, y1, u0, u1, color, light, false, side);
+		quad(p, consumer, x0, y0, x1, y1, u0, u1, color, light, true, side);
 		float sy0 = -width * 0.04f;
 		float sy1 = width * 0.06f;
-		quad(p, consumer, x0, sy0, x1 * 0.92f, sy1, u0, u1, shaftColor, light, false);
-		quad(p, consumer, x0, sy0, x1 * 0.92f, sy1, u0, u1, shaftColor, light, true);
+		quad(p, consumer, x0, sy0, x1 * 0.92f, sy1, u0, u1, shaftColor, light, false, side);
+		quad(p, consumer, x0, sy0, x1 * 0.92f, sy1, u0, u1, shaftColor, light, true, side);
 	}
 
 	private static void quad(
@@ -132,9 +134,10 @@ public final class WingsLayer extends RenderLayer<AvatarRenderState, PlayerModel
 		float u1,
 		int color,
 		int light,
-		boolean back
+		boolean back,
+		int side
 	) {
-		float nz = back ? -1f : 1f;
+		float nz = (back ? -1f : 1f) * side;
 		float z = back ? 0.0015f : -0.0015f;
 		if (!back) {
 			vertex(p, consumer, x0, y0, z, u0, 0f, color, light, nz);

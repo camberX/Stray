@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.3.46", new String[]{
+			"Wings sweep behind the back on both sides and are lit the same left and right. The left wing was folding into the chest."
+		}),
 		new Entry("1.3.45", new String[]{
 			"Wings cosmetic. The shop desk can give a player Angel, Demon, Fairy, or Phoenix wings in any color; every Stray user sees them flap on the player's back."
 		}),
