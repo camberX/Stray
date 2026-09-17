@@ -93,13 +93,18 @@ public final class GardenHud {
 		"^(?:jacob'?s contest:\\s*)?(.+?)\\s+left$",
 		Pattern.CASE_INSENSITIVE
 	);
+	/** SkyHanni TabWidget.VISITORS: `Visitors: (2)` — count is in parentheses. */
 	private static final Pattern VISITORS_HEADER = Pattern.compile(
-		"^visitors?:\\s*(.*)$",
+		"^(?:[^\\p{Alnum}]*)visitors?:\\s*(?:\\((\\d+)\\)|(.+))$",
 		Pattern.CASE_INSENSITIVE
 	);
 	private static final Pattern NEXT_VISITOR = Pattern.compile(
 		"^next visitor:\\s*(.+)$",
 		Pattern.CASE_INSENSITIVE
+	);
+	/** SkyHanni visitorNamePattern on colored tab text: ` §r§aEmissary Carlton`. */
+	private static final Pattern VISITOR_NAME = Pattern.compile(
+		"^\\s*(?:§.)+(§.[^§]+).*"
 	);
 	private static final Pattern DURATION = Pattern.compile(
 		"(?:(\\d+)d\\s*)?(?:(\\d+)h\\s*)?(?:(\\d+)m\\s*)?(?:(\\d+)s)?",
@@ -228,9 +233,9 @@ public final class GardenHud {
 	}
 
 	private static void readTab(Minecraft client) {
-		List<String> lines = tabLines(client);
-		parseContest(lines);
-		parseVisitors(lines);
+		TabLines tab = tabLines(client);
+		parseContest(tab.clean);
+		parseVisitors(tab.clean, tab.raw);
 	}
 
 	private static void parseContest(List<String> lines) {
@@ -301,7 +306,7 @@ public final class GardenHud {
 		contest = new ContestSnap(true, active, List.copyOf(crops), boosted, time.isEmpty() ? "?" : time);
 	}
 
-	private static void parseVisitors(List<String> lines) {
+	private static void parseVisitors(List<String> cleaned, List<String> raw) {
 		int count = -1;
 		boolean locked = false;
 		boolean queueFull = false;
@@ -309,12 +314,19 @@ public final class GardenHud {
 		List<String> names = new ArrayList<>();
 		boolean inList = false;
 		int remaining = 0;
-		for (String line : lines) {
+		int size = Math.min(cleaned.size(), raw.size());
+		for (int i = 0; i < size; i++) {
+			String line = cleaned.get(i);
+			String colored = raw.get(i);
 			Matcher header = VISITORS_HEADER.matcher(line);
 			if (header.matches()) {
 				inList = true;
-				String info = header.group(1) == null ? "" : header.group(1).trim();
-				if (info.equalsIgnoreCase("Not Unlocked!")) {
+				String parens = header.group(1);
+				String info = header.group(2) == null ? "" : header.group(2).trim();
+				if (parens != null) {
+					count = parseInt(parens);
+					remaining = Math.max(0, count);
+				} else if (info.equalsIgnoreCase("Not Unlocked!")) {
 					locked = true;
 					count = 0;
 					remaining = 0;
@@ -341,11 +353,18 @@ public final class GardenHud {
 			if (!inList) {
 				continue;
 			}
-			if (line.isEmpty() || widget(line) || remaining <= 0) {
+			if (remaining <= 0 || widget(line)) {
 				inList = false;
 				continue;
 			}
-			names.add(line);
+			if (line.isEmpty()) {
+				continue;
+			}
+			String name = visitorName(colored, line);
+			if (name.isEmpty()) {
+				continue;
+			}
+			names.add(name);
 			remaining--;
 		}
 		if (count < 0 && names.isEmpty() && next.isEmpty() && !locked) {
@@ -744,21 +763,39 @@ public final class GardenHud {
 		return new Milestone(cap + overflow, cap + overflow + 1, have, step, false);
 	}
 
-	private static List<String> tabLines(Minecraft client) {
+	private static TabLines tabLines(Minecraft client) {
 		ClientPacketListener connection = client.player.connection;
 		if (connection == null) {
-			return List.of();
+			return new TabLines(List.of(), List.of());
 		}
 		List<PlayerInfo> infos = new ArrayList<>(connection.getListedOnlinePlayers());
 		infos.sort(TAB_ORDER);
-		List<String> lines = new ArrayList<>(infos.size());
+		List<String> raw = new ArrayList<>(infos.size());
+		List<String> clean = new ArrayList<>(infos.size());
 		for (PlayerInfo info : infos) {
-			String line = clean(tabName(info));
-			if (!line.isEmpty()) {
-				lines.add(line);
+			Component component = tabName(info);
+			String colored = component == null ? "" : component.getString();
+			String line = clean(colored);
+			if (line.isEmpty()) {
+				continue;
+			}
+			raw.add(colored);
+			clean.add(line);
+		}
+		return new TabLines(clean, raw);
+	}
+
+	private static String visitorName(String colored, String cleaned) {
+		if (colored != null) {
+			Matcher matcher = VISITOR_NAME.matcher(colored);
+			if (matcher.matches()) {
+				String named = clean(matcher.group(1));
+				if (!named.isEmpty()) {
+					return named;
+				}
 			}
 		}
-		return lines;
+		return cleaned == null ? "" : cleaned;
 	}
 
 	private static Component tabName(PlayerInfo info) {
@@ -826,13 +863,18 @@ public final class GardenHud {
 			|| key.startsWith("profile:")
 			|| key.startsWith("skills:")
 			|| key.startsWith("collections")
+			|| key.startsWith("crop milestone")
+			|| key.startsWith("garden level")
+			|| key.startsWith("copper:")
 			|| key.startsWith("pets:")
 			|| key.startsWith("composter")
 			|| key.startsWith("pests:")
 			|| key.startsWith("plots:")
 			|| key.startsWith("event:")
+			|| key.startsWith("jacob")
 			|| key.equals("farming")
-			|| key.equals("garden");
+			|| key.equals("garden")
+			|| key.equals("info");
 	}
 
 	private static int parseDuration(String value) {
@@ -920,6 +962,9 @@ public final class GardenHud {
 			out[i + 1] = total;
 		}
 		return out;
+	}
+
+	private record TabLines(List<String> clean, List<String> raw) {
 	}
 
 	public record ContestSnap(boolean present, boolean active, List<String> crops, String boosted, String time) {
