@@ -54,6 +54,7 @@ public final class StrayHud {
 		MiningHudRenderer.extract(graphics, delta);
 		JacobContestHudRenderer.extract(graphics, delta);
 		ComposterHudRenderer.extract(graphics, delta);
+		GardenHudRenderer.extract(graphics, delta);
 		SkillProgressHudRenderer.extract(graphics, delta);
 		UpdateToast.extract(graphics);
 	}

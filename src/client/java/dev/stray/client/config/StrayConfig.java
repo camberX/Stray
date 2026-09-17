@@ -111,6 +111,12 @@ public final class StrayConfig {
 	public float pestEspOpacity = 0.38f;
 	public boolean jacobContestHudEnabled = false;
 	public boolean skillProgressHudEnabled = false;
+	public boolean gardenContestHudEnabled = false;
+	public boolean gardenVisitorHudEnabled = false;
+	public boolean gardenHoeHudEnabled = false;
+	public boolean gardenMilestoneHudEnabled = false;
+	public boolean gardenShoppingHudEnabled = false;
+	public java.util.Map<String, Integer> overflowHoeLevels = new java.util.LinkedHashMap<>();
 	public boolean composterHudEnabled = false;
 	public boolean composterUpgradesKnown = false;
 	public String composterProfile = "";
@@ -270,6 +276,11 @@ public final class StrayConfig {
 	public HudSlot slotBoss = new HudSlot();
 	public HudSlot slotEffects = new HudSlot();
 	public HudSlot slotHeldItem = new HudSlot();
+	public HudSlot slotGardenContest = new HudSlot();
+	public HudSlot slotGardenVisitor = new HudSlot();
+	public HudSlot slotGardenHoe = new HudSlot();
+	public HudSlot slotGardenMilestone = new HudSlot();
+	public HudSlot slotGardenShopping = new HudSlot();
 	public String inventoryHudAnchor = "bottom_right";
 	public float inventoryHudScale = 1.0f;
 	public float hudWatermarkScale = 1.0f;
@@ -1270,6 +1281,29 @@ public final class StrayConfig {
 				loaded.slotBoss = hudSlot(loaded.slotBoss);
 				loaded.slotEffects = hudSlot(loaded.slotEffects);
 				loaded.slotHeldItem = hudSlot(loaded.slotHeldItem);
+				loaded.slotGardenContest = hudSlot(loaded.slotGardenContest);
+				loaded.slotGardenVisitor = hudSlot(loaded.slotGardenVisitor);
+				loaded.slotGardenHoe = hudSlot(loaded.slotGardenHoe);
+				loaded.slotGardenMilestone = hudSlot(loaded.slotGardenMilestone);
+				loaded.slotGardenShopping = hudSlot(loaded.slotGardenShopping);
+				if (loaded.overflowHoeLevels == null) {
+					loaded.overflowHoeLevels = new java.util.LinkedHashMap<>();
+				}
+				if (!json.has("gardenContestHudEnabled")) {
+					loaded.gardenContestHudEnabled = false;
+				}
+				if (!json.has("gardenVisitorHudEnabled")) {
+					loaded.gardenVisitorHudEnabled = false;
+				}
+				if (!json.has("gardenHoeHudEnabled")) {
+					loaded.gardenHoeHudEnabled = false;
+				}
+				if (!json.has("gardenMilestoneHudEnabled")) {
+					loaded.gardenMilestoneHudEnabled = false;
+				}
+				if (!json.has("gardenShoppingHudEnabled")) {
+					loaded.gardenShoppingHudEnabled = false;
+				}
 				loaded.themePaneOpacity = loaded.themePaneOpacity <= 0f
 					? 0.90f
 					: clamp(loaded.themePaneOpacity, 0.20f, 1f);
@@ -1786,7 +1820,7 @@ public final class StrayConfig {
 			case "MINING", "DWARVEN" -> "MINING";
 			case "HOLLOWS", "CH", "DIVAN" -> "HOLLOWS";
 			case "FARMING", "YAW", "PITCH" -> "FARMING";
-			case "GARDEN", "PEST", "PLOTS" -> "GARDEN";
+			case "GARDEN", "PEST", "PLOTS", "VISITOR", "HOE", "MILESTONE", "SHOPPING" -> "GARDEN";
 			case "GREENHOUSE", "DNA", "AUTODNA" -> "GREENHOUSE";
 			case "TOOLS", "RINGS", "PATHS", "MARKS", "COMMANDRINGS", "PATHRECORDER", "BLOCKMARKS" -> "TOOLS";
 			case "MENUS", "LOADOUTS", "WARDROBE", "MISC", "AUTOEXPERIMENTS" -> "MENUS";
@@ -1853,6 +1887,11 @@ public final class StrayConfig {
 		slotBoss = new HudSlot();
 		slotEffects = new HudSlot();
 		slotHeldItem = new HudSlot();
+		slotGardenContest = new HudSlot();
+		slotGardenVisitor = new HudSlot();
+		slotGardenHoe = new HudSlot();
+		slotGardenMilestone = new HudSlot();
+		slotGardenShopping = new HudSlot();
 	}
 
 	public static int clamp(int value, int min, int max) {
