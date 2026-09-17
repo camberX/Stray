@@ -48,7 +48,7 @@ public class StrayTitleScreen extends Screen {
 	@Override
 	protected void init() {
 		Theme.refresh();
-		appear = 0f;
+		appear = 1f;
 		status = "";
 		AccountStore.rememberLauncher(minecraft);
 	}
@@ -206,7 +206,7 @@ public class StrayTitleScreen extends Screen {
 		long now = System.nanoTime();
 		dt = Math.min(0.05f, (now - lastNs) / 1_000_000_000f);
 		lastNs = now;
-		appear = Anim.exp(appear, 1f, 11f, dt);
+		appear = 1f;
 	}
 
 	private boolean multiplayerOpen() {

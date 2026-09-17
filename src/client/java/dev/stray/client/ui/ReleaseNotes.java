@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.3.42", new String[]{
+			"The title screen marble stays still. The drifting backdrop and fade-in are gone."
+		}),
 		new Entry("1.3.41", new String[]{
 			"Picture in picture no longer draws a title bar over the capture."
 		}),
