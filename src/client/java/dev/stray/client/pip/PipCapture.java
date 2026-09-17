@@ -6,14 +6,16 @@ import dev.stray.client.config.StrayConfig;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.texture.DynamicTexture;
 import net.minecraft.resources.Identifier;
+import org.lwjgl.system.MemoryUtil;
 
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.locks.LockSupport;
 
 /**
- * Picture-in-picture capture. A daemon thread grabs the chosen window at a
- * low rate and the HUD only uploads when a new frame is ready.
+ * Picture-in-picture capture. A daemon thread grabs the chosen window at
+ * up to 60 FPS; the HUD only memcpy's and uploads when a frame is ready.
  */
 public final class PipCapture {
 	public static final Identifier TEXTURE = Stray.id("dynamic/pip");
@@ -28,6 +30,9 @@ public final class PipCapture {
 	private static int texH;
 	private static boolean registered;
 	private static volatile String status = "Pick a window";
+	private static WindowInfo cached;
+	private static long cachedAt;
+	private static int[] recycle;
 
 	public record WindowInfo(String id, String title, int width, int height) {
 	}
@@ -83,6 +88,8 @@ public final class PipCapture {
 		WindowInfo next = list.get((at + 1) % list.size());
 		config.pipWindowId = next.id();
 		config.pipWindowTitle = next.title();
+		cached = next;
+		cachedAt = System.nanoTime();
 		FRAME.set(null);
 		DIRTY.set(false);
 		status = next.title();
@@ -118,10 +125,18 @@ public final class PipCapture {
 				texW = frame.width;
 				texH = frame.height;
 			}
-			int i = 0;
-			for (int y = 0; y < frame.height; y++) {
-				for (int x = 0; x < frame.width; x++) {
-					image.setPixel(x, y, frame.argb[i++]);
+			int count = frame.width * frame.height;
+			long pointer = image.getPointer();
+			if (pointer != 0L) {
+				for (int i = 0; i < count; i++) {
+					MemoryUtil.memPutInt(pointer + ((long) i << 2), frame.argb[i]);
+				}
+			} else {
+				int i = 0;
+				for (int y = 0; y < frame.height; y++) {
+					for (int x = 0; x < frame.width; x++) {
+						image.setPixel(x, y, frame.argb[i++]);
+					}
 				}
 			}
 			texture.upload();
@@ -153,6 +168,8 @@ public final class PipCapture {
 	public static void stop() {
 		RUNNING.set(false);
 		worker = null;
+		cached = null;
+		PipWin32.close();
 	}
 
 	private static void ensureWorker() {
@@ -162,6 +179,7 @@ public final class PipCapture {
 		RUNNING.set(true);
 		Thread thread = new Thread(PipCapture::loop, "stray-pip");
 		thread.setDaemon(true);
+		thread.setPriority(Thread.NORM_PRIORITY + 1);
 		worker = thread;
 		thread.start();
 	}
@@ -175,13 +193,11 @@ public final class PipCapture {
 				status = "Capture failed";
 				Stray.LOGGER.debug("PiP capture failed", exception);
 			}
-			int fps = StrayConfig.clamp(StrayConfig.get().pipFps, 4, 20);
-			long sleep = Math.max(20L, 1000L / fps - (System.nanoTime() - started) / 1_000_000L);
-			try {
-				Thread.sleep(sleep);
-			} catch (InterruptedException interrupted) {
-				Thread.currentThread().interrupt();
-				return;
+			int fps = StrayConfig.clamp(StrayConfig.get().pipFps, 15, 60);
+			long period = 1_000_000_000L / fps;
+			long remaining = started + period - System.nanoTime();
+			if (remaining > 0L) {
+				LockSupport.parkNanos(remaining);
 			}
 		}
 	}
@@ -198,11 +214,18 @@ public final class PipCapture {
 			return;
 		}
 		int[] size = new int[2];
-		int[] argb = PipWin32.capture(target.id(), size);
+		Frame shown = FRAME.get();
+		int[] back = recycle;
+		if (back != null && shown != null && back == shown.argb) {
+			back = null;
+		}
+		int[] argb = PipWin32.capture(target.id(), size, back);
 		if (argb == null || size[0] < 1 || size[1] < 1) {
+			cached = null;
 			status = "Can't capture";
 			return;
 		}
+		recycle = shown != null && shown.argb != argb ? shown.argb : null;
 		FRAME.set(new Frame(argb, size[0], size[1], target.title()));
 		DIRTY.set(true);
 		status = target.title();
@@ -213,28 +236,42 @@ public final class PipCapture {
 	}
 
 	private static WindowInfo resolve(StrayConfig config) {
+		WindowInfo hold = cached;
+		long now = System.nanoTime();
+		if (hold != null && hold.id().equals(config.pipWindowId) && now - cachedAt < 2_000_000_000L) {
+			return hold;
+		}
 		List<WindowInfo> list = windows();
 		if (list.isEmpty()) {
+			cached = null;
 			return null;
 		}
+		WindowInfo found = null;
 		for (WindowInfo info : list) {
 			if (info.id().equals(config.pipWindowId)) {
-				return info;
+				found = info;
+				break;
 			}
 		}
-		if (config.pipWindowTitle != null && !config.pipWindowTitle.isBlank()) {
+		if (found == null && config.pipWindowTitle != null && !config.pipWindowTitle.isBlank()) {
 			String want = config.pipWindowTitle.toLowerCase();
 			for (WindowInfo info : list) {
 				if (info.title().equalsIgnoreCase(config.pipWindowTitle)) {
-					return info;
+					found = info;
+					break;
 				}
 			}
-			for (WindowInfo info : list) {
-				if (info.title().toLowerCase().contains(want) || want.contains(info.title().toLowerCase())) {
-					return info;
+			if (found == null) {
+				for (WindowInfo info : list) {
+					if (info.title().toLowerCase().contains(want) || want.contains(info.title().toLowerCase())) {
+						found = info;
+						break;
+					}
 				}
 			}
 		}
-		return null;
+		cached = found;
+		cachedAt = now;
+		return found;
 	}
 }

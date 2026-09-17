@@ -3284,7 +3284,7 @@ public class StrayScreen extends Screen {
 			case PIP -> {
 				String window = config.pipWindowTitle == null || config.pipWindowTitle.isBlank() ? "Click to pick" : config.pipWindowTitle;
 				y = clickRow(graphics, font, ix, y, iw, mouseX, mouseY, clip(font, window, (int) iw - 4), PipCapture::cycleWindow);
-				y = slider(graphics, font, ix, y, iw, "Capture", config.pipFps + " fps", (config.pipFps - 4) / 16f, v -> config.pipFps = StrayConfig.clamp(4 + Math.round(v * 16f), 4, 20));
+				y = slider(graphics, font, ix, y, iw, "Capture", config.pipFps + " fps", (config.pipFps - 15) / 45f, v -> config.pipFps = StrayConfig.clamp(15 + Math.round(v * 45f), 15, 60));
 				slider(graphics, font, ix, y, iw, "Opacity", Math.round(config.pipOpacity * 100) + "%", config.pipOpacity, v -> config.pipOpacity = StrayConfig.clamp(v, 0.25f, 1f));
 			}
 			case RAWMATS -> cycle(graphics, font, ix, y, iw, mouseX, mouseY, "Materials", config.rawmatsModeLabel(), config::cycleRawmatsMode);
