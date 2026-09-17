@@ -1,7 +1,9 @@
 package dev.stray.client.movement;
 
 import com.mojang.brigadier.Command;
+import com.mojang.brigadier.arguments.DoubleArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
+import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.suggestion.SuggestionProvider;
 import dev.stray.client.config.StrayConfig;
@@ -15,7 +17,7 @@ import net.minecraft.network.chat.Component;
 import java.util.ArrayList;
 import java.util.List;
 
-/** {@code /stray path start|stop|list|show|hide|rename|delete}. */
+/** {@code /stray path <x> <y> <z>} walks there; {@code start|stop|list|...} manage recordings. */
 public final class PathCommands {
 	private PathCommands() {
 	}
@@ -26,6 +28,23 @@ public final class PathCommands {
 				PathRecorder.toggle();
 				return Command.SINGLE_SUCCESS;
 			})
+			.then(ClientCommands.argument("x", DoubleArgumentType.doubleArg())
+				.then(ClientCommands.argument("y", DoubleArgumentType.doubleArg())
+					.then(ClientCommands.argument("z", DoubleArgumentType.doubleArg())
+						.executes(PathCommands::walk))))
+			.then(ClientCommands.literal("go")
+				.then(ClientCommands.argument("x", DoubleArgumentType.doubleArg())
+					.then(ClientCommands.argument("y", DoubleArgumentType.doubleArg())
+						.then(ClientCommands.argument("z", DoubleArgumentType.doubleArg())
+							.executes(PathCommands::walk)))))
+			.then(ClientCommands.literal("cancel").executes(context -> {
+				if (PathWalker.walking()) {
+					PathWalker.stop(true);
+				} else {
+					tell("Not walking.", ChatFormatting.GRAY);
+				}
+				return Command.SINGLE_SUCCESS;
+			}))
 			.then(ClientCommands.literal("start").executes(context -> {
 				if (!PathRecorder.recording()) {
 					PathRecorder.start();
@@ -33,7 +52,11 @@ public final class PathCommands {
 				return Command.SINGLE_SUCCESS;
 			}))
 			.then(ClientCommands.literal("stop").executes(context -> {
-				PathRecorder.stop(true);
+				if (PathWalker.walking()) {
+					PathWalker.stop(true);
+				} else {
+					PathRecorder.stop(true);
+				}
 				return Command.SINGLE_SUCCESS;
 			}))
 			.then(ClientCommands.literal("list").executes(context -> list()))
@@ -80,6 +103,15 @@ public final class PathCommands {
 							tell(PathRecorder.rename(from, to) ? "Renamed " + from + " to " + to + "." : "No path called " + from + ".", ChatFormatting.YELLOW);
 							return Command.SINGLE_SUCCESS;
 						}))));
+	}
+
+	private static int walk(CommandContext<FabricClientCommandSource> context) {
+		PathWalker.go(
+			DoubleArgumentType.getDouble(context, "x"),
+			DoubleArgumentType.getDouble(context, "y"),
+			DoubleArgumentType.getDouble(context, "z")
+		);
+		return Command.SINGLE_SUCCESS;
 	}
 
 	private static SuggestionProvider<FabricClientCommandSource> names() {

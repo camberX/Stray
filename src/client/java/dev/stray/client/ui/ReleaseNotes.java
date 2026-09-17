@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.3.43", new String[]{
+			"/stray path <x> <y> <z> walks you there. A* over walkable blocks with jumps and drops, straightened waypoints, and a spring-damped look that overshoots and settles like a mouse. Movement is keys only. /stray path stop cancels."
+		}),
 		new Entry("1.3.42", new String[]{
 			"The title screen marble stays still. The drifting backdrop and fade-in are gone."
 		}),
