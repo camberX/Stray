@@ -12,7 +12,7 @@ public final class ShopWings {
 		DEMON(5, 1.15f, 1.0f, false, false, 0x2B1D2E),
 		FAIRY(6, 0.9f, 0.62f, true, false, 0x9AE6FF),
 		PHOENIX(8, 1.1f, 0.9f, true, false, 0xFF7A1A),
-		BUTTERFLY(0, 1.08f, 1.0f, false, true, 0x3D98CB);
+		BUTTERFLY(0, 0.84f, 1.0f, false, true, 0x3D98CB);
 
 		public final int feathers;
 		public final float span;
