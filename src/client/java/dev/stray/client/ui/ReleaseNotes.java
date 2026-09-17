@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.3.44", new String[]{
+			"The menu head is clipped to a circle in the shader. No more square corners showing through the pane."
+		}),
 		new Entry("1.3.43", new String[]{
 			"/stray path <x> <y> <z> walks you there. A* over walkable blocks with jumps and drops, straightened waypoints, and a spring-damped look that overshoots and settles like a mouse. Movement is keys only. /stray path stop cancels."
 		}),
