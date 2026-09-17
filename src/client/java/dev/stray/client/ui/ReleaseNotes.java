@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.3.48", new String[]{
+			"Wing feathers lengthen toward the top. The bottom coverts are short; the top primaries are the longest."
+		}),
 		new Entry("1.3.47", new String[]{
 			"The right wing is no longer a blunt rectangle: both sides share the same feather mesh, mirrored in the pose. Tapping W no longer twitches the flap."
 		}),
