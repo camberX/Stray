@@ -88,8 +88,9 @@ public final class WingsLayer extends RenderLayer<AvatarRenderState, PlayerModel
 		for (int i = 0; i < n; i++) {
 			float t = n == 1 ? 0f : i / (float) (n - 1);
 			float fan = Mth.lerp(t, -28f, 78f);
-			float length = (0.62f + (1f - Math.abs(t - 0.35f)) * 0.45f) * style.span;
-			float width = 0.12f + (1f - t) * 0.05f;
+			// t=0 is the bottom covert, t=1 is the top primary.
+			float length = Mth.lerp(t, 0.48f, 1.16f) * style.span;
+			float width = 0.11f + (1f - t) * 0.05f;
 			float flutter = Mth.sin(time * 0.03f + i * 0.9f) * 2.5f;
 			pose.pushPose();
 			pose.mulPose(Axis.ZP.rotationDegrees(fan + flutter));
