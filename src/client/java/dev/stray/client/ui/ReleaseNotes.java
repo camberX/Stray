@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.3.41", new String[]{
+			"Picture in picture no longer draws a title bar over the capture."
+		}),
 		new Entry("1.3.40", new String[]{
 			"Picture in picture no longer swaps red and blue."
 		}),
