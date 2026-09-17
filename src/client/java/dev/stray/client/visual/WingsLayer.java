@@ -77,7 +77,7 @@ public final class WingsLayer extends RenderLayer<AvatarRenderState, PlayerModel
 		float time
 	) {
 		ShopWings.Style style = wings.style();
-		int n = style.feathers;
+		int n = Math.max(1, style.feathers);
 		pose.pushPose();
 		pose.translate(side * 0.08f, 0f, 0f);
 		// Mirror the right wing in X so blades always extend in local +X. Open/lift
@@ -85,28 +85,57 @@ public final class WingsLayer extends RenderLayer<AvatarRenderState, PlayerModel
 		pose.scale(side, 1f, 1f);
 		pose.mulPose(Axis.YP.rotationDegrees(-open));
 		pose.mulPose(Axis.ZP.rotationDegrees(-lift));
-		for (int i = 0; i < n; i++) {
-			float t = n == 1 ? 0f : i / (float) (n - 1);
-			float fan = Mth.lerp(t, -28f, 78f);
-			// t=0 is the bottom covert, t=1 is the top primary.
-			float length = Mth.lerp(t, 0.48f, 1.16f) * style.span;
-			float width = 0.11f + (1f - t) * 0.05f;
-			float flutter = Mth.sin(time * 0.03f + i * 0.9f) * 2.5f;
-			pose.pushPose();
-			pose.mulPose(Axis.ZP.rotationDegrees(fan + flutter));
-			pose.mulPose(Axis.XP.rotationDegrees(6f + t * 10f));
-			float shade = 1f - t * 0.18f;
-			float alpha = style.alpha * (style == ShopWings.Style.FAIRY ? 0.8f + 0.2f * (1f - t) : 1f);
-			int color = tint(wings.rgb(), shade, alpha);
-			int shaft = tint(wings.rgb(), shade * 0.72f, alpha);
-			float len = length;
-			float wid = width;
-			int col = color;
-			int shaftCol = shaft;
-			int packed = light;
-			collector.submitCustomGeometry(pose, type, (p, consumer) -> blade(p, consumer, len, wid, col, shaftCol, packed));
-			pose.popPose();
+		if (n > 1) {
+			for (int i = 0; i < n - 1; i++) {
+				float t = (i + 0.5f) / (n - 1);
+				feather(pose, collector, type, light, wings, t, 0.62f, true, time, i + 17);
+			}
 		}
+		for (int i = 0; i < n; i++) {
+			float t = n == 1 ? 1f : i / (float) (n - 1);
+			feather(pose, collector, type, light, wings, t, 1f, false, time, i);
+		}
+		pose.popPose();
+	}
+
+	private void feather(
+		PoseStack pose,
+		SubmitNodeCollector collector,
+		RenderType type,
+		int light,
+		ShopWings.Wings wings,
+		float t,
+		float size,
+		boolean covert,
+		float time,
+		int seed
+	) {
+		ShopWings.Style style = wings.style();
+		// Keep the top of the fan from going vertical so the longest blades still
+		// read as span. t=0 is the bottom covert, t=1 is the top primary.
+		float fan = Mth.lerp(t, -18f, 40f);
+		float length = (0.34f + (float) Math.pow(t, 1.2) * 0.92f) * style.span * size;
+		float width = (0.10f + (1f - t) * 0.045f) * (covert ? 0.72f : 1f);
+		float flutter = Mth.sin(time * 0.03f + seed * 0.9f) * (covert ? 3.2f : 2.2f);
+		pose.pushPose();
+		if (covert) {
+			pose.translate(0f, 0f, 0.008f);
+		}
+		pose.mulPose(Axis.ZP.rotationDegrees(fan + flutter));
+		pose.mulPose(Axis.XP.rotationDegrees(4f + t * 5f));
+		float shade = (1f - t * 0.14f) * (covert ? 0.78f : 1f);
+		float alpha = style.alpha * (style == ShopWings.Style.FAIRY ? 0.8f + 0.2f * (1f - t) : 1f);
+		if (covert) {
+			alpha *= 0.88f;
+		}
+		int color = tint(wings.rgb(), shade, alpha);
+		int shaft = tint(wings.rgb(), shade * 0.72f, alpha);
+		float len = length;
+		float wid = width;
+		int col = color;
+		int shaftCol = shaft;
+		int packed = light;
+		collector.submitCustomGeometry(pose, type, (p, consumer) -> blade(p, consumer, len, wid, col, shaftCol, packed));
 		pose.popPose();
 	}
 
