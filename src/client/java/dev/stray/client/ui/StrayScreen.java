@@ -20,6 +20,7 @@ import dev.stray.client.render.GlowBlurRadius;
 import dev.stray.client.movement.CommandRings;
 import dev.stray.client.movement.MovementRings;
 import dev.stray.client.movement.PathRecorder;
+import dev.stray.client.pip.PipCapture;
 import dev.stray.client.render.BlockMarks;
 import dev.stray.client.render.GuiDraw;
 import dev.stray.client.render.SkillProgressHudRenderer;
@@ -163,6 +164,7 @@ public class StrayScreen extends Screen {
 		NODE_ESP("Node ESP", 4),
 		WATERMARK("Watermark", 4),
 		MUSIC("Music", 3),
+		PIP("Picture in picture", 3),
 		RAWMATS("Raw mats", 1),
 		MINING("Mining HUD", 1),
 		TITANIUM("Titanium ESP", 3),
@@ -429,6 +431,9 @@ public class StrayScreen extends Screen {
 		new SearchEntry("Filled box", Tab.NODES, "Nodes"),
 		new SearchEntry("Watermark", Tab.OVERLAY, "Overlay"),
 		new SearchEntry("Music HUD", Tab.MEDIA, "Media"),
+		new SearchEntry("Picture in picture", Tab.OVERLAY, "Overlay"),
+		new SearchEntry("PiP", Tab.OVERLAY, "Overlay"),
+		new SearchEntry("Window capture", Tab.OVERLAY, "Overlay"),
 		new SearchEntry("Song Notification", Tab.MEDIA, "Media"),
 		new SearchEntry("Song chat", Tab.MEDIA, "Media"),
 		new SearchEntry("Now playing chat", Tab.MEDIA, "Media"),
@@ -2213,9 +2218,10 @@ public class StrayScreen extends Screen {
 			case ESP -> drawMobsTab(graphics, font, mouseX, mouseY);
 			case OVERLAY -> {
 				int extra = config.skillProgressHudEnabled ? Feature.SKILL.rows() : 0;
-				float y = featureCard(graphics, font, left, top, col, cardHeight(6 + extra), "HUD");
+				float y = featureCard(graphics, font, left, top, col, cardHeight(7 + extra), "HUD");
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Watermark", config.watermarkEnabled, v -> config.watermarkEnabled = v, Feature.WATERMARK);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Music", config.musicHudEnabled, v -> config.musicHudEnabled = v, Feature.MUSIC);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Picture in picture", config.pipEnabled, v -> config.pipEnabled = v, Feature.PIP);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Raw mats", config.rawmatsHudEnabled, v -> config.rawmatsHudEnabled = v, Feature.RAWMATS);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Pickup log", config.pickupLogEnabled, v -> config.pickupLogEnabled = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Skill progress", config.skillProgressHudEnabled, v -> config.skillProgressHudEnabled = v);
@@ -2435,6 +2441,7 @@ public class StrayScreen extends Screen {
 			case OVERLAY -> {
 				float y = sectionLabel(graphics, font, left, top, "Info");
 				y = controlCard(graphics, font, left, y, col, mouseX, mouseY, "Watermark", config.watermarkEnabled, v -> config.watermarkEnabled = v, Feature.WATERMARK);
+				y = controlCard(graphics, font, left, y, col, mouseX, mouseY, "Picture in picture", config.pipEnabled, v -> config.pipEnabled = v, Feature.PIP);
 				y = controlCard(graphics, font, left, y, col, mouseX, mouseY, "Raw mats", config.rawmatsHudEnabled, v -> config.rawmatsHudEnabled = v, Feature.RAWMATS);
 				y = toggleCard(graphics, font, left, y, col, mouseX, mouseY, "Pickup log", config.pickupLogEnabled, v -> config.pickupLogEnabled = v);
 				y = controlCard(graphics, font, left, y, col, mouseX, mouseY, "Skill progress", config.skillProgressHudEnabled, v -> config.skillProgressHudEnabled = v, Feature.SKILL);
@@ -3273,6 +3280,12 @@ public class StrayScreen extends Screen {
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Hide when idle", config.musicHideIdle, v -> config.musicHideIdle = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Song Notification", config.musicChatAnnounce, v -> config.musicChatAnnounce = v);
 				toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Spotify", config.spotifyEnabled, v -> config.spotifyEnabled = v);
+			}
+			case PIP -> {
+				String window = config.pipWindowTitle == null || config.pipWindowTitle.isBlank() ? "Click to pick" : config.pipWindowTitle;
+				y = clickRow(graphics, font, ix, y, iw, mouseX, mouseY, clip(font, window, (int) iw - 4), PipCapture::cycleWindow);
+				y = slider(graphics, font, ix, y, iw, "Capture", config.pipFps + " fps", (config.pipFps - 4) / 16f, v -> config.pipFps = StrayConfig.clamp(4 + Math.round(v * 16f), 4, 20));
+				slider(graphics, font, ix, y, iw, "Opacity", Math.round(config.pipOpacity * 100) + "%", config.pipOpacity, v -> config.pipOpacity = StrayConfig.clamp(v, 0.25f, 1f));
 			}
 			case RAWMATS -> cycle(graphics, font, ix, y, iw, mouseX, mouseY, "Materials", config.rawmatsModeLabel(), config::cycleRawmatsMode);
 			case SKILL -> {

@@ -74,6 +74,11 @@ public final class StrayConfig {
 	public boolean watermarkTime = false;
 	public boolean watermarkName = false;
 	public boolean musicHudEnabled = false;
+	public boolean pipEnabled = false;
+	public String pipWindowId = "";
+	public String pipWindowTitle = "";
+	public int pipFps = 8;
+	public float pipOpacity = 1.0f;
 	public boolean musicHideIdle = false;
 	public boolean musicChatAnnounce = false;
 	public boolean musicChatOffDefault = false;
@@ -270,6 +275,7 @@ public final class StrayConfig {
 	public float hudWatermarkScale = 1.0f;
 	public float hudNodesScale = 1.0f;
 	public float hudMusicScale = 1.0f;
+	public float hudPipScale = 1.0f;
 	public float hudRawmatsScale = 1.0f;
 	public float hudPickupScale = 1.0f;
 	public float hudMiningScale = 1.0f;
@@ -285,6 +291,8 @@ public final class StrayConfig {
 	public float hudNodesY = -1f;
 	public float hudMusicX = -1f;
 	public float hudMusicY = -1f;
+	public float hudPipX = -1f;
+	public float hudPipY = -1f;
 	public float hudRawmatsX = -1f;
 	public float hudRawmatsY = -1f;
 	public float hudPickupX = -1f;
@@ -1064,6 +1072,17 @@ public final class StrayConfig {
 				if (!json.has("themedChatEnabled")) {
 					loaded.themedChatEnabled = false;
 				}
+				if (!json.has("pipEnabled")) {
+					loaded.pipEnabled = false;
+				}
+				loaded.pipFps = clamp(loaded.pipFps, 4, 20);
+				loaded.pipOpacity = clamp(loaded.pipOpacity, 0.25f, 1f);
+				if (loaded.pipWindowId == null) {
+					loaded.pipWindowId = "";
+				}
+				if (loaded.pipWindowTitle == null) {
+					loaded.pipWindowTitle = "";
+				}
 				if (!json.has("stashChatCompact")) {
 					loaded.stashChatCompact = false;
 				}
@@ -1177,6 +1196,7 @@ public final class StrayConfig {
 				loaded.hudWatermarkScale = clampHudScale(loaded.hudWatermarkScale);
 				loaded.hudNodesScale = clampHudScale(loaded.hudNodesScale);
 				loaded.hudMusicScale = clampHudScale(loaded.hudMusicScale);
+				loaded.hudPipScale = clampHudScale(loaded.hudPipScale);
 				loaded.hudRawmatsScale = clampHudScale(loaded.hudRawmatsScale);
 				loaded.hudPickupScale = clampHudScale(loaded.hudPickupScale);
 				loaded.hudMiningScale = clampHudScale(loaded.hudMiningScale);

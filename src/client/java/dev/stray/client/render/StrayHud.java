@@ -46,6 +46,7 @@ public final class StrayHud {
 		MovementRings.extract(graphics, delta);
 		WatermarkRenderer.extract(graphics, delta);
 		MusicHudRenderer.extract(graphics, delta);
+		PipHudRenderer.extract(graphics, delta);
 		RawmatsHudRenderer.extract(graphics, delta);
 		PickupLogRenderer.extract(graphics, delta);
 		InventoryHudRenderer.extract(graphics, delta);
