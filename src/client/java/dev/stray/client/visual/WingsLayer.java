@@ -95,9 +95,9 @@ public final class WingsLayer extends RenderLayer<AvatarRenderState, PlayerModel
 		pose.scale(side, 1f, 1f);
 		pose.mulPose(Axis.YP.rotationDegrees(-open));
 		pose.mulPose(Axis.XP.rotationDegrees(5f));
-		float x1 = 1.14f * span;
-		float y0 = -0.92f;
-		float y1 = 0.74f;
+		float x1 = 0.90f * span;
+		float y0 = -0.72f;
+		float y1 = 0.58f;
 		int packed = light;
 		int col = color;
 		collector.submitCustomGeometry(pose, type, (p, consumer) -> {
