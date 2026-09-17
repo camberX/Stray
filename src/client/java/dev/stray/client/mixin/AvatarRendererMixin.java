@@ -4,8 +4,12 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import dev.stray.client.render.NametagRenderer;
 import dev.stray.client.visual.HeldItemShader;
 import dev.stray.client.visual.ShopCape;
+import dev.stray.client.visual.ShopWings;
+import dev.stray.client.visual.WingsHolder;
+import dev.stray.client.visual.WingsLayer;
 import net.minecraft.client.model.geom.ModelPart;
 import net.minecraft.client.renderer.SubmitNodeCollector;
+import net.minecraft.client.renderer.entity.EntityRendererProvider;
 import net.minecraft.client.renderer.entity.player.AvatarRenderer;
 import net.minecraft.client.renderer.entity.state.AvatarRenderState;
 import net.minecraft.client.renderer.rendertype.RenderType;
@@ -33,6 +37,14 @@ public class AvatarRendererMixin {
 		if (ShopCape.showing(entity.getUUID())) {
 			state.showCape = true;
 		}
+		if (state instanceof WingsHolder holder) {
+			holder.stray$setWings(ShopWings.get(entity.getUUID()));
+		}
+	}
+
+	@Inject(method = "<init>", at = @At("RETURN"))
+	private void stray$addWings(EntityRendererProvider.Context context, boolean slim, CallbackInfo ci) {
+		((LivingEntityRendererInvoker) this).stray$addLayer(new WingsLayer((AvatarRenderer<?>) (Object) this));
 	}
 
 	@Inject(method = "shouldShowName(Lnet/minecraft/world/entity/Avatar;D)Z", at = @At("HEAD"), cancellable = true)

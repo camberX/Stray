@@ -325,6 +325,7 @@ public final class ShopCape {
 			String tag = jsonField(status.body(), "tag");
 			boolean listed = status.body().contains("\"allowed\":true") || status.body().contains("\"allowed\": true");
 			slot.tag = tag;
+			ShopWings.set(uuid, jsonField(status.body(), "wings"), jsonField(status.body(), "wingsRgb"));
 			if (uuid.equals(selfUuid())) {
 				boolean listedCopy = listed;
 				Minecraft.getInstance().execute(() -> setAllowed(listedCopy));

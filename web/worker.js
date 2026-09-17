@@ -44,10 +44,11 @@ async function route(request, env) {
 		const listed = state.whitelist.includes(id);
 		const tag = tagFor(state, id);
 		const head = await env.CAPES.head(capeKey(id));
+		const wings = wingsFor(state, id);
 		if (!head) {
-			return json(200, { has: false, hash: "", allowed: listed, tag, bypass: hasBypass(state, id), retryIn: capeRetrySec(state, id) });
+			return json(200, { has: false, hash: "", allowed: listed, tag, wings: wings.style, wingsRgb: wings.rgb, bypass: hasBypass(state, id), retryIn: capeRetrySec(state, id) });
 		}
-		return json(200, { has: true, hash: head.customMetadata?.hash || "", allowed: listed, tag, bypass: hasBypass(state, id), retryIn: capeRetrySec(state, id) });
+		return json(200, { has: true, hash: head.customMetadata?.hash || "", allowed: listed, tag, wings: wings.style, wingsRgb: wings.rgb, bypass: hasBypass(state, id), retryIn: capeRetrySec(state, id) });
 	}
 	if (request.method === "GET" && path.startsWith("/capes/") && path.endsWith(".png")) {
 		const id = normalizeUuid(path.slice("/capes/".length, -4));
@@ -82,6 +83,9 @@ async function route(request, env) {
 	}
 	if ((request.method === "PUT" || request.method === "DELETE") && path === "/api/tag") {
 		return handleTag(request, env);
+	}
+	if ((request.method === "PUT" || request.method === "DELETE") && path === "/api/wings") {
+		return handleWings(request, env);
 	}
 	if (request.method === "PUT" && path === "/api/bypass") {
 		return handleBypass(request, env);
@@ -300,6 +304,31 @@ async function handleTag(request, env) {
 	return json(200, { ok: true, tag, players: await playersFor(env, state) });
 }
 
+async function handleWings(request, env) {
+	const checked = await adminBody(request, env);
+	if (checked.error) {
+		return checked.error;
+	}
+	const uuid = normalizeUuid(checked.body.uuid);
+	if (!uuid) {
+		return json(400, { error: "Need a valid UUID" });
+	}
+	const state = await loadState(env);
+	if (!state.whitelist.includes(uuid)) {
+		return json(403, { error: "uuid not whitelisted" });
+	}
+	state.wings = objectMap(state.wings);
+	const style = request.method === "DELETE" ? "" : sanitizeWingStyle(checked.body.style);
+	const rgb = sanitizeRgb(checked.body.rgb);
+	if (style) {
+		state.wings[uuid] = { style, rgb: rgb || WING_DEFAULT_RGB[style] || "FFFFFF" };
+	} else {
+		delete state.wings[uuid];
+	}
+	await saveState(env, state);
+	return json(200, { ok: true, wings: wingsFor(state, uuid), players: await playersFor(env, state) });
+}
+
 async function handleBypass(request, env) {
 	const checked = await adminBody(request, env);
 	if (checked.error) {
@@ -477,6 +506,31 @@ function tagFor(state, uuid) {
 	return sanitizeTag(objectMap(state.tags)[uuid]);
 }
 
+const WING_STYLES = ["angel", "demon", "fairy", "phoenix"];
+const WING_DEFAULT_RGB = { angel: "F4F6FF", demon: "2B1D2E", fairy: "9AE6FF", phoenix: "FF7A1A" };
+
+function sanitizeWingStyle(value) {
+	const style = String(value || "").trim().toLowerCase();
+	return WING_STYLES.includes(style) ? style : "";
+}
+
+function sanitizeRgb(value) {
+	const hex = String(value || "").trim().replace(/^#/, "").toUpperCase();
+	return /^[0-9A-F]{6}$/.test(hex) ? hex : "";
+}
+
+function wingsFor(state, uuid) {
+	const entry = objectMap(state.wings)[uuid];
+	if (!entry || typeof entry !== "object") {
+		return { style: "", rgb: "" };
+	}
+	const style = sanitizeWingStyle(entry.style);
+	if (!style) {
+		return { style: "", rgb: "" };
+	}
+	return { style, rgb: sanitizeRgb(entry.rgb) || WING_DEFAULT_RGB[style] };
+}
+
 function noteFor(state, uuid) {
 	return sanitizeNote(objectMap(state.notes)[uuid]);
 }
@@ -584,6 +638,7 @@ async function playersFor(env, state, forceNames) {
 			cape: Boolean(head),
 			hash: head?.customMetadata?.hash || "",
 			tag: tagFor(state, uuid),
+			wings: wingsFor(state, uuid),
 			bypass: hasBypass(state, uuid),
 			retryIn: capeRetrySec(state, uuid),
 			note: noteFor(state, uuid)
@@ -622,6 +677,9 @@ function forgetPlayer(state, uuid) {
 	}
 	if (state.notes) {
 		delete state.notes[uuid];
+	}
+	if (state.wings) {
+		delete state.wings[uuid];
 	}
 }
 
@@ -727,7 +785,7 @@ async function fetchJson(url) {
 }
 
 async function loadState(env) {
-	const empty = { whitelist: [], names: {}, namesAt: {}, tags: {}, bypass: {}, capeAt: {}, notes: {}, config: {} };
+	const empty = { whitelist: [], names: {}, namesAt: {}, tags: {}, wings: {}, bypass: {}, capeAt: {}, notes: {}, config: {} };
 	const object = await env.CAPES.get("state.json");
 	if (!object) {
 		return empty;
@@ -739,6 +797,7 @@ async function loadState(env) {
 			names: objectMap(parsed.names),
 			namesAt: objectMap(parsed.namesAt),
 			tags: objectMap(parsed.tags),
+			wings: objectMap(parsed.wings),
 			bypass: objectMap(parsed.bypass),
 			capeAt: objectMap(parsed.capeAt),
 			notes: objectMap(parsed.notes),
@@ -2745,6 +2804,20 @@ const MANAGE_HTML = `<!DOCTYPE html>
 					<button type="button" class="ghost" id="d-urlgo">Fetch</button>
 				</div>
 			</div>
+			<div class="field">
+				<label>Wings</label>
+				<div class="row">
+					<select class="grow" id="d-wings">
+						<option value="">None</option>
+						<option value="angel">Angel</option>
+						<option value="demon">Demon</option>
+						<option value="fairy">Fairy</option>
+						<option value="phoenix">Phoenix</option>
+					</select>
+					<input id="d-wingrgb" type="color" value="#F4F6FF" title="Wing color">
+					<button type="button" class="ghost" id="d-wingsave">Save</button>
+				</div>
+			</div>
 			<input id="d-file" type="file" accept="image/png,image/jpeg,image/webp,.png,.jpg,.jpeg,.webp" hidden>
 			<div class="row">
 				<button type="button" class="ghost" id="d-copy">Copy UUID</button>
@@ -3125,6 +3198,9 @@ const MANAGE_HTML = `<!DOCTYPE html>
 				tagEl.hidden = true;
 			}
 			document.getElementById("d-nocape").hidden = Boolean(player.cape);
+			const wings = player.wings || {};
+			document.getElementById("d-wings").value = wings.style || "";
+			document.getElementById("d-wingrgb").value = "#" + (wings.rgb || WING_COLORS[wings.style] || "F4F6FF");
 			document.getElementById("d-dl").disabled = !player.cape;
 			document.getElementById("d-reset").disabled = !(player.retryIn > 0);
 			loadModel(player);
@@ -3550,6 +3626,21 @@ const MANAGE_HTML = `<!DOCTYPE html>
 			if (!selected) return;
 			admin("/api/bypass", "PUT", { uuid: selected, bypass: document.getElementById("d-bypass").checked })
 				.then(function (data) { draw(data.players || []); setStatus(true, document.getElementById("d-bypass").checked ? "Bypass on." : "Bypass off."); })
+				.catch(function (error) { setStatus(false, error.message); });
+		};
+		const WING_COLORS = { angel: "F4F6FF", demon: "2B1D2E", fairy: "9AE6FF", phoenix: "FF7A1A" };
+		document.getElementById("d-wings").onchange = function () {
+			const style = document.getElementById("d-wings").value;
+			if (style && WING_COLORS[style]) {
+				document.getElementById("d-wingrgb").value = "#" + WING_COLORS[style];
+			}
+		};
+		document.getElementById("d-wingsave").onclick = function () {
+			if (!selected) return;
+			const style = document.getElementById("d-wings").value;
+			const rgb = document.getElementById("d-wingrgb").value.replace("#", "");
+			admin("/api/wings", style ? "PUT" : "DELETE", { uuid: selected, style: style, rgb: rgb })
+				.then(function (data) { draw(data.players || []); setStatus(true, style ? "Wings saved. They show on the next world join." : "Wings removed."); })
 				.catch(function (error) { setStatus(false, error.message); });
 		};
 		document.getElementById("d-reset").onclick = function () {

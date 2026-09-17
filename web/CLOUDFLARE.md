@@ -96,7 +96,7 @@ Attach `stray.gay` to the Worker (Settings → Domains & Routes). The `workers.d
 1. They message **@evilkitten911** with their Minecraft name.
 2. Open `https://stray.gay/admin` (or your Worker `/admin`), enter the admin key, and you land on the cape desk. Visiting `/manage` without logging in redirects to the login page and does not include the desk HTML.
 3. Type their username or UUID and click **Add**, or use Bulk add. You should see their current name, skin, and cape.
-4. Click a player to change cape, head tag, note, bypass, or reset the 24 hour cooldown. **Dewhitelist** drops them.
+4. Click a player to change cape, head tag, wings (style + color), note, bypass, or reset the 24 hour cooldown. **Dewhitelist** drops them.
 
 Capes only show for Stray users.
 
