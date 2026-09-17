@@ -27,6 +27,7 @@ import net.minecraft.util.Mth;
  */
 public final class WingsLayer extends RenderLayer<AvatarRenderState, PlayerModel> {
 	private static final Identifier FEATHER = Stray.id("dynamic/wing_feather");
+	private static final Identifier BUTTERFLY = Stray.id("textures/entity/butterfly_wing.png");
 	private static final int TEX_W = 16;
 	private static final int TEX_H = 64;
 	private static boolean textureReady;
@@ -44,12 +45,26 @@ public final class WingsLayer extends RenderLayer<AvatarRenderState, PlayerModel
 		if (wings == null || state.isInvisible || state.isSpectator) {
 			return;
 		}
-		ensureTexture();
 		ShopWings.Style style = wings.style();
-		RenderType type = style.glow ? RenderTypes.entityTranslucentEmissive(FEATHER) : RenderTypes.entityTranslucent(FEATHER);
-		int packedLight = style.glow ? 0xF000F0 : light;
 		float time = state.ageInTicks;
 		float glide = state.isFallFlying ? 1f : 0f;
+		if (style.butterfly) {
+			RenderType type = RenderTypes.entityTranslucent(BUTTERFLY);
+			float flutter = Mth.sin(time * 0.19f) * 6.5f + Mth.sin(time * 0.43f) * 2.4f;
+			float open = 15f + glide * 12f + flutter;
+			pose.pushPose();
+			getParentModel().body.translateAndRotate(pose);
+			pose.translate(0f, 0.02f, 0.15f);
+			int color = tint(wings.rgb(), 1f, style.alpha);
+			for (int side = -1; side <= 1; side += 2) {
+				drawButterfly(pose, collector, type, light, color, style.span, side, open);
+			}
+			pose.popPose();
+			return;
+		}
+		ensureTexture();
+		RenderType type = style.glow ? RenderTypes.entityTranslucentEmissive(FEATHER) : RenderTypes.entityTranslucent(FEATHER);
+		int packedLight = style.glow ? 0xF000F0 : light;
 		float beatRate = 0.08f + glide * 0.18f;
 		float beatAmp = 4.2f + glide * 22f;
 		float beat = Mth.sin(time * beatRate) * beatAmp;
@@ -63,6 +78,68 @@ public final class WingsLayer extends RenderLayer<AvatarRenderState, PlayerModel
 			drawWing(pose, collector, type, packedLight, wings, side, open, lift, time);
 		}
 		pose.popPose();
+	}
+
+	private void drawButterfly(
+		PoseStack pose,
+		SubmitNodeCollector collector,
+		RenderType type,
+		int light,
+		int color,
+		float span,
+		int side,
+		float open
+	) {
+		pose.pushPose();
+		pose.translate(side * 0.05f, 0f, 0f);
+		pose.scale(side, 1f, 1f);
+		pose.mulPose(Axis.YP.rotationDegrees(-open));
+		pose.mulPose(Axis.XP.rotationDegrees(5f));
+		float x1 = 1.14f * span;
+		float y0 = -0.92f;
+		float y1 = 0.74f;
+		int packed = light;
+		int col = color;
+		collector.submitCustomGeometry(pose, type, (p, consumer) -> {
+			butterflyQuad(p, consumer, 0f, y0, x1, y1, col, packed, false);
+			butterflyQuad(p, consumer, 0f, y0, x1, y1, col, packed, true);
+		});
+		pose.popPose();
+	}
+
+	private static void butterflyQuad(
+		PoseStack.Pose p,
+		VertexConsumer consumer,
+		float x0,
+		float y0,
+		float x1,
+		float y1,
+		int color,
+		int light,
+		boolean back
+	) {
+		float nz = back ? -1f : 1f;
+		float z = back ? 0.0015f : -0.0015f;
+		if (!back) {
+			wingVertex(p, consumer, x0, y0, z, 0f, 0f, color, light, nz);
+			wingVertex(p, consumer, x0, y1, z, 0f, 1f, color, light, nz);
+			wingVertex(p, consumer, x1, y1, z, 1f, 1f, color, light, nz);
+			wingVertex(p, consumer, x1, y0, z, 1f, 0f, color, light, nz);
+		} else {
+			wingVertex(p, consumer, x1, y0, z, 1f, 0f, color, light, nz);
+			wingVertex(p, consumer, x1, y1, z, 1f, 1f, color, light, nz);
+			wingVertex(p, consumer, x0, y1, z, 0f, 1f, color, light, nz);
+			wingVertex(p, consumer, x0, y0, z, 0f, 0f, color, light, nz);
+		}
+	}
+
+	private static void wingVertex(PoseStack.Pose p, VertexConsumer consumer, float x, float y, float z, float u, float v, int color, int light, float nz) {
+		consumer.addVertex(p, x, y, z)
+			.setColor(color)
+			.setUv(u, v)
+			.setOverlay(OverlayTexture.NO_OVERLAY)
+			.setLight(light)
+			.setNormal(p, 0f, 0f, nz);
 	}
 
 	private void drawWing(

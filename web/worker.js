@@ -506,8 +506,8 @@ function tagFor(state, uuid) {
 	return sanitizeTag(objectMap(state.tags)[uuid]);
 }
 
-const WING_STYLES = ["angel", "demon", "fairy", "phoenix"];
-const WING_DEFAULT_RGB = { angel: "F4F6FF", demon: "2B1D2E", fairy: "9AE6FF", phoenix: "FF7A1A" };
+const WING_STYLES = ["angel", "demon", "fairy", "phoenix", "butterfly"];
+const WING_DEFAULT_RGB = { angel: "F4F6FF", demon: "2B1D2E", fairy: "9AE6FF", phoenix: "FF7A1A", butterfly: "3D98CB" };
 
 function sanitizeWingStyle(value) {
 	const style = String(value || "").trim().toLowerCase();
@@ -2813,6 +2813,7 @@ const MANAGE_HTML = `<!DOCTYPE html>
 						<option value="demon">Demon</option>
 						<option value="fairy">Fairy</option>
 						<option value="phoenix">Phoenix</option>
+						<option value="butterfly">Butterfly</option>
 					</select>
 					<input id="d-wingrgb" type="color" value="#F4F6FF" title="Wing color">
 					<button type="button" class="ghost" id="d-wingsave">Save</button>
@@ -3628,7 +3629,7 @@ const MANAGE_HTML = `<!DOCTYPE html>
 				.then(function (data) { draw(data.players || []); setStatus(true, document.getElementById("d-bypass").checked ? "Bypass on." : "Bypass off."); })
 				.catch(function (error) { setStatus(false, error.message); });
 		};
-		const WING_COLORS = { angel: "F4F6FF", demon: "2B1D2E", fairy: "9AE6FF", phoenix: "FF7A1A" };
+		const WING_COLORS = { angel: "F4F6FF", demon: "2B1D2E", fairy: "9AE6FF", phoenix: "FF7A1A", butterfly: "3D98CB" };
 		document.getElementById("d-wings").onchange = function () {
 			const style = document.getElementById("d-wings").value;
 			if (style && WING_COLORS[style]) {
