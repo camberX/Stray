@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.3.34", new String[]{
+			"Compact stash chat folds Hypixel pickup spam into one line. Click still runs the original stash pickup. Off by default in Menus."
+		}),
 		new Entry("1.3.33", new String[]{
 			"Chat peek in Keys. Hold the bind to show the focused chat history without opening the box; the wheel scrolls while it is down."
 		}),

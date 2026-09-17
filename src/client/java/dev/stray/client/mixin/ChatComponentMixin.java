@@ -1,7 +1,9 @@
 package dev.stray.client.mixin;
 
+import com.llamalad7.mixinextras.injector.wrapmethod.WrapMethod;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
+import dev.stray.client.chat.StashChat;
 import dev.stray.client.fairy.FairySoulTracker;
 import dev.stray.client.mining.CrystalHollows;
 import dev.stray.client.mining.MiningTracker;
@@ -12,28 +14,36 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.ChatComponent;
+import net.minecraft.client.multiplayer.chat.GuiMessageSource;
+import net.minecraft.client.multiplayer.chat.GuiMessageTag;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MessageSignature;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.ModifyVariable;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(ChatComponent.class)
 public class ChatComponentMixin {
-	@ModifyVariable(
-		method = "addMessage(Lnet/minecraft/network/chat/Component;Lnet/minecraft/network/chat/MessageSignature;Lnet/minecraft/client/multiplayer/chat/GuiMessageSource;Lnet/minecraft/client/multiplayer/chat/GuiMessageTag;)V",
-		at = @At("HEAD"),
-		argsOnly = true,
-		ordinal = 0
+	@WrapMethod(
+		method = "addMessage(Lnet/minecraft/network/chat/Component;Lnet/minecraft/network/chat/MessageSignature;Lnet/minecraft/client/multiplayer/chat/GuiMessageSource;Lnet/minecraft/client/multiplayer/chat/GuiMessageTag;)V"
 	)
-	private Component stray$nick(Component message) {
+	private void stray$nick(
+		Component message,
+		MessageSignature signature,
+		GuiMessageSource source,
+		GuiMessageTag tag,
+		Operation<Void> original
+	) {
 		Component rewritten = NickHider.rewrite(message);
 		MiningTracker.onChat(rewritten);
 		FairySoulTracker.onChat(rewritten);
 		CrystalHollows.allowChat(rewritten, false);
-		return rewritten;
+		Component stash = StashChat.filter(rewritten);
+		if (stash != null) {
+			original.call(stash, signature, source, tag);
+		}
 	}
 
 	@Inject(method = "getHeight()I", at = @At("HEAD"), cancellable = true)
