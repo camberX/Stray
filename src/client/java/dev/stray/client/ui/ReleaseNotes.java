@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.3.49", new String[]{
+			"Every wing style is longest at the top, not the middle. Smaller coverts sit between the primaries."
+		}),
 		new Entry("1.3.48", new String[]{
 			"Wing feathers lengthen toward the top. The bottom coverts are short; the top primaries are the longest."
 		}),
