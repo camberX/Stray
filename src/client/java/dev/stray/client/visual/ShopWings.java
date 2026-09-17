@@ -8,22 +8,25 @@ import java.util.concurrent.ConcurrentHashMap;
 /** Wing cosmetics granted from the shop desk; keyed by player UUID. */
 public final class ShopWings {
 	public enum Style {
-		ANGEL(7, 1.0f, 0.95f, false, 0xF4F6FF),
-		DEMON(5, 1.15f, 1.0f, false, 0x2B1D2E),
-		FAIRY(6, 0.9f, 0.62f, true, 0x9AE6FF),
-		PHOENIX(8, 1.1f, 0.9f, true, 0xFF7A1A);
+		ANGEL(7, 1.0f, 0.95f, false, false, 0xF4F6FF),
+		DEMON(5, 1.15f, 1.0f, false, false, 0x2B1D2E),
+		FAIRY(6, 0.9f, 0.62f, true, false, 0x9AE6FF),
+		PHOENIX(8, 1.1f, 0.9f, true, false, 0xFF7A1A),
+		BUTTERFLY(0, 0.84f, 1.0f, false, true, 0x3D98CB);
 
 		public final int feathers;
 		public final float span;
 		public final float alpha;
 		public final boolean glow;
+		public final boolean butterfly;
 		public final int defaultRgb;
 
-		Style(int feathers, float span, float alpha, boolean glow, int defaultRgb) {
+		Style(int feathers, float span, float alpha, boolean glow, boolean butterfly, int defaultRgb) {
 			this.feathers = feathers;
 			this.span = span;
 			this.alpha = alpha;
 			this.glow = glow;
+			this.butterfly = butterfly;
 			this.defaultRgb = defaultRgb;
 		}
 
