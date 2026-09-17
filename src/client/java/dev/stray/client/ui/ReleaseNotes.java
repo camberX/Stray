@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.3.53", new String[]{
+			"Butterfly wings sit on the upper back instead of around the head."
+		}),
 		new Entry("1.3.52", new String[]{
 			"Butterfly wings are smaller and painted with veins, a bright upper sheen, and spots on the lower lobe."
 		}),
