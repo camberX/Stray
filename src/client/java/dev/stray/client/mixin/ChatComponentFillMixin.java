@@ -28,6 +28,24 @@ public class ChatComponentFillMixin {
 		}
 	}
 
+	@Inject(
+		method = "handleTag(IIIIFLnet/minecraft/client/multiplayer/chat/GuiMessageTag;)V",
+		at = @At("HEAD"),
+		cancellable = true
+	)
+	private void stray$skipServerBar(CallbackInfo ci) {
+		ci.cancel();
+	}
+
+	@Inject(
+		method = "handleTagIcon(IIZLnet/minecraft/client/multiplayer/chat/GuiMessageTag;Lnet/minecraft/client/multiplayer/chat/GuiMessageTag$Icon;)V",
+		at = @At("HEAD"),
+		cancellable = true
+	)
+	private void stray$skipServerIcon(CallbackInfo ci) {
+		ci.cancel();
+	}
+
 	@WrapOperation(
 		method = "handleMessage(IFLnet/minecraft/util/FormattedCharSequence;)Z",
 		at = @At(
