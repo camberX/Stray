@@ -20,9 +20,10 @@ import net.minecraft.util.Mth;
 
 /**
  * Feathered wings on the upper back. Each feather is a textured blade fanned
- * from a root behind the shoulders; the pair flaps slowly at rest and beats
- * harder while sprinting or gliding. Geometry is built from a runtime texture,
- * tinted by the shop color.
+ * from a root behind the shoulders. Both sides use the same +X mesh; the right
+ * wing is mirrored with a pose scale so winding, UVs, and lighting stay even.
+ * The pair idles with a slow flap and only beats harder while gliding — walk
+ * animation speed is ignored so tapping W does not twitch the wings.
  */
 public final class WingsLayer extends RenderLayer<AvatarRenderState, PlayerModel> {
 	private static final Identifier FEATHER = Stray.id("dynamic/wing_feather");
@@ -48,13 +49,12 @@ public final class WingsLayer extends RenderLayer<AvatarRenderState, PlayerModel
 		RenderType type = style.glow ? RenderTypes.entityTranslucentEmissive(FEATHER) : RenderTypes.entityTranslucent(FEATHER);
 		int packedLight = style.glow ? 0xF000F0 : light;
 		float time = state.ageInTicks;
-		float walk = Mth.clamp(state.walkAnimationSpeed, 0f, 1f);
-		float glide = state.fallFlyingTimeInTicks > 0 ? 1f : 0f;
-		float beatRate = 0.09f + walk * 0.16f + glide * 0.22f;
-		float beatAmp = 5f + walk * 16f + glide * 24f;
-		float beat = Mth.sin(state.ageInTicks * beatRate) * beatAmp;
-		float open = 34f + walk * 18f + glide * 26f + beat;
-		float lift = 12f + walk * 6f + glide * 12f + beat * 0.4f;
+		float glide = state.isFallFlying ? 1f : 0f;
+		float beatRate = 0.08f + glide * 0.18f;
+		float beatAmp = 4.2f + glide * 22f;
+		float beat = Mth.sin(time * beatRate) * beatAmp;
+		float open = 36f + glide * 28f + beat;
+		float lift = 10f + glide * 14f + beat * 0.35f;
 
 		pose.pushPose();
 		getParentModel().body.translateAndRotate(pose);
@@ -80,10 +80,11 @@ public final class WingsLayer extends RenderLayer<AvatarRenderState, PlayerModel
 		int n = style.feathers;
 		pose.pushPose();
 		pose.translate(side * 0.08f, 0f, 0f);
-		// +x is the player's left after the model flip; rotating -side*open sweeps
-		// both wings toward +z (behind the back) instead of into the chest.
-		pose.mulPose(Axis.YP.rotationDegrees(-side * open));
-		pose.mulPose(Axis.ZP.rotationDegrees(-side * lift));
+		// Mirror the right wing in X so blades always extend in local +X. Open/lift
+		// then sweep both sides toward +z (behind the back) with the same signs.
+		pose.scale(side, 1f, 1f);
+		pose.mulPose(Axis.YP.rotationDegrees(-open));
+		pose.mulPose(Axis.ZP.rotationDegrees(-lift));
 		for (int i = 0; i < n; i++) {
 			float t = n == 1 ? 0f : i / (float) (n - 1);
 			float fan = Mth.lerp(t, -28f, 78f);
@@ -91,8 +92,8 @@ public final class WingsLayer extends RenderLayer<AvatarRenderState, PlayerModel
 			float width = 0.12f + (1f - t) * 0.05f;
 			float flutter = Mth.sin(time * 0.03f + i * 0.9f) * 2.5f;
 			pose.pushPose();
-			pose.mulPose(Axis.ZP.rotationDegrees(side * (fan + flutter)));
-			pose.mulPose(Axis.XP.rotationDegrees(side * (6f + t * 10f)));
+			pose.mulPose(Axis.ZP.rotationDegrees(fan + flutter));
+			pose.mulPose(Axis.XP.rotationDegrees(6f + t * 10f));
 			float shade = 1f - t * 0.18f;
 			float alpha = style.alpha * (style == ShopWings.Style.FAIRY ? 0.8f + 0.2f * (1f - t) : 1f);
 			int color = tint(wings.rgb(), shade, alpha);
@@ -102,25 +103,23 @@ public final class WingsLayer extends RenderLayer<AvatarRenderState, PlayerModel
 			int col = color;
 			int shaftCol = shaft;
 			int packed = light;
-			collector.submitCustomGeometry(pose, type, (p, consumer) -> blade(p, consumer, len, wid, col, shaftCol, packed, side));
+			collector.submitCustomGeometry(pose, type, (p, consumer) -> blade(p, consumer, len, wid, col, shaftCol, packed));
 			pose.popPose();
 		}
 		pose.popPose();
 	}
 
-	private static void blade(PoseStack.Pose p, VertexConsumer consumer, float length, float width, int color, int shaftColor, int light, int side) {
+	private static void blade(PoseStack.Pose p, VertexConsumer consumer, float length, float width, int color, int shaftColor, int light) {
 		float x0 = 0f;
-		float x1 = side * length;
+		float x1 = length;
 		float y0 = -width * 0.35f;
 		float y1 = width * 0.65f;
-		float u0 = side > 0 ? 0f : 1f;
-		float u1 = side > 0 ? 1f : 0f;
-		quad(p, consumer, x0, y0, x1, y1, u0, u1, color, light, false, side);
-		quad(p, consumer, x0, y0, x1, y1, u0, u1, color, light, true, side);
+		quad(p, consumer, x0, y0, x1, y1, color, light, false);
+		quad(p, consumer, x0, y0, x1, y1, color, light, true);
 		float sy0 = -width * 0.04f;
 		float sy1 = width * 0.06f;
-		quad(p, consumer, x0, sy0, x1 * 0.92f, sy1, u0, u1, shaftColor, light, false, side);
-		quad(p, consumer, x0, sy0, x1 * 0.92f, sy1, u0, u1, shaftColor, light, true, side);
+		quad(p, consumer, x0, sy0, x1 * 0.92f, sy1, shaftColor, light, false);
+		quad(p, consumer, x0, sy0, x1 * 0.92f, sy1, shaftColor, light, true);
 	}
 
 	private static void quad(
@@ -130,25 +129,22 @@ public final class WingsLayer extends RenderLayer<AvatarRenderState, PlayerModel
 		float y0,
 		float x1,
 		float y1,
-		float u0,
-		float u1,
 		int color,
 		int light,
-		boolean back,
-		int side
+		boolean back
 	) {
-		float nz = (back ? -1f : 1f) * side;
+		float nz = back ? -1f : 1f;
 		float z = back ? 0.0015f : -0.0015f;
 		if (!back) {
-			vertex(p, consumer, x0, y0, z, u0, 0f, color, light, nz);
-			vertex(p, consumer, x0, y1, z, u0, 1f, color, light, nz);
-			vertex(p, consumer, x1, y1, z, u1, 1f, color, light, nz);
-			vertex(p, consumer, x1, y0, z, u1, 0f, color, light, nz);
+			vertex(p, consumer, x0, y0, z, 0f, 0f, color, light, nz);
+			vertex(p, consumer, x0, y1, z, 0f, 1f, color, light, nz);
+			vertex(p, consumer, x1, y1, z, 1f, 1f, color, light, nz);
+			vertex(p, consumer, x1, y0, z, 1f, 0f, color, light, nz);
 		} else {
-			vertex(p, consumer, x1, y0, z, u1, 0f, color, light, nz);
-			vertex(p, consumer, x1, y1, z, u1, 1f, color, light, nz);
-			vertex(p, consumer, x0, y1, z, u0, 1f, color, light, nz);
-			vertex(p, consumer, x0, y0, z, u0, 0f, color, light, nz);
+			vertex(p, consumer, x1, y0, z, 1f, 0f, color, light, nz);
+			vertex(p, consumer, x1, y1, z, 1f, 1f, color, light, nz);
+			vertex(p, consumer, x0, y1, z, 0f, 1f, color, light, nz);
+			vertex(p, consumer, x0, y0, z, 0f, 0f, color, light, nz);
 		}
 	}
 
