@@ -77,7 +77,7 @@ public final class StrayConfig {
 	public boolean pipEnabled = false;
 	public String pipWindowId = "";
 	public String pipWindowTitle = "";
-	public int pipFps = 8;
+	public int pipFps = 60;
 	public float pipOpacity = 1.0f;
 	public boolean musicHideIdle = false;
 	public boolean musicChatAnnounce = false;
@@ -1075,7 +1075,10 @@ public final class StrayConfig {
 				if (!json.has("pipEnabled")) {
 					loaded.pipEnabled = false;
 				}
-				loaded.pipFps = clamp(loaded.pipFps, 4, 20);
+				if (!json.has("pipFps") || loaded.pipFps < 30) {
+					loaded.pipFps = 60;
+				}
+				loaded.pipFps = clamp(loaded.pipFps, 15, 60);
 				loaded.pipOpacity = clamp(loaded.pipOpacity, 0.25f, 1f);
 				if (loaded.pipWindowId == null) {
 					loaded.pipWindowId = "";
