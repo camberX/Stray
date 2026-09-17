@@ -6,6 +6,7 @@ import dev.stray.client.config.StrayConfig;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.texture.DynamicTexture;
 import net.minecraft.resources.Identifier;
+import net.minecraft.util.ARGB;
 import org.lwjgl.system.MemoryUtil;
 
 import java.util.List;
@@ -129,7 +130,7 @@ public final class PipCapture {
 			long pointer = image.getPointer();
 			if (pointer != 0L) {
 				for (int i = 0; i < count; i++) {
-					MemoryUtil.memPutInt(pointer + ((long) i << 2), frame.argb[i]);
+					MemoryUtil.memPutInt(pointer + ((long) i << 2), ARGB.toABGR(frame.argb[i]));
 				}
 			} else {
 				int i = 0;

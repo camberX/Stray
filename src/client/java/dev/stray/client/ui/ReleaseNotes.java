@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.3.40", new String[]{
+			"Picture in picture no longer swaps red and blue."
+		}),
 		new Entry("1.3.39", new String[]{
 			"Picture in picture captures at 60 FPS. The grab reuses GDI buffers and no longer stalls on a 20ms sleep cap."
 		}),
