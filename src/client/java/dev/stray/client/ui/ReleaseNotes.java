@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.3.36", new String[]{
+			"Chat no longer draws the server/system tag bar next to messages."
+		}),
 		new Entry("1.3.35", new String[]{
 			"Compact stash chat drops the blank lines around pickup spam, and the click label is PICK UP."
 		}),
