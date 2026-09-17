@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.3.35", new String[]{
+			"Compact stash chat drops the blank lines around pickup spam, and the click label is PICK UP."
+		}),
 		new Entry("1.3.34", new String[]{
 			"Compact stash chat folds Hypixel pickup spam into one line. Click still runs the original stash pickup. Off by default in Menus."
 		}),

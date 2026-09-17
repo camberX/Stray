@@ -31,9 +31,11 @@ public final class StashChat {
 		"(?i)click here\\s+to pick them up"
 	);
 	private static final long HOLD_MS = 2500L;
+	private static final long BLANK_MS = 1000L;
 
 	private static boolean reentry;
 	private static Pending pending;
+	private static long lastCompactAt;
 
 	private StashChat() {
 	}
@@ -45,11 +47,12 @@ public final class StashChat {
 		}
 		String plain = plain(message);
 		if (plain.isEmpty()) {
-			return message;
+			return dropBlank() ? null : message;
 		}
 		Parsed complete = parseComplete(plain);
 		if (complete != null) {
 			flushPending();
+			lastCompactAt = now();
 			return compact(complete, message);
 		}
 		if (isHeaderOnly(plain)) {
@@ -74,6 +77,7 @@ public final class StashChat {
 			if (CLICK.matcher(plain).find()) {
 				Parsed parsed = pending.parsed;
 				pending = null;
+				lastCompactAt = now();
 				return compact(parsed, message);
 			}
 		}
@@ -146,8 +150,16 @@ public final class StashChat {
 			line.append(bit(parsed.types, style(countColor), click, hover));
 			line.append(bit(" types", style(Theme.MUTED), click, hover));
 		}
-		line.append(bit("  [pick up]", style(Theme.ACCENT), click, hover));
+		line.append(bit("  [PICK UP]", style(Theme.ACCENT).withBold(true), click, hover));
 		return line;
+	}
+
+	private static boolean dropBlank() {
+		long at = now();
+		if (pending != null && at - pending.at <= HOLD_MS) {
+			return true;
+		}
+		return lastCompactAt != 0L && at - lastCompactAt <= BLANK_MS;
 	}
 
 	private static MutableComponent bit(String text, Style look, ClickEvent click, HoverEvent hover) {
