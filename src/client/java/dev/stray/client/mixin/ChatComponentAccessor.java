@@ -10,11 +10,17 @@ import java.util.List;
 
 @Mixin(ChatComponent.class)
 public interface ChatComponentAccessor {
+	@Accessor("allMessages")
+	List<GuiMessage> stray$allMessages();
+
 	@Accessor("trimmedMessages")
 	List<GuiMessage.Line> stray$trimmedMessages();
 
 	@Accessor("chatScrollbarPos")
 	int stray$scroll();
+
+	@Invoker("refreshTrimmedMessages")
+	void stray$refreshTrimmedMessages();
 
 	@Invoker("getWidth")
 	int stray$chatWidth();

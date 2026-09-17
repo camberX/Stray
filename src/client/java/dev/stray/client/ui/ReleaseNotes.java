@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.3.37", new String[]{
+			"Compact stash chat also eats the blank spacer Hypixel sends above the pickup line."
+		}),
 		new Entry("1.3.36", new String[]{
 			"Chat no longer draws the server/system tag bar next to messages."
 		}),
