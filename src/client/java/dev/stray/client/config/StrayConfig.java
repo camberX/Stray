@@ -172,6 +172,7 @@ public final class StrayConfig {
 	public boolean storagePreviewHoldShift = false;
 	public boolean themedGuisEnabled = false;
 	public boolean themedChatEnabled = false;
+	public boolean stashChatCompact = false;
 	public boolean hitsoundEnabled = false;
 	public boolean hitsoundMelee = false;
 	public boolean hitsoundArrows = false;
@@ -1062,6 +1063,9 @@ public final class StrayConfig {
 				}
 				if (!json.has("themedChatEnabled")) {
 					loaded.themedChatEnabled = false;
+				}
+				if (!json.has("stashChatCompact")) {
+					loaded.stashChatCompact = false;
 				}
 				if (!json.has("crystalHollowsScan")) {
 					loaded.crystalHollowsScan = true;
