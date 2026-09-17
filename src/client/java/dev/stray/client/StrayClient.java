@@ -55,6 +55,7 @@ import dev.stray.client.movement.MovementRingCommands;
 import dev.stray.client.movement.MovementRings;
 import dev.stray.client.movement.PathCommands;
 import dev.stray.client.movement.PathRecorder;
+import dev.stray.client.movement.PathWalker;
 import dev.stray.client.pip.PipCapture;
 import dev.stray.client.mining.MiningTracker;
 import dev.stray.client.mining.TitaniumTracker;
@@ -177,6 +178,7 @@ public final class StrayClient implements ClientModInitializer {
 		BlockOutlineGlow.init();
 		BlockMarks.init();
 		PathRecorder.init();
+		PathWalker.init();
 		CommandRings.init();
 		MovementRings.init();
 		MiningWorldRenderer.init();
@@ -333,6 +335,7 @@ public final class StrayClient implements ClientModInitializer {
 			PathRecorder.tick(client);
 			CommandRings.tick(client);
 			MovementRings.tick(client);
+			PathWalker.tick(client);
 			PipCapture.tick(client);
 			AotvSim.tick();
 			ShopCape.tick();
@@ -352,6 +355,7 @@ public final class StrayClient implements ClientModInitializer {
 			BlockMarks.onWorldChange();
 			CommandRings.onWorldChange();
 			MovementRings.onWorldChange();
+			PathWalker.stop(false);
 			NucleusAlerts.reset();
 		});
 
