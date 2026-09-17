@@ -417,6 +417,14 @@ public class StrayScreen extends Screen {
 		new SearchEntry("Contest prediction", Tab.FARMING, "Farming"),
 		new SearchEntry("Crops per second", Tab.FARMING, "Farming"),
 		new SearchEntry("Composter overlay", Tab.FARMING, "Farming"),
+		new SearchEntry("Next contest HUD", Tab.GARDEN, "Garden"),
+		new SearchEntry("Jacob next contest", Tab.GARDEN, "Garden"),
+		new SearchEntry("Visitor HUD", Tab.GARDEN, "Garden"),
+		new SearchEntry("Visitor timer", Tab.GARDEN, "Garden"),
+		new SearchEntry("Hoe level", Tab.GARDEN, "Garden"),
+		new SearchEntry("Crop milestone", Tab.GARDEN, "Garden"),
+		new SearchEntry("Shopping list", Tab.GARDEN, "Garden"),
+		new SearchEntry("Visitor shopping", Tab.GARDEN, "Garden"),
 		new SearchEntry("Garden plots", Tab.GARDEN, "Garden"),
 		new SearchEntry("Pest ESP", Tab.GARDEN, "Garden"),
 		new SearchEntry("Garden pests", Tab.GARDEN, "Garden"),
@@ -2585,7 +2593,13 @@ public class StrayScreen extends Screen {
 			}
 			case GARDEN -> {
 				float y = sectionLabel(graphics, font, left, top, "Plots");
-				controlCard(graphics, font, left, y, col, mouseX, mouseY, "Garden plots", config.gardenPlotsWidget, v -> config.gardenPlotsWidget = v, Feature.PLOTS);
+				y = controlCard(graphics, font, left, y, col, mouseX, mouseY, "Garden plots", config.gardenPlotsWidget, v -> config.gardenPlotsWidget = v, Feature.PLOTS);
+				y = sectionLabel(graphics, font, left, y, "Overlays");
+				y = toggleCard(graphics, font, left, y, col, mouseX, mouseY, "Next contest", config.gardenContestHudEnabled, v -> config.gardenContestHudEnabled = v);
+				y = toggleCard(graphics, font, left, y, col, mouseX, mouseY, "Visitors", config.gardenVisitorHudEnabled, v -> config.gardenVisitorHudEnabled = v);
+				y = toggleCard(graphics, font, left, y, col, mouseX, mouseY, "Hoe level", config.gardenHoeHudEnabled, v -> config.gardenHoeHudEnabled = v);
+				y = toggleCard(graphics, font, left, y, col, mouseX, mouseY, "Crop milestone", config.gardenMilestoneHudEnabled, v -> config.gardenMilestoneHudEnabled = v);
+				toggleCard(graphics, font, left, y, col, mouseX, mouseY, "Shopping list", config.gardenShoppingHudEnabled, v -> config.gardenShoppingHudEnabled = v);
 				y = sectionLabel(graphics, font, right, top, "Pests");
 				controlCard(graphics, font, right, y, col, mouseX, mouseY, "Pest ESP", config.pestEspEnabled, v -> config.pestEspEnabled = v, Feature.PEST);
 			}

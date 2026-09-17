@@ -31,6 +31,11 @@ public final class HudLayout {
 		JACOB("Jacob contest"),
 		COMPOSTER("Composter"),
 		SKILL("Skill progress"),
+		NEXT_CONTEST("Next contest"),
+		VISITOR("Visitors"),
+		HOE("Hoe level"),
+		MILESTONE("Crop milestone"),
+		SHOPPING("Shopping list"),
 		HOTBAR("Hotbar"),
 		HEALTH("Health"),
 		HUNGER("Hunger"),
@@ -229,6 +234,10 @@ public final class HudLayout {
 						below += ComposterHudRenderer.drawHeight() * scale(Id.COMPOSTER) + 4;
 					}
 					y = placed(config.hudSkillY) ? config.hudSkillY : MARGIN + below;
+				}
+				case NEXT_CONTEST, VISITOR, HOE, MILESTONE, SHOPPING -> {
+					x = MARGIN;
+					y = gardenDefaultY(id, config);
 				}
 				default -> {
 					x = defaultX(id, font, guiW, w);
@@ -444,6 +453,11 @@ public final class HudLayout {
 			case JACOB -> config.jacobContestHudEnabled;
 			case COMPOSTER -> config.composterHudEnabled;
 			case SKILL -> config.skillProgressHudEnabled;
+			case NEXT_CONTEST -> config.gardenContestHudEnabled;
+			case VISITOR -> config.gardenVisitorHudEnabled;
+			case HOE -> config.gardenHoeHudEnabled;
+			case MILESTONE -> config.gardenMilestoneHudEnabled;
+			case SHOPPING -> config.gardenShoppingHudEnabled;
 			case HOTBAR, HEALTH, HUNGER, ARMOR, AIR, EXPERIENCE, MOUNT -> false;
 			case SCOREBOARD -> config.hudScoreboard;
 			case BOSS -> config.hudBossBar;
@@ -512,8 +526,49 @@ public final class HudLayout {
 			case BOSS -> config.slotBoss;
 			case EFFECTS -> config.slotEffects;
 			case HELD_ITEM -> config.slotHeldItem;
+			case NEXT_CONTEST -> config.slotGardenContest;
+			case VISITOR -> config.slotGardenVisitor;
+			case HOE -> config.slotGardenHoe;
+			case MILESTONE -> config.slotGardenMilestone;
+			case SHOPPING -> config.slotGardenShopping;
 			default -> null;
 		};
+	}
+
+	private static float gardenDefaultY(Id id, StrayConfig config) {
+		float below = WatermarkRenderer.occupiedHeight();
+		if (config.hudEnabled) {
+			below += NodeHudRenderer.drawHeight() * scale(Id.NODES) + 4;
+		}
+		if (config.miningHudEnabled) {
+			below += MiningHudRenderer.drawHeight() * scale(Id.MINING) + 4;
+		}
+		if (config.jacobContestHudEnabled) {
+			below += JacobContestHudRenderer.drawHeight() * scale(Id.JACOB) + 4;
+		}
+		if (config.composterHudEnabled) {
+			below += ComposterHudRenderer.drawHeight() * scale(Id.COMPOSTER) + 4;
+		}
+		if (config.skillProgressHudEnabled) {
+			below += SkillProgressHudRenderer.drawHeight() * scale(Id.SKILL) + 4;
+		}
+		Id[] order = {Id.NEXT_CONTEST, Id.VISITOR, Id.HOE, Id.MILESTONE, Id.SHOPPING};
+		boolean[] on = {
+			config.gardenContestHudEnabled,
+			config.gardenVisitorHudEnabled,
+			config.gardenHoeHudEnabled,
+			config.gardenMilestoneHudEnabled,
+			config.gardenShoppingHudEnabled
+		};
+		for (int i = 0; i < order.length; i++) {
+			if (order[i] == id) {
+				break;
+			}
+			if (on[i]) {
+				below += height(order[i], null) + 4;
+			}
+		}
+		return MARGIN + below;
 	}
 
 	private static float defaultX(Id id, Font font, int guiW, float w) {
@@ -580,6 +635,11 @@ public final class HudLayout {
 			case JACOB -> JacobContestHudRenderer.drawWidth() * scale;
 			case COMPOSTER -> ComposterHudRenderer.drawWidth() * scale;
 			case SKILL -> SkillProgressHudRenderer.drawWidth() * scale;
+			case NEXT_CONTEST -> GardenHudRenderer.contestWidth() * scale;
+			case VISITOR -> GardenHudRenderer.visitorWidth() * scale;
+			case HOE -> GardenHudRenderer.hoeWidth() * scale;
+			case MILESTONE -> GardenHudRenderer.milestoneWidth() * scale;
+			case SHOPPING -> GardenHudRenderer.shoppingWidth() * scale;
 			case HOTBAR -> HotbarHudRenderer.drawWidth() * scale;
 			case HEALTH, HUNGER, ARMOR, AIR, MOUNT -> StatusHudRenderer.BAR_W * scale;
 			case EXPERIENCE -> StatusHudRenderer.xpWidth() * scale;
@@ -605,6 +665,11 @@ public final class HudLayout {
 			case JACOB -> JacobContestHudRenderer.drawHeight() * scale;
 			case COMPOSTER -> ComposterHudRenderer.drawHeight() * scale;
 			case SKILL -> SkillProgressHudRenderer.drawHeight() * scale;
+			case NEXT_CONTEST -> GardenHudRenderer.contestHeight() * scale;
+			case VISITOR -> GardenHudRenderer.visitorHeight() * scale;
+			case HOE -> GardenHudRenderer.hoeHeight() * scale;
+			case MILESTONE -> GardenHudRenderer.milestoneHeight() * scale;
+			case SHOPPING -> GardenHudRenderer.shoppingHeight() * scale;
 			case HOTBAR -> HotbarHudRenderer.HEIGHT * scale;
 			case HEALTH, HUNGER, ARMOR, AIR, MOUNT -> StatusHudRenderer.BAR_H * scale;
 			case EXPERIENCE -> StatusHudRenderer.XP_BOX_H * scale;

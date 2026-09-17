@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.3.51", new String[]{
+			"Garden overlays: next Jacob contest, visitor timer, hoe level, crop milestone, and visitor shopping list. Off by default on the Garden tab; drag them in the HUD editor."
+		}),
 		new Entry("1.3.50", new String[]{
 			"Wings are no longer upside down. The long primaries sit at the top; the short coverts hang at the bottom."
 		}),
