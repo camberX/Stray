@@ -922,9 +922,9 @@ public class StrayScreen extends Screen {
 		}
 		PlayerSkin skin = playerSkin();
 		if (skin != null && skin.body() != null) {
-			PlayerFaceExtractor.extractRenderState(graphics, skin, faceX, faceY, face);
+			ControlChrome.face(graphics, faceX, faceY, face, skin);
 		} else {
-			GuiDraw.rounded(graphics, faceX, faceY, face, face, 3, Theme.ACCENT);
+			GuiDraw.circle(graphics, faceX + face * 0.5f, faceY + face * 0.5f, face * 0.5f, Theme.ACCENT);
 		}
 		float nameX = windowX + 10 + face + 4;
 		GuiDraw.menu(graphics, font, fitName(font, playerName(), (int) (SIDEBAR_W - 18 - face)), nameX, GuiDraw.middle(footY, face), Theme.TEXT);

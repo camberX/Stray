@@ -184,6 +184,10 @@ public final class ControlChrome {
 			GuiDraw.circle(graphics, x + size * 0.5f, y + size * 0.5f, size * 0.5f, clipFill());
 			return;
 		}
+		if (GuiDraw.circleBlit(graphics, id, x, y, size, 8f, 8f, 8, 8, 64, 64)) {
+			GuiDraw.circleBlit(graphics, id, x, y, size, 40f, 8f, 8, 8, 64, 64);
+			return;
+		}
 		GuiDraw.blit(graphics, id, x, y, size, size, 8f, 8f, 8, 8, 64, 64);
 		GuiDraw.blit(graphics, id, x, y, size, size, 40f, 8f, 8, 8, 64, 64);
 		GuiDraw.circleClip(graphics, x, y, size, windowFill());

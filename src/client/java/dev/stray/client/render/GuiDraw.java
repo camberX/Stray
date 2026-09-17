@@ -17,6 +17,7 @@ import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
+import net.minecraft.util.Mth;
 
 import java.util.Locale;
 
@@ -269,6 +270,71 @@ public final class GuiDraw {
 		graphics.pose().scale(radius, radius);
 		graphics.blit(RenderPipelines.GUI_TEXTURED, CIRCLE_HOLE, 0, 0, u, v, 1, 1, CIRCLE_HALF, CIRCLE_HALF, CIRCLE_TEX, CIRCLE_TEX, color);
 		graphics.pose().popMatrix();
+	}
+
+	private static com.mojang.blaze3d.pipeline.RenderPipeline circleBlitPipeline;
+
+	/**
+	 * Blits a texture region masked to a circle in the shader, so nothing has to
+	 * be painted over the corners afterwards.
+	 */
+	public static boolean circleBlit(
+		GuiGraphicsExtractor graphics,
+		Identifier id,
+		float x,
+		float y,
+		float size,
+		float u,
+		float v,
+		int regionW,
+		int regionH,
+		int texW,
+		int texH
+	) {
+		if (size <= 0f || id == null || !(graphics instanceof dev.stray.client.mixin.GuiGraphicsExtractorInvoker invoker)) {
+			return false;
+		}
+		Minecraft client = Minecraft.getInstance();
+		net.minecraft.client.renderer.texture.AbstractTexture texture = client.getTextureManager().getTexture(id);
+		com.mojang.blaze3d.textures.GpuTextureView view = texture == null ? null : texture.getTextureView();
+		if (view == null) {
+			return false;
+		}
+		ensureCircleBlitPipeline();
+		float u0 = u / texW;
+		float u1 = (u + regionW) / texW;
+		float v0 = v / texH;
+		float v1 = (v + regionH) / texH;
+		int r = Math.round(Mth.clamp(u0, 0f, 1f) * 255f);
+		int g = Math.round(Mth.clamp(v0, 0f, 1f) * 255f);
+		int b = Math.max(1, Math.round(Mth.clamp(u1 - u0, 0f, 1f) * 255f));
+		int a = Math.max(1, Math.round(Mth.clamp(v1 - v0, 0f, 1f) * 255f));
+		int packed = (a << 24) | (r << 16) | (g << 8) | b;
+		com.mojang.blaze3d.textures.GpuSampler sampler = com.mojang.blaze3d.systems.RenderSystem.getSamplerCache()
+			.getClampToEdge(com.mojang.blaze3d.textures.FilterMode.NEAREST);
+		graphics.pose().pushMatrix();
+		graphics.pose().translate(x, y);
+		graphics.pose().scale(size, size);
+		invoker.stray$innerBlit(circleBlitPipeline, view, sampler, 0, 0, 1, 1, u0, u1, v0, v1, packed);
+		graphics.pose().popMatrix();
+		return true;
+	}
+
+	private static synchronized void ensureCircleBlitPipeline() {
+		if (circleBlitPipeline != null) {
+			return;
+		}
+		Identifier shader = Stray.id("core/gui_circle_blit");
+		circleBlitPipeline = com.mojang.blaze3d.pipeline.RenderPipeline.builder()
+			.withLocation(Stray.id("pipeline/gui_circle_blit"))
+			.withVertexShader(shader)
+			.withFragmentShader(shader)
+			.withSampler("Sampler0")
+			.withUniform("DynamicTransforms", com.mojang.blaze3d.shaders.UniformType.UNIFORM_BUFFER)
+			.withUniform("Projection", com.mojang.blaze3d.shaders.UniformType.UNIFORM_BUFFER)
+			.withColorTargetState(new com.mojang.blaze3d.pipeline.ColorTargetState(com.mojang.blaze3d.pipeline.BlendFunction.TRANSLUCENT))
+			.withVertexFormat(com.mojang.blaze3d.vertex.DefaultVertexFormat.POSITION_TEX_COLOR, com.mojang.blaze3d.vertex.VertexFormat.Mode.QUADS)
+			.build();
 	}
 
 	public static void circleClip(GuiGraphicsExtractor graphics, float x, float y, float size, int cover) {
