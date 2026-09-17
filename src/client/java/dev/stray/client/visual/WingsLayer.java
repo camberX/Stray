@@ -54,7 +54,7 @@ public final class WingsLayer extends RenderLayer<AvatarRenderState, PlayerModel
 			float open = 15f + glide * 12f + flutter;
 			pose.pushPose();
 			getParentModel().body.translateAndRotate(pose);
-			pose.translate(0f, 0.02f, 0.15f);
+			pose.translate(0f, 0.38f, 0.15f);
 			int color = tint(wings.rgb(), 1f, style.alpha);
 			for (int side = -1; side <= 1; side += 2) {
 				drawButterfly(pose, collector, type, light, color, style.span, side, open);
