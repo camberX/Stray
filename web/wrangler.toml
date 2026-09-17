@@ -9,7 +9,7 @@ run_worker_first = true
 
 [vars]
 TITLE = "STRAY Capes"
-MOD_GITHUB = "camberX/Eisenmann"
+MOD_GITHUB = "camberX/Stray"
 MOD_GITHUB_BRANCH = "main"
 MOD_GITHUB_PATH = "web/public/mod"
 

@@ -129,7 +129,7 @@ The jar always uses `https://stray.gay`, so that hostname must be on the Worker:
 
 ## Updating later
 
-The shop download does **not** need a Worker deploy for each new jar. `./gradlew build` writes `web/public/mod/latest.json` and the jar; `git push` to [camberX/Eisenmann](https://github.com/camberX/Eisenmann) is enough. The Worker fetches that on `/download` and `/api/mod`. It tries `camberX/Eisenmann` first and keeps the former repository URL as a migration fallback.
+The shop download does **not** need a Worker deploy for each new jar. `./gradlew build` writes `web/public/mod/latest.json` and the jar; `git push` to [camberX/Stray](https://github.com/camberX/Stray) `main` is enough. The Worker fetches that on `/download` and `/api/mod`. It tries jsDelivr, then GitHub, on `camberX/Stray` first and keeps Eisenmann/voidmark as migration fallbacks.
 
 If the landing page still says **Build not published yet**, the live Worker does not have this fetch code. Paste the current `web/worker.js` into the Worker editor and Deploy, or run:
 

@@ -1,2 +1,2 @@
-# Jars are fetched from GitHub. Keep latest.json and the HTML.
-mod/*.jar
+# Jars stay on GitHub. Uploading every historical build blows the Worker asset limit.
+*.jar

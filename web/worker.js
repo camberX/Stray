@@ -1078,19 +1078,18 @@ function modGithubDir(env, meta) {
 function githubFileUrls(repo, branch, dir, fileName) {
 	const file = String(fileName || "stray.jar").replace(/^\/+/, "");
 	const path = dir + "/" + file;
-	const urls = [
+	return [
+		"https://cdn.jsdelivr.net/gh/" + repo + "@" + branch + "/" + path,
+		"https://github.com/" + repo + "/raw/" + branch + "/" + path,
 		"https://raw.githubusercontent.com/" + repo + "/" + branch + "/" + path,
 		"https://api.github.com/repos/" + repo + "/contents/" + path + "?ref=" + encodeURIComponent(branch)
 	];
-	return urls;
 }
 
 function githubFetchHeaders(url) {
 	const headers = { "User-Agent": "Stray-Shop" };
 	if (url.includes("api.github.com")) {
 		headers.Accept = "application/vnd.github.raw";
-	} else if (url.endsWith(".json") || url.includes("latest.json")) {
-		headers.Accept = "application/json";
 	}
 	return headers;
 }
@@ -1110,7 +1109,13 @@ function githubModFileUrls(env, meta, fileName) {
 	if (!repo) {
 		return [];
 	}
-	return githubFileUrls(repo, modGithubBranch(env, meta), modGithubDir(env, meta), fileName);
+	const urls = githubFileUrls(repo, modGithubBranch(env, meta), modGithubDir(env, meta), fileName);
+	const version = meta && meta.version ? String(meta.version) : "";
+	const file = String(fileName || "").replace(/^\/+/, "");
+	if (version && file) {
+		urls.push("https://github.com/" + repo + "/releases/download/v" + version + "/" + file);
+	}
+	return urls;
 }
 
 async function readGithubMeta(env) {
@@ -2204,13 +2209,15 @@ const STORE_HTML = `<!DOCTYPE html>
 			var links = [document.getElementById("mod-download"), document.getElementById("mod-download-2")];
 			var mirrors = [
 				{ url: "/api/mod", repo: "" },
-				{ url: "https://raw.githubusercontent.com/camberX/Eisenmann/main/web/public/mod/latest.json", repo: "camberX/Eisenmann" },
+				{ url: "https://cdn.jsdelivr.net/gh/camberX/Stray@main/web/public/mod/latest.json", repo: "camberX/Stray" },
+				{ url: "https://raw.githubusercontent.com/camberX/Stray/main/web/public/mod/latest.json", repo: "camberX/Stray" },
 				{ url: "https://cdn.jsdelivr.net/gh/camberX/Eisenmann@main/web/public/mod/latest.json", repo: "camberX/Eisenmann" },
+				{ url: "https://raw.githubusercontent.com/camberX/Eisenmann/main/web/public/mod/latest.json", repo: "camberX/Eisenmann" },
 				{ url: "https://raw.githubusercontent.com/camberX/voidmark/main/web/public/mod/latest.json", repo: "camberX/voidmark" }
 			];
 			function fileUrl(data) {
 				if (data.url && data.url.charAt(0) === "/") return data.url;
-				return "https://raw.githubusercontent.com/" + (data.repo || "camberX/Eisenmann") + "/main/web/public/mod/" + (data.file || ("stray-" + data.version + ".jar"));
+				return "https://raw.githubusercontent.com/" + (data.repo || "camberX/Stray") + "/main/web/public/mod/" + (data.file || ("stray-" + data.version + ".jar"));
 			}
 			function apply(data) {
 				ver.textContent = "v" + data.version;
