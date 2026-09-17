@@ -111,9 +111,9 @@ public final class WingsLayer extends RenderLayer<AvatarRenderState, PlayerModel
 		int seed
 	) {
 		ShopWings.Style style = wings.style();
-		// Keep the top of the fan from going vertical so the longest blades still
-		// read as span. t=0 is the bottom covert, t=1 is the top primary.
-		float fan = Mth.lerp(t, -18f, 40f);
+		// Player renderer scales Y by -1, so model +Y is toward the feet. Negative
+		// fan aims at the head. t=0 is the short bottom covert, t=1 the top primary.
+		float fan = Mth.lerp(t, 18f, -40f);
 		float length = (0.34f + (float) Math.pow(t, 1.2) * 0.92f) * style.span * size;
 		float width = (0.10f + (1f - t) * 0.045f) * (covert ? 0.72f : 1f);
 		float flutter = Mth.sin(time * 0.03f + seed * 0.9f) * (covert ? 3.2f : 2.2f);
