@@ -13,8 +13,8 @@ import java.util.Locale;
 
 public final class ComposterHudRenderer {
 	public static final float WIDTH = 166f;
-	public static final float HEIGHT = 82f;
-	private static final float PAD = 6f;
+	public static final float HEIGHT = 64f;
+	private static final float PAD = 5f;
 	private static final float BAR_W = WIDTH - PAD * 2f;
 	private static final float BAR_H = 2.4f;
 	private static final NumberFormat INTEGER = NumberFormat.getIntegerInstance(Locale.US);
@@ -75,19 +75,19 @@ public final class ComposterHudRenderer {
 			text.organic,
 			snapshot.organicMatter(),
 			snapshot.maxOrganicMatter(),
-			18,
+			15,
 			0xFFF5C16C
 		);
-		resource(graphics, font, "Fuel", text.fuel, snapshot.fuel(), snapshot.maxFuel(), 38, 0xFF75D69C);
+		resource(graphics, font, "Fuel", text.fuel, snapshot.fuel(), snapshot.maxFuel(), 29, 0xFF75D69C);
 
-		GuiDraw.small(graphics, font, text.stored, PAD + 1, 58, Theme.TEXT);
+		GuiDraw.small(graphics, font, text.stored, PAD + 1, 44, Theme.TEXT);
 		if (text.predicted != null) {
-			right(graphics, font, text.predicted, 58, Theme.ACCENT);
+			right(graphics, font, text.predicted, 44, Theme.ACCENT);
 		}
 
-		GuiDraw.small(graphics, font, text.busy, PAD + 1, 70, Theme.MUTED);
+		GuiDraw.small(graphics, font, text.busy, PAD + 1, 54, Theme.MUTED);
 		if (text.perHour != null) {
-			right(graphics, font, text.perHour, 70, Theme.ACCENT);
+			right(graphics, font, text.perHour, 54, Theme.ACCENT);
 		}
 		graphics.pose().popMatrix();
 	}
@@ -103,7 +103,7 @@ public final class ComposterHudRenderer {
 		String stored = "Stored  " + amount(snapshot.storedCompost());
 		String predicted = snapshot.predictedCompost() >= 0 ? amount(snapshot.predictedCompost()) + " compost" : null;
 		String busyRaw = snapshot.active() ? "Busy  " + snapshot.emptyIn() : snapshot.emptyIn();
-		String busy = GuiDraw.ellipsize(font, busyRaw, 103, true);
+		String busy = GuiDraw.ellipsize(font, busyRaw, 110, true);
 		String perHour = snapshot.compostPerHour() > 0d
 			? String.format(Locale.ROOT, "%.1f/h", snapshot.compostPerHour())
 			: null;
@@ -128,7 +128,7 @@ public final class ComposterHudRenderer {
 	) {
 		GuiDraw.small(graphics, font, label, PAD + 1, y, Theme.TEXT);
 		right(graphics, font, value, y, Theme.MUTED);
-		float barY = y + 11;
+		float barY = y + 9;
 		GuiDraw.rounded(graphics, PAD, barY, BAR_W, BAR_H, BAR_H * 0.5f, Theme.HUD_TRACK);
 		if (maximum > 0 && current > 0) {
 			float fraction = Math.max(0f, Math.min(1f, current / (float) maximum));
