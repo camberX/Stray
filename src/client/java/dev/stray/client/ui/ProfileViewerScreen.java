@@ -27,9 +27,12 @@ import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.Mth;
+import net.minecraft.core.component.DataComponents;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.player.PlayerSkin;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.item.component.ResolvableProfile;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -1229,6 +1232,17 @@ public class ProfileViewerScreen extends Screen {
 		if (stack == null || stack.isEmpty() || size <= 1f) {
 			return;
 		}
+		if (paintSkull(graphics, stack, x, y, size)) {
+			if (decorations) {
+				graphics.pose().pushMatrix();
+				float scale = size / 16f;
+				graphics.pose().translate(x, y);
+				graphics.pose().scale(scale, scale);
+				graphics.itemDecorations(font, stack, 0, 0);
+				graphics.pose().popMatrix();
+			}
+			return;
+		}
 		float scale = size / 16f;
 		LocalPlayer player = minecraft.player;
 		graphics.pose().pushMatrix();
@@ -1243,6 +1257,31 @@ public class ProfileViewerScreen extends Screen {
 			graphics.itemDecorations(font, stack, 0, 0);
 		}
 		graphics.pose().popMatrix();
+	}
+
+	private boolean paintSkull(GuiGraphicsExtractor graphics, ItemStack stack, float x, float y, float size) {
+		if (minecraft == null || stack == null || !stack.is(Items.PLAYER_HEAD)) {
+			return false;
+		}
+		ResolvableProfile profile = stack.get(DataComponents.PROFILE);
+		if (profile == null) {
+			return false;
+		}
+		GameProfile partial = profile.partialProfile();
+		if (partial == null || partial.properties().get("textures").isEmpty()) {
+			return false;
+		}
+		PlayerSkin skin = minecraft.getSkinManager().createLookup(partial, false).get();
+		if (skin == null || skin.body() == null) {
+			return false;
+		}
+		Identifier id = skin.body().texturePath();
+		if (id == null) {
+			return false;
+		}
+		GuiDraw.blit(graphics, id, x, y, size, size, 8f, 8f, 8, 8, 64, 64);
+		GuiDraw.blit(graphics, id, x, y, size, size, 40f, 8f, 8, 8, 64, 64);
+		return true;
 	}
 
 	private void chip(GuiGraphicsExtractor graphics, Font font, float x, float y, float w, int mouseX, int mouseY, String label, Runnable click) {
