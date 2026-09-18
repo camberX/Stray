@@ -42,10 +42,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.zip.GZIPInputStream;
 
 /**
- * Loads Hypixel Skyblock profiles for {@code /pv}. Stats come from Soopy so
- * the window can open quickly. A later Soopy miss does not wait on the Hypixel
- * dump before showing the last good lookup. Inventory still fills from that
- * dump in the background.
+ * Loads Hypixel Skyblock profiles for {@code /pv}. First paint is UUID plus
+ * Soopy only. The Hypixel dump starts after the window is up so a new name
+ * is not stuck behind a multi-megabyte download. Inventory fills in after.
  */
 public final class ProfileViewer {
 	private static final String MOJANG = "https://api.mojang.com/users/profiles/minecraft/";
@@ -512,6 +511,7 @@ public final class ProfileViewer {
 
 	private static void fetch(String name, Minecraft client, int gen) {
 		try {
+			long started = System.currentTimeMillis();
 			Resolved identity = resolveIdentity(name, client);
 			if (stale(gen)) {
 				return;
@@ -523,45 +523,48 @@ public final class ProfileViewer {
 			String compact = compact(identity.uuid());
 			LookupCache cached = cacheOf(compact);
 			if (paint(gen, identity, compact, cached == null ? null : cached.soopy, cached == null ? null : cached.soopyPlayer, Map.of())) {
+				Stray.LOGGER.info("Profile viewer opened {} from cache in {}ms", identity.name(), System.currentTimeMillis() - started);
 				if (cached != null && isHypixelProfiles(cached.dump)) {
 					applyDump(gen, compact, cached.dump);
 					itemsLoading = false;
 					return;
 				}
-				fillInventories(gen, identity, compact, profileDump(compact), null);
+				loadBagsAfterPaint(gen, identity, compact, null);
 				return;
 			}
 
-			CompletableFuture<JsonObject> dump = profileDump(compact);
 			CompletableFuture<JsonObject> soopy = getJsonAsync(SOOPY_SKYBLOCK + compact);
 			CompletableFuture<JsonObject> soopyPlayer = getJsonAsync(SOOPY_PLAYER + compact);
-			CompletableFuture<Resolved> skin = CompletableFuture.supplyAsync(() -> withSkin(identity), Util.nonCriticalIoPool());
-			SkyblockPetLore.request();
-
 			JsonObject soopyJson = soopy.join();
 			if (stale(gen)) {
 				return;
 			}
-			Resolved resolved = skin.getNow(identity);
-			if (resolved == null) {
-				resolved = identity;
-			}
-			if (paint(gen, resolved, compact, soopyJson, soopyPlayer.getNow(null), Map.of())) {
-				remember(compact, soopyJson, soopyPlayer.getNow(null), null);
-				fillInventories(gen, resolved, compact, dump, soopyPlayer);
+			JsonObject playerJson = soopyPlayer.getNow(null);
+			if (paint(gen, identity, compact, soopyJson, playerJson, Map.of())) {
+				remember(compact, soopyJson, playerJson, null);
+				Stray.LOGGER.info("Profile viewer opened {} from Soopy in {}ms", identity.name(), System.currentTimeMillis() - started);
+				SkyblockPetLore.request();
+				loadBagsAfterPaint(gen, identity, compact, soopyPlayer);
 				return;
 			}
-			if (cached != null && paint(gen, resolved, compact, cached.soopy, cached.soopyPlayer, Map.of())) {
-				fillInventories(gen, resolved, compact, dump, soopyPlayer);
+			SkyblockPetLore.request();
+			if (cached != null && paint(gen, identity, compact, cached.soopy, cached.soopyPlayer, Map.of())) {
+				Stray.LOGGER.info("Profile viewer opened {} from stale Soopy cache in {}ms", identity.name(), System.currentTimeMillis() - started);
+				loadBagsAfterPaint(gen, identity, compact, soopyPlayer);
 				return;
 			}
-			fillInventories(gen, resolved, compact, dump, soopyPlayer);
+			fillInventories(gen, identity, compact, profileDump(compact), soopyPlayer);
 		} catch (Exception exception) {
 			if (!stale(gen)) {
 				fail(gen, exception.getMessage() == null ? "lookup failed" : exception.getMessage());
 				Stray.LOGGER.warn("Profile viewer lookup failed", exception);
 			}
 		}
+	}
+
+	private static void loadBagsAfterPaint(int gen, Resolved identity, String compact, CompletableFuture<JsonObject> soopyPlayer) {
+		Util.nonCriticalIoPool().execute(() -> withSkin(identity));
+		Util.nonCriticalIoPool().execute(() -> fillInventories(gen, identity, compact, profileDump(compact), soopyPlayer));
 	}
 
 	private static boolean paint(
