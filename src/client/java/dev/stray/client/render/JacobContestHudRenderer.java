@@ -15,8 +15,9 @@ import java.util.Locale;
 
 public final class JacobContestHudRenderer {
 	public static final float WIDTH = 158f;
-	private static final float HEIGHT = 62f;
-	private static final float PAD = 6f;
+	private static final float HEIGHT = 48f;
+	private static final float PAD = 5f;
+	private static final float LINE = 10f;
 
 	private JacobContestHudRenderer() {
 	}
@@ -66,20 +67,24 @@ public final class JacobContestHudRenderer {
 
 		String score = amount(snap.score());
 		Component crop = hudClip(font, snap.crop(), 92);
-		GuiDraw.hud(graphics, font, crop, PAD + 1, 18, Theme.TEXT);
-		right(graphics, font, score, 18, Theme.TEXT);
+		GuiDraw.hud(graphics, font, crop, PAD + 1, PAD + LINE, Theme.TEXT);
+		right(graphics, font, score, PAD + LINE, Theme.TEXT);
 
 		String rank = label(snap.currentRank());
-		GuiDraw.small(graphics, font, "Current", PAD + 1, 32, Theme.MUTED);
-		GuiDraw.small(graphics, font, rank, 46, 32, medalColor(snap.currentRank()));
-
 		String projected = label(snap.projectedRank()) + " · " + amount(snap.projectedScore());
-		GuiDraw.small(graphics, font, "Projected", PAD + 1, 43, Theme.MUTED);
-		GuiDraw.small(graphics, font, GuiDraw.ellipsize(font, projected, WIDTH - 46 - PAD, true), 46, 43, medalColor(snap.projectedRank()));
+		GuiDraw.small(graphics, font, rank + " →", PAD + 1, PAD + LINE * 2, medalColor(snap.currentRank()));
+		GuiDraw.small(
+			graphics,
+			font,
+			GuiDraw.ellipsize(font, projected, WIDTH - 52 - PAD, true),
+			52,
+			PAD + LINE * 2,
+			medalColor(snap.projectedRank())
+		);
 
 		String update = snap.updates() == 0 ? "learning" : amount(Math.round(snap.perUpdate())) + "/update";
 		String rate = amount(Math.round(snap.perSecond())) + "/s · " + update;
-		GuiDraw.small(graphics, font, GuiDraw.ellipsize(font, rate, WIDTH - PAD * 2, true), PAD + 1, 53, Theme.MUTED);
+		GuiDraw.small(graphics, font, GuiDraw.ellipsize(font, rate, WIDTH - PAD * 2, true), PAD + 1, PAD + LINE * 3, Theme.MUTED);
 		graphics.pose().popMatrix();
 	}
 

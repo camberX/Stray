@@ -240,6 +240,23 @@ public final class GardenHud {
 		return shopping;
 	}
 
+	/** Crop preview for a tab visitor: opened offer items first, else catalog. */
+	public static List<String> cropsFor(String name) {
+		List<Need> opened = matchShopping(name);
+		if (opened != null && !opened.isEmpty()) {
+			List<String> out = new ArrayList<>();
+			for (Need need : opened) {
+				if (need.name() != null && !need.name().isBlank() && !out.contains(need.name())) {
+					out.add(need.name());
+				}
+			}
+			if (!out.isEmpty()) {
+				return List.copyOf(out);
+			}
+		}
+		return GardenVisitors.preview(name);
+	}
+
 	private static void readTab(Minecraft client) {
 		TabLines lines = tabLines(client);
 		parseContest(lines.clean());

@@ -8,6 +8,8 @@ import dev.stray.client.farming.GardenHud.MilestoneSnap;
 import dev.stray.client.farming.GardenHud.Need;
 import dev.stray.client.farming.GardenHud.ShoppingSnap;
 import dev.stray.client.farming.GardenHud.VisitorSnap;
+import dev.stray.client.farming.GardenVisitors;
+import dev.stray.client.item.ItemIds;
 import dev.stray.client.location.SkyblockLocation;
 import dev.stray.client.ui.HudEditorScreen;
 import dev.stray.client.ui.Theme;
@@ -18,22 +20,28 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.input.MouseButtonEvent;
+import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.network.chat.Component;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 
 import java.text.NumberFormat;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 public final class GardenHudRenderer {
 	private static final float WIDTH = 158f;
-	private static final float CONTEST_H = 40f;
-	private static final float VISITOR_H = 48f;
-	private static final float HOE_H = 48f;
-	private static final float MILESTONE_H = 72f;
-	private static final float PAD = 6f;
-	private static final float LINE = 11f;
+	private static final float CONTEST_H = 28f;
+	private static final float MILESTONE_H = 40f;
+	private static final float PAD = 5f;
+	private static final float LINE = 10f;
+	private static final float ICON = 8f;
 	private static final NumberFormat INTEGER = NumberFormat.getIntegerInstance(Locale.US);
 	private static final List<Hit> ITEM_HITS = new ArrayList<>();
+	private static final Map<String, ItemStack> CROP_STACKS = new HashMap<>();
 
 	private GardenHudRenderer() {
 	}
@@ -44,6 +52,9 @@ public final class GardenHudRenderer {
 				return;
 			}
 			ScreenMouseEvents.allowMouseClick(screen).register((opened, event) -> !mouseClicked(event));
+			ScreenEvents.afterExtract(screen).register((opened, graphics, mouseX, mouseY, tick) ->
+				hoverRecipe(graphics, client.font, mouseX, mouseY)
+			);
 		});
 	}
 
@@ -80,7 +91,8 @@ public final class GardenHudRenderer {
 	}
 
 	public static float visitorHeight() {
-		return VISITOR_H;
+		VisitorSnap snap = GardenHud.visitors().present() ? GardenHud.visitors() : sampleVisitor();
+		return visitorHeightOf(snap);
 	}
 
 	public static float hoeWidth() {
@@ -88,7 +100,8 @@ public final class GardenHudRenderer {
 	}
 
 	public static float hoeHeight() {
-		return HOE_H;
+		HoeSnap snap = GardenHud.hoe().present() ? GardenHud.hoe() : sampleHoe();
+		return hoeHeightOf(snap);
 	}
 
 	public static float milestoneWidth() {
@@ -130,7 +143,7 @@ public final class GardenHudRenderer {
 			VisitorSnap snap = GardenHud.visitors();
 			if (snap.present() || HudLayout.editorOpen()) {
 				HudLayout.Box box = HudLayout.box(HudLayout.Id.VISITOR, client.font, graphics.guiWidth(), graphics.guiHeight());
-				drawVisitor(graphics, client.font, box.x(), box.y(), HudLayout.scale(HudLayout.Id.VISITOR), snap);
+				drawVisitor(graphics, client.font, client.player, box.x(), box.y(), HudLayout.scale(HudLayout.Id.VISITOR), snap);
 			}
 		}
 		if (config.gardenHoeHudEnabled) {
@@ -172,30 +185,190 @@ public final class GardenHudRenderer {
 		if (!snap.boosted().isEmpty()) {
 			crops = crops.replace(snap.boosted(), snap.boosted() + "*");
 		}
-		GuiDraw.small(graphics, font, GuiDraw.ellipsize(font, crops, WIDTH - PAD * 2, true), PAD + 1, PAD + LINE + 4, Theme.TEXT);
+		GuiDraw.small(graphics, font, GuiDraw.ellipsize(font, crops, WIDTH - PAD * 2, true), PAD + 1, PAD + LINE, Theme.TEXT);
 		graphics.pose().popMatrix();
 	}
 
 	private static void drawVisitor(
 		GuiGraphicsExtractor graphics,
 		Font font,
+		LocalPlayer player,
 		float x,
 		float y,
 		float scale,
 		VisitorSnap value
 	) {
 		VisitorSnap snap = value.present() ? value : sampleVisitor();
-		begin(graphics, x, y, scale, WIDTH, VISITOR_H);
+		float height = visitorHeightOf(snap);
+		begin(graphics, x, y, scale, WIDTH, height);
 		String title = snap.count() == 1 ? "1 VISITOR" : snap.count() + " VISITORS";
 		GuiDraw.small(graphics, font, title, PAD + 1, PAD, Theme.ACCENT);
 		String next = snap.locked()
 			? "Not unlocked"
-			: snap.queueFull() ? "Queue Full!" : "Next in " + snap.next();
-		int nextColor = snap.queueFull() || snap.locked() ? 0xFFF87171 : Theme.TEXT;
-		GuiDraw.small(graphics, font, GuiDraw.ellipsize(font, next, WIDTH - PAD * 2, true), PAD + 1, PAD + LINE + 4, nextColor);
-		String names = snap.names().isEmpty() ? "None waiting" : String.join(" · ", snap.names());
-		GuiDraw.small(graphics, font, GuiDraw.ellipsize(font, names, WIDTH - PAD * 2, true), PAD + 1, PAD + LINE * 2 + 6, Theme.MUTED);
+			: snap.queueFull() ? "Queue Full!" : snap.next();
+		int nextColor = snap.queueFull() || snap.locked() ? 0xFFF87171 : Theme.MUTED;
+		right(graphics, font, GuiDraw.ellipsize(font, next, 88, true), PAD, nextColor);
+		float cursor = PAD + LINE;
+		List<String> names = snap.names();
+		if (names.isEmpty()) {
+			GuiDraw.small(graphics, font, "None waiting", PAD + 1, cursor, Theme.MUTED);
+		} else {
+			for (String name : names) {
+				drawVisitorRow(graphics, font, player, name, cursor);
+				cursor += LINE;
+			}
+		}
 		graphics.pose().popMatrix();
+	}
+
+	private static void drawVisitorRow(
+		GuiGraphicsExtractor graphics,
+		Font font,
+		LocalPlayer player,
+		String name,
+		float y
+	) {
+		List<String> crops = GardenHud.cropsFor(name);
+		boolean icons = player != null && canDrawIcons(crops);
+		float cropsWidth = icons ? cropWidth(font, crops) : textCropWidth(font, crops);
+		float nameMax = Math.max(40f, WIDTH - PAD * 2 - cropsWidth - 4f);
+		String label = GuiDraw.ellipsize(font, name, nameMax, true);
+		GuiDraw.small(graphics, font, label, PAD + 1, y, Theme.TEXT);
+		drawCrops(graphics, font, player, crops, WIDTH - PAD, y, icons);
+	}
+
+	private static void drawCrops(
+		GuiGraphicsExtractor graphics,
+		Font font,
+		LocalPlayer player,
+		List<String> crops,
+		float right,
+		float y,
+		boolean icons
+	) {
+		if (crops.isEmpty()) {
+			return;
+		}
+		if (!icons) {
+			String text = GuiDraw.ellipsize(font, String.join(" · ", crops), 72, true);
+			GuiDraw.small(graphics, font, text, right - GuiDraw.smallWidth(font, text), y, Theme.MUTED);
+			return;
+		}
+		float x = right - cropWidth(font, crops);
+		float iconY = y - 1f;
+		for (int i = 0; i < crops.size(); i++) {
+			if (i > 0) {
+				x += 1f;
+			}
+			String crop = crops.get(i);
+			ItemStack stack = GardenVisitors.ANY.equals(crop) || GardenVisitors.UNKNOWN.equals(crop)
+				? ItemStack.EMPTY
+				: cropStack(crop);
+			if (stack.isEmpty()) {
+				String shortName = shortCrop(crop);
+				GuiDraw.small(graphics, font, shortName, x, y, Theme.MUTED);
+				x += GuiDraw.smallWidth(font, shortName);
+				continue;
+			}
+			graphics.pose().pushMatrix();
+			graphics.pose().translate(x, iconY);
+			graphics.pose().scale(ICON / 16f, ICON / 16f);
+			graphics.item(player, stack, 0, 0, 41 + crop.hashCode());
+			graphics.pose().popMatrix();
+			x += ICON;
+		}
+	}
+
+	private static float textCropWidth(Font font, List<String> crops) {
+		return GuiDraw.smallWidth(font, GuiDraw.ellipsize(font, String.join(" · ", crops), 72, true));
+	}
+
+	private static boolean canDrawIcons(List<String> crops) {
+		for (String crop : crops) {
+			if (GardenVisitors.ANY.equals(crop) || GardenVisitors.UNKNOWN.equals(crop)) {
+				continue;
+			}
+			if (!cropStack(crop).isEmpty()) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	private static float cropWidth(Font font, List<String> crops) {
+		if (crops.isEmpty()) {
+			return 0f;
+		}
+		float width = 0f;
+		for (int i = 0; i < crops.size(); i++) {
+			if (i > 0) {
+				width += 1f;
+			}
+			String crop = crops.get(i);
+			if (GardenVisitors.ANY.equals(crop) || GardenVisitors.UNKNOWN.equals(crop) || cropStack(crop).isEmpty()) {
+				width += GuiDraw.smallWidth(font, shortCrop(crop));
+			} else {
+				width += ICON;
+			}
+		}
+		return width;
+	}
+
+	private static String shortCrop(String crop) {
+		if (crop == null || crop.isBlank()) {
+			return "";
+		}
+		if (GardenVisitors.ANY.equals(crop) || GardenVisitors.UNKNOWN.equals(crop)) {
+			return crop;
+		}
+		int space = crop.lastIndexOf(' ');
+		return space > 0 && crop.length() > 12 ? crop.substring(space + 1) : crop;
+	}
+
+	private static ItemStack cropStack(String name) {
+		if (name == null || name.isBlank()) {
+			return ItemStack.EMPTY;
+		}
+		ItemStack cached = CROP_STACKS.get(name);
+		if (cached != null) {
+			return cached;
+		}
+		ItemStack stack = vanillaCrop(name);
+		if (stack.isEmpty()) {
+			ItemIds.Preview preview = ItemIds.resolve(name);
+			if (preview.kind() == ItemIds.Kind.VANILLA || preview.kind() == ItemIds.Kind.SKYBLOCK) {
+				stack = preview.stack();
+			}
+		}
+		if (stack == null) {
+			stack = ItemStack.EMPTY;
+		}
+		CROP_STACKS.put(name, stack);
+		return stack;
+	}
+
+	private static ItemStack vanillaCrop(String name) {
+		return switch (name.toLowerCase(Locale.ROOT)) {
+			case "wheat" -> new ItemStack(Items.WHEAT);
+			case "carrot" -> new ItemStack(Items.CARROT);
+			case "potato" -> new ItemStack(Items.POTATO);
+			case "sugar cane", "cane" -> new ItemStack(Items.SUGAR_CANE);
+			case "melon slice", "melon" -> new ItemStack(Items.MELON_SLICE);
+			case "cocoa beans", "cocoa" -> new ItemStack(Items.COCOA_BEANS);
+			case "red mushroom block", "mushroom" -> new ItemStack(Items.RED_MUSHROOM_BLOCK);
+			case "pumpkin" -> new ItemStack(Items.PUMPKIN);
+			case "nether wart", "wart" -> new ItemStack(Items.NETHER_WART);
+			case "cactus" -> new ItemStack(Items.CACTUS);
+			case "sunflower" -> new ItemStack(Items.SUNFLOWER);
+			case "bread" -> new ItemStack(Items.BREAD);
+			case "cake" -> new ItemStack(Items.CAKE);
+			case "jack o' lantern" -> new ItemStack(Items.JACK_O_LANTERN);
+			case "golden carrot" -> new ItemStack(Items.GOLDEN_CARROT);
+			case "raw mutton" -> new ItemStack(Items.MUTTON);
+			case "raw porkchop" -> new ItemStack(Items.PORKCHOP);
+			case "raw rabbit" -> new ItemStack(Items.RABBIT);
+			default -> ItemStack.EMPTY;
+		};
 	}
 
 	private static void drawHoe(
@@ -207,16 +380,14 @@ public final class GardenHudRenderer {
 		HoeSnap value
 	) {
 		HoeSnap snap = value.present() ? value : sampleHoe();
-		begin(graphics, x, y, scale, WIDTH, HOE_H);
-		GuiDraw.small(graphics, font, "HOE LEVEL", PAD + 1, PAD, Theme.ACCENT);
-		String level = "Level " + snap.level() + "➜" + snap.next();
-		right(graphics, font, level, PAD, Theme.TEXT);
+		float height = hoeHeightOf(snap);
+		begin(graphics, x, y, scale, WIDTH, height);
+		GuiDraw.small(graphics, font, "HOE " + snap.level() + "➜" + snap.next(), PAD + 1, PAD, Theme.ACCENT);
 		String xp = amount(snap.exp()) + "/" + amount(snap.need());
-		int xpColor = snap.upgrade() ? 0xFFF87171 : Theme.TEXT;
-		GuiDraw.small(graphics, font, xp, PAD + 1, PAD + LINE + 4, xpColor);
-		String warn = snap.overclock() ? "Overclock required" : snap.upgrade() ? "Upgrade required" : snap.overflow() ? "Overflow" : "";
+		right(graphics, font, xp, PAD, snap.upgrade() ? 0xFFF87171 : Theme.TEXT);
+		String warn = hoeWarn(snap);
 		if (!warn.isEmpty()) {
-			right(graphics, font, warn, PAD + LINE + 4, 0xFFF87171);
+			GuiDraw.small(graphics, font, warn, PAD + 1, PAD + LINE, 0xFFF87171);
 		}
 		graphics.pose().popMatrix();
 	}
@@ -231,22 +402,21 @@ public final class GardenHudRenderer {
 	) {
 		MilestoneSnap snap = value.present() ? value : sampleMilestone();
 		begin(graphics, x, y, scale, WIDTH, MILESTONE_H);
-		GuiDraw.small(graphics, font, "CROP MILESTONE", PAD + 1, PAD, Theme.ACCENT);
 		String crop = snap.maxed()
 			? snap.crop() + " MAXED"
 			: snap.crop() + "  " + snap.tier() + "➜" + snap.next();
-		GuiDraw.small(graphics, font, GuiDraw.ellipsize(font, crop, WIDTH - PAD * 2, true), PAD + 1, 18, Theme.TEXT);
-		String progress = amount(snap.have()) + "/" + amount(snap.need());
-		GuiDraw.small(graphics, font, progress, PAD + 1, 30, Theme.TEXT);
+		GuiDraw.small(graphics, font, GuiDraw.ellipsize(font, crop, 96, true), PAD + 1, PAD, Theme.ACCENT);
 		double percent = snap.need() <= 0 ? 100d : 100d * snap.have() / (double) snap.need();
-		right(graphics, font, String.format(Locale.ROOT, "%.1f%%", Math.min(100d, percent)), 30, Theme.MUTED);
-		String eta = snap.eta().isEmpty() ? "—" : "In " + snap.eta();
-		GuiDraw.small(graphics, font, eta, PAD + 1, 42, Theme.MUTED);
+		right(graphics, font, String.format(Locale.ROOT, "%.1f%%", Math.min(100d, percent)), PAD, Theme.MUTED);
+		String progress = amount(snap.have()) + "/" + amount(snap.need());
+		GuiDraw.small(graphics, font, progress, PAD + 1, PAD + LINE, Theme.TEXT);
 		String rate = snap.perSecond() > 0.05d
 			? amount(Math.round(snap.perSecond())) + "/s"
 			: "0/s";
-		right(graphics, font, rate, 42, Theme.ACCENT);
-		GuiDraw.small(graphics, font, "Counter  " + amount(snap.counter()), PAD + 1, 54, Theme.MUTED);
+		right(graphics, font, rate, PAD + LINE, Theme.ACCENT);
+		String eta = snap.eta().isEmpty() ? "—" : "In " + snap.eta();
+		GuiDraw.small(graphics, font, eta, PAD + 1, PAD + LINE * 2, Theme.MUTED);
+		right(graphics, font, "Counter  " + amount(snap.counter()), PAD + LINE * 2, Theme.MUTED);
 		graphics.pose().popMatrix();
 	}
 
@@ -263,12 +433,10 @@ public final class GardenHudRenderer {
 		ITEM_HITS.clear();
 		begin(graphics, x, y, scale, WIDTH, height);
 		GuiDraw.small(graphics, font, "SHOPPING LIST", PAD + 1, PAD, Theme.ACCENT);
-		float cursor = PAD + LINE + 4;
+		float cursor = PAD + LINE;
 		List<Need> items = snap.items();
 		if (items.isEmpty()) {
-			String hint = snap.visitors().isEmpty() ? "No visitors" : "Open a visitor";
-			GuiDraw.small(graphics, font, hint, PAD + 1, cursor, Theme.MUTED);
-			cursor += LINE;
+			GuiDraw.small(graphics, font, "Open a visitor", PAD + 1, cursor, Theme.MUTED);
 		} else {
 			int shown = Math.min(8, items.size());
 			for (int i = 0; i < shown; i++) {
@@ -297,16 +465,51 @@ public final class GardenHudRenderer {
 				cursor += LINE;
 			}
 		}
-		if (!snap.visitors().isEmpty()) {
-			String names = String.join(" · ", snap.visitors());
-			GuiDraw.small(graphics, font, GuiDraw.ellipsize(font, names, WIDTH - PAD * 2, true), PAD + 1, cursor, Theme.MUTED);
-		}
 		graphics.pose().popMatrix();
 	}
 
+	private static void hoverRecipe(GuiGraphicsExtractor graphics, Font font, int mouseX, int mouseY) {
+		if (!StrayConfig.get().gardenShoppingHudEnabled || HudLayout.editorOpen()) {
+			return;
+		}
+		for (Hit hit : ITEM_HITS) {
+			if (hit.contains(mouseX, mouseY)) {
+				graphics.setTooltipForNextFrame(
+					font,
+					Component.literal("Click for /recipe " + hit.query),
+					mouseX,
+					mouseY
+				);
+				return;
+			}
+		}
+	}
+
+	private static float hoeHeightOf(HoeSnap snap) {
+		return hoeWarn(snap).isEmpty() ? PAD * 2 + LINE : PAD * 2 + LINE * 2;
+	}
+
+	private static String hoeWarn(HoeSnap snap) {
+		if (snap.overclock()) {
+			return "Overclock required";
+		}
+		if (snap.upgrade()) {
+			return "Upgrade required";
+		}
+		if (snap.overflow()) {
+			return "Overflow";
+		}
+		return "";
+	}
+
+	private static float visitorHeightOf(VisitorSnap snap) {
+		int rows = 1 + Math.max(1, snap.names().size());
+		return PAD * 2 + rows * LINE;
+	}
+
 	private static float shoppingHeightOf(ShoppingSnap snap) {
-		int rows = 1 + Math.max(1, Math.min(8, snap.items().size())) + (snap.visitors().isEmpty() ? 0 : 1);
-		return Math.max(36f, PAD + 12f + rows * LINE + 4f);
+		int rows = 1 + Math.max(1, Math.min(8, snap.items().size()));
+		return PAD * 2 + rows * LINE;
 	}
 
 	private static void begin(GuiGraphicsExtractor graphics, float x, float y, float scale, float w, float h) {
@@ -331,7 +534,7 @@ public final class GardenHudRenderer {
 	}
 
 	private static VisitorSnap sampleVisitor() {
-		return new VisitorSnap(true, 2, List.of("Carlton", "Spaceman"), "11m", false, false);
+		return new VisitorSnap(true, 2, List.of("Emissary Carlton", "Spaceman"), "11m", false, false);
 	}
 
 	private static HoeSnap sampleHoe() {
@@ -346,7 +549,7 @@ public final class GardenHudRenderer {
 		return new ShoppingSnap(
 			true,
 			List.of(new Need("Enchanted Bread", "ENCHANTED_BREAD", 64, 12), new Need("Enchanted Sugar", "ENCHANTED_SUGAR", 32, 32)),
-			List.of("Carlton", "Spaceman"),
+			List.of(),
 			List.of()
 		);
 	}
