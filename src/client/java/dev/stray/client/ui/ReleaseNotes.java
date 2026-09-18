@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.4.4", new String[]{
+			"Profile viewer opens a new name from Soopy first. The Hypixel dump is not started until stats are on screen, so a first-time /pv is not starved by inventory download."
+		}),
 		new Entry("1.4.3", new String[]{
 			"Profile viewer keeps the last lookup for ten minutes and never waits on the Hypixel dump before opening. A later Soopy miss no longer hangs on Loading."
 		}),
