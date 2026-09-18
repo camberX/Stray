@@ -305,18 +305,15 @@ public final class AutoUpdate implements PreLaunchEntrypoint {
 			}
 		}
 		List<String> urls = new ArrayList<>();
+		urls.add("https://github.com/camberX/Stray/releases/download/v" + version + "/" + file);
+		urls.add("https://github.com/camberX/Eisenmann/releases/download/v" + version + "/" + file);
+		urls.add("https://github.com/camberX/voidmark/releases/download/v" + version + "/" + file);
 		urls.add(download);
 		urls.add(UpdateMeta.SHOP + "/stray.jar");
-		urls.add(UpdateMeta.SHOP + "/eisenmann.jar");
-		urls.add(UpdateMeta.SHOP + "/voidmark.jar");
 		urls.add("https://raw.githubusercontent.com/camberX/Stray/main/web/public/mod/" + file);
-		urls.add("https://raw.githubusercontent.com/camberX/Eisenmann/main/web/public/mod/" + file);
 		urls.add("https://raw.githubusercontent.com/camberX/voidmark/main/web/public/mod/" + file);
 		urls.add("https://raw.githubusercontent.com/camberX/Stray/main/web/public/mod/stray.jar");
-		urls.add("https://raw.githubusercontent.com/camberX/Eisenmann/main/web/public/mod/stray.jar");
 		urls.add("https://raw.githubusercontent.com/camberX/voidmark/main/web/public/mod/stray.jar");
-		urls.add("https://raw.githubusercontent.com/camberX/Eisenmann/main/web/public/mod/eisenmann.jar");
-		urls.add("https://raw.githubusercontent.com/camberX/voidmark/main/web/public/mod/eisenmann.jar");
 		return new Remote(version, file, urls);
 	}
 
@@ -375,6 +372,7 @@ public final class AutoUpdate implements PreLaunchEntrypoint {
 				HttpResponse.BodyHandlers.ofInputStream()
 			);
 			if (response.statusCode() < 200 || response.statusCode() >= 300) {
+				log("Download from " + url + " returned HTTP " + response.statusCode() + ".");
 				return false;
 			}
 			try (InputStream in = response.body()) {
