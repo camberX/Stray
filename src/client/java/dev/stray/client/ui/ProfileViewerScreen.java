@@ -808,7 +808,11 @@ public class ProfileViewerScreen extends Screen {
 		ProfileViewer.Profile profile
 	) {
 		if (profile.inventory().vacant() && profile.ender().isEmpty() && profile.backpacks().isEmpty()) {
-			GuiDraw.menu(graphics, font, "Inventory is hidden or empty.", x + 12, y + 14, Theme.MUTED);
+			if (ProfileViewer.itemsLoading()) {
+				GuiDraw.menu(graphics, font, "Loading inventory...", x + 12, y + 14, Theme.MUTED);
+			} else {
+				GuiDraw.menu(graphics, font, "Inventory is hidden or empty.", x + 12, y + 14, Theme.MUTED);
+			}
 			return;
 		}
 		if (itemPane == ItemPane.ENDER && profile.ender().isEmpty()) {
