@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.4.2", new String[]{
+			"Profile viewer opens from Soopy instead of waiting on the Hypixel dump. Inventory, Ender Chest, and backpacks still load, but they fill in after the rest of the window is up."
+		}),
 		new Entry("1.4.1", new String[]{
 			"Visitor shopping list uses SkyHanni's tab and NPC detection. It shows how many you have, including sacks you've opened, with no price. Click an item to run /recipe."
 		}),
