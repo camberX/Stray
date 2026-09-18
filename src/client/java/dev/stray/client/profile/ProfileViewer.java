@@ -36,21 +36,35 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.zip.GZIPInputStream;
 
 /**
- * Loads Hypixel Skyblock profiles for {@code /pv}. Data comes from the same
- * public profile host Stray already uses for storage counts.
+ * Loads Hypixel Skyblock profiles for {@code /pv}. Stats come from Soopy so
+ * the window can open quickly. Inventory, Ender Chest, and backpacks still
+ * need the Hypixel profile dump, so that request runs in the background for
+ * the looked-up player only and fills the Items tab when it arrives.
  */
 public final class ProfileViewer {
-	private static final String PROFILE = "https://hypixel.odtheking.com/get/";
 	private static final String MOJANG = "https://api.mojang.com/users/profiles/minecraft/";
 	private static final String ASHCON = "https://api.ashcon.app/mojang/v2/user/";
+	private static final String SOOPY_SKYBLOCK = "https://soopy.dev/api/v2/player_skyblock/";
+	private static final String SOOPY_PLAYER = "https://soopy.dev/api/v2/player/";
+	private static final String HYPIXEL_DUMP = "https://hypixel.odtheking.com/get/";
+	private static final String SESSION = "https://sessionserver.mojang.com/session/minecraft/profile/";
+	private static final String[] PRICE_URLS = {
+		"https://sky.coflnet.com/api/prices/neu",
+		"https://lb.tricked.pro/lowestbins",
+		"https://moulberry.codes/lowestbin.json",
+		"https://sky.coflnet.com/api/auctions/lowestbins"
+	};
 	private static final HttpClient HTTP = HttpClient.newBuilder()
 		.followRedirects(HttpClient.Redirect.NORMAL)
-		.connectTimeout(Duration.ofSeconds(10))
+		.connectTimeout(Duration.ofSeconds(8))
 		.build();
+	private static final Object PRICE_LOCK = new Object();
 
 	private static final long[] SKILL_XP = {
 		0L, 50L, 175L, 375L, 675L, 1175L, 1925L, 2925L, 4425L, 6425L,
@@ -329,6 +343,39 @@ public final class ProfileViewer {
 				List.of()
 			);
 		}
+
+		private Profile withStorage(Bag inventory, Bag armor, List<Bag> ender, List<Bag> backpacks) {
+			return new Profile(
+				id,
+				cuteName,
+				gameMode,
+				selected,
+				purse,
+				bank,
+				itemWorth,
+				networth,
+				skyblockLevel,
+				skyblockProgress,
+				skillAverage,
+				fairySouls,
+				secrets,
+				firstJoin,
+				cookie,
+				kills,
+				deaths,
+				skills,
+				slayers,
+				dungeons,
+				mining,
+				farming,
+				pets,
+				inventory == null ? this.inventory : inventory,
+				armor == null ? this.armor : armor,
+				ender == null ? this.ender : ender,
+				backpacks == null ? this.backpacks : backpacks,
+				collections
+			);
+		}
 	}
 
 	public record Snapshot(
@@ -368,6 +415,32 @@ public final class ProfileViewer {
 				skinSignature
 			);
 		}
+
+		private Snapshot withProfiles(List<Profile> next) {
+			if (next == null || next.isEmpty()) {
+				return this;
+			}
+			String keep = current() == null ? "" : current().id();
+			int index = selected;
+			if (keep != null && !keep.isBlank()) {
+				for (int i = 0; i < next.size(); i++) {
+					if (keep.equalsIgnoreCase(next.get(i).id())) {
+						index = i;
+						break;
+					}
+				}
+			}
+			return new Snapshot(
+				name,
+				uuid,
+				List.copyOf(next),
+				Math.max(0, Math.min(index, next.size() - 1)),
+				error,
+				taggedName,
+				skinValue,
+				skinSignature
+			);
+		}
 	}
 
 	private static final AtomicInteger GEN = new AtomicInteger();
@@ -375,6 +448,7 @@ public final class ProfileViewer {
 	private static volatile String error = "";
 	private static volatile String query = "";
 	private static volatile Snapshot snapshot = Snapshot.empty();
+	private static volatile boolean itemsLoading;
 
 	private ProfileViewer() {
 	}
@@ -393,6 +467,10 @@ public final class ProfileViewer {
 
 	public static Snapshot snapshot() {
 		return snapshot == null ? Snapshot.empty() : snapshot;
+	}
+
+	public static boolean itemsLoading() {
+		return itemsLoading;
 	}
 
 	public static void select(int index) {
@@ -424,68 +502,57 @@ public final class ProfileViewer {
 		query = name;
 		status = Status.LOADING;
 		error = "";
+		itemsLoading = true;
 		int gen = GEN.incrementAndGet();
 		Util.nonCriticalIoPool().execute(() -> fetch(name, client, gen));
 	}
 
 	private static void fetch(String name, Minecraft client, int gen) {
 		try {
-			Resolved resolved = resolve(name, client);
+			Resolved identity = resolveIdentity(name, client);
 			if (stale(gen)) {
 				return;
 			}
-			if (resolved == null) {
+			if (identity == null) {
 				fail(gen, "unknown player");
 				return;
 			}
-			HttpRequest request = HttpRequest.newBuilder(URI.create(PROFILE + compact(resolved.uuid())))
-				.timeout(Duration.ofSeconds(20))
-				.header("User-Agent", "Stray/" + Stray.MOD_ID)
-				.GET()
-				.build();
-			HttpResponse<String> response = HTTP.send(request, HttpResponse.BodyHandlers.ofString());
+			String compact = compact(identity.uuid());
+			CompletableFuture<JsonObject> dump = profileDump(compact);
+			CompletableFuture<JsonObject> soopy = getJsonAsync(SOOPY_SKYBLOCK + compact);
+			CompletableFuture<JsonObject> soopyPlayer = getJsonAsync(SOOPY_PLAYER + compact);
+			CompletableFuture<Resolved> skin = CompletableFuture.supplyAsync(() -> withSkin(identity), Util.nonCriticalIoPool());
+			SkyblockPetLore.request();
+
+			JsonObject soopyJson = soopy.join();
 			if (stale(gen)) {
 				return;
 			}
-			if (response.statusCode() < 200 || response.statusCode() >= 300) {
-				fail(gen, "HTTP " + response.statusCode());
+			JsonObject root = soopyAsProfiles(soopyJson);
+			JsonObject soopyForParse = soopyJson;
+			if (root == null) {
+				root = dump.join();
+				soopyForParse = null;
+				if (!isHypixelProfiles(root)) {
+					fail(gen, "profile lookup failed");
+					return;
+				}
+			}
+			Map<String, JsonObject> gardens = gardenByProfile(root);
+			if (stale(gen)) {
 				return;
 			}
-			ensurePrices();
-			SkyblockPetLore.ensure();
-			JsonObject root = JsonParser.parseString(response.body()).getAsJsonObject();
-			if (root.has("success") && root.get("success").isJsonPrimitive() && !root.get("success").getAsBoolean()) {
-				fail(gen, "profile lookup failed");
-				return;
-			}
-			String compact = compact(resolved.uuid());
-			JsonObject soopy = getJson("https://soopy.dev/api/v2/player_skyblock/" + compact);
-			JsonObject soopyPlayer = getJson("https://soopy.dev/api/v2/player/" + compact);
-			List<Profile> profiles = parseProfiles(root, resolved.uuid(), soopy);
+			List<Profile> profiles = parseProfiles(root, identity.uuid(), soopyForParse, gardens, false);
 			if (profiles.isEmpty()) {
 				fail(gen, "no Skyblock profile");
 				return;
 			}
-			int selected = 0;
-			for (int i = 0; i < profiles.size(); i++) {
-				if (profiles.get(i).selected()) {
-					selected = i;
-					break;
-				}
+			Resolved resolved = skin.getNow(identity);
+			if (resolved == null) {
+				resolved = identity;
 			}
-			snapshot = new Snapshot(
-				resolved.name(),
-				resolved.uuid(),
-				List.copyOf(profiles),
-				selected,
-				"",
-				taggedName(resolved.name(), soopyPlayer, profiles.get(selected)),
-				resolved.skinValue(),
-				resolved.skinSignature()
-			);
-			error = "";
-			status = Status.READY;
-			query = resolved.name();
+			ready(gen, resolved, profiles, soopyPlayer.getNow(null));
+			fillInventories(gen, compact, dump);
 		} catch (Exception exception) {
 			if (!stale(gen)) {
 				fail(gen, exception.getMessage() == null ? "lookup failed" : exception.getMessage());
@@ -494,29 +561,237 @@ public final class ProfileViewer {
 		}
 	}
 
-	private static Resolved resolve(String name, Minecraft client) throws Exception {
-		UUID local = uuidOf(client);
-		String localName = localName(client);
-		if (local != null && (name.isBlank() || name.equalsIgnoreCase(localName))) {
-			return withSkin(new Resolved(localName.isBlank() ? name : localName, local, "", ""));
+	private static JsonObject soopyAsProfiles(JsonObject soopy) {
+		JsonObject data = object(soopy, "data");
+		JsonObject map = object(data, "profiles");
+		if (map == null || map.size() == 0) {
+			return null;
 		}
-		JsonObject mojang = getJson(MOJANG + encode(name));
-		if (mojang != null) {
-			UUID uuid = uuidOf(string(mojang, "id"));
-			String named = string(mojang, "name");
-			if (uuid != null) {
-				return withSkin(new Resolved(named.isBlank() ? name : named, uuid, "", ""));
+		String current = compact(string(object(data, "stats"), "currentProfileId"));
+		JsonArray list = new JsonArray();
+		for (String key : map.keySet()) {
+			JsonObject src = object(map, key);
+			if (src == null) {
+				continue;
+			}
+			JsonObject profile = new JsonObject();
+			profile.addProperty("profile_id", key);
+			profile.addProperty("cute_name", string(src, "cute_name"));
+			profile.addProperty("selected", compact(key).equals(current) || bool(src, "selected"));
+			String mode = string(src, "game_mode");
+			if (mode.isBlank()) {
+				mode = string(src, "gameMode");
+			}
+			profile.addProperty("game_mode", mode);
+			JsonObject banking = new JsonObject();
+			double bank = num(object(src, "stats"), "bank_balance");
+			if (bank == 0d) {
+				bank = num(src, "bank_balance");
+			}
+			banking.addProperty("balance", bank);
+			profile.add("banking", banking);
+			JsonObject members = object(src, "members");
+			if (members != null) {
+				profile.add("members", members);
+			}
+			list.add(profile);
+		}
+		if (list.isEmpty()) {
+			return null;
+		}
+		JsonObject root = new JsonObject();
+		root.addProperty("success", true);
+		root.add("profiles", list);
+		return root;
+	}
+
+	private static CompletableFuture<JsonObject> profileDump(String compact) {
+		try {
+			HttpRequest request = HttpRequest.newBuilder(URI.create(HYPIXEL_DUMP + compact))
+				.timeout(Duration.ofSeconds(20))
+				.header("User-Agent", "Stray/" + Stray.MOD_ID)
+				.GET()
+				.build();
+			return HTTP.sendAsync(request, HttpResponse.BodyHandlers.ofString())
+				.thenApply(response -> {
+					if (response.statusCode() < 200 || response.statusCode() >= 300) {
+						return null;
+					}
+					JsonElement element = JsonParser.parseString(response.body());
+					JsonObject root = element != null && element.isJsonObject() ? element.getAsJsonObject() : null;
+					return isHypixelProfiles(root) ? root : null;
+				})
+				.exceptionally(ignored -> null);
+		} catch (Exception ignored) {
+			return CompletableFuture.completedFuture(null);
+		}
+	}
+
+	private static boolean isHypixelProfiles(JsonObject root) {
+		return root != null && root.has("profiles") && root.get("profiles").isJsonArray();
+	}
+
+	private static void fillInventories(int gen, String compact, CompletableFuture<JsonObject> dump) {
+		try {
+			JsonObject root = dump == null ? null : dump.join();
+			if (stale(gen)) {
+				return;
+			}
+			Snapshot current = snapshot;
+			if (current == null || current.profiles().isEmpty() || !isHypixelProfiles(root)) {
+				return;
+			}
+			boolean hadBags = false;
+			List<Profile> next = new ArrayList<>();
+			for (Profile profile : current.profiles()) {
+				JsonObject member = dumpMember(root, profile.id(), compact);
+				Profile filled = applyStorage(profile, member);
+				hadBags |= !filled.inventory().vacant() || !filled.ender().isEmpty() || !filled.backpacks().isEmpty();
+				next.add(filled);
+			}
+			if (stale(gen) || next.isEmpty()) {
+				return;
+			}
+			snapshot = current.withProfiles(next);
+			if (!hadBags) {
+				Stray.LOGGER.info("Profile viewer inventory dump had no bags for {}", compact);
+			}
+		} catch (Exception exception) {
+			if (!stale(gen)) {
+				Stray.LOGGER.warn("Profile viewer inventory lookup failed", exception);
+			}
+		} finally {
+			if (!stale(gen)) {
+				itemsLoading = false;
 			}
 		}
-		JsonObject ashcon = getJson(ASHCON + encode(name));
-		if (ashcon != null) {
-			UUID uuid = uuidOf(string(ashcon, "uuid"));
-			String named = string(ashcon, "username");
-			if (uuid != null) {
-				return withSkin(new Resolved(named.isBlank() ? name : named, uuid, "", ""), ashcon);
+	}
+
+	private static JsonObject dumpMember(JsonObject root, String profileId, String compact) {
+		if (!isHypixelProfiles(root)) {
+			return null;
+		}
+		String want = compact(profileId);
+		for (JsonElement element : root.getAsJsonArray("profiles")) {
+			if (element == null || !element.isJsonObject()) {
+				continue;
+			}
+			JsonObject profile = element.getAsJsonObject();
+			if (!want.isBlank() && !want.equals(compact(string(profile, "profile_id")))) {
+				continue;
+			}
+			JsonObject member = memberIn(profile, compact);
+			if (member != null) {
+				return member;
 			}
 		}
 		return null;
+	}
+
+	private static Profile applyStorage(Profile profile, JsonObject member) {
+		if (profile == null || member == null) {
+			return profile;
+		}
+		JsonObject inventory = object(member, "inventory");
+		Bag inv = parseBag("Inventory", first(inventory, member, "inv_contents"), 9, 36);
+		Bag armor = parseBag("Armor", first(inventory, member, "inv_armor"), 1, 4);
+		List<Bag> ender = parseEnder(inventory, member);
+		List<Bag> backpacks = parseBackpacks(inventory, member);
+		if (inv.vacant() && armor.vacant() && ender.isEmpty() && backpacks.isEmpty()) {
+			return profile;
+		}
+		return profile.withStorage(inv, armor, ender, backpacks);
+	}
+
+	private static void ready(int gen, Resolved resolved, List<Profile> profiles, JsonObject soopyPlayer) {
+		if (stale(gen) || resolved == null || profiles == null || profiles.isEmpty()) {
+			return;
+		}
+		int selected = selectedIndex(profiles);
+		Snapshot current = snapshot;
+		if (current != null && resolved.uuid() != null && resolved.uuid().equals(current.uuid()) && current.current() != null) {
+			String keep = current.current().id();
+			if (keep != null && !keep.isBlank()) {
+				for (int i = 0; i < profiles.size(); i++) {
+					if (keep.equalsIgnoreCase(profiles.get(i).id())) {
+						selected = i;
+						break;
+					}
+				}
+			}
+		}
+		snapshot = new Snapshot(
+			resolved.name(),
+			resolved.uuid(),
+			List.copyOf(profiles),
+			selected,
+			"",
+			taggedName(resolved.name(), soopyPlayer, profiles.get(selected)),
+			resolved.skinValue(),
+			resolved.skinSignature()
+		);
+		error = "";
+		status = Status.READY;
+		query = resolved.name();
+	}
+
+	private static int selectedIndex(List<Profile> profiles) {
+		for (int i = 0; i < profiles.size(); i++) {
+			if (profiles.get(i).selected()) {
+				return i;
+			}
+		}
+		return 0;
+	}
+
+	private static Resolved resolveIdentity(String name, Minecraft client) {
+		UUID local = uuidOf(client);
+		String localName = localName(client);
+		if (local != null && (name.isBlank() || name.equalsIgnoreCase(localName))) {
+			return new Resolved(localName.isBlank() ? name : localName, local, "", "");
+		}
+		CompletableFuture<JsonObject> mojang = getJsonAsync(MOJANG + encode(name));
+		CompletableFuture<JsonObject> ashcon = getJsonAsync(ASHCON + encode(name));
+		Resolved resolved = null;
+		while (resolved == null && (!mojang.isDone() || !ashcon.isDone())) {
+			try {
+				CompletableFuture.anyOf(mojang, ashcon).join();
+			} catch (Exception ignored) {
+			}
+			resolved = fromMojang(mojang.getNow(null), name);
+			if (resolved == null) {
+				resolved = fromAshcon(ashcon.getNow(null), name);
+			}
+		}
+		if (resolved != null) {
+			return resolved;
+		}
+		resolved = fromMojang(mojang.getNow(null), name);
+		return resolved != null ? resolved : fromAshcon(ashcon.getNow(null), name);
+	}
+
+	private static Resolved fromMojang(JsonObject mojang, String name) {
+		if (mojang == null) {
+			return null;
+		}
+		UUID uuid = uuidOf(string(mojang, "id"));
+		if (uuid == null) {
+			return null;
+		}
+		String named = string(mojang, "name");
+		return new Resolved(named.isBlank() ? name : named, uuid, "", "");
+	}
+
+	private static Resolved fromAshcon(JsonObject ashcon, String name) {
+		if (ashcon == null) {
+			return null;
+		}
+		UUID uuid = uuidOf(string(ashcon, "uuid"));
+		if (uuid == null) {
+			return null;
+		}
+		String named = string(ashcon, "username");
+		return new Resolved(named.isBlank() ? name : named, uuid, "", "");
 	}
 
 	private static Resolved withSkin(Resolved resolved) {
@@ -527,15 +802,22 @@ public final class ProfileViewer {
 		if (resolved == null) {
 			return null;
 		}
-		JsonObject textures = ashcon != null ? object(object(ashcon, "textures"), "raw") : null;
-		if (textures == null) {
-			textures = object(object(getJson(ASHCON + encode(resolved.name())), "textures"), "raw");
+		if (resolved.skinValue() != null && !resolved.skinValue().isBlank()) {
+			return resolved;
 		}
+		CompletableFuture<JsonObject> ashconFuture = ashcon != null
+			? CompletableFuture.completedFuture(ashcon)
+			: getJsonAsync(ASHCON + encode(resolved.name()));
+		CompletableFuture<JsonObject> sessionFuture = getJsonAsync(SESSION + compact(resolved.uuid()) + "?unsigned=false");
+		try {
+			CompletableFuture.allOf(ashconFuture, sessionFuture).join();
+		} catch (Exception ignored) {
+		}
+		JsonObject textures = object(object(ashconFuture.getNow(null), "textures"), "raw");
 		String value = string(textures, "value");
 		String signature = string(textures, "signature");
 		if (value.isBlank()) {
-			JsonObject session = getJson("https://sessionserver.mojang.com/session/minecraft/profile/" + compact(resolved.uuid()) + "?unsigned=false");
-			JsonArray properties = array(session, "properties");
+			JsonArray properties = array(sessionFuture.getNow(null), "properties");
 			if (properties != null) {
 				for (JsonElement element : properties) {
 					if (element == null || !element.isJsonObject()) {
@@ -554,29 +836,47 @@ public final class ProfileViewer {
 	}
 
 	private static JsonObject getJson(String url) {
+		return getJsonAsync(url).join();
+	}
+
+	private static CompletableFuture<JsonObject> getJsonAsync(String url) {
+		return getJsonAsync(url, Duration.ofSeconds(8));
+	}
+
+	private static CompletableFuture<JsonObject> getJsonAsync(String url, Duration timeout) {
 		try {
 			HttpRequest request = HttpRequest.newBuilder(URI.create(url))
-				.timeout(Duration.ofSeconds(10))
+				.timeout(timeout)
 				.header("User-Agent", "Stray/" + Stray.MOD_ID)
 				.GET()
 				.build();
-			HttpResponse<String> response = HTTP.send(request, HttpResponse.BodyHandlers.ofString());
-			if (response.statusCode() < 200 || response.statusCode() >= 300) {
-				return null;
-			}
-			JsonElement element = JsonParser.parseString(response.body());
-			return element != null && element.isJsonObject() ? element.getAsJsonObject() : null;
+			return HTTP.sendAsync(request, HttpResponse.BodyHandlers.ofString())
+				.thenApply(response -> {
+					if (response.statusCode() < 200 || response.statusCode() >= 300) {
+						return null;
+					}
+					JsonElement element = JsonParser.parseString(response.body());
+					return element != null && element.isJsonObject() ? element.getAsJsonObject() : null;
+				})
+				.exceptionally(ignored -> null);
 		} catch (Exception ignored) {
-			return null;
+			return CompletableFuture.completedFuture(null);
 		}
 	}
 
-	private static List<Profile> parseProfiles(JsonObject root, UUID uuid, JsonObject soopy) {
+	private static List<Profile> parseProfiles(
+		JsonObject root,
+		UUID uuid,
+		JsonObject soopy,
+		Map<String, JsonObject> gardens,
+		boolean remoteNetworth
+	) {
 		List<Profile> out = new ArrayList<>();
 		if (root == null || !root.has("profiles") || !root.get("profiles").isJsonArray()) {
 			return out;
 		}
 		String compact = compact(uuid);
+		Map<String, JsonObject> gardenMap = gardens == null ? Map.of() : gardens;
 		for (JsonElement element : root.getAsJsonArray("profiles")) {
 			if (element == null || !element.isJsonObject()) {
 				continue;
@@ -586,12 +886,19 @@ public final class ProfileViewer {
 			if (member == null) {
 				continue;
 			}
-			out.add(parseMember(object, member, compact, soopy));
+			out.add(parseMember(object, member, compact, soopy, gardenMap.get(compact(string(object, "profile_id"))), remoteNetworth));
 		}
 		return out;
 	}
 
-	private static Profile parseMember(JsonObject profile, JsonObject member, String compact, JsonObject soopy) {
+	private static Profile parseMember(
+		JsonObject profile,
+		JsonObject member,
+		String compact,
+		JsonObject soopy,
+		JsonObject garden,
+		boolean remoteNetworth
+	) {
 		JsonObject soopyMember = soopyMember(soopy, string(profile, "profile_id"), string(profile, "cute_name"), compact);
 		JsonObject soopySkills = object(object(soopyMember, "skills"), "levels");
 		JsonObject playerData = object(member, "player_data");
@@ -671,7 +978,7 @@ public final class ProfileViewer {
 		Dungeon dungeons = parseDungeons(member, soopyMember);
 		List<Slayer> slayers = parseSlayers(member, soopyMember);
 		Mining mining = parseMining(member, soopyMember);
-		Farming farming = parseFarming(member, gardenData(string(profile, "profile_id")));
+		Farming farming = parseFarming(member, garden);
 		List<Pet> pets = parsePets(member);
 		JsonObject inventory = object(member, "inventory");
 		Bag inv = parseBag("Inventory", first(inventory, member, "inv_contents"), 9, 36);
@@ -736,7 +1043,7 @@ public final class ProfileViewer {
 				net = helperNet;
 			}
 		}
-		if (bool(profile, "selected")) {
+		if (remoteNetworth && bool(profile, "selected")) {
 			double remote = coflNetworth(profile, compact);
 			if (remote > net) {
 				items = Math.max(0d, remote - purse - bank);
@@ -1146,16 +1453,30 @@ public final class ProfileViewer {
 		return (int) num(nodes, key);
 	}
 
-	private static JsonObject gardenData(String profileId) {
-		String id = compact(profileId);
-		if (id.isBlank()) {
-			return null;
+	private static Map<String, JsonObject> gardenByProfile(JsonObject root) {
+		Map<String, JsonObject> out = new ConcurrentHashMap<>();
+		if (root == null || !root.has("profiles") || !root.get("profiles").isJsonArray()) {
+			return out;
 		}
-		JsonObject elite = getJson(ELITE_GARDEN + id);
-		if (elite != null && (elite.has("crops") || elite.has("gardenLevel") || elite.has("experience"))) {
-			return elite;
+		List<CompletableFuture<Void>> jobs = new ArrayList<>();
+		for (JsonElement element : root.getAsJsonArray("profiles")) {
+			if (element == null || !element.isJsonObject()) {
+				continue;
+			}
+			String id = compact(string(element.getAsJsonObject(), "profile_id"));
+			if (id.isBlank()) {
+				continue;
+			}
+			jobs.add(getJsonAsync(ELITE_GARDEN + id, Duration.ofSeconds(2)).thenAccept(elite -> {
+				if (elite != null && (elite.has("crops") || elite.has("gardenLevel") || elite.has("experience"))) {
+					out.put(id, elite);
+				}
+			}));
 		}
-		return null;
+		if (!jobs.isEmpty()) {
+			CompletableFuture.allOf(jobs.toArray(CompletableFuture[]::new)).join();
+		}
+		return out;
 	}
 
 	private static Farming parseFarming(JsonObject member, JsonObject gardenApi) {
@@ -1297,6 +1618,9 @@ public final class ProfileViewer {
 	private static List<Collection> parseCollections(JsonObject member) {
 		List<Collection> out = new ArrayList<>();
 		JsonObject collection = object(member, "collection");
+		if (collection == null) {
+			collection = object(member, "collections");
+		}
 		if (collection == null) {
 			return out;
 		}
@@ -2071,73 +2395,55 @@ public final class ProfileViewer {
 		if (!PRICES.isEmpty() && System.currentTimeMillis() - pricesAt < 30 * 60 * 1000L) {
 			return;
 		}
-		Map<String, Double> next = new HashMap<>(PRICES);
-		try {
-			HttpRequest request = HttpRequest.newBuilder(URI.create("https://api.hypixel.net/v2/skyblock/bazaar"))
-				.timeout(Duration.ofSeconds(12))
-				.header("User-Agent", "Stray/" + Stray.MOD_ID)
-				.GET()
-				.build();
-			HttpResponse<String> response = HTTP.send(request, HttpResponse.BodyHandlers.ofString());
-			if (response.statusCode() >= 200 && response.statusCode() < 300) {
-				JsonObject products = object(JsonParser.parseString(response.body()).getAsJsonObject(), "products");
-				if (products != null) {
-					for (String id : products.keySet()) {
-						JsonObject quick = object(object(products, id), "quick_status");
-						double sell = num(quick, "sellPrice");
-						double buy = num(quick, "buyPrice");
-						double value = buy > 0 ? buy : sell;
-						if (value > 0d) {
-							next.put(id.toUpperCase(Locale.ROOT), value);
-						}
+		synchronized (PRICE_LOCK) {
+			if (!PRICES.isEmpty() && System.currentTimeMillis() - pricesAt < 30 * 60 * 1000L) {
+				return;
+			}
+			Map<String, Double> next = new ConcurrentHashMap<>(PRICES);
+			List<CompletableFuture<Void>> jobs = new ArrayList<>();
+			jobs.add(getJsonAsync("https://api.hypixel.net/v2/skyblock/bazaar").thenAccept(root -> {
+				JsonObject products = object(root, "products");
+				if (products == null) {
+					return;
+				}
+				for (String id : products.keySet()) {
+					JsonObject quick = object(object(products, id), "quick_status");
+					double sell = num(quick, "sellPrice");
+					double buy = num(quick, "buyPrice");
+					double value = buy > 0 ? buy : sell;
+					if (value > 0d) {
+						next.put(id.toUpperCase(Locale.ROOT), value);
 					}
 				}
+			}));
+			for (String url : PRICE_URLS) {
+				jobs.add(mergePrices(next, url));
 			}
-		} catch (Exception ignored) {
-		}
-		mergePrices(next, "https://sky.coflnet.com/api/prices/neu");
-		mergePrices(next, "https://lb.tricked.pro/lowestbins");
-		mergePrices(next, "https://moulberry.codes/lowestbin.json");
-		mergePrices(next, "https://sky.coflnet.com/api/auctions/lowestbins");
-		if (!next.isEmpty()) {
-			PRICES = Map.copyOf(next);
-			pricesAt = System.currentTimeMillis();
-		} else {
-			Stray.LOGGER.warn("Profile viewer price lookup returned no items");
+			CompletableFuture.allOf(jobs.toArray(CompletableFuture[]::new)).join();
+			if (!next.isEmpty()) {
+				PRICES = Map.copyOf(next);
+				pricesAt = System.currentTimeMillis();
+			} else {
+				Stray.LOGGER.warn("Profile viewer price lookup returned no items");
+			}
 		}
 	}
 
-	private static void mergePrices(Map<String, Double> next, String url) {
-		try {
-			HttpRequest request = HttpRequest.newBuilder(URI.create(url))
-				.timeout(Duration.ofSeconds(12))
-				.header("User-Agent", "Stray/" + Stray.MOD_ID)
-				.GET()
-				.build();
-			HttpResponse<String> response = HTTP.send(request, HttpResponse.BodyHandlers.ofString());
-			if (response.statusCode() < 200 || response.statusCode() >= 300) {
-				Stray.LOGGER.warn("Price source {} returned HTTP {}", url, response.statusCode());
+	private static CompletableFuture<Void> mergePrices(Map<String, Double> next, String url) {
+		return getJsonAsync(url).thenAccept(bins -> {
+			if (bins == null) {
+				Stray.LOGGER.warn("Price source {} returned no data", url);
 				return;
 			}
-			JsonElement root = JsonParser.parseString(response.body());
-			if (root == null || !root.isJsonObject()) {
-				return;
-			}
-			JsonObject bins = root.getAsJsonObject();
 			for (String id : bins.keySet()) {
 				double value = num(bins, id);
 				if (value <= 0d) {
 					continue;
 				}
 				String key = id.toUpperCase(Locale.ROOT);
-				Double current = next.get(key);
-				if (current == null || value > current) {
-					next.put(key, value);
-				}
+				next.merge(key, value, Math::max);
 			}
-		} catch (Exception exception) {
-			Stray.LOGGER.warn("Price source {} failed", url, exception);
-		}
+		});
 	}
 
 	private static double bagWorth(Bag bag) {
@@ -2532,6 +2838,7 @@ public final class ProfileViewer {
 		}
 		error = message == null || message.isBlank() ? "lookup failed" : message;
 		status = Status.ERROR;
+		itemsLoading = false;
 	}
 
 	private static JsonObject soopyMember(JsonObject soopy, String profileId, String cute, String compact) {
