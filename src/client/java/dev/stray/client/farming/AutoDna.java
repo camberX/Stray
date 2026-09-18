@@ -52,6 +52,7 @@ public final class AutoDna {
 	private static boolean fakeInventory;
 	private static int errorCount;
 	private static DnaAnalyzerSolver.Solution board = DnaAnalyzerSolver.Solution.none();
+	private static String boardKey = "";
 	private static int pendingA = -1;
 	private static int pendingB = -1;
 	private static boolean clickedFirst;
@@ -78,6 +79,7 @@ public final class AutoDna {
 		fakeInventory = false;
 		errorCount = 0;
 		board = DnaAnalyzerSolver.Solution.none();
+		boardKey = "";
 		clearPending();
 	}
 
@@ -90,6 +92,7 @@ public final class AutoDna {
 		fakeInventory = false;
 		errorCount = 0;
 		board = DnaAnalyzerSolver.Solution.none();
+		boardKey = "";
 		clearPending();
 		if (inInventory) {
 			Minecraft.getInstance().execute(AutoDna::readBoard);
@@ -103,6 +106,7 @@ public final class AutoDna {
 			fakeInventory = false;
 			errorCount = 0;
 			board = DnaAnalyzerSolver.Solution.none();
+			boardKey = "";
 			clearPending();
 			Minecraft.getInstance().execute(AutoDna::readBoard);
 			return;
@@ -122,17 +126,19 @@ public final class AutoDna {
 		if (!(client.screen instanceof AbstractContainerScreen<?> screen)) {
 			return;
 		}
-		if (!inInventory || pendingA < 0 || waitingForUpdate) {
+		if (!inInventory || waitingForUpdate) {
 			readBoard();
 		}
 		if (!enabled()) {
 			return;
 		}
-		if (!screen.getMenu().getCarried().isEmpty() && clickedFirst && pendingB >= 0) {
-			clickIfReady(screen, pendingB, true);
+		if (waitingForUpdate || pendingA < 0 || pendingB < 0 || pendingA == pendingB) {
 			return;
 		}
-		if (waitingForUpdate || pendingA < 0 || pendingB < 0) {
+		if (!screen.getMenu().getCarried().isEmpty()) {
+			if (clickedFirst) {
+				clickIfReady(screen, pendingB, true);
+			}
 			return;
 		}
 		if (!clickedFirst) {
@@ -174,6 +180,9 @@ public final class AutoDna {
 			return;
 		}
 		inInventory = true;
+		if (pendingA >= 0 && pendingB >= 0 && !waitingForUpdate) {
+			return;
+		}
 		List<Slot> slots = screen.getMenu().slots;
 		if (slots.size() <= LAST_SLOT) {
 			return;
@@ -219,6 +228,11 @@ public final class AutoDna {
 			}
 		}
 		errorCount = 0;
+		String key = fingerprint(columns);
+		if (waitingForUpdate && key.equals(boardKey)) {
+			return;
+		}
+		boardKey = key;
 		waitingForUpdate = false;
 		board = DnaAnalyzerSolver.solve(columns, StrayConfig.get().autoDnaAllowEnds);
 		armNextSwap();
@@ -233,8 +247,23 @@ public final class AutoDna {
 		}
 		List<DnaAnalyzerSolver.Swap> swaps = board.swaps();
 		DnaAnalyzerSolver.Swap next = swaps.get(swaps.size() - 1);
-		pendingA = next.a().slot();
-		pendingB = next.b().slot();
+		int a = next.a().slot();
+		int b = next.b().slot();
+		if (a == b) {
+			return;
+		}
+		pendingA = a;
+		pendingB = b;
+	}
+
+	private static String fingerprint(DnaAnalyzerSolver.Color[][] columns) {
+		StringBuilder out = new StringBuilder(DnaAnalyzerSolver.COLUMNS * DnaAnalyzerSolver.ROWS);
+		for (DnaAnalyzerSolver.Color[] column : columns) {
+			for (DnaAnalyzerSolver.Color color : column) {
+				out.append(color == null ? '?' : color.name().charAt(0));
+			}
+		}
+		return out.toString();
 	}
 
 	private static void afterRender(Screen screen, GuiGraphicsExtractor graphics) {
