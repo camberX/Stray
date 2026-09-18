@@ -159,7 +159,7 @@ final class SkyblockPvApi {
 	}
 
 	private static String userAgent() {
-		String version = "1.4.8";
+		String version = "1.4.9";
 		try {
 			version = net.fabricmc.loader.api.FabricLoader.getInstance()
 				.getModContainer(Stray.MOD_ID)
