@@ -18,6 +18,7 @@ import net.minecraft.network.chat.TextColor;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.ClientboundContainerSetContentPacket;
 import net.minecraft.network.protocol.game.ClientboundContainerSetSlotPacket;
+import net.minecraft.network.protocol.game.ClientboundOpenScreenPacket;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.inventory.ContainerInput;
 import net.minecraft.world.inventory.Slot;
@@ -31,20 +32,23 @@ import java.util.Set;
 import java.util.regex.Pattern;
 
 /**
- * Auto-clicks the next SkyHanni DNA analyzer swap in Greenhouse menus titled
- * {@code (mutation) DNA}.
+ * Auto-clicks the next SkyHanni DNA analyzer swap in Crop Analyzer menus
+ * whose window title is the mutation name plus {@code DNA}, e.g.
+ * {@code Ashwreath DNA} or {@code All-in Aloe DNA}.
  */
 public final class AutoDna {
 	private static final int HIGHLIGHT = 0x8000C853;
 	private static final int CLOSE_SLOT = 49;
 	private static final int FIRST_SLOT = 9;
 	private static final int LAST_SLOT = 44;
-	private static final Pattern PAREN_DNA = Pattern.compile(
-		"[(\\uFF08][^)\\uFF09]{1,40}[)\\uFF09]\\s*DNA\\s*$",
+	private static final int INFO_SLOT = 4;
+	private static final Pattern MUTATION_DNA = Pattern.compile(
+		".+\\s+DNA\\s*$",
 		Pattern.CASE_INSENSITIVE
 	);
 
 	private static boolean inInventory;
+	private static String packetTitle = "";
 	private static boolean fakeInventory;
 	private static int errorCount;
 	private static DnaAnalyzerSolver.Solution board = DnaAnalyzerSolver.Solution.none();
@@ -70,6 +74,7 @@ public final class AutoDna {
 
 	public static void reset() {
 		inInventory = false;
+		packetTitle = "";
 		fakeInventory = false;
 		errorCount = 0;
 		board = DnaAnalyzerSolver.Solution.none();
@@ -81,7 +86,7 @@ public final class AutoDna {
 			reset();
 			return;
 		}
-		inInventory = isDnaTitle(screen.getTitle());
+		inInventory = isDnaInventory(screen);
 		fakeInventory = false;
 		errorCount = 0;
 		board = DnaAnalyzerSolver.Solution.none();
@@ -92,6 +97,16 @@ public final class AutoDna {
 	}
 
 	public static void onPacket(Packet<?> packet) {
+		if (packet instanceof ClientboundOpenScreenPacket open) {
+			packetTitle = plain(open.getTitle());
+			inInventory = isDnaTitle(packetTitle);
+			fakeInventory = false;
+			errorCount = 0;
+			board = DnaAnalyzerSolver.Solution.none();
+			clearPending();
+			Minecraft.getInstance().execute(AutoDna::readBoard);
+			return;
+		}
 		if (!(packet instanceof ClientboundContainerSetSlotPacket
 			|| packet instanceof ClientboundContainerSetContentPacket)) {
 			return;
@@ -152,7 +167,7 @@ public final class AutoDna {
 		if (!(client.screen instanceof AbstractContainerScreen<?> screen)) {
 			return;
 		}
-		if (!isDnaTitle(screen.getTitle())) {
+		if (!isDnaInventory(screen)) {
 			if (inInventory) {
 				reset();
 			}
@@ -268,6 +283,32 @@ public final class AutoDna {
 		return (long) config.autoDnaClickDelay + extra;
 	}
 
+	static boolean isDnaInventory(Screen screen) {
+		if (screen == null) {
+			return false;
+		}
+		if (isDnaTitle(screen.getTitle()) || isDnaTitle(packetTitle)) {
+			return true;
+		}
+		if (!(screen instanceof AbstractContainerScreen<?> container)) {
+			return false;
+		}
+		List<Slot> slots = container.getMenu().slots;
+		if (slots.size() <= INFO_SLOT) {
+			return false;
+		}
+		ItemStack info = slots.get(INFO_SLOT).getItem();
+		if (info == null || info.isEmpty()) {
+			return false;
+		}
+		boolean prior = ItemAppearance.suppress();
+		try {
+			return isDnaTitle(info.getHoverName());
+		} finally {
+			ItemAppearance.resume(prior);
+		}
+	}
+
 	static boolean isDnaTitle(Component title) {
 		return isDnaTitle(plain(title));
 	}
@@ -277,13 +318,13 @@ public final class AutoDna {
 			return false;
 		}
 		String folded = plain.toLowerCase(Locale.ROOT);
-		if (PAREN_DNA.matcher(plain).find()) {
-			return true;
-		}
 		if (folded.contains("shard") || folded.contains("ultimate")) {
 			return false;
 		}
-		return folded.endsWith(" dna") || folded.equals("dna");
+		if (MUTATION_DNA.matcher(plain).find()) {
+			return true;
+		}
+		return folded.endsWith(" dna") && folded.length() > 4;
 	}
 
 	static DnaAnalyzerSolver.Color colorOf(ItemStack stack) {
@@ -325,19 +366,37 @@ public final class AutoDna {
 		if (legacy.startsWith("§aDNA") || legacy.startsWith("§2DNA")) {
 			return DnaAnalyzerSolver.Color.GREEN;
 		}
-		String plain = plain(hover);
-		if (!isDnaItemName(plain)) {
-			return null;
-		}
+		String name = plain(hover);
 		DnaAnalyzerSolver.Color fromCode = firstLegacyColor(legacy);
-		if (fromCode != null) {
+		if (fromCode != null && (isDnaItemName(name) || inInventory)) {
 			return fromCode;
 		}
 		DnaAnalyzerSolver.Color styled = firstColor(hover);
-		if (styled != null) {
+		if (styled != null && (isDnaItemName(name) || inInventory)) {
 			return styled;
 		}
-		return fromItem(stack);
+		DnaAnalyzerSolver.Color named = colorWord(name);
+		if (named != null) {
+			return named;
+		}
+		return inInventory || isDnaItemName(name) ? fromItem(stack) : null;
+	}
+
+	private static DnaAnalyzerSolver.Color colorWord(String plain) {
+		String folded = plain == null ? "" : plain.toLowerCase(Locale.ROOT);
+		if (folded.contains("red")) {
+			return DnaAnalyzerSolver.Color.RED;
+		}
+		if (folded.contains("yellow") || folded.contains("gold") || folded.contains("orange")) {
+			return DnaAnalyzerSolver.Color.YELLOW;
+		}
+		if (folded.contains("blue") || folded.contains("cyan") || folded.contains("aqua")) {
+			return DnaAnalyzerSolver.Color.BLUE;
+		}
+		if (folded.contains("green") || folded.contains("lime")) {
+			return DnaAnalyzerSolver.Color.GREEN;
+		}
+		return null;
 	}
 
 	private static boolean isDnaItemName(String plain) {
@@ -463,7 +522,23 @@ public final class AutoDna {
 	}
 
 	private static String plain(Component component) {
-		return component == null ? "" : plain(component.getString());
+		if (component == null) {
+			return "";
+		}
+		StringBuilder visited = new StringBuilder();
+		component.visit((style, text) -> {
+			visited.append(text);
+			return Optional.empty();
+		}, Style.EMPTY);
+		String fromVisit = plain(visited.toString());
+		String fromGet = plain(component.getString());
+		if (fromVisit.toLowerCase(Locale.ROOT).contains("dna")) {
+			return fromVisit;
+		}
+		if (fromGet.toLowerCase(Locale.ROOT).contains("dna")) {
+			return fromGet;
+		}
+		return fromVisit.isEmpty() ? fromGet : fromVisit;
 	}
 
 	private static String plain(String value) {

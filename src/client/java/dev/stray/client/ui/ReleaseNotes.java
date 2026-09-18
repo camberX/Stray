@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.4.16", new String[]{
+			"Auto DNA treats Crop Analyzer titles as the mutation name plus DNA, like Ashwreath DNA, including the open-screen packet title."
+		}),
 		new Entry("1.4.15", new String[]{
 			"Auto DNA recognizes Greenhouse menus titled (mutation) DNA, waits for the board to fill, and clicks the next swap."
 		}),
