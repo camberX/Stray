@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.4.8", new String[]{
+			"Profile viewer Collections replaces the Farm tab. It lists Skyblock collection counts instead of Garden milestones."
+		}),
 		new Entry("1.4.7", new String[]{
 			"Profile viewer skulls are the 3D head item again instead of a flat face."
 		}),

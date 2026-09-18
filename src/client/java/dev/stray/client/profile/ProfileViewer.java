@@ -283,7 +283,7 @@ public final class ProfileViewer {
 		}
 	}
 
-	public record Collection(String name, long amount) {
+	public record Collection(String id, String name, long amount) {
 	}
 
 	public record Profile(
@@ -1859,23 +1859,48 @@ public final class ProfileViewer {
 			collection = object(member, "collections");
 		}
 		if (collection == null) {
+			collection = object(object(member, "player_data"), "collection");
+		}
+		if (collection == null) {
 			return out;
 		}
 		for (Map.Entry<String, JsonElement> entry : collection.entrySet()) {
-			if (entry.getValue() == null || !entry.getValue().isJsonPrimitive()) {
+			String id = entry.getKey();
+			if (id == null || id.isBlank() || "unlocked_coll_tiers".equalsIgnoreCase(id)) {
 				continue;
 			}
-			long amount = Math.max(0L, (long) num(collection, entry.getKey()));
+			long amount = collectionAmount(entry.getValue());
 			if (amount <= 0L) {
 				continue;
 			}
-			out.add(new Collection(itemName(entry.getKey()), amount));
+			out.add(new Collection(id, itemName(id), amount));
 		}
 		out.sort(Comparator.comparingLong(Collection::amount).reversed());
-		if (out.size() > 48) {
-			return new ArrayList<>(out.subList(0, 48));
-		}
 		return out;
+	}
+
+	private static long collectionAmount(JsonElement value) {
+		if (value == null || value.isJsonNull()) {
+			return 0L;
+		}
+		if (value.isJsonPrimitive()) {
+			return Math.max(0L, (long) num(value.getAsJsonPrimitive()));
+		}
+		if (!value.isJsonObject()) {
+			return 0L;
+		}
+		JsonObject object = value.getAsJsonObject();
+		double amount = num(object, "amount");
+		if (amount <= 0d) {
+			amount = num(object, "collected");
+		}
+		if (amount <= 0d) {
+			amount = num(object, "collection");
+		}
+		if (amount <= 0d) {
+			amount = num(object, "total");
+		}
+		return Math.max(0L, (long) amount);
 	}
 
 	private static JsonElement bagOf(JsonObject inventory, JsonObject member, String name) {
@@ -2601,6 +2626,13 @@ public final class ProfileViewer {
 			return 0d;
 		}
 		JsonPrimitive primitive = value.getAsJsonPrimitive();
+		return num(primitive);
+	}
+
+	private static double num(JsonPrimitive primitive) {
+		if (primitive == null) {
+			return 0d;
+		}
 		if (primitive.isNumber()) {
 			return primitive.getAsDouble();
 		}
