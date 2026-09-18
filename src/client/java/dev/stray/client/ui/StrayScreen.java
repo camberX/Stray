@@ -163,7 +163,7 @@ public class StrayScreen extends Screen {
 		NUCLEUS("Nucleus alerts", 2),
 		NODE_ESP("Node ESP", 4),
 		WATERMARK("Watermark", 4),
-		MUSIC("Music", 3),
+		MUSIC("Music", 4),
 		PIP("Picture in picture", 3),
 		RAWMATS("Raw mats", 1),
 		MINING("Mining HUD", 1),
@@ -3296,6 +3296,7 @@ public class StrayScreen extends Screen {
 				toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Name", config.watermarkName, v -> config.watermarkName = v);
 			}
 			case MUSIC -> {
+				y = cycle(graphics, font, ix, y, iw, mouseX, mouseY, "Layout", config.musicLayoutLabel(), config::cycleMusicLayout);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Hide when idle", config.musicHideIdle, v -> config.musicHideIdle = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Song Notification", config.musicChatAnnounce, v -> config.musicChatAnnounce = v);
 				toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Spotify", config.spotifyEnabled, v -> config.spotifyEnabled = v);

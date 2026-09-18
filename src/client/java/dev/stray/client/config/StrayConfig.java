@@ -79,6 +79,7 @@ public final class StrayConfig {
 	public String pipWindowTitle = "";
 	public int pipFps = 60;
 	public float pipOpacity = 1.0f;
+	public String musicHudLayout = "card";
 	public boolean musicHideIdle = false;
 	public boolean musicChatAnnounce = false;
 	public boolean musicChatOffDefault = false;
@@ -248,6 +249,7 @@ public final class StrayConfig {
 	public float titaniumEspOpacity = 0.38f;
 	public boolean rawmatsEnchanted = false;
 	public String rawmatsItemId = "";
+	public long rawmatsCount = 1L;
 	public boolean inventoryHudEnabled = false;
 	public boolean inventoryHudHotbar = false;
 	public boolean inventoryHudArmor = false;
@@ -985,6 +987,8 @@ public final class StrayConfig {
 				if (loaded.rawmatsItemId == null) {
 					loaded.rawmatsItemId = "";
 				}
+				loaded.rawmatsCount = clampRawmatsCount(loaded.rawmatsCount);
+				loaded.musicHudLayout = normalizeMusicLayout(loaded.musicHudLayout);
 				if (loaded.musicApiToken == null) {
 					loaded.musicApiToken = "";
 				}
@@ -1389,6 +1393,60 @@ public final class StrayConfig {
 
 	public String rawmatsModeLabel() {
 		return rawmatsEnchanted ? "Enchanted" : "Raw";
+	}
+
+	public static long clampRawmatsCount(long count) {
+		if (count < 1L) {
+			return 1L;
+		}
+		return Math.min(count, 999_999L);
+	}
+
+	private static final String[] MUSIC_LAYOUTS = {"card", "compact", "poster", "dock"};
+
+	public void cycleMusicLayout() {
+		musicHudLayout = MUSIC_LAYOUTS[(musicLayoutIndex() + 1) % MUSIC_LAYOUTS.length];
+	}
+
+	public String musicLayoutLabel() {
+		return switch (normalizeMusicLayout(musicHudLayout)) {
+			case "compact" -> "Compact";
+			case "poster" -> "Poster";
+			case "dock" -> "Dock";
+			default -> "Card";
+		};
+	}
+
+	private int musicLayoutIndex() {
+		String current = normalizeMusicLayout(musicHudLayout);
+		for (int i = 0; i < MUSIC_LAYOUTS.length; i++) {
+			if (MUSIC_LAYOUTS[i].equals(current)) {
+				return i;
+			}
+		}
+		return 0;
+	}
+
+	public static String normalizeMusicLayout(String value) {
+		if (value == null) {
+			return "card";
+		}
+		String key = value.trim().toLowerCase(java.util.Locale.ROOT);
+		for (String layout : MUSIC_LAYOUTS) {
+			if (layout.equals(key)) {
+				return layout;
+			}
+		}
+		if ("stacked".equals(key) || "cover".equals(key)) {
+			return "poster";
+		}
+		if ("thin".equals(key) || "banner".equals(key) || "bar".equals(key)) {
+			return "dock";
+		}
+		if ("mini".equals(key) || "small".equals(key)) {
+			return "compact";
+		}
+		return "card";
 	}
 
 	public EntityVisuals visuals(EntityKind kind) {

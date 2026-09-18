@@ -105,12 +105,12 @@ public final class RawmatsHudRenderer {
 
 		if (!snap.present()) {
 			GuiDraw.menu(graphics, font, "No item tracked", PAD + 4, PAD + 12, Theme.TEXT);
-			GuiDraw.small(graphics, font, "/st rawmats <id>", PAD + 4, PAD + 24, Theme.MUTED);
+			GuiDraw.small(graphics, font, "/st rawmats <id> [count]", PAD + 4, PAD + 24, Theme.MUTED);
 			graphics.pose().popMatrix();
 			return;
 		}
 
-		String title = ellipsize(font, snap.name(), WIDTH - PAD * 2 - 72, false);
+		String title = ellipsize(font, titleOf(snap), WIDTH - PAD * 2 - 72, false);
 		GuiDraw.menu(graphics, font, title, PAD + 4, PAD + 12, Theme.TEXT);
 		String tally = snap.complete() + "/" + snap.total();
 		String pct = Math.round(snap.progress() * 100f) + "%";
@@ -141,6 +141,13 @@ public final class RawmatsHudRenderer {
 			GuiDraw.small(graphics, font, hint, PAD + 4, rowY + 1, Theme.MUTED);
 		}
 		graphics.pose().popMatrix();
+	}
+
+	private static String titleOf(RawmatsTracker.Snapshot snap) {
+		if (snap.crafts() > 1L) {
+			return snap.name() + " ×" + snap.crafts();
+		}
+		return snap.name();
 	}
 
 	private static void row(

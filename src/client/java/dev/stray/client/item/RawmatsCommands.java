@@ -17,8 +17,12 @@ import net.minecraft.world.item.ItemStack;
 
 import java.util.List;
 import java.util.Locale;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public final class RawmatsCommands {
+	private static final Pattern COUNT_TAIL = Pattern.compile("(?i)^(.+?)(?:\\s+[x×*]\\s*(\\d+)|\\s+(\\d+))$");
+
 	private RawmatsCommands() {
 	}
 
@@ -71,7 +75,7 @@ public final class RawmatsCommands {
 		ItemStack held = ItemIds.held(player);
 		String id = ItemStorage.idOf(held);
 		if (id == null) {
-			tell(muted("Hold a Skyblock item or type /st rawmats <id>."));
+			tell(muted("Hold a Skyblock item or type /st rawmats <id> [count]."));
 			return 0;
 		}
 		return track(id);
@@ -102,20 +106,24 @@ public final class RawmatsCommands {
 				.append(Component.literal(" " + config.rawmatsModeLabel()).withStyle(style(Theme.TEXT))));
 			return Command.SINGLE_SUCCESS;
 		}
-		ItemIds.Preview preview = ItemIds.resolve(trimmed);
+		Query parsed = parse(trimmed);
+		ItemIds.Preview preview = ItemIds.resolve(parsed.id());
 		String id = preview.kind() == ItemIds.Kind.SKYBLOCK
 			? SkyblockRecipes.normalize(preview.canonical())
-			: SkyblockRecipes.normalize(trimmed);
+			: SkyblockRecipes.normalize(parsed.id());
 		if (id.isBlank()) {
 			tell(muted("Unknown item. Try sb:HYPERION or hold the item and run /st rawmats."));
 			return 0;
 		}
-		RawmatsTracker.set(id);
+		RawmatsTracker.set(id, parsed.count());
 		RawmatsTracker.Snapshot snap = RawmatsTracker.snapshot();
 		MutableComponent line = brand()
 			.append(sep())
 			.append(Component.literal("RAW MATS").withStyle(style(Theme.ACCENT).withBold(true)))
 			.append(Component.literal(" " + snap.name()).withStyle(style(Theme.TEXT)));
+		if (parsed.count() > 1L) {
+			line.append(Component.literal(" ×" + parsed.count()).withStyle(style(Theme.ACCENT)));
+		}
 		if (snap.recipe()) {
 			line.append(Component.literal("  " + StrayConfig.get().rawmatsModeLabel().toLowerCase(Locale.ROOT) + "  " + snap.complete() + "/" + snap.total() + " materials").withStyle(style(Theme.MUTED)));
 		} else {
@@ -139,6 +147,34 @@ public final class RawmatsCommands {
 			tell(muted("Ender Chest, backpacks, and sacks load when you join a server or run /st rawmats."));
 		}
 		return Command.SINGLE_SUCCESS;
+	}
+
+	private static Query parse(String trimmed) {
+		Matcher matcher = COUNT_TAIL.matcher(trimmed);
+		if (!matcher.matches()) {
+			return new Query(trimmed, 1L);
+		}
+		String id = matcher.group(1).trim();
+		if (id.isEmpty() || keyword(id)) {
+			return new Query(trimmed, 1L);
+		}
+		String digits = matcher.group(2) != null ? matcher.group(2) : matcher.group(3);
+		long count = 1L;
+		try {
+			count = Long.parseLong(digits);
+		} catch (NumberFormatException ignored) {
+			return new Query(trimmed, 1L);
+		}
+		return new Query(id, StrayConfig.clampRawmatsCount(count));
+	}
+
+	private static boolean keyword(String value) {
+		String key = value.toLowerCase(Locale.ROOT);
+		return key.equals("clear") || key.equals("off") || key.equals("none")
+			|| key.equals("refresh") || key.equals("raw") || key.equals("enchanted") || key.equals("ench");
+	}
+
+	private record Query(String id, long count) {
 	}
 
 	private static MutableComponent brand() {
