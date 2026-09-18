@@ -69,7 +69,7 @@ public class ProfileViewerScreen extends Screen {
 		ITEMS("Items", MenuFont.BAG),
 		DUNGEONS("Dungeons", MenuFont.SWORD),
 		MINING("Mining", MenuFont.DIAMOND),
-		FARMING("Farm", MenuFont.GRAIN),
+		COLLECTIONS("Collections", MenuFont.CATEGORY),
 		PETS("Pets", MenuFont.CAT);
 
 		final String label;
@@ -325,7 +325,7 @@ public class ProfileViewerScreen extends Screen {
 			case ITEMS -> drawItems(graphics, font, mouseX, mouseY, x, y, w, h, profile);
 			case DUNGEONS -> drawDungeons(graphics, font, mouseX, mouseY, x, y, w, h, profile);
 			case MINING -> drawMining(graphics, font, mouseX, mouseY, x, y, w, h, profile);
-			case FARMING -> drawFarming(graphics, font, mouseX, mouseY, x, y, w, h, profile);
+			case COLLECTIONS -> drawCollections(graphics, font, mouseX, mouseY, x, y, w, h, profile);
 			case PETS -> drawPets(graphics, font, mouseX, mouseY, x, y, w, h, profile);
 		}
 	}
@@ -663,7 +663,7 @@ public class ProfileViewerScreen extends Screen {
 		}
 	}
 
-	private void drawFarming(
+	private void drawCollections(
 		GuiGraphicsExtractor graphics,
 		Font font,
 		int mouseX,
@@ -674,48 +674,44 @@ public class ProfileViewerScreen extends Screen {
 		float h,
 		ProfileViewer.Profile profile
 	) {
-		float left = x + 12;
-		float top = y + 10;
-		float col = (w - 32) / 3f;
-		ProfileViewer.Skill farming = skill(profile, "Farming");
-		infoRow(graphics, font, mouseX, mouseY, left, top, col, new ItemStack(Items.WHEAT), "Farming",
-			farming.level() + " / " + farming.cap(), "Farming " + farming.level() + " / " + farming.cap());
-		infoRow(graphics, font, mouseX, mouseY, left + col + 8, top, col, new ItemStack(Items.OAK_SAPLING), "Garden",
-			String.valueOf(profile.farming().garden()), "Garden level " + profile.farming().garden());
-		infoRow(graphics, font, mouseX, mouseY, left + (col + 8) * 2, top, col, new ItemStack(Items.PLAYER_HEAD), "Visitors",
-			String.valueOf(profile.farming().visitors()), profile.farming().visitors() + " unique visitors");
-
-		List<ProfileViewer.Crop> crops = profile.farming().crops();
-		float gridY = top + 32;
-		float gridH = y + h - gridY - 8;
-		int columns = 5;
-		int rows = 2;
-		float cardW = (w - 28 - (columns - 1) * 8f) / columns;
-		float cardH = Math.min(88f, (gridH - (rows - 1) * 8f) / rows);
-		for (int i = 0; i < crops.size(); i++) {
-			int column = i % columns;
-			int row = i / columns;
-			if (row >= rows) {
-				break;
+		List<ProfileViewer.Collection> collections = profile.collections();
+		if (collections == null || collections.isEmpty()) {
+			GuiDraw.menu(graphics, font, "No collections on this profile.", x + 12, y + 14, Theme.MUTED);
+			return;
+		}
+		float pad = 10;
+		float left = x + pad;
+		float top = y + pad;
+		float gridW = w - pad * 2;
+		float gridH = h - pad * 2;
+		int columns = Math.max(3, (int) (gridW / 92f));
+		float gap = 6;
+		float cardW = (gridW - (columns - 1) * gap) / columns;
+		float cardH = 52;
+		int rows = Math.max(1, (int) (gridH / (cardH + gap)));
+		float rowH = cardH + gap;
+		listScroll = Mth.clamp(listScroll, 0f, Math.max(0f, (float) Math.ceil(collections.size() / (double) columns) * rowH - gridH));
+		int first = (int) (listScroll / rowH);
+		int visible = columns * (rows + 1);
+		for (int i = first * columns; i < collections.size() && i < first * columns + visible; i++) {
+			int local = i - first * columns;
+			int col = local % columns;
+			int row = local / columns;
+			ProfileViewer.Collection collection = collections.get(i);
+			float cx = left + col * (cardW + gap);
+			float cy = top + row * rowH - (listScroll - first * rowH);
+			if (cy + cardH < top || cy > top + gridH) {
+				continue;
 			}
-			ProfileViewer.Crop crop = crops.get(i);
-			float cx = left + column * (cardW + 8);
-			float cy = gridY + row * (cardH + 8);
 			boolean hover = GuiDraw.hovered(mouseX, mouseY, cx, cy, cardW, cardH);
 			GuiDraw.panel(graphics, cx, cy, cardW, cardH, 8, hover ? Theme.CARD_HOVER : Theme.CARD, hover ? Theme.ACCENT : Theme.LINE);
-			paintItem(graphics, font, cropIcon(crop.name()), cx + 8, cy + 10, 20, false);
-			GuiDraw.small(graphics, font, crop.name(), cx + 32, cy + 10, Theme.MUTED);
-			GuiDraw.menu(graphics, font, crop.level() + " / " + crop.cap(), cx + 32, cy + 22, Theme.TEXT);
-			GuiDraw.small(graphics, font, compact(crop.amount()), cx + 32, cy + 36, Theme.MUTED);
-			float barW = cardW - 16;
-			GuiDraw.rounded(graphics, cx + 8, cy + cardH - 14, barW, 5, 2, Theme.TRACK);
-			float fill = Math.max(0f, Math.min(1f, crop.progress()));
-			if (fill > 0.01f) {
-				GuiDraw.rounded(graphics, cx + 8, cy + cardH - 14, Math.max(4f, barW * fill), 5, 2, Theme.ACCENT);
-			}
+			ItemStack icon = collectionIcon(collection.id());
+			paintItem(graphics, font, icon, cx + 8, cy + 16, 20, false);
+			GuiDraw.small(graphics, font, clip(font, collection.name(), cardW - 40), cx + 32, cy + 10, Theme.MUTED);
+			GuiDraw.menu(graphics, font, compact(collection.amount()), cx + 32, cy + 24, Theme.TEXT);
 			if (hover) {
-				tooltip = crop.name() + " milestone " + crop.level() + " / " + crop.cap()
-					+ "\n" + prettyNumber(crop.amount()) + " Garden harvests";
+				hoverStack = icon;
+				tooltip = collection.name() + "\n" + prettyNumber(collection.amount()) + " collected";
 			}
 		}
 	}
@@ -1511,20 +1507,17 @@ public class ProfileViewerScreen extends Screen {
 		};
 	}
 
-	private static ItemStack cropIcon(String name) {
-		return switch (name == null ? "" : name) {
-			case "Wheat" -> new ItemStack(Items.WHEAT);
-			case "Carrot" -> new ItemStack(Items.CARROT);
-			case "Potato" -> new ItemStack(Items.POTATO);
-			case "Pumpkin" -> new ItemStack(Items.PUMPKIN);
-			case "Melon" -> new ItemStack(Items.MELON_SLICE);
-			case "Mushroom" -> new ItemStack(Items.RED_MUSHROOM);
-			case "Cocoa" -> new ItemStack(Items.COCOA_BEANS);
-			case "Cactus" -> new ItemStack(Items.CACTUS);
-			case "Cane" -> new ItemStack(Items.SUGAR_CANE);
-			case "Wart" -> new ItemStack(Items.NETHER_WART);
-			default -> new ItemStack(Items.WHEAT);
-		};
+	private static ItemStack collectionIcon(String id) {
+		if (id == null || id.isBlank()) {
+			return new ItemStack(Items.PAPER);
+		}
+		String raw = id.trim();
+		ItemIds.Preview preview = raw.contains(":") ? ItemIds.resolve(raw) : ItemIds.resolve("sb:" + raw);
+		ItemStack stack = preview.stack();
+		if (stack != null && !stack.isEmpty()) {
+			return stack;
+		}
+		return new ItemStack(Items.PAPER);
 	}
 
 	private static boolean ironman(ProfileViewer.Profile profile) {
