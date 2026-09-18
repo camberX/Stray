@@ -363,6 +363,7 @@ public final class StrayConfig {
 	public boolean menuScaleV2;
 	public boolean menuStarfield = false;
 	public boolean hudStarfield = false;
+	public String hudStyle = "stray";
 	public boolean accentOutlines = false;
 	public String guiDesign = "control";
 	public int controlPaneRgb = 0x181818;
@@ -1310,6 +1311,7 @@ public final class StrayConfig {
 				loaded.hudOpacity = loaded.hudOpacity <= 0f
 					? 0.90f
 					: clamp(loaded.hudOpacity, 0.20f, 1f);
+				loaded.hudStyle = normalizeHudStyle(loaded.hudStyle);
 				if (loaded.playerVisuals == null) {
 					loaded.playerVisuals = new EntityVisuals();
 				}
@@ -1474,6 +1476,29 @@ public final class StrayConfig {
 
 	public void cycleHealthBarStyle() {
 		healthBarStyle = healthBarCsgo() ? "stray" : "csgo";
+	}
+
+	public boolean hudStyleVanilla() {
+		return "vanilla".equalsIgnoreCase(hudStyle);
+	}
+
+	public String hudStyleLabel() {
+		return hudStyleVanilla() ? "Vanilla" : "Stray";
+	}
+
+	public void cycleHudStyle() {
+		hudStyle = hudStyleVanilla() ? "stray" : "vanilla";
+	}
+
+	public static String normalizeHudStyle(String style) {
+		if (style == null) {
+			return "stray";
+		}
+		String key = style.trim().toLowerCase();
+		if (key.equals("vanilla") || key.equals("minecraft") || key.equals("mc")) {
+			return "vanilla";
+		}
+		return "stray";
 	}
 
 	public static String normalizeHealthBarSide(String side) {
