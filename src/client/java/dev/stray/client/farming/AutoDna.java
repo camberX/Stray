@@ -10,6 +10,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.Style;
@@ -24,18 +25,24 @@ import net.minecraft.world.item.ItemStack;
 
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.Set;
+import java.util.regex.Pattern;
 
 /**
- * Auto-clicks the next SkyHanni DNA analyzer swap in Greenhouse menus whose
- * title ends with {@code DNA}.
+ * Auto-clicks the next SkyHanni DNA analyzer swap in Greenhouse menus titled
+ * {@code (mutation) DNA}.
  */
 public final class AutoDna {
 	private static final int HIGHLIGHT = 0x8000C853;
 	private static final int CLOSE_SLOT = 49;
 	private static final int FIRST_SLOT = 9;
 	private static final int LAST_SLOT = 44;
+	private static final Pattern PAREN_DNA = Pattern.compile(
+		"[(\\uFF08][^)\\uFF09]{1,40}[)\\uFF09]\\s*DNA\\s*$",
+		Pattern.CASE_INSENSITIVE
+	);
 
 	private static boolean inInventory;
 	private static boolean fakeInventory;
@@ -74,8 +81,7 @@ public final class AutoDna {
 			reset();
 			return;
 		}
-		String title = screen.getTitle().getString();
-		inInventory = title.endsWith(" DNA");
+		inInventory = isDnaTitle(screen.getTitle());
 		fakeInventory = false;
 		errorCount = 0;
 		board = DnaAnalyzerSolver.Solution.none();
@@ -86,13 +92,11 @@ public final class AutoDna {
 	}
 
 	public static void onPacket(Packet<?> packet) {
-		if (!inInventory) {
+		if (!(packet instanceof ClientboundContainerSetSlotPacket
+			|| packet instanceof ClientboundContainerSetContentPacket)) {
 			return;
 		}
-		if (packet instanceof ClientboundContainerSetSlotPacket
-			|| packet instanceof ClientboundContainerSetContentPacket) {
-			Minecraft.getInstance().execute(AutoDna::readBoard);
-		}
+		Minecraft.getInstance().execute(AutoDna::readBoard);
 	}
 
 	public static boolean shouldBlock(int slotId) {
@@ -100,10 +104,13 @@ public final class AutoDna {
 	}
 
 	public static void tick(Minecraft client) {
-		if (!enabled()) {
+		if (!(client.screen instanceof AbstractContainerScreen<?> screen)) {
 			return;
 		}
-		if (!(client.screen instanceof AbstractContainerScreen<?> screen)) {
+		if (!inInventory || pendingA < 0 || waitingForUpdate) {
+			readBoard();
+		}
+		if (!enabled()) {
 			return;
 		}
 		if (!screen.getMenu().getCarried().isEmpty() && clickedFirst && pendingB >= 0) {
@@ -141,17 +148,17 @@ public final class AutoDna {
 	}
 
 	private static void readBoard() {
-		if (!inInventory || fakeInventory) {
-			return;
-		}
 		Minecraft client = Minecraft.getInstance();
 		if (!(client.screen instanceof AbstractContainerScreen<?> screen)) {
 			return;
 		}
-		if (!screen.getTitle().getString().endsWith(" DNA")) {
-			reset();
+		if (!isDnaTitle(screen.getTitle())) {
+			if (inInventory) {
+				reset();
+			}
 			return;
 		}
+		inInventory = true;
 		List<Slot> slots = screen.getMenu().slots;
 		if (slots.size() <= LAST_SLOT) {
 			return;
@@ -161,18 +168,33 @@ public final class AutoDna {
 		}
 
 		DnaAnalyzerSolver.Color[][] columns = new DnaAnalyzerSolver.Color[DnaAnalyzerSolver.COLUMNS][DnaAnalyzerSolver.ROWS];
+		boolean empty = false;
+		boolean unknown = false;
 		for (int slotId = FIRST_SLOT; slotId <= LAST_SLOT; slotId++) {
 			int row = (slotId / 9) - 1;
 			int column = slotId % 9;
-			DnaAnalyzerSolver.Color color = colorOf(slots.get(slotId).getItem());
+			ItemStack stack = slots.get(slotId).getItem();
+			if (stack == null || stack.isEmpty()) {
+				empty = true;
+				continue;
+			}
+			DnaAnalyzerSolver.Color color = colorOf(stack);
 			if (color == null) {
-				fakeInventory = true;
-				board = DnaAnalyzerSolver.Solution.none();
-				clearPending();
-				return;
+				unknown = true;
+				continue;
 			}
 			columns[column][row] = color;
 		}
+		if (empty) {
+			return;
+		}
+		if (unknown) {
+			fakeInventory = true;
+			board = DnaAnalyzerSolver.Solution.none();
+			clearPending();
+			return;
+		}
+		fakeInventory = false;
 
 		for (DnaAnalyzerSolver.Color[] column : columns) {
 			Set<DnaAnalyzerSolver.Color> unique = new HashSet<>(List.of(column));
@@ -246,6 +268,24 @@ public final class AutoDna {
 		return (long) config.autoDnaClickDelay + extra;
 	}
 
+	static boolean isDnaTitle(Component title) {
+		return isDnaTitle(plain(title));
+	}
+
+	static boolean isDnaTitle(String plain) {
+		if (plain == null || plain.isEmpty()) {
+			return false;
+		}
+		String folded = plain.toLowerCase(Locale.ROOT);
+		if (PAREN_DNA.matcher(plain).find()) {
+			return true;
+		}
+		if (folded.contains("shard") || folded.contains("ultimate")) {
+			return false;
+		}
+		return folded.endsWith(" dna") || folded.equals("dna");
+	}
+
 	static DnaAnalyzerSolver.Color colorOf(ItemStack stack) {
 		if (stack == null || stack.isEmpty()) {
 			return null;
@@ -253,45 +293,71 @@ public final class AutoDna {
 		boolean prior = ItemAppearance.suppress();
 		try {
 			Component hover = stack.getHoverName();
-			String legacy = stripLeadingWhite(toLegacy(hover));
-			if (legacy.startsWith("§cDNA")) {
-				return DnaAnalyzerSolver.Color.RED;
+			Component custom = stack.get(DataComponents.CUSTOM_NAME);
+			DnaAnalyzerSolver.Color fromHover = colorOfName(hover, stack);
+			if (fromHover != null) {
+				return fromHover;
 			}
-			if (legacy.startsWith("§eDNA")) {
-				return DnaAnalyzerSolver.Color.YELLOW;
+			if (custom != null && custom != hover) {
+				return colorOfName(custom, stack);
 			}
-			if (legacy.startsWith("§9DNA")) {
-				return DnaAnalyzerSolver.Color.BLUE;
-			}
-			if (legacy.startsWith("§aDNA")) {
-				return DnaAnalyzerSolver.Color.GREEN;
-			}
-			String plain = ChatFormatting.stripFormatting(hover.getString()).trim();
-			if (plain.equals("DNA") || plain.endsWith(" DNA")) {
-				DnaAnalyzerSolver.Color styled = firstColor(hover);
-				if (styled != null) {
-					return styled;
-				}
-			}
-			return fromItem(stack, plain);
+			return null;
 		} finally {
 			ItemAppearance.resume(prior);
 		}
 	}
 
-	private static DnaAnalyzerSolver.Color fromItem(ItemStack stack, String plain) {
-		if (!plain.contains("DNA")) {
+	private static DnaAnalyzerSolver.Color colorOfName(Component hover, ItemStack stack) {
+		if (hover == null) {
 			return null;
 		}
+		String legacy = stripLeadingWhite(toLegacy(hover));
+		if (legacy.startsWith("§cDNA") || legacy.startsWith("§4DNA")) {
+			return DnaAnalyzerSolver.Color.RED;
+		}
+		if (legacy.startsWith("§eDNA") || legacy.startsWith("§6DNA")) {
+			return DnaAnalyzerSolver.Color.YELLOW;
+		}
+		if (legacy.startsWith("§9DNA") || legacy.startsWith("§1DNA")
+			|| legacy.startsWith("§bDNA") || legacy.startsWith("§3DNA")) {
+			return DnaAnalyzerSolver.Color.BLUE;
+		}
+		if (legacy.startsWith("§aDNA") || legacy.startsWith("§2DNA")) {
+			return DnaAnalyzerSolver.Color.GREEN;
+		}
+		String plain = plain(hover);
+		if (!isDnaItemName(plain)) {
+			return null;
+		}
+		DnaAnalyzerSolver.Color fromCode = firstLegacyColor(legacy);
+		if (fromCode != null) {
+			return fromCode;
+		}
+		DnaAnalyzerSolver.Color styled = firstColor(hover);
+		if (styled != null) {
+			return styled;
+		}
+		return fromItem(stack);
+	}
+
+	private static boolean isDnaItemName(String plain) {
+		if (plain == null || plain.isEmpty()) {
+			return false;
+		}
+		String folded = plain.toUpperCase(Locale.ROOT);
+		return folded.equals("DNA") || folded.startsWith("DNA") || folded.endsWith(" DNA") || folded.contains("DNA");
+	}
+
+	private static DnaAnalyzerSolver.Color fromItem(ItemStack stack) {
 		Identifier id = BuiltInRegistries.ITEM.getKey(stack.getItem());
 		String path = id.getPath();
 		if (path.contains("red")) {
 			return DnaAnalyzerSolver.Color.RED;
 		}
-		if (path.contains("yellow")) {
+		if (path.contains("yellow") || path.contains("gold") || path.contains("orange")) {
 			return DnaAnalyzerSolver.Color.YELLOW;
 		}
-		if (path.contains("blue")) {
+		if (path.contains("blue") || path.contains("cyan") || path.contains("light_blue")) {
 			return DnaAnalyzerSolver.Color.BLUE;
 		}
 		if (path.contains("green") || path.contains("lime")) {
@@ -313,7 +379,7 @@ public final class AutoDna {
 			out.append(text);
 			return Optional.empty();
 		}, Style.EMPTY);
-		return out.toString();
+		return out.toString().replaceAll("§r(§[0-9a-f])", "$1");
 	}
 
 	private static DnaAnalyzerSolver.Color firstColor(Component component) {
@@ -328,18 +394,59 @@ public final class AutoDna {
 		return found[0];
 	}
 
+	private static DnaAnalyzerSolver.Color firstLegacyColor(String legacy) {
+		String rest = stripLeadingWhite(legacy);
+		while (rest.length() >= 2 && rest.charAt(0) == '\u00A7') {
+			DnaAnalyzerSolver.Color color = colorOf(ChatFormatting.getByCode(Character.toLowerCase(rest.charAt(1))));
+			if (color != null) {
+				return color;
+			}
+			char code = Character.toLowerCase(rest.charAt(1));
+			if ("klmnor".indexOf(code) < 0) {
+				break;
+			}
+			rest = rest.substring(2);
+		}
+		return null;
+	}
+
 	private static ChatFormatting formattingOf(Style style) {
 		TextColor color = style.getColor();
 		if (color == null) {
 			return null;
 		}
+		ChatFormatting named = ChatFormatting.getByName(color.serialize());
+		if (named != null && named.isColor()) {
+			return named;
+		}
+		int rgb = color.getValue();
 		for (ChatFormatting formatting : ChatFormatting.values()) {
-			Integer rgb = formatting.getColor();
-			if (rgb != null && color.getValue() == rgb) {
+			Integer value = formatting.getColor();
+			if (value != null && value == rgb) {
 				return formatting;
 			}
 		}
-		return null;
+		return nearestNamed(rgb);
+	}
+
+	private static ChatFormatting nearestNamed(int rgb) {
+		int best = Integer.MAX_VALUE;
+		ChatFormatting found = null;
+		for (ChatFormatting formatting : ChatFormatting.values()) {
+			Integer value = formatting.getColor();
+			if (value == null) {
+				continue;
+			}
+			int dr = ((rgb >> 16) & 0xFF) - ((value >> 16) & 0xFF);
+			int dg = ((rgb >> 8) & 0xFF) - ((value >> 8) & 0xFF);
+			int db = (rgb & 0xFF) - (value & 0xFF);
+			int dist = dr * dr + dg * dg + db * db;
+			if (dist < best) {
+				best = dist;
+				found = formatting;
+			}
+		}
+		return best <= 48 * 48 * 3 ? found : null;
 	}
 
 	private static DnaAnalyzerSolver.Color colorOf(ChatFormatting formatting) {
@@ -353,6 +460,25 @@ public final class AutoDna {
 			case GREEN, DARK_GREEN -> DnaAnalyzerSolver.Color.GREEN;
 			default -> null;
 		};
+	}
+
+	private static String plain(Component component) {
+		return component == null ? "" : plain(component.getString());
+	}
+
+	private static String plain(String value) {
+		if (value == null || value.isEmpty()) {
+			return "";
+		}
+		String text = ChatFormatting.stripFormatting(value);
+		if (text == null) {
+			text = value;
+		}
+		return text.replaceAll("§.", "")
+			.replace('\u00A0', ' ')
+			.replace('\u202F', ' ')
+			.replaceAll("\\s+", " ")
+			.trim();
 	}
 
 	private static String stripLeadingWhite(String value) {
