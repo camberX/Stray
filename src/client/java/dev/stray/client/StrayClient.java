@@ -33,6 +33,7 @@ import dev.stray.client.net.ConnectionPing;
 import dev.stray.client.node.EnderNodeTracker;
 import dev.stray.client.item.ItemAppearance;
 import dev.stray.client.item.ItemIds;
+import dev.stray.client.item.ItemStorage;
 import dev.stray.client.item.RawmatsCommands;
 import dev.stray.client.item.RawmatsTracker;
 import dev.stray.client.item.SkyblockItems;
@@ -313,6 +314,7 @@ public final class StrayClient implements ClientModInitializer {
 			StrayConfig running = StrayConfig.get();
 			SpotifySmtc.tick(running.musicHudEnabled && running.spotifyEnabled);
 			SkyblockLocation.tick(client);
+			ItemStorage.tick(client);
 			StoragePreview.tick(client);
 			LoadoutsScreen.tickSwap(client);
 			WardrobeScreen.tickSwap(client);

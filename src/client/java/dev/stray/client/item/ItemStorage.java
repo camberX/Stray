@@ -52,6 +52,10 @@ public final class ItemStorage {
 
 	private static final Pattern STORED = Pattern.compile("(?i)stored:\\s*([\\d,.]+\\s*[kmb]?)");
 	private static final Map<String, Map<String, Long>> PAGES = new HashMap<>();
+	private static final Map<String, Map<String, Long>> NAME_PAGES = new HashMap<>();
+	private static final Map<String, Long> OPENED_SACKS = new HashMap<>();
+	private static final Map<String, Long> OPENED_SACK_NAMES = new HashMap<>();
+	private static Map<String, Long> captureNames;
 	private static volatile Map<String, Long> apiEnder = Map.of();
 	private static volatile Map<String, Long> apiBackpack = Map.of();
 	private static volatile Map<String, Long> apiSacks = Map.of();
@@ -79,7 +83,7 @@ public final class ItemStorage {
 			resetOpen();
 			return;
 		}
-		String title = screen.getTitle() == null ? "" : screen.getTitle().getString();
+		String title = plainTitle(screen.getTitle());
 		String kind = kind(title);
 		if (kind == null) {
 			resetOpen();
@@ -91,20 +95,29 @@ public final class ItemStorage {
 			return;
 		}
 		Map<String, Long> counts = new HashMap<>();
-		int end = Math.max(0, menu.slots.size() - 36);
-		for (int i = 0; i < end; i++) {
-			addSlot(menu.slots.get(i), counts, 0, true);
+		captureNames = "sack".equals(kind) ? new HashMap<>() : null;
+		boolean prior = ItemAppearance.suppress();
+		try {
+			int end = Math.max(0, menu.slots.size() - 36);
+			for (int i = 0; i < end; i++) {
+				addSlot(menu.slots.get(i), counts, 0, true);
+			}
+		} finally {
+			ItemAppearance.resume(prior);
 		}
 		if (tracksMoves(kind) && kind.equals(openKind) && title.equals(openTitle)) {
 			nudge(adjust(kind), openCounts, counts);
 		}
+		String page = kind + ":" + title.toLowerCase(Locale.ROOT);
 		if ("sack".equals(kind)) {
-			commitSackSeen(counts);
+			storeSackPage(page, counts, captureNames);
+		} else if (!counts.isEmpty() || !PAGES.containsKey(page)) {
+			PAGES.put(page, Map.copyOf(counts));
 		}
+		captureNames = null;
 		openKind = kind;
 		openTitle = title;
 		openCounts = counts;
-		PAGES.put(kind + ":" + title.trim().toLowerCase(Locale.ROOT), counts);
 		countTick = Integer.MIN_VALUE;
 	}
 
@@ -147,6 +160,35 @@ public final class ItemStorage {
 		countTick = Integer.MIN_VALUE;
 	}
 
+	private static void storeSackPage(String page, Map<String, Long> counts, Map<String, Long> names) {
+		Map<String, Long> prior = PAGES.get(page);
+		if (counts.isEmpty() && prior != null && !prior.isEmpty()) {
+			return;
+		}
+		PAGES.put(page, Map.copyOf(counts));
+		if (names != null) {
+			Map<String, Long> priorNames = NAME_PAGES.get(page);
+			if (!(names.isEmpty() && priorNames != null && !priorNames.isEmpty())) {
+				NAME_PAGES.put(page, Map.copyOf(names));
+			}
+		}
+		commitSackSeen(counts);
+		rebuildOpenedSacks();
+	}
+
+	private static void rebuildOpenedSacks() {
+		OPENED_SACKS.clear();
+		OPENED_SACK_NAMES.clear();
+		for (Map.Entry<String, Map<String, Long>> page : PAGES.entrySet()) {
+			if (page.getKey().startsWith("sack:")) {
+				merge(OPENED_SACKS, page.getValue());
+			}
+		}
+		for (Map.Entry<String, Map<String, Long>> page : NAME_PAGES.entrySet()) {
+			merge(OPENED_SACK_NAMES, page.getValue());
+		}
+	}
+
 	public static long sackCount(String id) {
 		String key = SkyblockRecipes.normalize(id);
 		if (key.isBlank()) {
@@ -164,15 +206,22 @@ public final class ItemStorage {
 		if (key.isBlank()) {
 			return 0L;
 		}
-		long n = 0L;
-		String prefix = "sack:";
-		for (Map.Entry<String, Map<String, Long>> page : PAGES.entrySet()) {
-			if (page.getKey().startsWith(prefix)) {
-				n += page.getValue().getOrDefault(key, 0L);
-			}
-		}
+		long n = OPENED_SACKS.getOrDefault(key, 0L);
 		if (sacksLive) {
 			n = Math.max(n, sackCount(key));
+		}
+		return Math.max(0L, n);
+	}
+
+	public static long openedSackNamed(String name) {
+		String folded = foldName(name);
+		if (folded.isEmpty()) {
+			return 0L;
+		}
+		long n = OPENED_SACK_NAMES.getOrDefault(folded, 0L);
+		String id = SkyblockItems.idFromName(name);
+		if (id != null && !id.isBlank()) {
+			n = Math.max(n, openedSackCount(id));
 		}
 		return Math.max(0L, n);
 	}
@@ -194,6 +243,12 @@ public final class ItemStorage {
 		}
 		apiSacks = Map.copyOf(next);
 		sacksLive = true;
+		long opened = OPENED_SACKS.getOrDefault(key, 0L) + delta;
+		if (opened > 0L) {
+			OPENED_SACKS.put(key, opened);
+		} else {
+			OPENED_SACKS.remove(key);
+		}
 		countTick = Integer.MIN_VALUE;
 	}
 
@@ -351,16 +406,22 @@ public final class ItemStorage {
 			return;
 		}
 		String id = idOf(stack);
-		if (id != null) {
-			Long stored = storedAmount(stack);
-			if (stored != null) {
-				if (stored > 0L) {
-					out.merge(id, stored, Long::sum);
-				}
-			} else {
-				out.merge(id, (long) Math.max(1, stack.getCount()), Long::sum);
-			}
+		Long stored = storedAmount(stack);
+		long amount = stored != null ? stored : (long) Math.max(1, stack.getCount());
+		if (stored != null && stored <= 0L) {
+			amount = 0L;
+		}
+		if (id != null && amount > 0L) {
+			out.merge(id, amount, Long::sum);
 			ItemIds.remember(stack);
+		} else if (id != null) {
+			ItemIds.remember(stack);
+		}
+		if (captureNames != null && amount > 0L) {
+			String name = foldName(stack.getHoverName().getString());
+			if (!name.isEmpty()) {
+				captureNames.merge(name, amount, Long::sum);
+			}
 		}
 		addNested(extra(stack), out, depth + 1, nestStorage);
 	}
@@ -593,6 +654,9 @@ public final class ItemStorage {
 		if (lower.contains("backpack")) {
 			return "backpack";
 		}
+		if (lower.contains("sack of sacks") || lower.equals("sacks")) {
+			return null;
+		}
 		if (lower.contains("sack")) {
 			return "sack";
 		}
@@ -600,6 +664,28 @@ public final class ItemStorage {
 			return "storage";
 		}
 		return null;
+	}
+
+	private static String plainTitle(Component title) {
+		if (title == null) {
+			return "";
+		}
+		String text = ChatFormatting.stripFormatting(title.getString());
+		if (text == null) {
+			text = title.getString();
+		}
+		return text.replaceAll("§.", "").replace('\u00A0', ' ').replaceAll("\\s+", " ").trim();
+	}
+
+	private static String foldName(String value) {
+		if (value == null) {
+			return "";
+		}
+		String text = ChatFormatting.stripFormatting(value);
+		if (text == null) {
+			text = value;
+		}
+		return text.replaceAll("§.", "").replace('\u00A0', ' ').replaceAll("\\s+", " ").trim().toLowerCase(Locale.ROOT);
 	}
 
 	private static final class ItemIdsRead {
