@@ -42,13 +42,14 @@ public final class RawmatsTracker {
 		List<Line> lines,
 		long complete,
 		long total,
+		long crafts,
 		boolean recipe,
 		boolean sawEnder,
 		boolean sawBackpack,
 		boolean sawSacks
 	) {
 		public static Snapshot none() {
-			return new Snapshot("", "", ItemStack.EMPTY, List.of(), 0L, 0L, false, false, false, false);
+			return new Snapshot("", "", ItemStack.EMPTY, List.of(), 0L, 0L, 1L, false, false, false, false);
 		}
 
 		public boolean present() {
@@ -90,16 +91,22 @@ public final class RawmatsTracker {
 	public static void clear() {
 		StrayConfig config = StrayConfig.get();
 		config.rawmatsItemId = "";
+		config.rawmatsCount = 1L;
 		config.save();
 	}
 
 	public static String set(String query) {
+		return set(query, 1L);
+	}
+
+	public static String set(String query, long count) {
 		String id = SkyblockRecipes.normalize(query);
 		if (id.isBlank()) {
 			return "";
 		}
 		StrayConfig config = StrayConfig.get();
 		config.rawmatsItemId = id;
+		config.rawmatsCount = StrayConfig.clampRawmatsCount(count);
 		config.rawmatsHudEnabled = true;
 		config.save();
 		SkyblockProfileApi.refresh();
@@ -108,6 +115,7 @@ public final class RawmatsTracker {
 
 	private static int snapTick = Integer.MIN_VALUE;
 	private static boolean snapEnchanted;
+	private static long snapCount = 1L;
 	private static String snapId = "";
 	private static Snapshot snapCache = Snapshot.none();
 
@@ -121,26 +129,28 @@ public final class RawmatsTracker {
 		Minecraft client = Minecraft.getInstance();
 		int tick = client.player == null ? -1 : client.player.tickCount;
 		boolean enchanted = StrayConfig.get().rawmatsEnchanted;
-		if (tick == snapTick && enchanted == snapEnchanted && id.equals(snapId)) {
+		long count = StrayConfig.clampRawmatsCount(StrayConfig.get().rawmatsCount);
+		if (tick == snapTick && enchanted == snapEnchanted && count == snapCount && id.equals(snapId)) {
 			return snapCache;
 		}
 		snapTick = tick;
 		snapEnchanted = enchanted;
+		snapCount = count;
 		snapId = id;
-		snapCache = compute(id);
+		snapCache = compute(id, count);
 		return snapCache;
 	}
 
-	private static Snapshot compute(String id) {
+	private static Snapshot compute(String id, long count) {
 		SkyblockRecipes.load();
 		SkyblockRecipes.Expand expand = StrayConfig.get().rawmatsEnchanted
 			? SkyblockRecipes.Expand.ENCHANTED
 			: SkyblockRecipes.Expand.RAW;
-		Map<String, Long> need = SkyblockRecipes.expand(id, 1L, expand);
+		Map<String, Long> need = SkyblockRecipes.expand(id, count, expand);
 		boolean recipe = SkyblockRecipes.has(id);
 		if (need.isEmpty()) {
 			need = new LinkedHashMap<>();
-			need.put(id, 1L);
+			need.put(id, count);
 		}
 		Minecraft client = Minecraft.getInstance();
 		Player player = client.player;
@@ -181,6 +191,7 @@ public final class RawmatsTracker {
 			List.copyOf(lines),
 			complete,
 			lines.size(),
+			count,
 			recipe,
 			ItemStorage.sawEnder(),
 			ItemStorage.sawBackpack(),

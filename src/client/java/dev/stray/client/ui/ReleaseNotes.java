@@ -15,6 +15,10 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.4.18", new String[]{
+			"Music HUD layouts: Card, Compact, Poster, and Dock. Cycle them in Music settings.",
+			"/st rawmats sb:mithril_plate 2 tracks materials for two crafts, not one."
+		}),
 		new Entry("1.4.17", new String[]{
 			"Auto DNA clicks each swap pair once. Slot updates no longer reset the first click, so it does not hammer the same DNA strand."
 		}),
