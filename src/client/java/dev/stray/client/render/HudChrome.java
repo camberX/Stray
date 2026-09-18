@@ -39,7 +39,6 @@ public final class HudChrome {
 		int accent
 	) {
 		if (vanilla()) {
-			tooltip(graphics, x, y, w, h);
 			return;
 		}
 		if (StrayConfig.get().guiDesignControl()) {
@@ -69,25 +68,6 @@ public final class HudChrome {
 		int outline
 	) {
 		panel(graphics, x, y, w, h, radius, fill, outline, 0);
-	}
-
-	/** Minecraft item-tooltip chrome: dark fill and the purple gradient rim. */
-	private static void tooltip(GuiGraphicsExtractor graphics, float x, float y, float w, float h) {
-		if (w < 4f || h < 4f) {
-			return;
-		}
-		float opacity = StrayConfig.clamp(StrayConfig.get().hudOpacity, 0.20f, 1f);
-		int background = Theme.withAlpha(0x100010, Math.round(240 * opacity));
-		int start = Theme.withAlpha(0x5000FF, Math.round(80 * opacity));
-		int end = Theme.withAlpha(0x28007F, Math.round(80 * opacity));
-		GuiDraw.fill(graphics, x + 1, y, w - 2, h, background);
-		GuiDraw.fill(graphics, x, y + 1, 1, h - 2, background);
-		GuiDraw.fill(graphics, x + w - 1, y + 1, 1, h - 2, background);
-		GuiDraw.fill(graphics, x + 1, y + 1, w - 2, 1, start);
-		GuiDraw.fill(graphics, x + 1, y + h - 2, w - 2, 1, end);
-		float side = Math.max(1f, h - 4f);
-		GuiDraw.fillGradient(graphics, x + 1, y + 2, 1, side, start, end);
-		GuiDraw.fillGradient(graphics, x + w - 2, y + 2, 1, side, start, end);
 	}
 
 	/** Rail sits on the side closer to the screen edge. */
