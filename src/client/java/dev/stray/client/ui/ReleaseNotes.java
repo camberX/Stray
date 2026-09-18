@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.4.11", new String[]{
+			"Garden visitor HUD lists each visitor with crop previews next to the name. Shopping list drops visitor names and shows a /recipe hover. Farming overlays use the panel instead of leaving empty rows."
+		}),
 		new Entry("1.4.10", new String[]{
 			"Profile viewer Collections are grouped by Farming, Mining, Combat, Foraging, Fishing, and Rift. Maxed collections use gold text."
 		}),
