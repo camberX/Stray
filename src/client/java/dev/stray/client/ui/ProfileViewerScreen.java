@@ -691,6 +691,7 @@ public class ProfileViewerScreen extends Screen {
 		int rows = Math.max(1, (int) (gridH / (cardH + gap)));
 		float rowH = cardH + gap;
 		listScroll = Mth.clamp(listScroll, 0f, Math.max(0f, (float) Math.ceil(collections.size() / (double) columns) * rowH - gridH));
+		boolean clip = GuiDraw.scissor(graphics, left, top, gridW, gridH);
 		int first = (int) (listScroll / rowH);
 		int visible = columns * (rows + 1);
 		for (int i = first * columns; i < collections.size() && i < first * columns + visible; i++) {
@@ -703,7 +704,8 @@ public class ProfileViewerScreen extends Screen {
 			if (cy + cardH < top || cy > top + gridH) {
 				continue;
 			}
-			boolean hover = GuiDraw.hovered(mouseX, mouseY, cx, cy, cardW, cardH);
+			boolean hover = GuiDraw.hovered(mouseX, mouseY, cx, cy, cardW, cardH)
+				&& GuiDraw.hovered(mouseX, mouseY, left, top, gridW, gridH);
 			GuiDraw.panel(graphics, cx, cy, cardW, cardH, 8, hover ? Theme.CARD_HOVER : Theme.CARD, hover ? Theme.ACCENT : Theme.LINE);
 			ItemStack icon = collectionIcon(collection.id());
 			paintItem(graphics, font, icon, cx + 8, cy + 16, 20, false);
@@ -713,6 +715,9 @@ public class ProfileViewerScreen extends Screen {
 				hoverStack = icon;
 				tooltip = collection.name() + "\n" + prettyNumber(collection.amount()) + " collected";
 			}
+		}
+		if (clip) {
+			GuiDraw.disableScissor(graphics);
 		}
 	}
 
