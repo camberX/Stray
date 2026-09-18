@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.4.5", new String[]{
+			"Profile viewer uses the same cached Hypixel API as skyblock-pv, so a first-time /pv gets stats and bags from one request instead of waiting on Soopy."
+		}),
 		new Entry("1.4.4", new String[]{
 			"Profile viewer opens a new name from Soopy first. The Hypixel dump is not started until stats are on screen, so a first-time /pv is not starved by inventory download."
 		}),

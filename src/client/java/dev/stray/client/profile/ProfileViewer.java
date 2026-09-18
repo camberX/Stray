@@ -42,13 +42,15 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.zip.GZIPInputStream;
 
 /**
- * Loads Hypixel Skyblock profiles for {@code /pv}. First paint is UUID plus
- * Soopy only. The Hypixel dump starts after the window is up so a new name
- * is not stuck behind a multi-megabyte download. Inventory fills in after.
+ * Loads Hypixel Skyblock profiles for {@code /pv}. First paint uses the same
+ * cached Hypixel proxy as skyblock-pv ({@code skyblock-pv.thatgravyboat.tech}),
+ * which already includes inventory NBT. Soopy and the odtheking dump are
+ * fallbacks only.
  */
 public final class ProfileViewer {
 	private static final String MOJANG = "https://api.mojang.com/users/profiles/minecraft/";
 	private static final String ASHCON = "https://api.ashcon.app/mojang/v2/user/";
+	private static final String PLAYERDB = "https://playerdb.co/api/player/minecraft/";
 	private static final String SOOPY_SKYBLOCK = "https://soopy.dev/api/v2/player_skyblock/";
 	private static final String SOOPY_PLAYER = "https://soopy.dev/api/v2/player/";
 	private static final String HYPIXEL_DUMP = "https://hypixel.odtheking.com/get/";
@@ -522,14 +524,31 @@ public final class ProfileViewer {
 			}
 			String compact = compact(identity.uuid());
 			LookupCache cached = cacheOf(compact);
-			if (paint(gen, identity, compact, cached == null ? null : cached.soopy, cached == null ? null : cached.soopyPlayer, Map.of())) {
+			if (paintHypixel(gen, identity, compact, cached == null ? null : cached.dump, cached == null ? null : cached.soopyPlayer)) {
 				Stray.LOGGER.info("Profile viewer opened {} from cache in {}ms", identity.name(), System.currentTimeMillis() - started);
-				if (cached != null && isHypixelProfiles(cached.dump)) {
-					applyDump(gen, compact, cached.dump);
-					itemsLoading = false;
-					return;
-				}
+				itemsLoading = false;
+				return;
+			}
+			if (paint(gen, identity, compact, cached == null ? null : cached.soopy, cached == null ? null : cached.soopyPlayer, Map.of())) {
+				Stray.LOGGER.info("Profile viewer opened {} from Soopy cache in {}ms", identity.name(), System.currentTimeMillis() - started);
 				loadBagsAfterPaint(gen, identity, compact, null);
+				return;
+			}
+
+			JsonObject pv = SkyblockPvApi.profiles(client, identity.uuid());
+			if (stale(gen)) {
+				return;
+			}
+			if (paintHypixel(gen, identity, compact, pv, null)) {
+				remember(compact, null, null, pv);
+				Stray.LOGGER.info("Profile viewer opened {} from skyblock-pv API in {}ms", identity.name(), System.currentTimeMillis() - started);
+				SkyblockPetLore.request();
+				if (!hasBags(snapshot())) {
+					loadBagsAfterPaint(gen, identity, compact, null);
+				} else {
+					itemsLoading = false;
+					Util.nonCriticalIoPool().execute(() -> withSkin(identity));
+				}
 				return;
 			}
 
@@ -565,6 +584,31 @@ public final class ProfileViewer {
 	private static void loadBagsAfterPaint(int gen, Resolved identity, String compact, CompletableFuture<JsonObject> soopyPlayer) {
 		Util.nonCriticalIoPool().execute(() -> withSkin(identity));
 		Util.nonCriticalIoPool().execute(() -> fillInventories(gen, identity, compact, profileDump(compact), soopyPlayer));
+	}
+
+	private static boolean paintHypixel(int gen, Resolved identity, String compact, JsonObject root, JsonObject soopyPlayer) {
+		if (!isHypixelProfiles(root)) {
+			return false;
+		}
+		List<Profile> profiles = parseProfiles(root, identity.uuid(), null, Map.of(), false);
+		if (profiles.isEmpty()) {
+			return false;
+		}
+		ready(gen, identity, profiles, soopyPlayer);
+		applyDump(gen, compact, root);
+		return true;
+	}
+
+	private static boolean hasBags(Snapshot current) {
+		if (current == null || current.profiles().isEmpty()) {
+			return false;
+		}
+		for (Profile profile : current.profiles()) {
+			if (profile != null && (!profile.inventory().vacant() || !profile.ender().isEmpty() || !profile.backpacks().isEmpty())) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	private static boolean paint(
@@ -844,21 +888,28 @@ public final class ProfileViewer {
 		if (cached != null) {
 			return cached;
 		}
+		CompletableFuture<JsonObject> playerdb = getJsonAsync(PLAYERDB + encode(name));
 		CompletableFuture<JsonObject> mojang = getJsonAsync(MOJANG + encode(name));
 		CompletableFuture<JsonObject> ashcon = getJsonAsync(ASHCON + encode(name));
 		Resolved resolved = null;
-		while (resolved == null && (!mojang.isDone() || !ashcon.isDone())) {
+		while (resolved == null && (!playerdb.isDone() || !mojang.isDone() || !ashcon.isDone())) {
 			try {
-				CompletableFuture.anyOf(mojang, ashcon).join();
+				CompletableFuture.anyOf(playerdb, mojang, ashcon).join();
 			} catch (Exception ignored) {
 			}
-			resolved = fromMojang(mojang.getNow(null), name);
+			resolved = fromPlayerDb(playerdb.getNow(null), name);
+			if (resolved == null) {
+				resolved = fromMojang(mojang.getNow(null), name);
+			}
 			if (resolved == null) {
 				resolved = fromAshcon(ashcon.getNow(null), name);
 			}
 		}
 		if (resolved == null) {
-			resolved = fromMojang(mojang.getNow(null), name);
+			resolved = fromPlayerDb(playerdb.getNow(null), name);
+			if (resolved == null) {
+				resolved = fromMojang(mojang.getNow(null), name);
+			}
 			if (resolved == null) {
 				resolved = fromAshcon(ashcon.getNow(null), name);
 			}
@@ -868,6 +919,22 @@ public final class ProfileViewer {
 			NAMES.put(resolved.name().toLowerCase(Locale.ROOT), resolved);
 		}
 		return resolved;
+	}
+
+	private static Resolved fromPlayerDb(JsonObject root, String name) {
+		JsonObject player = object(object(root, "data"), "player");
+		if (player == null) {
+			return null;
+		}
+		UUID uuid = uuidOf(string(player, "raw_id"));
+		if (uuid == null) {
+			uuid = uuidOf(string(player, "id"));
+		}
+		if (uuid == null) {
+			return null;
+		}
+		String named = string(player, "username");
+		return new Resolved(named.isBlank() ? name : named, uuid, "", "");
 	}
 
 	private static Resolved fromMojang(JsonObject mojang, String name) {
