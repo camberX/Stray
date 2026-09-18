@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.4.13", new String[]{
+			"Vanilla HUD style is SkyHanni-like text only: no panel, gold titles, and shadowed Minecraft text. Stray still uses the glass panels."
+		}),
 		new Entry("1.4.12", new String[]{
 			"Theme has a HUD style switch. Stray keeps the current glass panels; Vanilla uses Minecraft tooltip chrome, gold titles, and shadowed text."
 		}),
