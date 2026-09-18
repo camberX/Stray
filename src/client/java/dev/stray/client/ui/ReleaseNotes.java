@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.4.10", new String[]{
+			"Profile viewer Collections are grouped by Farming, Mining, Combat, Foraging, Fishing, and Rift. Maxed collections use gold text."
+		}),
 		new Entry("1.4.9", new String[]{
 			"Profile viewer Collections no longer overlap the search bar and profile chips while scrolling."
 		}),

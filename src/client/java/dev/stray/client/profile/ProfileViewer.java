@@ -149,6 +149,102 @@ public final class ProfileViewer {
 		2400000, 2400000, 2400000, 2400000, 2400000, 2400000
 	);
 	private static final String ELITE_GARDEN = "https://api.elitebot.dev/garden/";
+	private static final String[] COLLECTION_TYPES = {
+		"FARMING", "MINING", "COMBAT", "FORAGING", "FISHING", "RIFT", "OTHER"
+	};
+	private static final String[] COLLECTION_META = {
+		"FARMING|INK_SACK:3|100000",
+		"FARMING|MOONFLOWER|1000000",
+		"FARMING|CARROT_ITEM|100000",
+		"FARMING|DOUBLE_PLANT|1000000",
+		"FARMING|WILD_ROSE|1000000",
+		"FARMING|CACTUS|50000",
+		"FARMING|RAW_CHICKEN|100000",
+		"FARMING|SUGAR_CANE|50000",
+		"FARMING|PUMPKIN|250000",
+		"FARMING|WHEAT|100000",
+		"FARMING|SEEDS|25000",
+		"FARMING|MUSHROOM_COLLECTION|50000",
+		"FARMING|RABBIT|50000",
+		"FARMING|NETHER_STALK|250000",
+		"FARMING|MUTTON|100000",
+		"FARMING|MELON|250000",
+		"FARMING|POTATO_ITEM|100000",
+		"FARMING|LEATHER|100000",
+		"FARMING|PORK|50000",
+		"FARMING|FEATHER|50000",
+		"MINING|INK_SACK:4|250000",
+		"MINING|REDSTONE|250000",
+		"MINING|UMBER|500000",
+		"MINING|COAL|100000",
+		"MINING|MYCEL|100000",
+		"MINING|ENDER_STONE|50000",
+		"MINING|QUARTZ|50000",
+		"MINING|SAND|5000",
+		"MINING|IRON_INGOT|400000",
+		"MINING|GEMSTONE_COLLECTION|2000000",
+		"MINING|TUNGSTEN|500000",
+		"MINING|OBSIDIAN|100000",
+		"MINING|DIAMOND|50000",
+		"MINING|COBBLESTONE|70000",
+		"MINING|GLOWSTONE_DUST|25000",
+		"MINING|GOLD_INGOT|500000",
+		"MINING|GRAVEL|50000",
+		"MINING|HARD_STONE|1000000",
+		"MINING|MITHRIL_ORE|1000000",
+		"MINING|EMERALD|100000",
+		"MINING|SAND:1|100000",
+		"MINING|ICE|500000",
+		"MINING|GLACITE|500000",
+		"MINING|SULPHUR_ORE|100000",
+		"MINING|NETHERRACK|5000",
+		"COMBAT|ENDER_PEARL|50000",
+		"COMBAT|CHILI_PEPPER|10000",
+		"COMBAT|SLIME_BALL|50000",
+		"COMBAT|MAGMA_CREAM|50000",
+		"COMBAT|GHAST_TEAR|25000",
+		"COMBAT|SULPHUR|50000",
+		"COMBAT|ROTTEN_FLESH|100000",
+		"COMBAT|SPIDER_EYE|50000",
+		"COMBAT|BONE|150000",
+		"COMBAT|BLAZE_ROD|50000",
+		"COMBAT|STRING|50000",
+		"FORAGING|SEA_LUMIES|10000",
+		"FORAGING|LOG_2|25000",
+		"FORAGING|RUBY_VEILSHROOM|25000",
+		"FORAGING|LOG:1|25000",
+		"FORAGING|VINESAP|1000",
+		"FORAGING|LOG:3|25000",
+		"FORAGING|LOG:2|25000",
+		"FORAGING|LUSHLILAC|500",
+		"FORAGING|MANGROVE_LOG|150000",
+		"FORAGING|HELIX_LOG|250000",
+		"FORAGING|LOG|25000",
+		"FORAGING|HONEYCOMB|50000",
+		"FORAGING|FIG_LOG|150000",
+		"FORAGING|TENDER_WOOD|1000",
+		"FORAGING|LOG_2:1|25000",
+		"FISHING|WATER_LILY|50000",
+		"FISHING|PRISMARINE_SHARD|800",
+		"FISHING|INK_SACK|4000",
+		"FISHING|RAW_FISH|60000",
+		"FISHING|RAW_FISH:3|18000",
+		"FISHING|LOTUS|250000",
+		"FISHING|RAW_FISH:2|4000",
+		"FISHING|RAW_FISH:1|10000",
+		"FISHING|MAGMA_FISH|500000",
+		"FISHING|PRISMARINE_CRYSTALS|800",
+		"FISHING|CLAY_BALL|5000",
+		"FISHING|SPONGE|4000",
+		"RIFT|WILTED_BERBERIS|400",
+		"RIFT|METAL_HEART|100",
+		"RIFT|CADUCOUS_STEM|500",
+		"RIFT|AGARICUS_CAP|200",
+		"RIFT|HEMOVIBE|100000",
+		"RIFT|HALF_EATEN_CARROT|3500",
+		"RIFT|TIMITE|750"
+	};
+	private static final Map<String, CollectionDef> COLLECTION_DEFS = collectionDefs();
 
 	public enum Status {
 		IDLE, LOADING, READY, ERROR
@@ -283,7 +379,7 @@ public final class ProfileViewer {
 		}
 	}
 
-	public record Collection(String id, String name, long amount) {
+	public record Collection(String id, String name, String type, long amount, boolean maxed) {
 	}
 
 	public record Profile(
@@ -1873,10 +1969,71 @@ public final class ProfileViewer {
 			if (amount <= 0L) {
 				continue;
 			}
-			out.add(new Collection(id, itemName(id), amount));
+			CollectionDef def = collectionDef(id);
+			out.add(new Collection(id, itemName(id), def.type(), amount, def.max() > 0L && amount >= def.max()));
 		}
-		out.sort(Comparator.comparingLong(Collection::amount).reversed());
+		out.sort(Comparator
+			.comparingInt((Collection row) -> collectionTypeOrder(row.type()))
+			.thenComparing(Comparator.comparingLong(Collection::amount).reversed()));
 		return out;
+	}
+
+	private static CollectionDef collectionDef(String id) {
+		if (id == null || id.isBlank()) {
+			return CollectionDef.NONE;
+		}
+		String key = id.trim().toUpperCase(Locale.ROOT);
+		CollectionDef def = COLLECTION_DEFS.get(key);
+		if (def != null) {
+			return def;
+		}
+		def = COLLECTION_DEFS.get(key.replace('-', ':'));
+		if (def != null) {
+			return def;
+		}
+		return switch (key) {
+			case "MUSHROOM", "RED_MUSHROOM", "BROWN_MUSHROOM" -> COLLECTION_DEFS.getOrDefault("MUSHROOM_COLLECTION", CollectionDef.NONE);
+			case "GEMSTONE", "GEMSTONES" -> COLLECTION_DEFS.getOrDefault("GEMSTONE_COLLECTION", CollectionDef.NONE);
+			case "MITHRIL" -> COLLECTION_DEFS.getOrDefault("MITHRIL_ORE", CollectionDef.NONE);
+			case "NETHER_WART", "NETHERWART" -> COLLECTION_DEFS.getOrDefault("NETHER_STALK", CollectionDef.NONE);
+			case "COCOA", "COCOA_BEANS" -> COLLECTION_DEFS.getOrDefault("INK_SACK:3", CollectionDef.NONE);
+			case "LAPIS", "LAPIS_LAZULI" -> COLLECTION_DEFS.getOrDefault("INK_SACK:4", CollectionDef.NONE);
+			case "GUNPOWDER" -> COLLECTION_DEFS.getOrDefault("SULPHUR", CollectionDef.NONE);
+			default -> CollectionDef.NONE;
+		};
+	}
+
+	private static int collectionTypeOrder(String type) {
+		if (type == null) {
+			return COLLECTION_TYPES.length;
+		}
+		for (int i = 0; i < COLLECTION_TYPES.length; i++) {
+			if (COLLECTION_TYPES[i].equals(type)) {
+				return i;
+			}
+		}
+		return COLLECTION_TYPES.length;
+	}
+
+	private static Map<String, CollectionDef> collectionDefs() {
+		Map<String, CollectionDef> out = new HashMap<>();
+		for (String line : COLLECTION_META) {
+			String[] bits = line.split("\\|", 3);
+			if (bits.length < 3) {
+				continue;
+			}
+			long max = 0L;
+			try {
+				max = Long.parseLong(bits[2]);
+			} catch (NumberFormatException ignored) {
+			}
+			out.put(bits[1], new CollectionDef(bits[0], max));
+		}
+		return out;
+	}
+
+	private record CollectionDef(String type, long max) {
+		static final CollectionDef NONE = new CollectionDef("OTHER", 0L);
 	}
 
 	private static long collectionAmount(JsonElement value) {
