@@ -32,6 +32,15 @@ public final class StrayHud {
 	}
 
 	private static void extract(GuiGraphicsExtractor graphics, DeltaTracker delta) {
+		HudChrome.beginHud();
+		try {
+			extractHud(graphics, delta);
+		} finally {
+			HudChrome.endHud();
+		}
+	}
+
+	private static void extractHud(GuiGraphicsExtractor graphics, DeltaTracker delta) {
 		VanillaHud.extract(graphics, delta);
 		Hitmarker.extract(graphics, delta);
 		FarmingHud.extract(graphics, delta);

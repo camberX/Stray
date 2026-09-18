@@ -353,6 +353,9 @@ public class StrayScreen extends Screen {
 		new SearchEntry("Star nametags", Tab.STARS, "Stars"),
 		new SearchEntry("Menu scale", Tab.SETTINGS, "Theme"),
 		new SearchEntry("HUD opacity", Tab.SETTINGS, "Theme"),
+		new SearchEntry("HUD style", Tab.SETTINGS, "Theme"),
+		new SearchEntry("Vanilla HUD", Tab.SETTINGS, "Theme"),
+		new SearchEntry("Stray HUD", Tab.SETTINGS, "Theme"),
 		new SearchEntry("Menu stars", Tab.SETTINGS, "Theme"),
 		new SearchEntry("HUD stars", Tab.SETTINGS, "Theme"),
 		new SearchEntry("Accent outlines", Tab.SETTINGS, "Theme"),
@@ -1945,6 +1948,7 @@ public class StrayScreen extends Screen {
 			StrayConfig.get().hudOpacity = StrayConfig.clamp(0.20f + v * 0.80f, 0.20f, 1f);
 			Theme.refresh();
 		});
+		y = cycle(graphics, font, settingsX + 8, y, PANEL_W - 16, mouseX, mouseY, "HUD style", StrayConfig.get().hudStyleLabel(), StrayConfig.get()::cycleHudStyle);
 		y = toggle(graphics, font, settingsX + 8, y, PANEL_W - 16, mouseX, mouseY, "Menu stars", StrayConfig.get().menuStarfield, v -> StrayConfig.get().menuStarfield = v);
 		y = toggle(graphics, font, settingsX + 8, y, PANEL_W - 16, mouseX, mouseY, "HUD stars", StrayConfig.get().hudStarfield, v -> StrayConfig.get().hudStarfield = v);
 		y = toggle(graphics, font, settingsX + 8, y, PANEL_W - 16, mouseX, mouseY, "Accent outlines", StrayConfig.get().accentOutlines, v -> {
@@ -2708,12 +2712,13 @@ public class StrayScreen extends Screen {
 		});
 		toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Update notify", config.updateNotify, v -> config.updateNotify = v);
 
-		float accentH = cardTop() + cardHead() + 14 + swatchBlockH(Theme.PRESETS.length, iw) + rowH() * 4 + cardPad();
+		float accentH = cardTop() + cardHead() + 14 + swatchBlockH(Theme.PRESETS.length, iw) + rowH() * 5 + cardPad();
 		float lookY = sectionLabel(graphics, font, right, top, "Look");
 		y = featureCard(graphics, font, right, lookY, col, accentH, "Accent");
 		GuiDraw.small(graphics, font, "Preset", rx, y + 1, ControlChrome.muted());
 		y = swatchRow(graphics, mouseX, mouseY, rx + 2, y + 12, iw - 2, Theme.PRESETS, true);
 		y = colorRow(graphics, font, rx, y, iw, mouseX, mouseY, "Custom", config.themeAccentRgb, PickerTarget.THEME);
+		y = cycle(graphics, font, rx, y, iw, mouseX, mouseY, "HUD style", config.hudStyleLabel(), config::cycleHudStyle);
 		y = slider(graphics, font, rx, y, iw, "HUD", Math.round(config.hudOpacity * 100) + "%", (config.hudOpacity - 0.20f) / 0.80f, v -> {
 			config.hudOpacity = StrayConfig.clamp(0.20f + v * 0.80f, 0.20f, 1f);
 			Theme.refresh();

@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.4.12", new String[]{
+			"Theme has a HUD style switch. Stray keeps the current glass panels; Vanilla uses Minecraft tooltip chrome, gold titles, and shadowed text."
+		}),
 		new Entry("1.4.11", new String[]{
 			"Garden visitor HUD lists each visitor with crop previews next to the name. Shopping list drops visitor names and shows a /recipe hover. Farming overlays use the panel instead of leaving empty rows."
 		}),

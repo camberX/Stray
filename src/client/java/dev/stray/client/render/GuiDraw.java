@@ -782,7 +782,7 @@ public final class GuiDraw {
 	}
 
 	public static void text(GuiGraphicsExtractor graphics, Font font, String value, float x, float y, int color, boolean shadow) {
-		graphics.text(font, value, Math.round(x), Math.round(y), color, shadow);
+		graphics.text(font, value, Math.round(x), Math.round(y), hudInk(color), hudShadow(shadow));
 	}
 
 	public static void text(GuiGraphicsExtractor graphics, Font font, String value, float x, float y, float scale, int color, boolean shadow) {
@@ -791,12 +791,12 @@ public final class GuiDraw {
 		if (scale != 1.0f) {
 			graphics.pose().scale(scale, scale);
 		}
-		graphics.text(font, value, 0, 0, color, shadow);
+		graphics.text(font, value, 0, 0, hudInk(color), hudShadow(shadow));
 		graphics.pose().popMatrix();
 	}
 
 	public static void text(GuiGraphicsExtractor graphics, Font font, Component value, float x, float y, int color, boolean shadow) {
-		graphics.text(font, value, Math.round(x), Math.round(y), color, shadow);
+		graphics.text(font, value, Math.round(x), Math.round(y), hudInk(color), hudShadow(shadow));
 	}
 
 	public static void text(GuiGraphicsExtractor graphics, Font font, Component value, float x, float y, float scale, int color, boolean shadow) {
@@ -807,8 +807,28 @@ public final class GuiDraw {
 		graphics.pose().pushMatrix();
 		graphics.pose().translate(x, y);
 		graphics.pose().scale(scale, scale);
-		graphics.text(font, value, 0, 0, color, shadow);
+		graphics.text(font, value, 0, 0, hudInk(color), hudShadow(shadow));
 		graphics.pose().popMatrix();
+	}
+
+	private static boolean hudShadow(boolean shadow) {
+		return shadow || HudChrome.vanillaInk();
+	}
+
+	private static int hudInk(int color) {
+		if (!HudChrome.vanillaInk()) {
+			return color;
+		}
+		if (color == Theme.ACCENT) {
+			return 0xFFFFAA00;
+		}
+		if (color == Theme.TEXT || color == Theme.HEADER) {
+			return 0xFFFFFFFF;
+		}
+		if (color == Theme.MUTED || color == Theme.OFF) {
+			return 0xFFAAAAAA;
+		}
+		return color;
 	}
 
 	public static void menu(GuiGraphicsExtractor graphics, Font font, String value, float x, float y, int color) {
