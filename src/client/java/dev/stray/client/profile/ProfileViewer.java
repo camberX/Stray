@@ -42,15 +42,17 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.zip.GZIPInputStream;
 
 /**
- * Loads Hypixel Skyblock profiles for {@code /pv}. Stats come from Soopy's
- * cached Skyblock API; the old odtheking Hypixel dump sits behind Cloudflare
- * and routinely stalls the loading spinner until it times out.
+ * Loads Hypixel Skyblock profiles for {@code /pv}. Stats come from Soopy so
+ * the window can open quickly. Inventory, Ender Chest, and backpacks still
+ * need the Hypixel profile dump, so that request runs in the background for
+ * the looked-up player only and fills the Items tab when it arrives.
  */
 public final class ProfileViewer {
 	private static final String MOJANG = "https://api.mojang.com/users/profiles/minecraft/";
 	private static final String ASHCON = "https://api.ashcon.app/mojang/v2/user/";
 	private static final String SOOPY_SKYBLOCK = "https://soopy.dev/api/v2/player_skyblock/";
 	private static final String SOOPY_PLAYER = "https://soopy.dev/api/v2/player/";
+	private static final String HYPIXEL_DUMP = "https://hypixel.odtheking.com/get/";
 	private static final String SESSION = "https://sessionserver.mojang.com/session/minecraft/profile/";
 	private static final String[] PRICE_URLS = {
 		"https://sky.coflnet.com/api/prices/neu",
@@ -341,6 +343,39 @@ public final class ProfileViewer {
 				List.of()
 			);
 		}
+
+		private Profile withStorage(Bag inventory, Bag armor, List<Bag> ender, List<Bag> backpacks) {
+			return new Profile(
+				id,
+				cuteName,
+				gameMode,
+				selected,
+				purse,
+				bank,
+				itemWorth,
+				networth,
+				skyblockLevel,
+				skyblockProgress,
+				skillAverage,
+				fairySouls,
+				secrets,
+				firstJoin,
+				cookie,
+				kills,
+				deaths,
+				skills,
+				slayers,
+				dungeons,
+				mining,
+				farming,
+				pets,
+				inventory == null ? this.inventory : inventory,
+				armor == null ? this.armor : armor,
+				ender == null ? this.ender : ender,
+				backpacks == null ? this.backpacks : backpacks,
+				collections
+			);
+		}
 	}
 
 	public record Snapshot(
@@ -380,6 +415,32 @@ public final class ProfileViewer {
 				skinSignature
 			);
 		}
+
+		private Snapshot withProfiles(List<Profile> next) {
+			if (next == null || next.isEmpty()) {
+				return this;
+			}
+			String keep = current() == null ? "" : current().id();
+			int index = selected;
+			if (keep != null && !keep.isBlank()) {
+				for (int i = 0; i < next.size(); i++) {
+					if (keep.equalsIgnoreCase(next.get(i).id())) {
+						index = i;
+						break;
+					}
+				}
+			}
+			return new Snapshot(
+				name,
+				uuid,
+				List.copyOf(next),
+				Math.max(0, Math.min(index, next.size() - 1)),
+				error,
+				taggedName,
+				skinValue,
+				skinSignature
+			);
+		}
 	}
 
 	private static final AtomicInteger GEN = new AtomicInteger();
@@ -387,6 +448,7 @@ public final class ProfileViewer {
 	private static volatile String error = "";
 	private static volatile String query = "";
 	private static volatile Snapshot snapshot = Snapshot.empty();
+	private static volatile boolean itemsLoading;
 
 	private ProfileViewer() {
 	}
@@ -405,6 +467,10 @@ public final class ProfileViewer {
 
 	public static Snapshot snapshot() {
 		return snapshot == null ? Snapshot.empty() : snapshot;
+	}
+
+	public static boolean itemsLoading() {
+		return itemsLoading;
 	}
 
 	public static void select(int index) {
@@ -436,6 +502,7 @@ public final class ProfileViewer {
 		query = name;
 		status = Status.LOADING;
 		error = "";
+		itemsLoading = true;
 		int gen = GEN.incrementAndGet();
 		Util.nonCriticalIoPool().execute(() -> fetch(name, client, gen));
 	}
@@ -451,6 +518,7 @@ public final class ProfileViewer {
 				return;
 			}
 			String compact = compact(identity.uuid());
+			CompletableFuture<JsonObject> dump = profileDump(compact);
 			CompletableFuture<JsonObject> soopy = getJsonAsync(SOOPY_SKYBLOCK + compact);
 			CompletableFuture<JsonObject> soopyPlayer = getJsonAsync(SOOPY_PLAYER + compact);
 			CompletableFuture<Resolved> skin = CompletableFuture.supplyAsync(() -> withSkin(identity), Util.nonCriticalIoPool());
@@ -461,15 +529,20 @@ public final class ProfileViewer {
 				return;
 			}
 			JsonObject root = soopyAsProfiles(soopyJson);
+			JsonObject soopyForParse = soopyJson;
 			if (root == null) {
-				fail(gen, "profile lookup failed");
-				return;
+				root = dump.join();
+				soopyForParse = null;
+				if (!isHypixelProfiles(root)) {
+					fail(gen, "profile lookup failed");
+					return;
+				}
 			}
 			Map<String, JsonObject> gardens = gardenByProfile(root);
 			if (stale(gen)) {
 				return;
 			}
-			List<Profile> profiles = parseProfiles(root, identity.uuid(), soopyJson, gardens, false);
+			List<Profile> profiles = parseProfiles(root, identity.uuid(), soopyForParse, gardens, false);
 			if (profiles.isEmpty()) {
 				fail(gen, "no Skyblock profile");
 				return;
@@ -479,6 +552,7 @@ public final class ProfileViewer {
 				resolved = identity;
 			}
 			ready(gen, resolved, profiles, soopyPlayer.getNow(null));
+			fillInventories(gen, compact, dump);
 		} catch (Exception exception) {
 			if (!stale(gen)) {
 				fail(gen, exception.getMessage() == null ? "lookup failed" : exception.getMessage());
@@ -529,6 +603,104 @@ public final class ProfileViewer {
 		root.addProperty("success", true);
 		root.add("profiles", list);
 		return root;
+	}
+
+	private static CompletableFuture<JsonObject> profileDump(String compact) {
+		try {
+			HttpRequest request = HttpRequest.newBuilder(URI.create(HYPIXEL_DUMP + compact))
+				.timeout(Duration.ofSeconds(20))
+				.header("User-Agent", "Stray/" + Stray.MOD_ID)
+				.GET()
+				.build();
+			return HTTP.sendAsync(request, HttpResponse.BodyHandlers.ofString())
+				.thenApply(response -> {
+					if (response.statusCode() < 200 || response.statusCode() >= 300) {
+						return null;
+					}
+					JsonElement element = JsonParser.parseString(response.body());
+					JsonObject root = element != null && element.isJsonObject() ? element.getAsJsonObject() : null;
+					return isHypixelProfiles(root) ? root : null;
+				})
+				.exceptionally(ignored -> null);
+		} catch (Exception ignored) {
+			return CompletableFuture.completedFuture(null);
+		}
+	}
+
+	private static boolean isHypixelProfiles(JsonObject root) {
+		return root != null && root.has("profiles") && root.get("profiles").isJsonArray();
+	}
+
+	private static void fillInventories(int gen, String compact, CompletableFuture<JsonObject> dump) {
+		try {
+			JsonObject root = dump == null ? null : dump.join();
+			if (stale(gen)) {
+				return;
+			}
+			Snapshot current = snapshot;
+			if (current == null || current.profiles().isEmpty() || !isHypixelProfiles(root)) {
+				return;
+			}
+			boolean hadBags = false;
+			List<Profile> next = new ArrayList<>();
+			for (Profile profile : current.profiles()) {
+				JsonObject member = dumpMember(root, profile.id(), compact);
+				Profile filled = applyStorage(profile, member);
+				hadBags |= !filled.inventory().vacant() || !filled.ender().isEmpty() || !filled.backpacks().isEmpty();
+				next.add(filled);
+			}
+			if (stale(gen) || next.isEmpty()) {
+				return;
+			}
+			snapshot = current.withProfiles(next);
+			if (!hadBags) {
+				Stray.LOGGER.info("Profile viewer inventory dump had no bags for {}", compact);
+			}
+		} catch (Exception exception) {
+			if (!stale(gen)) {
+				Stray.LOGGER.warn("Profile viewer inventory lookup failed", exception);
+			}
+		} finally {
+			if (!stale(gen)) {
+				itemsLoading = false;
+			}
+		}
+	}
+
+	private static JsonObject dumpMember(JsonObject root, String profileId, String compact) {
+		if (!isHypixelProfiles(root)) {
+			return null;
+		}
+		String want = compact(profileId);
+		for (JsonElement element : root.getAsJsonArray("profiles")) {
+			if (element == null || !element.isJsonObject()) {
+				continue;
+			}
+			JsonObject profile = element.getAsJsonObject();
+			if (!want.isBlank() && !want.equals(compact(string(profile, "profile_id")))) {
+				continue;
+			}
+			JsonObject member = memberIn(profile, compact);
+			if (member != null) {
+				return member;
+			}
+		}
+		return null;
+	}
+
+	private static Profile applyStorage(Profile profile, JsonObject member) {
+		if (profile == null || member == null) {
+			return profile;
+		}
+		JsonObject inventory = object(member, "inventory");
+		Bag inv = parseBag("Inventory", first(inventory, member, "inv_contents"), 9, 36);
+		Bag armor = parseBag("Armor", first(inventory, member, "inv_armor"), 1, 4);
+		List<Bag> ender = parseEnder(inventory, member);
+		List<Bag> backpacks = parseBackpacks(inventory, member);
+		if (inv.vacant() && armor.vacant() && ender.isEmpty() && backpacks.isEmpty()) {
+			return profile;
+		}
+		return profile.withStorage(inv, armor, ender, backpacks);
 	}
 
 	private static void ready(int gen, Resolved resolved, List<Profile> profiles, JsonObject soopyPlayer) {
@@ -2666,6 +2838,7 @@ public final class ProfileViewer {
 		}
 		error = message == null || message.isBlank() ? "lookup failed" : message;
 		status = Status.ERROR;
+		itemsLoading = false;
 	}
 
 	private static JsonObject soopyMember(JsonObject soopy, String profileId, String cute, String compact) {
