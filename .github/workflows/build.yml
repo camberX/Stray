@@ -39,6 +39,18 @@ jobs:
           fi
           if gh release view "$TAG" >/dev/null 2>&1; then
             echo "Release $TAG already exists"
+          else
+            gh release create "$TAG" "$JAR" --title "$VERSION" --generate-notes
+          fi
+          DEST="web/public/mod/stray-${VERSION}.jar"
+          if [ -f "$DEST" ] && cmp -s "$JAR" "$DEST"; then
+            echo "$DEST already matches this build"
             exit 0
           fi
-          gh release create "$TAG" "$JAR" --title "$VERSION" --generate-notes
+          cp "$JAR" "$DEST"
+          cp "$JAR" web/public/mod/stray.jar
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -- "$DEST" web/public/mod/stray.jar
+          git commit -m "Publish stray-${VERSION}.jar on the GitHub download path."
+          git push
