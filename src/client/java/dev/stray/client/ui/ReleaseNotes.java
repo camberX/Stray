@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.4.17", new String[]{
+			"Auto DNA clicks each swap pair once. Slot updates no longer reset the first click, so it does not hammer the same DNA strand."
+		}),
 		new Entry("1.4.16", new String[]{
 			"Auto DNA treats Crop Analyzer titles as the mutation name plus DNA, like Ashwreath DNA, including the open-screen packet title."
 		}),
