@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.4.14", new String[]{
+			"Opening a sack caches its Stored counts for the visitor shopping list. You don't need Raw Mats running, and it still doesn't fetch sacks from the API."
+		}),
 		new Entry("1.4.13", new String[]{
 			"Vanilla HUD style is SkyHanni-like text only: no panel, gold titles, and shadowed Minecraft text. Stray still uses the glass panels."
 		}),

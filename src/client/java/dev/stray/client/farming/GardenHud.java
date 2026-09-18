@@ -1095,14 +1095,17 @@ public final class GardenHud {
 			int have = 0;
 			if (id != null && !id.isBlank()) {
 				have += byId.getOrDefault(id, 0);
-				long sack = ItemStorage.openedSackCount(id);
-				if (sack > Integer.MAX_VALUE) {
-					have = Integer.MAX_VALUE;
-				} else {
-					have += (int) sack;
-				}
 			} else {
 				have += byName.getOrDefault(fold(name), 0);
+			}
+			long sack = ItemStorage.openedSackCount(id);
+			if (sack <= 0L) {
+				sack = ItemStorage.openedSackNamed(name);
+			}
+			if (sack > Integer.MAX_VALUE) {
+				have = Integer.MAX_VALUE;
+			} else if (sack > 0L && have < Integer.MAX_VALUE - (int) sack) {
+				have += (int) sack;
 			}
 			return have;
 		}
