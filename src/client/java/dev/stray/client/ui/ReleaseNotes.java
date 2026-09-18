@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.4.6", new String[]{
+			"Profile viewer other-player skins apply again, networth comes from SkyHelper after the window opens, and skulls sit on the face texture instead of a shifted 3D head."
+		}),
 		new Entry("1.4.5", new String[]{
 			"Profile viewer uses the same cached Hypixel API as skyblock-pv, so a first-time /pv gets stats and bags from one request instead of waiting on Soopy."
 		}),

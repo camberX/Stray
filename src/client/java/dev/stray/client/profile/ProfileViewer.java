@@ -55,6 +55,7 @@ public final class ProfileViewer {
 	private static final String SOOPY_PLAYER = "https://soopy.dev/api/v2/player/";
 	private static final String HYPIXEL_DUMP = "https://hypixel.odtheking.com/get/";
 	private static final String SESSION = "https://sessionserver.mojang.com/session/minecraft/profile/";
+	private static final String SKYHELPER_NETWORTH = "https://nw.dreamys.studio/v1/profile";
 	private static final String[] PRICE_URLS = {
 		"https://sky.coflnet.com/api/prices/neu",
 		"https://lb.tricked.pro/lowestbins",
@@ -348,6 +349,39 @@ public final class ProfileViewer {
 			);
 		}
 
+		private Profile withNetworth(double itemWorth, double networth) {
+			return new Profile(
+				id,
+				cuteName,
+				gameMode,
+				selected,
+				purse,
+				bank,
+				itemWorth,
+				networth,
+				skyblockLevel,
+				skyblockProgress,
+				skillAverage,
+				fairySouls,
+				secrets,
+				firstJoin,
+				cookie,
+				kills,
+				deaths,
+				skills,
+				slayers,
+				dungeons,
+				mining,
+				farming,
+				pets,
+				inventory,
+				armor,
+				ender,
+				backpacks,
+				collections
+			);
+		}
+
 		private Profile withStorage(Bag inventory, Bag armor, List<Bag> ender, List<Bag> backpacks) {
 			return new Profile(
 				id,
@@ -445,6 +479,19 @@ public final class ProfileViewer {
 				skinSignature
 			);
 		}
+
+		private Snapshot withSkin(String skinValue, String skinSignature) {
+			return new Snapshot(
+				name,
+				uuid,
+				profiles,
+				selected,
+				error,
+				taggedName,
+				skinValue == null ? "" : skinValue,
+				skinSignature == null ? "" : skinSignature
+			);
+		}
 	}
 
 	private static final AtomicInteger GEN = new AtomicInteger();
@@ -527,6 +574,7 @@ public final class ProfileViewer {
 			if (paintHypixel(gen, identity, compact, cached == null ? null : cached.dump, cached == null ? null : cached.soopyPlayer)) {
 				Stray.LOGGER.info("Profile viewer opened {} from cache in {}ms", identity.name(), System.currentTimeMillis() - started);
 				itemsLoading = false;
+				loadSkinAndNetworth(gen, identity, compact, cached.dump);
 				return;
 			}
 			if (paint(gen, identity, compact, cached == null ? null : cached.soopy, cached == null ? null : cached.soopyPlayer, Map.of())) {
@@ -543,11 +591,11 @@ public final class ProfileViewer {
 				remember(compact, null, null, pv);
 				Stray.LOGGER.info("Profile viewer opened {} from skyblock-pv API in {}ms", identity.name(), System.currentTimeMillis() - started);
 				SkyblockPetLore.request();
+				loadSkinAndNetworth(gen, identity, compact, pv);
 				if (!hasBags(snapshot())) {
 					loadBagsAfterPaint(gen, identity, compact, null);
 				} else {
 					itemsLoading = false;
-					Util.nonCriticalIoPool().execute(() -> withSkin(identity));
 				}
 				return;
 			}
@@ -572,6 +620,7 @@ public final class ProfileViewer {
 				loadBagsAfterPaint(gen, identity, compact, soopyPlayer);
 				return;
 			}
+			Util.nonCriticalIoPool().execute(() -> applySkin(gen, identity));
 			fillInventories(gen, identity, compact, profileDump(compact), soopyPlayer);
 		} catch (Exception exception) {
 			if (!stale(gen)) {
@@ -582,15 +631,19 @@ public final class ProfileViewer {
 	}
 
 	private static void loadBagsAfterPaint(int gen, Resolved identity, String compact, CompletableFuture<JsonObject> soopyPlayer) {
-		Util.nonCriticalIoPool().execute(() -> withSkin(identity));
+		Util.nonCriticalIoPool().execute(() -> applySkin(gen, identity));
 		Util.nonCriticalIoPool().execute(() -> fillInventories(gen, identity, compact, profileDump(compact), soopyPlayer));
+	}
+
+	private static void loadSkinAndNetworth(int gen, Resolved identity, String compact, JsonObject dump) {
+		Util.nonCriticalIoPool().execute(() -> applySkin(gen, identity));
 	}
 
 	private static boolean paintHypixel(int gen, Resolved identity, String compact, JsonObject root, JsonObject soopyPlayer) {
 		if (!isHypixelProfiles(root)) {
 			return false;
 		}
-		List<Profile> profiles = parseProfiles(root, identity.uuid(), null, Map.of(), false);
+		List<Profile> profiles = parseProfiles(root, identity.uuid(), null, Map.of());
 		if (profiles.isEmpty()) {
 			return false;
 		}
@@ -623,7 +676,7 @@ public final class ProfileViewer {
 		if (root == null) {
 			return false;
 		}
-		List<Profile> profiles = parseProfiles(root, identity.uuid(), soopy, gardens, false);
+		List<Profile> profiles = parseProfiles(root, identity.uuid(), soopy, gardens);
 		if (profiles.isEmpty()) {
 			return false;
 		}
@@ -723,7 +776,7 @@ public final class ProfileViewer {
 			Snapshot current = snapshot;
 			if (status == Status.LOADING || current == null || current.profiles().isEmpty()
 				|| identity.uuid() != null && !identity.uuid().equals(current.uuid())) {
-				List<Profile> profiles = parseProfiles(root, identity.uuid(), null, Map.of(), false);
+				List<Profile> profiles = parseProfiles(root, identity.uuid(), null, Map.of());
 				if (profiles.isEmpty()) {
 					if (status == Status.LOADING) {
 						fail(gen, "no Skyblock profile");
@@ -771,6 +824,7 @@ public final class ProfileViewer {
 		if (!hadBags) {
 			Stray.LOGGER.info("Profile viewer inventory dump had no bags for {}", compact);
 		}
+		Util.nonCriticalIoPool().execute(() -> applySkyhelper(gen, compact, root));
 	}
 
 	private static LookupCache cacheOf(String compact) {
@@ -934,7 +988,8 @@ public final class ProfileViewer {
 			return null;
 		}
 		String named = string(player, "username");
-		return new Resolved(named.isBlank() ? name : named, uuid, "", "");
+		String[] textures = texturesOf(array(player, "properties"));
+		return new Resolved(named.isBlank() ? name : named, uuid, textures[0], textures[1]);
 	}
 
 	private static Resolved fromMojang(JsonObject mojang, String name) {
@@ -958,7 +1013,8 @@ public final class ProfileViewer {
 			return null;
 		}
 		String named = string(ashcon, "username");
-		return new Resolved(named.isBlank() ? name : named, uuid, "", "");
+		JsonObject raw = object(object(ashcon, "textures"), "raw");
+		return new Resolved(named.isBlank() ? name : named, uuid, string(raw, "value"), string(raw, "signature"));
 	}
 
 	private static Resolved withSkin(Resolved resolved) {
@@ -984,22 +1040,45 @@ public final class ProfileViewer {
 		String value = string(textures, "value");
 		String signature = string(textures, "signature");
 		if (value.isBlank()) {
-			JsonArray properties = array(sessionFuture.getNow(null), "properties");
-			if (properties != null) {
-				for (JsonElement element : properties) {
-					if (element == null || !element.isJsonObject()) {
-						continue;
-					}
-					JsonObject property = element.getAsJsonObject();
-					if ("textures".equalsIgnoreCase(string(property, "name"))) {
-						value = string(property, "value");
-						signature = string(property, "signature");
-						break;
-					}
+			String[] session = texturesOf(array(sessionFuture.getNow(null), "properties"));
+			value = session[0];
+			signature = session[1];
+		}
+		return new Resolved(resolved.name(), resolved.uuid(), value, signature);
+	}
+
+	private static String[] texturesOf(JsonArray properties) {
+		if (properties != null) {
+			for (JsonElement element : properties) {
+				if (element == null || !element.isJsonObject()) {
+					continue;
+				}
+				JsonObject property = element.getAsJsonObject();
+				if ("textures".equalsIgnoreCase(string(property, "name"))) {
+					return new String[]{string(property, "value"), string(property, "signature")};
 				}
 			}
 		}
-		return new Resolved(resolved.name(), resolved.uuid(), value, signature);
+		return new String[]{"", ""};
+	}
+
+	private static void applySkin(int gen, Resolved identity) {
+		Resolved skinned = withSkin(identity);
+		if (skinned == null || skinned.skinValue() == null || skinned.skinValue().isBlank()) {
+			return;
+		}
+		NAMES.put(skinned.name().toLowerCase(Locale.ROOT), skinned);
+		if (stale(gen)) {
+			return;
+		}
+		Snapshot current = snapshot;
+		if (current == null || current.uuid() == null || !current.uuid().equals(skinned.uuid())) {
+			return;
+		}
+		if (skinned.skinValue().equals(current.skinValue())) {
+			return;
+		}
+		snapshot = current.withSkin(skinned.skinValue(), skinned.skinSignature());
 	}
 
 	private static JsonObject getJson(String url) {
@@ -1035,8 +1114,7 @@ public final class ProfileViewer {
 		JsonObject root,
 		UUID uuid,
 		JsonObject soopy,
-		Map<String, JsonObject> gardens,
-		boolean remoteNetworth
+		Map<String, JsonObject> gardens
 	) {
 		List<Profile> out = new ArrayList<>();
 		if (root == null || !root.has("profiles") || !root.get("profiles").isJsonArray()) {
@@ -1053,7 +1131,7 @@ public final class ProfileViewer {
 			if (member == null) {
 				continue;
 			}
-			out.add(parseMember(object, member, compact, soopy, gardenMap.get(compact(string(object, "profile_id"))), remoteNetworth));
+			out.add(parseMember(object, member, compact, soopy, gardenMap.get(compact(string(object, "profile_id")))));
 		}
 		return out;
 	}
@@ -1063,8 +1141,7 @@ public final class ProfileViewer {
 		JsonObject member,
 		String compact,
 		JsonObject soopy,
-		JsonObject garden,
-		boolean remoteNetworth
+		JsonObject garden
 	) {
 		JsonObject soopyMember = soopyMember(soopy, string(profile, "profile_id"), string(profile, "cute_name"), compact);
 		JsonObject soopySkills = object(object(soopyMember, "skills"), "levels");
@@ -1208,13 +1285,6 @@ public final class ProfileViewer {
 			if (helperNet > net) {
 				items = Math.max(0d, helperNet - purse - bank);
 				net = helperNet;
-			}
-		}
-		if (remoteNetworth && bool(profile, "selected")) {
-			double remote = coflNetworth(profile, compact);
-			if (remote > net) {
-				items = Math.max(0d, remote - purse - bank);
-				net = remote;
 			}
 		}
 		return new Profile(
@@ -2724,44 +2794,96 @@ public final class ProfileViewer {
 		return PRICES.get("PET_" + key);
 	}
 
-	private static double coflNetworth(JsonObject profile, String compact) {
-		if (profile == null) {
+	private static double skyhelperNetworth(JsonObject member, double bank) {
+		if (member == null) {
 			return 0d;
 		}
 		try {
-			HttpRequest request = HttpRequest.newBuilder(URI.create("https://sky.coflnet.com/api/networth"))
-				.timeout(Duration.ofSeconds(10))
+			JsonObject options = new JsonObject();
+			options.addProperty("onlyNetworth", true);
+			JsonObject body = new JsonObject();
+			body.add("profile", member);
+			body.addProperty("bankBalance", bank);
+			body.add("options", options);
+			HttpRequest request = HttpRequest.newBuilder(URI.create(SKYHELPER_NETWORTH))
+				.timeout(Duration.ofSeconds(20))
 				.header("User-Agent", "Stray/" + Stray.MOD_ID)
 				.header("Content-Type", "application/json")
-				.POST(HttpRequest.BodyPublishers.ofString(profile.toString()))
+				.POST(HttpRequest.BodyPublishers.ofString(body.toString()))
 				.build();
 			HttpResponse<String> response = HTTP.send(request, HttpResponse.BodyHandlers.ofString());
 			if (response.statusCode() < 200 || response.statusCode() >= 300) {
-				Stray.LOGGER.warn("Coflnet networth returned HTTP {}", response.statusCode());
+				Stray.LOGGER.warn("SkyHelper networth returned HTTP {}", response.statusCode());
 				return 0d;
 			}
 			JsonObject root = JsonParser.parseString(response.body()).getAsJsonObject();
-			JsonObject members = object(root, "member");
-			if (members != null && compact != null) {
-				JsonObject own = object(members, compact);
-				if (own == null) {
-					for (String key : members.keySet()) {
-						if (compact(key).equals(compact)) {
-							own = object(members, key);
-							break;
-						}
-					}
-				}
-				double value = own == null ? 0d : num(own, "fullValue");
-				if (value > 0d) {
-					return value;
-				}
+			JsonObject nw = object(root, "networth");
+			double total = num(nw, "networth");
+			if (total <= 0d) {
+				total = num(root, "networth");
 			}
-			return num(root, "fullValue");
+			return total;
 		} catch (Exception exception) {
-			Stray.LOGGER.warn("Coflnet networth lookup failed", exception);
+			Stray.LOGGER.warn("SkyHelper networth lookup failed", exception);
 			return 0d;
 		}
+	}
+
+	private static void applySkyhelper(int gen, String compact, JsonObject root) {
+		if (stale(gen) || !isHypixelProfiles(root)) {
+			return;
+		}
+		Snapshot current = snapshot;
+		if (current == null || current.profiles().isEmpty() || compact == null) {
+			return;
+		}
+		Profile selected = current.current();
+		if (selected == null) {
+			return;
+		}
+		JsonObject profile = dumpProfile(root, selected.id());
+		JsonObject member = memberIn(profile, compact);
+		double bank = num(object(profile, "banking"), "balance");
+		if (bank <= 0d) {
+			bank = selected.bank();
+		}
+		double net = skyhelperNetworth(member, bank);
+		if (net <= 0d || stale(gen)) {
+			return;
+		}
+		current = snapshot;
+		if (current == null || current.profiles().isEmpty()) {
+			return;
+		}
+		List<Profile> next = new ArrayList<>();
+		for (Profile profileRow : current.profiles()) {
+			if (profileRow != null && selected.id().equalsIgnoreCase(profileRow.id())) {
+				double items = Math.max(0d, net - profileRow.purse() - profileRow.bank());
+				next.add(profileRow.withNetworth(items, net));
+			} else {
+				next.add(profileRow);
+			}
+		}
+		if (!next.isEmpty()) {
+			snapshot = current.withProfiles(next);
+		}
+	}
+
+	private static JsonObject dumpProfile(JsonObject root, String profileId) {
+		if (!isHypixelProfiles(root)) {
+			return null;
+		}
+		String want = compact(profileId);
+		for (JsonElement element : root.getAsJsonArray("profiles")) {
+			if (element == null || !element.isJsonObject()) {
+				continue;
+			}
+			JsonObject profile = element.getAsJsonObject();
+			if (want.isBlank() || want.equals(compact(string(profile, "profile_id")))) {
+				return profile;
+			}
+		}
+		return null;
 	}
 
 	private static String normPerk(String id) {
