@@ -688,31 +688,68 @@ public class ProfileViewerScreen extends Screen {
 		float gap = 6;
 		float cardW = (gridW - (columns - 1) * gap) / columns;
 		float cardH = 52;
-		int rows = Math.max(1, (int) (gridH / (cardH + gap)));
 		float rowH = cardH + gap;
-		listScroll = Mth.clamp(listScroll, 0f, Math.max(0f, (float) Math.ceil(collections.size() / (double) columns) * rowH - gridH));
-		int first = (int) (listScroll / rowH);
-		int visible = columns * (rows + 1);
-		for (int i = first * columns; i < collections.size() && i < first * columns + visible; i++) {
-			int local = i - first * columns;
-			int col = local % columns;
-			int row = local / columns;
-			ProfileViewer.Collection collection = collections.get(i);
-			float cx = left + col * (cardW + gap);
-			float cy = top + row * rowH - (listScroll - first * rowH);
-			if (cy + cardH < top || cy > top + gridH) {
+		float headerH = 22;
+		int gold = 0xFFFFAA00;
+		Map<String, List<ProfileViewer.Collection>> grouped = new HashMap<>();
+		for (ProfileViewer.Collection collection : collections) {
+			String type = collection.type() == null || collection.type().isBlank() ? "OTHER" : collection.type();
+			grouped.computeIfAbsent(type, ignored -> new ArrayList<>()).add(collection);
+		}
+		String[] types = {"FARMING", "MINING", "COMBAT", "FORAGING", "FISHING", "RIFT", "OTHER"};
+		float totalH = 0f;
+		for (String type : types) {
+			List<ProfileViewer.Collection> group = grouped.get(type);
+			if (group == null || group.isEmpty()) {
 				continue;
 			}
-			boolean hover = GuiDraw.hovered(mouseX, mouseY, cx, cy, cardW, cardH);
-			GuiDraw.panel(graphics, cx, cy, cardW, cardH, 8, hover ? Theme.CARD_HOVER : Theme.CARD, hover ? Theme.ACCENT : Theme.LINE);
-			ItemStack icon = collectionIcon(collection.id());
-			paintItem(graphics, font, icon, cx + 8, cy + 16, 20, false);
-			GuiDraw.small(graphics, font, clip(font, collection.name(), cardW - 40), cx + 32, cy + 10, Theme.MUTED);
-			GuiDraw.menu(graphics, font, compact(collection.amount()), cx + 32, cy + 24, Theme.TEXT);
-			if (hover) {
-				hoverStack = icon;
-				tooltip = collection.name() + "\n" + prettyNumber(collection.amount()) + " collected";
+			totalH += headerH + (float) Math.ceil(group.size() / (double) columns) * rowH;
+		}
+		listScroll = Mth.clamp(listScroll, 0f, Math.max(0f, totalH - gridH));
+		boolean clip = GuiDraw.scissor(graphics, left, top, gridW, gridH);
+		float cursor = top - listScroll;
+		for (String type : types) {
+			List<ProfileViewer.Collection> group = grouped.get(type);
+			if (group == null || group.isEmpty()) {
+				continue;
 			}
+			if (cursor + headerH > top && cursor < top + gridH) {
+				sectionTitle(graphics, font, left, cursor + 2, gridW, collectionTypeIcon(type), collectionTypeName(type));
+			}
+			cursor += headerH;
+			for (int i = 0; i < group.size(); i++) {
+				int col = i % columns;
+				if (col == 0 && i > 0) {
+					cursor += rowH;
+				}
+				float cx = left + col * (cardW + gap);
+				float cy = cursor;
+				if (cy + cardH < top || cy > top + gridH) {
+					continue;
+				}
+				ProfileViewer.Collection collection = group.get(i);
+				boolean hover = GuiDraw.hovered(mouseX, mouseY, cx, cy, cardW, cardH)
+					&& GuiDraw.hovered(mouseX, mouseY, left, top, gridW, gridH);
+				GuiDraw.panel(graphics, cx, cy, cardW, cardH, 8, hover ? Theme.CARD_HOVER : Theme.CARD, hover ? Theme.ACCENT : Theme.LINE);
+				ItemStack icon = collectionIcon(collection.id());
+				paintItem(graphics, font, icon, cx + 8, cy + 16, 20, false);
+				int nameColor = collection.maxed() ? gold : Theme.MUTED;
+				int valueColor = collection.maxed() ? gold : Theme.TEXT;
+				GuiDraw.small(graphics, font, clip(font, collection.name(), cardW - 40), cx + 32, cy + 10, nameColor);
+				GuiDraw.menu(graphics, font, compact(collection.amount()), cx + 32, cy + 24, valueColor);
+				if (hover) {
+					hoverStack = icon;
+					tooltip = collection.name()
+						+ (collection.maxed() ? "  (maxed)" : "")
+						+ "\n" + prettyNumber(collection.amount()) + " collected";
+				}
+			}
+			if (!group.isEmpty()) {
+				cursor += rowH;
+			}
+		}
+		if (clip) {
+			GuiDraw.disableScissor(graphics);
 		}
 	}
 
@@ -1504,6 +1541,30 @@ public class ProfileViewerScreen extends Screen {
 			case "vanguard_seeker" -> "More Vanguard Corpse Mineshafts.";
 			case "sheer_force" -> "Pickaxe Ability: extra Mining Spread.";
 			default -> "";
+		};
+	}
+
+	private static ItemStack collectionTypeIcon(String type) {
+		return switch (type == null ? "" : type) {
+			case "FARMING" -> new ItemStack(Items.WHEAT);
+			case "MINING" -> new ItemStack(Items.DIAMOND_PICKAXE);
+			case "COMBAT" -> new ItemStack(Items.DIAMOND_SWORD);
+			case "FORAGING" -> new ItemStack(Items.OAK_SAPLING);
+			case "FISHING" -> new ItemStack(Items.FISHING_ROD);
+			case "RIFT" -> new ItemStack(Items.ENDER_EYE);
+			default -> new ItemStack(Items.CHEST);
+		};
+	}
+
+	private static String collectionTypeName(String type) {
+		return switch (type == null ? "" : type) {
+			case "FARMING" -> "Farming";
+			case "MINING" -> "Mining";
+			case "COMBAT" -> "Combat";
+			case "FORAGING" -> "Foraging";
+			case "FISHING" -> "Fishing";
+			case "RIFT" -> "Rift";
+			default -> "Other";
 		};
 	}
 

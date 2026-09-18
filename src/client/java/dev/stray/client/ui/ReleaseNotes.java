@@ -15,8 +15,14 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
-		new Entry("1.4.9", new String[]{
+		new Entry("1.4.11", new String[]{
 			"Garden visitor HUD lists each visitor with crop previews next to the name. Shopping list drops visitor names and shows a /recipe hover. Farming overlays use the panel instead of leaving empty rows."
+		}),
+		new Entry("1.4.10", new String[]{
+			"Profile viewer Collections are grouped by Farming, Mining, Combat, Foraging, Fishing, and Rift. Maxed collections use gold text."
+		}),
+		new Entry("1.4.9", new String[]{
+			"Profile viewer Collections no longer overlap the search bar and profile chips while scrolling."
 		}),
 		new Entry("1.4.8", new String[]{
 			"Profile viewer Collections replaces the Farm tab. It lists Skyblock collection counts instead of Garden milestones."
