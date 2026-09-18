@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.4.3", new String[]{
+			"Profile viewer keeps the last lookup for ten minutes and never waits on the Hypixel dump before opening. A later Soopy miss no longer hangs on Loading."
+		}),
 		new Entry("1.4.2", new String[]{
 			"Profile viewer opens from Soopy instead of waiting on the Hypixel dump. Inventory, Ender Chest, and backpacks still load, but they fill in after the rest of the window is up."
 		}),
