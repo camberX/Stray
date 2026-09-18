@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.4.7", new String[]{
+			"Profile viewer skulls are the 3D head item again instead of a flat face."
+		}),
 		new Entry("1.4.6", new String[]{
 			"Profile viewer other-player skins apply again, networth comes from SkyHelper after the window opens, and skulls sit on the face texture instead of a shifted 3D head."
 		}),
