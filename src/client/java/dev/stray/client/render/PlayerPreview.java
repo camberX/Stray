@@ -10,10 +10,14 @@ import net.minecraft.client.renderer.entity.state.AvatarRenderState;
 import net.minecraft.client.renderer.entity.state.EntityRenderState;
 import net.minecraft.client.renderer.entity.state.HumanoidRenderState;
 import net.minecraft.client.renderer.entity.state.LivingEntityRenderState;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.world.entity.Pose;
 import net.minecraft.world.entity.player.PlayerSkin;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.item.SwingAnimationType;
+import net.minecraft.world.item.component.ResolvableProfile;
+import net.minecraft.world.level.block.SkullBlock;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
 
@@ -273,11 +277,7 @@ public final class PlayerPreview {
 			living.walkAnimationSpeed = 0f;
 			living.isAutoSpinAttack = false;
 			living.hasRedOverlay = false;
-			if (stripHands || gear == null || gear.head == null || gear.head.isEmpty()) {
-				living.headItem.clear();
-				living.wornHeadType = null;
-				living.wornHeadProfile = null;
-			}
+			applyWornHead(living, gear, stripHands);
 		}
 		if (state instanceof ArmedEntityRenderState armed && stripHands) {
 			armed.rightHandItemStack = ItemStack.EMPTY;
@@ -306,7 +306,7 @@ public final class PlayerPreview {
 				humanoid.legsEquipment = ItemStack.EMPTY;
 				humanoid.feetEquipment = ItemStack.EMPTY;
 			} else {
-				humanoid.headEquipment = empty(gear.head);
+				humanoid.headEquipment = skullHead(gear.head) ? ItemStack.EMPTY : empty(gear.head);
 				humanoid.chestEquipment = empty(gear.chest);
 				humanoid.legsEquipment = empty(gear.legs);
 				humanoid.feetEquipment = empty(gear.feet);
@@ -318,6 +318,22 @@ public final class PlayerPreview {
 			avatar.isSpectator = false;
 			avatar.heldOnHead.clear();
 		}
+	}
+
+	private static void applyWornHead(LivingEntityRenderState living, Gear gear, boolean stripHands) {
+		living.headItem.clear();
+		if (stripHands || gear == null || !skullHead(gear.head)) {
+			living.wornHeadType = null;
+			living.wornHeadProfile = null;
+			return;
+		}
+		living.wornHeadType = SkullBlock.Types.PLAYER;
+		ResolvableProfile profile = gear.head.get(DataComponents.PROFILE);
+		living.wornHeadProfile = profile;
+	}
+
+	private static boolean skullHead(ItemStack stack) {
+		return stack != null && !stack.isEmpty() && stack.is(Items.PLAYER_HEAD);
 	}
 
 	private static ItemStack empty(ItemStack stack) {
