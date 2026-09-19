@@ -140,7 +140,16 @@ npx wrangler deploy
 
 After you change the cape desk HTML or `wrangler.toml` (Worker code, not the jar), deploy the same way.
 
-The live websocket (`wss://stray.gay/ws`) needs the Durable Object in `wrangler.toml`. After pulling this change, run `npx wrangler deploy` from `web/` once so Global IRC and lobby pings can fan out. Pasting only `worker.js` into the dashboard editor is not enough for that socket.
+The live websocket (`wss://stray.gay/ws`) needs the Durable Object in `wrangler.toml`. Pasting only `worker.js` into the dashboard editor is not enough for that socket, and you do not have to run wrangler.
+
+**Git deploy (no CLI):** Workers & Pages → `voidmark-capes` → Settings → Builds → Connect repository. Use [camberX/Stray](https://github.com/camberX/Stray), production branch `main`, **root directory `web`**. Save and deploy. Cloudflare reads this `wrangler.toml` from that folder and creates class `StrayLive` plus binding `STRAY_LIVE`. Do not Add Binding in the dashboard while it still says “No Durable Object found” / `my-binding`.
+
+If wrangler is available instead:
+
+```bash
+cd web
+npx wrangler deploy
+```
 
 Change `MOD_GITHUB` in `wrangler.toml` if the jar lives in a different public repo. Changing the `ADMIN` secret is another `npx wrangler secret put ADMIN`. The UUID list and cape PNGs stay in the R2 bucket.
 

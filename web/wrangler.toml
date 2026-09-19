@@ -1,3 +1,5 @@
+# Worker root is this `web/` folder. Connect Git with root directory `web`
+# so Cloudflare applies STRAY_LIVE from this file (no wrangler CLI required).
 name = "voidmark-capes"
 main = "worker.js"
 compatibility_date = "2026-09-01"
@@ -17,6 +19,7 @@ MOD_GITHUB_PATH = "web/public/mod"
 binding = "CAPES"
 bucket_name = "voidmark-capes"
 
+# Hibernation Durable Object for wss://stray.gay/ws (global IRC + lobby pings).
 [[durable_objects.bindings]]
 name = "STRAY_LIVE"
 class_name = "StrayLive"
