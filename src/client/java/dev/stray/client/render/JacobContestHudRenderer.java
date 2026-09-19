@@ -15,7 +15,7 @@ import java.util.Locale;
 
 public final class JacobContestHudRenderer {
 	public static final float WIDTH = 158f;
-	private static final float HEIGHT = 48f;
+	private static final float HEIGHT = 58f;
 	private static final float PAD = 5f;
 	private static final float LINE = 10f;
 
@@ -82,9 +82,24 @@ public final class JacobContestHudRenderer {
 			medalColor(snap.projectedRank())
 		);
 
+		String details = snap.detailsLine();
+		if (!details.isEmpty()) {
+			int detailColor = snap.nextEtaSeconds() >= 0 && snap.remainingSeconds() > 0 && snap.nextEtaSeconds() > snap.remainingSeconds()
+				? Theme.MUTED
+				: medalColor(snap.nextMedal() != Medal.NONE ? snap.nextMedal() : snap.currentRank());
+			GuiDraw.small(
+				graphics,
+				font,
+				GuiDraw.ellipsize(font, details, WIDTH - PAD * 2, true),
+				PAD + 1,
+				PAD + LINE * 3,
+				detailColor
+			);
+		}
+
 		String update = snap.updates() == 0 ? "learning" : amount(Math.round(snap.perUpdate())) + "/update";
 		String rate = amount(Math.round(snap.perSecond())) + "/s · " + update;
-		GuiDraw.small(graphics, font, GuiDraw.ellipsize(font, rate, WIDTH - PAD * 2, true), PAD + 1, PAD + LINE * 3, Theme.MUTED);
+		GuiDraw.small(graphics, font, GuiDraw.ellipsize(font, rate, WIDTH - PAD * 2, true), PAD + 1, PAD + LINE * 4, Theme.MUTED);
 		graphics.pose().popMatrix();
 	}
 
@@ -131,13 +146,19 @@ public final class JacobContestHudRenderer {
 			true,
 			"Nether Wart",
 			"5:59",
+			359,
 			139_874,
 			Medal.SILVER,
 			Medal.GOLD,
 			242_600,
 			285.5d,
 			571d,
-			4
+			4,
+			true,
+			12_400,
+			Medal.GOLD,
+			18_200,
+			64
 		);
 	}
 }

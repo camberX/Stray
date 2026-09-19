@@ -327,18 +327,77 @@ public final class JacobContestTracker {
 			projectedRank = Medal.values()[Math.max(Medal.NONE.ordinal(), demotionCap)];
 		}
 		double perUpdate = updateCount == 0 ? 0d : updateTotal / (double) updateCount;
+		int currentDelta = 0;
+		boolean hasCurrentDelta = false;
+		Integer currentCutoff = parsed.cutoffs.get(parsed.rank);
+		if (parsed.rank != Medal.NONE && currentCutoff != null) {
+			currentDelta = parsed.score - currentCutoff;
+			hasCurrentDelta = true;
+		}
+		Medal nextMedal = nextMedal(parsed);
+		int nextNeed = 0;
+		int nextEtaSeconds = -1;
+		if (nextMedal != Medal.NONE) {
+			Integer nextCutoff = parsed.cutoffs.get(nextMedal);
+			if (nextCutoff != null) {
+				nextNeed = Math.max(0, nextCutoff - parsed.score);
+				double nextCutoffRate = 0d;
+				Deque<CutoffSample> samples = CUTOFF_SAMPLES.get(nextMedal);
+				if (samples != null && !samples.isEmpty()) {
+					nextCutoffRate = cutoffRate(samples, nextCutoff, parsed.remaining);
+				}
+				nextEtaSeconds = etaSeconds(parsed.score, nextCutoff, perSecond, nextCutoffRate);
+			}
+		}
 		return new Snapshot(
 			true,
 			parsed.crop,
 			formatTime(parsed.remaining),
+			parsed.remaining,
 			parsed.score,
 			parsed.rank,
 			projectedRank,
 			Math.max(parsed.score, projectedScore),
 			Math.max(0d, perSecond),
 			Math.max(0d, perUpdate),
-			updateCount
+			updateCount,
+			hasCurrentDelta,
+			currentDelta,
+			nextMedal,
+			nextNeed,
+			nextEtaSeconds
 		);
+	}
+
+	private static Medal nextMedal(Parsed parsed) {
+		if (parsed.rank == Medal.DIAMOND) {
+			return Medal.NONE;
+		}
+		Medal direct = parsed.rank.next();
+		if (direct != Medal.NONE && parsed.cutoffs.containsKey(direct)) {
+			return direct;
+		}
+		for (Medal medal : Medal.values()) {
+			if (medal.ordinal() > parsed.rank.ordinal() && parsed.cutoffs.containsKey(medal)) {
+				return medal;
+			}
+		}
+		return direct;
+	}
+
+	private static int etaSeconds(int score, int cutoff, double scoreRate, double cutoffRate) {
+		int need = cutoff - score;
+		if (need <= 0) {
+			return 0;
+		}
+		double closing = scoreRate - cutoffRate;
+		if (closing <= 0.05d) {
+			if (scoreRate <= 0.05d) {
+				return -1;
+			}
+			closing = scoreRate;
+		}
+		return (int) Math.ceil(need / closing);
 	}
 
 	private static double rate(Deque<ScoreSample> samples, int current, int remaining) {
@@ -466,7 +525,25 @@ public final class JacobContestTracker {
 	}
 
 	private static String formatTime(int seconds) {
-		return (seconds / 60) + ":" + String.format(Locale.ROOT, "%02d", seconds % 60);
+		int safe = Math.max(0, seconds);
+		return (safe / 60) + ":" + String.format(Locale.ROOT, "%02d", safe % 60);
+	}
+
+	private static String compact(int value) {
+		long amount = Math.abs((long) value);
+		if (amount >= 1_000_000L) {
+			double millions = amount / 1_000_000d;
+			return (millions >= 100d || Math.abs(millions - Math.rint(millions)) < 0.05d
+				? String.format(Locale.ROOT, "%.0f", millions)
+				: String.format(Locale.ROOT, "%.1f", millions)) + "m";
+		}
+		if (amount >= 1_000L) {
+			double thousands = amount / 1_000d;
+			return (thousands >= 100d || Math.abs(thousands - Math.rint(thousands)) < 0.05d
+				? String.format(Locale.ROOT, "%.0f", thousands)
+				: String.format(Locale.ROOT, "%.1f", thousands)) + "k";
+		}
+		return Long.toString(amount);
 	}
 
 	public enum Medal {
@@ -475,23 +552,108 @@ public final class JacobContestTracker {
 		SILVER,
 		GOLD,
 		PLATINUM,
-		DIAMOND
+		DIAMOND;
+
+		Medal next() {
+			int index = ordinal() + 1;
+			Medal[] medals = values();
+			return index < medals.length ? medals[index] : NONE;
+		}
+
+		String shortName() {
+			return switch (this) {
+				case NONE -> "Unranked";
+				case BRONZE -> "Bronze";
+				case SILVER -> "Silver";
+				case GOLD -> "Gold";
+				case PLATINUM -> "Plat";
+				case DIAMOND -> "Dia";
+			};
+		}
 	}
 
 	public record Snapshot(
 		boolean present,
 		String crop,
 		String remaining,
+		int remainingSeconds,
 		int score,
 		Medal currentRank,
 		Medal projectedRank,
 		int projectedScore,
 		double perSecond,
 		double perUpdate,
-		int updates
+		int updates,
+		boolean hasCurrentDelta,
+		int currentDelta,
+		Medal nextMedal,
+		int nextNeed,
+		int nextEtaSeconds
 	) {
 		private static Snapshot empty() {
-			return new Snapshot(false, "", "0:00", 0, Medal.NONE, Medal.NONE, 0, 0d, 0d, 0);
+			return new Snapshot(
+				false,
+				"",
+				"0:00",
+				0,
+				0,
+				Medal.NONE,
+				Medal.NONE,
+				0,
+				0d,
+				0d,
+				0,
+				false,
+				0,
+				Medal.NONE,
+				0,
+				-1
+			);
+		}
+
+		public String detailsLine() {
+			String current = currentGap();
+			String next = nextEta();
+			if (current.isEmpty()) {
+				return next;
+			}
+			if (next.isEmpty()) {
+				return current;
+			}
+			return current + " · " + next;
+		}
+
+		public String currentGap() {
+			if (!hasCurrentDelta || currentRank == Medal.NONE) {
+				return "";
+			}
+			if (currentDelta >= 0) {
+				return "+" + compact(currentDelta) + " " + currentRank.shortName();
+			}
+			return compact(-currentDelta) + " below " + currentRank.shortName();
+		}
+
+		public String nextEta() {
+			if (currentRank == Medal.DIAMOND) {
+				return "Max";
+			}
+			if (nextMedal == Medal.NONE) {
+				return "";
+			}
+			String name = nextMedal.shortName();
+			if (nextEtaSeconds == 0) {
+				return name + " now";
+			}
+			if (nextEtaSeconds < 0) {
+				return nextNeed > 0 ? compact(nextNeed) + " to " + name : "";
+			}
+			if (remainingSeconds > 0 && nextEtaSeconds > remainingSeconds) {
+				return nextNeed > 0 ? compact(nextNeed) + " to " + name + " won't" : name + " won't";
+			}
+			if (nextNeed > 0) {
+				return compact(nextNeed) + " to " + name + " in " + formatTime(nextEtaSeconds);
+			}
+			return name + " in " + formatTime(nextEtaSeconds);
 		}
 	}
 

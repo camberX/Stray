@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.4.31", new String[]{
+			"Jacob contest HUD shows how far you are over or under your current medal and an ETA for the next one, from live tab cutoffs and your crop rate."
+		}),
 		new Entry("1.4.30", new String[]{
 			"Composter HUD keeps the Organic/Fuel cap from the machine GUI after you close it. Tab and old upgrade levels no longer snap 220k back to 160k."
 		}),
