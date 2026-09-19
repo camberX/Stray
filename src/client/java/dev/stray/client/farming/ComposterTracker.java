@@ -45,6 +45,14 @@ public final class ComposterTracker {
 		"(?:(\\d+)d\\s*)?(?:(\\d+)h\\s*)?(?:(\\d+)m\\s*)?(?:(\\d+)s)?",
 		Pattern.CASE_INSENSITIVE
 	);
+	private static final long ORGANIC_BASE = 40_000L;
+	private static final long ORGANIC_PER_LEVEL = 20_000L;
+	private static final long FUEL_BASE = 100_000L;
+	private static final long FUEL_PER_LEVEL = 30_000L;
+	private static final int ORGANIC_SLOT = 2;
+	private static final int FUEL_SLOT = 7;
+	private static long liveOrganicMax = -1;
+	private static long liveFuelMax = -1;
 	private static final Comparator<PlayerInfo> TAB_ORDER = Comparator
 		.comparingInt((PlayerInfo info) -> -info.getTabListOrder())
 		.thenComparingInt(info -> info.getGameMode() == GameType.SPECTATOR ? 1 : 0)
@@ -71,6 +79,8 @@ public final class ComposterTracker {
 			return;
 		}
 		parseTick = tick;
+		liveOrganicMax = -1;
+		liveFuelMax = -1;
 		Parsed parsed = readWidget(client);
 		try {
 			readCapacities(client);
@@ -83,6 +93,7 @@ public final class ComposterTracker {
 		if (parsed != null) {
 			persistCaps(parsed.maxOrganic, parsed.maxFuel);
 		}
+		shrinkInflatedCaps();
 		if (parsed == null) {
 			if (++missingTicks >= 8) {
 				snapshot = Snapshot.empty();
@@ -101,6 +112,8 @@ public final class ComposterTracker {
 		snapshot = Snapshot.empty();
 		parseTick = Integer.MIN_VALUE;
 		missingTicks = 0;
+		liveOrganicMax = -1;
+		liveFuelMax = -1;
 	}
 
 	private static Parsed readWidget(Minecraft client) {
@@ -189,18 +202,10 @@ public final class ComposterTracker {
 			|| config.composterProfile.isBlank()
 			|| parsed.profile.equalsIgnoreCase(config.composterProfile);
 		boolean upgradesKnown = config.composterUpgradesKnown && matchingProfile;
-		long maxOrganic = config.composterMaxOrganic > 0
-			? config.composterMaxOrganic
-			: 40_000L + config.composterOrganicMatterCap * 30_000L;
-		long maxFuel = config.composterMaxFuel > 0
-			? config.composterMaxFuel
-			: 100_000L + config.composterFuelCap * 30_000L;
-		if (config.composterMaxOrganic <= 0 && !upgradesKnown) {
-			maxOrganic = -1;
-		}
-		if (config.composterMaxFuel <= 0 && !upgradesKnown) {
-			maxFuel = -1;
-		}
+		long formulaOrganic = upgradesKnown ? organicCapacity(config.composterOrganicMatterCap) : -1;
+		long formulaFuel = upgradesKnown ? fuelCapacity(config.composterFuelCap) : -1;
+		long maxOrganic = firstCap(parsed.maxOrganic, liveOrganicMax, formulaOrganic, config.composterMaxOrganic);
+		long maxFuel = firstCap(parsed.maxFuel, liveFuelMax, formulaFuel, config.composterMaxFuel);
 		double speedFactor = 1d + config.composterSpeed * 0.2d;
 		double secondsPer = 600d / speedFactor;
 		double costFactor = 1d - config.composterCostReduction / 100d;
@@ -271,29 +276,37 @@ public final class ComposterTracker {
 		long fuelMax = -1;
 		boolean sawOrganic = false;
 		boolean sawFuel = false;
-		for (Slot slot : screen.getMenu().slots) {
+		List<Slot> slots = screen.getMenu().slots;
+		int upper = Math.max(0, slots.size() - 36);
+		for (int i = 0; i < upper; i++) {
+			Slot slot = slots.get(i);
+			if (client.player != null && slot.container == client.player.getInventory()) {
+				continue;
+			}
 			ItemStack stack = slot.getItem();
 			if (stack == null || stack.isEmpty()) {
 				continue;
 			}
 			try {
 				String name = itemName(stack).toLowerCase(Locale.ROOT);
-				String blob = itemBlob(stack);
-				String lower = blob.toLowerCase(Locale.ROOT);
-				long total = firstRatioMax(blob);
-				if (name.contains("organic")) {
+				boolean organicPane = i == ORGANIC_SLOT || name.contains("organic");
+				boolean fuelPane = !organicPane && (i == FUEL_SLOT || name.contains("fuel"));
+				if (organicPane) {
 					sawOrganic = true;
 				}
-				if (name.contains("fuel") && !name.contains("organic")) {
+				if (fuelPane) {
 					sawFuel = true;
 				}
+				if (!organicPane && !fuelPane) {
+					continue;
+				}
+				long total = firstRatioMax(itemBlob(stack), organicPane ? ORGANIC_BASE : FUEL_BASE);
 				if (total <= 0) {
 					continue;
 				}
-				int index = slot.index;
-				if (index == 46 || name.contains("organic") || lower.contains("organic")) {
+				if (organicPane) {
 					organicMax = total;
-				} else if (index == 52 || name.contains("fuel") || lower.contains("fuel")) {
+				} else {
 					fuelMax = total;
 				}
 			} catch (RuntimeException ignored) {
@@ -302,6 +315,8 @@ public final class ComposterTracker {
 		if (!titled && !(sawOrganic && sawFuel)) {
 			return;
 		}
+		liveOrganicMax = organicMax;
+		liveFuelMax = fuelMax;
 		persistCaps(organicMax, fuelMax);
 	}
 
@@ -313,12 +328,37 @@ public final class ComposterTracker {
 		boolean changed = false;
 		if (organicMax > 0 && config.composterMaxOrganic != organicMax) {
 			config.composterMaxOrganic = organicMax;
-			config.composterOrganicMatterCap = capLevel(organicMax, 40_000L);
+			if (!config.composterUpgradesKnown) {
+				config.composterOrganicMatterCap = capLevel(organicMax, ORGANIC_BASE, ORGANIC_PER_LEVEL);
+			}
 			changed = true;
 		}
 		if (fuelMax > 0 && config.composterMaxFuel != fuelMax) {
 			config.composterMaxFuel = fuelMax;
-			config.composterFuelCap = capLevel(fuelMax, 100_000L);
+			if (!config.composterUpgradesKnown) {
+				config.composterFuelCap = capLevel(fuelMax, FUEL_BASE, FUEL_PER_LEVEL);
+			}
+			changed = true;
+		}
+		if (changed) {
+			config.save();
+		}
+	}
+
+	private static void shrinkInflatedCaps() {
+		StrayConfig config = StrayConfig.get();
+		if (!config.composterUpgradesKnown) {
+			return;
+		}
+		long organic = organicCapacity(config.composterOrganicMatterCap);
+		long fuel = fuelCapacity(config.composterFuelCap);
+		boolean changed = false;
+		if (config.composterMaxOrganic > organic) {
+			config.composterMaxOrganic = organic;
+			changed = true;
+		}
+		if (config.composterMaxFuel > fuel) {
+			config.composterMaxFuel = fuel;
 			changed = true;
 		}
 		if (changed) {
@@ -327,23 +367,50 @@ public final class ComposterTracker {
 	}
 
 	static long firstRatioMax(String blob) {
+		return firstRatioMax(blob, ORGANIC_BASE);
+	}
+
+	static long firstRatioMax(String blob, long minCap) {
 		if (blob == null || blob.isBlank()) {
 			return 0L;
 		}
+		long best = 0L;
+		best = Math.max(best, bestRatio(blob, minCap));
 		String normalized = stripCodes(blob).replaceAll("[\\p{Cf}]", "").replace('\u00A0', ' ');
-		Matcher ratio = RATIO.matcher(blob);
-		if (ratio.find()) {
-			long total = parseAmount(ratio.group(2));
-			if (total > 0) {
-				return total;
-			}
-		}
-		Matcher cleaned = RATIO.matcher(normalized);
-		return cleaned.find() ? parseAmount(cleaned.group(2)) : 0L;
+		return Math.max(best, bestRatio(normalized, minCap));
 	}
 
-	private static int capLevel(long max, long base) {
-		return StrayConfig.clamp((int) Math.round((max - base) / 30_000d), 0, 25);
+	private static long bestRatio(String text, long minCap) {
+		long best = 0L;
+		Matcher ratio = RATIO.matcher(text);
+		while (ratio.find()) {
+			long total = parseAmount(ratio.group(2));
+			if (total >= minCap && total > best) {
+				best = total;
+			}
+		}
+		return best;
+	}
+
+	private static int capLevel(long max, long base, long perLevel) {
+		return StrayConfig.clamp((int) Math.round((max - base) / (double) perLevel), 0, 25);
+	}
+
+	private static long organicCapacity(int level) {
+		return ORGANIC_BASE + Math.max(0, level) * ORGANIC_PER_LEVEL;
+	}
+
+	private static long fuelCapacity(int level) {
+		return FUEL_BASE + Math.max(0, level) * FUEL_PER_LEVEL;
+	}
+
+	private static long firstCap(long... values) {
+		for (long value : values) {
+			if (value > 0) {
+				return value;
+			}
+		}
+		return -1;
 	}
 
 	private static String itemName(ItemStack stack) {
@@ -457,8 +524,8 @@ public final class ComposterTracker {
 		config.composterFuelCap = fuelCap;
 		config.composterOrganicMatterCap = organicCap;
 		config.composterCostReduction = cost;
-		config.composterMaxOrganic = 40_000L + organicCap * 30_000L;
-		config.composterMaxFuel = 100_000L + fuelCap * 30_000L;
+		config.composterMaxOrganic = organicCapacity(organicCap);
+		config.composterMaxFuel = fuelCapacity(fuelCap);
 		config.save();
 	}
 
