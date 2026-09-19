@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.4.25", new String[]{
+			"Lobby pings work on every server and in singleplayer. Hypixel still groups by lobby id; other servers use the address; a local world keeps its own marks even if the live socket is down."
+		}),
 		new Entry("1.4.24", new String[]{
 			"Lobby pings read Hypixel's tab Server widget (including the padded two-line form) and /locraw, so /st ping works while Status already shows Hypixel and Skyblock."
 		}),

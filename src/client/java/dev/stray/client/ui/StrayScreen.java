@@ -16,6 +16,7 @@ import dev.stray.client.mining.CrystalHollows;
 import dev.stray.client.mining.MiningAreas;
 import dev.stray.client.mining.MiningTracker;
 import dev.stray.client.mining.TitaniumTracker;
+import dev.stray.client.net.StrayLive;
 import dev.stray.client.render.GlowBlurRadius;
 import dev.stray.client.movement.CommandRings;
 import dev.stray.client.movement.MovementRings;
@@ -2313,7 +2314,7 @@ public class StrayScreen extends Screen {
 				y = readout(graphics, font, ix, y, iw, "Hypixel", SkyblockLocation.onHypixel);
 				y = readout(graphics, font, ix, y, iw, "Skyblock", SkyblockLocation.inSkyblock);
 				y = readout(graphics, font, ix, y, iw, "The End", SkyblockLocation.inTheEnd);
-				y = statRow(graphics, font, ix, y, iw, "Lobby", SkyblockLocation.server.isEmpty() ? "Unknown" : SkyblockLocation.server);
+		y = statRow(graphics, font, ix, y, iw, "Lobby", StrayLive.roomId());
 				String area = SkyblockLocation.area.isEmpty() ? "Unknown" : SkyblockLocation.area;
 				GuiDraw.menu(graphics, font, clip(font, area, (int) iw - 4), ix, GuiDraw.middle(y, ROW), fade());
 
@@ -2586,7 +2587,7 @@ public class StrayScreen extends Screen {
 				y = readout(graphics, font, ix, y, iw, "Hypixel", SkyblockLocation.onHypixel);
 				y = readout(graphics, font, ix, y, iw, "Skyblock", SkyblockLocation.inSkyblock);
 				y = readout(graphics, font, ix, y, iw, "The End", SkyblockLocation.inTheEnd);
-				y = statRow(graphics, font, ix, y, iw, "Lobby", SkyblockLocation.server.isEmpty() ? "Unknown" : SkyblockLocation.server);
+		y = statRow(graphics, font, ix, y, iw, "Lobby", StrayLive.roomId());
 				String area = SkyblockLocation.area.isEmpty() ? "Unknown" : SkyblockLocation.area;
 				GuiDraw.menu(graphics, font, clip(font, area, (int) iw - 4), ix, GuiDraw.middle(y, ROW), fade());
 				y = sectionLabel(graphics, font, right, top, "Client");

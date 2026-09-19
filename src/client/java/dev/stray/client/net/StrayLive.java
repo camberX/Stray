@@ -12,6 +12,8 @@ import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.ChatFormatting;
 import net.minecraft.SharedConstants;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.multiplayer.ServerData;
+import net.minecraft.client.server.IntegratedServer;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.network.chat.Style;
@@ -26,6 +28,7 @@ import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.regex.Pattern;
 
 /**
  * Global IRC and lobby pings on the existing stray.gay websocket.
@@ -43,6 +46,7 @@ public final class StrayLive implements WebSocket.Listener {
 	private static final Style NAME = Style.EMPTY.withColor(ChatFormatting.AQUA);
 	private static final Style TEXT = Style.EMPTY.withColor(ChatFormatting.WHITE);
 	private static final Style MUTED = Style.EMPTY.withColor(ChatFormatting.GRAY);
+	private static final Pattern LIVE_ROOM = Pattern.compile("^[A-Za-z0-9_\\-]{1,64}$");
 
 	private static volatile WebSocket socket;
 	private static volatile boolean connecting;
@@ -79,7 +83,7 @@ public final class StrayLive implements WebSocket.Listener {
 			}
 			return;
 		}
-		String server = SkyblockLocation.server == null ? "" : SkyblockLocation.server.trim();
+		String server = roomId(client);
 		if (!server.equals(lastServer)) {
 			lastServer = server;
 			send(serverUpdate(server));
@@ -133,33 +137,107 @@ public final class StrayLive implements WebSocket.Listener {
 			tell("Turn on Lobby pings in Menus.", ChatFormatting.GRAY);
 			return false;
 		}
+		Minecraft client = Minecraft.getInstance();
+		if (client.player == null) {
+			return false;
+		}
+		String room = roomId(client);
+		String name = client.player.getGameProfile().name();
+		String cleanLabel = label == null || label.isBlank() ? "" : sanitizeIrc(label);
+		LobbyPings.accept(name == null ? "You" : name, x, y, z, cleanLabel);
 		if (!connected()) {
-			tell("Live socket is not connected yet.", ChatFormatting.GRAY);
-			return false;
-		}
-		String server = SkyblockLocation.server == null ? "" : SkyblockLocation.server.trim();
-		if (server.isEmpty() && SkyblockLocation.onHypixel) {
-			SkyblockLocation.requestLocraw(Minecraft.getInstance());
-		}
-		if (server.isEmpty()) {
-			tell("Join a Hypixel lobby to ping.", ChatFormatting.GRAY);
-			return false;
+			return true;
 		}
 		JsonObject payload = new JsonObject();
 		payload.addProperty("type", "ping");
 		payload.addProperty("x", x);
 		payload.addProperty("y", y);
 		payload.addProperty("z", z);
-		payload.addProperty("server", server);
-		if (label != null && !label.isBlank()) {
-			payload.addProperty("label", sanitizeIrc(label));
+		payload.addProperty("server", room);
+		if (!cleanLabel.isEmpty()) {
+			payload.addProperty("label", cleanLabel);
 		}
 		send(payload);
-		if (!server.equals(lastServer)) {
-			lastServer = server;
-			send(serverUpdate(server));
+		if (!room.equals(lastServer)) {
+			lastServer = room;
+			send(serverUpdate(room));
 		}
 		return true;
+	}
+
+	/** Hypixel lobby id, else the server address, else the singleplayer world. */
+	public static String roomId() {
+		return roomId(Minecraft.getInstance());
+	}
+
+	static String roomId(Minecraft client) {
+		String hypixel = SkyblockLocation.server == null ? "" : SkyblockLocation.server.trim();
+		if (LIVE_ROOM.matcher(hypixel).matches()) {
+			return hypixel;
+		}
+		if (client == null) {
+			return "world";
+		}
+		if (client.isLocalServer()) {
+			return slug("sp-" + localWorldName(client));
+		}
+		ServerData data = client.getCurrentServer();
+		if (data != null) {
+			String ip = data.ip == null ? "" : data.ip.trim();
+			if (!ip.isEmpty()) {
+				return slug("mp-" + ip);
+			}
+			String name = data.name == null ? "" : data.name.trim();
+			if (!name.isEmpty()) {
+				return slug("mp-" + name);
+			}
+		}
+		return "world";
+	}
+
+	private static String localWorldName(Minecraft client) {
+		IntegratedServer server = client.getSingleplayerServer();
+		if (server != null) {
+			String name = server.getWorldData().getLevelName();
+			if (name != null && !name.isBlank()) {
+				return name.trim();
+			}
+		}
+		return "singleplayer";
+	}
+
+	static String slug(String raw) {
+		if (raw == null || raw.isBlank()) {
+			return "world";
+		}
+		StringBuilder out = new StringBuilder(raw.length());
+		boolean dash = false;
+		for (int i = 0; i < raw.length(); i++) {
+			char c = raw.charAt(i);
+			if (c >= 'A' && c <= 'Z') {
+				c += 32;
+			}
+			if (c >= 'a' && c <= 'z' || c >= '0' && c <= '9' || c == '_' || c == '-') {
+				out.append(c);
+				dash = false;
+			} else if (!dash && !out.isEmpty()) {
+				out.append('-');
+				dash = true;
+			}
+		}
+		while (!out.isEmpty() && out.charAt(out.length() - 1) == '-') {
+			out.setLength(out.length() - 1);
+		}
+		String slug = out.isEmpty() ? "world" : out.toString();
+		if (LIVE_ROOM.matcher(slug).matches()) {
+			return slug;
+		}
+		if (slug.length() > 64) {
+			String hash = Integer.toHexString(raw.hashCode());
+			int keep = Math.max(8, 64 - 1 - hash.length());
+			slug = slug.substring(0, keep) + "-" + hash;
+		}
+		return LIVE_ROOM.matcher(slug).matches() ? slug : "world";
 	}
 
 	private static boolean wanted() {
@@ -221,7 +299,7 @@ public final class StrayLive implements WebSocket.Listener {
 		payload.addProperty("type", "hello");
 		payload.addProperty("name", name == null ? "" : name);
 		payload.addProperty("uuid", uuid == null ? "" : uuid.toString());
-		payload.addProperty("server", SkyblockLocation.server == null ? "" : SkyblockLocation.server);
+		payload.addProperty("server", roomId(client));
 		payload.addProperty("version", modVersion());
 		helloAt = System.currentTimeMillis();
 		send(payload);
@@ -308,7 +386,7 @@ public final class StrayLive implements WebSocket.Listener {
 
 	private static void onHello(JsonObject json) {
 		greeted = json.has("ok") && json.get("ok").getAsBoolean();
-		lastServer = SkyblockLocation.server == null ? "" : SkyblockLocation.server;
+		lastServer = roomId(Minecraft.getInstance());
 	}
 
 	private static void onHistory(JsonObject json) {
