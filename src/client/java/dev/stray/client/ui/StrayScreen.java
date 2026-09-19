@@ -1228,15 +1228,19 @@ public class StrayScreen extends Screen {
 
 	private void drawFarmingContest(GuiGraphicsExtractor graphics, Font font, float x, float top, float col, float ix, float iw) {
 		float y = sectionLabel(graphics, font, x, top, "Contest");
-		y = featureCard(graphics, font, x, y, col, cardHeight(4), "Jacob");
+		y = featureCard(graphics, font, x, y, col, cardHeight(5), "Jacob");
 		var contest = JacobContestTracker.snapshot();
 		if (contest.present()) {
 			GuiDraw.menu(graphics, font, clip(font, contest.crop() + "  " + contest.remaining(), (int) iw - 4), ix, y + 2, ink());
 			GuiDraw.menu(graphics, font, String.format(Locale.ROOT, "%,d collected", contest.score()), ix, y + 16, fade());
 			String projected = contest.projectedRank().name() + "  " + String.format(Locale.ROOT, "%,d", contest.projectedScore());
 			GuiDraw.menu(graphics, font, clip(font, projected, (int) iw - 4), ix, y + 30, Theme.ACCENT);
+			String details = contest.detailsLine();
+			if (!details.isEmpty()) {
+				GuiDraw.small(graphics, font, clip(font, details, (int) iw - 4), ix, y + 44, Theme.ACCENT);
+			}
 			String rate = String.format(Locale.ROOT, "%,.0f/s · %,.0f/update", contest.perSecond(), contest.perUpdate());
-			GuiDraw.small(graphics, font, clip(font, rate, (int) iw - 4), ix, y + 44, fade());
+			GuiDraw.small(graphics, font, clip(font, rate, (int) iw - 4), ix, y + 56, fade());
 			return;
 		}
 		GuiDraw.menu(graphics, font, "No active Jacob contest", ix, y + 2, fade());
@@ -2366,15 +2370,19 @@ public class StrayScreen extends Screen {
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Enable", config.autoDnaEnabled, v -> config.autoDnaEnabled = v);
 				drawFeatureFields(graphics, font, mouseX, mouseY, ix, y, iw, Feature.AUTO_DNA);
 
-				y = featureCard(graphics, font, right, top, col, cardHeight(4), "Contest");
+				y = featureCard(graphics, font, right, top, col, cardHeight(5), "Contest");
 				var contest = JacobContestTracker.snapshot();
 				if (contest.present()) {
 					GuiDraw.menu(graphics, font, clip(font, contest.crop() + "  " + contest.remaining(), (int) iw - 4), rx, y + 2, ink());
 					GuiDraw.menu(graphics, font, String.format(Locale.ROOT, "%,d collected", contest.score()), rx, y + 16, fade());
 					String projected = contest.projectedRank().name() + "  " + String.format(Locale.ROOT, "%,d", contest.projectedScore());
 					GuiDraw.menu(graphics, font, clip(font, projected, (int) iw - 4), rx, y + 30, Theme.ACCENT);
+					String details = contest.detailsLine();
+					if (!details.isEmpty()) {
+						GuiDraw.small(graphics, font, clip(font, details, (int) iw - 4), rx, y + 44, Theme.ACCENT);
+					}
 					String rate = String.format(Locale.ROOT, "%,.0f/s · %,.0f/update", contest.perSecond(), contest.perUpdate());
-					GuiDraw.small(graphics, font, clip(font, rate, (int) iw - 4), rx, y + 44, fade());
+					GuiDraw.small(graphics, font, clip(font, rate, (int) iw - 4), rx, y + 56, fade());
 				} else {
 					GuiDraw.menu(graphics, font, "No active Jacob contest", rx, y + 2, fade());
 					GuiDraw.small(graphics, font, "Reads the live player-list widget", rx, y + 16, fade());
