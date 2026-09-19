@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.4.27", new String[]{
+			"/irc users shows how many Stray users are on the live socket."
+		}),
 		new Entry("1.4.26", new String[]{
 			"Lobby pings mark the block you are looking at, like Rainbow Six. Aim at your ping and press the bind again to clear it, or wait 30 seconds for it to despawn."
 		}),
