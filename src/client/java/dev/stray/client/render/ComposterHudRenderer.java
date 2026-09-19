@@ -190,7 +190,7 @@ public final class ComposterHudRenderer {
 			true,
 			"7m 42s",
 			82_500,
-			130_000,
+			100_000,
 			76_200,
 			160_000,
 			18,

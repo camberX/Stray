@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.4.22", new String[]{
+			"Composter overlay uses 20k Organic Matter Cap per level (40k base) and 30k Fuel Cap per level (100k base). Opening upgrades no longer inflates the organic max."
+		}),
 		new Entry("1.4.21", new String[]{
 			"Cleaner NPC chat turns [NPC] Name: message into [Name] message. Yellow Hypixel brackets stay, and the NPC name keeps its color. Off by default in Menus."
 		}),
