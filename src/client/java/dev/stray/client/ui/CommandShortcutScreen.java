@@ -90,6 +90,7 @@ public class CommandShortcutScreen extends Screen {
 		y = toggleRow(graphics, font, mouseX, mouseY, x, y, w, "Enabled", config.commandShortcutsEnabled, v -> {
 			config.commandShortcutsEnabled = v;
 			config.save();
+			CommandShortcuts.sync();
 		});
 		y = toggleRow(graphics, font, mouseX, mouseY, x, y, w, "Pass arguments", config.commandShortcutsPassArgs, v -> {
 			config.commandShortcutsPassArgs = v;

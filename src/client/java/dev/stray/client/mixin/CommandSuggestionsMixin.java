@@ -2,48 +2,16 @@ package dev.stray.client.mixin;
 
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
-import com.mojang.brigadier.CommandDispatcher;
-import com.mojang.brigadier.ParseResults;
-import com.mojang.brigadier.suggestion.Suggestions;
 import dev.stray.client.ui.ChatChrome;
-import dev.stray.client.ui.CommandShortcuts;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.CommandSuggestions;
-import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.util.FormattedCharSequence;
-import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
-
-import java.util.concurrent.CompletableFuture;
 
 @Mixin(CommandSuggestions.class)
 public class CommandSuggestionsMixin {
-	@Shadow
-	@Final
-	private EditBox input;
-
-	@WrapOperation(
-		method = "updateCommandInfo",
-		at = @At(
-			value = "INVOKE",
-			target = "Lcom/mojang/brigadier/CommandDispatcher;getCompletionSuggestions(Lcom/mojang/brigadier/ParseResults;I)Ljava/util/concurrent/CompletableFuture;"
-		)
-	)
-	private CompletableFuture<Suggestions> stray$shortcutSuggestions(
-		CommandDispatcher<?> dispatcher,
-		ParseResults<?> parse,
-		int cursor,
-		Operation<CompletableFuture<Suggestions>> original
-	) {
-		CompletableFuture<Suggestions> future = original.call(dispatcher, parse, cursor);
-		if (!CommandShortcuts.suggests()) {
-			return future;
-		}
-		return future.thenApply(suggestions -> CommandShortcuts.mergeSuggestions(input.getValue(), cursor, suggestions));
-	}
 
 	@WrapOperation(
 		method = "extractUsage",
