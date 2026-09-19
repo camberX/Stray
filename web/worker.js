@@ -1,5 +1,193 @@
 const MAX_BYTES = 2 * 1024 * 1024;
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
+const NAME_RE = /^[A-Za-z0-9_]{1,16}$/;
+const SERVER_RE = /^[A-Za-z0-9_\-]{1,32}$/;
+const IRC_COOL_MS = 1500;
+const PING_COOL_MS = 3000;
+const IRC_MAX = 180;
+const HISTORY_MAX = 30;
+const PING_LIFE_MS = 45000;
+
+export class StrayLive {
+	constructor(ctx, env) {
+		this.ctx = ctx;
+		this.env = env;
+		this.recent = [];
+	}
+
+	async fetch(request) {
+		if (request.headers.get("Upgrade") !== "websocket") {
+			return new Response("Expected websocket", { status: 426 });
+		}
+		const pair = new WebSocketPair();
+		this.ctx.acceptWebSocket(pair[1]);
+		pair[1].serializeAttachment({
+			uuid: "",
+			name: "",
+			server: "",
+			ircAt: 0,
+			pingAt: 0
+		});
+		return new Response(null, { status: 101, webSocket: pair[0] });
+	}
+
+	async webSocketMessage(ws, raw) {
+		let msg;
+		try {
+			msg = JSON.parse(typeof raw === "string" ? raw : new TextDecoder().decode(raw));
+		} catch {
+			return;
+		}
+		if (!msg || typeof msg !== "object") {
+			return;
+		}
+		const type = String(msg.type || "");
+		if (type === "hello") {
+			this.onHello(ws, msg);
+			return;
+		}
+		const meta = ws.deserializeAttachment() || {};
+		if (!meta.uuid || !meta.name) {
+			ws.send(JSON.stringify({ type: "error", message: "Say hello first." }));
+			return;
+		}
+		if (type === "server") {
+			meta.server = cleanServer(msg.server);
+			ws.serializeAttachment(meta);
+			return;
+		}
+		if (type === "irc") {
+			this.onIrc(ws, meta, msg);
+			return;
+		}
+		if (type === "ping") {
+			this.onPing(ws, meta, msg);
+		}
+	}
+
+	async webSocketClose(ws) {
+		try {
+			ws.close(1000, "bye");
+		} catch {
+			/* already closed */
+		}
+	}
+
+	onHello(ws, msg) {
+		const name = String(msg.name || "").trim();
+		const uuid = String(msg.uuid || "").trim().toLowerCase();
+		if (!NAME_RE.test(name) || !UUID_RE.test(uuid)) {
+			ws.send(JSON.stringify({ type: "error", message: "Bad hello." }));
+			ws.close(1008, "bad hello");
+			return;
+		}
+		const meta = {
+			uuid,
+			name,
+			server: cleanServer(msg.server),
+			ircAt: 0,
+			pingAt: 0
+		};
+		ws.serializeAttachment(meta);
+		ws.send(JSON.stringify({ type: "hello", ok: true, users: this.ctx.getWebSockets().length }));
+		if (this.recent.length) {
+			ws.send(JSON.stringify({ type: "history", messages: this.recent }));
+		}
+	}
+
+	onIrc(ws, meta, msg) {
+		const now = Date.now();
+		if (now - meta.ircAt < IRC_COOL_MS) {
+			ws.send(JSON.stringify({ type: "error", message: "Slow down." }));
+			return;
+		}
+		const text = cleanIrc(msg.text);
+		if (!text) {
+			return;
+		}
+		meta.ircAt = now;
+		ws.serializeAttachment(meta);
+		const payload = { type: "irc", name: meta.name, uuid: meta.uuid, text, at: now };
+		this.recent.push(payload);
+		if (this.recent.length > HISTORY_MAX) {
+			this.recent.shift();
+		}
+		this.broadcast(payload);
+	}
+
+	onPing(ws, meta, msg) {
+		const now = Date.now();
+		if (now - meta.pingAt < PING_COOL_MS) {
+			ws.send(JSON.stringify({ type: "error", message: "Slow down." }));
+			return;
+		}
+		if (!meta.server) {
+			ws.send(JSON.stringify({ type: "error", message: "Join a lobby to ping." }));
+			return;
+		}
+		const x = toInt(msg.x);
+		const y = toInt(msg.y);
+		const z = toInt(msg.z);
+		if (x === null || y === null || z === null || y < -128 || y > 512) {
+			return;
+		}
+		meta.pingAt = now;
+		ws.serializeAttachment(meta);
+		const payload = {
+			type: "ping",
+			name: meta.name,
+			uuid: meta.uuid,
+			server: meta.server,
+			x,
+			y,
+			z,
+			label: cleanIrc(msg.label || ""),
+			at: now,
+			until: now + PING_LIFE_MS
+		};
+		this.broadcast(payload, (other) => other.server === meta.server);
+	}
+
+	broadcast(payload, filter) {
+		const data = JSON.stringify(payload);
+		for (const socket of this.ctx.getWebSockets()) {
+			const meta = socket.deserializeAttachment() || {};
+			if (filter && !filter(meta)) {
+				continue;
+			}
+			try {
+				socket.send(data);
+			} catch {
+				/* drop */
+			}
+		}
+	}
+}
+
+function cleanServer(value) {
+	const text = String(value || "").trim();
+	return SERVER_RE.test(text) ? text : "";
+}
+
+function cleanIrc(value) {
+	let text = String(value || "").replace(/[\r\n\u0000-\u001f]/g, " ").replace(/§./g, "").trim();
+	if (text.length > IRC_MAX) {
+		text = text.slice(0, IRC_MAX);
+	}
+	return text;
+}
+
+function toInt(value) {
+	const n = Number(value);
+	if (!Number.isFinite(n)) {
+		return null;
+	}
+	const i = Math.round(n);
+	if (i < -30000000 || i > 30000000) {
+		return null;
+	}
+	return i;
+}
 
 export default {
 	async fetch(request, env) {
@@ -15,6 +203,14 @@ export default {
 async function route(request, env) {
 	const url = new URL(request.url);
 	const path = canonicalizePath(url.pathname);
+
+	if (request.headers.get("Upgrade") === "websocket" && (path === "/ws" || path === "/api/ws")) {
+		if (!env.STRAY_LIVE) {
+			return json(501, { error: "Live socket is not bound. Deploy wrangler.toml Durable Objects." });
+		}
+		const id = env.STRAY_LIVE.idFromName("hub");
+		return env.STRAY_LIVE.get(id).fetch(request);
+	}
 
 	if (request.method === "OPTIONS") {
 		return new Response(null, { status: 204, headers: cors() });

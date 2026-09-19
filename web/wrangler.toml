@@ -16,3 +16,11 @@ MOD_GITHUB_PATH = "web/public/mod"
 [[r2_buckets]]
 binding = "CAPES"
 bucket_name = "voidmark-capes"
+
+[[durable_objects.bindings]]
+name = "STRAY_LIVE"
+class_name = "StrayLive"
+
+[[migrations]]
+tag = "v1-stray-live"
+new_sqlite_classes = ["StrayLive"]

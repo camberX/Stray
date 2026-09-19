@@ -30,6 +30,8 @@ import dev.stray.client.config.StrayConfig;
 import dev.stray.update.AutoUpdate;
 import dev.stray.client.location.SkyblockLocation;
 import dev.stray.client.net.ConnectionPing;
+import dev.stray.client.net.LiveCommands;
+import dev.stray.client.net.StrayLive;
 import dev.stray.client.node.EnderNodeTracker;
 import dev.stray.client.item.ItemAppearance;
 import dev.stray.client.item.ItemIds;
@@ -125,6 +127,7 @@ public final class StrayClient implements ClientModInitializer {
 	private static boolean wasLoadouts;
 	private static boolean wasWardrobe;
 	private static boolean wasProfile;
+	private static boolean wasPing;
 
 	public static boolean loadoutsKey(KeyEvent event) {
 		return menuKeyMatches(StrayConfig.get().openLoadoutsKey, event);
@@ -152,6 +155,7 @@ public final class StrayClient implements ClientModInitializer {
 		wasLoadouts = menuKeyHeld(config.openLoadoutsKey);
 		wasWardrobe = menuKeyHeld(config.openWardrobeKey);
 		wasProfile = menuKeyHeld(config.openProfileKey);
+		wasPing = menuKeyHeld(config.strayPingKey);
 	}
 
 	public static boolean menuKeyMatches(String keyName, KeyEvent event) {
@@ -180,6 +184,7 @@ public final class StrayClient implements ClientModInitializer {
 		MobGlowRenderer.init();
 		BlockOutlineGlow.init();
 		BlockMarks.init();
+		StrayLive.init();
 		PathRecorder.init();
 		PathWalker.init();
 		CommandRings.init();
@@ -254,6 +259,8 @@ public final class StrayClient implements ClientModInitializer {
 			root.then(CommandRingCommands.command());
 			root.then(MovementRingCommands.command());
 			root.then(ClientCommands.literal("shortcuts").executes(context -> CommandShortcuts.open()));
+			root.then(LiveCommands.irc());
+			root.then(LiveCommands.ping());
 			root.then(stealCommand());
 			var brand = dispatcher.register(root);
 			dispatcher.register(ClientCommands.literal("st").redirect(brand));
@@ -275,6 +282,8 @@ public final class StrayClient implements ClientModInitializer {
 			vm.then(CommandRingCommands.command());
 			vm.then(MovementRingCommands.command());
 			vm.then(ClientCommands.literal("shortcuts").executes(context -> CommandShortcuts.open()));
+			vm.then(LiveCommands.irc());
+			vm.then(LiveCommands.ping());
 			vm.then(stealCommand());
 			dispatcher.register(vm);
 			dispatcher.register(ClientCommands.literal("loadouts").executes(context -> LoadoutsCommands.open()));
@@ -288,6 +297,8 @@ public final class StrayClient implements ClientModInitializer {
 				.then(ClientCommands.argument("player", StringArgumentType.greedyString())
 					.executes(context -> ProfileCommands.open(StringArgumentType.getString(context, "player")))));
 			dispatcher.register(AutoClickerCommands.command());
+			dispatcher.register(LiveCommands.irc());
+			dispatcher.register(LiveCommands.ping());
 			CommandShortcuts.register(dispatcher);
 		});
 
@@ -346,6 +357,7 @@ public final class StrayClient implements ClientModInitializer {
 			PipCapture.tick(client);
 			AotvSim.tick();
 			ShopCape.tick();
+			StrayLive.tick(client);
 			UiFontPack.tick(client);
 			UpdateNotifier.tick();
 		});
@@ -423,11 +435,13 @@ public final class StrayClient implements ClientModInitializer {
 			CrystalHollows.reset();
 			CrystalHollowsMap.close();
 			MetalDetector.reset();
+			StrayLive.disconnect();
 		});
 
 		ClientLifecycleEvents.CLIENT_STOPPING.register(client -> {
 			FarmKeys.restore();
 			PipCapture.stop();
+			StrayLive.disconnect();
 		});
 	}
 
@@ -478,6 +492,7 @@ public final class StrayClient implements ClientModInitializer {
 		boolean loadouts = menuKeyHeld(config.openLoadoutsKey);
 		boolean wardrobe = menuKeyHeld(config.openWardrobeKey);
 		boolean profile = menuKeyHeld(config.openProfileKey);
+		boolean ping = menuKeyHeld(config.strayPingKey);
 		if (!ignoreMenuBinds(client)) {
 			if (gui && !wasGui) {
 				handleOpenGui(client);
@@ -503,11 +518,15 @@ public final class StrayClient implements ClientModInitializer {
 					ProfileCommands.open("");
 				}
 			}
+			if (ping && !wasPing && strayHotkeys(client) && config.strayPingEnabled) {
+				LiveCommands.ping("");
+			}
 		}
 		wasGui = gui;
 		wasLoadouts = loadouts;
 		wasWardrobe = wardrobe;
 		wasProfile = profile;
+		wasPing = ping;
 	}
 
 	private static boolean ignoreMenuBinds(Minecraft client) {

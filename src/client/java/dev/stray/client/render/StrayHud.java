@@ -8,6 +8,7 @@ import dev.stray.client.mining.CrystalHollowsRenderer;
 import dev.stray.client.mining.MetalDetector;
 import dev.stray.client.movement.CommandRings;
 import dev.stray.client.movement.MovementRings;
+import dev.stray.client.net.LobbyPings;
 import dev.stray.client.update.UpdateToast;
 import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry;
 import net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements;
@@ -48,6 +49,7 @@ public final class StrayHud {
 		EntityBoxEsp.extract(graphics, delta);
 		EntityHealthBars.extract(graphics, delta);
 		CrystalHollowsRenderer.extract(graphics, delta);
+		LobbyPings.extract(graphics, delta);
 		CrystalHollowsMap.extract(graphics, delta);
 		MetalDetector.extract(graphics, delta);
 		BlockMarks.extract(graphics, delta);

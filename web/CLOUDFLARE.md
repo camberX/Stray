@@ -140,6 +140,8 @@ npx wrangler deploy
 
 After you change the cape desk HTML or `wrangler.toml` (Worker code, not the jar), deploy the same way.
 
+The live websocket (`wss://stray.gay/ws`) needs the Durable Object in `wrangler.toml`. After pulling this change, run `npx wrangler deploy` from `web/` once so Global IRC and lobby pings can fan out. Pasting only `worker.js` into the dashboard editor is not enough for that socket.
+
 Change `MOD_GITHUB` in `wrangler.toml` if the jar lives in a different public repo. Changing the `ADMIN` secret is another `npx wrangler secret put ADMIN`. The UUID list and cape PNGs stay in the R2 bucket.
 
 ## Local testing (not Cloudflare)
