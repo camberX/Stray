@@ -1,15 +1,25 @@
 package dev.stray.client.location;
 
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import dev.stray.client.config.StrayConfig;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientPacketListener;
 import net.minecraft.client.multiplayer.PlayerInfo;
 import net.minecraft.network.chat.Component;
+import net.minecraft.world.level.GameType;
 import net.minecraft.world.scores.DisplaySlot;
 import net.minecraft.world.scores.Objective;
 import net.minecraft.world.scores.PlayerTeam;
 import net.minecraft.world.scores.Scoreboard;
 import net.minecraft.world.phys.AABB;
+
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Hypixel / Skyblock / island flags. Tab and scoreboard are walked at most a
@@ -19,6 +29,19 @@ public final class SkyblockLocation {
 	private static final String AREA_PREFIX = "Area: ";
 	private static final String DUNGEON_PREFIX = "Dungeon: ";
 	private static final int REFRESH_TICKS = 5;
+	private static final long LOCRAW_MS = 15_000L;
+	private static final Pattern SERVER_LINE = Pattern.compile(
+		"(?i)^server:\\s*([A-Za-z0-9_\\-]{1,32})(?:\\s.*)?$"
+	);
+	private static final Pattern LOBBY_ID = Pattern.compile("^[A-Za-z0-9_\\-]{1,32}$");
+	private static final Comparator<PlayerInfo> TAB_ORDER = Comparator
+		.comparingInt((PlayerInfo info) -> -info.getTabListOrder())
+		.thenComparingInt(info -> info.getGameMode() == GameType.SPECTATOR ? 1 : 0)
+		.thenComparing(info -> {
+			PlayerTeam team = info.getTeam();
+			return team == null ? "" : team.getName();
+		})
+		.thenComparing(info -> info.getProfile().name(), String.CASE_INSENSITIVE_ORDER);
 
 	public static boolean onHypixel;
 	public static boolean inSkyblock;
@@ -33,6 +56,8 @@ public final class SkyblockLocation {
 	public static String serverBrand = "";
 
 	private static int lastTick = Integer.MIN_VALUE;
+	private static boolean locrawPending;
+	private static long lastLocrawAt;
 
 	private SkyblockLocation() {
 	}
@@ -64,6 +89,9 @@ public final class SkyblockLocation {
 			server = locrawServer;
 		} else if (!tabServer.isEmpty()) {
 			server = tabServer;
+		}
+		if (onHypixel && server.isEmpty()) {
+			requestLocraw(client);
 		}
 		inSkyblock = onHypixel && (sidebar.skyblock || !area.isEmpty() || !poi.isEmpty());
 		inTheEnd = inSkyblock && isTheEnd(area, sidebar);
@@ -106,6 +134,8 @@ public final class SkyblockLocation {
 		locrawServer = "";
 		serverBrand = "";
 		lastTick = Integer.MIN_VALUE;
+		locrawPending = false;
+		lastLocrawAt = 0L;
 	}
 
 	private static String brand(ClientPacketListener connection) {
@@ -175,17 +205,118 @@ public final class SkyblockLocation {
 		if (connection == null) {
 			return "";
 		}
-		for (PlayerInfo info : connection.getListedOnlinePlayers()) {
-			Component display = info.getTabListDisplayName();
-			if (display == null) {
+		LinkedHashSet<PlayerInfo> unique = new LinkedHashSet<>();
+		unique.addAll(connection.getListedOnlinePlayers());
+		unique.addAll(connection.getOnlinePlayers());
+		List<PlayerInfo> infos = new ArrayList<>(unique);
+		infos.sort(TAB_ORDER);
+		List<String> lines = new ArrayList<>(infos.size());
+		for (PlayerInfo info : infos) {
+			String text = plain(tabName(info)).trim();
+			if (!text.isEmpty()) {
+				lines.add(text);
+			}
+		}
+		return parseTabServer(lines);
+	}
+
+	static String parseTabServer(List<String> lines) {
+		if (lines == null || lines.isEmpty()) {
+			return "";
+		}
+		for (int i = 0; i < lines.size(); i++) {
+			String line = lines.get(i).trim();
+			if (line.isEmpty()) {
 				continue;
 			}
-			String text = plain(display);
-			if (text.startsWith("Server: ")) {
-				return text.substring("Server: ".length()).trim();
+			Matcher labeled = SERVER_LINE.matcher(line);
+			if (labeled.matches()) {
+				String id = lobbyId(labeled.group(1));
+				if (!id.isEmpty()) {
+					return id;
+				}
+			}
+			if (line.equalsIgnoreCase("server") || line.equalsIgnoreCase("server:")) {
+				if (i + 1 < lines.size()) {
+					String id = lobbyId(lines.get(i + 1).trim());
+					if (!id.isEmpty()) {
+						return id;
+					}
+				}
+			}
+			if (line.length() > 7 && line.regionMatches(true, 0, "server ", 0, 7)) {
+				String id = lobbyId(line.substring(7).trim());
+				if (!id.isEmpty()) {
+					return id;
+				}
 			}
 		}
 		return "";
+	}
+
+	private static String lobbyId(String value) {
+		if (value == null || value.isEmpty() || !LOBBY_ID.matcher(value).matches()) {
+			return "";
+		}
+		if (value.equalsIgnoreCase("limbo")) {
+			return value;
+		}
+		boolean digit = false;
+		for (int i = 0; i < value.length(); i++) {
+			if (value.charAt(i) >= '0' && value.charAt(i) <= '9') {
+				digit = true;
+				break;
+			}
+		}
+		return digit ? value : "";
+	}
+
+	private static Component tabName(PlayerInfo info) {
+		Component display = info.getTabListDisplayName();
+		if (display != null) {
+			return display;
+		}
+		return PlayerTeam.formatNameForTeam(info.getTeam(), Component.literal(info.getProfile().name()));
+	}
+
+	public static void requestLocraw(Minecraft client) {
+		if (client == null || client.player == null || client.player.connection == null) {
+			return;
+		}
+		long now = System.currentTimeMillis();
+		if (locrawPending && now - lastLocrawAt < LOCRAW_MS) {
+			return;
+		}
+		locrawPending = true;
+		lastLocrawAt = now;
+		client.player.connection.sendCommand("locraw");
+	}
+
+	/** Parse Hypixel /locraw JSON. Returns true when the line should stay hidden. */
+	public static boolean takeLocraw(String text) {
+		if (text == null) {
+			return false;
+		}
+		String raw = text.trim();
+		if (!raw.startsWith("{") || !raw.endsWith("}") || !raw.contains("\"server\"")) {
+			return false;
+		}
+		try {
+			JsonObject json = JsonParser.parseString(raw).getAsJsonObject();
+			if (!json.has("server") || !json.get("server").isJsonPrimitive()) {
+				return false;
+			}
+			String id = lobbyId(json.get("server").getAsString().trim());
+			if (!id.isEmpty()) {
+				locrawServer = id;
+				server = id;
+			}
+			boolean hide = locrawPending;
+			locrawPending = false;
+			return hide;
+		} catch (RuntimeException ignored) {
+			return false;
+		}
 	}
 
 	private static String readArea(ClientPacketListener connection, Sidebar sidebar) {

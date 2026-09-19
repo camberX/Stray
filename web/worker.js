@@ -121,9 +121,13 @@ export class StrayLive {
 			ws.send(JSON.stringify({ type: "error", message: "Slow down." }));
 			return;
 		}
-		if (!meta.server) {
+		const server = cleanServer(msg.server) || meta.server;
+		if (!server) {
 			ws.send(JSON.stringify({ type: "error", message: "Join a lobby to ping." }));
 			return;
+		}
+		if (server !== meta.server) {
+			meta.server = server;
 		}
 		const x = toInt(msg.x);
 		const y = toInt(msg.y);
@@ -137,7 +141,7 @@ export class StrayLive {
 			type: "ping",
 			name: meta.name,
 			uuid: meta.uuid,
-			server: meta.server,
+			server,
 			x,
 			y,
 			z,

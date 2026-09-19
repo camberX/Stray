@@ -1,7 +1,5 @@
 package dev.stray.client.mining;
 
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 import dev.stray.client.config.StrayConfig;
 import dev.stray.client.location.SkyblockLocation;
 import net.minecraft.ChatFormatting;
@@ -34,7 +32,6 @@ public final class CrystalHollows {
 		new StaticMark(new BlockPos(475, 116, 475), "Jungle", 0xAA00AA),
 		new StaticMark(new BlockPos(513, 106, 524), "Nucleus", 0xFF5555)
 	);
-	private static boolean locrawPending;
 	private static boolean inHollows;
 	private static String lastServer = "";
 
@@ -94,13 +91,8 @@ public final class CrystalHollows {
 			return true;
 		}
 		String text = message.getString().replaceAll("§.", "");
-		if (locrawPending && text.startsWith("{\"server\":") && text.endsWith("}")) {
-			parseLocraw(text);
-			locrawPending = false;
+		if (SkyblockLocation.takeLocraw(text)) {
 			return false;
-		}
-		if (text.startsWith("{\"server\":") && text.endsWith("}")) {
-			parseLocraw(text);
 		}
 		if (!tracking()) {
 			return true;
@@ -184,43 +176,21 @@ public final class CrystalHollows {
 		LOCKED.clear();
 		CrystalHollowsScanner.reset();
 		lastServer = "";
-		locrawPending = false;
 		inHollows = true;
 		SkyblockLocation.locrawServer = "";
 		SkyblockLocation.server = "";
 		CrystalHollowsMap.reset();
-		requestLocraw(client);
+		SkyblockLocation.requestLocraw(client);
 	}
 
 	private static void leave() {
 		WAYPOINTS.clear();
 		LOCKED.clear();
 		CrystalHollowsScanner.reset();
-		locrawPending = false;
 		inHollows = false;
 		lastServer = "";
 		CrystalHollowsSocket.disconnect();
 		CrystalHollowsMap.reset();
-	}
-
-	private static void requestLocraw(Minecraft client) {
-		if (client == null || client.player == null || client.player.connection == null) {
-			return;
-		}
-		locrawPending = true;
-		client.player.connection.sendCommand("locraw");
-	}
-
-	private static void parseLocraw(String text) {
-		try {
-			JsonObject json = JsonParser.parseString(text).getAsJsonObject();
-			if (json.has("server")) {
-				String id = json.get("server").getAsString();
-				SkyblockLocation.locrawServer = id;
-				SkyblockLocation.server = id;
-			}
-		} catch (Exception ignored) {
-		}
 	}
 
 	private static void readNpc(String text, Minecraft client) {
