@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.4.20", new String[]{
+			"Metal Detector HUD no longer crashes when treasure predictions update while the overlay is drawing."
+		}),
 		new Entry("1.4.19", new String[]{
 			"Command shortcuts register as normal client commands. Aliases are not red in chat and no longer appear in unrelated suggestion lists."
 		}),
