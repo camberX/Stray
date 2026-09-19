@@ -151,7 +151,7 @@ public final class StrayLive implements WebSocket.Listener {
 		return true;
 	}
 
-	public static boolean sendPing(int x, int y, int z, String label) {
+	public static boolean sendPing(double x, double y, double z, String label) {
 		if (!StrayConfig.get().strayPingEnabled) {
 			tell("Turn on Lobby pings in Menus.", ChatFormatting.GRAY);
 			return false;
@@ -160,18 +160,21 @@ public final class StrayLive implements WebSocket.Listener {
 		if (client.player == null) {
 			return false;
 		}
+		double px = snapCoord(x);
+		double py = snapCoord(y);
+		double pz = snapCoord(z);
 		String room = roomId(client);
 		String name = client.player.getGameProfile().name();
 		String cleanLabel = label == null || label.isBlank() ? "" : sanitizeIrc(label);
-		LobbyPings.accept(name == null ? "You" : name, x, y, z, cleanLabel);
+		LobbyPings.accept(name == null ? "You" : name, px, py, pz, cleanLabel);
 		if (!connected()) {
 			return true;
 		}
 		JsonObject payload = new JsonObject();
 		payload.addProperty("type", "ping");
-		payload.addProperty("x", x);
-		payload.addProperty("y", y);
-		payload.addProperty("z", z);
+		payload.addProperty("x", px);
+		payload.addProperty("y", py);
+		payload.addProperty("z", pz);
 		payload.addProperty("server", room);
 		if (!cleanLabel.isEmpty()) {
 			payload.addProperty("label", cleanLabel);
@@ -515,15 +518,30 @@ public final class StrayLive implements WebSocket.Listener {
 		}
 	}
 
+	private static double snapCoord(double value) {
+		return Math.round(value * 20.0) / 20.0;
+	}
+
+	private static double jsonCoord(JsonObject json, String key) {
+		if (!json.has(key) || !json.get(key).isJsonPrimitive()) {
+			return Double.NaN;
+		}
+		try {
+			return json.get(key).getAsDouble();
+		} catch (RuntimeException ignored) {
+			return Double.NaN;
+		}
+	}
+
 	private static void onPing(JsonObject json) {
 		if (!StrayConfig.get().strayPingEnabled) {
 			return;
 		}
 		String name = text(json, "name");
-		int x = json.has("x") ? json.get("x").getAsInt() : Integer.MIN_VALUE;
-		int y = json.has("y") ? json.get("y").getAsInt() : Integer.MIN_VALUE;
-		int z = json.has("z") ? json.get("z").getAsInt() : Integer.MIN_VALUE;
-		if (name.isEmpty() || y == Integer.MIN_VALUE) {
+		double x = jsonCoord(json, "x");
+		double y = jsonCoord(json, "y");
+		double z = jsonCoord(json, "z");
+		if (name.isEmpty() || Double.isNaN(x) || Double.isNaN(y) || Double.isNaN(z)) {
 			return;
 		}
 		String label = text(json, "label");
@@ -538,7 +556,7 @@ public final class StrayLive implements WebSocket.Listener {
 		line.append(Component.literal("] ").setStyle(BRACKET));
 		line.append(Component.literal(name).setStyle(NAME));
 		line.append(Component.literal(" marked ").setStyle(MUTED));
-		line.append(Component.literal(x + ", " + y + ", " + z).setStyle(TEXT));
+		line.append(Component.literal(snapCoord(x) + ", " + snapCoord(y) + ", " + snapCoord(z)).setStyle(TEXT));
 		if (!label.isEmpty()) {
 			line.append(Component.literal(" · " + label).setStyle(MUTED));
 		}

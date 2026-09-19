@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.4.28", new String[]{
+			"Lobby pings look like Rainbow Six: a yellow diamond on the exact spot you are aiming at, a downward chevron, and distance. No more block box, beam, or camera tracer."
+		}),
 		new Entry("1.4.27", new String[]{
 			"/irc users shows how many Stray users are on the live socket."
 		}),
