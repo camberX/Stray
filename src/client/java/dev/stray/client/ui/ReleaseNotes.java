@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.4.21", new String[]{
+			"Cleaner NPC chat turns [NPC] Name: message into [Name] message. Yellow Hypixel brackets stay, and the NPC name keeps its color. Off by default in Menus."
+		}),
 		new Entry("1.4.20", new String[]{
 			"Metal Detector HUD no longer crashes when treasure predictions update while the overlay is drawing."
 		}),
