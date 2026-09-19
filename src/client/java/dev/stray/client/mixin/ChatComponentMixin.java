@@ -3,6 +3,7 @@ package dev.stray.client.mixin;
 import com.llamalad7.mixinextras.injector.wrapmethod.WrapMethod;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
+import dev.stray.client.chat.NpcChat;
 import dev.stray.client.chat.StashChat;
 import dev.stray.client.fairy.FairySoulTracker;
 import dev.stray.client.farming.GardenHud;
@@ -42,7 +43,7 @@ public class ChatComponentMixin {
 		FairySoulTracker.onChat(rewritten);
 		GardenHud.onChat(rewritten);
 		CrystalHollows.allowChat(rewritten, false);
-		Component stash = StashChat.filter(rewritten);
+		Component stash = StashChat.filter(NpcChat.rewrite(rewritten));
 		if (stash != null) {
 			original.call(stash, signature, source, tag);
 		}
