@@ -25,7 +25,7 @@ import org.joml.Vector3fc;
 import java.util.ArrayList;
 import java.util.List;
 
-/** Lobby pings from the Stray live websocket. Visible to every connected user in the same Hypixel lobby. */
+/** Pings from the Stray live websocket. Same room: Hypixel lobby, multiplayer server, or singleplayer world. */
 public final class LobbyPings {
 	private static final long LIFE_MS = 45_000L;
 	private static final int MAX = 32;

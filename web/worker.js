@@ -1,7 +1,7 @@
 const MAX_BYTES = 2 * 1024 * 1024;
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 const NAME_RE = /^[A-Za-z0-9_]{1,16}$/;
-const SERVER_RE = /^[A-Za-z0-9_\-]{1,32}$/;
+const SERVER_RE = /^[A-Za-z0-9_\-]{1,64}$/;
 const IRC_COOL_MS = 1500;
 const PING_COOL_MS = 3000;
 const IRC_MAX = 180;
@@ -121,7 +121,7 @@ export class StrayLive {
 			ws.send(JSON.stringify({ type: "error", message: "Slow down." }));
 			return;
 		}
-		const server = cleanServer(msg.server) || meta.server;
+		const server = cleanServer(msg.server) || meta.server || "world";
 		if (!server) {
 			ws.send(JSON.stringify({ type: "error", message: "Join a lobby to ping." }));
 			return;
@@ -132,7 +132,7 @@ export class StrayLive {
 		const x = toInt(msg.x);
 		const y = toInt(msg.y);
 		const z = toInt(msg.z);
-		if (x === null || y === null || z === null || y < -128 || y > 512) {
+		if (x === null || y === null || z === null || y < -2048 || y > 2048) {
 			return;
 		}
 		meta.pingAt = now;
