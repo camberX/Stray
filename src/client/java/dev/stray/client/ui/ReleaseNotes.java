@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.4.24", new String[]{
+			"Lobby pings read Hypixel's tab Server widget (including the padded two-line form) and /locraw, so /st ping works while Status already shows Hypixel and Skyblock."
+		}),
 		new Entry("1.4.23", new String[]{
 			"Global IRC and lobby pings on stray.gay. /irc talks to every Stray user. /st ping (or the Lobby ping bind) marks a spot in your Hypixel lobby that other Stray users there can see."
 		}),

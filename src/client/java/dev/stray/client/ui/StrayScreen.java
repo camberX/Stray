@@ -2309,10 +2309,11 @@ public class StrayScreen extends Screen {
 				GuiDraw.menu(graphics, font, MenuSlotBinds.hint() + " equips and closes", rx, y + 58, fade());
 			}
 			case STATUS -> {
-				float y = featureCard(graphics, font, left, top, col, cardHeight(4), "Location");
+				float y = featureCard(graphics, font, left, top, col, cardHeight(5), "Location");
 				y = readout(graphics, font, ix, y, iw, "Hypixel", SkyblockLocation.onHypixel);
 				y = readout(graphics, font, ix, y, iw, "Skyblock", SkyblockLocation.inSkyblock);
 				y = readout(graphics, font, ix, y, iw, "The End", SkyblockLocation.inTheEnd);
+				y = statRow(graphics, font, ix, y, iw, "Lobby", SkyblockLocation.server.isEmpty() ? "Unknown" : SkyblockLocation.server);
 				String area = SkyblockLocation.area.isEmpty() ? "Unknown" : SkyblockLocation.area;
 				GuiDraw.menu(graphics, font, clip(font, area, (int) iw - 4), ix, GuiDraw.middle(y, ROW), fade());
 
@@ -2581,10 +2582,11 @@ public class StrayScreen extends Screen {
 			}
 			case STATUS -> {
 				float y = sectionLabel(graphics, font, left, top, "Server");
-				y = featureCard(graphics, font, left, y, col, cardHeight(4), "Location");
+				y = featureCard(graphics, font, left, y, col, cardHeight(5), "Location");
 				y = readout(graphics, font, ix, y, iw, "Hypixel", SkyblockLocation.onHypixel);
 				y = readout(graphics, font, ix, y, iw, "Skyblock", SkyblockLocation.inSkyblock);
 				y = readout(graphics, font, ix, y, iw, "The End", SkyblockLocation.inTheEnd);
+				y = statRow(graphics, font, ix, y, iw, "Lobby", SkyblockLocation.server.isEmpty() ? "Unknown" : SkyblockLocation.server);
 				String area = SkyblockLocation.area.isEmpty() ? "Unknown" : SkyblockLocation.area;
 				GuiDraw.menu(graphics, font, clip(font, area, (int) iw - 4), ix, GuiDraw.middle(y, ROW), fade());
 				y = sectionLabel(graphics, font, right, top, "Client");

@@ -138,6 +138,9 @@ public final class StrayLive implements WebSocket.Listener {
 			return false;
 		}
 		String server = SkyblockLocation.server == null ? "" : SkyblockLocation.server.trim();
+		if (server.isEmpty() && SkyblockLocation.onHypixel) {
+			SkyblockLocation.requestLocraw(Minecraft.getInstance());
+		}
 		if (server.isEmpty()) {
 			tell("Join a Hypixel lobby to ping.", ChatFormatting.GRAY);
 			return false;
@@ -147,10 +150,15 @@ public final class StrayLive implements WebSocket.Listener {
 		payload.addProperty("x", x);
 		payload.addProperty("y", y);
 		payload.addProperty("z", z);
+		payload.addProperty("server", server);
 		if (label != null && !label.isBlank()) {
 			payload.addProperty("label", sanitizeIrc(label));
 		}
 		send(payload);
+		if (!server.equals(lastServer)) {
+			lastServer = server;
+			send(serverUpdate(server));
+		}
 		return true;
 	}
 
