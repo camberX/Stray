@@ -16,6 +16,11 @@ public final class LiveCommands {
 
 	public static LiteralArgumentBuilder<FabricClientCommandSource> irc() {
 		return ClientCommands.literal("irc")
+			.then(ClientCommands.literal("users")
+				.executes(context -> {
+					StrayLive.requestUsers();
+					return Command.SINGLE_SUCCESS;
+				}))
 			.then(ClientCommands.argument("message", StringArgumentType.greedyString())
 				.executes(context -> {
 					StrayLive.sendIrc(StringArgumentType.getString(context, "message"));

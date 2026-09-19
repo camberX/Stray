@@ -2306,7 +2306,7 @@ public class StrayScreen extends Screen {
 				GuiDraw.menu(graphics, font, "/loadouts  /ld", rx, y + 2, ink());
 				GuiDraw.menu(graphics, font, "/wardrobe  /wd", rx, y + 16, ink());
 				GuiDraw.menu(graphics, font, "/pv  /profile", rx, y + 30, ink());
-				GuiDraw.menu(graphics, font, "/irc  /st ping", rx, y + 44, ink());
+				GuiDraw.menu(graphics, font, "/irc users  /st ping", rx, y + 44, ink());
 				GuiDraw.menu(graphics, font, MenuSlotBinds.hint() + " equips and closes", rx, y + 58, fade());
 			}
 			case STATUS -> {

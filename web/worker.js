@@ -66,6 +66,10 @@ export class StrayLive {
 		}
 		if (type === "ping_clear") {
 			this.onPingClear(ws, meta, msg);
+			return;
+		}
+		if (type === "users") {
+			this.onUsers(ws);
 		}
 	}
 
@@ -93,7 +97,7 @@ export class StrayLive {
 			pingAt: 0
 		};
 		ws.serializeAttachment(meta);
-		ws.send(JSON.stringify({ type: "hello", ok: true, users: this.ctx.getWebSockets().length }));
+		ws.send(JSON.stringify({ type: "hello", ok: true, users: this.onlineUsers() }));
 		if (this.recent.length) {
 			ws.send(JSON.stringify({ type: "history", messages: this.recent }));
 		}
@@ -117,6 +121,21 @@ export class StrayLive {
 			this.recent.shift();
 		}
 		this.broadcast(payload);
+	}
+
+	onUsers(ws) {
+		ws.send(JSON.stringify({ type: "users", users: this.onlineUsers() }));
+	}
+
+	onlineUsers() {
+		const seen = new Set();
+		for (const socket of this.ctx.getWebSockets()) {
+			const meta = socket.deserializeAttachment() || {};
+			if (meta.uuid) {
+				seen.add(meta.uuid);
+			}
+		}
+		return seen.size;
 	}
 
 	onPing(ws, meta, msg) {

@@ -55,6 +55,8 @@ public final class StrayLive implements WebSocket.Listener {
 	private static volatile String lastServer = "";
 	private static volatile boolean greeted;
 	private static volatile long helloAt;
+	private static volatile int lastUsers = -1;
+	private static volatile int shownUsers = Integer.MIN_VALUE;
 	private static final List<CharSequence> PARTS = new ArrayList<>();
 
 	private StrayLive() {
@@ -95,6 +97,8 @@ public final class StrayLive implements WebSocket.Listener {
 		greeted = false;
 		helloAt = 0L;
 		lastServer = "";
+		lastUsers = -1;
+		shownUsers = Integer.MIN_VALUE;
 		connecting = false;
 		LobbyPings.clear();
 		WebSocket current = socket;
@@ -129,6 +133,21 @@ public final class StrayLive implements WebSocket.Listener {
 		payload.addProperty("type", "irc");
 		payload.addProperty("text", clean);
 		send(payload);
+		return true;
+	}
+
+	public static boolean requestUsers() {
+		if (!connected()) {
+			tell("IRC is not connected yet.", ChatFormatting.GRAY);
+			return false;
+		}
+		shownUsers = Integer.MIN_VALUE;
+		JsonObject payload = new JsonObject();
+		payload.addProperty("type", "users");
+		send(payload);
+		if (lastUsers >= 0) {
+			showUsers(lastUsers);
+		}
 		return true;
 	}
 
@@ -376,6 +395,8 @@ public final class StrayLive implements WebSocket.Listener {
 		helloAt = 0L;
 		connecting = false;
 		lastServer = "";
+		lastUsers = -1;
+		shownUsers = Integer.MIN_VALUE;
 		return WebSocket.Listener.super.onClose(webSocket, statusCode, reason);
 	}
 
@@ -386,6 +407,8 @@ public final class StrayLive implements WebSocket.Listener {
 		greeted = false;
 		helloAt = 0L;
 		connecting = false;
+		lastUsers = -1;
+		shownUsers = Integer.MIN_VALUE;
 	}
 
 	private static void handle(String raw) {
@@ -399,6 +422,7 @@ public final class StrayLive implements WebSocket.Listener {
 			switch (type) {
 				case "hello" -> client.execute(() -> onHello(json));
 				case "irc" -> client.execute(() -> onIrc(json));
+				case "users" -> client.execute(() -> onUsers(json));
 				case "history" -> client.execute(() -> onHistory(json));
 				case "ping" -> client.execute(() -> onPing(json));
 				case "ping_clear" -> client.execute(() -> onPingClear(json));
@@ -414,6 +438,10 @@ public final class StrayLive implements WebSocket.Listener {
 	private static void onHello(JsonObject json) {
 		greeted = json.has("ok") && json.get("ok").getAsBoolean();
 		lastServer = roomId(Minecraft.getInstance());
+		int n = jsonNumber(json, "users");
+		if (n >= 0) {
+			lastUsers = n;
+		}
 	}
 
 	private static void onHistory(JsonObject json) {
@@ -449,6 +477,42 @@ public final class StrayLive implements WebSocket.Listener {
 		line.append(Component.literal(": ").setStyle(TEXT));
 		line.append(Component.literal(body).setStyle(TEXT));
 		client.gui.getChat().addClientSystemMessage(line);
+	}
+
+	private static void onUsers(JsonObject json) {
+		int n = jsonNumber(json, "users");
+		if (n >= 0) {
+			lastUsers = n;
+			showUsers(n);
+		}
+	}
+
+	private static void showUsers(int n) {
+		if (n == shownUsers) {
+			return;
+		}
+		shownUsers = n;
+		Minecraft client = Minecraft.getInstance();
+		if (client.player == null || client.gui == null) {
+			return;
+		}
+		MutableComponent line = Component.empty();
+		line.append(Component.literal("[").setStyle(BRACKET));
+		line.append(Component.literal("IRC").setStyle(BRACKET));
+		line.append(Component.literal("] ").setStyle(BRACKET));
+		line.append(Component.literal(n == 1 ? "1 user online" : n + " users online").setStyle(TEXT));
+		client.gui.getChat().addClientSystemMessage(line);
+	}
+
+	private static int jsonNumber(JsonObject json, String key) {
+		if (!json.has(key) || !json.get(key).isJsonPrimitive()) {
+			return -1;
+		}
+		try {
+			return json.get(key).getAsInt();
+		} catch (RuntimeException ignored) {
+			return -1;
+		}
 	}
 
 	private static void onPing(JsonObject json) {
