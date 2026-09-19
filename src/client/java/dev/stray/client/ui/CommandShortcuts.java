@@ -1,16 +1,20 @@
 package dev.stray.client.ui;
 
 import com.mojang.brigadier.Command;
-import com.mojang.brigadier.LiteralMessage;
-import com.mojang.brigadier.suggestion.Suggestions;
-import com.mojang.brigadier.suggestion.SuggestionsBuilder;
+import com.mojang.brigadier.CommandDispatcher;
+import com.mojang.brigadier.arguments.StringArgumentType;
+import com.mojang.brigadier.tree.CommandNode;
 import dev.stray.client.config.StrayConfig;
+import net.fabricmc.fabric.api.client.command.v2.ClientCommands;
+import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource;
 import net.minecraft.client.Minecraft;
 
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 
 /** Chat aliases: `/hub extra` can become `/warp garden extra` when pass-args is on. */
@@ -19,9 +23,75 @@ public final class CommandShortcuts {
 	public static final int MAX_ALIAS = 32;
 	public static final int MAX_COMMAND = 256;
 
+	private static final Set<String> REGISTERED = new HashSet<>();
+	private static Field childrenField;
+	private static Field literalsField;
 	private static boolean sending;
 
 	private CommandShortcuts() {
+	}
+
+	public static void register(CommandDispatcher<FabricClientCommandSource> dispatcher) {
+		REGISTERED.clear();
+		apply(dispatcher, false);
+	}
+
+	public static void sync() {
+		CommandDispatcher<FabricClientCommandSource> dispatcher = ClientCommands.getActiveDispatcher();
+		if (dispatcher == null) {
+			return;
+		}
+		apply(dispatcher, true);
+	}
+
+	private static void apply(CommandDispatcher<FabricClientCommandSource> dispatcher, boolean refresh) {
+		Set<String> desired = desiredAliases();
+		for (String name : new ArrayList<>(REGISTERED)) {
+			if (desired.contains(name)) {
+				continue;
+			}
+			removeChild(dispatcher.getRoot(), name);
+			REGISTERED.remove(name);
+		}
+		for (String name : desired) {
+			if (!REGISTERED.add(name)) {
+				continue;
+			}
+			if (dispatcher.getRoot().getChild(name) != null) {
+				REGISTERED.remove(name);
+				continue;
+			}
+			dispatcher.register(
+				ClientCommands.literal(name)
+					.executes(context -> runAlias(name, ""))
+					.then(ClientCommands.argument("args", StringArgumentType.greedyString())
+						.executes(context -> runAlias(name, StringArgumentType.getString(context, "args"))))
+			);
+		}
+		if (refresh) {
+			try {
+				ClientCommands.refreshCommandCompletions();
+			} catch (IllegalStateException ignored) {
+			}
+		}
+	}
+
+	private static Set<String> desiredAliases() {
+		Set<String> names = new HashSet<>();
+		StrayConfig config = StrayConfig.get();
+		if (!config.commandShortcutsEnabled || config.commandShortcuts == null) {
+			return names;
+		}
+		for (StrayConfig.CommandShortcut row : config.commandShortcuts) {
+			if (row == null) {
+				continue;
+			}
+			String name = registrationName(row.alias);
+			if (!name.isEmpty()) {
+				names.add(name);
+			}
+		}
+		return names;
 	}
 
 	public static boolean handleTyped(String raw) {
@@ -48,68 +118,7 @@ public final class CommandShortcuts {
 		}
 		String alias = (split < 0 ? message : message.substring(0, split)).toLowerCase(Locale.ROOT);
 		String rest = split < 0 ? "" : message.substring(split).trim();
-		StrayConfig.CommandShortcut match = find(config, alias);
-		if (match == null) {
-			return false;
-		}
-		String expanded = normalizeCommand(match.command);
-		if (expanded.isEmpty()) {
-			return false;
-		}
-		if (config.commandShortcutsPassArgs && !rest.isEmpty()) {
-			expanded = expanded + " " + rest;
-		}
-		if (expanded.equals(message)) {
-			return false;
-		}
-		return send(expanded);
-	}
-
-	public static boolean suggests() {
-		StrayConfig config = StrayConfig.get();
-		return config.commandShortcutsEnabled
-			&& config.commandShortcuts != null
-			&& !config.commandShortcuts.isEmpty();
-	}
-
-	public static Suggestions mergeSuggestions(String input, int cursor, Suggestions original) {
-		Suggestions extra = suggestions(input, cursor);
-		if (extra == null || extra.isEmpty()) {
-			return original == null ? Suggestions.empty().join() : original;
-		}
-		if (original == null || original.isEmpty()) {
-			return extra;
-		}
-		return Suggestions.merge(input, List.of(original, extra));
-	}
-
-	public static Suggestions suggestions(String input, int cursor) {
-		if (!suggests() || input == null || cursor <= 0 || !input.startsWith("/")) {
-			return Suggestions.empty().join();
-		}
-		int end = 1;
-		while (end < input.length() && !Character.isWhitespace(input.charAt(end))) {
-			end++;
-		}
-		if (cursor < 1 || cursor > end) {
-			return Suggestions.empty().join();
-		}
-		String typed = input.substring(0, cursor);
-		SuggestionsBuilder builder = new SuggestionsBuilder(typed, 1);
-		boolean any = false;
-		for (StrayConfig.CommandShortcut row : StrayConfig.get().commandShortcuts) {
-			if (row == null) {
-				continue;
-			}
-			String alias = normalizeAlias(row.alias);
-			if (alias.isEmpty()) {
-				continue;
-			}
-			String command = normalizeCommand(row.command);
-			builder.suggest(alias, new LiteralMessage(command.isEmpty() ? "/" + alias : "/" + command));
-			any = true;
-		}
-		return any ? builder.build() : Suggestions.empty().join();
+		return runAlias(alias, rest) == Command.SINGLE_SUCCESS;
 	}
 
 	public static int open() {
@@ -150,6 +159,7 @@ public final class CommandShortcuts {
 			if (key.equals(row.alias.toLowerCase(Locale.ROOT))) {
 				row.command = command;
 				config.save();
+				sync();
 				return true;
 			}
 		}
@@ -161,6 +171,7 @@ public final class CommandShortcuts {
 		row.command = command;
 		config.commandShortcuts.add(row);
 		config.save();
+		sync();
 		return true;
 	}
 
@@ -172,6 +183,7 @@ public final class CommandShortcuts {
 		}
 		config.commandShortcuts.remove(index);
 		config.save();
+		sync();
 		return true;
 	}
 
@@ -230,6 +242,58 @@ public final class CommandShortcuts {
 			value = value.substring(0, MAX_COMMAND);
 		}
 		return value;
+	}
+
+	private static int runAlias(String alias, String args) {
+		if (sending) {
+			return 0;
+		}
+		StrayConfig config = StrayConfig.get();
+		if (!config.commandShortcutsEnabled) {
+			return 0;
+		}
+		StrayConfig.CommandShortcut match = find(config, alias);
+		if (match == null) {
+			return 0;
+		}
+		String expanded = normalizeCommand(match.command);
+		if (expanded.isEmpty()) {
+			return 0;
+		}
+		if (config.commandShortcutsPassArgs && args != null && !args.isBlank()) {
+			expanded = expanded + " " + args.trim();
+		}
+		return send(expanded) ? Command.SINGLE_SUCCESS : 0;
+	}
+
+	private static String registrationName(String alias) {
+		String name = normalizeAlias(alias).toLowerCase(Locale.ROOT);
+		if (name.isEmpty()) {
+			return "";
+		}
+		for (int i = 0; i < name.length(); i++) {
+			char c = name.charAt(i);
+			if (c >= 'a' && c <= 'z' || c >= '0' && c <= '9' || c == '_' || c == '-' || c == '.' || c == '+') {
+				continue;
+			}
+			return "";
+		}
+		return name;
+	}
+
+	@SuppressWarnings("unchecked")
+	private static void removeChild(CommandNode<?> root, String name) {
+		try {
+			if (childrenField == null) {
+				childrenField = CommandNode.class.getDeclaredField("children");
+				literalsField = CommandNode.class.getDeclaredField("literals");
+				childrenField.setAccessible(true);
+				literalsField.setAccessible(true);
+			}
+			((Map<String, ?>) childrenField.get(root)).remove(name);
+			((Map<String, ?>) literalsField.get(root)).remove(name);
+		} catch (ReflectiveOperationException ignored) {
+		}
 	}
 
 	private static String stripSlash(String raw) {

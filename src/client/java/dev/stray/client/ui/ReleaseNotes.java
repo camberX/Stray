@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.4.19", new String[]{
+			"Command shortcuts register as normal client commands. Aliases are not red in chat and no longer appear in unrelated suggestion lists."
+		}),
 		new Entry("1.4.18", new String[]{
 			"Music HUD layouts: Card, Compact, Poster, and Dock. Cycle them in Music settings.",
 			"/st rawmats sb:mithril_plate 2 tracks materials for two crafts, not one."

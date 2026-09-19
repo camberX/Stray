@@ -2538,7 +2538,10 @@ public class StrayScreen extends Screen {
 					shortcutsH,
 					"Shortcuts",
 					config.commandShortcutsEnabled,
-					v -> config.commandShortcutsEnabled = v,
+					v -> {
+						config.commandShortcutsEnabled = v;
+						CommandShortcuts.sync();
+					},
 					mouseX,
 					mouseY,
 					"Edit",

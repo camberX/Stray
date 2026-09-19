@@ -288,6 +288,7 @@ public final class StrayClient implements ClientModInitializer {
 				.then(ClientCommands.argument("player", StringArgumentType.greedyString())
 					.executes(context -> ProfileCommands.open(StringArgumentType.getString(context, "player")))));
 			dispatcher.register(AutoClickerCommands.command());
+			CommandShortcuts.register(dispatcher);
 		});
 
 		ClientTickEvents.START_CLIENT_TICK.register(client -> {
