@@ -31,9 +31,9 @@ import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Vector3fc;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -98,7 +98,8 @@ public final class MetalDetector {
 	private static final float TAG_H = 14f;
 	private static final float PAD_X = 8f;
 
-	private static final List<BlockPos> PREDICTIONS = new ArrayList<>();
+	/** Copy-on-write: HUD extract and chat/action-bar updates can interleave. */
+	private static final List<BlockPos> PREDICTIONS = new CopyOnWriteArrayList<>();
 
 	private static BlockPos base;
 	private static BlockPos ignore;
@@ -227,8 +228,12 @@ public final class MetalDetector {
 		Vec3 camPos = camera.position();
 		Vector3fc forward = camera.forwardVector();
 		Font font = client.font;
-		boolean unique = PREDICTIONS.size() == 1;
-		for (BlockPos pos : PREDICTIONS) {
+		List<BlockPos> hits = List.copyOf(PREDICTIONS);
+		if (hits.isEmpty()) {
+			return;
+		}
+		boolean unique = hits.size() == 1;
+		for (BlockPos pos : hits) {
 			Vec3 head = Vec3.atCenterOf(pos).add(0, 1.2, 0);
 			Vec3 rel = head.subtract(camPos);
 			double facing = rel.x * forward.x() + rel.y * forward.y() + rel.z * forward.z();
@@ -270,10 +275,14 @@ public final class MetalDetector {
 		}
 		Minecraft client = Minecraft.getInstance();
 		Vec3 eyes = client.player == null ? Vec3.ZERO : client.player.getEyePosition();
-		int rgb = PREDICTIONS.size() == 1 ? 0x55FF55 : 0xFFAA00;
+		List<BlockPos> hits = List.copyOf(PREDICTIONS);
+		if (hits.isEmpty()) {
+			return;
+		}
+		int rgb = hits.size() == 1 ? 0x55FF55 : 0xFFAA00;
 		int line = 0xEB000000 | rgb;
 		int fill = 0x55000000 | rgb;
-		for (BlockPos pos : PREDICTIONS) {
+		for (BlockPos pos : hits) {
 			GizmoProperties cuboid = Gizmos.cuboid(new AABB(pos).inflate(0.15), GizmoStyle.strokeAndFill(line, 2.4f, fill));
 			cuboid.setAlwaysOnTop();
 			Vec3 center = Vec3.atCenterOf(pos);
