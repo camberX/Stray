@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.4.26", new String[]{
+			"Lobby pings mark the block you are looking at, like Rainbow Six. Aim at your ping and press the bind again to clear it, or wait 30 seconds for it to despawn."
+		}),
 		new Entry("1.4.25", new String[]{
 			"Lobby pings work on every server and in singleplayer. Hypixel still groups by lobby id; other servers use the address; a local world keeps its own marks even if the live socket is down."
 		}),
