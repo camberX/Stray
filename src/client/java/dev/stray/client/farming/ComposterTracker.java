@@ -91,7 +91,7 @@ public final class ComposterTracker {
 		} catch (RuntimeException ignored) {
 		}
 		if (parsed != null) {
-			persistCaps(parsed.maxOrganic, parsed.maxFuel);
+			persistCaps(parsed.maxOrganic, parsed.maxFuel, false);
 		}
 		shrinkInflatedCaps();
 		if (parsed == null) {
@@ -204,8 +204,8 @@ public final class ComposterTracker {
 		boolean upgradesKnown = config.composterUpgradesKnown && matchingProfile;
 		long formulaOrganic = upgradesKnown ? organicCapacity(config.composterOrganicMatterCap) : -1;
 		long formulaFuel = upgradesKnown ? fuelCapacity(config.composterFuelCap) : -1;
-		long maxOrganic = firstCap(parsed.maxOrganic, liveOrganicMax, formulaOrganic, config.composterMaxOrganic);
-		long maxFuel = firstCap(parsed.maxFuel, liveFuelMax, formulaFuel, config.composterMaxFuel);
+		long maxOrganic = firstCap(liveOrganicMax, config.composterMaxOrganic, formulaOrganic, parsed.maxOrganic);
+		long maxFuel = firstCap(liveFuelMax, config.composterMaxFuel, formulaFuel, parsed.maxFuel);
 		double speedFactor = 1d + config.composterSpeed * 0.2d;
 		double secondsPer = 600d / speedFactor;
 		double costFactor = 1d - config.composterCostReduction / 100d;
@@ -317,26 +317,28 @@ public final class ComposterTracker {
 		}
 		liveOrganicMax = organicMax;
 		liveFuelMax = fuelMax;
-		persistCaps(organicMax, fuelMax);
+		persistCaps(organicMax, fuelMax, true);
 	}
 
-	private static void persistCaps(long organicMax, long fuelMax) {
+	private static void persistCaps(long organicMax, long fuelMax, boolean authoritative) {
 		if (organicMax <= 0 && fuelMax <= 0) {
 			return;
 		}
 		StrayConfig config = StrayConfig.get();
 		boolean changed = false;
-		if (organicMax > 0 && config.composterMaxOrganic != organicMax) {
+		if (organicMax > 0 && acceptCap(organicMax, config.composterMaxOrganic, authoritative)) {
 			config.composterMaxOrganic = organicMax;
-			if (!config.composterUpgradesKnown) {
-				config.composterOrganicMatterCap = capLevel(organicMax, ORGANIC_BASE, ORGANIC_PER_LEVEL);
+			int implied = capLevel(organicMax, ORGANIC_BASE, ORGANIC_PER_LEVEL);
+			if (!config.composterUpgradesKnown || implied > config.composterOrganicMatterCap) {
+				config.composterOrganicMatterCap = implied;
 			}
 			changed = true;
 		}
-		if (fuelMax > 0 && config.composterMaxFuel != fuelMax) {
+		if (fuelMax > 0 && acceptCap(fuelMax, config.composterMaxFuel, authoritative)) {
 			config.composterMaxFuel = fuelMax;
-			if (!config.composterUpgradesKnown) {
-				config.composterFuelCap = capLevel(fuelMax, FUEL_BASE, FUEL_PER_LEVEL);
+			int implied = capLevel(fuelMax, FUEL_BASE, FUEL_PER_LEVEL);
+			if (!config.composterUpgradesKnown || implied > config.composterFuelCap) {
+				config.composterFuelCap = implied;
 			}
 			changed = true;
 		}
@@ -345,25 +347,41 @@ public final class ComposterTracker {
 		}
 	}
 
+	private static boolean acceptCap(long incoming, long stored, boolean authoritative) {
+		if (incoming <= 0) {
+			return false;
+		}
+		if (stored <= 0) {
+			return true;
+		}
+		if (authoritative) {
+			return incoming != stored;
+		}
+		return incoming > stored;
+	}
+
 	private static void shrinkInflatedCaps() {
 		StrayConfig config = StrayConfig.get();
-		if (!config.composterUpgradesKnown) {
+		if (!legacyOrganic(config.composterMaxOrganic)) {
 			return;
 		}
-		long organic = organicCapacity(config.composterOrganicMatterCap);
-		long fuel = fuelCapacity(config.composterFuelCap);
-		boolean changed = false;
-		if (config.composterMaxOrganic > organic) {
-			config.composterMaxOrganic = organic;
-			changed = true;
+		long organic = config.composterUpgradesKnown
+			? organicCapacity(config.composterOrganicMatterCap)
+			: organicCapacity(capLevel(config.composterMaxOrganic, ORGANIC_BASE, 30_000L));
+		if (organic <= 0 || config.composterMaxOrganic == organic) {
+			return;
 		}
-		if (config.composterMaxFuel > fuel) {
-			config.composterMaxFuel = fuel;
-			changed = true;
+		config.composterMaxOrganic = organic;
+		config.save();
+	}
+
+	/** Old HUD used 30k/level. 220k is also a valid 20k/level cap, so leave those alone. */
+	private static boolean legacyOrganic(long max) {
+		if (max <= ORGANIC_BASE) {
+			return false;
 		}
-		if (changed) {
-			config.save();
-		}
+		long extra = max - ORGANIC_BASE;
+		return extra % 30_000L == 0 && extra % ORGANIC_PER_LEVEL != 0;
 	}
 
 	static long firstRatioMax(String blob) {
