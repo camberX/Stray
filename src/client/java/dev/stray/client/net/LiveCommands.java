@@ -7,7 +7,7 @@ import net.fabricmc.fabric.api.client.command.v2.ClientCommands;
 import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
-import net.minecraft.core.BlockPos;
+import net.minecraft.world.phys.Vec3;
 
 /** {@code /st irc} and {@code /st ping} on the Stray live websocket. */
 public final class LiveCommands {
@@ -45,12 +45,12 @@ public final class LiveCommands {
 			StrayLive.clearPing();
 			return Command.SINGLE_SUCCESS;
 		}
-		BlockPos pos = LobbyPings.lookPos();
-		if (pos == null) {
+		Vec3 at = LobbyPings.lookHit();
+		if (at == null) {
 			StrayLive.tell("Look at a spot to ping it.", ChatFormatting.GRAY);
 			return 0;
 		}
-		StrayLive.sendPing(pos.getX(), pos.getY(), pos.getZ(), label);
+		StrayLive.sendPing(at.x, at.y, at.z, label);
 		return Command.SINGLE_SUCCESS;
 	}
 }

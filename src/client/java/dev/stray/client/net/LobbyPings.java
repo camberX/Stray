@@ -2,21 +2,18 @@ package dev.stray.client.net;
 
 import dev.stray.client.config.StrayConfig;
 import dev.stray.client.render.GuiDraw;
-import dev.stray.client.render.NametagRenderer;
-import dev.stray.client.ui.Anim;
 import dev.stray.client.ui.MenuFont;
-import dev.stray.client.ui.Theme;
 import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderEvents;
 import net.minecraft.client.Camera;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
-import net.minecraft.core.BlockPos;
 import net.minecraft.gizmos.GizmoProperties;
 import net.minecraft.gizmos.GizmoStyle;
 import net.minecraft.gizmos.Gizmos;
 import net.minecraft.network.chat.Component;
+import net.minecraft.util.Mth;
 import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.BlockHitResult;
@@ -35,16 +32,15 @@ public final class LobbyPings {
 	private static final long LIFE_MS = 30_000L;
 	private static final int MAX = 32;
 	private static final double LOOK_RANGE = 96.0;
-	private static final double AIM_NDC = 0.045;
-	private static final float TAG_H = 14f;
-	private static final float PAD_X = 8f;
+	private static final double AIM_NDC = 0.05;
+	private static final int YELLOW = 0xF5C400;
 	private static final List<Ping> PINGS = new ArrayList<>();
 
 	private LobbyPings() {
 	}
 
 	public static void init() {
-		LevelRenderEvents.BEFORE_GIZMOS.register(context -> emitBoxes());
+		LevelRenderEvents.BEFORE_GIZMOS.register(context -> emitMarkers());
 	}
 
 	public static void tick() {
@@ -60,11 +56,11 @@ public final class LobbyPings {
 		}
 	}
 
-	public static void accept(String name, int x, int y, int z, String label) {
+	public static void accept(String name, double x, double y, double z, String label) {
 		if (!StrayConfig.get().strayPingEnabled || name == null || name.isBlank()) {
 			return;
 		}
-		BlockPos pos = new BlockPos(x, y, z);
+		Vec3 pos = new Vec3(x, y, z);
 		long now = System.currentTimeMillis();
 		synchronized (PINGS) {
 			PINGS.removeIf(ping -> ping.name.equalsIgnoreCase(name));
@@ -84,22 +80,12 @@ public final class LobbyPings {
 		}
 	}
 
-	/** True when the crosshair is on this player's ping box, beam, or nametag. */
+	/** True when the crosshair is on this player's ping marker. */
 	public static boolean aimingAtOwn(String name) {
 		if (name == null || name.isBlank()) {
 			return false;
 		}
 		Minecraft client = Minecraft.getInstance();
-		if (client.player == null || client.level == null) {
-			return false;
-		}
-		Camera camera = client.gameRenderer.getMainCamera();
-		if (!camera.isInitialized()) {
-			return false;
-		}
-		Vec3 origin = camera.position();
-		Vector3fc forward = camera.forwardVector();
-		Vec3 end = origin.add(forward.x() * LOOK_RANGE, forward.y() * LOOK_RANGE, forward.z() * LOOK_RANGE);
 		Ping match;
 		synchronized (PINGS) {
 			match = null;
@@ -110,14 +96,11 @@ public final class LobbyPings {
 				}
 			}
 		}
-		if (match == null) {
-			return false;
-		}
-		return aimsAt(client, origin, forward, end, match);
+		return match != null && aimsAt(client, match);
 	}
 
-	/** Block under the crosshair, an aimed entity, or the far look point — never the player's feet. */
-	public static BlockPos lookPos() {
+	/** Exact look-at point on a block face, entity, or far clip — never the player's feet. */
+	public static Vec3 lookHit() {
 		Minecraft client = Minecraft.getInstance();
 		if (client.player == null || client.level == null) {
 			return null;
@@ -125,48 +108,49 @@ public final class LobbyPings {
 		Vec3 eye = client.player.getEyePosition();
 		Vec3 look = client.player.getLookAngle();
 		Vec3 end = eye.add(look.scale(LOOK_RANGE));
-		HitResult vanilla = client.hitResult;
-		if (vanilla instanceof EntityHitResult entity && entity.getEntity() != null) {
-			Vec3 at = entity.getLocation();
-			if (at.distanceToSqr(eye) <= LOOK_RANGE * LOOK_RANGE) {
-				return entity.getEntity().blockPosition();
-			}
-		}
-		BlockHitResult hit = client.level.clip(new ClipContext(
+		BlockHitResult block = client.level.clip(new ClipContext(
 			eye,
 			end,
 			ClipContext.Block.OUTLINE,
 			ClipContext.Fluid.NONE,
 			client.player
 		));
-		if (hit.getType() == HitResult.Type.BLOCK) {
-			BlockPos pos = hit.getBlockPos();
-			if (!client.level.getBlockState(pos).isAir()) {
-				return pos.immutable();
+		double blockDist = block.getLocation().distanceToSqr(eye);
+		HitResult vanilla = client.hitResult;
+		if (vanilla instanceof EntityHitResult entity && entity.getEntity() != null) {
+			Vec3 at = entity.getLocation();
+			double entityDist = at.distanceToSqr(eye);
+			if (entityDist <= LOOK_RANGE * LOOK_RANGE && entityDist < blockDist) {
+				return at;
 			}
 		}
-		return BlockPos.containing(hit.getLocation());
+		Vec3 at = block.getLocation();
+		Vec3 toEye = eye.subtract(at);
+		double len = toEye.length();
+		if (len > 1.0E-4) {
+			at = at.add(toEye.scale(0.04 / len));
+		}
+		return at;
 	}
 
-	private static boolean aimsAt(Minecraft client, Vec3 origin, Vector3fc forward, Vec3 end, Ping ping) {
-		Vec3 center = Vec3.atCenterOf(ping.pos);
-		double dist = Math.max(1.0, center.distanceTo(origin));
-		double pad = Math.max(0.4, dist * 0.02);
-		AABB box = new AABB(ping.pos).inflate(pad);
-		AABB beam = new AABB(
-			center.x - pad,
-			ping.pos.getY(),
-			center.z - pad,
-			center.x + pad,
-			ping.pos.getY() + 8.4,
-			center.z + pad
-		);
-		if (hits(box, origin, end) || hits(beam, origin, end)) {
+	private static boolean aimsAt(Minecraft client, Ping ping) {
+		if (client.player == null || client.level == null) {
+			return false;
+		}
+		Camera camera = client.gameRenderer.getMainCamera();
+		if (!camera.isInitialized()) {
+			return false;
+		}
+		Vec3 origin = camera.position();
+		Vector3fc forward = camera.forwardVector();
+		Vec3 end = origin.add(forward.x() * LOOK_RANGE, forward.y() * LOOK_RANGE, forward.z() * LOOK_RANGE);
+		double dist = Math.max(1.0, ping.pos.distanceTo(origin));
+		double pad = Math.max(0.35, dist * 0.018);
+		AABB box = new AABB(ping.pos, ping.pos).inflate(pad);
+		if (hits(box, origin, end)) {
 			return true;
 		}
-		return nearCrosshair(client, origin, forward, center)
-			|| nearCrosshair(client, origin, forward, center.add(0, 1.6, 0))
-			|| nearCrosshair(client, origin, forward, center.add(0, 8, 0));
+		return nearCrosshair(client, origin, forward, ping.pos);
 	}
 
 	private static boolean hits(AABB box, Vec3 origin, Vec3 end) {
@@ -202,47 +186,53 @@ public final class LobbyPings {
 		Vec3 camPos = camera.position();
 		Vector3fc forward = camera.forwardVector();
 		Font font = client.font;
-		int rgb = Theme.ACCENT & 0xFFFFFF;
+		String self = client.player.getGameProfile().name();
 		List<Ping> snapshot;
 		synchronized (PINGS) {
 			snapshot = List.copyOf(PINGS);
 		}
 		for (Ping ping : snapshot) {
-			Vec3 head = Vec3.atCenterOf(ping.pos).add(0, 1.6, 0);
-			Vec3 rel = head.subtract(camPos);
+			Vec3 rel = ping.pos.subtract(camPos);
 			double facing = rel.x * forward.x() + rel.y * forward.y() + rel.z * forward.z();
-			if (facing <= 0.12) {
+			if (facing <= 0.08) {
 				continue;
 			}
-			Vec3 ndc = client.gameRenderer.projectPointToScreen(head);
-			if (ndc.x < -1.2 || ndc.x > 1.2 || ndc.y < -1.2 || ndc.y > 1.2) {
+			Vec3 ndc = client.gameRenderer.projectPointToScreen(ping.pos);
+			if (ndc.x < -1.25 || ndc.x > 1.25 || ndc.y < -1.25 || ndc.y > 1.25) {
 				continue;
 			}
 			float x = (float) ((ndc.x * 0.5 + 0.5) * graphics.guiWidth());
 			float y = (float) ((-ndc.y * 0.5 + 0.5) * graphics.guiHeight());
-			double dist = head.distanceTo(camPos);
-			float scale = NametagRenderer.distanceScale(dist);
-			String title = ping.label.isEmpty() ? ping.name : ping.name + " · " + ping.label;
-			Component name = MenuFont.vanilla(title);
+			boolean hot = aimsAt(client, ping);
+			int rgb = hot ? 0xFFFFFF : YELLOW;
+			int fill = 0xFF000000 | rgb;
+			int ink = 0xFF140E04;
+			drawDiamond(graphics, x, y, hot ? 8.4f : 7.2f, ink);
+			drawDiamond(graphics, x, y, hot ? 6.2f : 5.2f, fill);
+			GuiDraw.stroke(graphics, x - 9f, y + 7f, x, y + 17f, hot ? 2.6f : 2.2f, fill);
+			GuiDraw.stroke(graphics, x + 9f, y + 7f, x, y + 17f, hot ? 2.6f : 2.2f, fill);
+			double dist = ping.pos.distanceTo(camPos);
 			Component meters = MenuFont.vanilla(GuiDraw.meters(dist));
-			float nameW = font.width(name);
-			float distW = font.width(meters);
-			float w = nameW + 5f + distW + PAD_X * 2f;
-			graphics.pose().pushMatrix();
-			graphics.pose().translate(x, y);
-			if (scale != 1.0f) {
-				graphics.pose().scale(scale, scale);
+			GuiDraw.text(graphics, font, meters, x + 12f, y - 5f, fill, true);
+			String title = ping.label.isEmpty() ? ping.name : ping.name + " · " + ping.label;
+			if (self != null && ping.name.equalsIgnoreCase(self) && ping.label.isEmpty()) {
+				title = hot ? "Remove" : ping.name;
 			}
-			float left = -w * 0.5f;
-			float top = -2f - TAG_H;
-			GuiDraw.panel(graphics, left, top, w, TAG_H, 5, Theme.WINDOW, Theme.LINE);
-			GuiDraw.text(graphics, font, name, left + PAD_X, GuiDraw.middle(top, TAG_H), 0xFF000000 | rgb, false);
-			GuiDraw.text(graphics, font, meters, left + PAD_X + nameW + 5f, GuiDraw.middle(top, TAG_H), Anim.fade(Theme.MUTED, 1f), false);
-			graphics.pose().popMatrix();
+			Component name = MenuFont.vanilla(title);
+			float nameW = font.width(name);
+			GuiDraw.text(graphics, font, name, x - nameW * 0.5f, y - 20f, fill, true);
 		}
 	}
 
-	private static void emitBoxes() {
+	private static void drawDiamond(GuiGraphicsExtractor graphics, float x, float y, float radius, int color) {
+		graphics.pose().pushMatrix();
+		graphics.pose().translate(x, y);
+		graphics.pose().rotate((float) (Math.PI * 0.25));
+		GuiDraw.fillSmooth(graphics, -radius, -radius, radius * 2f, radius * 2f, color);
+		graphics.pose().popMatrix();
+	}
+
+	private static void emitMarkers() {
 		if (!StrayConfig.get().strayPingEnabled) {
 			return;
 		}
@@ -250,34 +240,56 @@ public final class LobbyPings {
 		if (client.player == null) {
 			return;
 		}
-		int rgb = Theme.ACCENT & 0xFFFFFF;
-		int line = 0xEB000000 | rgb;
-		int fill = 0x55000000 | rgb;
 		Camera camera = client.gameRenderer.getMainCamera();
-		Vec3 start = null;
-		if (camera.isInitialized()) {
-			Vector3fc f = camera.forwardVector();
-			Vector3f up = new Vector3f(camera.upVector());
-			Vec3 cam = camera.position();
-			start = cam.add(f.x() * 0.9, f.y() * 0.9, f.z() * 0.9).subtract(up.x * 0.28, up.y * 0.28, up.z * 0.28);
+		if (!camera.isInitialized()) {
+			return;
 		}
+		Vec3 origin = camera.position();
+		Vector3fc fwd = camera.forwardVector();
+		Vector3fc upv = camera.upVector();
+		Vector3f right = new Vector3f(upv).cross(fwd.x(), fwd.y(), fwd.z());
+		if (right.lengthSquared() < 1.0E-6f) {
+			right.set(1f, 0f, 0f);
+		} else {
+			right.normalize();
+		}
+		Vec3 r = new Vec3(right.x, right.y, right.z);
+		Vec3 u = new Vec3(upv.x(), upv.y(), upv.z());
 		List<Ping> snapshot;
 		synchronized (PINGS) {
 			snapshot = List.copyOf(PINGS);
 		}
 		for (Ping ping : snapshot) {
-			GizmoProperties cuboid = Gizmos.cuboid(new AABB(ping.pos).inflate(0.08), GizmoStyle.strokeAndFill(line, 2.6f, fill));
-			cuboid.setAlwaysOnTop();
-			Vec3 bottom = Vec3.atCenterOf(ping.pos);
-			GizmoProperties beam = Gizmos.line(bottom, bottom.add(0, 8, 0), line, 2.4f);
-			beam.setAlwaysOnTop();
-			if (start != null) {
-				GizmoProperties tracer = Gizmos.line(start, bottom, 0xB0000000 | rgb, 1.8f);
-				tracer.setAlwaysOnTop();
-			}
+			boolean hot = aimsAt(client, ping);
+			int rgb = hot ? 0xFFFFFF : YELLOW;
+			int line = 0xF2000000 | rgb;
+			int fill = 0x99000000 | rgb;
+			double dist = Math.max(1.0, ping.pos.distanceTo(origin));
+			double s = Mth.clamp(dist * 0.02, 0.10, 0.38);
+			Vec3 p = ping.pos;
+			Vec3 top = p.add(u.scale(s));
+			Vec3 bot = p.add(u.scale(-s));
+			Vec3 left = p.add(r.scale(-s));
+			Vec3 rightP = p.add(r.scale(s));
+			GizmoProperties diamond = Gizmos.rect(top, rightP, bot, left, GizmoStyle.fill(fill));
+			diamond.setAlwaysOnTop();
+			worldLine(top, rightP, line, 2.6f);
+			worldLine(rightP, bot, line, 2.6f);
+			worldLine(bot, left, line, 2.6f);
+			worldLine(left, top, line, 2.6f);
+			Vec3 vL = p.add(u.scale(-s * 0.4)).add(r.scale(-s * 0.9));
+			Vec3 vR = p.add(u.scale(-s * 0.4)).add(r.scale(s * 0.9));
+			Vec3 vTip = p.add(u.scale(-s * 1.9));
+			worldLine(vL, vTip, line, 2.6f);
+			worldLine(vR, vTip, line, 2.6f);
 		}
 	}
 
-	private record Ping(String name, BlockPos pos, String label, long at) {
+	private static void worldLine(Vec3 a, Vec3 b, int color, float width) {
+		GizmoProperties line = Gizmos.line(a, b, color, width);
+		line.setAlwaysOnTop();
+	}
+
+	private record Ping(String name, Vec3 pos, String label, long at) {
 	}
 }

@@ -152,9 +152,9 @@ export class StrayLive {
 		if (server !== meta.server) {
 			meta.server = server;
 		}
-		const x = toInt(msg.x);
-		const y = toInt(msg.y);
-		const z = toInt(msg.z);
+		const x = toCoord(msg.x);
+		const y = toCoord(msg.y);
+		const z = toCoord(msg.z);
 		if (x === null || y === null || z === null || y < -2048 || y > 2048) {
 			return;
 		}
@@ -230,6 +230,18 @@ function toInt(value) {
 		return null;
 	}
 	return i;
+}
+
+function toCoord(value) {
+	const n = Number(value);
+	if (!Number.isFinite(n)) {
+		return null;
+	}
+	const v = Math.round(n * 20) / 20;
+	if (v < -30000000 || v > 30000000) {
+		return null;
+	}
+	return v;
 }
 
 export default {
