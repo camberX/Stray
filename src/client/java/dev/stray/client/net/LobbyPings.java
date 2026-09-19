@@ -3,6 +3,7 @@ package dev.stray.client.net;
 import dev.stray.client.config.StrayConfig;
 import dev.stray.client.render.GuiDraw;
 import dev.stray.client.ui.MenuFont;
+import dev.stray.client.ui.Theme;
 import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderEvents;
 import net.minecraft.client.Camera;
 import net.minecraft.client.DeltaTracker;
@@ -33,7 +34,6 @@ public final class LobbyPings {
 	private static final int MAX = 32;
 	private static final double LOOK_RANGE = 96.0;
 	private static final double AIM_NDC = 0.05;
-	private static final int YELLOW = 0xF5C400;
 	private static final List<Ping> PINGS = new ArrayList<>();
 
 	private LobbyPings() {
@@ -204,23 +204,23 @@ public final class LobbyPings {
 			float x = (float) ((ndc.x * 0.5 + 0.5) * graphics.guiWidth());
 			float y = (float) ((-ndc.y * 0.5 + 0.5) * graphics.guiHeight());
 			boolean hot = aimsAt(client, ping);
-			int rgb = hot ? 0xFFFFFF : YELLOW;
+			int rgb = hot ? 0xFFFFFF : (Theme.ACCENT & 0xFFFFFF);
 			int fill = 0xFF000000 | rgb;
-			int ink = 0xFF140E04;
-			drawDiamond(graphics, x, y, hot ? 8.4f : 7.2f, ink);
-			drawDiamond(graphics, x, y, hot ? 6.2f : 5.2f, fill);
-			GuiDraw.stroke(graphics, x - 9f, y + 7f, x, y + 17f, hot ? 2.6f : 2.2f, fill);
-			GuiDraw.stroke(graphics, x + 9f, y + 7f, x, y + 17f, hot ? 2.6f : 2.2f, fill);
+			int ink = 0xE0000000 | (Theme.WINDOW & 0xFFFFFF);
+			drawDiamond(graphics, x, y, hot ? 5.6f : 4.6f, ink);
+			drawDiamond(graphics, x, y, hot ? 4.0f : 3.2f, fill);
+			GuiDraw.stroke(graphics, x - 6f, y + 4.5f, x, y + 11.5f, hot ? 1.8f : 1.5f, fill);
+			GuiDraw.stroke(graphics, x + 6f, y + 4.5f, x, y + 11.5f, hot ? 1.8f : 1.5f, fill);
 			double dist = ping.pos.distanceTo(camPos);
 			Component meters = MenuFont.vanilla(GuiDraw.meters(dist));
-			GuiDraw.text(graphics, font, meters, x + 12f, y - 5f, fill, true);
+			GuiDraw.text(graphics, font, meters, x + 8f, y - 4f, fill, true);
 			String title = ping.label.isEmpty() ? ping.name : ping.name + " · " + ping.label;
 			if (self != null && ping.name.equalsIgnoreCase(self) && ping.label.isEmpty()) {
 				title = hot ? "Remove" : ping.name;
 			}
 			Component name = MenuFont.vanilla(title);
 			float nameW = font.width(name);
-			GuiDraw.text(graphics, font, name, x - nameW * 0.5f, y - 20f, fill, true);
+			GuiDraw.text(graphics, font, name, x - nameW * 0.5f, y - 14f, fill, true);
 		}
 	}
 
@@ -261,11 +261,11 @@ public final class LobbyPings {
 		}
 		for (Ping ping : snapshot) {
 			boolean hot = aimsAt(client, ping);
-			int rgb = hot ? 0xFFFFFF : YELLOW;
+			int rgb = hot ? 0xFFFFFF : (Theme.ACCENT & 0xFFFFFF);
 			int line = 0xF2000000 | rgb;
 			int fill = 0x99000000 | rgb;
 			double dist = Math.max(1.0, ping.pos.distanceTo(origin));
-			double s = Mth.clamp(dist * 0.02, 0.10, 0.38);
+			double s = Mth.clamp(dist * 0.013, 0.06, 0.24);
 			Vec3 p = ping.pos;
 			Vec3 top = p.add(u.scale(s));
 			Vec3 bot = p.add(u.scale(-s));
@@ -273,15 +273,15 @@ public final class LobbyPings {
 			Vec3 rightP = p.add(r.scale(s));
 			GizmoProperties diamond = Gizmos.rect(top, rightP, bot, left, GizmoStyle.fill(fill));
 			diamond.setAlwaysOnTop();
-			worldLine(top, rightP, line, 2.6f);
-			worldLine(rightP, bot, line, 2.6f);
-			worldLine(bot, left, line, 2.6f);
-			worldLine(left, top, line, 2.6f);
+			worldLine(top, rightP, line, 1.8f);
+			worldLine(rightP, bot, line, 1.8f);
+			worldLine(bot, left, line, 1.8f);
+			worldLine(left, top, line, 1.8f);
 			Vec3 vL = p.add(u.scale(-s * 0.4)).add(r.scale(-s * 0.9));
 			Vec3 vR = p.add(u.scale(-s * 0.4)).add(r.scale(s * 0.9));
 			Vec3 vTip = p.add(u.scale(-s * 1.9));
-			worldLine(vL, vTip, line, 2.6f);
-			worldLine(vR, vTip, line, 2.6f);
+			worldLine(vL, vTip, line, 1.8f);
+			worldLine(vR, vTip, line, 1.8f);
 		}
 	}
 
