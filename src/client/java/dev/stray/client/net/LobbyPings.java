@@ -17,18 +17,25 @@ import net.minecraft.gizmos.GizmoProperties;
 import net.minecraft.gizmos.GizmoStyle;
 import net.minecraft.gizmos.Gizmos;
 import net.minecraft.network.chat.Component;
+import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.EntityHitResult;
+import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Vector3f;
 import org.joml.Vector3fc;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 /** Pings from the Stray live websocket. Same room: Hypixel lobby, multiplayer server, or singleplayer world. */
 public final class LobbyPings {
-	private static final long LIFE_MS = 45_000L;
+	private static final long LIFE_MS = 30_000L;
 	private static final int MAX = 32;
+	private static final double LOOK_RANGE = 96.0;
+	private static final double AIM_NDC = 0.045;
 	private static final float TAG_H = 14f;
 	private static final float PAD_X = 8f;
 	private static final List<Ping> PINGS = new ArrayList<>();
@@ -66,6 +73,118 @@ public final class LobbyPings {
 			}
 			PINGS.add(new Ping(name, pos, label == null ? "" : label, now));
 		}
+	}
+
+	public static boolean remove(String name) {
+		if (name == null || name.isBlank()) {
+			return false;
+		}
+		synchronized (PINGS) {
+			return PINGS.removeIf(ping -> ping.name.equalsIgnoreCase(name));
+		}
+	}
+
+	/** True when the crosshair is on this player's ping box, beam, or nametag. */
+	public static boolean aimingAtOwn(String name) {
+		if (name == null || name.isBlank()) {
+			return false;
+		}
+		Minecraft client = Minecraft.getInstance();
+		if (client.player == null || client.level == null) {
+			return false;
+		}
+		Camera camera = client.gameRenderer.getMainCamera();
+		if (!camera.isInitialized()) {
+			return false;
+		}
+		Vec3 origin = camera.position();
+		Vector3fc forward = camera.forwardVector();
+		Vec3 end = origin.add(forward.x() * LOOK_RANGE, forward.y() * LOOK_RANGE, forward.z() * LOOK_RANGE);
+		Ping match;
+		synchronized (PINGS) {
+			match = null;
+			for (Ping ping : PINGS) {
+				if (ping.name.equalsIgnoreCase(name)) {
+					match = ping;
+					break;
+				}
+			}
+		}
+		if (match == null) {
+			return false;
+		}
+		return aimsAt(client, origin, forward, end, match);
+	}
+
+	/** Block under the crosshair, an aimed entity, or the far look point — never the player's feet. */
+	public static BlockPos lookPos() {
+		Minecraft client = Minecraft.getInstance();
+		if (client.player == null || client.level == null) {
+			return null;
+		}
+		Vec3 eye = client.player.getEyePosition();
+		Vec3 look = client.player.getLookAngle();
+		Vec3 end = eye.add(look.scale(LOOK_RANGE));
+		HitResult vanilla = client.hitResult;
+		if (vanilla instanceof EntityHitResult entity && entity.getEntity() != null) {
+			Vec3 at = entity.getLocation();
+			if (at.distanceToSqr(eye) <= LOOK_RANGE * LOOK_RANGE) {
+				return entity.getEntity().blockPosition();
+			}
+		}
+		BlockHitResult hit = client.level.clip(new ClipContext(
+			eye,
+			end,
+			ClipContext.Block.OUTLINE,
+			ClipContext.Fluid.NONE,
+			client.player
+		));
+		if (hit.getType() == HitResult.Type.BLOCK) {
+			BlockPos pos = hit.getBlockPos();
+			if (!client.level.getBlockState(pos).isAir()) {
+				return pos.immutable();
+			}
+		}
+		return BlockPos.containing(hit.getLocation());
+	}
+
+	private static boolean aimsAt(Minecraft client, Vec3 origin, Vector3fc forward, Vec3 end, Ping ping) {
+		Vec3 center = Vec3.atCenterOf(ping.pos);
+		double dist = Math.max(1.0, center.distanceTo(origin));
+		double pad = Math.max(0.4, dist * 0.02);
+		AABB box = new AABB(ping.pos).inflate(pad);
+		AABB beam = new AABB(
+			center.x - pad,
+			ping.pos.getY(),
+			center.z - pad,
+			center.x + pad,
+			ping.pos.getY() + 8.4,
+			center.z + pad
+		);
+		if (hits(box, origin, end) || hits(beam, origin, end)) {
+			return true;
+		}
+		return nearCrosshair(client, origin, forward, center)
+			|| nearCrosshair(client, origin, forward, center.add(0, 1.6, 0))
+			|| nearCrosshair(client, origin, forward, center.add(0, 8, 0));
+	}
+
+	private static boolean hits(AABB box, Vec3 origin, Vec3 end) {
+		if (box.contains(origin)) {
+			return true;
+		}
+		Optional<Vec3> clip = box.clip(origin, end);
+		return clip.isPresent();
+	}
+
+	private static boolean nearCrosshair(Minecraft client, Vec3 origin, Vector3fc forward, Vec3 point) {
+		Vec3 rel = point.subtract(origin);
+		double facing = rel.x * forward.x() + rel.y * forward.y() + rel.z * forward.z();
+		if (facing <= 0.12) {
+			return false;
+		}
+		Vec3 ndc = client.gameRenderer.projectPointToScreen(point);
+		return Math.abs(ndc.x) <= AIM_NDC && Math.abs(ndc.y) <= AIM_NDC;
 	}
 
 	public static void extract(GuiGraphicsExtractor graphics, DeltaTracker delta) {

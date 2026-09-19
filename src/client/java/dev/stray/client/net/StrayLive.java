@@ -165,6 +165,32 @@ public final class StrayLive implements WebSocket.Listener {
 		return true;
 	}
 
+	public static boolean clearPing() {
+		if (!StrayConfig.get().strayPingEnabled) {
+			tell("Turn on Lobby pings in Menus.", ChatFormatting.GRAY);
+			return false;
+		}
+		Minecraft client = Minecraft.getInstance();
+		if (client.player == null) {
+			return false;
+		}
+		String name = client.player.getGameProfile().name();
+		LobbyPings.remove(name == null ? "You" : name);
+		if (!connected()) {
+			return true;
+		}
+		String room = roomId(client);
+		JsonObject payload = new JsonObject();
+		payload.addProperty("type", "ping_clear");
+		payload.addProperty("server", room);
+		send(payload);
+		if (!room.equals(lastServer)) {
+			lastServer = room;
+			send(serverUpdate(room));
+		}
+		return true;
+	}
+
 	/** Hypixel lobby id, else the server address, else the singleplayer world. */
 	public static String roomId() {
 		return roomId(Minecraft.getInstance());
@@ -375,6 +401,7 @@ public final class StrayLive implements WebSocket.Listener {
 				case "irc" -> client.execute(() -> onIrc(json));
 				case "history" -> client.execute(() -> onHistory(json));
 				case "ping" -> client.execute(() -> onPing(json));
+				case "ping_clear" -> client.execute(() -> onPingClear(json));
 				case "error" -> client.execute(() -> onErrorMessage(json));
 				default -> {
 				}
@@ -452,6 +479,16 @@ public final class StrayLive implements WebSocket.Listener {
 			line.append(Component.literal(" · " + label).setStyle(MUTED));
 		}
 		client.gui.getChat().addClientSystemMessage(line);
+	}
+
+	private static void onPingClear(JsonObject json) {
+		if (!StrayConfig.get().strayPingEnabled) {
+			return;
+		}
+		String name = text(json, "name");
+		if (!name.isEmpty()) {
+			LobbyPings.remove(name);
+		}
 	}
 
 	private static void onErrorMessage(JsonObject json) {

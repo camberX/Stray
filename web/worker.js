@@ -6,7 +6,7 @@ const IRC_COOL_MS = 1500;
 const PING_COOL_MS = 3000;
 const IRC_MAX = 180;
 const HISTORY_MAX = 30;
-const PING_LIFE_MS = 45000;
+const PING_LIFE_MS = 30000;
 
 export class StrayLive {
 	constructor(ctx, env) {
@@ -62,6 +62,10 @@ export class StrayLive {
 		}
 		if (type === "ping") {
 			this.onPing(ws, meta, msg);
+			return;
+		}
+		if (type === "ping_clear") {
+			this.onPingClear(ws, meta, msg);
 		}
 	}
 
@@ -150,6 +154,22 @@ export class StrayLive {
 			until: now + PING_LIFE_MS
 		};
 		this.broadcast(payload, (other) => other.server === meta.server);
+	}
+
+	onPingClear(ws, meta, msg) {
+		const server = cleanServer(msg.server) || meta.server || "world";
+		if (!server) {
+			ws.send(JSON.stringify({ type: "error", message: "Join a lobby to ping." }));
+			return;
+		}
+		if (server !== meta.server) {
+			meta.server = server;
+			ws.serializeAttachment(meta);
+		}
+		this.broadcast(
+			{ type: "ping_clear", name: meta.name, uuid: meta.uuid, server, at: Date.now() },
+			(other) => other.server === meta.server
+		);
 	}
 
 	broadcast(payload, filter) {
