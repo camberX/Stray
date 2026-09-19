@@ -173,6 +173,7 @@ public final class StrayConfig {
 	public String openProfileKey = "key.keyboard.unknown";
 	public String chestAimKey = "key.keyboard.unknown";
 	public String chatPeekKey = "key.keyboard.unknown";
+	public String strayPingKey = "key.keyboard.unknown";
 	public String[] menuSlotKeys = defaultMenuSlotKeys();
 	public int chestEspRgb = 0xF4C14E;
 	public float chestEspOpacity = 0.34f;
@@ -186,6 +187,8 @@ public final class StrayConfig {
 	public boolean themedChatEnabled = false;
 	public boolean stashChatCompact = false;
 	public boolean npcChatClean = false;
+	public boolean strayIrcEnabled = true;
+	public boolean strayPingEnabled = true;
 	public boolean hitsoundEnabled = false;
 	public boolean hitsoundMelee = false;
 	public boolean hitsoundArrows = false;
@@ -1073,6 +1076,7 @@ public final class StrayConfig {
 				loaded.openProfileKey = blankKey(loaded.openProfileKey, "key.keyboard.unknown");
 				loaded.chestAimKey = blankKey(loaded.chestAimKey, "key.keyboard.unknown");
 				loaded.chatPeekKey = blankKey(loaded.chatPeekKey, "key.keyboard.unknown");
+				loaded.strayPingKey = blankKey(loaded.strayPingKey, "key.keyboard.unknown");
 				loaded.menuSlotKeys = normalizeMenuSlotKeys(loaded.menuSlotKeys);
 				if (!json.has("profileViewerEnabled")) {
 					loaded.profileViewerEnabled = false;
@@ -1109,6 +1113,13 @@ public final class StrayConfig {
 				if (!json.has("npcChatClean")) {
 					loaded.npcChatClean = false;
 				}
+				if (!json.has("strayIrcEnabled")) {
+					loaded.strayIrcEnabled = true;
+				}
+				if (!json.has("strayPingEnabled")) {
+					loaded.strayPingEnabled = true;
+				}
+				loaded.strayPingKey = blankKey(loaded.strayPingKey, "key.keyboard.unknown");
 				if (!json.has("crystalHollowsScan")) {
 					loaded.crystalHollowsScan = true;
 				}

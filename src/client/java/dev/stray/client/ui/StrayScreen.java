@@ -401,6 +401,11 @@ public class StrayScreen extends Screen {
 		new SearchEntry("Cleaner NPC", Tab.MENUS, "Menus"),
 		new SearchEntry("NPC chat", Tab.MENUS, "Menus"),
 		new SearchEntry("NPC messages", Tab.MENUS, "Menus"),
+		new SearchEntry("Global IRC", Tab.MENUS, "Menus"),
+		new SearchEntry("IRC", Tab.MENUS, "Menus"),
+		new SearchEntry("Lobby ping", Tab.MENUS, "Menus"),
+		new SearchEntry("Lobby pings", Tab.MENUS, "Menus"),
+		new SearchEntry("Ping spot", Tab.KEYS, "Keys"),
 		new SearchEntry("Pickup stash", Tab.MENUS, "Menus"),
 		new SearchEntry("Custom chat", Tab.MENUS, "Menus"),
 		new SearchEntry("Stray GUIs", Tab.MENUS, "Menus"),
@@ -2283,19 +2288,24 @@ public class StrayScreen extends Screen {
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Open animation", config.loadoutsOpenAnim, v -> config.loadoutsOpenAnim = v);
 				toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Disabled potions", config.disabledPotionsHighlight, v -> config.disabledPotionsHighlight = v);
 
+				float liveH = cardHeight(2);
+				y = featureCard(graphics, font, left, top + cardHeight(11) + 8, col, liveH, "Live");
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Global IRC", config.strayIrcEnabled, v -> config.strayIrcEnabled = v);
+				toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Lobby pings", config.strayPingEnabled, v -> config.strayPingEnabled = v);
+
 				float experimentsH = cardHeight(1 + Feature.AUTO_EXPERIMENTS.rows());
-				y = featureCard(graphics, font, left, top + cardHeight(11) + 8, col, experimentsH, "Auto experiments");
+				y = featureCard(graphics, font, left, top + cardHeight(11) + 8 + liveH + 8, col, experimentsH, "Auto experiments");
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Enable", config.autoExperimentsEnabled, v -> config.autoExperimentsEnabled = v);
 				drawFeatureFields(graphics, font, mouseX, mouseY, ix, y, iw, Feature.AUTO_EXPERIMENTS);
 
-				float bindsH = cardHeight(5);
+				float bindsH = cardHeight(6);
 				y = featureCard(graphics, font, right, top, col, bindsH, "Keybinds");
 				y = drawMenuKeybinds(graphics, font, rx, y, iw, mouseX, mouseY);
-				y = featureCard(graphics, font, right, top + bindsH + 8, col, cardHeight(5), "Commands");
+				y = featureCard(graphics, font, right, top + bindsH + 8, col, cardHeight(6), "Commands");
 				GuiDraw.menu(graphics, font, "/loadouts  /ld", rx, y + 2, ink());
 				GuiDraw.menu(graphics, font, "/wardrobe  /wd", rx, y + 16, ink());
 				GuiDraw.menu(graphics, font, "/pv  /profile", rx, y + 30, ink());
-				GuiDraw.menu(graphics, font, "/autoclicker add left", rx, y + 44, ink());
+				GuiDraw.menu(graphics, font, "/irc  /st ping", rx, y + 44, ink());
 				GuiDraw.menu(graphics, font, MenuSlotBinds.hint() + " equips and closes", rx, y + 58, fade());
 			}
 			case STATUS -> {
@@ -2503,6 +2513,8 @@ public class StrayScreen extends Screen {
 				float y = sectionLabel(graphics, font, left, top, "Skyblock");
 				y = controlCard(graphics, font, left, y, col, mouseX, mouseY, "Loadouts menu", config.loadoutsMenuEnabled, v -> config.loadoutsMenuEnabled = v, Feature.LOADOUTS);
 				y = controlCard(graphics, font, left, y, col, mouseX, mouseY, "Wardrobe menu", config.wardrobeMenuEnabled, v -> config.wardrobeMenuEnabled = v, Feature.WARDROBE);
+				y = toggleCard(graphics, font, left, y, col, mouseX, mouseY, "Global IRC", config.strayIrcEnabled, v -> config.strayIrcEnabled = v);
+				y = toggleCard(graphics, font, left, y, col, mouseX, mouseY, "Lobby pings", config.strayPingEnabled, v -> config.strayPingEnabled = v);
 				y = featureCard(graphics, font, left, y, col, cardHeight(9), "Menus");
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Profile viewer", config.profileViewerEnabled, v -> config.profileViewerEnabled = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Storage preview", config.storagePreviewEnabled, v -> config.storagePreviewEnabled = v);
@@ -2522,7 +2534,7 @@ public class StrayScreen extends Screen {
 			}
 			case KEYS -> {
 				float y = sectionLabel(graphics, font, left, top, "Binds");
-				y = featureCard(graphics, font, left, y, col, cardHeight(5), "Keybinds");
+				y = featureCard(graphics, font, left, y, col, cardHeight(6), "Keybinds");
 				drawMenuKeybinds(graphics, font, ix, y, iw, mouseX, mouseY);
 				float chatY = sectionLabel(graphics, font, right, top, "Chat");
 				float commandsH = cardHeight(5);
@@ -3438,7 +3450,8 @@ public class StrayScreen extends Screen {
 		y = bindRow(graphics, font, x, y, w, mouseX, mouseY, "Loadouts", 4, OdinClicks.parseKey(config.openLoadoutsKey));
 		y = bindRow(graphics, font, x, y, w, mouseX, mouseY, "Wardrobe", 5, OdinClicks.parseKey(config.openWardrobeKey));
 		y = bindRow(graphics, font, x, y, w, mouseX, mouseY, "Profile", 7, OdinClicks.parseKey(config.openProfileKey));
-		return bindRow(graphics, font, x, y, w, mouseX, mouseY, "Chat peek", 11, OdinClicks.parseKey(config.chatPeekKey));
+		y = bindRow(graphics, font, x, y, w, mouseX, mouseY, "Chat peek", 11, OdinClicks.parseKey(config.chatPeekKey));
+		return bindRow(graphics, font, x, y, w, mouseX, mouseY, "Lobby ping", 12, OdinClicks.parseKey(config.strayPingKey));
 	}
 
 	private float drawSlotKeybinds(
@@ -3518,6 +3531,7 @@ public class StrayScreen extends Screen {
 			case 9 -> config.pathRecordKey = name;
 			case 10 -> config.movementRecordKey = name;
 			case 11 -> config.chatPeekKey = name;
+			case 12 -> config.strayPingKey = name;
 			case 20, 21, 22, 23, 24, 25, 26, 27, 28 -> config.setMenuSlotKey(bindListen - 20, name);
 		}
 		bindListen = 0;

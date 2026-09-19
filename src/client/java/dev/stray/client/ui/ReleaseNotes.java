@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.4.23", new String[]{
+			"Global IRC and lobby pings on stray.gay. /irc talks to every Stray user. /st ping (or the Lobby ping bind) marks a spot in your Hypixel lobby that other Stray users there can see."
+		}),
 		new Entry("1.4.22", new String[]{
 			"Composter overlay uses 20k Organic Matter Cap per level (40k base) and 30k Fuel Cap per level (100k base). Opening upgrades no longer inflates the organic max."
 		}),
