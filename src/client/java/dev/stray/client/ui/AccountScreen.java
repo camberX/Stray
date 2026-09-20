@@ -16,6 +16,7 @@ import net.minecraft.util.Mth;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 /**
  * Title-screen account list: Microsoft device code, session token, switch.
@@ -27,11 +28,12 @@ public class AccountScreen extends Screen {
 	private static final float BTN_H = 22;
 	private static final float PAD = 16;
 	private static final int VISIBLE = 5;
+	private static final float STAR = 22;
 
 	private final Screen parent;
 	private final List<Hit> hits = new ArrayList<>();
 	private float scroll;
-	private int selected = -1;
+	private UUID selectedId;
 	private boolean tokenFocus;
 	private int tokenCursor;
 	private String token = "";
@@ -45,11 +47,10 @@ public class AccountScreen extends Screen {
 	@Override
 	protected void init() {
 		AccountStore.rememberLauncher(minecraft);
-		if (selected < 0) {
-			List<AccountStore.Entry> accounts = AccountStore.accounts();
-			for (int i = 0; i < accounts.size(); i++) {
-				if (accounts.get(i).active()) {
-					selected = i;
+		if (selectedId == null) {
+			for (AccountStore.Entry entry : AccountStore.accounts()) {
+				if (entry.active()) {
+					selectedId = entry.uuid;
 					break;
 				}
 			}
@@ -148,7 +149,7 @@ public class AccountScreen extends Screen {
 		int index
 	) {
 		boolean hovered = GuiDraw.hovered(mouseX, mouseY, x, y, w, ROW_H - 2);
-		boolean on = index == selected || entry.active();
+		boolean on = entry.uuid.equals(selectedId) || entry.active();
 		int fill = on ? Theme.CARD_HOVER : Theme.CARD;
 		if (ControlChrome.on()) {
 			ControlChrome.glass(graphics, x, y, w, ROW_H - 4, 10f, on || hovered ? Theme.CARD_HOVER : ControlChrome.cardFill());
@@ -156,10 +157,34 @@ public class AccountScreen extends Screen {
 			GuiDraw.panel(graphics, x, y, w, ROW_H - 4, 6, fill, hovered || on ? Theme.ACCENT : Theme.LINE);
 		}
 		int text = ControlChrome.on() ? ControlChrome.cardText() : Theme.TEXT;
-		GuiDraw.menu(graphics, font, entry.name, x + 10, GuiDraw.middle(y, ROW_H - 4), text);
+		float starCx = x + 12;
+		float starCy = y + (ROW_H - 4) * 0.5f;
+		favoriteMark(graphics, starCx, starCy, entry.favorite);
+		GuiDraw.menu(graphics, font, entry.name, x + 24, GuiDraw.middle(y, ROW_H - 4), text);
 		String kind = entry.active() ? "playing" : entry.kindLabel();
 		GuiDraw.small(graphics, font, kind, x + w - 10 - GuiDraw.smallWidth(font, kind), y + 8, Theme.MUTED);
-		hits.add(new Hit(x, y, w, ROW_H - 2, () -> selected = index));
+		hits.add(new Hit(x, y, w, ROW_H - 2, () -> select(index), () -> {
+			select(index);
+			if (canSwitch()) {
+				switchSelected();
+			}
+		}));
+		hits.add(new Hit(x, y, STAR, ROW_H - 2, () -> toggleFavorite(index)));
+	}
+
+	private static void favoriteMark(GuiGraphicsExtractor graphics, float cx, float cy, boolean on) {
+		int color = on ? Theme.ACCENT : Theme.MUTED;
+		float longArm = on ? 5.1f : 4.3f;
+		float shortArm = on ? 3.3f : 2.7f;
+		float thick = on ? 1.55f : 1.2f;
+		GuiDraw.stroke(graphics, cx, cy - longArm, cx, cy + longArm, thick, color);
+		GuiDraw.stroke(graphics, cx - shortArm, cy, cx + shortArm, cy, thick, color);
+		float diag = shortArm * 0.72f;
+		GuiDraw.stroke(graphics, cx - diag, cy - diag, cx + diag, cy + diag, thick * 0.85f, color);
+		GuiDraw.stroke(graphics, cx - diag, cy + diag, cx + diag, cy - diag, thick * 0.85f, color);
+		if (on) {
+			GuiDraw.circle(graphics, cx, cy, 1.55f, color);
+		}
 	}
 
 	private void field(GuiGraphicsExtractor graphics, Font font, int mouseX, int mouseY, float x, float y, float w, String hint) {
@@ -204,8 +229,35 @@ public class AccountScreen extends Screen {
 		}
 	}
 
+	private int selectedIndex() {
+		if (selectedId == null) {
+			return -1;
+		}
+		List<AccountStore.Entry> accounts = AccountStore.accounts();
+		for (int i = 0; i < accounts.size(); i++) {
+			if (accounts.get(i).uuid.equals(selectedId)) {
+				return i;
+			}
+		}
+		return -1;
+	}
+
+	private void select(int index) {
+		List<AccountStore.Entry> accounts = AccountStore.accounts();
+		if (index >= 0 && index < accounts.size()) {
+			selectedId = accounts.get(index).uuid;
+		}
+	}
+
+	private void toggleFavorite(int index) {
+		click();
+		select(index);
+		int moved = AccountStore.toggleFavorite(index);
+		select(moved);
+	}
+
 	private boolean selectedValid() {
-		return selected >= 0 && selected < AccountStore.accounts().size();
+		return selectedIndex() >= 0;
 	}
 
 	private boolean canSwitch() {
@@ -236,13 +288,19 @@ public class AccountScreen extends Screen {
 
 	private void switchSelected() {
 		click();
-		AccountStore.switchTo(selected, this::setStatus);
+		AccountStore.switchTo(selectedIndex(), this::setStatus);
 	}
 
 	private void removeSelected() {
 		click();
-		AccountStore.remove(selected);
-		selected = Math.min(selected, AccountStore.accounts().size() - 1);
+		int index = selectedIndex();
+		AccountStore.remove(index);
+		List<AccountStore.Entry> accounts = AccountStore.accounts();
+		if (accounts.isEmpty()) {
+			selectedId = null;
+		} else {
+			select(Math.min(index, accounts.size() - 1));
+		}
 		setStatus("Removed.");
 	}
 
@@ -275,6 +333,12 @@ public class AccountScreen extends Screen {
 		for (int i = hits.size() - 1; i >= 0; i--) {
 			Hit hit = hits.get(i);
 			if (hit.contains(event.x(), event.y())) {
+				if (doubled) {
+					if (hit.doubleClick != null) {
+						hit.doubleClick.run();
+					}
+					return true;
+				}
 				hit.click.run();
 				return true;
 			}
@@ -341,7 +405,11 @@ public class AccountScreen extends Screen {
 		return super.charTyped(event);
 	}
 
-	private record Hit(float x, float y, float w, float h, Runnable click) {
+	private record Hit(float x, float y, float w, float h, Runnable click, Runnable doubleClick) {
+		Hit(float x, float y, float w, float h, Runnable click) {
+			this(x, y, w, h, click, null);
+		}
+
 		boolean contains(double mx, double my) {
 			return GuiDraw.hovered(mx, my, x, y, w, h);
 		}
