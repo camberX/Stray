@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.4.35", new String[]{
+			"Shopping list has a /recipe and /bz switch on the overlay and in Garden settings. Click an item to run the selected command."
+		}),
 		new Entry("1.4.34", new String[]{
 			"Visitor shopping list keeps offers from NPCs whose tab name has NEW!, like Spaceman. Opening the GUI no longer loses the items after the name is tagged new."
 		}),

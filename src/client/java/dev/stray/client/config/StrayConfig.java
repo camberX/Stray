@@ -117,6 +117,7 @@ public final class StrayConfig {
 	public boolean gardenHoeHudEnabled = false;
 	public boolean gardenMilestoneHudEnabled = false;
 	public boolean gardenShoppingHudEnabled = false;
+	public boolean gardenShoppingBz = false;
 	public java.util.Map<String, Integer> overflowHoeLevels = new java.util.LinkedHashMap<>();
 	public boolean composterHudEnabled = false;
 	public boolean composterUpgradesKnown = false;
@@ -1404,6 +1405,18 @@ public final class StrayConfig {
 
 	public void cycleRawmatsMode() {
 		rawmatsEnchanted = !rawmatsEnchanted;
+	}
+
+	public String gardenShoppingClickLabel() {
+		return gardenShoppingBz ? "/bz" : "/recipe";
+	}
+
+	public void setGardenShoppingBz(boolean bz) {
+		if (gardenShoppingBz == bz) {
+			return;
+		}
+		gardenShoppingBz = bz;
+		save();
 	}
 
 	public String rawmatsModeLabel() {
