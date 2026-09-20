@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.4.44", new String[]{
+			"Shopping list has a /recipe and /bz option in Garden settings. Clicking an item runs the one you pick."
+		}),
 		new Entry("1.4.43", new String[]{
 			"Crop milestone overlay reads Harvest/Total from the Crop Milestones chest and Garden tab percents, and draws on top of that menu."
 		}),
