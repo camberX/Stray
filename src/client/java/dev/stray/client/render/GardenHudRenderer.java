@@ -19,6 +19,7 @@ import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.network.chat.Component;
@@ -52,9 +53,17 @@ public final class GardenHudRenderer {
 				return;
 			}
 			ScreenMouseEvents.allowMouseClick(screen).register((opened, event) -> !mouseClicked(event));
-			ScreenEvents.afterExtract(screen).register((opened, graphics, mouseX, mouseY, tick) ->
-				hoverRecipe(graphics, client.font, mouseX, mouseY)
-			);
+			ScreenEvents.afterExtract(screen).register((opened, graphics, mouseX, mouseY, tick) -> {
+				if (opened instanceof AbstractContainerScreen<?>) {
+					HudChrome.beginHud();
+					try {
+						paint(graphics);
+					} finally {
+						HudChrome.endHud();
+					}
+				}
+				hoverRecipe(graphics, client.font, mouseX, mouseY);
+			});
 		});
 	}
 
@@ -122,6 +131,14 @@ public final class GardenHudRenderer {
 	}
 
 	static void extract(GuiGraphicsExtractor graphics, DeltaTracker deltaTracker) {
+		Minecraft client = Minecraft.getInstance();
+		if (client.screen instanceof AbstractContainerScreen<?>) {
+			return;
+		}
+		paint(graphics);
+	}
+
+	private static void paint(GuiGraphicsExtractor graphics) {
 		ITEM_HITS.clear();
 		Minecraft client = Minecraft.getInstance();
 		if (client.player == null || client.options.hideGui) {
