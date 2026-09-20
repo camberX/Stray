@@ -135,10 +135,6 @@ public final class GardenHud {
 		"OVERFLOW! Your (.+) has just dropped a Tool Exp Capsule!",
 		Pattern.CASE_INSENSITIVE
 	);
-	private static final Pattern CROP_MILESTONE_TITLE = Pattern.compile(
-		"crop milestones?|milestones?",
-		Pattern.CASE_INSENSITIVE
-	);
 	private static final Pattern CROP_MILESTONE_PROGRESS = Pattern.compile(
 		"progress(?: to)?(?:\\s+(?:tier|milestone))?\\s*(\\d+)?\\s*:\\s*([\\d,.]+[kmb]?)\\s*[/\\u2044\\u2215]\\s*([\\d,.]+[kmb]?)",
 		Pattern.CASE_INSENSITIVE
@@ -596,7 +592,7 @@ public final class GardenHud {
 			return;
 		}
 		String title = clean(screen.getTitle());
-		boolean titled = CROP_MILESTONE_TITLE.matcher(title).find();
+		boolean titled = cropMilestoneTitle(title);
 		CropKind pageCrop = exactCrop(title);
 		if (pageCrop == null) {
 			pageCrop = exactCrop(title.replaceAll("(?i)\\s*milestones?\\s*", " ").trim());
@@ -659,8 +655,7 @@ public final class GardenHud {
 	private static void parseMilestoneTab(List<String> lines) {
 		Minecraft client = Minecraft.getInstance();
 		if (client.screen instanceof AbstractContainerScreen<?> screen) {
-			String title = clean(screen.getTitle());
-			if (CROP_MILESTONE_TITLE.matcher(title).find()) {
+			if (cropMilestoneTitle(clean(screen.getTitle()))) {
 				return;
 			}
 		}
@@ -910,6 +905,10 @@ public final class GardenHud {
 			counter = nbtLong(extra, "mined_crops");
 		}
 		return counter;
+	}
+
+	private static boolean cropMilestoneTitle(String title) {
+		return "crop milestones".equals(fold(title));
 	}
 
 	private static CropKind exactCrop(String raw) {
