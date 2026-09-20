@@ -253,6 +253,7 @@ public final class StrayConfig {
 	public int titaniumEspRgb = 0xE8ECF2;
 	public float titaniumEspOpacity = 0.38f;
 	public boolean rawmatsEnchanted = false;
+	public boolean rawmatsRemaining = false;
 	public String rawmatsItemId = "";
 	public long rawmatsCount = 1L;
 	public boolean inventoryHudEnabled = false;
@@ -1421,6 +1422,14 @@ public final class StrayConfig {
 
 	public String rawmatsModeLabel() {
 		return rawmatsEnchanted ? "Enchanted" : "Raw";
+	}
+
+	public void cycleRawmatsDisplay() {
+		rawmatsRemaining = !rawmatsRemaining;
+	}
+
+	public String rawmatsDisplayLabel() {
+		return rawmatsRemaining ? "Remaining" : "Percent";
 	}
 
 	public static long clampRawmatsCount(long count) {
