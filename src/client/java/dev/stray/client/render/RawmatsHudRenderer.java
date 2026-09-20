@@ -15,6 +15,7 @@ import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.world.item.ItemStack;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
@@ -27,6 +28,7 @@ public final class RawmatsHudRenderer {
 	private static final float ICON = 16;
 	private static final int MAX_ROWS = 10;
 	private static Rect modeHit = Rect.EMPTY;
+	private static Rect displayHit = Rect.EMPTY;
 
 	private RawmatsHudRenderer() {
 	}
@@ -56,6 +58,12 @@ public final class RawmatsHudRenderer {
 		if (!(Minecraft.getInstance().screen instanceof ChatScreen)) {
 			return false;
 		}
+		if (displayHit.contains(event.x(), event.y())) {
+			StrayConfig config = StrayConfig.get();
+			config.cycleRawmatsDisplay();
+			config.save();
+			return true;
+		}
 		if (modeHit.contains(event.x(), event.y())) {
 			StrayConfig config = StrayConfig.get();
 			config.cycleRawmatsMode();
@@ -69,16 +77,19 @@ public final class RawmatsHudRenderer {
 		Minecraft client = Minecraft.getInstance();
 		if (client.options.hideGui) {
 			modeHit = Rect.EMPTY;
+			displayHit = Rect.EMPTY;
 			return;
 		}
 		StrayConfig config = StrayConfig.get();
 		if (!config.rawmatsHudEnabled) {
 			modeHit = Rect.EMPTY;
+			displayHit = Rect.EMPTY;
 			return;
 		}
 		RawmatsTracker.Snapshot snap = RawmatsTracker.snapshot();
 		if (!snap.present() && !HudLayout.editorOpen()) {
 			modeHit = Rect.EMPTY;
+			displayHit = Rect.EMPTY;
 			return;
 		}
 		HudLayout.Box box = HudLayout.box(HudLayout.Id.RAWMATS, client.font, graphics.guiWidth(), graphics.guiHeight());
@@ -97,11 +108,18 @@ public final class RawmatsHudRenderer {
 		HudChrome.panel(graphics, 0, 0, WIDTH, h, 6, Theme.WINDOW, Theme.LINE);
 		GuiDraw.small(graphics, font, "RAW MATS", PAD + 4, PAD + 1, Theme.ACCENT);
 		boolean chat = client.screen instanceof ChatScreen;
-		String mode = StrayConfig.get().rawmatsModeLabel();
+		StrayConfig config = StrayConfig.get();
+		String mode = config.rawmatsModeLabel();
+		String display = config.rawmatsDisplayLabel();
 		float modeW = GuiDraw.smallWidth(font, mode);
-		int modeColor = chat ? Theme.ACCENT : Theme.MUTED;
-		GuiDraw.small(graphics, font, mode, WIDTH - PAD - modeW, PAD + 1, modeColor);
-		modeHit = new Rect(x + (WIDTH - PAD - modeW) * scale, y + PAD * scale, (modeW + 8) * scale, 12 * scale);
+		float displayW = GuiDraw.smallWidth(font, display);
+		int switchColor = chat ? Theme.ACCENT : Theme.MUTED;
+		float modeX = WIDTH - PAD - modeW;
+		float displayX = modeX - 8 - displayW;
+		GuiDraw.small(graphics, font, display, displayX, PAD + 1, switchColor);
+		GuiDraw.small(graphics, font, mode, modeX, PAD + 1, switchColor);
+		displayHit = new Rect(x + displayX * scale, y + PAD * scale, (displayW + 6) * scale, 12 * scale);
+		modeHit = new Rect(x + modeX * scale, y + PAD * scale, (modeW + 8) * scale, 12 * scale);
 
 		if (!snap.present()) {
 			GuiDraw.menu(graphics, font, "No item tracked", PAD + 4, PAD + 12, Theme.TEXT);
@@ -110,16 +128,24 @@ public final class RawmatsHudRenderer {
 			return;
 		}
 
-		String title = ellipsize(font, titleOf(snap), WIDTH - PAD * 2 - 72, false);
+		boolean remaining = config.rawmatsRemaining;
+		String title = ellipsize(font, titleOf(snap), WIDTH - PAD * 2 - 88, false);
 		GuiDraw.menu(graphics, font, title, PAD + 4, PAD + 12, Theme.TEXT);
 		String tally = snap.complete() + "/" + snap.total();
-		String pct = Math.round(snap.progress() * 100f) + "%";
-		String right = tally + "  " + pct;
+		String extra = remaining
+			? format(remainingTotal(snap)) + " left"
+			: Math.round(snap.progress() * 100f) + "%";
+		String right = tally + "  " + extra;
 		GuiDraw.small(graphics, font, right, WIDTH - PAD - GuiDraw.smallWidth(font, right), PAD + 12, Theme.MUTED);
 
-		List<RawmatsTracker.Line> lines = snap.lines();
-		if (lines.isEmpty()) {
+		List<RawmatsTracker.Line> lines = visible(snap);
+		if (snap.lines().isEmpty()) {
 			GuiDraw.small(graphics, font, snap.recipe() ? "No ingredients" : "No craft recipe", PAD + 4, HEAD + 2, Theme.MUTED);
+			graphics.pose().popMatrix();
+			return;
+		}
+		if (lines.isEmpty()) {
+			GuiDraw.small(graphics, font, "None remaining", PAD + 4, HEAD + 2, Theme.ACCENT);
 			graphics.pose().popMatrix();
 			return;
 		}
@@ -129,7 +155,7 @@ public final class RawmatsHudRenderer {
 		float rowY = HEAD;
 		for (int i = 0; i < shown; i++) {
 			RawmatsTracker.Line line = lines.get(i);
-			row(graphics, font, player, line, PAD, rowY, i);
+			row(graphics, font, player, line, PAD, rowY, i, remaining);
 			rowY += rowHeight(line);
 		}
 		if (lines.size() > MAX_ROWS) {
@@ -157,7 +183,8 @@ public final class RawmatsHudRenderer {
 		RawmatsTracker.Line line,
 		float x,
 		float y,
-		int seed
+		int seed,
+		boolean remaining
 	) {
 		ItemStack stack = line.icon();
 		boolean note = line.hasNote();
@@ -167,7 +194,9 @@ public final class RawmatsHudRenderer {
 			graphics.item(player, stack, Math.round(x), Math.round(iconY), 200 + seed);
 		}
 		float textX = x + ICON + 4;
-		String amount = format(line.have()) + "/" + format(line.need());
+		String amount = remaining
+			? format(line.remaining()) + " left"
+			: format(line.have()) + "/" + format(line.need());
 		float amountW = GuiDraw.smallWidth(font, amount);
 		float nameW = WIDTH - textX - amountW - PAD - 8;
 		String name = ellipsize(font, line.name(), nameW, true);
@@ -190,7 +219,7 @@ public final class RawmatsHudRenderer {
 		if (!snap.present()) {
 			return 44;
 		}
-		List<RawmatsTracker.Line> lines = snap.lines();
+		List<RawmatsTracker.Line> lines = visible(snap);
 		int shown = Math.min(MAX_ROWS, Math.max(1, lines.size()));
 		float rows = 0f;
 		if (lines.isEmpty()) {
@@ -224,6 +253,28 @@ public final class RawmatsHudRenderer {
 			return "Open Ender Chest, backpacks, and sacks to count them";
 		}
 		return null;
+	}
+
+	private static List<RawmatsTracker.Line> visible(RawmatsTracker.Snapshot snap) {
+		List<RawmatsTracker.Line> lines = snap.lines();
+		if (!StrayConfig.get().rawmatsRemaining) {
+			return lines;
+		}
+		List<RawmatsTracker.Line> left = new ArrayList<>();
+		for (RawmatsTracker.Line line : lines) {
+			if (!line.done()) {
+				left.add(line);
+			}
+		}
+		return left;
+	}
+
+	private static long remainingTotal(RawmatsTracker.Snapshot snap) {
+		long total = 0L;
+		for (RawmatsTracker.Line line : snap.lines()) {
+			total += line.remaining();
+		}
+		return total;
 	}
 
 	static String format(long value) {

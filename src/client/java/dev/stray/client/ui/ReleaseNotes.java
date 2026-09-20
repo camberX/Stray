@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.4.36", new String[]{
+			"Raw mats can show remaining counts instead of the percentage. Percent is still there; switch Display on the overlay or in Overlay settings."
+		}),
 		new Entry("1.4.35", new String[]{
 			"Shopping list has a /recipe and /bz switch on the overlay and in Garden settings. Click an item to run the selected command."
 		}),

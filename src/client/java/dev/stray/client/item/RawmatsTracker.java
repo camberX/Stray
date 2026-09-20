@@ -27,6 +27,10 @@ public final class RawmatsTracker {
 			return note != null && !note.isBlank();
 		}
 
+		public long remaining() {
+			return Math.max(0L, need - have);
+		}
+
 		public float progress() {
 			if (need <= 0L) {
 				return 0f;

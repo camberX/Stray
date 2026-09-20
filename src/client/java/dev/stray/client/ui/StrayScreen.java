@@ -166,7 +166,7 @@ public class StrayScreen extends Screen {
 		WATERMARK("Watermark", 4),
 		MUSIC("Music", 4),
 		PIP("Picture in picture", 3),
-		RAWMATS("Raw mats", 1),
+		RAWMATS("Raw mats", 2),
 		MINING("Mining HUD", 1),
 		TITANIUM("Titanium ESP", 3),
 		CRYSTAL("CH waypoints", 5),
@@ -462,6 +462,7 @@ public class StrayScreen extends Screen {
 		new SearchEntry("Song chat", Tab.MEDIA, "Media"),
 		new SearchEntry("Now playing chat", Tab.MEDIA, "Media"),
 		new SearchEntry("Raw mats", Tab.OVERLAY, "Overlay"),
+		new SearchEntry("Remaining materials", Tab.OVERLAY, "Overlay"),
 		new SearchEntry("Pickup log", Tab.OVERLAY, "Overlay"),
 		new SearchEntry("Skill progress", Tab.OVERLAY, "Overlay"),
 		new SearchEntry("Skill HUD", Tab.OVERLAY, "Overlay"),
@@ -3342,7 +3343,10 @@ public class StrayScreen extends Screen {
 				y = slider(graphics, font, ix, y, iw, "Capture", config.pipFps + " fps", (config.pipFps - 15) / 45f, v -> config.pipFps = StrayConfig.clamp(15 + Math.round(v * 45f), 15, 60));
 				slider(graphics, font, ix, y, iw, "Opacity", Math.round(config.pipOpacity * 100) + "%", config.pipOpacity, v -> config.pipOpacity = StrayConfig.clamp(v, 0.25f, 1f));
 			}
-			case RAWMATS -> cycle(graphics, font, ix, y, iw, mouseX, mouseY, "Materials", config.rawmatsModeLabel(), config::cycleRawmatsMode);
+			case RAWMATS -> {
+				y = cycle(graphics, font, ix, y, iw, mouseX, mouseY, "Materials", config.rawmatsModeLabel(), config::cycleRawmatsMode);
+				cycle(graphics, font, ix, y, iw, mouseX, mouseY, "Display", config.rawmatsDisplayLabel(), config::cycleRawmatsDisplay);
+			}
 			case SKILL -> {
 				SkillProgressTracker.poll(minecraft);
 				SkillProgressHudRenderer.draw(
