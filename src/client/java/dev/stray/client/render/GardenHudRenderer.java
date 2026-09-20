@@ -506,9 +506,10 @@ public final class GardenHudRenderer {
 		}
 		for (Hit hit : ITEM_HITS) {
 			if (hit.contains(mouseX, mouseY)) {
+				String command = StrayConfig.get().gardenShoppingClickLabel();
 				String tip = hit.craftable
-					? "Craftable · Click for /recipe " + hit.query
-					: "Click for /recipe " + hit.query;
+					? "Craftable · Click for " + command + " " + hit.query
+					: "Click for " + command + " " + hit.query;
 				graphics.setTooltipForNextFrame(font, Component.literal(tip), mouseX, mouseY);
 				return;
 			}
@@ -589,7 +590,8 @@ public final class GardenHudRenderer {
 		if (client.player == null || client.player.connection == null || name == null || name.isBlank()) {
 			return;
 		}
-		client.player.connection.sendCommand("recipe " + name.trim());
+		String command = StrayConfig.get().gardenShoppingBz ? "bz" : "recipe";
+		client.player.connection.sendCommand(command + " " + name.trim());
 	}
 
 	private record Hit(float x, float y, float w, float h, String query, boolean craftable, Runnable click) {
