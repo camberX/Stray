@@ -61,6 +61,7 @@ public final class AccountStore {
 					ACCOUNTS.add(entry);
 				}
 			}
+			pinFavorites();
 		} catch (Exception exception) {
 			Stray.LOGGER.warn("Could not read accounts.json", exception);
 		}
@@ -423,6 +424,34 @@ public final class AccountStore {
 		save();
 	}
 
+	public static int toggleFavorite(int index) {
+		if (index < 0 || index >= ACCOUNTS.size()) {
+			return index;
+		}
+		Entry old = ACCOUNTS.remove(index);
+		Entry next = old.withFavorite(!old.favorite);
+		int dest = 0;
+		if (!next.favorite) {
+			while (dest < ACCOUNTS.size() && ACCOUNTS.get(dest).favorite) {
+				dest++;
+			}
+		}
+		ACCOUNTS.add(dest, next);
+		save();
+		return dest;
+	}
+
+	private static void pinFavorites() {
+		List<Entry> fav = new ArrayList<>();
+		List<Entry> rest = new ArrayList<>();
+		for (Entry entry : ACCOUNTS) {
+			(entry.favorite ? fav : rest).add(entry);
+		}
+		ACCOUNTS.clear();
+		ACCOUNTS.addAll(fav);
+		ACCOUNTS.addAll(rest);
+	}
+
 	private static void onDeviceCode(MsaDeviceCode code, Consumer<String> status) {
 		deviceUrl = code.getDirectVerificationUri();
 		deviceCode = code.getUserCode();
@@ -465,10 +494,12 @@ public final class AccountStore {
 	}
 
 	private static void replace(MicrosoftAuth.Session session, Kind kind, boolean write) {
-		Entry next = new Entry(kind, session.name(), session.uuid(), session.accessToken(), session.authManager());
+		boolean favorite = false;
 		for (int i = 0; i < ACCOUNTS.size(); i++) {
 			Entry existing = ACCOUNTS.get(i);
 			if (existing.uuid.equals(session.uuid()) || existing.name.equalsIgnoreCase(session.name())) {
+				favorite = existing.favorite;
+				Entry next = new Entry(kind, session.name(), session.uuid(), session.accessToken(), session.authManager(), favorite);
 				ACCOUNTS.set(i, next);
 				if (write) {
 					save();
@@ -476,7 +507,7 @@ public final class AccountStore {
 				return;
 			}
 		}
-		ACCOUNTS.add(next);
+		ACCOUNTS.add(new Entry(kind, session.name(), session.uuid(), session.accessToken(), session.authManager(), false));
 		if (write) {
 			save();
 		}
@@ -521,15 +552,25 @@ public final class AccountStore {
 		public final Kind kind;
 		public final String name;
 		public final UUID uuid;
+		public final boolean favorite;
 		private final String accessToken;
 		private final JsonObject authManager;
 
 		Entry(Kind kind, String name, UUID uuid, String accessToken, JsonObject authManager) {
+			this(kind, name, uuid, accessToken, authManager, false);
+		}
+
+		Entry(Kind kind, String name, UUID uuid, String accessToken, JsonObject authManager, boolean favorite) {
 			this.kind = kind;
 			this.name = name;
 			this.uuid = uuid;
 			this.accessToken = accessToken;
 			this.authManager = authManager;
+			this.favorite = favorite;
+		}
+
+		Entry withFavorite(boolean favorite) {
+			return new Entry(kind, name, uuid, accessToken, authManager, favorite);
 		}
 
 		public String kindLabel() {
@@ -556,6 +597,9 @@ public final class AccountStore {
 			json.addProperty("type", kind == Kind.MICROSOFT ? "microsoft" : "session");
 			json.addProperty("name", name);
 			json.addProperty("uuid", uuid.toString());
+			if (favorite) {
+				json.addProperty("favorite", true);
+			}
 			if (kind == Kind.MICROSOFT && authManager != null) {
 				json.add("authManager", authManager);
 			} else if (accessToken != null) {
@@ -569,15 +613,16 @@ public final class AccountStore {
 				String type = json.has("type") ? json.get("type").getAsString() : "microsoft";
 				String name = json.get("name").getAsString();
 				UUID uuid = UUID.fromString(json.get("uuid").getAsString());
+				boolean favorite = json.has("favorite") && json.get("favorite").getAsBoolean();
 				if ("session".equals(type)) {
 					String token = json.get("accessToken").getAsString();
-					return new Entry(Kind.SESSION, name, uuid, token, null);
+					return new Entry(Kind.SESSION, name, uuid, token, null, favorite);
 				}
 				JsonObject manager = json.getAsJsonObject("authManager");
 				if (manager == null) {
 					return null;
 				}
-				return new Entry(Kind.MICROSOFT, name, uuid, "", manager);
+				return new Entry(Kind.MICROSOFT, name, uuid, "", manager, favorite);
 			} catch (Exception exception) {
 				return null;
 			}
