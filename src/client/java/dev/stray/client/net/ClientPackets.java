@@ -3,6 +3,7 @@ package dev.stray.client.net;
 import dev.stray.client.combat.AutoExperiments;
 import dev.stray.client.combat.MageBeamHits;
 import dev.stray.client.farming.AutoDna;
+import dev.stray.client.farming.GardenHud;
 import dev.stray.client.menu.DisabledPotions;
 import dev.stray.client.mining.ChestEsp;
 import dev.stray.client.node.EnderNodeTracker;
@@ -49,5 +50,6 @@ public final class ClientPackets {
 		AutoExperiments.onPacket(packet);
 		AutoDna.onPacket(packet);
 		DisabledPotions.onPacket(packet);
+		GardenHud.onPacket(packet);
 	}
 }

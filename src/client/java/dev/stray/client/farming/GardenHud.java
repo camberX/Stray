@@ -16,6 +16,8 @@ import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.protocol.Packet;
+import net.minecraft.network.protocol.game.ClientboundOpenScreenPacket;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
@@ -38,10 +40,10 @@ import java.util.regex.Pattern;
 
 /**
  * Garden overlays: next Jacob contest, visitor timer, hoe level, crop
- * milestone, and visitor shopping list. Crop milestones come from the Crop
- * Milestones chest and the Garden tab widget, then the held tool counter
- * after the menu closes. Visitor NPC chests and hoe NBT still feed the
- * other overlays.
+ * milestone, and visitor shopping list. Crop milestones come from Harvest/Total
+ * lore in the Crop Milestones chest and the Garden tab percents, then the held
+ * tool counter after the menu closes. Visitor NPC chests and hoe NBT still feed
+ * the other overlays.
  */
 public final class GardenHud {
 	private static final int INFO_SLOT = 13;
@@ -135,6 +137,10 @@ public final class GardenHud {
 		"OVERFLOW! Your (.+) has just dropped a Tool Exp Capsule!",
 		Pattern.CASE_INSENSITIVE
 	);
+	private static final Pattern CROP_MILESTONE_HARVEST = Pattern.compile(
+		"^harvest\\s+(.+?)\\s+on\\b",
+		Pattern.CASE_INSENSITIVE
+	);
 	private static final Pattern CROP_MILESTONE_PROGRESS = Pattern.compile(
 		"progress(?: to)?(?:\\s+(?:tier|milestone))?\\s*(\\d+)?\\s*:\\s*([\\d,.]+[kmb]?)\\s*[/\\u2044\\u2215]\\s*([\\d,.]+[kmb]?)",
 		Pattern.CASE_INSENSITIVE
@@ -148,7 +154,7 @@ public final class GardenHud {
 		Pattern.CASE_INSENSITIVE
 	);
 	private static final Pattern CROP_MILESTONE_TOTAL = Pattern.compile(
-		"(?:harvested|collected|grown)[:\\s]+([\\d,.]+[kmb]?)",
+		"(?:^|\\s)(?:total|harvested|collected|grown)\\s*:\\s*([\\d,.]+[kmb]?)",
 		Pattern.CASE_INSENSITIVE
 	);
 	private static final Pattern CROP_MILESTONE_MAXED = Pattern.compile(
@@ -157,6 +163,14 @@ public final class GardenHud {
 	);
 	private static final Pattern TAB_MILESTONE_HEADER = Pattern.compile(
 		"^crop milestones?:?\\s*(.*)$",
+		Pattern.CASE_INSENSITIVE
+	);
+	private static final Pattern TAB_MILESTONE_PERCENT = Pattern.compile(
+		"^(.+?)\\s+(\\d+)\\s*:\\s*([\\d.]+)\\s*%$",
+		Pattern.CASE_INSENSITIVE
+	);
+	private static final Pattern TAB_MILESTONE_MAX = Pattern.compile(
+		"^(.+?)\\s+(\\d+)\\s*:\\s*max$",
 		Pattern.CASE_INSENSITIVE
 	);
 	private static final Pattern TAB_MILESTONE_ROW = Pattern.compile(
@@ -190,6 +204,7 @@ public final class GardenHud {
 	private static CropKind lastGuiCrop;
 	private static long lastCounter = -1L;
 	private static boolean milestoneMenuOpen;
+	private static String packetTitle = "";
 
 	private GardenHud() {
 	}
@@ -200,12 +215,12 @@ public final class GardenHud {
 			return;
 		}
 		int tick = client.player.tickCount;
+		readCropMilestoneMenu(client);
 		if (parseTick == Integer.MIN_VALUE || tick < parseTick || tick - parseTick >= 5) {
 			parseTick = tick;
 			readTab(client);
 		}
 		readHoe(client.player);
-		readCropMilestoneMenu(client);
 		readMilestone(client.player);
 		readVisitorChest(client);
 		countShopping(client.player);
@@ -230,6 +245,13 @@ public final class GardenHud {
 		lastGuiCrop = null;
 		lastCounter = -1L;
 		milestoneMenuOpen = false;
+		packetTitle = "";
+	}
+
+	public static void onPacket(Packet<?> packet) {
+		if (packet instanceof ClientboundOpenScreenPacket open) {
+			packetTitle = clean(open.getTitle());
+		}
 	}
 
 	public static void onChat(Component message) {
@@ -517,10 +539,14 @@ public final class GardenHud {
 		ItemStack held = player.getMainHandItem();
 		CropKind heldCrop = cropOf(held);
 		long counter = toolCounter(held);
-		CropKind crop = milestoneMenuOpen && lastGuiCrop != null
-			? lastGuiCrop
-			: heldCrop != null ? heldCrop : lastGuiCrop;
+		CropKind crop = heldCrop != null ? heldCrop : lastGuiCrop;
+		if (milestoneMenuOpen && lastGuiCrop != null) {
+			crop = lastGuiCrop;
+		}
 		if (crop == null) {
+			if (milestoneMenuOpen && milestone.present()) {
+				return;
+			}
 			milestone = MilestoneSnap.empty();
 			RATE.clear();
 			lastCounter = -1L;
@@ -545,6 +571,9 @@ public final class GardenHud {
 			harvested = counter;
 		}
 		if (harvested < 0L) {
+			if (milestoneMenuOpen && milestone.present()) {
+				return;
+			}
 			milestone = MilestoneSnap.empty();
 			RATE.clear();
 			lastCounter = -1L;
@@ -591,7 +620,7 @@ public final class GardenHud {
 		if (!(client.screen instanceof AbstractContainerScreen<?> screen) || client.player == null) {
 			return;
 		}
-		String title = clean(screen.getTitle());
+		String title = menuTitle(screen);
 		boolean titled = cropMilestoneTitle(title);
 		CropKind pageCrop = exactCrop(title);
 		if (pageCrop == null) {
@@ -614,7 +643,10 @@ public final class GardenHud {
 			if (stack == null || stack.isEmpty()) {
 				continue;
 			}
-			CropKind crop = cropNamed(itemName(stack));
+			CropKind crop = cropFromHarvestLore(stack);
+			if (crop == null) {
+				crop = cropNamed(itemName(stack));
+			}
 			if (crop == null && pageCrop != null && milestoneLore(stack)) {
 				crop = pageCrop;
 			}
@@ -624,7 +656,7 @@ public final class GardenHud {
 			if (crop == null) {
 				continue;
 			}
-			long total = parseCropMilestone(crop, stack);
+			long total = parseCropMilestone(crop, stack, titled);
 			if (total < 0L) {
 				continue;
 			}
@@ -643,21 +675,18 @@ public final class GardenHud {
 		milestoneMenuOpen = true;
 		if (hoverCrop != null) {
 			lastGuiCrop = hoverCrop;
-		} else if (heldCrop != null && CROP_PROGRESS.containsKey(heldCrop)) {
+		} else if (firstCrop != null) {
+			lastGuiCrop = firstCrop;
+		} else if (heldCrop != null) {
 			lastGuiCrop = heldCrop;
 		} else if (pageCrop != null && CROP_PROGRESS.containsKey(pageCrop)) {
 			lastGuiCrop = pageCrop;
-		} else if (firstCrop != null) {
-			lastGuiCrop = firstCrop;
 		}
 	}
 
 	private static void parseMilestoneTab(List<String> lines) {
-		Minecraft client = Minecraft.getInstance();
-		if (client.screen instanceof AbstractContainerScreen<?> screen) {
-			if (cropMilestoneTitle(clean(screen.getTitle()))) {
-				return;
-			}
+		if (milestoneMenuOpen && !CROP_PROGRESS.isEmpty()) {
+			return;
 		}
 		for (int i = 0; i < lines.size(); i++) {
 			Matcher header = TAB_MILESTONE_HEADER.matcher(lines.get(i));
@@ -682,28 +711,27 @@ public final class GardenHud {
 
 	private static void parseMilestoneTabRow(String raw) {
 		String line = raw.replaceFirst("^[\\s\\u25CB\\u25CF\\u25E6\\u00B7\\u2022○●◯]+", "").trim();
-		Matcher row = TAB_MILESTONE_ROW.matcher(line);
-		if (!row.matches()) {
-			return;
-		}
-		CropKind crop = cropNamed(row.group(1) == null ? "" : row.group(1).trim());
-		if (crop == null) {
-			crop = lastGuiCrop;
-		}
-		if (crop == null) {
-			Minecraft client = Minecraft.getInstance();
-			if (client.player != null) {
-				crop = cropOf(client.player.getMainHandItem());
+		CropKind crop = null;
+		long total = -1L;
+		Matcher max = TAB_MILESTONE_MAX.matcher(line);
+		if (max.matches()) {
+			crop = tabCrop(max.group(1));
+			total = harvestedForTier(crop, parseInt(max.group(2)), true, 100d);
+		} else {
+			Matcher percent = TAB_MILESTONE_PERCENT.matcher(line);
+			if (percent.matches()) {
+				crop = tabCrop(percent.group(1));
+				total = harvestedForTier(crop, parseInt(percent.group(2)), false, parsePercent(percent.group(3)));
+			} else {
+				Matcher row = TAB_MILESTONE_ROW.matcher(line);
+				if (!row.matches()) {
+					return;
+				}
+				crop = tabCrop(row.group(1));
+				total = harvestedAt(crop, parseInt(row.group(2)), parseCount(row.group(3)), parseCount(row.group(4)), false);
 			}
 		}
-		if (crop == null) {
-			return;
-		}
-		int tier = parseInt(row.group(2));
-		long have = parseCount(row.group(3));
-		long need = parseCount(row.group(4));
-		long total = harvestedAt(crop, tier, have, need, false);
-		if (total < 0L) {
+		if (crop == null || total < 0L) {
 			return;
 		}
 		CropProgress prior = CROP_PROGRESS.get(crop);
@@ -715,10 +743,39 @@ public final class GardenHud {
 		lastGuiCrop = crop;
 	}
 
+	private static CropKind tabCrop(String raw) {
+		CropKind crop = cropNamed(raw == null ? "" : raw.trim());
+		if (crop != null) {
+			return crop;
+		}
+		if (lastGuiCrop != null) {
+			return lastGuiCrop;
+		}
+		Minecraft client = Minecraft.getInstance();
+		if (client.player != null) {
+			return cropOf(client.player.getMainHandItem());
+		}
+		return null;
+	}
+
+	private static CropKind cropFromHarvestLore(ItemStack stack) {
+		for (String line : itemLines(stack)) {
+			Matcher harvest = CROP_MILESTONE_HARVEST.matcher(clean(line));
+			if (harvest.find()) {
+				CropKind crop = cropNamed(harvest.group(1));
+				if (crop != null) {
+					return crop;
+				}
+			}
+		}
+		return null;
+	}
+
 	private static boolean milestoneLore(ItemStack stack) {
 		for (String line : itemLines(stack)) {
 			String plain = clean(line);
-			if (CROP_MILESTONE_PROGRESS.matcher(plain).find()
+			if (CROP_MILESTONE_HARVEST.matcher(plain).find()
+				|| CROP_MILESTONE_PROGRESS.matcher(plain).find()
 				|| CROP_MILESTONE_TOTAL.matcher(plain).find()
 				|| CROP_MILESTONE_MAXED.matcher(plain).find()
 				|| (fold(plain).contains("progress") && CROP_MILESTONE_RATIO.matcher(plain).find())) {
@@ -728,7 +785,7 @@ public final class GardenHud {
 		return false;
 	}
 
-	private static long parseCropMilestone(CropKind crop, ItemStack stack) {
+	private static long parseCropMilestone(CropKind crop, ItemStack stack, boolean loose) {
 		int nextTier = -1;
 		int currentTier = -1;
 		long have = -1L;
@@ -768,6 +825,16 @@ public final class GardenHud {
 				currentTier = parseInt(tier.group(1));
 			}
 		}
+		if (have < 0L && loose) {
+			for (String line : itemLines(stack)) {
+				Matcher ratio = CROP_MILESTONE_RATIO.matcher(clean(line));
+				if (ratio.find()) {
+					have = parseCount(ratio.group(1));
+					need = parseCount(ratio.group(2));
+					break;
+				}
+			}
+		}
 		if (harvested >= 0L) {
 			return harvested;
 		}
@@ -788,6 +855,42 @@ public final class GardenHud {
 			return crop.table[crop.table.length - 1];
 		}
 		return -1L;
+	}
+
+	private static long harvestedForTier(CropKind crop, int tier, boolean maxed, double percent) {
+		if (crop == null || tier < 0) {
+			return -1L;
+		}
+		long[] table = crop.table;
+		int cap = table.length - 1;
+		if (maxed || percent >= 100d) {
+			if (tier <= cap) {
+				return table[tier];
+			}
+			long step = cap > 0 ? Math.max(1L, table[cap] - table[cap - 1]) : 1L;
+			return table[cap] + (long) (tier - cap) * step;
+		}
+		int from = Math.min(tier, cap);
+		long base = table[from];
+		long next;
+		if (from + 1 < table.length) {
+			next = table[from + 1];
+		} else {
+			long step = cap > 0 ? Math.max(1L, table[cap] - table[cap - 1]) : 1L;
+			next = base + step;
+		}
+		return base + Math.round((next - base) * (Math.max(0d, percent) / 100d));
+	}
+
+	private static double parsePercent(String value) {
+		if (value == null || value.isBlank()) {
+			return -1d;
+		}
+		try {
+			return Double.parseDouble(value.trim());
+		} catch (NumberFormatException ignored) {
+			return -1d;
+		}
 	}
 
 	private static int guessTier(CropKind crop, long need) {
@@ -853,6 +956,9 @@ public final class GardenHud {
 	}
 
 	private static long harvestedAt(CropKind crop, int tier, long have, long need, boolean progressTo) {
+		if (crop == null) {
+			return -1L;
+		}
 		long[] table = crop.table;
 		long amount = Math.max(0L, have);
 		if (need > 0L && tier >= 0) {
@@ -907,8 +1013,17 @@ public final class GardenHud {
 		return counter;
 	}
 
+	private static String menuTitle(AbstractContainerScreen<?> screen) {
+		String title = clean(screen.getTitle());
+		if (!title.isEmpty()) {
+			return title;
+		}
+		return packetTitle;
+	}
+
 	private static boolean cropMilestoneTitle(String title) {
-		return "crop milestones".equals(fold(title));
+		String key = fold(title).replaceAll("[^a-z ]", " ").replaceAll("\\s+", " ").trim();
+		return key.equals("crop milestones") || key.startsWith("crop milestones ");
 	}
 
 	private static CropKind exactCrop(String raw) {

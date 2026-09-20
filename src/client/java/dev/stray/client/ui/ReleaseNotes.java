@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.4.43", new String[]{
+			"Crop milestone overlay reads Harvest/Total from the Crop Milestones chest and Garden tab percents, and draws on top of that menu."
+		}),
 		new Entry("1.4.42", new String[]{
 			"Shopping list keeps the have/need count and puts a green C next to items you can craft."
 		}),
