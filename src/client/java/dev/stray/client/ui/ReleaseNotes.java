@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.4.37", new String[]{
+			"Crop milestone HUD reads the Crop Milestones chest and the Garden tab widget, then keeps counting from the held tool after you close the menu."
+		}),
 		new Entry("1.4.36", new String[]{
 			"Raw mats can show remaining counts instead of the percentage. Percent is still there; switch Display on the overlay or in Overlay settings."
 		}),
