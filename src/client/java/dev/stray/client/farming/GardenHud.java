@@ -136,11 +136,15 @@ public final class GardenHud {
 		Pattern.CASE_INSENSITIVE
 	);
 	private static final Pattern CROP_MILESTONE_TITLE = Pattern.compile(
-		"crop milestones?",
+		"crop milestones?|milestones?",
 		Pattern.CASE_INSENSITIVE
 	);
 	private static final Pattern CROP_MILESTONE_PROGRESS = Pattern.compile(
 		"progress(?: to)?(?:\\s+(?:tier|milestone))?\\s*(\\d+)?\\s*:\\s*([\\d,.]+[kmb]?)\\s*[/\\u2044\\u2215]\\s*([\\d,.]+[kmb]?)",
+		Pattern.CASE_INSENSITIVE
+	);
+	private static final Pattern CROP_MILESTONE_RATIO = Pattern.compile(
+		"([\\d,.]+[kmb]?)\\s*[/\\u2044\\u2215]\\s*([\\d,.]+[kmb]?)",
 		Pattern.CASE_INSENSITIVE
 	);
 	private static final Pattern CROP_MILESTONE_TIER = Pattern.compile(
@@ -148,7 +152,7 @@ public final class GardenHud {
 		Pattern.CASE_INSENSITIVE
 	);
 	private static final Pattern CROP_MILESTONE_TOTAL = Pattern.compile(
-		"(?:harvested|collected)[:\\s]+([\\d,.]+[kmb]?)",
+		"(?:harvested|collected|grown)[:\\s]+([\\d,.]+[kmb]?)",
 		Pattern.CASE_INSENSITIVE
 	);
 	private static final Pattern CROP_MILESTONE_MAXED = Pattern.compile(
@@ -189,6 +193,7 @@ public final class GardenHud {
 	private static String lastCrop = "";
 	private static CropKind lastGuiCrop;
 	private static long lastCounter = -1L;
+	private static boolean milestoneMenuOpen;
 
 	private GardenHud() {
 	}
@@ -228,6 +233,7 @@ public final class GardenHud {
 		lastCrop = "";
 		lastGuiCrop = null;
 		lastCounter = -1L;
+		milestoneMenuOpen = false;
 	}
 
 	public static void onChat(Component message) {
@@ -515,7 +521,9 @@ public final class GardenHud {
 		ItemStack held = player.getMainHandItem();
 		CropKind heldCrop = cropOf(held);
 		long counter = toolCounter(held);
-		CropKind crop = heldCrop != null ? heldCrop : lastGuiCrop;
+		CropKind crop = milestoneMenuOpen && lastGuiCrop != null
+			? lastGuiCrop
+			: heldCrop != null ? heldCrop : lastGuiCrop;
 		if (crop == null) {
 			milestone = MilestoneSnap.empty();
 			RATE.clear();
@@ -525,7 +533,9 @@ public final class GardenHud {
 		CropProgress stored = CROP_PROGRESS.get(crop);
 		long harvested = -1L;
 		if (stored != null) {
-			if (heldCrop == crop && counter >= 0L) {
+			if (milestoneMenuOpen) {
+				harvested = stored.total;
+			} else if (heldCrop == crop && counter >= 0L) {
 				if (stored.toolAt >= 0L) {
 					harvested = stored.total + Math.max(0L, counter - stored.toolAt);
 				} else {
@@ -581,17 +591,15 @@ public final class GardenHud {
 	}
 
 	private static void readCropMilestoneMenu(Minecraft client) {
+		milestoneMenuOpen = false;
 		if (!(client.screen instanceof AbstractContainerScreen<?> screen) || client.player == null) {
 			return;
 		}
 		String title = clean(screen.getTitle());
-		boolean menu = CROP_MILESTONE_TITLE.matcher(title).find();
+		boolean titled = CROP_MILESTONE_TITLE.matcher(title).find();
 		CropKind pageCrop = exactCrop(title);
-		if (!menu) {
+		if (pageCrop == null) {
 			pageCrop = exactCrop(title.replaceAll("(?i)\\s*milestones?\\s*", " ").trim());
-		}
-		if (!menu && pageCrop == null) {
-			return;
 		}
 		ItemStack held = client.player.getMainHandItem();
 		CropKind heldCrop = cropOf(held);
@@ -599,17 +607,23 @@ public final class GardenHud {
 		Slot hovered = ((AbstractContainerScreenAccessor) screen).stray$hoveredSlot();
 		CropKind hoverCrop = null;
 		CropKind firstCrop = null;
-		for (Slot slot : screen.getMenu().slots) {
-			if (slot.container instanceof Inventory) {
+		List<Slot> slots = screen.getMenu().slots;
+		int upper = Math.max(0, slots.size() - 36);
+		for (int i = 0; i < upper; i++) {
+			Slot slot = slots.get(i);
+			if (slot.container == client.player.getInventory()) {
 				continue;
 			}
 			ItemStack stack = slot.getItem();
 			if (stack == null || stack.isEmpty()) {
 				continue;
 			}
-			CropKind crop = cropNamed(clean(stack.getHoverName().getString()));
+			CropKind crop = cropNamed(itemName(stack));
 			if (crop == null && pageCrop != null && milestoneLore(stack)) {
 				crop = pageCrop;
+			}
+			if (crop == null && milestoneLore(stack)) {
+				crop = cropNamed(String.join(" ", itemLines(stack)));
 			}
 			if (crop == null) {
 				continue;
@@ -627,10 +641,12 @@ public final class GardenHud {
 				hoverCrop = crop;
 			}
 		}
+		if (!titled && firstCrop == null) {
+			return;
+		}
+		milestoneMenuOpen = true;
 		if (hoverCrop != null) {
 			lastGuiCrop = hoverCrop;
-		} else if (lastGuiCrop != null && CROP_PROGRESS.containsKey(lastGuiCrop)) {
-			return;
 		} else if (heldCrop != null && CROP_PROGRESS.containsKey(heldCrop)) {
 			lastGuiCrop = heldCrop;
 		} else if (pageCrop != null && CROP_PROGRESS.containsKey(pageCrop)) {
@@ -705,11 +721,12 @@ public final class GardenHud {
 	}
 
 	private static boolean milestoneLore(ItemStack stack) {
-		for (String line : lore(stack)) {
+		for (String line : itemLines(stack)) {
 			String plain = clean(line);
 			if (CROP_MILESTONE_PROGRESS.matcher(plain).find()
 				|| CROP_MILESTONE_TOTAL.matcher(plain).find()
-				|| CROP_MILESTONE_MAXED.matcher(plain).find()) {
+				|| CROP_MILESTONE_MAXED.matcher(plain).find()
+				|| (fold(plain).contains("progress") && CROP_MILESTONE_RATIO.matcher(plain).find())) {
 				return true;
 			}
 		}
@@ -723,7 +740,7 @@ public final class GardenHud {
 		long need = -1L;
 		long harvested = -1L;
 		boolean maxed = false;
-		for (String line : lore(stack)) {
+		for (String line : itemLines(stack)) {
 			String plain = clean(line);
 			Matcher progress = CROP_MILESTONE_PROGRESS.matcher(plain);
 			if (progress.find()) {
@@ -743,6 +760,14 @@ public final class GardenHud {
 				maxed = true;
 				continue;
 			}
+			if (fold(plain).contains("progress")) {
+				Matcher ratio = CROP_MILESTONE_RATIO.matcher(plain);
+				if (ratio.find()) {
+					have = parseCount(ratio.group(1));
+					need = parseCount(ratio.group(2));
+					continue;
+				}
+			}
 			Matcher tier = CROP_MILESTONE_TIER.matcher(plain);
 			if (tier.find()) {
 				currentTier = parseInt(tier.group(1));
@@ -758,10 +783,78 @@ public final class GardenHud {
 				return fromProgress;
 			}
 		}
+		if (have >= 0L && need > 0L && currentTier < 0 && nextTier < 0) {
+			long fromProgress = harvestedAt(crop, guessTier(crop, need), have, need, false);
+			if (fromProgress >= 0L) {
+				return fromProgress;
+			}
+		}
 		if (maxed) {
 			return crop.table[crop.table.length - 1];
 		}
 		return -1L;
+	}
+
+	private static int guessTier(CropKind crop, long need) {
+		long[] table = crop.table;
+		for (int i = 1; i < table.length; i++) {
+			if (Math.abs(table[i] - table[i - 1] - need) <= 1L) {
+				return i - 1;
+			}
+		}
+		return -1;
+	}
+
+	private static String itemName(ItemStack stack) {
+		boolean prior = ItemAppearance.suppress();
+		try {
+			if (stack == null || stack.isEmpty()) {
+				return "";
+			}
+			Component custom = stack.get(DataComponents.CUSTOM_NAME);
+			if (custom != null && !clean(custom).isBlank()) {
+				return clean(custom);
+			}
+			Component named = stack.get(DataComponents.ITEM_NAME);
+			if (named != null && !clean(named).isBlank()) {
+				return clean(named);
+			}
+			return clean(stack.getHoverName());
+		} finally {
+			ItemAppearance.resume(prior);
+		}
+	}
+
+	private static List<String> itemLines(ItemStack stack) {
+		boolean prior = ItemAppearance.suppress();
+		try {
+			List<String> lines = new ArrayList<>();
+			addItemLine(lines, stack.get(DataComponents.CUSTOM_NAME));
+			addItemLine(lines, stack.get(DataComponents.ITEM_NAME));
+			addItemLine(lines, stack.getHoverName());
+			ItemLore lore = stack.get(DataComponents.LORE);
+			if (lore != null) {
+				for (Component line : lore.lines()) {
+					addItemLine(lines, line);
+				}
+				for (Component line : lore.styledLines()) {
+					addItemLine(lines, line);
+				}
+			}
+			return lines;
+		} finally {
+			ItemAppearance.resume(prior);
+		}
+	}
+
+	private static void addItemLine(List<String> lines, Component component) {
+		if (component == null) {
+			return;
+		}
+		String text = clean(component);
+		if (!text.isEmpty() && !lines.contains(text)) {
+			lines.add(text);
+		}
 	}
 
 	private static long harvestedAt(CropKind crop, int tier, long have, long need, boolean progressTo) {
