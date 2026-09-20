@@ -29,6 +29,8 @@ public class AccountScreen extends Screen {
 	private static final float PAD = 16;
 	private static final int VISIBLE = 5;
 	private static final float STAR = 22;
+	private static final int OK = 0xFF3DDC84;
+	private static final int FAIL = 0xFFEF5350;
 
 	private final Screen parent;
 	private final List<Hit> hits = new ArrayList<>();
@@ -149,20 +151,40 @@ public class AccountScreen extends Screen {
 		int index
 	) {
 		boolean hovered = GuiDraw.hovered(mouseX, mouseY, x, y, w, ROW_H - 2);
-		boolean on = entry.uuid.equals(selectedId) || entry.active();
-		int fill = on ? Theme.CARD_HOVER : Theme.CARD;
+		boolean selected = entry.uuid.equals(selectedId);
+		boolean loggedIn = entry.active();
+		boolean failed = selected && entry.uuid.equals(AccountStore.lastFailedId());
+		int outline = Theme.LINE;
+		int fill = Theme.CARD;
+		if (selected && failed) {
+			outline = FAIL;
+			fill = Theme.withAlpha(FAIL, 48);
+		} else if (selected && loggedIn) {
+			outline = OK;
+			fill = Theme.withAlpha(OK, 48);
+		} else if (selected || hovered) {
+			outline = Theme.ACCENT;
+			fill = Theme.CARD_HOVER;
+		}
 		if (ControlChrome.on()) {
-			ControlChrome.glass(graphics, x, y, w, ROW_H - 4, 10f, on || hovered ? Theme.CARD_HOVER : ControlChrome.cardFill());
+			int glass = selected && (failed || loggedIn)
+				? fill
+				: (selected || hovered ? Theme.CARD_HOVER : ControlChrome.cardFill());
+			ControlChrome.glass(graphics, x, y, w, ROW_H - 4, 10f, glass);
+			if (selected && (failed || loggedIn)) {
+				GuiDraw.roundedOutline(graphics, x, y, w, ROW_H - 4, 10f, outline, 1.4f);
+			}
 		} else {
-			GuiDraw.panel(graphics, x, y, w, ROW_H - 4, 6, fill, hovered || on ? Theme.ACCENT : Theme.LINE);
+			GuiDraw.panel(graphics, x, y, w, ROW_H - 4, 6, fill, outline);
 		}
 		int text = ControlChrome.on() ? ControlChrome.cardText() : Theme.TEXT;
 		float starCx = x + 12;
 		float starCy = y + (ROW_H - 4) * 0.5f;
 		favoriteMark(graphics, starCx, starCy, entry.favorite);
 		GuiDraw.menu(graphics, font, entry.name, x + 24, GuiDraw.middle(y, ROW_H - 4), text);
-		String kind = entry.active() ? "playing" : entry.kindLabel();
-		GuiDraw.small(graphics, font, kind, x + w - 10 - GuiDraw.smallWidth(font, kind), y + 8, Theme.MUTED);
+		String kind = loggedIn ? "playing" : entry.kindLabel();
+		int kindColor = selected && failed ? FAIL : (loggedIn ? OK : Theme.MUTED);
+		GuiDraw.small(graphics, font, kind, x + w - 10 - GuiDraw.smallWidth(font, kind), y + 8, kindColor);
 		hits.add(new Hit(x, y, w, ROW_H - 2, () -> select(index), () -> {
 			select(index);
 			if (canSwitch()) {
