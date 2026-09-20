@@ -442,16 +442,18 @@ public final class GardenHudRenderer {
 			for (int i = 0; i < shown; i++) {
 				Need need = items.get(i);
 				boolean ready = need.having() >= need.required();
-				String label = GuiDraw.ellipsize(font, need.name(), WIDTH - 72, true);
+				boolean craftable = !ready && need.craftable();
+				String status = craftable ? "Craftable!" : amount(need.having()) + "/" + amount(need.required());
+				float statusW = GuiDraw.smallWidth(font, status);
+				String label = GuiDraw.ellipsize(font, need.name(), WIDTH - PAD * 2 - statusW - 6, true);
 				GuiDraw.small(graphics, font, label, PAD + 1, cursor, Theme.TEXT);
-				String count = amount(need.having()) + "/" + amount(need.required());
 				GuiDraw.small(
 					graphics,
 					font,
-					count,
-					WIDTH - PAD - GuiDraw.smallWidth(font, count),
+					status,
+					WIDTH - PAD - statusW,
 					cursor,
-					ready ? 0xFF75D69C : Theme.MUTED
+					ready || craftable ? 0xFF75D69C : Theme.MUTED
 				);
 				if (value.present() && !HudLayout.editorOpen()) {
 					ITEM_HITS.add(new Hit(
@@ -460,6 +462,7 @@ public final class GardenHudRenderer {
 						(WIDTH - PAD * 2) * scale,
 						LINE * scale,
 						need.name(),
+						craftable,
 						() -> openShopping(need.name())
 					));
 				}
@@ -475,7 +478,10 @@ public final class GardenHudRenderer {
 		}
 		for (Hit hit : ITEM_HITS) {
 			if (hit.contains(mouseX, mouseY)) {
-				graphics.setTooltipForNextFrame(font, Component.literal("Click for /recipe " + hit.query), mouseX, mouseY);
+				String tip = hit.craftable
+					? "Craftable · Click for /recipe " + hit.query
+					: "Click for /recipe " + hit.query;
+				graphics.setTooltipForNextFrame(font, Component.literal(tip), mouseX, mouseY);
 				return;
 			}
 		}
@@ -544,7 +550,7 @@ public final class GardenHudRenderer {
 	private static ShoppingSnap sampleShopping() {
 		return new ShoppingSnap(
 			true,
-			List.of(new Need("Enchanted Bread", "ENCHANTED_BREAD", 64, 12), new Need("Enchanted Sugar", "ENCHANTED_SUGAR", 32, 32)),
+			List.of(new Need("Enchanted Bread", "ENCHANTED_BREAD", 64, 12, true), new Need("Enchanted Sugar", "ENCHANTED_SUGAR", 32, 32, false)),
 			List.of(),
 			List.of()
 		);
@@ -558,7 +564,7 @@ public final class GardenHudRenderer {
 		client.player.connection.sendCommand("recipe " + name.trim());
 	}
 
-	private record Hit(float x, float y, float w, float h, String query, Runnable click) {
+	private record Hit(float x, float y, float w, float h, String query, boolean craftable, Runnable click) {
 		private boolean contains(double mx, double my) {
 			return w > 0 && h > 0 && mx >= x && mx <= x + w && my >= y && my <= y + h;
 		}
