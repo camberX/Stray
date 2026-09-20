@@ -210,6 +210,7 @@ public final class GardenVisitors {
 		if (value == null) {
 			return "";
 		}
-		return value.replaceAll("§.", "").replace('\u00A0', ' ').replaceAll("\\s+", " ").trim().toLowerCase(Locale.ROOT);
+		String folded = value.replaceAll("§.", "").replace('\u00A0', ' ').replaceAll("\\s+", " ").trim().toLowerCase(Locale.ROOT);
+		return folded.replaceAll("\\s*\\(?new!?\\)?\\s*$", "").trim();
 	}
 }

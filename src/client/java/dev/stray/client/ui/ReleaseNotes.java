@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.4.34", new String[]{
+			"Visitor shopping list keeps offers from NPCs whose tab name has NEW!, like Spaceman. Opening the GUI no longer loses the items after the name is tagged new."
+		}),
 		new Entry("1.4.33", new String[]{
 			"Account switcher paints the selected row green when that account is logged in and red if sign-in failed."
 		}),
