@@ -37,6 +37,7 @@ public final class AccountStore {
 	private static SessionApplier.Snapshot launcher;
 	private static volatile String deviceUrl;
 	private static volatile String deviceCode;
+	private static volatile UUID lastFailedId;
 
 	private AccountStore() {
 	}
@@ -83,6 +84,10 @@ public final class AccountStore {
 		return deviceCode;
 	}
 
+	public static UUID lastFailedId() {
+		return lastFailedId;
+	}
+
 	public static String currentName() {
 		Minecraft client = Minecraft.getInstance();
 		if (client == null || client.getUser() == null) {
@@ -115,8 +120,13 @@ public final class AccountStore {
 		client.execute(() -> {
 			try {
 				SessionApplier.restore(client, launcher);
+				lastFailedId = null;
 				status.accept("Restored " + client.getUser().getName() + ".");
 			} catch (Exception exception) {
+				UUID current = currentId();
+				if (current != null) {
+					lastFailedId = current;
+				}
 				status.accept(fail(exception));
 			}
 		});
@@ -400,6 +410,7 @@ public final class AccountStore {
 			return;
 		}
 		Entry entry = ACCOUNTS.get(index);
+		lastFailedId = null;
 		status.accept("Signing in as " + entry.name + "…");
 		Thread thread = new Thread(() -> {
 			try {
@@ -407,6 +418,7 @@ public final class AccountStore {
 				replace(session, entry.kind);
 				login(session, status);
 			} catch (Exception exception) {
+				lastFailedId = entry.uuid;
 				status.accept(fail(exception));
 			} finally {
 				BUSY.set(false);
@@ -474,8 +486,10 @@ public final class AccountStore {
 			try {
 				rememberLauncher(client);
 				SessionApplier.apply(client, session.name(), session.uuid(), session.accessToken());
+				lastFailedId = null;
 				status.accept("Playing as " + session.name() + ".");
 			} catch (Exception exception) {
+				lastFailedId = session.uuid();
 				status.accept(fail(exception));
 			}
 		});

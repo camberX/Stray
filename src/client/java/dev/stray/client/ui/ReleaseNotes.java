@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.4.33", new String[]{
+			"Account switcher paints the selected row green when that account is logged in and red if sign-in failed."
+		}),
 		new Entry("1.4.32", new String[]{
 			"Account switcher: double-click a row to sign in. Star an account to pin it at the top of the list."
 		}),
