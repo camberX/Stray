@@ -108,7 +108,10 @@ public final class GardenHud {
 	);
 	/** SkyHanni visitorNamePattern on colored tab text: ` §r§aEmissary Carlton`. */
 	private static final Pattern VISITOR_NAME = Pattern.compile(
-		"^\\s*(?:§.)+(§.[^§]+).*"
+		"^\\s*(?:§.)+([^§]+).*"
+	);
+	private static final Pattern VISITOR_NEW = Pattern.compile(
+		"(?i)\\s*\\(?NEW!?\\)?\\s*$"
 	);
 	private static final Pattern OFFERS_ACCEPTED = Pattern.compile(
 		"^offers accepted:\\s*",
@@ -548,7 +551,10 @@ public final class GardenHud {
 		if (needs.isEmpty()) {
 			needs = readRequired(info);
 		}
-		SHOPPING.put(name, List.copyOf(needs));
+		if (needs.isEmpty()) {
+			return;
+		}
+		storeShopping(name, needs);
 	}
 
 	private static ItemStack slotItem(AbstractContainerScreen<?> screen, int index) {
@@ -574,11 +580,11 @@ public final class GardenHud {
 	}
 
 	private static String visitorNpcName(ItemStack info, Component title) {
-		String named = clean(info.getHoverName().getString());
+		String named = visitorLabel(clean(info.getHoverName().getString()));
 		if (!named.isEmpty() && !named.equalsIgnoreCase("Chest")) {
 			return named;
 		}
-		return clean(title);
+		return visitorLabel(clean(title));
 	}
 
 	private static List<Need> readRequired(ItemStack stack) {
@@ -657,9 +663,8 @@ public final class GardenHud {
 		if (exact != null) {
 			return exact;
 		}
-		String folded = fold(name);
 		for (Map.Entry<String, List<Need>> entry : SHOPPING.entrySet()) {
-			if (fold(entry.getKey()).equals(folded) || fold(entry.getKey()).endsWith(folded) || folded.endsWith(fold(entry.getKey()))) {
+			if (sameVisitor(entry.getKey(), name)) {
 				return entry.getValue();
 			}
 		}
@@ -672,20 +677,44 @@ public final class GardenHud {
 		}
 		List<String> keep = new ArrayList<>();
 		for (String stored : SHOPPING.keySet()) {
-			boolean found = false;
 			for (String name : names) {
-				String a = fold(stored);
-				String b = fold(name);
-				if (a.equals(b) || a.endsWith(b) || b.endsWith(a)) {
-					found = true;
+				if (sameVisitor(stored, name)) {
+					keep.add(stored);
 					break;
 				}
 			}
-			if (found) {
-				keep.add(stored);
-			}
 		}
 		SHOPPING.keySet().retainAll(keep);
+	}
+
+	private static void storeShopping(String name, List<Need> needs) {
+		String label = visitorLabel(name);
+		if (label.isEmpty()) {
+			return;
+		}
+		String found = null;
+		for (String stored : SHOPPING.keySet()) {
+			if (sameVisitor(stored, label)) {
+				found = stored;
+				break;
+			}
+		}
+		if (found != null) {
+			SHOPPING.remove(found);
+		}
+		SHOPPING.put(label, List.copyOf(needs));
+	}
+
+	private static boolean sameVisitor(String left, String right) {
+		String a = foldVisitor(left);
+		String b = foldVisitor(right);
+		if (a.isEmpty() || b.isEmpty()) {
+			return false;
+		}
+		if (a.equals(b)) {
+			return true;
+		}
+		return a.endsWith(" " + b) || b.endsWith(" " + a);
 	}
 
 	private static HeldCounts inventoryCounts(LocalPlayer player) {
@@ -849,16 +878,17 @@ public final class GardenHud {
 	}
 
 	private static String visitorName(String colored, String cleaned) {
+		String named = "";
 		if (colored != null) {
 			Matcher matcher = VISITOR_NAME.matcher(colored);
 			if (matcher.matches()) {
-				String named = clean(matcher.group(1));
-				if (!named.isEmpty()) {
-					return named;
-				}
+				named = clean(matcher.group(1));
 			}
 		}
-		return cleaned == null ? "" : cleaned;
+		if (named.isEmpty()) {
+			named = cleaned == null ? "" : cleaned;
+		}
+		return visitorLabel(named);
 	}
 
 	private static Component tabName(PlayerInfo info) {
@@ -1009,6 +1039,19 @@ public final class GardenHud {
 
 	private static String fold(String value) {
 		return clean(value).toLowerCase(Locale.ROOT);
+	}
+
+	private static String foldVisitor(String name) {
+		return fold(visitorLabel(name));
+	}
+
+	private static String visitorLabel(String name) {
+		String text = clean(name);
+		if (text.isEmpty()) {
+			return "";
+		}
+		text = text.replaceFirst("^[\\s\\u25CB\\u25CF\\u25E6\\u00B7\\u2022○●◯]+", "").trim();
+		return VISITOR_NEW.matcher(text).replaceAll("").trim();
 	}
 
 	private static String shortName(String name) {
