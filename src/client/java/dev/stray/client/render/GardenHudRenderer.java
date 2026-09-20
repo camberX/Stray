@@ -443,17 +443,28 @@ public final class GardenHudRenderer {
 				Need need = items.get(i);
 				boolean ready = need.having() >= need.required();
 				boolean craftable = !ready && need.craftable();
-				String status = craftable ? "Craftable!" : amount(need.having()) + "/" + amount(need.required());
-				float statusW = GuiDraw.smallWidth(font, status);
-				String label = GuiDraw.ellipsize(font, need.name(), WIDTH - PAD * 2 - statusW - 6, true);
+				String count = amount(need.having()) + "/" + amount(need.required());
+				float countW = GuiDraw.smallWidth(font, count);
+				float markW = craftable ? GuiDraw.smallWidth(font, " C") : 0f;
+				String label = GuiDraw.ellipsize(font, need.name(), WIDTH - PAD * 2 - countW - markW - 6, true);
 				GuiDraw.small(graphics, font, label, PAD + 1, cursor, Theme.TEXT);
+				if (craftable) {
+					GuiDraw.small(
+						graphics,
+						font,
+						"C",
+						PAD + 1 + GuiDraw.smallWidth(font, label) + 3,
+						cursor,
+						0xFF75D69C
+					);
+				}
 				GuiDraw.small(
 					graphics,
 					font,
-					status,
-					WIDTH - PAD - statusW,
+					count,
+					WIDTH - PAD - countW,
 					cursor,
-					ready || craftable ? 0xFF75D69C : Theme.MUTED
+					ready ? 0xFF75D69C : Theme.MUTED
 				);
 				if (value.present() && !HudLayout.editorOpen()) {
 					ITEM_HITS.add(new Hit(

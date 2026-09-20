@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.4.42", new String[]{
+			"Shopping list keeps the have/need count and puts a green C next to items you can craft."
+		}),
 		new Entry("1.4.41", new String[]{
 			"Crop milestone overlay treats the chest as open only when the title is Crop Milestones."
 		}),
