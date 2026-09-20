@@ -5,6 +5,7 @@ import dev.stray.client.item.ItemAppearance;
 import dev.stray.client.item.ItemIds;
 import dev.stray.client.item.ItemStorage;
 import dev.stray.client.item.SkyblockItems;
+import dev.stray.client.item.SkyblockRecipes;
 import dev.stray.client.mixin.AbstractContainerScreenAccessor;
 import dev.stray.client.visual.NickSteal;
 import net.minecraft.client.Minecraft;
@@ -27,6 +28,7 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.EnumMap;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -946,10 +948,14 @@ public final class GardenHud {
 			}
 		}
 		List<Need> items = new ArrayList<>();
+		Map<String, Long> materials = craftMaterials(ItemStorage.counts(player));
 		for (Map.Entry<String, Integer> entry : totals.entrySet()) {
 			String name = entry.getKey();
 			String id = ids.get(name);
-			items.add(new Need(name, id == null ? "" : id, entry.getValue(), having.of(name, id)));
+			int have = having.of(name, id);
+			int need = entry.getValue();
+			boolean craftable = have < need && canCraft(id, need, materials);
+			items.add(new Need(name, id == null ? "" : id, need, have, craftable));
 		}
 		boolean present = live.present() || !items.isEmpty();
 		List<String> names = new ArrayList<>(known);
@@ -1068,7 +1074,52 @@ public final class GardenHud {
 			return null;
 		}
 		String id = SkyblockItems.idFromName(name);
-		return new Need(name, id == null ? "" : id, amount, 0);
+		return new Need(name, id == null ? "" : id, amount, 0, false);
+	}
+
+	private static boolean canCraft(String id, long amount, Map<String, Long> materials) {
+		if (materials == null || materials.isEmpty() || amount <= 0L) {
+			return false;
+		}
+		String key = SkyblockRecipes.normalize(id);
+		if (key.isEmpty() || !SkyblockRecipes.has(key)) {
+			return false;
+		}
+		Map<String, Long> need = SkyblockRecipes.expand(key, amount, SkyblockRecipes.Expand.RAW);
+		if (need.isEmpty()) {
+			return false;
+		}
+		for (Map.Entry<String, Long> leaf : need.entrySet()) {
+			if (materials.getOrDefault(leaf.getKey(), 0L) < leaf.getValue()) {
+				return false;
+			}
+		}
+		return true;
+	}
+
+	private static Map<String, Long> craftMaterials(Map<String, Long> owned) {
+		if (owned == null || owned.isEmpty()) {
+			return Map.of();
+		}
+		SkyblockRecipes.load();
+		Map<String, Long> out = new HashMap<>();
+		for (Map.Entry<String, Long> entry : owned.entrySet()) {
+			long count = entry.getValue();
+			if (count <= 0L) {
+				continue;
+			}
+			String id = SkyblockRecipes.normalize(entry.getKey());
+			if (id.isEmpty()) {
+				continue;
+			}
+			Map<String, Long> leaves = SkyblockRecipes.has(id)
+				? SkyblockRecipes.expand(id, count, SkyblockRecipes.Expand.RAW)
+				: Map.of(id, count);
+			for (Map.Entry<String, Long> leaf : leaves.entrySet()) {
+				out.merge(leaf.getKey(), leaf.getValue(), Long::sum);
+			}
+		}
+		return out;
 	}
 
 	private static CropMark cropLine(String line) {
@@ -1458,7 +1509,7 @@ public final class GardenHud {
 		}
 	}
 
-	public record Need(String name, String id, int required, int having) {
+	public record Need(String name, String id, int required, int having, boolean craftable) {
 	}
 
 	private record TabLines(List<String> clean, List<String> raw) {

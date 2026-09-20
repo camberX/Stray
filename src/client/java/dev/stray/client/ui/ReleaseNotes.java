@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.4.39", new String[]{
+			"Shopping list shows Craftable! in green when you can make the rest from items you already have."
+		}),
 		new Entry("1.4.38", new String[]{
 			"Shopping list HUD no longer has a /recipe and /bz switch. Clicking an item always runs /recipe."
 		}),
