@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.4.38", new String[]{
+			"Shopping list HUD no longer has a /recipe and /bz switch. Clicking an item always runs /recipe."
+		}),
 		new Entry("1.4.37", new String[]{
 			"Crop milestone HUD reads the Crop Milestones chest and the Garden tab widget, then keeps counting from the held tool after you close the menu."
 		}),
