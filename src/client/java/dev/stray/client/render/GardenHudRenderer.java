@@ -71,7 +71,7 @@ public final class GardenHudRenderer {
 		}
 		for (Hit hit : ITEM_HITS) {
 			if (hit.contains(event.x(), event.y())) {
-				openRecipe(hit.query);
+				hit.click.run();
 				return true;
 			}
 		}
@@ -433,6 +433,7 @@ public final class GardenHudRenderer {
 		ITEM_HITS.clear();
 		begin(graphics, x, y, scale, WIDTH, height);
 		GuiDraw.small(graphics, font, "SHOPPING LIST", PAD + 1, PAD, Theme.ACCENT);
+		drawClickMode(graphics, font, x, y, scale, value.present() && !HudLayout.editorOpen());
 		float cursor = PAD + LINE;
 		List<Need> items = snap.items();
 		if (items.isEmpty()) {
@@ -459,7 +460,8 @@ public final class GardenHudRenderer {
 						y + cursor * scale,
 						(WIDTH - PAD * 2) * scale,
 						LINE * scale,
-						need.name()
+						need.name(),
+						() -> openShopping(need.name())
 					));
 				}
 				cursor += LINE;
@@ -468,18 +470,53 @@ public final class GardenHudRenderer {
 		graphics.pose().popMatrix();
 	}
 
+	private static void drawClickMode(
+		GuiGraphicsExtractor graphics,
+		Font font,
+		float x,
+		float y,
+		float scale,
+		boolean clicks
+	) {
+		boolean bz = StrayConfig.get().gardenShoppingBz;
+		float bzW = GuiDraw.smallWidth(font, "/bz");
+		float recipeW = GuiDraw.smallWidth(font, "/recipe");
+		float gap = 5f;
+		float bzX = WIDTH - PAD - bzW;
+		float recipeX = bzX - gap - recipeW;
+		GuiDraw.small(graphics, font, "/recipe", recipeX, PAD, bz ? Theme.MUTED : Theme.ACCENT);
+		GuiDraw.small(graphics, font, "/bz", bzX, PAD, bz ? Theme.ACCENT : Theme.MUTED);
+		if (!clicks) {
+			return;
+		}
+		ITEM_HITS.add(new Hit(
+			x + recipeX * scale,
+			y + PAD * scale,
+			recipeW * scale,
+			LINE * scale,
+			null,
+			() -> StrayConfig.get().setGardenShoppingBz(false)
+		));
+		ITEM_HITS.add(new Hit(
+			x + bzX * scale,
+			y + PAD * scale,
+			bzW * scale,
+			LINE * scale,
+			null,
+			() -> StrayConfig.get().setGardenShoppingBz(true)
+		));
+	}
+
 	private static void hoverRecipe(GuiGraphicsExtractor graphics, Font font, int mouseX, int mouseY) {
 		if (!StrayConfig.get().gardenShoppingHudEnabled || HudLayout.editorOpen()) {
 			return;
 		}
 		for (Hit hit : ITEM_HITS) {
 			if (hit.contains(mouseX, mouseY)) {
-				graphics.setTooltipForNextFrame(
-					font,
-					Component.literal("Click for /recipe " + hit.query),
-					mouseX,
-					mouseY
-				);
+				String tip = hit.query == null || hit.query.isBlank()
+					? "Click items with " + StrayConfig.get().gardenShoppingClickLabel()
+					: "Click for " + StrayConfig.get().gardenShoppingClickLabel() + " " + hit.query;
+				graphics.setTooltipForNextFrame(font, Component.literal(tip), mouseX, mouseY);
 				return;
 			}
 		}
@@ -554,15 +591,16 @@ public final class GardenHudRenderer {
 		);
 	}
 
-	private static void openRecipe(String name) {
+	private static void openShopping(String name) {
 		Minecraft client = Minecraft.getInstance();
 		if (client.player == null || client.player.connection == null || name == null || name.isBlank()) {
 			return;
 		}
-		client.player.connection.sendCommand("recipe " + name.trim());
+		String command = StrayConfig.get().gardenShoppingBz ? "bz" : "recipe";
+		client.player.connection.sendCommand(command + " " + name.trim());
 	}
 
-	private record Hit(float x, float y, float w, float h, String query) {
+	private record Hit(float x, float y, float w, float h, String query, Runnable click) {
 		private boolean contains(double mx, double my) {
 			return w > 0 && h > 0 && mx >= x && mx <= x + w && my >= y && my <= y + h;
 		}

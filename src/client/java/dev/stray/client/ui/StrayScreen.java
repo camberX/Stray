@@ -176,6 +176,7 @@ public class StrayScreen extends Screen {
 		INVENTORY("Inventory", 5),
 		SKILL("Skill progress", 3),
 		PLOTS("Garden plots", 1),
+		SHOPPING("Shopping list", 1),
 		PEST("Pest ESP", 2),
 		AUTO_DNA("Auto DNA", 5),
 		NAMETAGS("Nametags", 6),
@@ -437,6 +438,9 @@ public class StrayScreen extends Screen {
 		new SearchEntry("Crop milestone", Tab.GARDEN, "Garden"),
 		new SearchEntry("Shopping list", Tab.GARDEN, "Garden"),
 		new SearchEntry("Visitor shopping", Tab.GARDEN, "Garden"),
+		new SearchEntry("/recipe", Tab.GARDEN, "Garden"),
+		new SearchEntry("/bz", Tab.GARDEN, "Garden"),
+		new SearchEntry("Bazaar", Tab.GARDEN, "Garden"),
 		new SearchEntry("Garden plots", Tab.GARDEN, "Garden"),
 		new SearchEntry("Pest ESP", Tab.GARDEN, "Garden"),
 		new SearchEntry("Garden pests", Tab.GARDEN, "Garden"),
@@ -2634,7 +2638,7 @@ public class StrayScreen extends Screen {
 				y = toggleCard(graphics, font, left, y, col, mouseX, mouseY, "Visitors", config.gardenVisitorHudEnabled, v -> config.gardenVisitorHudEnabled = v);
 				y = toggleCard(graphics, font, left, y, col, mouseX, mouseY, "Hoe level", config.gardenHoeHudEnabled, v -> config.gardenHoeHudEnabled = v);
 				y = toggleCard(graphics, font, left, y, col, mouseX, mouseY, "Crop milestone", config.gardenMilestoneHudEnabled, v -> config.gardenMilestoneHudEnabled = v);
-				toggleCard(graphics, font, left, y, col, mouseX, mouseY, "Shopping list", config.gardenShoppingHudEnabled, v -> config.gardenShoppingHudEnabled = v);
+				controlCard(graphics, font, left, y, col, mouseX, mouseY, "Shopping list", config.gardenShoppingHudEnabled, v -> config.gardenShoppingHudEnabled = v, Feature.SHOPPING);
 				y = sectionLabel(graphics, font, right, top, "Pests");
 				controlCard(graphics, font, right, y, col, mouseX, mouseY, "Pest ESP", config.pestEspEnabled, v -> config.pestEspEnabled = v, Feature.PEST);
 			}
@@ -3355,6 +3359,7 @@ public class StrayScreen extends Screen {
 			case MINING -> toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Ability alert", config.miningAbilityAlert, v -> config.miningAbilityAlert = v);
 			case FARMING -> slider(graphics, font, ix, y, iw, "Scale", Math.round(config.farmingYawPitchScale * 100) + "%", (config.farmingYawPitchScale - 0.50f) / 1.50f, v -> config.farmingYawPitchScale = StrayConfig.clampHudScale(0.50f + v * 1.50f));
 			case PLOTS -> toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Close on click", config.gardenPlotsCloseOnClick, v -> config.gardenPlotsCloseOnClick = v);
+			case SHOPPING -> chipRow(graphics, font, ix, y, iw, mouseX, mouseY, new String[]{"/recipe", "/bz"}, config.gardenShoppingBz ? 1 : 0, i -> config.setGardenShoppingBz(i == 1));
 			case PEST -> {
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Through walls", config.pestEspThroughWalls, v -> config.pestEspThroughWalls = v);
 				colorRow(graphics, font, ix, y, iw, mouseX, mouseY, "Color", config.pestEspRgb, PickerTarget.PEST);
