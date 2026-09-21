@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.4.47", new String[]{
+			"Swap loadouts closes the loadouts menu after it equips the other slot."
+		}),
 		new Entry("1.4.46", new String[]{
 			"Swap loadouts keeps the loadouts menu open after it equips the other slot."
 		}),

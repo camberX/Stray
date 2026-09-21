@@ -5,7 +5,7 @@ import dev.stray.client.config.StrayConfig;
 
 /**
  * Toggles between two loadout slots chosen in settings.
- * The loadouts menu stays open after the click.
+ * The loadouts menu closes after the click.
  */
 public final class LoadoutSwap {
 	private LoadoutSwap() {
