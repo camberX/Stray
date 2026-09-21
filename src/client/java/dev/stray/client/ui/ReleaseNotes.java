@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.4.56", new String[]{
+			"Titanium ESP has an All areas toggle. It marks every titanium vein in range, with no commission and outside the named job zone."
+		}),
 		new Entry("1.4.55", new String[]{
 			"Custom fog was invisible because a missing density saved as 0, and that value is the fog strength. It now starts at full strength. Drag Density down if you want it thinner."
 		}),

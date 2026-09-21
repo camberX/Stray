@@ -21,6 +21,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * Scans loaded chunks while an unfinished Titanium commission is on the tab list.
  * {@code [Area] Titanium} jobs only keep ores in that named region;
  * {@code Titanium Miner} keeps every vein in range.
+ * {@link StrayConfig#titaniumEspAll} skips the commission and the named zone.
  */
 public final class TitaniumTracker {
 	private static final TitaniumTracker INSTANCE = new TitaniumTracker();
@@ -43,7 +44,7 @@ public final class TitaniumTracker {
 			}
 			return;
 		}
-		MiningAreas.TitaniumFilter next = MiningTracker.titaniumFilter();
+		MiningAreas.TitaniumFilter next = filter();
 		boolean filterChanged = !next.equals(filter);
 		filter = next;
 		if (!active() || client.player == null || client.level == null) {
@@ -91,10 +92,20 @@ public final class TitaniumTracker {
 		return blocks.size();
 	}
 
+	public static MiningAreas.TitaniumFilter filter() {
+		StrayConfig config = StrayConfig.get();
+		if (config.titaniumEspAll) {
+			return MiningAreas.TitaniumFilter.ALL;
+		}
+		return MiningTracker.titaniumFilter();
+	}
+
 	public static boolean active() {
-		return StrayConfig.get().titaniumEsp
-			&& MiningTracker.hasTitaniumCommission()
-			&& MiningTracker.inMiningIsland();
+		StrayConfig config = StrayConfig.get();
+		if (!config.titaniumEsp || !MiningTracker.inMiningIsland()) {
+			return false;
+		}
+		return config.titaniumEspAll || MiningTracker.hasTitaniumCommission();
 	}
 
 	private void rebuildView() {
