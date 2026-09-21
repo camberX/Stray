@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.4.50", new String[]{
+			"/stray update schedules the update for the next launch and leaves the current jar in place. Auto close, next to Auto update, chooses whether that command closes Minecraft."
+		}),
 		new Entry("1.4.49", new String[]{
 			"Version bump."
 		}),

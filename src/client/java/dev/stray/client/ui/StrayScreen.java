@@ -75,7 +75,7 @@ public class StrayScreen extends Screen {
 	private static final float PICKER_H = 140;
 	private static final float PANEL_W = 168;
 	private static final float FEATURE_W = 176;
-	private static final float SETTINGS_H = 460;
+	private static final float SETTINGS_H = 480;
 	private static final float FONT_SEARCH_H = 14;
 	private static final float FONT_ROW = 16;
 	private static final int FONT_VISIBLE = 6;
@@ -364,6 +364,7 @@ public class StrayScreen extends Screen {
 		new SearchEntry("GUI outlines", Tab.SETTINGS, "Theme"),
 		new SearchEntry("Auto update", Tab.SETTINGS, "Theme"),
 		new SearchEntry("Auto-update", Tab.SETTINGS, "Theme"),
+		new SearchEntry("Auto close", Tab.SETTINGS, "Theme"),
 		new SearchEntry("/stray update", Tab.SETTINGS, "Theme"),
 		new SearchEntry("Updater", Tab.SETTINGS, "Theme"),
 		new SearchEntry("Update notify", Tab.SETTINGS, "Theme"),
@@ -1981,6 +1982,10 @@ public class StrayScreen extends Screen {
 			StrayConfig.get().autoUpdate = v;
 			StrayConfig.get().save();
 		});
+		y = toggle(graphics, font, settingsX + 8, y, PANEL_W - 16, mouseX, mouseY, "Auto close", StrayConfig.get().updateAutoClose, v -> {
+			StrayConfig.get().updateAutoClose = v;
+			StrayConfig.get().save();
+		});
 		toggle(graphics, font, settingsX + 8, y, PANEL_W - 16, mouseX, mouseY, "Update notify", StrayConfig.get().updateNotify, v -> StrayConfig.get().updateNotify = v);
 	}
 
@@ -2739,7 +2744,7 @@ public class StrayScreen extends Screen {
 	) {
 		StrayConfig config = StrayConfig.get();
 		float y = sectionLabel(graphics, font, left, top, "Window");
-		y = featureCard(graphics, font, left, y, col, cardHeight(7), "Control");
+		y = featureCard(graphics, font, left, y, col, cardHeight(8), "Control");
 		y = colorRow(graphics, font, ix, y, iw, mouseX, mouseY, "Glass", config.controlPaneRgb, PickerTarget.CONTROL);
 		y = colorRow(graphics, font, ix, y, iw, mouseX, mouseY, "Pills", config.controlPillRgb, PickerTarget.PILL);
 		y = slider(graphics, font, ix, y, iw, "Frost", Math.round(config.controlFrost * 100) + "%", config.controlFrost, v -> config.controlFrost = StrayConfig.clamp(v, 0f, 1f));
@@ -2747,6 +2752,10 @@ public class StrayScreen extends Screen {
 		y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Animations", config.uiAnimations, v -> config.uiAnimations = v);
 		y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Auto update", config.autoUpdate, v -> {
 			config.autoUpdate = v;
+			config.save();
+		});
+		y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Auto close", config.updateAutoClose, v -> {
+			config.updateAutoClose = v;
 			config.save();
 		});
 		toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Update notify", config.updateNotify, v -> config.updateNotify = v);

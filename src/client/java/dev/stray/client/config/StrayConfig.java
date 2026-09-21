@@ -67,6 +67,7 @@ public final class StrayConfig {
 	public boolean uiAnimations = false;
 	public boolean autoUpdate = false;
 	public boolean updateNotify = true;
+	public boolean updateAutoClose = true;
 	public String updateNotifiedVersion = "";
 	public boolean watermarkEnabled = false;
 	public boolean watermarkFps = false;
@@ -860,6 +861,9 @@ public final class StrayConfig {
 				}
 				if (!json.has("updateNotify")) {
 					loaded.updateNotify = true;
+				}
+				if (!json.has("updateAutoClose")) {
+					loaded.updateAutoClose = true;
 				}
 				if (loaded.mobGlowName == null) {
 					loaded.mobGlowName = "";

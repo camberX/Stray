@@ -36,9 +36,13 @@ public final class AutoUpdate implements PreLaunchEntrypoint {
 	@Override
 	public void onPreLaunch() {
 		log("PreLaunch updater loaded.");
-		if (!enabled()) {
+		boolean pending = takeNextLaunchRequest();
+		if (!enabled() && !pending) {
 			log("Auto-update is off in config, so PreLaunch will not download. Client launch still checks if the in-game toggle is on.");
 			return;
+		}
+		if (pending) {
+			log("Update was requested last session. Checking now, then replacing the older jar.");
 		}
 		checkAndInstall(true);
 	}
@@ -131,6 +135,36 @@ public final class AutoUpdate implements PreLaunchEntrypoint {
 
 	public static void quit() {
 		killGame();
+	}
+
+	/**
+	 * Ask the next Minecraft launch to check for an update.
+	 * Does not download or remove the jar that is running now.
+	 */
+	public static boolean requestNextLaunch() {
+		try {
+			Path file = nextLaunchFlag();
+			Files.createDirectories(file.getParent());
+			Files.writeString(file, "1" + System.lineSeparator());
+			log("Update check scheduled for the next launch. The current jar stays in place.");
+			return true;
+		} catch (Exception exception) {
+			log("Could not schedule the next-launch update: " + exception.getMessage());
+			return false;
+		}
+	}
+
+	private static boolean takeNextLaunchRequest() {
+		Path file = nextLaunchFlag();
+		if (!Files.isRegularFile(file)) {
+			return false;
+		}
+		deleteQuiet(file);
+		return true;
+	}
+
+	private static Path nextLaunchFlag() {
+		return FabricLoader.getInstance().getConfigDir().resolve("stray-update-next.txt");
 	}
 
 	private static void checkAndInstall(boolean closeGame) {
