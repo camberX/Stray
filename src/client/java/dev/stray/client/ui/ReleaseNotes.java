@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.4.55", new String[]{
+			"Custom fog was invisible because a missing density saved as 0, and that value is the fog strength. It now starts at full strength. Drag Density down if you want it thinner."
+		}),
 		new Entry("1.4.54", new String[]{
 			"Auto rogue sword swaps, right-clicks, and swaps back on three separate tick starts. The slot packet is sent once, so Grim no longer sees a duplicate slot change during the click."
 		}),
