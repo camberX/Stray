@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.4.57", new String[]{
+			"Custom fog start and end now move the fog on Sodium, and Density 100% fills that span instead of leaving a faint tint."
+		}),
 		new Entry("1.4.56", new String[]{
 			"Titanium ESP has an All areas toggle. It marks every titanium vein in range, with no commission and outside the named job zone."
 		}),

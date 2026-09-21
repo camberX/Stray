@@ -1,5 +1,6 @@
 package dev.stray.client.mixin.sodium;
 
+import dev.stray.client.visual.CustomFog;
 import dev.stray.client.visual.WorldTint;
 import net.caffeinemc.mods.sodium.client.gl.shader.ShaderLoader;
 import net.minecraft.resources.Identifier;
@@ -13,6 +14,10 @@ public class SodiumShaderLoaderMixin {
 	@Inject(method = "getShaderSource", at = @At("RETURN"), cancellable = true, remap = false)
 	private static void stray$injectWorldTint(Identifier name, CallbackInfoReturnable<String> cir) {
 		String path = name.getPath();
+		if (path.endsWith("fog.glsl")) {
+			cir.setReturnValue(CustomFog.injectSodiumShader(cir.getReturnValue()));
+			return;
+		}
 		if (!path.endsWith(".fsh") || !path.contains("block_layer")) {
 			return;
 		}
