@@ -49,6 +49,7 @@ public final class StrayConfig {
 	public float fogStart = 0.12f;
 	public float fogEnd = 0.72f;
 	public float fogDensity = 1.0f;
+	public boolean fogDensityInitialized = false;
 	public boolean matchFogToWorld = false;
 	public boolean ambienceEnabled = false;
 	public String ambienceWeather = "no_change";
@@ -707,9 +708,19 @@ public final class StrayConfig {
 				if (!json.has("endSkybox")) {
 					loaded.endSkybox = false;
 				}
+				if (!json.has("fogStart")) {
+					loaded.fogStart = 0.12f;
+				}
+				if (!json.has("fogEnd")) {
+					loaded.fogEnd = 0.72f;
+				}
 				loaded.fogStart = clamp(loaded.fogStart, 0f, 0.95f);
 				loaded.fogEnd = clamp(loaded.fogEnd, 0.05f, 1f);
+				if (!json.has("fogDensity") || !loaded.fogDensityInitialized && loaded.fogDensity <= 0f) {
+					loaded.fogDensity = 1f;
+				}
 				loaded.fogDensity = clamp(loaded.fogDensity, 0f, 1f);
+				loaded.fogDensityInitialized = true;
 				loaded.aspectRatio = clamp(loaded.aspectRatio, 0.50f, 1.20f);
 				loaded.motionBlurStrength = clamp(loaded.motionBlurStrength, 0f, 2f);
 				loaded.motionBlurAlgorithm = normalizeMotionBlurAlgorithm(loaded.motionBlurAlgorithm);
