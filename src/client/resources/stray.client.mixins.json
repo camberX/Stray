@@ -57,6 +57,7 @@
 		"MouseHandlerMixin",
 		"ModelBlockRendererMixin",
 		"MultiPlayerGameModeMixin",
+		"MultiPlayerGameModeInvoker",
 		"PlayerTabOverlayMixin",
 		"PostChainAccessor",
 		"PostPassAccessor",
