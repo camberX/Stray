@@ -1,6 +1,7 @@
 package dev.stray.client.combat;
 
 import dev.stray.client.config.StrayConfig;
+import dev.stray.client.debug.StrayDebug;
 import dev.stray.client.location.SkyblockLocation;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
@@ -9,6 +10,7 @@ import net.minecraft.network.protocol.game.ServerboundSetCarriedItemPacket;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 
 /**
  * After Mort hands out the dungeon map, swap to a hotbar item whose name
@@ -75,12 +77,19 @@ public final class AutoRogue {
 			if (stack.isEmpty()) {
 				continue;
 			}
-			String name = stack.getHoverName().getString();
-			if (name != null && name.toLowerCase().contains("rogue")) {
+			if (matches(stack)) {
 				return slot;
 			}
 		}
 		return -1;
+	}
+
+	private static boolean matches(ItemStack stack) {
+		if (StrayDebug.enabled("rogue")) {
+			return stack.is(Items.GOLDEN_SWORD);
+		}
+		String name = stack.getHoverName().getString();
+		return name != null && name.toLowerCase().contains("rogue");
 	}
 
 	private static void select(LocalPlayer player, int slot) {

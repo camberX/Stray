@@ -25,7 +25,7 @@ import java.util.Set;
 
 /** Session debug flags toggled with {@code /stray debug <flag>}. */
 public final class StrayDebug {
-	private static final Set<String> KNOWN = Set.of("composter");
+	private static final Set<String> KNOWN = Set.of("composter", "rogue");
 	private static final int[] COMPOSTER_SLOTS = {2, 7};
 	private static final Map<String, Boolean> FLAGS = new LinkedHashMap<>();
 	private static String lastComposterDump = "";
@@ -75,6 +75,11 @@ public final class StrayDebug {
 		boolean next = !enabled(flag);
 		FLAGS.put(flag, next);
 		tell("Debug " + flag + " " + (next ? "on" : "off"));
+		if ("rogue".equals(flag)) {
+			tell(next
+				? "Auto rogue sword looks for a golden sword."
+				: "Auto rogue sword looks for an item named rogue.");
+		}
 		if (next && "composter".equals(flag)) {
 			lastComposterDump = "";
 			dumpComposter(true);
