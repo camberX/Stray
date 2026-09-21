@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.4.48", new String[]{
+			"/stray update downloads the newest jar and closes Minecraft, whether Auto update is on or off. Launch again to load it."
+		}),
 		new Entry("1.4.47", new String[]{
 			"Swap loadouts closes the loadouts menu after it equips the other slot."
 		}),
