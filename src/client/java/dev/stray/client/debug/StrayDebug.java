@@ -77,8 +77,8 @@ public final class StrayDebug {
 		tell("Debug " + flag + " " + (next ? "on" : "off"));
 		if ("rogue".equals(flag)) {
 			tell(next
-				? "Auto rogue sword looks for a golden sword."
-				: "Auto rogue sword looks for an item named rogue.");
+				? "Auto rogue sword looks for a golden sword and does not wait for a dungeon start."
+				: "Auto rogue sword looks for an item named rogue after a dungeon starts.");
 		}
 		if (next && "composter".equals(flag)) {
 			lastComposterDump = "";

@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.4.53", new String[]{
+			"/stray debug rogue skips the dungeon-start check. It swaps to a golden sword wherever you are until you turn the flag off."
+		}),
 		new Entry("1.4.52", new String[]{
 			"/stray debug rogue makes Auto rogue sword swap to a golden sword instead of an item named rogue. Run it again to go back."
 		}),
