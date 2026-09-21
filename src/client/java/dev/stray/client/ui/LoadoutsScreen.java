@@ -162,6 +162,11 @@ public class LoadoutsScreen extends Screen {
 			screen.tryPendingEquip();
 			return;
 		}
+		if (client.screen instanceof AbstractContainerScreen<?> chest
+			&& LoadoutsMenus.matches(chest.getMenu(), chest.getTitle())) {
+			flushPendingEquip(client);
+			return;
+		}
 		LoadoutsCommands.open();
 	}
 
@@ -737,7 +742,7 @@ public class LoadoutsScreen extends Screen {
 		}
 		int index = pendingEquipIndex;
 		pendingEquipIndex = -1;
-		equipLoadout(index);
+		clickLoadout(index);
 	}
 
 	private static void flushPendingEquip(Minecraft client) {
@@ -768,9 +773,6 @@ public class LoadoutsScreen extends Screen {
 		int slot = piece.slot();
 		pendingEquipIndex = -1;
 		sendClick(chest, chest.getMenu(), slot, 0);
-		if (client.player != null) {
-			client.player.closeContainer();
-		}
 	}
 
 	private void rememberCache() {
@@ -840,17 +842,34 @@ public class LoadoutsScreen extends Screen {
 	}
 
 	private void equipLoadout(int index) {
-		adoptMenu();
-		List<LoadoutsMenus.Piece> loadouts = snapshot.loadouts();
-		if (index < 0 || index >= loadouts.size()) {
-			return;
-		}
-		LoadoutsMenus.Piece piece = loadouts.get(index);
-		if (piece == null || piece.slot() < 0) {
+		LoadoutsMenus.Piece piece = loadoutAt(index);
+		if (piece == null) {
 			return;
 		}
 		markSelected(piece.slot());
 		queueClickAndClose(piece.slot());
+	}
+
+	private void clickLoadout(int index) {
+		LoadoutsMenus.Piece piece = loadoutAt(index);
+		if (piece == null) {
+			return;
+		}
+		markSelected(piece.slot());
+		clickSlot(piece.slot(), 0);
+	}
+
+	private LoadoutsMenus.Piece loadoutAt(int index) {
+		adoptMenu();
+		List<LoadoutsMenus.Piece> loadouts = snapshot.loadouts();
+		if (index < 0 || index >= loadouts.size()) {
+			return null;
+		}
+		LoadoutsMenus.Piece piece = loadouts.get(index);
+		if (piece == null || piece.slot() < 0) {
+			return null;
+		}
+		return piece;
 	}
 
 	private void queueClickAndClose(int slot) {
