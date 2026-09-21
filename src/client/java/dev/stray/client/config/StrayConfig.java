@@ -170,6 +170,10 @@ public final class StrayConfig {
 	public float chestAimSpeed = 1.00f;
 	public String openGuiKey = "key.keyboard.right.shift";
 	public String openLoadoutsKey = "key.keyboard.unknown";
+	public String loadoutSwapKey = "key.keyboard.unknown";
+	public int loadoutSwapSlotA = 1;
+	public int loadoutSwapSlotB = 2;
+	public boolean loadoutSwapNextIsB = false;
 	public String openWardrobeKey = "key.keyboard.unknown";
 	public String openProfileKey = "key.keyboard.unknown";
 	public String chestAimKey = "key.keyboard.unknown";
@@ -1074,6 +1078,9 @@ public final class StrayConfig {
 				}
 				loaded.openGuiKey = blankKey(loaded.openGuiKey, "key.keyboard.right.shift");
 				loaded.openLoadoutsKey = blankKey(loaded.openLoadoutsKey, "key.keyboard.unknown");
+				loaded.loadoutSwapKey = blankKey(loaded.loadoutSwapKey, "key.keyboard.unknown");
+				loaded.loadoutSwapSlotA = clampLoadoutSwapSlot(loaded.loadoutSwapSlotA);
+				loaded.loadoutSwapSlotB = clampLoadoutSwapSlot(loaded.loadoutSwapSlotB);
 				loaded.openWardrobeKey = blankKey(loaded.openWardrobeKey, "key.keyboard.unknown");
 				loaded.openProfileKey = blankKey(loaded.openProfileKey, "key.keyboard.unknown");
 				loaded.chestAimKey = blankKey(loaded.chestAimKey, "key.keyboard.unknown");
@@ -1875,6 +1882,28 @@ public final class StrayConfig {
 			case "midnight", "mid_night" -> Clock.MIDNIGHT;
 			default -> Clock.NO_CHANGE;
 		};
+	}
+
+	public void cycleLoadoutSwapSlotA() {
+		loadoutSwapSlotA = clampLoadoutSwapSlot(loadoutSwapSlotA) % 9 + 1;
+		save();
+	}
+
+	public void cycleLoadoutSwapSlotB() {
+		loadoutSwapSlotB = clampLoadoutSwapSlot(loadoutSwapSlotB) % 9 + 1;
+		save();
+	}
+
+	public String loadoutSwapSlotALabel() {
+		return String.valueOf(clampLoadoutSwapSlot(loadoutSwapSlotA));
+	}
+
+	public String loadoutSwapSlotBLabel() {
+		return String.valueOf(clampLoadoutSwapSlot(loadoutSwapSlotB));
+	}
+
+	public static int clampLoadoutSwapSlot(int slot) {
+		return slot < 1 || slot > 9 ? 1 : slot;
 	}
 
 	public static String[] defaultMenuSlotKeys() {

@@ -92,6 +92,7 @@ import dev.stray.client.ui.CommandShortcuts;
 import dev.stray.client.ui.HudEditorScreen;
 import dev.stray.client.ui.ItemEditScreen;
 import dev.stray.client.ui.LoadoutsCommands;
+import dev.stray.client.ui.LoadoutSwap;
 import dev.stray.client.ui.LoadoutsScreen;
 import dev.stray.client.ui.ProfileCommands;
 import dev.stray.client.ui.ProfileViewerScreen;
@@ -125,6 +126,7 @@ public final class StrayClient implements ClientModInitializer {
 	private static boolean itemAppearancesLoaded;
 	private static boolean wasGui;
 	private static boolean wasLoadouts;
+	private static boolean wasLoadoutSwap;
 	private static boolean wasWardrobe;
 	private static boolean wasProfile;
 	private static boolean wasPing;
@@ -153,6 +155,7 @@ public final class StrayClient implements ClientModInitializer {
 		StrayConfig config = StrayConfig.get();
 		wasGui = menuKeyHeld(config.openGuiKey);
 		wasLoadouts = menuKeyHeld(config.openLoadoutsKey);
+		wasLoadoutSwap = menuKeyHeld(config.loadoutSwapKey);
 		wasWardrobe = menuKeyHeld(config.openWardrobeKey);
 		wasProfile = menuKeyHeld(config.openProfileKey);
 		wasPing = menuKeyHeld(config.strayPingKey);
@@ -490,6 +493,7 @@ public final class StrayClient implements ClientModInitializer {
 		StrayConfig config = StrayConfig.get();
 		boolean gui = menuKeyHeld(config.openGuiKey);
 		boolean loadouts = menuKeyHeld(config.openLoadoutsKey);
+		boolean swapLoadout = menuKeyHeld(config.loadoutSwapKey);
 		boolean wardrobe = menuKeyHeld(config.openWardrobeKey);
 		boolean profile = menuKeyHeld(config.openProfileKey);
 		boolean ping = menuKeyHeld(config.strayPingKey);
@@ -503,6 +507,9 @@ public final class StrayClient implements ClientModInitializer {
 				} else {
 					LoadoutsCommands.open();
 				}
+			}
+			if (swapLoadout && !wasLoadoutSwap) {
+				LoadoutSwap.toggle();
 			}
 			if (wardrobe && !wasWardrobe) {
 				if (client.screen instanceof WardrobeScreen screen) {
@@ -524,6 +531,7 @@ public final class StrayClient implements ClientModInitializer {
 		}
 		wasGui = gui;
 		wasLoadouts = loadouts;
+		wasLoadoutSwap = swapLoadout;
 		wasWardrobe = wardrobe;
 		wasProfile = profile;
 		wasPing = ping;

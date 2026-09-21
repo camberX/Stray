@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.4.45", new String[]{
+			"A Swap loadouts bind toggles between two slots you pick under Loadouts menu. Press it in-game to equip the other one."
+		}),
 		new Entry("1.4.44", new String[]{
 			"Shopping list has a /recipe and /bz option in Garden settings. Clicking an item runs the one you pick."
 		}),
