@@ -45,7 +45,11 @@ public final class AutoRogue {
 	}
 
 	public static void tick(Minecraft client) {
-		if (!StrayConfig.get().autoRogueEnabled || !dungeonStarted || !SkyblockLocation.inDungeon) {
+		if (!StrayConfig.get().autoRogueEnabled) {
+			return;
+		}
+		boolean debug = StrayDebug.enabled("rogue");
+		if (!debug && (!dungeonStarted || !SkyblockLocation.inDungeon)) {
 			return;
 		}
 		if (client.player == null || client.gameMode == null || client.screen != null || client.level == null) {
