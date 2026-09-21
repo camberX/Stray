@@ -44,6 +44,7 @@ public class LoadoutsScreen extends Screen {
 	private static boolean cancelIncoming;
 	private static boolean skipCustomThisOpen;
 	private static long suppressUntil;
+	private static int pendingEquipIndex = -1;
 
 	private AbstractContainerScreen<?> vanilla;
 	private AbstractContainerMenu menu;
@@ -130,12 +131,45 @@ public class LoadoutsScreen extends Screen {
 		cancelIncoming = false;
 		suppressUntil = 0L;
 		skipCustomThisOpen = false;
+		pendingEquipIndex = -1;
+	}
+
+	public static int selectedIndex() {
+		Minecraft client = Minecraft.getInstance();
+		LoadoutsMenus.Snapshot snap = cache;
+		if (client.screen instanceof LoadoutsScreen screen && screen.snapshot != null) {
+			snap = screen.snapshot;
+		}
+		if (snap == null || snap.loadouts() == null) {
+			return -1;
+		}
+		for (int i = 0; i < snap.loadouts().size(); i++) {
+			LoadoutsMenus.Piece piece = snap.loadouts().get(i);
+			if (piece != null && piece.selected()) {
+				return i;
+			}
+		}
+		return -1;
+	}
+
+	public static void equipIndex(int index) {
+		if (index < 0 || index > 8) {
+			return;
+		}
+		pendingEquipIndex = index;
+		Minecraft client = Minecraft.getInstance();
+		if (client.screen instanceof LoadoutsScreen screen) {
+			screen.tryPendingEquip();
+			return;
+		}
+		LoadoutsCommands.open();
 	}
 
 	public static void tickSwap(Minecraft client) {
 		if (client == null) {
 			return;
 		}
+		flushPendingEquip(client);
 		if (skipCustomThisOpen) {
 			if (client.screen instanceof LoadoutsScreen loadouts) {
 				loadouts.followServer();
@@ -206,10 +240,12 @@ public class LoadoutsScreen extends Screen {
 		if (attaching) {
 			attaching = false;
 			flushQueue();
+			tryPendingEquip();
 			return;
 		}
 		placed = false;
 		appear = StrayConfig.get().loadoutsOpenAnim ? 0.08f : 1f;
+		tryPendingEquip();
 	}
 
 	@Override
@@ -689,6 +725,52 @@ public class LoadoutsScreen extends Screen {
 			syncSelectedSlot();
 		}
 		rememberCache();
+		tryPendingEquip();
+	}
+
+	private void tryPendingEquip() {
+		if (pendingEquipIndex < 0) {
+			return;
+		}
+		if (snapshot.loadouts().size() <= pendingEquipIndex) {
+			return;
+		}
+		int index = pendingEquipIndex;
+		pendingEquipIndex = -1;
+		equipLoadout(index);
+	}
+
+	private static void flushPendingEquip(Minecraft client) {
+		if (pendingEquipIndex < 0 || client.screen == null) {
+			return;
+		}
+		if (client.screen instanceof LoadoutsScreen screen) {
+			screen.tryPendingEquip();
+			return;
+		}
+		if (LoadoutsMenus.enabled()) {
+			return;
+		}
+		if (!(client.screen instanceof AbstractContainerScreen<?> chest)) {
+			return;
+		}
+		if (!LoadoutsMenus.matches(chest.getMenu(), chest.getTitle())) {
+			return;
+		}
+		LoadoutsMenus.Snapshot snap = LoadoutsMenus.read(chest.getMenu(), chest.getTitle());
+		if (pendingEquipIndex >= snap.loadouts().size()) {
+			return;
+		}
+		LoadoutsMenus.Piece piece = snap.loadouts().get(pendingEquipIndex);
+		if (piece == null || piece.slot() < 0) {
+			return;
+		}
+		int slot = piece.slot();
+		pendingEquipIndex = -1;
+		sendClick(chest, chest.getMenu(), slot, 0);
+		if (client.player != null) {
+			client.player.closeContainer();
+		}
 	}
 
 	private void rememberCache() {

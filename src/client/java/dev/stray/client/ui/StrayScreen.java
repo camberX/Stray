@@ -159,7 +159,7 @@ public class StrayScreen extends Screen {
 		PATHS("Paths", 5),
 		RINGS("Command rings", 3),
 		MOVE("WIP — DO NOT USE", 6),
-		LOADOUTS("Loadouts menu", 9),
+		LOADOUTS("Loadouts menu", 11),
 		WARDROBE("Wardrobe menu", 9),
 		NUCLEUS("Nucleus alerts", 2),
 		NODE_ESP("Node ESP", 4),
@@ -385,6 +385,8 @@ public class StrayScreen extends Screen {
 		new SearchEntry("Menus", Tab.MENUS, "Menus"),
 		new SearchEntry("Loadouts", Tab.MENUS, "Menus"),
 		new SearchEntry("Loadouts menu", Tab.MENUS, "Menus"),
+		new SearchEntry("Swap loadouts", Tab.KEYS, "Keys"),
+		new SearchEntry("Loadout swap", Tab.MENUS, "Menus"),
 		new SearchEntry("Loadouts animation", Tab.MENUS, "Menus"),
 		new SearchEntry("Open animation", Tab.MENUS, "Menus"),
 		new SearchEntry("Wardrobe", Tab.MENUS, "Menus"),
@@ -2308,7 +2310,7 @@ public class StrayScreen extends Screen {
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Enable", config.autoExperimentsEnabled, v -> config.autoExperimentsEnabled = v);
 				drawFeatureFields(graphics, font, mouseX, mouseY, ix, y, iw, Feature.AUTO_EXPERIMENTS);
 
-				float bindsH = cardHeight(6);
+				float bindsH = cardHeight(7);
 				y = featureCard(graphics, font, right, top, col, bindsH, "Keybinds");
 				y = drawMenuKeybinds(graphics, font, rx, y, iw, mouseX, mouseY);
 				y = featureCard(graphics, font, right, top + bindsH + 8, col, cardHeight(6), "Commands");
@@ -2549,7 +2551,7 @@ public class StrayScreen extends Screen {
 			}
 			case KEYS -> {
 				float y = sectionLabel(graphics, font, left, top, "Binds");
-				y = featureCard(graphics, font, left, y, col, cardHeight(6), "Keybinds");
+				y = featureCard(graphics, font, left, y, col, cardHeight(7), "Keybinds");
 				drawMenuKeybinds(graphics, font, ix, y, iw, mouseX, mouseY);
 				float chatY = sectionLabel(graphics, font, right, top, "Chat");
 				float commandsH = cardHeight(5);
@@ -3420,7 +3422,12 @@ public class StrayScreen extends Screen {
 				y = slider(graphics, font, ix, y, iw, "Opacity", Math.round(visuals.nametagOpacity * 100) + "%", (visuals.nametagOpacity - 0.15f) / 0.85f, v -> visuals.nametagOpacity = StrayConfig.clamp(0.15f + v * 0.85f, 0.15f, 1f));
 				slider(graphics, font, ix, y, iw, "Range", visuals.nametagRange + "m", (visuals.nametagRange - 64) / 192f, v -> visuals.nametagRange = StrayConfig.clamp(64 + Math.round(v * 192f), 64, 256));
 			}
-			case LOADOUTS, WARDROBE -> {
+			case LOADOUTS -> {
+				y = cycle(graphics, font, ix, y, iw, mouseX, mouseY, "Swap A", config.loadoutSwapSlotALabel(), config::cycleLoadoutSwapSlotA);
+				y = cycle(graphics, font, ix, y, iw, mouseX, mouseY, "Swap B", config.loadoutSwapSlotBLabel(), config::cycleLoadoutSwapSlotB);
+				drawSlotKeybinds(graphics, font, ix, y, iw, mouseX, mouseY);
+			}
+			case WARDROBE -> {
 				drawSlotKeybinds(graphics, font, ix, y, iw, mouseX, mouseY);
 			}
 			case NODES -> {
@@ -3468,6 +3475,7 @@ public class StrayScreen extends Screen {
 		StrayConfig config = StrayConfig.get();
 		y = bindRow(graphics, font, x, y, w, mouseX, mouseY, "Open menu", 3, OdinClicks.parseKey(config.openGuiKey));
 		y = bindRow(graphics, font, x, y, w, mouseX, mouseY, "Loadouts", 4, OdinClicks.parseKey(config.openLoadoutsKey));
+		y = bindRow(graphics, font, x, y, w, mouseX, mouseY, "Swap loadouts", 13, OdinClicks.parseKey(config.loadoutSwapKey));
 		y = bindRow(graphics, font, x, y, w, mouseX, mouseY, "Wardrobe", 5, OdinClicks.parseKey(config.openWardrobeKey));
 		y = bindRow(graphics, font, x, y, w, mouseX, mouseY, "Profile", 7, OdinClicks.parseKey(config.openProfileKey));
 		y = bindRow(graphics, font, x, y, w, mouseX, mouseY, "Chat peek", 11, OdinClicks.parseKey(config.chatPeekKey));
@@ -3552,6 +3560,7 @@ public class StrayScreen extends Screen {
 			case 10 -> config.movementRecordKey = name;
 			case 11 -> config.chatPeekKey = name;
 			case 12 -> config.strayPingKey = name;
+			case 13 -> config.loadoutSwapKey = name;
 			case 20, 21, 22, 23, 24, 25, 26, 27, 28 -> config.setMenuSlotKey(bindListen - 20, name);
 		}
 		bindListen = 0;
