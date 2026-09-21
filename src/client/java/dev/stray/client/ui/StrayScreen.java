@@ -168,7 +168,7 @@ public class StrayScreen extends Screen {
 		PIP("Picture in picture", 3),
 		RAWMATS("Raw mats", 2),
 		MINING("Mining HUD", 1),
-		TITANIUM("Titanium ESP", 3),
+		TITANIUM("Titanium ESP", 4),
 		CRYSTAL("CH waypoints", 5),
 		CH_MAP("CH map", 1),
 		METAL("Metal detector", 1),
@@ -423,6 +423,7 @@ public class StrayScreen extends Screen {
 		new SearchEntry("Node HUD", Tab.NODES, "Nodes"),
 		new SearchEntry("Mining HUD", Tab.MINING, "Mining"),
 		new SearchEntry("Titanium ESP", Tab.MINING, "Mining"),
+		new SearchEntry("All areas", Tab.MINING, "Mining"),
 		new SearchEntry("Commissions", Tab.MINING, "Mining"),
 		new SearchEntry("Pickaxe ability", Tab.MINING, "Mining"),
 		new SearchEntry("Ability alert", Tab.MINING, "Mining"),
@@ -1221,19 +1222,23 @@ public class StrayScreen extends Screen {
 		GuiDraw.menu(graphics, font, snap.abilityReady() ? "Ready" : snap.abilityLabel(), ix, y + 14, snap.abilityReady() ? Theme.ACCENT : fade());
 		String jobs = snap.commissions().isEmpty() ? "No commissions" : snap.commissions().size() + " commission" + (snap.commissions().size() == 1 ? "" : "s");
 		GuiDraw.menu(graphics, font, jobs, ix, y + 26, fade());
-		String titanium;
-		int titaniumColor = fade();
-		if (!MiningTracker.hasTitaniumCommission()) {
+		String titanium = titaniumLiveLabel();
+		int titaniumColor = titanium == null ? fade() : Theme.ACCENT;
+		if (titanium == null) {
 			titanium = "No titanium job";
-		} else {
-			MiningAreas.TitaniumFilter filter = MiningTracker.titaniumFilter();
-			int count = TitaniumTracker.get().count();
-			titanium = filter.unrestricted()
-				? count + " titanium"
-				: count + " in " + filter.label();
-			titaniumColor = Theme.ACCENT;
 		}
 		GuiDraw.menu(graphics, font, clip(font, titanium, (int) iw - 4), ix, y + 38, titaniumColor);
+	}
+
+	private String titaniumLiveLabel() {
+		if (!StrayConfig.get().titaniumEspAll && !MiningTracker.hasTitaniumCommission()) {
+			return null;
+		}
+		MiningAreas.TitaniumFilter filter = TitaniumTracker.filter();
+		int count = TitaniumTracker.get().count();
+		return filter.unrestricted()
+			? count + " titanium"
+			: count + " in " + filter.label();
 	}
 
 	private void drawFarmingContest(GuiGraphicsExtractor graphics, Font font, float x, float top, float col, float ix, float iw) {
@@ -2359,17 +2364,10 @@ public class StrayScreen extends Screen {
 				GuiDraw.menu(graphics, font, snap.abilityReady() ? "Ready" : snap.abilityLabel(), rx, y + 14, snap.abilityReady() ? Theme.ACCENT : fade());
 				String jobs = snap.commissions().isEmpty() ? "No commissions" : snap.commissions().size() + " commission" + (snap.commissions().size() == 1 ? "" : "s");
 				GuiDraw.menu(graphics, font, jobs, rx, y + 26, fade());
-				String titanium;
-				int titaniumColor = Theme.MUTED;
-				if (!MiningTracker.hasTitaniumCommission()) {
+				String titanium = titaniumLiveLabel();
+				int titaniumColor = titanium == null ? Theme.MUTED : Theme.ACCENT;
+				if (titanium == null) {
 					titanium = "No titanium job";
-				} else {
-					MiningAreas.TitaniumFilter filter = MiningTracker.titaniumFilter();
-					int count = TitaniumTracker.get().count();
-					titanium = filter.unrestricted()
-						? count + " titanium"
-						: count + " in " + filter.label();
-					titaniumColor = Theme.ACCENT;
 				}
 				GuiDraw.menu(graphics, font, clip(font, titanium, (int) iw - 4), rx, y + 38, titaniumColor);
 			}
@@ -3394,6 +3392,7 @@ public class StrayScreen extends Screen {
 				toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Middle click", config.autoDnaMiddleClick, v -> config.autoDnaMiddleClick = v);
 			}
 			case TITANIUM -> {
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "All areas", config.titaniumEspAll, v -> config.titaniumEspAll = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Through walls", config.titaniumEspThroughWalls, v -> config.titaniumEspThroughWalls = v);
 				y = slider(graphics, font, ix, y, iw, "Range", config.titaniumEspRange + "m", (config.titaniumEspRange - 24) / 56f, v -> config.titaniumEspRange = StrayConfig.clamp(24 + Math.round(v * 56f), 24, 80));
 				colorRow(graphics, font, ix, y, iw, mouseX, mouseY, "Color", config.titaniumEspRgb, PickerTarget.TITANIUM);

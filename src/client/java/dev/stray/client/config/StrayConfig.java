@@ -142,6 +142,7 @@ public final class StrayConfig {
 	public boolean metalDetectorToolTitle = false;
 	public boolean titaniumEsp = false;
 	public boolean titaniumEspThroughWalls = false;
+	public boolean titaniumEspAll = false;
 	public boolean chestEspEnabled = false;
 	public boolean chestEspTracers = false;
 	public boolean chestEspThroughWalls = false;
