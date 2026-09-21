@@ -7,6 +7,7 @@ import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import dev.stray.client.combat.AutoClicker;
 import dev.stray.client.combat.AutoClickerCommands;
 import dev.stray.client.combat.AutoExperiments;
+import dev.stray.client.combat.AutoRogue;
 import dev.stray.client.combat.Hitmarker;
 import dev.stray.client.combat.Hitsound;
 import dev.stray.client.combat.OdinClicks;
@@ -309,6 +310,7 @@ public final class StrayClient implements ClientModInitializer {
 		});
 
 		ClientTickEvents.START_CLIENT_TICK.register(client -> {
+			AutoRogue.tick(client);
 			FarmKeys.tick(client);
 			ChestAimer.tick(client);
 			AutoClicker.tick(client);
@@ -369,6 +371,7 @@ public final class StrayClient implements ClientModInitializer {
 		});
 
 		ClientLevelEvents.AFTER_CLIENT_LEVEL_CHANGE.register((client, level) -> {
+			AutoRogue.onWorldChange();
 			FarmKeys.onWorldChange();
 			MobGlowRenderer.reset();
 			StarMobEsp.reset();
@@ -385,6 +388,7 @@ public final class StrayClient implements ClientModInitializer {
 		});
 
 		ClientPlayConnectionEvents.JOIN.register((handler, sender, client) -> {
+			AutoRogue.onWorldChange();
 			CrystalHollows.onWorldChange();
 			MetalDetector.onWorldChange();
 			MobGlowRenderer.reset();
