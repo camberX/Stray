@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.4.54", new String[]{
+			"Auto rogue sword swaps, right-clicks, and swaps back on three separate tick starts. The slot packet is sent once, so Grim no longer sees a duplicate slot change during the click."
+		}),
 		new Entry("1.4.53", new String[]{
 			"/stray debug rogue skips the dungeon-start check. It swaps to a golden sword wherever you are until you turn the flag off."
 		}),
