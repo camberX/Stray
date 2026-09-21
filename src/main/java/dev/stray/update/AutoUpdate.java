@@ -111,34 +111,58 @@ public final class AutoUpdate implements PreLaunchEntrypoint {
 		}
 	}
 
-	private static void checkAndInstall(boolean closeGame) {
+	/**
+	 * Download a newer jar even when auto-update is off.
+	 * Does not exit. Call {@link #quit()} after a successful update.
+	 */
+	public static UpdateOutcome updateNow() {
 		String installed = installedVersion();
 		log("Checking stray.gay for a newer jar (you have " + (installed.isEmpty() ? "unknown" : installed) + ")…");
+		UpdateOutcome onDisk = adoptNewerJar(installed);
+		if (onDisk != null) {
+			return onDisk;
+		}
+		UpdateOutcome outcome = fetchAndApply(true);
+		if (outcome.status() == UpdateStatus.UPDATED) {
+			log(outcome.message());
+		}
+		return outcome;
+	}
+
+	public static void quit() {
+		killGame();
+	}
+
+	private static void checkAndInstall(boolean closeGame) {
+		UpdateOutcome outcome = updateNow();
+		if (closeGame && outcome.status() == UpdateStatus.UPDATED) {
+			killGame();
+		}
+	}
+
+	private static UpdateOutcome adoptNewerJar(String installed) {
 		Path mods = modsDir();
 		Path current = currentJar();
 		if (current == null) {
 			current = newestJar(mods);
 		}
 		Path newest = newestJar(mods);
-		if (newest != null && current != null && !newest.equals(current)) {
-			String onDisk = jarVersion(newest);
-			if (onDisk != null && UpdateMeta.compare(onDisk, installed) > 0) {
-				log("Newer jar " + onDisk + " is already in mods. Closing so it can load.");
-				try {
-					for (Path old : staleJars(mods, newest)) {
-						retire(old);
-					}
-				} catch (Exception ignored) {
-				}
-				killGame();
-				return;
+		if (newest == null || current == null || newest.equals(current)) {
+			return null;
+		}
+		String onDisk = jarVersion(newest);
+		if (onDisk == null || (!installed.isEmpty() && UpdateMeta.compare(onDisk, installed) <= 0)) {
+			return null;
+		}
+		String message = "Newer jar " + onDisk + " is already in mods. Closing so it can load.";
+		log(message);
+		try {
+			for (Path old : staleJars(mods, newest)) {
+				retire(old);
 			}
+		} catch (Exception ignored) {
 		}
-		String next = installNewer(closeGame);
-		if (next != null && closeGame) {
-			log("Updated to " + next + ". Closing Minecraft.");
-			killGame();
-		}
+		return UpdateOutcome.updated(onDisk, message, true);
 	}
 
 	/**
@@ -147,6 +171,11 @@ public final class AutoUpdate implements PreLaunchEntrypoint {
 	 * @return the new version, or {@code null} if nothing was installed
 	 */
 	public static String installNewer(boolean closeGame) {
+		UpdateOutcome outcome = fetchAndApply(closeGame);
+		return outcome.status() == UpdateStatus.UPDATED ? outcome.version() : null;
+	}
+
+	private static UpdateOutcome fetchAndApply(boolean closeGame) {
 		fetched = true;
 		Path mods = modsDir();
 		Path current = currentJar();
@@ -160,12 +189,14 @@ public final class AutoUpdate implements PreLaunchEntrypoint {
 		try {
 			Remote remote = fetchRemote();
 			if (remote == null) {
-				log("No update info.");
-				return null;
+				String message = "No update info.";
+				log(message);
+				return UpdateOutcome.failed(message);
 			}
 			if (!installed.isEmpty() && UpdateMeta.compare(remote.version, installed) <= 0) {
-				log("Already up to date (" + installed + ").");
-				return null;
+				String message = "Already up to date (" + installed + ").";
+				log(message);
+				return UpdateOutcome.current(installed, message);
 			}
 			if (closeGame) {
 				log("Found " + remote.version + ". Downloading and closing Minecraft so the new jar can load.");
@@ -174,14 +205,16 @@ public final class AutoUpdate implements PreLaunchEntrypoint {
 			}
 			Path dest = apply(current, remote);
 			if (dest == null) {
-				log("Update failed. Continuing with " + (installed.isEmpty() ? "this build" : installed) + ".");
-				return null;
+				String message = "Update failed. Continuing with " + (installed.isEmpty() ? "this build" : installed) + ".";
+				log(message);
+				return UpdateOutcome.failed(message);
 			}
-			return remote.version;
+			return UpdateOutcome.updated(remote.version, "Updated to " + remote.version + ". Closing Minecraft.", false);
 		} catch (Exception exception) {
-			log("Update check failed: " + exception.getMessage());
+			String message = "Update check failed: " + exception.getMessage();
+			log(message);
 			Stray.LOGGER.warn("Auto-update failed", exception);
-			return null;
+			return UpdateOutcome.failed(message);
 		}
 	}
 
@@ -597,5 +630,25 @@ public final class AutoUpdate implements PreLaunchEntrypoint {
 	}
 
 	private record Remote(String version, String file, List<String> urls) {
+	}
+
+	public enum UpdateStatus {
+		UPDATED,
+		CURRENT,
+		FAILED
+	}
+
+	public record UpdateOutcome(UpdateStatus status, String version, String message, boolean alreadyOnDisk) {
+		public static UpdateOutcome updated(String version, String message, boolean alreadyOnDisk) {
+			return new UpdateOutcome(UpdateStatus.UPDATED, version, message, alreadyOnDisk);
+		}
+
+		public static UpdateOutcome current(String version, String message) {
+			return new UpdateOutcome(UpdateStatus.CURRENT, version, message, false);
+		}
+
+		public static UpdateOutcome failed(String message) {
+			return new UpdateOutcome(UpdateStatus.FAILED, "", message, false);
+		}
 	}
 }

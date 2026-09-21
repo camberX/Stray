@@ -364,6 +364,7 @@ public class StrayScreen extends Screen {
 		new SearchEntry("GUI outlines", Tab.SETTINGS, "Theme"),
 		new SearchEntry("Auto update", Tab.SETTINGS, "Theme"),
 		new SearchEntry("Auto-update", Tab.SETTINGS, "Theme"),
+		new SearchEntry("/stray update", Tab.SETTINGS, "Theme"),
 		new SearchEntry("Updater", Tab.SETTINGS, "Theme"),
 		new SearchEntry("Update notify", Tab.SETTINGS, "Theme"),
 		new SearchEntry("Update notification", Tab.SETTINGS, "Theme"),

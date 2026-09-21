@@ -27,6 +27,7 @@ import dev.stray.client.farming.JacobContestTracker;
 import dev.stray.client.skill.SkillProgressTracker;
 import dev.stray.client.account.AccountStore;
 import dev.stray.client.config.StrayConfig;
+import dev.stray.client.update.UpdateCommands;
 import dev.stray.update.AutoUpdate;
 import dev.stray.client.location.SkyblockLocation;
 import dev.stray.client.net.ConnectionPing;
@@ -264,6 +265,7 @@ public final class StrayClient implements ClientModInitializer {
 			root.then(ClientCommands.literal("shortcuts").executes(context -> CommandShortcuts.open()));
 			root.then(LiveCommands.irc());
 			root.then(LiveCommands.ping());
+			root.then(UpdateCommands.command());
 			root.then(stealCommand());
 			var brand = dispatcher.register(root);
 			dispatcher.register(ClientCommands.literal("st").redirect(brand));
@@ -287,6 +289,7 @@ public final class StrayClient implements ClientModInitializer {
 			vm.then(ClientCommands.literal("shortcuts").executes(context -> CommandShortcuts.open()));
 			vm.then(LiveCommands.irc());
 			vm.then(LiveCommands.ping());
+			vm.then(UpdateCommands.command());
 			vm.then(stealCommand());
 			dispatcher.register(vm);
 			dispatcher.register(ClientCommands.literal("loadouts").executes(context -> LoadoutsCommands.open()));
