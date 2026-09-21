@@ -11,7 +11,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-@Mixin(FogRenderer.class)
+@Mixin(value = FogRenderer.class, priority = 990)
 public class FogRendererMixin {
 	@Inject(method = "setupFog", at = @At("RETURN"))
 	private void stray$customFog(Camera camera, int renderDistance, DeltaTracker deltaTracker, float darkenWorldAmount, ClientLevel level, CallbackInfoReturnable<FogData> cir) {
