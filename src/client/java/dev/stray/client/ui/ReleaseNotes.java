@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.4.51", new String[]{
+			"Auto rogue sword, off by default in Assist. Once Mort gives the dungeon map, it swaps to a hotbar item named rogue, right-clicks, and swaps back. It repeats 30 seconds after each click until you change world. The swap and click run on tick start, before movement."
+		}),
 		new Entry("1.4.50", new String[]{
 			"/stray update schedules the update for the next launch and leaves the current jar in place. Auto close, next to Auto update, chooses whether that command closes Minecraft."
 		}),

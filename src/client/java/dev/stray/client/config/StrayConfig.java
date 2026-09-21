@@ -201,6 +201,7 @@ public final class StrayConfig {
 	public boolean hitsoundMage = false;
 	public boolean hitmarkerEnabled = false;
 	public boolean triggerbotEnabled = false;
+	public boolean autoRogueEnabled = false;
 	public boolean triggerbotPlayers = false;
 	public float triggerbotHumanize = 0.50f;
 	public boolean autoClickerEnabled = false;
@@ -1040,6 +1041,9 @@ public final class StrayConfig {
 				}
 				if (!json.has("triggerbotEnabled")) {
 					loaded.triggerbotEnabled = false;
+				}
+				if (!json.has("autoRogueEnabled")) {
+					loaded.autoRogueEnabled = false;
 				}
 				if (!json.has("triggerbotPlayers")) {
 					loaded.triggerbotPlayers = false;
