@@ -742,7 +742,7 @@ public class LoadoutsScreen extends Screen {
 		}
 		int index = pendingEquipIndex;
 		pendingEquipIndex = -1;
-		clickLoadout(index);
+		equipLoadout(index);
 	}
 
 	private static void flushPendingEquip(Minecraft client) {
@@ -773,6 +773,9 @@ public class LoadoutsScreen extends Screen {
 		int slot = piece.slot();
 		pendingEquipIndex = -1;
 		sendClick(chest, chest.getMenu(), slot, 0);
+		if (client.player != null) {
+			client.player.closeContainer();
+		}
 	}
 
 	private void rememberCache() {
@@ -848,15 +851,6 @@ public class LoadoutsScreen extends Screen {
 		}
 		markSelected(piece.slot());
 		queueClickAndClose(piece.slot());
-	}
-
-	private void clickLoadout(int index) {
-		LoadoutsMenus.Piece piece = loadoutAt(index);
-		if (piece == null) {
-			return;
-		}
-		markSelected(piece.slot());
-		clickSlot(piece.slot(), 0);
 	}
 
 	private LoadoutsMenus.Piece loadoutAt(int index) {
