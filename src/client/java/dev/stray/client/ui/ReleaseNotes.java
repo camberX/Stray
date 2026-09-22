@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.4.61", new String[]{
+			"Right click Click GUI and pick Stray menu to switch back. Theme settings has the same Menu option."
+		}),
 		new Entry("1.4.60", new String[]{
 			"Click GUI is a column menu. Left click toggles a feature, right click opens its settings, and you can drag a column by its header. Array list sits on the right, one color per feature. Both are on the Menus tab."
 		}),

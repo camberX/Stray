@@ -388,6 +388,8 @@ public class StrayScreen extends Screen {
 		new SearchEntry("Open menu", Tab.KEYS, "Keys"),
 		new SearchEntry("Menus", Tab.MENUS, "Menus"),
 		new SearchEntry("Click GUI", Tab.MENUS, "Menus"),
+		new SearchEntry("Stray menu", Tab.MENUS, "Menus"),
+		new SearchEntry("Menu style", Tab.SETTINGS, "Theme"),
 		new SearchEntry("Array list", Tab.MENUS, "Menus"),
 		new SearchEntry("No cursor reset", Tab.MENUS, "Menus"),
 		new SearchEntry("Unhook timeout", Tab.MENUS, "Menus"),
@@ -1984,7 +1986,12 @@ public class StrayScreen extends Screen {
 			return;
 		}
 		GuiDraw.menu(graphics, font, "Theme", settingsX + 8, settingsY + 6, Theme.HEADER);
-		float y = colorRow(graphics, font, settingsX + 8, settingsY + 20, PANEL_W - 16, mouseX, mouseY, "Glass", StrayConfig.get().controlPaneRgb, PickerTarget.CONTROL);
+		float y = cycle(graphics, font, settingsX + 8, settingsY + 20, PANEL_W - 16, mouseX, mouseY, "Menu", StrayConfig.get().clickGui ? "Click GUI" : "Stray", () -> {
+			StrayConfig config = StrayConfig.get();
+			config.clickGui = !config.clickGui;
+			UnloadState.markDirty();
+		});
+		y = colorRow(graphics, font, settingsX + 8, y, PANEL_W - 16, mouseX, mouseY, "Glass", StrayConfig.get().controlPaneRgb, PickerTarget.CONTROL);
 		y = colorRow(graphics, font, settingsX + 8, y, PANEL_W - 16, mouseX, mouseY, "Pills", StrayConfig.get().controlPillRgb, PickerTarget.PILL);
 		y = slider(graphics, font, settingsX + 8, y, PANEL_W - 16, "Frost", Math.round(StrayConfig.get().controlFrost * 100) + "%", StrayConfig.get().controlFrost, v -> StrayConfig.get().controlFrost = StrayConfig.clamp(v, 0f, 1f));
 		GuiDraw.small(graphics, font, "Accent", settingsX + 8, y + 2, controlCenter() ? ControlChrome.muted() : Theme.MUTED);
@@ -2789,7 +2796,11 @@ public class StrayScreen extends Screen {
 	) {
 		StrayConfig config = StrayConfig.get();
 		float y = sectionLabel(graphics, font, left, top, "Window");
-		y = featureCard(graphics, font, left, y, col, cardHeight(8), "Control");
+		y = featureCard(graphics, font, left, y, col, cardHeight(9), "Control");
+		y = cycle(graphics, font, ix, y, iw, mouseX, mouseY, "Menu", config.clickGui ? "Click GUI" : "Stray", () -> {
+			config.clickGui = !config.clickGui;
+			UnloadState.markDirty();
+		});
 		y = colorRow(graphics, font, ix, y, iw, mouseX, mouseY, "Glass", config.controlPaneRgb, PickerTarget.CONTROL);
 		y = colorRow(graphics, font, ix, y, iw, mouseX, mouseY, "Pills", config.controlPillRgb, PickerTarget.PILL);
 		y = slider(graphics, font, ix, y, iw, "Frost", Math.round(config.controlFrost * 100) + "%", config.controlFrost, v -> config.controlFrost = StrayConfig.clamp(v, 0f, 1f));
