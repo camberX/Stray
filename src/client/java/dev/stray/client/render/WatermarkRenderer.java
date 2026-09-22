@@ -18,9 +18,9 @@ public final class WatermarkRenderer {
 	private static final float S_SCALE = 2.55f;
 	private static final float TRAY_SCALE = 1.6f;
 	private static final float VERSION_SCALE = 0.62f;
-	private static final float BETA_SCALE = 0.9f;
+	private static final float BETA_SCALE = 0.72f;
 	private static final String BETA = "Beta";
-	private static final int GOLD = 0xFFFFAA00;
+	private static final int GOLD = 0xFFFFD56A;
 	/** Vanilla bitmap cells are 8px. S ink ends on the baseline; y fills the last row. */
 	private static final float CAP_BOTTOM = 7f;
 	private static final float DESCENDER_BOTTOM = 8f;
