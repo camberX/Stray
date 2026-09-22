@@ -19,8 +19,9 @@ public final class WatermarkRenderer {
 	private static final float S_SCALE = 2.55f;
 	private static final float TRAY_SCALE = 1.35f;
 	private static final float VERSION_SCALE = 0.62f;
-	/** Capitals end above the line box. The rest of the line is the y descender. */
-	private static final float ASCENT = 7f / 9f;
+	/** Vanilla bitmap cells are 8px. S ink ends on the baseline; y fills the last row. */
+	private static final float CAP_BOTTOM = 7f;
+	private static final float DESCENDER_BOTTOM = 8f;
 	private static final float PART_GAP = 3f;
 	private static final String DEV_TAG = "DEV";
 	private static final float DEV_GAP = 3f;
@@ -118,10 +119,9 @@ public final class WatermarkRenderer {
 		Component mark = MenuFont.title("S");
 		Component rest = MenuFont.title("tray");
 		String version = versionLabel();
-		float line = Math.max(1, font.lineHeight);
 		float markW = font.width(mark) * S_SCALE;
 		float textX = markW + PART_GAP;
-		float trayY = trayTop(line);
+		float trayY = trayTop();
 		GuiDraw.text(graphics, font, mark, 0, 0, S_SCALE, Theme.ACCENT, true);
 		if (!version.isEmpty()) {
 			Component minor = MenuFont.brand(version);
@@ -135,10 +135,9 @@ public final class WatermarkRenderer {
 		GuiDraw.text(graphics, font, rest, textX, trayY, TRAY_SCALE, Theme.ACCENT, true);
 	}
 
-	/** Puts the bottom of tray, including the y descender, on the bottom of S. */
-	private static float trayTop(float line) {
-		float sBottom = line * ASCENT * S_SCALE;
-		return sBottom - line * TRAY_SCALE;
+	/** Puts the bottom of the y in tray on the bottom of S. */
+	private static float trayTop() {
+		return CAP_BOTTOM * S_SCALE - DESCENDER_BOTTOM * TRAY_SCALE;
 	}
 
 	private static int widthTick = Integer.MIN_VALUE;
