@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.4.79", new String[]{
+			"Array list outlines are half a pixel. The black fill is more transparent, and the names are slightly smaller."
+		}),
 		new Entry("1.4.78", new String[]{
 			"Array list names use the same color as their swatch. With accent color on, the names are the accent color too."
 		}),
