@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.4.81", new String[]{
+			"Client watermark Beta is smaller and a lighter gold."
+		}),
 		new Entry("1.4.80", new String[]{
 			"The client watermark has a small gold Beta under it."
 		}),
