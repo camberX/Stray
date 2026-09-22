@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.4.62", new String[]{
+			"Click GUI columns match the tight list layout. Headers and module names are centered, rows are one font step tall, and enabled rows use the accent color."
+		}),
 		new Entry("1.4.61", new String[]{
 			"Right click Click GUI and pick Stray menu to switch back. Theme settings has the same Menu option."
 		}),
