@@ -386,6 +386,8 @@ public class StrayScreen extends Screen {
 		new SearchEntry("1-9", Tab.MENUS, "Menus"),
 		new SearchEntry("Open menu", Tab.KEYS, "Keys"),
 		new SearchEntry("Menus", Tab.MENUS, "Menus"),
+		new SearchEntry("No cursor reset", Tab.MENUS, "Menus"),
+		new SearchEntry("Unhook timeout", Tab.MENUS, "Menus"),
 		new SearchEntry("Loadouts", Tab.MENUS, "Menus"),
 		new SearchEntry("Loadouts menu", Tab.MENUS, "Menus"),
 		new SearchEntry("Swap loadouts", Tab.KEYS, "Keys"),
@@ -2334,6 +2336,10 @@ public class StrayScreen extends Screen {
 				GuiDraw.menu(graphics, font, "/pv  /profile", rx, y + 30, ink());
 				GuiDraw.menu(graphics, font, "/irc users  /st ping", rx, y + 44, ink());
 				GuiDraw.menu(graphics, font, MenuSlotBinds.hint() + " equips and closes", rx, y + 58, fade());
+
+				float cursorTop = top + bindsH + 8 + cardHeight(6) + 8;
+				y = featureCard(graphics, font, right, cursorTop, col, cardHeight(2), "Cursor");
+				drawCursorReset(graphics, font, rx, y, iw, mouseX, mouseY);
 			}
 			case STATUS -> {
 				float y = featureCard(graphics, font, left, top, col, cardHeight(5), "Location");
@@ -2552,7 +2558,11 @@ public class StrayScreen extends Screen {
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Cleaner NPC chat", config.npcChatClean, v -> config.npcChatClean = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Open animation", config.loadoutsOpenAnim, v -> config.loadoutsOpenAnim = v);
 				toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Disabled potions", config.disabledPotionsHighlight, v -> config.disabledPotionsHighlight = v);
-				y = sectionLabel(graphics, font, right, top, "Experiments");
+				float cursorY = sectionLabel(graphics, font, right, top, "Cursor");
+				float cursorH = cardHeight(2);
+				y = featureCard(graphics, font, right, cursorY, col, cursorH, "No cursor reset");
+				drawCursorReset(graphics, font, rx, y, iw, mouseX, mouseY);
+				y = sectionLabel(graphics, font, right, cursorY + cursorH + 8, "Experiments");
 				float expH = cardHeight(config.autoExperimentsEnabled ? Feature.AUTO_EXPERIMENTS.rows() : 0);
 				y = featureCard(graphics, font, right, y, col, expH, "Auto experiments", config.autoExperimentsEnabled, v -> config.autoExperimentsEnabled = v, mouseX, mouseY);
 				if (config.autoExperimentsEnabled) {
@@ -3476,6 +3486,16 @@ public class StrayScreen extends Screen {
 		toggle(graphics, font, x, y, split, mouseX, mouseY, label, enabled, setEnabled);
 		slider(graphics, font, x + split + 4, y, Math.max(48f, w - split - 4), "CPS", cpsLabel(cps), (cps - 3.0f) / 12.0f, setCps);
 		return bindRow(graphics, font, x, y + rowH(), w, mouseX, mouseY, "Bind", bindWhich, key);
+	}
+
+	private float drawCursorReset(GuiGraphicsExtractor graphics, Font font, float x, float y, float w, int mouseX, int mouseY) {
+		StrayConfig config = StrayConfig.get();
+		y = toggle(graphics, font, x, y, w, mouseX, mouseY, "No cursor reset", config.noCursorReset, v -> config.noCursorReset = v);
+		int timeout = Math.round(StrayConfig.clamp(config.noCursorResetTimeout, 0, 1000) / 10f) * 10;
+		return slider(graphics, font, x, y, w, "Unhook", timeout + " ms", timeout / 1000f, v -> {
+			config.noCursorResetTimeout = Math.round(v * 100f) * 10;
+			UnloadState.markDirty();
+		});
 	}
 
 	private float drawMenuKeybinds(

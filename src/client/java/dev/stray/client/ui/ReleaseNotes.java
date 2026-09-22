@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.4.58", new String[]{
+			"No cursor reset keeps the pointer where it was when a chest menu is replaced by the next one. Unhook timeout on the Menus tab is how long that lasts after the previous menu closes."
+		}),
 		new Entry("1.4.57", new String[]{
 			"Custom fog start and end now move the fog on Sodium, and Density 100% fills that span instead of leaving a faint tint."
 		}),

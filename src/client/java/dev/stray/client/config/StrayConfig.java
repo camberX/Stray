@@ -186,6 +186,8 @@ public final class StrayConfig {
 	public int chestEspRgb = 0xF4C14E;
 	public float chestEspOpacity = 0.34f;
 	public boolean loadoutsMenuEnabled = false;
+	public boolean noCursorReset = true;
+	public int noCursorResetTimeout = 150;
 	public boolean loadoutsOpenAnim = false;
 	public boolean wardrobeMenuEnabled = false;
 	public boolean profileViewerEnabled = false;
@@ -1119,6 +1121,12 @@ public final class StrayConfig {
 				if (!json.has("themedGuisEnabled")) {
 					loaded.themedGuisEnabled = false;
 				}
+				if (!json.has("noCursorReset")) {
+					loaded.noCursorReset = true;
+				}
+				loaded.noCursorResetTimeout = json.has("noCursorResetTimeout")
+					? Math.round(clamp(loaded.noCursorResetTimeout, 0, 1000) / 10f) * 10
+					: 150;
 				if (!json.has("themedChatEnabled")) {
 					loaded.themedChatEnabled = false;
 				}
