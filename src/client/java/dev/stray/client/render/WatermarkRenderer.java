@@ -17,11 +17,13 @@ public final class WatermarkRenderer {
 	public static final float HEIGHT = 18;
 	private static final float CLIENT_HEIGHT = 22;
 	private static final float S_SCALE = 2.55f;
-	private static final float TRAY_SCALE = 1.35f;
+	private static final float TRAY_SCALE = 1.6f;
 	private static final float VERSION_SCALE = 0.62f;
 	/** Vanilla bitmap cells are 8px. S ink ends on the baseline; y fills the last row. */
 	private static final float CAP_BOTTOM = 7f;
 	private static final float DESCENDER_BOTTOM = 8f;
+	/** Bitmap advance includes one empty pixel past the S ink. */
+	private static final float SIDE_GAP = 1f;
 	private static final float PART_GAP = 3f;
 	private static final String DEV_TAG = "DEV";
 	private static final float DEV_GAP = 3f;
@@ -119,20 +121,37 @@ public final class WatermarkRenderer {
 		Component mark = MenuFont.title("S");
 		Component rest = MenuFont.title("tray");
 		String version = versionLabel();
-		float markW = font.width(mark) * S_SCALE;
-		float textX = markW + PART_GAP;
+		float textX = besideS(font, mark);
 		float trayY = trayTop();
-		GuiDraw.text(graphics, font, mark, 0, 0, S_SCALE, Theme.ACCENT, true);
+		drawScaled(graphics, font, mark, 0, 0, S_SCALE, Theme.ACCENT);
 		if (!version.isEmpty()) {
 			Component minor = MenuFont.brand(version);
-			GuiDraw.text(graphics, font, minor, textX, 0, VERSION_SCALE, WHITE, true);
+			drawScaled(graphics, font, minor, textX, 0, VERSION_SCALE, WHITE);
 			float extraX = textX + font.width(minor) * VERSION_SCALE + PART_GAP;
 			String extra = clientExtras(StrayConfig.get());
 			if (!extra.isEmpty()) {
-				GuiDraw.text(graphics, font, MenuFont.brand(extra), extraX, 0, VERSION_SCALE, WHITE, true);
+				drawScaled(graphics, font, MenuFont.brand(extra), extraX, 0, VERSION_SCALE, WHITE);
 			}
 		}
-		GuiDraw.text(graphics, font, rest, textX, trayY, TRAY_SCALE, Theme.ACCENT, true);
+		drawScaled(graphics, font, rest, textX, trayY, TRAY_SCALE, Theme.ACCENT);
+	}
+
+	/** One screen pixel of shadow, so the big S and the smaller tray share a bottom edge. */
+	private static void drawScaled(GuiGraphicsExtractor graphics, Font font, Component text, float x, float y, float scale, int color) {
+		GuiDraw.text(graphics, font, text, x + 1f, y + 1f, scale, shadow(color), false);
+		GuiDraw.text(graphics, font, text, x, y, scale, color, false);
+	}
+
+	private static int shadow(int color) {
+		int alpha = color >>> 24;
+		int red = Math.round(((color >> 16) & 0xFF) * 0.25f);
+		int green = Math.round(((color >> 8) & 0xFF) * 0.25f);
+		int blue = Math.round((color & 0xFF) * 0.25f);
+		return (alpha << 24) | (red << 16) | (green << 8) | blue;
+	}
+
+	private static float besideS(Font font, Component mark) {
+		return Math.max(0f, font.width(mark) * S_SCALE - S_SCALE + SIDE_GAP);
 	}
 
 	/** Puts the bottom of the y in tray on the bottom of S. */
@@ -178,7 +197,7 @@ public final class WatermarkRenderer {
 	}
 
 	private static float clientWidth(Font font, StrayConfig config) {
-		float markW = font.width(MenuFont.title("S")) * S_SCALE;
+		float markW = besideS(font, MenuFont.title("S"));
 		float top = 0f;
 		String version = versionLabel();
 		if (!version.isEmpty()) {
@@ -193,7 +212,7 @@ public final class WatermarkRenderer {
 		}
 		float trayW = font.width(MenuFont.title("tray")) * TRAY_SCALE;
 		float right = Math.max(top, trayW);
-		return markW + (right > 0f ? PART_GAP + right : 0f);
+		return markW + right + 1f;
 	}
 
 	private static String clientExtras(StrayConfig config) {
