@@ -31,7 +31,6 @@ public final class ClickGui {
 	private static final int STRIDE = BOX + V_GAP;
 	private static final int OUTLINE = 0xFF000000;
 	private static final int PANEL = 0x99000000;
-	private static final int OFF_FILL = 0x66000000;
 	private static final int ACCENT_ALPHA = 150;
 	private static final int TEXT = 0xFFFFFFFF;
 	private static final int DIM = 0xFFAAAAAA;
@@ -191,7 +190,7 @@ public final class ClickGui {
 			if (shown) {
 				boolean on = mod.on.getAsBoolean();
 				int rowY = Math.round(y);
-				outlined(graphics, boxX, rowY, boxW, BOX, on ? accentFill() : OFF_FILL);
+				moduleBox(graphics, boxX, rowY, boxW, BOX, on);
 				String label = fit(font, mod.name, boxW - 4);
 				GuiDraw.text(graphics, font, label, textX(font, label, boxX, boxW), textY(font, rowY, BOX), on ? TEXT : DIM, true);
 				screen.clickHit(boxX, rowY, boxW, BOX, () -> toggle(mod));
@@ -280,7 +279,7 @@ public final class ClickGui {
 		boolean on,
 		Runnable pick
 	) {
-		outlined(graphics, Math.round(x), Math.round(y), Math.round(w), BOX, on ? accentFill() : OFF_FILL);
+		moduleBox(graphics, Math.round(x), Math.round(y), Math.round(w), BOX, on);
 		GuiDraw.text(graphics, font, label, textX(font, label, x, w), textY(font, y, BOX), on ? TEXT : DIM, true);
 		screen.clickHit(x, y, w, BOX, pick);
 	}
@@ -296,7 +295,7 @@ public final class ClickGui {
 		for (int choice : choices) {
 			boolean on = current == choice;
 			String label = choice + " ms";
-			outlined(graphics, Math.round(x), Math.round(y), Math.round(w), BOX, on ? accentFill() : OFF_FILL);
+			moduleBox(graphics, Math.round(x), Math.round(y), Math.round(w), BOX, on);
 			GuiDraw.text(graphics, font, label, textX(font, label, x, w), textY(font, y, BOX), on ? TEXT : DIM, true);
 			float hitY = y;
 			screen.clickHit(x, hitY, w, BOX, () -> {
@@ -387,15 +386,29 @@ public final class ClickGui {
 		return Theme.withAlpha(Theme.ACCENT, ACCENT_ALPHA);
 	}
 
+	private static void moduleBox(GuiGraphicsExtractor graphics, int x, int y, int w, int h, boolean enabled) {
+		frame(graphics, x, y, w, h);
+		if (enabled) {
+			GuiDraw.fill(graphics, x + 1, y + 1, w - 2, h - 2, accentFill());
+		}
+	}
+
 	private static void outlined(GuiGraphicsExtractor graphics, int x, int y, int w, int h, int fill) {
+		frame(graphics, x, y, w, h);
 		if (w < 3 || h < 3) {
+			return;
+		}
+		GuiDraw.fill(graphics, x + 1, y + 1, w - 2, h - 2, fill);
+	}
+
+	private static void frame(GuiGraphicsExtractor graphics, int x, int y, int w, int h) {
+		if (w < 2 || h < 2) {
 			return;
 		}
 		GuiDraw.fill(graphics, x, y, w, 1, OUTLINE);
 		GuiDraw.fill(graphics, x, y + h - 1, w, 1, OUTLINE);
 		GuiDraw.fill(graphics, x, y, 1, h, OUTLINE);
 		GuiDraw.fill(graphics, x + w - 1, y, 1, h, OUTLINE);
-		GuiDraw.fill(graphics, x + 1, y + 1, w - 2, h - 2, fill);
 	}
 
 	private static float textX(Font font, String label, float x, float w) {
