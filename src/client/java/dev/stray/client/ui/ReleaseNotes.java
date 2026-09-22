@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.4.72", new String[]{
+			"Right click a click GUI module to slide its settings open under it. Experiments is in Menus. Names use a capital on each word. Off modules are more transparent. Click GUI stays on until you right click it and pick Stray Menu."
+		}),
 		new Entry("1.4.71", new String[]{
 			"Client watermark version text is smaller. The bottom of S and tray line up."
 		}),

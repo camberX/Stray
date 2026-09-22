@@ -18,8 +18,8 @@ import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 
 /**
- * Column click GUI. Left click toggles a feature. Right click opens its settings.
- * Headers drag. Each column scrolls on its own.
+ * Column click GUI. Left click toggles a feature. Right click slides its settings
+ * open under that row. Headers drag. Each column scrolls on its own.
  */
 public final class ClickGui {
 	static final int COL_W = 106;
@@ -32,7 +32,7 @@ public final class ClickGui {
 	private static final int STRIDE = BOX + V_GAP;
 	private static final int OUTLINE = 0xFF000000;
 	private static final int PANEL = 0x99000000;
-	private static final int OFF_FILL = 0xCC000000;
+	private static final int OFF_FILL = 0x88000000;
 	private static final int ACCENT_ALPHA = 115;
 	private static final int TEXT = 0xFFFFFFFF;
 	private static final int DIM = 0xFFAAAAAA;
@@ -43,6 +43,10 @@ public final class ClickGui {
 	private static boolean placed;
 	private static boolean lightInk;
 	private static String expandedName;
+	private static String shownName;
+	private static float expandT;
+	private static long expandNs;
+	private static boolean reveal;
 	private static String dragging;
 	private static float dragOffX;
 	private static float dragOffY;
@@ -72,14 +76,12 @@ public final class ClickGui {
 
 	static void extract(StrayScreen screen, GuiGraphicsExtractor graphics, int mouseX, int mouseY) {
 		Font font = Minecraft.getInstance().font;
+		tickExpand();
 		syncColumns(screen);
 		rows.clear();
 		panelLive = false;
 		for (String id : ORDER) {
 			drawColumn(screen, graphics, font, mouseX, mouseY, columns.get(id));
-		}
-		if (expandedName != null) {
-			drawSettings(screen, graphics, font, mouseX, mouseY);
 		}
 		screen.clickPicker(graphics, font);
 		if (StrayConfig.get().arrayList) {
@@ -97,7 +99,14 @@ public final class ClickGui {
 				continue;
 			}
 			if (row.mod.feature != null || row.mod.timeout || row.mod.menuStyle) {
-				expandedName = row.mod.name.equals(expandedName) ? null : row.mod.name;
+				if (row.mod.name.equals(expandedName)) {
+					expandedName = null;
+				} else {
+					expandedName = row.mod.name;
+					shownName = row.mod.name;
+					expandT = 0f;
+					reveal = true;
+				}
 			}
 			return;
 		}
@@ -169,17 +178,37 @@ public final class ClickGui {
 		}
 		int x = Math.round(column.x);
 		int top = Math.round(column.y);
-		int content = stackH(mods.size());
+		float content = columnContent(screen, mods);
 		int viewTop = top + HEADER + V_GAP;
 		int visible = Math.max(BOX, screen.height - viewTop - H_PAD);
-		int shownH = Math.min(content, visible);
+		int shownH = Math.min(Math.round(content), visible);
 		column.height = HEADER + V_GAP + shownH + H_PAD;
 		float maxScroll = Math.max(0f, content - visible);
+		if (reveal) {
+			float cursor = 0f;
+			for (int i = 0; i < mods.size(); i++) {
+				Mod mod = mods.get(i);
+				if (mod.name.equals(shownName)) {
+					float settingsTop = cursor + BOX + V_GAP;
+					float full = settingsFull(screen, mod);
+					maxScroll = Math.max(maxScroll, cursor + BOX + V_GAP + full - visible);
+					if (settingsTop + Math.min(full, 48f) > column.scroll + visible) {
+						column.scroll = Math.max(0f, settingsTop + Math.min(full, visible * 0.55f) - visible);
+					}
+					reveal = false;
+					break;
+				}
+				cursor += BOX;
+				if (i + 1 < mods.size()) {
+					cursor += V_GAP;
+				}
+			}
+		}
 		column.scroll = Math.round(Mth.clamp(column.scroll, 0f, maxScroll));
 
 		GuiDraw.fill(graphics, x, top, COL_W, column.height, PANEL);
 		outlined(graphics, x, top, COL_W, HEADER, accentFill());
-		String title = column.id;
+		String title = display(column.id);
 		GuiDraw.text(graphics, font, title, textX(font, title, x, COL_W), textY(font, top, HEADER), TEXT, true);
 		screen.clickHit(x, top, COL_W, HEADER, () -> beginDrag(column.id));
 
@@ -187,87 +216,95 @@ public final class ClickGui {
 		int boxW = COL_W - H_PAD * 2;
 		boolean clipped = GuiDraw.scissor(graphics, x, viewTop, COL_W, shownH);
 		float y = viewTop - column.scroll;
-		for (Mod mod : mods) {
+		for (int i = 0; i < mods.size(); i++) {
+			Mod mod = mods.get(i);
 			boolean shown = y + BOX > viewTop && y < viewTop + shownH;
 			if (shown) {
 				boolean on = mod.on.getAsBoolean();
 				int rowY = Math.round(y);
 				moduleBox(graphics, boxX, rowY, boxW, BOX, on);
-				String label = fit(font, mod.name, boxW - 4);
+				String label = fit(font, display(mod.name), boxW - 4);
 				GuiDraw.text(graphics, font, label, textX(font, label, boxX, boxW), textY(font, rowY, BOX), on ? TEXT : DIM, true);
-				screen.clickHit(boxX, rowY, boxW, BOX, () -> toggle(mod));
+				if (mod.menuStyle) {
+					screen.clickHit(boxX, rowY, boxW, BOX, () -> {
+					});
+				} else {
+					screen.clickHit(boxX, rowY, boxW, BOX, () -> toggle(mod));
+				}
 				rows.add(new Row(mod, boxX, rowY, boxW, BOX));
 			}
-			y += STRIDE;
+			y += BOX;
+			if (mod.name.equals(shownName) && expandT > 0.001f) {
+				float full = settingsFull(screen, mod);
+				float open = full * expandT;
+				y += V_GAP;
+				if (open > 1f && y + open > viewTop && y < viewTop + shownH) {
+					drawInline(screen, graphics, font, mouseX, mouseY, mod, x, viewTop, shownH, boxX, y, boxW, open, clipped);
+				}
+				y += open;
+			}
+			if (i + 1 < mods.size()) {
+				y += V_GAP;
+			}
 		}
 		if (clipped) {
 			GuiDraw.disableScissor(graphics);
 		}
 	}
 
-	private static void drawSettings(StrayScreen screen, GuiGraphicsExtractor graphics, Font font, int mouseX, int mouseY) {
-		Mod mod = null;
-		for (Mod candidate : modules()) {
-			if (candidate.name.equals(expandedName)) {
-				mod = candidate;
-				break;
-			}
+	private static void drawInline(
+		StrayScreen screen,
+		GuiGraphicsExtractor graphics,
+		Font font,
+		int mouseX,
+		int mouseY,
+		Mod mod,
+		int columnX,
+		int viewTop,
+		int viewH,
+		int boxX,
+		float y,
+		int boxW,
+		float open,
+		boolean columnClipped
+	) {
+		float clipTop = Math.max(y, viewTop);
+		float clipBot = Math.min(y + open, viewTop + viewH);
+		if (columnClipped) {
+			GuiDraw.disableScissor(graphics);
 		}
-		if (mod == null) {
-			return;
+		boolean settingsClip = clipBot > clipTop + 0.5f && GuiDraw.scissor(graphics, columnX, clipTop, COL_W, clipBot - clipTop);
+		int mark = screen.clickHitMark();
+		if (mod.menuStyle) {
+			drawMenuStyle(screen, graphics, font, boxX, y, boxW);
+		} else if (mod.timeout) {
+			drawTimeout(screen, graphics, font, boxX, y, boxW);
+		} else if (mod.feature != null) {
+			screen.clickVisuals(mod.kind);
+			screen.clickSettings(graphics, font, mouseX, mouseY, boxX, y, boxW, mod.feature);
 		}
-		Row anchor = null;
-		for (int i = rows.size() - 1; i >= 0; i--) {
-			if (rows.get(i).mod.name.equals(expandedName)) {
-				anchor = rows.get(i);
-				break;
-			}
+		if (expandT < 0.92f) {
+			screen.clickHitRewind(mark);
+		} else {
+			screen.clickClipHits(mark, columnX, clipTop, COL_W, Math.max(0f, clipBot - clipTop));
 		}
-		if (anchor == null) {
-			return;
+		if (settingsClip) {
+			GuiDraw.disableScissor(graphics);
 		}
-		float rowH = screen.clickSettingRow();
-		boolean plain = mod.menuStyle || mod.timeout;
-		int settingRows = mod.menuStyle ? 2 : mod.timeout ? 6 : mod.feature.rows();
-		panelW = plain ? COL_W : 196;
-		panelH = plain ? HEADER + V_GAP + stackH(settingRows) + H_PAD : HEADER + settingRows * rowH + 8;
-		panelX = anchor.x + COL_W + 2;
-		if (panelX + panelW > screen.width - 2) {
-			panelX = anchor.x - panelW - 2;
-		}
-		panelY = anchor.y;
-		if (panelY + panelH > screen.height - 2) {
-			panelY = Math.max(2, screen.height - 2 - panelH);
+		if (columnClipped) {
+			GuiDraw.scissor(graphics, columnX, viewTop, COL_W, viewH);
 		}
 		panelLive = true;
-		int px = Math.round(panelX);
-		int py = Math.round(panelY);
-		int pw = Math.round(panelW);
-		GuiDraw.fill(graphics, px, py, pw, panelH, PANEL);
-		outlined(graphics, px, py, pw, HEADER, accentFill());
-		String heading = fit(font, mod.name, pw - 4);
-		GuiDraw.text(graphics, font, heading, textX(font, heading, px, pw), textY(font, py, HEADER), TEXT, true);
-		screen.clickHit(panelX, panelY, panelW, panelH, () -> {
-		});
-		if (mod.menuStyle) {
-			drawMenuStyle(screen, graphics, font, px + H_PAD, py + HEADER + V_GAP, pw - H_PAD * 2);
-			return;
-		}
-		if (mod.timeout) {
-			drawTimeout(screen, graphics, font, px + H_PAD, py + HEADER + V_GAP, pw - H_PAD * 2);
-			return;
-		}
-		float innerX = panelX + 6;
-		float innerY = panelY + HEADER + 4;
-		float innerW = panelW - 12;
-		screen.clickVisuals(mod.kind);
-		screen.clickSettings(graphics, font, mouseX, mouseY, innerX, innerY, innerW, mod.feature);
+		panelX = columnX;
+		panelY = clipTop;
+		panelW = COL_W;
+		panelH = Math.max(0f, clipBot - clipTop);
 	}
 
 	private static void drawMenuStyle(StrayScreen screen, GuiGraphicsExtractor graphics, Font font, float x, float y, float w) {
 		boolean click = StrayConfig.get().clickGui;
 		drawChoice(screen, graphics, font, x, y, w, "Click GUI", click, () -> setClickGui(true));
-		drawChoice(screen, graphics, font, x, y + STRIDE, w, "Stray menu", !click, () -> setClickGui(false));
+		drawChoice(screen, graphics, font, x, y + STRIDE, w, "Stray Menu", !click, () -> setClickGui(false));
 	}
 
 	private static void drawChoice(
@@ -384,6 +421,71 @@ public final class ClickGui {
 		return count * BOX + (count - 1) * V_GAP;
 	}
 
+	private static float columnContent(StrayScreen screen, List<Mod> mods) {
+		float h = 0f;
+		for (int i = 0; i < mods.size(); i++) {
+			Mod mod = mods.get(i);
+			h += BOX;
+			if (mod.name.equals(shownName) && expandT > 0.001f) {
+				h += V_GAP + settingsFull(screen, mod) * expandT;
+			}
+			if (i + 1 < mods.size()) {
+				h += V_GAP;
+			}
+		}
+		return h;
+	}
+
+	private static float settingsFull(StrayScreen screen, Mod mod) {
+		if (mod.menuStyle) {
+			return stackH(2);
+		}
+		if (mod.timeout) {
+			return stackH(6);
+		}
+		if (mod.feature == null) {
+			return 0f;
+		}
+		return mod.feature.rows() * screen.clickSettingRow();
+	}
+
+	private static void tickExpand() {
+		long now = System.nanoTime();
+		float dt = expandNs == 0L ? 0.016f : Math.min(0.05f, (now - expandNs) / 1_000_000_000f);
+		expandNs = now;
+		float target = expandedName != null && expandedName.equals(shownName) ? 1f : 0f;
+		expandT += (target - expandT) * (1f - (float) Math.exp(-16f * dt));
+		if (Math.abs(target - expandT) < 0.01f) {
+			expandT = target;
+		}
+		if (expandT == 0f) {
+			shownName = expandedName;
+		}
+	}
+
+	public static String display(String label) {
+		if (label == null || label.isEmpty()) {
+			return "";
+		}
+		StringBuilder out = new StringBuilder(label.length());
+		boolean cap = true;
+		for (int i = 0; i < label.length(); i++) {
+			char c = label.charAt(i);
+			if (Character.isWhitespace(c)) {
+				cap = true;
+				out.append(c);
+				continue;
+			}
+			if (cap && Character.isLetter(c)) {
+				out.append(Character.toUpperCase(c));
+			} else {
+				out.append(c);
+			}
+			cap = false;
+		}
+		return out.toString();
+	}
+
 	private static int accentFill() {
 		return Theme.withAlpha(Theme.ACCENT, ACCENT_ALPHA);
 	}
@@ -486,8 +588,6 @@ public final class ClickGui {
 		mods.add(mod("Auto clicker", "Combat", StrayScreen.Feature.AUTO_CLICKER, null, () -> config.autoClickerEnabled, v -> config.autoClickerEnabled = v, true, false));
 		mods.add(mod("Auto rogue", "Combat", null, null, () -> config.autoRogueEnabled, v -> config.autoRogueEnabled = v, true, false));
 		mods.add(mod("Triggerbot", "Combat", null, null, () -> config.triggerbotEnabled, v -> config.triggerbotEnabled = v, true, false));
-		mods.add(mod("Experiments", "Combat", StrayScreen.Feature.AUTO_EXPERIMENTS, null, () -> config.autoExperimentsEnabled, v -> config.autoExperimentsEnabled = v, true, false));
-
 		mods.add(mod("Array list", "HUD", null, null, () -> config.arrayList, v -> config.arrayList = v, false, false));
 		mods.add(mod("Watermark", "HUD", StrayScreen.Feature.WATERMARK, null, () -> config.watermarkEnabled, v -> config.watermarkEnabled = v, true, false));
 		mods.add(mod("Music", "HUD", StrayScreen.Feature.MUSIC, null, () -> config.musicHudEnabled, v -> config.musicHudEnabled = v, true, false));
@@ -521,6 +621,7 @@ public final class ClickGui {
 		mods.add(mod("Auto DNA", "Farming", StrayScreen.Feature.AUTO_DNA, null, () -> config.autoDnaEnabled, v -> config.autoDnaEnabled = v, true, false));
 
 		mods.add(mod("Click GUI", "Menus", null, null, () -> config.clickGui, v -> config.clickGui = v, false, false, true));
+		mods.add(mod("Experiments", "Menus", StrayScreen.Feature.AUTO_EXPERIMENTS, null, () -> config.autoExperimentsEnabled, v -> config.autoExperimentsEnabled = v, true, false));
 		mods.add(mod("Loadouts", "Menus", StrayScreen.Feature.LOADOUTS, null, () -> config.loadoutsMenuEnabled, v -> config.loadoutsMenuEnabled = v, true, false));
 		mods.add(mod("Wardrobe", "Menus", StrayScreen.Feature.WARDROBE, null, () -> config.wardrobeMenuEnabled, v -> config.wardrobeMenuEnabled = v, true, false));
 		mods.add(mod("Profile viewer", "Menus", null, null, () -> config.profileViewerEnabled, v -> config.profileViewerEnabled = v, true, false));

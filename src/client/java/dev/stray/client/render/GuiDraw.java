@@ -2,6 +2,7 @@ package dev.stray.client.render;
 
 import dev.stray.Stray;
 import dev.stray.client.config.StrayConfig;
+import dev.stray.client.ui.ClickGui;
 import dev.stray.client.ui.ControlChrome;
 import dev.stray.client.ui.LoadoutsScreen;
 import dev.stray.client.ui.MenuFont;
@@ -833,12 +834,14 @@ public final class GuiDraw {
 
 	public static void menu(GuiGraphicsExtractor graphics, Font font, String value, float x, float y, int color) {
 		float scale = MenuFont.bodyScale();
-		text(graphics, font, MenuFont.body(value), x, MenuFont.menuY(y, scale), scale, color, false);
+		String shown = clickWords(value);
+		text(graphics, font, MenuFont.body(shown), x, MenuFont.menuY(y, scale), scale, color, false);
 	}
 
 	public static void small(GuiGraphicsExtractor graphics, Font font, String value, float x, float y, int color) {
 		float scale = MenuFont.smallScale();
-		text(graphics, font, MenuFont.small(value), x, MenuFont.menuY(y, scale), scale, color, false);
+		String shown = clickWords(value);
+		text(graphics, font, MenuFont.small(shown), x, MenuFont.menuY(y, scale), scale, color, false);
 	}
 
 	public static void title(GuiGraphicsExtractor graphics, Font font, String value, float x, float y, int color) {
@@ -880,11 +883,18 @@ public final class GuiDraw {
 	}
 
 	public static int menuWidth(Font font, String value) {
-		return scaledWidth(font.width(MenuFont.body(value)), MenuFont.bodyScale());
+		return scaledWidth(font.width(MenuFont.body(clickWords(value))), MenuFont.bodyScale());
 	}
 
 	public static int smallWidth(Font font, String value) {
-		return scaledWidth(font.width(MenuFont.small(value)), MenuFont.smallScale());
+		return scaledWidth(font.width(MenuFont.small(clickWords(value))), MenuFont.smallScale());
+	}
+
+	private static String clickWords(String value) {
+		if (value == null || !ClickGui.lightInk()) {
+			return value;
+		}
+		return ClickGui.display(value);
 	}
 
 	public static int titleWidth(Font font, String value) {
