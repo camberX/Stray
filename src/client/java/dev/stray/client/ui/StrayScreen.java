@@ -183,7 +183,13 @@ public class StrayScreen extends Screen {
 		NAMETAGS("Nametags", 6),
 		HEALTH("Health bar", 7),
 		BOX("2D box", 5),
-		NODES("Nodes", 5);
+		NODES("Nodes", 5),
+		ACCENT("Accent", 3),
+		PANE("Pane", 2),
+		WINDOW("Window", 3),
+		SCALE("Menu scale", 2),
+		NICK("Nick hider", 2),
+		CAPE("Cape", 5);
 
 		final String title;
 		private final int baseRows;
@@ -196,6 +202,12 @@ public class StrayScreen extends Screen {
 		int rows() {
 			if (this == PATHS) {
 				return baseRows + Math.min(PathRecorder.here().size(), 10);
+			}
+			if (this == NICK) {
+				return NickSteal.status() == NickSteal.Status.OFF ? 2 : 3;
+			}
+			if (this == CAPE) {
+				return ShopCape.allowed() ? 5 : 1;
 			}
 			return baseRows;
 		}
@@ -3196,6 +3208,148 @@ public class StrayScreen extends Screen {
 		drawFeatureFields(graphics, font, mouseX, mouseY, featureX + 8, featureY + 20, FEATURE_W - 16, feature);
 	}
 
+	private String accentPresetLabel() {
+		int current = StrayConfig.get().themeAccentRgb & 0xFFFFFF;
+		for (Theme.Swatch swatch : Theme.PRESETS) {
+			if (swatch.rgb() == current) {
+				return swatch.name();
+			}
+		}
+		return "Custom";
+	}
+
+	private void cycleAccentPreset() {
+		int current = StrayConfig.get().themeAccentRgb & 0xFFFFFF;
+		Theme.Swatch[] presets = Theme.PRESETS;
+		int index = -1;
+		for (int i = 0; i < presets.length; i++) {
+			if (presets[i].rgb() == current) {
+				index = i;
+				break;
+			}
+		}
+		Theme.applyPreset(presets[(index + 1) % presets.length]);
+	}
+
+	private String panePresetLabel() {
+		int current = StrayConfig.get().themePaneRgb & 0xFFFFFF;
+		for (Theme.Swatch swatch : Theme.PANE_PRESETS) {
+			if (swatch.rgb() == current) {
+				return swatch.name();
+			}
+		}
+		return "Custom";
+	}
+
+	private void cyclePanePreset() {
+		int current = StrayConfig.get().themePaneRgb & 0xFFFFFF;
+		Theme.Swatch[] presets = Theme.PANE_PRESETS;
+		int index = -1;
+		for (int i = 0; i < presets.length; i++) {
+			if (presets[i].rgb() == current) {
+				index = i;
+				break;
+			}
+		}
+		Theme.applyPanePreset(presets[(index + 1) % presets.length]);
+	}
+
+	private void drawNickFields(GuiGraphicsExtractor graphics, Font font, int mouseX, int mouseY, float x, float y, float w) {
+		StrayConfig config = StrayConfig.get();
+		String raw = config.nick == null ? "" : config.nick;
+		String shown = raw.isEmpty() && !nickFocused ? "Nick" : raw + (nickFocused ? "|" : "");
+		y = clickField(graphics, font, x, y, w, mouseX, mouseY, shown, nickFocused, raw.isEmpty() && !nickFocused, () -> {
+			nickFocused = true;
+			stealFocused = false;
+			capeFocused = false;
+		});
+		nickFieldX = x;
+		nickFieldY = y - rowH();
+		nickFieldW = w;
+		if (!stealFocused) {
+			stealDraft = NickSteal.target();
+		}
+		String stealShown = stealDraft.isEmpty() && !stealFocused ? "Steal name" : stealDraft + (stealFocused ? "|" : "");
+		y = clickField(graphics, font, x, y, w, mouseX, mouseY, stealShown, stealFocused, stealDraft.isEmpty() && !stealFocused, () -> {
+			stealFocused = true;
+			nickFocused = false;
+			capeFocused = false;
+		});
+		stealFieldX = x;
+		stealFieldY = y - rowH();
+		stealFieldW = w;
+		if (NickSteal.status() != NickSteal.Status.OFF) {
+			clickButton(graphics, font, x, y, w, mouseX, mouseY, "Stop stealing", () -> {
+				stealDraft = "";
+				NickSteal.stop();
+			});
+		}
+	}
+
+	private void drawCapeFields(GuiGraphicsExtractor graphics, Font font, int mouseX, int mouseY, float x, float y, float w) {
+		if (!ShopCape.allowed()) {
+			clickButton(graphics, font, x, y, w, mouseX, mouseY, ShopCape.lockLabel(), () -> {
+			});
+			return;
+		}
+		if (!capeFocused) {
+			StrayConfig config = StrayConfig.get();
+			if (config.capeUrl != null && !config.capeUrl.isBlank()) {
+				capeUrlDraft = config.capeUrl;
+			} else if (config.capePath != null && !config.capePath.isBlank()) {
+				capeUrlDraft = config.capePath;
+			} else if (CustomCape.status() == CustomCape.Status.EMPTY) {
+				capeUrlDraft = "";
+			}
+		}
+		String shown = capeUrlDraft.isEmpty() && !capeFocused ? "https://...png" : capeUrlDraft + (capeFocused ? "|" : "");
+		y = clickField(graphics, font, x, y, w, mouseX, mouseY, shown, capeFocused, capeUrlDraft.isEmpty() && !capeFocused, () -> {
+			capeFocused = true;
+			nickFocused = false;
+			stealFocused = false;
+		});
+		capeFieldX = x;
+		capeFieldY = y - rowH();
+		capeFieldW = w;
+		y = clickButton(graphics, font, x, y, w, mouseX, mouseY, CustomCape.picking() ? "Selecting..." : "Local file", CustomCape::pickLocal);
+		y = clickButton(graphics, font, x, y, w, mouseX, mouseY, CustomCape.picking() ? "Selecting..." : "Create cape", CustomCape::pickCreate);
+		y = clickButton(graphics, font, x, y, w, mouseX, mouseY, "Remove cape", () -> {
+			capeUrlDraft = "";
+			CustomCape.clear();
+		});
+		clickButton(graphics, font, x, y, w, mouseX, mouseY, ShopCape.refreshLabel(), ShopCape::refreshAll);
+	}
+
+	private float clickField(
+		GuiGraphicsExtractor graphics,
+		Font font,
+		float x,
+		float y,
+		float w,
+		int mouseX,
+		int mouseY,
+		String shown,
+		boolean focused,
+		boolean placeholder,
+		Runnable focus
+	) {
+		float row = rowH();
+		boolean hover = GuiDraw.hovered(mouseX, mouseY, x, y, w, row);
+		GuiDraw.panel(graphics, x, y + 1, w, row - 2, 4, focused || hover ? Theme.CARD_HOVER : Theme.CARD, focused ? Theme.ACCENT : Theme.LINE);
+		GuiDraw.menu(graphics, font, clip(font, shown, (int) w - 8), x + 4, GuiDraw.middle(y, row), placeholder ? fade() : ink());
+		hits.add(new Hit(x, y, w, row, focus));
+		return y + row;
+	}
+
+	private float clickButton(GuiGraphicsExtractor graphics, Font font, float x, float y, float w, int mouseX, int mouseY, String label, Runnable action) {
+		float row = rowH();
+		boolean hover = GuiDraw.hovered(mouseX, mouseY, x, y, w, row);
+		GuiDraw.panel(graphics, x, y + 1, w, row - 2, 4, hover ? Theme.CARD_HOVER : Theme.CARD, Theme.LINE);
+		GuiDraw.menu(graphics, font, clip(font, label, (int) w - 8), x + 4, GuiDraw.middle(y, row), ink());
+		hits.add(new Hit(x, y, w, row, action));
+		return y + row;
+	}
+
 	private void drawFeatureFields(
 		GuiGraphicsExtractor graphics,
 		Font font,
@@ -3506,6 +3660,29 @@ public class StrayScreen extends Screen {
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Block scan", config.blockScan, v -> config.blockScan = v);
 				toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Particle hints", config.particleDetection, v -> config.particleDetection = v);
 			}
+			case ACCENT -> {
+				y = cycle(graphics, font, ix, y, iw, mouseX, mouseY, "Preset", accentPresetLabel(), this::cycleAccentPreset);
+				y = colorRow(graphics, font, ix, y, iw, mouseX, mouseY, "Color", config.themeAccentRgb, PickerTarget.THEME);
+				slider(graphics, font, ix, y, iw, "HUD", Math.round(config.hudOpacity * 100) + "%", (config.hudOpacity - 0.20f) / 0.80f, v -> {
+					config.hudOpacity = StrayConfig.clamp(0.20f + v * 0.80f, 0.20f, 1f);
+					Theme.refresh();
+				});
+			}
+			case PANE -> {
+				y = cycle(graphics, font, ix, y, iw, mouseX, mouseY, "Preset", panePresetLabel(), this::cyclePanePreset);
+				colorRow(graphics, font, ix, y, iw, mouseX, mouseY, "Color", config.themePaneRgb, PickerTarget.PANE);
+			}
+			case WINDOW -> {
+				y = colorRow(graphics, font, ix, y, iw, mouseX, mouseY, "Glass", config.controlPaneRgb, PickerTarget.CONTROL);
+				y = colorRow(graphics, font, ix, y, iw, mouseX, mouseY, "Pills", config.controlPillRgb, PickerTarget.PILL);
+				slider(graphics, font, ix, y, iw, "Frost", Math.round(config.controlFrost * 100) + "%", config.controlFrost, v -> config.controlFrost = StrayConfig.clamp(v, 0f, 1f));
+			}
+			case SCALE -> chipRow(graphics, font, ix, y, iw, mouseX, mouseY, new String[]{"100%", "90%", "75%", "50%"}, menuScaleChip(), index -> {
+				float[] values = {1.00f, 0.90f, 0.75f, 0.50f};
+				config.menuScale = values[index];
+			});
+			case NICK -> drawNickFields(graphics, font, mouseX, mouseY, ix, y, iw);
+			case CAPE -> drawCapeFields(graphics, font, mouseX, mouseY, ix, y, iw);
 		}
 		fieldScope = previousScope;
 	}

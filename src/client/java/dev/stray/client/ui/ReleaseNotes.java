@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.4.75", new String[]{
+			"Click GUI no longer repeats itself when you right click it. Theme is its own column. Nick hider and cape open their settings on right click."
+		}),
 		new Entry("1.4.74", new String[]{
 			"Client watermark tray is larger and sits closer to the S. Both letters share the same bottom edge, including the shadow."
 		}),

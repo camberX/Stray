@@ -36,7 +36,7 @@ public final class ClickGui {
 	private static final int ACCENT_ALPHA = 115;
 	private static final int TEXT = 0xFFFFFFFF;
 	private static final int DIM = 0xFFAAAAAA;
-	private static final String[] ORDER = {"World", "Visuals", "Combat", "HUD", "Mining", "Farming", "Menus", "Player"};
+	private static final String[] ORDER = {"World", "Visuals", "Combat", "HUD", "Mining", "Farming", "Menus", "Theme", "Player"};
 
 	private static final Map<String, Column> columns = new LinkedHashMap<>();
 	private static final List<Row> rows = new ArrayList<>();
@@ -225,7 +225,7 @@ public final class ClickGui {
 				moduleBox(graphics, boxX, rowY, boxW, BOX, on);
 				String label = fit(font, display(mod.name), boxW - 4);
 				GuiDraw.text(graphics, font, label, textX(font, label, boxX, boxW), textY(font, rowY, BOX), on ? TEXT : DIM, true);
-				if (mod.menuStyle) {
+				if (mod.menuStyle || mod.hold) {
 					screen.clickHit(boxX, rowY, boxW, BOX, () -> {
 					});
 				} else {
@@ -302,9 +302,7 @@ public final class ClickGui {
 	}
 
 	private static void drawMenuStyle(StrayScreen screen, GuiGraphicsExtractor graphics, Font font, float x, float y, float w) {
-		boolean click = StrayConfig.get().clickGui;
-		drawChoice(screen, graphics, font, x, y, w, "Click GUI", click, () -> setClickGui(true));
-		drawChoice(screen, graphics, font, x, y + STRIDE, w, "Stray Menu", !click, () -> setClickGui(false));
+		drawChoice(screen, graphics, font, x, y, w, "Stray Menu", false, () -> setClickGui(false));
 	}
 
 	private static void drawChoice(
@@ -438,7 +436,7 @@ public final class ClickGui {
 
 	private static float settingsFull(StrayScreen screen, Mod mod) {
 		if (mod.menuStyle) {
-			return stackH(2);
+			return stackH(1);
 		}
 		if (mod.timeout) {
 			return stackH(6);
@@ -638,7 +636,24 @@ public final class ClickGui {
 		mods.add(mod("Command rings", "Menus", StrayScreen.Feature.RINGS, null, () -> config.commandRingsEnabled, v -> config.commandRingsEnabled = v, true, false));
 		mods.add(mod("Paths", "Menus", StrayScreen.Feature.PATHS, null, () -> config.pathsEnabled, v -> config.pathsEnabled = v, true, false));
 
-		mods.add(mod("Nick hider", "Player", null, null, () -> config.nickEnabled, v -> config.nickEnabled = v, true, false));
+		mods.add(hold("Accent", "Theme", StrayScreen.Feature.ACCENT));
+		mods.add(hold("Pane", "Theme", StrayScreen.Feature.PANE));
+		mods.add(hold("Window", "Theme", StrayScreen.Feature.WINDOW));
+		mods.add(hold("Menu scale", "Theme", StrayScreen.Feature.SCALE));
+		mods.add(mod("Vanilla HUD", "Theme", null, null, config::hudStyleVanilla, v -> config.hudStyle = v ? "vanilla" : "stray", false, false));
+		mods.add(mod("Menu stars", "Theme", null, null, () -> config.menuStarfield, v -> config.menuStarfield = v, false, false));
+		mods.add(mod("HUD stars", "Theme", null, null, () -> config.hudStarfield, v -> config.hudStarfield = v, false, false));
+		mods.add(mod("Accent outlines", "Theme", null, null, () -> config.accentOutlines, v -> {
+			config.accentOutlines = v;
+			Theme.refresh();
+		}, false, false));
+		mods.add(mod("Animations", "Theme", null, null, () -> config.uiAnimations, v -> config.uiAnimations = v, false, false));
+		mods.add(mod("Auto update", "Theme", null, null, () -> config.autoUpdate, v -> config.autoUpdate = v, false, false));
+		mods.add(mod("Auto close", "Theme", null, null, () -> config.updateAutoClose, v -> config.updateAutoClose = v, false, false));
+		mods.add(mod("Update notify", "Theme", null, null, () -> config.updateNotify, v -> config.updateNotify = v, false, false));
+
+		mods.add(mod("Nick hider", "Player", StrayScreen.Feature.NICK, null, () -> config.nickEnabled, v -> config.nickEnabled = v, true, false));
+		mods.add(hold("Cape", "Player", StrayScreen.Feature.CAPE, ClickGui::capeOn));
 		return mods;
 	}
 
@@ -666,7 +681,21 @@ public final class ClickGui {
 		boolean timeout,
 		boolean menuStyle
 	) {
-		return new Mod(name, column, feature, kind, on, set, list, timeout, menuStyle);
+		return new Mod(name, column, feature, kind, on, set, list, timeout, menuStyle, false);
+	}
+
+	private static Mod hold(String name, String column, StrayScreen.Feature feature) {
+		return hold(name, column, feature, () -> true);
+	}
+
+	private static Mod hold(String name, String column, StrayScreen.Feature feature, BooleanSupplier on) {
+		return new Mod(name, column, feature, null, on, v -> {
+		}, false, false, false, true);
+	}
+
+	private static boolean capeOn() {
+		StrayConfig config = StrayConfig.get();
+		return (config.capeUrl != null && !config.capeUrl.isBlank()) || (config.capePath != null && !config.capePath.isBlank());
 	}
 
 	private record Mod(
@@ -678,7 +707,8 @@ public final class ClickGui {
 		Consumer<Boolean> set,
 		boolean list,
 		boolean timeout,
-		boolean menuStyle
+		boolean menuStyle,
+		boolean hold
 	) {
 	}
 
