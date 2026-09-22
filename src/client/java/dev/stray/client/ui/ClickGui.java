@@ -279,8 +279,8 @@ public final class ClickGui {
 		if ("Array list".equals(mod.name)) {
 			drawArrayList(screen, graphics, font, boxX, y, boxW);
 		} else if (mod.menuStyle) {
-			if ("HUD style".equals(mod.name)) {
-				drawHudStyle(screen, graphics, font, boxX, y, boxW);
+			if ("HUD".equals(mod.name)) {
+				drawHud(screen, graphics, font, boxX, y, boxW);
 			} else {
 				drawMenuStyle(screen, graphics, font, boxX, y, boxW);
 			}
@@ -343,18 +343,20 @@ public final class ClickGui {
 		drawChoice(screen, graphics, font, x, y, w, "Stray Menu", false, () -> setClickGui(false));
 	}
 
-	private static void drawHudStyle(StrayScreen screen, GuiGraphicsExtractor graphics, Font font, float x, float y, float w) {
+	private static void drawHud(StrayScreen screen, GuiGraphicsExtractor graphics, Font font, float x, float y, float w) {
 		StrayConfig config = StrayConfig.get();
-		drawChoice(screen, graphics, font, x, y, w, "Stray", !config.hudStyleVanilla() && !config.hudStyleClick(), () -> setHudStyle("stray"));
+		drawChoice(screen, graphics, font, x, y, w, "HUD Stars", config.hudStarfield, () -> {
+			StrayConfig current = StrayConfig.get();
+			current.hudStarfield = !current.hudStarfield;
+			UnloadState.markDirty();
+		});
 		y += STRIDE;
-		drawChoice(screen, graphics, font, x, y, w, "Click", config.hudStyleClick(), () -> setHudStyle("click"));
+		drawChoice(screen, graphics, font, x, y, w, "Style " + config.hudStyleLabel(), true, () -> {
+			StrayConfig.get().cycleHudStyle();
+			UnloadState.markDirty();
+		});
 		y += STRIDE;
-		drawChoice(screen, graphics, font, x, y, w, "Vanilla", config.hudStyleVanilla(), () -> setHudStyle("vanilla"));
-	}
-
-	private static void setHudStyle(String style) {
-		StrayConfig.get().setHudStyle(style);
-		UnloadState.markDirty();
+		drawChoice(screen, graphics, font, x, y, w, "HUD Editor", true, () -> Minecraft.getInstance().setScreen(new HudEditorScreen()));
 	}
 
 	private static void drawChoice(
@@ -491,7 +493,7 @@ public final class ClickGui {
 			return stackH(arrayListRows());
 		}
 		if (mod.menuStyle) {
-			return "HUD style".equals(mod.name) ? stackH(3) : stackH(1);
+			return "HUD".equals(mod.name) ? stackH(3) : stackH(1);
 		}
 		if (mod.timeout) {
 			return stackH(6);
@@ -692,9 +694,8 @@ public final class ClickGui {
 		mods.add(mod("Paths", "Menus", StrayScreen.Feature.PATHS, null, () -> config.pathsEnabled, v -> config.pathsEnabled = v, true, false));
 
 		mods.add(hold("Accent", "Theme", StrayScreen.Feature.ACCENT));
-		mods.add(mod("HUD style", "Theme", null, null, () -> true, v -> {
+		mods.add(mod("HUD", "Theme", null, null, () -> true, v -> {
 		}, false, false, true));
-		mods.add(mod("HUD stars", "Theme", null, null, () -> config.hudStarfield, v -> config.hudStarfield = v, false, false));
 		mods.add(mod("Auto update", "Theme", null, null, () -> config.autoUpdate, v -> config.autoUpdate = v, false, false));
 		mods.add(mod("Auto close", "Theme", null, null, () -> config.updateAutoClose, v -> config.updateAutoClose = v, false, false));
 		mods.add(mod("Update notify", "Theme", null, null, () -> config.updateNotify, v -> config.updateNotify = v, false, false));

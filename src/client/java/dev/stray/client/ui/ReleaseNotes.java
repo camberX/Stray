@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.4.82", new String[]{
+			"Theme has a HUD module. Right click it for HUD stars, HUD style, and a button that opens the HUD editor."
+		}),
 		new Entry("1.4.81", new String[]{
 			"Client watermark Beta is smaller and a lighter gold."
 		}),
