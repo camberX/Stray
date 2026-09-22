@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.4.77", new String[]{
+			"Array list rows are transparent black with a 1 pixel outline and a color swatch on the right. Each box is only as wide as that name, longest at the top. Right click Array list to choose which features show, or use the accent color instead of random colors."
+		}),
 		new Entry("1.4.76", new String[]{
 			"Click GUI switches are smaller, with a half-pixel outline and the same transparent black as modules that are off. Theme hides settings that do not affect the click GUI. HUD style adds Click, which draws the HUD as those same boxes."
 		}),

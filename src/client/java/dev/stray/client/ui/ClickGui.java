@@ -98,7 +98,7 @@ public final class ClickGui {
 			if (!contains(x, y, row.x, row.y, row.w, row.h)) {
 				continue;
 			}
-			if (row.mod.feature != null || row.mod.timeout || row.mod.menuStyle) {
+			if (row.mod.feature != null || row.mod.timeout || row.mod.menuStyle || "Array list".equals(row.mod.name)) {
 				if (row.mod.name.equals(expandedName)) {
 					expandedName = null;
 				} else {
@@ -154,8 +154,9 @@ public final class ClickGui {
 
 	public static List<String> enabledLabels() {
 		List<String> labels = new ArrayList<>();
+		StrayConfig config = StrayConfig.get();
 		for (Mod mod : modules()) {
-			if (mod.list && mod.on.getAsBoolean()) {
+			if (mod.list && mod.on.getAsBoolean() && config.arrayListShows(mod.name)) {
 				labels.add(mod.name);
 			}
 		}
@@ -275,7 +276,9 @@ public final class ClickGui {
 		}
 		boolean settingsClip = clipBot > clipTop + 0.5f && GuiDraw.scissor(graphics, columnX, clipTop, COL_W, clipBot - clipTop);
 		int mark = screen.clickHitMark();
-		if (mod.menuStyle) {
+		if ("Array list".equals(mod.name)) {
+			drawArrayList(screen, graphics, font, boxX, y, boxW);
+		} else if (mod.menuStyle) {
 			if ("HUD style".equals(mod.name)) {
 				drawHudStyle(screen, graphics, font, boxX, y, boxW);
 			} else {
@@ -303,6 +306,37 @@ public final class ClickGui {
 		panelY = clipTop;
 		panelW = COL_W;
 		panelH = Math.max(0f, clipBot - clipTop);
+	}
+
+	private static void drawArrayList(StrayScreen screen, GuiGraphicsExtractor graphics, Font font, float x, float y, float w) {
+		StrayConfig config = StrayConfig.get();
+		drawChoice(screen, graphics, font, x, y, w, "Accent Color", config.arrayListAccent, () -> {
+			StrayConfig.get().arrayListAccent = !StrayConfig.get().arrayListAccent;
+			UnloadState.markDirty();
+		});
+		y += STRIDE;
+		for (Mod mod : modules()) {
+			if (!mod.list) {
+				continue;
+			}
+			boolean shown = config.arrayListShows(mod.name);
+			String name = mod.name;
+			drawChoice(screen, graphics, font, x, y, w, fit(font, display(name), Math.round(w) - 4), shown, () -> {
+				StrayConfig.get().toggleArrayListShown(name);
+				UnloadState.markDirty();
+			});
+			y += STRIDE;
+		}
+	}
+
+	private static int arrayListRows() {
+		int count = 1;
+		for (Mod mod : modules()) {
+			if (mod.list) {
+				count++;
+			}
+		}
+		return count;
 	}
 
 	private static void drawMenuStyle(StrayScreen screen, GuiGraphicsExtractor graphics, Font font, float x, float y, float w) {
@@ -453,6 +487,9 @@ public final class ClickGui {
 	}
 
 	private static float settingsFull(StrayScreen screen, Mod mod) {
+		if ("Array list".equals(mod.name)) {
+			return stackH(arrayListRows());
+		}
 		if (mod.menuStyle) {
 			return "HUD style".equals(mod.name) ? stackH(3) : stackH(1);
 		}
