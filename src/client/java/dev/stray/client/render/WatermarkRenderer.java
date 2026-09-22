@@ -15,10 +15,12 @@ import java.util.List;
 
 public final class WatermarkRenderer {
 	public static final float HEIGHT = 18;
-	private static final float CLIENT_HEIGHT = 22;
 	private static final float S_SCALE = 2.55f;
 	private static final float TRAY_SCALE = 1.6f;
 	private static final float VERSION_SCALE = 0.62f;
+	private static final float BETA_SCALE = 0.9f;
+	private static final String BETA = "Beta";
+	private static final int GOLD = 0xFFFFAA00;
 	/** Vanilla bitmap cells are 8px. S ink ends on the baseline; y fills the last row. */
 	private static final float CAP_BOTTOM = 7f;
 	private static final float DESCENDER_BOTTOM = 8f;
@@ -36,7 +38,7 @@ public final class WatermarkRenderer {
 	}
 
 	public static float height() {
-		return StrayConfig.get().watermarkClient() ? CLIENT_HEIGHT : HEIGHT;
+		return StrayConfig.get().watermarkClient() ? clientHeight() : HEIGHT;
 	}
 
 	public static float occupiedHeight() {
@@ -134,6 +136,7 @@ public final class WatermarkRenderer {
 			}
 		}
 		drawScaled(graphics, font, rest, textX, trayY, TRAY_SCALE, Theme.ACCENT);
+		drawScaled(graphics, font, MenuFont.title(BETA), 0f, betaTop(), BETA_SCALE, GOLD);
 	}
 
 	/** One screen pixel of shadow, so the big S and the smaller tray share a bottom edge. */
@@ -157,6 +160,15 @@ public final class WatermarkRenderer {
 	/** Puts the bottom of the y in tray on the bottom of S. */
 	private static float trayTop() {
 		return CAP_BOTTOM * S_SCALE - DESCENDER_BOTTOM * TRAY_SCALE;
+	}
+
+	/** Sits just under the S shadow. Capitals share the bitmap baseline. */
+	private static float betaTop() {
+		return CAP_BOTTOM * S_SCALE + 2f;
+	}
+
+	private static float clientHeight() {
+		return betaTop() + CAP_BOTTOM * BETA_SCALE + 1f;
 	}
 
 	private static int widthTick = Integer.MIN_VALUE;
@@ -212,7 +224,8 @@ public final class WatermarkRenderer {
 		}
 		float trayW = font.width(MenuFont.title("tray")) * TRAY_SCALE;
 		float right = Math.max(top, trayW);
-		return markW + right + 1f;
+		float betaW = font.width(MenuFont.title(BETA)) * BETA_SCALE;
+		return Math.max(markW + right, betaW) + 1f;
 	}
 
 	private static String clientExtras(StrayConfig config) {
