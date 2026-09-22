@@ -658,7 +658,7 @@ public final class HudLayout {
 	private static float height(Id id, Font font) {
 		float scale = scale(id);
 		return switch (id) {
-			case WATERMARK -> WatermarkRenderer.HEIGHT * scale;
+			case WATERMARK -> WatermarkRenderer.height() * scale;
 			case INVENTORY -> InventoryHudRenderer.drawHeight() * scale;
 			case NODES -> NodeHudRenderer.drawHeight() * scale;
 			case MUSIC -> MusicHudRenderer.drawHeight() * scale;

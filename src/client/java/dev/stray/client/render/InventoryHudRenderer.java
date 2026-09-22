@@ -53,7 +53,7 @@ public final class InventoryHudRenderer {
 		float margin = HudLayout.MARGIN;
 		float hotbar = 24;
 		return switch (anchor) {
-			case "top_left" -> margin + (StrayConfig.get().watermarkEnabled ? WatermarkRenderer.HEIGHT + 8 : 0);
+			case "top_left" -> margin + (StrayConfig.get().watermarkEnabled ? WatermarkRenderer.height() + 8 : 0);
 			case "top_right" -> margin;
 			default -> guiH - drawH - hotbar;
 		};
