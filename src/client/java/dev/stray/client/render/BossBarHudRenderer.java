@@ -114,7 +114,7 @@ public final class BossBarHudRenderer {
 		int fill = barColor(event);
 		HudChrome.panel(graphics, x, y, BAR_W, BAR_H, 5, Theme.HUD_WINDOW, Theme.HUD_LINE);
 		if (t > 0.01f) {
-			GuiDraw.rounded(graphics, x + 8, y + BAR_H - 4, Math.max(2f, (BAR_W - 16f) * t), 2.5f, 1.2f, fill);
+			HudChrome.rounded(graphics, x + 8, y + BAR_H - 4, Math.max(2f, (BAR_W - 16f) * t), 2.5f, 1.2f, fill);
 		}
 		Label label = label(font, event);
 		float nx = x + (BAR_W - label.width) * 0.5f;

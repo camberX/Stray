@@ -84,10 +84,10 @@ public final class MiningHudRenderer {
 		float barX = PAD + 2;
 		float barW = WIDTH - PAD * 2 - 2;
 		float barY = PAD + HEAD;
-		GuiDraw.rounded(graphics, barX, barY, barW, BAR, 1.1f, Theme.HUD_TRACK);
+		HudChrome.rounded(graphics, barX, barY, barW, BAR, 1.1f, Theme.HUD_TRACK);
 		float filled = Math.max(snap.abilityReady() ? barW : 0f, barW * snap.abilityProgress());
 		if (filled > 0.4f) {
-			GuiDraw.rounded(graphics, barX, barY, filled, BAR, 1.1f, snap.abilityReady() ? Theme.ACCENT : Theme.ACCENT_DIM);
+			HudChrome.rounded(graphics, barX, barY, filled, BAR, 1.1f, snap.abilityReady() ? Theme.ACCENT : Theme.ACCENT_DIM);
 		}
 
 		List<MiningTracker.Commission> commissions = snap.commissions();
@@ -108,10 +108,10 @@ public final class MiningHudRenderer {
 					progressColor
 				);
 				float commBarY = rowY + 10;
-				GuiDraw.rounded(graphics, barX, commBarY, barW, COMM_BAR, 1.2f, Theme.HUD_TRACK);
+				HudChrome.rounded(graphics, barX, commBarY, barW, COMM_BAR, 1.2f, Theme.HUD_TRACK);
 				float amount = Math.max(commission.fraction() > 0f ? 2f : 0f, barW * commission.fraction());
 				if (amount > 0.5f) {
-					GuiDraw.rounded(graphics, barX, commBarY, amount, COMM_BAR, 1.2f, progressColor);
+					HudChrome.rounded(graphics, barX, commBarY, amount, COMM_BAR, 1.2f, progressColor);
 				}
 				rowY += ROW;
 			}
@@ -131,7 +131,7 @@ public final class MiningHudRenderer {
 		int pane = Anim.fade(Theme.HUD_WINDOW, fade);
 		int accent = Anim.fade(Theme.ACCENT, fade);
 		graphics.pose().pushMatrix();
-		GuiDraw.rounded(graphics, x, y, w, h, 6, pane);
+		HudChrome.rounded(graphics, x, y, w, h, 6, pane);
 		GuiDraw.hud(graphics, font, title, x + (w - GuiDraw.hudWidth(font, title)) * 0.5f, y + 6, accent);
 		GuiDraw.hud(graphics, font, name, x + (w - GuiDraw.hudWidth(font, name)) * 0.5f, y + 18, accent);
 		graphics.pose().popMatrix();

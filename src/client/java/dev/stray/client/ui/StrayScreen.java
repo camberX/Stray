@@ -372,6 +372,7 @@ public class StrayScreen extends Screen {
 		new SearchEntry("HUD style", Tab.SETTINGS, "Theme"),
 		new SearchEntry("Vanilla HUD", Tab.SETTINGS, "Theme"),
 		new SearchEntry("Stray HUD", Tab.SETTINGS, "Theme"),
+		new SearchEntry("Click HUD", Tab.SETTINGS, "Theme"),
 		new SearchEntry("Menu stars", Tab.SETTINGS, "Theme"),
 		new SearchEntry("HUD stars", Tab.SETTINGS, "Theme"),
 		new SearchEntry("Accent outlines", Tab.SETTINGS, "Theme"),
@@ -3134,8 +3135,9 @@ public class StrayScreen extends Screen {
 		GuiDraw.menu(graphics, font, label, x + 1, labelY, ink());
 
 		float t = anim("tog-" + animKey, value ? 1f : 0f);
-		float trackW = controlCenter() ? 28 : 22;
-		float trackH = controlCenter() ? 16 : 11;
+		boolean clickList = StrayConfig.get().clickGui;
+		float trackW = clickList ? 18 : controlCenter() ? 28 : 22;
+		float trackH = clickList ? 10 : controlCenter() ? 16 : 11;
 		float tx = x + w - trackW;
 		float ty = y + (row - trackH) / 2f;
 		boolean showCog = feature != null && !controlCenter();
@@ -3146,7 +3148,9 @@ public class StrayScreen extends Screen {
 			GuiDraw.icon(graphics, font, MenuFont.SETTINGS, cogX + 1, labelY, cogOn || cogHover ? Theme.ACCENT : fade());
 			hits.add(new Hit(cogX, y, COG_W, ROW, () -> openFeature(feature)));
 		}
-		if (controlCenter()) {
+		if (clickList) {
+			clickToggle(graphics, tx, ty, trackW, trackH, t);
+		} else if (controlCenter()) {
 			ControlChrome.toggle(graphics, tx, ty, trackW, trackH, t);
 		} else {
 			int fill = t > 0.5f ? Theme.ACCENT : Theme.TRACK;
@@ -3170,6 +3174,17 @@ public class StrayScreen extends Screen {
 			}));
 		}
 		return y + row;
+	}
+
+	private void clickToggle(GuiGraphicsExtractor graphics, float x, float y, float w, float h, float t) {
+		float stroke = 0.5f;
+		GuiDraw.roundedFine(graphics, x, y, w, h, h * 0.5f, 0xFF000000);
+		int fill = t > 0.5f ? Theme.ACCENT : 0x88000000;
+		float innerH = h - stroke * 2f;
+		GuiDraw.roundedFine(graphics, x + stroke, y + stroke, w - stroke * 2f, innerH, innerH * 0.5f, fill);
+		float knobR = innerH * 0.34f;
+		float knobX = x + stroke + knobR + 1f + t * (w - stroke * 2f - knobR * 2f - 2f);
+		GuiDraw.circle(graphics, knobX, y + h * 0.5f, knobR, 0xFFFFFFFF);
 	}
 
 	private void openFeature(Feature feature) {

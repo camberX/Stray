@@ -1653,12 +1653,32 @@ public final class StrayConfig {
 		return "vanilla".equalsIgnoreCase(hudStyle);
 	}
 
+	public boolean hudStyleClick() {
+		return "click".equalsIgnoreCase(hudStyle);
+	}
+
 	public String hudStyleLabel() {
-		return hudStyleVanilla() ? "Vanilla" : "Stray";
+		if (hudStyleVanilla()) {
+			return "Vanilla";
+		}
+		if (hudStyleClick()) {
+			return "Click";
+		}
+		return "Stray";
 	}
 
 	public void cycleHudStyle() {
-		hudStyle = hudStyleVanilla() ? "stray" : "vanilla";
+		if (hudStyleVanilla()) {
+			hudStyle = "stray";
+		} else if (hudStyleClick()) {
+			hudStyle = "vanilla";
+		} else {
+			hudStyle = "click";
+		}
+	}
+
+	public void setHudStyle(String style) {
+		hudStyle = normalizeHudStyle(style);
 	}
 
 	public static String normalizeHudStyle(String style) {
@@ -1668,6 +1688,9 @@ public final class StrayConfig {
 		String key = style.trim().toLowerCase();
 		if (key.equals("vanilla") || key.equals("minecraft") || key.equals("mc")) {
 			return "vanilla";
+		}
+		if (key.equals("click") || key.equals("clickgui") || key.equals("list")) {
+			return "click";
 		}
 		return "stray";
 	}

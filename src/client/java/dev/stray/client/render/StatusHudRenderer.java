@@ -105,7 +105,7 @@ public final class StatusHudRenderer {
 			float barY = XP_BOX_H - XP_H;
 			HudChrome.panel(graphics, 0, barY, w, XP_H, 4, Theme.WINDOW, Theme.LINE);
 			if (t > 0.01f) {
-				GuiDraw.rounded(graphics, 1, barY + 1, Math.max(2f, (w - 2f) * t), XP_H - 2, 3, Theme.ACCENT);
+				HudChrome.rounded(graphics, 1, barY + 1, Math.max(2f, (w - 2f) * t), XP_H - 2, 3, Theme.ACCENT);
 			}
 			String text = Integer.toString(level);
 			float tx = (w - GuiDraw.titleWidth(font, text)) * 0.5f;
@@ -126,7 +126,7 @@ public final class StatusHudRenderer {
 		t = Mth.clamp(t, 0f, 1f);
 		HudChrome.panel(graphics, x, y, BAR_W, BAR_H, 4, Theme.WINDOW, Theme.LINE);
 		if (t > 0.01f) {
-			GuiDraw.rounded(graphics, x + 1, y + 1, Math.max(2f, (BAR_W - 2f) * t), BAR_H - 2, 3, fill);
+			HudChrome.rounded(graphics, x + 1, y + 1, Math.max(2f, (BAR_W - 2f) * t), BAR_H - 2, 3, fill);
 		}
 		GuiDraw.small(graphics, font, label, x + 4, y + 2, Theme.TEXT);
 		GuiDraw.small(graphics, font, value, x + BAR_W - 4 - GuiDraw.smallWidth(font, value), y + 2, Theme.TEXT);

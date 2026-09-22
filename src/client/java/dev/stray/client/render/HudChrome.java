@@ -6,6 +6,12 @@ import dev.stray.client.ui.Theme;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 
 public final class HudChrome {
+	private static final float STROKE = 0.5f;
+	private static final int OUTLINE = 0xFF000000;
+	private static final int FILL = 0x99000000;
+	private static final int OFF = 0x88000000;
+	private static final int ACCENT_ALPHA = 115;
+
 	private static boolean hudPass;
 
 	private HudChrome() {
@@ -23,8 +29,16 @@ public final class HudChrome {
 		return StrayConfig.get().hudStyleVanilla();
 	}
 
+	public static boolean click() {
+		return StrayConfig.get().hudStyleClick();
+	}
+
 	public static boolean vanillaInk() {
 		return hudPass && vanilla();
+	}
+
+	public static boolean clickInk() {
+		return hudPass && click();
 	}
 
 	public static void panel(
@@ -39,6 +53,10 @@ public final class HudChrome {
 		int accent
 	) {
 		if (vanilla()) {
+			return;
+		}
+		if (click()) {
+			box(graphics, x, y, w, h, FILL);
 			return;
 		}
 		if (StrayConfig.get().guiDesignControl()) {
@@ -68,6 +86,49 @@ public final class HudChrome {
 		int outline
 	) {
 		panel(graphics, x, y, w, h, radius, fill, outline, 0);
+	}
+
+	/** Sharp transparent-black box with a half-pixel outline, matching the click GUI. */
+	public static void box(GuiGraphicsExtractor graphics, float x, float y, float w, float h, int fill) {
+		if (w < 1f || h < 1f) {
+			return;
+		}
+		GuiDraw.fillSmooth(graphics, x, y, w, STROKE, OUTLINE);
+		GuiDraw.fillSmooth(graphics, x, y + h - STROKE, w, STROKE, OUTLINE);
+		GuiDraw.fillSmooth(graphics, x, y, STROKE, h, OUTLINE);
+		GuiDraw.fillSmooth(graphics, x + w - STROKE, y, STROKE, h, OUTLINE);
+		GuiDraw.fillSmooth(graphics, x + STROKE, y + STROKE, w - STROKE * 2f, h - STROKE * 2f, fill);
+	}
+
+	/** Progress and chips. Click style uses a flat fill instead of a rounded pill. */
+	public static void rounded(GuiGraphicsExtractor graphics, float x, float y, float w, float h, float radius, int color) {
+		if (click()) {
+			if (w > 0f && h > 0f) {
+				GuiDraw.fillSmooth(graphics, x, y, w, h, clickPaint(color));
+			}
+			return;
+		}
+		GuiDraw.rounded(graphics, x, y, w, h, radius, color);
+	}
+
+	public static void slot(GuiGraphicsExtractor graphics, float x, float y, float size, boolean selected) {
+		if (click()) {
+			box(graphics, x, y, size, size, selected ? Theme.withAlpha(Theme.ACCENT, ACCENT_ALPHA) : OFF);
+			return;
+		}
+		int fill = selected ? Theme.HUD_CARD_HOVER : Theme.HUD_TRACK;
+		int outline = selected ? Theme.ACCENT : Theme.HUD_LINE;
+		GuiDraw.well(graphics, x, y, size, fill, outline);
+	}
+
+	private static int clickPaint(int color) {
+		if (color == Theme.HUD_TRACK || color == Theme.HUD_CARD || color == Theme.HUD_CARD_HOVER || color == Theme.HUD_LINE || color == Theme.HUD_WINDOW) {
+			return OFF;
+		}
+		if ((color >>> 24) == 0xFF) {
+			return Theme.withAlpha(color, ACCENT_ALPHA);
+		}
+		return color;
 	}
 
 	/** Rail sits on the side closer to the screen edge. */

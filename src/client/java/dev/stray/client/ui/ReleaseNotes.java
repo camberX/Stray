@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.4.76", new String[]{
+			"Click GUI switches are smaller, with a half-pixel outline and the same transparent black as modules that are off. Theme hides settings that do not affect the click GUI. HUD style adds Click, which draws the HUD as those same boxes."
+		}),
 		new Entry("1.4.75", new String[]{
 			"Click GUI no longer repeats itself when you right click it. Theme is its own column. Nick hider and cape open their settings on right click."
 		}),

@@ -276,7 +276,11 @@ public final class ClickGui {
 		boolean settingsClip = clipBot > clipTop + 0.5f && GuiDraw.scissor(graphics, columnX, clipTop, COL_W, clipBot - clipTop);
 		int mark = screen.clickHitMark();
 		if (mod.menuStyle) {
-			drawMenuStyle(screen, graphics, font, boxX, y, boxW);
+			if ("HUD style".equals(mod.name)) {
+				drawHudStyle(screen, graphics, font, boxX, y, boxW);
+			} else {
+				drawMenuStyle(screen, graphics, font, boxX, y, boxW);
+			}
 		} else if (mod.timeout) {
 			drawTimeout(screen, graphics, font, boxX, y, boxW);
 		} else if (mod.feature != null) {
@@ -303,6 +307,20 @@ public final class ClickGui {
 
 	private static void drawMenuStyle(StrayScreen screen, GuiGraphicsExtractor graphics, Font font, float x, float y, float w) {
 		drawChoice(screen, graphics, font, x, y, w, "Stray Menu", false, () -> setClickGui(false));
+	}
+
+	private static void drawHudStyle(StrayScreen screen, GuiGraphicsExtractor graphics, Font font, float x, float y, float w) {
+		StrayConfig config = StrayConfig.get();
+		drawChoice(screen, graphics, font, x, y, w, "Stray", !config.hudStyleVanilla() && !config.hudStyleClick(), () -> setHudStyle("stray"));
+		y += STRIDE;
+		drawChoice(screen, graphics, font, x, y, w, "Click", config.hudStyleClick(), () -> setHudStyle("click"));
+		y += STRIDE;
+		drawChoice(screen, graphics, font, x, y, w, "Vanilla", config.hudStyleVanilla(), () -> setHudStyle("vanilla"));
+	}
+
+	private static void setHudStyle(String style) {
+		StrayConfig.get().setHudStyle(style);
+		UnloadState.markDirty();
 	}
 
 	private static void drawChoice(
@@ -436,7 +454,7 @@ public final class ClickGui {
 
 	private static float settingsFull(StrayScreen screen, Mod mod) {
 		if (mod.menuStyle) {
-			return stackH(1);
+			return "HUD style".equals(mod.name) ? stackH(3) : stackH(1);
 		}
 		if (mod.timeout) {
 			return stackH(6);
@@ -637,17 +655,9 @@ public final class ClickGui {
 		mods.add(mod("Paths", "Menus", StrayScreen.Feature.PATHS, null, () -> config.pathsEnabled, v -> config.pathsEnabled = v, true, false));
 
 		mods.add(hold("Accent", "Theme", StrayScreen.Feature.ACCENT));
-		mods.add(hold("Pane", "Theme", StrayScreen.Feature.PANE));
-		mods.add(hold("Window", "Theme", StrayScreen.Feature.WINDOW));
-		mods.add(hold("Menu scale", "Theme", StrayScreen.Feature.SCALE));
-		mods.add(mod("Vanilla HUD", "Theme", null, null, config::hudStyleVanilla, v -> config.hudStyle = v ? "vanilla" : "stray", false, false));
-		mods.add(mod("Menu stars", "Theme", null, null, () -> config.menuStarfield, v -> config.menuStarfield = v, false, false));
+		mods.add(mod("HUD style", "Theme", null, null, () -> true, v -> {
+		}, false, false, true));
 		mods.add(mod("HUD stars", "Theme", null, null, () -> config.hudStarfield, v -> config.hudStarfield = v, false, false));
-		mods.add(mod("Accent outlines", "Theme", null, null, () -> config.accentOutlines, v -> {
-			config.accentOutlines = v;
-			Theme.refresh();
-		}, false, false));
-		mods.add(mod("Animations", "Theme", null, null, () -> config.uiAnimations, v -> config.uiAnimations = v, false, false));
 		mods.add(mod("Auto update", "Theme", null, null, () -> config.autoUpdate, v -> config.autoUpdate = v, false, false));
 		mods.add(mod("Auto close", "Theme", null, null, () -> config.updateAutoClose, v -> config.updateAutoClose = v, false, false));
 		mods.add(mod("Update notify", "Theme", null, null, () -> config.updateNotify, v -> config.updateNotify = v, false, false));

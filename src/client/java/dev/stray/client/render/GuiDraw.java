@@ -835,31 +835,31 @@ public final class GuiDraw {
 	public static void menu(GuiGraphicsExtractor graphics, Font font, String value, float x, float y, int color) {
 		float scale = MenuFont.bodyScale();
 		String shown = clickWords(value);
-		text(graphics, font, MenuFont.body(shown), x, MenuFont.menuY(y, scale), scale, color, false);
+		text(graphics, font, MenuFont.body(shown), x, MenuFont.menuY(y, scale), scale, color, HudChrome.clickInk());
 	}
 
 	public static void small(GuiGraphicsExtractor graphics, Font font, String value, float x, float y, int color) {
 		float scale = MenuFont.smallScale();
 		String shown = clickWords(value);
-		text(graphics, font, MenuFont.small(shown), x, MenuFont.menuY(y, scale), scale, color, false);
+		text(graphics, font, MenuFont.small(shown), x, MenuFont.menuY(y, scale), scale, color, HudChrome.clickInk());
 	}
 
 	public static void title(GuiGraphicsExtractor graphics, Font font, String value, float x, float y, int color) {
 		float scale = MenuFont.titleScale();
-		text(graphics, font, MenuFont.title(value), x, MenuFont.menuY(y, scale), scale, color, false);
+		text(graphics, font, MenuFont.title(value), x, MenuFont.menuY(y, scale), scale, color, HudChrome.clickInk());
 	}
 
 	public static void brand(GuiGraphicsExtractor graphics, Font font, String value, float x, float y, int color) {
-		text(graphics, font, MenuFont.brand(value), x, y - 1.0f, color, false);
+		text(graphics, font, MenuFont.brand(value), x, y - 1.0f, color, HudChrome.clickInk());
 	}
 
 	public static void brandSmall(GuiGraphicsExtractor graphics, Font font, String value, float x, float y, int color) {
-		text(graphics, font, MenuFont.brandSmall(value), x, y - 1.0f, color, false);
+		text(graphics, font, MenuFont.brandSmall(value), x, y - 1.0f, color, HudChrome.clickInk());
 	}
 
 	public static void hud(GuiGraphicsExtractor graphics, Font font, Component value, float x, float y, int color) {
 		float scale = MenuFont.bodyScale();
-		text(graphics, font, MenuFont.applyBody(value), x, MenuFont.hudY(y, scale), scale, color, false);
+		text(graphics, font, MenuFont.applyBody(value), x, MenuFont.hudY(y, scale), scale, color, HudChrome.clickInk());
 	}
 
 	public static void icon(GuiGraphicsExtractor graphics, Font font, String glyph, float x, float y, int color) {

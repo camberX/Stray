@@ -62,9 +62,7 @@ public final class HotbarHudRenderer {
 		int seed,
 		boolean selected
 	) {
-		int fill = selected ? Theme.HUD_CARD_HOVER : Theme.HUD_TRACK;
-		int outline = selected ? Theme.ACCENT : Theme.HUD_LINE;
-		GuiDraw.well(graphics, x, y, SLOT, fill, outline);
+		HudChrome.slot(graphics, x, y, SLOT, selected);
 		if (stack == null || stack.isEmpty()) {
 			return;
 		}

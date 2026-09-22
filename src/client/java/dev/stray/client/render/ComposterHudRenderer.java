@@ -129,10 +129,10 @@ public final class ComposterHudRenderer {
 		GuiDraw.small(graphics, font, label, PAD + 1, y, Theme.TEXT);
 		right(graphics, font, value, y, Theme.MUTED);
 		float barY = y + 9;
-		GuiDraw.rounded(graphics, PAD, barY, BAR_W, BAR_H, BAR_H * 0.5f, Theme.HUD_TRACK);
+		HudChrome.rounded(graphics, PAD, barY, BAR_W, BAR_H, BAR_H * 0.5f, Theme.HUD_TRACK);
 		if (maximum > 0 && current > 0) {
 			float fraction = Math.max(0f, Math.min(1f, current / (float) maximum));
-			GuiDraw.rounded(graphics, PAD, barY, Math.max(BAR_H, BAR_W * fraction), BAR_H, BAR_H * 0.5f, color);
+			HudChrome.rounded(graphics, PAD, barY, Math.max(BAR_H, BAR_W * fraction), BAR_H, BAR_H * 0.5f, color);
 		}
 	}
 
