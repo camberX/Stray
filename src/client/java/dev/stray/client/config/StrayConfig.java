@@ -190,6 +190,8 @@ public final class StrayConfig {
 	public float chestEspOpacity = 0.34f;
 	public boolean clickGui = true;
 	public boolean arrayList = true;
+	public boolean arrayListAccent = false;
+	public java.util.List<String> arrayListHidden = new java.util.ArrayList<>();
 	public java.util.List<ClickColumnPos> clickColumns = new java.util.ArrayList<>();
 	public boolean loadoutsMenuEnabled = false;
 	public boolean noCursorReset = true;
@@ -1138,6 +1140,12 @@ public final class StrayConfig {
 				if (!json.has("arrayList")) {
 					loaded.arrayList = true;
 				}
+				if (!json.has("arrayListAccent")) {
+					loaded.arrayListAccent = false;
+				}
+				if (loaded.arrayListHidden == null) {
+					loaded.arrayListHidden = new java.util.ArrayList<>();
+				}
 				if (loaded.clickColumns == null) {
 					loaded.clickColumns = new java.util.ArrayList<>();
 				}
@@ -1679,6 +1687,22 @@ public final class StrayConfig {
 
 	public void setHudStyle(String style) {
 		hudStyle = normalizeHudStyle(style);
+	}
+
+	public boolean arrayListShows(String name) {
+		return arrayListHidden == null || name == null || !arrayListHidden.contains(name);
+	}
+
+	public void toggleArrayListShown(String name) {
+		if (name == null) {
+			return;
+		}
+		if (arrayListHidden == null) {
+			arrayListHidden = new java.util.ArrayList<>();
+		}
+		if (!arrayListHidden.remove(name)) {
+			arrayListHidden.add(name);
+		}
 	}
 
 	public static String normalizeHudStyle(String style) {
