@@ -17,6 +17,7 @@ import dev.stray.client.farming.AutoDna;
 import dev.stray.client.farming.PestEsp;
 import dev.stray.client.farming.GardenPlots;
 import dev.stray.client.menu.DisabledPotions;
+import dev.stray.client.menu.NoCursorReset;
 import dev.stray.client.farming.FarmKeys;
 import dev.stray.client.fairy.FairySoulCommands;
 import dev.stray.client.fairy.FairySoulRenderer;
@@ -338,6 +339,7 @@ public final class StrayClient implements ClientModInitializer {
 			StoragePreview.tick(client);
 			LoadoutsScreen.tickSwap(client);
 			WardrobeScreen.tickSwap(client);
+			NoCursorReset.tick(client);
 			Hitsound.tick(client);
 			PickupLogRenderer.tick(client);
 			JacobContestTracker.tick(client);
