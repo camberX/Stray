@@ -19,7 +19,6 @@ import java.util.List;
 public final class ArrayListHud {
 	private static final int PANEL = 0x99000000;
 	private static final int OUTLINE = 0xFF000000;
-	private static final int TEXT = 0xFFFFFFFF;
 	private static final int SWATCH = 2;
 	private static final int PAD = 1;
 
@@ -69,7 +68,7 @@ public final class ArrayListHud {
 		GuiDraw.fill(graphics, x + w - 1, y, 1, h, OUTLINE);
 		GuiDraw.fill(graphics, x + 1, y + 1, w - 2, h - 2, PANEL);
 		GuiDraw.fill(graphics, x + w - 1 - SWATCH, y + 1, SWATCH, h - 2, row.color);
-		GuiDraw.text(graphics, font, row.label, x + 1 + PAD, y + 1, TEXT, true);
+		graphics.text(font, row.label, x + 1 + PAD, y + 1, row.color, true);
 	}
 
 	private record Row(String label, int color, int width) {
