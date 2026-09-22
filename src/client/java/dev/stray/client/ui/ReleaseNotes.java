@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.4.59", new String[]{
+			"Pest cooldown reads the Garden pests tab widget. The 2 minute title, under that card, flashes when the cooldown counts down through 2:00."
+		}),
 		new Entry("1.4.58", new String[]{
 			"No cursor reset keeps the pointer where it was when a chest menu is replaced by the next one. Unhook timeout on the Menus tab is how long that lasts after the previous menu closes."
 		}),

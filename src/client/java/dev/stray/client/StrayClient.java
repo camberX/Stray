@@ -14,6 +14,7 @@ import dev.stray.client.combat.OdinClicks;
 import dev.stray.client.combat.Triggerbot;
 import dev.stray.client.debug.StrayDebug;
 import dev.stray.client.farming.AutoDna;
+import dev.stray.client.farming.PestCooldown;
 import dev.stray.client.farming.PestEsp;
 import dev.stray.client.farming.GardenPlots;
 import dev.stray.client.menu.DisabledPotions;
@@ -346,6 +347,7 @@ public final class StrayClient implements ClientModInitializer {
 			SkillProgressTracker.tick(client);
 			ComposterTracker.tick(client);
 			GardenHud.tick(client);
+			PestCooldown.tick(client);
 			StrayDebug.tick(client);
 			EnderNodeTracker.get().tick(client);
 			ConnectionPing.tick(client);
@@ -380,6 +382,7 @@ public final class StrayClient implements ClientModInitializer {
 			ChestAimer.stop();
 			ChestEsp.get().clear();
 			PestEsp.reset();
+			PestCooldown.reset();
 			CrystalHollows.onWorldChange();
 			MetalDetector.onWorldChange();
 			BlockMarks.onWorldChange();
@@ -402,6 +405,7 @@ public final class StrayClient implements ClientModInitializer {
 			AutoExperiments.reset();
 			AutoDna.reset();
 			PestEsp.reset();
+			PestCooldown.reset();
 			DisabledPotions.reset();
 			PickupLogRenderer.clear();
 			JacobContestTracker.reset();
@@ -424,6 +428,7 @@ public final class StrayClient implements ClientModInitializer {
 			AutoExperiments.reset();
 			AutoDna.reset();
 			PestEsp.reset();
+			PestCooldown.reset();
 			DisabledPotions.reset();
 			PickupLogRenderer.clear();
 			JacobContestTracker.reset();
@@ -438,6 +443,7 @@ public final class StrayClient implements ClientModInitializer {
 			TitaniumTracker.get().clear();
 			ChestEsp.get().clear();
 			PestEsp.reset();
+			PestCooldown.reset();
 			ChestAimer.stop();
 			MobGlowRenderer.reset();
 			StarMobEsp.reset();
