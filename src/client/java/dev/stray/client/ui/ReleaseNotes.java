@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.4.74", new String[]{
+			"Client watermark tray is larger and sits closer to the S. Both letters share the same bottom edge, including the shadow."
+		}),
 		new Entry("1.4.73", new String[]{
 			"Client watermark lines the bottom of tray up with the bottom of the big S."
 		}),
