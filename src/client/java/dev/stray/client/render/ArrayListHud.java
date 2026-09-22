@@ -32,11 +32,11 @@ public final class ArrayListHud {
 	public static void draw(GuiGraphicsExtractor graphics, Font font, int guiWidth) {
 		List<String> labels = new ArrayList<>(ClickGui.enabledLabels());
 		labels.sort(Comparator.comparingInt((String label) -> font.width(label)).reversed());
-		float y = 2f;
+		float y = 1f;
 		int line = Math.max(1, font.lineHeight);
 		for (String label : labels) {
 			int color = ClickGui.colorOf(label);
-			float x = guiWidth - font.width(label) - 2f;
+			float x = guiWidth - font.width(label) - 1f;
 			GuiDraw.text(graphics, font, label, x, y, color, true);
 			y += line;
 		}

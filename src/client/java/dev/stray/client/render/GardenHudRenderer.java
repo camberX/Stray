@@ -9,6 +9,8 @@ import dev.stray.client.farming.GardenHud.Need;
 import dev.stray.client.farming.GardenHud.ShoppingSnap;
 import dev.stray.client.farming.GardenHud.VisitorSnap;
 import dev.stray.client.farming.GardenVisitors;
+import dev.stray.client.farming.PestCooldown;
+import dev.stray.client.farming.PestCooldown.Snap;
 import dev.stray.client.item.ItemIds;
 import dev.stray.client.location.SkyblockLocation;
 import dev.stray.client.ui.HudEditorScreen;
@@ -36,6 +38,7 @@ import java.util.Map;
 public final class GardenHudRenderer {
 	private static final float WIDTH = 158f;
 	private static final float CONTEST_H = 28f;
+	private static final float COOLDOWN_H = 28f;
 	private static final float MILESTONE_H = 40f;
 	private static final float PAD = 5f;
 	private static final float LINE = 10f;
@@ -130,6 +133,14 @@ public final class GardenHudRenderer {
 		return shoppingHeightOf(snap);
 	}
 
+	public static float pestCooldownWidth() {
+		return WIDTH;
+	}
+
+	public static float pestCooldownHeight() {
+		return COOLDOWN_H;
+	}
+
 	static void extract(GuiGraphicsExtractor graphics, DeltaTracker deltaTracker) {
 		Minecraft client = Minecraft.getInstance();
 		if (client.screen instanceof AbstractContainerScreen<?>) {
@@ -184,6 +195,13 @@ public final class GardenHudRenderer {
 				drawShopping(graphics, client.font, box.x(), box.y(), HudLayout.scale(HudLayout.Id.SHOPPING), snap);
 			}
 		}
+		if (config.pestCooldownHudEnabled) {
+			Snap snap = PestCooldown.snap();
+			if (snap.present() || HudLayout.editorOpen()) {
+				HudLayout.Box box = HudLayout.box(HudLayout.Id.PEST_COOLDOWN, client.font, graphics.guiWidth(), graphics.guiHeight());
+				drawPestCooldown(graphics, client.font, box.x(), box.y(), HudLayout.scale(HudLayout.Id.PEST_COOLDOWN), snap);
+			}
+		}
 	}
 
 	private static void drawContest(
@@ -203,6 +221,27 @@ public final class GardenHudRenderer {
 			crops = crops.replace(snap.boosted(), snap.boosted() + "*");
 		}
 		GuiDraw.small(graphics, font, GuiDraw.ellipsize(font, crops, WIDTH - PAD * 2, true), PAD + 1, PAD + LINE, Theme.TEXT);
+		graphics.pose().popMatrix();
+	}
+
+	private static void drawPestCooldown(
+		GuiGraphicsExtractor graphics,
+		Font font,
+		float x,
+		float y,
+		float scale,
+		Snap value
+	) {
+		Snap current = value.present() ? value : Snap.sample();
+		begin(graphics, x, y, scale, WIDTH, COOLDOWN_H);
+		GuiDraw.small(graphics, font, "PEST COOLDOWN", PAD + 1, PAD, Theme.ACCENT);
+		int color = switch (current.kind()) {
+			case READY -> 0x7DFF9A;
+			case MAX -> 0xFF5A4A;
+			case MISSING -> Theme.MUTED;
+			case COUNTING -> Theme.TEXT;
+		};
+		right(graphics, font, current.label(), PAD, color);
 		graphics.pose().popMatrix();
 	}
 

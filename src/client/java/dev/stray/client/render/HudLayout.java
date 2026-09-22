@@ -36,6 +36,7 @@ public final class HudLayout {
 		HOE("Hoe level"),
 		MILESTONE("Crop milestone"),
 		SHOPPING("Shopping list"),
+		PEST_COOLDOWN("Pest cooldown"),
 		HOTBAR("Hotbar"),
 		HEALTH("Health"),
 		HUNGER("Hunger"),
@@ -235,7 +236,7 @@ public final class HudLayout {
 					}
 					y = placed(config.hudSkillY) ? config.hudSkillY : MARGIN + below;
 				}
-				case NEXT_CONTEST, VISITOR, HOE, MILESTONE, SHOPPING -> {
+				case NEXT_CONTEST, VISITOR, HOE, MILESTONE, SHOPPING, PEST_COOLDOWN -> {
 					x = MARGIN;
 					y = gardenDefaultY(id, config);
 				}
@@ -458,6 +459,7 @@ public final class HudLayout {
 			case HOE -> config.gardenHoeHudEnabled;
 			case MILESTONE -> config.gardenMilestoneHudEnabled;
 			case SHOPPING -> config.gardenShoppingHudEnabled;
+			case PEST_COOLDOWN -> config.pestCooldownHudEnabled;
 			case HOTBAR, HEALTH, HUNGER, ARMOR, AIR, EXPERIENCE, MOUNT -> false;
 			case SCOREBOARD -> config.hudScoreboard;
 			case BOSS -> config.hudBossBar;
@@ -531,6 +533,7 @@ public final class HudLayout {
 			case HOE -> config.slotGardenHoe;
 			case MILESTONE -> config.slotGardenMilestone;
 			case SHOPPING -> config.slotGardenShopping;
+			case PEST_COOLDOWN -> config.slotGardenPest;
 			default -> null;
 		};
 	}
@@ -552,13 +555,14 @@ public final class HudLayout {
 		if (config.skillProgressHudEnabled) {
 			below += SkillProgressHudRenderer.drawHeight() * scale(Id.SKILL) + 4;
 		}
-		Id[] order = {Id.NEXT_CONTEST, Id.VISITOR, Id.HOE, Id.MILESTONE, Id.SHOPPING};
+		Id[] order = {Id.NEXT_CONTEST, Id.VISITOR, Id.HOE, Id.MILESTONE, Id.SHOPPING, Id.PEST_COOLDOWN};
 		boolean[] on = {
 			config.gardenContestHudEnabled,
 			config.gardenVisitorHudEnabled,
 			config.gardenHoeHudEnabled,
 			config.gardenMilestoneHudEnabled,
-			config.gardenShoppingHudEnabled
+			config.gardenShoppingHudEnabled,
+			config.pestCooldownHudEnabled
 		};
 		for (int i = 0; i < order.length; i++) {
 			if (order[i] == id) {
@@ -640,6 +644,7 @@ public final class HudLayout {
 			case HOE -> GardenHudRenderer.hoeWidth() * scale;
 			case MILESTONE -> GardenHudRenderer.milestoneWidth() * scale;
 			case SHOPPING -> GardenHudRenderer.shoppingWidth() * scale;
+			case PEST_COOLDOWN -> GardenHudRenderer.pestCooldownWidth() * scale;
 			case HOTBAR -> HotbarHudRenderer.drawWidth() * scale;
 			case HEALTH, HUNGER, ARMOR, AIR, MOUNT -> StatusHudRenderer.BAR_W * scale;
 			case EXPERIENCE -> StatusHudRenderer.xpWidth() * scale;
@@ -670,6 +675,7 @@ public final class HudLayout {
 			case HOE -> GardenHudRenderer.hoeHeight() * scale;
 			case MILESTONE -> GardenHudRenderer.milestoneHeight() * scale;
 			case SHOPPING -> GardenHudRenderer.shoppingHeight() * scale;
+			case PEST_COOLDOWN -> GardenHudRenderer.pestCooldownHeight() * scale;
 			case HOTBAR -> HotbarHudRenderer.HEIGHT * scale;
 			case HEALTH, HUNGER, ARMOR, AIR, MOUNT -> StatusHudRenderer.BAR_H * scale;
 			case EXPERIENCE -> StatusHudRenderer.XP_BOX_H * scale;

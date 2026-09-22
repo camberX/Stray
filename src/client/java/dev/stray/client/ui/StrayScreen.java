@@ -178,6 +178,7 @@ public class StrayScreen extends Screen {
 		PLOTS("Garden plots", 1),
 		SHOPPING("Shopping list", 1),
 		PEST("Pest ESP", 2),
+		PEST_COOLDOWN("Pest cooldown", 1),
 		AUTO_DNA("Auto DNA", 5),
 		NAMETAGS("Nametags", 6),
 		HEALTH("Health bar", 7),
@@ -387,6 +388,8 @@ public class StrayScreen extends Screen {
 		new SearchEntry("Open menu", Tab.KEYS, "Keys"),
 		new SearchEntry("Menus", Tab.MENUS, "Menus"),
 		new SearchEntry("Click GUI", Tab.MENUS, "Menus"),
+		new SearchEntry("Stray menu", Tab.MENUS, "Menus"),
+		new SearchEntry("Menu style", Tab.SETTINGS, "Theme"),
 		new SearchEntry("Array list", Tab.MENUS, "Menus"),
 		new SearchEntry("No cursor reset", Tab.MENUS, "Menus"),
 		new SearchEntry("Unhook timeout", Tab.MENUS, "Menus"),
@@ -453,6 +456,8 @@ public class StrayScreen extends Screen {
 		new SearchEntry("Bazaar", Tab.GARDEN, "Garden"),
 		new SearchEntry("Garden plots", Tab.GARDEN, "Garden"),
 		new SearchEntry("Pest ESP", Tab.GARDEN, "Garden"),
+		new SearchEntry("Pest cooldown", Tab.GARDEN, "Garden"),
+		new SearchEntry("Pest cooldown title", Tab.GARDEN, "Garden"),
 		new SearchEntry("Garden pests", Tab.GARDEN, "Garden"),
 		new SearchEntry("Vacuum", Tab.GARDEN, "Garden"),
 		new SearchEntry("Plot widget", Tab.GARDEN, "Garden"),
@@ -1981,7 +1986,12 @@ public class StrayScreen extends Screen {
 			return;
 		}
 		GuiDraw.menu(graphics, font, "Theme", settingsX + 8, settingsY + 6, Theme.HEADER);
-		float y = colorRow(graphics, font, settingsX + 8, settingsY + 20, PANEL_W - 16, mouseX, mouseY, "Glass", StrayConfig.get().controlPaneRgb, PickerTarget.CONTROL);
+		float y = cycle(graphics, font, settingsX + 8, settingsY + 20, PANEL_W - 16, mouseX, mouseY, "Menu", StrayConfig.get().clickGui ? "Click GUI" : "Stray", () -> {
+			StrayConfig config = StrayConfig.get();
+			config.clickGui = !config.clickGui;
+			UnloadState.markDirty();
+		});
+		y = colorRow(graphics, font, settingsX + 8, y, PANEL_W - 16, mouseX, mouseY, "Glass", StrayConfig.get().controlPaneRgb, PickerTarget.CONTROL);
 		y = colorRow(graphics, font, settingsX + 8, y, PANEL_W - 16, mouseX, mouseY, "Pills", StrayConfig.get().controlPillRgb, PickerTarget.PILL);
 		y = slider(graphics, font, settingsX + 8, y, PANEL_W - 16, "Frost", Math.round(StrayConfig.get().controlFrost * 100) + "%", StrayConfig.get().controlFrost, v -> StrayConfig.get().controlFrost = StrayConfig.clamp(v, 0f, 1f));
 		GuiDraw.small(graphics, font, "Accent", settingsX + 8, y + 2, controlCenter() ? ControlChrome.muted() : Theme.MUTED);
@@ -2690,7 +2700,8 @@ public class StrayScreen extends Screen {
 				y = toggleCard(graphics, font, left, y, col, mouseX, mouseY, "Crop milestone", config.gardenMilestoneHudEnabled, v -> config.gardenMilestoneHudEnabled = v);
 				controlCard(graphics, font, left, y, col, mouseX, mouseY, "Shopping list", config.gardenShoppingHudEnabled, v -> config.gardenShoppingHudEnabled = v, Feature.SHOPPING);
 				y = sectionLabel(graphics, font, right, top, "Pests");
-				controlCard(graphics, font, right, y, col, mouseX, mouseY, "Pest ESP", config.pestEspEnabled, v -> config.pestEspEnabled = v, Feature.PEST);
+				y = controlCard(graphics, font, right, y, col, mouseX, mouseY, "Pest ESP", config.pestEspEnabled, v -> config.pestEspEnabled = v, Feature.PEST);
+				controlCard(graphics, font, right, y, col, mouseX, mouseY, "Pest cooldown", config.pestCooldownHudEnabled, v -> config.pestCooldownHudEnabled = v, Feature.PEST_COOLDOWN);
 			}
 			case GREENHOUSE -> {
 				float y = sectionLabel(graphics, font, left, top, "Analyzer");
@@ -2785,7 +2796,11 @@ public class StrayScreen extends Screen {
 	) {
 		StrayConfig config = StrayConfig.get();
 		float y = sectionLabel(graphics, font, left, top, "Window");
-		y = featureCard(graphics, font, left, y, col, cardHeight(8), "Control");
+		y = featureCard(graphics, font, left, y, col, cardHeight(9), "Control");
+		y = cycle(graphics, font, ix, y, iw, mouseX, mouseY, "Menu", config.clickGui ? "Click GUI" : "Stray", () -> {
+			config.clickGui = !config.clickGui;
+			UnloadState.markDirty();
+		});
 		y = colorRow(graphics, font, ix, y, iw, mouseX, mouseY, "Glass", config.controlPaneRgb, PickerTarget.CONTROL);
 		y = colorRow(graphics, font, ix, y, iw, mouseX, mouseY, "Pills", config.controlPillRgb, PickerTarget.PILL);
 		y = slider(graphics, font, ix, y, iw, "Frost", Math.round(config.controlFrost * 100) + "%", config.controlFrost, v -> config.controlFrost = StrayConfig.clamp(v, 0f, 1f));
@@ -3421,6 +3436,7 @@ public class StrayScreen extends Screen {
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Through walls", config.pestEspThroughWalls, v -> config.pestEspThroughWalls = v);
 				colorRow(graphics, font, ix, y, iw, mouseX, mouseY, "Color", config.pestEspRgb, PickerTarget.PEST);
 			}
+			case PEST_COOLDOWN -> toggle(graphics, font, ix, y, iw, mouseX, mouseY, "2 minute title", config.pestCooldownTitle, v -> config.pestCooldownTitle = v);
 			case AUTO_DNA -> {
 				y = slider(graphics, font, ix, y, iw, "Click delay", config.autoDnaClickDelay + "ms", (config.autoDnaClickDelay - 100) / 900f, v -> config.autoDnaClickDelay = snapInt(100 + v * 900f, 100, 1000, 10));
 				y = slider(graphics, font, ix, y, iw, "Delay variety", config.autoDnaDelayVariety + "ms", config.autoDnaDelayVariety / 1000f, v -> config.autoDnaDelayVariety = snapInt(v * 1000f, 0, 1000, 10));
