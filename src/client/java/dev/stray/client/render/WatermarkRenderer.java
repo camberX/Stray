@@ -16,8 +16,11 @@ import java.util.List;
 public final class WatermarkRenderer {
 	public static final float HEIGHT = 18;
 	private static final float CLIENT_HEIGHT = 22;
-	private static final float S_SCALE = 2.35f;
+	private static final float S_SCALE = 2.55f;
 	private static final float TRAY_SCALE = 1.35f;
+	private static final float VERSION_SCALE = 0.62f;
+	/** Capitals end above the line box. The rest of the line is the y descender. */
+	private static final float ASCENT = 7f / 9f;
 	private static final float PART_GAP = 3f;
 	private static final String DEV_TAG = "DEV";
 	private static final float DEV_GAP = 3f;
@@ -115,20 +118,27 @@ public final class WatermarkRenderer {
 		Component mark = MenuFont.title("S");
 		Component rest = MenuFont.title("tray");
 		String version = versionLabel();
+		float line = Math.max(1, font.lineHeight);
 		float markW = font.width(mark) * S_SCALE;
 		float textX = markW + PART_GAP;
+		float trayY = trayTop(line);
 		GuiDraw.text(graphics, font, mark, 0, 0, S_SCALE, Theme.ACCENT, true);
-		float top = 0f;
 		if (!version.isEmpty()) {
 			Component minor = MenuFont.brand(version);
-			GuiDraw.text(graphics, font, minor, textX, top, WHITE, true);
-			float extraX = textX + font.width(minor) + PART_GAP;
+			GuiDraw.text(graphics, font, minor, textX, 0, VERSION_SCALE, WHITE, true);
+			float extraX = textX + font.width(minor) * VERSION_SCALE + PART_GAP;
 			String extra = clientExtras(StrayConfig.get());
 			if (!extra.isEmpty()) {
-				GuiDraw.text(graphics, font, MenuFont.brand(extra), extraX, top, WHITE, true);
+				GuiDraw.text(graphics, font, MenuFont.brand(extra), extraX, 0, VERSION_SCALE, WHITE, true);
 			}
 		}
-		GuiDraw.text(graphics, font, rest, textX, font.lineHeight, TRAY_SCALE, Theme.ACCENT, true);
+		GuiDraw.text(graphics, font, rest, textX, trayY, TRAY_SCALE, Theme.ACCENT, true);
+	}
+
+	/** Puts the bottom of tray, including the y descender, on the bottom of S. */
+	private static float trayTop(float line) {
+		float sBottom = line * ASCENT * S_SCALE;
+		return sBottom - line * TRAY_SCALE;
 	}
 
 	private static int widthTick = Integer.MIN_VALUE;
@@ -173,14 +183,14 @@ public final class WatermarkRenderer {
 		float top = 0f;
 		String version = versionLabel();
 		if (!version.isEmpty()) {
-			top += font.width(MenuFont.brand(version));
+			top += font.width(MenuFont.brand(version)) * VERSION_SCALE;
 		}
 		String extra = clientExtras(config);
 		if (!extra.isEmpty()) {
 			if (top > 0f) {
 				top += PART_GAP;
 			}
-			top += font.width(MenuFont.brand(extra));
+			top += font.width(MenuFont.brand(extra)) * VERSION_SCALE;
 		}
 		float trayW = font.width(MenuFont.title("tray")) * TRAY_SCALE;
 		float right = Math.max(top, trayW);
