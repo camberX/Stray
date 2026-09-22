@@ -20,11 +20,6 @@ jobs:
         run: chmod +x ./gradlew
       - name: build
         run: ./gradlew build
-      - name: capture build artifacts
-        uses: actions/upload-artifact@v7
-        with:
-          name: Artifacts
-          path: build/libs/
       - name: publish GitHub release
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         env:
@@ -54,3 +49,9 @@ jobs:
           fi
           git commit -m "Publish stray-${VERSION}.jar on the GitHub download path."
           git push
+      - name: capture build artifacts
+        continue-on-error: true
+        uses: actions/upload-artifact@v7
+        with:
+          name: Artifacts
+          path: build/libs/
