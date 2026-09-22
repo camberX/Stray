@@ -22,15 +22,13 @@ import java.util.function.Consumer;
  * Headers drag. Each column scrolls on its own.
  */
 public final class ClickGui {
-	static final int COL_W = 108;
-	private static final int GAP = 3;
-	private static final int HEADER = 13;
-	private static final int ROW = 12;
-	private static final int HEADER_COLOR = 0xE02A4C9E;
-	private static final int ENABLED_COLOR = 0xE03A62C4;
-	private static final int ROW_COLOR = 0xE0101218;
+	static final int COL_W = 106;
+	private static final int GAP = 2;
+	private static final int HEADER = 16;
+	private static final int ROW = 16;
+	private static final int ROW_COLOR = 0xFF000000;
 	private static final int TEXT = 0xFFFFFFFF;
-	private static final int DIM = 0xFFD0D0DC;
+	private static final int DIM = 0xFFAAAAAA;
 	private static final String[] ORDER = {"World", "Visuals", "Combat", "HUD", "Mining", "Farming", "Menus", "Player"};
 
 	private static final Map<String, Column> columns = new LinkedHashMap<>();
@@ -162,31 +160,33 @@ public final class ClickGui {
 				mods.add(mod);
 			}
 		}
+		int x = Math.round(column.x);
+		int top = Math.round(column.y);
 		float content = mods.size() * ROW;
-		float visible = Math.max(ROW, screen.height - column.y - HEADER - 4);
+		float visible = Math.max(ROW, screen.height - top - HEADER);
 		column.height = HEADER + Math.min(content, visible);
 		float maxScroll = Math.max(0f, content - visible);
-		column.scroll = Mth.clamp(column.scroll, 0f, maxScroll);
+		column.scroll = Math.round(Mth.clamp(column.scroll, 0f, maxScroll));
 
-		GuiDraw.fill(graphics, column.x, column.y, COL_W, HEADER, HEADER_COLOR);
+		int accent = Theme.ACCENT;
+		GuiDraw.fill(graphics, x, top, COL_W, HEADER, accent);
 		String title = column.id;
-		int titleW = font.width(title);
-		GuiDraw.text(graphics, font, title, column.x + (COL_W - titleW) / 2f, column.y + 2, TEXT, true);
-		screen.clickHit(column.x, column.y, COL_W, HEADER, () -> beginDrag(column.id));
+		GuiDraw.text(graphics, font, title, textX(font, title, x, COL_W), textY(font, top, HEADER), TEXT, true);
+		screen.clickHit(x, top, COL_W, HEADER, () -> beginDrag(column.id));
 
-		float clipY = column.y + HEADER;
-		boolean clipped = GuiDraw.scissor(graphics, column.x, clipY, COL_W, visible);
+		float clipY = top + HEADER;
+		boolean clipped = GuiDraw.scissor(graphics, x, clipY, COL_W, visible);
 		float y = clipY - column.scroll;
 		for (Mod mod : mods) {
 			boolean shown = y + ROW > clipY && y < clipY + visible;
 			if (shown) {
 				boolean on = mod.on.getAsBoolean();
-				GuiDraw.fill(graphics, column.x, y, COL_W, ROW, on ? ENABLED_COLOR : ROW_COLOR);
-				String label = fit(font, mod.name, COL_W - 6);
-				GuiDraw.text(graphics, font, label, column.x + 3, y + 2, on ? TEXT : DIM, true);
-				float hitY = y;
-				screen.clickHit(column.x, hitY, COL_W, ROW, () -> toggle(mod));
-				rows.add(new Row(mod, column.x, hitY, COL_W, ROW));
+				int rowY = Math.round(y);
+				GuiDraw.fill(graphics, x, rowY, COL_W, ROW, on ? accent : ROW_COLOR);
+				String label = fit(font, mod.name, COL_W - 4);
+				GuiDraw.text(graphics, font, label, textX(font, label, x, COL_W), textY(font, rowY, ROW), on ? TEXT : DIM, true);
+				screen.clickHit(x, rowY, COL_W, ROW, () -> toggle(mod));
+				rows.add(new Row(mod, x, rowY, COL_W, ROW));
 			}
 			y += ROW;
 		}
@@ -217,9 +217,10 @@ public final class ClickGui {
 			return;
 		}
 		float rowH = screen.clickSettingRow();
+		boolean plain = mod.menuStyle || mod.timeout;
 		int settingRows = mod.menuStyle ? 2 : mod.timeout ? 6 : mod.feature.rows();
-		panelW = 196;
-		panelH = 18 + settingRows * rowH + 8;
+		panelW = plain ? COL_W : 196;
+		panelH = plain ? HEADER + settingRows * ROW : HEADER + settingRows * rowH + 8;
 		panelX = anchor.x + COL_W + 2;
 		if (panelX + panelW > screen.width - 2) {
 			panelX = anchor.x - panelW - 2;
@@ -229,22 +230,26 @@ public final class ClickGui {
 			panelY = Math.max(2, screen.height - 2 - panelH);
 		}
 		panelLive = true;
-		GuiDraw.fill(graphics, panelX, panelY, panelW, panelH, 0xF0101218);
-		GuiDraw.fill(graphics, panelX, panelY, panelW, HEADER, HEADER_COLOR);
-		GuiDraw.text(graphics, font, fit(font, mod.name, (int) panelW - 8), panelX + 4, panelY + 2, TEXT, true);
+		int px = Math.round(panelX);
+		int py = Math.round(panelY);
+		int pw = Math.round(panelW);
+		GuiDraw.fill(graphics, px, py, pw, panelH, ROW_COLOR);
+		GuiDraw.fill(graphics, px, py, pw, HEADER, Theme.ACCENT);
+		String heading = fit(font, mod.name, pw - 4);
+		GuiDraw.text(graphics, font, heading, textX(font, heading, px, pw), textY(font, py, HEADER), TEXT, true);
 		screen.clickHit(panelX, panelY, panelW, panelH, () -> {
 		});
-		float innerX = panelX + 6;
-		float innerY = panelY + HEADER + 4;
-		float innerW = panelW - 12;
 		if (mod.menuStyle) {
-			drawMenuStyle(screen, graphics, font, innerX, innerY, innerW);
+			drawMenuStyle(screen, graphics, font, px, py + HEADER, pw);
 			return;
 		}
 		if (mod.timeout) {
-			drawTimeout(screen, graphics, font, innerX, innerY, innerW);
+			drawTimeout(screen, graphics, font, px, py + HEADER, pw);
 			return;
 		}
+		float innerX = panelX + 6;
+		float innerY = panelY + HEADER + 4;
+		float innerW = panelW - 12;
 		screen.clickVisuals(mod.kind);
 		screen.clickSettings(graphics, font, mouseX, mouseY, innerX, innerY, innerW, mod.feature);
 	}
@@ -252,7 +257,7 @@ public final class ClickGui {
 	private static void drawMenuStyle(StrayScreen screen, GuiGraphicsExtractor graphics, Font font, float x, float y, float w) {
 		boolean click = StrayConfig.get().clickGui;
 		drawChoice(screen, graphics, font, x, y, w, "Click GUI", click, () -> setClickGui(true));
-		drawChoice(screen, graphics, font, x, y + ROW + 4, w, "Stray menu", !click, () -> setClickGui(false));
+		drawChoice(screen, graphics, font, x, y + ROW, w, "Stray menu", !click, () -> setClickGui(false));
 	}
 
 	private static void drawChoice(
@@ -266,9 +271,9 @@ public final class ClickGui {
 		boolean on,
 		Runnable pick
 	) {
-		GuiDraw.fill(graphics, x, y, w, ROW + 4, on ? ENABLED_COLOR : ROW_COLOR);
-		GuiDraw.text(graphics, font, label, x + 3, y + 3, on ? TEXT : DIM, true);
-		screen.clickHit(x, y, w, ROW + 4, pick);
+		GuiDraw.fill(graphics, x, y, w, ROW, on ? Theme.ACCENT : ROW_COLOR);
+		GuiDraw.text(graphics, font, label, textX(font, label, x, w), textY(font, y, ROW), on ? TEXT : DIM, true);
+		screen.clickHit(x, y, w, ROW, pick);
 	}
 
 	private static void setClickGui(boolean click) {
@@ -281,14 +286,15 @@ public final class ClickGui {
 		int[] choices = {50, 100, 150, 300, 500, 1000};
 		for (int choice : choices) {
 			boolean on = current == choice;
-			GuiDraw.fill(graphics, x, y, w, ROW + 4, on ? ENABLED_COLOR : ROW_COLOR);
-			GuiDraw.text(graphics, font, choice + " ms", x + 3, y + 3, on ? TEXT : DIM, true);
+			String label = choice + " ms";
+			GuiDraw.fill(graphics, x, y, w, ROW, on ? Theme.ACCENT : ROW_COLOR);
+			GuiDraw.text(graphics, font, label, textX(font, label, x, w), textY(font, y, ROW), on ? TEXT : DIM, true);
 			float hitY = y;
-			screen.clickHit(x, hitY, w, ROW + 4, () -> {
+			screen.clickHit(x, hitY, w, ROW, () -> {
 				StrayConfig.get().noCursorResetTimeout = choice;
 				UnloadState.markDirty();
 			});
-			y += ROW + 4;
+			y += ROW;
 		}
 	}
 
@@ -322,7 +328,7 @@ public final class ClickGui {
 					saved.put(pos.id, pos);
 				}
 			}
-			int fit = Math.max(1, (screen.width - 8) / (COL_W + GAP));
+			int fit = Math.max(1, (screen.width - 2) / (COL_W + GAP));
 			int bands = (ORDER.length + fit - 1) / fit;
 			float band = Math.max(HEADER + ROW * 4, (screen.height - 8f) / bands);
 			for (int i = 0; i < ORDER.length; i++) {
@@ -332,8 +338,8 @@ public final class ClickGui {
 					column.x = pos.x;
 					column.y = pos.y;
 				} else {
-					column.x = 4 + (i % fit) * (COL_W + GAP);
-					column.y = 4 + (i / fit) * band;
+					column.x = 2 + (i % fit) * (COL_W + GAP);
+					column.y = (i / fit) * band;
 				}
 			}
 			placed = true;
@@ -359,6 +365,14 @@ public final class ClickGui {
 			config.clickColumns.add(pos);
 		}
 		UnloadState.markDirty();
+	}
+
+	private static float textX(Font font, String label, float x, float w) {
+		return x + (w - font.width(label)) / 2f;
+	}
+
+	private static float textY(Font font, float y, int h) {
+		return y + (h - font.lineHeight) / 2f;
 	}
 
 	private static String fit(Font font, String label, int max) {
