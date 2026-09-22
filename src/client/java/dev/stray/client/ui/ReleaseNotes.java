@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.4.66", new String[]{
+			"Click GUI category and feature boxes are a little shorter. Features that are off use a darker transparent black than the column behind them."
+		}),
 		new Entry("1.4.65", new String[]{
 			"Click GUI outlines are a half pixel. Feature boxes sit 1px in from the column sides, with 2px between them."
 		}),

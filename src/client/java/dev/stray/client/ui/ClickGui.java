@@ -24,14 +24,15 @@ import java.util.function.Consumer;
 public final class ClickGui {
 	static final int COL_W = 106;
 	private static final int GAP = 2;
-	private static final int HEADER = 16;
-	private static final int BOX = 16;
+	private static final int HEADER = 14;
+	private static final int BOX = 14;
 	private static final int V_GAP = 2;
 	private static final int H_PAD = 1;
 	private static final float STROKE = 0.5f;
 	private static final int STRIDE = BOX + V_GAP;
 	private static final int OUTLINE = 0xFF000000;
 	private static final int PANEL = 0x99000000;
+	private static final int OFF_FILL = 0xCC000000;
 	private static final int ACCENT_ALPHA = 150;
 	private static final int TEXT = 0xFFFFFFFF;
 	private static final int DIM = 0xFFAAAAAA;
@@ -389,9 +390,7 @@ public final class ClickGui {
 
 	private static void moduleBox(GuiGraphicsExtractor graphics, int x, int y, int w, int h, boolean enabled) {
 		frame(graphics, x, y, w, h);
-		if (enabled) {
-			GuiDraw.fillSmooth(graphics, x + STROKE, y + STROKE, w - STROKE * 2, h - STROKE * 2, accentFill());
-		}
+		GuiDraw.fillSmooth(graphics, x + STROKE, y + STROKE, w - STROKE * 2, h - STROKE * 2, enabled ? accentFill() : OFF_FILL);
 	}
 
 	private static void outlined(GuiGraphicsExtractor graphics, int x, int y, int w, int h, int fill) {
