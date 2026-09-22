@@ -187,6 +187,9 @@ public final class StrayConfig {
 	public String[] menuSlotKeys = defaultMenuSlotKeys();
 	public int chestEspRgb = 0xF4C14E;
 	public float chestEspOpacity = 0.34f;
+	public boolean clickGui = true;
+	public boolean arrayList = true;
+	public java.util.List<ClickColumnPos> clickColumns = new java.util.ArrayList<>();
 	public boolean loadoutsMenuEnabled = false;
 	public boolean noCursorReset = true;
 	public int noCursorResetTimeout = 150;
@@ -1126,6 +1129,15 @@ public final class StrayConfig {
 				}
 				if (!json.has("noCursorReset")) {
 					loaded.noCursorReset = true;
+				}
+				if (!json.has("clickGui")) {
+					loaded.clickGui = true;
+				}
+				if (!json.has("arrayList")) {
+					loaded.arrayList = true;
+				}
+				if (loaded.clickColumns == null) {
+					loaded.clickColumns = new java.util.ArrayList<>();
 				}
 				loaded.noCursorResetTimeout = json.has("noCursorResetTimeout")
 					? Math.round(clamp(loaded.noCursorResetTimeout, 0, 1000) / 10f) * 10
@@ -2092,6 +2104,12 @@ public final class StrayConfig {
 
 	public static float clamp(float value, float min, float max) {
 		return Math.max(min, Math.min(max, value));
+	}
+
+	public static final class ClickColumnPos {
+		public String id = "";
+		public float x;
+		public float y;
 	}
 
 	public static final class HudSlot {

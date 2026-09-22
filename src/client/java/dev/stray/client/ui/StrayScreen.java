@@ -138,7 +138,7 @@ public class StrayScreen extends Screen {
 		}
 	}
 
-	private enum Feature {
+	enum Feature {
 		WORLD("World tint", 4),
 		SKY("Skybox", 4),
 		AMBIENCE("Ambience", 4),
@@ -387,6 +387,8 @@ public class StrayScreen extends Screen {
 		new SearchEntry("1-9", Tab.MENUS, "Menus"),
 		new SearchEntry("Open menu", Tab.KEYS, "Keys"),
 		new SearchEntry("Menus", Tab.MENUS, "Menus"),
+		new SearchEntry("Click GUI", Tab.MENUS, "Menus"),
+		new SearchEntry("Array list", Tab.MENUS, "Menus"),
 		new SearchEntry("No cursor reset", Tab.MENUS, "Menus"),
 		new SearchEntry("Unhook timeout", Tab.MENUS, "Menus"),
 		new SearchEntry("Loadouts", Tab.MENUS, "Menus"),
@@ -678,6 +680,20 @@ public class StrayScreen extends Screen {
 
 	@Override
 	public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float delta) {
+		if (StrayConfig.get().clickGui) {
+			tickAnim();
+			hits.clear();
+			viewScale = 1f;
+			viewLift = 0f;
+			viewCx = 0f;
+			viewCy = 0f;
+			if (closing && appear <= 0.02f) {
+				finishClose();
+				return;
+			}
+			ClickGui.extract(this, graphics, mouseX, mouseY);
+			return;
+		}
 		tickAnim();
 		hits.clear();
 		if (closing && appear <= 0.02f) {
@@ -795,10 +811,16 @@ public class StrayScreen extends Screen {
 	}
 
 	private int ink() {
+		if (ClickGui.lightInk()) {
+			return 0xFFF4F6FA;
+		}
 		return controlCenter() ? ControlChrome.cardText() : Theme.TEXT;
 	}
 
 	private int fade() {
+		if (ClickGui.lightInk()) {
+			return 0xFF9AA6B8;
+		}
 		return controlCenter() ? ControlChrome.cardMuted() : Theme.MUTED;
 	}
 
@@ -2307,7 +2329,10 @@ public class StrayScreen extends Screen {
 				toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Paths", config.pathsEnabled, v -> config.pathsEnabled = v, Feature.PATHS);
 			}
 			case MENUS -> {
-				float y = featureCard(graphics, font, left, top, col, cardHeight(11), "Menus");
+				float menusH = cardHeight(13);
+				float y = featureCard(graphics, font, left, top, col, menusH, "Menus");
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Click GUI", config.clickGui, v -> config.clickGui = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Array list", config.arrayList, v -> config.arrayList = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Loadouts menu", config.loadoutsMenuEnabled, v -> config.loadoutsMenuEnabled = v, Feature.LOADOUTS);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Wardrobe menu", config.wardrobeMenuEnabled, v -> config.wardrobeMenuEnabled = v, Feature.WARDROBE);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Profile viewer", config.profileViewerEnabled, v -> config.profileViewerEnabled = v);
@@ -2321,12 +2346,12 @@ public class StrayScreen extends Screen {
 				toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Disabled potions", config.disabledPotionsHighlight, v -> config.disabledPotionsHighlight = v);
 
 				float liveH = cardHeight(2);
-				y = featureCard(graphics, font, left, top + cardHeight(11) + 8, col, liveH, "Live");
+				y = featureCard(graphics, font, left, top + menusH + 8, col, liveH, "Live");
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Global IRC", config.strayIrcEnabled, v -> config.strayIrcEnabled = v);
 				toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Lobby pings", config.strayPingEnabled, v -> config.strayPingEnabled = v);
 
 				float experimentsH = cardHeight(1 + Feature.AUTO_EXPERIMENTS.rows());
-				y = featureCard(graphics, font, left, top + cardHeight(11) + 8 + liveH + 8, col, experimentsH, "Auto experiments");
+				y = featureCard(graphics, font, left, top + menusH + 8 + liveH + 8, col, experimentsH, "Auto experiments");
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Enable", config.autoExperimentsEnabled, v -> config.autoExperimentsEnabled = v);
 				drawFeatureFields(graphics, font, mouseX, mouseY, ix, y, iw, Feature.AUTO_EXPERIMENTS);
 
@@ -2547,6 +2572,8 @@ public class StrayScreen extends Screen {
 			}
 			case MENUS -> {
 				float y = sectionLabel(graphics, font, left, top, "Skyblock");
+				y = toggleCard(graphics, font, left, y, col, mouseX, mouseY, "Click GUI", config.clickGui, v -> config.clickGui = v);
+				y = toggleCard(graphics, font, left, y, col, mouseX, mouseY, "Array list", config.arrayList, v -> config.arrayList = v);
 				y = controlCard(graphics, font, left, y, col, mouseX, mouseY, "Loadouts menu", config.loadoutsMenuEnabled, v -> config.loadoutsMenuEnabled = v, Feature.LOADOUTS);
 				y = controlCard(graphics, font, left, y, col, mouseX, mouseY, "Wardrobe menu", config.wardrobeMenuEnabled, v -> config.wardrobeMenuEnabled = v, Feature.WARDROBE);
 				y = toggleCard(graphics, font, left, y, col, mouseX, mouseY, "Global IRC", config.strayIrcEnabled, v -> config.strayIrcEnabled = v);
@@ -3979,6 +4006,15 @@ public class StrayScreen extends Screen {
 			captureBind(InputConstants.Type.MOUSE.getOrCreate(event.button()));
 			return true;
 		}
+		if (StrayConfig.get().clickGui) {
+			double cx = localX(event.x());
+			double cy = localY(event.y());
+			ClickGui.pointer(cx, cy);
+			if (event.button() == 1) {
+				ClickGui.rightClick(cx, cy);
+				return true;
+			}
+		}
 		if (event.button() != 0) {
 			return super.mouseClicked(event, doubled);
 		}
@@ -4038,11 +4074,18 @@ public class StrayScreen extends Screen {
 			searchOpen = false;
 			return true;
 		}
+		if (StrayConfig.get().clickGui) {
+			ClickGui.collapse();
+			return true;
+		}
 		return super.mouseClicked(event, doubled);
 	}
 
 	@Override
 	public boolean mouseDragged(MouseButtonEvent event, double dx, double dy) {
+		if (StrayConfig.get().clickGui && event.button() == 0 && ClickGui.drag(localX(event.x()), localY(event.y()))) {
+			return true;
+		}
 		if (event.button() == 0 && dragging) {
 			windowX = localX(event.x()) - (float) dragOffX;
 			windowY = localY(event.y()) - (float) dragOffY;
@@ -4065,6 +4108,9 @@ public class StrayScreen extends Screen {
 
 	@Override
 	public boolean mouseReleased(MouseButtonEvent event) {
+		if (StrayConfig.get().clickGui) {
+			ClickGui.endDrag();
+		}
 		if (dragging && moved) {
 			persistMenuPosition();
 		}
@@ -4076,6 +4122,9 @@ public class StrayScreen extends Screen {
 
 	@Override
 	public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
+		if (StrayConfig.get().clickGui && ClickGui.scroll(localX(mouseX), localY(mouseY), scrollY)) {
+			return true;
+		}
 		double lx = localX(mouseX);
 		double ly = localY(mouseY);
 		if (notesOpen && scrollY != 0 && GuiDraw.hovered(lx, ly, notesX, notesY, PANEL_W, notesH)) {
@@ -4373,6 +4422,40 @@ public class StrayScreen extends Screen {
 		finishedClose = true;
 		WorldTint.syncChunkMeshes(minecraft);
 		super.onClose();
+	}
+
+	void clickHit(float x, float y, float w, float h, Runnable click) {
+		hits.add(new Hit(x, y, w, h, click));
+	}
+
+	void clickVisuals(EntityKind kind) {
+		if (kind == null) {
+			return;
+		}
+		visualsKind = kind;
+		pickerKind = kind;
+	}
+
+	float clickSettingRow() {
+		return rowH();
+	}
+
+	void clickSettings(GuiGraphicsExtractor graphics, Font font, int mouseX, int mouseY, float x, float y, float w, Feature feature) {
+		ClickGui.useLightInk(true);
+		String previous = fieldScope;
+		fieldScope = "click/" + feature.name();
+		try {
+			drawFeatureFields(graphics, font, mouseX, mouseY, x, y, w, feature);
+		} finally {
+			fieldScope = previous;
+			ClickGui.useLightInk(false);
+		}
+	}
+
+	void clickPicker(GuiGraphicsExtractor graphics, Font font) {
+		if (pickerT > 0.02f && pickerTarget != null) {
+			drawPicker(graphics, font);
+		}
 	}
 
 	private final class Hit {
