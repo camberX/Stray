@@ -27,7 +27,7 @@ public final class ClickGui {
 	private static final int HEADER = 14;
 	private static final int BOX = 14;
 	private static final int V_GAP = 2;
-	private static final int H_PAD = 1;
+	private static final int H_PAD = 2;
 	private static final float STROKE = 0.5f;
 	private static final int STRIDE = BOX + V_GAP;
 	private static final int OUTLINE = 0xFF000000;
