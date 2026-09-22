@@ -33,7 +33,7 @@ public final class ClickGui {
 	private static final int OUTLINE = 0xFF000000;
 	private static final int PANEL = 0x99000000;
 	private static final int OFF_FILL = 0xCC000000;
-	private static final int ACCENT_ALPHA = 150;
+	private static final int ACCENT_ALPHA = 115;
 	private static final int TEXT = 0xFFFFFFFF;
 	private static final int DIM = 0xFFAAAAAA;
 	private static final String[] ORDER = {"World", "Visuals", "Combat", "HUD", "Mining", "Farming", "Menus", "Player"};
