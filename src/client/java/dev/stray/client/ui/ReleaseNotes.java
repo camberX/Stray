@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.4.80", new String[]{
+			"The client watermark has a small gold Beta under it."
+		}),
 		new Entry("1.4.79", new String[]{
 			"Array list outlines are half a pixel. The black fill is more transparent, and the names are slightly smaller."
 		}),
