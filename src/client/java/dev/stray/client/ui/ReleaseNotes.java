@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.4.67", new String[]{
+			"Click GUI module boxes have 2px of space on the left and right."
+		}),
 		new Entry("1.4.66", new String[]{
 			"Click GUI category and feature boxes are a little shorter. Features that are off use a darker transparent black than the column behind them."
 		}),
