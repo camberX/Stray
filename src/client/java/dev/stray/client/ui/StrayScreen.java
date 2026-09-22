@@ -3842,6 +3842,21 @@ public class StrayScreen extends Screen {
 		pickerVal = hsv[2];
 		pickerAlpha = opacityToSlider(target);
 		float h = pickerHeight();
+		if (StrayConfig.get().clickGui) {
+			float swatchRight = x + PICKER_W;
+			float right = swatchRight + 6f;
+			float placeX = right + PICKER_W <= width - 4f ? right : x;
+			float maxX = Math.max(4f, width - PICKER_W - 4f);
+			float maxY = Math.max(4f, height - h - 4f);
+			float placeY = y;
+			if (placeY > maxY) {
+				float above = y - rowH() - 2f - h;
+				placeY = above >= 4f ? above : maxY;
+			}
+			pickerX = Mth.clamp(placeX, 4f, maxX);
+			pickerY = Mth.clamp(placeY, 4f, maxY);
+			return;
+		}
 		pickerX = Mth.clamp(x, windowX + sidebarW() + 4, windowX + windowW - PICKER_W - 4);
 		pickerY = Mth.clamp(y, windowY + toolbarH(), windowY + windowH - h - 4);
 	}
@@ -4438,6 +4453,25 @@ public class StrayScreen extends Screen {
 
 	void clickHit(float x, float y, float w, float h, Runnable click) {
 		hits.add(new Hit(x, y, w, h, click));
+	}
+
+	int clickHitMark() {
+		return hits.size();
+	}
+
+	void clickHitRewind(int mark) {
+		if (mark >= 0 && mark < hits.size()) {
+			hits.subList(mark, hits.size()).clear();
+		}
+	}
+
+	void clickClipHits(int mark, float x, float y, float w, float h) {
+		for (int i = hits.size() - 1; i >= mark; i--) {
+			Hit hit = hits.get(i);
+			if (hit.x + hit.w <= x || hit.x >= x + w || hit.y + hit.h <= y || hit.y >= y + h) {
+				hits.remove(i);
+			}
+		}
 	}
 
 	void clickVisuals(EntityKind kind) {
