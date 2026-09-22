@@ -26,8 +26,9 @@ public final class ClickGui {
 	private static final int GAP = 2;
 	private static final int HEADER = 16;
 	private static final int BOX = 16;
-	private static final int V_GAP = 4;
-	private static final int H_PAD = 3;
+	private static final int V_GAP = 2;
+	private static final int H_PAD = 1;
+	private static final float STROKE = 0.5f;
 	private static final int STRIDE = BOX + V_GAP;
 	private static final int OUTLINE = 0xFF000000;
 	private static final int PANEL = 0x99000000;
@@ -389,26 +390,23 @@ public final class ClickGui {
 	private static void moduleBox(GuiGraphicsExtractor graphics, int x, int y, int w, int h, boolean enabled) {
 		frame(graphics, x, y, w, h);
 		if (enabled) {
-			GuiDraw.fill(graphics, x + 1, y + 1, w - 2, h - 2, accentFill());
+			GuiDraw.fillSmooth(graphics, x + STROKE, y + STROKE, w - STROKE * 2, h - STROKE * 2, accentFill());
 		}
 	}
 
 	private static void outlined(GuiGraphicsExtractor graphics, int x, int y, int w, int h, int fill) {
 		frame(graphics, x, y, w, h);
-		if (w < 3 || h < 3) {
-			return;
-		}
-		GuiDraw.fill(graphics, x + 1, y + 1, w - 2, h - 2, fill);
+		GuiDraw.fillSmooth(graphics, x + STROKE, y + STROKE, w - STROKE * 2, h - STROKE * 2, fill);
 	}
 
 	private static void frame(GuiGraphicsExtractor graphics, int x, int y, int w, int h) {
 		if (w < 2 || h < 2) {
 			return;
 		}
-		GuiDraw.fill(graphics, x, y, w, 1, OUTLINE);
-		GuiDraw.fill(graphics, x, y + h - 1, w, 1, OUTLINE);
-		GuiDraw.fill(graphics, x, y, 1, h, OUTLINE);
-		GuiDraw.fill(graphics, x + w - 1, y, 1, h, OUTLINE);
+		GuiDraw.fillSmooth(graphics, x, y, w, STROKE, OUTLINE);
+		GuiDraw.fillSmooth(graphics, x, y + h - STROKE, w, STROKE, OUTLINE);
+		GuiDraw.fillSmooth(graphics, x, y, STROKE, h, OUTLINE);
+		GuiDraw.fillSmooth(graphics, x + w - STROKE, y, STROKE, h, OUTLINE);
 	}
 
 	private static float textX(Font font, String label, float x, float w) {

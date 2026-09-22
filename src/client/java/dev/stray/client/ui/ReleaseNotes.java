@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.4.65", new String[]{
+			"Click GUI outlines are a half pixel. Feature boxes sit 1px in from the column sides, with 2px between them."
+		}),
 		new Entry("1.4.64", new String[]{
 			"Click GUI accent fill is only inside a module box while that feature is on. Off features keep the black outline on the transparent panel."
 		}),
