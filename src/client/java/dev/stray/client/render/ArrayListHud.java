@@ -17,10 +17,12 @@ import java.util.List;
  * Longest name is on top.
  */
 public final class ArrayListHud {
-	private static final int PANEL = 0x99000000;
+	private static final float STROKE = 0.5f;
+	private static final float SCALE = 0.9f;
+	private static final float PAD = 1f;
+	private static final float SWATCH = 2f;
+	private static final int PANEL = 0x77000000;
 	private static final int OUTLINE = 0xFF000000;
-	private static final int SWATCH = 2;
-	private static final int PAD = 1;
 
 	private ArrayListHud() {
 	}
@@ -44,33 +46,37 @@ public final class ArrayListHud {
 			int color = config.arrayListAccent ? Theme.ACCENT : ClickGui.colorOf(name);
 			rows.add(new Row(label, color, widthOf(font, label)));
 		}
-		rows.sort(Comparator.comparingInt(Row::width).reversed());
-		int line = Math.max(1, font.lineHeight);
-		int rowH = line + 2;
-		int y = 0;
+		rows.sort(Comparator.comparingDouble(Row::width).reversed());
+		float textH = Math.max(1, font.lineHeight) * SCALE;
+		float rowH = textH + STROKE * 2f;
+		float y = 0f;
 		for (Row row : rows) {
 			drawRow(graphics, font, row, guiWidth, y, rowH);
-			y += rowH - 1;
+			y += rowH - STROKE;
 		}
 	}
 
-	/** Outline, one pixel of padding, the name, its shadow, and the swatch. */
-	private static int widthOf(Font font, String label) {
-		return font.width(label) + 1 + PAD + SWATCH + 2;
+	/** Half-pixel outline, padding, the scaled name, its shadow, and the swatch. */
+	private static float widthOf(Font font, String label) {
+		return font.width(label) * SCALE + SCALE + PAD + SWATCH + STROKE * 2f;
 	}
 
-	private static void drawRow(GuiGraphicsExtractor graphics, Font font, Row row, int right, int y, int h) {
-		int w = row.width;
-		int x = right - w;
-		GuiDraw.fill(graphics, x, y, w, 1, OUTLINE);
-		GuiDraw.fill(graphics, x, y + h - 1, w, 1, OUTLINE);
-		GuiDraw.fill(graphics, x, y, 1, h, OUTLINE);
-		GuiDraw.fill(graphics, x + w - 1, y, 1, h, OUTLINE);
-		GuiDraw.fill(graphics, x + 1, y + 1, w - 2, h - 2, PANEL);
-		GuiDraw.fill(graphics, x + w - 1 - SWATCH, y + 1, SWATCH, h - 2, row.color);
-		graphics.text(font, row.label, x + 1 + PAD, y + 1, row.color, true);
+	private static void drawRow(GuiGraphicsExtractor graphics, Font font, Row row, int right, float y, float h) {
+		float w = row.width;
+		float x = right - w;
+		GuiDraw.fillSmooth(graphics, x, y, w, STROKE, OUTLINE);
+		GuiDraw.fillSmooth(graphics, x, y + h - STROKE, w, STROKE, OUTLINE);
+		GuiDraw.fillSmooth(graphics, x, y, STROKE, h, OUTLINE);
+		GuiDraw.fillSmooth(graphics, x + w - STROKE, y, STROKE, h, OUTLINE);
+		GuiDraw.fillSmooth(graphics, x + STROKE, y + STROKE, w - STROKE * 2f, h - STROKE * 2f, PANEL);
+		GuiDraw.fillSmooth(graphics, x + w - STROKE - SWATCH, y + STROKE, SWATCH, h - STROKE * 2f, row.color);
+		graphics.pose().pushMatrix();
+		graphics.pose().translate(x + STROKE + PAD, y + STROKE);
+		graphics.pose().scale(SCALE, SCALE);
+		graphics.text(font, row.label, 0, 0, row.color, true);
+		graphics.pose().popMatrix();
 	}
 
-	private record Row(String label, int color, int width) {
+	private record Row(String label, int color, float width) {
 	}
 }
