@@ -91,7 +91,7 @@ public final class ClickGui {
 			if (!contains(x, y, row.x, row.y, row.w, row.h)) {
 				continue;
 			}
-			if (row.mod.feature != null || row.mod.timeout) {
+			if (row.mod.feature != null || row.mod.timeout || row.mod.menuStyle) {
 				expandedName = row.mod.name.equals(expandedName) ? null : row.mod.name;
 			}
 			return;
@@ -217,7 +217,7 @@ public final class ClickGui {
 			return;
 		}
 		float rowH = screen.clickSettingRow();
-		int settingRows = mod.timeout ? 6 : mod.feature.rows();
+		int settingRows = mod.menuStyle ? 2 : mod.timeout ? 6 : mod.feature.rows();
 		panelW = 196;
 		panelH = 18 + settingRows * rowH + 8;
 		panelX = anchor.x + COL_W + 2;
@@ -237,12 +237,43 @@ public final class ClickGui {
 		float innerX = panelX + 6;
 		float innerY = panelY + HEADER + 4;
 		float innerW = panelW - 12;
+		if (mod.menuStyle) {
+			drawMenuStyle(screen, graphics, font, innerX, innerY, innerW);
+			return;
+		}
 		if (mod.timeout) {
 			drawTimeout(screen, graphics, font, innerX, innerY, innerW);
 			return;
 		}
 		screen.clickVisuals(mod.kind);
 		screen.clickSettings(graphics, font, mouseX, mouseY, innerX, innerY, innerW, mod.feature);
+	}
+
+	private static void drawMenuStyle(StrayScreen screen, GuiGraphicsExtractor graphics, Font font, float x, float y, float w) {
+		boolean click = StrayConfig.get().clickGui;
+		drawChoice(screen, graphics, font, x, y, w, "Click GUI", click, () -> setClickGui(true));
+		drawChoice(screen, graphics, font, x, y + ROW + 4, w, "Stray menu", !click, () -> setClickGui(false));
+	}
+
+	private static void drawChoice(
+		StrayScreen screen,
+		GuiGraphicsExtractor graphics,
+		Font font,
+		float x,
+		float y,
+		float w,
+		String label,
+		boolean on,
+		Runnable pick
+	) {
+		GuiDraw.fill(graphics, x, y, w, ROW + 4, on ? ENABLED_COLOR : ROW_COLOR);
+		GuiDraw.text(graphics, font, label, x + 3, y + 3, on ? TEXT : DIM, true);
+		screen.clickHit(x, y, w, ROW + 4, pick);
+	}
+
+	private static void setClickGui(boolean click) {
+		StrayConfig.get().clickGui = click;
+		UnloadState.markDirty();
 	}
 
 	private static void drawTimeout(StrayScreen screen, GuiGraphicsExtractor graphics, Font font, float x, float y, float w) {
@@ -434,7 +465,7 @@ public final class ClickGui {
 		mods.add(mod("Pest cooldown", "Farming", StrayScreen.Feature.PEST_COOLDOWN, null, () -> config.pestCooldownHudEnabled, v -> config.pestCooldownHudEnabled = v, true, false));
 		mods.add(mod("Auto DNA", "Farming", StrayScreen.Feature.AUTO_DNA, null, () -> config.autoDnaEnabled, v -> config.autoDnaEnabled = v, true, false));
 
-		mods.add(mod("Click GUI", "Menus", null, null, () -> config.clickGui, v -> config.clickGui = v, false, false));
+		mods.add(mod("Click GUI", "Menus", null, null, () -> config.clickGui, v -> config.clickGui = v, false, false, true));
 		mods.add(mod("Loadouts", "Menus", StrayScreen.Feature.LOADOUTS, null, () -> config.loadoutsMenuEnabled, v -> config.loadoutsMenuEnabled = v, true, false));
 		mods.add(mod("Wardrobe", "Menus", StrayScreen.Feature.WARDROBE, null, () -> config.wardrobeMenuEnabled, v -> config.wardrobeMenuEnabled = v, true, false));
 		mods.add(mod("Profile viewer", "Menus", null, null, () -> config.profileViewerEnabled, v -> config.profileViewerEnabled = v, true, false));
@@ -465,7 +496,21 @@ public final class ClickGui {
 		boolean list,
 		boolean timeout
 	) {
-		return new Mod(name, column, feature, kind, on, set, list, timeout);
+		return mod(name, column, feature, kind, on, set, list, timeout, false);
+	}
+
+	private static Mod mod(
+		String name,
+		String column,
+		StrayScreen.Feature feature,
+		EntityKind kind,
+		BooleanSupplier on,
+		Consumer<Boolean> set,
+		boolean list,
+		boolean timeout,
+		boolean menuStyle
+	) {
+		return new Mod(name, column, feature, kind, on, set, list, timeout, menuStyle);
 	}
 
 	private record Mod(
@@ -476,7 +521,8 @@ public final class ClickGui {
 		BooleanSupplier on,
 		Consumer<Boolean> set,
 		boolean list,
-		boolean timeout
+		boolean timeout,
+		boolean menuStyle
 	) {
 	}
 
