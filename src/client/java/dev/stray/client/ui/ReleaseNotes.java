@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.4.78", new String[]{
+			"Array list names use the same color as their swatch. With accent color on, the names are the accent color too."
+		}),
 		new Entry("1.4.77", new String[]{
 			"Array list rows are transparent black with a 1 pixel outline and a color swatch on the right. Each box is only as wide as that name, longest at the top. Right click Array list to choose which features show, or use the accent color instead of random colors."
 		}),
