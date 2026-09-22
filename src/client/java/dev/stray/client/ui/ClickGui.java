@@ -25,8 +25,14 @@ public final class ClickGui {
 	static final int COL_W = 106;
 	private static final int GAP = 2;
 	private static final int HEADER = 16;
-	private static final int ROW = 16;
-	private static final int ROW_COLOR = 0xFF000000;
+	private static final int BOX = 16;
+	private static final int V_GAP = 4;
+	private static final int H_PAD = 3;
+	private static final int STRIDE = BOX + V_GAP;
+	private static final int OUTLINE = 0xFF000000;
+	private static final int PANEL = 0x99000000;
+	private static final int OFF_FILL = 0x66000000;
+	private static final int ACCENT_ALPHA = 150;
 	private static final int TEXT = 0xFFFFFFFF;
 	private static final int DIM = 0xFFAAAAAA;
 	private static final String[] ORDER = {"World", "Visuals", "Combat", "HUD", "Mining", "Farming", "Menus", "Player"};
@@ -129,7 +135,7 @@ public final class ClickGui {
 		}
 		for (Column column : columns.values()) {
 			if (contains(x, y, column.x, column.y, COL_W, column.height)) {
-				column.scroll = Math.max(0f, column.scroll - (float) wheel * ROW);
+				column.scroll = Math.max(0f, column.scroll - (float) wheel * STRIDE);
 				return true;
 			}
 		}
@@ -162,33 +168,36 @@ public final class ClickGui {
 		}
 		int x = Math.round(column.x);
 		int top = Math.round(column.y);
-		float content = mods.size() * ROW;
-		float visible = Math.max(ROW, screen.height - top - HEADER);
-		column.height = HEADER + Math.min(content, visible);
+		int content = stackH(mods.size());
+		int viewTop = top + HEADER + V_GAP;
+		int visible = Math.max(BOX, screen.height - viewTop - H_PAD);
+		int shownH = Math.min(content, visible);
+		column.height = HEADER + V_GAP + shownH + H_PAD;
 		float maxScroll = Math.max(0f, content - visible);
 		column.scroll = Math.round(Mth.clamp(column.scroll, 0f, maxScroll));
 
-		int accent = Theme.ACCENT;
-		GuiDraw.fill(graphics, x, top, COL_W, HEADER, accent);
+		GuiDraw.fill(graphics, x, top, COL_W, column.height, PANEL);
+		outlined(graphics, x, top, COL_W, HEADER, accentFill());
 		String title = column.id;
 		GuiDraw.text(graphics, font, title, textX(font, title, x, COL_W), textY(font, top, HEADER), TEXT, true);
 		screen.clickHit(x, top, COL_W, HEADER, () -> beginDrag(column.id));
 
-		float clipY = top + HEADER;
-		boolean clipped = GuiDraw.scissor(graphics, x, clipY, COL_W, visible);
-		float y = clipY - column.scroll;
+		int boxX = x + H_PAD;
+		int boxW = COL_W - H_PAD * 2;
+		boolean clipped = GuiDraw.scissor(graphics, x, viewTop, COL_W, shownH);
+		float y = viewTop - column.scroll;
 		for (Mod mod : mods) {
-			boolean shown = y + ROW > clipY && y < clipY + visible;
+			boolean shown = y + BOX > viewTop && y < viewTop + shownH;
 			if (shown) {
 				boolean on = mod.on.getAsBoolean();
 				int rowY = Math.round(y);
-				GuiDraw.fill(graphics, x, rowY, COL_W, ROW, on ? accent : ROW_COLOR);
-				String label = fit(font, mod.name, COL_W - 4);
-				GuiDraw.text(graphics, font, label, textX(font, label, x, COL_W), textY(font, rowY, ROW), on ? TEXT : DIM, true);
-				screen.clickHit(x, rowY, COL_W, ROW, () -> toggle(mod));
-				rows.add(new Row(mod, x, rowY, COL_W, ROW));
+				outlined(graphics, boxX, rowY, boxW, BOX, on ? accentFill() : OFF_FILL);
+				String label = fit(font, mod.name, boxW - 4);
+				GuiDraw.text(graphics, font, label, textX(font, label, boxX, boxW), textY(font, rowY, BOX), on ? TEXT : DIM, true);
+				screen.clickHit(boxX, rowY, boxW, BOX, () -> toggle(mod));
+				rows.add(new Row(mod, boxX, rowY, boxW, BOX));
 			}
-			y += ROW;
+			y += STRIDE;
 		}
 		if (clipped) {
 			GuiDraw.disableScissor(graphics);
@@ -220,7 +229,7 @@ public final class ClickGui {
 		boolean plain = mod.menuStyle || mod.timeout;
 		int settingRows = mod.menuStyle ? 2 : mod.timeout ? 6 : mod.feature.rows();
 		panelW = plain ? COL_W : 196;
-		panelH = plain ? HEADER + settingRows * ROW : HEADER + settingRows * rowH + 8;
+		panelH = plain ? HEADER + V_GAP + stackH(settingRows) + H_PAD : HEADER + settingRows * rowH + 8;
 		panelX = anchor.x + COL_W + 2;
 		if (panelX + panelW > screen.width - 2) {
 			panelX = anchor.x - panelW - 2;
@@ -233,18 +242,18 @@ public final class ClickGui {
 		int px = Math.round(panelX);
 		int py = Math.round(panelY);
 		int pw = Math.round(panelW);
-		GuiDraw.fill(graphics, px, py, pw, panelH, ROW_COLOR);
-		GuiDraw.fill(graphics, px, py, pw, HEADER, Theme.ACCENT);
+		GuiDraw.fill(graphics, px, py, pw, panelH, PANEL);
+		outlined(graphics, px, py, pw, HEADER, accentFill());
 		String heading = fit(font, mod.name, pw - 4);
 		GuiDraw.text(graphics, font, heading, textX(font, heading, px, pw), textY(font, py, HEADER), TEXT, true);
 		screen.clickHit(panelX, panelY, panelW, panelH, () -> {
 		});
 		if (mod.menuStyle) {
-			drawMenuStyle(screen, graphics, font, px, py + HEADER, pw);
+			drawMenuStyle(screen, graphics, font, px + H_PAD, py + HEADER + V_GAP, pw - H_PAD * 2);
 			return;
 		}
 		if (mod.timeout) {
-			drawTimeout(screen, graphics, font, px, py + HEADER, pw);
+			drawTimeout(screen, graphics, font, px + H_PAD, py + HEADER + V_GAP, pw - H_PAD * 2);
 			return;
 		}
 		float innerX = panelX + 6;
@@ -257,7 +266,7 @@ public final class ClickGui {
 	private static void drawMenuStyle(StrayScreen screen, GuiGraphicsExtractor graphics, Font font, float x, float y, float w) {
 		boolean click = StrayConfig.get().clickGui;
 		drawChoice(screen, graphics, font, x, y, w, "Click GUI", click, () -> setClickGui(true));
-		drawChoice(screen, graphics, font, x, y + ROW, w, "Stray menu", !click, () -> setClickGui(false));
+		drawChoice(screen, graphics, font, x, y + STRIDE, w, "Stray menu", !click, () -> setClickGui(false));
 	}
 
 	private static void drawChoice(
@@ -271,9 +280,9 @@ public final class ClickGui {
 		boolean on,
 		Runnable pick
 	) {
-		GuiDraw.fill(graphics, x, y, w, ROW, on ? Theme.ACCENT : ROW_COLOR);
-		GuiDraw.text(graphics, font, label, textX(font, label, x, w), textY(font, y, ROW), on ? TEXT : DIM, true);
-		screen.clickHit(x, y, w, ROW, pick);
+		outlined(graphics, Math.round(x), Math.round(y), Math.round(w), BOX, on ? accentFill() : OFF_FILL);
+		GuiDraw.text(graphics, font, label, textX(font, label, x, w), textY(font, y, BOX), on ? TEXT : DIM, true);
+		screen.clickHit(x, y, w, BOX, pick);
 	}
 
 	private static void setClickGui(boolean click) {
@@ -287,14 +296,14 @@ public final class ClickGui {
 		for (int choice : choices) {
 			boolean on = current == choice;
 			String label = choice + " ms";
-			GuiDraw.fill(graphics, x, y, w, ROW, on ? Theme.ACCENT : ROW_COLOR);
-			GuiDraw.text(graphics, font, label, textX(font, label, x, w), textY(font, y, ROW), on ? TEXT : DIM, true);
+			outlined(graphics, Math.round(x), Math.round(y), Math.round(w), BOX, on ? accentFill() : OFF_FILL);
+			GuiDraw.text(graphics, font, label, textX(font, label, x, w), textY(font, y, BOX), on ? TEXT : DIM, true);
 			float hitY = y;
-			screen.clickHit(x, hitY, w, ROW, () -> {
+			screen.clickHit(x, hitY, w, BOX, () -> {
 				StrayConfig.get().noCursorResetTimeout = choice;
 				UnloadState.markDirty();
 			});
-			y += ROW;
+			y += STRIDE;
 		}
 	}
 
@@ -330,7 +339,7 @@ public final class ClickGui {
 			}
 			int fit = Math.max(1, (screen.width - 2) / (COL_W + GAP));
 			int bands = (ORDER.length + fit - 1) / fit;
-			float band = Math.max(HEADER + ROW * 4, (screen.height - 8f) / bands);
+			float band = Math.max(HEADER + STRIDE * 4, (screen.height - 8f) / bands);
 			for (int i = 0; i < ORDER.length; i++) {
 				Column column = columns.get(ORDER[i]);
 				StrayConfig.ClickColumnPos pos = saved.get(column.id);
@@ -365,6 +374,28 @@ public final class ClickGui {
 			config.clickColumns.add(pos);
 		}
 		UnloadState.markDirty();
+	}
+
+	private static int stackH(int count) {
+		if (count <= 0) {
+			return 0;
+		}
+		return count * BOX + (count - 1) * V_GAP;
+	}
+
+	private static int accentFill() {
+		return Theme.withAlpha(Theme.ACCENT, ACCENT_ALPHA);
+	}
+
+	private static void outlined(GuiGraphicsExtractor graphics, int x, int y, int w, int h, int fill) {
+		if (w < 3 || h < 3) {
+			return;
+		}
+		GuiDraw.fill(graphics, x, y, w, 1, OUTLINE);
+		GuiDraw.fill(graphics, x, y + h - 1, w, 1, OUTLINE);
+		GuiDraw.fill(graphics, x, y, 1, h, OUTLINE);
+		GuiDraw.fill(graphics, x + w - 1, y, 1, h, OUTLINE);
+		GuiDraw.fill(graphics, x + 1, y + 1, w - 2, h - 2, fill);
 	}
 
 	private static float textX(Font font, String label, float x, float w) {

@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.4.63", new String[]{
+			"Click GUI columns use a transparent black panel. Each feature is its own box: a black outline, transparent accent fill when it is on, 3px side padding, and 4px between boxes. Category headers have a 1px black outline."
+		}),
 		new Entry("1.4.62", new String[]{
 			"Click GUI columns match the tight list layout. Headers and module names are centered, rows are one font step tall, and enabled rows use the accent color."
 		}),
