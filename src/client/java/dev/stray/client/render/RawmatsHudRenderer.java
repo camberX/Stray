@@ -189,7 +189,7 @@ public final class RawmatsHudRenderer {
 		ItemStack stack = line.icon();
 		boolean note = line.hasNote();
 		float iconY = note ? y + 5 : y + 1;
-		GuiDraw.rounded(graphics, x, iconY, ICON, ICON, 3, Theme.HUD_TRACK);
+		HudChrome.rounded(graphics, x, iconY, ICON, ICON, 3, Theme.HUD_TRACK);
 		if (stack != null && !stack.isEmpty() && player != null) {
 			graphics.item(player, stack, Math.round(x), Math.round(iconY), 200 + seed);
 		}
@@ -210,9 +210,9 @@ public final class RawmatsHudRenderer {
 		float barX = textX;
 		float barW = WIDTH - textX - PAD;
 		float barY = note ? y + 20 : y + 12;
-		GuiDraw.rounded(graphics, barX, barY, barW, 2.5f, 1.2f, Theme.HUD_TRACK);
+		HudChrome.rounded(graphics, barX, barY, barW, 2.5f, 1.2f, Theme.HUD_TRACK);
 		float filled = Math.max(line.have() > 0L ? 2f : 0f, barW * line.progress());
-		GuiDraw.rounded(graphics, barX, barY, filled, 2.5f, 1.2f, line.done() ? Theme.ACCENT : Theme.ACCENT_DIM);
+		HudChrome.rounded(graphics, barX, barY, filled, 2.5f, 1.2f, line.done() ? Theme.ACCENT : Theme.ACCENT_DIM);
 	}
 
 	private static float heightOf(RawmatsTracker.Snapshot snap) {

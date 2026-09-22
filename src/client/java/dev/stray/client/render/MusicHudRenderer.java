@@ -329,9 +329,9 @@ public final class MusicHudRenderer {
 
 	private static void drawBar(GuiGraphicsExtractor graphics, NowPlaying track, float x, float y, float w, float h) {
 		float progress = progressOf(track);
-		GuiDraw.rounded(graphics, x, y, w, h, h * 0.5f, Theme.HUD_TRACK);
+		HudChrome.rounded(graphics, x, y, w, h, h * 0.5f, Theme.HUD_TRACK);
 		float filled = Math.max(2f, w * progress);
-		GuiDraw.rounded(graphics, x, y, filled, h, h * 0.5f, Theme.ACCENT);
+		HudChrome.rounded(graphics, x, y, filled, h, h * 0.5f, Theme.ACCENT);
 	}
 
 	private static String clockLine(NowPlaying track) {
@@ -410,10 +410,14 @@ public final class MusicHudRenderer {
 		float size
 	) {
 		CoverArt.bind(track);
-		GuiDraw.rounded(graphics, x, y, size, size, Math.min(5, size * 0.2f), Theme.HUD_CARD);
+		HudChrome.rounded(graphics, x, y, size, size, Math.min(5, size * 0.2f), Theme.HUD_CARD);
 		if (CoverArt.ready()) {
 			int tex = CoverArt.size();
-			GuiDraw.roundedBlit(graphics, CoverArt.id(), x, y, size, size, Math.min(5, size * 0.2f), tex, Theme.HUD_CARD);
+			if (HudChrome.click()) {
+				GuiDraw.blit(graphics, CoverArt.id(), x, y, size, size, 0f, 0f, tex, tex, tex, tex);
+			} else {
+				GuiDraw.roundedBlit(graphics, CoverArt.id(), x, y, size, size, Math.min(5, size * 0.2f), tex, Theme.HUD_CARD);
+			}
 			return size;
 		}
 		GuiDraw.icon(graphics, font, ICON, x + size * 0.5f - 5f, y + size * 0.5f - 5f, live ? Theme.ACCENT : Theme.MUTED);

@@ -73,7 +73,7 @@ public final class PipHudRenderer {
 				Theme.withAlpha(0xFFFFFF, alpha)
 			);
 		} else {
-			GuiDraw.rounded(graphics, viewX, viewY, viewW, viewH, 4, Theme.withAlpha(Theme.HUD_CARD, 180));
+			HudChrome.rounded(graphics, viewX, viewY, viewW, viewH, 4, Theme.withAlpha(Theme.HUD_CARD, 180));
 			String hint = HudLayout.editorOpen() ? "Select a window in HUD" : PipCapture.supported() ? "Select a window" : "Windows only";
 			GuiDraw.small(graphics, font, hint, viewX + 6, viewY + viewH * 0.5f - 4, Theme.MUTED);
 		}
