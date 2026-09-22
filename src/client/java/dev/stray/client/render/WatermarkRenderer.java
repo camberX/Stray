@@ -15,9 +15,9 @@ import java.util.List;
 
 public final class WatermarkRenderer {
 	public static final float HEIGHT = 18;
-	private static final float CLIENT_HEIGHT = 20;
-	private static final float NAME_SCALE = 2f;
-	private static final float VERSION_DROP = 1f;
+	private static final float CLIENT_HEIGHT = 22;
+	private static final float S_SCALE = 2.35f;
+	private static final float TRAY_SCALE = 1.35f;
 	private static final float PART_GAP = 3f;
 	private static final String DEV_TAG = "DEV";
 	private static final float DEV_GAP = 3f;
@@ -112,20 +112,23 @@ public final class WatermarkRenderer {
 	}
 
 	private static void drawClient(GuiGraphicsExtractor graphics, Font font) {
-		Component name = MenuFont.title("Stray");
+		Component mark = MenuFont.title("S");
+		Component rest = MenuFont.title("tray");
 		String version = versionLabel();
-		float nameW = font.width(name) * NAME_SCALE;
-		GuiDraw.text(graphics, font, name, 0, 0, NAME_SCALE, Theme.ACCENT, true);
-		float x = nameW + PART_GAP;
+		float markW = font.width(mark) * S_SCALE;
+		float textX = markW + PART_GAP;
+		GuiDraw.text(graphics, font, mark, 0, 0, S_SCALE, Theme.ACCENT, true);
+		float top = 0f;
 		if (!version.isEmpty()) {
 			Component minor = MenuFont.brand(version);
-			GuiDraw.text(graphics, font, minor, x, VERSION_DROP, WHITE, true);
-			x += font.width(minor) + PART_GAP;
+			GuiDraw.text(graphics, font, minor, textX, top, WHITE, true);
+			float extraX = textX + font.width(minor) + PART_GAP;
+			String extra = clientExtras(StrayConfig.get());
+			if (!extra.isEmpty()) {
+				GuiDraw.text(graphics, font, MenuFont.brand(extra), extraX, top, WHITE, true);
+			}
 		}
-		String extra = clientExtras(StrayConfig.get());
-		if (!extra.isEmpty()) {
-			GuiDraw.text(graphics, font, MenuFont.brand(extra), x, VERSION_DROP, WHITE, true);
-		}
+		GuiDraw.text(graphics, font, rest, textX, font.lineHeight, TRAY_SCALE, Theme.ACCENT, true);
 	}
 
 	private static int widthTick = Integer.MIN_VALUE;
@@ -166,16 +169,22 @@ public final class WatermarkRenderer {
 	}
 
 	private static float clientWidth(Font font, StrayConfig config) {
-		float w = font.width(MenuFont.title("Stray")) * NAME_SCALE;
+		float markW = font.width(MenuFont.title("S")) * S_SCALE;
+		float top = 0f;
 		String version = versionLabel();
 		if (!version.isEmpty()) {
-			w += PART_GAP + font.width(MenuFont.brand(version));
+			top += font.width(MenuFont.brand(version));
 		}
 		String extra = clientExtras(config);
 		if (!extra.isEmpty()) {
-			w += PART_GAP + font.width(MenuFont.brand(extra));
+			if (top > 0f) {
+				top += PART_GAP;
+			}
+			top += font.width(MenuFont.brand(extra));
 		}
-		return w;
+		float trayW = font.width(MenuFont.title("tray")) * TRAY_SCALE;
+		float right = Math.max(top, trayW);
+		return markW + (right > 0f ? PART_GAP + right : 0f);
 	}
 
 	private static String clientExtras(StrayConfig config) {

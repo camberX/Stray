@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.4.70", new String[]{
+			"Client watermark is a large S, the version beside it at the top, and tray under the version."
+		}),
 		new Entry("1.4.69", new String[]{
 			"Watermark has a Client style. Stray is drawn large in the accent color, with the version in smaller white text beside it and no panel. Right click Watermark and set Style."
 		}),
