@@ -75,6 +75,7 @@ public final class StrayConfig {
 	public boolean watermarkPing = false;
 	public boolean watermarkTime = false;
 	public boolean watermarkName = false;
+	public String watermarkStyle = "panel";
 	public boolean musicHudEnabled = false;
 	public boolean pipEnabled = false;
 	public String pipWindowId = "";
@@ -1024,6 +1025,7 @@ public final class StrayConfig {
 				}
 				loaded.rawmatsCount = clampRawmatsCount(loaded.rawmatsCount);
 				loaded.musicHudLayout = normalizeMusicLayout(loaded.musicHudLayout);
+				loaded.watermarkStyle = normalizeWatermarkStyle(loaded.watermarkStyle);
 				if (loaded.musicApiToken == null) {
 					loaded.musicApiToken = "";
 				}
@@ -1494,6 +1496,23 @@ public final class StrayConfig {
 			return 1L;
 		}
 		return Math.min(count, 999_999L);
+	}
+
+	public boolean watermarkClient() {
+		return "client".equals(watermarkStyle);
+	}
+
+	public void cycleWatermarkStyle() {
+		watermarkStyle = watermarkClient() ? "panel" : "client";
+		UnloadState.markDirty();
+	}
+
+	public String watermarkStyleLabel() {
+		return watermarkClient() ? "Client" : "Panel";
+	}
+
+	private static String normalizeWatermarkStyle(String style) {
+		return "client".equals(style) ? "client" : "panel";
 	}
 
 	private static final String[] MUSIC_LAYOUTS = {"card", "compact", "poster", "dock"};

@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.4.69", new String[]{
+			"Watermark has a Client style. Stray is drawn large in the accent color, with the version in smaller white text beside it and no panel. Right click Watermark and set Style."
+		}),
 		new Entry("1.4.68", new String[]{
 			"Enabled click GUI features use a slightly more transparent accent fill."
 		}),
