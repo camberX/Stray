@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.4.92", new String[]{
+			"Pest cooldown shows only the time. It hides when the cooldown is ready."
+		}),
 		new Entry("1.4.91", new String[]{
 			"Shopping list counts the item the visitor named. Enchanted Melon is the melon block in the sack, not your enchanted slices."
 		}),

@@ -644,7 +644,7 @@ public final class HudLayout {
 			case HOE -> GardenHudRenderer.hoeWidth() * scale;
 			case MILESTONE -> GardenHudRenderer.milestoneWidth() * scale;
 			case SHOPPING -> GardenHudRenderer.shoppingWidth() * scale;
-			case PEST_COOLDOWN -> GardenHudRenderer.pestCooldownWidth() * scale;
+			case PEST_COOLDOWN -> GardenHudRenderer.pestCooldownWidth(font) * scale;
 			case HOTBAR -> HotbarHudRenderer.drawWidth() * scale;
 			case HEALTH, HUNGER, ARMOR, AIR, MOUNT -> StatusHudRenderer.BAR_W * scale;
 			case EXPERIENCE -> StatusHudRenderer.xpWidth() * scale;
