@@ -10,9 +10,11 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.zip.GZIPInputStream;
 
 public final class SkyblockItems {
@@ -29,6 +31,7 @@ public final class SkyblockItems {
 
 	private static final Map<String, Entry> BY_ID = new HashMap<>();
 	private static final Map<String, String> BY_NAME = new HashMap<>();
+	private static final Set<String> DISPLAY_NAMES = new HashSet<>();
 	private static boolean loaded;
 
 	private SkyblockItems() {
@@ -172,20 +175,46 @@ public final class SkyblockItems {
 
 	private static void indexName(Entry entry) {
 		if (entry.name != null && !entry.name.isBlank()) {
-			rememberName(entry.name, entry.id);
+			rememberDisplay(entry.name, entry.id);
 		}
-		rememberName(entry.id.replace('_', ' '), entry.id);
+		rememberAlias(entry.id.replace('_', ' '), entry.id);
 	}
 
-	private static void rememberName(String name, String id) {
-		String key = name.trim().toLowerCase(Locale.ROOT);
+	/**
+	 * Sack lines and visitor offers use the display name. Spelling an id with
+	 * spaces ("enchanted melon" from ENCHANTED_MELON) must not replace the item
+	 * that is actually called that (Enchanted Melon is the block).
+	 */
+	private static void rememberDisplay(String name, String id) {
+		String key = nameKey(name);
 		if (key.isEmpty()) {
 			return;
 		}
 		String existing = BY_NAME.get(key);
+		if (!DISPLAY_NAMES.contains(key)) {
+			BY_NAME.put(key, id);
+			DISPLAY_NAMES.add(key);
+			return;
+		}
 		if (existing == null || existing.equals(id) || SkyblockRecipes.normalize(name).equals(id)) {
 			BY_NAME.put(key, id);
+			return;
 		}
+		if (existing.startsWith("BUILDER_") && !id.startsWith("BUILDER_")) {
+			BY_NAME.put(key, id);
+		}
+	}
+
+	private static void rememberAlias(String name, String id) {
+		String key = nameKey(name);
+		if (key.isEmpty() || BY_NAME.containsKey(key)) {
+			return;
+		}
+		BY_NAME.put(key, id);
+	}
+
+	private static String nameKey(String name) {
+		return name.trim().toLowerCase(Locale.ROOT);
 	}
 
 	private static Entry parse(String line) {
