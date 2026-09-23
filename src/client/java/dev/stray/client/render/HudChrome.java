@@ -7,7 +7,6 @@ import net.minecraft.client.gui.GuiGraphicsExtractor;
 
 public final class HudChrome {
 	private static final float STROKE = 0.5f;
-	private static final int OUTLINE = 0xFF000000;
 	private static final int FILL = 0x99000000;
 	private static final int OFF = 0x88000000;
 	private static final int ACCENT_ALPHA = 115;
@@ -39,6 +38,11 @@ public final class HudChrome {
 
 	public static boolean clickInk() {
 		return hudPass && click();
+	}
+
+	/** Black, or the accent color when accent outlines are on. */
+	public static int outline() {
+		return StrayConfig.get().accentOutlines ? Theme.ACCENT : 0xFF000000;
 	}
 
 	public static void panel(
@@ -93,10 +97,11 @@ public final class HudChrome {
 		if (w < 1f || h < 1f) {
 			return;
 		}
-		GuiDraw.fillSmooth(graphics, x, y, w, STROKE, OUTLINE);
-		GuiDraw.fillSmooth(graphics, x, y + h - STROKE, w, STROKE, OUTLINE);
-		GuiDraw.fillSmooth(graphics, x, y, STROKE, h, OUTLINE);
-		GuiDraw.fillSmooth(graphics, x + w - STROKE, y, STROKE, h, OUTLINE);
+		int outline = outline();
+		GuiDraw.fillSmooth(graphics, x, y, w, STROKE, outline);
+		GuiDraw.fillSmooth(graphics, x, y + h - STROKE, w, STROKE, outline);
+		GuiDraw.fillSmooth(graphics, x, y, STROKE, h, outline);
+		GuiDraw.fillSmooth(graphics, x + w - STROKE, y, STROKE, h, outline);
 		GuiDraw.fillSmooth(graphics, x + STROKE, y + STROKE, w - STROKE * 2f, h - STROKE * 2f, fill);
 	}
 

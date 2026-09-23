@@ -4,6 +4,7 @@ import dev.stray.client.config.StrayConfig;
 import dev.stray.client.mixin.ChatComponentAccessor;
 import dev.stray.client.render.GuiDraw;
 import dev.stray.client.render.GuiFrostBlur;
+import dev.stray.client.render.HudChrome;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.ChatComponent;
@@ -45,7 +46,12 @@ public final class ChatChrome {
 	}
 
 	public static boolean enabled() {
-		return StrayConfig.get().themedChatEnabled;
+		StrayConfig config = StrayConfig.get();
+		return config.themedChatEnabled || config.hudStyleClick();
+	}
+
+	private static boolean click() {
+		return StrayConfig.get().hudStyleClick();
 	}
 
 	public static boolean skipFill() {
@@ -103,6 +109,10 @@ public final class ChatChrome {
 		float h = rows * lineH * scale + PAD * 2f;
 		float x = 4f * scale - PAD;
 		float y = graphics.guiHeight() - 40f - rows * lineH * scale - PAD + bumpY;
+		if (click()) {
+			HudChrome.box(graphics, x, y, w, h, 0x99000000);
+			return;
+		}
 		float radius = paneRadius(w, h);
 		int fill = chatFill(focused, 1f);
 		GuiFrostBlur.blitWindow(graphics, x, y, w, h, radius);
@@ -137,6 +147,10 @@ public final class ChatChrome {
 		float x = 2f;
 		float y = screen.height - INPUT_MARGIN - INPUT_H;
 		float w = screen.width - 4f;
+		if (click()) {
+			HudChrome.box(graphics, x, y, w, INPUT_H, 0x99000000);
+			return;
+		}
 		float radius = 8f;
 		GuiFrostBlur.blitWindow(graphics, x, y, w, INPUT_H, radius);
 		GuiDraw.roundedFine(graphics, x, y, w, INPUT_H, radius, ControlChrome.windowFill());
@@ -149,6 +163,9 @@ public final class ChatChrome {
 		}
 		Minecraft client = Minecraft.getInstance();
 		if (client == null || !(client.screen instanceof ChatScreen)) {
+			return;
+		}
+		if (click()) {
 			return;
 		}
 		if (box.isBordered()) {

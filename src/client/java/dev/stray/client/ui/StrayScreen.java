@@ -24,6 +24,7 @@ import dev.stray.client.movement.PathRecorder;
 import dev.stray.client.pip.PipCapture;
 import dev.stray.client.render.BlockMarks;
 import dev.stray.client.render.GuiDraw;
+import dev.stray.client.render.HudChrome;
 import dev.stray.client.render.SkillProgressHudRenderer;
 import dev.stray.client.skill.SkillProgressTracker;
 import dev.stray.client.render.HudStats;
@@ -3178,7 +3179,7 @@ public class StrayScreen extends Screen {
 
 	private void clickToggle(GuiGraphicsExtractor graphics, float x, float y, float w, float h, float t) {
 		float stroke = 0.5f;
-		GuiDraw.roundedFine(graphics, x, y, w, h, h * 0.5f, 0xFF000000);
+		GuiDraw.roundedFine(graphics, x, y, w, h, h * 0.5f, HudChrome.outline());
 		int fill = t > 0.5f ? Theme.ACCENT : 0x88000000;
 		float innerH = h - stroke * 2f;
 		GuiDraw.roundedFine(graphics, x + stroke, y + stroke, w - stroke * 2f, innerH, innerH * 0.5f, fill);

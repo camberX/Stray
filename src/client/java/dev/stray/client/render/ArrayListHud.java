@@ -22,7 +22,6 @@ public final class ArrayListHud {
 	private static final float PAD = 1f;
 	private static final float SWATCH = 2f;
 	private static final int PANEL = 0x77000000;
-	private static final int OUTLINE = 0xFF000000;
 
 	private ArrayListHud() {
 	}
@@ -64,10 +63,11 @@ public final class ArrayListHud {
 	private static void drawRow(GuiGraphicsExtractor graphics, Font font, Row row, int right, float y, float h) {
 		float w = row.width;
 		float x = right - w;
-		GuiDraw.fillSmooth(graphics, x, y, w, STROKE, OUTLINE);
-		GuiDraw.fillSmooth(graphics, x, y + h - STROKE, w, STROKE, OUTLINE);
-		GuiDraw.fillSmooth(graphics, x, y, STROKE, h, OUTLINE);
-		GuiDraw.fillSmooth(graphics, x + w - STROKE, y, STROKE, h, OUTLINE);
+		int outline = HudChrome.outline();
+		GuiDraw.fillSmooth(graphics, x, y, w, STROKE, outline);
+		GuiDraw.fillSmooth(graphics, x, y + h - STROKE, w, STROKE, outline);
+		GuiDraw.fillSmooth(graphics, x, y, STROKE, h, outline);
+		GuiDraw.fillSmooth(graphics, x + w - STROKE, y, STROKE, h, outline);
 		GuiDraw.fillSmooth(graphics, x + STROKE, y + STROKE, w - STROKE * 2f, h - STROKE * 2f, PANEL);
 		GuiDraw.fillSmooth(graphics, x + w - STROKE - SWATCH, y + STROKE, SWATCH, h - STROKE * 2f, row.color);
 		graphics.pose().pushMatrix();
