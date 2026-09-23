@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.4.91", new String[]{
+			"Shopping list counts the item the visitor named. Enchanted Melon is the melon block in the sack, not your enchanted slices."
+		}),
 		new Entry("1.4.90", new String[]{
 			"Command rings only fire when you are on the same height as the ring. Show rings turns the drawing off without disabling the trigger. /stray cmd remove deletes the nearest ring."
 		}),
