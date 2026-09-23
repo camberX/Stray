@@ -42,6 +42,9 @@ public final class PartyFinderStats {
 		569809640L
 	};
 	private static final long CATA_OVERFLOW = 200_000_000L;
+	/** Cumulative shards syphoned to reach each attribute level. Index is the level. */
+	private static final int[] RARE_SYPHON = {0, 1, 3, 6, 9, 13, 17, 22, 28, 36, 48};
+	private static final int[] EPIC_SYPHON = {0, 1, 2, 4, 6, 9, 12, 16, 20, 25, 32};
 	private static final Style BAR = Style.EMPTY.withColor(0x2FB5FF);
 	private static final Style TEXT = Style.EMPTY.withColor(0xF4F7FB);
 	private static final Style DIM = Style.EMPTY.withColor(0x8B93A7);
@@ -126,8 +129,8 @@ public final class PartyFinderStats {
 		int runs = completions(normal) + completions(masterFloors);
 		int mp = magicalPower(member);
 		Integer blood = bloodMobs(member);
-		int murkbat = shardLevel(member, "rekindle", "murkbat");
-		int prince = shardLevel(member, "reborn", "prince");
+		int murkbat = shardLevel(member, "rekindle", RARE_SYPHON);
+		int prince = shardLevel(member, "reborn", EPIC_SYPHON);
 		List<ProfileViewer.SlotItem> armor = ProfileViewer.storedItems(member, "inv_armor", "armor");
 		boolean apiOff = armor.isEmpty() && mp <= 0;
 
@@ -305,7 +308,7 @@ public final class PartyFinderStats {
 	}
 
 	private static String shard(int level) {
-		return level < 0 ? "—" : Integer.toString(level);
+		return Integer.toString(Math.max(0, level));
 	}
 
 	private static String average(int secrets, int runs) {
@@ -315,71 +318,23 @@ public final class PartyFinderStats {
 		return String.format(Locale.ROOT, " (%.2f)", secrets / (double) runs);
 	}
 
-	private static int shardLevel(JsonObject member, String... keys) {
-		JsonObject attributes = object(member, "attributes");
-		JsonObject stacks = object(attributes, "stacks");
-		int stacked = matchNumber(stacks == null ? attributes : stacks, keys, true);
-		if (stacked >= 0) {
-			return stacked;
+	/**
+	 * {@code attributes.stacks} stores how many shards were syphoned, not the level.
+	 * Murkbat is Rekindle (rare) and Prince is Reborn (epic).
+	 */
+	private static int shardLevel(JsonObject member, String attribute, int[] cumulative) {
+		JsonObject stacks = object(object(member, "attributes"), "stacks");
+		if (stacks == null || !stacks.has(attribute)) {
+			return 0;
 		}
-		JsonObject shards = object(member, "shards");
-		JsonArray owned = array(shards, "owned");
-		if (owned != null) {
-			for (JsonElement element : owned) {
-				if (element == null || !element.isJsonObject()) {
-					continue;
-				}
-				JsonObject shard = element.getAsJsonObject();
-				if (!matches(string(shard, "type"), keys)) {
-					continue;
-				}
-				for (String key : new String[]{"level", "attribute_level", "syphon_level", "syphoned", "active_level"}) {
-					if (shard.has(key)) {
-						return (int) num(shard, key);
-					}
-				}
+		int syphoned = (int) num(stacks, attribute);
+		int level = 0;
+		for (int i = 1; i < cumulative.length; i++) {
+			if (syphoned >= cumulative[i]) {
+				level = i;
 			}
 		}
-		return matchNumber(shards, keys, false);
-	}
-
-	private static int matchNumber(JsonObject object, String[] keys, boolean exact) {
-		if (object == null) {
-			return -1;
-		}
-		for (String have : object.keySet()) {
-			if (exact ? matchesExact(have, keys) : matches(have, keys)) {
-				JsonElement value = object.get(have);
-				if (value != null && value.isJsonPrimitive() && value.getAsJsonPrimitive().isNumber()) {
-					return value.getAsInt();
-				}
-			}
-		}
-		return -1;
-	}
-
-	private static boolean matchesExact(String have, String[] keys) {
-		String norm = norm(have);
-		for (String key : keys) {
-			if (norm.equals(norm(key))) {
-				return true;
-			}
-		}
-		return false;
-	}
-
-	private static boolean matches(String have, String[] keys) {
-		String norm = norm(have);
-		if (norm.isBlank()) {
-			return false;
-		}
-		for (String key : keys) {
-			String token = norm(key);
-			if (norm.equals(token) || norm.endsWith("_" + token) || norm.startsWith(token + "_")) {
-				return true;
-			}
-		}
-		return false;
+		return level;
 	}
 
 	private static String norm(String value) {
