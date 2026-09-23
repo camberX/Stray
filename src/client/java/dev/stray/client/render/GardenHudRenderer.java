@@ -38,7 +38,6 @@ import java.util.Map;
 public final class GardenHudRenderer {
 	private static final float WIDTH = 158f;
 	private static final float CONTEST_H = 28f;
-	private static final float COOLDOWN_H = 28f;
 	private static final float MILESTONE_H = 40f;
 	private static final float PAD = 5f;
 	private static final float LINE = 10f;
@@ -133,12 +132,12 @@ public final class GardenHudRenderer {
 		return shoppingHeightOf(snap);
 	}
 
-	public static float pestCooldownWidth() {
-		return WIDTH;
+	public static float pestCooldownWidth(Font font) {
+		return timeWidth(font, cooldownLabel());
 	}
 
 	public static float pestCooldownHeight() {
-		return COOLDOWN_H;
+		return PAD * 2f + LINE;
 	}
 
 	static void extract(GuiGraphicsExtractor graphics, DeltaTracker deltaTracker) {
@@ -197,7 +196,7 @@ public final class GardenHudRenderer {
 		}
 		if (config.pestCooldownHudEnabled) {
 			Snap snap = PestCooldown.snap();
-			if (snap.present() || HudLayout.editorOpen()) {
+			if (showPestCooldown(snap)) {
 				HudLayout.Box box = HudLayout.box(HudLayout.Id.PEST_COOLDOWN, client.font, graphics.guiWidth(), graphics.guiHeight());
 				drawPestCooldown(graphics, client.font, box.x(), box.y(), HudLayout.scale(HudLayout.Id.PEST_COOLDOWN), snap);
 			}
@@ -224,6 +223,25 @@ public final class GardenHudRenderer {
 		graphics.pose().popMatrix();
 	}
 
+	private static boolean showPestCooldown(Snap snap) {
+		if (HudLayout.editorOpen()) {
+			return true;
+		}
+		return snap.present() && snap.kind() != PestCooldown.Kind.READY;
+	}
+
+	private static String cooldownLabel() {
+		Snap snap = PestCooldown.snap();
+		if (snap.present() && snap.kind() != PestCooldown.Kind.READY) {
+			return snap.label();
+		}
+		return Snap.sample().label();
+	}
+
+	private static float timeWidth(Font font, String text) {
+		return GuiDraw.smallWidth(font, text) + PAD * 2f + 2f;
+	}
+
 	private static void drawPestCooldown(
 		GuiGraphicsExtractor graphics,
 		Font font,
@@ -232,16 +250,11 @@ public final class GardenHudRenderer {
 		float scale,
 		Snap value
 	) {
-		Snap current = value.present() ? value : Snap.sample();
-		begin(graphics, x, y, scale, WIDTH, COOLDOWN_H);
-		GuiDraw.small(graphics, font, "PEST COOLDOWN", PAD + 1, PAD, Theme.ACCENT);
-		int color = switch (current.kind()) {
-			case READY -> 0x7DFF9A;
-			case MAX -> 0xFF5A4A;
-			case MISSING -> Theme.MUTED;
-			case COUNTING -> Theme.TEXT;
-		};
-		right(graphics, font, current.label(), PAD, color);
+		String text = value.present() && value.kind() != PestCooldown.Kind.READY ? value.label() : Snap.sample().label();
+		int color = value.present() && value.kind() == PestCooldown.Kind.MAX ? 0xFF5A4A : Theme.TEXT;
+		float width = timeWidth(font, text);
+		begin(graphics, x, y, scale, width, pestCooldownHeight());
+		GuiDraw.small(graphics, font, text, PAD + 1, PAD, color);
 		graphics.pose().popMatrix();
 	}
 
