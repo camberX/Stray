@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.4.89", new String[]{
+			"Array list boxes drop the black line where two modules touch."
+		}),
 		new Entry("1.4.88", new String[]{
 			"Party stats pets are only the dungeon ones. The arrow line uses the equipped arrow."
 		}),
