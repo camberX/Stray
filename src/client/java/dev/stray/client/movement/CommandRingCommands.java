@@ -29,6 +29,10 @@ public final class CommandRingCommands {
 			}))
 			.then(ClientCommands.literal("list").executes(context -> list()))
 			.then(ClientCommands.literal("remove")
+				.executes(context -> {
+					tell(CommandRings.removeNearest(), ChatFormatting.YELLOW);
+					return Command.SINGLE_SUCCESS;
+				})
 				.then(ClientCommands.argument("index", IntegerArgumentType.integer(1))
 					.executes(context -> {
 						int index = IntegerArgumentType.getInteger(context, "index");
@@ -50,7 +54,7 @@ public final class CommandRingCommands {
 			tell("Turn on Command rings in Misc → Tools first, or place one anyway to enable it.", ChatFormatting.YELLOW);
 		}
 		tell("/stray cmd \"warp hub\" 2   place a ring at your feet (saved on this island)", ChatFormatting.AQUA);
-		tell("/stray cmd list | remove <n> | clear", ChatFormatting.GRAY);
+		tell("/stray cmd list | remove | remove <n> | clear", ChatFormatting.GRAY);
 		return Command.SINGLE_SUCCESS;
 	}
 
