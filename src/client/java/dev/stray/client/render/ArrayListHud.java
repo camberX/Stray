@@ -50,8 +50,10 @@ public final class ArrayListHud {
 		float textH = Math.max(1, font.lineHeight) * SCALE;
 		float rowH = textH + STROKE * 2f;
 		float y = 0f;
-		for (Row row : rows) {
-			drawRow(graphics, font, row, guiWidth, y, rowH);
+		for (int i = 0; i < rows.size(); i++) {
+			float above = i == 0 ? 0f : rows.get(i - 1).width();
+			float below = i + 1 >= rows.size() ? 0f : rows.get(i + 1).width();
+			drawRow(graphics, font, rows.get(i), guiWidth, y, rowH, above, below);
 			y += rowH - STROKE;
 		}
 	}
@@ -61,15 +63,35 @@ public final class ArrayListHud {
 		return font.width(label) * SCALE + SCALE + PAD + SWATCH + STROKE * 2f;
 	}
 
-	private static void drawRow(GuiGraphicsExtractor graphics, Font font, Row row, int right, float y, float h) {
+	private static void drawRow(GuiGraphicsExtractor graphics, Font font, Row row, int right, float y, float h, float above, float below) {
 		float w = row.width;
 		float x = right - w;
-		GuiDraw.fillSmooth(graphics, x, y, w, STROKE, OUTLINE);
-		GuiDraw.fillSmooth(graphics, x, y + h - STROKE, w, STROKE, OUTLINE);
+		float step = below <= 0f ? w : Math.max(0f, w - below);
+		if (above <= 0f) {
+			GuiDraw.fillSmooth(graphics, x, y, w, STROKE, OUTLINE);
+		} else if (above < w) {
+			GuiDraw.fillSmooth(graphics, x, y, w - above, STROKE, OUTLINE);
+		}
+		if (step > 0f) {
+			GuiDraw.fillSmooth(graphics, x, y + h - STROKE, step, STROKE, OUTLINE);
+		}
 		GuiDraw.fillSmooth(graphics, x, y, STROKE, h, OUTLINE);
 		GuiDraw.fillSmooth(graphics, x + w - STROKE, y, STROKE, h, OUTLINE);
-		GuiDraw.fillSmooth(graphics, x + STROKE, y + STROKE, w - STROKE * 2f, h - STROKE * 2f, PANEL);
-		GuiDraw.fillSmooth(graphics, x + w - STROKE - SWATCH, y + STROKE, SWATCH, h - STROKE * 2f, row.color);
+		float fillTop = y + STROKE;
+		float fillH = h - STROKE * 2f;
+		if (below <= 0f) {
+			GuiDraw.fillSmooth(graphics, x + STROKE, fillTop, w - STROKE * 2f, fillH, PANEL);
+			GuiDraw.fillSmooth(graphics, x + w - STROKE - SWATCH, fillTop, SWATCH, fillH, row.color);
+		} else {
+			if (step > STROKE) {
+				GuiDraw.fillSmooth(graphics, x + STROKE, fillTop, step - STROKE, fillH, PANEL);
+			}
+			float meetX = x + Math.max(step, STROKE);
+			float meetW = x + w - STROKE - meetX;
+			float meetH = y + h - fillTop;
+			GuiDraw.fillSmooth(graphics, meetX, fillTop, meetW, meetH, PANEL);
+			GuiDraw.fillSmooth(graphics, x + w - STROKE - SWATCH, fillTop, SWATCH, meetH, row.color);
+		}
 		graphics.pose().pushMatrix();
 		graphics.pose().translate(x + STROKE + PAD, y + STROKE);
 		graphics.pose().scale(SCALE, SCALE);
