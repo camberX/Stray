@@ -661,7 +661,7 @@ public final class ProfileViewer {
 		JsonObject inventory = object(member, "inventory");
 		for (String key : keys) {
 			List<SlotItem> items = new ArrayList<>();
-			for (SlotItem item : parseBag(key, first(inventory, member, key), 9, 0).slots()) {
+			for (SlotItem item : parseBag(key, bagOf(inventory, member, key), 9, 0).slots()) {
 				if (item != null && !item.empty()) {
 					items.add(item);
 				}

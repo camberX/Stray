@@ -18,8 +18,10 @@ import net.minecraft.network.chat.Style;
 import net.minecraft.util.Util;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
@@ -33,6 +35,30 @@ public final class PartyFinderStats {
 	private static final Pattern JOIN = Pattern.compile(
 		"^Party Finder > (\\w{1,16}) joined the dungeon group! \\((\\w+) Level (\\d+)\\)$"
 	);
+	/** Dungeon pets party finder cards care about. Unique type and rarity, same set Noamm prints. */
+	private static final List<String> DUNGEON_PETS = List.of(
+		"GOLDEN_DRAGON",
+		"ENDER_DRAGON",
+		"SKELETON",
+		"WITHER_SKELETON",
+		"BABY_YETI",
+		"TIGER",
+		"LION",
+		"SPIRIT",
+		"JELLYFISH",
+		"BLUE_WHALE",
+		"SHEEP",
+		"GRIFFIN",
+		"BLACK_CAT",
+		"BLAZE",
+		"PHOENIX",
+		"MONKEY",
+		"TURTLE",
+		"BAL",
+		"MEGALODON",
+		"GUARDIAN"
+	);
+	private static final Set<String> DUNGEON_PET_SET = Set.copyOf(DUNGEON_PETS);
 	private static final long[] CATA_XP = {
 		0L, 50L, 125L, 235L, 395L, 625L, 955L, 1425L, 2095L, 3045L,
 		4385L, 6275L, 8940L, 12700L, 17960L, 25340L, 35640L, 50040L, 70040L, 97640L,
@@ -181,40 +207,45 @@ public final class PartyFinderStats {
 		if (pets == null) {
 			pets = array(member, "pets");
 		}
-		List<JsonObject> shown = new ArrayList<>();
+		Map<String, Map<String, Boolean>> found = new LinkedHashMap<>();
 		if (pets != null) {
 			for (JsonElement element : pets) {
-				if (element != null && element.isJsonObject()) {
-					JsonObject pet = element.getAsJsonObject();
-					if (!string(pet, "type").isBlank()) {
-						if (bool(pet, "active")) {
-							shown.add(0, pet);
-						} else {
-							shown.add(pet);
-						}
-					}
+				if (element == null || !element.isJsonObject()) {
+					continue;
 				}
+				JsonObject pet = element.getAsJsonObject();
+				String type = string(pet, "type").toUpperCase(Locale.ROOT);
+				if (!DUNGEON_PET_SET.contains(type)) {
+					continue;
+				}
+				String tier = string(pet, "tier").toUpperCase(Locale.ROOT);
+				found.computeIfAbsent(type, ignored -> new LinkedHashMap<>())
+					.merge(tier, bool(pet, "active"), (left, right) -> left || right);
 			}
 		}
-		if (shown.isEmpty()) {
+		if (found.isEmpty()) {
 			line.append(Component.literal("None").setStyle(Style.EMPTY.withColor(ChatFormatting.RED)));
 			return line;
 		}
-		int limit = Math.min(4, shown.size());
-		for (int i = 0; i < limit; i++) {
-			if (i > 0) {
-				line.append(Component.literal(", ").setStyle(DIM));
+		boolean any = false;
+		for (String type : DUNGEON_PETS) {
+			Map<String, Boolean> tiers = found.get(type);
+			if (tiers == null || tiers.isEmpty()) {
+				continue;
 			}
-			JsonObject pet = shown.get(i);
-			String type = shortPet(string(pet, "type"));
-			Style color = Style.EMPTY.withColor(petColor(string(pet, "tier")));
-			if (bool(pet, "active")) {
-				color = color.withBold(true);
+			List<String> ordered = new ArrayList<>(tiers.keySet());
+			ordered.sort((left, right) -> Integer.compare(tierRank(right), tierRank(left)));
+			for (String tier : ordered) {
+				if (any) {
+					line.append(Component.literal(", ").setStyle(DIM));
+				}
+				any = true;
+				Style color = Style.EMPTY.withColor(petColor(tier));
+				if (Boolean.TRUE.equals(tiers.get(tier))) {
+					color = color.withBold(true);
+				}
+				line.append(Component.literal(shortPet(type)).setStyle(color));
 			}
-			line.append(Component.literal(type).setStyle(color));
-		}
-		if (shown.size() > limit) {
-			line.append(Component.literal(" +" + (shown.size() - limit)).setStyle(DIM));
 		}
 		return line;
 	}
@@ -362,25 +393,64 @@ public final class PartyFinderStats {
 	}
 
 	private static String arrow(JsonObject member) {
-		String named = string(member, "favorite_arrow");
-		if (!named.isBlank()) {
-			return pretty(named);
+		String favorite = string(object(member, "item_data"), "favorite_arrow");
+		if (favorite.isBlank()) {
+			favorite = string(member, "favorite_arrow");
 		}
 		List<ProfileViewer.SlotItem> quiver = ProfileViewer.storedItems(member, "quiver", "inv_quiver", "quiver_contents");
-		ProfileViewer.SlotItem best = null;
+		if (!favorite.isBlank()) {
+			String named = namedArrow(quiver, favorite);
+			return named.isBlank() ? pretty(favorite) : named;
+		}
+		String bestId = "";
+		String bestName = "";
+		int bestCount = 0;
+		Map<String, Integer> counts = new LinkedHashMap<>();
+		Map<String, String> names = new LinkedHashMap<>();
+		for (ProfileViewer.SlotItem item : quiver) {
+			if (item == null || item.empty() || item.id() == null || item.id().isBlank()) {
+				continue;
+			}
+			counts.merge(item.id(), Math.max(1, item.count()), Integer::sum);
+			String name = plain(item.name());
+			if (!name.isBlank()) {
+				names.putIfAbsent(item.id(), name);
+			}
+		}
+		for (Map.Entry<String, Integer> entry : counts.entrySet()) {
+			if (entry.getValue() > bestCount) {
+				bestCount = entry.getValue();
+				bestId = entry.getKey();
+				bestName = names.getOrDefault(bestId, "");
+			}
+		}
+		if (!bestName.isBlank()) {
+			return bestName;
+		}
+		return bestId.isBlank() ? "—" : pretty(bestId);
+	}
+
+	private static String namedArrow(List<ProfileViewer.SlotItem> quiver, String favorite) {
+		String want = favorite.toUpperCase(Locale.ROOT);
+		String named = "";
 		for (ProfileViewer.SlotItem item : quiver) {
 			if (item == null || item.empty()) {
 				continue;
 			}
-			if (best == null || item.count() > best.count()) {
-				best = item;
+			String id = item.id() == null ? "" : item.id().toUpperCase(Locale.ROOT);
+			String value = item.valueId() == null ? "" : item.valueId().toUpperCase(Locale.ROOT);
+			if (!id.equals(want) && !value.equals(want) && !id.endsWith(":" + want)) {
+				continue;
+			}
+			String name = plain(item.name());
+			if (!name.isBlank()) {
+				return name;
+			}
+			if (named.isBlank()) {
+				named = pretty(item.id());
 			}
 		}
-		if (best == null) {
-			return "—";
-		}
-		String name = best.name() == null || best.name().isBlank() ? pretty(best.id()) : plain(best.name());
-		return name.isBlank() ? "—" : name;
+		return named;
 	}
 
 	private static Integer bloodMobs(JsonObject member) {
@@ -482,6 +552,17 @@ public final class PartyFinderStats {
 			return "Edrag";
 		}
 		return pretty(type);
+	}
+
+	private static int tierRank(String tier) {
+		return switch (tier == null ? "" : tier) {
+			case "MYTHIC" -> 5;
+			case "LEGENDARY" -> 4;
+			case "EPIC" -> 3;
+			case "RARE" -> 2;
+			case "UNCOMMON" -> 1;
+			default -> 0;
+		};
 	}
 
 	private static ChatFormatting petColor(String tier) {
