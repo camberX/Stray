@@ -5,7 +5,6 @@ import dev.stray.client.config.StrayConfig;
 import dev.stray.client.config.UnloadState;
 import dev.stray.client.render.ArrayListHud;
 import dev.stray.client.render.GuiDraw;
-import dev.stray.client.render.HudChrome;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
@@ -31,6 +30,7 @@ public final class ClickGui {
 	private static final int H_PAD = 2;
 	private static final float STROKE = 0.5f;
 	private static final int STRIDE = BOX + V_GAP;
+	private static final int OUTLINE = 0xFF000000;
 	private static final int PANEL = 0x99000000;
 	private static final int OFF_FILL = 0x88000000;
 	private static final int ACCENT_ALPHA = 115;
@@ -566,11 +566,10 @@ public final class ClickGui {
 		if (w < 2 || h < 2) {
 			return;
 		}
-		int outline = HudChrome.outline();
-		GuiDraw.fillSmooth(graphics, x, y, w, STROKE, outline);
-		GuiDraw.fillSmooth(graphics, x, y + h - STROKE, w, STROKE, outline);
-		GuiDraw.fillSmooth(graphics, x, y, STROKE, h, outline);
-		GuiDraw.fillSmooth(graphics, x + w - STROKE, y, STROKE, h, outline);
+		GuiDraw.fillSmooth(graphics, x, y, w, STROKE, OUTLINE);
+		GuiDraw.fillSmooth(graphics, x, y + h - STROKE, w, STROKE, OUTLINE);
+		GuiDraw.fillSmooth(graphics, x, y, STROKE, h, OUTLINE);
+		GuiDraw.fillSmooth(graphics, x + w - STROKE, y, STROKE, h, OUTLINE);
 	}
 
 	private static float textX(Font font, String label, float x, float w) {
