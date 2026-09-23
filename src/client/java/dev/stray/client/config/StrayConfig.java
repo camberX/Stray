@@ -155,6 +155,7 @@ public final class StrayConfig {
 	public int blockMarksRgb = 0x2FB5FF;
 	public String blockMarkEditKey = "key.keyboard.enter";
 	public boolean commandRingsEnabled = false;
+	public boolean commandRingsRender = true;
 	public int commandRingsRgb = 0x2FB5FF;
 	public boolean movementRingsEnabled = false;
 	public int movementRingsRgb = 0xFF8A4A;
@@ -954,6 +955,9 @@ public final class StrayConfig {
 				loaded.blockMarkEditKey = blankKey(loaded.blockMarkEditKey, "key.keyboard.enter");
 				if (!json.has("commandRingsEnabled")) {
 					loaded.commandRingsEnabled = false;
+				}
+				if (!json.has("commandRingsRender")) {
+					loaded.commandRingsRender = true;
 				}
 				if (!json.has("commandRingsRgb") || (loaded.commandRingsRgb & 0xFFFFFF) == 0) {
 					loaded.commandRingsRgb = 0x2FB5FF;

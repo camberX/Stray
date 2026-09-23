@@ -46,6 +46,8 @@ public final class CommandRings {
 	private static final int SEGMENTS_FAR = 24;
 	private static final double DRAW_RANGE = 96.0;
 	private static final double DRAW_RANGE_SQ = DRAW_RANGE * DRAW_RANGE;
+	/** Feet must be on the ring's own floor. A block above or below does not count. */
+	private static final double SAME_HEIGHT = 0.5;
 	private static final double FAR_SQ = 24.0 * 24.0;
 	private static final double[] COS = new double[SEGMENTS + 1];
 	private static final double[] SIN = new double[SEGMENTS + 1];
@@ -75,6 +77,11 @@ public final class CommandRings {
 
 	public static boolean enabled() {
 		return StrayConfig.get().commandRingsEnabled;
+	}
+
+	public static boolean visible() {
+		StrayConfig config = StrayConfig.get();
+		return config.commandRingsEnabled && config.commandRingsRender;
 	}
 
 	public static int count() {
@@ -138,11 +145,41 @@ public final class CommandRings {
 			return false;
 		}
 		rings.remove(index - 1);
-		if (rings.isEmpty()) {
-			SAVED.remove(IslandSaves.key());
-		}
+		dropIslandIfEmpty(rings);
 		touch();
 		return true;
+	}
+
+	public static String removeNearest() {
+		Minecraft client = Minecraft.getInstance();
+		LocalPlayer player = client.player;
+		if (player == null) {
+			return "Join a world first.";
+		}
+		List<Ring> rings = mutableHere();
+		if (rings.isEmpty()) {
+			return "No rings on " + IslandSaves.label() + ".";
+		}
+		double x = player.getX();
+		double y = player.getY();
+		double z = player.getZ();
+		int best = 0;
+		double bestDist = Double.MAX_VALUE;
+		for (int i = 0; i < rings.size(); i++) {
+			Ring ring = rings.get(i);
+			double dx = x - ring.x;
+			double dy = y - ring.y;
+			double dz = z - ring.z;
+			double dist = dx * dx + dy * dy + dz * dz;
+			if (dist < bestDist) {
+				bestDist = dist;
+				best = i;
+			}
+		}
+		Ring removed = rings.remove(best);
+		dropIslandIfEmpty(rings);
+		touch();
+		return "Removed nearest ring: /" + removed.command;
 	}
 
 	public static void tick(Minecraft client) {
@@ -162,14 +199,18 @@ public final class CommandRings {
 		for (Ring ring : rings) {
 			double dx = x - ring.x;
 			double dz = z - ring.z;
-			boolean inside = dx * dx + dz * dz <= ring.radius * ring.radius && Math.abs(y - ring.y) <= 2.5;
-			if (!inside) {
-				// Left the ring: arm for the next walk-in only.
+			boolean inColumn = dx * dx + dz * dz <= ring.radius * ring.radius;
+			boolean sameHeight = Math.abs(y - ring.y) <= SAME_HEIGHT;
+			if (!inColumn) {
+				// Left the circle: arm for the next walk-in. Height alone does not re-arm.
 				ring.armed = true;
 				ring.inside = false;
 				continue;
 			}
-			ring.inside = true;
+			ring.inside = sameHeight;
+			if (!sameHeight) {
+				continue;
+			}
 			if (allow && ring.armed) {
 				ring.armed = false;
 				run(client, ring);
@@ -181,7 +222,7 @@ public final class CommandRings {
 	}
 
 	public static void extract(GuiGraphicsExtractor graphics, DeltaTracker delta) {
-		if (!enabled() || here().isEmpty()) {
+		if (!visible() || here().isEmpty()) {
 			return;
 		}
 		Minecraft client = Minecraft.getInstance();
@@ -236,7 +277,7 @@ public final class CommandRings {
 	}
 
 	private static void emit() {
-		if (!enabled() || here().isEmpty()) {
+		if (!visible() || here().isEmpty()) {
 			return;
 		}
 		Minecraft client = Minecraft.getInstance();
@@ -346,6 +387,12 @@ public final class CommandRings {
 				metersLabel = MenuFont.vanilla(format(radius) + "m");
 			}
 			return metersLabel;
+		}
+	}
+
+	private static void dropIslandIfEmpty(List<Ring> rings) {
+		if (rings.isEmpty()) {
+			SAVED.remove(IslandSaves.key());
 		}
 	}
 

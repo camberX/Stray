@@ -157,7 +157,7 @@ public class StrayScreen extends Screen {
 		FAIRY("Fairy souls", 1),
 		MARKS("Block marks", 4),
 		PATHS("Paths", 5),
-		RINGS("Command rings", 3),
+		RINGS("Command rings", 4),
 		MOVE("WIP — DO NOT USE", 6),
 		LOADOUTS("Loadouts menu", 11),
 		WARDROBE("Wardrobe menu", 9),
@@ -269,6 +269,7 @@ public class StrayScreen extends Screen {
 		new SearchEntry("Triggerbot humanize", Tab.ASSIST, "Assist"),
 		new SearchEntry("Auto clicker", Tab.ASSIST, "Assist"),
 		new SearchEntry("Command rings", Tab.TOOLS, "Tools"),
+		new SearchEntry("Show rings", Tab.TOOLS, "Tools"),
 		new SearchEntry("Command ring", Tab.TOOLS, "Tools"),
 		new SearchEntry("/stray cmd", Tab.TOOLS, "Tools"),
 		new SearchEntry("Movement rings", Tab.TOOLS, "Tools"),
@@ -3524,6 +3525,7 @@ public class StrayScreen extends Screen {
 				colorRow(graphics, font, ix, y, iw, mouseX, mouseY, "Color", config.blockMarksRgb, PickerTarget.MARKS);
 			}
 			case RINGS -> {
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Show rings", config.commandRingsRender, v -> config.commandRingsRender = v);
 				y = colorRow(graphics, font, ix, y, iw, mouseX, mouseY, "Color", config.commandRingsRgb, PickerTarget.RINGS);
 				y = clickRow(graphics, font, ix, y, iw, mouseX, mouseY, CommandRings.count() == 0 ? "Clear rings on " + PathRecorder.islandLabel() : "Clear " + CommandRings.count() + " ring" + (CommandRings.count() == 1 ? "" : "s") + " on " + PathRecorder.islandLabel(), CommandRings::clear);
 				GuiDraw.small(graphics, font, "/stray cmd \"warp hub\" 2  ·  saved on this island", ix, y + 2, Theme.MUTED);
