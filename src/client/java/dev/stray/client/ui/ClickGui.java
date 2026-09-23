@@ -707,6 +707,7 @@ public final class ClickGui {
 		mods.add(mod("Auto clicker", "Combat", StrayScreen.Feature.AUTO_CLICKER, null, () -> config.autoClickerEnabled, v -> config.autoClickerEnabled = v, true, false));
 		mods.add(mod("Auto rogue", "Combat", null, null, () -> config.autoRogueEnabled, v -> config.autoRogueEnabled = v, true, false));
 		mods.add(mod("Triggerbot", "Combat", null, null, () -> config.triggerbotEnabled, v -> config.triggerbotEnabled = v, true, false));
+		mods.add(mod("Party stats", "Combat", null, null, () -> config.partyFinderStats, v -> config.partyFinderStats = v, true, false));
 		mods.add(mod("Array list", "HUD", null, null, () -> config.arrayList, v -> config.arrayList = v, false, false));
 		mods.add(mod("Watermark", "HUD", StrayScreen.Feature.WATERMARK, null, () -> config.watermarkEnabled, v -> config.watermarkEnabled = v, true, false));
 		mods.add(mod("Music", "HUD", StrayScreen.Feature.MUSIC, null, () -> config.musicHudEnabled, v -> config.musicHudEnabled = v, true, false));

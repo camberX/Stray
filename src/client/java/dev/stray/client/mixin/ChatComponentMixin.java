@@ -4,6 +4,7 @@ import com.llamalad7.mixinextras.injector.wrapmethod.WrapMethod;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import dev.stray.client.chat.NpcChat;
+import dev.stray.client.dungeon.PartyFinderStats;
 import dev.stray.client.combat.AutoRogue;
 import dev.stray.client.chat.StashChat;
 import dev.stray.client.fairy.FairySoulTracker;
@@ -41,6 +42,7 @@ public class ChatComponentMixin {
 	) {
 		Component rewritten = NickHider.rewrite(message);
 		AutoRogue.onChat(rewritten);
+		PartyFinderStats.onChat(rewritten);
 		MiningTracker.onChat(rewritten);
 		FairySoulTracker.onChat(rewritten);
 		GardenHud.onChat(rewritten);
