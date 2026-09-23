@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.4.85", new String[]{
+			"Click GUI subsettings are nested. Toggles use a switch, so they do not look like modules."
+		}),
 		new Entry("1.4.84", new String[]{
 			"Accent outlines stay on HUD boxes only. Click GUI and the array list keep black outlines."
 		}),
