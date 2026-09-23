@@ -30,6 +30,9 @@ public final class ClickGui {
 	private static final int H_PAD = 2;
 	private static final float STROKE = 0.5f;
 	private static final int STRIDE = BOX + V_GAP;
+	private static final int NEST = 3;
+	private static final float SWITCH_W = 16f;
+	private static final float SWITCH_H = 8f;
 	private static final int OUTLINE = 0xFF000000;
 	private static final int PANEL = 0x99000000;
 	private static final int OFF_FILL = 0x88000000;
@@ -340,7 +343,7 @@ public final class ClickGui {
 	}
 
 	private static void drawMenuStyle(StrayScreen screen, GuiGraphicsExtractor graphics, Font font, float x, float y, float w) {
-		drawChoice(screen, graphics, font, x, y, w, "Stray Menu", false, () -> setClickGui(false));
+		drawButton(screen, graphics, font, x, y, w, "Stray Menu", () -> setClickGui(false));
 	}
 
 	private static void drawHud(StrayScreen screen, GuiGraphicsExtractor graphics, Font font, float x, float y, float w) {
@@ -351,7 +354,7 @@ public final class ClickGui {
 			UnloadState.markDirty();
 		});
 		y += STRIDE;
-		drawChoice(screen, graphics, font, x, y, w, "Style " + config.hudStyleLabel(), true, () -> {
+		drawButton(screen, graphics, font, x, y, w, "Style " + config.hudStyleLabel(), () -> {
 			StrayConfig.get().cycleHudStyle();
 			UnloadState.markDirty();
 		});
@@ -363,9 +366,10 @@ public final class ClickGui {
 			UnloadState.markDirty();
 		});
 		y += STRIDE;
-		drawChoice(screen, graphics, font, x, y, w, "HUD Editor", true, () -> Minecraft.getInstance().setScreen(new HudEditorScreen()));
+		drawButton(screen, graphics, font, x, y, w, "HUD Editor", () -> Minecraft.getInstance().setScreen(new HudEditorScreen()));
 	}
 
+	/** Boolean subsetting. A switch on the right, not a module-sized accent fill. */
 	private static void drawChoice(
 		StrayScreen screen,
 		GuiGraphicsExtractor graphics,
@@ -377,9 +381,43 @@ public final class ClickGui {
 		boolean on,
 		Runnable pick
 	) {
-		moduleBox(graphics, Math.round(x), Math.round(y), Math.round(w), BOX, on);
-		GuiDraw.text(graphics, font, label, textX(font, label, x, w), textY(font, y, BOX), on ? TEXT : DIM, true);
-		screen.clickHit(x, y, w, BOX, pick);
+		int ix = Math.round(x) + NEST;
+		int iy = Math.round(y);
+		int iw = Math.round(w) - NEST * 2;
+		outlined(graphics, ix, iy, iw, BOX, OFF_FILL);
+		float sw = SWITCH_W;
+		float sh = SWITCH_H;
+		float sx = ix + iw - 2f - sw;
+		float sy = y + (BOX - sh) * 0.5f;
+		drawSwitch(graphics, sx, sy, sw, sh, on);
+		int max = Math.max(4, Math.round(sx - 2f - (ix + 2f)));
+		String shown = fit(font, label, max);
+		GuiDraw.text(graphics, font, shown, ix + 2f, textY(font, iy, BOX), TEXT, true);
+		screen.clickHit(ix, iy, iw, BOX, pick);
+	}
+
+	/** Action row. Left label and a chevron, so it does not read as an enabled module. */
+	private static void drawButton(
+		StrayScreen screen,
+		GuiGraphicsExtractor graphics,
+		Font font,
+		float x,
+		float y,
+		float w,
+		String label,
+		Runnable pick
+	) {
+		int ix = Math.round(x) + NEST;
+		int iy = Math.round(y);
+		int iw = Math.round(w) - NEST * 2;
+		outlined(graphics, ix, iy, iw, BOX, OFF_FILL);
+		String mark = ">";
+		float markX = ix + iw - 2f - font.width(mark);
+		GuiDraw.text(graphics, font, mark, markX, textY(font, iy, BOX), DIM, true);
+		int max = Math.max(4, Math.round(markX - 2f - (ix + 2f)));
+		String shown = fit(font, label, max);
+		GuiDraw.text(graphics, font, shown, ix + 2f, textY(font, iy, BOX), TEXT, true);
+		screen.clickHit(ix, iy, iw, BOX, pick);
 	}
 
 	private static void setClickGui(boolean click) {
@@ -393,10 +431,17 @@ public final class ClickGui {
 		for (int choice : choices) {
 			boolean on = current == choice;
 			String label = choice + " ms";
-			moduleBox(graphics, Math.round(x), Math.round(y), Math.round(w), BOX, on);
-			GuiDraw.text(graphics, font, label, textX(font, label, x, w), textY(font, y, BOX), on ? TEXT : DIM, true);
-			float hitY = y;
-			screen.clickHit(x, hitY, w, BOX, () -> {
+			int ix = Math.round(x) + NEST;
+			int iy = Math.round(y);
+			int iw = Math.round(w) - NEST * 2;
+			outlined(graphics, ix, iy, iw, BOX, OFF_FILL);
+			float textLeft = ix + 2f;
+			if (on) {
+				GuiDraw.fillSmooth(graphics, ix + STROKE, iy + STROKE, 2f, BOX - STROKE * 2f, Theme.ACCENT);
+				textLeft = ix + STROKE + 4f;
+			}
+			GuiDraw.text(graphics, font, label, textLeft, textY(font, iy, BOX), on ? TEXT : DIM, true);
+			screen.clickHit(ix, iy, iw, BOX, () -> {
 				StrayConfig.get().noCursorResetTimeout = choice;
 				UnloadState.markDirty();
 			});
@@ -550,6 +595,18 @@ public final class ClickGui {
 
 	private static int accentFill() {
 		return Theme.withAlpha(Theme.ACCENT, ACCENT_ALPHA);
+	}
+
+	private static void drawSwitch(GuiGraphicsExtractor graphics, float x, float y, float w, float h, boolean on) {
+		float stroke = 0.5f;
+		GuiDraw.roundedFine(graphics, x, y, w, h, h * 0.5f, OUTLINE);
+		int fill = on ? Theme.ACCENT : OFF_FILL;
+		float innerH = h - stroke * 2f;
+		GuiDraw.roundedFine(graphics, x + stroke, y + stroke, w - stroke * 2f, innerH, innerH * 0.5f, fill);
+		float knobR = innerH * 0.34f;
+		float t = on ? 1f : 0f;
+		float knobX = x + stroke + knobR + 1f + t * (w - stroke * 2f - knobR * 2f - 2f);
+		GuiDraw.circle(graphics, knobX, y + h * 0.5f, knobR, 0xFFFFFFFF);
 	}
 
 	private static void moduleBox(GuiGraphicsExtractor graphics, int x, int y, int w, int h, boolean enabled) {
