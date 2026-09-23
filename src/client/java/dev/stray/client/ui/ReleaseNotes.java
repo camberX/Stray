@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.4.84", new String[]{
+			"Accent outlines stay on HUD boxes only. Click GUI and the array list keep black outlines."
+		}),
 		new Entry("1.4.83", new String[]{
 			"Click HUD style also draws chat as the same boxes. Accent outlines replaces those black outlines with the accent color."
 		}),
