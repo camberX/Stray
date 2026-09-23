@@ -13,6 +13,7 @@ import dev.stray.client.combat.Hitsound;
 import dev.stray.client.combat.OdinClicks;
 import dev.stray.client.combat.Triggerbot;
 import dev.stray.client.debug.StrayDebug;
+import dev.stray.client.dungeon.PartyFinderStats;
 import dev.stray.client.farming.AutoDna;
 import dev.stray.client.farming.PestCooldown;
 import dev.stray.client.farming.PestEsp;
@@ -270,6 +271,7 @@ public final class StrayClient implements ClientModInitializer {
 			root.then(LiveCommands.ping());
 			root.then(UpdateCommands.command());
 			root.then(stealCommand());
+			root.then(PartyFinderStats.command());
 			var brand = dispatcher.register(root);
 			dispatcher.register(ClientCommands.literal("st").redirect(brand));
 			dispatcher.register(ClientCommands.literal("voidmark").redirect(brand));
@@ -294,6 +296,7 @@ public final class StrayClient implements ClientModInitializer {
 			vm.then(LiveCommands.ping());
 			vm.then(UpdateCommands.command());
 			vm.then(stealCommand());
+			vm.then(PartyFinderStats.command());
 			dispatcher.register(vm);
 			dispatcher.register(ClientCommands.literal("loadouts").executes(context -> LoadoutsCommands.open()));
 			dispatcher.register(ClientCommands.literal("loadout").executes(context -> LoadoutsCommands.open()));

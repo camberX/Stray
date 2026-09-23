@@ -264,6 +264,7 @@ public class StrayScreen extends Screen {
 		new SearchEntry("Hit pitch", Tab.COMBAT, "Hitsound"),
 		new SearchEntry("Triggerbot", Tab.ASSIST, "Assist"),
 		new SearchEntry("Auto rogue sword", Tab.ASSIST, "Assist"),
+		new SearchEntry("Party stats", Tab.ASSIST, "Assist"),
 		new SearchEntry("Triggerbot players", Tab.ASSIST, "Assist"),
 		new SearchEntry("Triggerbot humanize", Tab.ASSIST, "Assist"),
 		new SearchEntry("Auto clicker", Tab.ASSIST, "Assist"),
@@ -2303,6 +2304,9 @@ public class StrayScreen extends Screen {
 				float rogueY = top + cardHeight(5) + 8 + cardHeight(3) + 8;
 				y = featureCard(graphics, font, left, rogueY, col, cardHeight(1), "Auto rogue sword");
 				toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Enable", config.autoRogueEnabled, v -> config.autoRogueEnabled = v);
+				float partyY = rogueY + cardHeight(1) + 8;
+				y = featureCard(graphics, font, left, partyY, col, cardHeight(1), "Party stats");
+				toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Join messages", config.partyFinderStats, v -> config.partyFinderStats = v);
 
 				float clickerH = fitH(top, cardHeight(1 + autoClickerFieldRows()));
 				y = featureCard(graphics, font, right, top, col, clickerH, "Auto clicker");
@@ -2525,7 +2529,8 @@ public class StrayScreen extends Screen {
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Enable", config.triggerbotEnabled, v -> config.triggerbotEnabled = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Players", config.triggerbotPlayers, v -> config.triggerbotPlayers = v);
 				slider(graphics, font, ix, y, iw, "Humanize", Math.round(config.triggerbotHumanize * 100) + "%", config.triggerbotHumanize, v -> config.triggerbotHumanize = StrayConfig.clamp(v, 0f, 1f));
-				toggleCard(graphics, font, left, aim + triggerH + 8, col, mouseX, mouseY, "Auto rogue sword", config.autoRogueEnabled, v -> config.autoRogueEnabled = v);
+				float rogueY = toggleCard(graphics, font, left, aim + triggerH + 8, col, mouseX, mouseY, "Auto rogue sword", config.autoRogueEnabled, v -> config.autoRogueEnabled = v);
+				toggleCard(graphics, font, left, rogueY, col, mouseX, mouseY, "Party stats", config.partyFinderStats, v -> config.partyFinderStats = v);
 
 				y = sectionLabel(graphics, font, right, top, "Clicks");
 				float clickerH = config.autoClickerEnabled ? fitH(y, cardHeight(autoClickerFieldRows())) : cardHeight(0);

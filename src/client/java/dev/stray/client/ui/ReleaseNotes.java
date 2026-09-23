@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.4.86", new String[]{
+			"Party finder joins print a stats card, including Murkbat and Prince shard levels. /stray pf <name> shows the same card."
+		}),
 		new Entry("1.4.85", new String[]{
 			"Click GUI subsettings are nested. Toggles use a switch, so they do not look like modules."
 		}),

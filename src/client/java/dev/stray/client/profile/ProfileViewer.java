@@ -628,6 +628,72 @@ public final class ProfileViewer {
 		snapshot = current.withSelected(index);
 	}
 
+	public record RawMember(String name, JsonObject member) {
+	}
+
+	/** Selected Skyblock member JSON, without opening the profile viewer. */
+	public static RawMember rawMember(String name) {
+		try {
+			Minecraft client = Minecraft.getInstance();
+			Resolved identity = resolveIdentity(name == null ? "" : name.trim(), client);
+			if (identity == null || identity.uuid() == null) {
+				return null;
+			}
+			String compact = compact(identity.uuid());
+			JsonObject member = memberFrom(SkyblockPvApi.profiles(client, identity.uuid()), compact);
+			if (member == null) {
+				member = memberFrom(getJson(HYPIXEL_DUMP + compact), compact);
+			}
+			if (member == null) {
+				member = memberFrom(soopyAsProfiles(getJson(SOOPY_SKYBLOCK + compact)), compact);
+			}
+			return member == null ? null : new RawMember(identity.name(), member);
+		} catch (Exception exception) {
+			Stray.LOGGER.warn("Party stats lookup failed", exception);
+			return null;
+		}
+	}
+
+	public static List<SlotItem> storedItems(JsonObject member, String... keys) {
+		if (member == null || keys == null) {
+			return List.of();
+		}
+		JsonObject inventory = object(member, "inventory");
+		for (String key : keys) {
+			List<SlotItem> items = new ArrayList<>();
+			for (SlotItem item : parseBag(key, first(inventory, member, key), 9, 0).slots()) {
+				if (item != null && !item.empty()) {
+					items.add(item);
+				}
+			}
+			if (!items.isEmpty()) {
+				return List.copyOf(items);
+			}
+		}
+		return List.of();
+	}
+
+	private static JsonObject memberFrom(JsonObject root, String compact) {
+		if (!isHypixelProfiles(root)) {
+			return null;
+		}
+		JsonObject chosen = null;
+		for (JsonElement element : root.getAsJsonArray("profiles")) {
+			if (element == null || !element.isJsonObject()) {
+				continue;
+			}
+			JsonObject profile = element.getAsJsonObject();
+			if (chosen == null) {
+				chosen = profile;
+			}
+			if (bool(profile, "selected")) {
+				chosen = profile;
+				break;
+			}
+		}
+		return chosen == null ? null : memberIn(chosen, compact);
+	}
+
 	public static void openSelf() {
 		Minecraft client = Minecraft.getInstance();
 		String name = "";

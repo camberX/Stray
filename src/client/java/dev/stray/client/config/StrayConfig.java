@@ -190,6 +190,7 @@ public final class StrayConfig {
 	public float chestEspOpacity = 0.34f;
 	public boolean clickGui = true;
 	public boolean arrayList = true;
+	public boolean partyFinderStats = true;
 	public boolean arrayListAccent = false;
 	public java.util.List<String> arrayListHidden = new java.util.ArrayList<>();
 	public java.util.List<ClickColumnPos> clickColumns = new java.util.ArrayList<>();
@@ -1139,6 +1140,9 @@ public final class StrayConfig {
 				}
 				if (!json.has("arrayList")) {
 					loaded.arrayList = true;
+				}
+				if (!json.has("partyFinderStats")) {
+					loaded.partyFinderStats = true;
 				}
 				if (!json.has("arrayListAccent")) {
 					loaded.arrayListAccent = false;
