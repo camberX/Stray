@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.4.87", new String[]{
+			"Murkbat and Prince on the party stats card show the attribute level, not how many shards were syphoned."
+		}),
 		new Entry("1.4.86", new String[]{
 			"Party finder joins print a stats card, including Murkbat and Prince shard levels. /stray pf <name> shows the same card."
 		}),
