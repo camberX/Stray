@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.4.83", new String[]{
+			"Click HUD style also draws chat as the same boxes. Accent outlines replaces those black outlines with the accent color."
+		}),
 		new Entry("1.4.82", new String[]{
 			"Theme has a HUD module. Right click it for HUD stars, HUD style, and a button that opens the HUD editor."
 		}),

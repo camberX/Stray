@@ -5,6 +5,7 @@ import dev.stray.client.config.StrayConfig;
 import dev.stray.client.config.UnloadState;
 import dev.stray.client.render.ArrayListHud;
 import dev.stray.client.render.GuiDraw;
+import dev.stray.client.render.HudChrome;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
@@ -30,7 +31,6 @@ public final class ClickGui {
 	private static final int H_PAD = 2;
 	private static final float STROKE = 0.5f;
 	private static final int STRIDE = BOX + V_GAP;
-	private static final int OUTLINE = 0xFF000000;
 	private static final int PANEL = 0x99000000;
 	private static final int OFF_FILL = 0x88000000;
 	private static final int ACCENT_ALPHA = 115;
@@ -356,6 +356,13 @@ public final class ClickGui {
 			UnloadState.markDirty();
 		});
 		y += STRIDE;
+		drawChoice(screen, graphics, font, x, y, w, "Accent Outlines", config.accentOutlines, () -> {
+			StrayConfig current = StrayConfig.get();
+			current.accentOutlines = !current.accentOutlines;
+			Theme.refresh();
+			UnloadState.markDirty();
+		});
+		y += STRIDE;
 		drawChoice(screen, graphics, font, x, y, w, "HUD Editor", true, () -> Minecraft.getInstance().setScreen(new HudEditorScreen()));
 	}
 
@@ -493,7 +500,7 @@ public final class ClickGui {
 			return stackH(arrayListRows());
 		}
 		if (mod.menuStyle) {
-			return "HUD".equals(mod.name) ? stackH(3) : stackH(1);
+			return "HUD".equals(mod.name) ? stackH(4) : stackH(1);
 		}
 		if (mod.timeout) {
 			return stackH(6);
@@ -559,10 +566,11 @@ public final class ClickGui {
 		if (w < 2 || h < 2) {
 			return;
 		}
-		GuiDraw.fillSmooth(graphics, x, y, w, STROKE, OUTLINE);
-		GuiDraw.fillSmooth(graphics, x, y + h - STROKE, w, STROKE, OUTLINE);
-		GuiDraw.fillSmooth(graphics, x, y, STROKE, h, OUTLINE);
-		GuiDraw.fillSmooth(graphics, x + w - STROKE, y, STROKE, h, OUTLINE);
+		int outline = HudChrome.outline();
+		GuiDraw.fillSmooth(graphics, x, y, w, STROKE, outline);
+		GuiDraw.fillSmooth(graphics, x, y + h - STROKE, w, STROKE, outline);
+		GuiDraw.fillSmooth(graphics, x, y, STROKE, h, outline);
+		GuiDraw.fillSmooth(graphics, x + w - STROKE, y, STROKE, h, outline);
 	}
 
 	private static float textX(Font font, String label, float x, float w) {
