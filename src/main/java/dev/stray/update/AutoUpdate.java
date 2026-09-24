@@ -384,6 +384,10 @@ public final class AutoUpdate implements PreLaunchEntrypoint {
 		urls.add("https://github.com/camberX/voidmark/releases/download/v" + version + "/" + file);
 		urls.add(download);
 		urls.add(UpdateMeta.SHOP + "/stray.jar");
+		urls.add("https://raw.githubusercontent.com/camberX/Stray/main/web/public/mod/" + file);
+		urls.add("https://raw.githubusercontent.com/camberX/voidmark/main/web/public/mod/" + file);
+		urls.add("https://raw.githubusercontent.com/camberX/Stray/main/web/public/mod/stray.jar");
+		urls.add("https://raw.githubusercontent.com/camberX/voidmark/main/web/public/mod/stray.jar");
 		return new Remote(version, file, urls);
 	}
 

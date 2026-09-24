@@ -23,7 +23,14 @@ replay_*.log
 agent-tools/
 libs/
 *.jar
-web/
+web/**
+!web/public/
+web/public/**
+!web/public/mod.json
+!web/public/mod/
+web/public/mod/**
+!web/public/mod/latest.json
+!web/public/mod/*.jar
 web/data/whitelist.json
 web/data/names.json
 web/data/namesAt.json

@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.4.97", new String[]{
+			"Auto-update can see the new jar again. The download file is published on GitHub without the rest of the site."
+		}),
 		new Entry("1.4.96", new String[]{
 			"The pest cooldown title and subtitle can be edited under Pest cooldown."
 		}),

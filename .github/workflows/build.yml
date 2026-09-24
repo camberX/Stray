@@ -37,6 +37,20 @@ jobs:
           else
             gh release create "$TAG" "$JAR" --title "$VERSION" --generate-notes
           fi
+          mkdir -p web/public/mod
+          cp "$JAR" "web/public/mod/stray-${VERSION}.jar"
+          cp "$JAR" web/public/mod/stray.jar
+          printf '{\n    "version": "%s",\n    "minecraft": "26.1.2",\n    "file": "stray-%s.jar"\n}\n' "$VERSION" "$VERSION" > web/public/mod/latest.json
+          cp web/public/mod/latest.json web/public/mod.json
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -- web/public/mod/latest.json web/public/mod.json "web/public/mod/stray-${VERSION}.jar" web/public/mod/stray.jar
+          if git diff --cached --quiet; then
+            echo "Download files are already committed"
+            exit 0
+          fi
+          git commit -m "Publish stray-${VERSION}.jar for the auto-updater."
+          git push
       - name: capture build artifacts
         continue-on-error: true
         uses: actions/upload-artifact@v7
