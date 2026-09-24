@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.5.6", new String[]{
+			"Top down uses your normal field of view. Ceilings are cut out only within 6 blocks of you, you stay visible, and block-outline shaders are left alone."
+		}),
 		new Entry("1.5.5", new String[]{
 			"Top down is a real overhead camera in the movable window, not a block map. Blocks above you are clipped, and height is how high that camera sits."
 		}),

@@ -26,4 +26,7 @@ public interface CameraAccessor {
 
 	@Accessor("depthFar")
 	float stray$depthFar();
+
+	@Accessor("detached")
+	void stray$detached(boolean detached);
 }

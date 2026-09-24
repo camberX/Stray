@@ -18,23 +18,25 @@ import net.minecraft.client.renderer.culling.Frustum;
 import net.minecraft.client.renderer.fog.FogData;
 import net.minecraft.client.renderer.fog.FogRenderer;
 import net.minecraft.client.renderer.state.level.CameraRenderState;
+import net.minecraft.util.Mth;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Matrix4f;
 
 /**
- * Renders the world a second time from above the player into a square target.
- * The main camera is restored before this returns. A near plane just above the
- * eyes clips ceilings and other blocks between the overhead camera and the player.
+ * Overhead picture of the world. The wide shot uses a normal camera near plane
+ * so the field of view stays a real camera. A second shot clips ceilings and is
+ * only shown in a 6-block radius around the player, who is rendered detached.
  */
 public final class TopDownCapture {
 	public static final int SIZE = 256;
-	private static final float FOV = 70f;
-	private static final float CLIP_ABOVE_EYES = 0.35f;
+	public static final float CUT_RADIUS = 6f;
 
-	private static MainTarget target;
+	private static MainTarget wideTarget;
+	private static MainTarget cutTarget;
 	private static ProjectionMatrixBuffer projection;
 	private static boolean capturing;
 	private static boolean ready;
+	private static float cutFraction;
 
 	private TopDownCapture() {
 	}
@@ -44,10 +46,22 @@ public final class TopDownCapture {
 	}
 
 	public static GpuTextureView colorView() {
-		if (!ready || target == null) {
+		if (!ready || wideTarget == null) {
 			return null;
 		}
-		return target.getColorTextureView();
+		return wideTarget.getColorTextureView();
+	}
+
+	public static GpuTextureView cutView() {
+		if (!ready || cutTarget == null) {
+			return null;
+		}
+		return cutTarget.getColorTextureView();
+	}
+
+	/** Radius of the ceiling cutout as a fraction of the window width. */
+	public static float cutFraction() {
+		return cutFraction;
 	}
 
 	public static void render(DeltaTracker delta) {
@@ -70,6 +84,7 @@ public final class TopDownCapture {
 		Vec3 savedPos = camera.position();
 		float savedYaw = camera.yRot();
 		float savedPitch = camera.xRot();
+		boolean savedDetached = camera.isDetached();
 		Frustum savedFrustum = access.stray$cullFrustum();
 		float savedFar = access.stray$depthFar();
 		float savedFov = camera.getFov();
@@ -78,82 +93,55 @@ public final class TopDownCapture {
 		GameRenderer renderer = client.gameRenderer;
 		CameraRenderState state = renderer.getGameRenderState().levelRenderState.cameraRenderState;
 		FogData savedFog = state.fogData;
+		Matrix4f savedProjection = state.projectionMatrix == null ? new Matrix4f() : new Matrix4f(state.projectionMatrix);
 		RenderTarget main = client.getMainRenderTarget();
-		if (main == null || state == null) {
+		if (main == null) {
 			return;
 		}
 		float partial = delta.getGameTimeDeltaPartialTick(false);
 		float altitude = TopDownView.height();
 		Vec3 eye = client.player.getEyePosition(partial);
-		float near = Math.max(0.25f, altitude - CLIP_ABOVE_EYES);
-		float far = Math.max(savedFar, near + 32f);
+		float fov = Mth.clamp(savedFov, 30f, 110f);
+		float far = Math.max(savedFar, altitude + 64f);
+		float cutNear = Math.max(0.05f, altitude - 0.45f);
+		float depth = Math.max(1f, altitude);
+		float halfWidth = depth * (float) Math.tan(Math.toRadians(fov * 0.5f));
+		cutFraction = Mth.clamp(0.5f * CUT_RADIUS / halfWidth, 0.05f, 0.5f);
 		boolean swapped = false;
 		capturing = true;
 		try {
+			access.stray$detached(true);
 			access.stray$setPosition(new Vec3(eye.x, eye.y + altitude, eye.z));
 			access.stray$setRotation(client.player.getViewYRot(partial), 90f);
-			access.stray$setupPerspective(near, far, FOV, SIZE, SIZE);
-			Matrix4f view = camera.getViewRotationMatrix(new Matrix4f());
+			access.stray$setupPerspective(Camera.PROJECTION_Z_NEAR, far, fov, SIZE, SIZE);
 			boolean zeroToOne = RenderSystem.getDevice().isZZeroToOne();
-			Matrix4f proj = new Matrix4f().perspective((float) Math.toRadians(FOV), 1f, near, far, zeroToOne);
-			Frustum frustum = new Frustum(view, proj);
+			Matrix4f view = camera.getViewRotationMatrix(new Matrix4f());
+			Matrix4f cullProj = new Matrix4f().perspective((float) Math.toRadians(fov), 1f, Camera.PROJECTION_Z_NEAR, far, zeroToOne);
+			Frustum frustum = new Frustum(view, cullProj);
 			Vec3 overhead = camera.position();
 			frustum.prepare(overhead.x, overhead.y, overhead.z);
 			access.stray$cullFrustum(frustum);
-			camera.extractRenderState(state, partial);
-			if (state.projectionMatrix != null) {
-				state.projectionMatrix.set(proj);
-			}
 			GameRendererAccessor game = (GameRendererAccessor) renderer;
 			FogRenderer fog = game.stray$fogRenderer();
-			FogData overheadFog = fog.setupFog(
-				camera,
-				client.options.getEffectiveRenderDistance(),
-				delta,
-				renderer.getBossOverlayWorldDarkening(partial),
-				client.level
-			);
-			state.fogData = overheadFog;
-			fog.updateBuffer(overheadFog);
 			client.levelRenderer.update(camera);
-			client.levelRenderer.extractLevel(delta, camera, partial);
-			if (renderer.getGameRenderState().levelRenderState.chunkSectionsToRender == null) {
-				return;
-			}
-			ensureTarget();
-			if (target == null || target.getColorTexture() == null || target.getDepthTexture() == null) {
-				return;
-			}
-			((MinecraftAccessor) client).stray$mainRenderTarget(target);
-			swapped = true;
-			RenderSystem.getDevice().createCommandEncoder().clearColorAndDepthTextures(
-				target.getColorTexture(),
-				0xFF87CEEB,
-				target.getDepthTexture(),
-				1.0
-			);
+			ensureTargets();
 			if (projection == null) {
 				projection = new ProjectionMatrixBuffer("stray-top-down");
 			}
-			RenderSystem.setProjectionMatrix(projection.getBuffer(proj), ProjectionType.PERSPECTIVE);
-			client.levelRenderer.renderLevel(
-				game.stray$resourcePool(),
-				delta,
-				false,
-				state,
-				new Matrix4f(state.viewRotationMatrix),
-				fog.getBuffer(FogRenderer.FogMode.WORLD),
-				overheadFog.color,
-				true,
-				renderer.getGameRenderState().levelRenderState.chunkSectionsToRender
-			);
-			ready = target.getColorTextureView() != null;
+			((MinecraftAccessor) client).stray$mainRenderTarget(wideTarget);
+			swapped = true;
+			drawPass(client, renderer, game, fog, camera, state, delta, partial, cullProj);
+			Matrix4f cutProj = new Matrix4f().perspective((float) Math.toRadians(fov), 1f, cutNear, far, zeroToOne);
+			((MinecraftAccessor) client).stray$mainRenderTarget(cutTarget);
+			drawPass(client, renderer, game, fog, camera, state, delta, partial, cutProj);
+			ready = wideTarget.getColorTextureView() != null && cutTarget.getColorTextureView() != null;
 		} catch (RuntimeException ignored) {
 			ready = false;
 		} finally {
 			if (swapped) {
 				((MinecraftAccessor) client).stray$mainRenderTarget(main);
 			}
+			access.stray$detached(savedDetached);
 			access.stray$setPosition(savedPos);
 			access.stray$setRotation(savedYaw, savedPitch);
 			access.stray$setupPerspective(Camera.PROJECTION_Z_NEAR, savedFar, savedFov, windowW, windowH);
@@ -165,17 +153,78 @@ public final class TopDownCapture {
 				state.fogData = savedFog;
 				((GameRendererAccessor) renderer).stray$fogRenderer().updateBuffer(savedFog);
 			}
+			if (projection != null) {
+				RenderSystem.setProjectionMatrix(projection.getBuffer(savedProjection), ProjectionType.PERSPECTIVE);
+			}
 			capturing = false;
 		}
 	}
 
-	private static void ensureTarget() {
-		if (target != null && target.width == SIZE && target.height == SIZE && target.getColorTextureView() != null) {
+	private static void drawPass(
+		Minecraft client,
+		GameRenderer renderer,
+		GameRendererAccessor game,
+		FogRenderer fog,
+		Camera camera,
+		CameraRenderState state,
+		DeltaTracker delta,
+		float partial,
+		Matrix4f proj
+	) {
+		camera.extractRenderState(state, partial);
+		if (state.projectionMatrix != null) {
+			state.projectionMatrix.set(proj);
+		}
+		FogData overheadFog = fog.setupFog(
+			camera,
+			client.options.getEffectiveRenderDistance(),
+			delta,
+			renderer.getBossOverlayWorldDarkening(partial),
+			client.level
+		);
+		state.fogData = overheadFog;
+		fog.updateBuffer(overheadFog);
+		client.levelRenderer.extractLevel(delta, camera, partial);
+		renderer.getGameRenderState().levelRenderState.haveGlowingEntities = false;
+		if (renderer.getGameRenderState().levelRenderState.chunkSectionsToRender == null) {
 			return;
+		}
+		RenderTarget current = client.getMainRenderTarget();
+		if (current == null || current.getColorTexture() == null || current.getDepthTexture() == null) {
+			return;
+		}
+		RenderSystem.getDevice().createCommandEncoder().clearColorAndDepthTextures(
+			current.getColorTexture(),
+			0xFF87CEEB,
+			current.getDepthTexture(),
+			1.0
+		);
+		RenderSystem.setProjectionMatrix(projection.getBuffer(proj), ProjectionType.PERSPECTIVE);
+		client.levelRenderer.renderLevel(
+			game.stray$resourcePool(),
+			delta,
+			false,
+			state,
+			new Matrix4f(state.viewRotationMatrix),
+			fog.getBuffer(FogRenderer.FogMode.WORLD),
+			overheadFog.color,
+			false,
+			renderer.getGameRenderState().levelRenderState.chunkSectionsToRender
+		);
+	}
+
+	private static void ensureTargets() {
+		wideTarget = ensure(wideTarget);
+		cutTarget = ensure(cutTarget);
+	}
+
+	private static MainTarget ensure(MainTarget target) {
+		if (target != null && target.width == SIZE && target.height == SIZE && target.getColorTextureView() != null) {
+			return target;
 		}
 		if (target != null) {
 			target.destroyBuffers();
 		}
-		target = new MainTarget(SIZE, SIZE);
+		return new MainTarget(SIZE, SIZE);
 	}
 }
