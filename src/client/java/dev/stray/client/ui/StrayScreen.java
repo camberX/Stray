@@ -295,6 +295,7 @@ public class StrayScreen extends Screen {
 		new SearchEntry("Click delay", Tab.MENUS, "Misc"),
 		new SearchEntry("Serum count", Tab.MENUS, "Misc"),
 		new SearchEntry("Disabled potions", Tab.MENUS, "Menus"),
+		new SearchEntry("Sack recipe", Tab.MENUS, "Menus"),
 		new SearchEntry("Toggle Potion Effects", Tab.MENUS, "Menus"),
 		new SearchEntry("Potion effects", Tab.MENUS, "Menus"),
 		new SearchEntry("Held item shader", Tab.ESP, "Held item"),
@@ -2357,7 +2358,7 @@ public class StrayScreen extends Screen {
 				toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Paths", config.pathsEnabled, v -> config.pathsEnabled = v, Feature.PATHS);
 			}
 			case MENUS -> {
-				float menusH = cardHeight(13);
+				float menusH = cardHeight(14);
 				float y = featureCard(graphics, font, left, top, col, menusH, "Menus");
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Click GUI", config.clickGui, v -> config.clickGui = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Array list", config.arrayList, v -> config.arrayList = v);
@@ -2371,7 +2372,8 @@ public class StrayScreen extends Screen {
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Compact stash chat", config.stashChatCompact, v -> config.stashChatCompact = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Cleaner NPC chat", config.npcChatClean, v -> config.npcChatClean = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Open animation", config.loadoutsOpenAnim, v -> config.loadoutsOpenAnim = v);
-				toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Disabled potions", config.disabledPotionsHighlight, v -> config.disabledPotionsHighlight = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Disabled potions", config.disabledPotionsHighlight, v -> config.disabledPotionsHighlight = v);
+				toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Sack recipe", config.sackRecipe, v -> config.sackRecipe = v);
 
 				float liveH = cardHeight(2);
 				y = featureCard(graphics, font, left, top + menusH + 8, col, liveH, "Live");
@@ -2607,7 +2609,7 @@ public class StrayScreen extends Screen {
 				y = controlCard(graphics, font, left, y, col, mouseX, mouseY, "Wardrobe menu", config.wardrobeMenuEnabled, v -> config.wardrobeMenuEnabled = v, Feature.WARDROBE);
 				y = toggleCard(graphics, font, left, y, col, mouseX, mouseY, "Global IRC", config.strayIrcEnabled, v -> config.strayIrcEnabled = v);
 				y = toggleCard(graphics, font, left, y, col, mouseX, mouseY, "Lobby pings", config.strayPingEnabled, v -> config.strayPingEnabled = v);
-				y = featureCard(graphics, font, left, y, col, cardHeight(9), "Menus");
+				y = featureCard(graphics, font, left, y, col, cardHeight(10), "Menus");
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Profile viewer", config.profileViewerEnabled, v -> config.profileViewerEnabled = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Storage preview", config.storagePreviewEnabled, v -> config.storagePreviewEnabled = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Preview needs Shift", config.storagePreviewHoldShift, v -> config.storagePreviewHoldShift = v);
@@ -2616,7 +2618,8 @@ public class StrayScreen extends Screen {
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Compact stash chat", config.stashChatCompact, v -> config.stashChatCompact = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Cleaner NPC chat", config.npcChatClean, v -> config.npcChatClean = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Open animation", config.loadoutsOpenAnim, v -> config.loadoutsOpenAnim = v);
-				toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Disabled potions", config.disabledPotionsHighlight, v -> config.disabledPotionsHighlight = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Disabled potions", config.disabledPotionsHighlight, v -> config.disabledPotionsHighlight = v);
+				toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Sack recipe", config.sackRecipe, v -> config.sackRecipe = v);
 				float cursorY = sectionLabel(graphics, font, right, top, "Cursor");
 				float cursorH = cardHeight(2);
 				y = featureCard(graphics, font, right, cursorY, col, cursorH, "No cursor reset");

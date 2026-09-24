@@ -1,6 +1,7 @@
 package dev.stray.client.mixin;
 
 import dev.stray.client.item.ItemAppearance;
+import dev.stray.client.menu.SackRecipe;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
@@ -49,6 +50,19 @@ public class ItemStackMixin {
 		ItemStack shown = ItemAppearance.named((ItemStack) (Object) this);
 		if (shown != (Object) this) {
 			cir.setReturnValue(shown.getTooltipLines(context, player, flag));
+		}
+	}
+
+	@Inject(method = "getTooltipLines", at = @At("RETURN"))
+	private void stray$sackRecipeLore(
+		Item.TooltipContext context,
+		Player player,
+		TooltipFlag flag,
+		CallbackInfoReturnable<List<Component>> cir
+	) {
+		List<Component> extra = SackRecipe.withLore((ItemStack) (Object) this, cir.getReturnValue());
+		if (extra != null) {
+			cir.setReturnValue(extra);
 		}
 	}
 }

@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.4.94", new String[]{
+			"Middle click a sack item to open its recipe, with a lore line while Sack recipe is on. Crop milestone, visitors, hoe level, and next contest are in the click GUI."
+		}),
 		new Entry("1.4.93", new String[]{
 			"Update checks run at launch, on close, and from /stray update. Update notify hides the update card when it is off."
 		}),
