@@ -181,7 +181,8 @@ public final class StrayClient implements ClientModInitializer {
 	public void onInitializeClient() {
 		StrayConfig.load();
 		AccountStore.load();
-		AutoUpdate.clientLaunchCheck(StrayConfig.get().autoUpdate, StrayConfig.get().updateNotify);
+		String newer = AutoUpdate.clientLaunchCheck(StrayConfig.get().autoUpdate, StrayConfig.get().updateNotify);
+		UpdateNotifier.announce(newer);
 		Theme.refresh();
 		SkyblockItems.load();
 		SkyblockRecipes.load();
@@ -463,6 +464,9 @@ public final class StrayClient implements ClientModInitializer {
 			FarmKeys.restore();
 			PipCapture.stop();
 			StrayLive.disconnect();
+			if (StrayConfig.get().autoUpdate) {
+				AutoUpdate.updateNow();
+			}
 		});
 	}
 

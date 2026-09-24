@@ -2,7 +2,6 @@ package dev.stray.client.update;
 
 import dev.stray.Stray;
 import dev.stray.client.config.StrayConfig;
-import dev.stray.update.AutoUpdate;
 import dev.stray.update.UpdateMeta;
 import net.fabricmc.fabric.api.client.screen.v1.ScreenEvents;
 import net.fabricmc.fabric.api.client.screen.v1.ScreenMouseEvents;
@@ -10,11 +9,6 @@ import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.Minecraft;
 
 public final class UpdateNotifier {
-	private static final long RETRY_MS = 30_000L;
-	private static final long POLL_MS = 180_000L;
-	private static volatile boolean checking;
-	private static long nextAt;
-
 	private UpdateNotifier() {
 	}
 
@@ -33,58 +27,24 @@ public final class UpdateNotifier {
 	}
 
 	public static void tick() {
-		Minecraft client = Minecraft.getInstance();
-		UpdateToast.tickMouse(client);
-		StrayConfig config = StrayConfig.get();
-		if (!config.updateNotify && !config.autoUpdate) {
-			return;
-		}
-		if (checking) {
-			return;
-		}
-		long now = System.currentTimeMillis();
-		if (now < nextAt) {
-			return;
-		}
-		checking = true;
-		Thread thread = new Thread(UpdateNotifier::check, "stray-update-notify");
-		thread.setDaemon(true);
-		thread.start();
+		UpdateToast.tickMouse(Minecraft.getInstance());
 	}
 
-	private static void check() {
-		try {
-			String remote = UpdateMeta.latestVersion();
-			if (remote == null) {
-				nextAt = System.currentTimeMillis() + RETRY_MS;
-				return;
-			}
-			StrayConfig config = StrayConfig.get();
-			nextAt = System.currentTimeMillis() + (config.autoUpdate ? 60_000L : POLL_MS);
-			String installed = installedVersion();
-			if (UpdateMeta.compare(remote, installed) <= 0) {
-				return;
-			}
-			String downloaded = null;
-			if (config.autoUpdate) {
-				downloaded = AutoUpdate.installNewer(false);
-			}
-			String seen = config.updateNotifiedVersion == null ? "" : config.updateNotifiedVersion;
-			if (downloaded == null && !config.updateNotify) {
-				return;
-			}
-			if (!seen.isEmpty() && UpdateMeta.compare(remote, seen) <= 0 && downloaded == null) {
-				return;
-			}
-			config.updateNotifiedVersion = remote;
-			config.save();
-			Minecraft.getInstance().execute(() -> UpdateToast.show(remote, installed));
-			Stray.LOGGER.info("Update {} is out (installed {}).", remote, installed);
-		} catch (Exception ignored) {
-			nextAt = System.currentTimeMillis() + RETRY_MS;
-		} finally {
-			checking = false;
+	/** One card after the startup check. Never polls while the game is open. */
+	public static void announce(String remote) {
+		if (remote == null || remote.isBlank() || !StrayConfig.get().updateNotify) {
+			return;
 		}
+		String installed = installedVersion();
+		StrayConfig config = StrayConfig.get();
+		String seen = config.updateNotifiedVersion == null ? "" : config.updateNotifiedVersion;
+		if (!seen.isEmpty() && UpdateMeta.compare(remote, seen) <= 0) {
+			return;
+		}
+		config.updateNotifiedVersion = remote;
+		config.save();
+		Minecraft.getInstance().execute(() -> UpdateToast.show(remote, installed));
+		Stray.LOGGER.info("Update {} is out (installed {}).", remote, installed);
 	}
 
 	private static String installedVersion() {

@@ -2041,7 +2041,10 @@ public class StrayScreen extends Screen {
 			StrayConfig.get().updateAutoClose = v;
 			StrayConfig.get().save();
 		});
-		toggle(graphics, font, settingsX + 8, y, PANEL_W - 16, mouseX, mouseY, "Update notify", StrayConfig.get().updateNotify, v -> StrayConfig.get().updateNotify = v);
+		toggle(graphics, font, settingsX + 8, y, PANEL_W - 16, mouseX, mouseY, "Update notify", StrayConfig.get().updateNotify, v -> {
+			StrayConfig.get().updateNotify = v;
+			StrayConfig.get().save();
+		});
 	}
 
 	private float settingsHeight() {
@@ -2833,7 +2836,10 @@ public class StrayScreen extends Screen {
 			config.updateAutoClose = v;
 			config.save();
 		});
-		toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Update notify", config.updateNotify, v -> config.updateNotify = v);
+		toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Update notify", config.updateNotify, v -> {
+			config.updateNotify = v;
+			config.save();
+		});
 
 		float accentH = cardTop() + cardHead() + 14 + swatchBlockH(Theme.PRESETS.length, iw) + rowH() * 5 + cardPad();
 		float lookY = sectionLabel(graphics, font, right, top, "Look");

@@ -12,7 +12,7 @@ import net.minecraft.network.chat.Component;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
-/** {@code /stray update} schedules an update check for the next launch. */
+/** {@code /stray update} checks once now. Auto close decides whether Minecraft exits after that. */
 public final class UpdateCommands {
 	private static final AtomicBoolean RUNNING = new AtomicBoolean();
 
@@ -25,44 +25,45 @@ public final class UpdateCommands {
 
 	private static int run() {
 		if (!RUNNING.compareAndSet(false, true)) {
-			tell("Already scheduling an update.");
+			tell("Already checking for an update.");
 			return Command.SINGLE_SUCCESS;
 		}
+		tell("Checking for an update.");
+		Thread thread = new Thread(UpdateCommands::checkNow, "stray-manual-update");
+		thread.setDaemon(true);
+		thread.start();
+		return Command.SINGLE_SUCCESS;
+	}
+
+	private static void checkNow() {
 		boolean closing = false;
 		try {
-			if (!AutoUpdate.requestNextLaunch()) {
-				tell("Could not schedule the update.");
-				return 0;
+			AutoUpdate.UpdateOutcome outcome = AutoUpdate.updateNow();
+			if (outcome.status() == AutoUpdate.UpdateStatus.UPDATED) {
+				tell(outcome.message());
+			} else if (outcome.status() == AutoUpdate.UpdateStatus.CURRENT) {
+				tell(outcome.message());
+			} else {
+				tell(outcome.message() == null || outcome.message().isBlank() ? "Could not check for an update." : outcome.message());
+				AutoUpdate.requestNextLaunch();
 			}
 			if (StrayConfig.get().updateAutoClose) {
-				tell("Stray will check for an update the next time Minecraft starts. Closing.");
+				tell("Closing.");
 				closing = true;
-				Thread thread = new Thread(UpdateCommands::closeSoon, "stray-manual-update");
-				thread.setDaemon(true);
-				thread.start();
-				return Command.SINGLE_SUCCESS;
+				try {
+					Thread.sleep(700L);
+				} catch (InterruptedException ignored) {
+					Thread.currentThread().interrupt();
+				}
+				AutoUpdate.quit();
 			}
-			tell("Stray will check for an update the next time Minecraft starts. The current jar stays until then.");
-			return Command.SINGLE_SUCCESS;
 		} catch (RuntimeException exception) {
-			tell("Could not schedule the update.");
-			return 0;
+			tell("Could not check for an update.");
 		} finally {
 			if (!closing) {
 				RUNNING.set(false);
 			}
 		}
-	}
-
-	private static void closeSoon() {
-		try {
-			Thread.sleep(700L);
-		} catch (InterruptedException ignored) {
-			Thread.currentThread().interrupt();
-		} finally {
-			RUNNING.set(false);
-		}
-		AutoUpdate.quit();
 	}
 
 	private static void tell(String text) {

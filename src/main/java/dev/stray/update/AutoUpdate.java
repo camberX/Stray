@@ -78,22 +78,27 @@ public final class AutoUpdate implements PreLaunchEntrypoint {
 	 * Always runs from client init after {@code stray.json} is loaded.
 	 * PreLaunch does not skip this unless a network fetch already finished.
 	 */
-	public static void clientLaunchCheck(boolean autoUpdate, boolean notify) {
+	/**
+	 * One check at client start.
+	 *
+	 * @return a newer version when notify is on and nothing was installed, otherwise {@code null}
+	 */
+	public static String clientLaunchCheck(boolean autoUpdate, boolean notify) {
 		log("Client launch: auto-update " + (autoUpdate ? "on" : "off") + ", notify " + (notify ? "on" : "off") + ".");
 		if (autoUpdate) {
 			if (fetched) {
 				log("Already queried stray.gay during PreLaunch.");
-				return;
+				return null;
 			}
 			checkAndInstall(true);
-			return;
+			return null;
 		}
 		if (!notify) {
 			log("Not checking for a new jar (both toggles off).");
-			return;
+			return null;
 		}
 		if (fetched) {
-			return;
+			return null;
 		}
 		fetched = true;
 		String installed = installedVersion();
@@ -102,16 +107,18 @@ public final class AutoUpdate implements PreLaunchEntrypoint {
 			Remote remote = fetchRemote();
 			if (remote == null) {
 				log("No update info.");
-				return;
+				return null;
 			}
 			if (!installed.isEmpty() && UpdateMeta.compare(remote.version, installed) <= 0) {
 				log("Already up to date (" + installed + ").");
-				return;
+				return null;
 			}
 			log("Found " + remote.version + ". Turn on Auto update to install it, or restart after downloading.");
+			return remote.version;
 		} catch (Exception exception) {
 			log("Update check failed: " + exception.getMessage());
 			Stray.LOGGER.warn("Update check failed", exception);
+			return null;
 		}
 	}
 

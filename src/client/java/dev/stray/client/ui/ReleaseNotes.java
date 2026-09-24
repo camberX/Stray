@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.4.93", new String[]{
+			"Update checks run at launch, on close, and from /stray update. Update notify hides the update card when it is off."
+		}),
 		new Entry("1.4.92", new String[]{
 			"Pest cooldown shows only the time. It hides when the cooldown is ready."
 		}),

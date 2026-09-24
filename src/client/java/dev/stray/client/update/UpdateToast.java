@@ -1,5 +1,6 @@
 package dev.stray.client.update;
 
+import dev.stray.client.config.StrayConfig;
 import dev.stray.client.render.GuiDraw;
 import dev.stray.client.render.HudChrome;
 import dev.stray.client.ui.Theme;
@@ -44,7 +45,7 @@ public final class UpdateToast {
 	}
 
 	public static void show(String next, String have) {
-		if (next == null || next.isBlank()) {
+		if (!StrayConfig.get().updateNotify || next == null || next.isBlank()) {
 			return;
 		}
 		if (phase != Phase.IDLE && next.equals(remote)) {
@@ -59,6 +60,10 @@ public final class UpdateToast {
 	}
 
 	public static void extract(GuiGraphicsExtractor graphics) {
+		if (!StrayConfig.get().updateNotify) {
+			clear();
+			return;
+		}
 		if (phase == Phase.IDLE) {
 			return;
 		}
