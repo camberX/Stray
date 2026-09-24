@@ -5,6 +5,7 @@ import dev.stray.client.config.StrayConfig;
 import dev.stray.client.config.UnloadState;
 import dev.stray.client.render.ArrayListHud;
 import dev.stray.client.render.GuiDraw;
+import dev.stray.client.render.MobCatalog;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
@@ -40,7 +41,7 @@ public final class ClickGui {
 	private static final int ACCENT_ALPHA = 115;
 	private static final int TEXT = 0xFFFFFFFF;
 	private static final int DIM = 0xFFAAAAAA;
-	private static final String[] ORDER = {"World", "Visuals", "Combat", "HUD", "Mining", "Farming", "Menus", "Theme", "Player"};
+	private static final String[] ORDER = {"World", "Visuals", "Mobs", "Combat", "HUD", "Mining", "Farming", "Menus", "Theme", "Player"};
 
 	private static final Map<String, Column> columns = new LinkedHashMap<>();
 	private static final List<Row> rows = new ArrayList<>();
@@ -68,6 +69,12 @@ public final class ClickGui {
 	private static float searchY;
 	private static float searchW;
 	private static float searchH;
+	private static String mobQuery = "";
+	private static boolean mobSearchFocused;
+	private static float mobSearchX;
+	private static float mobSearchY;
+	private static float mobSearchW;
+	private static float mobSearchH;
 
 	private ClickGui() {
 	}
@@ -107,10 +114,44 @@ public final class ClickGui {
 
 	static void focusSearch() {
 		searchFocused = true;
+		mobSearchFocused = false;
 	}
 
 	static void blurSearch() {
 		searchFocused = false;
+	}
+
+	static boolean mobSearchFocused() {
+		return mobSearchFocused;
+	}
+
+	static void focusMobSearch() {
+		mobSearchFocused = true;
+		searchFocused = false;
+	}
+
+	static void blurMobSearch() {
+		mobSearchFocused = false;
+	}
+
+	static void typeMobSearch(String text) {
+		if (text == null || text.isEmpty() || mobQuery.length() >= 32) {
+			return;
+		}
+		mobQuery += text;
+		if (mobQuery.length() > 32) {
+			mobQuery = mobQuery.substring(0, 32);
+		}
+	}
+
+	static void backspaceMobSearch() {
+		if (!mobQuery.isEmpty()) {
+			mobQuery = mobQuery.substring(0, mobQuery.length() - 1);
+		}
+	}
+
+	static boolean mobSearchContains(double x, double y) {
+		return contains(x, y, mobSearchX, mobSearchY, mobSearchW, mobSearchH);
 	}
 
 	static void typeSearch(String text) {
@@ -134,7 +175,7 @@ public final class ClickGui {
 	}
 
 	static void rightClick(double x, double y) {
-		if (searchContains(x, y)) {
+		if (searchContains(x, y) || mobSearchContains(x, y)) {
 			return;
 		}
 		if (panelLive && contains(x, y, panelX, panelY, panelW, panelH)) {
@@ -245,6 +286,10 @@ public final class ClickGui {
 	}
 
 	private static void drawColumn(StrayScreen screen, GuiGraphicsExtractor graphics, Font font, int mouseX, int mouseY, Column column) {
+		if ("Mobs".equals(column.id)) {
+			drawMobs(screen, graphics, font, column);
+			return;
+		}
 		List<Mod> mods = new ArrayList<>();
 		for (Mod mod : modules()) {
 			if (column.id.equals(mod.column) && searchHit(mod)) {
@@ -323,6 +368,74 @@ public final class ClickGui {
 				y += open;
 			}
 			if (i + 1 < mods.size()) {
+				y += V_GAP;
+			}
+		}
+		if (clipped) {
+			GuiDraw.disableScissor(graphics);
+		}
+	}
+
+	private static void drawMobs(StrayScreen screen, GuiGraphicsExtractor graphics, Font font, Column column) {
+		String global = searchQuery.trim().toLowerCase(Locale.ROOT);
+		boolean titleHit = global.isEmpty() || "mobs".contains(global);
+		List<MobCatalog.Entry> entries = new ArrayList<>();
+		for (MobCatalog.Entry entry : MobCatalog.filtered(mobQuery)) {
+			if (global.isEmpty() || entry.name().toLowerCase(Locale.ROOT).contains(global)) {
+				entries.add(entry);
+			}
+		}
+		if (!titleHit && entries.isEmpty()) {
+			column.height = 0f;
+			return;
+		}
+		int x = Math.round(column.x);
+		int top = Math.round(column.y);
+		int searchY = top + HEADER + V_GAP;
+		int viewTop = searchY + BOX + V_GAP;
+		int visible = Math.max(BOX, screen.height - viewTop - H_PAD - BOX - 10);
+		float content = stackH(entries.size());
+		int shownH = Math.min(Math.round(content), visible);
+		column.height = HEADER + V_GAP + BOX + V_GAP + shownH + H_PAD;
+		column.scroll = Math.round(Mth.clamp(column.scroll, 0f, Math.max(0f, content - visible)));
+
+		GuiDraw.fill(graphics, x, top, COL_W, column.height, PANEL);
+		outlined(graphics, x, top, COL_W, HEADER, accentFill());
+		String title = display(column.id);
+		GuiDraw.text(graphics, font, title, textX(font, title, x, COL_W), textY(font, top, HEADER), TEXT, true);
+		screen.clickHit(x, top, COL_W, HEADER, () -> beginDrag(column.id));
+
+		int boxX = x + H_PAD;
+		int boxW = COL_W - H_PAD * 2;
+		mobSearchX = boxX;
+		mobSearchY = searchY;
+		mobSearchW = boxW;
+		mobSearchH = BOX;
+		outlined(graphics, boxX, searchY, boxW, BOX, mobSearchFocused ? accentFill() : OFF_FILL);
+		boolean placeholder = mobQuery.isEmpty() && !mobSearchFocused;
+		String shown = placeholder ? "Search" : mobQuery + (mobSearchFocused ? "|" : "");
+		GuiDraw.text(graphics, font, fit(font, shown, boxW - 8), boxX + 4, textY(font, searchY, BOX), placeholder ? DIM : TEXT, true);
+		screen.clickHit(boxX, searchY, boxW, BOX, ClickGui::focusMobSearch);
+
+		boolean clipped = shownH > 0 && GuiDraw.scissor(graphics, x, viewTop, COL_W, shownH);
+		StrayConfig config = StrayConfig.get();
+		float y = viewTop - column.scroll;
+		for (int i = 0; i < entries.size(); i++) {
+			MobCatalog.Entry entry = entries.get(i);
+			if (y + BOX > viewTop && y < viewTop + shownH) {
+				boolean on = config.isMobGlowSelected(entry.id().toString());
+				int rowY = Math.round(y);
+				moduleBox(graphics, boxX, rowY, boxW, BOX, on);
+				String label = fit(font, entry.name(), boxW - 4);
+				GuiDraw.text(graphics, font, label, textX(font, label, boxX, boxW), textY(font, rowY, BOX), on ? TEXT : DIM, true);
+				String id = entry.id().toString();
+				screen.clickHit(boxX, rowY, boxW, BOX, () -> {
+					StrayConfig.get().toggleMobGlow(id);
+					UnloadState.markDirty();
+				});
+			}
+			y += BOX;
+			if (i + 1 < entries.size()) {
 				y += V_GAP;
 			}
 		}

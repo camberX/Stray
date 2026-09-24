@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.5.10", new String[]{
+			"Click GUI has a Mobs column for mob ESP. Search sits at the top of that column."
+		}),
 		new Entry("1.5.9", new String[]{
 			"Top down clips every block between you and the camera, across the whole window."
 		}),
