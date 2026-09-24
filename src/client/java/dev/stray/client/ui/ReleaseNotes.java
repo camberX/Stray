@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.5.8", new String[]{
+			"Options, sliders, and the other vanilla menu buttons use the click GUI boxes instead of the rounded pills."
+		}),
 		new Entry("1.5.7", new String[]{
 			"The main menu, custom screens, and stray.gay use the click GUI boxes. The title screen keeps its backdrop. Click GUI stays the default menu."
 		}),

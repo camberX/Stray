@@ -86,29 +86,15 @@ public final class MenuChrome {
 		Theme.refresh();
 		float alpha = widget.getAlpha();
 		boolean hover = widget.active && widget.isHoveredOrFocused();
-		boolean compact = widget.getWidth() < 40 || widget.getHeight() < 18;
-		float radius = compact ? 4f : Math.min(7f, widget.getHeight() * 0.42f);
-		int fill = Theme.withAlpha(ClickLook.FILL, Math.round((hover ? 180 : 136) * alpha));
-		int outline = fade(hover ? Theme.ACCENT : Theme.LINE, alpha);
-		if (ControlChrome.on()) {
-			ControlChrome.glass(
-				graphics,
-				widget.getX(),
-				widget.getY(),
-				widget.getWidth(),
-				widget.getHeight(),
-				compact ? radius : 12f,
-				fill
-			);
-			return;
-		}
+		int fill = Theme.withAlpha(ClickLook.FILL, Math.round(136 * alpha));
+		int outline = hover ? Theme.ACCENT : Theme.LINE;
 		ClickLook.panel(
 			graphics,
 			widget.getX(),
 			widget.getY(),
 			widget.getWidth(),
 			widget.getHeight(),
-			radius,
+			0,
 			fill,
 			outline
 		);
@@ -117,19 +103,15 @@ public final class MenuChrome {
 	public static void field(GuiGraphicsExtractor graphics, AbstractWidget widget) {
 		float alpha = widget.getAlpha();
 		boolean focus = widget.isFocused();
-		int fill = Theme.withAlpha(Theme.PANEL, Math.round(220 * alpha));
-		int outline = fade(focus ? Theme.ACCENT : Theme.LINE, alpha);
-		if (ControlChrome.on()) {
-			ControlChrome.glass(graphics, widget.getX(), widget.getY(), widget.getWidth(), widget.getHeight(), 10f, fill);
-			return;
-		}
+		int fill = Theme.withAlpha(ClickLook.FILL, Math.round(136 * alpha));
+		int outline = focus ? Theme.ACCENT : Theme.LINE;
 		ClickLook.panel(
 			graphics,
 			widget.getX(),
 			widget.getY(),
 			widget.getWidth(),
 			widget.getHeight(),
-			5f,
+			0,
 			fill,
 			outline
 		);
@@ -142,34 +124,28 @@ public final class MenuChrome {
 		int w = widget.getWidth();
 		int h = widget.getHeight();
 		boolean hover = widget.active && widget.isHoveredOrFocused();
-		if (ControlChrome.on()) {
-			ControlChrome.glass(graphics, x, y, w, h, 12f, fade(Theme.CARD, alpha));
-			ControlChrome.slider(graphics, x + 10, y + h * 0.5f - 2.5f, w - 20, 5, (float) Math.max(0d, Math.min(1d, value)));
-			return;
-		}
 		ClickLook.panel(
 			graphics,
 			x,
 			y,
 			w,
 			h,
-			6f,
-			Theme.withAlpha(ClickLook.FILL, Math.round(230 * alpha)),
-			fade(hover ? Theme.ACCENT : Theme.LINE, alpha),
-			0
+			0,
+			Theme.withAlpha(ClickLook.FILL, Math.round(136 * alpha)),
+			hover ? Theme.ACCENT : Theme.LINE
 		);
-		float trackY = y + h * 0.5f - 1.5f;
-		GuiDraw.rounded(graphics, x + 8, trackY, Math.max(8, w - 16), 3, 1.5f, fade(Theme.TRACK, alpha));
 		float t = (float) Math.max(0d, Math.min(1d, value));
-		float filled = (w - 16) * t;
+		float trackX = x + 4;
+		float trackW = Math.max(8, w - 8);
+		float trackY = y + h * 0.5f - 2f;
+		GuiDraw.fillSmooth(graphics, trackX, trackY, trackW, 4, fade(0xFF222222, alpha));
+		float filled = trackW * t;
 		if (filled > 1f) {
-			GuiDraw.rounded(graphics, x + 8, trackY, filled, 3, 1.5f, fade(Theme.ACCENT, alpha));
+			GuiDraw.fillSmooth(graphics, trackX, trackY, filled, 4, fade(Theme.ACCENT, alpha));
 		}
-		float handleW = 8f;
-		float handleH = Math.max(10f, h - 6f);
-		float hx = x + 6 + t * (w - 14 - handleW);
-		float hy = y + (h - handleH) * 0.5f;
-		GuiDraw.rounded(graphics, hx, hy, handleW, handleH, 3f, fade(hover ? Theme.ACCENT : Theme.TEXT, alpha));
+		float handleW = 4f;
+		float hx = trackX + t * (trackW - handleW);
+		GuiDraw.fillSmooth(graphics, hx, y + 3, handleW, h - 6, fade(0xFFFFFFFF, alpha));
 	}
 
 	public static void listPanel(GuiGraphicsExtractor graphics, int x, int y, int w, int h) {

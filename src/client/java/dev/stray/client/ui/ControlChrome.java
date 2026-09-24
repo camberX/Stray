@@ -27,7 +27,7 @@ public final class ControlChrome {
 	}
 
 	public static boolean on() {
-		return true;
+		return false;
 	}
 
 	public static int hudFill() {
