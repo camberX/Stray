@@ -128,9 +128,12 @@ public final class PestCooldown {
 	private static void title(Minecraft client) {
 		Gui gui = client.gui;
 		if (gui != null) {
+			StrayConfig config = StrayConfig.get();
+			String title = config.pestCooldownAlert == null || config.pestCooldownAlert.isBlank() ? "Pest cooldown" : config.pestCooldownAlert;
+			String subtitle = config.pestCooldownAlertSub == null || config.pestCooldownAlertSub.isBlank() ? "2:00 left" : config.pestCooldownAlertSub;
 			gui.setTimes(8, 50, 12);
-			gui.setTitle(Component.literal("Pest cooldown").withColor(0xFF5A4A));
-			gui.setSubtitle(Component.literal("2:00 left"));
+			gui.setTitle(Component.literal(title).withColor(0xFF5A4A));
+			gui.setSubtitle(Component.literal(subtitle));
 		}
 		client.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.NOTE_BLOCK_PLING.value(), 0.7f, 0.9f));
 	}

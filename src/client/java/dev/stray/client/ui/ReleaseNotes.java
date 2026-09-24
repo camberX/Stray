@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.4.96", new String[]{
+			"The pest cooldown title and subtitle can be edited under Pest cooldown."
+		}),
 		new Entry("1.4.95", new String[]{
 			"Sack recipe lore no longer crashes when you hover an item in a sack."
 		}),

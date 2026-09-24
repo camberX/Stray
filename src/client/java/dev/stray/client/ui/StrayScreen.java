@@ -178,7 +178,7 @@ public class StrayScreen extends Screen {
 		PLOTS("Garden plots", 1),
 		SHOPPING("Shopping list", 1),
 		PEST("Pest ESP", 2),
-		PEST_COOLDOWN("Pest cooldown", 1),
+		PEST_COOLDOWN("Pest cooldown", 3),
 		AUTO_DNA("Auto DNA", 5),
 		NAMETAGS("Nametags", 6),
 		HEALTH("Health bar", 7),
@@ -474,6 +474,7 @@ public class StrayScreen extends Screen {
 		new SearchEntry("Pest ESP", Tab.GARDEN, "Garden"),
 		new SearchEntry("Pest cooldown", Tab.GARDEN, "Garden"),
 		new SearchEntry("Pest cooldown title", Tab.GARDEN, "Garden"),
+		new SearchEntry("Pest cooldown text", Tab.GARDEN, "Garden"),
 		new SearchEntry("Garden pests", Tab.GARDEN, "Garden"),
 		new SearchEntry("Vacuum", Tab.GARDEN, "Garden"),
 		new SearchEntry("Plot widget", Tab.GARDEN, "Garden"),
@@ -577,6 +578,12 @@ public class StrayScreen extends Screen {
 	private boolean capeFocused;
 	private boolean nickFocused;
 	private boolean stealFocused;
+	private int pestAlertFocus;
+	private boolean pestAlertLive;
+	private float pestAlertX;
+	private float pestAlertY;
+	private float pestAlertW;
+	private float pestAlertH;
 	private String stealDraft = "";
 	private String searchQuery = "";
 	private String capeUrlDraft = "";
@@ -698,6 +705,7 @@ public class StrayScreen extends Screen {
 
 	@Override
 	public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float delta) {
+		pestAlertLive = false;
 		if (StrayConfig.get().clickGui) {
 			tickAnim();
 			hits.clear();
@@ -3134,6 +3142,57 @@ public class StrayScreen extends Screen {
 		return y + row;
 	}
 
+	private float alertLine(GuiGraphicsExtractor graphics, Font font, float x, float y, float w, int mouseX, int mouseY, String label, String value, int focusId) {
+		float row = rowH();
+		boolean focused = pestAlertFocus == focusId;
+		String shown = value == null ? "" : value;
+		String text = (shown.isEmpty() ? label : label + "  " + shown) + (focused ? "|" : "");
+		clickField(graphics, font, x, y, w, mouseX, mouseY, text, focused, shown.isEmpty() && !focused, () -> pestAlertFocus = focusId);
+		if (!pestAlertLive) {
+			pestAlertX = x;
+			pestAlertY = y;
+			pestAlertW = w;
+			pestAlertH = row;
+		} else {
+			float bottom = Math.max(pestAlertY + pestAlertH, y + row);
+			pestAlertX = Math.min(pestAlertX, x);
+			pestAlertY = Math.min(pestAlertY, y);
+			pestAlertW = Math.max(pestAlertW, w);
+			pestAlertH = bottom - pestAlertY;
+		}
+		pestAlertLive = true;
+		return y + row;
+	}
+
+	private void editPestAlert(int key, boolean paste, String typed) {
+		if (pestAlertFocus != 1 && pestAlertFocus != 2) {
+			return;
+		}
+		StrayConfig config = StrayConfig.get();
+		String current = pestAlertFocus == 1 ? config.pestCooldownAlert : config.pestCooldownAlertSub;
+		if (current == null) {
+			current = "";
+		}
+		if (paste) {
+			String clip = minecraft.keyboardHandler.getClipboard();
+			if (clip != null && !clip.isBlank()) {
+				current += clip.replace("\n", "").replace("\r", "");
+			}
+		} else if (typed != null) {
+			current += typed;
+		} else if (key == InputConstants.KEY_BACKSPACE && !current.isEmpty()) {
+			current = current.substring(0, current.length() - 1);
+		}
+		if (current.length() > 48) {
+			current = current.substring(0, 48);
+		}
+		if (pestAlertFocus == 1) {
+			config.pestCooldownAlert = current;
+		} else {
+			config.pestCooldownAlertSub = current;
+		}
+	}
+
 	private float toggle(GuiGraphicsExtractor graphics, Font font, float x, float y, float w, int mouseX, int mouseY, String label, boolean value, Consumer<Boolean> setter) {
 		return toggle(graphics, font, x, y, w, mouseX, mouseY, label, value, setter, null);
 	}
@@ -3622,7 +3681,11 @@ public class StrayScreen extends Screen {
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Through walls", config.pestEspThroughWalls, v -> config.pestEspThroughWalls = v);
 				colorRow(graphics, font, ix, y, iw, mouseX, mouseY, "Color", config.pestEspRgb, PickerTarget.PEST);
 			}
-			case PEST_COOLDOWN -> toggle(graphics, font, ix, y, iw, mouseX, mouseY, "2 minute title", config.pestCooldownTitle, v -> config.pestCooldownTitle = v);
+			case PEST_COOLDOWN -> {
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "2 minute title", config.pestCooldownTitle, v -> config.pestCooldownTitle = v);
+				y = alertLine(graphics, font, ix, y, iw, mouseX, mouseY, "Title", config.pestCooldownAlert, 1);
+				alertLine(graphics, font, ix, y, iw, mouseX, mouseY, "Subtitle", config.pestCooldownAlertSub, 2);
+			}
 			case AUTO_DNA -> {
 				y = slider(graphics, font, ix, y, iw, "Click delay", config.autoDnaClickDelay + "ms", (config.autoDnaClickDelay - 100) / 900f, v -> config.autoDnaClickDelay = snapInt(100 + v * 900f, 100, 1000, 10));
 				y = slider(graphics, font, ix, y, iw, "Delay variety", config.autoDnaDelayVariety + "ms", config.autoDnaDelayVariety / 1000f, v -> config.autoDnaDelayVariety = snapInt(v * 1000f, 0, 1000, 10));
@@ -4266,6 +4329,9 @@ public class StrayScreen extends Screen {
 		if (nickFocused && !onNick) {
 			nickFocused = false;
 		}
+		if (pestAlertFocus != 0 && !(pestAlertLive && GuiDraw.hovered(lx, ly, pestAlertX, pestAlertY, pestAlertW, pestAlertH))) {
+			pestAlertFocus = 0;
+		}
 		boolean onSteal = GuiDraw.hovered(lx, ly, stealFieldX, stealFieldY, stealFieldW, ROW);
 		if (stealFocused && !onSteal) {
 			stealFocused = false;
@@ -4423,6 +4489,10 @@ public class StrayScreen extends Screen {
 				nickFocused = false;
 				return true;
 			}
+			if (pestAlertFocus != 0) {
+				pestAlertFocus = 0;
+				return true;
+			}
 			if (stealFocused) {
 				stealFocused = false;
 				stealDraft = NickSteal.target();
@@ -4478,6 +4548,18 @@ public class StrayScreen extends Screen {
 			if (!capeUrlDraft.isEmpty()) {
 				capeUrlDraft = capeUrlDraft.substring(0, capeUrlDraft.length() - 1);
 			}
+			return true;
+		}
+		if (pestAlertFocus != 0 && event.key() == InputConstants.KEY_BACKSPACE) {
+			editPestAlert(InputConstants.KEY_BACKSPACE, false, null);
+			return true;
+		}
+		if (pestAlertFocus != 0 && event.key() == InputConstants.KEY_RETURN) {
+			pestAlertFocus = 0;
+			return true;
+		}
+		if (pestAlertFocus != 0 && event.key() == InputConstants.KEY_V && event.hasControlDown()) {
+			editPestAlert(0, true, null);
 			return true;
 		}
 		if (nickFocused && event.key() == InputConstants.KEY_BACKSPACE) {
@@ -4565,6 +4647,7 @@ public class StrayScreen extends Screen {
 			capeFocused = false;
 			nickFocused = false;
 			stealFocused = false;
+			pestAlertFocus = 0;
 			mobSearchFocused = false;
 			fontPickerOpen = false;
 			fontSearchFocused = false;
@@ -4577,6 +4660,10 @@ public class StrayScreen extends Screen {
 	public boolean charTyped(CharacterEvent event) {
 		if (capeFocused && event.isAllowedChatCharacter()) {
 			capeUrlDraft += event.codepointAsString();
+			return true;
+		}
+		if (pestAlertFocus != 0 && event.isAllowedChatCharacter()) {
+			editPestAlert(0, false, event.codepointAsString());
 			return true;
 		}
 		if (nickFocused && event.isAllowedChatCharacter()) {
@@ -4621,7 +4708,7 @@ public class StrayScreen extends Screen {
 	}
 
 	public boolean shouldIgnoreMenuBinds() {
-		return bindListen != 0 || capeFocused || nickFocused || stealFocused || searchOpen || mobSearchFocused || fontSearchFocused;
+		return bindListen != 0 || capeFocused || nickFocused || stealFocused || pestAlertFocus != 0 || searchOpen || mobSearchFocused || fontSearchFocused;
 	}
 
 	public void requestClose() {

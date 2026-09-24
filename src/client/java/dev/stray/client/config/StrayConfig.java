@@ -115,6 +115,8 @@ public final class StrayConfig {
 	public float pestEspOpacity = 0.38f;
 	public boolean pestCooldownHudEnabled = false;
 	public boolean pestCooldownTitle = true;
+	public String pestCooldownAlert = "Pest cooldown";
+	public String pestCooldownAlertSub = "2:00 left";
 	public boolean jacobContestHudEnabled = false;
 	public boolean skillProgressHudEnabled = false;
 	public boolean gardenContestHudEnabled = false;
@@ -1362,6 +1364,12 @@ public final class StrayConfig {
 				}
 				if (!json.has("pestCooldownTitle")) {
 					loaded.pestCooldownTitle = true;
+				}
+				if (!json.has("pestCooldownAlert") || loaded.pestCooldownAlert == null || loaded.pestCooldownAlert.isBlank()) {
+					loaded.pestCooldownAlert = "Pest cooldown";
+				}
+				if (!json.has("pestCooldownAlertSub") || loaded.pestCooldownAlertSub == null || loaded.pestCooldownAlertSub.isBlank()) {
+					loaded.pestCooldownAlertSub = "2:00 left";
 				}
 				loaded.pestEspRgb = loaded.pestEspRgb & 0xFFFFFF;
 				if (loaded.pestEspRgb == 0) {
