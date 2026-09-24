@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.5.11", new String[]{
+			"Top down hides every block above you within 6 blocks, so a layered farm stays visible. Roofs farther out stay."
+		}),
 		new Entry("1.5.10", new String[]{
 			"Click GUI has a Mobs column for mob ESP. Search sits at the top of that column."
 		}),

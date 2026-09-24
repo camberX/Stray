@@ -34,12 +34,18 @@ public final class TopDownCapture {
 	private static ProjectionMatrixBuffer projection;
 	private static boolean capturing;
 	private static boolean ready;
+	private static float cutThreshold;
 
 	private TopDownCapture() {
 	}
 
 	public static boolean capturing() {
 		return capturing;
+	}
+
+	/** Camera-relative Y where blocks above the player start. */
+	public static float cutThreshold() {
+		return cutThreshold;
 	}
 
 	public static GpuTextureView colorView() {
@@ -88,7 +94,8 @@ public final class TopDownCapture {
 		Vec3 eye = client.player.getEyePosition(partial);
 		float fov = Mth.clamp(savedFov, 30f, 110f);
 		float far = Math.max(savedFar, altitude + 64f);
-		float near = Math.max(0.05f, altitude - 0.25f);
+		float near = Camera.PROJECTION_Z_NEAR;
+		cutThreshold = (float) ((client.player.getBlockY() + 1) - (eye.y + altitude));
 		boolean swapped = false;
 		capturing = true;
 		try {
@@ -135,6 +142,7 @@ public final class TopDownCapture {
 			if (projection != null) {
 				RenderSystem.setProjectionMatrix(projection.getBuffer(savedProjection), ProjectionType.PERSPECTIVE);
 			}
+			TopDownTerrainCut.clear();
 			capturing = false;
 		}
 	}
