@@ -55,14 +55,14 @@ public abstract class CameraMixin {
 	}
 
 	@ModifyArg(
-		method = "extractRenderState",
+		method = "createProjectionMatrixForCulling",
 		at = @At(
 			value = "INVOKE",
 			target = "Lorg/joml/Matrix4f;perspective(FFFFZ)Lorg/joml/Matrix4f;"
 		),
 		index = 2
 	)
-	private float stray$topDownNear(float zNear) {
+	private float stray$topDownCullNear(float zNear) {
 		return TopDownView.nearPlane(zNear);
 	}
 

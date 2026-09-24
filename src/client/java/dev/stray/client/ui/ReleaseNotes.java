@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.5.3", new String[]{
+			"Top down no longer crashes on startup. Blocks above you are still cut out of that view."
+		}),
 		new Entry("1.5.2", new String[]{
 			"Holding a farming tool can switch to a top-down view. Blocks above you are hidden, and the height slider sets how far up the camera sits."
 		}),

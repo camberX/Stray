@@ -1,5 +1,6 @@
 package dev.stray.client.mixin;
 
+import dev.stray.client.farming.TopDownView;
 import dev.stray.client.render.GuiFrostBlur;
 import dev.stray.client.render.MobGlowRenderer;
 import dev.stray.client.visual.HeldItemShader;
@@ -11,6 +12,7 @@ import org.joml.Matrix4fc;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.ModifyArg;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(GameRenderer.class)
@@ -18,6 +20,18 @@ public class GameRendererMixin {
 	@Inject(method = "render", at = @At("HEAD"))
 	private void stray$beginFrame(DeltaTracker deltaTracker, boolean renderLevel, CallbackInfo ci) {
 		MobGlowRenderer.beginFrame();
+	}
+
+	@ModifyArg(
+		method = "renderLevel",
+		at = @At(
+			value = "INVOKE",
+			target = "Lnet/minecraft/client/renderer/Projection;setupPerspective(FFFFF)V"
+		),
+		index = 0
+	)
+	private float stray$topDownNear(float zNear) {
+		return TopDownView.nearPlane(zNear);
 	}
 
 	@Inject(method = "renderLevel", at = @At("HEAD"))
