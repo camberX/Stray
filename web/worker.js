@@ -1516,7 +1516,7 @@ const STORE_HTML = `<!DOCTYPE html>
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<title>Stray</title>
-	<meta name="description" content="A visuals oriented Hypixel Skyblock mod. Control-glass click GUI, ESP, HUD, mining, and custom capes.">
+	<meta name="description" content="A visuals oriented Hypixel Skyblock mod. World tint, ESP, HUD, mining, and custom capes.">
 	<meta name="theme-color" content="#05070d">
 	<link rel="preconnect" href="https://fonts.googleapis.com">
 	<link href="https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
@@ -1525,933 +1525,90 @@ const STORE_HTML = `<!DOCTYPE html>
 			--bg: #05070d;
 			--text: #f2f4f7;
 			--muted: #8a9aab;
-			--header: #c4ced8;
 			--accent: #e5e7eb;
-			--accent-dim: #4a5564;
-			--pane: #0b0e14;
-			--card: #12151c;
-			--line: #1c2430;
-			--track: #1a222c;
-			--off: #3d4a58;
-			--pill: #4a5564;
-			--warn: #f5c16c;
-			--glass: rgba(255, 255, 255, 0.10);
-			--glass-2: rgba(255, 255, 255, 0.16);
-			--glass-line: rgba(255, 255, 255, 0.18);
-			--ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+			--line: rgba(255, 255, 255, 0.12);
+			--card: rgba(255, 255, 255, 0.05);
 		}
 		* { box-sizing: border-box; }
-		html { color-scheme: dark; scroll-behavior: smooth; }
-		html, body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.45 "Nunito Sans", system-ui, sans-serif; }
-		::selection { background: color-mix(in srgb, var(--accent) 55%, #000); color: #fff; }
-		body { min-height: 100vh; overflow-x: hidden; }
-		#sky { position: fixed; inset: 0; z-index: 0; }
-		.nebula, .orb, .grain {
-			position: fixed; pointer-events: none; z-index: 1;
-		}
-		.nebula {
-			inset: -20%;
+		html, body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.5 "Nunito Sans", system-ui, sans-serif; }
+		body {
+			min-height: 100vh;
 			background:
-				radial-gradient(900px 520px at 18% 12%, color-mix(in srgb, var(--accent) 22%, transparent), transparent 62%),
-				radial-gradient(700px 480px at 88% 80%, color-mix(in srgb, var(--accent) 10%, transparent), transparent 58%),
-				radial-gradient(500px 300px at 70% 18%, rgba(168, 139, 250, 0.08), transparent 70%);
-			filter: blur(8px);
+				radial-gradient(900px 480px at 12% -10%, rgba(229, 231, 235, 0.08), transparent 60%),
+				var(--bg);
 		}
-		.orb {
-			width: 560px; height: 560px; border-radius: 50%;
-			left: 50%; top: 30%;
-			background: radial-gradient(circle, color-mix(in srgb, var(--accent) 20%, transparent), transparent 68%);
-			transform: translate(-50%, -50%);
-			transition: background 0.3s ease;
-		}
-		.grain {
-			inset: 0; opacity: 0.045; mix-blend-mode: overlay;
-			background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.55'/%3E%3C/svg%3E");
-		}
-		.wrap { position: relative; z-index: 2; width: min(1180px, calc(100% - 40px)); margin: 0 auto; padding: 28px 0 72px; }
-		.top {
-			display: flex; align-items: center; justify-content: space-between; gap: 16px;
-			padding: 8px 0 28px;
-		}
-		.mark { display: flex; flex-direction: column; gap: 7px; }
-		.word {
-			font-size: 13px; font-weight: 800; letter-spacing: 0.34em;
-			color: var(--text);
-		}
-		.tick { width: 28px; height: 2px; border-radius: 2px; background: var(--accent); box-shadow: 0 0 18px var(--accent); }
-		.top-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-		.ghost, .dl, .copy {
+		.wrap { width: min(720px, calc(100% - 40px)); margin: 0 auto; padding: 36px 0 64px; }
+		header { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+		.word { font-size: 13px; font-weight: 800; letter-spacing: 0.34em; }
+		.tick { width: 28px; height: 2px; margin-top: 8px; border-radius: 2px; background: var(--accent); }
+		.ver { color: var(--muted); font-size: 13px; font-weight: 700; letter-spacing: 0.08em; }
+		h1 { margin: 48px 0 0; font-size: clamp(40px, 7vw, 64px); line-height: 0.95; letter-spacing: -0.05em; font-weight: 800; }
+		.lede { margin: 16px 0 0; color: var(--muted); font-size: 18px; max-width: 42ch; }
+		.cta { display: flex; align-items: center; gap: 12px; margin-top: 28px; flex-wrap: wrap; }
+		.dl, .ghost, .copy {
 			display: inline-flex; align-items: center; justify-content: center;
 			text-decoration: none; border: 0; cursor: pointer; font: inherit; font-weight: 800;
 		}
-		.ghost {
-			color: var(--header); padding: 9px 14px; border-radius: 999px;
-			background: rgba(255,255,255,0.06); border: 1px solid var(--glass-line);
-			backdrop-filter: blur(16px);
-		}
-		.ghost:hover { background: rgba(255,255,255,0.10); color: var(--text); }
-		.ghost svg { width: 14px; height: 14px; margin-right: 7px; fill: currentColor; }
 		.dl {
-			background: var(--accent); color: #061018; padding: 9px 16px; border-radius: 999px;
-			box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 40%, transparent), 0 10px 30px color-mix(in srgb, var(--accent) 28%, transparent);
-			transition: transform 0.18s var(--ease), filter 0.18s ease;
+			background: var(--accent); color: #061018; padding: 10px 18px; border-radius: 999px;
 		}
-		.dl:hover { transform: translateY(-1px); filter: brightness(1.08); }
-		.dl.dead { pointer-events: none; opacity: 0.38; box-shadow: none; }
-		.ver { color: var(--muted); font-size: 13px; font-weight: 700; letter-spacing: 0.08em; }
-		.hero {
-			display: grid; grid-template-columns: minmax(280px, 0.92fr) minmax(0, 1.18fr);
-			gap: 36px; align-items: center; min-height: calc(100vh - 120px);
+		.dl.dead { pointer-events: none; opacity: 0.38; }
+		.ghost, .copy {
+			color: var(--text); padding: 9px 14px; border-radius: 999px;
+			background: rgba(255,255,255,0.06); border: 1px solid var(--line);
 		}
-		.kicker {
-			font-size: 11px; font-weight: 800; letter-spacing: 0.22em; text-transform: uppercase;
-			color: var(--accent);
+		.feats { list-style: none; margin: 40px 0 0; padding: 0; display: grid; gap: 10px; }
+		.feats li {
+			padding: 14px 16px; border-radius: 14px; background: var(--card); border: 1px solid var(--line);
 		}
-		h1 {
-			margin: 10px 0 0; font-size: clamp(44px, 7vw, 76px); line-height: 0.92;
-			letter-spacing: -0.05em; font-weight: 800;
-		}
-		.lede { margin: 18px 0 0; color: var(--muted); font-size: 18px; max-width: 42ch; }
-		.cta { display: flex; align-items: center; gap: 12px; margin-top: 26px; flex-wrap: wrap; }
-		.swatch-row { display: flex; gap: 8px; margin-top: 28px; flex-wrap: wrap; align-items: center; }
-		.swatch-row em { font-style: normal; color: var(--muted); font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; font-weight: 800; margin-right: 4px; }
-		.swatch {
-			width: 18px; height: 18px; border-radius: 6px; border: 1px solid #0006; padding: 0; cursor: pointer;
-			transition: transform 0.16s var(--ease);
-		}
-		.swatch:hover { transform: scale(1.12); }
-		.swatch.on { outline: 2px solid var(--text); outline-offset: 2px; }
-		.mode {
-			display: inline-flex; padding: 3px; border-radius: 999px;
-			background: rgba(255,255,255,0.06); border: 1px solid var(--glass-line);
-		}
-		.mode button {
-			border: 0; background: transparent; color: var(--muted); font: 800 12px/1 "Nunito Sans", sans-serif;
-			letter-spacing: 0.08em; text-transform: uppercase; padding: 8px 12px; border-radius: 999px; cursor: pointer;
-		}
-		.mode button.on { background: rgba(255,255,255,0.16); color: var(--text); }
-		.stage { position: relative; min-height: 560px; }
-		.gui {
-			width: 760px; height: 560px; max-width: 100%;
-			display: grid; grid-template-columns: 88px 1fr;
-			border-radius: 24px; overflow: hidden; user-select: none;
-			background: linear-gradient(180deg, rgba(255,255,255,0.16), rgba(255,255,255,0.06));
-			box-shadow:
-				0 30px 80px #000a,
-				inset 0 1px 0 rgba(255,255,255,0.34),
-				inset 0 -1px 0 rgba(255,255,255,0.06);
-			backdrop-filter: blur(28px) saturate(1.35);
-			opacity: 0; transform: scale(0.94) translateY(18px);
-			transform-origin: center;
-			transition: transform 0.5s var(--ease), opacity 0.36s ease, background 0.25s ease;
-		}
-		.gui.in { opacity: 1; transform: none; }
-		body.classic .gui {
-			grid-template-columns: 168px 1fr;
-			border-radius: 12px;
-			background: var(--pane);
-			box-shadow: 0 28px 70px #0009, inset 0 0 0 1px var(--line);
-			backdrop-filter: none;
-		}
-		body.ctrl .classic-only { display: none !important; }
-		body.classic .ctrl-only { display: none !important; }
-		.rail {
-			position: relative; display: flex; flex-direction: column; align-items: center;
-			padding: 10px 8px 8px; gap: 0;
-		}
-		body.classic .rail { align-items: stretch; padding: 16px 0 10px; background: #121820; }
-		body.classic .rail::after {
-			content: ""; position: absolute; top: 0; right: 0; width: 2px; height: 100%;
-			background: color-mix(in srgb, var(--accent) 38%, transparent);
-		}
-		.rail-pill {
-			position: absolute; left: 10px; width: calc(100% - 20px); height: 48px; border-radius: 14px;
-			background: rgba(255,255,255,0.16);
-			transition: top 0.22s var(--ease), height 0.22s var(--ease), opacity 0.16s ease;
-			pointer-events: none; z-index: 0;
-		}
-		body.classic .rail-pill {
-			left: 12px; width: calc(100% - 24px); height: 32px; border-radius: 8px; background: var(--pill);
-		}
-		.rail-pill.hide { opacity: 0; }
-		.brand-mini {
-			position: relative; z-index: 1; font-size: 9px; font-weight: 800; letter-spacing: 0.18em;
-			color: var(--header); padding: 4px 0 10px; display: none;
-		}
-		body.classic .brand-mini { display: flex; align-items: baseline; gap: 6px; padding: 0 18px 0; font-size: 14px; letter-spacing: 0.04em; color: var(--text); }
-		body.classic .brand-mini b { color: var(--accent); font-size: 10px; letter-spacing: 0; font-weight: 700; }
-		body.classic .rail-tick { display: block; }
-		.rail-tick { display: none; width: 32px; height: 3px; margin: 7px 18px 10px; background: var(--accent); border-radius: 2px; }
-		.grp { display: none; }
-		body.classic .grp { display: block; padding: 8px 20px 2px; font-size: 10px; letter-spacing: 0.1em; color: var(--header); font-weight: 700; }
-		.tab {
-			position: relative; z-index: 1; width: 72px; height: 48px; border: 0; background: transparent;
-			color: rgba(245,245,247,0.62); cursor: pointer; border-radius: 14px;
-			display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
-			font: 800 8px/1 "Nunito Sans", sans-serif; letter-spacing: 0.04em;
-		}
-		.tab svg { width: 16px; height: 16px; fill: currentColor; }
-		.tab.on { color: #f5f5f7; }
-		.tab:hover:not(.on) { color: #fff; }
-		body.classic .tab {
-			width: calc(100% - 24px); height: 32px; margin: 1px 12px; padding: 0 12px;
-			flex-direction: row; justify-content: flex-start; gap: 10px;
-			font: 700 15px/1 "Nunito Sans", sans-serif; color: var(--muted); border-radius: 8px;
-		}
-		body.classic .tab svg { fill: var(--accent); }
-		body.classic .tab.on { color: var(--text); }
-		body.classic .tab.on svg { fill: var(--text); }
-		body.classic .tab:hover:not(.on) { background: #ffffff14; }
-		.you {
-			margin-top: auto; position: relative; z-index: 1; width: auto; padding: 12px 18px 4px;
-			display: flex; flex-direction: row; align-items: center; justify-content: flex-start; gap: 8px;
-			cursor: pointer; color: var(--header);
-			font: 700 15px/1 "Nunito Sans", sans-serif;
-			border-top: 2px solid var(--accent);
-		}
-		.you.on { color: var(--text); }
-		.face, .head-face {
-			width: 22px; height: 22px; border-radius: 4px; flex: 0 0 auto;
-			background: linear-gradient(#d7b08a, #8a6240); box-shadow: inset 0 -8px 0 #6d4a2e;
-		}
-		.head-face {
-			width: 22px; height: 22px; border: 0; padding: 0; cursor: pointer; border-radius: 7px;
-		}
-		.head-face.on { outline: 2px solid var(--accent); outline-offset: 1px; }
-		.recycle {
-			margin-top: auto; position: relative; z-index: 1; padding: 6px 0 2px;
-			font: 800 11px/1.2 "Nunito Sans", sans-serif; color: var(--accent); text-align: center;
-			letter-spacing: 0.02em; white-space: pre-line;
-		}
-		.recycle b { display: block; font-size: 9px; font-weight: 800; margin-top: 2px; }
-		.main { position: relative; display: flex; flex-direction: column; min-width: 0; }
-		.head {
-			height: 44px; display: flex; align-items: center; gap: 8px; padding: 0 14px;
-		}
-		.head h2 {
-			margin: 0; font-size: 15px; font-weight: 800; letter-spacing: 0.02em;
-			position: relative; padding-bottom: 4px;
-		}
-		body.ctrl .head h2 { display: none; }
-		.head h2::after {
-			content: ""; position: absolute; left: 0; bottom: 0; width: 100%; height: 2px;
-			background: var(--accent); border-radius: 2px; transform-origin: left;
-			animation: under 0.28s var(--ease);
-		}
-		@keyframes under { from { transform: scaleX(0); } to { transform: scaleX(1); } }
-		.head-tabs { display: flex; align-items: center; gap: 12px; min-width: 0; }
-		.head-tab {
-			border: 0; background: transparent; color: rgba(245,245,247,0.55); cursor: pointer;
-			font: 800 13px/1 "Nunito Sans", sans-serif; padding: 0 1px 7px; position: relative;
-		}
-		.head-tab.on { color: #f5f5f7; }
-		.head-tab.on::after {
-			content: ""; position: absolute; left: 0; bottom: 0; width: 100%; height: 1.5px;
-			background: currentColor; border-radius: 1px;
-		}
-		.search {
-			margin-left: auto; height: 28px; width: 110px; border-radius: 999px; border: 0;
-			background: rgba(0,0,0,0.18); color: var(--text); padding: 0 12px;
-			font: 600 12px/1 "Nunito Sans", sans-serif;
-		}
-		body.classic .search { background: var(--card); width: 148px; }
-		.iconbtn {
-			width: 26px; height: 26px; border: 0; background: transparent; color: rgba(245,245,247,0.7);
-			padding: 0; cursor: pointer; display: grid; place-items: center; flex: 0 0 auto;
-		}
-		.iconbtn:hover, .iconbtn.on { color: var(--accent); }
-		.iconbtn svg { width: 15px; height: 15px; fill: currentColor; }
-		.pane { position: relative; flex: 1; overflow: hidden; }
-		#pane-stars { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; display: none; }
-		body.classic #pane-stars { display: block; }
-		.cols {
-			position: absolute; inset: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
-			padding: 4px 12px 12px; align-content: start; align-items: start;
-			opacity: 0; transform: translateY(12px); pointer-events: none;
-			transition: opacity 0.2s ease, transform 0.24s var(--ease);
-			overflow: auto;
-		}
-		.cols.on { opacity: 1; transform: none; pointer-events: auto; }
-		.cols.one { grid-template-columns: 1fr; }
-		.stack { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
-		.card {
-			background: rgba(255,255,255,0.12); border-radius: 16px; padding: 10px 12px 8px;
-			box-shadow: inset 0 1px 0 rgba(255,255,255,0.22);
-		}
-		body.classic .card { background: var(--card); border-radius: 12px; box-shadow: none; }
-		.card h3 {
-			margin: 0 0 6px; padding-bottom: 6px; border-bottom: 1px solid rgba(255,255,255,0.12);
-			font-size: 10px; letter-spacing: 0.1em; color: var(--header); font-weight: 800;
-		}
-		body.classic .card h3 { border-bottom-color: var(--line); }
-		.row { display: flex; align-items: center; justify-content: space-between; min-height: 26px; gap: 8px; }
-		.row span { font-size: 13px; font-weight: 700; }
-		.row em, .val { font-style: normal; font-size: 12px; color: var(--muted); font-weight: 700; }
-		.val { color: var(--accent); }
-		.hint { font-size: 11px; color: var(--muted); padding: 2px 0 6px; }
-		.dot {
-			width: 14px; height: 14px; border-radius: 4px; flex: 0 0 auto;
-			background: var(--accent); border: 1px solid #0005;
-		}
-		.chips { display: flex; flex-wrap: wrap; gap: 6px; padding: 4px 0 6px; }
-		.chip {
-			border: 0; background: rgba(255,255,255,0.10); color: var(--muted); cursor: pointer;
-			font: 800 10px/1 "Nunito Sans", sans-serif; letter-spacing: 0.04em; text-transform: uppercase;
-			padding: 6px 8px; border-radius: 8px;
-		}
-		.chip.on { background: var(--accent); color: #061018; }
-		.slide { display: flex; align-items: center; gap: 8px; min-height: 24px; }
-		.slide span { font-size: 13px; font-weight: 700; min-width: 58px; }
-		.slide em { margin-left: auto; font-style: normal; font-size: 11px; color: var(--muted); font-weight: 700; }
-		.bar {
-			flex: 1; height: 4px; border-radius: 99px; background: rgba(255,255,255,0.16); position: relative;
-		}
-		.bar i {
-			position: absolute; top: -3px; width: 10px; height: 10px; border-radius: 50%;
-			background: var(--accent); box-shadow: 0 0 8px var(--accent);
-		}
-		.bind {
-			font: 800 11px/1 "Nunito Sans", sans-serif; color: var(--accent); letter-spacing: 0.02em;
-			padding: 5px 8px; border-radius: 6px; background: color-mix(in srgb, var(--accent) 16%, transparent);
-			cursor: pointer; border: 0;
-		}
-		.tog {
-			width: 42px; height: 24px; border: 0; padding: 0; border-radius: 99px;
-			background: rgba(255,255,255,0.28); position: relative; cursor: pointer; flex: 0 0 auto;
-		}
-		.tog::after {
-			content: ""; position: absolute; top: 3px; left: 3px; width: 18px; height: 18px; border-radius: 50%;
-			background: #fff; box-shadow: 0 1px 4px #0005;
-			transition: left 0.18s var(--ease), background 0.18s ease;
-		}
-		.tog.on { background: var(--accent); }
-		.tog.on::after { left: 21px; }
-		body.classic .tog { width: 44px; height: 22px; background: var(--track); }
-		body.classic .tog::after { width: 16px; height: 16px; background: var(--off); box-shadow: none; }
-		body.classic .tog.on::after { left: 25px; background: #061018; }
-		.list { display: flex; flex-direction: column; gap: 2px; }
-		.list button {
-			border: 0; background: transparent; color: rgba(245,245,247,0.7);
-			font: 700 14px/1.4 "Nunito Sans", sans-serif; text-align: left; padding: 5px 8px; border-radius: 8px; cursor: pointer;
-		}
-		.list button.on, .list button:hover { background: rgba(255,255,255,0.10); color: #fff; }
-		.sheet {
-			position: absolute; top: 8px; right: 14px; width: 188px; z-index: 3;
-			background: rgba(12,16,24,0.72); border: 1px solid var(--glass-line); border-radius: 18px; padding: 12px;
-			backdrop-filter: blur(18px);
-			opacity: 0; transform: translateX(10px); pointer-events: none;
-			transition: opacity 0.18s ease, transform 0.22s var(--ease);
-		}
-		.sheet.on { opacity: 1; transform: none; pointer-events: auto; }
-		.sheet h3 { margin: 0 0 10px; font-size: 11px; letter-spacing: 0.08em; color: var(--header); }
-		.swatches, #hero-swatches { display: flex; flex-wrap: wrap; gap: 8px; }
-		.nick, .field {
-			width: 100%; background: rgba(0,0,0,0.22); border: 1px solid rgba(255,255,255,0.12);
-			color: var(--text); font: 700 13px "Nunito Sans", sans-serif; padding: 7px 10px; border-radius: 8px;
-		}
-		.skin { width: 72px; height: 96px; margin: 6px auto 8px; background: linear-gradient(#c2a27a, #8a6a4a); border-radius: 10px; }
-		.filebtn {
-			width: 100%; text-align: left; border: 1px solid rgba(255,255,255,0.12);
-			background: rgba(0,0,0,0.18); color: var(--text); font: 700 13px "Nunito Sans", sans-serif;
-			padding: 7px 10px; border-radius: 8px; cursor: pointer; margin-top: 4px;
-		}
-		.filebtn:hover { background: rgba(255,255,255,0.08); }
-		.watermark {
-			position: absolute; left: 18px; top: 12px; font-size: 11px; font-weight: 800; letter-spacing: 0.18em;
-			color: color-mix(in srgb, var(--accent) 80%, #fff); opacity: 0.9; pointer-events: none;
-		}
-		.band { margin-top: 64px; }
-		.band h2 { margin: 0 0 6px; font-size: 13px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--header); }
-		.band p { margin: 0 0 18px; color: var(--muted); }
-		.feats {
-			display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px;
-		}
-		.feat {
-			background: rgba(255,255,255,0.06); border: 1px solid var(--glass-line); border-radius: 18px;
-			padding: 16px 16px 14px; backdrop-filter: blur(18px);
-			box-shadow: inset 0 1px 0 rgba(255,255,255,0.12);
-			transition: transform 0.2s var(--ease), border-color 0.2s ease, background 0.2s ease;
-		}
-		.feat:hover {
-			transform: translateY(-3px);
-			background: rgba(255,255,255,0.09);
-			border-color: color-mix(in srgb, var(--accent) 45%, transparent);
-		}
-		.feat svg { width: 18px; height: 18px; fill: var(--accent); }
-		.feat b { display: block; margin: 10px 0 4px; font-size: 14px; letter-spacing: 0.04em; }
-		.feat span { color: var(--muted); font-size: 13px; line-height: 1.4; }
-		.cape {
-			margin-top: 22px; display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 12px;
-		}
-		.glass {
-			background: rgba(255,255,255,0.06); border: 1px solid var(--glass-line); border-radius: 22px;
-			padding: 22px 22px 20px; backdrop-filter: blur(18px);
-			box-shadow: inset 0 1px 0 rgba(255,255,255,0.12);
-		}
-		.glass h2 { margin: 0 0 8px; font-size: 18px; }
-		.who { display: flex; align-items: center; gap: 8px; margin: 10px 0 8px; }
-		.handle { font-family: ui-monospace, Consolas, monospace; font-size: 16px; font-weight: 700; }
-		.copy {
-			border: 1px solid var(--glass-line); background: rgba(0,0,0,0.18); color: var(--muted);
-			font-size: 12px; padding: 6px 10px; border-radius: 999px;
-		}
-		.copy:hover { color: var(--text); }
-		.glass p { margin: 0; color: var(--muted); font-size: 14px; }
-		.statline { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-		.statline div { padding: 8px 0; }
-		.statline b { display: block; font-size: 22px; color: var(--accent); letter-spacing: -0.03em; }
-		.statline span { color: var(--muted); font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; font-weight: 800; }
-		.foot { margin-top: 28px; color: #5d6470; font-size: 13px; letter-spacing: 0.08em; display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+		.feats b { display: block; font-size: 14px; letter-spacing: 0.04em; }
+		.feats span { color: var(--muted); font-size: 14px; }
+		.cape { margin-top: 28px; padding: 18px 16px; border-radius: 14px; background: var(--card); border: 1px solid var(--line); }
+		.cape h2 { margin: 0 0 8px; font-size: 18px; }
+		.who { display: flex; align-items: center; gap: 8px; margin: 8px 0; }
+		.handle { font-family: ui-monospace, Consolas, monospace; font-weight: 700; }
+		.cape p, .note { margin: 0; color: var(--muted); font-size: 14px; }
+		.note { margin-top: 18px; }
+		.foot { margin-top: 28px; color: #5d6470; font-size: 13px; letter-spacing: 0.08em; display: flex; justify-content: space-between; }
 		.foot a { color: inherit; text-decoration: none; }
-		.foot a:hover { color: var(--accent); }
-		@media (max-width: 1020px) {
-			.hero, .cape, .feats { grid-template-columns: 1fr; }
-			.stage { min-height: 0; overflow: hidden; }
-			.gui { width: 760px; transform: scale(0.68); transform-origin: top left; }
-			.gui.in { transform: scale(0.68); }
-			.stage { height: calc(560px * 0.68); }
-			.hero { min-height: 0; padding-bottom: 12px; }
-		}
-		@media (max-width: 720px) {
-			.wrap { width: calc(100% - 24px); }
-			.gui { transform: scale(0.48); }
-			.gui.in { transform: scale(0.48); }
-			.stage { height: calc(560px * 0.48); }
-			h1 { font-size: 42px; }
-		}
 	</style>
 </head>
-<body class="ctrl">
-	<canvas id="sky"></canvas>
-	<div class="nebula"></div>
-	<div class="orb" id="orb"></div>
-	<div class="grain"></div>
+<body>
 	<div class="wrap">
-		<header class="top">
-			<div class="mark">
+		<header>
+			<div>
 				<div class="word">STRAY</div>
 				<div class="tick"></div>
 			</div>
-			<div class="top-actions">
-				<a class="ghost" href="https://github.com/camberX/Stray" target="_blank" rel="noopener noreferrer" aria-label="GitHub"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>GitHub</a>
-				<a class="dl" id="mod-download" href="/download">Download</a>
-				<span class="ver" id="mod-ver"></span>
-			</div>
+			<span class="ver" id="mod-ver"></span>
 		</header>
-
-		<section class="hero">
-			<div>
-				<div class="kicker">Hypixel Skyblock client</div>
-				<h1>Stray</h1>
-				<p class="lede">A Visuals oriented mod for Hypixel Skyblock</p>
-				<div class="cta">
-					<a class="dl" id="mod-download-2" href="/download">Get the jar</a>
-					<a class="ghost" href="https://github.com/camberX/Stray" target="_blank" rel="noopener noreferrer">GitHub</a>
-					<a class="ghost" href="#features">Browse modules</a>
-				</div>
-				<div class="swatch-row">
-					<em>Accent</em>
-					<div id="hero-swatches"></div>
-				</div>
-			</div>
-			<div class="stage">
-				<div class="gui in" id="menu">
-					<aside class="rail">
-						<div class="rail-pill" id="nav-pill"></div>
-						<div class="brand-mini classic-only">STRAY<b id="menu-ver"></b></div>
-						<div class="rail-tick classic-only"></div>
-						<button type="button" class="tab ctrl-only on" data-group="world" data-tab="world"><svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm6.9 9h-3.2a15 15 0 0 0-1.4-6 8 8 0 0 1 4.6 6zM12 4c.8 1.3 1.5 3.4 1.8 6H10.2C10.5 7.4 11.2 5.3 12 4zM4.1 13h3.2c.2 2.2.7 4.2 1.4 6A8 8 0 0 1 4.1 13zM8.7 11H5.1A8 8 0 0 1 9.7 5a15 15 0 0 0-1 6zm1.5 2h3.6c-.3 2.6-1 4.7-1.8 6-.8-1.3-1.5-3.4-1.8-6zm5.1 6c.7-1.8 1.2-3.8 1.4-6h3.2a8 8 0 0 1-4.6 6z"/></svg>World</button>
-						<button type="button" class="tab ctrl-only" data-group="combat" data-tab="combat"><svg viewBox="0 0 24 24"><path d="M6.5 2 4 6l2 2-6 6 4 4 6-6 2 2 4-2.5L14 8l2-2-1-3-3 1-2-2zM16 14l6 6-2 2-6-6z"/></svg>Combat</button>
-						<button type="button" class="tab ctrl-only" data-group="visuals" data-tab="visuals"><svg viewBox="0 0 24 24"><path d="M12 5C7 5 2.7 8.1 1 12c1.7 3.9 6 7 11 7s9.3-3.1 11-7c-1.7-3.9-6-7-11-7zm0 12a5 5 0 1 1 0-10 5 5 0 0 1 0 10zm0-8a3 3 0 1 0 0 6 3 3 0 0 0 0-6z"/></svg>Visuals</button>
-						<button type="button" class="tab ctrl-only" data-group="hud" data-tab="overlay"><svg viewBox="0 0 24 24"><path d="M3 5h18v10H3zm2 2v6h14V7zM8 17h8v2H8z"/></svg>HUD</button>
-						<button type="button" class="tab ctrl-only" data-group="mining" data-tab="mining"><svg viewBox="0 0 24 24"><path d="M12 2 4 7v10l8 5 8-5V7zm0 2.2 5.8 3.6L12 11.6 6.2 7.8zm-6 5.2 5 3.1v6.3L6 16.3zm8 9.4v-6.3l5-3.1v6.3z"/></svg>Mining</button>
-						<button type="button" class="tab ctrl-only" data-group="farming" data-tab="farming"><svg viewBox="0 0 24 24"><path d="M12 2 4 7l8 5 8-5zM4 12l8 5 8-5M4 17l8 5 8-5"/></svg>Farming</button>
-						<button type="button" class="tab ctrl-only" data-group="misc" data-tab="menus"><svg viewBox="0 0 24 24"><path d="M4 5h16v3H4zm0 5.5h16v3H4zM4 16h16v3H4z"/></svg>Misc</button>
-						<button type="button" class="tab ctrl-only" data-group="theme" data-tab="theme"><svg viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 9 9c0-.3 0-.6-.1-.9A6 6 0 0 1 12 3z"/></svg>Theme</button>
-						<button type="button" class="tab classic-only on" data-tab="world"><svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z"/></svg>World</button>
-						<button type="button" class="tab classic-only" data-tab="combat"><svg viewBox="0 0 24 24"><path d="M6.5 2 4 6l2 2-6 6 4 4 6-6 2 2 4-2.5L14 8l2-2z"/></svg>Combat</button>
-						<button type="button" class="tab classic-only" data-tab="visuals"><svg viewBox="0 0 24 24"><path d="M12 5C7 5 2.7 8.1 1 12c1.7 3.9 6 7 11 7s9.3-3.1 11-7c-1.7-3.9-6-7-11-7z"/></svg>Visuals</button>
-						<div class="grp classic-only">HUD</div>
-						<button type="button" class="tab classic-only" data-tab="overlay"><svg viewBox="0 0 24 24"><path d="M3 5h18v10H3zM8 17h8v2H8z"/></svg>Overlay</button>
-						<button type="button" class="tab classic-only" data-tab="bars"><svg viewBox="0 0 24 24"><path d="M4 18h3V9H4zm6.5 0h3V4h-3zM17 18h3v-7h-3z"/></svg>Bars</button>
-						<div class="grp classic-only">MINING</div>
-						<button type="button" class="tab classic-only" data-tab="mining"><svg viewBox="0 0 24 24"><path d="M12 2 4 7v10l8 5 8-5V7z"/></svg>Mining</button>
-						<button type="button" class="tab classic-only" data-tab="nodes"><svg viewBox="0 0 24 24"><path d="M12 3 4 7.5v9L12 21l8-4.5v-9z"/></svg>Nodes</button>
-						<button type="button" class="tab classic-only" data-tab="farming"><svg viewBox="0 0 24 24"><path d="M12 2 4 7l8 5 8-5zM4 12l8 5 8-5"/></svg>Farming</button>
-						<div class="grp classic-only">MISC</div>
-						<button type="button" class="tab classic-only" data-tab="menus"><svg viewBox="0 0 24 24"><path d="M4 6h16v12H4zM8 3h8v3H8z"/></svg>Menus</button>
-						<button type="button" class="tab classic-only" data-tab="status"><svg viewBox="0 0 24 24"><path d="M4 18h16v2H4zM6 10h3v7H6zm5-5h3v12h-3zm5 8h3v4h-3z"/></svg>Status</button>
-						<div class="you classic-only" id="you" data-tab="player">
-							<div class="face"></div>
-							<span>You</span>
-						</div>
-						<div class="recycle ctrl-only" id="rail-ver">♲<b id="rail-ver-num"></b></div>
-					</aside>
-					<section class="main">
-						<div class="head">
-							<h2 id="bar-title">World</h2>
-							<nav class="head-tabs ctrl-only" id="head-tabs"></nav>
-							<input class="search" placeholder="Search" spellcheck="false">
-							<button type="button" class="iconbtn ctrl-only" title="Notes"><svg viewBox="0 0 24 24"><path d="M12 4a6 6 0 0 0-6 6v3.2L4 16h16l-2-2.8V10a6 6 0 0 0-6-6zm-2 16h4a2 2 0 0 1-4 0z"/></svg></button>
-							<button type="button" class="iconbtn ctrl-only" title="HUD editor"><svg viewBox="0 0 24 24"><path d="M4 6h16v2H4zm0 5h10v2H4zm0 5h16v2H4z"/></svg></button>
-							<button type="button" class="iconbtn classic-only" id="theme-btn" title="Theme"><svg viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 9 9c0-.3 0-.6-.1-.9A6 6 0 0 1 12 3z"/></svg></button>
-							<button type="button" class="head-face ctrl-only" id="head-face" title="Player"></button>
-						</div>
-						<div class="pane">
-							<canvas id="pane-stars"></canvas>
-							<div class="watermark" id="wm" hidden>STRAY</div>
-							<div class="cols on" data-panel="world">
-								<div class="stack">
-									<div class="card">
-										<h3>WORLD TINT</h3>
-										<div class="row"><span>Enable</span><button type="button" class="tog on"></button></div>
-										<div class="row"><span>Mode</span><em class="val">Lightmap</em></div>
-										<div class="row"><span>Color</span><span class="dot"></span></div>
-										<div class="slide"><span>Strength</span><div class="bar"><i style="left:70%"></i></div><em>70</em></div>
-									</div>
-									<div class="card">
-										<h3>SKYBOX</h3>
-										<div class="row"><span>Enable</span><button type="button" class="tog on"></button></div>
-										<div class="row"><span>Match world</span><button type="button" class="tog on"></button></div>
-										<div class="slide"><span>Strength</span><div class="bar"><i style="left:55%"></i></div><em>55</em></div>
-									</div>
-								</div>
-								<div class="stack">
-									<div class="card">
-										<h3>FOG</h3>
-										<div class="row"><span>Enable</span><button type="button" class="tog"></button></div>
-										<div class="row"><span>Match world</span><button type="button" class="tog on"></button></div>
-										<div class="slide"><span>Start</span><div class="bar"><i style="left:20%"></i></div><em>20%</em></div>
-										<div class="slide"><span>End</span><div class="bar"><i style="left:80%"></i></div><em>80%</em></div>
-									</div>
-									<div class="card">
-										<h3>ASPECT RATIO</h3>
-										<div class="row"><span>Enable</span><button type="button" class="tog"></button></div>
-										<div class="slide"><span>Aspect</span><div class="bar"><i style="left:71%"></i></div><em>Native</em></div>
-										<div class="chips">
-											<button type="button" class="chip on">Native</button>
-											<button type="button" class="chip">16:10</button>
-											<button type="button" class="chip">4:3</button>
-											<button type="button" class="chip">5:4</button>
-										</div>
-									</div>
-								</div>
-							</div>
-							<div class="cols" data-panel="combat">
-								<div class="card">
-									<h3>HITSOUND</h3>
-									<div class="row"><span>Enable</span><button type="button" class="tog on"></button></div>
-									<div class="row"><span>Melee</span><button type="button" class="tog on"></button></div>
-									<div class="row"><span>Arrows</span><button type="button" class="tog on"></button></div>
-									<div class="row"><span>Hitmarker</span><button type="button" class="tog on"></button></div>
-									<div class="slide"><span>Volume</span><div class="bar"><i style="left:80%"></i></div><em>80%</em></div>
-									<div class="slide"><span>Pitch</span><div class="bar"><i style="left:50%"></i></div><em>1.00</em></div>
-								</div>
-								<div class="stack">
-									<div class="card">
-										<h3>TRIGGERBOT</h3>
-										<div class="row"><span>Enable</span><button type="button" class="tog"></button></div>
-										<div class="row"><span>Players</span><button type="button" class="tog on"></button></div>
-										<div class="slide"><span>Humanize</span><div class="bar"><i style="left:35%"></i></div><em>35%</em></div>
-									</div>
-									<div class="card">
-										<h3>AUTO CLICKER</h3>
-										<div class="row"><span>Enable</span><button type="button" class="tog on"></button></div>
-										<div class="row"><span>Whitelist only</span><button type="button" class="tog"></button></div>
-										<div class="row"><span>Terminator only</span><button type="button" class="tog"></button></div>
-										<div class="row"><span>Left</span><button type="button" class="bind">[ None ]</button></div>
-										<div class="row"><span>Right</span><button type="button" class="bind">[ Button 5 ]</button></div>
-									</div>
-								</div>
-							</div>
-							<div class="cols" data-panel="visuals">
-								<div class="stack">
-									<div class="card">
-										<h3>MOB GLOW</h3>
-										<div class="row"><span>Enable</span><button type="button" class="tog on"></button></div>
-										<div class="row"><span>Through walls</span><button type="button" class="tog on"></button></div>
-										<div class="row"><span>Color</span><span class="dot"></span></div>
-									</div>
-									<div class="card">
-										<h3>BLOCK OUTLINE</h3>
-										<div class="row"><span>Enable</span><button type="button" class="tog"></button></div>
-										<div class="row"><span>Color</span><span class="dot"></span></div>
-									</div>
-									<div class="card">
-										<h3>CHEST ESP</h3>
-										<div class="row"><span>Enable</span><button type="button" class="tog on"></button></div>
-										<div class="row"><span>Tracers</span><button type="button" class="tog"></button></div>
-										<div class="row"><span>Chest Aim</span><button type="button" class="bind">[ None ]</button></div>
-									</div>
-									<div class="card">
-										<h3>HELD ITEM</h3>
-										<div class="row"><span>Enable</span><button type="button" class="tog on"></button></div>
-										<div class="row"><span>Style</span><em class="val">Glow</em></div>
-										<div class="row"><span>Color</span><span class="dot"></span></div>
-									</div>
-								</div>
-								<div class="stack">
-									<div class="card">
-										<h3>PLAYER FILL</h3>
-										<div class="row"><span>Enable</span><button type="button" class="tog on"></button></div>
-									</div>
-									<div class="card">
-										<h3>NAMETAGS</h3>
-										<div class="row"><span>Enable</span><button type="button" class="tog on"></button></div>
-										<div class="row"><span>Own nametag</span><button type="button" class="tog"></button></div>
-										<div class="row"><span>Through walls</span><button type="button" class="tog on"></button></div>
-										<div class="row"><span>Show distance</span><button type="button" class="tog"></button></div>
-									</div>
-									<div class="card">
-										<h3>MOBS</h3>
-										<input class="field" placeholder="Search mobs..." spellcheck="false">
-										<div class="list">
-											<button type="button" class="on">Player</button>
-											<button type="button">Zombie</button>
-											<button type="button">Enderman</button>
-											<button type="button">Blaze</button>
-											<button type="button">Creeper</button>
-										</div>
-									</div>
-								</div>
-							</div>
-							<div class="cols" data-panel="overlay">
-								<div class="stack">
-									<div class="card">
-										<h3>WATERMARK</h3>
-										<div class="row"><span>Enable</span><button type="button" class="tog on"></button></div>
-										<div class="row"><span>FPS</span><button type="button" class="tog on"></button></div>
-										<div class="row"><span>Ping</span><button type="button" class="tog on"></button></div>
-										<div class="row"><span>Clock</span><button type="button" class="tog"></button></div>
-										<div class="row"><span>Name</span><button type="button" class="tog"></button></div>
-									</div>
-									<div class="card">
-										<h3>RAW MATS</h3>
-										<div class="row"><span>Enable</span><button type="button" class="tog"></button></div>
-										<div class="row"><span>Materials</span><em class="val">Compact</em></div>
-									</div>
-									<div class="card">
-										<h3>PICKUP LOG</h3>
-										<div class="row"><span>Enable</span><button type="button" class="tog"></button></div>
-									</div>
-								</div>
-								<div class="stack">
-									<div class="card">
-										<h3>MUSIC</h3>
-										<div class="row"><span>Enable</span><button type="button" class="tog on"></button></div>
-										<div class="row"><span>Hide when idle</span><button type="button" class="tog on"></button></div>
-										<div class="row"><span>Spotify</span><button type="button" class="tog on"></button></div>
-									</div>
-									<div class="card">
-										<h3>INVENTORY HUD</h3>
-										<div class="row"><span>Enable</span><button type="button" class="tog"></button></div>
-										<div class="row"><span>Hotbar</span><button type="button" class="tog on"></button></div>
-										<div class="row"><span>Armor</span><button type="button" class="tog on"></button></div>
-										<div class="row"><span>Item count</span><button type="button" class="tog on"></button></div>
-									</div>
-								</div>
-							</div>
-							<div class="cols" data-panel="bars">
-								<div class="card">
-									<h3>BARS</h3>
-									<div class="row"><span>Hotbar</span><button type="button" class="tog on"></button></div>
-									<div class="row"><span>Health</span><button type="button" class="tog on"></button></div>
-									<div class="row"><span>Hunger</span><button type="button" class="tog on"></button></div>
-									<div class="row"><span>Armor</span><button type="button" class="tog on"></button></div>
-									<div class="row"><span>Air</span><button type="button" class="tog on"></button></div>
-									<div class="row"><span>Experience</span><button type="button" class="tog on"></button></div>
-									<div class="row"><span>Mount health</span><button type="button" class="tog on"></button></div>
-								</div>
-								<div class="card">
-									<h3>INFO</h3>
-									<div class="row"><span>Scoreboard</span><button type="button" class="tog on"></button></div>
-									<div class="row"><span>Boss bar</span><button type="button" class="tog on"></button></div>
-									<div class="row"><span>Effects</span><button type="button" class="tog on"></button></div>
-									<div class="row"><span>Held item</span><button type="button" class="tog on"></button></div>
-									<p class="hint">Move and scale each piece from the toolbar HUD editor.</p>
-								</div>
-							</div>
-							<div class="cols" data-panel="mining">
-								<div class="stack">
-									<div class="card">
-										<h3>MINING HUD</h3>
-										<div class="row"><span>Enable</span><button type="button" class="tog on"></button></div>
-										<div class="row"><span>Ability alert</span><button type="button" class="tog on"></button></div>
-									</div>
-									<div class="card">
-										<h3>TITANIUM ESP</h3>
-										<div class="row"><span>Enable</span><button type="button" class="tog"></button></div>
-										<div class="row"><span>Through walls</span><button type="button" class="tog on"></button></div>
-										<div class="slide"><span>Range</span><div class="bar"><i style="left:40%"></i></div><em>48m</em></div>
-									</div>
-								</div>
-								<div class="card">
-									<h3>LIVE</h3>
-									<div class="row"><span>Pickobulus</span><em class="val">Ready</em></div>
-									<div class="row"><span>Commissions</span><em>2 commissions</em></div>
-									<div class="row"><span>Titanium</span><em>No titanium job</em></div>
-								</div>
-							</div>
-							<div class="cols" data-panel="nodes">
-								<div class="card">
-									<h3>MARKERS</h3>
-									<div class="row"><span>Enable</span><button type="button" class="tog on"></button></div>
-									<div class="row"><span>Node HUD</span><button type="button" class="tog on"></button></div>
-									<div class="row"><span>Only in The End</span><button type="button" class="tog on"></button></div>
-									<div class="row"><span>Force enable</span><button type="button" class="tog"></button></div>
-									<div class="slide"><span>Scan radius</span><div class="bar"><i style="left:50%"></i></div><em>48m</em></div>
-									<div class="row"><span>Particle hints</span><button type="button" class="tog"></button></div>
-								</div>
-								<div class="card">
-									<h3>NODE ESP</h3>
-									<div class="row"><span>Enable</span><button type="button" class="tog on"></button></div>
-									<div class="row"><span>Outline</span><button type="button" class="tog on"></button></div>
-									<div class="row"><span>Tracer</span><button type="button" class="tog"></button></div>
-									<div class="row"><span>Through walls</span><button type="button" class="tog on"></button></div>
-									<div class="row"><span>Color</span><span class="dot"></span></div>
-								</div>
-							</div>
-							<div class="cols" data-panel="farming">
-								<div class="stack">
-									<div class="card">
-										<h3>YAW / PITCH</h3>
-										<div class="row"><span>Enable</span><button type="button" class="tog on"></button></div>
-										<div class="slide"><span>Scale</span><div class="bar"><i style="left:33%"></i></div><em>100%</em></div>
-									</div>
-									<div class="card">
-										<h3>JACOB CONTEST HUD</h3>
-										<div class="row"><span>Enable</span><button type="button" class="tog on"></button></div>
-									</div>
-								</div>
-								<div class="card">
-									<h3>CONTEST</h3>
-									<p class="hint">No active Jacob contest</p>
-									<p class="hint">Reads the live player-list widget</p>
-								</div>
-							</div>
-							<div class="cols" data-panel="menus">
-								<div class="stack">
-									<div class="card">
-										<h3>MENUS</h3>
-										<div class="row"><span>Loadouts menu</span><button type="button" class="tog on"></button></div>
-										<div class="row"><span>Wardrobe menu</span><button type="button" class="tog on"></button></div>
-										<div class="row"><span>Open animation</span><button type="button" class="tog on"></button></div>
-									</div>
-									<div class="card">
-										<h3>AUTO EXPERIMENTS</h3>
-										<div class="row"><span>Enable</span><button type="button" class="tog"></button></div>
-										<div class="slide"><span>Click delay</span><div class="bar"><i style="left:15%"></i></div><em>250ms</em></div>
-										<div class="row"><span>Auto close</span><button type="button" class="tog on"></button></div>
-										<div class="row"><span>Get max XP</span><button type="button" class="tog"></button></div>
-									</div>
-								</div>
-								<div class="stack">
-									<div class="card">
-										<h3>KEYBINDS</h3>
-										<div class="row"><span>Open menu</span><button type="button" class="bind">[ RShift ]</button></div>
-										<div class="row"><span>Loadouts</span><button type="button" class="bind">[ None ]</button></div>
-										<div class="row"><span>Wardrobe</span><button type="button" class="bind">[ None ]</button></div>
-									</div>
-									<div class="card">
-										<h3>COMMANDS</h3>
-										<p class="hint">/loadouts  /ld</p>
-										<p class="hint">/wardrobe  /wd</p>
-										<p class="hint">/autoclicker add left</p>
-										<p class="hint">1-9 equips and closes</p>
-									</div>
-								</div>
-							</div>
-							<div class="cols" data-panel="status">
-								<div class="card">
-									<h3>LOCATION</h3>
-									<div class="row"><span>Hypixel</span><em class="val">ON</em></div>
-									<div class="row"><span>Skyblock</span><em class="val">ON</em></div>
-									<div class="row"><span>The End</span><em>OFF</em></div>
-									<p class="hint">Hub</p>
-								</div>
-								<div class="card">
-									<h3>CLIENT</h3>
-									<div class="row"><span>FPS</span><em>144</em></div>
-									<div class="row"><span>Ping</span><em>32ms</em></div>
-								</div>
-							</div>
-							<div class="cols" data-panel="player">
-								<div class="card">
-									<h3>YOU</h3>
-									<div class="skin"></div>
-									<p class="hint">Drag to rotate</p>
-								</div>
-								<div class="stack">
-									<div class="card">
-										<h3>NICK</h3>
-										<div class="row"><span>Replace my name</span><button type="button" class="tog"></button></div>
-										<p class="hint">Chat, tab, scoreboard. Use &amp;6 &amp;l.</p>
-										<input class="nick" value="You" maxlength="16" spellcheck="false">
-									</div>
-									<div class="card">
-										<h3>CAPE</h3>
-										<p class="hint">Message @evilkitten911 to unlock</p>
-										<input class="field" placeholder="https://...png" spellcheck="false">
-										<button type="button" class="filebtn">Local file...</button>
-										<button type="button" class="filebtn">Create cape...</button>
-										<button type="button" class="filebtn">Remove cape</button>
-									</div>
-								</div>
-							</div>
-							<div class="cols" data-panel="theme">
-								<div class="card">
-									<h3>CONTROL</h3>
-									<div class="row"><span>GUI</span><em class="val" id="gui-label">Control</em></div>
-									<div class="row"><span>Glass</span><span class="dot"></span></div>
-									<div class="row"><span>Pills</span><span class="dot"></span></div>
-									<div class="slide"><span>Frost</span><div class="bar"><i style="left:70%"></i></div><em>70%</em></div>
-									<div class="row"><span>Menu stars</span><button type="button" class="tog on"></button></div>
-									<div class="row"><span>Animations</span><button type="button" class="tog on"></button></div>
-									<div class="row"><span>Auto update</span><button type="button" class="tog on"></button></div>
-								</div>
-								<div class="stack">
-									<div class="card">
-										<h3>ACCENT</h3>
-										<p class="hint">Preset</p>
-										<div class="swatches" id="swatches"></div>
-										<div class="row"><span>Custom</span><span class="dot"></span></div>
-										<div class="slide"><span>HUD</span><div class="bar"><i style="left:80%"></i></div><em>80%</em></div>
-										<div class="row"><span>HUD stars</span><button type="button" class="tog"></button></div>
-									</div>
-									<div class="card">
-										<h3>SCALE</h3>
-										<p class="hint">Menu</p>
-										<div class="chips">
-											<button type="button" class="chip on">100%</button>
-											<button type="button" class="chip">90%</button>
-											<button type="button" class="chip">75%</button>
-											<button type="button" class="chip">50%</button>
-										</div>
-									</div>
-								</div>
-							</div>
-							<div class="sheet classic-only" id="theme">
-								<h3>ACCENT</h3>
-								<div class="swatches" id="classic-swatches"></div>
-							</div>
-						</div>
-					</section>
-				</div>
-			</div>
-		</section>
-
-		<section class="band" id="features">
-			<h2>Modules</h2>
-			<p>The same cards you click in-game, tuned for Skyblock.</p>
-			<div class="feats">
-				<article class="feat"><svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z"/></svg><b>World</b><span>Terrain tint, skybox, fog, and aspect without touching shaders.</span></article>
-				<article class="feat"><svg viewBox="0 0 24 24"><path d="M6.5 2 4 6l2 2-6 6 4 4 6-6 2 2 4-2.5L14 8l2-2z"/></svg><b>Combat</b><span>Hitsounds, triggerbot, Terminator CPS, and in-menu clicker binds.</span></article>
-				<article class="feat"><svg viewBox="0 0 24 24"><path d="M12 5C7 5 2.7 8.1 1 12c1.7 3.9 6 7 11 7s9.3-3.1 11-7c-1.7-3.9-6-7-11-7z"/></svg><b>Visuals</b><span>Mob glow, player fill, chest ESP, held-item shader, and nametag filters.</span></article>
-				<article class="feat"><svg viewBox="0 0 24 24"><path d="M3 5h18v10H3zM8 17h8v2H8z"/></svg><b>HUD</b><span>Overlay and Bars: watermark, Spotify, raw mats, and a live HUD editor.</span></article>
-				<article class="feat"><svg viewBox="0 0 24 24"><path d="M12 2 4 7v10l8 5 8-5V7z"/></svg><b>Mining</b><span>Commission HUD, titanium ESP, and End node markers on a second tab.</span></article>
-				<article class="feat"><svg viewBox="0 0 24 24"><path d="M12 2 4 7l8 5 8-5zM4 12l8 5 8-5"/></svg><b>Farming</b><span>Yaw / pitch overlay and a Jacob contest tracker on the tab list.</span></article>
-				<article class="feat"><svg viewBox="0 0 24 24"><path d="M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4zm0 2c-3 0-8 1.5-8 4.5V21h16v-2.5C20 15.5 15 14 12 14z"/></svg><b>You</b><span>Nick, custom capes, and head tags other Stray users see.</span></article>
-				<article class="feat"><svg viewBox="0 0 24 24"><path d="M4 6h16v12H4zM8 3h8v3H8z"/></svg><b>Misc</b><span>Loadouts, wardrobe, auto experiments, keybinds, and a Status tab.</span></article>
-			</div>
-		</section>
-
+		<h1>Hypixel Skyblock client.</h1>
+		<p class="lede">World tint, ESP, HUD, mining, and farming tools. Right Shift opens the menu in game.</p>
+		<div class="cta">
+			<a class="dl" id="mod-download" href="/download">Download</a>
+			<a class="ghost" href="https://github.com/camberX/Stray" target="_blank" rel="noopener noreferrer">GitHub</a>
+		</div>
+		<ul class="feats">
+			<li><b>World</b><span>Terrain tint, skybox, fog, and aspect.</span></li>
+			<li><b>Visuals</b><span>Mob glow, player fill, chest ESP, and nametags.</span></li>
+			<li><b>HUD</b><span>Watermark, music, raw mats, and a movable editor.</span></li>
+			<li><b>Mining and farming</b><span>Commission HUD, node markers, and a top-down farm camera.</span></li>
+		</ul>
 		<section class="cape">
-			<div class="glass">
-				<h2>Want a custom cape?</h2>
-				<div class="who">
-					<span class="handle">@evilkitten911</span>
-					<button type="button" class="copy" id="copy">Copy</button>
-				</div>
-				<p>Message that Discord with your Minecraft name. After you get added, open the Cape card in Stray and crop a photo or paste a PNG. Other Stray users see it when they join a world.</p>
+			<h2>Custom cape</h2>
+			<div class="who">
+				<span class="handle">@evilkitten911</span>
+				<button type="button" class="copy" id="copy">Copy</button>
 			</div>
-			<div class="glass statline">
-				<div><b id="stat-ver">1.2</b><span>Latest build</span></div>
-				<div><b>26.1</b><span>Minecraft</span></div>
-				<div><b>Right Shift</b><span>Open menu</span></div>
-				<div><b>stray.gay</b><span>Always this host</span></div>
-			</div>
+			<p>Message that Discord with your Minecraft name. After you are added, open the Cape card in Stray.</p>
 		</section>
+		<p class="note">Minecraft <span id="mc-ver">26.1.2</span> · latest build <span id="stat-ver">—</span></p>
 		<div class="foot">
 			<span>stray.gay</span>
 			<a href="/admin">Desk</a>
 		</div>
 	</div>
 	<script>
-		(function sky() {
-			var c = document.getElementById("sky");
-			var ctx = c.getContext("2d");
-			var stars = [];
-			var colors = ["#f4f7ff", "#d7e6ff", "#c8f0ff", "#ffe9c8", "#b8d4ff"];
-			var shot = null;
-			var nextShot = 0;
-			function resize() {
-				c.width = window.innerWidth;
-				c.height = window.innerHeight;
-				stars = [];
-				var n = Math.floor(c.width * c.height / 7800);
-				for (var i = 0; i < n; i++) {
-					stars.push({
-						x: Math.random() * c.width,
-						y: Math.random() * c.height,
-						z: Math.random(),
-						s: Math.random() * 1.6 + 0.3,
-						c: colors[(Math.random() * colors.length) | 0],
-						p: Math.random() * Math.PI * 2
-					});
-				}
-			}
-			function tick(now) {
-				ctx.fillStyle = "#05070d";
-				ctx.fillRect(0, 0, c.width, c.height);
-				for (var i = 0; i < stars.length; i++) {
-					var st = stars[i];
-					st.y += 0.08 + st.z * 0.18;
-					if (st.y > c.height) { st.y = 0; st.x = Math.random() * c.width; }
-					var a = 0.18 + st.z * 0.55 + Math.sin(now * 0.002 + st.p) * 0.16;
-					ctx.fillStyle = st.c;
-					ctx.globalAlpha = Math.max(0.08, Math.min(0.95, a));
-					ctx.fillRect(st.x, st.y, st.s, st.s);
-				}
-				ctx.globalAlpha = 1;
-				if (!shot && now > nextShot) {
-					shot = { x: Math.random() * c.width * 0.7, y: Math.random() * c.height * 0.4, vx: 4.2 + Math.random() * 2, vy: 1.6 + Math.random(), life: 0 };
-					nextShot = now + 8200 + Math.random() * 4000;
-				}
-				if (shot) {
-					shot.x += shot.vx;
-					shot.y += shot.vy;
-					shot.life += 1;
-					var g = ctx.createLinearGradient(shot.x, shot.y, shot.x - shot.vx * 9, shot.y - shot.vy * 9);
-					g.addColorStop(0, "rgba(244,247,255,0.95)");
-					g.addColorStop(1, "rgba(244,247,255,0)");
-					ctx.strokeStyle = g;
-					ctx.lineWidth = 1.4;
-					ctx.beginPath();
-					ctx.moveTo(shot.x, shot.y);
-					ctx.lineTo(shot.x - shot.vx * 9, shot.y - shot.vy * 9);
-					ctx.stroke();
-					if (shot.life > 42 || shot.x > c.width || shot.y > c.height) shot = null;
-				}
-				requestAnimationFrame(tick);
-			}
-			window.addEventListener("resize", resize);
-			resize();
-			nextShot = performance.now() + 2400;
-			requestAnimationFrame(tick);
-		})();
-		(function orb() {
-			var el = document.getElementById("orb");
-			var x = window.innerWidth * 0.5, y = window.innerHeight * 0.3, tx = x, ty = y;
-			window.addEventListener("pointermove", function (e) { tx = e.clientX; ty = e.clientY; });
-			function loop() {
-				x += (tx - x) * 0.06;
-				y += (ty - y) * 0.06;
-				el.style.left = x + "px";
-				el.style.top = y + "px";
-				requestAnimationFrame(loop);
-			}
-			loop();
-		})();
 		document.getElementById("copy").onclick = function () {
 			var btn = this;
 			navigator.clipboard.writeText("@evilkitten911").then(function () {
@@ -2461,9 +1618,9 @@ const STORE_HTML = `<!DOCTYPE html>
 		};
 		(function loadMod() {
 			var ver = document.getElementById("mod-ver");
-			var menuVer = document.getElementById("menu-ver");
 			var stat = document.getElementById("stat-ver");
-			var links = [document.getElementById("mod-download"), document.getElementById("mod-download-2")];
+			var mc = document.getElementById("mc-ver");
+			var link = document.getElementById("mod-download");
 			var mirrors = [
 				{ url: "/api/mod", repo: "" },
 				{ url: "https://cdn.jsdelivr.net/gh/camberX/Stray@main/web/public/mod/latest.json", repo: "camberX/Stray" },
@@ -2478,15 +1635,11 @@ const STORE_HTML = `<!DOCTYPE html>
 			}
 			function apply(data) {
 				ver.textContent = "v" + data.version;
-				if (menuVer) menuVer.textContent = "v" + data.version;
-				var railNum = document.getElementById("rail-ver-num");
-				if (railNum) railNum.textContent = "v" + data.version;
 				stat.textContent = data.version;
-				for (var i = 0; i < links.length; i++) {
-					links[i].classList.remove("dead");
-					links[i].setAttribute("download", data.file || ("stray-" + data.version + ".jar"));
-					links[i].href = fileUrl(data);
-				}
+				if (data.minecraft) mc.textContent = data.minecraft;
+				link.classList.remove("dead");
+				link.setAttribute("download", data.file || ("stray-" + data.version + ".jar"));
+				link.href = fileUrl(data);
 			}
 			function versionParts(value) {
 				return String(value || "").split(/[^0-9]+/).filter(Boolean).map(Number);
@@ -2515,191 +1668,6 @@ const STORE_HTML = `<!DOCTYPE html>
 					consider(data);
 				}).catch(function () { consider(null); });
 			});
-		})();
-		(function menu() {
-			var GROUPS = {
-				world: [{ id: "world", label: "World" }],
-				combat: [{ id: "combat", label: "Combat" }],
-				visuals: [{ id: "visuals", label: "Visuals" }],
-				hud: [{ id: "overlay", label: "Overlay" }, { id: "bars", label: "Bars" }],
-				mining: [{ id: "mining", label: "Mining" }, { id: "nodes", label: "Nodes" }],
-				farming: [{ id: "farming", label: "Farming" }],
-				misc: [{ id: "menus", label: "Menus" }, { id: "status", label: "Status" }],
-				theme: [{ id: "theme", label: "Theme" }],
-				player: [{ id: "player", label: "Player" }]
-			};
-			var TAB_GROUP = {};
-			Object.keys(GROUPS).forEach(function (g) {
-				GROUPS[g].forEach(function (t) { TAB_GROUP[t.id] = g; });
-			});
-			var titles = {
-				world: "World", combat: "Combat", visuals: "Visuals", overlay: "Overlay", bars: "Bars",
-				mining: "Mining", nodes: "Nodes", farming: "Farming", menus: "Menus", status: "Status",
-				player: "Player", theme: "Theme"
-			};
-			var current = "world";
-			var panels = document.querySelectorAll(".cols");
-			var title = document.getElementById("bar-title");
-			var theme = document.getElementById("theme");
-			var themeBtn = document.getElementById("theme-btn");
-			var pill = document.getElementById("nav-pill");
-			var box = document.getElementById("menu");
-			var wm = document.getElementById("wm");
-			var headTabs = document.getElementById("head-tabs");
-			var headFace = document.getElementById("head-face");
-			var you = document.getElementById("you");
-			var guiLabel = document.getElementById("gui-label");
-			var nick = document.querySelector(".nick");
-			if (box) box.classList.add("in");
-			var binds = ["[ None ]", "[ RShift ]", "[ Button 5 ]", "[ Mouse 4 ]"];
-			var colors = ["#e5e7eb", "#2fb5ff", "#4d8dff", "#a78bfa", "#f472b6", "#fb7185", "#fb923c", "#34d399"];
-			function paintSwatches(wrap) {
-				if (!wrap) return;
-				colors.forEach(function (hex, i) {
-					var b = document.createElement("button");
-					b.type = "button";
-					b.className = "swatch" + (i === 0 ? " on" : "");
-					b.setAttribute("data-hex", hex);
-					b.style.background = hex;
-					b.onclick = function () { pick(hex); };
-					wrap.appendChild(b);
-				});
-			}
-			function pick(hex) {
-				document.documentElement.style.setProperty("--accent", hex);
-				document.documentElement.style.setProperty("--accent-dim", hex);
-				document.documentElement.style.setProperty("--pill", hex === "#e5e7eb" ? "#4a5564" : hex);
-				document.querySelectorAll(".swatch").forEach(function (x) {
-					x.classList.toggle("on", x.getAttribute("data-hex") === hex);
-				});
-			}
-			paintSwatches(document.getElementById("swatches"));
-			paintSwatches(document.getElementById("classic-swatches"));
-			paintSwatches(document.getElementById("hero-swatches"));
-			function classicMode() {
-				return false;
-			}
-			function setMode(classic) {
-				document.body.classList.remove("classic");
-				document.body.classList.add("ctrl");
-				if (guiLabel) guiLabel.textContent = "Control";
-			}
-			function activeRail() {
-				if (classicMode()) {
-					if (current === "player") return you;
-					return document.querySelector(".tab.classic-only.on");
-				}
-				return document.querySelector(".tab.ctrl-only.on");
-			}
-			function movePill(el) {
-				if (!pill) return;
-				if (!el || el.id === "you" || current === "player") {
-					pill.classList.add("hide");
-					return;
-				}
-				pill.classList.remove("hide");
-				pill.style.top = el.offsetTop + "px";
-				pill.style.height = el.offsetHeight + "px";
-			}
-			function paintHead(name) {
-				if (!headTabs) return;
-				var group = TAB_GROUP[name];
-				var tabs = GROUPS[group] || [];
-				headTabs.innerHTML = "";
-				tabs.forEach(function (t) {
-					var b = document.createElement("button");
-					b.type = "button";
-					b.className = "head-tab" + (t.id === name ? " on" : "");
-					b.textContent = t.label;
-					b.onclick = function () { show(t.id); };
-					headTabs.appendChild(b);
-				});
-			}
-			function show(name) {
-				current = name;
-				var group = TAB_GROUP[name];
-				document.querySelectorAll(".tab.ctrl-only").forEach(function (t) {
-					t.classList.toggle("on", t.getAttribute("data-group") === group && group !== "player");
-				});
-				document.querySelectorAll(".tab.classic-only").forEach(function (t) {
-					t.classList.toggle("on", t.getAttribute("data-tab") === name);
-				});
-				if (you) you.classList.toggle("on", name === "player");
-				if (headFace) headFace.classList.toggle("on", name === "player");
-				panels.forEach(function (p) { p.classList.toggle("on", p.getAttribute("data-panel") === name); });
-				if (title) {
-					title.textContent = titles[name] || name;
-					title.replaceWith(title.cloneNode(true));
-					title = document.getElementById("bar-title");
-				}
-				if (wm) wm.hidden = name !== "overlay";
-				if (theme) theme.classList.remove("on");
-				if (themeBtn) themeBtn.classList.remove("on");
-				paintHead(name);
-				requestAnimationFrame(function () { movePill(activeRail()); });
-			}
-			function openGroup(group) {
-				if (TAB_GROUP[current] === group) return;
-				show(GROUPS[group][0].id);
-			}
-			document.querySelectorAll(".tab.ctrl-only").forEach(function (t) {
-				t.onclick = function () { openGroup(t.getAttribute("data-group")); };
-			});
-			document.querySelectorAll(".tab.classic-only").forEach(function (t) {
-				t.onclick = function () { show(t.getAttribute("data-tab")); };
-			});
-			if (you) you.onclick = function () { show("player"); };
-			if (headFace) headFace.onclick = function () { show("player"); };
-			if (themeBtn) themeBtn.onclick = function () {
-				if (theme) theme.classList.toggle("on");
-				themeBtn.classList.toggle("on");
-			};
-			if (box) box.addEventListener("click", function (e) {
-				var tog = e.target.closest(".tog");
-				if (tog) tog.classList.toggle("on");
-				var row = e.target.closest(".list button");
-				if (row) row.classList.toggle("on");
-				var chip = e.target.closest(".chip");
-				if (chip && chip.parentNode) {
-					chip.parentNode.querySelectorAll(".chip").forEach(function (x) { x.classList.toggle("on", x === chip); });
-				}
-				var bind = e.target.closest(".bind");
-				if (bind) {
-					var i = binds.indexOf(bind.textContent.trim());
-					bind.textContent = binds[(i + 1) % binds.length];
-				}
-			});
-			if (nick) nick.oninput = function () {
-				if (you && you.querySelector("span")) you.querySelector("span").textContent = this.value.trim() || "You";
-			};
-			setMode(false);
-			paintHead(current);
-			movePill(activeRail());
-			var c = document.getElementById("pane-stars");
-			if (!c || !c.getContext) return;
-			var ctx = c.getContext("2d");
-			if (!ctx) return;
-			var stars = [];
-			function resize() {
-				c.width = c.clientWidth;
-				c.height = c.clientHeight;
-				stars = [];
-				for (var i = 0; i < 48; i++) stars.push({ x: Math.random() * c.width, y: Math.random() * c.height, z: Math.random(), s: Math.random() * 1.3 + 0.3 });
-			}
-			function tick() {
-				ctx.clearRect(0, 0, c.width, c.height);
-				for (var i = 0; i < stars.length; i++) {
-					var st = stars[i];
-					st.y += 0.12 + st.z * 0.16;
-					if (st.y > c.height) st.y = 0;
-					ctx.fillStyle = "rgba(232,237,245," + (0.16 + st.z * 0.5) + ")";
-					ctx.fillRect(st.x, st.y, st.s, st.s);
-				}
-				requestAnimationFrame(tick);
-			}
-			window.addEventListener("resize", resize);
-			resize();
-			tick();
 		})();
 	</script>
 </body>
