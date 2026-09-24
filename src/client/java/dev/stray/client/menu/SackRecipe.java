@@ -6,6 +6,7 @@ import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.network.chat.Component;
+import net.minecraft.world.inventory.ContainerInput;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 
@@ -21,8 +22,9 @@ public final class SackRecipe {
 	private SackRecipe() {
 	}
 
-	public static boolean click(AbstractContainerScreen<?> screen, Slot slot, int button) {
-		if (button != 2 || !StrayConfig.get().sackRecipe || !sack(screen) || !sackSlot(screen, slot)) {
+	public static boolean click(AbstractContainerScreen<?> screen, Slot slot, int button, ContainerInput type) {
+		boolean middle = button == 2 || type == ContainerInput.CLONE;
+		if (!middle || !StrayConfig.get().sackRecipe || !sack(screen) || !sackSlot(screen, slot)) {
 			return false;
 		}
 		ItemStack stack = slot.getItem();

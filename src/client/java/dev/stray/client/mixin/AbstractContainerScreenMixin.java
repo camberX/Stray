@@ -8,8 +8,10 @@ import dev.stray.client.ui.ChestFillers;
 import dev.stray.client.ui.ContainerChrome;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
+import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.world.inventory.ContainerInput;
 import net.minecraft.world.inventory.Slot;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
@@ -23,8 +25,18 @@ public class AbstractContainerScreenMixin {
 
 	@Inject(method = "slotClicked", at = @At("HEAD"), cancellable = true)
 	private void stray$blockDnaClose(Slot slot, int slotId, int button, ContainerInput type, CallbackInfo ci) {
-		if (AutoDna.shouldBlock(slotId) || SackRecipe.click((AbstractContainerScreen<?>) (Object) this, slot, button)) {
+		if (AutoDna.shouldBlock(slotId) || SackRecipe.click((AbstractContainerScreen<?>) (Object) this, slot, button, type)) {
 			ci.cancel();
+		}
+	}
+
+	@Inject(method = "mouseClicked", at = @At("HEAD"), cancellable = true)
+	private void stray$sackRecipeClick(MouseButtonEvent event, boolean doubled, CallbackInfoReturnable<Boolean> cir) {
+		if (event.button() != 2) {
+			return;
+		}
+		if (SackRecipe.click((AbstractContainerScreen<?>) (Object) this, hoveredSlot, 2, ContainerInput.CLONE)) {
+			cir.setReturnValue(true);
 		}
 	}
 

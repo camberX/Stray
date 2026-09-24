@@ -10,6 +10,7 @@ import dev.stray.client.chat.StashChat;
 import dev.stray.client.fairy.FairySoulTracker;
 import dev.stray.client.farming.GardenHud;
 import dev.stray.client.mining.CrystalHollows;
+import dev.stray.client.item.RawmatsTracker;
 import dev.stray.client.mining.MiningTracker;
 import dev.stray.client.ui.ChatChrome;
 import dev.stray.client.ui.ChatPeek;
@@ -46,6 +47,7 @@ public class ChatComponentMixin {
 		MiningTracker.onChat(rewritten);
 		FairySoulTracker.onChat(rewritten);
 		GardenHud.onChat(rewritten);
+		RawmatsTracker.onChat(rewritten);
 		CrystalHollows.allowChat(rewritten, false);
 		Component stash = StashChat.filter(NpcChat.rewrite(rewritten));
 		if (stash != null) {

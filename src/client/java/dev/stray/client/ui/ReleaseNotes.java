@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.5.1", new String[]{
+			"Middle click in a sack opens the recipe. Supercrafting an item removes it from the raw mats list."
+		}),
 		new Entry("1.5.0", new String[]{
 			"/stray update stays open when you are already up to date or the check fails. Auto close still exits after a newer jar is installed."
 		}),

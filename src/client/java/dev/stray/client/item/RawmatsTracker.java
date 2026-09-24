@@ -2,6 +2,7 @@ package dev.stray.client.item;
 
 import dev.stray.client.config.StrayConfig;
 import net.minecraft.client.Minecraft;
+import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 
@@ -14,9 +15,13 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public final class RawmatsTracker {
 	private static final String[] CRIMSON = {"HOT_", "BURNING_", "FIERY_", "INFERNAL_"};
+	private static final Pattern CRAFT = Pattern.compile("(?i)^you (?:super)?crafted\\s+(.+?)\\s+x([\\d,]+)!?$");
+	private static final Map<String, Long> CRAFTED = new HashMap<>();
 
 	public record Line(String id, String name, ItemStack icon, long have, long need, String note) {
 		public boolean done() {
@@ -93,10 +98,55 @@ public final class RawmatsTracker {
 	}
 
 	public static void clear() {
+		CRAFTED.clear();
 		StrayConfig config = StrayConfig.get();
 		config.rawmatsItemId = "";
 		config.rawmatsCount = 1L;
 		config.save();
+	}
+
+	/**
+	 * {@code You Supercrafted Enchanted Sugar Cane x397!} uses those materials,
+	 * so that line leaves the list.
+	 */
+	public static void onChat(Component message) {
+		if (!tracking() || message == null) {
+			return;
+		}
+		String text = message.getString().replaceAll("§.", "").trim();
+		Matcher matcher = CRAFT.matcher(text);
+		if (!matcher.find()) {
+			return;
+		}
+		String id = SkyblockItems.idFromName(matcher.group(1));
+		long count = countOf(matcher.group(2));
+		if (id == null || id.isBlank() || count <= 0L) {
+			return;
+		}
+		SkyblockRecipes.Expand expand = StrayConfig.get().rawmatsEnchanted
+			? SkyblockRecipes.Expand.ENCHANTED
+			: SkyblockRecipes.Expand.RAW;
+		Map<String, Long> used = SkyblockRecipes.expand(id, count, expand);
+		if (used.isEmpty()) {
+			used = Map.of(SkyblockRecipes.normalize(id), count);
+		}
+		for (Map.Entry<String, Long> entry : used.entrySet()) {
+			if (entry.getValue() > 0L) {
+				CRAFTED.merge(entry.getKey(), entry.getValue(), Long::sum);
+			}
+		}
+		snapTick = Integer.MIN_VALUE;
+	}
+
+	private static long countOf(String raw) {
+		if (raw == null || raw.isBlank()) {
+			return 0L;
+		}
+		try {
+			return Long.parseLong(raw.replace(",", ""));
+		} catch (NumberFormatException ignored) {
+			return 0L;
+		}
 	}
 
 	public static String set(String query) {
@@ -108,6 +158,7 @@ public final class RawmatsTracker {
 		if (id.isBlank()) {
 			return "";
 		}
+		CRAFTED.clear();
 		StrayConfig config = StrayConfig.get();
 		config.rawmatsItemId = id;
 		config.rawmatsCount = StrayConfig.clampRawmatsCount(count);
@@ -164,7 +215,7 @@ public final class RawmatsTracker {
 		Map<String, List<String>> used = recipeMaterials(id, need, expand);
 		List<Line> lines = new ArrayList<>();
 		for (Map.Entry<String, Long> entry : need.entrySet()) {
-			long required = entry.getValue();
+			long required = entry.getValue() - CRAFTED.getOrDefault(entry.getKey(), 0L);
 			if (required <= 0L) {
 				continue;
 			}
