@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.5.15", new String[]{
+			"Top down hides the farm layer above you. Sodium's chunk shader drops those blocks inside 6 blocks."
+		}),
 		new Entry("1.5.14", new String[]{
 			"Top down now drops the layer above you. The cut is applied on the block shader itself, inside 6 blocks."
 		}),

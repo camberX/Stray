@@ -53,6 +53,31 @@ public final class TopDownTerrainCut {
 		return GlStateManager._glGetUniformLocation(program, "StrayCut");
 	}
 
+	public static String patchSodiumVertex(String source) {
+		if (source == null || source.contains("strayRel") || !source.contains("vec3 position = _vert_position + translation;")) {
+			return source;
+		}
+		return source
+			.replace("out vec2 v_TexCoord;", "out vec2 v_TexCoord;\nout vec3 strayRel;")
+			.replace(
+				"vec3 position = _vert_position + translation;",
+				"vec3 position = _vert_position + translation;\n    strayRel = position;"
+			);
+	}
+
+	public static String patchSodiumFragment(String source) {
+		if (source == null || source.contains("u_StrayCut") || !source.contains("void main() {")) {
+			return source;
+		}
+		String withIn = source.contains("in vec2 v_TexCoord;")
+			? source.replace("in vec2 v_TexCoord;", "in vec2 v_TexCoord;\nin vec3 strayRel;\nuniform vec3 u_StrayCut;")
+			: "in vec3 strayRel;\nuniform vec3 u_StrayCut;\n" + source;
+		return withIn.replace(
+			"void main() {",
+			"void main() {\n    if (u_StrayCut.z > 0.5 && dot(strayRel.xz, strayRel.xz) <= u_StrayCut.y * u_StrayCut.y && strayRel.y > u_StrayCut.x) discard;"
+		);
+	}
+
 	public static String patchSource(String source) {
 		if (source == null || source.contains("strayRel")) {
 			return source;

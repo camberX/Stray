@@ -1,5 +1,6 @@
 package dev.stray.client.mixin.sodium;
 
+import dev.stray.client.render.TopDownTerrainCut;
 import dev.stray.client.visual.CustomFog;
 import dev.stray.client.visual.WorldTint;
 import net.caffeinemc.mods.sodium.client.gl.shader.ShaderLoader;
@@ -18,9 +19,13 @@ public class SodiumShaderLoaderMixin {
 			cir.setReturnValue(CustomFog.injectSodiumShader(cir.getReturnValue()));
 			return;
 		}
+		if (path.endsWith(".vsh") && path.contains("block_layer")) {
+			cir.setReturnValue(TopDownTerrainCut.patchSodiumVertex(cir.getReturnValue()));
+			return;
+		}
 		if (!path.endsWith(".fsh") || !path.contains("block_layer")) {
 			return;
 		}
-		cir.setReturnValue(WorldTint.injectTerrainFragmentSource(cir.getReturnValue()));
+		cir.setReturnValue(TopDownTerrainCut.patchSodiumFragment(WorldTint.injectTerrainFragmentSource(cir.getReturnValue())));
 	}
 }
