@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.5.16", new String[]{
+			"Starting the game no longer goes black. The top-down cut stays on terrain shaders only."
+		}),
 		new Entry("1.5.15", new String[]{
 			"Top down hides the farm layer above you. Sodium's chunk shader drops those blocks inside 6 blocks."
 		}),

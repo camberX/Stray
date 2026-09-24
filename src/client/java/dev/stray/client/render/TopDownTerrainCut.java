@@ -87,7 +87,7 @@ public final class TopDownTerrainCut {
 				.replace("out vec2 texCoord0;", "out vec2 texCoord0;\nout vec3 strayRel;")
 				.replace("texCoord0 = UV0;", "texCoord0 = UV0;\n    strayRel = pos;");
 		}
-		if (source.contains("fragColor") && source.contains("apply_fog")) {
+		if (source.contains("in vec2 texCoord0;") && source.contains("fragColor") && source.contains("apply_fog")) {
 			return source
 				.replace("in vec2 texCoord0;", "in vec2 texCoord0;\nin vec3 strayRel;\nuniform vec3 StrayCut;")
 				.replace(
