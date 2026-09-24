@@ -763,7 +763,10 @@ public final class ClickGui {
 		}, false, false, true));
 		mods.add(mod("Auto update", "Theme", null, null, () -> config.autoUpdate, v -> config.autoUpdate = v, false, false));
 		mods.add(mod("Auto close", "Theme", null, null, () -> config.updateAutoClose, v -> config.updateAutoClose = v, false, false));
-		mods.add(mod("Update notify", "Theme", null, null, () -> config.updateNotify, v -> config.updateNotify = v, false, false));
+		mods.add(mod("Update notify", "Theme", null, null, () -> config.updateNotify, v -> {
+			config.updateNotify = v;
+			config.save();
+		}, false, false));
 
 		mods.add(mod("Nick hider", "Player", StrayScreen.Feature.NICK, null, () -> config.nickEnabled, v -> config.nickEnabled = v, true, false));
 		mods.add(hold("Cape", "Player", StrayScreen.Feature.CAPE, ClickGui::capeOn));
