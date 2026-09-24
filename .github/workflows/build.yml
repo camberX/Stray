@@ -37,18 +37,6 @@ jobs:
           else
             gh release create "$TAG" "$JAR" --title "$VERSION" --generate-notes
           fi
-          DEST="web/public/mod/stray-${VERSION}.jar"
-          cp "$JAR" "$DEST"
-          cp "$JAR" web/public/mod/stray.jar
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -- "$DEST" web/public/mod/stray.jar
-          if git diff --cached --quiet; then
-            echo "$DEST is already committed"
-            exit 0
-          fi
-          git commit -m "Publish stray-${VERSION}.jar on the GitHub download path."
-          git push
       - name: capture build artifacts
         continue-on-error: true
         uses: actions/upload-artifact@v7
