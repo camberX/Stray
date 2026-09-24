@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.5.5", new String[]{
+			"Top down is a real overhead camera in the movable window, not a block map. Blocks above you are clipped, and height is how high that camera sits."
+		}),
 		new Entry("1.5.4", new String[]{
 			"Top down is a small window you can move in the HUD editor. It shows while you hold a farming tool, and it skips blocks above you. Height sets how far the window looks."
 		}),

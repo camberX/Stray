@@ -1416,7 +1416,7 @@ public final class StrayConfig {
 				if (!json.has("topDownView")) {
 					loaded.topDownView = false;
 				}
-				loaded.topDownHeight = clamp(loaded.topDownHeight, 4f, 24f);
+				loaded.topDownHeight = clamp(loaded.topDownHeight, 4f, 40f);
 				loaded.slotTopDown = hudSlot(loaded.slotTopDown);
 				if (!json.has("gardenShoppingHudEnabled")) {
 					loaded.gardenShoppingHudEnabled = false;

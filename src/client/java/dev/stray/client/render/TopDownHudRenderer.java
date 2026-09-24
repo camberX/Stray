@@ -1,5 +1,9 @@
 package dev.stray.client.render;
 
+import com.mojang.blaze3d.systems.RenderSystem;
+import com.mojang.blaze3d.textures.FilterMode;
+import com.mojang.blaze3d.textures.GpuSampler;
+import com.mojang.blaze3d.textures.GpuTextureView;
 import dev.stray.client.farming.TopDownView;
 import dev.stray.client.ui.Theme;
 import net.minecraft.client.DeltaTracker;
@@ -39,23 +43,16 @@ public final class TopDownHudRenderer {
 		float view = TopDownView.WINDOW;
 		float left = x + PAD;
 		float top = y + PAD;
-		int[] colors = TopDownView.colors();
-		int radius = TopDownView.radius();
-		int span = radius * 2 + 1;
-		if (colors.length != span * span) {
+		GpuTextureView texture = TopDownCapture.colorView();
+		if (texture == null) {
 			HudChrome.rounded(graphics, left, top, view, view, 4, Theme.withAlpha(Theme.HUD_CARD, 180));
 			return;
 		}
-		float cell = view / span;
-		int index = 0;
-		for (int row = 0; row < span; row++) {
-			for (int col = 0; col < span; col++) {
-				int color = colors[index++];
-				GuiDraw.fill(graphics, left + col * cell, top + row * cell, cell + 0.5f, cell + 0.5f, 0xFF000000 | color);
-			}
-		}
-		float mid = left + view * 0.5f;
-		float midY = top + view * 0.5f;
-		GuiDraw.fill(graphics, mid - 1.5f, midY - 1.5f, 3f, 3f, Theme.ACCENT);
+		GpuSampler sampler = RenderSystem.getSamplerCache().getClampToEdge(FilterMode.LINEAR);
+		graphics.pose().pushMatrix();
+		graphics.pose().translate(left, top);
+		graphics.pose().scale(view, view);
+		graphics.blit(texture, sampler, 0, 0, 1, 1, 0f, 1f, 1f, 0f);
+		graphics.pose().popMatrix();
 	}
 }

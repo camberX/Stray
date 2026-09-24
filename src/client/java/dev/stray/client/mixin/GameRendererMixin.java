@@ -2,6 +2,7 @@ package dev.stray.client.mixin;
 
 import dev.stray.client.render.GuiFrostBlur;
 import dev.stray.client.render.MobGlowRenderer;
+import dev.stray.client.render.TopDownCapture;
 import dev.stray.client.visual.HeldItemShader;
 import dev.stray.client.visual.motionblur.MotionBlurShaders;
 import net.minecraft.client.DeltaTracker;
@@ -59,6 +60,7 @@ public class GameRendererMixin {
 	private void stray$motionBlurAfterLevel(DeltaTracker deltaTracker, CallbackInfo ci) {
 		MotionBlurShaders.applyDeferredTemporalBlur();
 		MotionBlurShaders.clearFrameAllocator();
+		TopDownCapture.render(deltaTracker);
 	}
 
 	@Inject(

@@ -4,6 +4,7 @@ import com.mojang.blaze3d.buffers.GpuBufferSlice;
 import com.mojang.blaze3d.resource.GraphicsResourceAllocator;
 import com.mojang.blaze3d.vertex.PoseStack;
 import dev.stray.client.config.StrayConfig;
+import dev.stray.client.render.TopDownCapture;
 import dev.stray.client.visual.motionblur.MotionBlurShaders;
 import net.minecraft.client.CameraType;
 import net.minecraft.client.DeltaTracker;
@@ -54,6 +55,9 @@ public class LevelRendererMixin {
 		ChunkSectionsToRender chunkSectionsToRender,
 		CallbackInfo ci
 	) {
+		if (TopDownCapture.capturing()) {
+			return;
+		}
 		boolean blurActive = MotionBlurShaders.active();
 		boolean needsVelocity = blurActive && StrayConfig.get().motionBlurUsesVelocity();
 		double cx = cameraState.pos.x();
@@ -109,6 +113,9 @@ public class LevelRendererMixin {
 
 	@Inject(method = "submitEntities", at = @At("HEAD"))
 	private void stray$motionBlurBeforeEntities(PoseStack poseStack, LevelRenderState levelRenderState, SubmitNodeCollector output, CallbackInfo ci) {
+		if (TopDownCapture.capturing()) {
+			return;
+		}
 		if (!MotionBlurShaders.active() || !StrayConfig.get().motionBlurUsesVelocity()) {
 			return;
 		}
@@ -132,6 +139,9 @@ public class LevelRendererMixin {
 		ChunkSectionsToRender chunkSectionsToRender,
 		CallbackInfo ci
 	) {
+		if (TopDownCapture.capturing()) {
+			return;
+		}
 		StrayConfig.MotionBlurAlgorithm algorithm = StrayConfig.get().motionBlurAlgorithm();
 		boolean special = stray$thirdPersonOrPassenger();
 		if (algorithm == StrayConfig.MotionBlurAlgorithm.HYBRID_BLENDING && !special) {
