@@ -2,8 +2,8 @@ package dev.stray.client.render;
 
 import com.mojang.blaze3d.opengl.GlRenderPipeline;
 import com.mojang.blaze3d.opengl.GlStateManager;
-import net.minecraft.resources.Identifier;
-import org.lwjgl.opengl.GL41;
+import org.lwjgl.opengl.GL11;
+import org.lwjgl.opengl.GL20;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -23,10 +23,6 @@ public final class TopDownTerrainCut {
 		if (!TopDownCapture.capturing() || pipeline == null || pipeline.program() == null) {
 			return;
 		}
-		Identifier fragment = pipeline.info().getFragmentShader();
-		if (fragment == null || !fragment.getPath().contains("terrain")) {
-			return;
-		}
 		int program = pipeline.program().getProgramId();
 		if (program <= 0) {
 			return;
@@ -35,15 +31,22 @@ public final class TopDownTerrainCut {
 		if (location < 0) {
 			return;
 		}
-		GL41.glProgramUniform3f(program, location, TopDownCapture.cutThreshold(), 6f, 1f);
+		uniform(program, location, TopDownCapture.cutThreshold(), 6f, 1f);
 	}
 
 	public static void clear() {
 		for (Map.Entry<Integer, Integer> entry : locations.entrySet()) {
 			if (entry.getKey() > 0 && entry.getValue() >= 0) {
-				GL41.glProgramUniform3f(entry.getKey(), entry.getValue(), 0f, 0f, 0f);
+				uniform(entry.getKey(), entry.getValue(), 0f, 0f, 0f);
 			}
 		}
+	}
+
+	private static void uniform(int program, int location, float x, float y, float z) {
+		int previous = GL11.glGetInteger(GL20.GL_CURRENT_PROGRAM);
+		GL20.glUseProgram(program);
+		GL20.glUniform3f(location, x, y, z);
+		GL20.glUseProgram(previous);
 	}
 
 	private static int find(int program) {
@@ -54,12 +57,12 @@ public final class TopDownTerrainCut {
 		if (source == null || source.contains("strayRel")) {
 			return source;
 		}
-		if (source.contains("in vec3 Position") && source.contains("ChunkPosition")) {
+		if (source.contains("in vec3 Position") && source.contains("fog_spherical_distance")) {
 			return source
 				.replace("out vec2 texCoord0;", "out vec2 texCoord0;\nout vec3 strayRel;")
 				.replace("texCoord0 = UV0;", "texCoord0 = UV0;\n    strayRel = pos;");
 		}
-		if (source.contains("fragColor") && source.contains("ChunkVisibility")) {
+		if (source.contains("fragColor") && source.contains("apply_fog")) {
 			return source
 				.replace("in vec2 texCoord0;", "in vec2 texCoord0;\nin vec3 strayRel;\nuniform vec3 StrayCut;")
 				.replace(
