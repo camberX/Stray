@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.4.99", new String[]{
+			"Click GUI search hides modules that do not match. The results list is gone."
+		}),
 		new Entry("1.4.98", new String[]{
 			"The click GUI has a search bar at the bottom center. Click a result to open that module."
 		}),

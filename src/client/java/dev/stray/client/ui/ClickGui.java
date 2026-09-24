@@ -64,16 +64,10 @@ public final class ClickGui {
 	private static final int SEARCH_W = 168;
 	private static String searchQuery = "";
 	private static boolean searchFocused;
-	private static float searchScroll;
 	private static float searchX;
 	private static float searchY;
 	private static float searchW;
 	private static float searchH;
-	private static float searchListX;
-	private static float searchListY;
-	private static float searchListW;
-	private static float searchListH;
-	private static boolean searchListLive;
 
 	private ClickGui() {
 	}
@@ -101,7 +95,7 @@ public final class ClickGui {
 			drawColumn(screen, graphics, font, mouseX, mouseY, columns.get(id));
 		}
 		screen.clickPicker(graphics, font);
-		drawSearch(screen, graphics, font, mouseX, mouseY);
+		drawSearch(screen, graphics, font);
 		if (StrayConfig.get().arrayList) {
 			ArrayListHud.draw(graphics, font, screen.width);
 		}
@@ -127,21 +121,16 @@ public final class ClickGui {
 		if (searchQuery.length() > 32) {
 			searchQuery = searchQuery.substring(0, 32);
 		}
-		searchScroll = 0f;
 	}
 
 	static void backspaceSearch() {
 		if (!searchQuery.isEmpty()) {
 			searchQuery = searchQuery.substring(0, searchQuery.length() - 1);
-			searchScroll = 0f;
 		}
 	}
 
 	static boolean searchContains(double x, double y) {
-		if (contains(x, y, searchX, searchY, searchW, searchH)) {
-			return true;
-		}
-		return searchListLive && contains(x, y, searchListX, searchListY, searchListW, searchListH);
+		return contains(x, y, searchX, searchY, searchW, searchH);
 	}
 
 	static void rightClick(double x, double y) {
@@ -201,10 +190,6 @@ public final class ClickGui {
 		if (wheel == 0) {
 			return false;
 		}
-		if (searchListLive && contains(x, y, searchListX, searchListY, searchListW, searchListH)) {
-			searchScroll = Math.max(0f, searchScroll - (float) wheel * STRIDE);
-			return true;
-		}
 		for (Column column : columns.values()) {
 			if (contains(x, y, column.x, column.y, COL_W, column.height)) {
 				column.scroll = Math.max(0f, column.scroll - (float) wheel * STRIDE);
@@ -232,7 +217,7 @@ public final class ClickGui {
 		return 0xFF000000 | rgb;
 	}
 
-	private static void drawSearch(StrayScreen screen, GuiGraphicsExtractor graphics, Font font, int mouseX, int mouseY) {
+	private static void drawSearch(StrayScreen screen, GuiGraphicsExtractor graphics, Font font) {
 		int width = Math.min(SEARCH_W, Math.max(BOX, screen.width - 16));
 		int x = (screen.width - width) / 2;
 		int y = screen.height - BOX - 8;
@@ -246,86 +231,29 @@ public final class ClickGui {
 		String label = fit(font, shown, width - 8);
 		GuiDraw.text(graphics, font, label, x + 4, textY(font, y, BOX), placeholder ? DIM : TEXT, true);
 		screen.clickHit(x, y, width, BOX, ClickGui::focusSearch);
-		drawSearchResults(screen, graphics, font, mouseX, mouseY, x, y, width);
 	}
 
-	private static void drawSearchResults(StrayScreen screen, GuiGraphicsExtractor graphics, Font font, int mouseX, int mouseY, int x, int y, int width) {
-		searchListLive = false;
-		if (searchQuery.isBlank()) {
-			return;
-		}
-		List<Mod> matches = searchMatches();
-		int rows = matches.isEmpty() ? 1 : Math.min(8, matches.size());
-		int listH = rows * STRIDE - V_GAP;
-		int listY = y - 2 - listH;
-		searchListLive = true;
-		searchListX = x;
-		searchListY = listY;
-		searchListW = width;
-		searchListH = listH;
-		GuiDraw.fill(graphics, x, listY, width, listH, PANEL);
-		if (matches.isEmpty()) {
-			outlined(graphics, x, listY, width, BOX, OFF_FILL);
-			String empty = fit(font, "No matches", width - 8);
-			GuiDraw.text(graphics, font, empty, x + 4, textY(font, listY, BOX), DIM, true);
-			return;
-		}
-		float maxScroll = Math.max(0f, matches.size() * STRIDE - V_GAP - listH);
-		searchScroll = Mth.clamp(searchScroll, 0f, maxScroll);
-		boolean clipped = GuiDraw.scissor(graphics, x, listY, width, listH);
-		float rowY = listY - searchScroll;
-		for (Mod mod : matches) {
-			float top = Math.max(rowY, listY);
-			float bot = Math.min(rowY + BOX, listY + listH);
-			if (bot - top >= 1f) {
-				int iy = Math.round(rowY);
-				boolean hover = mouseX >= x && mouseX < x + width && mouseY >= top && mouseY < bot;
-				outlined(graphics, x, iy, width, BOX, hover ? accentFill() : OFF_FILL);
-				String name = fit(font, display(mod.name), width - 8);
-				GuiDraw.text(graphics, font, name, x + 4, textY(font, iy, BOX), TEXT, true);
-				screen.clickHit(x, top, width, bot - top, () -> openSearch(mod));
-			}
-			rowY += STRIDE;
-		}
-		if (clipped) {
-			GuiDraw.disableScissor(graphics);
-		}
-	}
-
-	private static List<Mod> searchMatches() {
+	private static boolean searchHit(Mod mod) {
 		String needle = searchQuery.trim().toLowerCase(Locale.ROOT);
-		List<Mod> matches = new ArrayList<>();
 		if (needle.isEmpty()) {
-			return matches;
+			return true;
 		}
-		for (Mod mod : modules()) {
-			String name = display(mod.name).toLowerCase(Locale.ROOT);
-			String column = display(mod.column).toLowerCase(Locale.ROOT);
-			if (name.contains(needle) || column.contains(needle)) {
-				matches.add(mod);
-			}
+		if (display(mod.column).toLowerCase(Locale.ROOT).contains(needle)) {
+			return true;
 		}
-		return matches;
-	}
-
-	private static void openSearch(Mod mod) {
-		if (mod.feature != null || mod.timeout || mod.menuStyle || "Array list".equals(mod.name)) {
-			expandedName = mod.name;
-			shownName = mod.name;
-			expandT = 0f;
-			reveal = true;
-		}
-		searchQuery = "";
-		searchFocused = false;
-		searchScroll = 0f;
+		return display(mod.name).toLowerCase(Locale.ROOT).contains(needle);
 	}
 
 	private static void drawColumn(StrayScreen screen, GuiGraphicsExtractor graphics, Font font, int mouseX, int mouseY, Column column) {
 		List<Mod> mods = new ArrayList<>();
 		for (Mod mod : modules()) {
-			if (column.id.equals(mod.column)) {
+			if (column.id.equals(mod.column) && searchHit(mod)) {
 				mods.add(mod);
 			}
+		}
+		if (!searchQuery.isBlank() && mods.isEmpty()) {
+			column.height = 0f;
+			return;
 		}
 		int x = Math.round(column.x);
 		int top = Math.round(column.y);
