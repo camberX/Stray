@@ -4,7 +4,6 @@ import dev.stray.client.config.StrayConfig;
 import dev.stray.client.mixin.AbstractContainerScreenAccessor;
 import dev.stray.client.mixin.InventoryScreenAccessor;
 import dev.stray.client.render.GuiDraw;
-import dev.stray.client.render.GuiFrostBlur;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
@@ -57,17 +56,14 @@ public final class ContainerChrome {
 		float y = box.stray$topPos() - PAD;
 		float w = box.stray$imageWidth() + PAD * 2;
 		float h = box.stray$imageHeight() + PAD * 2;
-		float radius = Math.min(12f, Math.min(w, h) * 0.08f);
-		GuiFrostBlur.blitWindow(graphics, x, y, w, h, radius);
-		GuiDraw.roundedFine(graphics, x, y, w, h, radius, ControlChrome.windowFill());
-		GuiDraw.roundedOutline(graphics, x, y, w, h, radius, Theme.LINE, 1f);
+		ClickLook.panel(graphics, x, y, w, h, 0, ClickLook.PANEL, Theme.LINE);
 		int left = box.stray$leftPos();
 		int top = box.stray$topPos();
 		for (Slot slot : container.getMenu().slots) {
 			if (slot == null || !slot.isActive() || ChestFillers.hide(slot)) {
 				continue;
 			}
-			GuiDraw.well(graphics, left + slot.x, top + slot.y, SLOT, Theme.PANEL, Theme.LINE);
+			ClickLook.panel(graphics, left + slot.x, top + slot.y, SLOT, SLOT, 0, ClickLook.FILL, Theme.LINE);
 		}
 		player(graphics, container, box);
 	}
@@ -77,7 +73,12 @@ public final class ContainerChrome {
 			return;
 		}
 		Theme.refresh();
-		GuiDraw.wellBorder(graphics, hovered.x, hovered.y, SLOT, Theme.ACCENT);
+		float x = hovered.x;
+		float y = hovered.y;
+		GuiDraw.fillSmooth(graphics, x, y, SLOT, ClickLook.STROKE, Theme.ACCENT);
+		GuiDraw.fillSmooth(graphics, x, y + SLOT - ClickLook.STROKE, SLOT, ClickLook.STROKE, Theme.ACCENT);
+		GuiDraw.fillSmooth(graphics, x, y, ClickLook.STROKE, SLOT, Theme.ACCENT);
+		GuiDraw.fillSmooth(graphics, x + SLOT - ClickLook.STROKE, y, ClickLook.STROKE, SLOT, Theme.ACCENT);
 	}
 
 	public static int labelColor(int color) {
@@ -89,7 +90,7 @@ public final class ContainerChrome {
 			return color;
 		}
 		Theme.refresh();
-		return ControlChrome.text();
+		return ClickLook.TEXT;
 	}
 
 	private static void player(

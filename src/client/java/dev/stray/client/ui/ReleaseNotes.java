@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.5.12", new String[]{
+			"Chests and the inventory use the click GUI boxes. The mob list shows eight rows at a time and still scrolls through every mob."
+		}),
 		new Entry("1.5.11", new String[]{
 			"Top down hides every block above you within 6 blocks, so a layered farm stays visible. Roofs farther out stay."
 		}),

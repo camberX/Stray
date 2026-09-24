@@ -393,7 +393,8 @@ public final class ClickGui {
 		int top = Math.round(column.y);
 		int searchY = top + HEADER + V_GAP;
 		int viewTop = searchY + BOX + V_GAP;
-		int visible = Math.max(BOX, screen.height - viewTop - H_PAD - BOX - 10);
+		int room = Math.max(BOX, screen.height - viewTop - H_PAD - BOX - 10);
+		int visible = Math.min(room, stackH(8));
 		float content = stackH(entries.size());
 		int shownH = Math.min(Math.round(content), visible);
 		column.height = HEADER + V_GAP + BOX + V_GAP + shownH + H_PAD;

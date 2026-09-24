@@ -207,7 +207,8 @@ public final class StrayConfig {
 	public boolean profileViewerEnabled = false;
 	public boolean storagePreviewEnabled = false;
 	public boolean storagePreviewHoldShift = false;
-	public boolean themedGuisEnabled = false;
+	public boolean themedGuisEnabled = true;
+	public boolean styledContainers = true;
 	public boolean themedChatEnabled = false;
 	public boolean stashChatCompact = false;
 	public boolean npcChatClean = false;
@@ -1142,8 +1143,8 @@ public final class StrayConfig {
 				if (!json.has("storagePreviewHoldShift")) {
 					loaded.storagePreviewHoldShift = false;
 				}
-				if (!json.has("themedGuisEnabled")) {
-					loaded.themedGuisEnabled = false;
+				if (!json.has("themedGuisEnabled") || !json.has("styledContainers")) {
+					loaded.themedGuisEnabled = true;
 				}
 				if (!json.has("noCursorReset")) {
 					loaded.noCursorReset = true;
