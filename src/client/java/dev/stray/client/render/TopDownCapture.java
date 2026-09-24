@@ -23,20 +23,17 @@ import net.minecraft.world.phys.Vec3;
 import org.joml.Matrix4f;
 
 /**
- * Overhead picture of the world. The wide shot uses a normal camera near plane
- * so the field of view stays a real camera. A second shot clips ceilings and is
- * only shown in a 6-block radius around the player, who is rendered detached.
+ * Overhead picture of the world. The near plane sits just above the player's
+ * head, so blocks between the camera and the player are not drawn. The player
+ * is rendered detached, and the field of view stays the player's.
  */
 public final class TopDownCapture {
 	public static final int SIZE = 256;
-	public static final float CUT_RADIUS = 6f;
 
 	private static MainTarget wideTarget;
-	private static MainTarget cutTarget;
 	private static ProjectionMatrixBuffer projection;
 	private static boolean capturing;
 	private static boolean ready;
-	private static float cutFraction;
 
 	private TopDownCapture() {
 	}
@@ -50,18 +47,6 @@ public final class TopDownCapture {
 			return null;
 		}
 		return wideTarget.getColorTextureView();
-	}
-
-	public static GpuTextureView cutView() {
-		if (!ready || cutTarget == null) {
-			return null;
-		}
-		return cutTarget.getColorTextureView();
-	}
-
-	/** Radius of the ceiling cutout as a fraction of the window width. */
-	public static float cutFraction() {
-		return cutFraction;
 	}
 
 	public static void render(DeltaTracker delta) {
@@ -103,20 +88,17 @@ public final class TopDownCapture {
 		Vec3 eye = client.player.getEyePosition(partial);
 		float fov = Mth.clamp(savedFov, 30f, 110f);
 		float far = Math.max(savedFar, altitude + 64f);
-		float cutNear = Math.max(0.05f, altitude - 0.45f);
-		float depth = Math.max(1f, altitude);
-		float halfWidth = depth * (float) Math.tan(Math.toRadians(fov * 0.5f));
-		cutFraction = Mth.clamp(0.5f * CUT_RADIUS / halfWidth, 0.05f, 0.5f);
+		float near = Math.max(0.05f, altitude - 0.25f);
 		boolean swapped = false;
 		capturing = true;
 		try {
 			access.stray$detached(true);
 			access.stray$setPosition(new Vec3(eye.x, eye.y + altitude, eye.z));
 			access.stray$setRotation(client.player.getViewYRot(partial), 90f);
-			access.stray$setupPerspective(Camera.PROJECTION_Z_NEAR, far, fov, SIZE, SIZE);
+			access.stray$setupPerspective(near, far, fov, SIZE, SIZE);
 			boolean zeroToOne = RenderSystem.getDevice().isZZeroToOne();
 			Matrix4f view = camera.getViewRotationMatrix(new Matrix4f());
-			Matrix4f cullProj = new Matrix4f().perspective((float) Math.toRadians(fov), 1f, Camera.PROJECTION_Z_NEAR, far, zeroToOne);
+			Matrix4f cullProj = new Matrix4f().perspective((float) Math.toRadians(fov), 1f, near, far, zeroToOne);
 			Frustum frustum = new Frustum(view, cullProj);
 			Vec3 overhead = camera.position();
 			frustum.prepare(overhead.x, overhead.y, overhead.z);
@@ -131,10 +113,7 @@ public final class TopDownCapture {
 			((MinecraftAccessor) client).stray$mainRenderTarget(wideTarget);
 			swapped = true;
 			drawPass(client, renderer, game, fog, camera, state, delta, partial, cullProj);
-			Matrix4f cutProj = new Matrix4f().perspective((float) Math.toRadians(fov), 1f, cutNear, far, zeroToOne);
-			((MinecraftAccessor) client).stray$mainRenderTarget(cutTarget);
-			drawPass(client, renderer, game, fog, camera, state, delta, partial, cutProj);
-			ready = wideTarget.getColorTextureView() != null && cutTarget.getColorTextureView() != null;
+			ready = wideTarget.getColorTextureView() != null;
 		} catch (RuntimeException ignored) {
 			ready = false;
 		} finally {
@@ -215,7 +194,6 @@ public final class TopDownCapture {
 
 	private static void ensureTargets() {
 		wideTarget = ensure(wideTarget);
-		cutTarget = ensure(cutTarget);
 	}
 
 	private static MainTarget ensure(MainTarget target) {

@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.5.9", new String[]{
+			"Top down clips every block between you and the camera, across the whole window."
+		}),
 		new Entry("1.5.8", new String[]{
 			"Options, sliders, and the other vanilla menu buttons use the click GUI boxes instead of the rounded pills."
 		}),

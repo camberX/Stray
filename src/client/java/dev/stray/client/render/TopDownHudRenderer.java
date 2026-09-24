@@ -50,22 +50,6 @@ public final class TopDownHudRenderer {
 		}
 		GpuSampler sampler = RenderSystem.getSamplerCache().getClampToEdge(FilterMode.LINEAR);
 		blitView(graphics, texture, sampler, left, top, view);
-		GpuTextureView cut = TopDownCapture.cutView();
-		if (cut == null) {
-			return;
-		}
-		float radius = TopDownCapture.cutFraction() * view;
-		float cx = left + view * 0.5f;
-		float cy = top + view * 0.5f;
-		org.joml.Vector2f origin = new org.joml.Vector2f();
-		org.joml.Vector2f extent = new org.joml.Vector2f();
-		graphics.pose().transformPosition(cx - radius, cy - radius, origin);
-		graphics.pose().transformPosition(cx + radius, cy + radius, extent);
-		if (!GuiDraw.scissor(graphics, origin.x, origin.y, extent.x - origin.x, extent.y - origin.y)) {
-			return;
-		}
-		blitView(graphics, cut, sampler, left, top, view);
-		GuiDraw.disableScissor(graphics);
 	}
 
 	private static void blitView(GuiGraphicsExtractor graphics, GpuTextureView texture, GpuSampler sampler, float left, float top, float view) {
