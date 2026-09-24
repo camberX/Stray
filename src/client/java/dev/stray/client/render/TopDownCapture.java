@@ -95,7 +95,7 @@ public final class TopDownCapture {
 		float fov = Mth.clamp(savedFov, 30f, 110f);
 		float far = Math.max(savedFar, altitude + 64f);
 		float near = Camera.PROJECTION_Z_NEAR;
-		cutThreshold = (float) ((client.player.getBlockY() + 1) - (eye.y + altitude));
+		cutThreshold = (float) (client.player.getBlockY() - (eye.y + altitude));
 		boolean swapped = false;
 		capturing = true;
 		try {
