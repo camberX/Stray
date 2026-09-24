@@ -123,6 +123,8 @@ public final class StrayConfig {
 	public boolean gardenVisitorHudEnabled = false;
 	public boolean gardenHoeHudEnabled = false;
 	public boolean gardenMilestoneHudEnabled = false;
+	public boolean topDownView = false;
+	public float topDownHeight = 12f;
 	public boolean gardenShoppingHudEnabled = false;
 	public boolean gardenShoppingBz = false;
 	public java.util.Map<String, Integer> overflowHoeLevels = new java.util.LinkedHashMap<>();
@@ -1410,6 +1412,10 @@ public final class StrayConfig {
 				if (!json.has("gardenMilestoneHudEnabled")) {
 					loaded.gardenMilestoneHudEnabled = false;
 				}
+				if (!json.has("topDownView")) {
+					loaded.topDownView = false;
+				}
+				loaded.topDownHeight = clamp(loaded.topDownHeight, 4f, 40f);
 				if (!json.has("gardenShoppingHudEnabled")) {
 					loaded.gardenShoppingHudEnabled = false;
 				}

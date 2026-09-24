@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.5.2", new String[]{
+			"Holding a farming tool can switch to a top-down view. Blocks above you are hidden, and the height slider sets how far up the camera sits."
+		}),
 		new Entry("1.5.1", new String[]{
 			"Middle click in a sack opens the recipe. Supercrafting an item removes it from the raw mats list."
 		}),

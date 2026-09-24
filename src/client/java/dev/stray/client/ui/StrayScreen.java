@@ -173,6 +173,7 @@ public class StrayScreen extends Screen {
 		CH_MAP("CH map", 1),
 		METAL("Metal detector", 1),
 		FARMING("Yaw / Pitch", 1),
+		TOP_DOWN("Top down", 1),
 		INVENTORY("Inventory", 5),
 		SKILL("Skill progress", 3),
 		PLOTS("Garden plots", 1),
@@ -453,6 +454,7 @@ public class StrayScreen extends Screen {
 		new SearchEntry("Farming", Tab.FARMING, "Farming"),
 		new SearchEntry("Yaw", Tab.FARMING, "Farming"),
 		new SearchEntry("Pitch", Tab.FARMING, "Farming"),
+		new SearchEntry("Top down", Tab.FARMING, "Farming"),
 		new SearchEntry("Yaw / Pitch", Tab.FARMING, "Farming"),
 		new SearchEntry("Farming tool", Tab.FARMING, "Farming"),
 		new SearchEntry("Jacob contest HUD", Tab.FARMING, "Farming"),
@@ -2444,9 +2446,10 @@ public class StrayScreen extends Screen {
 				GuiDraw.menu(graphics, font, clip(font, titanium, (int) iw - 4), rx, y + 38, titaniumColor);
 			}
 			case FARMING -> {
-				float farmingH = cardHeight(5);
+				float farmingH = cardHeight(6);
 				float dnaH = cardHeight(1 + Feature.AUTO_DNA.rows());
 				float y = featureCard(graphics, font, left, top, col, farmingH, "Farming");
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Top down", config.topDownView, v -> config.topDownView = v, Feature.TOP_DOWN);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Yaw / Pitch", config.farmingYawPitch, v -> config.farmingYawPitch = v, Feature.FARMING);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Jacob contest HUD", config.jacobContestHudEnabled, v -> config.jacobContestHudEnabled = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Composter overlay", config.composterHudEnabled, v -> config.composterHudEnabled = v);
@@ -2718,6 +2721,7 @@ public class StrayScreen extends Screen {
 			}
 			case FARMING -> {
 				float y = sectionLabel(graphics, font, left, top, "Overlays");
+				y = controlCard(graphics, font, left, y, col, mouseX, mouseY, "Top down", config.topDownView, v -> config.topDownView = v, Feature.TOP_DOWN);
 				y = controlCard(graphics, font, left, y, col, mouseX, mouseY, "Yaw / Pitch", config.farmingYawPitch, v -> config.farmingYawPitch = v, Feature.FARMING);
 				y = toggleCard(graphics, font, left, y, col, mouseX, mouseY, "Jacob contest HUD", config.jacobContestHudEnabled, v -> config.jacobContestHudEnabled = v);
 				toggleCard(graphics, font, left, y, col, mouseX, mouseY, "Composter overlay", config.composterHudEnabled, v -> config.composterHudEnabled = v);
@@ -3674,6 +3678,17 @@ public class StrayScreen extends Screen {
 				GuiDraw.small(graphics, font, "From the action bar. HUD editor to move.", ix, y + SkillProgressHudRenderer.drawHeight() + 2, fade());
 			}
 			case MINING -> toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Ability alert", config.miningAbilityAlert, v -> config.miningAbilityAlert = v);
+			case TOP_DOWN -> slider(
+				graphics,
+				font,
+				ix,
+				y,
+				iw,
+				"Height",
+				String.format(Locale.ROOT, "%.0f", config.topDownHeight),
+				(config.topDownHeight - 4f) / 36f,
+				v -> config.topDownHeight = StrayConfig.clamp(4f + v * 36f, 4f, 40f)
+			);
 			case FARMING -> slider(graphics, font, ix, y, iw, "Scale", Math.round(config.farmingYawPitchScale * 100) + "%", (config.farmingYawPitchScale - 0.50f) / 1.50f, v -> config.farmingYawPitchScale = StrayConfig.clampHudScale(0.50f + v * 1.50f));
 			case PLOTS -> toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Close on click", config.gardenPlotsCloseOnClick, v -> config.gardenPlotsCloseOnClick = v);
 			case SHOPPING -> chipRow(graphics, font, ix, y, iw, mouseX, mouseY, new String[]{"/recipe", "/bz"}, config.gardenShoppingBz ? 1 : 0, i -> config.setGardenShoppingBz(i == 1));
