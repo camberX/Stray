@@ -3686,8 +3686,8 @@ public class StrayScreen extends Screen {
 				iw,
 				"Height",
 				String.format(Locale.ROOT, "%.0f", config.topDownHeight),
-				(config.topDownHeight - 4f) / 36f,
-				v -> config.topDownHeight = StrayConfig.clamp(4f + v * 36f, 4f, 40f)
+				(config.topDownHeight - 4f) / 20f,
+				v -> config.topDownHeight = StrayConfig.clamp(4f + v * 20f, 4f, 24f)
 			);
 			case FARMING -> slider(graphics, font, ix, y, iw, "Scale", Math.round(config.farmingYawPitchScale * 100) + "%", (config.farmingYawPitchScale - 0.50f) / 1.50f, v -> config.farmingYawPitchScale = StrayConfig.clampHudScale(0.50f + v * 1.50f));
 			case PLOTS -> toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Close on click", config.gardenPlotsCloseOnClick, v -> config.gardenPlotsCloseOnClick = v);

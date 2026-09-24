@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.5.4", new String[]{
+			"Top down is a small window you can move in the HUD editor. It shows while you hold a farming tool, and it skips blocks above you. Height sets how far the window looks."
+		}),
 		new Entry("1.5.3", new String[]{
 			"Top down no longer crashes on startup. Blocks above you are still cut out of that view."
 		}),

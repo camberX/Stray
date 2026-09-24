@@ -37,6 +37,7 @@ public final class HudLayout {
 		MILESTONE("Crop milestone"),
 		SHOPPING("Shopping list"),
 		PEST_COOLDOWN("Pest cooldown"),
+		TOP_DOWN("Top down"),
 		HOTBAR("Hotbar"),
 		HEALTH("Health"),
 		HUNGER("Hunger"),
@@ -235,6 +236,10 @@ public final class HudLayout {
 						below += ComposterHudRenderer.drawHeight() * scale(Id.COMPOSTER) + 4;
 					}
 					y = placed(config.hudSkillY) ? config.hudSkillY : MARGIN + below;
+				}
+				case TOP_DOWN -> {
+					x = Math.max(MARGIN, guiW - w - MARGIN);
+					y = Math.max(MARGIN, guiH * 0.5f - h * 0.5f);
 				}
 				case NEXT_CONTEST, VISITOR, HOE, MILESTONE, SHOPPING, PEST_COOLDOWN -> {
 					x = MARGIN;
@@ -460,6 +465,7 @@ public final class HudLayout {
 			case MILESTONE -> config.gardenMilestoneHudEnabled;
 			case SHOPPING -> config.gardenShoppingHudEnabled;
 			case PEST_COOLDOWN -> config.pestCooldownHudEnabled;
+			case TOP_DOWN -> config.topDownView;
 			case HOTBAR, HEALTH, HUNGER, ARMOR, AIR, EXPERIENCE, MOUNT -> false;
 			case SCOREBOARD -> config.hudScoreboard;
 			case BOSS -> config.hudBossBar;
@@ -534,6 +540,7 @@ public final class HudLayout {
 			case MILESTONE -> config.slotGardenMilestone;
 			case SHOPPING -> config.slotGardenShopping;
 			case PEST_COOLDOWN -> config.slotGardenPest;
+			case TOP_DOWN -> config.slotTopDown;
 			default -> null;
 		};
 	}
@@ -645,6 +652,7 @@ public final class HudLayout {
 			case MILESTONE -> GardenHudRenderer.milestoneWidth() * scale;
 			case SHOPPING -> GardenHudRenderer.shoppingWidth() * scale;
 			case PEST_COOLDOWN -> GardenHudRenderer.pestCooldownWidth(font) * scale;
+			case TOP_DOWN -> TopDownHudRenderer.drawWidth() * scale;
 			case HOTBAR -> HotbarHudRenderer.drawWidth() * scale;
 			case HEALTH, HUNGER, ARMOR, AIR, MOUNT -> StatusHudRenderer.BAR_W * scale;
 			case EXPERIENCE -> StatusHudRenderer.xpWidth() * scale;
@@ -676,6 +684,7 @@ public final class HudLayout {
 			case MILESTONE -> GardenHudRenderer.milestoneHeight() * scale;
 			case SHOPPING -> GardenHudRenderer.shoppingHeight() * scale;
 			case PEST_COOLDOWN -> GardenHudRenderer.pestCooldownHeight() * scale;
+			case TOP_DOWN -> TopDownHudRenderer.drawHeight() * scale;
 			case HOTBAR -> HotbarHudRenderer.HEIGHT * scale;
 			case HEALTH, HUNGER, ARMOR, AIR, MOUNT -> StatusHudRenderer.BAR_H * scale;
 			case EXPERIENCE -> StatusHudRenderer.XP_BOX_H * scale;

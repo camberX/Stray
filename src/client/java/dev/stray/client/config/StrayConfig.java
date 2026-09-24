@@ -315,6 +315,7 @@ public final class StrayConfig {
 	public HudSlot slotGardenMilestone = new HudSlot();
 	public HudSlot slotGardenShopping = new HudSlot();
 	public HudSlot slotGardenPest = new HudSlot();
+	public HudSlot slotTopDown = new HudSlot();
 	public String inventoryHudAnchor = "bottom_right";
 	public float inventoryHudScale = 1.0f;
 	public float hudWatermarkScale = 1.0f;
@@ -1415,7 +1416,8 @@ public final class StrayConfig {
 				if (!json.has("topDownView")) {
 					loaded.topDownView = false;
 				}
-				loaded.topDownHeight = clamp(loaded.topDownHeight, 4f, 40f);
+				loaded.topDownHeight = clamp(loaded.topDownHeight, 4f, 24f);
+				loaded.slotTopDown = hudSlot(loaded.slotTopDown);
 				if (!json.has("gardenShoppingHudEnabled")) {
 					loaded.gardenShoppingHudEnabled = false;
 				}
@@ -2184,6 +2186,7 @@ public final class StrayConfig {
 		slotGardenMilestone = new HudSlot();
 		slotGardenShopping = new HudSlot();
 		slotGardenPest = new HudSlot();
+		slotTopDown = new HudSlot();
 	}
 
 	public static int clamp(int value, int min, int max) {

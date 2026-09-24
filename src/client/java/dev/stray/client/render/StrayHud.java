@@ -59,6 +59,7 @@ public final class StrayHud {
 		ArrayListHud.extract(graphics, delta);
 		MusicHudRenderer.extract(graphics, delta);
 		PipHudRenderer.extract(graphics, delta);
+		TopDownHudRenderer.extract(graphics, delta);
 		RawmatsHudRenderer.extract(graphics, delta);
 		PickupLogRenderer.extract(graphics, delta);
 		InventoryHudRenderer.extract(graphics, delta);
