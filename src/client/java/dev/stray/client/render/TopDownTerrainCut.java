@@ -82,12 +82,12 @@ public final class TopDownTerrainCut {
 		if (source == null || source.contains("strayRel")) {
 			return source;
 		}
-		if (source.contains("in vec3 Position") && source.contains("fog_spherical_distance")) {
+		if (source.contains("ChunkPosition") && source.contains("vec3 pos =")) {
 			return source
 				.replace("out vec2 texCoord0;", "out vec2 texCoord0;\nout vec3 strayRel;")
 				.replace("texCoord0 = UV0;", "texCoord0 = UV0;\n    strayRel = pos;");
 		}
-		if (source.contains("in vec2 texCoord0;") && source.contains("fragColor") && source.contains("apply_fog")) {
+		if (source.contains("ChunkVisibility") && source.contains("in vec2 texCoord0;") && source.contains("void main() {")) {
 			return source
 				.replace("in vec2 texCoord0;", "in vec2 texCoord0;\nin vec3 strayRel;\nuniform vec3 StrayCut;")
 				.replace(

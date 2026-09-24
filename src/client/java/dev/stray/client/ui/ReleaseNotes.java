@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.5.17", new String[]{
+			"The game draws again. The top-down cut no longer rewrites the text, item, and entity shaders."
+		}),
 		new Entry("1.5.16", new String[]{
 			"Starting the game no longer goes black. The top-down cut stays on terrain shaders only."
 		}),
