@@ -53,7 +53,7 @@ public class ItemStackMixin {
 		}
 	}
 
-	@Inject(method = "getTooltipLines", at = @At("RETURN"))
+	@Inject(method = "getTooltipLines", at = @At("RETURN"), cancellable = true)
 	private void stray$sackRecipeLore(
 		Item.TooltipContext context,
 		Player player,

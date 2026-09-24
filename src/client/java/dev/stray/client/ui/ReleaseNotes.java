@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.4.95", new String[]{
+			"Sack recipe lore no longer crashes when you hover an item in a sack."
+		}),
 		new Entry("1.4.94", new String[]{
 			"Middle click a sack item to open its recipe, with a lore line while Sack recipe is on. Crop milestone, visitors, hoe level, and next contest are in the click GUI."
 		}),
