@@ -4345,6 +4345,9 @@ public class StrayScreen extends Screen {
 		if (fontSearchFocused && !onFontSearch) {
 			fontSearchFocused = false;
 		}
+		if (StrayConfig.get().clickGui && !ClickGui.searchContains(lx, ly)) {
+			ClickGui.blurSearch();
+		}
 		for (int i = hits.size() - 1; i >= 0; i--) {
 			Hit hit = hits.get(i);
 			if (hit.contains(lx, ly)) {
@@ -4467,6 +4470,24 @@ public class StrayScreen extends Screen {
 
 	@Override
 	public boolean keyPressed(KeyEvent event) {
+		if (StrayConfig.get().clickGui && ClickGui.searchFocused()) {
+			if (event.isEscape() || event.key() == InputConstants.KEY_RETURN) {
+				ClickGui.blurSearch();
+				return true;
+			}
+			if (event.key() == InputConstants.KEY_BACKSPACE) {
+				ClickGui.backspaceSearch();
+				return true;
+			}
+			if (event.key() == InputConstants.KEY_V && event.hasControlDown()) {
+				String clip = minecraft.keyboardHandler.getClipboard();
+				if (clip != null && !clip.isBlank()) {
+					ClickGui.typeSearch(clip.replace("\n", "").replace("\r", ""));
+				}
+				return true;
+			}
+			return true;
+		}
 		if (bindListen != 0) {
 			if (event.key() == InputConstants.KEY_ESCAPE || event.key() == InputConstants.KEY_BACKSPACE) {
 				captureBind(InputConstants.UNKNOWN);
@@ -4640,6 +4661,10 @@ public class StrayScreen extends Screen {
 			return true;
 		}
 		if (event.key() == InputConstants.KEY_F && event.hasControlDown()) {
+			if (StrayConfig.get().clickGui) {
+				ClickGui.focusSearch();
+				return true;
+			}
 			searchOpen = true;
 			settingsOpen = false;
 			notesOpen = false;
@@ -4658,6 +4683,10 @@ public class StrayScreen extends Screen {
 
 	@Override
 	public boolean charTyped(CharacterEvent event) {
+		if (StrayConfig.get().clickGui && ClickGui.searchFocused() && event.isAllowedChatCharacter()) {
+			ClickGui.typeSearch(event.codepointAsString());
+			return true;
+		}
 		if (capeFocused && event.isAllowedChatCharacter()) {
 			capeUrlDraft += event.codepointAsString();
 			return true;
@@ -4708,7 +4737,7 @@ public class StrayScreen extends Screen {
 	}
 
 	public boolean shouldIgnoreMenuBinds() {
-		return bindListen != 0 || capeFocused || nickFocused || stealFocused || pestAlertFocus != 0 || searchOpen || mobSearchFocused || fontSearchFocused;
+		return bindListen != 0 || capeFocused || nickFocused || stealFocused || pestAlertFocus != 0 || searchOpen || ClickGui.searchFocused() || mobSearchFocused || fontSearchFocused;
 	}
 
 	public void requestClose() {

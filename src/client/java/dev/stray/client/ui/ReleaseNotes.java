@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.4.98", new String[]{
+			"The click GUI has a search bar at the bottom center. Click a result to open that module."
+		}),
 		new Entry("1.4.97", new String[]{
 			"Auto-update can see the new jar again. The download file is published on GitHub without the rest of the site."
 		}),
