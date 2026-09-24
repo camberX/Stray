@@ -73,7 +73,7 @@ public class CommandShortcutScreen extends Screen {
 		layout();
 
 		GuiDraw.fill(graphics, 0, 0, width, height, 0x14000000);
-		GuiDraw.panel(graphics, windowX, windowY, windowW, windowH, Theme.WINDOW_RADIUS, Theme.WINDOW, Theme.LINE);
+		ClickLook.panel(graphics, windowX, windowY, windowW, windowH, Theme.WINDOW_RADIUS, Theme.WINDOW, Theme.LINE);
 		GuiDraw.title(graphics, font, "SHORTCUTS", windowX + 12, windowY + 8, Theme.TEXT);
 		GuiDraw.small(
 			graphics,
@@ -113,7 +113,7 @@ public class CommandShortcutScreen extends Screen {
 		listY = y;
 		listW = w;
 		listH = Math.max(ROW_H * 3, fieldY - 8 - listY);
-		GuiDraw.panel(graphics, listX, listY, listW, listH, 6, Theme.TRACK, Theme.LINE);
+		ClickLook.panel(graphics, listX, listY, listW, listH, 6, Theme.TRACK, Theme.LINE);
 		drawList(graphics, font, mouseX, mouseY, config);
 
 		drawField(graphics, font, mouseX, mouseY, 0, "Alias", alias, x, fieldY, w);
@@ -217,7 +217,7 @@ public class CommandShortcutScreen extends Screen {
 	) {
 		boolean focused = field == which;
 		boolean hover = GuiDraw.hovered(mouseX, mouseY, x, y, w, FIELD_H);
-		GuiDraw.panel(graphics, x, y, w, FIELD_H, 5, focused || hover ? Theme.CARD_HOVER : Theme.CARD, focused ? Theme.ACCENT : Theme.LINE);
+		ClickLook.panel(graphics, x, y, w, FIELD_H, 5, focused || hover ? Theme.CARD_HOVER : Theme.CARD, focused ? Theme.ACCENT : Theme.LINE);
 		float labelW = GuiDraw.smallWidth(font, label) + 6;
 		GuiDraw.small(graphics, font, label, x + 6, y + 5, Theme.MUTED);
 		String placeholder = which == 0 ? "hub" : "warp garden";
@@ -243,7 +243,7 @@ public class CommandShortcutScreen extends Screen {
 
 	private void button(GuiGraphicsExtractor graphics, Font font, int mouseX, int mouseY, float x, float y, float w, float h, String label, int color, Runnable click) {
 		boolean hover = GuiDraw.hovered(mouseX, mouseY, x, y, w, h);
-		GuiDraw.panel(graphics, x, y, w, h, 5, hover ? Theme.CARD_HOVER : Theme.CARD, hover ? Theme.ACCENT : Theme.LINE);
+		ClickLook.panel(graphics, x, y, w, h, 5, hover ? Theme.CARD_HOVER : Theme.CARD, hover ? Theme.ACCENT : Theme.LINE);
 		GuiDraw.menu(graphics, font, label, x + (w - GuiDraw.menuWidth(font, label)) * 0.5f, GuiDraw.middle(y, h), color);
 		hits.add(new Hit(x, y, w, h, click));
 	}

@@ -88,8 +88,7 @@ public final class MenuChrome {
 		boolean hover = widget.active && widget.isHoveredOrFocused();
 		boolean compact = widget.getWidth() < 40 || widget.getHeight() < 18;
 		float radius = compact ? 4f : Math.min(7f, widget.getHeight() * 0.42f);
-		int fillRgb = Theme.mix(Theme.CARD, Theme.CARD_HOVER, hover ? 1f : 0f);
-		int fill = Theme.withAlpha(fillRgb, Math.round((((Theme.CARD >>> 24) & 0xFF) + (hover ? 18 : 0)) * alpha));
+		int fill = Theme.withAlpha(ClickLook.FILL, Math.round((hover ? 180 : 136) * alpha));
 		int outline = fade(hover ? Theme.ACCENT : Theme.LINE, alpha);
 		if (ControlChrome.on()) {
 			ControlChrome.glass(
@@ -103,7 +102,7 @@ public final class MenuChrome {
 			);
 			return;
 		}
-		GuiDraw.panel(
+		ClickLook.panel(
 			graphics,
 			widget.getX(),
 			widget.getY(),
@@ -124,7 +123,7 @@ public final class MenuChrome {
 			ControlChrome.glass(graphics, widget.getX(), widget.getY(), widget.getWidth(), widget.getHeight(), 10f, fill);
 			return;
 		}
-		GuiDraw.panel(
+		ClickLook.panel(
 			graphics,
 			widget.getX(),
 			widget.getY(),
@@ -148,14 +147,14 @@ public final class MenuChrome {
 			ControlChrome.slider(graphics, x + 10, y + h * 0.5f - 2.5f, w - 20, 5, (float) Math.max(0d, Math.min(1d, value)));
 			return;
 		}
-		GuiDraw.panel(
+		ClickLook.panel(
 			graphics,
 			x,
 			y,
 			w,
 			h,
 			6f,
-			Theme.withAlpha(Theme.CARD, Math.round(230 * alpha)),
+			Theme.withAlpha(ClickLook.FILL, Math.round(230 * alpha)),
 			fade(hover ? Theme.ACCENT : Theme.LINE, alpha),
 			0
 		);
@@ -174,7 +173,7 @@ public final class MenuChrome {
 	}
 
 	public static void listPanel(GuiGraphicsExtractor graphics, int x, int y, int w, int h) {
-		GuiDraw.panel(graphics, x, y, w, h, 8f, Theme.withAlpha(Theme.WINDOW_SOLID, 160), Theme.LINE, 0);
+		ClickLook.panel(graphics, x, y, w, h, 8f, ClickLook.PANEL, Theme.LINE, 0);
 	}
 
 	public static void listSeparators(GuiGraphicsExtractor graphics, int x, int y, int w, int bottom) {
@@ -183,7 +182,7 @@ public final class MenuChrome {
 	}
 
 	public static void selection(GuiGraphicsExtractor graphics, int x, int y, int w, int h) {
-		GuiDraw.panel(
+		ClickLook.panel(
 			graphics,
 			x,
 			y,

@@ -261,7 +261,7 @@ public class WardrobeScreen extends Screen {
 		if (ControlChrome.on()) {
 			ControlChrome.glass(graphics, windowX, windowY, windowW, windowH, ControlChrome.WINDOW_R, Theme.WINDOW);
 		} else {
-			GuiDraw.rounded(graphics, windowX, windowY, windowW, windowH, Theme.WINDOW_RADIUS, Theme.WINDOW);
+			ClickLook.panel(graphics, windowX, windowY, windowW, windowH, 0, ClickLook.PANEL, Theme.LINE);
 		}
 		Starfield.draw(graphics, windowX, windowY, windowW, windowH, Theme.WINDOW_RADIUS, appear);
 		if (clip) {
@@ -315,7 +315,7 @@ public class WardrobeScreen extends Screen {
 		WardrobeMenus.Piece piece
 	) {
 		boolean hover = GuiDraw.hovered(mouseX, mouseY, x, y, w, 16);
-		GuiDraw.panel(graphics, x, y, w, 16, 5, hover ? Theme.CARD_HOVER : Theme.CARD, hover ? Theme.ACCENT : Theme.LINE);
+		ClickLook.panel(graphics, x, y, w, 16, 5, hover ? Theme.CARD_HOVER : Theme.CARD, hover ? Theme.ACCENT : Theme.LINE);
 		GuiDraw.menu(
 			graphics,
 			font,
@@ -355,7 +355,7 @@ public class WardrobeScreen extends Screen {
 			boolean hover = GuiDraw.hovered(mouseX, mouseY, sx, sy, cellW, cellH);
 			int fill = hover ? Theme.CARD_HOVER : Theme.CARD;
 			int line = selected ? Theme.ACCENT : Theme.LINE;
-			GuiDraw.panel(graphics, sx, sy, cellW, cellH, 8, fill, line);
+			ClickLook.panel(graphics, sx, sy, cellW, cellH, 8, fill, line);
 			String mark = String.valueOf(i + 1);
 			GuiDraw.small(graphics, font, mark, sx + 5, sy + 4, selected ? Theme.ACCENT : Theme.MUTED);
 			float iconRow = armor ? ARMOR_ICON + 6f : 0f;
@@ -451,7 +451,7 @@ public class WardrobeScreen extends Screen {
 		float x = windowX + windowW - 10f - w;
 		float y = windowY + windowH - 8f - h;
 		boolean hover = GuiDraw.hovered(mouseX, mouseY, x, y, w, h);
-		GuiDraw.panel(graphics, x, y, w, h, 5, hover ? Theme.CARD_HOVER : Theme.CARD, hover ? Theme.ACCENT : Theme.LINE);
+		ClickLook.panel(graphics, x, y, w, h, 5, hover ? Theme.CARD_HOVER : Theme.CARD, hover ? Theme.ACCENT : Theme.LINE);
 		GuiDraw.menu(graphics, font, label, x + (w - GuiDraw.menuWidth(font, label)) * 0.5f, GuiDraw.middle(y, h), Theme.TEXT);
 		hits.add(new Hit(x, y, w, h, -1, false, false, true));
 	}

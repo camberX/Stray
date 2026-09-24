@@ -84,7 +84,7 @@ public class AccountScreen extends Screen {
 		if (ControlChrome.on()) {
 			ControlChrome.glass(graphics, x, y, MENU_W, MENU_H, ControlChrome.WINDOW_R, ControlChrome.windowFill());
 		} else {
-			GuiDraw.panel(graphics, x, y, MENU_W, MENU_H, Theme.WINDOW_RADIUS, Theme.WINDOW, Theme.LINE);
+			ClickLook.panel(graphics, x, y, MENU_W, MENU_H, Theme.WINDOW_RADIUS, Theme.WINDOW, Theme.LINE);
 		}
 		GuiDraw.title(graphics, font, "ACCOUNTS", x + PAD, y + 12, ControlChrome.on() ? ControlChrome.text() : Theme.TEXT);
 		String current = AccountStore.currentName();
@@ -175,7 +175,7 @@ public class AccountScreen extends Screen {
 				GuiDraw.roundedOutline(graphics, x, y, w, ROW_H - 4, 10f, outline, 1.4f);
 			}
 		} else {
-			GuiDraw.panel(graphics, x, y, w, ROW_H - 4, 6, fill, outline);
+			ClickLook.panel(graphics, x, y, w, ROW_H - 4, 6, fill, outline);
 		}
 		int text = ControlChrome.on() ? ControlChrome.cardText() : Theme.TEXT;
 		float starCx = x + 12;
@@ -215,7 +215,7 @@ public class AccountScreen extends Screen {
 		if (ControlChrome.on()) {
 			ControlChrome.glass(graphics, x, y, w, BTN_H, 10f, ControlChrome.cardFill());
 		} else {
-			GuiDraw.panel(graphics, x, y, w, BTN_H, 6, Theme.CARD, outline);
+			ClickLook.panel(graphics, x, y, w, BTN_H, 6, Theme.CARD, outline);
 		}
 		String shown = token.isBlank() ? hint : mask(token);
 		int color = token.isBlank() ? Theme.MUTED : (ControlChrome.on() ? ControlChrome.cardText() : Theme.TEXT);
@@ -239,7 +239,7 @@ public class AccountScreen extends Screen {
 		if (ControlChrome.on()) {
 			ControlChrome.glass(graphics, x, y, w, BTN_H, 10f, hovered ? Theme.CARD_HOVER : ControlChrome.cardFill());
 		} else {
-			GuiDraw.panel(graphics, x, y, w, BTN_H, 6, Theme.CARD, hovered ? Theme.ACCENT : Theme.LINE);
+			ClickLook.panel(graphics, x, y, w, BTN_H, 6, Theme.CARD, hovered ? Theme.ACCENT : Theme.LINE);
 		}
 		int text = enabled
 			? (ControlChrome.on() ? ControlChrome.cardText() : Theme.TEXT)

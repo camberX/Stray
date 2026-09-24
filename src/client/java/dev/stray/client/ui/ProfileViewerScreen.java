@@ -192,7 +192,7 @@ public class ProfileViewerScreen extends Screen {
 		if (ControlChrome.on()) {
 			ControlChrome.glass(graphics, windowX, windowY, windowW, windowH, ControlChrome.WINDOW_R, Theme.WINDOW);
 		} else {
-			GuiDraw.rounded(graphics, windowX, windowY, windowW, windowH, Theme.WINDOW_RADIUS, Theme.WINDOW);
+			ClickLook.panel(graphics, windowX, windowY, windowW, windowH, 0, ClickLook.PANEL, Theme.LINE);
 		}
 		Starfield.draw(graphics, windowX, windowY, windowW, windowH, Theme.WINDOW_RADIUS, appear);
 		if (clip) {
@@ -243,7 +243,7 @@ public class ProfileViewerScreen extends Screen {
 		chip(graphics, font, x, windowY + 8, refreshW, mouseX, mouseY, "↻", this::load);
 		x -= fieldW + 4;
 		boolean hover = GuiDraw.hovered(mouseX, mouseY, x, windowY + 8, fieldW, 18);
-		GuiDraw.panel(graphics, x, windowY + 8, fieldW, 18, 5, queryFocused || hover ? Theme.CARD_HOVER : Theme.CARD, queryFocused ? Theme.ACCENT : Theme.LINE);
+		ClickLook.panel(graphics, x, windowY + 8, fieldW, 18, 5, queryFocused || hover ? Theme.CARD_HOVER : Theme.CARD, queryFocused ? Theme.ACCENT : Theme.LINE);
 		String shown = query.isBlank() ? "name" : query;
 		GuiDraw.small(graphics, font, clip(font, shown, fieldW - 10), x + 6, GuiDraw.middle(windowY + 8, 18), query.isBlank() ? Theme.OFF : Theme.TEXT);
 		hits.add(new Hit(x, windowY + 8, fieldW, 18, () -> queryFocused = true));
@@ -258,7 +258,7 @@ public class ProfileViewerScreen extends Screen {
 			float w = GuiDraw.smallWidth(font, label) + 14 + (mode ? 14 : 0);
 			boolean on = i == snap.selected();
 			boolean over = GuiDraw.hovered(mouseX, mouseY, chipX, chipY, w, 16);
-			GuiDraw.panel(graphics, chipX, chipY, w, 16, 5, on || over ? Theme.CARD_HOVER : Theme.CARD, on ? Theme.ACCENT : Theme.LINE);
+			ClickLook.panel(graphics, chipX, chipY, w, 16, 5, on || over ? Theme.CARD_HOVER : Theme.CARD, on ? Theme.ACCENT : Theme.LINE);
 			float textX = chipX + 6;
 			if (mode) {
 				paintItem(graphics, font, new ItemStack(Items.IRON_INGOT), chipX + 3, chipY + 1, 14, false);
@@ -288,7 +288,7 @@ public class ProfileViewerScreen extends Screen {
 			boolean hover = GuiDraw.hovered(mouseX, mouseY, x, y, w, 26);
 			int fill = on ? Theme.withAlpha(Theme.ACCENT, 38) : hover ? Theme.CARD_HOVER : Theme.CARD;
 			int line = on ? Theme.ACCENT : Theme.LINE;
-			GuiDraw.panel(graphics, x, y, w, 26, 7, fill, line);
+			ClickLook.panel(graphics, x, y, w, 26, 7, fill, line);
 			int color = on ? Theme.ACCENT : Theme.TEXT;
 			GuiDraw.icon(graphics, font, value.icon, x + 8, GuiDraw.middle(y, 26) - 1, color);
 			GuiDraw.menu(graphics, font, value.label, x + 24, GuiDraw.middle(y, 26), color);
@@ -307,7 +307,7 @@ public class ProfileViewerScreen extends Screen {
 		float y = windowY + 52;
 		float w = windowW - RAIL - 18;
 		float h = windowH - 62;
-		GuiDraw.panel(graphics, x, y, w, h, 8, Theme.PANEL, Theme.LINE);
+		ClickLook.panel(graphics, x, y, w, h, 8, Theme.PANEL, Theme.LINE);
 		ProfileViewer.Status status = ProfileViewer.status();
 		if (status == ProfileViewer.Status.LOADING) {
 			GuiDraw.menu(graphics, font, "Loading " + (query.isBlank() ? "profile" : query) + "...", x + 12, y + 14, Theme.MUTED);
@@ -429,7 +429,7 @@ public class ProfileViewerScreen extends Screen {
 		ProfileViewer.Profile profile
 	) {
 		float stageH = Math.min(h - 2, w * 1.55f);
-		GuiDraw.panel(graphics, x, y, w, stageH, 8, Theme.CARD, Theme.LINE);
+		ClickLook.panel(graphics, x, y, w, stageH, 8, Theme.CARD, Theme.LINE);
 		if (ironman(profile)) {
 			paintItem(graphics, font, new ItemStack(Items.IRON_INGOT), x + 8, y + 8, 16, false);
 		}
@@ -730,7 +730,7 @@ public class ProfileViewerScreen extends Screen {
 				ProfileViewer.Collection collection = group.get(i);
 				boolean hover = GuiDraw.hovered(mouseX, mouseY, cx, cy, cardW, cardH)
 					&& GuiDraw.hovered(mouseX, mouseY, left, top, gridW, gridH);
-				GuiDraw.panel(graphics, cx, cy, cardW, cardH, 8, hover ? Theme.CARD_HOVER : Theme.CARD, hover ? Theme.ACCENT : Theme.LINE);
+				ClickLook.panel(graphics, cx, cy, cardW, cardH, 8, hover ? Theme.CARD_HOVER : Theme.CARD, hover ? Theme.ACCENT : Theme.LINE);
 				ItemStack icon = collectionIcon(collection.id());
 				paintItem(graphics, font, icon, cx + 8, cy + 16, 20, false);
 				int nameColor = collection.maxed() ? gold : Theme.MUTED;
@@ -778,7 +778,7 @@ public class ProfileViewerScreen extends Screen {
 		float px = x + pad;
 		float py = y + pad;
 		float ph = h - pad * 2;
-		GuiDraw.panel(graphics, px, py, previewW, ph, 8, Theme.CARD, Theme.LINE);
+		ClickLook.panel(graphics, px, py, previewW, ph, 8, Theme.CARD, Theme.LINE);
 		if (shown != null) {
 			ItemStack icon = petStack(shown);
 			paintItem(graphics, font, icon, px + (previewW - 64) * 0.5f, py + 22, 64, false);
@@ -809,7 +809,7 @@ public class ProfileViewerScreen extends Screen {
 			float cy = gy + row * cell;
 			boolean on = shown == pet;
 			boolean hover = GuiDraw.hovered(mouseX, mouseY, cx, cy, cell - 3, cell - 3);
-			GuiDraw.panel(
+			ClickLook.panel(
 				graphics,
 				cx,
 				cy,
@@ -883,7 +883,7 @@ public class ProfileViewerScreen extends Screen {
 				float pw = GuiDraw.smallWidth(font, label) + 12;
 				boolean on = i == itemPage;
 				boolean over = GuiDraw.hovered(mouseX, mouseY, px, pageY, pw, 16);
-				GuiDraw.panel(graphics, px, pageY, pw, 16, 5, on || over ? Theme.CARD_HOVER : Theme.CARD, on ? Theme.ACCENT : Theme.LINE);
+				ClickLook.panel(graphics, px, pageY, pw, 16, 5, on || over ? Theme.CARD_HOVER : Theme.CARD, on ? Theme.ACCENT : Theme.LINE);
 				GuiDraw.small(graphics, font, label, px + 6, GuiDraw.middle(pageY, 16), on ? Theme.ACCENT : Theme.TEXT);
 				int page = i;
 				hits.add(new Hit(px, pageY, pw, 16, () -> itemPage = page));
@@ -945,7 +945,7 @@ public class ProfileViewerScreen extends Screen {
 	) {
 		float w = GuiDraw.smallWidth(font, label) + 14;
 		boolean over = GuiDraw.hovered(mouseX, mouseY, x, y, w, 16);
-		GuiDraw.panel(graphics, x, y, w, 16, 5, on || over ? Theme.CARD_HOVER : Theme.CARD, on ? Theme.ACCENT : Theme.LINE);
+		ClickLook.panel(graphics, x, y, w, 16, 5, on || over ? Theme.CARD_HOVER : Theme.CARD, on ? Theme.ACCENT : Theme.LINE);
 		GuiDraw.small(graphics, font, label, x + 7, GuiDraw.middle(y, 16), on ? Theme.ACCENT : Theme.TEXT);
 		hits.add(new Hit(x, y, w, 16, click));
 		return x + w + 5;
@@ -997,7 +997,7 @@ public class ProfileViewerScreen extends Screen {
 		ProfileViewer.SlotItem item
 	) {
 		boolean hover = GuiDraw.hovered(mouseX, mouseY, x, y, slot, slot);
-		GuiDraw.panel(graphics, x, y, slot, slot, 6, hover ? Theme.CARD_HOVER : Theme.CARD, hover ? Theme.ACCENT : Theme.LINE);
+		ClickLook.panel(graphics, x, y, slot, slot, 6, hover ? Theme.CARD_HOVER : Theme.CARD, hover ? Theme.ACCENT : Theme.LINE);
 		if (item == null || item.empty()) {
 			return;
 		}
@@ -1177,7 +1177,7 @@ public class ProfileViewerScreen extends Screen {
 				return cy;
 			}
 			boolean hover = GuiDraw.hovered(mouseX, mouseY, cx, cy, cw, CHIP_H);
-			GuiDraw.panel(graphics, cx, cy, cw, CHIP_H, 6, hover ? Theme.CARD_HOVER : Theme.CARD, hover ? Theme.ACCENT : Theme.LINE);
+			ClickLook.panel(graphics, cx, cy, cw, CHIP_H, 6, hover ? Theme.CARD_HOVER : Theme.CARD, hover ? Theme.ACCENT : Theme.LINE);
 			paintItem(graphics, font, skillIcon(skill.name()), cx + 3, cy + 3, 16, false);
 			GuiDraw.small(graphics, font, level, cx + 22, GuiDraw.middle(cy, CHIP_H), Theme.TEXT);
 			if (hover) {
@@ -1212,7 +1212,7 @@ public class ProfileViewerScreen extends Screen {
 				return cy;
 			}
 			boolean hover = GuiDraw.hovered(mouseX, mouseY, cx, cy, cw, CHIP_H);
-			GuiDraw.panel(graphics, cx, cy, cw, CHIP_H, 6, hover ? Theme.CARD_HOVER : Theme.CARD, hover ? Theme.ACCENT : Theme.LINE);
+			ClickLook.panel(graphics, cx, cy, cw, CHIP_H, 6, hover ? Theme.CARD_HOVER : Theme.CARD, hover ? Theme.ACCENT : Theme.LINE);
 			paintItem(graphics, font, slayerIcon(slayer.name()), cx + 3, cy + 3, 16, false);
 			GuiDraw.small(graphics, font, level, cx + 22, GuiDraw.middle(cy, CHIP_H), Theme.TEXT);
 			if (hover) {
@@ -1247,7 +1247,7 @@ public class ProfileViewerScreen extends Screen {
 				return cy;
 			}
 			boolean hover = GuiDraw.hovered(mouseX, mouseY, cx, cy, cw, CHIP_H);
-			GuiDraw.panel(graphics, cx, cy, cw, CHIP_H, 6, hover ? Theme.CARD_HOVER : Theme.CARD, hover ? Theme.ACCENT : Theme.LINE);
+			ClickLook.panel(graphics, cx, cy, cw, CHIP_H, 6, hover ? Theme.CARD_HOVER : Theme.CARD, hover ? Theme.ACCENT : Theme.LINE);
 			paintItem(graphics, font, classIcon(skill.name()), cx + 3, cy + 3, 16, false);
 			GuiDraw.small(graphics, font, level, cx + 22, GuiDraw.middle(cy, CHIP_H), Theme.TEXT);
 			if (hover) {
@@ -1280,7 +1280,7 @@ public class ProfileViewerScreen extends Screen {
 
 	private void chip(GuiGraphicsExtractor graphics, Font font, float x, float y, float w, int mouseX, int mouseY, String label, Runnable click) {
 		boolean hover = GuiDraw.hovered(mouseX, mouseY, x, y, w, 18);
-		GuiDraw.panel(graphics, x, y, w, 18, 5, hover ? Theme.CARD_HOVER : Theme.CARD, hover ? Theme.ACCENT : Theme.LINE);
+		ClickLook.panel(graphics, x, y, w, 18, 5, hover ? Theme.CARD_HOVER : Theme.CARD, hover ? Theme.ACCENT : Theme.LINE);
 		GuiDraw.menu(graphics, font, label, x + (w - GuiDraw.menuWidth(font, label)) * 0.5f, GuiDraw.middle(y, 18), Theme.TEXT);
 		hits.add(new Hit(x, y, w, 18, click));
 	}

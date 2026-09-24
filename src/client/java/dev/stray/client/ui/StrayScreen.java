@@ -1198,7 +1198,7 @@ public class StrayScreen extends Screen {
 		mobFieldY = searchY;
 		mobFieldW = innerW(width);
 		boolean hoverSearch = GuiDraw.hovered(mouseX, mouseY, mobFieldX, mobFieldY, mobFieldW, 14);
-		GuiDraw.panel(graphics, mobFieldX, mobFieldY, mobFieldW, 14, 5, mobSearchFocused || hoverSearch ? Theme.CARD_HOVER : Theme.PANEL, mobSearchFocused ? Theme.ACCENT : Theme.LINE);
+		ClickLook.panel(graphics, mobFieldX, mobFieldY, mobFieldW, 14, 5, mobSearchFocused || hoverSearch ? Theme.CARD_HOVER : Theme.PANEL, mobSearchFocused ? Theme.ACCENT : Theme.LINE);
 		String shown = mobQuery.isEmpty() && !mobSearchFocused ? "Search mobs..." : mobQuery + (mobSearchFocused ? "|" : "");
 		GuiDraw.menu(graphics, font, clip(font, shown, (int) mobFieldW - 10), mobFieldX + 5, GuiDraw.middle(mobFieldY, 14), mobQuery.isEmpty() && !mobSearchFocused ? fade() : ink());
 		hits.add(new Hit(mobFieldX, mobFieldY, mobFieldW, 14, () -> {
@@ -1373,7 +1373,7 @@ public class StrayScreen extends Screen {
 		nickFieldY = y;
 		nickFieldW = iw;
 		boolean hoverNick = GuiDraw.hovered(mouseX, mouseY, rx, y, iw, 16);
-		GuiDraw.panel(graphics, rx, y, iw, 16, 5, nickFocused || hoverNick ? Theme.CARD_HOVER : Theme.CARD, nickFocused ? Theme.ACCENT : Theme.LINE);
+		ClickLook.panel(graphics, rx, y, iw, 16, 5, nickFocused || hoverNick ? Theme.CARD_HOVER : Theme.CARD, nickFocused ? Theme.ACCENT : Theme.LINE);
 		NickHider.suppress();
 		String raw = config.nick == null ? "" : config.nick;
 		String shown = raw.isEmpty() && !nickFocused ? "Nick  (&6Name)" : raw + (nickFocused ? "|" : "");
@@ -1409,7 +1409,7 @@ public class StrayScreen extends Screen {
 		stealFieldY = y;
 		stealFieldW = iw;
 		boolean hoverSteal = GuiDraw.hovered(mouseX, mouseY, rx, y, iw, ROW);
-		GuiDraw.panel(graphics, rx, y, iw, ROW, 5, stealFocused || hoverSteal ? Theme.CARD_HOVER : Theme.CARD, stealFocused ? Theme.ACCENT : Theme.LINE);
+		ClickLook.panel(graphics, rx, y, iw, ROW, 5, stealFocused || hoverSteal ? Theme.CARD_HOVER : Theme.CARD, stealFocused ? Theme.ACCENT : Theme.LINE);
 		NickHider.suppress();
 		String stealShown = stealDraft.isEmpty() && !stealFocused ? "Username, Enter to steal" : stealDraft + (stealFocused ? "|" : "");
 		GuiDraw.menu(graphics, font, clip(font, stealShown, (int) iw - 12), rx + 5, GuiDraw.middle(y, ROW), stealDraft.isEmpty() && !stealFocused ? Theme.MUTED : Theme.TEXT);
@@ -1427,7 +1427,7 @@ public class StrayScreen extends Screen {
 		y += ROW;
 		if (NickSteal.status() != NickSteal.Status.OFF) {
 			boolean hoverStop = GuiDraw.hovered(mouseX, mouseY, rx, y, iw, ROW);
-			GuiDraw.panel(graphics, rx, y + 1, iw, ROW - 2, 5, hoverStop ? Theme.CARD_HOVER : Theme.CARD, Theme.LINE);
+			ClickLook.panel(graphics, rx, y + 1, iw, ROW - 2, 5, hoverStop ? Theme.CARD_HOVER : Theme.CARD, Theme.LINE);
 			GuiDraw.menu(graphics, font, "Stop stealing", rx + 5, GuiDraw.middle(y, ROW), Theme.TEXT);
 			hits.add(new Hit(rx, y, iw, ROW, () -> {
 				stealDraft = "";
@@ -1474,7 +1474,7 @@ public class StrayScreen extends Screen {
 			String shop = ShopCape.publishStatus();
 			GuiDraw.small(graphics, font, shop.isBlank() ? ShopCape.lockLabel() : shop, rx, y + 2, Theme.WARN);
 			y += ROW;
-			GuiDraw.panel(graphics, rx, y + 1, iw, ROW - 2, 5, Theme.CARD, Theme.LINE);
+			ClickLook.panel(graphics, rx, y + 1, iw, ROW - 2, 5, Theme.CARD, Theme.LINE);
 			GuiDraw.menu(graphics, font, "Cape locked", rx + 5, GuiDraw.middle(y, ROW), Theme.MUTED);
 			y += ROW;
 			capeRefreshRow(graphics, font, mouseX, mouseY, rx, y, iw);
@@ -1489,7 +1489,7 @@ public class StrayScreen extends Screen {
 		capeFieldY = y;
 		capeFieldW = iw;
 		boolean hoverField = GuiDraw.hovered(mouseX, mouseY, rx, y, iw, ROW);
-		GuiDraw.panel(graphics, rx, y, iw, ROW, 4, capeFocused || hoverField ? Theme.CARD_HOVER : Theme.CARD, capeFocused ? Theme.ACCENT : Theme.LINE);
+		ClickLook.panel(graphics, rx, y, iw, ROW, 4, capeFocused || hoverField ? Theme.CARD_HOVER : Theme.CARD, capeFocused ? Theme.ACCENT : Theme.LINE);
 		NickHider.suppress();
 		String shown = capeUrlDraft.isEmpty() && !capeFocused ? "https://...png" : capeUrlDraft + (capeFocused ? "|" : "");
 		GuiDraw.menu(graphics, font, clip(font, shown, (int) iw - 10), rx + 5, GuiDraw.middle(y, ROW), capeUrlDraft.isEmpty() && !capeFocused ? Theme.MUTED : Theme.TEXT);
@@ -1504,19 +1504,19 @@ public class StrayScreen extends Screen {
 
 		boolean picking = CustomCape.picking();
 		boolean hoverFile = !picking && GuiDraw.hovered(mouseX, mouseY, rx, y, iw, ROW);
-		GuiDraw.panel(graphics, rx, y + 1, iw, ROW - 2, 5, hoverFile ? Theme.CARD_HOVER : Theme.CARD, Theme.LINE);
+		ClickLook.panel(graphics, rx, y + 1, iw, ROW - 2, 5, hoverFile ? Theme.CARD_HOVER : Theme.CARD, Theme.LINE);
 		GuiDraw.menu(graphics, font, picking ? "Selecting…" : "Local file...", rx + 5, GuiDraw.middle(y, ROW), picking ? Theme.MUTED : Theme.TEXT);
 		hits.add(new Hit(rx, y, iw, ROW, CustomCape::pickLocal));
 		y += ROW;
 
 		boolean hoverCreate = !picking && GuiDraw.hovered(mouseX, mouseY, rx, y, iw, ROW);
-		GuiDraw.panel(graphics, rx, y + 1, iw, ROW - 2, 5, hoverCreate ? Theme.CARD_HOVER : Theme.CARD, Theme.LINE);
+		ClickLook.panel(graphics, rx, y + 1, iw, ROW - 2, 5, hoverCreate ? Theme.CARD_HOVER : Theme.CARD, Theme.LINE);
 		GuiDraw.menu(graphics, font, picking ? "Selecting…" : "Create cape...", rx + 5, GuiDraw.middle(y, ROW), picking ? Theme.MUTED : Theme.TEXT);
 		hits.add(new Hit(rx, y, iw, ROW, CustomCape::pickCreate));
 		y += ROW;
 
 		boolean hoverClear = GuiDraw.hovered(mouseX, mouseY, rx, y, iw, ROW);
-		GuiDraw.panel(graphics, rx, y + 1, iw, ROW - 2, 5, hoverClear ? Theme.CARD_HOVER : Theme.CARD, Theme.LINE);
+		ClickLook.panel(graphics, rx, y + 1, iw, ROW - 2, 5, hoverClear ? Theme.CARD_HOVER : Theme.CARD, Theme.LINE);
 		GuiDraw.menu(graphics, font, "Remove cape", rx + 5, GuiDraw.middle(y, ROW), Theme.TEXT);
 		hits.add(new Hit(rx, y, iw, ROW, () -> {
 			capeUrlDraft = "";
@@ -1529,7 +1529,7 @@ public class StrayScreen extends Screen {
 	private void capeRefreshRow(GuiGraphicsExtractor graphics, Font font, int mouseX, int mouseY, float rx, float y, float iw) {
 		boolean ready = ShopCape.refreshReady();
 		boolean hover = ready && GuiDraw.hovered(mouseX, mouseY, rx, y, iw, ROW);
-		GuiDraw.panel(graphics, rx, y + 1, iw, ROW - 2, 5, hover ? Theme.CARD_HOVER : Theme.CARD, Theme.LINE);
+		ClickLook.panel(graphics, rx, y + 1, iw, ROW - 2, 5, hover ? Theme.CARD_HOVER : Theme.CARD, Theme.LINE);
 		GuiDraw.menu(graphics, font, ShopCape.refreshLabel(), rx + 5, GuiDraw.middle(y, ROW), ready ? Theme.TEXT : Theme.MUTED);
 		hits.add(new Hit(rx, y, iw, ROW, ShopCape::refreshAll));
 	}
@@ -1847,7 +1847,7 @@ public class StrayScreen extends Screen {
 
 		float labelY = GuiDraw.middle(y, 14);
 		boolean hudHover = GuiDraw.hovered(mouseX, mouseY, x, y, ACTION_W, 14);
-		GuiDraw.panel(graphics, x, y, ACTION_W, 14, 5, hudHover ? Theme.CARD_HOVER : Theme.CARD, Theme.LINE);
+		ClickLook.panel(graphics, x, y, ACTION_W, 14, 5, hudHover ? Theme.CARD_HOVER : Theme.CARD, Theme.LINE);
 		GuiDraw.menu(graphics, font, "HUD", x + (ACTION_W - GuiDraw.menuWidth(font, "HUD")) / 2f, labelY, Theme.TEXT);
 		hits.add(new Hit(x, y, ACTION_W, 14, () -> minecraft.setScreen(new HudEditorScreen())));
 
@@ -1857,7 +1857,7 @@ public class StrayScreen extends Screen {
 		searchFieldW = Mth.lerp(searchT, 72, Math.max(72, searchMax));
 
 		if (searchT > 0.08f) {
-			GuiDraw.panel(graphics, searchFieldX, y, searchFieldW, 14, 5, Theme.CARD_HOVER, Theme.ACCENT);
+			ClickLook.panel(graphics, searchFieldX, y, searchFieldW, 14, 5, Theme.CARD_HOVER, Theme.ACCENT);
 			String shown = searchQuery.isEmpty() ? "Search settings..." : searchQuery + (searchOpen ? "|" : "");
 			int color = searchQuery.isEmpty() ? Theme.MUTED : Theme.TEXT;
 			GuiDraw.menu(graphics, font, clip(font, shown, (int) searchFieldW - 10), searchFieldX + 6, labelY, color);
@@ -1947,7 +1947,7 @@ public class StrayScreen extends Screen {
 			if (controlCenter()) {
 				ControlChrome.sheet(graphics, searchFieldX, top, searchFieldW, 20);
 			} else {
-				GuiDraw.panel(graphics, searchFieldX, top, searchFieldW, 20, 6, Anim.fade(Theme.PANEL, searchT), Theme.LINE);
+				ClickLook.panel(graphics, searchFieldX, top, searchFieldW, 20, 6, Anim.fade(Theme.PANEL, searchT), Theme.LINE);
 			}
 			GuiDraw.menu(graphics, font, "No matches", searchFieldX + 8, GuiDraw.middle(top, 20), controlCenter() ? ControlChrome.muted() : Theme.MUTED);
 			return;
@@ -1956,7 +1956,7 @@ public class StrayScreen extends Screen {
 		if (controlCenter()) {
 			ControlChrome.sheet(graphics, searchFieldX, top, searchFieldW, h);
 		} else {
-			GuiDraw.panel(graphics, searchFieldX, top, searchFieldW, h, 6, Anim.fade(Theme.PANEL, searchT), Theme.LINE);
+			ClickLook.panel(graphics, searchFieldX, top, searchFieldW, h, 6, Anim.fade(Theme.PANEL, searchT), Theme.LINE);
 		}
 		float iy = top + 3;
 		for (SearchEntry entry : matches) {
@@ -2101,7 +2101,7 @@ public class StrayScreen extends Screen {
 		y += 12;
 		float rowY = y;
 		boolean hover = GuiDraw.hovered(mouseX, mouseY, x, rowY, w, ROW);
-		GuiDraw.panel(graphics, x, rowY + 1, w, ROW - 2, 5, hover || fontPickerOpen ? Theme.CARD_HOVER : Theme.CARD, fontPickerOpen ? Theme.ACCENT : Theme.LINE);
+		ClickLook.panel(graphics, x, rowY + 1, w, ROW - 2, 5, hover || fontPickerOpen ? Theme.CARD_HOVER : Theme.CARD, fontPickerOpen ? Theme.ACCENT : Theme.LINE);
 		GuiDraw.menu(graphics, font, clip(font, currentFontLabel(), (int) w - 18), x + 5, GuiDraw.middle(rowY, ROW), Theme.TEXT);
 		GuiDraw.small(graphics, font, fontPickerOpen ? "^" : "v", x + w - 8 - GuiDraw.smallWidth(font, fontPickerOpen ? "^" : "v"), GuiDraw.middle(rowY, ROW) + 1, Theme.MUTED);
 		hits.add(new Hit(x, rowY, w, ROW, () -> {
@@ -2120,7 +2120,7 @@ public class StrayScreen extends Screen {
 		fontListY = searchY + FONT_SEARCH_H + 2;
 		fontListW = w;
 		fontListH = FONT_VISIBLE * FONT_ROW;
-		GuiDraw.panel(graphics, x, searchY, w, FONT_SEARCH_H + 2 + fontListH + 2, 5, Theme.CARD, Theme.LINE);
+		ClickLook.panel(graphics, x, searchY, w, FONT_SEARCH_H + 2 + fontListH + 2, 5, Theme.CARD, Theme.LINE);
 		boolean searchHover = GuiDraw.hovered(mouseX, mouseY, x, searchY, w, FONT_SEARCH_H);
 		if (fontSearchFocused || searchHover) {
 			GuiDraw.rounded(graphics, x + 1, searchY + 1, w - 2, FONT_SEARCH_H - 1, 4, Theme.CARD_HOVER);
@@ -3118,7 +3118,7 @@ public class StrayScreen extends Screen {
 			}
 			return headY + cardHead();
 		}
-		GuiDraw.panel(graphics, x, y, w, h, Math.min(14f, h / 2f), Theme.CARD, Theme.LINE);
+		ClickLook.panel(graphics, x, y, w, h, Math.min(14f, h / 2f), Theme.CARD, Theme.LINE);
 		pageExtent = Math.max(pageExtent, y + h);
 		GuiDraw.small(graphics, font, title, x + CARD_PAD, y + 5, Theme.HEADER);
 		GuiDraw.hline(graphics, x + CARD_PAD, y + 16, w - CARD_PAD * 2, Theme.LINE);
@@ -3428,7 +3428,7 @@ public class StrayScreen extends Screen {
 	) {
 		float row = rowH();
 		boolean hover = GuiDraw.hovered(mouseX, mouseY, x, y, w, row);
-		GuiDraw.panel(graphics, x, y + 1, w, row - 2, 4, focused || hover ? Theme.CARD_HOVER : Theme.CARD, focused ? Theme.ACCENT : Theme.LINE);
+		ClickLook.panel(graphics, x, y + 1, w, row - 2, 4, focused || hover ? Theme.CARD_HOVER : Theme.CARD, focused ? Theme.ACCENT : Theme.LINE);
 		GuiDraw.menu(graphics, font, clip(font, shown, (int) w - 8), x + 4, GuiDraw.middle(y, row), placeholder ? fade() : ink());
 		hits.add(new Hit(x, y, w, row, focus));
 		return y + row;
@@ -3437,7 +3437,7 @@ public class StrayScreen extends Screen {
 	private float clickButton(GuiGraphicsExtractor graphics, Font font, float x, float y, float w, int mouseX, int mouseY, String label, Runnable action) {
 		float row = rowH();
 		boolean hover = GuiDraw.hovered(mouseX, mouseY, x, y, w, row);
-		GuiDraw.panel(graphics, x, y + 1, w, row - 2, 4, hover ? Theme.CARD_HOVER : Theme.CARD, Theme.LINE);
+		ClickLook.panel(graphics, x, y + 1, w, row - 2, 4, hover ? Theme.CARD_HOVER : Theme.CARD, Theme.LINE);
 		GuiDraw.menu(graphics, font, clip(font, label, (int) w - 8), x + 4, GuiDraw.middle(y, row), ink());
 		hits.add(new Hit(x, y, w, row, action));
 		return y + row;
@@ -3963,7 +3963,7 @@ public class StrayScreen extends Screen {
 				GuiDraw.rounded(graphics, cx, rowY + 1, cw, ROW - 2, 7, on ? Theme.ACCENT : hover ? 0x33FFFFFF : ControlChrome.searchFill());
 				GuiDraw.menu(graphics, font, labels[i], cx + 5, GuiDraw.middle(rowY, ROW), on ? 0xFFFFFFFF : ink());
 			} else {
-				GuiDraw.panel(graphics, cx, rowY + 1, cw, ROW - 2, 5, on ? Theme.ACCENT : hover ? Theme.CARD_HOVER : Theme.CARD, on ? Theme.ACCENT : Theme.LINE);
+				ClickLook.panel(graphics, cx, rowY + 1, cw, ROW - 2, 5, on ? Theme.ACCENT : hover ? Theme.CARD_HOVER : Theme.CARD, on ? Theme.ACCENT : Theme.LINE);
 				GuiDraw.menu(graphics, font, labels[i], cx + 5, GuiDraw.middle(rowY, ROW), on ? Theme.WINDOW_SOLID : Theme.TEXT);
 			}
 			int index = i;

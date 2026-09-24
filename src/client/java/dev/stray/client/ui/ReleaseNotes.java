@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.5.7", new String[]{
+			"The main menu, custom screens, and stray.gay use the click GUI boxes. The title screen keeps its backdrop. Click GUI stays the default menu."
+		}),
 		new Entry("1.5.6", new String[]{
 			"Top down uses your normal field of view. Ceilings are cut out only within 6 blocks of you, you stay visible, and block-outline shaders are left alone."
 		}),

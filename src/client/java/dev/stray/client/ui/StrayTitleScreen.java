@@ -29,10 +29,10 @@ import java.util.Map;
  * Stray title screen: dark starfield, tall pane buttons, no dirt background.
  */
 public class StrayTitleScreen extends Screen {
-	private static final float BUTTON_W = 252;
-	private static final float BUTTON_H = 32;
-	private static final float BUTTON_GAP = 8;
-	private static final float SPLIT_GAP = 8;
+	private static final float BUTTON_W = 168;
+	private static final float BUTTON_H = 16;
+	private static final float BUTTON_GAP = 2;
+	private static final float SPLIT_GAP = 2;
 
 	private final List<Hit> hits = new ArrayList<>();
 	private final Map<String, Float> hovers = new HashMap<>();
@@ -71,10 +71,6 @@ public class StrayTitleScreen extends Screen {
 	@Override
 	public void extractBackground(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float delta) {
 		TitleBackdrop.draw(graphics, width, height);
-		if (!ControlChrome.on()) {
-			GuiDraw.fill(graphics, 0, 0, width, 48, 0x66000000);
-			GuiDraw.fill(graphics, 0, height - 36, width, 36, 0x88000000);
-		}
 	}
 
 	@Override
@@ -87,34 +83,19 @@ public class StrayTitleScreen extends Screen {
 
 		float colW = BUTTON_W;
 		float colX = (width - colW) * 0.5f;
-		float stackH = BUTTON_H * 3 + BUTTON_GAP * 2 + 14 + BUTTON_H;
-		float colY = Mth.clamp((height - stackH) * 0.42f, 56, height - stackH - 48);
+		float stackH = 16 + BUTTON_GAP + BUTTON_H * 3 + BUTTON_GAP * 2 + 6 + BUTTON_H;
+		float colY = Mth.clamp((height - stackH) * 0.42f, 48, height - stackH - 40);
 
-		if (ControlChrome.on()) {
-			float pad = 22f;
-			ControlChrome.glass(
-				graphics,
-				colX - pad,
-				colY - 50,
-				colW + pad * 2,
-				stackH + 74,
-				ControlChrome.WINDOW_R,
-				Anim.fade(ControlChrome.windowFill(), fade)
-			);
-		}
-
-		int title = ControlChrome.on() ? ControlChrome.text() : Theme.TEXT;
-		int accent = Theme.ACCENT;
-		GuiDraw.title(graphics, font, "STRAY", colX, colY - 28, Anim.fade(title, fade));
-		GuiDraw.rounded(graphics, colX, colY - 14, 18, 2, 1, Anim.fade(accent, fade));
+		ClickLook.panel(graphics, colX, colY - 18, colW, 16, 0, ClickLook.PANEL, Theme.LINE);
+		GuiDraw.text(graphics, font, "STRAY", colX + 4, colY - 18 + (16 - font.lineHeight) * 0.5f, Anim.fade(ClickLook.TEXT, fade), true);
 		String ver = "v" + modVersion();
-		GuiDraw.small(graphics, font, ver, colX + 22, colY - 16, Anim.fade(accent, fade));
+		GuiDraw.text(graphics, font, ver, colX + colW - 4 - font.width(ver), colY - 18 + (16 - font.lineHeight) * 0.5f, Anim.fade(ClickLook.DIM, fade), true);
 
 		float y = colY;
 		y = button(graphics, font, mouseX, mouseY, colX, y, colW, "Singleplayer", true, fade, this::openSingleplayer);
 		y = button(graphics, font, mouseX, mouseY, colX, y, colW, "Multiplayer", multiplayerOpen(), fade, this::openMultiplayer);
 		y = button(graphics, font, mouseX, mouseY, colX, y, colW, "Accounts", true, fade, this::openAccounts);
-		y += 6;
+		y += 4;
 		float half = (colW - SPLIT_GAP) * 0.5f;
 		button(graphics, font, mouseX, mouseY, colX, y, half, "Options", true, fade, this::openOptions);
 		button(graphics, font, mouseX, mouseY, colX + half + SPLIT_GAP, y, half, "Quit", true, fade, this::quit);
@@ -158,19 +139,12 @@ public class StrayTitleScreen extends Screen {
 		Runnable action
 	) {
 		boolean hovered = enabled && GuiDraw.hovered(mouseX, mouseY, x, y, w, BUTTON_H);
-		float hover = anim("btn-" + label, hovered ? 1f : 0f);
-		int fill = Theme.withAlpha(Theme.mix(Theme.CARD, Theme.CARD_HOVER, hover), (Theme.CARD >>> 24) & 0xFF);
-		int outline = hover > 0.55f ? Theme.ACCENT : Theme.LINE;
-		if (ControlChrome.on()) {
-			int pill = hover > 0.4f ? Theme.CARD_HOVER : ControlChrome.cardFill();
-			ControlChrome.glass(graphics, x, y, w, BUTTON_H, 14f, Anim.fade(pill, fade));
-		} else {
-			GuiDraw.panel(graphics, x, y, w, BUTTON_H, 7, Anim.fade(fill, fade), Anim.fade(outline, fade), enabled ? Theme.ACCENT : 0);
-		}
-		int text = enabled
-			? (ControlChrome.on() ? ControlChrome.cardText() : Theme.TEXT)
-			: (ControlChrome.on() ? ControlChrome.cardMuted() : Theme.MUTED);
-		GuiDraw.menu(graphics, font, label, x + 14, GuiDraw.middle(y, BUTTON_H), Anim.fade(text, fade));
+		int outline = hovered ? Theme.ACCENT : Theme.LINE;
+		int fill = enabled ? ClickLook.FILL : 0x44000000;
+		ClickLook.panel(graphics, x, y, w, BUTTON_H, 0, Anim.fade(fill, fade), outline);
+		int text = enabled ? (hovered ? ClickLook.TEXT : ClickLook.TEXT) : ClickLook.DIM;
+		float textX = x + (w - font.width(label)) * 0.5f;
+		GuiDraw.text(graphics, font, label, textX, y + (BUTTON_H - font.lineHeight) * 0.5f, Anim.fade(text, fade), true);
 		if (enabled) {
 			hits.add(new Hit(x, y, w, BUTTON_H, action));
 		}

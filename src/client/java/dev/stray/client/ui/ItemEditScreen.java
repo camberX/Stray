@@ -88,14 +88,14 @@ public class ItemEditScreen extends Screen {
 		refresh();
 
 		GuiDraw.fill(graphics, 0, 0, width, height, 0x14000000);
-		GuiDraw.panel(graphics, windowX, windowY, windowW, windowH, Theme.WINDOW_RADIUS, Theme.WINDOW, Theme.LINE);
+		ClickLook.panel(graphics, windowX, windowY, windowW, windowH, Theme.WINDOW_RADIUS, Theme.WINDOW, Theme.LINE);
 		GuiDraw.title(graphics, font, "ITEM", windowX + 12, windowY + 8, Theme.TEXT);
 		GuiDraw.small(graphics, font, "ID", windowX + 12 + GuiDraw.titleWidth(font, "ITEM") + 4, windowY + 10, Theme.ACCENT);
 		hits.add(new Hit(windowX, windowY, windowW, 22, mx -> startDrag()));
 
 		float slotX = windowX + (windowW - SLOT) * 0.5f;
 		float slotY = windowY + 28;
-		GuiDraw.panel(graphics, slotX, slotY, SLOT, SLOT, 8, Theme.TRACK, Theme.LINE);
+		ClickLook.panel(graphics, slotX, slotY, SLOT, SLOT, 8, Theme.TRACK, Theme.LINE);
 		ItemStack stack = previewStack();
 		if (!stack.isEmpty()) {
 			float scale = 3f;
@@ -150,7 +150,7 @@ public class ItemEditScreen extends Screen {
 		fieldY = slotY + SLOT + 32;
 		fieldW = windowW - 24;
 		boolean hoverField = GuiDraw.hovered(mouseX, mouseY, fieldX, fieldY, fieldW, FIELD_H);
-		GuiDraw.panel(
+		ClickLook.panel(
 			graphics,
 			fieldX,
 			fieldY,
