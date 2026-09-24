@@ -245,6 +245,7 @@ public final class StrayConfig {
 	public boolean superpairsSkipBottles = false;
 	public boolean superpairsSkipPets = false;
 	public boolean disabledPotionsHighlight = false;
+	public boolean sackRecipe = true;
 	public float hitmarkerScale = 1.00f;
 	public float hitsoundVolume = 0.80f;
 	public float hitsoundPitch = 1.00f;
@@ -1097,6 +1098,9 @@ public final class StrayConfig {
 				}
 				if (!json.has("disabledPotionsHighlight")) {
 					loaded.disabledPotionsHighlight = false;
+				}
+				if (!json.has("sackRecipe")) {
+					loaded.sackRecipe = true;
 				}
 				loaded.autoClickerCps = json.has("autoClickerCps")
 					? clamp(loaded.autoClickerCps, 3.0f, 15.0f)

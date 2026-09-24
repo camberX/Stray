@@ -1,6 +1,7 @@
 package dev.stray.client.mixin;
 
 import dev.stray.client.farming.AutoDna;
+import dev.stray.client.menu.SackRecipe;
 import dev.stray.client.farming.GardenPlots;
 import dev.stray.client.item.StoragePreview;
 import dev.stray.client.ui.ChestFillers;
@@ -22,7 +23,7 @@ public class AbstractContainerScreenMixin {
 
 	@Inject(method = "slotClicked", at = @At("HEAD"), cancellable = true)
 	private void stray$blockDnaClose(Slot slot, int slotId, int button, ContainerInput type, CallbackInfo ci) {
-		if (AutoDna.shouldBlock(slotId)) {
+		if (AutoDna.shouldBlock(slotId) || SackRecipe.click((AbstractContainerScreen<?>) (Object) this, slot, button)) {
 			ci.cancel();
 		}
 	}
