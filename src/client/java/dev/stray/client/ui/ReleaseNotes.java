@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.5.0", new String[]{
+			"/stray update stays open when you are already up to date or the check fails. Auto close still exits after a newer jar is installed."
+		}),
 		new Entry("1.4.99", new String[]{
 			"Click GUI search hides modules that do not match. The results list is gone."
 		}),

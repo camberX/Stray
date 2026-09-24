@@ -12,7 +12,7 @@ import net.minecraft.network.chat.Component;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
-/** {@code /stray update} checks once now. Auto close decides whether Minecraft exits after that. */
+/** {@code /stray update} checks once now. Auto close exits only after a newer jar is installed. */
 public final class UpdateCommands {
 	private static final AtomicBoolean RUNNING = new AtomicBoolean();
 
@@ -40,22 +40,26 @@ public final class UpdateCommands {
 		try {
 			AutoUpdate.UpdateOutcome outcome = AutoUpdate.updateNow();
 			if (outcome.status() == AutoUpdate.UpdateStatus.UPDATED) {
-				tell(outcome.message());
+				if (StrayConfig.get().updateAutoClose) {
+					tell(outcome.message());
+					tell("Closing.");
+					closing = true;
+					try {
+						Thread.sleep(700L);
+					} catch (InterruptedException ignored) {
+						Thread.currentThread().interrupt();
+					}
+					AutoUpdate.quit();
+				} else if (outcome.alreadyOnDisk()) {
+					tell("Newer jar " + outcome.version() + " is already in mods. Restart to load it.");
+				} else {
+					tell("Updated to " + outcome.version() + ". Restart Minecraft to load it.");
+				}
 			} else if (outcome.status() == AutoUpdate.UpdateStatus.CURRENT) {
 				tell(outcome.message());
 			} else {
 				tell(outcome.message() == null || outcome.message().isBlank() ? "Could not check for an update." : outcome.message());
 				AutoUpdate.requestNextLaunch();
-			}
-			if (StrayConfig.get().updateAutoClose) {
-				tell("Closing.");
-				closing = true;
-				try {
-					Thread.sleep(700L);
-				} catch (InterruptedException ignored) {
-					Thread.currentThread().interrupt();
-				}
-				AutoUpdate.quit();
 			}
 		} catch (RuntimeException exception) {
 			tell("Could not check for an update.");
