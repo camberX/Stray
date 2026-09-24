@@ -24,8 +24,11 @@ agent-tools/
 libs/
 *.jar
 web/**
+!web/worker.js
+!web/wrangler.toml
 !web/public/
 web/public/**
+!web/public/index.html
 !web/public/mod.json
 !web/public/mod/
 web/public/mod/**
