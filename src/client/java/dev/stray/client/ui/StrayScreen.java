@@ -475,7 +475,7 @@ public class StrayScreen extends Screen {
 		new SearchEntry("Garden plots", Tab.GARDEN, "Garden"),
 		new SearchEntry("Pest ESP", Tab.GARDEN, "Garden"),
 		new SearchEntry("Pest cooldown", Tab.GARDEN, "Garden"),
-		new SearchEntry("Pest cooldown title", Tab.GARDEN, "Garden"),
+		new SearchEntry("Swap alert", Tab.GARDEN, "Garden"),
 		new SearchEntry("Pest cooldown text", Tab.GARDEN, "Garden"),
 		new SearchEntry("Garden pests", Tab.GARDEN, "Garden"),
 		new SearchEntry("Vacuum", Tab.GARDEN, "Garden"),
@@ -3697,7 +3697,7 @@ public class StrayScreen extends Screen {
 				colorRow(graphics, font, ix, y, iw, mouseX, mouseY, "Color", config.pestEspRgb, PickerTarget.PEST);
 			}
 			case PEST_COOLDOWN -> {
-				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "2 minute title", config.pestCooldownTitle, v -> config.pestCooldownTitle = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Swap alert", config.pestCooldownTitle, v -> config.pestCooldownTitle = v);
 				y = alertLine(graphics, font, ix, y, iw, mouseX, mouseY, "Title", config.pestCooldownAlert, 1);
 				alertLine(graphics, font, ix, y, iw, mouseX, mouseY, "Subtitle", config.pestCooldownAlertSub, 2);
 			}

@@ -115,8 +115,8 @@ public final class StrayConfig {
 	public float pestEspOpacity = 0.38f;
 	public boolean pestCooldownHudEnabled = false;
 	public boolean pestCooldownTitle = true;
-	public String pestCooldownAlert = "Pest cooldown";
-	public String pestCooldownAlertSub = "2:00 left";
+	public String pestCooldownAlert = "Swap armor";
+	public String pestCooldownAlertSub = "5s left";
 	public boolean jacobContestHudEnabled = false;
 	public boolean skillProgressHudEnabled = false;
 	public boolean gardenContestHudEnabled = false;
@@ -1369,11 +1369,13 @@ public final class StrayConfig {
 				if (!json.has("pestCooldownTitle")) {
 					loaded.pestCooldownTitle = true;
 				}
-				if (!json.has("pestCooldownAlert") || loaded.pestCooldownAlert == null || loaded.pestCooldownAlert.isBlank()) {
-					loaded.pestCooldownAlert = "Pest cooldown";
+				boolean oldAlert = loaded.pestCooldownAlert == null || loaded.pestCooldownAlert.isBlank() || "Pest cooldown".equals(loaded.pestCooldownAlert);
+				boolean oldAlertSub = loaded.pestCooldownAlertSub == null || loaded.pestCooldownAlertSub.isBlank() || "2:00 left".equals(loaded.pestCooldownAlertSub);
+				if (!json.has("pestCooldownAlert") || loaded.pestCooldownAlert == null || loaded.pestCooldownAlert.isBlank() || (oldAlert && oldAlertSub)) {
+					loaded.pestCooldownAlert = "Swap armor";
 				}
-				if (!json.has("pestCooldownAlertSub") || loaded.pestCooldownAlertSub == null || loaded.pestCooldownAlertSub.isBlank()) {
-					loaded.pestCooldownAlertSub = "2:00 left";
+				if (!json.has("pestCooldownAlertSub") || loaded.pestCooldownAlertSub == null || loaded.pestCooldownAlertSub.isBlank() || "2:00 left".equals(loaded.pestCooldownAlertSub)) {
+					loaded.pestCooldownAlertSub = "5s left";
 				}
 				loaded.pestEspRgb = loaded.pestEspRgb & 0xFFFFFF;
 				if (loaded.pestEspRgb == 0) {

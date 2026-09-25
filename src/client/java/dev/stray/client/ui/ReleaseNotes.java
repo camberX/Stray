@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.5.22", new String[]{
+			"Pest cooldown counts the 3:29 reduced timer and tells you to swap armor at 3:24. The 2:00 tab alert is gone."
+		}),
 		new Entry("1.5.21", new String[]{
 			"Click GUI feature cards are accent fill with a black outline again. Black fill and an accent outline stay on the screens outside that menu."
 		}),
