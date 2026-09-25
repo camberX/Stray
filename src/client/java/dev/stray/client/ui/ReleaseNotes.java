@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.5.23", new String[]{
+			"Swap loadouts stays hidden. With farm keys on, breaking and movement release for the click and come back a tick later, before the movement packet, so it does not flag post."
+		}),
 		new Entry("1.5.22", new String[]{
 			"Pest cooldown counts the 3:29 reduced timer and tells you to swap armor at 3:24. The 2:00 tab alert is gone."
 		}),

@@ -4,8 +4,10 @@ import dev.stray.client.farming.AutoDna;
 import dev.stray.client.menu.SackRecipe;
 import dev.stray.client.farming.GardenPlots;
 import dev.stray.client.item.StoragePreview;
+import dev.stray.client.item.LoadoutsMenus;
 import dev.stray.client.ui.ChestFillers;
 import dev.stray.client.ui.ContainerChrome;
+import dev.stray.client.ui.LoadoutsScreen;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.input.MouseButtonEvent;
@@ -22,6 +24,17 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public class AbstractContainerScreenMixin {
 	@Shadow
 	protected Slot hoveredSlot;
+
+	@Inject(method = "extractRenderState", at = @At("HEAD"), cancellable = true)
+	private void stray$hideLoadoutSwap(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick, CallbackInfo ci) {
+		if (!LoadoutsScreen.hidingSwap()) {
+			return;
+		}
+		AbstractContainerScreen<?> chest = (AbstractContainerScreen<?>) (Object) this;
+		if (LoadoutsMenus.matches(chest.getMenu(), chest.getTitle())) {
+			ci.cancel();
+		}
+	}
 
 	@Inject(method = "slotClicked", at = @At("HEAD"), cancellable = true)
 	private void stray$blockDnaClose(Slot slot, int slotId, int button, ContainerInput type, CallbackInfo ci) {

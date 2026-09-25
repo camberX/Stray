@@ -19,9 +19,28 @@ public final class LoadoutsCommands {
 	}
 
 	public static int open() {
+		if (!send()) {
+			return 0;
+		}
+		LoadoutsScreen.allowReopen();
+		Minecraft client = Minecraft.getInstance();
+		if (LoadoutsMenus.enabled()
+			&& LoadoutsScreen.hasCache()
+			&& !(client.screen instanceof LoadoutsScreen)) {
+			client.setScreen(LoadoutsScreen.fromCache());
+		}
+		return Command.SINGLE_SUCCESS;
+	}
+
+	/** Asks Hypixel for the loadouts chest without opening the Stray menu. */
+	public static void openHidden() {
+		send();
+	}
+
+	private static boolean send() {
 		Minecraft client = Minecraft.getInstance();
 		if (client.player == null || client.player.connection == null) {
-			return 0;
+			return false;
 		}
 		if (!SkyblockLocation.inSkyblock && !SkyblockLocation.onHypixel) {
 			client.gui.getChat().addClientSystemMessage(
@@ -36,12 +55,6 @@ public final class LoadoutsCommands {
 			} catch (RuntimeException ignoredToo) {
 			}
 		}
-		LoadoutsScreen.allowReopen();
-		if (LoadoutsMenus.enabled()
-			&& LoadoutsScreen.hasCache()
-			&& !(client.screen instanceof LoadoutsScreen)) {
-			client.setScreen(LoadoutsScreen.fromCache());
-		}
-		return Command.SINGLE_SUCCESS;
+		return true;
 	}
 }

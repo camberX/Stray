@@ -9,6 +9,7 @@ import dev.stray.client.movement.AotvSim;
 import dev.stray.client.movement.MovementRings;
 import dev.stray.client.render.BlockMarks;
 import dev.stray.client.render.MobGlowRenderer;
+import dev.stray.client.ui.LoadoutSwap;
 import dev.stray.client.ui.LoadoutsScreen;
 import dev.stray.client.ui.StrayTitleScreen;
 import dev.stray.client.ui.WardrobeScreen;
@@ -47,6 +48,7 @@ public class MinecraftMixin {
 	@Inject(method = "handleKeybinds", at = @At("HEAD"))
 	private void stray$triggerbot(CallbackInfo ci) {
 		Minecraft client = (Minecraft) (Object) this;
+		LoadoutSwap.preKeybinds(client);
 		MovementRings.preKeybinds(client);
 		Triggerbot.tick(client);
 		MageBeamHits.onAttack(client);

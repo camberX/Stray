@@ -161,6 +161,7 @@ public final class StrayClient implements ClientModInitializer {
 		wasGui = menuKeyHeld(config.openGuiKey);
 		wasLoadouts = menuKeyHeld(config.openLoadoutsKey);
 		wasLoadoutSwap = menuKeyHeld(config.loadoutSwapKey);
+		LoadoutSwap.syncEdge();
 		wasWardrobe = menuKeyHeld(config.openWardrobeKey);
 		wasProfile = menuKeyHeld(config.openProfileKey);
 		wasPing = menuKeyHeld(config.strayPingKey);
@@ -529,9 +530,6 @@ public final class StrayClient implements ClientModInitializer {
 				} else {
 					LoadoutsCommands.open();
 				}
-			}
-			if (swapLoadout && !wasLoadoutSwap) {
-				LoadoutSwap.toggle();
 			}
 			if (wardrobe && !wasWardrobe) {
 				if (client.screen instanceof WardrobeScreen screen) {
