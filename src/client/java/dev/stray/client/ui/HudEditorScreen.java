@@ -71,7 +71,7 @@ public class HudEditorScreen extends Screen {
 				hovered = true;
 			}
 			if (!HudLayout.enabled(box.id())) {
-				ClickLook.panel(graphics, box.x(), box.y(), box.w(), box.h(), 5, Theme.withAlpha(Theme.WINDOW, 80), Theme.LINE);
+				ClickLook.outside(graphics, box.x(), box.y(), box.w(), box.h(), 5, Theme.withAlpha(Theme.WINDOW, 80), Theme.LINE);
 				GuiDraw.small(graphics, font, box.id().label, box.x() + 6, box.y() + 4, Theme.MUTED);
 			}
 			int outline = dragging == box.id() || selected == box.id()
@@ -90,7 +90,7 @@ public class HudEditorScreen extends Screen {
 				if (tagY < 22) {
 					tagY = box.bottom() + 3;
 				}
-				ClickLook.panel(graphics, tagX, tagY, tagW, 12, 3, Theme.WINDOW, Theme.ACCENT);
+				ClickLook.outside(graphics, tagX, tagY, tagW, 12, 3, Theme.WINDOW, Theme.ACCENT);
 				GuiDraw.small(graphics, font, tag, tagX + 5, tagY + 1, Theme.TEXT);
 			}
 		}
@@ -108,7 +108,7 @@ public class HudEditorScreen extends Screen {
 		float h = 20;
 		float x = (guiW - BAR_W) * 0.5f;
 		float y = 6;
-		ClickLook.panel(graphics, x, y, BAR_W, h, 6, Theme.WINDOW, Theme.LINE);
+		ClickLook.outside(graphics, x, y, BAR_W, h, 6, Theme.WINDOW, Theme.LINE);
 		GuiDraw.small(graphics, font, "HUD EDITOR", x + 8, y + 5, Theme.ACCENT);
 		boolean free = minecraft.hasShiftDown();
 		GuiDraw.small(graphics, font, free ? "Free move" : "Snap · scroll to scale", x + 78, y + 5, Theme.MUTED);
@@ -116,14 +116,14 @@ public class HudEditorScreen extends Screen {
 		float dw = 40;
 		float dx = x + BAR_W - dw - 6;
 		boolean hover = GuiDraw.hovered(mouseX, mouseY, dx, y + 3, dw, 14);
-		ClickLook.panel(graphics, dx, y + 3, dw, 14, 5, hover ? Theme.CARD_HOVER : Theme.CARD, hover ? Theme.ACCENT : Theme.LINE);
+		ClickLook.outside(graphics, dx, y + 3, dw, 14, 5, hover ? Theme.CARD_HOVER : Theme.CARD, hover ? Theme.ACCENT : Theme.LINE);
 		GuiDraw.menu(graphics, font, "Done", dx + (dw - GuiDraw.menuWidth(font, "Done")) * 0.5f, GuiDraw.middle(y + 3, 14), Theme.TEXT);
 	}
 
 	private void drawInspector(GuiGraphicsExtractor graphics, Font font, int mouseX, int mouseY, int guiW, int guiH) {
 		inspectX = (guiW - INSPECT_W) * 0.5f;
 		inspectY = guiH - INSPECT_H - 8;
-		ClickLook.panel(graphics, inspectX, inspectY, INSPECT_W, INSPECT_H, 6, Theme.WINDOW, Theme.ACCENT);
+		ClickLook.outside(graphics, inspectX, inspectY, INSPECT_W, INSPECT_H, 6, Theme.WINDOW, Theme.ACCENT);
 		GuiDraw.small(graphics, font, selected.label, inspectX + 8, inspectY + 6, Theme.ACCENT);
 		GuiDraw.small(graphics, font, "Scale", inspectX + 64, inspectY + 6, Theme.MUTED);
 

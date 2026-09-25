@@ -14,6 +14,7 @@ public final class ClickLook {
 	public static final int PANEL = 0x99000000;
 	public static final int TEXT = 0xFFFFFFFF;
 	public static final int DIM = 0xFFAAAAAA;
+	private static final int ACCENT_ALPHA = 115;
 
 	private ClickLook() {
 	}
@@ -41,15 +42,9 @@ public final class ClickLook {
 		if (w < 2f || h < 2f) {
 			return;
 		}
+		int paint = accentOutline(outline) ? Theme.withAlpha(Theme.ACCENT, ACCENT_ALPHA) : fill;
 		frame(graphics, x, y, w, h);
-		GuiDraw.fillSmooth(graphics, x + STROKE, y + STROKE, w - STROKE * 2f, h - STROKE * 2f, fill);
-		if (accentOutline(outline)) {
-			int stroke = 0xFF000000 | (Theme.ACCENT & 0xFFFFFF);
-			GuiDraw.fillSmooth(graphics, x, y, w, STROKE, stroke);
-			GuiDraw.fillSmooth(graphics, x, y + h - STROKE, w, STROKE, stroke);
-			GuiDraw.fillSmooth(graphics, x, y, STROKE, h, stroke);
-			GuiDraw.fillSmooth(graphics, x + w - STROKE, y, STROKE, h, stroke);
-		}
+		GuiDraw.fillSmooth(graphics, x + STROKE, y + STROKE, w - STROKE * 2f, h - STROKE * 2f, paint);
 		if ((accent & 0xFF000000) != 0) {
 			float bar = 2f;
 			if (accentRight) {
@@ -57,6 +52,23 @@ public final class ClickLook {
 			} else {
 				GuiDraw.fillSmooth(graphics, x + STROKE, y + STROKE, bar, h - STROKE * 2f, accent);
 			}
+		}
+	}
+
+	/**
+	 * Black fill with an accent stroke. For screens outside the click GUI.
+	 * The click GUI itself keeps the accent fill and black outline.
+	 */
+	public static void outside(GuiGraphicsExtractor graphics, float x, float y, float w, float h, float radius, int fill, int outline) {
+		outside(graphics, x, y, w, h, radius, fill, outline, 0);
+	}
+
+	public static void outside(GuiGraphicsExtractor graphics, float x, float y, float w, float h, float radius, int fill, int outline, int accent) {
+		int stroke = accentOutline(outline) ? (0xFF000000 | (Theme.ACCENT & 0xFFFFFF)) : OUTLINE;
+		solid(graphics, x, y, w, h, fill, stroke);
+		if ((accent & 0xFF000000) != 0) {
+			float bar = 2f;
+			GuiDraw.fillSmooth(graphics, x + STROKE, y + STROKE, bar, h - STROKE * 2f, accent);
 		}
 	}
 

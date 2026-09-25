@@ -86,7 +86,7 @@ public class StrayTitleScreen extends Screen {
 		float stackH = 16 + BUTTON_GAP + BUTTON_H * 3 + BUTTON_GAP * 2 + 6 + BUTTON_H;
 		float colY = Mth.clamp((height - stackH) * 0.42f, 48, height - stackH - 40);
 
-		ClickLook.panel(graphics, colX, colY - 18, colW, 16, 0, ClickLook.PANEL, Theme.LINE);
+		ClickLook.outside(graphics, colX, colY - 18, colW, 16, 0, ClickLook.PANEL, Theme.LINE);
 		GuiDraw.text(graphics, font, "STRAY", colX + 4, colY - 18 + (16 - font.lineHeight) * 0.5f, Anim.fade(ClickLook.TEXT, fade), true);
 		String ver = "v" + modVersion();
 		GuiDraw.text(graphics, font, ver, colX + colW - 4 - font.width(ver), colY - 18 + (16 - font.lineHeight) * 0.5f, Anim.fade(ClickLook.DIM, fade), true);
@@ -141,7 +141,7 @@ public class StrayTitleScreen extends Screen {
 		boolean hovered = enabled && GuiDraw.hovered(mouseX, mouseY, x, y, w, BUTTON_H);
 		int outline = hovered ? Theme.ACCENT : Theme.LINE;
 		int fill = enabled ? ClickLook.FILL : 0x44000000;
-		ClickLook.panel(graphics, x, y, w, BUTTON_H, 0, Anim.fade(fill, fade), outline);
+		ClickLook.outside(graphics, x, y, w, BUTTON_H, 0, Anim.fade(fill, fade), outline);
 		int text = enabled ? (hovered ? ClickLook.TEXT : ClickLook.TEXT) : ClickLook.DIM;
 		float textX = x + (w - font.width(label)) * 0.5f;
 		GuiDraw.text(graphics, font, label, textX, y + (BUTTON_H - font.lineHeight) * 0.5f, Anim.fade(text, fade), true);

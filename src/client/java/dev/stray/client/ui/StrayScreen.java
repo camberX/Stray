@@ -3963,8 +3963,8 @@ public class StrayScreen extends Screen {
 				GuiDraw.rounded(graphics, cx, rowY + 1, cw, ROW - 2, 7, on ? Theme.ACCENT : hover ? 0x33FFFFFF : ControlChrome.searchFill());
 				GuiDraw.menu(graphics, font, labels[i], cx + 5, GuiDraw.middle(rowY, ROW), on ? 0xFFFFFFFF : ink());
 			} else {
-				ClickLook.panel(graphics, cx, rowY + 1, cw, ROW - 2, 5, on || hover ? Theme.CARD_HOVER : Theme.CARD, on ? Theme.ACCENT : Theme.LINE);
-				GuiDraw.menu(graphics, font, labels[i], cx + 5, GuiDraw.middle(rowY, ROW), Theme.TEXT);
+				ClickLook.panel(graphics, cx, rowY + 1, cw, ROW - 2, 5, on ? Theme.ACCENT : hover ? Theme.CARD_HOVER : Theme.CARD, on ? Theme.ACCENT : Theme.LINE);
+				GuiDraw.menu(graphics, font, labels[i], cx + 5, GuiDraw.middle(rowY, ROW), on ? Theme.WINDOW_SOLID : Theme.TEXT);
 			}
 			int index = i;
 			hits.add(new Hit(cx, rowY, cw, ROW, () -> pick.accept(index)));

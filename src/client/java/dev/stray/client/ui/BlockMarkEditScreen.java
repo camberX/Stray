@@ -67,14 +67,14 @@ public class BlockMarkEditScreen extends Screen {
 		layout();
 
 		GuiDraw.fill(graphics, 0, 0, width, height, 0x14000000);
-		ClickLook.panel(graphics, windowX, windowY, windowW, windowH, Theme.WINDOW_RADIUS, Theme.WINDOW, Theme.LINE);
+		ClickLook.outside(graphics, windowX, windowY, windowW, windowH, Theme.WINDOW_RADIUS, Theme.WINDOW, Theme.LINE);
 		GuiDraw.title(graphics, font, "MARK", windowX + 12, windowY + 8, Theme.TEXT);
 		String coords = pos.getX() + " " + pos.getY() + " " + pos.getZ();
 		GuiDraw.small(graphics, font, coords, windowX + 12 + GuiDraw.titleWidth(font, "MARK") + 4, windowY + 10, Theme.ACCENT);
 
 		float slotX = windowX + 12;
 		float slotY = windowY + 30;
-		ClickLook.panel(graphics, slotX, slotY, SLOT, SLOT, 8, Theme.TRACK, Theme.LINE);
+		ClickLook.outside(graphics, slotX, slotY, SLOT, SLOT, 8, Theme.TRACK, Theme.LINE);
 		ItemStack stack = preview.stack();
 		if (!stack.isEmpty()) {
 			float scale = 2f;
@@ -131,7 +131,7 @@ public class BlockMarkEditScreen extends Screen {
 	private void drawField(GuiGraphicsExtractor graphics, Font font, int mouseX, int mouseY, int which, String label, String value, float x, float y, float w) {
 		boolean focused = field == which;
 		boolean hover = GuiDraw.hovered(mouseX, mouseY, x, y, w, FIELD_H);
-		ClickLook.panel(graphics, x, y, w, FIELD_H, 5, focused || hover ? Theme.CARD_HOVER : Theme.CARD, focused ? Theme.ACCENT : Theme.LINE);
+		ClickLook.outside(graphics, x, y, w, FIELD_H, 5, focused || hover ? Theme.CARD_HOVER : Theme.CARD, focused ? Theme.ACCENT : Theme.LINE);
 		float labelW = GuiDraw.smallWidth(font, label) + 6;
 		GuiDraw.small(graphics, font, label, x + 6, y + 5, Theme.MUTED);
 		String shown = value.isEmpty() && !focused ? (which == 0 ? "Unnamed" : "minecraft:diamond or sb:HYPERION") : value;
@@ -156,7 +156,7 @@ public class BlockMarkEditScreen extends Screen {
 
 	private void button(GuiGraphicsExtractor graphics, Font font, int mouseX, int mouseY, float x, float y, float w, float h, String label, int color, Runnable click) {
 		boolean hover = GuiDraw.hovered(mouseX, mouseY, x, y, w, h);
-		ClickLook.panel(graphics, x, y, w, h, 5, hover ? Theme.CARD_HOVER : Theme.CARD, hover ? Theme.ACCENT : Theme.LINE);
+		ClickLook.outside(graphics, x, y, w, h, 5, hover ? Theme.CARD_HOVER : Theme.CARD, hover ? Theme.ACCENT : Theme.LINE);
 		GuiDraw.menu(graphics, font, label, x + (w - GuiDraw.menuWidth(font, label)) * 0.5f, GuiDraw.middle(y, h), color);
 		hits.add(new Hit(x, y, w, h, click));
 	}

@@ -112,14 +112,14 @@ public class CapeCreatorScreen extends Screen {
 		Font font = minecraft.font;
 		Theme.refresh();
 		GuiDraw.fill(graphics, 0, 0, width, height, 0x14000000);
-		ClickLook.panel(graphics, windowX, windowY, MENU_W, MENU_H, Theme.WINDOW_RADIUS, Theme.WINDOW, Theme.LINE);
+		ClickLook.outside(graphics, windowX, windowY, MENU_W, MENU_H, Theme.WINDOW_RADIUS, Theme.WINDOW, Theme.LINE);
 		GuiDraw.title(graphics, font, "CAPE", windowX + 12, windowY + 8, Theme.TEXT);
 		GuiDraw.small(graphics, font, "CREATOR", windowX + 12 + GuiDraw.titleWidth(font, "CAPE") + 4, windowY + 10, Theme.ACCENT);
 		hits.add(new Hit(windowX, windowY, MENU_W, 22, this::startWindowDrag, true));
 
 		stageX = windowX + 12;
 		stageY = windowY + 28;
-		ClickLook.panel(graphics, stageX, stageY, STAGE_W, STAGE_H, 6, Theme.PANEL, Theme.LINE);
+		ClickLook.outside(graphics, stageX, stageY, STAGE_W, STAGE_H, 6, Theme.PANEL, Theme.LINE);
 		layoutImage();
 		GuiDraw.blit(graphics, SOURCE_ID, imgX, imgY, imgW, imgH, 0f, 0f, srcW, srcH, srcW, srcH);
 		float cx = imgX + crop.x * imgW;
@@ -135,7 +135,7 @@ public class CapeCreatorScreen extends Screen {
 		float px = windowX + MENU_W - 12 - PREVIEW_W;
 		float py = stageY;
 		GuiDraw.small(graphics, font, "FACE", px, py - 1, Theme.MUTED);
-		ClickLook.panel(graphics, px, py + 10, PREVIEW_W, PREVIEW_H, 5, Theme.PANEL, Theme.LINE);
+		ClickLook.outside(graphics, px, py + 10, PREVIEW_W, PREVIEW_H, 5, Theme.PANEL, Theme.LINE);
 		int ru = Math.max(0, Math.round(crop.x * srcW));
 		int rv = Math.max(0, Math.round(crop.y * srcH));
 		int rw = Math.max(1, Math.round(crop.w * srcW));
@@ -174,7 +174,7 @@ public class CapeCreatorScreen extends Screen {
 		Runnable click
 	) {
 		boolean hover = GuiDraw.hovered(mouseX, mouseY, x, y, w, BTN_H);
-		ClickLook.panel(graphics, x, y, w, BTN_H, 5, hover ? Theme.CARD_HOVER : Theme.CARD, hover ? Theme.ACCENT : Theme.LINE);
+		ClickLook.outside(graphics, x, y, w, BTN_H, 5, hover ? Theme.CARD_HOVER : Theme.CARD, hover ? Theme.ACCENT : Theme.LINE);
 		GuiDraw.menu(graphics, font, label, x + (w - GuiDraw.menuWidth(font, label)) * 0.5f, GuiDraw.middle(y, BTN_H), Theme.TEXT);
 		hits.add(new Hit(x, y, w, BTN_H, click, false));
 	}

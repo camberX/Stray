@@ -131,7 +131,7 @@ public final class MenuChrome {
 	}
 
 	public static void listPanel(GuiGraphicsExtractor graphics, int x, int y, int w, int h) {
-		ClickLook.panel(graphics, x, y, w, h, 8f, ClickLook.PANEL, Theme.LINE, 0);
+		ClickLook.outside(graphics, x, y, w, h, 8f, ClickLook.PANEL, Theme.LINE, 0);
 	}
 
 	public static void listSeparators(GuiGraphicsExtractor graphics, int x, int y, int w, int bottom) {
@@ -140,7 +140,7 @@ public final class MenuChrome {
 	}
 
 	public static void selection(GuiGraphicsExtractor graphics, int x, int y, int w, int h) {
-		ClickLook.panel(
+		ClickLook.outside(
 			graphics,
 			x,
 			y,

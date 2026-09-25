@@ -310,7 +310,7 @@ public class LoadoutsScreen extends Screen {
 		if (ControlChrome.on()) {
 			ControlChrome.glass(graphics, windowX, windowY, windowW, windowH, ControlChrome.WINDOW_R, Theme.WINDOW);
 		} else {
-			ClickLook.panel(graphics, windowX, windowY, windowW, windowH, 0, ClickLook.PANEL, Theme.LINE);
+			ClickLook.outside(graphics, windowX, windowY, windowW, windowH, 0, ClickLook.PANEL, Theme.LINE);
 		}
 		Starfield.draw(graphics, windowX, windowY, windowW, windowH, Theme.WINDOW_RADIUS, appear);
 		if (clip) {
@@ -367,7 +367,7 @@ public class LoadoutsScreen extends Screen {
 		LoadoutsMenus.Piece piece
 	) {
 		boolean hover = GuiDraw.hovered(mouseX, mouseY, x, y, w, 16);
-		ClickLook.panel(graphics, x, y, w, 16, 5, hover ? Theme.CARD_HOVER : Theme.CARD, hover ? Theme.ACCENT : Theme.LINE);
+		ClickLook.outside(graphics, x, y, w, 16, 5, hover ? Theme.CARD_HOVER : Theme.CARD, hover ? Theme.ACCENT : Theme.LINE);
 		GuiDraw.menu(
 			graphics,
 			font,
@@ -388,7 +388,7 @@ public class LoadoutsScreen extends Screen {
 		float top = windowY + 28;
 		float stageW = windowX + windowW - SLOTS_W - 20 - left;
 		float stageH = 148;
-		ClickLook.panel(graphics, left, top, stageW, stageH, 8, Theme.PANEL, Theme.LINE);
+		ClickLook.outside(graphics, left, top, stageW, stageH, 8, Theme.PANEL, Theme.LINE);
 		PlayerPreview.View view = new PlayerPreview.View(viewScale, viewCx, viewCy, viewLift);
 		boolean hasPet = !snapshot.pet().isEmpty();
 		float playerW = hasPet ? stageW * 0.58f : stageW;
@@ -436,7 +436,7 @@ public class LoadoutsScreen extends Screen {
 	private void drawLoadouts(GuiGraphicsExtractor graphics, Font font, int mouseX, int mouseY) {
 		float x = windowX + windowW - SLOTS_W - 10;
 		float y = windowY + 28;
-		ClickLook.panel(graphics, x, y, SLOTS_W, SLOTS_H, 8, Theme.CARD, Theme.LINE);
+		ClickLook.outside(graphics, x, y, SLOTS_W, SLOTS_H, 8, Theme.CARD, Theme.LINE);
 		GuiDraw.small(graphics, font, "SLOTS", x + 8, y + 6, Theme.ACCENT);
 		boolean clip = GuiDraw.scissor(graphics, x + 1, y + 1, SLOTS_W - 2, SLOTS_H - 2);
 		List<LoadoutsMenus.Piece> loadouts = snapshot.loadouts();
@@ -494,7 +494,7 @@ public class LoadoutsScreen extends Screen {
 		float y = windowY + 182;
 		float w = windowW - 20;
 		float h = windowH - 190;
-		ClickLook.panel(graphics, x, y, w, h, 8, Theme.CARD, Theme.LINE);
+		ClickLook.outside(graphics, x, y, w, h, 8, Theme.CARD, Theme.LINE);
 		float cx = x + 8;
 		float cy = y + 8;
 		for (LoadoutsMenus.Piece piece : labeledContents()) {
@@ -560,7 +560,7 @@ public class LoadoutsScreen extends Screen {
 		float x = windowX + windowW - 10f - w;
 		float y = windowY + windowH - 8f - h;
 		boolean hover = GuiDraw.hovered(mouseX, mouseY, x, y, w, h);
-		ClickLook.panel(graphics, x, y, w, h, 5, hover ? Theme.CARD_HOVER : Theme.CARD, hover ? Theme.ACCENT : Theme.LINE);
+		ClickLook.outside(graphics, x, y, w, h, 5, hover ? Theme.CARD_HOVER : Theme.CARD, hover ? Theme.ACCENT : Theme.LINE);
 		GuiDraw.menu(graphics, font, label, x + (w - GuiDraw.menuWidth(font, label)) * 0.5f, GuiDraw.middle(y, h), Theme.TEXT);
 		hits.add(new Hit(x, y, w, h, -1, false, false, true));
 	}

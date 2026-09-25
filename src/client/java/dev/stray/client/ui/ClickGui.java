@@ -38,6 +38,7 @@ public final class ClickGui {
 	private static final int OUTLINE = 0xFF000000;
 	private static final int PANEL = 0x99000000;
 	private static final int OFF_FILL = 0x88000000;
+	private static final int ACCENT_ALPHA = 115;
 	private static final int TEXT = 0xFFFFFFFF;
 	private static final int DIM = 0xFFAAAAAA;
 	private static final String[] ORDER = {"World", "Visuals", "Mobs", "Combat", "HUD", "Mining", "Farming", "Menus", "Theme", "Player"};
@@ -265,7 +266,7 @@ public final class ClickGui {
 		searchY = y;
 		searchW = width;
 		searchH = BOX;
-		outlined(graphics, x, y, width, BOX, OFF_FILL, searchFocused);
+		outlined(graphics, x, y, width, BOX, searchFocused ? accentFill() : OFF_FILL);
 		boolean placeholder = searchQuery.isEmpty() && !searchFocused;
 		String shown = placeholder ? "Search" : searchQuery + (searchFocused ? "|" : "");
 		String label = fit(font, shown, width - 8);
@@ -330,7 +331,7 @@ public final class ClickGui {
 		column.scroll = Math.round(Mth.clamp(column.scroll, 0f, maxScroll));
 
 		GuiDraw.fill(graphics, x, top, COL_W, column.height, PANEL);
-		outlined(graphics, x, top, COL_W, HEADER, PANEL, true);
+		outlined(graphics, x, top, COL_W, HEADER, accentFill());
 		String title = display(column.id);
 		GuiDraw.text(graphics, font, title, textX(font, title, x, COL_W), textY(font, top, HEADER), TEXT, true);
 		screen.clickHit(x, top, COL_W, HEADER, () -> beginDrag(column.id));
@@ -400,7 +401,7 @@ public final class ClickGui {
 		column.scroll = Math.round(Mth.clamp(column.scroll, 0f, Math.max(0f, content - visible)));
 
 		GuiDraw.fill(graphics, x, top, COL_W, column.height, PANEL);
-		outlined(graphics, x, top, COL_W, HEADER, PANEL, true);
+		outlined(graphics, x, top, COL_W, HEADER, accentFill());
 		String title = display(column.id);
 		GuiDraw.text(graphics, font, title, textX(font, title, x, COL_W), textY(font, top, HEADER), TEXT, true);
 		screen.clickHit(x, top, COL_W, HEADER, () -> beginDrag(column.id));
@@ -411,7 +412,7 @@ public final class ClickGui {
 		mobSearchY = searchY;
 		mobSearchW = boxW;
 		mobSearchH = BOX;
-		outlined(graphics, boxX, searchY, boxW, BOX, OFF_FILL, mobSearchFocused);
+		outlined(graphics, boxX, searchY, boxW, BOX, mobSearchFocused ? accentFill() : OFF_FILL);
 		boolean placeholder = mobQuery.isEmpty() && !mobSearchFocused;
 		String shown = placeholder ? "Search" : mobQuery + (mobSearchFocused ? "|" : "");
 		GuiDraw.text(graphics, font, fit(font, shown, boxW - 8), boxX + 4, textY(font, searchY, BOX), placeholder ? DIM : TEXT, true);
@@ -781,6 +782,10 @@ public final class ClickGui {
 		return out.toString();
 	}
 
+	private static int accentFill() {
+		return Theme.withAlpha(Theme.ACCENT, ACCENT_ALPHA);
+	}
+
 	private static void drawSwitch(GuiGraphicsExtractor graphics, float x, float y, float w, float h, boolean on) {
 		float stroke = 0.5f;
 		GuiDraw.roundedFine(graphics, x, y, w, h, h * 0.5f, OUTLINE);
@@ -794,23 +799,13 @@ public final class ClickGui {
 	}
 
 	private static void moduleBox(GuiGraphicsExtractor graphics, int x, int y, int w, int h, boolean enabled) {
-		outlined(graphics, x, y, w, h, enabled ? PANEL : OFF_FILL, enabled);
+		frame(graphics, x, y, w, h);
+		GuiDraw.fillSmooth(graphics, x + STROKE, y + STROKE, w - STROKE * 2, h - STROKE * 2, enabled ? accentFill() : OFF_FILL);
 	}
 
 	private static void outlined(GuiGraphicsExtractor graphics, int x, int y, int w, int h, int fill) {
-		outlined(graphics, x, y, w, h, fill, false);
-	}
-
-	private static void outlined(GuiGraphicsExtractor graphics, int x, int y, int w, int h, int fill, boolean accentStroke) {
 		frame(graphics, x, y, w, h);
 		GuiDraw.fillSmooth(graphics, x + STROKE, y + STROKE, w - STROKE * 2, h - STROKE * 2, fill);
-		if (accentStroke) {
-			int stroke = 0xFF000000 | (Theme.ACCENT & 0xFFFFFF);
-			GuiDraw.fillSmooth(graphics, x, y, w, STROKE, stroke);
-			GuiDraw.fillSmooth(graphics, x, y + h - STROKE, w, STROKE, stroke);
-			GuiDraw.fillSmooth(graphics, x, y, STROKE, h, stroke);
-			GuiDraw.fillSmooth(graphics, x + w - STROKE, y, STROKE, h, stroke);
-		}
 	}
 
 	private static void frame(GuiGraphicsExtractor graphics, int x, int y, int w, int h) {

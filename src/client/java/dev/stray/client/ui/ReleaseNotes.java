@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.5.21", new String[]{
+			"Click GUI feature cards are accent fill with a black outline again. Black fill and an accent outline stay on the screens outside that menu."
+		}),
 		new Entry("1.5.20", new String[]{
 			"Menus keep a black fill. The accent color is only the outline."
 		}),
