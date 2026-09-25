@@ -4,6 +4,7 @@ import com.mojang.blaze3d.platform.InputConstants;
 import dev.stray.client.menu.NoCursorReset;
 import dev.stray.client.movement.MovementRings;
 import dev.stray.client.ui.ChatPeek;
+import dev.stray.client.ui.LoadoutsScreen;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.MouseHandler;
 import net.minecraft.client.gui.screens.inventory.ContainerScreen;
@@ -26,6 +27,18 @@ public class MouseHandlerMixin {
 	private double stray$beforeX;
 	@Unique
 	private double stray$beforeY;
+
+	/**
+	 * {@code grabMouse} always calls {@code setScreen(null)}. During a hidden
+	 * loadout swap that closes the chest before the slot click is sent.
+	 */
+	@Inject(method = "grabMouse", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/Minecraft;setScreen(Lnet/minecraft/client/gui/screens/Screen;)V"), cancellable = true)
+	private void stray$keepHiddenLoadouts(CallbackInfo ci) {
+		Minecraft client = Minecraft.getInstance();
+		if (client.screen != null && LoadoutsScreen.hideDefaultChest(client.screen)) {
+			ci.cancel();
+		}
+	}
 
 	@Inject(method = "grabMouse", at = @At(value = "FIELD", target = "Lnet/minecraft/client/MouseHandler;xpos:D", ordinal = 0, opcode = Opcodes.PUTFIELD))
 	private void stray$rememberCursor(CallbackInfo ci) {
