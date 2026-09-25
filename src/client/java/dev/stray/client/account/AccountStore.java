@@ -21,17 +21,18 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
 /**
- * Saved Microsoft and session accounts. Tokens live in a dedicated file, not
- * stray.json.
+ * Saved Microsoft and session accounts. Tokens live in AppData, shared across
+ * instances, not in the instance config folder or stray.json.
  */
 public final class AccountStore {
 	private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
-	private static final Path PATH = FabricLoader.getInstance().getConfigDir().resolve("stray").resolve("accounts.json");
+	private static final Path PATH = sharedDir().resolve("accounts.json");
 	private static final AtomicBoolean BUSY = new AtomicBoolean(false);
 	private static final List<Entry> ACCOUNTS = new ArrayList<>();
 	private static SessionApplier.Snapshot launcher;
@@ -44,27 +45,117 @@ public final class AccountStore {
 
 	public static void load() {
 		ACCOUNTS.clear();
-		if (!Files.isRegularFile(PATH)) {
-			return;
+		if (!Files.isRegularFile(PATH) || readEntries(PATH, ACCOUNTS)) {
+			absorbInstance();
 		}
-		try (Reader reader = Files.newBufferedReader(PATH)) {
-			JsonObject root = JsonParser.parseReader(reader).getAsJsonObject();
-			JsonArray list = root.getAsJsonArray("accounts");
+		pinFavorites();
+	}
+
+	/**
+	 * One shared file under {@code %APPDATA%/Stray}. Other systems use the
+	 * equivalent user data folder.
+	 */
+	private static Path sharedDir() {
+		String appdata = System.getenv("APPDATA");
+		if (appdata != null && !appdata.isBlank()) {
+			return Path.of(appdata, "Stray");
+		}
+		String home = System.getProperty("user.home", ".");
+		String os = System.getProperty("os.name", "").toLowerCase(Locale.ROOT);
+		if (os.contains("mac")) {
+			return Path.of(home, "Library", "Application Support", "Stray");
+		}
+		String xdg = System.getenv("XDG_DATA_HOME");
+		if (xdg != null && !xdg.isBlank()) {
+			return Path.of(xdg, "stray");
+		}
+		return Path.of(home, ".local", "share", "stray");
+	}
+
+	private static Path instanceFile() {
+		return FabricLoader.getInstance().getConfigDir().resolve("stray").resolve("accounts.json");
+	}
+
+	private static boolean readEntries(Path path, List<Entry> into) {
+		try (Reader reader = Files.newBufferedReader(path)) {
+			JsonElement parsed = JsonParser.parseReader(reader);
+			if (!parsed.isJsonObject()) {
+				return false;
+			}
+			JsonArray list = parsed.getAsJsonObject().getAsJsonArray("accounts");
 			if (list == null) {
-				return;
+				return true;
 			}
 			for (JsonElement element : list) {
 				if (!element.isJsonObject()) {
 					continue;
 				}
 				Entry entry = Entry.fromJson(element.getAsJsonObject());
-				if (entry != null) {
-					ACCOUNTS.add(entry);
+				if (entry != null && !contains(into, entry.uuid)) {
+					into.add(entry);
 				}
 			}
-			pinFavorites();
+			return true;
 		} catch (Exception exception) {
-			Stray.LOGGER.warn("Could not read accounts.json", exception);
+			Stray.LOGGER.warn("Could not read accounts.json ({})", path, exception);
+			return false;
+		}
+	}
+
+	/**
+	 * Copies accounts out of this instance into AppData, then removes the
+	 * instance file. Accounts already in AppData are kept.
+	 */
+	private static void absorbInstance() {
+		Path legacy = instanceFile();
+		if (!Files.isRegularFile(legacy) || sameFile(legacy, PATH)) {
+			return;
+		}
+		List<Entry> extra = new ArrayList<>();
+		if (!readEntries(legacy, extra)) {
+			return;
+		}
+		boolean added = false;
+		for (Entry entry : extra) {
+			if (!contains(ACCOUNTS, entry.uuid)) {
+				ACCOUNTS.add(entry);
+				added = true;
+			}
+		}
+		boolean missingShared = !Files.isRegularFile(PATH);
+		if (missingShared || added) {
+			pinFavorites();
+			if (!save()) {
+				return;
+			}
+		}
+		try {
+			Files.deleteIfExists(legacy);
+			Stray.LOGGER.info("Account list now lives at {}", PATH);
+		} catch (IOException exception) {
+			Stray.LOGGER.warn("Could not remove the instance accounts.json", exception);
+		}
+	}
+
+	private static boolean contains(List<Entry> entries, UUID uuid) {
+		for (Entry entry : entries) {
+			if (entry.uuid.equals(uuid)) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	private static boolean sameFile(Path left, Path right) {
+		Path a = left.toAbsolutePath().normalize();
+		Path b = right.toAbsolutePath().normalize();
+		if (a.equals(b)) {
+			return true;
+		}
+		try {
+			return Files.exists(left) && Files.exists(right) && Files.isSameFile(left, right);
+		} catch (IOException exception) {
+			return false;
 		}
 	}
 
@@ -527,7 +618,7 @@ public final class AccountStore {
 		}
 	}
 
-	private static void save() {
+	private static boolean save() {
 		JsonObject root = new JsonObject();
 		JsonArray list = new JsonArray();
 		for (Entry entry : ACCOUNTS) {
@@ -539,8 +630,10 @@ public final class AccountStore {
 			try (Writer writer = Files.newBufferedWriter(PATH)) {
 				GSON.toJson(root, writer);
 			}
+			return true;
 		} catch (IOException exception) {
 			Stray.LOGGER.warn("Could not write accounts.json", exception);
+			return false;
 		}
 	}
 

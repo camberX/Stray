@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.5.27", new String[]{
+			"The account list is stored in AppData (Roaming/Stray/accounts.json), shared across instances. A copy left in the instance config is moved there."
+		}),
 		new Entry("1.5.26", new String[]{
 			"Hide default menu only skips drawing the loadouts chest. Grabbing the mouse no longer closes that chest before the swap click."
 		}),
