@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.5.29", new String[]{
+			"Pest ESP puts the pest's name above it. The skull texture decides Beetle, Cricket, and the rest."
+		}),
 		new Entry("1.5.28", new String[]{
 			"Pest cooldown follows the tab timer. A set that reduces pest spawn time shortens the countdown, and a minutes-only tab value counts as a minute that just rolled over."
 		}),
