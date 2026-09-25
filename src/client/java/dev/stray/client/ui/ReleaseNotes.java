@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.5.24", new String[]{
+			"Swap loadouts clicks the other slot after the chest opens. Key handling stops while that screen is up, so the click now runs at the start of the tick."
+		}),
 		new Entry("1.5.23", new String[]{
 			"Swap loadouts stays hidden. With farm keys on, breaking and movement release for the click and come back a tick later, before the movement packet, so it does not flag post."
 		}),

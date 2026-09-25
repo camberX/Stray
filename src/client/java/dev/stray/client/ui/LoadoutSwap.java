@@ -27,6 +27,7 @@ public final class LoadoutSwap {
 	private enum Phase {
 		IDLE,
 		HELD,
+		RELEASED,
 		RESTORE
 	}
 
@@ -38,8 +39,28 @@ public final class LoadoutSwap {
 	}
 
 	/**
+	 * Runs at the start of the client tick, including while a screen is open.
+	 * {@code handleKeybinds} does not run then, so the click has to happen here,
+	 * still before this tick's movement packet.
+	 */
+	public static void onStart(Minecraft client) {
+		if (client == null || client.options == null || phase != Phase.HELD) {
+			return;
+		}
+		suppress(client);
+		if (LoadoutsScreen.clickSilentNow(client)) {
+			phase = Phase.RELEASED;
+			return;
+		}
+		if (++waited > WAIT_TICKS) {
+			LoadoutsScreen.cancelSilent();
+			phase = Phase.RELEASED;
+		}
+	}
+
+	/**
 	 * Runs at the start of {@code handleKeybinds}, before this tick's attack
-	 * and movement packets.
+	 * and movement packets. Skipped while a screen is open.
 	 */
 	public static void preKeybinds(Minecraft client) {
 		if (client == null || client.options == null) {
@@ -50,16 +71,13 @@ public final class LoadoutSwap {
 			phase = Phase.IDLE;
 			return;
 		}
+		if (phase == Phase.RELEASED) {
+			suppress(client);
+			phase = Phase.RESTORE;
+			return;
+		}
 		if (phase == Phase.HELD) {
 			suppress(client);
-			if (LoadoutsScreen.clickSilentNow(client)) {
-				phase = Phase.RESTORE;
-				return;
-			}
-			if (++waited > WAIT_TICKS) {
-				LoadoutsScreen.cancelSilent();
-				phase = Phase.RESTORE;
-			}
 			return;
 		}
 		boolean down = held();

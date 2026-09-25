@@ -317,6 +317,7 @@ public final class StrayClient implements ClientModInitializer {
 		});
 
 		ClientTickEvents.START_CLIENT_TICK.register(client -> {
+			LoadoutSwap.onStart(client);
 			AutoRogue.tick(client);
 			FarmKeys.tick(client);
 			ChestAimer.tick(client);
