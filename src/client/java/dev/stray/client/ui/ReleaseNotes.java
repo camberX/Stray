@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.5.18", new String[]{
+			"Top down keeps a round 6-block hole. Chests use a transparent black fill with an accent outline when that option is on."
+		}),
 		new Entry("1.5.17", new String[]{
 			"The game draws again. The top-down cut no longer rewrites the text, item, and entity shaders."
 		}),

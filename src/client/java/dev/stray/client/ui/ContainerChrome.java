@@ -56,14 +56,15 @@ public final class ContainerChrome {
 		float y = box.stray$topPos() - PAD;
 		float w = box.stray$imageWidth() + PAD * 2;
 		float h = box.stray$imageHeight() + PAD * 2;
-		ClickLook.panel(graphics, x, y, w, h, 0, ClickLook.PANEL, Theme.LINE);
+		int stroke = StrayConfig.get().accentOutlines ? Theme.ACCENT : ClickLook.OUTLINE;
+		ClickLook.solid(graphics, x, y, w, h, ClickLook.PANEL, stroke);
 		int left = box.stray$leftPos();
 		int top = box.stray$topPos();
 		for (Slot slot : container.getMenu().slots) {
 			if (slot == null || !slot.isActive() || ChestFillers.hide(slot)) {
 				continue;
 			}
-			ClickLook.panel(graphics, left + slot.x, top + slot.y, SLOT, SLOT, 0, ClickLook.FILL, Theme.LINE);
+			ClickLook.solid(graphics, left + slot.x, top + slot.y, SLOT, SLOT, ClickLook.FILL, ClickLook.OUTLINE);
 		}
 		player(graphics, container, box);
 	}

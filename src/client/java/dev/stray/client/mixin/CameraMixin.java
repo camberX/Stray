@@ -2,6 +2,7 @@ package dev.stray.client.mixin;
 
 import dev.stray.client.movement.MovementRings;
 import dev.stray.client.render.AspectFov;
+import dev.stray.client.render.TopDownCapture;
 import net.minecraft.client.Camera;
 import net.minecraft.client.DeltaTracker;
 import org.spongepowered.asm.mixin.Mixin;
@@ -46,6 +47,9 @@ public abstract class CameraMixin {
 		index = 1
 	)
 	private float stray$aspectCull(float aspect) {
+		if (TopDownCapture.capturing()) {
+			return aspect;
+		}
 		return AspectFov.apply(aspect);
 	}
 }

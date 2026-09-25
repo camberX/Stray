@@ -55,6 +55,18 @@ public final class ClickLook {
 		}
 	}
 
+	/** Flat fill with a real stroke. Does not turn an accent outline into a fill. */
+	public static void solid(GuiGraphicsExtractor graphics, float x, float y, float w, float h, int fill, int stroke) {
+		if (w < 2f || h < 2f) {
+			return;
+		}
+		GuiDraw.fillSmooth(graphics, x, y, w, h, fill);
+		GuiDraw.fillSmooth(graphics, x, y, w, STROKE, stroke);
+		GuiDraw.fillSmooth(graphics, x, y + h - STROKE, w, STROKE, stroke);
+		GuiDraw.fillSmooth(graphics, x, y, STROKE, h, stroke);
+		GuiDraw.fillSmooth(graphics, x + w - STROKE, y, STROKE, h, stroke);
+	}
+
 	public static void frame(GuiGraphicsExtractor graphics, float x, float y, float w, float h) {
 		GuiDraw.fillSmooth(graphics, x, y, w, STROKE, OUTLINE);
 		GuiDraw.fillSmooth(graphics, x, y + h - STROKE, w, STROKE, OUTLINE);
