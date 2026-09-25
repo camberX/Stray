@@ -915,7 +915,7 @@ public final class ClickGui {
 		mods.add(mod("CH waypoints", "Mining", StrayScreen.Feature.CRYSTAL, null, () -> config.crystalHollowsWaypoints, v -> config.crystalHollowsWaypoints = v, true, false));
 		mods.add(mod("CH map", "Mining", StrayScreen.Feature.CH_MAP, null, () -> config.crystalHollowsMap, v -> config.crystalHollowsMap = v, true, false));
 		mods.add(mod("Metal detector", "Mining", StrayScreen.Feature.METAL, null, () -> config.metalDetectorSolver, v -> config.metalDetectorSolver = v, true, false));
-		mods.add(mod("Robot parts", "Mining", null, null, () -> config.nucleusAlertParts, v -> config.nucleusAlertParts = v, true, false));
+		mods.add(mod("Robot parts", "Mining", StrayScreen.Feature.NUCLEUS, null, () -> config.nucleusAlertParts, v -> config.nucleusAlertParts = v, true, false));
 		mods.add(mod("Divan tools", "Mining", null, null, () -> config.nucleusAlertTools, v -> config.nucleusAlertTools = v, true, false));
 		mods.add(mod("Nodes", "Mining", StrayScreen.Feature.NODES, null, () -> config.markersEnabled, v -> config.markersEnabled = v, true, false));
 		mods.add(mod("Node ESP", "Mining", StrayScreen.Feature.NODE_ESP, null, () -> config.boxFill, v -> config.boxFill = v, true, false));
@@ -952,6 +952,8 @@ public final class ClickGui {
 		mods.add(mod("Block marks", "Menus", StrayScreen.Feature.MARKS, null, () -> config.blockMarksEnabled, v -> config.blockMarksEnabled = v, true, false));
 		mods.add(mod("Command rings", "Menus", StrayScreen.Feature.RINGS, null, () -> config.commandRingsEnabled, v -> config.commandRingsEnabled = v, true, false));
 		mods.add(mod("Paths", "Menus", StrayScreen.Feature.PATHS, null, () -> config.pathsEnabled, v -> config.pathsEnabled = v, true, false));
+		mods.add(mod("Shortcuts", "Menus", null, null, () -> config.commandShortcutsEnabled, v -> config.commandShortcutsEnabled = v, true, false));
+		mods.add(mod("Movement rings", "Menus", StrayScreen.Feature.MOVE, null, () -> config.movementRingsEnabled, v -> config.movementRingsEnabled = v, true, false));
 
 		mods.add(hold("Accent", "Theme", StrayScreen.Feature.ACCENT));
 		mods.add(mod("HUD", "Theme", null, null, () -> true, v -> {

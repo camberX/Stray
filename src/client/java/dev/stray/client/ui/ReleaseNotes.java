@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.5.19", new String[]{
+			"Top down only hides blocks above your head. Settings buttons keep a black fill with an accent outline. Shortcuts, movement rings, and nucleus settings are in the click GUI."
+		}),
 		new Entry("1.5.18", new String[]{
 			"Top down keeps a round 6-block hole. Chests use a transparent black fill with an accent outline when that option is on."
 		}),

@@ -95,7 +95,8 @@ public final class TopDownCapture {
 		float fov = Mth.clamp(savedFov, 30f, 110f);
 		float far = Math.max(savedFar, altitude + 64f);
 		float near = Camera.PROJECTION_Z_NEAR;
-		cutThreshold = (float) (client.player.getBlockY() - (eye.y + altitude));
+		// Only blocks above the player's head. The floor and the layer they stand on stay.
+		cutThreshold = (float) (client.player.getBlockY() + 2.0 - (eye.y + altitude));
 		boolean swapped = false;
 		capturing = true;
 		try {

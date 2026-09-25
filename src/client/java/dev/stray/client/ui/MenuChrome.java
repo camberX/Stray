@@ -1,5 +1,6 @@
 package dev.stray.client.ui;
 
+import dev.stray.client.config.StrayConfig;
 import dev.stray.client.render.GuiDraw;
 import dev.stray.client.render.Starfield;
 import dev.stray.client.render.TitleBackdrop;
@@ -87,34 +88,16 @@ public final class MenuChrome {
 		float alpha = widget.getAlpha();
 		boolean hover = widget.active && widget.isHoveredOrFocused();
 		int fill = Theme.withAlpha(ClickLook.FILL, Math.round(136 * alpha));
-		int outline = hover ? Theme.ACCENT : Theme.LINE;
-		ClickLook.panel(
-			graphics,
-			widget.getX(),
-			widget.getY(),
-			widget.getWidth(),
-			widget.getHeight(),
-			0,
-			fill,
-			outline
-		);
+		int outline = hover || StrayConfig.get().accentOutlines ? Theme.ACCENT : ClickLook.OUTLINE;
+		ClickLook.solid(graphics, widget.getX(), widget.getY(), widget.getWidth(), widget.getHeight(), fill, outline);
 	}
 
 	public static void field(GuiGraphicsExtractor graphics, AbstractWidget widget) {
 		float alpha = widget.getAlpha();
 		boolean focus = widget.isFocused();
 		int fill = Theme.withAlpha(ClickLook.FILL, Math.round(136 * alpha));
-		int outline = focus ? Theme.ACCENT : Theme.LINE;
-		ClickLook.panel(
-			graphics,
-			widget.getX(),
-			widget.getY(),
-			widget.getWidth(),
-			widget.getHeight(),
-			0,
-			fill,
-			outline
-		);
+		int outline = focus || StrayConfig.get().accentOutlines ? Theme.ACCENT : ClickLook.OUTLINE;
+		ClickLook.solid(graphics, widget.getX(), widget.getY(), widget.getWidth(), widget.getHeight(), fill, outline);
 	}
 
 	public static void slider(GuiGraphicsExtractor graphics, AbstractWidget widget, double value) {
@@ -124,15 +107,14 @@ public final class MenuChrome {
 		int w = widget.getWidth();
 		int h = widget.getHeight();
 		boolean hover = widget.active && widget.isHoveredOrFocused();
-		ClickLook.panel(
+		ClickLook.solid(
 			graphics,
 			x,
 			y,
 			w,
 			h,
-			0,
 			Theme.withAlpha(ClickLook.FILL, Math.round(136 * alpha)),
-			hover ? Theme.ACCENT : Theme.LINE
+			hover || StrayConfig.get().accentOutlines ? Theme.ACCENT : ClickLook.OUTLINE
 		);
 		float t = (float) Math.max(0d, Math.min(1d, value));
 		float trackX = x + 4;
