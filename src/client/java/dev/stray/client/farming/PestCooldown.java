@@ -22,8 +22,11 @@ import java.util.regex.Pattern;
 
 /**
  * Garden pest spawn cooldown from the pests tab widget.
- * Full reduction shortens a 506 second cooldown to 209. The HUD counts that
- * reduced timer, and the swap title fires once it has been running for 204 seconds.
+ * The widget time is stored as an end timestamp. It is replaced when the
+ * widget is more than a few seconds later, or when a shorter time shows up,
+ * which is what happens in a pest spawn reduction set. A minutes-only value
+ * is treated as having just rolled over. The swap title still fires once the
+ * cooldown has been running for 204 seconds.
  */
 public final class PestCooldown {
 	public static final int BASE_SECONDS = 506;
@@ -51,6 +54,7 @@ public final class PestCooldown {
 	private static boolean cycle;
 	private static long anchorMs;
 	private static int elapsedAtAnchor;
+	private static long cooldownEndMs;
 	private static boolean titled;
 	private static int parseTick = Integer.MIN_VALUE;
 
@@ -124,6 +128,7 @@ public final class PestCooldown {
 		cycle = false;
 		anchorMs = 0L;
 		elapsedAtAnchor = 0;
+		cooldownEndMs = 0L;
 		titled = false;
 	}
 
@@ -143,29 +148,63 @@ public final class PestCooldown {
 			return;
 		}
 		int seconds = read.seconds();
+		boolean secondsShown = showsSeconds(read);
 		boolean jumped = cycle && previousSeconds >= 0 && seconds > previousSeconds + 15;
 		boolean opened = previousKind == Kind.READY || previousKind == Kind.MAX;
 		if (!cycle || jumped || opened) {
 			cycle = true;
 			anchorMs = now;
-			titled = false;
 			elapsedAtAnchor = jumped || opened ? 0 : Math.max(0, BASE_SECONDS - seconds);
+			titled = !jumped && !opened && elapsedAtAnchor >= SWAP_SECONDS;
+		}
+		long tabEnd = now + seconds * 1000L;
+		if (takeTabEnd(tabEnd, secondsShown)) {
+			cooldownEndMs = secondsShown ? tabEnd : tabEnd + 60_000L;
 		}
 		previousKind = Kind.COUNTING;
 		previousSeconds = seconds;
 	}
 
+	/**
+	 * Widget updates lag by a few seconds and never sit much higher than the
+	 * real cooldown. A shorter reading is real: either the minute rolled, or
+	 * a reduction set cut the timer.
+	 */
+	private static boolean takeTabEnd(long tabEnd, boolean secondsShown) {
+		if (cooldownEndMs <= 0L) {
+			return true;
+		}
+		if (tabEnd > cooldownEndMs + 6_000L) {
+			return true;
+		}
+		if (!secondsShown && tabEnd + 60_000L < cooldownEndMs) {
+			return true;
+		}
+		return secondsShown && tabEnd + 1_000L < cooldownEndMs;
+	}
+
+	private static boolean showsSeconds(Snap read) {
+		String label = read.label();
+		return label != null && !label.matches("\\d+m");
+	}
+
 	private static void refresh(Minecraft client, StrayConfig config, long now) {
-		int elapsed = elapsedAtAnchor + (int) Math.max(0L, (now - anchorMs) / 1000L);
-		int left = REDUCED_SECONDS - elapsed;
-		if (left <= 0) {
+		if (cycle && !titled) {
+			int elapsed = elapsedAtAnchor + (int) Math.max(0L, (now - anchorMs) / 1000L);
+			if (elapsed >= SWAP_SECONDS && config.pestCooldownTitle) {
+				titled = true;
+				title(client);
+			}
+		}
+		if (cooldownEndMs <= 0L) {
+			return;
+		}
+		long leftMs = cooldownEndMs - now;
+		if (leftMs <= 0L) {
 			snap = Snap.missing();
 			return;
 		}
-		if (!titled && elapsed >= SWAP_SECONDS && config.pestCooldownTitle) {
-			titled = true;
-			title(client);
-		}
+		int left = (int) ((leftMs + 999L) / 1000L);
 		snap = new Snap(true, Kind.COUNTING, left, format(left));
 	}
 
