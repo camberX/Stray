@@ -159,7 +159,7 @@ public class StrayScreen extends Screen {
 		PATHS("Paths", 5),
 		RINGS("Command rings", 4),
 		MOVE("WIP — DO NOT USE", 6),
-		LOADOUTS("Loadouts menu", 11),
+		LOADOUTS("Loadouts menu", 12),
 		WARDROBE("Wardrobe menu", 9),
 		NUCLEUS("Nucleus alerts", 2),
 		NODE_ESP("Node ESP", 4),
@@ -413,6 +413,7 @@ public class StrayScreen extends Screen {
 		new SearchEntry("Loadouts", Tab.MENUS, "Menus"),
 		new SearchEntry("Loadouts menu", Tab.MENUS, "Menus"),
 		new SearchEntry("Swap loadouts", Tab.KEYS, "Keys"),
+		new SearchEntry("Hide default menu", Tab.MENUS, "Menus"),
 		new SearchEntry("Loadout swap", Tab.MENUS, "Menus"),
 		new SearchEntry("Loadouts animation", Tab.MENUS, "Menus"),
 		new SearchEntry("Open animation", Tab.MENUS, "Menus"),
@@ -3757,6 +3758,7 @@ public class StrayScreen extends Screen {
 			case LOADOUTS -> {
 				y = cycle(graphics, font, ix, y, iw, mouseX, mouseY, "Swap A", config.loadoutSwapSlotALabel(), config::cycleLoadoutSwapSlotA);
 				y = cycle(graphics, font, ix, y, iw, mouseX, mouseY, "Swap B", config.loadoutSwapSlotBLabel(), config::cycleLoadoutSwapSlotB);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Hide default menu", config.loadoutHideDefault, v -> config.loadoutHideDefault = v);
 				drawSlotKeybinds(graphics, font, ix, y, iw, mouseX, mouseY);
 			}
 			case WARDROBE -> {

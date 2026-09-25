@@ -185,6 +185,7 @@ public final class StrayConfig {
 	public int loadoutSwapSlotA = 1;
 	public int loadoutSwapSlotB = 2;
 	public boolean loadoutSwapNextIsB = false;
+	public boolean loadoutHideDefault = true;
 	public String openWardrobeKey = "key.keyboard.unknown";
 	public String openProfileKey = "key.keyboard.unknown";
 	public String chestAimKey = "key.keyboard.unknown";
@@ -1128,6 +1129,9 @@ public final class StrayConfig {
 				loaded.loadoutSwapKey = blankKey(loaded.loadoutSwapKey, "key.keyboard.unknown");
 				loaded.loadoutSwapSlotA = clampLoadoutSwapSlot(loaded.loadoutSwapSlotA);
 				loaded.loadoutSwapSlotB = clampLoadoutSwapSlot(loaded.loadoutSwapSlotB);
+				if (!json.has("loadoutHideDefault")) {
+					loaded.loadoutHideDefault = true;
+				}
 				loaded.openWardrobeKey = blankKey(loaded.openWardrobeKey, "key.keyboard.unknown");
 				loaded.openProfileKey = blankKey(loaded.openProfileKey, "key.keyboard.unknown");
 				loaded.chestAimKey = blankKey(loaded.chestAimKey, "key.keyboard.unknown");

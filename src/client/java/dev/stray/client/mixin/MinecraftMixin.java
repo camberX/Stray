@@ -34,6 +34,14 @@ public class MinecraftMixin {
 		return WardrobeScreen.wrap(LoadoutsScreen.wrap(screen));
 	}
 
+	@Inject(method = "setScreen", at = @At("RETURN"))
+	private void stray$hideDefaultLoadouts(Screen screen, CallbackInfo ci) {
+		Minecraft client = (Minecraft) (Object) this;
+		if (client.screen != null && LoadoutsScreen.hideDefaultChest(client.screen) && client.mouseHandler != null) {
+			client.mouseHandler.grabMouse();
+		}
+	}
+
 	@Inject(method = "setScreen", at = @At("HEAD"))
 	private void stray$autoExperimentsOpen(Screen screen, CallbackInfo ci) {
 		AutoExperiments.onOpen(screen);

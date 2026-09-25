@@ -4,7 +4,6 @@ import dev.stray.client.farming.AutoDna;
 import dev.stray.client.menu.SackRecipe;
 import dev.stray.client.farming.GardenPlots;
 import dev.stray.client.item.StoragePreview;
-import dev.stray.client.item.LoadoutsMenus;
 import dev.stray.client.ui.ChestFillers;
 import dev.stray.client.ui.ContainerChrome;
 import dev.stray.client.ui.LoadoutsScreen;
@@ -27,11 +26,7 @@ public class AbstractContainerScreenMixin {
 
 	@Inject(method = "extractRenderState", at = @At("HEAD"), cancellable = true)
 	private void stray$hideLoadoutSwap(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick, CallbackInfo ci) {
-		if (!LoadoutsScreen.hidingSwap()) {
-			return;
-		}
-		AbstractContainerScreen<?> chest = (AbstractContainerScreen<?>) (Object) this;
-		if (LoadoutsMenus.matches(chest.getMenu(), chest.getTitle())) {
+		if (LoadoutsScreen.hideDefaultChest((AbstractContainerScreen<?>) (Object) this)) {
 			ci.cancel();
 		}
 	}

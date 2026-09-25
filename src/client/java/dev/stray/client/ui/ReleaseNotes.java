@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.5.25", new String[]{
+			"Loadouts has a Hide default menu option. On, the swap key also hides Hypixel's loadouts chest and keeps the mouse grabbed."
+		}),
 		new Entry("1.5.24", new String[]{
 			"Swap loadouts clicks the other slot after the chest opens. Key handling stops while that screen is up, so the click now runs at the start of the tick."
 		}),

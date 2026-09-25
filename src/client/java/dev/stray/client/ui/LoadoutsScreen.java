@@ -185,7 +185,14 @@ public class LoadoutsScreen extends Screen {
 	}
 
 	public static boolean hidingSwap() {
-		return silentSwap;
+		return silentSwap && StrayConfig.get().loadoutHideDefault;
+	}
+
+	public static boolean hideDefaultChest(Screen screen) {
+		if (!hidingSwap() || !(screen instanceof AbstractContainerScreen<?> chest)) {
+			return false;
+		}
+		return LoadoutsMenus.matches(chest.getMenu(), chest.getTitle());
 	}
 
 	public static void cancelSilent() {
