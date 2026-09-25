@@ -286,7 +286,7 @@ public class ProfileViewerScreen extends Screen {
 		for (Tab value : Tab.values()) {
 			boolean on = tab == value;
 			boolean hover = GuiDraw.hovered(mouseX, mouseY, x, y, w, 26);
-			int fill = on ? Theme.withAlpha(Theme.ACCENT, 38) : hover ? Theme.CARD_HOVER : Theme.CARD;
+			int fill = on || hover ? Theme.CARD_HOVER : Theme.CARD;
 			int line = on ? Theme.ACCENT : Theme.LINE;
 			ClickLook.panel(graphics, x, y, w, 26, 7, fill, line);
 			int color = on ? Theme.ACCENT : Theme.TEXT;

@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.5.20", new String[]{
+			"Menus keep a black fill. The accent color is only the outline."
+		}),
 		new Entry("1.5.19", new String[]{
 			"Top down only hides blocks above your head. Settings buttons keep a black fill with an accent outline. Shortcuts, movement rings, and nucleus settings are in the click GUI."
 		}),

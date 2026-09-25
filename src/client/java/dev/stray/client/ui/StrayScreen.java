@@ -1239,7 +1239,7 @@ public class StrayScreen extends Screen {
 				boolean hover = GuiDraw.hovered(mouseX, mouseY, mobListX, iy, mobListW, row)
 					&& GuiDraw.hovered(mouseX, mouseY, mobListX, mobListY, mobListW, mobListH);
 				if (on) {
-					GuiDraw.rounded(graphics, mobListX - 2, iy, mobListW + 4, row, 5, Theme.withAlpha(Theme.ACCENT, 38));
+					GuiDraw.rounded(graphics, mobListX - 2, iy, mobListW + 4, row, 5, Theme.CARD_HOVER);
 					GuiDraw.rounded(graphics, mobListX - 2, iy + 3, 2, row - 6, 1, Theme.ACCENT);
 				} else if (hover) {
 					GuiDraw.rounded(graphics, mobListX - 2, iy, mobListW + 4, row, 5, 0x10FFFFFF);
@@ -1908,7 +1908,7 @@ public class StrayScreen extends Screen {
 		boolean hover = GuiDraw.hovered(mouseX, mouseY, x, y, ICON_SLOT, 14);
 		float t = anim("icon-" + glyph, hover || active ? 1f : 0f);
 		if (t > 0.02f) {
-			GuiDraw.rounded(graphics, x, y, ICON_SLOT, 14, 4, Anim.fade(Theme.withAlpha(Theme.ACCENT, 40), t));
+			GuiDraw.rounded(graphics, x, y, ICON_SLOT, 14, 4, Anim.fade(Theme.CARD_HOVER, t));
 		}
 		float iw = GuiDraw.iconWidth(font, glyph);
 		GuiDraw.icon(graphics, font, glyph, x + (ICON_SLOT - iw) * 0.5f, GuiDraw.middle(y, 14), active ? Theme.ACCENT : Theme.MUTED);
@@ -1962,7 +1962,7 @@ public class StrayScreen extends Screen {
 		for (SearchEntry entry : matches) {
 			boolean hover = GuiDraw.hovered(mouseX, mouseY, searchFieldX, iy, searchFieldW, 16);
 			if (hover) {
-				GuiDraw.rounded(graphics, searchFieldX + 2, iy, searchFieldW - 4, 16, 4, Theme.withAlpha(Theme.ACCENT, 28));
+				GuiDraw.rounded(graphics, searchFieldX + 2, iy, searchFieldW - 4, 16, 4, Theme.CARD_HOVER);
 			}
 			GuiDraw.menu(graphics, font, entry.label, searchFieldX + 8, GuiDraw.middle(iy, 16), hover ? Theme.ACCENT : Theme.TEXT);
 			GuiDraw.small(graphics, font, entry.hint, searchFieldX + searchFieldW - GuiDraw.smallWidth(font, entry.hint) - 8, GuiDraw.middle(iy, 16) + 1, Theme.MUTED);
@@ -2143,7 +2143,7 @@ public class StrayScreen extends Screen {
 					boolean rowHover = GuiDraw.hovered(mouseX, mouseY, fontListX, iy, fontListW, FONT_ROW)
 						&& GuiDraw.hovered(mouseX, mouseY, fontListX, fontListY, fontListW, fontListH);
 					if (on || rowHover) {
-						GuiDraw.rounded(graphics, fontListX, iy, fontListW, FONT_ROW, 3, Theme.withAlpha(Theme.ACCENT, on ? 40 : 22));
+						GuiDraw.rounded(graphics, fontListX, iy, fontListW, FONT_ROW, 3, on ? Theme.CARD_HOVER : Theme.CARD);
 					}
 					String label = family.isEmpty() ? "Nunito (default)" : fontLabel(family);
 					GuiDraw.menu(graphics, font, clip(font, label, (int) fontListW - 10), fontListX + 5, GuiDraw.middle(iy, FONT_ROW), on ? Theme.ACCENT : Theme.TEXT);
@@ -3887,7 +3887,7 @@ public class StrayScreen extends Screen {
 		boolean hovered = GuiDraw.hovered(mouseX, mouseY, chipX, y, chipW, row);
 		float hot = anim("bind-" + which, hovered || listening ? 1f : 0f);
 		if (hot > 0.02f) {
-			GuiDraw.rounded(graphics, chipX, chipY, chipW, chipH, 4, Anim.fade(Theme.withAlpha(Theme.ACCENT, controlCenter() ? 48 : 32), hot));
+			GuiDraw.rounded(graphics, chipX, chipY, chipW, chipH, 4, Anim.fade(Theme.CARD_HOVER, hot));
 		}
 		float labelY = GuiDraw.middle(y, row);
 		GuiDraw.menu(graphics, font, label, x + 1, labelY, ink());
@@ -3963,8 +3963,8 @@ public class StrayScreen extends Screen {
 				GuiDraw.rounded(graphics, cx, rowY + 1, cw, ROW - 2, 7, on ? Theme.ACCENT : hover ? 0x33FFFFFF : ControlChrome.searchFill());
 				GuiDraw.menu(graphics, font, labels[i], cx + 5, GuiDraw.middle(rowY, ROW), on ? 0xFFFFFFFF : ink());
 			} else {
-				ClickLook.panel(graphics, cx, rowY + 1, cw, ROW - 2, 5, on ? Theme.ACCENT : hover ? Theme.CARD_HOVER : Theme.CARD, on ? Theme.ACCENT : Theme.LINE);
-				GuiDraw.menu(graphics, font, labels[i], cx + 5, GuiDraw.middle(rowY, ROW), on ? Theme.WINDOW_SOLID : Theme.TEXT);
+				ClickLook.panel(graphics, cx, rowY + 1, cw, ROW - 2, 5, on || hover ? Theme.CARD_HOVER : Theme.CARD, on ? Theme.ACCENT : Theme.LINE);
+				GuiDraw.menu(graphics, font, labels[i], cx + 5, GuiDraw.middle(rowY, ROW), Theme.TEXT);
 			}
 			int index = i;
 			hits.add(new Hit(cx, rowY, cw, ROW, () -> pick.accept(index)));

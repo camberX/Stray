@@ -14,7 +14,6 @@ public final class ClickLook {
 	public static final int PANEL = 0x99000000;
 	public static final int TEXT = 0xFFFFFFFF;
 	public static final int DIM = 0xFFAAAAAA;
-	private static final int ACCENT_ALPHA = 115;
 
 	private ClickLook() {
 	}
@@ -42,9 +41,15 @@ public final class ClickLook {
 		if (w < 2f || h < 2f) {
 			return;
 		}
-		int paint = accentOutline(outline) ? Theme.withAlpha(Theme.ACCENT, ACCENT_ALPHA) : fill;
 		frame(graphics, x, y, w, h);
-		GuiDraw.fillSmooth(graphics, x + STROKE, y + STROKE, w - STROKE * 2f, h - STROKE * 2f, paint);
+		GuiDraw.fillSmooth(graphics, x + STROKE, y + STROKE, w - STROKE * 2f, h - STROKE * 2f, fill);
+		if (accentOutline(outline)) {
+			int stroke = 0xFF000000 | (Theme.ACCENT & 0xFFFFFF);
+			GuiDraw.fillSmooth(graphics, x, y, w, STROKE, stroke);
+			GuiDraw.fillSmooth(graphics, x, y + h - STROKE, w, STROKE, stroke);
+			GuiDraw.fillSmooth(graphics, x, y, STROKE, h, stroke);
+			GuiDraw.fillSmooth(graphics, x + w - STROKE, y, STROKE, h, stroke);
+		}
 		if ((accent & 0xFF000000) != 0) {
 			float bar = 2f;
 			if (accentRight) {
