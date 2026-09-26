@@ -176,7 +176,9 @@ public final class InventoryHudRenderer {
 		String emptyMark,
 		boolean selected
 	) {
-		HudChrome.slot(graphics, x, y, SLOT, selected);
+		if (!StrayConfig.get().inventoryHudMinimal) {
+			HudChrome.slot(graphics, x, y, SLOT, selected);
+		}
 		if (stack == null || stack.isEmpty()) {
 			if (emptyMark != null) {
 				GuiDraw.small(
