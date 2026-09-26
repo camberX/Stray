@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.5.31", new String[]{
+			"Click GUI feature cards sit a little closer to the column edges."
+		}),
 		new Entry("1.5.30", new String[]{
 			"Click GUI feature cards have a little more side padding, and the feature names are slightly smaller."
 		}),
