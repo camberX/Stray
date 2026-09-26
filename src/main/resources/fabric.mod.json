@@ -11,6 +11,10 @@
 		"sources": "https://github.com/camberX/Eisenmann"
 	},
 	"license": "CC0-1.0",
+	"custom": {
+		"stray:channel": "${channel}",
+		"stray:sha": "${sha}"
+	},
 	"icon": "assets/stray/icon.png",
 	"environment": "client",
 	"entrypoints": {

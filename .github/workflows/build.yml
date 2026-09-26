@@ -1,5 +1,14 @@
 name: build
-on: [pull_request, push]
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      release:
+        description: Publish this commit as the player release
+        type: boolean
+        default: false
 
 jobs:
   build:
@@ -7,53 +16,98 @@ jobs:
     permissions:
       contents: write
     steps:
-      - name: checkout repository
-        uses: actions/checkout@v6
-      - name: validate gradle wrapper
-        uses: gradle/actions/wrapper-validation@v6
-      - name: setup jdk
-        uses: actions/setup-java@v5
-        with:
-          java-version: '25'
-          distribution: 'temurin'
-      - name: make gradle wrapper executable
-        run: chmod +x ./gradlew
-      - name: build
-        run: ./gradlew build
-      - name: publish GitHub release
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          VERSION=$(grep '^version=' gradle.properties | cut -d= -f2 | tr -d '[:space:]')
-          TAG="v${VERSION}"
-          JAR="build/libs/stray-${VERSION}.jar"
-          if [ ! -f "$JAR" ]; then
-            echo "Missing $JAR"
-            exit 1
-          fi
-          if gh release view "$TAG" >/dev/null 2>&1; then
-            echo "Release $TAG already exists"
-          else
-            gh release create "$TAG" "$JAR" --title "$VERSION" --generate-notes
-          fi
-          mkdir -p web/public/mod
-          cp "$JAR" "web/public/mod/stray-${VERSION}.jar"
-          cp "$JAR" web/public/mod/stray.jar
-          printf '{\n    "version": "%s",\n    "minecraft": "26.1.2",\n    "file": "stray-%s.jar"\n}\n' "$VERSION" "$VERSION" > web/public/mod/latest.json
-          cp web/public/mod/latest.json web/public/mod.json
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -- web/public/mod/latest.json web/public/mod.json "web/public/mod/stray-${VERSION}.jar" web/public/mod/stray.jar
-          if git diff --cached --quiet; then
-            echo "Download files are already committed"
-            exit 0
-          fi
-          git commit -m "Publish stray-${VERSION}.jar for the auto-updater."
-          git push
-      - name: capture build artifacts
-        continue-on-error: true
-        uses: actions/upload-artifact@v7
-        with:
-          name: Artifacts
-          path: build/libs/
+    - name: checkout repository
+      uses: actions/checkout@v6
+    - name: validate gradle wrapper
+      uses: gradle/actions/wrapper-validation@v6
+    - name: setup jdk
+      uses: actions/setup-java@v5
+      with:
+        java-version: '25'
+        distribution: 'temurin'
+    - name: make gradle wrapper executable
+      run: chmod +x ./gradlew
+    - name: build
+      if: github.event_name != 'workflow_dispatch' || inputs.release != true
+      env:
+        EVENT: ${{ github.event_name }}
+        REF: ${{ github.ref }}
+        SHA: ${{ github.sha }}
+      run: |
+        if [ "$EVENT" = "push" ] && [ "$REF" = "refs/heads/main" ]; then
+          ./gradlew build -PstrayChannel=dev -PstraySha="$SHA"
+        else
+          ./gradlew build
+        fi
+    - name: publish dev jar
+      if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        SHA: ${{ github.sha }}
+        RUN: ${{ github.run_id }}
+      run: |
+        set -euo pipefail
+        VERSION=$(grep '^version=' gradle.properties | cut -d= -f2 | tr -d '[:space:]')
+        JAR=$(ls build/libs/stray-dev-*.jar | head -n 1)
+        if [ ! -f "$JAR" ]; then
+          echo "Missing dev jar"
+          exit 1
+        fi
+        WORK=$(mktemp -d)
+        git config --global user.name "github-actions[bot]"
+        git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+        git init "$WORK"
+        git -C "$WORK" checkout -b dev-builds
+        cp "$JAR" "$WORK/stray-dev.jar"
+        printf '{\n    "version": "%s",\n    "sha": "%s",\n    "run": "%s",\n    "file": "stray-dev.jar"\n}\n' "$VERSION" "$SHA" "$RUN" > "$WORK/dev.json"
+        git -C "$WORK" add stray-dev.jar dev.json
+        git -C "$WORK" commit -m "Dev build ${SHA}"
+        git -C "$WORK" push --force "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" HEAD:dev-builds
+    - name: build release
+      if: github.event_name == 'workflow_dispatch' && inputs.release == true
+      run: ./gradlew build
+    - name: publish GitHub release
+      if: github.event_name == 'workflow_dispatch' && inputs.release == true
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        VERSION=$(grep '^version=' gradle.properties | cut -d= -f2 | tr -d '[:space:]')
+        TAG="v${VERSION}"
+        JAR="build/libs/stray-${VERSION}.jar"
+        if [ ! -f "$JAR" ]; then
+          echo "Missing $JAR"
+          exit 1
+        fi
+        if gh release view "$TAG" >/dev/null 2>&1; then
+          echo "Release $TAG already exists"
+        else
+          gh release create "$TAG" "$JAR" --title "$VERSION" --generate-notes
+        fi
+        mkdir -p web/public/mod
+        cp "$JAR" "web/public/mod/stray-${VERSION}.jar"
+        cp "$JAR" web/public/mod/stray.jar
+        printf '{\n    "version": "%s",\n    "minecraft": "26.1.2",\n    "file": "stray-%s.jar"\n}\n' "$VERSION" "$VERSION" > web/public/mod/latest.json
+        cp web/public/mod/latest.json web/public/mod.json
+        git config user.name "github-actions[bot]"
+        git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+        git add -- web/public/mod/latest.json web/public/mod.json "web/public/mod/stray-${VERSION}.jar" web/public/mod/stray.jar
+        if git diff --cached --quiet; then
+          echo "Download files are already committed"
+          exit 0
+        fi
+        git commit -m "Publish stray-${VERSION}.jar for the auto-updater."
+        git push
+    - name: capture build artifacts
+      continue-on-error: true
+      uses: actions/upload-artifact@v7
+      with:
+        name: stray-dev
+        path: build/libs/stray-dev*.jar
+        if-no-files-found: ignore
+    - name: capture release artifacts
+      continue-on-error: true
+      if: github.event_name != 'push'
+      uses: actions/upload-artifact@v7
+      with:
+        name: Artifacts
+        path: build/libs/

@@ -24,9 +24,11 @@ import java.util.Locale;
 import java.util.Optional;
 
 /**
- * Optional launch gate. When {@code autoUpdate} is on, Minecraft waits here
- * for stray.gay. A newer jar is written into mods, the old one is
- * retired, and this process exits so the next launch loads the new jar.
+ * Optional launch gate. Release jars follow stray.gay and GitHub Releases.
+ * A dev jar follows the latest GitHub Actions build on main instead, and
+ * never replaces a release jar. A newer jar is written into mods, the old
+ * one of the same channel is retired, and this process exits so the next
+ * launch loads the new jar.
  */
 public final class AutoUpdate implements PreLaunchEntrypoint {
 	private static final String DOWNLOAD = UpdateMeta.SHOP + "/download";
@@ -85,6 +87,9 @@ public final class AutoUpdate implements PreLaunchEntrypoint {
 	 */
 	public static String clientLaunchCheck(boolean autoUpdate, boolean notify) {
 		log("Client launch: auto-update " + (autoUpdate ? "on" : "off") + ", notify " + (notify ? "on" : "off") + ".");
+		if (devChannel()) {
+			return clientLaunchCheckDev(autoUpdate, notify);
+		}
 		if (autoUpdate) {
 			if (fetched) {
 				log("Already queried stray.gay during PreLaunch.");
@@ -217,6 +222,9 @@ public final class AutoUpdate implements PreLaunchEntrypoint {
 	}
 
 	private static UpdateOutcome fetchAndApply(boolean closeGame) {
+		if (devChannel()) {
+			return fetchAndApplyDev(closeGame);
+		}
 		fetched = true;
 		Path mods = modsDir();
 		Path current = currentJar();
@@ -388,7 +396,186 @@ public final class AutoUpdate implements PreLaunchEntrypoint {
 		urls.add("https://raw.githubusercontent.com/camberX/voidmark/main/web/public/mod/" + file);
 		urls.add("https://raw.githubusercontent.com/camberX/Stray/main/web/public/mod/stray.jar");
 		urls.add("https://raw.githubusercontent.com/camberX/voidmark/main/web/public/mod/stray.jar");
-		return new Remote(version, file, urls);
+		return new Remote(version, file, urls, null);
+	}
+
+	private static String clientLaunchCheckDev(boolean autoUpdate, boolean notify) {
+		if (autoUpdate) {
+			if (fetched) {
+				log("Already queried GitHub Actions during PreLaunch.");
+				return null;
+			}
+			checkAndInstall(true);
+			return null;
+		}
+		if (!notify) {
+			log("Not checking for a dev build (both toggles off).");
+			return null;
+		}
+		if (fetched) {
+			return null;
+		}
+		fetched = true;
+		Remote remote = fetchDevRemote();
+		if (remote == null) {
+			log("No dev build info.");
+			return null;
+		}
+		String sha = installedSha();
+		if (!sha.isEmpty() && sha.equals(remote.sha)) {
+			log("Dev build is current (" + shortSha(sha) + ").");
+			return null;
+		}
+		log("Newer dev build " + shortSha(remote.sha) + " is on GitHub Actions. Turn on Auto update to install it.");
+		return shortSha(remote.sha);
+	}
+
+	private static UpdateOutcome fetchAndApplyDev(boolean closeGame) {
+		fetched = true;
+		Path mods = modsDir();
+		Path current = currentJar();
+		if (current == null) {
+			current = mods.resolve("stray-dev.jar");
+		}
+		String sha = installedSha();
+		try {
+			Remote remote = fetchDevRemote();
+			if (remote == null) {
+				String message = "No dev build info.";
+				log(message);
+				return UpdateOutcome.failed(message);
+			}
+			if (!sha.isEmpty() && sha.equals(remote.sha)) {
+				String message = "Dev build is current (" + shortSha(sha) + ").";
+				log(message);
+				return UpdateOutcome.current(shortSha(sha), message);
+			}
+			String label = shortSha(remote.sha);
+			if (closeGame) {
+				log("Found dev build " + label + ". Downloading and closing Minecraft so the new jar can load.");
+			} else {
+				log("Found dev build " + label + ". Downloading. Restart Minecraft to load it.");
+			}
+			Path dest = apply(current, remote);
+			if (dest == null) {
+				String message = "Dev update failed. Continuing with " + (sha.isEmpty() ? "this build" : shortSha(sha)) + ".";
+				log(message);
+				return UpdateOutcome.failed(message);
+			}
+			return UpdateOutcome.updated(label, "Updated to dev build " + label + ". Closing Minecraft.", false);
+		} catch (Exception exception) {
+			String message = "Dev update failed: " + exception.getMessage();
+			log(message);
+			Stray.LOGGER.warn("Dev auto-update failed", exception);
+			return UpdateOutcome.failed(message);
+		}
+	}
+
+	/**
+	 * Latest successful Actions build on main, once that run has published {@code dev-builds}.
+	 */
+	private static Remote fetchDevRemote() {
+		HttpClient http = HttpClient.newBuilder()
+			.followRedirects(HttpClient.Redirect.NORMAL)
+			.connectTimeout(Duration.ofSeconds(6))
+			.build();
+		String runSha = latestActionSha(http);
+		if (runSha == null || runSha.isBlank()) {
+			log("Could not read the latest GitHub Actions run.");
+			return null;
+		}
+		JsonObject json = null;
+		for (String url : List.of(
+			"https://raw.githubusercontent.com/camberX/Stray/dev-builds/dev.json",
+			"https://raw.githubusercontent.com/camberX/voidmark/dev-builds/dev.json"
+		)) {
+			JsonObject candidate = UpdateMeta.getJson(http, url, 12);
+			if (candidate != null && candidate.has("sha")) {
+				json = candidate;
+				break;
+			}
+		}
+		if (json == null) {
+			log("No published dev build yet.");
+			return null;
+		}
+		String sha = json.get("sha").getAsString().trim();
+		if (!runSha.equalsIgnoreCase(sha)) {
+			log("Latest Actions run " + shortSha(runSha) + " is not published yet (dev jar is " + shortSha(sha) + ").");
+			return null;
+		}
+		String version = json.has("version") ? json.get("version").getAsString().trim() : "";
+		if (version.isEmpty()) {
+			version = installedVersion();
+		}
+		List<String> urls = new ArrayList<>();
+		urls.add("https://raw.githubusercontent.com/camberX/Stray/dev-builds/stray-dev.jar");
+		urls.add("https://github.com/camberX/Stray/raw/dev-builds/stray-dev.jar");
+		urls.add("https://raw.githubusercontent.com/camberX/voidmark/dev-builds/stray-dev.jar");
+		return new Remote(version, "stray-dev.jar", urls, sha);
+	}
+
+	private static String latestActionSha(HttpClient http) {
+		for (String url : List.of(
+			"https://api.github.com/repos/camberX/Stray/actions/workflows/build.yml/runs?branch=main&status=success&per_page=8",
+			"https://api.github.com/repos/camberX/voidmark/actions/workflows/build.yml/runs?branch=main&status=success&per_page=8"
+		)) {
+			JsonObject json = UpdateMeta.getJson(http, url, 12, "application/vnd.github+json");
+			if (json == null || !json.has("workflow_runs") || !json.get("workflow_runs").isJsonArray()) {
+				continue;
+			}
+			for (var element : json.getAsJsonArray("workflow_runs")) {
+				if (!element.isJsonObject()) {
+					continue;
+				}
+				JsonObject run = element.getAsJsonObject();
+				String branch = text(run, "head_branch");
+				String event = text(run, "event");
+				String sha = text(run, "head_sha");
+				if ("main".equals(branch) && "push".equals(event) && !sha.isEmpty()) {
+					return sha;
+				}
+			}
+		}
+		return null;
+	}
+
+	private static String text(JsonObject json, String key) {
+		if (json == null || !json.has(key) || json.get(key).isJsonNull()) {
+			return "";
+		}
+		return json.get(key).getAsString().trim();
+	}
+
+	private static boolean devChannel() {
+		return "dev".equals(installedCustom("stray:channel"));
+	}
+
+	private static String installedSha() {
+		return installedCustom("stray:sha");
+	}
+
+	private static String installedCustom(String key) {
+		Optional<ModContainer> container = FabricLoader.getInstance().getModContainer(Stray.MOD_ID);
+		if (container.isEmpty()) {
+			return "";
+		}
+		net.fabricmc.loader.api.metadata.CustomValue value = container.get().getMetadata().getCustomValue(key);
+		if (value == null) {
+			return "";
+		}
+		try {
+			return value.getAsString().trim();
+		} catch (Exception ignored) {
+			return "";
+		}
+	}
+
+	private static String shortSha(String sha) {
+		if (sha == null || sha.isBlank()) {
+			return "unknown";
+		}
+		return sha.length() <= 7 ? sha : sha.substring(0, 7);
 	}
 
 	private static Path apply(Path current, Remote remote) throws Exception {
@@ -398,10 +585,10 @@ public final class AutoUpdate implements PreLaunchEntrypoint {
 		}
 		Path dest = mods.resolve(remote.file).toAbsolutePath().normalize();
 		if (!mods.equals(dest.getParent()) || dest.equals(current)) {
-			dest = mods.resolve("stray-" + remote.version + ".jar");
+			dest = mods.resolve(remote.sha == null ? "stray-" + remote.version + ".jar" : "stray-dev.jar");
 		}
 		if (dest.equals(current)) {
-			dest = mods.resolve("stray-" + remote.version + "-new.jar");
+			dest = mods.resolve(remote.sha == null ? "stray-" + remote.version + "-new.jar" : "stray-dev-new.jar");
 		}
 		Path part = dest.resolveSibling(dest.getFileName() + ".part");
 		Files.deleteIfExists(part);
@@ -433,7 +620,9 @@ public final class AutoUpdate implements PreLaunchEntrypoint {
 			Files.move(part, dest, StandardCopyOption.REPLACE_EXISTING);
 		}
 		for (Path old : staleJars(mods, dest)) {
-			retire(old);
+			if (sameChannel(old, dest)) {
+				retire(old);
+			}
 		}
 		sweep(mods, dest);
 		return dest;
@@ -478,7 +667,14 @@ public final class AutoUpdate implements PreLaunchEntrypoint {
 
 	private static boolean validJar(Path path, Remote remote) {
 		String version = jarVersion(path);
-		return version != null && remote.version.equals(version);
+		if (version == null || !remote.version.equals(version)) {
+			return false;
+		}
+		if (remote.sha == null) {
+			return !"dev".equals(jarCustom(path, "stray:channel"));
+		}
+		return remote.sha.equalsIgnoreCase(jarCustom(path, "stray:sha"))
+			&& "dev".equals(jarCustom(path, "stray:channel"));
 	}
 
 	private static String jarVersion(Path path) {
@@ -619,7 +815,9 @@ public final class AutoUpdate implements PreLaunchEntrypoint {
 					|| name.endsWith(".part")
 					|| name.endsWith(".disabled")
 					|| name.endsWith(".jar.old");
-				boolean extraJar = name.endsWith(".jar") && (keepAbs == null || !absolute.equals(keepAbs));
+				boolean extraJar = name.endsWith(".jar")
+					&& (keepAbs == null || !absolute.equals(keepAbs))
+					&& (keepAbs == null || sameChannel(absolute, keepAbs));
 				if (trash || extraJar) {
 					if (deleteQuiet(absolute)) {
 						if (extraJar) {
@@ -631,6 +829,36 @@ public final class AutoUpdate implements PreLaunchEntrypoint {
 				}
 			}
 		} catch (Exception ignored) {
+		}
+	}
+
+	private static boolean sameChannel(Path left, Path right) {
+		return devJar(left) == devJar(right);
+	}
+
+	private static boolean devJar(Path path) {
+		return "dev".equals(jarCustom(path, "stray:channel"));
+	}
+
+	private static String jarCustom(Path path, String key) {
+		try (java.util.zip.ZipFile zip = new java.util.zip.ZipFile(path.toFile())) {
+			java.util.zip.ZipEntry entry = zip.getEntry("fabric.mod.json");
+			if (entry == null) {
+				return "";
+			}
+			try (Reader reader = new java.io.InputStreamReader(zip.getInputStream(entry))) {
+				JsonObject metadata = JsonParser.parseReader(reader).getAsJsonObject();
+				if (!metadata.has("custom") || !metadata.get("custom").isJsonObject()) {
+					return "";
+				}
+				JsonObject custom = metadata.getAsJsonObject("custom");
+				if (!custom.has(key) || custom.get(key).isJsonNull()) {
+					return "";
+				}
+				return custom.get(key).getAsString().trim();
+			}
+		} catch (Exception ignored) {
+			return "";
 		}
 	}
 
@@ -670,7 +898,7 @@ public final class AutoUpdate implements PreLaunchEntrypoint {
 		Stray.LOGGER.info(message);
 	}
 
-	private record Remote(String version, String file, List<String> urls) {
+	private record Remote(String version, String file, List<String> urls, String sha) {
 	}
 
 	public enum UpdateStatus {

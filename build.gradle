@@ -6,8 +6,11 @@ plugins {
 version = project.version
 group = project.group
 
+def strayChannel = (findProperty('strayChannel') ?: 'release').toString().trim()
+def straySha = (findProperty('straySha') ?: '').toString().trim()
+
 base {
-	archivesName = 'stray'
+	archivesName = strayChannel == 'dev' ? 'stray-dev' : 'stray'
 }
 
 repositories {
@@ -54,9 +57,11 @@ dependencies {
 processResources {
 	def version = project.version
 	inputs.property "version", version
+	inputs.property "channel", strayChannel
+	inputs.property "sha", straySha
 
 	filesMatching("fabric.mod.json") {
-		expand "version": version
+		expand "version": version, "channel": strayChannel, "sha": straySha
 	}
 }
 
@@ -121,8 +126,10 @@ tasks.register("syncWebMod") {
 	}
 }
 
-tasks.named("build") {
-	finalizedBy "syncWebMod"
+if (strayChannel != 'dev') {
+	tasks.named("build") {
+		finalizedBy "syncWebMod"
+	}
 }
 
 publishing {
