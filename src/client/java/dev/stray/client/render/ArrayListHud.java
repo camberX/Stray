@@ -18,7 +18,6 @@ import java.util.List;
  */
 public final class ArrayListHud {
 	private static final float STROKE = 0.5f;
-	private static final float SCALE = 0.9f;
 	private static final float PAD = 1f;
 	private static final float SWATCH = 2f;
 	private static final int PANEL = 0x77000000;
@@ -47,7 +46,7 @@ public final class ArrayListHud {
 			rows.add(new Row(label, color, widthOf(font, label)));
 		}
 		rows.sort(Comparator.comparingDouble(Row::width).reversed());
-		float textH = Math.max(1, font.lineHeight) * SCALE;
+		float textH = Math.max(1, font.lineHeight);
 		float rowH = textH + STROKE * 2f;
 		float y = 0f;
 		for (int i = 0; i < rows.size(); i++) {
@@ -58,9 +57,9 @@ public final class ArrayListHud {
 		}
 	}
 
-	/** Half-pixel outline, padding, the scaled name, its shadow, and the swatch. */
+	/** Half-pixel outline, padding, the name, its shadow, and the swatch. */
 	private static float widthOf(Font font, String label) {
-		return font.width(label) * SCALE + SCALE + PAD + SWATCH + STROKE * 2f;
+		return font.width(ClickGui.styled(label)) + 1f + PAD + SWATCH + STROKE * 2f;
 	}
 
 	private static void drawRow(GuiGraphicsExtractor graphics, Font font, Row row, int right, float y, float h, float above, float below) {
@@ -92,11 +91,14 @@ public final class ArrayListHud {
 			GuiDraw.fillSmooth(graphics, meetX, fillTop, meetW, meetH, PANEL);
 			GuiDraw.fillSmooth(graphics, x + w - STROKE - SWATCH, fillTop, SWATCH, meetH, row.color);
 		}
-		graphics.pose().pushMatrix();
-		graphics.pose().translate(x + STROKE + PAD, y + STROKE);
-		graphics.pose().scale(SCALE, SCALE);
-		graphics.text(font, row.label, 0, 0, row.color, true);
-		graphics.pose().popMatrix();
+		graphics.text(
+			font,
+			ClickGui.styled(row.label),
+			Math.round(x + STROKE + PAD),
+			Math.round(y + STROKE),
+			row.color,
+			true
+		);
 	}
 
 	private record Row(String label, int color, float width) {
