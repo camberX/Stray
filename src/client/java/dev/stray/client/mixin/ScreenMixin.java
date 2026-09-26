@@ -2,6 +2,7 @@ package dev.stray.client.mixin;
 
 import dev.stray.client.render.GuiDraw;
 import dev.stray.client.ui.ContainerChrome;
+import dev.stray.client.ui.LoadoutsScreen;
 import dev.stray.client.ui.MenuChrome;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
@@ -15,6 +16,13 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public abstract class ScreenMixin {
 	@Shadow public int width;
 	@Shadow public int height;
+
+	@Inject(method = "extractRenderStateWithTooltipAndSubtitles", at = @At("HEAD"), cancellable = true)
+	private void stray$hideDefaultLoadouts(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float delta, CallbackInfo ci) {
+		if (LoadoutsScreen.hideDefaultChest((Screen) (Object) this)) {
+			ci.cancel();
+		}
+	}
 
 	@Inject(
 		method = "extractRenderStateWithTooltipAndSubtitles",

@@ -43,6 +43,7 @@ public class LoadoutsScreen extends Screen {
 	private static boolean silentFlush;
 	private static boolean cancelIncoming;
 	private static boolean skipCustomThisOpen;
+	private static boolean silentSwap;
 	private static long suppressUntil;
 	private static int pendingEquipIndex = -1;
 
@@ -92,7 +93,7 @@ public class LoadoutsScreen extends Screen {
 			|| !LoadoutsMenus.matches(chest.getMenu(), chest.getTitle())) {
 			return screen;
 		}
-		if (skipCustomThisOpen) {
+		if (skipCustomThisOpen || silentSwap) {
 			return screen;
 		}
 		if (shouldDiscardIncoming()) {
@@ -131,6 +132,7 @@ public class LoadoutsScreen extends Screen {
 		cancelIncoming = false;
 		suppressUntil = 0L;
 		skipCustomThisOpen = false;
+		silentSwap = false;
 		pendingEquipIndex = -1;
 	}
 
@@ -170,19 +172,101 @@ public class LoadoutsScreen extends Screen {
 		LoadoutsCommands.open();
 	}
 
+	/** Keybind swap: click the chest when it arrives and never show the menu. */
+	public static void armHidden(int index) {
+		if (index < 0 || index > 8) {
+			return;
+		}
+		pendingEquipIndex = index;
+		allowReopen();
+		pendingEquipIndex = index;
+		silentSwap = true;
+		skipCustomThisOpen = true;
+	}
+
+	public static boolean hidingSwap() {
+		return silentSwap && StrayConfig.get().loadoutHideDefault;
+	}
+
+	public static boolean hideDefaultChest(Screen screen) {
+		if (!hidingSwap() || !(screen instanceof AbstractContainerScreen<?> chest)) {
+			return false;
+		}
+		return LoadoutsMenus.matches(chest.getMenu(), chest.getTitle());
+	}
+
+	public static void cancelSilent() {
+		silentSwap = false;
+		pendingEquipIndex = -1;
+		skipCustomThisOpen = false;
+		Minecraft client = Minecraft.getInstance();
+		if (client.player != null
+			&& client.screen instanceof AbstractContainerScreen<?> chest
+			&& LoadoutsMenus.matches(chest.getMenu(), chest.getTitle())) {
+			client.player.closeContainer();
+		}
+	}
+
+	/**
+	 * Clicks the armed loadout before this tick's movement packet.
+	 * Returns true once the click has been sent.
+	 */
+	public static boolean clickSilentNow(Minecraft client) {
+		if (!silentSwap || pendingEquipIndex < 0 || client == null || client.player == null) {
+			return false;
+		}
+		AbstractContainerScreen<?> chest = null;
+		AbstractContainerMenu menu = null;
+		if (client.screen instanceof LoadoutsScreen screen && screen.vanilla != null && screen.menu != null) {
+			chest = screen.vanilla;
+			menu = screen.menu;
+		} else if (client.screen instanceof AbstractContainerScreen<?> found
+			&& LoadoutsMenus.matches(found.getMenu(), found.getTitle())) {
+			chest = found;
+			menu = found.getMenu();
+		}
+		if (chest == null || menu == null || client.player.containerMenu != menu) {
+			return false;
+		}
+		LoadoutsMenus.Snapshot snap = LoadoutsMenus.read(menu, chest.getTitle());
+		if (snap.loadouts().size() <= pendingEquipIndex) {
+			return false;
+		}
+		LoadoutsMenus.Piece piece = snap.loadouts().get(pendingEquipIndex);
+		if (piece == null || piece.slot() < 0) {
+			return false;
+		}
+		int slot = piece.slot();
+		pendingEquipIndex = -1;
+		silentSwap = false;
+		sendClick(chest, menu, slot, 0);
+		if (snap.hasItems()) {
+			cache = snap.withSelectedSlot(slot);
+		}
+		suppressReopen();
+		skipCustomThisOpen = true;
+		client.player.closeContainer();
+		if (client.screen instanceof LoadoutsScreen) {
+			client.setScreen(null);
+		}
+		return true;
+	}
+
 	public static void tickSwap(Minecraft client) {
 		if (client == null) {
 			return;
 		}
-		flushPendingEquip(client);
-		if (skipCustomThisOpen) {
+		if (!silentSwap) {
+			flushPendingEquip(client);
+		}
+		if (skipCustomThisOpen || silentSwap) {
 			if (client.screen instanceof LoadoutsScreen loadouts) {
 				loadouts.followServer();
 				return;
 			}
 			boolean vanillaChest = client.screen instanceof AbstractContainerScreen<?> chest
 				&& LoadoutsMenus.matches(chest.getMenu(), chest.getTitle());
-			if (!vanillaChest) {
+			if (!vanillaChest && !silentSwap) {
 				skipCustomThisOpen = false;
 			}
 			return;

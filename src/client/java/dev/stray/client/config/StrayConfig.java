@@ -115,8 +115,8 @@ public final class StrayConfig {
 	public float pestEspOpacity = 0.38f;
 	public boolean pestCooldownHudEnabled = false;
 	public boolean pestCooldownTitle = true;
-	public String pestCooldownAlert = "Pest cooldown";
-	public String pestCooldownAlertSub = "2:00 left";
+	public String pestCooldownAlert = "Swap armor";
+	public String pestCooldownAlertSub = "5s left";
 	public boolean jacobContestHudEnabled = false;
 	public boolean skillProgressHudEnabled = false;
 	public boolean gardenContestHudEnabled = false;
@@ -185,6 +185,7 @@ public final class StrayConfig {
 	public int loadoutSwapSlotA = 1;
 	public int loadoutSwapSlotB = 2;
 	public boolean loadoutSwapNextIsB = false;
+	public boolean loadoutHideDefault = true;
 	public String openWardrobeKey = "key.keyboard.unknown";
 	public String openProfileKey = "key.keyboard.unknown";
 	public String chestAimKey = "key.keyboard.unknown";
@@ -1128,6 +1129,9 @@ public final class StrayConfig {
 				loaded.loadoutSwapKey = blankKey(loaded.loadoutSwapKey, "key.keyboard.unknown");
 				loaded.loadoutSwapSlotA = clampLoadoutSwapSlot(loaded.loadoutSwapSlotA);
 				loaded.loadoutSwapSlotB = clampLoadoutSwapSlot(loaded.loadoutSwapSlotB);
+				if (!json.has("loadoutHideDefault")) {
+					loaded.loadoutHideDefault = true;
+				}
 				loaded.openWardrobeKey = blankKey(loaded.openWardrobeKey, "key.keyboard.unknown");
 				loaded.openProfileKey = blankKey(loaded.openProfileKey, "key.keyboard.unknown");
 				loaded.chestAimKey = blankKey(loaded.chestAimKey, "key.keyboard.unknown");
@@ -1369,11 +1373,13 @@ public final class StrayConfig {
 				if (!json.has("pestCooldownTitle")) {
 					loaded.pestCooldownTitle = true;
 				}
-				if (!json.has("pestCooldownAlert") || loaded.pestCooldownAlert == null || loaded.pestCooldownAlert.isBlank()) {
-					loaded.pestCooldownAlert = "Pest cooldown";
+				boolean oldAlert = loaded.pestCooldownAlert == null || loaded.pestCooldownAlert.isBlank() || "Pest cooldown".equals(loaded.pestCooldownAlert);
+				boolean oldAlertSub = loaded.pestCooldownAlertSub == null || loaded.pestCooldownAlertSub.isBlank() || "2:00 left".equals(loaded.pestCooldownAlertSub);
+				if (!json.has("pestCooldownAlert") || loaded.pestCooldownAlert == null || loaded.pestCooldownAlert.isBlank() || (oldAlert && oldAlertSub)) {
+					loaded.pestCooldownAlert = "Swap armor";
 				}
-				if (!json.has("pestCooldownAlertSub") || loaded.pestCooldownAlertSub == null || loaded.pestCooldownAlertSub.isBlank()) {
-					loaded.pestCooldownAlertSub = "2:00 left";
+				if (!json.has("pestCooldownAlertSub") || loaded.pestCooldownAlertSub == null || loaded.pestCooldownAlertSub.isBlank() || "2:00 left".equals(loaded.pestCooldownAlertSub)) {
+					loaded.pestCooldownAlertSub = "5s left";
 				}
 				loaded.pestEspRgb = loaded.pestEspRgb & 0xFFFFFF;
 				if (loaded.pestEspRgb == 0) {

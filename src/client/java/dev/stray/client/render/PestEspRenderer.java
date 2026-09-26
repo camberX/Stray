@@ -7,6 +7,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.gizmos.GizmoProperties;
 import net.minecraft.gizmos.GizmoStyle;
 import net.minecraft.gizmos.Gizmos;
+import net.minecraft.gizmos.TextGizmo;
 import net.minecraft.world.phys.Vec3;
 
 import java.util.List;
@@ -42,6 +43,18 @@ public final class PestEspRenderer {
 			GizmoProperties box = Gizmos.cuboid(pest.box(), style);
 			if (through) {
 				box.setAlwaysOnTop();
+			}
+			if (pest.name() == null || pest.name().isEmpty()) {
+				continue;
+			}
+			Vec3 at = new Vec3(pest.center().x, pest.box().maxY + 0.35, pest.center().z);
+			GizmoProperties tag = Gizmos.billboardText(
+				pest.name(),
+				at,
+				TextGizmo.Style.forColorAndCentered(0xFFFFFFFF).withScale(0.25f)
+			);
+			if (through) {
+				tag.setAlwaysOnTop();
 			}
 		}
 		if (!PestEsp.holdingVacuum(client.player)) {

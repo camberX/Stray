@@ -251,7 +251,8 @@ public final class GardenHudRenderer {
 		Snap value
 	) {
 		String text = value.present() && value.kind() != PestCooldown.Kind.READY ? value.label() : Snap.sample().label();
-		int color = value.present() && value.kind() == PestCooldown.Kind.MAX ? 0xFF5A4A : Theme.TEXT;
+		boolean swap = value.present() && value.kind() == PestCooldown.Kind.COUNTING && value.seconds() <= PestCooldown.SWAP_LEAD_SECONDS;
+		int color = value.present() && (value.kind() == PestCooldown.Kind.MAX || swap) ? 0xFF5A4A : Theme.TEXT;
 		float width = timeWidth(font, text);
 		begin(graphics, x, y, scale, width, pestCooldownHeight());
 		GuiDraw.small(graphics, font, text, PAD + 1, PAD, color);

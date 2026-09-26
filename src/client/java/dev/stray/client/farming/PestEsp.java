@@ -37,7 +37,7 @@ public final class PestEsp {
 	private PestEsp() {
 	}
 
-	public record Mark(AABB box, Vec3 center) {
+	public record Mark(AABB box, Vec3 center, String name) {
 	}
 
 	public static void tick(Minecraft client) {
@@ -60,14 +60,15 @@ public final class PestEsp {
 			if (entity.distanceToSqr(camera) > RANGE_SQ) {
 				continue;
 			}
-			if (!isPestHead(stand)) {
+			String name = pestName(stand);
+			if (name.isEmpty()) {
 				continue;
 			}
 			AABB box = stand.getBoundingBox();
 			if (box.getXsize() < 0.35 || box.getYsize() < 0.35) {
 				box = box.inflate(0.22);
 			}
-			next.add(new Mark(box, box.getCenter()));
+			next.add(new Mark(box, box.getCenter(), name));
 		}
 		view = List.copyOf(next);
 	}
@@ -91,9 +92,13 @@ public final class PestEsp {
 		return isVacuum(player.getMainHandItem()) || isVacuum(player.getOffhandItem());
 	}
 
-	static boolean isPestHead(ArmorStand stand) {
-		ItemStack helmet = stand.getItemBySlot(EquipmentSlot.HEAD);
-		return isPestTexture(headTexture(helmet));
+	static String pestName(ArmorStand stand) {
+		String texture = headTexture(stand.getItemBySlot(EquipmentSlot.HEAD));
+		if (!isPestTexture(texture)) {
+			return "";
+		}
+		String named = PestHeads.name(textureHash(texture));
+		return named.isEmpty() ? "Pest" : named;
 	}
 
 	static boolean isPestTexture(String texture) {

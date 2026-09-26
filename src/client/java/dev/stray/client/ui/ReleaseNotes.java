@@ -15,8 +15,32 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
-		new Entry("1.5.22", new String[]{
+		new Entry("1.5.30", new String[]{
 			"Click GUI feature cards have a little more side padding, and the feature names are slightly smaller."
+		}),
+		new Entry("1.5.29", new String[]{
+			"Pest ESP puts the pest's name above it. The skull texture decides Beetle, Cricket, and the rest."
+		}),
+		new Entry("1.5.28", new String[]{
+			"Pest cooldown follows the tab timer. A set that reduces pest spawn time shortens the countdown, and a minutes-only tab value counts as a minute that just rolled over."
+		}),
+		new Entry("1.5.27", new String[]{
+			"The account list is stored in AppData (Roaming/Stray/accounts.json), shared across instances. A copy left in the instance config is moved there."
+		}),
+		new Entry("1.5.26", new String[]{
+			"Hide default menu only skips drawing the loadouts chest. Grabbing the mouse no longer closes that chest before the swap click."
+		}),
+		new Entry("1.5.25", new String[]{
+			"Loadouts has a Hide default menu option. On, the swap key also hides Hypixel's loadouts chest and keeps the mouse grabbed."
+		}),
+		new Entry("1.5.24", new String[]{
+			"Swap loadouts clicks the other slot after the chest opens. Key handling stops while that screen is up, so the click now runs at the start of the tick."
+		}),
+		new Entry("1.5.23", new String[]{
+			"Swap loadouts stays hidden. With farm keys on, breaking and movement release for the click and come back a tick later, before the movement packet, so it does not flag post."
+		}),
+		new Entry("1.5.22", new String[]{
+			"Pest cooldown counts the 3:29 reduced timer and tells you to swap armor at 3:24. The 2:00 tab alert is gone."
 		}),
 		new Entry("1.5.21", new String[]{
 			"Click GUI feature cards are accent fill with a black outline again. Black fill and an accent outline stay on the screens outside that menu."

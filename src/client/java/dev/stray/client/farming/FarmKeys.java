@@ -24,6 +24,14 @@ public final class FarmKeys {
 	private FarmKeys() {
 	}
 
+	public static boolean enabled() {
+		return enabled;
+	}
+
+	public static boolean breaking() {
+		return enabled && attackLatched;
+	}
+
 	public static int toggle() {
 		Minecraft client = Minecraft.getInstance();
 		if (enabled) {

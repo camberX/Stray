@@ -22,10 +22,17 @@ import java.util.regex.Pattern;
 
 /**
  * Garden pest spawn cooldown from the pests tab widget.
- * The two-minute title fires once each time the remaining time crosses 120 seconds.
+ * The widget time is stored as an end timestamp. It is replaced when the
+ * widget is more than a few seconds later, or when a shorter time shows up,
+ * which is what happens in a pest spawn reduction set. A minutes-only value
+ * is treated as having just rolled over. The swap title still fires once the
+ * cooldown has been running for 204 seconds.
  */
 public final class PestCooldown {
-	public static final int TITLE_SECONDS = 120;
+	public static final int BASE_SECONDS = 506;
+	public static final int REDUCED_SECONDS = 209;
+	public static final int SWAP_LEAD_SECONDS = 5;
+	public static final int SWAP_SECONDS = REDUCED_SECONDS - SWAP_LEAD_SECONDS;
 	private static final long HOLD_MS = 2_000L;
 	private static final Pattern PESTS_HEADER = Pattern.compile("(?i)^(?:.*\\s)?pests?:?$");
 	private static final Pattern COOLDOWN = Pattern.compile(
@@ -43,6 +50,11 @@ public final class PestCooldown {
 	private static Snap snap = Snap.missing();
 	private static long seenAt;
 	private static int previousSeconds = -1;
+	private static Kind previousKind = Kind.MISSING;
+	private static boolean cycle;
+	private static long anchorMs;
+	private static int elapsedAtAnchor;
+	private static long cooldownEndMs;
 	private static boolean titled;
 	private static int parseTick = Integer.MIN_VALUE;
 
@@ -62,14 +74,14 @@ public final class PestCooldown {
 		}
 
 		public static Snap sample() {
-			return new Snap(true, Kind.COUNTING, 118, "1m 58s");
+			return new Snap(true, Kind.COUNTING, REDUCED_SECONDS, format(REDUCED_SECONDS));
 		}
 	}
 
 	public static void tick(Minecraft client) {
 		StrayConfig config = StrayConfig.get();
 		if (!config.pestCooldownHudEnabled) {
-			if (snap.present() || titled) {
+			if (snap.present() || cycle || titled) {
 				reset();
 			}
 			return;
@@ -78,22 +90,24 @@ public final class PestCooldown {
 			reset();
 			return;
 		}
-		int tick = client.player.tickCount;
-		if (parseTick != Integer.MIN_VALUE && tick >= parseTick && tick - parseTick < 5) {
-			return;
-		}
-		parseTick = tick;
-		Snap read = read(client);
 		long now = System.currentTimeMillis();
-		if (read.present()) {
-			note(client, config, read);
-			snap = read;
-			seenAt = now;
-			return;
+		int tick = client.player.tickCount;
+		boolean due = parseTick == Integer.MIN_VALUE || tick < parseTick || tick - parseTick >= 5;
+		if (due) {
+			parseTick = tick;
+			Snap read = read(client);
+			if (read.present()) {
+				track(read, now);
+				seenAt = now;
+			} else if (seenAt == 0L || now - seenAt > HOLD_MS) {
+				snap = Snap.missing();
+				clearCycle();
+				previousKind = Kind.MISSING;
+				previousSeconds = -1;
+			}
 		}
-		if (seenAt == 0L || now - seenAt > HOLD_MS) {
-			snap = Snap.missing();
-			previousSeconds = -1;
+		if (cycle) {
+			refresh(client, config, now);
 		}
 	}
 
@@ -105,32 +119,108 @@ public final class PestCooldown {
 		snap = Snap.missing();
 		seenAt = 0L;
 		previousSeconds = -1;
-		titled = false;
+		previousKind = Kind.MISSING;
+		clearCycle();
 		parseTick = Integer.MIN_VALUE;
 	}
 
-	private static void note(Minecraft client, StrayConfig config, Snap read) {
-		int seconds = read.seconds();
-		if (read.kind() != Kind.COUNTING) {
+	private static void clearCycle() {
+		cycle = false;
+		anchorMs = 0L;
+		elapsedAtAnchor = 0;
+		cooldownEndMs = 0L;
+		titled = false;
+	}
+
+	private static void track(Snap read, long now) {
+		if (read.kind() == Kind.MAX) {
+			clearCycle();
+			previousKind = Kind.MAX;
 			previousSeconds = -1;
-			titled = false;
+			snap = read;
 			return;
 		}
-		if (seconds > TITLE_SECONDS) {
-			titled = false;
-		} else if (!titled && previousSeconds > TITLE_SECONDS && config.pestCooldownTitle) {
-			titled = true;
-			title(client);
+		if (read.kind() != Kind.COUNTING) {
+			clearCycle();
+			previousKind = read.kind();
+			previousSeconds = -1;
+			snap = Snap.missing();
+			return;
 		}
+		int seconds = read.seconds();
+		boolean secondsShown = showsSeconds(read);
+		boolean jumped = cycle && previousSeconds >= 0 && seconds > previousSeconds + 15;
+		boolean opened = previousKind == Kind.READY || previousKind == Kind.MAX;
+		if (!cycle || jumped || opened) {
+			cycle = true;
+			anchorMs = now;
+			elapsedAtAnchor = jumped || opened ? 0 : Math.max(0, BASE_SECONDS - seconds);
+			titled = !jumped && !opened && elapsedAtAnchor >= SWAP_SECONDS;
+		}
+		long tabEnd = now + seconds * 1000L;
+		if (takeTabEnd(tabEnd, secondsShown)) {
+			cooldownEndMs = secondsShown ? tabEnd : tabEnd + 60_000L;
+		}
+		previousKind = Kind.COUNTING;
 		previousSeconds = seconds;
+	}
+
+	/**
+	 * Widget updates lag by a few seconds and never sit much higher than the
+	 * real cooldown. A shorter reading is real: either the minute rolled, or
+	 * a reduction set cut the timer.
+	 */
+	private static boolean takeTabEnd(long tabEnd, boolean secondsShown) {
+		if (cooldownEndMs <= 0L) {
+			return true;
+		}
+		if (tabEnd > cooldownEndMs + 6_000L) {
+			return true;
+		}
+		if (!secondsShown && tabEnd + 60_000L < cooldownEndMs) {
+			return true;
+		}
+		return secondsShown && tabEnd + 1_000L < cooldownEndMs;
+	}
+
+	private static boolean showsSeconds(Snap read) {
+		String label = read.label();
+		return label != null && !label.matches("\\d+m");
+	}
+
+	private static void refresh(Minecraft client, StrayConfig config, long now) {
+		if (cycle && !titled) {
+			int elapsed = elapsedAtAnchor + (int) Math.max(0L, (now - anchorMs) / 1000L);
+			if (elapsed >= SWAP_SECONDS && config.pestCooldownTitle) {
+				titled = true;
+				title(client);
+			}
+		}
+		if (cooldownEndMs <= 0L) {
+			return;
+		}
+		long leftMs = cooldownEndMs - now;
+		if (leftMs <= 0L) {
+			snap = Snap.missing();
+			return;
+		}
+		int left = (int) ((leftMs + 999L) / 1000L);
+		snap = new Snap(true, Kind.COUNTING, left, format(left));
+	}
+
+	private static String format(int seconds) {
+		if (seconds >= 60) {
+			return (seconds / 60) + "m " + (seconds % 60) + "s";
+		}
+		return seconds + "s";
 	}
 
 	private static void title(Minecraft client) {
 		Gui gui = client.gui;
 		if (gui != null) {
 			StrayConfig config = StrayConfig.get();
-			String title = config.pestCooldownAlert == null || config.pestCooldownAlert.isBlank() ? "Pest cooldown" : config.pestCooldownAlert;
-			String subtitle = config.pestCooldownAlertSub == null || config.pestCooldownAlertSub.isBlank() ? "2:00 left" : config.pestCooldownAlertSub;
+			String title = config.pestCooldownAlert == null || config.pestCooldownAlert.isBlank() ? "Swap armor" : config.pestCooldownAlert;
+			String subtitle = config.pestCooldownAlertSub == null || config.pestCooldownAlertSub.isBlank() ? "5s left" : config.pestCooldownAlertSub;
 			gui.setTimes(8, 50, 12);
 			gui.setTitle(Component.literal(title).withColor(0xFF5A4A));
 			gui.setSubtitle(Component.literal(subtitle));
