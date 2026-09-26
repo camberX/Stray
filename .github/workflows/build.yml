@@ -48,9 +48,14 @@ jobs:
       run: |
         set -euo pipefail
         VERSION=$(grep '^version=' gradle.properties | cut -d= -f2 | tr -d '[:space:]')
-        JAR=$(ls build/libs/stray-dev-*.jar | head -n 1)
+        JAR="build/libs/stray-dev-${VERSION}.jar"
         if [ ! -f "$JAR" ]; then
-          echo "Missing dev jar"
+          echo "Missing dev jar $JAR"
+          ls -la build/libs || true
+          exit 1
+        fi
+        if ! jar tf "$JAR" | grep -q 'dev/stray/update/AutoUpdate.class'; then
+          echo "$JAR is not the compiled mod (AutoUpdate.class missing)"
           exit 1
         fi
         WORK=$(mktemp -d)
@@ -102,7 +107,10 @@ jobs:
       uses: actions/upload-artifact@v7
       with:
         name: stray-dev
-        path: build/libs/stray-dev*.jar
+        path: |
+          build/libs/stray-dev-*.jar
+          !build/libs/*-sources.jar
+          !build/libs/*-javadoc.jar
         if-no-files-found: ignore
     - name: capture release artifacts
       continue-on-error: true
