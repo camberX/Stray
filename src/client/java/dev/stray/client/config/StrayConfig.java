@@ -111,6 +111,7 @@ public final class StrayConfig {
 	public int gardenPlotsY = 0;
 	public boolean pestEspEnabled = false;
 	public boolean pestEspThroughWalls = true;
+	public boolean pestEspNametag = true;
 	public int pestEspRgb = 0xB62F00;
 	public float pestEspOpacity = 0.38f;
 	public boolean pestCooldownHudEnabled = false;
@@ -1367,6 +1368,9 @@ public final class StrayConfig {
 				}
 				if (!json.has("pestEspEnabled")) {
 					loaded.pestEspEnabled = false;
+				}
+				if (!json.has("pestEspNametag")) {
+					loaded.pestEspNametag = true;
 				}
 				if (!json.has("pestCooldownHudEnabled")) {
 					loaded.pestCooldownHudEnabled = false;

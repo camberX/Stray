@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.5.40", new String[]{
+			"Pest ESP nametags can be turned off. Their size follows the player nametag: larger up close, smaller far away, then the Size slider."
+		}),
 		new Entry("1.5.39", new String[]{
 			"Lasso shows the pull bar while you hold one. The first time it says REEL, it right-clicks once."
 		}),

@@ -47,6 +47,7 @@ public final class StrayHud {
 		Hitmarker.extract(graphics, delta);
 		FarmingHud.extract(graphics, delta);
 		NametagRenderer.extract(graphics, delta);
+		PestEspRenderer.extract(graphics);
 		EntityBoxEsp.extract(graphics, delta);
 		EntityHealthBars.extract(graphics, delta);
 		CrystalHollowsRenderer.extract(graphics, delta);

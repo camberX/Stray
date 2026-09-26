@@ -178,7 +178,7 @@ public class StrayScreen extends Screen {
 		SKILL("Skill progress", 3),
 		PLOTS("Garden plots", 1),
 		SHOPPING("Shopping list", 1),
-		PEST("Pest ESP", 2),
+		PEST("Pest ESP", 3),
 		PEST_COOLDOWN("Pest cooldown", 3),
 		AUTO_DNA("Auto DNA", 5),
 		NAMETAGS("Nametags", 6),
@@ -475,6 +475,7 @@ public class StrayScreen extends Screen {
 		new SearchEntry("Bazaar", Tab.GARDEN, "Garden"),
 		new SearchEntry("Garden plots", Tab.GARDEN, "Garden"),
 		new SearchEntry("Pest ESP", Tab.GARDEN, "Garden"),
+		new SearchEntry("Pest nametag", Tab.GARDEN, "Garden"),
 		new SearchEntry("Pest cooldown", Tab.GARDEN, "Garden"),
 		new SearchEntry("Lasso", Tab.GARDEN, "Garden"),
 		new SearchEntry("Reel", Tab.GARDEN, "Garden"),
@@ -3698,6 +3699,7 @@ public class StrayScreen extends Screen {
 			case PLOTS -> toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Close on click", config.gardenPlotsCloseOnClick, v -> config.gardenPlotsCloseOnClick = v);
 			case SHOPPING -> chipRow(graphics, font, ix, y, iw, mouseX, mouseY, new String[]{"/recipe", "/bz"}, config.gardenShoppingBz ? 1 : 0, i -> config.setGardenShoppingBz(i == 1));
 			case PEST -> {
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Nametag", config.pestEspNametag, v -> config.pestEspNametag = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Through walls", config.pestEspThroughWalls, v -> config.pestEspThroughWalls = v);
 				colorRow(graphics, font, ix, y, iw, mouseX, mouseY, "Color", config.pestEspRgb, PickerTarget.PEST);
 			}
