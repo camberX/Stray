@@ -3,6 +3,7 @@ package dev.stray.client.render;
 import dev.stray.Stray;
 import dev.stray.client.combat.Hitmarker;
 import dev.stray.client.farming.FarmingHud;
+import dev.stray.client.hunting.LassoReel;
 import dev.stray.client.mining.CrystalHollowsMap;
 import dev.stray.client.mining.CrystalHollowsRenderer;
 import dev.stray.client.mining.MetalDetector;
@@ -46,6 +47,7 @@ public final class StrayHud {
 		Hitmarker.extract(graphics, delta);
 		FarmingHud.extract(graphics, delta);
 		NametagRenderer.extract(graphics, delta);
+		PestEspRenderer.extract(graphics);
 		EntityBoxEsp.extract(graphics, delta);
 		EntityHealthBars.extract(graphics, delta);
 		CrystalHollowsRenderer.extract(graphics, delta);
@@ -68,6 +70,7 @@ public final class StrayHud {
 		JacobContestHudRenderer.extract(graphics, delta);
 		ComposterHudRenderer.extract(graphics, delta);
 		GardenHudRenderer.extract(graphics, delta);
+		LassoReel.extract(graphics);
 		SkillProgressHudRenderer.extract(graphics, delta);
 		UpdateToast.extract(graphics);
 	}

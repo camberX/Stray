@@ -111,12 +111,14 @@ public final class StrayConfig {
 	public int gardenPlotsY = 0;
 	public boolean pestEspEnabled = false;
 	public boolean pestEspThroughWalls = true;
+	public boolean pestEspNametag = true;
 	public int pestEspRgb = 0xB62F00;
 	public float pestEspOpacity = 0.38f;
 	public boolean pestCooldownHudEnabled = false;
 	public boolean pestCooldownTitle = true;
 	public String pestCooldownAlert = "Swap armor";
 	public String pestCooldownAlertSub = "5s left";
+	public boolean lassoDisplay = true;
 	public boolean jacobContestHudEnabled = false;
 	public boolean skillProgressHudEnabled = false;
 	public boolean gardenContestHudEnabled = false;
@@ -182,6 +184,7 @@ public final class StrayConfig {
 	public String openGuiKey = "key.keyboard.right.shift";
 	public String openLoadoutsKey = "key.keyboard.unknown";
 	public String loadoutSwapKey = "key.keyboard.unknown";
+	public String emptyVacuumKey = "key.keyboard.unknown";
 	public int loadoutSwapSlotA = 1;
 	public int loadoutSwapSlotB = 2;
 	public boolean loadoutSwapNextIsB = false;
@@ -1127,6 +1130,7 @@ public final class StrayConfig {
 				loaded.openGuiKey = blankKey(loaded.openGuiKey, "key.keyboard.right.shift");
 				loaded.openLoadoutsKey = blankKey(loaded.openLoadoutsKey, "key.keyboard.unknown");
 				loaded.loadoutSwapKey = blankKey(loaded.loadoutSwapKey, "key.keyboard.unknown");
+				loaded.emptyVacuumKey = blankKey(loaded.emptyVacuumKey, "key.keyboard.unknown");
 				loaded.loadoutSwapSlotA = clampLoadoutSwapSlot(loaded.loadoutSwapSlotA);
 				loaded.loadoutSwapSlotB = clampLoadoutSwapSlot(loaded.loadoutSwapSlotB);
 				if (!json.has("loadoutHideDefault")) {
@@ -1367,11 +1371,17 @@ public final class StrayConfig {
 				if (!json.has("pestEspEnabled")) {
 					loaded.pestEspEnabled = false;
 				}
+				if (!json.has("pestEspNametag")) {
+					loaded.pestEspNametag = true;
+				}
 				if (!json.has("pestCooldownHudEnabled")) {
 					loaded.pestCooldownHudEnabled = false;
 				}
 				if (!json.has("pestCooldownTitle")) {
 					loaded.pestCooldownTitle = true;
+				}
+				if (!json.has("lassoDisplay")) {
+					loaded.lassoDisplay = true;
 				}
 				boolean oldAlert = loaded.pestCooldownAlert == null || loaded.pestCooldownAlert.isBlank() || "Pest cooldown".equals(loaded.pestCooldownAlert);
 				boolean oldAlertSub = loaded.pestCooldownAlertSub == null || loaded.pestCooldownAlertSub.isBlank() || "2:00 left".equals(loaded.pestCooldownAlertSub);
