@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.5.39", new String[]{
+			"Lasso shows the pull bar while you hold one. The first time it says REEL, it right-clicks once."
+		}),
 		new Entry("1.5.38", new String[]{
 			"The array list uses Cozette, same as the click GUI."
 		}),

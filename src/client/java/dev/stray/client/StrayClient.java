@@ -21,6 +21,7 @@ import dev.stray.client.farming.GardenPlots;
 import dev.stray.client.menu.DisabledPotions;
 import dev.stray.client.menu.NoCursorReset;
 import dev.stray.client.farming.FarmKeys;
+import dev.stray.client.hunting.LassoReel;
 import dev.stray.client.fairy.FairySoulCommands;
 import dev.stray.client.fairy.FairySoulRenderer;
 import dev.stray.client.fairy.FairySoulTracker;
@@ -318,6 +319,7 @@ public final class StrayClient implements ClientModInitializer {
 
 		ClientTickEvents.START_CLIENT_TICK.register(client -> {
 			LoadoutSwap.onStart(client);
+			LassoReel.tick(client);
 			AutoRogue.tick(client);
 			FarmKeys.tick(client);
 			ChestAimer.tick(client);
@@ -389,6 +391,7 @@ public final class StrayClient implements ClientModInitializer {
 			ChestEsp.get().clear();
 			PestEsp.reset();
 			PestCooldown.reset();
+			LassoReel.reset();
 			CrystalHollows.onWorldChange();
 			MetalDetector.onWorldChange();
 			BlockMarks.onWorldChange();
@@ -412,6 +415,7 @@ public final class StrayClient implements ClientModInitializer {
 			AutoDna.reset();
 			PestEsp.reset();
 			PestCooldown.reset();
+			LassoReel.reset();
 			DisabledPotions.reset();
 			PickupLogRenderer.clear();
 			JacobContestTracker.reset();
@@ -435,6 +439,7 @@ public final class StrayClient implements ClientModInitializer {
 			AutoDna.reset();
 			PestEsp.reset();
 			PestCooldown.reset();
+			LassoReel.reset();
 			DisabledPotions.reset();
 			PickupLogRenderer.clear();
 			JacobContestTracker.reset();
@@ -450,6 +455,7 @@ public final class StrayClient implements ClientModInitializer {
 			ChestEsp.get().clear();
 			PestEsp.reset();
 			PestCooldown.reset();
+			LassoReel.reset();
 			ChestAimer.stop();
 			MobGlowRenderer.reset();
 			StarMobEsp.reset();

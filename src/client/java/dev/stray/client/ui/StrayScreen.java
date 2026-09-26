@@ -476,6 +476,8 @@ public class StrayScreen extends Screen {
 		new SearchEntry("Garden plots", Tab.GARDEN, "Garden"),
 		new SearchEntry("Pest ESP", Tab.GARDEN, "Garden"),
 		new SearchEntry("Pest cooldown", Tab.GARDEN, "Garden"),
+		new SearchEntry("Lasso", Tab.GARDEN, "Garden"),
+		new SearchEntry("Reel", Tab.GARDEN, "Garden"),
 		new SearchEntry("Swap alert", Tab.GARDEN, "Garden"),
 		new SearchEntry("Pest cooldown text", Tab.GARDEN, "Garden"),
 		new SearchEntry("Garden pests", Tab.GARDEN, "Garden"),
@@ -2739,7 +2741,9 @@ public class StrayScreen extends Screen {
 				controlCard(graphics, font, left, y, col, mouseX, mouseY, "Shopping list", config.gardenShoppingHudEnabled, v -> config.gardenShoppingHudEnabled = v, Feature.SHOPPING);
 				y = sectionLabel(graphics, font, right, top, "Pests");
 				y = controlCard(graphics, font, right, y, col, mouseX, mouseY, "Pest ESP", config.pestEspEnabled, v -> config.pestEspEnabled = v, Feature.PEST);
-				controlCard(graphics, font, right, y, col, mouseX, mouseY, "Pest cooldown", config.pestCooldownHudEnabled, v -> config.pestCooldownHudEnabled = v, Feature.PEST_COOLDOWN);
+				y = controlCard(graphics, font, right, y, col, mouseX, mouseY, "Pest cooldown", config.pestCooldownHudEnabled, v -> config.pestCooldownHudEnabled = v, Feature.PEST_COOLDOWN);
+				y = sectionLabel(graphics, font, right, y, "Hunting");
+				toggleCard(graphics, font, right, y, col, mouseX, mouseY, "Lasso", config.lassoDisplay, v -> config.lassoDisplay = v);
 			}
 			case GREENHOUSE -> {
 				float y = sectionLabel(graphics, font, left, top, "Analyzer");
