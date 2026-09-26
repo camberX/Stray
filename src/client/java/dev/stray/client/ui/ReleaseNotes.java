@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.5.35", new String[]{
+			"Click GUI labels and subsettings use Cozette."
+		}),
 		new Entry("1.5.34", new String[]{
 			"Click GUI Departure Mono is a little thicker, without the bold smear."
 		}),
