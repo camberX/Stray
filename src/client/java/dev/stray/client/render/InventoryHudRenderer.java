@@ -91,50 +91,56 @@ public final class InventoryHudRenderer {
 		if (scale != 1.0f) {
 			graphics.pose().scale(scale, scale);
 		}
-
-		if (config.inventoryHudBlur) {
-			HudChrome.panel(graphics, 0, 0, layout.panelW, layout.panelH, 6, Theme.WINDOW, Theme.LINE);
+		if (config.inventoryHudMinimal) {
+			HudChrome.neutralOutline(true);
 		}
-		if (!config.inventoryHudMinimal) {
-			GuiDraw.small(graphics, font, "INVENTORY", layout.pad + 4, layout.pad + 1, Theme.ACCENT);
-			if (config.inventoryHudCount) {
-				String filled = filledLabel(player, inventory);
-				GuiDraw.small(
-					graphics,
-					font,
-					filled,
-					layout.panelW - layout.pad - GuiDraw.smallWidth(font, filled),
-					layout.pad + 1,
-					Theme.MUTED
-				);
+		try {
+			if (config.inventoryHudBlur) {
+				HudChrome.panel(graphics, 0, 0, layout.panelW, layout.panelH, 6, Theme.WINDOW, Theme.LINE);
 			}
-		}
-
-		int gridX = layout.pad;
-		if (config.inventoryHudArmor) {
-			for (int i = 0; i < ARMOR.length; i++) {
-				ItemStack stack = player.getItemBySlot(ARMOR[i]);
-				slot(graphics, font, player, stack, gridX + i * (SLOT + GAP), layout.armorY, 100 + i, ARMOR_MARK[i], false);
+			if (!config.inventoryHudMinimal) {
+				GuiDraw.small(graphics, font, "INVENTORY", layout.pad + 4, layout.pad + 1, Theme.ACCENT);
+				if (config.inventoryHudCount) {
+					String filled = filledLabel(player, inventory);
+					GuiDraw.small(
+						graphics,
+						font,
+						filled,
+						layout.panelW - layout.pad - GuiDraw.smallWidth(font, filled),
+						layout.pad + 1,
+						Theme.MUTED
+					);
+				}
 			}
-			slot(graphics, font, player, player.getItemBySlot(EquipmentSlot.OFFHAND), gridX + 5 * (SLOT + GAP), layout.armorY, 104, "O", false);
-		}
 
-		for (int row = 0; row < 3; row++) {
-			for (int col = 0; col < COLS; col++) {
-				int index = 9 + row * COLS + col;
-				slot(graphics, font, player, inventory.getItem(index), gridX + col * (SLOT + GAP), layout.mainY + row * (SLOT + GAP), index, null, false);
+			int gridX = layout.pad;
+			if (config.inventoryHudArmor) {
+				for (int i = 0; i < ARMOR.length; i++) {
+					ItemStack stack = player.getItemBySlot(ARMOR[i]);
+					slot(graphics, font, player, stack, gridX + i * (SLOT + GAP), layout.armorY, 100 + i, ARMOR_MARK[i], false);
+				}
+				slot(graphics, font, player, player.getItemBySlot(EquipmentSlot.OFFHAND), gridX + 5 * (SLOT + GAP), layout.armorY, 104, "O", false);
 			}
-		}
 
-		if (config.inventoryHudHotbar) {
-			GuiDraw.hline(graphics, gridX, layout.hotbarY - 3, layout.gridW, Theme.HUD_LINE);
-			int selected = inventory.getSelectedSlot();
-			for (int col = 0; col < COLS; col++) {
-				slot(graphics, font, player, inventory.getItem(col), gridX + col * (SLOT + GAP), layout.hotbarY, col, null, col == selected);
+			for (int row = 0; row < 3; row++) {
+				for (int col = 0; col < COLS; col++) {
+					int index = 9 + row * COLS + col;
+					slot(graphics, font, player, inventory.getItem(index), gridX + col * (SLOT + GAP), layout.mainY + row * (SLOT + GAP), index, null, false);
+				}
 			}
-		}
 
-		graphics.pose().popMatrix();
+			if (config.inventoryHudHotbar) {
+				int rule = config.inventoryHudMinimal ? Theme.HUD_LINE_NEUTRAL : Theme.HUD_LINE;
+				GuiDraw.hline(graphics, gridX, layout.hotbarY - 3, layout.gridW, rule);
+				int selected = inventory.getSelectedSlot();
+				for (int col = 0; col < COLS; col++) {
+					slot(graphics, font, player, inventory.getItem(col), gridX + col * (SLOT + GAP), layout.hotbarY, col, null, col == selected);
+				}
+			}
+		} finally {
+			HudChrome.neutralOutline(false);
+			graphics.pose().popMatrix();
+		}
 	}
 
 	private static Metrics metrics() {
@@ -170,7 +176,9 @@ public final class InventoryHudRenderer {
 		String emptyMark,
 		boolean selected
 	) {
-		HudChrome.slot(graphics, x, y, SLOT, selected);
+		if (!StrayConfig.get().inventoryHudMinimal) {
+			HudChrome.slot(graphics, x, y, SLOT, selected);
+		}
 		if (stack == null || stack.isEmpty()) {
 			if (emptyMark != null) {
 				GuiDraw.small(

@@ -17,6 +17,8 @@ public final class Theme {
 	public static int PANEL = 0xFF0B1118;
 	public static int HUD_WINDOW = 0xFF0B0E14;
 	public static int HUD_LINE = 0xFF1C2430;
+	/** HUD line before accent outlines recolor it. */
+	public static int HUD_LINE_NEUTRAL = 0xFF1C2430;
 	public static int HUD_TRACK = 0xFF1A222C;
 	public static int HUD_CARD = 0xFF12151C;
 	public static int HUD_CARD_HOVER = 0xFF171B24;
@@ -82,6 +84,7 @@ public final class Theme {
 			PANEL = ControlChrome.searchFill();
 			HUD_WINDOW = ControlChrome.hudFill();
 			HUD_LINE = LINE;
+			HUD_LINE_NEUTRAL = HUD_LINE;
 			HUD_TRACK = TRACK;
 			HUD_CARD = CARD;
 			HUD_CARD_HOVER = CARD_HOVER;
@@ -107,6 +110,7 @@ public final class Theme {
 		PANEL = withAlpha(mix(pane, 0x000000, 0.18f), paneA);
 		HUD_WINDOW = withAlpha(pane, hudA);
 		HUD_LINE = withAlpha(mix(pane, 0xFFFFFF, 0.14f), Math.max(hudA, 90));
+		HUD_LINE_NEUTRAL = HUD_LINE;
 		HUD_TRACK = withAlpha(mix(pane, 0xFFFFFF, 0.08f), hudA);
 		HUD_CARD = withAlpha(mix(pane, 0xFFFFFF, 0.055f), hudA);
 		HUD_CARD_HOVER = withAlpha(mix(pane, 0xFFFFFF, 0.10f), hudA);

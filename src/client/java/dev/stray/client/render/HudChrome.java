@@ -12,6 +12,8 @@ public final class HudChrome {
 	private static final int ACCENT_ALPHA = 115;
 
 	private static boolean hudPass;
+	/** This draw skips accent strokes. Inventory HUD minimal uses it. */
+	private static boolean neutralOutline;
 
 	private HudChrome() {
 	}
@@ -40,9 +42,20 @@ public final class HudChrome {
 		return hudPass && click();
 	}
 
+	public static void neutralOutline(boolean neutral) {
+		neutralOutline = neutral;
+	}
+
 	/** Black, or the accent color when accent outlines are on. */
 	public static int outline() {
+		if (neutralOutline) {
+			return 0xFF000000;
+		}
 		return StrayConfig.get().accentOutlines ? Theme.ACCENT : 0xFF000000;
+	}
+
+	private static int line() {
+		return neutralOutline ? Theme.HUD_LINE_NEUTRAL : Theme.HUD_LINE;
 	}
 
 	public static void panel(
@@ -73,7 +86,8 @@ public final class HudChrome {
 			return;
 		}
 		boolean right = accentTowardRight(graphics, x, y, w);
-		GuiDraw.panel(graphics, x, y, w, h, radius, Theme.HUD_WINDOW, Theme.HUD_LINE, accent, right);
+		int rail = neutralOutline ? 0 : accent;
+		GuiDraw.panel(graphics, x, y, w, h, radius, Theme.HUD_WINDOW, line(), rail, right);
 		if (StrayConfig.get().hudStarfield && w >= 72f && h >= 52f) {
 			Starfield.drawHud(graphics, x, y, w, h, radius);
 		}
@@ -122,7 +136,7 @@ public final class HudChrome {
 			return;
 		}
 		int fill = selected ? Theme.HUD_CARD_HOVER : Theme.HUD_TRACK;
-		int outline = selected ? Theme.ACCENT : Theme.HUD_LINE;
+		int outline = neutralOutline ? line() : (selected ? Theme.ACCENT : Theme.HUD_LINE);
 		GuiDraw.well(graphics, x, y, size, fill, outline);
 	}
 

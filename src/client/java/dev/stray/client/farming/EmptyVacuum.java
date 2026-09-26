@@ -23,6 +23,7 @@ public final class EmptyVacuum {
 	private static final String MENU = "Pesthunter";
 	private static final String BAG = "Empty Vacuum Bag";
 	private static int waiting;
+	private static int menuTicks;
 	private static boolean wasHeld;
 
 	private EmptyVacuum() {
@@ -34,6 +35,7 @@ public final class EmptyVacuum {
 
 	public static void reset() {
 		waiting = 0;
+		menuTicks = 0;
 		wasHeld = held();
 	}
 
@@ -42,6 +44,7 @@ public final class EmptyVacuum {
 		if (!ignore && down && !wasHeld && client.screen == null) {
 			call(client);
 			waiting = WAIT_TICKS;
+			menuTicks = 0;
 		}
 		wasHeld = down;
 	}
@@ -54,10 +57,21 @@ public final class EmptyVacuum {
 		waiting--;
 		if (client.player == null || client.level == null) {
 			waiting = 0;
+			menuTicks = 0;
+			return;
+		}
+		if (!pesthunterOpen(client)) {
+			menuTicks = 0;
+			return;
+		}
+		int delay = StrayConfig.clamp(StrayConfig.get().emptyVacuumDelay, 1, 10);
+		if (menuTicks < delay) {
+			menuTicks++;
 			return;
 		}
 		if (clickBag(client)) {
 			waiting = 0;
+			menuTicks = 0;
 		}
 	}
 
@@ -79,6 +93,17 @@ public final class EmptyVacuum {
 		}
 	}
 
+	private static boolean pesthunterOpen(Minecraft client) {
+		if (!(client.screen instanceof AbstractContainerScreen<?> screen)) {
+			return false;
+		}
+		if (!(screen.getMenu() instanceof ChestMenu)) {
+			return false;
+		}
+		String title = plain(screen.getTitle() == null ? "" : screen.getTitle().getString());
+		return MENU.equalsIgnoreCase(title);
+	}
+
 	private static boolean clickBag(Minecraft client) {
 		if (!(client.screen instanceof AbstractContainerScreen<?> screen)) {
 			return false;
@@ -86,8 +111,7 @@ public final class EmptyVacuum {
 		if (!(screen.getMenu() instanceof ChestMenu chest)) {
 			return false;
 		}
-		String title = plain(screen.getTitle() == null ? "" : screen.getTitle().getString());
-		if (!MENU.equalsIgnoreCase(title)) {
+		if (!pesthunterOpen(client)) {
 			return false;
 		}
 		int size = chest.getContainer().getContainerSize();
