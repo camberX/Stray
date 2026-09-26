@@ -118,6 +118,9 @@ public final class StrayConfig {
 	public boolean pestCooldownTitle = true;
 	public String pestCooldownAlert = "Swap armor";
 	public String pestCooldownAlertSub = "5s left";
+	public boolean customTitleEnabled = false;
+	public String customTitleTrigger = "";
+	public String customTitleText = "";
 	public boolean lassoDisplay = true;
 	public boolean jacobContestHudEnabled = false;
 	public boolean skillProgressHudEnabled = false;
@@ -1382,6 +1385,12 @@ public final class StrayConfig {
 				}
 				if (!json.has("lassoDisplay")) {
 					loaded.lassoDisplay = true;
+				}
+				if (loaded.customTitleTrigger == null) {
+					loaded.customTitleTrigger = "";
+				}
+				if (loaded.customTitleText == null) {
+					loaded.customTitleText = "";
 				}
 				boolean oldAlert = loaded.pestCooldownAlert == null || loaded.pestCooldownAlert.isBlank() || "Pest cooldown".equals(loaded.pestCooldownAlert);
 				boolean oldAlertSub = loaded.pestCooldownAlertSub == null || loaded.pestCooldownAlertSub.isBlank() || "2:00 left".equals(loaded.pestCooldownAlertSub);
