@@ -833,14 +833,22 @@ public final class GuiDraw {
 	}
 
 	public static void menu(GuiGraphicsExtractor graphics, Font font, String value, float x, float y, int color) {
-		float scale = MenuFont.bodyScale();
 		String shown = clickWords(value);
+		if (ClickGui.lightInk()) {
+			text(graphics, font, ClickGui.styled(shown), x, y + 1f, 1f, color, false);
+			return;
+		}
+		float scale = MenuFont.bodyScale();
 		text(graphics, font, MenuFont.body(shown), x, MenuFont.menuY(y, scale), scale, color, HudChrome.clickInk());
 	}
 
 	public static void small(GuiGraphicsExtractor graphics, Font font, String value, float x, float y, int color) {
-		float scale = MenuFont.smallScale();
 		String shown = clickWords(value);
+		if (ClickGui.lightInk()) {
+			text(graphics, font, ClickGui.styled(shown), x, y + 1f, 1f, color, false);
+			return;
+		}
+		float scale = MenuFont.smallScale();
 		text(graphics, font, MenuFont.small(shown), x, MenuFont.menuY(y, scale), scale, color, HudChrome.clickInk());
 	}
 
@@ -883,11 +891,19 @@ public final class GuiDraw {
 	}
 
 	public static int menuWidth(Font font, String value) {
-		return scaledWidth(font.width(MenuFont.body(clickWords(value))), MenuFont.bodyScale());
+		String shown = clickWords(value);
+		if (ClickGui.lightInk()) {
+			return font.width(ClickGui.styled(shown));
+		}
+		return scaledWidth(font.width(MenuFont.body(shown)), MenuFont.bodyScale());
 	}
 
 	public static int smallWidth(Font font, String value) {
-		return scaledWidth(font.width(MenuFont.small(clickWords(value))), MenuFont.smallScale());
+		String shown = clickWords(value);
+		if (ClickGui.lightInk()) {
+			return font.width(ClickGui.styled(shown));
+		}
+		return scaledWidth(font.width(MenuFont.small(shown)), MenuFont.smallScale());
 	}
 
 	private static String clickWords(String value) {

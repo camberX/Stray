@@ -34,7 +34,9 @@ public final class ClickGui {
 	private static final int BOX = 14;
 	private static final int V_GAP = 2;
 	private static final int H_PAD = 3;
-	private static final Style FEATURE_FONT = Style.EMPTY.withFont(new FontDescription.Resource(Stray.id("departure")));
+	private static final Style FEATURE_FONT = Style.EMPTY
+		.withFont(new FontDescription.Resource(Stray.id("departure")))
+		.withBold(true);
 	private static final float STROKE = 0.5f;
 	private static final int STRIDE = BOX + V_GAP;
 	private static final int NEST = 3;
@@ -583,8 +585,8 @@ public final class ClickGui {
 		float sy = y + (BOX - sh) * 0.5f;
 		drawSwitch(graphics, sx, sy, sw, sh, on);
 		int max = Math.max(4, Math.round(sx - 2f - (ix + 2f)));
-		String shown = fit(font, label, max);
-		GuiDraw.text(graphics, font, shown, ix + 2f, textY(font, iy, BOX), TEXT, true);
+		String shown = fitFeature(font, label, max);
+		departureLeft(graphics, font, shown, ix + 2f, iy, BOX, TEXT);
 		screen.clickHit(ix, iy, iw, BOX, pick);
 	}
 
@@ -604,11 +606,11 @@ public final class ClickGui {
 		int iw = Math.round(w) - NEST * 2;
 		outlined(graphics, ix, iy, iw, BOX, OFF_FILL);
 		String mark = ">";
-		float markX = ix + iw - 2f - font.width(mark);
-		GuiDraw.text(graphics, font, mark, markX, textY(font, iy, BOX), DIM, true);
+		float markX = ix + iw - 2f - font.width(featureText(mark));
+		departureLeft(graphics, font, mark, markX, iy, BOX, DIM);
 		int max = Math.max(4, Math.round(markX - 2f - (ix + 2f)));
-		String shown = fit(font, label, max);
-		GuiDraw.text(graphics, font, shown, ix + 2f, textY(font, iy, BOX), TEXT, true);
+		String shown = fitFeature(font, label, max);
+		departureLeft(graphics, font, shown, ix + 2f, iy, BOX, TEXT);
 		screen.clickHit(ix, iy, iw, BOX, pick);
 	}
 
@@ -632,7 +634,7 @@ public final class ClickGui {
 				GuiDraw.fillSmooth(graphics, ix + STROKE, iy + STROKE, 2f, BOX - STROKE * 2f, Theme.ACCENT);
 				textLeft = ix + STROKE + 4f;
 			}
-			GuiDraw.text(graphics, font, label, textLeft, textY(font, iy, BOX), on ? TEXT : DIM, true);
+			departureLeft(graphics, font, label, textLeft, iy, BOX, on ? TEXT : DIM);
 			screen.clickHit(ix, iy, iw, BOX, () -> {
 				StrayConfig.get().noCursorResetTimeout = choice;
 				UnloadState.markDirty();
@@ -821,14 +823,22 @@ public final class ClickGui {
 		GuiDraw.fillSmooth(graphics, x + w - STROKE, y, STROKE, h, OUTLINE);
 	}
 
+	public static Component styled(String label) {
+		return Component.literal(label == null ? "" : label).withStyle(FEATURE_FONT);
+	}
+
 	private static Component featureText(String label) {
-		return Component.literal(label).withStyle(FEATURE_FONT);
+		return styled(label);
 	}
 
 	private static void departure(GuiGraphicsExtractor graphics, Font font, String label, float x, float y, float w, int h, int color) {
 		Component text = featureText(label);
 		float width = font.width(text);
 		GuiDraw.text(graphics, font, text, x + (w - width) / 2f, y + (h - font.lineHeight) / 2f, 1f, color, false);
+	}
+
+	private static void departureLeft(GuiGraphicsExtractor graphics, Font font, String label, float x, float y, int h, int color) {
+		GuiDraw.text(graphics, font, featureText(label), x, y + (h - font.lineHeight) / 2f, 1f, color, false);
 	}
 
 	private static String fitFeature(Font font, String label, int max) {

@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.5.33", new String[]{
+			"Click GUI labels and subsettings use bold Departure Mono."
+		}),
 		new Entry("1.5.32", new String[]{
 			"Click GUI column headers, feature names, and mob names use Departure Mono."
 		}),
