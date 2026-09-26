@@ -1,5 +1,6 @@
 package dev.stray.client.ui;
 
+import dev.stray.Stray;
 import dev.stray.client.config.EntityKind;
 import dev.stray.client.config.StrayConfig;
 import dev.stray.client.config.UnloadState;
@@ -9,6 +10,9 @@ import dev.stray.client.render.MobCatalog;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.FontDescription;
+import net.minecraft.network.chat.Style;
 import net.minecraft.util.Mth;
 
 import java.util.ArrayList;
@@ -30,7 +34,7 @@ public final class ClickGui {
 	private static final int BOX = 14;
 	private static final int V_GAP = 2;
 	private static final int H_PAD = 3;
-	private static final float LABEL_SCALE = 0.9f;
+	private static final Style FEATURE_FONT = Style.EMPTY.withFont(new FontDescription.Resource(Stray.id("departure")));
 	private static final float STROKE = 0.5f;
 	private static final int STRIDE = BOX + V_GAP;
 	private static final int NEST = 3;
@@ -333,8 +337,7 @@ public final class ClickGui {
 
 		GuiDraw.fill(graphics, x, top, COL_W, column.height, PANEL);
 		outlined(graphics, x, top, COL_W, HEADER, accentFill());
-		String title = display(column.id);
-		GuiDraw.text(graphics, font, title, textX(font, title, x, COL_W), textY(font, top, HEADER), TEXT, true);
+		departure(graphics, font, display(column.id), x, top, COL_W, HEADER, TEXT);
 		screen.clickHit(x, top, COL_W, HEADER, () -> beginDrag(column.id));
 
 		int boxX = x + H_PAD;
@@ -348,8 +351,8 @@ public final class ClickGui {
 				boolean on = mod.on.getAsBoolean();
 				int rowY = Math.round(y);
 				moduleBox(graphics, boxX, rowY, boxW, BOX, on);
-				String label = fitScaled(font, display(mod.name), boxW - 4);
-				featureLabel(graphics, font, label, boxX, rowY, boxW, on ? TEXT : DIM);
+				String label = fitFeature(font, display(mod.name), boxW - 4);
+				departure(graphics, font, label, boxX, rowY, boxW, BOX, on ? TEXT : DIM);
 				if (mod.menuStyle || mod.hold) {
 					screen.clickHit(boxX, rowY, boxW, BOX, () -> {
 					});
@@ -403,8 +406,7 @@ public final class ClickGui {
 
 		GuiDraw.fill(graphics, x, top, COL_W, column.height, PANEL);
 		outlined(graphics, x, top, COL_W, HEADER, accentFill());
-		String title = display(column.id);
-		GuiDraw.text(graphics, font, title, textX(font, title, x, COL_W), textY(font, top, HEADER), TEXT, true);
+		departure(graphics, font, display(column.id), x, top, COL_W, HEADER, TEXT);
 		screen.clickHit(x, top, COL_W, HEADER, () -> beginDrag(column.id));
 
 		int boxX = x + H_PAD;
@@ -428,8 +430,8 @@ public final class ClickGui {
 				boolean on = config.isMobGlowSelected(entry.id().toString());
 				int rowY = Math.round(y);
 				moduleBox(graphics, boxX, rowY, boxW, BOX, on);
-				String label = fitScaled(font, entry.name(), boxW - 4);
-				featureLabel(graphics, font, label, boxX, rowY, boxW, on ? TEXT : DIM);
+				String label = fitFeature(font, entry.name(), boxW - 4);
+				departure(graphics, font, label, boxX, rowY, boxW, BOX, on ? TEXT : DIM);
 				String id = entry.id().toString();
 				screen.clickHit(boxX, rowY, boxW, BOX, () -> {
 					StrayConfig.get().toggleMobGlow(id);
@@ -819,14 +821,25 @@ public final class ClickGui {
 		GuiDraw.fillSmooth(graphics, x + w - STROKE, y, STROKE, h, OUTLINE);
 	}
 
-	private static void featureLabel(GuiGraphicsExtractor graphics, Font font, String label, float x, float y, float w, int color) {
-		float width = font.width(label) * LABEL_SCALE;
-		float height = font.lineHeight * LABEL_SCALE;
-		GuiDraw.text(graphics, font, label, x + (w - width) / 2f, y + (BOX - height) / 2f, LABEL_SCALE, color, true);
+	private static Component featureText(String label) {
+		return Component.literal(label).withStyle(FEATURE_FONT);
 	}
 
-	private static String fitScaled(Font font, String label, int max) {
-		return fit(font, label, Math.max(4, Math.round(max / LABEL_SCALE)));
+	private static void departure(GuiGraphicsExtractor graphics, Font font, String label, float x, float y, float w, int h, int color) {
+		Component text = featureText(label);
+		float width = font.width(text);
+		GuiDraw.text(graphics, font, text, x + (w - width) / 2f, y + (h - font.lineHeight) / 2f, 1f, color, false);
+	}
+
+	private static String fitFeature(Font font, String label, int max) {
+		if (font.width(featureText(label)) <= max) {
+			return label;
+		}
+		String trimmed = label;
+		while (trimmed.length() > 1 && font.width(featureText(trimmed + ".")) > max) {
+			trimmed = trimmed.substring(0, trimmed.length() - 1);
+		}
+		return trimmed + ".";
 	}
 
 	private static float textX(Font font, String label, float x, float w) {
