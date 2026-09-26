@@ -29,7 +29,8 @@ public final class ClickGui {
 	private static final int HEADER = 14;
 	private static final int BOX = 14;
 	private static final int V_GAP = 2;
-	private static final int H_PAD = 2;
+	private static final int H_PAD = 4;
+	private static final float LABEL_SCALE = 0.9f;
 	private static final float STROKE = 0.5f;
 	private static final int STRIDE = BOX + V_GAP;
 	private static final int NEST = 3;
@@ -347,8 +348,8 @@ public final class ClickGui {
 				boolean on = mod.on.getAsBoolean();
 				int rowY = Math.round(y);
 				moduleBox(graphics, boxX, rowY, boxW, BOX, on);
-				String label = fit(font, display(mod.name), boxW - 4);
-				GuiDraw.text(graphics, font, label, textX(font, label, boxX, boxW), textY(font, rowY, BOX), on ? TEXT : DIM, true);
+				String label = fitScaled(font, display(mod.name), boxW - 4);
+				featureLabel(graphics, font, label, boxX, rowY, boxW, on ? TEXT : DIM);
 				if (mod.menuStyle || mod.hold) {
 					screen.clickHit(boxX, rowY, boxW, BOX, () -> {
 					});
@@ -427,8 +428,8 @@ public final class ClickGui {
 				boolean on = config.isMobGlowSelected(entry.id().toString());
 				int rowY = Math.round(y);
 				moduleBox(graphics, boxX, rowY, boxW, BOX, on);
-				String label = fit(font, entry.name(), boxW - 4);
-				GuiDraw.text(graphics, font, label, textX(font, label, boxX, boxW), textY(font, rowY, BOX), on ? TEXT : DIM, true);
+				String label = fitScaled(font, entry.name(), boxW - 4);
+				featureLabel(graphics, font, label, boxX, rowY, boxW, on ? TEXT : DIM);
 				String id = entry.id().toString();
 				screen.clickHit(boxX, rowY, boxW, BOX, () -> {
 					StrayConfig.get().toggleMobGlow(id);
@@ -816,6 +817,16 @@ public final class ClickGui {
 		GuiDraw.fillSmooth(graphics, x, y + h - STROKE, w, STROKE, OUTLINE);
 		GuiDraw.fillSmooth(graphics, x, y, STROKE, h, OUTLINE);
 		GuiDraw.fillSmooth(graphics, x + w - STROKE, y, STROKE, h, OUTLINE);
+	}
+
+	private static void featureLabel(GuiGraphicsExtractor graphics, Font font, String label, float x, float y, float w, int color) {
+		float width = font.width(label) * LABEL_SCALE;
+		float height = font.lineHeight * LABEL_SCALE;
+		GuiDraw.text(graphics, font, label, x + (w - width) / 2f, y + (BOX - height) / 2f, LABEL_SCALE, color, true);
+	}
+
+	private static String fitScaled(Font font, String label, int max) {
+		return fit(font, label, Math.max(4, Math.round(max / LABEL_SCALE)));
 	}
 
 	private static float textX(Font font, String label, float x, float w) {
