@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.5.37", new String[]{
+			"Click GUI Cozette is a little thicker."
+		}),
 		new Entry("1.5.36", new String[]{
 			"Click GUI Cozette is smaller, and the labels have a text shadow."
 		}),
