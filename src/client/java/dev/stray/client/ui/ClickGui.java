@@ -832,11 +832,11 @@ public final class ClickGui {
 	private static void departure(GuiGraphicsExtractor graphics, Font font, String label, float x, float y, float w, int h, int color) {
 		Component text = featureText(label);
 		float width = font.width(text);
-		GuiDraw.text(graphics, font, text, x + (w - width) / 2f, y + (h - font.lineHeight) / 2f, 1f, color, false);
+		GuiDraw.text(graphics, font, text, x + (w - width) / 2f, y + (h - font.lineHeight) / 2f, 1f, color, true);
 	}
 
 	private static void departureLeft(GuiGraphicsExtractor graphics, Font font, String label, float x, float y, int h, int color) {
-		GuiDraw.text(graphics, font, featureText(label), x, y + (h - font.lineHeight) / 2f, 1f, color, false);
+		GuiDraw.text(graphics, font, featureText(label), x, y + (h - font.lineHeight) / 2f, 1f, color, true);
 	}
 
 	private static String fitFeature(Font font, String label, int max) {

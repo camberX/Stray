@@ -835,7 +835,7 @@ public final class GuiDraw {
 	public static void menu(GuiGraphicsExtractor graphics, Font font, String value, float x, float y, int color) {
 		String shown = clickWords(value);
 		if (ClickGui.lightInk()) {
-			text(graphics, font, ClickGui.styled(shown), x, y + 1f, 1f, color, false);
+			text(graphics, font, ClickGui.styled(shown), x, y, 1f, color, true);
 			return;
 		}
 		float scale = MenuFont.bodyScale();
@@ -845,7 +845,7 @@ public final class GuiDraw {
 	public static void small(GuiGraphicsExtractor graphics, Font font, String value, float x, float y, int color) {
 		String shown = clickWords(value);
 		if (ClickGui.lightInk()) {
-			text(graphics, font, ClickGui.styled(shown), x, y + 1f, 1f, color, false);
+			text(graphics, font, ClickGui.styled(shown), x, y, 1f, color, true);
 			return;
 		}
 		float scale = MenuFont.smallScale();
