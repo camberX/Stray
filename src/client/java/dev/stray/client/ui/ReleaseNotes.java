@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.5.41", new String[]{
+			"Empty bag keybind runs /call Philip, waits for the Pesthunter menu, and clicks the hopper minecart named Empty Vacuum Bag once."
+		}),
 		new Entry("1.5.40", new String[]{
 			"Pest ESP nametags can be turned off. Their size follows the player nametag: larger up close, smaller far away, then the Size slider."
 		}),

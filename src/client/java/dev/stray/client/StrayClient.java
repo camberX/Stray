@@ -20,6 +20,7 @@ import dev.stray.client.farming.PestEsp;
 import dev.stray.client.farming.GardenPlots;
 import dev.stray.client.menu.DisabledPotions;
 import dev.stray.client.menu.NoCursorReset;
+import dev.stray.client.farming.EmptyVacuum;
 import dev.stray.client.farming.FarmKeys;
 import dev.stray.client.hunting.LassoReel;
 import dev.stray.client.fairy.FairySoulCommands;
@@ -163,6 +164,7 @@ public final class StrayClient implements ClientModInitializer {
 		wasLoadouts = menuKeyHeld(config.openLoadoutsKey);
 		wasLoadoutSwap = menuKeyHeld(config.loadoutSwapKey);
 		LoadoutSwap.syncEdge();
+		EmptyVacuum.syncEdge();
 		wasWardrobe = menuKeyHeld(config.openWardrobeKey);
 		wasProfile = menuKeyHeld(config.openProfileKey);
 		wasPing = menuKeyHeld(config.strayPingKey);
@@ -319,6 +321,7 @@ public final class StrayClient implements ClientModInitializer {
 
 		ClientTickEvents.START_CLIENT_TICK.register(client -> {
 			LoadoutSwap.onStart(client);
+			EmptyVacuum.onStart(client);
 			LassoReel.tick(client);
 			AutoRogue.tick(client);
 			FarmKeys.tick(client);
@@ -392,6 +395,7 @@ public final class StrayClient implements ClientModInitializer {
 			PestEsp.reset();
 			PestCooldown.reset();
 			LassoReel.reset();
+			EmptyVacuum.reset();
 			CrystalHollows.onWorldChange();
 			MetalDetector.onWorldChange();
 			BlockMarks.onWorldChange();
@@ -416,6 +420,7 @@ public final class StrayClient implements ClientModInitializer {
 			PestEsp.reset();
 			PestCooldown.reset();
 			LassoReel.reset();
+			EmptyVacuum.reset();
 			DisabledPotions.reset();
 			PickupLogRenderer.clear();
 			JacobContestTracker.reset();
@@ -440,6 +445,7 @@ public final class StrayClient implements ClientModInitializer {
 			PestEsp.reset();
 			PestCooldown.reset();
 			LassoReel.reset();
+			EmptyVacuum.reset();
 			DisabledPotions.reset();
 			PickupLogRenderer.clear();
 			JacobContestTracker.reset();
@@ -456,6 +462,7 @@ public final class StrayClient implements ClientModInitializer {
 			PestEsp.reset();
 			PestCooldown.reset();
 			LassoReel.reset();
+			EmptyVacuum.reset();
 			ChestAimer.stop();
 			MobGlowRenderer.reset();
 			StarMobEsp.reset();
@@ -562,6 +569,7 @@ public final class StrayClient implements ClientModInitializer {
 		wasWardrobe = wardrobe;
 		wasProfile = profile;
 		wasPing = ping;
+		EmptyVacuum.poll(client, ignoreMenuBinds(client));
 	}
 
 	private static boolean ignoreMenuBinds(Minecraft client) {
