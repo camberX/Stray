@@ -593,22 +593,22 @@ public final class StrayClient implements ClientModInitializer {
 		if (screen.getFocused() instanceof EditBox) {
 			return true;
 		}
+		if (screen instanceof CustomTitleScreen) {
+			return true;
+		}
 		return !(screen instanceof StrayScreen
 			|| screen instanceof LoadoutsScreen
 			|| screen instanceof WardrobeScreen
 			|| screen instanceof ProfileViewerScreen
 			|| screen instanceof HudEditorScreen
 			|| screen instanceof ItemEditScreen
-			|| screen instanceof CommandShortcutScreen
-			|| screen instanceof CustomTitleScreen);
+			|| screen instanceof CommandShortcutScreen);
 	}
 
 	private static void handleOpenGui(Minecraft client) {
 		if (client.screen instanceof HudEditorScreen) {
 			client.setScreen(new StrayScreen());
 		} else if (client.screen instanceof CommandShortcutScreen screen) {
-			screen.onClose();
-		} else if (client.screen instanceof CustomTitleScreen screen) {
 			screen.onClose();
 		} else if (client.screen instanceof StrayScreen screen) {
 			screen.requestClose();
