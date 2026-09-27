@@ -32,6 +32,9 @@ import java.util.Locale;
  */
 public final class PestEsp {
 	private static final double RANGE_SQ = 96.0 * 96.0;
+	/** Head and tail stands of one worm sit within this gap. */
+	private static final double EARTHWORM_LINK = 1.5;
+	private static final String EARTHWORM = "Earthworm";
 	private static List<Mark> view = List.of();
 
 	private PestEsp() {
@@ -53,6 +56,7 @@ public final class PestEsp {
 		}
 		Vec3 camera = client.gameRenderer.getMainCamera().position();
 		List<Mark> next = new ArrayList<>();
+		List<AABB> worms = new ArrayList<>();
 		for (Entity entity : client.level.entitiesForRendering()) {
 			if (!(entity instanceof ArmorStand stand)) {
 				continue;
@@ -68,8 +72,13 @@ public final class PestEsp {
 			if (box.getXsize() < 0.35 || box.getYsize() < 0.35) {
 				box = box.inflate(0.22);
 			}
-			next.add(new Mark(box, box.getCenter(), name));
+			if (EARTHWORM.equals(name)) {
+				worms.add(box);
+			} else {
+				next.add(new Mark(box, box.getCenter(), name));
+			}
 		}
+		next.addAll(mergeEarthworms(worms));
 		view = List.copyOf(next);
 	}
 
@@ -83,6 +92,39 @@ public final class PestEsp {
 
 	public static List<Mark> snapshot() {
 		return view;
+	}
+
+	/** One box and one name per worm. Head and tail are separate armor stands. */
+	private static List<Mark> mergeEarthworms(List<AABB> parts) {
+		if (parts.isEmpty()) {
+			return List.of();
+		}
+		boolean[] used = new boolean[parts.size()];
+		List<Mark> marks = new ArrayList<>();
+		for (int i = 0; i < parts.size(); i++) {
+			if (used[i]) {
+				continue;
+			}
+			used[i] = true;
+			AABB box = parts.get(i);
+			boolean grew = true;
+			while (grew) {
+				grew = false;
+				for (int j = 0; j < parts.size(); j++) {
+					if (used[j]) {
+						continue;
+					}
+					if (!box.inflate(EARTHWORM_LINK).intersects(parts.get(j))) {
+						continue;
+					}
+					used[j] = true;
+					box = box.minmax(parts.get(j));
+					grew = true;
+				}
+			}
+			marks.add(new Mark(box, box.getCenter(), EARTHWORM));
+		}
+		return marks;
 	}
 
 	public static boolean holdingVacuum(LocalPlayer player) {
