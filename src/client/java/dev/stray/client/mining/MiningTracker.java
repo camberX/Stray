@@ -1,12 +1,14 @@
 package dev.stray.client.mining;
 
 import dev.stray.client.config.StrayConfig;
+import dev.stray.client.item.ItemText;
 import dev.stray.client.location.SkyblockLocation;
 import dev.stray.client.ui.StrayScreen;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientPacketListener;
 import net.minecraft.client.multiplayer.PlayerInfo;
 import net.minecraft.network.chat.Component;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.GameType;
 import net.minecraft.world.scores.PlayerTeam;
 
@@ -37,15 +39,32 @@ public final class MiningTracker {
 		})
 		.thenComparing(info -> info.getProfile().name(), String.CASE_INSENSITIVE_ORDER);
 	private static final long ALERT_MS = 3500L;
-	private static final long BOOST_MS = 120_000L;
-	private static final long PICKOBULUS_MS = 60_000L;
+	/**
+	 * Cooldown starts on cast and is shared by every pickaxe ability.
+	 * Mining Speed Boost, Maniac Miner, Gemstone Infusion, and Sheer Force
+	 * are 120s at every level. Pickobulus is 60/50/40s and Tunnel Vision is
+	 * 120/110/110s by ability level. A fuel tank (2/4/6/10%), the Pickaxe
+	 * Cooldown attribute (1% per level, up to 10%), Sky Mall (−20%), and the
+	 * mineshaft roll (−25%) shorten it. Entering a Glacite Mineshaft clears
+	 * it. The tab widget and the held tool's Cooldown line already include
+	 * those, so they replace this base.
+	 */
+	private static final int BASE_SECONDS = 120;
+	private static final int PICKOBULUS_SECONDS = 60;
+	private static final Pattern CLOCK = Pattern.compile(
+		"(?i)(?:(\\d{1,2})\\s*m(?:in(?:ute)?s?)?(?:\\s*(\\d{1,2})\\s*s(?:ec(?:ond)?s?)?)?|(\\d{1,3})\\s*s(?:ec(?:ond)?s?)?|(\\d{1,2}):(\\d{2}))"
+	);
+	private static final Pattern ABILITY_HEADER = Pattern.compile("(?i)^pickaxe ability:?$");
 
 	private static final Object LOCK = new Object();
 	private static List<Commission> commissions = List.of();
 	private static String ability = "Pickaxe";
 	private static boolean abilityReady = true;
 	private static long cooldownUntil;
-	private static long cooldownTotal = BOOST_MS;
+	private static long cooldownTotal = BASE_SECONDS * 1000L;
+	private static long cooldownStarted;
+	private static String trackedArea = "";
+	private static boolean sawArea;
 	private static String alertName = "";
 	private static long alertUntil;
 	private static int parseTick = Integer.MIN_VALUE;
@@ -80,6 +99,7 @@ public final class MiningTracker {
 		}
 		parseTick = t;
 		List<Commission> parsed = readCommissions(client);
+		syncAbility(client);
 		synchronized (LOCK) {
 			commissions = parsed;
 			if (!abilityReady && System.currentTimeMillis() >= cooldownUntil) {
@@ -94,13 +114,22 @@ public final class MiningTracker {
 		if (text.isEmpty()) {
 			return;
 		}
+		String key = text.toLowerCase(Locale.ROOT);
+		if (key.contains("has expired")) {
+			return;
+		}
+		int mentioned = key.contains("cooldown") ? clockSeconds(text) : -1;
+		if (mentioned >= 0) {
+			String named = abilityIn(text);
+			applyRemaining(named == null ? ability : named, mentioned);
+			return;
+		}
 		String name = abilityIn(text);
 		if (name == null) {
 			return;
 		}
-		String key = text.toLowerCase(Locale.ROOT);
 		if (key.contains("is now available")) {
-			markReady(name);
+			markReady(name, true);
 			return;
 		}
 		if (key.contains("you used") && key.contains("pickaxe ability")) {
@@ -111,15 +140,14 @@ public final class MiningTracker {
 	public static void reset() {
 		synchronized (LOCK) {
 			commissions = List.of();
-			ability = "Pickaxe";
-			abilityReady = true;
-			cooldownUntil = 0L;
 			alertName = "";
 			alertUntil = 0L;
 		}
 		parseTick = Integer.MIN_VALUE;
 		snapTick = Integer.MIN_VALUE;
 		snapCache = null;
+		trackedArea = "";
+		sawArea = false;
 	}
 
 	public static Snapshot snapshot() {
@@ -188,24 +216,165 @@ public final class MiningTracker {
 			|| area.contains("deep cavern");
 	}
 
+	private static void syncAbility(Minecraft client) {
+		watchArea();
+		AbilityLine live = readAbility(client);
+		if (live == null) {
+			return;
+		}
+		long now = System.currentTimeMillis();
+		if (live.ready) {
+			boolean freshCast;
+			synchronized (LOCK) {
+				freshCast = cooldownStarted > 0L && now - cooldownStarted < 4000L;
+			}
+			if (!freshCast) {
+				markReady(live.name == null ? ability : live.name, true);
+			}
+			return;
+		}
+		if (live.seconds >= 0) {
+			boolean stale;
+			synchronized (LOCK) {
+				long remain = Math.max(0L, cooldownUntil - now);
+				stale = cooldownStarted > 0L && now - cooldownStarted < 4000L && live.seconds * 1000L + 3000L < remain;
+			}
+			if (!stale) {
+				applyRemaining(live.name == null ? ability : live.name, live.seconds);
+			}
+		} else if (live.name != null) {
+			synchronized (LOCK) {
+				ability = live.name;
+			}
+		}
+	}
+
+	private static void watchArea() {
+		String area = SkyblockLocation.area == null ? "" : SkyblockLocation.area;
+		if (area.isEmpty()) {
+			return;
+		}
+		boolean shaft = area.toLowerCase(Locale.ROOT).contains("mineshaft");
+		boolean wasShaft = trackedArea.toLowerCase(Locale.ROOT).contains("mineshaft");
+		if (sawArea && shaft && !wasShaft) {
+			boolean cooling;
+			synchronized (LOCK) {
+				cooling = !abilityReady && System.currentTimeMillis() < cooldownUntil;
+			}
+			markReady(ability, cooling);
+		}
+		trackedArea = area;
+		sawArea = true;
+	}
+
+	private static AbilityLine readAbility(Minecraft client) {
+		if (client.player == null || client.player.connection == null) {
+			return null;
+		}
+		List<PlayerInfo> infos = new ArrayList<>(client.player.connection.getListedOnlinePlayers());
+		infos.sort(TAB_ORDER);
+		boolean section = false;
+		String name = null;
+		int seconds = -1;
+		boolean ready = false;
+		boolean saw = false;
+		int left = 0;
+		for (PlayerInfo info : infos) {
+			String line = cleanName(plain(tabName(info)));
+			if (line.isEmpty()) {
+				continue;
+			}
+			if (ABILITY_HEADER.matcher(line).matches()) {
+				section = true;
+				saw = true;
+				left = 4;
+				continue;
+			}
+			if (!section) {
+				continue;
+			}
+			if (isNewWidget(line) || left-- <= 0) {
+				break;
+			}
+			String found = abilityIn(line);
+			if (found != null) {
+				name = found;
+			}
+			String key = line.toLowerCase(Locale.ROOT);
+			int clock = clockSeconds(line);
+			if (clock >= 0) {
+				seconds = clock;
+				ready = false;
+				continue;
+			}
+			if (key.contains("not ready")) {
+				ready = false;
+				continue;
+			}
+			if (key.contains("available") || key.equals("ready") || key.equals("ready!")) {
+				ready = seconds < 0;
+			}
+		}
+		if (!saw) {
+			return null;
+		}
+		return new AbilityLine(name, seconds, ready && seconds < 0);
+	}
+
 	private static void startCooldown(String name) {
-		long duration = durationOf(name);
+		int seconds = loreSeconds();
+		if (seconds <= 0) {
+			seconds = baseSeconds(name);
+		}
+		long now = System.currentTimeMillis();
 		synchronized (LOCK) {
 			ability = name;
 			abilityReady = false;
-			cooldownTotal = duration;
-			cooldownUntil = System.currentTimeMillis() + duration;
+			cooldownStarted = now;
+			cooldownTotal = seconds * 1000L;
+			cooldownUntil = now + cooldownTotal;
 		}
 		snapTick = Integer.MIN_VALUE;
 	}
 
-	private static void markReady(String name) {
+	private static void applyRemaining(String name, int seconds) {
+		if (seconds <= 0) {
+			markReady(name, true);
+			return;
+		}
+		long now = System.currentTimeMillis();
 		synchronized (LOCK) {
-			ability = name;
+			if (name != null && !name.isBlank() && !"Pickaxe".equals(name)) {
+				ability = name;
+			}
+			long end = now + seconds * 1000L;
+			boolean replace = abilityReady || cooldownUntil <= now || end + 2000L < cooldownUntil || end > cooldownUntil + 2500L;
+			abilityReady = false;
+			if (!replace) {
+				return;
+			}
+			cooldownUntil = end;
+			if (cooldownStarted > 0L && end > cooldownStarted) {
+				cooldownTotal = end - cooldownStarted;
+			} else {
+				cooldownTotal = Math.max(seconds, baseSeconds(ability)) * 1000L;
+			}
+		}
+		snapTick = Integer.MIN_VALUE;
+	}
+
+	private static void markReady(String name, boolean alert) {
+		boolean wasReady;
+		synchronized (LOCK) {
+			wasReady = abilityReady && cooldownUntil <= System.currentTimeMillis();
+			if (name != null && !name.isBlank() && !"Pickaxe".equals(name)) {
+				ability = name;
+			}
 			abilityReady = true;
 			cooldownUntil = 0L;
-			if (StrayConfig.get().miningAbilityAlert) {
-				alertName = name;
+			cooldownStarted = 0L;
+			if (alert && !wasReady && StrayConfig.get().miningAbilityAlert) {
+				alertName = ability;
 				alertUntil = System.currentTimeMillis() + ALERT_MS;
 			}
 		}
@@ -214,7 +383,7 @@ public final class MiningTracker {
 
 	private static String abilityIn(String text) {
 		String key = text.toLowerCase(Locale.ROOT);
-		if (key.contains("pickobulus")) {
+		if (key.contains("pickobulus") || key.contains("pickobolus")) {
 			return "Pickobulus";
 		}
 		if (key.contains("mining speed boost")) {
@@ -226,15 +395,88 @@ public final class MiningTracker {
 		if (key.contains("gemstone infusion")) {
 			return "Gemstone Infusion";
 		}
+		if (key.contains("sheer force")) {
+			return "Sheer Force";
+		}
+		if (key.contains("tunnel vision")) {
+			return "Tunnel Vision";
+		}
+		if (key.contains("anomalous desire")) {
+			return "Anomalous Desire";
+		}
 		return null;
 	}
 
-	private static long durationOf(String name) {
-		String key = name.toLowerCase(Locale.ROOT);
-		if (key.contains("pickobulus") || key.contains("maniac")) {
-			return PICKOBULUS_MS;
+	private static int baseSeconds(String name) {
+		String key = name == null ? "" : name.toLowerCase(Locale.ROOT);
+		if (key.contains("pickobulus") || key.contains("pickobolus")) {
+			return PICKOBULUS_SECONDS;
 		}
-		return BOOST_MS;
+		return BASE_SECONDS;
+	}
+
+	private static int loreSeconds() {
+		Minecraft client = Minecraft.getInstance();
+		if (client.player == null) {
+			return 0;
+		}
+		ItemStack held = client.player.getMainHandItem();
+		if (held == null || held.isEmpty()) {
+			return 0;
+		}
+		ItemText text = ItemText.capture(held);
+		if (text.lore() == null) {
+			return 0;
+		}
+		int found = 0;
+		boolean ability = false;
+		for (Component line : text.lore().lines()) {
+			String plain = plain(line);
+			if (abilityIn(plain) != null || plain.toLowerCase(Locale.ROOT).contains("pickaxe ability")) {
+				ability = true;
+			}
+			if (!plain.toLowerCase(Locale.ROOT).contains("cooldown")) {
+				continue;
+			}
+			int seconds = clockSeconds(plain);
+			if (seconds >= 10 && seconds <= 180 && (ability || found == 0)) {
+				found = seconds;
+				if (ability) {
+					return seconds;
+				}
+			}
+		}
+		return found;
+	}
+
+	private static int clockSeconds(String text) {
+		if (text == null || text.isEmpty()) {
+			return -1;
+		}
+		Matcher matcher = CLOCK.matcher(text);
+		if (!matcher.find()) {
+			return -1;
+		}
+		if (matcher.group(1) != null) {
+			int minutes = Integer.parseInt(matcher.group(1));
+			int seconds = matcher.group(2) == null ? 0 : Integer.parseInt(matcher.group(2));
+			int total = minutes * 60 + seconds;
+			return total <= 180 ? total : -1;
+		}
+		if (matcher.group(3) != null) {
+			int seconds = Integer.parseInt(matcher.group(3));
+			return seconds <= 180 ? seconds : -1;
+		}
+		int minutes = Integer.parseInt(matcher.group(4));
+		int seconds = Integer.parseInt(matcher.group(5));
+		if (seconds >= 60) {
+			return -1;
+		}
+		int total = minutes * 60 + seconds;
+		return total <= 180 ? total : -1;
+	}
+
+	private record AbilityLine(String name, int seconds, boolean ready) {
 	}
 
 	public static boolean hasTitaniumCommission() {
