@@ -7,6 +7,7 @@ import com.google.gson.JsonParser;
 import dev.stray.Stray;
 import dev.stray.client.render.GlowBlurRadius;
 import dev.stray.client.render.MobCatalog;
+import dev.stray.client.hud.CustomTitle;
 import dev.stray.client.ui.Theme;
 import dev.stray.client.ui.CommandShortcuts;
 import net.fabricmc.loader.api.FabricLoader;
@@ -121,6 +122,7 @@ public final class StrayConfig {
 	public boolean customTitleEnabled = false;
 	public String customTitleTrigger = "";
 	public String customTitleText = "";
+	public java.util.List<CustomTitleRule> customTitles = new java.util.ArrayList<>();
 	public boolean lassoDisplay = true;
 	public boolean jacobContestHudEnabled = false;
 	public boolean skillProgressHudEnabled = false;
@@ -1397,6 +1399,18 @@ public final class StrayConfig {
 				if (loaded.customTitleText == null) {
 					loaded.customTitleText = "";
 				}
+				if (loaded.customTitles == null) {
+					loaded.customTitles = new java.util.ArrayList<>();
+				}
+				if (loaded.customTitles.isEmpty() && !loaded.customTitleTrigger.isBlank() && !loaded.customTitleText.isBlank()) {
+					CustomTitleRule migrated = new CustomTitleRule();
+					migrated.trigger = loaded.customTitleTrigger;
+					migrated.title = loaded.customTitleText;
+					loaded.customTitles.add(migrated);
+				}
+				loaded.customTitleTrigger = "";
+				loaded.customTitleText = "";
+				CustomTitle.normalize(loaded);
 				boolean oldAlert = loaded.pestCooldownAlert == null || loaded.pestCooldownAlert.isBlank() || "Pest cooldown".equals(loaded.pestCooldownAlert);
 				boolean oldAlertSub = loaded.pestCooldownAlertSub == null || loaded.pestCooldownAlertSub.isBlank() || "2:00 left".equals(loaded.pestCooldownAlertSub);
 				if (!json.has("pestCooldownAlert") || loaded.pestCooldownAlert == null || loaded.pestCooldownAlert.isBlank() || (oldAlert && oldAlertSub)) {
@@ -2247,6 +2261,11 @@ public final class StrayConfig {
 	public static final class CommandShortcut {
 		public String alias = "";
 		public String command = "";
+	}
+
+	public static final class CustomTitleRule {
+		public String trigger = "";
+		public String title = "";
 	}
 
 	public static final class ItemSkin {

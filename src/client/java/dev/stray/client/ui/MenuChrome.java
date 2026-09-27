@@ -35,7 +35,8 @@ public final class MenuChrome {
 			|| screen instanceof HudEditorScreen
 			|| screen instanceof CapeCreatorScreen
 			|| screen instanceof LoadoutsScreen
-			|| screen instanceof CommandShortcutScreen) {
+			|| screen instanceof CommandShortcutScreen
+			|| screen instanceof CustomTitleScreen) {
 			return false;
 		}
 		if (screen.isInGameUi() || screen instanceof AbstractContainerScreen || screen instanceof ChatScreen) {

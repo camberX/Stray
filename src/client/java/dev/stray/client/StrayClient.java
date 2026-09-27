@@ -94,7 +94,9 @@ import dev.stray.client.render.StarMobEsp;
 import dev.stray.client.render.NodeWorldRenderer;
 import dev.stray.client.render.VanillaHud;
 import dev.stray.client.render.WatermarkRenderer;
+import dev.stray.client.hud.CustomTitle;
 import dev.stray.client.ui.CommandShortcutScreen;
+import dev.stray.client.ui.CustomTitleScreen;
 import dev.stray.client.ui.CommandShortcuts;
 import dev.stray.client.ui.HudEditorScreen;
 import dev.stray.client.ui.ItemEditScreen;
@@ -272,6 +274,7 @@ public final class StrayClient implements ClientModInitializer {
 			root.then(CommandRingCommands.command());
 			root.then(MovementRingCommands.command());
 			root.then(ClientCommands.literal("shortcuts").executes(context -> CommandShortcuts.open()));
+			root.then(ClientCommands.literal("titles").executes(context -> CustomTitle.open()));
 			root.then(LiveCommands.irc());
 			root.then(LiveCommands.ping());
 			root.then(UpdateCommands.command());
@@ -297,6 +300,7 @@ public final class StrayClient implements ClientModInitializer {
 			vm.then(CommandRingCommands.command());
 			vm.then(MovementRingCommands.command());
 			vm.then(ClientCommands.literal("shortcuts").executes(context -> CommandShortcuts.open()));
+			vm.then(ClientCommands.literal("titles").executes(context -> CustomTitle.open()));
 			vm.then(LiveCommands.irc());
 			vm.then(LiveCommands.ping());
 			vm.then(UpdateCommands.command());
@@ -595,13 +599,16 @@ public final class StrayClient implements ClientModInitializer {
 			|| screen instanceof ProfileViewerScreen
 			|| screen instanceof HudEditorScreen
 			|| screen instanceof ItemEditScreen
-			|| screen instanceof CommandShortcutScreen);
+			|| screen instanceof CommandShortcutScreen
+			|| screen instanceof CustomTitleScreen);
 	}
 
 	private static void handleOpenGui(Minecraft client) {
 		if (client.screen instanceof HudEditorScreen) {
 			client.setScreen(new StrayScreen());
 		} else if (client.screen instanceof CommandShortcutScreen screen) {
+			screen.onClose();
+		} else if (client.screen instanceof CustomTitleScreen screen) {
 			screen.onClose();
 		} else if (client.screen instanceof StrayScreen screen) {
 			screen.requestClose();

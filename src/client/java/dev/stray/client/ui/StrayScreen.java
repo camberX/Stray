@@ -164,7 +164,6 @@ public class StrayScreen extends Screen {
 		NUCLEUS("Nucleus alerts", 2),
 		NODE_ESP("Node ESP", 4),
 		WATERMARK("Watermark", 5),
-		CUSTOM_TITLE("Custom title", 2),
 		MUSIC("Music", 4),
 		PIP("Picture in picture", 3),
 		RAWMATS("Raw mats", 2),
@@ -591,16 +590,10 @@ public class StrayScreen extends Screen {
 	private boolean stealFocused;
 	private int pestAlertFocus;
 	private boolean pestAlertLive;
-	private int customTitleFocus;
-	private boolean customTitleLive;
 	private float pestAlertX;
 	private float pestAlertY;
 	private float pestAlertW;
 	private float pestAlertH;
-	private float customTitleX;
-	private float customTitleY;
-	private float customTitleW;
-	private float customTitleH;
 	private String stealDraft = "";
 	private String searchQuery = "";
 	private String capeUrlDraft = "";
@@ -723,7 +716,6 @@ public class StrayScreen extends Screen {
 	@Override
 	public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float delta) {
 		pestAlertLive = false;
-		customTitleLive = false;
 		if (StrayConfig.get().clickGui) {
 			tickAnim();
 			hits.clear();
@@ -2347,7 +2339,7 @@ public class StrayScreen extends Screen {
 			case ESP -> drawMobsTab(graphics, font, mouseX, mouseY);
 			case OVERLAY -> {
 				int extra = config.skillProgressHudEnabled ? Feature.SKILL.rows() : 0;
-				float y = featureCard(graphics, font, left, top, col, cardHeight(8 + extra), "HUD");
+				float y = featureCard(graphics, font, left, top, col, cardHeight(9 + extra), "HUD");
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Watermark", config.watermarkEnabled, v -> config.watermarkEnabled = v, Feature.WATERMARK);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Music", config.musicHudEnabled, v -> config.musicHudEnabled = v, Feature.MUSIC);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Picture in picture", config.pipEnabled, v -> config.pipEnabled = v, Feature.PIP);
@@ -2359,7 +2351,8 @@ public class StrayScreen extends Screen {
 					y += Feature.SKILL.rows() * rowH();
 				}
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Inventory HUD", config.inventoryHudEnabled, v -> config.inventoryHudEnabled = v, Feature.INVENTORY);
-				toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Custom title", config.customTitleEnabled, v -> config.customTitleEnabled = v, Feature.CUSTOM_TITLE);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Custom title", config.customTitleEnabled, v -> config.customTitleEnabled = v);
+				clickRow(graphics, font, ix, y, iw, mouseX, mouseY, "Edit titles", () -> minecraft.setScreen(new CustomTitleScreen(this)));
 			}
 			case BARS -> {
 				float y = featureCard(graphics, font, left, top, col, cardHeight(4) + 28, "Info");
@@ -2593,7 +2586,21 @@ public class StrayScreen extends Screen {
 				y = controlCard(graphics, font, left, y, col, mouseX, mouseY, "Skill progress", config.skillProgressHudEnabled, v -> config.skillProgressHudEnabled = v, Feature.SKILL);
 				y = sectionLabel(graphics, font, right, top, "Inventory");
 				y = controlCard(graphics, font, right, y, col, mouseX, mouseY, "Inventory HUD", config.inventoryHudEnabled, v -> config.inventoryHudEnabled = v, Feature.INVENTORY);
-				controlCard(graphics, font, right, y, col, mouseX, mouseY, "Custom title", config.customTitleEnabled, v -> config.customTitleEnabled = v, Feature.CUSTOM_TITLE);
+				featureCard(
+					graphics,
+					font,
+					right,
+					y,
+					col,
+					cardHeight(0),
+					"Custom title",
+					config.customTitleEnabled,
+					v -> config.customTitleEnabled = v,
+					mouseX,
+					mouseY,
+					"Edit",
+					() -> minecraft.setScreen(new CustomTitleScreen(this))
+				);
 			}
 			case MEDIA -> {
 				float y = sectionLabel(graphics, font, left, top, "Now playing");
@@ -3217,58 +3224,6 @@ public class StrayScreen extends Screen {
 		}
 	}
 
-	private float customTitleLine(GuiGraphicsExtractor graphics, Font font, float x, float y, float w, int mouseX, int mouseY, String label, String value, int focusId) {
-		float row = rowH();
-		boolean focused = customTitleFocus == focusId;
-		String shown = value == null ? "" : value;
-		String text = (shown.isEmpty() ? label : label + "  " + shown) + (focused ? "|" : "");
-		clickField(graphics, font, x, y, w, mouseX, mouseY, text, focused, shown.isEmpty() && !focused, () -> customTitleFocus = focusId);
-		if (!customTitleLive) {
-			customTitleX = x;
-			customTitleY = y;
-			customTitleW = w;
-			customTitleH = row;
-		} else {
-			float bottom = Math.max(customTitleY + customTitleH, y + row);
-			customTitleX = Math.min(customTitleX, x);
-			customTitleY = Math.min(customTitleY, y);
-			customTitleW = Math.max(customTitleW, w);
-			customTitleH = bottom - customTitleY;
-		}
-		customTitleLive = true;
-		return y + row;
-	}
-
-	private void editCustomTitle(int key, boolean paste, String typed) {
-		if (customTitleFocus != 1 && customTitleFocus != 2) {
-			return;
-		}
-		StrayConfig config = StrayConfig.get();
-		String current = customTitleFocus == 1 ? config.customTitleTrigger : config.customTitleText;
-		if (current == null) {
-			current = "";
-		}
-		if (paste) {
-			String clip = minecraft.keyboardHandler.getClipboard();
-			if (clip != null && !clip.isBlank()) {
-				current += clip.replace("\n", "").replace("\r", "");
-			}
-		} else if (typed != null) {
-			current += typed;
-		} else if (key == InputConstants.KEY_BACKSPACE && !current.isEmpty()) {
-			current = current.substring(0, current.length() - 1);
-		}
-		if (current.length() > 72) {
-			current = current.substring(0, 72);
-		}
-		if (customTitleFocus == 1) {
-			config.customTitleTrigger = current;
-		} else {
-			config.customTitleText = current;
-		}
-		UnloadState.markDirty();
-	}
-
 	private float toggle(GuiGraphicsExtractor graphics, Font font, float x, float y, float w, int mouseX, int mouseY, String label, boolean value, Consumer<Boolean> setter) {
 		return toggle(graphics, font, x, y, w, mouseX, mouseY, label, value, setter, null);
 	}
@@ -3775,10 +3730,6 @@ public class StrayScreen extends Screen {
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Swap alert", config.pestCooldownTitle, v -> config.pestCooldownTitle = v);
 				y = alertLine(graphics, font, ix, y, iw, mouseX, mouseY, "Title", config.pestCooldownAlert, 1);
 				alertLine(graphics, font, ix, y, iw, mouseX, mouseY, "Subtitle", config.pestCooldownAlertSub, 2);
-			}
-			case CUSTOM_TITLE -> {
-				y = customTitleLine(graphics, font, ix, y, iw, mouseX, mouseY, "Chat", config.customTitleTrigger, 1);
-				customTitleLine(graphics, font, ix, y, iw, mouseX, mouseY, "Title", config.customTitleText, 2);
 			}
 			case AUTO_DNA -> {
 				y = slider(graphics, font, ix, y, iw, "Click delay", config.autoDnaClickDelay + "ms", (config.autoDnaClickDelay - 100) / 900f, v -> config.autoDnaClickDelay = snapInt(100 + v * 900f, 100, 1000, 10));
@@ -4429,9 +4380,6 @@ public class StrayScreen extends Screen {
 		if (pestAlertFocus != 0 && !(pestAlertLive && GuiDraw.hovered(lx, ly, pestAlertX, pestAlertY, pestAlertW, pestAlertH))) {
 			pestAlertFocus = 0;
 		}
-		if (customTitleFocus != 0 && !(customTitleLive && GuiDraw.hovered(lx, ly, customTitleX, customTitleY, customTitleW, customTitleH))) {
-			customTitleFocus = 0;
-		}
 		boolean onSteal = GuiDraw.hovered(lx, ly, stealFieldX, stealFieldY, stealFieldW, ROW);
 		if (stealFocused && !onSteal) {
 			stealFocused = false;
@@ -4634,10 +4582,6 @@ public class StrayScreen extends Screen {
 				pestAlertFocus = 0;
 				return true;
 			}
-			if (customTitleFocus != 0) {
-				customTitleFocus = 0;
-				return true;
-			}
 			if (stealFocused) {
 				stealFocused = false;
 				stealDraft = NickSteal.target();
@@ -4705,18 +4649,6 @@ public class StrayScreen extends Screen {
 		}
 		if (pestAlertFocus != 0 && event.key() == InputConstants.KEY_V && event.hasControlDown()) {
 			editPestAlert(0, true, null);
-			return true;
-		}
-		if (customTitleFocus != 0 && event.key() == InputConstants.KEY_BACKSPACE) {
-			editCustomTitle(InputConstants.KEY_BACKSPACE, false, null);
-			return true;
-		}
-		if (customTitleFocus != 0 && event.key() == InputConstants.KEY_RETURN) {
-			customTitleFocus = 0;
-			return true;
-		}
-		if (customTitleFocus != 0 && event.key() == InputConstants.KEY_V && event.hasControlDown()) {
-			editCustomTitle(0, true, null);
 			return true;
 		}
 		if (nickFocused && event.key() == InputConstants.KEY_BACKSPACE) {
@@ -4809,7 +4741,6 @@ public class StrayScreen extends Screen {
 			nickFocused = false;
 			stealFocused = false;
 			pestAlertFocus = 0;
-			customTitleFocus = 0;
 			mobSearchFocused = false;
 			fontPickerOpen = false;
 			fontSearchFocused = false;
@@ -4834,10 +4765,6 @@ public class StrayScreen extends Screen {
 		}
 		if (pestAlertFocus != 0 && event.isAllowedChatCharacter()) {
 			editPestAlert(0, false, event.codepointAsString());
-			return true;
-		}
-		if (customTitleFocus != 0 && event.isAllowedChatCharacter()) {
-			editCustomTitle(0, false, event.codepointAsString());
 			return true;
 		}
 		if (nickFocused && event.isAllowedChatCharacter()) {
@@ -4882,7 +4809,7 @@ public class StrayScreen extends Screen {
 	}
 
 	public boolean shouldIgnoreMenuBinds() {
-		return bindListen != 0 || capeFocused || nickFocused || stealFocused || pestAlertFocus != 0 || customTitleFocus != 0 || searchOpen || ClickGui.searchFocused() || ClickGui.mobSearchFocused() || mobSearchFocused || fontSearchFocused;
+		return bindListen != 0 || capeFocused || nickFocused || stealFocused || pestAlertFocus != 0 || searchOpen || ClickGui.searchFocused() || ClickGui.mobSearchFocused() || mobSearchFocused || fontSearchFocused;
 	}
 
 	public void requestClose() {
