@@ -136,7 +136,7 @@ public final class WatermarkRenderer {
 			}
 		}
 		drawScaled(graphics, font, rest, textX, trayY, TRAY_SCALE, Theme.ACCENT);
-		drawScaled(graphics, font, MenuFont.title(BETA), 0f, betaTop(), BETA_SCALE, GOLD);
+		drawScaled(graphics, font, MenuFont.title(channelLabel()), 0f, betaTop(), BETA_SCALE, GOLD);
 	}
 
 	/** One screen pixel of shadow, so the big S and the smaller tray share a bottom edge. */
@@ -224,7 +224,7 @@ public final class WatermarkRenderer {
 		}
 		float trayW = font.width(MenuFont.title("tray")) * TRAY_SCALE;
 		float right = Math.max(top, trayW);
-		float betaW = font.width(MenuFont.title(BETA)) * BETA_SCALE;
+		float betaW = font.width(MenuFont.title(channelLabel())) * BETA_SCALE;
 		return Math.max(markW + right, betaW) + 1f;
 	}
 
@@ -252,6 +252,28 @@ public final class WatermarkRenderer {
 			extra.append(HudStats.playerName());
 		}
 		return extra.toString();
+	}
+
+	/** Release jars keep Beta. Dev builds from main say Dev. */
+	private static String channelLabel() {
+		return devBuild() ? "Dev" : BETA;
+	}
+
+	private static boolean devBuild() {
+		return FabricLoader.getInstance()
+			.getModContainer("stray")
+			.map(container -> {
+				var value = container.getMetadata().getCustomValue("stray:channel");
+				if (value == null) {
+					return false;
+				}
+				try {
+					return "dev".equalsIgnoreCase(value.getAsString().trim());
+				} catch (Exception ignored) {
+					return false;
+				}
+			})
+			.orElse(false);
 	}
 
 	private static String versionLabel() {
