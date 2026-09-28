@@ -149,6 +149,7 @@ public final class StrayConfig {
 	public boolean crystalHollowsFindChat = false;
 	public boolean crystalHollowsThroughWalls = false;
 	public boolean crystalHollowsEntrances = false;
+	public boolean crystalHollowsRubyRoute = false;
 	public boolean crystalHollowsScan = true;
 	public boolean crystalHollowsMap = false;
 	public boolean crystalHollowsMapLabels = true;

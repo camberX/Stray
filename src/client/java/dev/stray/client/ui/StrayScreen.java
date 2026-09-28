@@ -169,7 +169,7 @@ public class StrayScreen extends Screen {
 		RAWMATS("Raw mats", 2),
 		MINING("Mining HUD", 1),
 		TITANIUM("Titanium ESP", 4),
-		CRYSTAL("CH waypoints", 5),
+		CRYSTAL("CH waypoints", 6),
 		CH_MAP("CH map", 1),
 		METAL("Metal detector", 1),
 		FARMING("Yaw / Pitch", 1),
@@ -3749,6 +3749,7 @@ public class StrayScreen extends Screen {
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Scan structures", config.crystalHollowsScan, v -> config.crystalHollowsScan = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Entrance zones", config.crystalHollowsEntrances, v -> config.crystalHollowsEntrances = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Through walls", config.crystalHollowsThroughWalls, v -> config.crystalHollowsThroughWalls = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "MF Ruby Route", config.crystalHollowsRubyRoute, v -> config.crystalHollowsRubyRoute = v);
 				clickRow(graphics, font, ix, y, iw, mouseX, mouseY, "Dump coords", CrystalHollows::dumpChat);
 			}
 			case CH_MAP -> toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Waypoint names", config.crystalHollowsMapLabels, v -> config.crystalHollowsMapLabels = v);

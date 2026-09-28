@@ -32,6 +32,21 @@ public final class CrystalHollows {
 		new StaticMark(new BlockPos(475, 116, 475), "Jungle", 0xAA00AA),
 		new StaticMark(new BlockPos(513, 106, 524), "Nucleus", 0xFF5555)
 	);
+	private static final int RUBY = 0x00FF00;
+	private static final int[] RUBY_ROUTE = {
+		238, 51, 398, 223, 51, 377, 220, 60, 380, 218, 64, 388, 215, 62, 400,
+		217, 66, 400, 217, 57, 393, 220, 59, 396, 224, 61, 394, 228, 60, 391,
+		246, 62, 391, 251, 62, 382, 252, 54, 406, 246, 53, 400, 235, 54, 406,
+		226, 56, 414, 230, 59, 413, 235, 33, 392, 232, 33, 394, 230, 37, 402,
+		228, 34, 413, 230, 39, 413, 227, 45, 414, 244, 42, 415, 250, 43, 412,
+		240, 42, 401, 246, 46, 391, 248, 47, 383, 246, 49, 337, 245, 52, 328,
+		238, 51, 319, 261, 55, 317, 259, 60, 322, 263, 46, 322, 260, 46, 327,
+		266, 55, 334, 272, 57, 333, 253, 36, 320, 249, 35, 327, 245, 37, 344,
+		238, 31, 343, 237, 38, 336, 241, 40, 332, 237, 47, 330, 238, 51, 319,
+		232, 41, 320, 228, 49, 347, 225, 49, 355, 255, 60, 354, 243, 35, 353,
+		248, 38, 353, 255, 48, 354, 245, 49, 357
+	};
+	private static final List<Mark> RUBY_MARKS = rubyMarks();
 	private static boolean inHollows;
 	private static String lastServer = "";
 
@@ -133,7 +148,23 @@ public final class CrystalHollows {
 		for (var entry : WAYPOINTS.entrySet()) {
 			out.add(new Mark(entry.getKey().label, entry.getValue(), entry.getKey().rgb, false));
 		}
+		if (StrayConfig.get().crystalHollowsRubyRoute) {
+			out.addAll(RUBY_MARKS);
+		}
 		return out;
+	}
+
+	private static List<Mark> rubyMarks() {
+		List<Mark> out = new ArrayList<>(RUBY_ROUTE.length / 3);
+		for (int i = 0; i < RUBY_ROUTE.length; i += 3) {
+			out.add(new Mark(
+				Integer.toString(i / 3 + 1),
+				new BlockPos(RUBY_ROUTE[i], RUBY_ROUTE[i + 1], RUBY_ROUTE[i + 2]),
+				RUBY,
+				false
+			));
+		}
+		return List.copyOf(out);
 	}
 
 	public static void dumpChat() {
