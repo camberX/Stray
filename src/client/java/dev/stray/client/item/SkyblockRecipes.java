@@ -8,6 +8,8 @@ import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.zip.GZIPInputStream;
@@ -22,6 +24,7 @@ public final class SkyblockRecipes {
 	}
 
 	private static final Map<String, Recipe> BY_ID = new HashMap<>();
+	private static final Map<String, List<String>> USED_IN = new HashMap<>();
 	private static boolean loaded;
 
 	/**
@@ -58,10 +61,30 @@ public final class SkyblockRecipes {
 					}
 				}
 			}
+			Map<String, LinkedHashSet<String>> used = new HashMap<>();
+			for (Recipe recipe : BY_ID.values()) {
+				for (String ingredient : recipe.ingredients.keySet()) {
+					used.computeIfAbsent(ingredient, key -> new LinkedHashSet<>()).add(recipe.id);
+				}
+			}
+			USED_IN.clear();
+			for (Map.Entry<String, LinkedHashSet<String>> entry : used.entrySet()) {
+				USED_IN.put(entry.getKey(), List.copyOf(entry.getValue()));
+			}
 			Stray.LOGGER.info("Loaded {} Skyblock recipes", BY_ID.size());
 		} catch (Exception exception) {
 			Stray.LOGGER.warn("Could not read Skyblock recipes", exception);
 		}
+	}
+
+	/** Recipes that consume {@code id} directly. A drill's next tier is the only hit. */
+	public static List<String> usedIn(String id) {
+		load();
+		if (id == null || id.isBlank()) {
+			return List.of();
+		}
+		List<String> hits = USED_IN.get(normalize(id));
+		return hits == null ? List.of() : hits;
 	}
 
 	public static Recipe get(String id) {
@@ -118,8 +141,6 @@ public final class SkyblockRecipes {
 			expand == null ? Expand.RAW : expand,
 			new HashMap<>(),
 			stock,
-			0L,
-			1L,
 			true
 		);
 	}
@@ -144,8 +165,6 @@ public final class SkyblockRecipes {
 		Expand mode,
 		Map<String, Long> remainder,
 		Stock stock,
-		long satisfied,
-		long denominator,
 		boolean root
 	) {
 		if (quantity <= 0L) {
@@ -173,35 +192,33 @@ public final class SkyblockRecipes {
 		if (recipe == null || recipe.ingredients.isEmpty()) {
 			leaf = true;
 		}
-		long covered = root ? 0L : mulDiv(quantity, satisfied, denominator);
-		if (covered > quantity) {
-			covered = quantity;
-		}
 		long taken = 0L;
 		if (!root && stock != null) {
-			taken = stock.take(id, quantity - covered);
-			if (taken > quantity - covered) {
-				taken = quantity - covered;
+			taken = stock.take(id, quantity);
+			if (taken > quantity) {
+				taken = quantity;
 			}
 		}
 		if (leaf) {
 			need.merge(id, quantity, Long::sum);
-			if (have != null) {
-				have.merge(id, covered + taken, Long::sum);
+			if (have != null && taken > 0L) {
+				have.merge(id, taken, Long::sum);
 			}
+			return;
+		}
+		// A drill you already own is the ingredient. Don't list the materials
+		// that went into it. Only the copies still missing get expanded.
+		long still = quantity - taken;
+		if (still <= 0L) {
 			return;
 		}
 		if (taken > 0L && stock != null) {
 			stock.onIntermediate(id, taken);
 		}
-		long crafts = ceilDiv(quantity, recipe.output);
+		long crafts = ceilDiv(still, recipe.output);
 		long produced = safeMul(crafts, recipe.output);
-		if (produced > quantity) {
-			remainder.merge(id, produced - quantity, Long::sum);
-		}
-		long nowSatisfied = covered + taken;
-		if (nowSatisfied > quantity) {
-			nowSatisfied = quantity;
+		if (produced > still) {
+			remainder.merge(id, produced - still, Long::sum);
 		}
 		stack.put(id, 1);
 		for (Map.Entry<String, Long> ingredient : recipe.ingredients.entrySet()) {
@@ -214,8 +231,6 @@ public final class SkyblockRecipes {
 				mode,
 				remainder,
 				stock,
-				nowSatisfied,
-				quantity,
 				false
 			);
 		}
@@ -244,29 +259,6 @@ public final class SkyblockRecipes {
 			return Long.MAX_VALUE;
 		}
 		return left * right;
-	}
-
-	/** {@code floor(value * numerator / denominator)}, capped at {@code value}. */
-	private static long mulDiv(long value, long numerator, long denominator) {
-		if (value <= 0L || numerator <= 0L || denominator <= 0L) {
-			return 0L;
-		}
-		if (numerator >= denominator) {
-			return value;
-		}
-		long whole = value / denominator;
-		long rem = value % denominator;
-		long high = safeMul(whole, numerator);
-		long low;
-		if (rem > Long.MAX_VALUE / numerator) {
-			low = Long.MAX_VALUE / denominator;
-		} else {
-			low = (rem * numerator) / denominator;
-		}
-		if (high >= Long.MAX_VALUE - low) {
-			return Long.MAX_VALUE;
-		}
-		return high + low;
 	}
 
 	public static String normalize(String raw) {

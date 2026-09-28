@@ -204,14 +204,15 @@ public final class RawmatsTracker {
 		Minecraft client = Minecraft.getInstance();
 		Player player = client.player;
 		Map<String, Long> owned = player == null ? Map.of() : ItemStorage.counts(player);
+		String goal = upgradeGoal(id, count, owned);
 		Map<String, LinkedHashSet<String>> converted = new LinkedHashMap<>();
 		Map<String, Long> need = new LinkedHashMap<>();
-		Map<String, Long> have = tally(id, count, owned, expand, need, converted);
-		boolean recipe = SkyblockRecipes.has(id);
+		Map<String, Long> have = tally(goal, count, owned, expand, need, converted);
+		boolean recipe = SkyblockRecipes.has(goal);
 		if (need.isEmpty()) {
-			need.put(id, count);
+			need.put(goal, count);
 		}
-		Map<String, List<String>> used = recipeMaterials(id, need, expand);
+		Map<String, List<String>> used = recipeMaterials(goal, need, expand);
 		List<Line> lines = new ArrayList<>();
 		for (Map.Entry<String, Long> entry : need.entrySet()) {
 			long required = entry.getValue() - CRAFTED.getOrDefault(entry.getKey(), 0L);
@@ -239,9 +240,9 @@ public final class RawmatsTracker {
 			}
 		}
 		return new Snapshot(
-			id,
-			nameOf(id),
-			iconOf(id),
+			goal,
+			nameOf(goal),
+			iconOf(goal),
 			List.copyOf(lines),
 			complete,
 			lines.size(),
@@ -251,6 +252,43 @@ public final class RawmatsTracker {
 			ItemStorage.sawBackpack(),
 			ItemStorage.sawSacks()
 		);
+	}
+
+	/**
+	 * A 355 you already own is the ingredient for a 455, not a pile of plates
+	 * to gather again. If that drill is only used by one recipe, follow it.
+	 */
+	private static String upgradeGoal(String id, long count, Map<String, Long> owned) {
+		String current = id;
+		LinkedHashSet<String> seen = new LinkedHashSet<>();
+		for (int step = 0; step < 8; step++) {
+			if (!seen.add(current) || ownedCount(owned, current) < count) {
+				break;
+			}
+			List<String> next = SkyblockRecipes.usedIn(current);
+			if (next.size() != 1) {
+				break;
+			}
+			String upgrade = next.get(0);
+			if (upgrade == null || upgrade.isBlank() || upgrade.equals(current)) {
+				break;
+			}
+			current = upgrade;
+		}
+		return current;
+	}
+
+	private static long ownedCount(Map<String, Long> owned, String id) {
+		long total = 0L;
+		for (Map.Entry<String, Long> entry : owned.entrySet()) {
+			if (entry.getKey() == null || entry.getValue() == null || entry.getValue() <= 0L) {
+				continue;
+			}
+			if (countsAs(SkyblockRecipes.normalize(entry.getKey())).contains(id)) {
+				total += entry.getValue();
+			}
+		}
+		return total;
 	}
 
 	/**
@@ -275,27 +313,7 @@ public final class RawmatsTracker {
 			pool.merge(SkyblockRecipes.normalize(entry.getKey()), entry.getValue(), Long::sum);
 		}
 		Map<String, Long> have = new HashMap<>();
-		Set<String> intermediates = new LinkedHashSet<>();
-		SkyblockRecipes.collect(target, count, expand, new SkyblockRecipes.Stock() {
-			@Override
-			public long take(String id, long quantity) {
-				return RawmatsTracker.take(pool, id, quantity);
-			}
-
-			@Override
-			public void onIntermediate(String id, long taken) {
-				if (taken > 0L && id != null && !id.isBlank()) {
-					intermediates.add(id);
-				}
-			}
-		}, need, have);
-		for (String mid : intermediates) {
-			for (String leaf : represented(mid, expand).keySet()) {
-				if (need.containsKey(leaf)) {
-					markConverted(converted, leaf, mid);
-				}
-			}
-		}
+		SkyblockRecipes.collect(target, count, expand, (id, quantity) -> RawmatsTracker.take(pool, id, quantity), need, have);
 		creditLeftovers(target, need, pool, have, expand, converted);
 		return have;
 	}
@@ -335,17 +353,6 @@ public final class RawmatsTracker {
 			pool.put(id, left);
 		}
 		return use;
-	}
-
-	private static Map<String, Long> represented(String id, SkyblockRecipes.Expand expand) {
-		if (expand == SkyblockRecipes.Expand.ENCHANTED && SkyblockRecipes.enchantedCompact(id)) {
-			return Map.of(id, 1L);
-		}
-		Map<String, Long> leaves = SkyblockRecipes.expand(id, 1L, expand);
-		if (leaves.isEmpty()) {
-			return Map.of(id, 1L);
-		}
-		return leaves;
 	}
 
 	/**
