@@ -212,7 +212,7 @@ public final class RawmatsTracker {
 		if (need.isEmpty()) {
 			need.put(goal, count);
 		}
-		Map<String, List<String>> used = recipeMaterials(goal, need, expand);
+		Map<String, List<String>> used = recipeMaterials(goal, count, owned, need, expand);
 		List<Line> lines = new ArrayList<>();
 		for (Map.Entry<String, Long> entry : need.entrySet()) {
 			long required = entry.getValue() - CRAFTED.getOrDefault(entry.getKey(), 0L);
@@ -406,9 +406,14 @@ public final class RawmatsTracker {
 		}
 	}
 
-	/** Direct recipe ingredients that expand into a displayed leaf, e.g. Refined Mithril → Enchanted Mithril. */
+	/**
+	 * Direct ingredients that still have to be crafted. A 355 you already own
+	 * is not listed, even when its materials overlap the plates for the 455.
+	 */
 	private static Map<String, List<String>> recipeMaterials(
 		String target,
+		long count,
+		Map<String, Long> owned,
 		Map<String, Long> need,
 		SkyblockRecipes.Expand expand
 	) {
@@ -416,15 +421,22 @@ public final class RawmatsTracker {
 		if (recipe == null || recipe.ingredients().isEmpty()) {
 			return Map.of();
 		}
+		long output = Math.max(1L, recipe.output());
+		long crafts = count <= 0L ? 0L : (count + output - 1L) / output;
 		Map<String, LinkedHashSet<String>> used = new LinkedHashMap<>();
-		for (String ingredient : recipe.ingredients().keySet()) {
-			if (need.containsKey(ingredient)) {
+		for (Map.Entry<String, Long> ingredient : recipe.ingredients().entrySet()) {
+			String id = ingredient.getKey();
+			if (need.containsKey(id)) {
 				continue;
 			}
-			Map<String, Long> leaves = SkyblockRecipes.expand(ingredient, 1L, expand);
+			long required = ingredient.getValue() * Math.max(1L, crafts);
+			if (ownedCount(owned, id) >= required) {
+				continue;
+			}
+			Map<String, Long> leaves = SkyblockRecipes.expand(id, 1L, expand);
 			for (String leaf : leaves.keySet()) {
-				if (need.containsKey(leaf) && !leaf.equals(ingredient)) {
-					used.computeIfAbsent(leaf, key -> new LinkedHashSet<>()).add(ingredient);
+				if (need.containsKey(leaf) && !leaf.equals(id)) {
+					used.computeIfAbsent(leaf, key -> new LinkedHashSet<>()).add(id);
 				}
 			}
 		}
