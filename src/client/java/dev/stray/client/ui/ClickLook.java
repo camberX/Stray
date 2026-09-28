@@ -9,6 +9,11 @@ import net.minecraft.client.gui.GuiGraphicsExtractor;
  */
 public final class ClickLook {
 	public static final float STROKE = 0.5f;
+	/**
+	 * A stroke of exactly 0.5 ends on a pixel center. The rasterizer keeps the
+	 * right and bottom edges and drops the left and top, so those sides look thinner.
+	 */
+	private static final float STROKE_COVER = STROKE + 0.01f;
 	public static final int OUTLINE = 0xFF000000;
 	public static final int FILL = 0x88000000;
 	public static final int PANEL = 0x99000000;
@@ -78,17 +83,18 @@ public final class ClickLook {
 			return;
 		}
 		GuiDraw.fillSmooth(graphics, x, y, w, h, fill);
-		GuiDraw.fillSmooth(graphics, x, y, w, STROKE, stroke);
-		GuiDraw.fillSmooth(graphics, x, y + h - STROKE, w, STROKE, stroke);
-		GuiDraw.fillSmooth(graphics, x, y, STROKE, h, stroke);
-		GuiDraw.fillSmooth(graphics, x + w - STROKE, y, STROKE, h, stroke);
+		stroke(graphics, x, y, w, h, stroke);
 	}
 
 	public static void frame(GuiGraphicsExtractor graphics, float x, float y, float w, float h) {
-		GuiDraw.fillSmooth(graphics, x, y, w, STROKE, OUTLINE);
-		GuiDraw.fillSmooth(graphics, x, y + h - STROKE, w, STROKE, OUTLINE);
-		GuiDraw.fillSmooth(graphics, x, y, STROKE, h, OUTLINE);
-		GuiDraw.fillSmooth(graphics, x + w - STROKE, y, STROKE, h, OUTLINE);
+		stroke(graphics, x, y, w, h, OUTLINE);
+	}
+
+	private static void stroke(GuiGraphicsExtractor graphics, float x, float y, float w, float h, int color) {
+		GuiDraw.fillSmooth(graphics, x, y, w, STROKE_COVER, color);
+		GuiDraw.fillSmooth(graphics, x, y + h - STROKE, w, STROKE, color);
+		GuiDraw.fillSmooth(graphics, x, y, STROKE_COVER, h, color);
+		GuiDraw.fillSmooth(graphics, x + w - STROKE, y, STROKE, h, color);
 	}
 
 	private static boolean accentOutline(int outline) {
