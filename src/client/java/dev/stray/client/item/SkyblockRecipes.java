@@ -6,7 +6,6 @@ import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Locale;
@@ -23,9 +22,19 @@ public final class SkyblockRecipes {
 	}
 
 	private static final Map<String, Recipe> BY_ID = new HashMap<>();
-	private static final Map<String, Map<String, Long>> RAW_CACHE = new HashMap<>();
-	private static final Map<String, Map<String, Long>> ENCHANTED_CACHE = new HashMap<>();
 	private static boolean loaded;
+
+	/**
+	 * Owned stacks the walk may spend. {@link #take} removes up to {@code quantity}
+	 * of {@code id} and returns how many it actually took. Called for every recipe
+	 * node, so an owned intermediate covers its ingredients instead of only leaves.
+	 */
+	public interface Stock {
+		long take(String id, long quantity);
+
+		default void onIntermediate(String id, long taken) {
+		}
+	}
 
 	private SkyblockRecipes() {
 	}
@@ -76,14 +85,43 @@ public final class SkyblockRecipes {
 	}
 
 	public static Map<String, Long> expand(String id, long quantity, Expand expand) {
-		load();
-		if (id == null || id.isBlank() || quantity <= 0L) {
-			return Map.of();
-		}
-		Expand mode = expand == null ? Expand.RAW : expand;
 		Map<String, Long> out = new LinkedHashMap<>();
-		walk(normalize(id), quantity, out, new HashMap<>(), mode);
+		collect(id, quantity, expand, null, out, null);
 		return out;
+	}
+
+	/**
+	 * One walk for the whole craft. Extra outputs (a recipe that makes 4 sticks
+	 * when the next row only needed 3) fill a later use of that same item.
+	 * Caching one craft and multiplying it over-counts those leftovers.
+	 * {@code stock} spends owned items at the node they match; {@code have}
+	 * receives that amount plus the share already covered by an owned parent.
+	 */
+	public static void collect(
+		String id,
+		long quantity,
+		Expand expand,
+		Stock stock,
+		Map<String, Long> need,
+		Map<String, Long> have
+	) {
+		load();
+		if (id == null || id.isBlank() || quantity <= 0L || need == null) {
+			return;
+		}
+		walk(
+			normalize(id),
+			quantity,
+			need,
+			have,
+			new HashMap<>(),
+			expand == null ? Expand.RAW : expand,
+			new HashMap<>(),
+			stock,
+			0L,
+			1L,
+			true
+		);
 	}
 
 	/**
@@ -97,40 +135,138 @@ public final class SkyblockRecipes {
 		return id.length() > "ENCHANTED_".length();
 	}
 
-	private static void walk(String id, long quantity, Map<String, Long> out, Map<String, Integer> stack, Expand mode) {
+	private static void walk(
+		String id,
+		long quantity,
+		Map<String, Long> need,
+		Map<String, Long> have,
+		Map<String, Integer> stack,
+		Expand mode,
+		Map<String, Long> remainder,
+		Stock stock,
+		long satisfied,
+		long denominator,
+		boolean root
+	) {
+		if (quantity <= 0L) {
+			return;
+		}
+		long carried = Math.min(remainder.getOrDefault(id, 0L), quantity);
+		if (carried > 0L) {
+			long left = remainder.get(id) - carried;
+			if (left <= 0L) {
+				remainder.remove(id);
+			} else {
+				remainder.put(id, left);
+			}
+			quantity -= carried;
+		}
 		if (quantity <= 0L) {
 			return;
 		}
 		int depth = stack.getOrDefault(id, 0);
-		if (depth > 0 || stack.size() > 32) {
-			out.merge(id, quantity, Long::sum);
-			return;
+		boolean leaf = depth > 0 || stack.size() > 32;
+		if (!leaf && mode == Expand.ENCHANTED && !stack.isEmpty() && enchantedCompact(id)) {
+			leaf = true;
 		}
-		if (mode == Expand.ENCHANTED && !stack.isEmpty() && enchantedCompact(id)) {
-			out.merge(id, quantity, Long::sum);
-			return;
-		}
-		Recipe recipe = BY_ID.get(id);
+		Recipe recipe = leaf ? null : BY_ID.get(id);
 		if (recipe == null || recipe.ingredients.isEmpty()) {
-			out.merge(id, quantity, Long::sum);
+			leaf = true;
+		}
+		long covered = root ? 0L : mulDiv(quantity, satisfied, denominator);
+		if (covered > quantity) {
+			covered = quantity;
+		}
+		long taken = 0L;
+		if (!root && stock != null) {
+			taken = stock.take(id, quantity - covered);
+			if (taken > quantity - covered) {
+				taken = quantity - covered;
+			}
+		}
+		if (leaf) {
+			need.merge(id, quantity, Long::sum);
+			if (have != null) {
+				have.merge(id, covered + taken, Long::sum);
+			}
 			return;
 		}
-		Map<String, Map<String, Long>> cache = mode == Expand.ENCHANTED ? ENCHANTED_CACHE : RAW_CACHE;
-		Map<String, Long> oneCraft = cache.get(id);
-		if (oneCraft == null) {
-			stack.put(id, 1);
-			Map<String, Long> craft = new LinkedHashMap<>();
-			for (Map.Entry<String, Long> ingredient : recipe.ingredients.entrySet()) {
-				walk(ingredient.getKey(), ingredient.getValue(), craft, stack, mode);
-			}
-			stack.remove(id);
-			oneCraft = Collections.unmodifiableMap(craft);
-			cache.put(id, oneCraft);
+		if (taken > 0L && stock != null) {
+			stock.onIntermediate(id, taken);
 		}
-		long crafts = (quantity + recipe.output - 1L) / recipe.output;
-		for (Map.Entry<String, Long> leaf : oneCraft.entrySet()) {
-			out.merge(leaf.getKey(), leaf.getValue() * crafts, Long::sum);
+		long crafts = ceilDiv(quantity, recipe.output);
+		long produced = safeMul(crafts, recipe.output);
+		if (produced > quantity) {
+			remainder.merge(id, produced - quantity, Long::sum);
 		}
+		long nowSatisfied = covered + taken;
+		if (nowSatisfied > quantity) {
+			nowSatisfied = quantity;
+		}
+		stack.put(id, 1);
+		for (Map.Entry<String, Long> ingredient : recipe.ingredients.entrySet()) {
+			walk(
+				ingredient.getKey(),
+				safeMul(ingredient.getValue(), crafts),
+				need,
+				have,
+				stack,
+				mode,
+				remainder,
+				stock,
+				nowSatisfied,
+				quantity,
+				false
+			);
+		}
+		stack.remove(id);
+	}
+
+	private static long ceilDiv(long numerator, long denominator) {
+		if (numerator <= 0L) {
+			return 0L;
+		}
+		if (denominator <= 1L) {
+			return numerator;
+		}
+		long quotient = numerator / denominator;
+		if (numerator % denominator == 0L) {
+			return quotient;
+		}
+		return quotient == Long.MAX_VALUE ? Long.MAX_VALUE : quotient + 1L;
+	}
+
+	private static long safeMul(long left, long right) {
+		if (left <= 0L || right <= 0L) {
+			return 0L;
+		}
+		if (left > Long.MAX_VALUE / right) {
+			return Long.MAX_VALUE;
+		}
+		return left * right;
+	}
+
+	/** {@code floor(value * numerator / denominator)}, capped at {@code value}. */
+	private static long mulDiv(long value, long numerator, long denominator) {
+		if (value <= 0L || numerator <= 0L || denominator <= 0L) {
+			return 0L;
+		}
+		if (numerator >= denominator) {
+			return value;
+		}
+		long whole = value / denominator;
+		long rem = value % denominator;
+		long high = safeMul(whole, numerator);
+		long low;
+		if (rem > Long.MAX_VALUE / numerator) {
+			low = Long.MAX_VALUE / denominator;
+		} else {
+			low = (rem * numerator) / denominator;
+		}
+		if (high >= Long.MAX_VALUE - low) {
+			return Long.MAX_VALUE;
+		}
+		return high + low;
 	}
 
 	public static String normalize(String raw) {

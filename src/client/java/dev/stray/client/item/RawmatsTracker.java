@@ -201,17 +201,16 @@ public final class RawmatsTracker {
 		SkyblockRecipes.Expand expand = StrayConfig.get().rawmatsEnchanted
 			? SkyblockRecipes.Expand.ENCHANTED
 			: SkyblockRecipes.Expand.RAW;
-		Map<String, Long> need = SkyblockRecipes.expand(id, count, expand);
-		boolean recipe = SkyblockRecipes.has(id);
-		if (need.isEmpty()) {
-			need = new LinkedHashMap<>();
-			need.put(id, count);
-		}
 		Minecraft client = Minecraft.getInstance();
 		Player player = client.player;
 		Map<String, Long> owned = player == null ? Map.of() : ItemStorage.counts(player);
 		Map<String, LinkedHashSet<String>> converted = new LinkedHashMap<>();
-		Map<String, Long> have = credit(id, need, owned, expand, converted);
+		Map<String, Long> need = new LinkedHashMap<>();
+		Map<String, Long> have = tally(id, count, owned, expand, need, converted);
+		boolean recipe = SkyblockRecipes.has(id);
+		if (need.isEmpty()) {
+			need.put(id, count);
+		}
 		Map<String, List<String>> used = recipeMaterials(id, need, expand);
 		List<Line> lines = new ArrayList<>();
 		for (Map.Entry<String, Long> entry : need.entrySet()) {
@@ -254,16 +253,117 @@ public final class RawmatsTracker {
 		);
 	}
 
-	private static Map<String, Long> credit(
+	/**
+	 * SkyOcean's craft helper spends owned items on the recipe node itself.
+	 * A golden plate in the bag covers every material in that plate, including
+	 * plates made from more than one ingredient. Compacts that are not on this
+	 * tree still count when they break down into one listed material.
+	 */
+	private static Map<String, Long> tally(
+		String target,
+		long count,
+		Map<String, Long> owned,
+		SkyblockRecipes.Expand expand,
+		Map<String, Long> need,
+		Map<String, LinkedHashSet<String>> converted
+	) {
+		Map<String, Long> pool = new HashMap<>();
+		for (Map.Entry<String, Long> entry : owned.entrySet()) {
+			if (entry.getKey() == null || entry.getValue() == null || entry.getValue() <= 0L) {
+				continue;
+			}
+			pool.merge(SkyblockRecipes.normalize(entry.getKey()), entry.getValue(), Long::sum);
+		}
+		Map<String, Long> have = new HashMap<>();
+		Set<String> intermediates = new LinkedHashSet<>();
+		SkyblockRecipes.collect(target, count, expand, new SkyblockRecipes.Stock() {
+			@Override
+			public long take(String id, long quantity) {
+				return RawmatsTracker.take(pool, id, quantity);
+			}
+
+			@Override
+			public void onIntermediate(String id, long taken) {
+				if (taken > 0L && id != null && !id.isBlank()) {
+					intermediates.add(id);
+				}
+			}
+		}, need, have);
+		for (String mid : intermediates) {
+			for (String leaf : represented(mid, expand).keySet()) {
+				if (need.containsKey(leaf)) {
+					markConverted(converted, leaf, mid);
+				}
+			}
+		}
+		creditLeftovers(target, need, pool, have, expand, converted);
+		return have;
+	}
+
+	/** Spend {@code id} first, then starred and higher crimson tiers that count as it. */
+	private static long take(Map<String, Long> pool, String id, long quantity) {
+		if (quantity <= 0L || pool.isEmpty() || id == null || id.isBlank()) {
+			return 0L;
+		}
+		long got = spend(pool, id, quantity);
+		if (got >= quantity) {
+			return got;
+		}
+		List<String> keys = new ArrayList<>(pool.keySet());
+		for (String owned : keys) {
+			if (got >= quantity) {
+				break;
+			}
+			if (owned.equals(id) || !countsAs(owned).contains(id)) {
+				continue;
+			}
+			got += spend(pool, owned, quantity - got);
+		}
+		return got;
+	}
+
+	private static long spend(Map<String, Long> pool, String id, long quantity) {
+		long have = pool.getOrDefault(id, 0L);
+		if (have <= 0L || quantity <= 0L) {
+			return 0L;
+		}
+		long use = Math.min(have, quantity);
+		long left = have - use;
+		if (left <= 0L) {
+			pool.remove(id);
+		} else {
+			pool.put(id, left);
+		}
+		return use;
+	}
+
+	private static Map<String, Long> represented(String id, SkyblockRecipes.Expand expand) {
+		if (expand == SkyblockRecipes.Expand.ENCHANTED && SkyblockRecipes.enchantedCompact(id)) {
+			return Map.of(id, 1L);
+		}
+		Map<String, Long> leaves = SkyblockRecipes.expand(id, 1L, expand);
+		if (leaves.isEmpty()) {
+			return Map.of(id, 1L);
+		}
+		return leaves;
+	}
+
+	/**
+	 * Stacks the tree did not visit. A single compact still covers its leaf
+	 * (enchanted iron toward iron). Raw cobble still crafts up into an
+	 * enchanted leaf. The target itself is not a material.
+	 */
+	private static void creditLeftovers(
 		String target,
 		Map<String, Long> need,
-		Map<String, Long> owned,
+		Map<String, Long> pool,
+		Map<String, Long> have,
 		SkyblockRecipes.Expand expand,
 		Map<String, LinkedHashSet<String>> converted
 	) {
-		Map<String, Long> have = new HashMap<>();
 		Map<String, Long> leftover = new HashMap<>();
-		for (Map.Entry<String, Long> entry : owned.entrySet()) {
+		List<Map.Entry<String, Long>> entries = new ArrayList<>(pool.entrySet());
+		for (Map.Entry<String, Long> entry : entries) {
 			String id = entry.getKey();
 			long count = entry.getValue();
 			if (count <= 0L || sameItem(id, target)) {
@@ -297,7 +397,6 @@ public final class RawmatsTracker {
 		if (expand == SkyblockRecipes.Expand.ENCHANTED) {
 			craftUp(need, leftover, have, converted);
 		}
-		return have;
 	}
 
 	/** Direct recipe ingredients that expand into a displayed leaf, e.g. Refined Mithril → Enchanted Mithril. */
