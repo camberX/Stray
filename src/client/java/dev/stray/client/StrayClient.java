@@ -329,6 +329,7 @@ public final class StrayClient implements ClientModInitializer {
 			LassoReel.tick(client);
 			AutoRogue.tick(client);
 			FarmKeys.tick(client);
+			EmptyVacuum.afterFarmKeys(client);
 			ChestAimer.tick(client);
 			AutoClicker.tick(client);
 			AutoExperiments.tick(client);
