@@ -15,6 +15,7 @@ import dev.stray.client.combat.Triggerbot;
 import dev.stray.client.debug.StrayDebug;
 import dev.stray.client.dungeon.PartyFinderStats;
 import dev.stray.client.farming.AutoDna;
+import dev.stray.client.farming.CropFever;
 import dev.stray.client.farming.PestCooldown;
 import dev.stray.client.farming.PestEsp;
 import dev.stray.client.farming.GardenPlots;
@@ -212,6 +213,7 @@ public final class StrayClient implements ClientModInitializer {
 		CrystalHollowsRenderer.init();
 		ClientReceiveMessageEvents.ALLOW_GAME.register((message, overlay) -> {
 			MetalDetector.onMessage(message, overlay);
+			CropFever.onMessage(message, overlay);
 			if (overlay) {
 				SkillProgressTracker.onActionBar(message);
 			}
@@ -399,6 +401,7 @@ public final class StrayClient implements ClientModInitializer {
 			ChestEsp.get().clear();
 			PestEsp.reset();
 			PestCooldown.reset();
+			CropFever.reset();
 			LassoReel.reset();
 			EmptyVacuum.reset();
 			CrystalHollows.onWorldChange();
@@ -424,6 +427,7 @@ public final class StrayClient implements ClientModInitializer {
 			AutoDna.reset();
 			PestEsp.reset();
 			PestCooldown.reset();
+			CropFever.reset();
 			LassoReel.reset();
 			EmptyVacuum.reset();
 			DisabledPotions.reset();
@@ -449,6 +453,7 @@ public final class StrayClient implements ClientModInitializer {
 			AutoDna.reset();
 			PestEsp.reset();
 			PestCooldown.reset();
+			CropFever.reset();
 			LassoReel.reset();
 			EmptyVacuum.reset();
 			DisabledPotions.reset();
@@ -466,6 +471,7 @@ public final class StrayClient implements ClientModInitializer {
 			ChestEsp.get().clear();
 			PestEsp.reset();
 			PestCooldown.reset();
+			CropFever.reset();
 			LassoReel.reset();
 			EmptyVacuum.reset();
 			ChestAimer.stop();

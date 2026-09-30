@@ -9,6 +9,7 @@ import dev.stray.client.farming.GardenHud.Need;
 import dev.stray.client.farming.GardenHud.ShoppingSnap;
 import dev.stray.client.farming.GardenHud.VisitorSnap;
 import dev.stray.client.farming.GardenVisitors;
+import dev.stray.client.farming.CropFever;
 import dev.stray.client.farming.PestCooldown;
 import dev.stray.client.farming.PestCooldown.Snap;
 import dev.stray.client.item.ItemIds;
@@ -136,6 +137,14 @@ public final class GardenHudRenderer {
 		return timeWidth(font, cooldownLabel());
 	}
 
+	public static float cropFeverWidth(Font font) {
+		return timeWidth(font, CropFever.label());
+	}
+
+	public static float cropFeverHeight() {
+		return PAD * 2f + LINE;
+	}
+
 	public static float pestCooldownHeight() {
 		return PAD * 2f + LINE;
 	}
@@ -201,6 +210,10 @@ public final class GardenHudRenderer {
 				drawPestCooldown(graphics, client.font, box.x(), box.y(), HudLayout.scale(HudLayout.Id.PEST_COOLDOWN), snap);
 			}
 		}
+		if (config.cropFeverHudEnabled && (CropFever.active() || HudLayout.editorOpen())) {
+			HudLayout.Box box = HudLayout.box(HudLayout.Id.CROP_FEVER, client.font, graphics.guiWidth(), graphics.guiHeight());
+			drawCropFever(graphics, client.font, box.x(), box.y(), HudLayout.scale(HudLayout.Id.CROP_FEVER));
+		}
 	}
 
 	private static void drawContest(
@@ -240,6 +253,16 @@ public final class GardenHudRenderer {
 
 	private static float timeWidth(Font font, String text) {
 		return GuiDraw.smallWidth(font, text) + PAD * 2f + 2f;
+	}
+
+	private static void drawCropFever(GuiGraphicsExtractor graphics, Font font, float x, float y, float scale) {
+		boolean live = CropFever.active();
+		String text = CropFever.label();
+		int color = live && CropFever.secondsLeft() <= 10 ? 0xFF5A4A : Theme.ACCENT;
+		float width = timeWidth(font, text);
+		begin(graphics, x, y, scale, width, cropFeverHeight());
+		GuiDraw.small(graphics, font, text, PAD + 1, PAD, color);
+		graphics.pose().popMatrix();
 	}
 
 	private static void drawPestCooldown(

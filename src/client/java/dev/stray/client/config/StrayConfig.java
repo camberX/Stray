@@ -116,6 +116,7 @@ public final class StrayConfig {
 	public int pestEspRgb = 0xB62F00;
 	public float pestEspOpacity = 0.38f;
 	public boolean pestCooldownHudEnabled = false;
+	public boolean cropFeverHudEnabled = true;
 	public boolean pestCooldownTitle = true;
 	public String pestCooldownAlert = "Swap armor";
 	public String pestCooldownAlertSub = "5s left";
@@ -327,6 +328,7 @@ public final class StrayConfig {
 	public HudSlot slotGardenMilestone = new HudSlot();
 	public HudSlot slotGardenShopping = new HudSlot();
 	public HudSlot slotGardenPest = new HudSlot();
+	public HudSlot slotGardenFever = new HudSlot();
 	public HudSlot slotTopDown = new HudSlot();
 	public String inventoryHudAnchor = "bottom_right";
 	public float inventoryHudScale = 1.0f;
@@ -1388,6 +1390,9 @@ public final class StrayConfig {
 				if (!json.has("pestCooldownHudEnabled")) {
 					loaded.pestCooldownHudEnabled = false;
 				}
+				if (!json.has("cropFeverHudEnabled")) {
+					loaded.cropFeverHudEnabled = true;
+				}
 				if (!json.has("pestCooldownTitle")) {
 					loaded.pestCooldownTitle = true;
 				}
@@ -1444,6 +1449,7 @@ public final class StrayConfig {
 				loaded.slotGardenMilestone = hudSlot(loaded.slotGardenMilestone);
 				loaded.slotGardenShopping = hudSlot(loaded.slotGardenShopping);
 				loaded.slotGardenPest = hudSlot(loaded.slotGardenPest);
+				loaded.slotGardenFever = hudSlot(loaded.slotGardenFever);
 				if (loaded.overflowHoeLevels == null) {
 					loaded.overflowHoeLevels = new java.util.LinkedHashMap<>();
 				}
@@ -2232,6 +2238,7 @@ public final class StrayConfig {
 		slotGardenMilestone = new HudSlot();
 		slotGardenShopping = new HudSlot();
 		slotGardenPest = new HudSlot();
+		slotGardenFever = new HudSlot();
 		slotTopDown = new HudSlot();
 	}
 

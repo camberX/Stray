@@ -480,6 +480,7 @@ public class StrayScreen extends Screen {
 		new SearchEntry("Bag delay", Tab.GARDEN, "Garden"),
 		new SearchEntry("Empty Vacuum Bag", Tab.GARDEN, "Garden"),
 		new SearchEntry("Pest cooldown", Tab.GARDEN, "Garden"),
+		new SearchEntry("Crop fever", Tab.GARDEN, "Garden"),
 		new SearchEntry("Lasso", Tab.GARDEN, "Garden"),
 		new SearchEntry("Reel", Tab.GARDEN, "Garden"),
 		new SearchEntry("Swap alert", Tab.GARDEN, "Garden"),
@@ -2760,6 +2761,7 @@ public class StrayScreen extends Screen {
 				y = toggleCard(graphics, font, left, y, col, mouseX, mouseY, "Visitors", config.gardenVisitorHudEnabled, v -> config.gardenVisitorHudEnabled = v);
 				y = toggleCard(graphics, font, left, y, col, mouseX, mouseY, "Hoe level", config.gardenHoeHudEnabled, v -> config.gardenHoeHudEnabled = v);
 				y = toggleCard(graphics, font, left, y, col, mouseX, mouseY, "Crop milestone", config.gardenMilestoneHudEnabled, v -> config.gardenMilestoneHudEnabled = v);
+				y = toggleCard(graphics, font, left, y, col, mouseX, mouseY, "Crop fever", config.cropFeverHudEnabled, v -> config.cropFeverHudEnabled = v);
 				controlCard(graphics, font, left, y, col, mouseX, mouseY, "Shopping list", config.gardenShoppingHudEnabled, v -> config.gardenShoppingHudEnabled = v, Feature.SHOPPING);
 				y = sectionLabel(graphics, font, right, top, "Pests");
 				y = controlCard(graphics, font, right, y, col, mouseX, mouseY, "Pest ESP", config.pestEspEnabled, v -> config.pestEspEnabled = v, Feature.PEST);

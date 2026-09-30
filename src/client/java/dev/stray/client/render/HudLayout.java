@@ -37,6 +37,7 @@ public final class HudLayout {
 		MILESTONE("Crop milestone"),
 		SHOPPING("Shopping list"),
 		PEST_COOLDOWN("Pest cooldown"),
+		CROP_FEVER("Crop fever"),
 		TOP_DOWN("Top down"),
 		HOTBAR("Hotbar"),
 		HEALTH("Health"),
@@ -241,7 +242,7 @@ public final class HudLayout {
 					x = Math.max(MARGIN, guiW - w - MARGIN);
 					y = Math.max(MARGIN, guiH * 0.5f - h * 0.5f);
 				}
-				case NEXT_CONTEST, VISITOR, HOE, MILESTONE, SHOPPING, PEST_COOLDOWN -> {
+				case NEXT_CONTEST, VISITOR, HOE, MILESTONE, SHOPPING, PEST_COOLDOWN, CROP_FEVER -> {
 					x = MARGIN;
 					y = gardenDefaultY(id, config);
 				}
@@ -465,6 +466,7 @@ public final class HudLayout {
 			case MILESTONE -> config.gardenMilestoneHudEnabled;
 			case SHOPPING -> config.gardenShoppingHudEnabled;
 			case PEST_COOLDOWN -> config.pestCooldownHudEnabled;
+			case CROP_FEVER -> config.cropFeverHudEnabled;
 			case TOP_DOWN -> config.topDownView;
 			case HOTBAR, HEALTH, HUNGER, ARMOR, AIR, EXPERIENCE, MOUNT -> false;
 			case SCOREBOARD -> config.hudScoreboard;
@@ -540,6 +542,7 @@ public final class HudLayout {
 			case MILESTONE -> config.slotGardenMilestone;
 			case SHOPPING -> config.slotGardenShopping;
 			case PEST_COOLDOWN -> config.slotGardenPest;
+			case CROP_FEVER -> config.slotGardenFever;
 			case TOP_DOWN -> config.slotTopDown;
 			default -> null;
 		};
@@ -562,14 +565,15 @@ public final class HudLayout {
 		if (config.skillProgressHudEnabled) {
 			below += SkillProgressHudRenderer.drawHeight() * scale(Id.SKILL) + 4;
 		}
-		Id[] order = {Id.NEXT_CONTEST, Id.VISITOR, Id.HOE, Id.MILESTONE, Id.SHOPPING, Id.PEST_COOLDOWN};
+		Id[] order = {Id.NEXT_CONTEST, Id.VISITOR, Id.HOE, Id.MILESTONE, Id.SHOPPING, Id.PEST_COOLDOWN, Id.CROP_FEVER};
 		boolean[] on = {
 			config.gardenContestHudEnabled,
 			config.gardenVisitorHudEnabled,
 			config.gardenHoeHudEnabled,
 			config.gardenMilestoneHudEnabled,
 			config.gardenShoppingHudEnabled,
-			config.pestCooldownHudEnabled
+			config.pestCooldownHudEnabled,
+			config.cropFeverHudEnabled
 		};
 		for (int i = 0; i < order.length; i++) {
 			if (order[i] == id) {
@@ -652,6 +656,7 @@ public final class HudLayout {
 			case MILESTONE -> GardenHudRenderer.milestoneWidth() * scale;
 			case SHOPPING -> GardenHudRenderer.shoppingWidth() * scale;
 			case PEST_COOLDOWN -> GardenHudRenderer.pestCooldownWidth(font) * scale;
+			case CROP_FEVER -> GardenHudRenderer.cropFeverWidth(font) * scale;
 			case TOP_DOWN -> TopDownHudRenderer.drawWidth() * scale;
 			case HOTBAR -> HotbarHudRenderer.drawWidth() * scale;
 			case HEALTH, HUNGER, ARMOR, AIR, MOUNT -> StatusHudRenderer.BAR_W * scale;
@@ -684,6 +689,7 @@ public final class HudLayout {
 			case MILESTONE -> GardenHudRenderer.milestoneHeight() * scale;
 			case SHOPPING -> GardenHudRenderer.shoppingHeight() * scale;
 			case PEST_COOLDOWN -> GardenHudRenderer.pestCooldownHeight() * scale;
+			case CROP_FEVER -> GardenHudRenderer.cropFeverHeight() * scale;
 			case TOP_DOWN -> TopDownHudRenderer.drawHeight() * scale;
 			case HOTBAR -> HotbarHudRenderer.HEIGHT * scale;
 			case HEALTH, HUNGER, ARMOR, AIR, MOUNT -> StatusHudRenderer.BAR_H * scale;
