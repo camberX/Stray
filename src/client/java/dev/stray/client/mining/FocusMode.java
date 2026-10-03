@@ -3,6 +3,7 @@ package dev.stray.client.mining;
 import com.mojang.blaze3d.opengl.GlRenderPipeline;
 import com.mojang.blaze3d.opengl.GlStateManager;
 import com.mojang.blaze3d.vertex.QuadInstance;
+import dev.stray.Stray;
 import dev.stray.client.config.StrayConfig;
 import dev.stray.client.location.SkyblockLocation;
 import dev.stray.client.visual.WorldTint;
@@ -201,11 +202,12 @@ public final class FocusMode {
 		}
 		if (WorldTint.sodiumLoaded()) {
 			try {
-				Class.forName("dev.stray.client.mixin.sodium.SodiumFocus")
+				Class.forName("dev.stray.client.compat.SodiumFocus")
 					.getMethod("rebuild")
 					.invoke(null);
 				return;
-			} catch (ReflectiveOperationException ignored) {
+			} catch (Throwable exception) {
+				Stray.LOGGER.warn("Sodium chunk reload failed, falling back to a full rebuild", exception);
 			}
 		}
 		if (client.levelRenderer != null) {

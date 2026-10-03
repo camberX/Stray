@@ -1,4 +1,4 @@
-package dev.stray.client.mixin.sodium;
+package dev.stray.client.compat;
 
 import net.caffeinemc.mods.sodium.client.render.SodiumWorldRenderer;
 
