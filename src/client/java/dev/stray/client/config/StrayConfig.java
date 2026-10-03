@@ -153,6 +153,7 @@ public final class StrayConfig {
 	public boolean crystalHollowsRubyRoute = false;
 	public boolean routeMiner = false;
 	public boolean routeMinerFocus = false;
+	public boolean routeMinerRegen = false;
 	public String routeMinerGem = "ruby";
 	public boolean crystalHollowsScan = true;
 	public boolean crystalHollowsMap = false;
@@ -1236,6 +1237,9 @@ public final class StrayConfig {
 				}
 				if (!json.has("routeMinerFocus")) {
 					loaded.routeMinerFocus = false;
+				}
+				if (!json.has("routeMinerRegen")) {
+					loaded.routeMinerRegen = false;
 				}
 				loaded.routeMinerGem = dev.stray.client.mining.FocusMode.normalize(loaded.routeMinerGem);
 				if (loaded.autoClickerLeftWhitelist == null) {

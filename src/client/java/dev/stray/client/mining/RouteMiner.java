@@ -11,10 +11,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Magma Fields ruby route. Each waypoint stays up while the selected gemstone's
- * stained glass or glass pane is still inside a 3-block cube around it, and
- * hides once that glass is gone. A later scan that finds it again puts the
- * waypoint back, which is the vein respawning.
+ * Magma Fields ruby route. Waypoints stay up while you prepare the route.
+ * Regenerated Waypoints, when enabled, checks a 3-block cube around each
+ * waypoint and hides it once the selected gemstone's glass is gone. A later
+ * scan that finds the glass again puts the waypoint back.
  *
  * At most one cube is read per tick. The vein you are standing in is preferred
  * and refreshes about twice a second; the rest of the route cycles behind it.
@@ -35,6 +35,7 @@ public final class RouteMiner {
 	private static int cursor;
 	private static int far;
 	private static String server = "";
+	private static boolean regenWas;
 
 	private RouteMiner() {
 	}
@@ -47,6 +48,9 @@ public final class RouteMiner {
 	public static List<CrystalHollows.Mark> marks() {
 		if (!enabled()) {
 			return List.of();
+		}
+		if (!regen()) {
+			return CrystalHollows.rubyMarks();
 		}
 		if (dirty) {
 			rebuild();
@@ -67,6 +71,14 @@ public final class RouteMiner {
 			}
 		}
 		if (!enabled() || client.level == null || client.player == null) {
+			return;
+		}
+		boolean regen = regen();
+		if (regen != regenWas) {
+			regenWas = regen;
+			reset();
+		}
+		if (!regen) {
 			return;
 		}
 		List<CrystalHollows.Mark> all = CrystalHollows.rubyMarks();
@@ -196,6 +208,10 @@ public final class RouteMiner {
 			&& level.hasChunkAt(CURSOR.set(x - RADIUS, y, z + RADIUS))
 			&& level.hasChunkAt(CURSOR.set(x + RADIUS, y, z - RADIUS))
 			&& level.hasChunkAt(CURSOR.set(x + RADIUS, y, z + RADIUS));
+	}
+
+	private static boolean regen() {
+		return StrayConfig.get().routeMinerRegen;
 	}
 
 	private static boolean isGlass(Block block) {

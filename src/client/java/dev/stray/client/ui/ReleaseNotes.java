@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.5.42", new String[]{
+			"Route miner keeps every waypoint up while you prepare the route. Regenerated Waypoints turns on the 3-block gemstone check that hides a spot once the glass is mined and brings it back when the vein respawns."
+		}),
 		new Entry("1.5.41", new String[]{
 			"Empty bag keybind runs /call Philip, waits for the Pesthunter menu, and clicks the hopper minecart named Empty Vacuum Bag once."
 		}),
