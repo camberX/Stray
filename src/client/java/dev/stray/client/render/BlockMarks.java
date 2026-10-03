@@ -22,6 +22,7 @@ import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.gizmos.GizmoProperties;
 import net.minecraft.gizmos.GizmoStyle;
 import net.minecraft.gizmos.Gizmos;
@@ -53,6 +54,7 @@ public final class BlockMarks {
 	private static final float PAD_X = 8f;
 	private static final int MAX = 64;
 	private static final double HOVER_RANGE = 96.0;
+	private static final Direction[] LINK = {Direction.EAST, Direction.UP, Direction.SOUTH};
 	private static final Map<String, Map<BlockPos, Mark>> SAVED = new LinkedHashMap<>();
 	private static boolean editWasDown;
 	private static boolean loaded;
@@ -234,7 +236,9 @@ public final class BlockMarks {
 		Vec3 camPos = camera.position();
 		Vector3fc forward = camera.forwardVector();
 		Font font = client.font;
-		int rgb = StrayConfig.get().blockMarksRgb & 0xFFFFFF;
+		StrayConfig config = StrayConfig.get();
+		int rgb = config.blockMarksRgb & 0xFFFFFF;
+		boolean showNames = config.blockMarksNames;
 		for (Mark mark : new ArrayList<>(here().values())) {
 			BlockPos pos = mark.pos;
 			boolean hot = pos.equals(hovered);
@@ -253,7 +257,7 @@ public final class BlockMarks {
 			double dist = head.distanceTo(camPos);
 			float scale = NametagRenderer.distanceScale(dist);
 			boolean icon = !mark.stack.isEmpty();
-			String label = mark.name.isEmpty() ? (hot ? "Enter to name" : "") : mark.name;
+			String label = !showNames || mark.name.isEmpty() ? (showNames && hot ? "Enter to name" : "") : mark.name;
 			Component name = MenuFont.vanilla(label);
 			Component meters = MenuFont.vanilla(GuiDraw.meters(dist));
 			float iconW = icon ? 12f : 0f;
@@ -306,7 +310,8 @@ public final class BlockMarks {
 			Vec3 cam = camera.position();
 			start = cam.add(f.x() * 0.9, f.y() * 0.9, f.z() * 0.9).subtract(up.x * 0.28, up.y * 0.28, up.z * 0.28);
 		}
-		for (Mark mark : here().values()) {
+		Map<BlockPos, Mark> marks = here();
+		for (Mark mark : marks.values()) {
 			BlockPos pos = mark.pos;
 			boolean hot = pos.equals(hovered);
 			GizmoProperties cuboid = Gizmos.cuboid(new AABB(pos).inflate(hot ? 0.04 : 0.01), GizmoStyle.strokeAndFill(hot ? 0xFFFFFFFF : line, hot ? 3.0f : 2.2f, fill));
@@ -314,6 +319,36 @@ public final class BlockMarks {
 			if (start != null) {
 				GizmoProperties tracer = Gizmos.line(start, Vec3.atCenterOf(pos), 0xB0000000 | rgb, 1.8f);
 				tracer.setAlwaysOnTop();
+			}
+		}
+		linkNeighbors(marks, line, fill);
+	}
+
+	/** Face-adjacent marks share a beam so a run of blocks reads as one mark. */
+	private static void linkNeighbors(Map<BlockPos, Mark> marks, int line, int fill) {
+		for (Mark mark : marks.values()) {
+			BlockPos pos = mark.pos;
+			for (Direction direction : LINK) {
+				BlockPos next = pos.relative(direction);
+				if (!marks.containsKey(next)) {
+					continue;
+				}
+				Vec3 a = Vec3.atCenterOf(pos);
+				Vec3 b = Vec3.atCenterOf(next);
+				boolean alongX = direction.getAxis() == Direction.Axis.X;
+				boolean alongY = direction.getAxis() == Direction.Axis.Y;
+				boolean alongZ = direction.getAxis() == Direction.Axis.Z;
+				double span = 0.12;
+				AABB beam = new AABB(
+					Math.min(a.x, b.x) - (alongX ? 0 : span),
+					Math.min(a.y, b.y) - (alongY ? 0 : span),
+					Math.min(a.z, b.z) - (alongZ ? 0 : span),
+					Math.max(a.x, b.x) + (alongX ? 0 : span),
+					Math.max(a.y, b.y) + (alongY ? 0 : span),
+					Math.max(a.z, b.z) + (alongZ ? 0 : span)
+				);
+				GizmoProperties cuboid = Gizmos.cuboid(beam, GizmoStyle.strokeAndFill(line, 2.2f, fill));
+				cuboid.setAlwaysOnTop();
 			}
 		}
 	}

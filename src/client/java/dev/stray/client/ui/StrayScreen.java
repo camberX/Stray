@@ -155,7 +155,7 @@ public class StrayScreen extends Screen {
 		BLOCK("Block outline", 1),
 		CHEST("Chest ESP", 5),
 		FAIRY("Fairy souls", 1),
-		MARKS("Block marks", 4),
+		MARKS("Block marks", 5),
 		PATHS("Paths", 5),
 		RINGS("Command rings", 4),
 		MOVE("WIP — DO NOT USE", 6),
@@ -169,7 +169,8 @@ public class StrayScreen extends Screen {
 		RAWMATS("Raw mats", 2),
 		MINING("Mining HUD", 1),
 		TITANIUM("Titanium ESP", 4),
-		CRYSTAL("CH waypoints", 6),
+		CRYSTAL("CH waypoints", 5),
+		ROUTE("Route miner", 1),
 		CH_MAP("CH map", 1),
 		METAL("Metal detector", 1),
 		FARMING("Yaw / Pitch", 1),
@@ -534,6 +535,9 @@ public class StrayScreen extends Screen {
 		new SearchEntry("Scavenged", Tab.HOLLOWS, "Divan"),
 		new SearchEntry("Crystal Hollows waypoints", Tab.HOLLOWS, "Hollows"),
 		new SearchEntry("CH waypoints", Tab.HOLLOWS, "Hollows"),
+		new SearchEntry("Route miner", Tab.HOLLOWS, "Hollows"),
+		new SearchEntry("MF Ruby Route", Tab.HOLLOWS, "Hollows"),
+		new SearchEntry("Ruby route", Tab.HOLLOWS, "Hollows"),
 		new SearchEntry("Structure scanner", Tab.HOLLOWS, "Hollows"),
 		new SearchEntry("Entrance zones", Tab.HOLLOWS, "Hollows"),
 		new SearchEntry("Nucleus waypoints", Tab.HOLLOWS, "Hollows"),
@@ -2434,10 +2438,11 @@ public class StrayScreen extends Screen {
 				statRow(graphics, font, rx, y, iw, "Ping", HudStats.pingLabel());
 			}
 			case MINING -> {
-				float 				y = featureCard(graphics, font, left, top, col, cardHeight(7), "Mining");
+				float 				y = featureCard(graphics, font, left, top, col, cardHeight(8), "Mining");
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Mining HUD", config.miningHudEnabled, v -> config.miningHudEnabled = v, Feature.MINING);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Titanium ESP", config.titaniumEsp, v -> config.titaniumEsp = v, Feature.TITANIUM);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "CH waypoints", config.crystalHollowsWaypoints, v -> config.crystalHollowsWaypoints = v, Feature.CRYSTAL);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Route miner", config.routeMiner, v -> config.routeMiner = v, Feature.ROUTE);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "CH map", config.crystalHollowsMap, v -> config.crystalHollowsMap = v, Feature.CH_MAP);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Metal detector", config.metalDetectorSolver, v -> config.metalDetectorSolver = v, Feature.METAL);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Robot part alert", config.nucleusAlertParts, v -> config.nucleusAlertParts = v);
@@ -2738,7 +2743,8 @@ public class StrayScreen extends Screen {
 			case HOLLOWS -> {
 				float y = sectionLabel(graphics, font, left, top, "Crystal Hollows");
 				y = controlCard(graphics, font, left, y, col, mouseX, mouseY, "CH waypoints", config.crystalHollowsWaypoints, v -> config.crystalHollowsWaypoints = v, Feature.CRYSTAL, "Dump", CrystalHollows::dumpChat);
-				controlCard(graphics, font, left, y, col, mouseX, mouseY, "CH map", config.crystalHollowsMap, v -> config.crystalHollowsMap = v, Feature.CH_MAP);
+				y = controlCard(graphics, font, left, y, col, mouseX, mouseY, "CH map", config.crystalHollowsMap, v -> config.crystalHollowsMap = v, Feature.CH_MAP);
+				controlCard(graphics, font, left, y, col, mouseX, mouseY, "Route miner", config.routeMiner, v -> config.routeMiner = v, Feature.ROUTE);
 				y = sectionLabel(graphics, font, right, top, "Mines of Divan");
 				y = controlCard(graphics, font, right, y, col, mouseX, mouseY, "Metal detector", config.metalDetectorSolver, v -> config.metalDetectorSolver = v, Feature.METAL);
 				y = sectionLabel(graphics, font, right, y, "Nucleus");
@@ -3620,6 +3626,7 @@ public class StrayScreen extends Screen {
 			}
 			case FAIRY -> toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Through walls", config.fairySoulThroughWalls, v -> config.fairySoulThroughWalls = v);
 			case MARKS -> {
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Names", config.blockMarksNames, v -> config.blockMarksNames = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Tracers", config.blockMarksTracers, v -> config.blockMarksTracers = v);
 				y = bindRow(graphics, font, ix, y, iw, mouseX, mouseY, "Edit mark", 8, OdinClicks.parseKey(config.blockMarkEditKey));
 				y = clickRow(graphics, font, ix, y, iw, mouseX, mouseY, BlockMarks.count() == 0 ? "Clear marks on " + PathRecorder.islandLabel() : "Clear " + BlockMarks.count() + " mark" + (BlockMarks.count() == 1 ? "" : "s") + " on " + PathRecorder.islandLabel(), BlockMarks::clear);
@@ -3751,9 +3758,9 @@ public class StrayScreen extends Screen {
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Scan structures", config.crystalHollowsScan, v -> config.crystalHollowsScan = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Entrance zones", config.crystalHollowsEntrances, v -> config.crystalHollowsEntrances = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Through walls", config.crystalHollowsThroughWalls, v -> config.crystalHollowsThroughWalls = v);
-				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "MF Ruby Route", config.crystalHollowsRubyRoute, v -> config.crystalHollowsRubyRoute = v);
 				clickRow(graphics, font, ix, y, iw, mouseX, mouseY, "Dump coords", CrystalHollows::dumpChat);
 			}
+			case ROUTE -> toggle(graphics, font, ix, y, iw, mouseX, mouseY, "MF Ruby Route", config.crystalHollowsRubyRoute, v -> config.crystalHollowsRubyRoute = v);
 			case CH_MAP -> toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Waypoint names", config.crystalHollowsMapLabels, v -> config.crystalHollowsMapLabels = v);
 			case METAL -> toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Tool title", config.metalDetectorToolTitle, v -> config.metalDetectorToolTitle = v);
 			case INVENTORY -> {

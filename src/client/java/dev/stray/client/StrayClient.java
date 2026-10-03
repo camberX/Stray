@@ -60,6 +60,7 @@ import dev.stray.client.mining.CrystalHollowsRenderer;
 import dev.stray.client.mining.CrystalHollowsMap;
 import dev.stray.client.mining.MetalDetector;
 import dev.stray.client.mining.NucleusAlerts;
+import dev.stray.client.mining.RouteMiner;
 import dev.stray.client.movement.AotvSim;
 import dev.stray.client.movement.CommandRingCommands;
 import dev.stray.client.movement.CommandRings;
@@ -376,6 +377,7 @@ public final class StrayClient implements ClientModInitializer {
 			PestEsp.tick(client);
 			FairySoulTracker.tick(client);
 			CrystalHollows.tick(client);
+			RouteMiner.tick(client);
 			CrystalHollowsMap.tick(client);
 			MetalDetector.tick(client);
 			NucleusAlerts.tick(client);
@@ -405,6 +407,7 @@ public final class StrayClient implements ClientModInitializer {
 			LassoReel.reset();
 			EmptyVacuum.reset();
 			CrystalHollows.onWorldChange();
+			RouteMiner.reset();
 			MetalDetector.onWorldChange();
 			BlockMarks.onWorldChange();
 			CommandRings.onWorldChange();
@@ -416,6 +419,7 @@ public final class StrayClient implements ClientModInitializer {
 		ClientPlayConnectionEvents.JOIN.register((handler, sender, client) -> {
 			AutoRogue.onWorldChange();
 			CrystalHollows.onWorldChange();
+			RouteMiner.reset();
 			MetalDetector.onWorldChange();
 			MobGlowRenderer.reset();
 			StarMobEsp.reset();

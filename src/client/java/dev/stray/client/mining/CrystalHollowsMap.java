@@ -132,15 +132,10 @@ public final class CrystalHollowsMap {
 		GuiDraw.blit(graphics, TEXTURE, 0, 0, MAP, MAP, 0f, 0f, TEX, TEX, TEX, TEX);
 		drawWalls(graphics, 0, 0);
 		for (CrystalHollows.Mark mark : CrystalHollows.mapMarks()) {
-			if (mark.nucleus()) {
-				drawDot(graphics, 0, 0, mark.pos(), mark.rgb(), 1.6f);
-				continue;
-			}
-			if (StrayConfig.get().crystalHollowsMapLabels) {
-				drawMark(graphics, font, 0, 0, mark);
-			} else {
-				drawDot(graphics, 0, 0, mark.pos(), mark.rgb(), 2.2f);
-			}
+			drawMapMark(graphics, font, mark);
+		}
+		for (CrystalHollows.Mark mark : RouteMiner.marks()) {
+			drawMapMark(graphics, font, mark);
 		}
 		if (client.player != null && SkyblockLocation.inCrystalHollows()) {
 			drawPlayer(graphics, 0, 0, client.player);
@@ -500,6 +495,18 @@ public final class CrystalHollowsMap {
 			return;
 		}
 		GuiDraw.fill(graphics, Math.round(x), Math.round(y), Math.max(1, Math.round(w)), Math.max(1, Math.round(h)), color);
+	}
+
+	private static void drawMapMark(GuiGraphicsExtractor graphics, Font font, CrystalHollows.Mark mark) {
+		if (mark.nucleus()) {
+			drawDot(graphics, 0, 0, mark.pos(), mark.rgb(), 1.6f);
+			return;
+		}
+		if (StrayConfig.get().crystalHollowsMapLabels) {
+			drawMark(graphics, font, 0, 0, mark);
+		} else {
+			drawDot(graphics, 0, 0, mark.pos(), mark.rgb(), 2.2f);
+		}
 	}
 
 	private static void drawMark(GuiGraphicsExtractor graphics, Font font, float mapX, float mapY, CrystalHollows.Mark mark) {

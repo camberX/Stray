@@ -46,7 +46,7 @@ public final class CrystalHollows {
 		232, 41, 320, 228, 49, 347, 225, 49, 355, 255, 60, 354, 243, 35, 353,
 		248, 38, 353, 255, 48, 354, 245, 49, 357
 	};
-	private static final List<Mark> RUBY_MARKS = rubyMarks();
+	private static final List<Mark> RUBY_MARKS = buildRubyMarks();
 	private static boolean inHollows;
 	private static String lastServer = "";
 
@@ -148,13 +148,14 @@ public final class CrystalHollows {
 		for (var entry : WAYPOINTS.entrySet()) {
 			out.add(new Mark(entry.getKey().label, entry.getValue(), entry.getKey().rgb, false));
 		}
-		if (StrayConfig.get().crystalHollowsRubyRoute) {
-			out.addAll(RUBY_MARKS);
-		}
 		return out;
 	}
 
-	private static List<Mark> rubyMarks() {
+	public static List<Mark> rubyMarks() {
+		return RUBY_MARKS;
+	}
+
+	private static List<Mark> buildRubyMarks() {
 		List<Mark> out = new ArrayList<>(RUBY_ROUTE.length / 3);
 		for (int i = 0; i < RUBY_ROUTE.length; i += 3) {
 			out.add(new Mark(

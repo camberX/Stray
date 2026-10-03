@@ -151,6 +151,7 @@ public final class StrayConfig {
 	public boolean crystalHollowsThroughWalls = false;
 	public boolean crystalHollowsEntrances = false;
 	public boolean crystalHollowsRubyRoute = false;
+	public boolean routeMiner = false;
 	public boolean crystalHollowsScan = true;
 	public boolean crystalHollowsMap = false;
 	public boolean crystalHollowsMapLabels = true;
@@ -164,6 +165,7 @@ public final class StrayConfig {
 	public boolean chestEspThroughWalls = false;
 	public boolean fairySoulEsp = false;
 	public boolean blockMarksEnabled = false;
+	public boolean blockMarksNames = true;
 	public boolean blockMarksTracers = true;
 	public int blockMarksRgb = 0x2FB5FF;
 	public String blockMarkEditKey = "key.keyboard.enter";
@@ -966,6 +968,9 @@ public final class StrayConfig {
 				if (!json.has("blockMarksEnabled")) {
 					loaded.blockMarksEnabled = false;
 				}
+				if (!json.has("blockMarksNames")) {
+					loaded.blockMarksNames = true;
+				}
 				if (!json.has("blockMarksTracers")) {
 					loaded.blockMarksTracers = true;
 				}
@@ -1223,6 +1228,9 @@ public final class StrayConfig {
 				loaded.strayPingKey = blankKey(loaded.strayPingKey, "key.keyboard.unknown");
 				if (!json.has("crystalHollowsScan")) {
 					loaded.crystalHollowsScan = true;
+				}
+				if (!json.has("routeMiner")) {
+					loaded.routeMiner = loaded.crystalHollowsRubyRoute;
 				}
 				if (loaded.autoClickerLeftWhitelist == null) {
 					loaded.autoClickerLeftWhitelist = new java.util.ArrayList<>();
