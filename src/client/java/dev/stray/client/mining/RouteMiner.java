@@ -4,22 +4,17 @@ import dev.stray.client.config.StrayConfig;
 import dev.stray.client.location.SkyblockLocation;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.resources.Identifier;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.Blocks;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 /**
- * Magma Fields ruby route. Each waypoint stays up while stained glass or a
- * glass pane is still inside a 3-block cube around it, and hides once that
- * glass is gone. A later scan that finds glass again puts the waypoint back,
- * which is the vein respawning.
+ * Magma Fields ruby route. Each waypoint stays up while the selected gemstone's
+ * stained glass or glass pane is still inside a 3-block cube around it, and
+ * hides once that glass is gone. A later scan that finds it again puts the
+ * waypoint back, which is the vein respawning.
  *
  * At most one cube is read per tick. The vein you are standing in is preferred
  * and refreshes about twice a second; the rest of the route cycles behind it.
@@ -31,7 +26,6 @@ public final class RouteMiner {
 	private static final int NEAR_GAP = 10;
 	private static final int FAR_GAP = 40;
 	private static final BlockPos.MutableBlockPos CURSOR = new BlockPos.MutableBlockPos();
-	private static Set<Block> glassBlocks;
 	private static boolean[] glass = new boolean[0];
 	private static boolean[] seen = new boolean[0];
 	private static int[] lastTick = new int[0];
@@ -61,6 +55,7 @@ public final class RouteMiner {
 	}
 
 	public static void tick(Minecraft client) {
+		FocusMode.tick();
 		if (client == null) {
 			return;
 		}
@@ -89,6 +84,18 @@ public final class RouteMiner {
 	public static void reset() {
 		for (int i = 0; i < seen.length; i++) {
 			seen[i] = false;
+			glass[i] = false;
+			lastTick[i] = -1000;
+		}
+		cursor = 0;
+		far = 0;
+		dirty = true;
+	}
+
+	/** Hide every waypoint until the next scan confirms the selected gemstone. */
+	public static void invalidate() {
+		for (int i = 0; i < seen.length; i++) {
+			seen[i] = true;
 			glass[i] = false;
 			lastTick[i] = -1000;
 		}
@@ -192,30 +199,7 @@ public final class RouteMiner {
 	}
 
 	private static boolean isGlass(Block block) {
-		if (block == Blocks.AIR || block == Blocks.CAVE_AIR || block == Blocks.VOID_AIR) {
-			return false;
-		}
-		return glassSet().contains(block);
-	}
-
-	private static Set<Block> glassSet() {
-		Set<Block> set = glassBlocks;
-		if (set != null) {
-			return set;
-		}
-		set = new HashSet<>();
-		for (Identifier id : BuiltInRegistries.BLOCK.keySet()) {
-			String path = id.getPath();
-			if (path.equals("glass")
-				|| path.equals("glass_pane")
-				|| path.equals("tinted_glass")
-				|| path.endsWith("_stained_glass")
-				|| path.endsWith("_stained_glass_pane")) {
-				set.add(BuiltInRegistries.BLOCK.getValue(id));
-			}
-		}
-		glassBlocks = set;
-		return set;
+		return FocusMode.matchesGem(block);
 	}
 
 	private static void ensure(int size) {

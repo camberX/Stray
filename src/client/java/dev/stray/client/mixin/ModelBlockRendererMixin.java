@@ -1,6 +1,7 @@
 package dev.stray.client.mixin;
 
 import com.mojang.blaze3d.vertex.QuadInstance;
+import dev.stray.client.mining.FocusMode;
 import dev.stray.client.visual.WorldTint;
 import net.minecraft.client.renderer.block.BlockAndTintGetter;
 import net.minecraft.client.renderer.block.BlockQuadOutput;
@@ -28,5 +29,6 @@ public class ModelBlockRendererMixin {
 	)
 	private void stray$tintRenderedBlock(BlockQuadOutput output, float x, float y, float z, BlockAndTintGetter level, BlockState state, BlockPos pos, BakedQuad quad, CallbackInfo ci) {
 		WorldTint.tintQuad(this.quadInstance);
+		FocusMode.paint(this.quadInstance, state);
 	}
 }

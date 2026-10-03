@@ -1,5 +1,6 @@
 package dev.stray.client.mixin.sodium;
 
+import dev.stray.client.mining.FocusMode;
 import dev.stray.client.render.TopDownCapture;
 import dev.stray.client.visual.CustomFog;
 import dev.stray.client.visual.WorldTint;
@@ -23,12 +24,15 @@ public class SodiumDefaultShaderInterfaceMixin {
 	private GlUniformFloat stray$fog;
 	@Unique
 	private GlUniformFloat3v stray$cut;
+	@Unique
+	private GlUniformFloat stray$focus;
 
 	@Inject(method = "<init>", at = @At("RETURN"), remap = false)
 	private void stray$bindWorldTint(ShaderBindingContext context, ChunkShaderOptions options, CallbackInfo ci) {
 		this.stray$worldTint = context.bindUniformOptional("u_WorldTint", GlUniformFloat4v::new);
 		this.stray$fog = context.bindUniformOptional("u_StrayFog", GlUniformFloat::new);
 		this.stray$cut = context.bindUniformOptional("u_StrayCut", GlUniformFloat3v::new);
+		this.stray$focus = context.bindUniformOptional("u_StrayFocus", GlUniformFloat::new);
 	}
 
 	@Inject(method = "setupState", at = @At("RETURN"), remap = false)
@@ -44,6 +48,9 @@ public class SodiumDefaultShaderInterfaceMixin {
 		}
 		if (this.stray$fog != null) {
 			this.stray$fog.setFloat(CustomFog.applied() ? 1f : 0f);
+		}
+		if (this.stray$focus != null) {
+			this.stray$focus.setFloat(FocusMode.visual() ? 1f : 0f);
 		}
 		if (this.stray$cut != null) {
 			if (TopDownCapture.capturing()) {

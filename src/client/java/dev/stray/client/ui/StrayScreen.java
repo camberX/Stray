@@ -170,7 +170,7 @@ public class StrayScreen extends Screen {
 		MINING("Mining HUD", 1),
 		TITANIUM("Titanium ESP", 4),
 		CRYSTAL("CH waypoints", 5),
-		ROUTE("Route miner", 1),
+		ROUTE("Route miner", 3),
 		CH_MAP("CH map", 1),
 		METAL("Metal detector", 1),
 		FARMING("Yaw / Pitch", 1),
@@ -538,6 +538,8 @@ public class StrayScreen extends Screen {
 		new SearchEntry("Route miner", Tab.HOLLOWS, "Hollows"),
 		new SearchEntry("MF Ruby Route", Tab.HOLLOWS, "Hollows"),
 		new SearchEntry("Ruby route", Tab.HOLLOWS, "Hollows"),
+		new SearchEntry("Focus mode", Tab.HOLLOWS, "Hollows"),
+		new SearchEntry("Gemstone", Tab.HOLLOWS, "Hollows"),
 		new SearchEntry("Structure scanner", Tab.HOLLOWS, "Hollows"),
 		new SearchEntry("Entrance zones", Tab.HOLLOWS, "Hollows"),
 		new SearchEntry("Nucleus waypoints", Tab.HOLLOWS, "Hollows"),
@@ -3760,7 +3762,11 @@ public class StrayScreen extends Screen {
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Through walls", config.crystalHollowsThroughWalls, v -> config.crystalHollowsThroughWalls = v);
 				clickRow(graphics, font, ix, y, iw, mouseX, mouseY, "Dump coords", CrystalHollows::dumpChat);
 			}
-			case ROUTE -> toggle(graphics, font, ix, y, iw, mouseX, mouseY, "MF Ruby Route", config.crystalHollowsRubyRoute, v -> config.crystalHollowsRubyRoute = v);
+			case ROUTE -> {
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "MF Ruby Route", config.crystalHollowsRubyRoute, v -> config.crystalHollowsRubyRoute = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Focus mode", config.routeMinerFocus, v -> config.routeMinerFocus = v);
+				cycle(graphics, font, ix, y, iw, mouseX, mouseY, "Gemstone", config.routeMinerGemLabel(), config::cycleRouteMinerGem);
+			}
 			case CH_MAP -> toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Waypoint names", config.crystalHollowsMapLabels, v -> config.crystalHollowsMapLabels = v);
 			case METAL -> toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Tool title", config.metalDetectorToolTitle, v -> config.metalDetectorToolTitle = v);
 			case INVENTORY -> {

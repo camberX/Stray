@@ -152,6 +152,8 @@ public final class StrayConfig {
 	public boolean crystalHollowsEntrances = false;
 	public boolean crystalHollowsRubyRoute = false;
 	public boolean routeMiner = false;
+	public boolean routeMinerFocus = false;
+	public String routeMinerGem = "ruby";
 	public boolean crystalHollowsScan = true;
 	public boolean crystalHollowsMap = false;
 	public boolean crystalHollowsMapLabels = true;
@@ -1232,6 +1234,10 @@ public final class StrayConfig {
 				if (!json.has("routeMiner")) {
 					loaded.routeMiner = loaded.crystalHollowsRubyRoute;
 				}
+				if (!json.has("routeMinerFocus")) {
+					loaded.routeMinerFocus = false;
+				}
+				loaded.routeMinerGem = dev.stray.client.mining.FocusMode.normalize(loaded.routeMinerGem);
 				if (loaded.autoClickerLeftWhitelist == null) {
 					loaded.autoClickerLeftWhitelist = new java.util.ArrayList<>();
 				}
@@ -1615,6 +1621,14 @@ public final class StrayConfig {
 
 	public void cycleMusicLayout() {
 		musicHudLayout = MUSIC_LAYOUTS[(musicLayoutIndex() + 1) % MUSIC_LAYOUTS.length];
+	}
+
+	public void cycleRouteMinerGem() {
+		routeMinerGem = dev.stray.client.mining.FocusMode.cycle(routeMinerGem);
+	}
+
+	public String routeMinerGemLabel() {
+		return dev.stray.client.mining.FocusMode.label(routeMinerGem);
 	}
 
 	public String musicLayoutLabel() {

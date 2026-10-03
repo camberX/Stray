@@ -3,6 +3,7 @@ package dev.stray.client.mixin;
 import com.mojang.blaze3d.shaders.ShaderType;
 import net.minecraft.client.renderer.ShaderManager;
 import net.minecraft.resources.Identifier;
+import dev.stray.client.mining.FocusMode;
 import dev.stray.client.render.TopDownTerrainCut;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -18,7 +19,7 @@ public class ShaderManagerMixin {
 		if (source == null || id == null || !id.getPath().contains("terrain")) {
 			return;
 		}
-		cir.setReturnValue(TopDownTerrainCut.patchSource(source));
+		cir.setReturnValue(FocusMode.patchVanilla(TopDownTerrainCut.patchSource(source)));
 	}
 
 	@ModifyArg(
@@ -33,6 +34,6 @@ public class ShaderManagerMixin {
 		if (!(source instanceof String text)) {
 			return source;
 		}
-		return TopDownTerrainCut.patchSource(text);
+		return FocusMode.patchVanilla(TopDownTerrainCut.patchSource(text));
 	}
 }
