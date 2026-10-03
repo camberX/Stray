@@ -141,23 +141,41 @@ public final class ControlChrome {
 	}
 
 	public static void window(GuiGraphicsExtractor graphics, float x, float y, float w, float h) {
-		GuiFrostBlur.blitWindow(graphics, x, y, w, h, WINDOW_R);
-		GuiDraw.roundedFine(graphics, x, y, w, h, WINDOW_R, windowFill());
-		rim(graphics, x, y, w, h, WINDOW_R);
+		surface(graphics, x, y, w, h, WINDOW_R, windowFill());
 	}
 
 	public static void card(GuiGraphicsExtractor graphics, float x, float y, float w, float h) {
-		GuiDraw.roundedFine(graphics, x, y, w, h, CARD_R, cardFill());
+		surface(graphics, x, y, w, h, CARD_R, cardFill());
 	}
 
 	public static void rail(GuiGraphicsExtractor graphics, float x, float y, float w, float h) {
-		float r = railRadius();
-		GuiDraw.roundedFine(graphics, x, y, w, h, r, railFill());
+		surface(graphics, x, y, w, h, railRadius(), railFill());
 	}
 
 	public static void search(GuiGraphicsExtractor graphics, float x, float y, float w, float h) {
-		float r = h * 0.5f;
-		GuiDraw.roundedFine(graphics, x, y, w, h, r, searchFill());
+		surface(graphics, x, y, w, h, h * 0.5f, searchFill());
+	}
+
+	/**
+	 * Liquid glass for the control menu: refracted frost, a thinner veil than the raw fill,
+	 * and a bright top rim. HUD glass stays on the plain frost blit.
+	 */
+	private static void surface(GuiGraphicsExtractor graphics, float x, float y, float w, float h, float radius, int fill) {
+		if (w < 2f || h < 2f) {
+			return;
+		}
+		float r = Math.min(Math.max(4f, radius), Math.min(w, h) * 0.5f);
+		GuiFrostBlur.blitLiquid(graphics, x, y, w, h, r);
+		GuiDraw.roundedFine(graphics, x, y, w, h, r, liquidVeil(fill));
+		liquidRim(graphics, x, y, w, h, r);
+	}
+
+	private static int liquidVeil(int fill) {
+		int alpha = (fill >>> 24) & 0xFF;
+		if (alpha > 148) {
+			alpha = Math.round(alpha * 0.70f);
+		}
+		return (Math.min(255, alpha) << 24) | (fill & 0xFFFFFF);
 	}
 
 	public static void rim(GuiGraphicsExtractor graphics, float x, float y, float w, float h, float radius) {
@@ -175,7 +193,24 @@ public final class ControlChrome {
 	}
 
 	public static void sheet(GuiGraphicsExtractor graphics, float x, float y, float w, float h) {
-		GuiDraw.roundedFine(graphics, x, y, w, h, 16f, Theme.withAlpha(paneRgb(), 210));
+		surface(graphics, x, y, w, h, 16f, Theme.withAlpha(paneRgb(), 210));
+	}
+
+	private static void liquidRim(GuiGraphicsExtractor graphics, float x, float y, float w, float h, float radius) {
+		int hi;
+		int lo;
+		if (StrayConfig.get().accentOutlines) {
+			int accent = Theme.ACCENT & 0xFFFFFF;
+			hi = Theme.withAlpha(accent, 220);
+			lo = Theme.withAlpha(accent, 70);
+		} else if (darkText()) {
+			hi = Theme.withAlpha(0xFFFFFF, 210);
+			lo = Theme.withAlpha(0x000000, 58);
+		} else {
+			hi = Theme.withAlpha(0xFFFFFF, 176);
+			lo = Theme.withAlpha(0xFFFFFF, 34);
+		}
+		GuiDraw.gradientRim(graphics, x, y, w, h, radius, hi, lo);
 	}
 
 	public static void face(GuiGraphicsExtractor graphics, float x, float y, float size, PlayerSkin skin) {

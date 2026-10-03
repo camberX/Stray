@@ -49,9 +49,10 @@ import java.util.OptionalInt;
 public final class GuiFrostBlur {
 	private static final Identifier BLUR_SHADER = Stray.id("post/frost_blur");
 	private static final Identifier ROUNDED_BLIT_SHADER = Stray.id("core/gui_rounded_blit");
+	private static final Identifier LIQUID_BLIT_SHADER = Stray.id("core/gui_liquid_glass");
 	private static final int ROUNDS = 3;
 	private static final float REGION_PAD_GUI = 3f;
-	private static final int MAX_REGIONS = 24;
+	private static final int MAX_REGIONS = 48;
 	private static final Vector2f UV_A = new Vector2f();
 	private static final Vector2f UV_B = new Vector2f();
 
@@ -62,6 +63,7 @@ public final class GuiFrostBlur {
 	private static float writtenRadius = -1f;
 	private static RenderPipeline blurPipeline;
 	private static RenderPipeline roundedBlitPipeline;
+	private static RenderPipeline liquidBlitPipeline;
 	private static GpuBuffer configH;
 	private static GpuBuffer configV;
 
@@ -162,6 +164,64 @@ public final class GuiFrostBlur {
 		graphics.pose().scale(w, h);
 		invoker.stray$innerBlit(roundedBlitPipeline, view, sampler, 0, 0, 1, 1, 0f, 1f, 0f, 1f, color);
 		graphics.pose().popMatrix();
+	}
+
+	/**
+	 * Frost with a refractive rim: the edge bends the backdrop, splits a little color,
+	 * and pulls toward the cursor. The center stays a clean blur.
+	 */
+	public static void blitLiquid(GuiGraphicsExtractor graphics, float x, float y, float w, float h, float radius) {
+		noteBlit(graphics, x, y, w, h);
+		if (!haveFrost || frost == null || w <= 0f || h <= 0f) {
+			return;
+		}
+		GpuTextureView view = frost.getColorTextureView();
+		if (view == null) {
+			return;
+		}
+		GpuSampler sampler = RenderSystem.getSamplerCache().getClampToEdge(FilterMode.LINEAR);
+		float r = Math.min(radius, Math.min(w, h) / 2f);
+		if (r < 0.75f || !(graphics instanceof GuiGraphicsExtractorInvoker invoker)) {
+			blitRegion(graphics, view, sampler, x, y, w, h);
+			return;
+		}
+		ensureLiquidBlitPipeline();
+		int ru = Math.max(1, Math.min(255, Math.round(r / w * 255f)));
+		int rv = Math.max(1, Math.min(255, Math.round(r / h * 255f)));
+		float[] cursor = cursorInQuad(graphics, x, y, w, h);
+		int color = 0xFF000000 | (ru << 16) | (rv << 8) | packCursor(cursor[0], cursor[1]);
+		graphics.pose().pushMatrix();
+		graphics.pose().translate(x, y);
+		graphics.pose().scale(w, h);
+		invoker.stray$innerBlit(liquidBlitPipeline, view, sampler, 0, 0, 1, 1, 0f, 1f, 0f, 1f, color);
+		graphics.pose().popMatrix();
+	}
+
+	/** Cursor in quad space. 0.5, 0.5 when it cannot be read. */
+	private static float[] cursorInQuad(GuiGraphicsExtractor graphics, float x, float y, float w, float h) {
+		float[] out = {0.5f, 0.5f};
+		Minecraft client = Minecraft.getInstance();
+		if (client == null || client.mouseHandler == null || client.getWindow() == null) {
+			return out;
+		}
+		graphics.pose().transformPosition(x, y, UV_A);
+		graphics.pose().transformPosition(x + w, y + h, UV_B);
+		float left = Math.min(UV_A.x, UV_B.x);
+		float right = Math.max(UV_A.x, UV_B.x);
+		float top = Math.min(UV_A.y, UV_B.y);
+		float bottom = Math.max(UV_A.y, UV_B.y);
+		double mx = client.mouseHandler.getScaledXPos(client.getWindow());
+		double my = client.mouseHandler.getScaledYPos(client.getWindow());
+		out[0] = (float) ((mx - left) / Math.max(0.001f, right - left));
+		out[1] = (float) ((my - top) / Math.max(0.001f, bottom - top));
+		return out;
+	}
+
+	/** Pack two 0..1 quad coordinates into one color byte, 4 bits each. */
+	private static int packCursor(float x, float y) {
+		int mx = Math.max(0, Math.min(15, Math.round(Math.max(0f, Math.min(1f, x)) * 15f)));
+		int my = Math.max(0, Math.min(15, Math.round(Math.max(0f, Math.min(1f, y)) * 15f)));
+		return (mx << 4) | my;
 	}
 
 	/**
@@ -350,6 +410,22 @@ public final class GuiFrostBlur {
 			.withLocation(Stray.id("pipeline/gui_rounded_blit"))
 			.withVertexShader(ROUNDED_BLIT_SHADER)
 			.withFragmentShader(ROUNDED_BLIT_SHADER)
+			.withSampler("Sampler0")
+			.withUniform("DynamicTransforms", UniformType.UNIFORM_BUFFER)
+			.withUniform("Projection", UniformType.UNIFORM_BUFFER)
+			.withColorTargetState(new ColorTargetState(BlendFunction.TRANSLUCENT))
+			.withVertexFormat(DefaultVertexFormat.POSITION_TEX_COLOR, VertexFormat.Mode.QUADS)
+			.build();
+	}
+
+	private static synchronized void ensureLiquidBlitPipeline() {
+		if (liquidBlitPipeline != null) {
+			return;
+		}
+		liquidBlitPipeline = RenderPipeline.builder()
+			.withLocation(Stray.id("pipeline/gui_liquid_glass"))
+			.withVertexShader(ROUNDED_BLIT_SHADER)
+			.withFragmentShader(LIQUID_BLIT_SHADER)
 			.withSampler("Sampler0")
 			.withUniform("DynamicTransforms", UniformType.UNIFORM_BUFFER)
 			.withUniform("Projection", UniformType.UNIFORM_BUFFER)
