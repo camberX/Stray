@@ -14,14 +14,37 @@ in vec4 vertexColor;
 
 out vec4 fragColor;
 
-// Rounded-rect glass over the frost texture.
-// vertexColor.rg is the corner radius as a fraction of the quad, same as the plain blit.
-// vertexColor.b packs the cursor: high nibble is x, low nibble is y, each 0..1 across the quad.
-// The rim refracts along the rounded edge, splits the channels, and brightens toward the cursor.
+// Same filter as https://github.com/rdev/liquid-glass-react (standard mode).
+// The displacement image is a linear gradient (R = x, B = y). feDisplacementMap
+// reads R for x and B for y. The filter region is inset -35% and 170% wide, so
+// the pane only covers the middle of that gradient. Scales are -70 / -77 / -84
+// for the red, green, and blue channels (displacementScale 70, aberration 2).
+// vertexColor.rg = corner radius as a fraction of the quad.
+// vertexColor.b = framebuffer pixels per local pixel, packed as s * 40.
+// vertexColor.a = cursor offset, 4 bits each, -100..100 like the library's mouseOffset.
 
 vec3 saturate(vec3 color, float amount) {
     float luma = dot(color, vec3(0.2126, 0.7152, 0.0722));
     return mix(vec3(luma), color, amount);
+}
+
+float gradAlpha(float t, float s1, float s2, float a1, float a2) {
+    if (t < s1) {
+        return mix(0.0, a1, t / max(s1, 0.0001));
+    }
+    if (t < s2) {
+        return mix(a1, a2, (t - s1) / max(s2 - s1, 0.0001));
+    }
+    return mix(a2, 0.0, (t - s2) / max(1.0 - s2, 0.0001));
+}
+
+vec3 screenWhite(vec3 base, float amount) {
+    return base + amount * (1.0 - base);
+}
+
+vec3 overlayWhite(vec3 base, float amount) {
+    vec3 over = mix(clamp(base * 2.0, 0.0, 1.0), vec3(1.0), step(vec3(0.5), base));
+    return mix(base, over, amount);
 }
 
 void main() {
@@ -37,57 +60,45 @@ void main() {
         discard;
     }
 
-    vec2 grad = vec2(dFdx(dist), dFdy(dist));
-    float gradLen = max(length(grad), 0.0001);
-    vec2 outward = grad / gradLen;
-    float radiusPx = 1.0 / gradLen;
-    float depth = max(0.0, -dist) * radiusPx;
-    float bezel = clamp(radiusPx * 0.46, 7.0, 26.0);
-    float t = clamp(depth / bezel, 0.0, 1.0);
-    float bulge = sin(t * 3.14159265) * (1.0 - smoothstep(0.62, 1.0, t));
-    float lip = smoothstep(1.0, 0.12, t);
-
-    float packed = floor(vertexColor.b * 255.0 + 0.5);
-    vec2 mouse = vec2(floor(packed / 16.0), mod(packed, 16.0)) / 15.0;
-    vec2 toMouse = mouse - texCoord0;
-    vec2 uvPerPx = max(vec2(length(dFdx(texCoord0)), length(dFdy(texCoord0))), vec2(0.00001));
-    vec2 mousePx = toMouse / uvPerPx;
-    float mouseLen = length(mousePx);
-    vec2 mouseDir = mouseLen > 0.5 ? mousePx / mouseLen : vec2(0.0);
-    float nearCursor = exp(-dot(toMouse, toMouse) * 7.0);
-
-    float bend = bulge * clamp(radiusPx * 0.42, 8.0, 22.0) + lip * 2.5;
-    vec2 offset = -outward * bend + mouseDir * nearCursor * min(bezel, 12.0) * 0.55;
-    vec2 split = outward * (2.6 * bulge + 0.8 * lip);
-
-    ivec2 texSize = textureSize(Sampler0, 0) - ivec2(1);
-    ivec2 base = ivec2(gl_FragCoord.xy);
-    ivec2 red = clamp(base + ivec2(int(round(offset.x + split.x)), int(round(offset.y + split.y))), ivec2(0), texSize);
-    ivec2 green = clamp(base + ivec2(int(round(offset.x)), int(round(offset.y))), ivec2(0), texSize);
-    ivec2 blue = clamp(base + ivec2(int(round(offset.x - split.x)), int(round(offset.y - split.y))), ivec2(0), texSize);
-
+    float pxScale = max(vertexColor.b * (255.0 / 40.0), 0.25);
+    float yUp = dFdy(texCoord0.y) < 0.0 ? 1.0 : -1.0;
+    vec2 mapUv = (texCoord0 + vec2(0.35)) / 1.70;
+    vec2 channel = vec2(1.0 - mapUv.x, 1.0 - mapUv.y) - vec2(0.5);
+    vec2 svg = channel * -70.0;
+    vec2 offR = vec2(svg.x, -svg.y * yUp) * pxScale;
+    vec2 texel = 1.0 / vec2(textureSize(Sampler0, 0));
+    vec2 uv = gl_FragCoord.xy * texel;
     vec3 color = vec3(
-        texelFetch(Sampler0, red, 0).r,
-        texelFetch(Sampler0, green, 0).g,
-        texelFetch(Sampler0, blue, 0).b
+        texture(Sampler0, uv + offR * texel).r,
+        texture(Sampler0, uv + offR * 1.1 * texel).g,
+        texture(Sampler0, uv + offR * 1.2 * texel).b
     );
     color = saturate(color, 1.4);
 
+    float packed = floor(vertexColor.a * 255.0 + 0.5);
+    float mouseX = (floor(packed / 16.0) / 15.0) * 200.0 - 100.0;
+    float mouseY = (mod(packed, 16.0) / 15.0) * 200.0 - 100.0;
+    float ang = radians(135.0 + mouseX * 1.2);
+    vec2 css = vec2(sin(ang), -cos(ang));
+    float along = clamp(dot(texCoord0 - vec2(0.5), css) + 0.5, 0.0, 1.0);
+    float s1 = clamp(0.33 + mouseY * 0.003, 0.10, 0.90);
+    float s2 = clamp(0.66 + mouseY * 0.004, s1 + 0.05, 0.95);
+    float rim = 1.0 - smoothstep(0.4, 1.5 * pxScale + 0.6, max(0.0, -dist) / max(length(vec2(dFdx(dist), dFdy(dist))), 0.0001));
+    float aScreen = gradAlpha(along, s1, s2, 0.12 + abs(mouseX) * 0.008, 0.40 + abs(mouseX) * 0.012) * 0.2 * rim;
+    float aOverlay = gradAlpha(along, s1, s2, 0.32 + abs(mouseX) * 0.008, 0.60 + abs(mouseX) * 0.012) * rim;
+    color = screenWhite(color, aScreen);
+    color = overlayWhite(color, aOverlay);
+
+    float edge = max(0.0, -dist) / max(length(vec2(dFdx(dist), dFdy(dist))), 0.0001);
     vec2 axis = sign(p);
-    vec2 normal;
-    if (q.x > 0.0 && q.y > 0.0) {
-        normal = normalize(max(q, vec2(0.0001))) * axis;
-    } else if (q.x > q.y) {
-        normal = vec2(axis.x, 0.0);
-    } else {
-        normal = vec2(0.0, axis.y);
-    }
+    vec2 normal = (q.x > 0.0 && q.y > 0.0)
+        ? normalize(max(q, vec2(0.0001))) * axis
+        : (q.x > q.y ? vec2(axis.x, 0.0) : vec2(0.0, axis.y));
     float top = clamp(-normal.y, 0.0, 1.0);
-    float bottom = clamp(normal.y, 0.0, 1.0);
-    float spec = pow(top, 1.35) * (0.22 + 0.38 * lip) * (0.75 + 0.45 * nearCursor);
-    color += spec;
-    color *= 1.0 - bottom * lip * 0.16;
-    color += smoothstep(0.42, 0.0, texCoord0.y) * lip * 0.06;
+    float hair = (1.0 - smoothstep(0.0, 0.75 * pxScale, edge)) * 0.5;
+    float inset = smoothstep(0.5 * pxScale, 0.0, abs(edge - 2.2 * pxScale)) * (0.35 + 0.65 * top);
+    color = mix(color, color * 0.72, inset * 0.35);
+    color += hair * (0.55 + 0.45 * top);
 
     fragColor = vec4(color, mask) * ColorModulator;
 }

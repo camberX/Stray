@@ -52,13 +52,19 @@ public final class GuiFrostBlur {
 	private static final Identifier LIQUID_BLIT_SHADER = Stray.id("core/gui_liquid_glass");
 	private static final int ROUNDS = 3;
 	private static final float REGION_PAD_GUI = 3f;
+	/** CSS blur(6px) on the liquid-glass backdrop, before the displacement. */
+	private static final float LIQUID_BLUR = 4f;
+	/** The lens reads about 21px outside the pane, plus the blur kernel. */
+	private static final float LIQUID_PAD_GUI = 32f;
 	private static final int MAX_REGIONS = 48;
 	private static final Vector2f UV_A = new Vector2f();
 	private static final Vector2f UV_B = new Vector2f();
 
 	private static TextureTarget frost;
+	private static TextureTarget glass;
 	private static TextureTarget swap;
 	private static boolean haveFrost;
+	private static boolean haveGlass;
 	private static float lastFrost = -1f;
 	private static float writtenRadius = -1f;
 	private static RenderPipeline blurPipeline;
@@ -73,16 +79,22 @@ public final class GuiFrostBlur {
 	 * these are exactly the panes about to be drawn this frame.
 	 */
 	private static final List<float[]> BLITS = new ArrayList<>();
+	private static final List<float[]> LIQUID = new ArrayList<>();
 	private static boolean blitOverflow;
+	private static boolean liquidOverflow;
 
 	private GuiFrostBlur() {
 	}
 
 	public static void captureAfterWorld() {
 		Minecraft client = Minecraft.getInstance();
-		List<Region> regions = takeRegions(client);
+		List<Region> regions = takeRegions(client, BLITS, blitOverflow, REGION_PAD_GUI);
+		blitOverflow = false;
+		List<Region> liquid = takeRegions(client, LIQUID, liquidOverflow, LIQUID_PAD_GUI);
+		liquidOverflow = false;
 		if (client == null || !StrayConfig.get().guiDesignControl()) {
 			haveFrost = false;
+			haveGlass = false;
 			lastFrost = -1f;
 			return;
 		}
@@ -90,16 +102,25 @@ public final class GuiFrostBlur {
 		boolean hud = client.level != null && (client.options == null || !client.options.hideGui);
 		if (!menu && !hud) {
 			haveFrost = false;
+			haveGlass = false;
 			lastFrost = -1f;
 			return;
 		}
-		if (regions != null && regions.isEmpty()) {
-			// Nothing drew glass this frame, so there is nothing to blur under.
+		boolean frostWanted = regions == null || !regions.isEmpty();
+		boolean glassWanted = liquid == null || !liquid.isEmpty();
+		if (!frostWanted) {
 			haveFrost = false;
 			lastFrost = -1f;
-			return;
 		}
-		capture(StrayConfig.get().controlFrost, regions);
+		if (!glassWanted) {
+			haveGlass = false;
+		}
+		if (frostWanted) {
+			capture(StrayConfig.get().controlFrost, regions);
+		}
+		if (glassWanted) {
+			captureLiquid(liquid);
+		}
 	}
 
 	public static void capture(float frost01) {
@@ -132,7 +153,7 @@ public final class GuiFrostBlur {
 			float radius = 2.5f + StrayConfig.clamp(frost01, 0f, 1f) * 29.5f;
 			ensureBlurPipeline();
 			writeConfigs(radius);
-			blur(main.getColorTextureView(), regions, main.width, main.height, Math.round(radius));
+			blur(main.getColorTextureView(), frost, regions, main.width, main.height, Math.round(radius));
 			haveFrost = true;
 			lastFrost = frost01;
 		} catch (RuntimeException ignored) {
@@ -167,15 +188,15 @@ public final class GuiFrostBlur {
 	}
 
 	/**
-	 * Frost with a refractive rim: the edge bends the backdrop, splits a little color,
-	 * and pulls toward the cursor. The center stays a clean blur.
+	 * Standard liquid-glass lens: a 6px blur, then the red/blue displacement map
+	 * at scale 70 with the library's chromatic split.
 	 */
 	public static void blitLiquid(GuiGraphicsExtractor graphics, float x, float y, float w, float h, float radius) {
-		noteBlit(graphics, x, y, w, h);
-		if (!haveFrost || frost == null || w <= 0f || h <= 0f) {
+		note(LIQUID, graphics, x, y, w, h, true);
+		if (!haveGlass || glass == null || w <= 0f || h <= 0f) {
 			return;
 		}
-		GpuTextureView view = frost.getColorTextureView();
+		GpuTextureView view = glass.getColorTextureView();
 		if (view == null) {
 			return;
 		}
@@ -188,13 +209,41 @@ public final class GuiFrostBlur {
 		ensureLiquidBlitPipeline();
 		int ru = Math.max(1, Math.min(255, Math.round(r / w * 255f)));
 		int rv = Math.max(1, Math.min(255, Math.round(r / h * 255f)));
+		int scaleByte = packScale(framebufferScale(graphics, x, y, w));
 		float[] cursor = cursorInQuad(graphics, x, y, w, h);
-		int color = 0xFF000000 | (ru << 16) | (rv << 8) | packCursor(cursor[0], cursor[1]);
+		int mouse = packMouse((cursor[0] - 0.5f) * 100f, (cursor[1] - 0.5f) * 100f);
+		int color = (mouse << 24) | (ru << 16) | (rv << 8) | scaleByte;
 		graphics.pose().pushMatrix();
 		graphics.pose().translate(x, y);
 		graphics.pose().scale(w, h);
 		invoker.stray$innerBlit(liquidBlitPipeline, view, sampler, 0, 0, 1, 1, 0f, 1f, 0f, 1f, color);
 		graphics.pose().popMatrix();
+	}
+
+	private static void captureLiquid(List<Region> regions) {
+		Minecraft client = Minecraft.getInstance();
+		if (client == null || client.level == null) {
+			haveGlass = false;
+			return;
+		}
+		RenderTarget main = client.getMainRenderTarget();
+		if (main == null || main.getColorTextureView() == null || main.width <= 0 || main.height <= 0) {
+			haveGlass = false;
+			return;
+		}
+		ensure(main.width, main.height);
+		if (glass == null || swap == null || glass.getColorTextureView() == null || swap.getColorTextureView() == null) {
+			haveGlass = false;
+			return;
+		}
+		try {
+			ensureBlurPipeline();
+			writeConfigs(LIQUID_BLUR);
+			blur(main.getColorTextureView(), glass, regions, main.width, main.height, Math.round(LIQUID_BLUR));
+			haveGlass = true;
+		} catch (RuntimeException ignored) {
+			haveGlass = false;
+		}
 	}
 
 	/** Cursor in quad space. 0.5, 0.5 when it cannot be read. */
@@ -217,18 +266,32 @@ public final class GuiFrostBlur {
 		return out;
 	}
 
-	/** Pack two 0..1 quad coordinates into one color byte, 4 bits each. */
-	private static int packCursor(float x, float y) {
-		int mx = Math.max(0, Math.min(15, Math.round(Math.max(0f, Math.min(1f, x)) * 15f)));
-		int my = Math.max(0, Math.min(15, Math.round(Math.max(0f, Math.min(1f, y)) * 15f)));
+	/** Framebuffer pixels per local GUI pixel, packed into one color byte. */
+	private static int packScale(float scale) {
+		return Math.max(1, Math.min(255, Math.round(scale * 40f)));
+	}
+
+	/** Library mouseOffset, about -100..100, 4 bits per axis. */
+	private static int packMouse(float offsetX, float offsetY) {
+		int mx = Math.max(0, Math.min(15, Math.round((offsetX + 100f) / 200f * 15f)));
+		int my = Math.max(0, Math.min(15, Math.round((offsetY + 100f) / 200f * 15f)));
 		return (mx << 4) | my;
+	}
+
+	private static float framebufferScale(GuiGraphicsExtractor graphics, float x, float y, float w) {
+		graphics.pose().transformPosition(x, y, UV_A);
+		graphics.pose().transformPosition(x + Math.max(w, 1f), y, UV_B);
+		float gui = Math.abs(UV_B.x - UV_A.x);
+		Minecraft client = Minecraft.getInstance();
+		double guiScale = client == null || client.getWindow() == null ? 1.0 : client.getWindow().getGuiScale();
+		return (float) (gui * guiScale / Math.max(1f, w));
 	}
 
 	/**
 	 * @param regions framebuffer rectangles that will be sampled, or {@code null}
 	 *                to blur the whole screen
 	 */
-	private static void blur(GpuTextureView source, List<Region> regions, int width, int height, int radius) {
+	private static void blur(GpuTextureView source, TextureTarget dest, List<Region> regions, int width, int height, int radius) {
 		CommandEncoder encoder = RenderSystem.getDevice().createCommandEncoder();
 		GpuSampler linear = RenderSystem.getSamplerCache().getClampToEdge(FilterMode.LINEAR);
 		List<Region> scissors = null;
@@ -251,8 +314,8 @@ public final class GuiFrostBlur {
 		GpuTextureView in = source;
 		for (int round = 0; round < ROUNDS; round++) {
 			pass(encoder, in, swap.getColorTextureView(), configH, linear, scissors);
-			pass(encoder, swap.getColorTextureView(), frost.getColorTextureView(), configV, linear, scissors);
-			in = frost.getColorTextureView();
+			pass(encoder, swap.getColorTextureView(), dest.getColorTextureView(), configV, linear, scissors);
+			in = dest.getColorTextureView();
 		}
 	}
 
@@ -329,44 +392,50 @@ public final class GuiFrostBlur {
 	 * framebuffer scissors (GL convention) and reset the list for the next frame.
 	 * Returns {@code null} when the whole screen must be blurred.
 	 */
-	private static List<Region> takeRegions(Minecraft client) {
-		boolean overflow = blitOverflow;
-		blitOverflow = false;
+	private static List<Region> takeRegions(Minecraft client, List<float[]> rects, boolean overflow, float padGui) {
 		if (client == null || overflow) {
-			BLITS.clear();
+			rects.clear();
 			return null;
 		}
 		RenderTarget main = client.getMainRenderTarget();
 		if (main == null) {
-			BLITS.clear();
+			rects.clear();
 			return null;
 		}
 		double scale = client.getWindow().getGuiScale();
 		int fbH = main.height;
-		List<Region> out = new ArrayList<>(BLITS.size());
-		for (float[] rect : BLITS) {
-			int left = (int) Math.floor((rect[0] - REGION_PAD_GUI) * scale);
-			int top = (int) Math.floor((rect[1] - REGION_PAD_GUI) * scale);
-			int right = (int) Math.ceil((rect[2] + REGION_PAD_GUI) * scale);
-			int bottom = (int) Math.ceil((rect[3] + REGION_PAD_GUI) * scale);
+		List<Region> out = new ArrayList<>(rects.size());
+		for (float[] rect : rects) {
+			int left = (int) Math.floor((rect[0] - padGui) * scale);
+			int top = (int) Math.floor((rect[1] - padGui) * scale);
+			int right = (int) Math.ceil((rect[2] + padGui) * scale);
+			int bottom = (int) Math.ceil((rect[3] + padGui) * scale);
 			out.add(new Region(left, fbH - bottom, right - left, bottom - top));
 		}
-		BLITS.clear();
+		rects.clear();
 		return out;
 	}
 
 	private static void noteBlit(GuiGraphicsExtractor graphics, float x, float y, float w, float h) {
-		if (blitOverflow) {
+		note(BLITS, graphics, x, y, w, h, false);
+	}
+
+	private static void note(List<float[]> rects, GuiGraphicsExtractor graphics, float x, float y, float w, float h, boolean liquid) {
+		if (liquid ? liquidOverflow : blitOverflow) {
 			return;
 		}
-		if (BLITS.size() >= MAX_REGIONS) {
-			blitOverflow = true;
-			BLITS.clear();
+		if (rects.size() >= MAX_REGIONS) {
+			if (liquid) {
+				liquidOverflow = true;
+			} else {
+				blitOverflow = true;
+			}
+			rects.clear();
 			return;
 		}
 		graphics.pose().transformPosition(x, y, UV_A);
 		graphics.pose().transformPosition(x + w, y + h, UV_B);
-		BLITS.add(new float[]{
+		rects.add(new float[]{
 			Math.min(UV_A.x, UV_B.x),
 			Math.min(UV_A.y, UV_B.y),
 			Math.max(UV_A.x, UV_B.x),
@@ -462,8 +531,14 @@ public final class GuiFrostBlur {
 			swap.destroyBuffers();
 			swap = null;
 		}
+		if (glass != null) {
+			glass.destroyBuffers();
+			glass = null;
+		}
 		haveFrost = false;
+		haveGlass = false;
 		frost = new TextureTarget("stray control frost", width, height, false);
+		glass = new TextureTarget("stray liquid glass", width, height, false);
 		swap = new TextureTarget("stray control frost swap", width, height, false);
 	}
 
