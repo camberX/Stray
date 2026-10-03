@@ -36,6 +36,11 @@ public class SodiumBlockRendererMixin {
 				alpha = 0xFF;
 			}
 			quad.setColor(vertex, (alpha << 24) | marker);
+			// Sodium multiplies this into the vertex color. Leaving the face
+			// shade in place turns side markers into the dark-gray fallback.
+			if (brightness != null && vertex < brightness.length) {
+				brightness[vertex] = 1f;
+			}
 		}
 	}
 }

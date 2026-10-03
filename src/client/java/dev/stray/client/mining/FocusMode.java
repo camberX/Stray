@@ -31,22 +31,34 @@ public final class FocusMode {
 	private static final int WHITE = 0xFFFFFF;
 	private static final int DESATURATE = 0x00FFFF;
 	private static final int PINK = 0xFF00FF;
-	private static final int GRAY = 0x202020;
+	// Near-black so a shaded copy stays below the white marker, whose darkest
+	// unoccluded face is still about half brightness.
+	private static final int GRAY = 0x010101;
 	private static final Gem[] GEMS = Gem.values();
+	// Face shade is multiplied into the marker (top 1.0, sides 0.6–0.8, bottom 0.5),
+	// so markers are matched by channel ratio instead of an absolute 0.97 cutoff.
 	private static final String FOCUS_FN = """
 		vec4 strayFocus(vec4 tex, vec4 marker, vec4 light) {
 		    float luma = dot(tex.rgb, vec3(0.299, 0.587, 0.114));
+		    float r = marker.r;
+		    float g = marker.g;
+		    float b = marker.b;
+		    float peak = max(r, max(g, b));
+		    float low = min(r, min(g, b));
+		    bool neutral = peak - low < max(peak * 0.12, 0.015);
+		    bool pink = r > g * 2.5 && b > g * 2.5 && peak > 0.04;
+		    bool cyan = g > r * 2.5 && b > r * 2.5 && peak > 0.04;
 		    vec3 rgb;
-		    if (marker.r > 0.97 && marker.g > 0.97 && marker.b > 0.97) {
-		        rgb = tex.rgb;
-		    } else if (marker.r < 0.05 && marker.g > 0.97 && marker.b > 0.97) {
-		        rgb = vec3(luma);
-		    } else if (marker.r > 0.97 && marker.g < 0.05 && marker.b > 0.97) {
+		    if (pink) {
 		        rgb = vec3(1.0, 0.22, 0.78) * (0.65 + 0.55 * luma);
+		    } else if (cyan) {
+		        rgb = vec3(luma);
+		    } else if (neutral && peak > 0.04) {
+		        rgb = tex.rgb;
 		    } else {
 		        rgb = vec3(0.10 + luma * 0.12);
 		    }
-		    vec3 lit = (marker.r > 0.97 && marker.g < 0.05 && marker.b > 0.97) ? max(light.rgb, vec3(0.62)) : light.rgb;
+		    vec3 lit = pink ? max(light.rgb, vec3(0.85)) : light.rgb;
 		    return vec4(rgb * lit, tex.a);
 		}
 		""";
