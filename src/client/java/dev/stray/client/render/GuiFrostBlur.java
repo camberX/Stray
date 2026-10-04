@@ -56,7 +56,7 @@ public final class GuiFrostBlur {
 	private static final float LIQUID_BLUR = 4f;
 	/** The lens reads about 21px outside the pane, plus the blur kernel. */
 	private static final float LIQUID_PAD_GUI = 32f;
-	private static final int MAX_REGIONS = 48;
+	private static final int MAX_REGIONS = 256;
 	private static final Vector2f UV_A = new Vector2f();
 	private static final Vector2f UV_B = new Vector2f();
 

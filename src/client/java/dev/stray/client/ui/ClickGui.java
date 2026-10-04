@@ -1,6 +1,7 @@
 package dev.stray.client.ui;
 
 import dev.stray.Stray;
+import dev.stray.client.combat.OdinClicks;
 import dev.stray.client.config.EntityKind;
 import dev.stray.client.config.StrayConfig;
 import dev.stray.client.config.UnloadState;
@@ -48,7 +49,11 @@ public final class ClickGui {
 	private static final int ACCENT_ALPHA = 115;
 	private static final int TEXT = 0xFFFFFFFF;
 	private static final int DIM = 0xFFAAAAAA;
-	private static final String[] ORDER = {"World", "Visuals", "Mobs", "Combat", "HUD", "Mining", "Farming", "Menus", "Theme", "Player"};
+	private static final String[] ORDER = {"World", "Visuals", "Mobs", "Combat", "HUD", "Mining", "Farming", "Menus", "Keys", "Theme", "Player"};
+	private static final int[] BIND_WHICH = {3, 4, 13, 5, 7, 11, 12, 14};
+	private static final String[] BIND_LABEL = {
+		"Open menu", "Loadouts", "Swap loadouts", "Wardrobe", "Profile", "Chat peek", "Lobby ping", "Empty bag"
+	};
 
 	private static final Map<String, Column> columns = new LinkedHashMap<>();
 	private static final List<Row> rows = new ArrayList<>();
@@ -302,6 +307,10 @@ public final class ClickGui {
 	private static void drawColumn(StrayScreen screen, GuiGraphicsExtractor graphics, Font font, int mouseX, int mouseY, Column column) {
 		if ("Mobs".equals(column.id)) {
 			drawMobs(screen, graphics, font, column);
+			return;
+		}
+		if ("Keys".equals(column.id)) {
+			drawKeys(screen, graphics, font, column);
 			return;
 		}
 		List<Mod> mods = new ArrayList<>();
@@ -810,6 +819,133 @@ public final class ClickGui {
 		GuiDraw.circle(graphics, knobX, y + h * 0.5f, knobR, 0xFFFFFFFF);
 	}
 
+	private static void drawKeys(StrayScreen screen, GuiGraphicsExtractor graphics, Font font, Column column) {
+		String needle = searchQuery.trim().toLowerCase(Locale.ROOT);
+		boolean title = needle.isEmpty() || "keys".contains(needle);
+		List<Integer> binds = new ArrayList<>();
+		for (int i = 0; i < BIND_LABEL.length; i++) {
+			if (title || BIND_LABEL[i].toLowerCase(Locale.ROOT).contains(needle)) {
+				binds.add(i);
+			}
+		}
+		boolean shortcuts = title || "shortcuts".contains(needle) || "pass arguments".contains(needle);
+		boolean commands = title || "commands".contains(needle) || "/loadouts".contains(needle) || "/wardrobe".contains(needle) || "/pv".contains(needle);
+		if (!title && binds.isEmpty() && !shortcuts && !commands) {
+			column.height = 0f;
+			return;
+		}
+		StrayConfig config = StrayConfig.get();
+		boolean shortcutOn = config.commandShortcutsEnabled;
+		int extra = shortcuts ? 1 + (shortcutOn ? 2 : 0) : 0;
+		int commandLines = commands ? 5 : 0;
+		float commandsH = commandLines == 0 ? 0f : commandLines * (font.lineHeight + 1) + 6f;
+		float content = stackH(binds.size() + extra) + (commandsH > 0f ? V_GAP + commandsH : 0f);
+		int x = Math.round(column.x);
+		int top = Math.round(column.y);
+		int viewTop = top + EDGE + HEADER + V_GAP;
+		int room = Math.max(BOX, screen.height - viewTop - EDGE - BOX - 10);
+		int shownH = Math.min(Math.round(content), room);
+		column.height = EDGE + HEADER + V_GAP + shownH + EDGE;
+		column.scroll = Math.round(Mth.clamp(column.scroll, 0f, Math.max(0f, content - shownH)));
+
+		columnBackdrop(graphics, x, top, COL_W, column.height);
+		int boxX = x + EDGE;
+		int boxW = COL_W - EDGE * 2;
+		int headerY = top + EDGE;
+		card(graphics, boxX, headerY, boxW, HEADER, accentFill());
+		departure(graphics, font, "Keys", boxX, headerY, boxW, HEADER, TEXT);
+		screen.clickHit(boxX, headerY, boxW, HEADER, () -> beginDrag(column.id));
+
+		boolean clipped = shownH > 0 && GuiDraw.scissor(graphics, boxX, viewTop, boxW, shownH);
+		float y = viewTop - column.scroll;
+		for (int index : binds) {
+			if (y + BOX > viewTop && y < viewTop + shownH) {
+				drawBind(screen, graphics, font, boxX, Math.round(y), boxW, BIND_LABEL[index], BIND_WHICH[index]);
+			}
+			y += STRIDE;
+		}
+		if (shortcuts) {
+			if (y + BOX > viewTop && y < viewTop + shownH) {
+				drawChoice(screen, graphics, font, boxX, y, boxW, "Shortcuts", shortcutOn, () -> {
+					StrayConfig current = StrayConfig.get();
+					current.commandShortcutsEnabled = !current.commandShortcutsEnabled;
+					CommandShortcuts.sync();
+					UnloadState.markDirty();
+				});
+			}
+			y += STRIDE;
+			if (shortcutOn) {
+				if (y + BOX > viewTop && y < viewTop + shownH) {
+					drawChoice(screen, graphics, font, boxX, y, boxW, "Pass arguments", config.commandShortcutsPassArgs, () -> {
+						StrayConfig current = StrayConfig.get();
+						current.commandShortcutsPassArgs = !current.commandShortcutsPassArgs;
+						UnloadState.markDirty();
+					});
+				}
+				y += STRIDE;
+				if (y + BOX > viewTop && y < viewTop + shownH) {
+					drawButton(screen, graphics, font, boxX, y, boxW, "Edit", () ->
+						Minecraft.getInstance().setScreen(new CommandShortcutScreen(screen))
+					);
+				}
+				y += STRIDE;
+			}
+		}
+		if (commands && y + commandsH > viewTop && y < viewTop + shownH) {
+			card(graphics, boxX, y, boxW, commandsH, OFF_FILL);
+			String[] lines = {
+				"/loadouts  /ld",
+				"/wardrobe  /wd",
+				"/pv  /profile",
+				"/autoclicker add left",
+				MenuSlotBinds.hint() + " equips and closes"
+			};
+			float textY = y + 3f;
+			for (String line : lines) {
+				GuiDraw.text(graphics, font, featureText(fitFeature(font, line, boxW - 8)), boxX + 4f, textY, 1f, DIM, true);
+				textY += font.lineHeight + 1;
+			}
+		}
+		if (clipped) {
+			GuiDraw.disableScissor(graphics);
+		}
+	}
+
+	private static void drawBind(
+		StrayScreen screen,
+		GuiGraphicsExtractor graphics,
+		Font font,
+		int x,
+		int y,
+		int w,
+		String label,
+		int which
+	) {
+		card(graphics, x, y, w, BOX, OFF_FILL);
+		boolean listening = screen.clickBindListening(which);
+		String chip = listening ? "..." : OdinClicks.keyLabel(OdinClicks.parseKey(bindKey(which)));
+		int chipW = font.width(featureText(chip));
+		int labelMax = Math.max(4, w - 8 - chipW);
+		departureLeft(graphics, font, fitFeature(font, label, labelMax), x + 4f, y, BOX, TEXT);
+		departureLeft(graphics, font, chip, x + w - 4f - chipW, y, BOX, Theme.ACCENT);
+		screen.clickHit(x, y, w, BOX, () -> screen.clickListenBind(which));
+	}
+
+	private static String bindKey(int which) {
+		StrayConfig config = StrayConfig.get();
+		return switch (which) {
+			case 3 -> config.openGuiKey;
+			case 4 -> config.openLoadoutsKey;
+			case 5 -> config.openWardrobeKey;
+			case 7 -> config.openProfileKey;
+			case 11 -> config.chatPeekKey;
+			case 12 -> config.strayPingKey;
+			case 13 -> config.loadoutSwapKey;
+			case 14 -> config.emptyVacuumKey;
+			default -> "";
+		};
+	}
+
 	private static void moduleBox(GuiGraphicsExtractor graphics, int x, int y, int w, int h, boolean enabled) {
 		card(graphics, x, y, w, h, enabled ? accentFill() : OFF_FILL);
 	}
@@ -820,7 +956,10 @@ public final class ClickGui {
 
 	private static void card(GuiGraphicsExtractor graphics, float x, float y, float w, float h, int fill) {
 		float r = Math.min(CARD_R, Math.min(w, h) * 0.5f);
-		GuiDraw.roundedFine(graphics, x, y, w, h, r, fill);
+		ControlChrome.lens(graphics, x, y, w, h, r);
+		if ((fill & 0xFF000000) != 0) {
+			GuiDraw.roundedFine(graphics, x, y, w, h, r, fill);
+		}
 	}
 
 	private static void columnBackdrop(GuiGraphicsExtractor graphics, float x, float y, float w, float h) {
@@ -996,7 +1135,6 @@ public final class ClickGui {
 		mods.add(mod("Block marks", "Menus", StrayScreen.Feature.MARKS, null, () -> config.blockMarksEnabled, v -> config.blockMarksEnabled = v, true, false));
 		mods.add(mod("Command rings", "Menus", StrayScreen.Feature.RINGS, null, () -> config.commandRingsEnabled, v -> config.commandRingsEnabled = v, true, false));
 		mods.add(mod("Paths", "Menus", StrayScreen.Feature.PATHS, null, () -> config.pathsEnabled, v -> config.pathsEnabled = v, true, false));
-		mods.add(mod("Shortcuts", "Menus", null, null, () -> config.commandShortcutsEnabled, v -> config.commandShortcutsEnabled = v, true, false));
 		mods.add(mod("Movement rings", "Menus", StrayScreen.Feature.MOVE, null, () -> config.movementRingsEnabled, v -> config.movementRingsEnabled = v, true, false));
 
 		mods.add(hold("Accent", "Theme", StrayScreen.Feature.ACCENT));

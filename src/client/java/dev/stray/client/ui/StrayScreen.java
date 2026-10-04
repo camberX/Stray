@@ -4869,6 +4869,14 @@ public class StrayScreen extends Screen {
 		hits.add(new Hit(x, y, w, h, click));
 	}
 
+	void clickListenBind(int which) {
+		bindListen = which;
+	}
+
+	boolean clickBindListening(int which) {
+		return bindListen == which;
+	}
+
 	int clickHitMark() {
 		return hits.size();
 	}

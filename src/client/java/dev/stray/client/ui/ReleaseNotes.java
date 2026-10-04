@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.5.45", new String[]{
+			"Click GUI category and feature cards use the liquid glass lens. Keys is its own column again, with the menu binds, shortcuts, and command list that used to live under Misc."
+		}),
 		new Entry("1.5.44", new String[]{
 			"Click GUI glass is a little darker. Headers, feature cards, and settings sit inside the rounded pane instead of square boxes on top of it."
 		}),

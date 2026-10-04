@@ -194,6 +194,15 @@ public final class ControlChrome {
 		surface(graphics, x, y, w, h, radius);
 	}
 
+	/** Liquid-glass lens without the column drop shadow. */
+	public static void lens(GuiGraphicsExtractor graphics, float x, float y, float w, float h, float radius) {
+		if (w < 2f || h < 2f) {
+			return;
+		}
+		float r = Math.min(Math.max(4f, radius), Math.min(w, h) * 0.5f);
+		GuiFrostBlur.blitLiquid(graphics, x, y, w, h, r);
+	}
+
 	public static void face(GuiGraphicsExtractor graphics, float x, float y, float size, PlayerSkin skin) {
 		Identifier id = faceTexture(skin);
 		if (id == null) {
