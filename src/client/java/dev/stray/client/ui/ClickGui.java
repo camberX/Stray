@@ -47,8 +47,8 @@ public final class ClickGui {
 	private static final int VEIL = 0x6A000000;
 	private static final float COLUMN_R = 10f;
 	private static final float CARD_R = 4f;
-	/** Feature-card specular, two steps under the category panes. */
-	private static final float CARD_SHINE = 0.33f;
+	/** Feature cards keep only a trace of the lens. Category panes stay at full shine. */
+	private static final float CARD_SHINE = 0f;
 	private static final int OFF_FILL = 0x88000000;
 	private static final int ACCENT_ALPHA = 115;
 	private static final int TEXT = 0xFFFFFFFF;
@@ -1003,10 +1003,17 @@ public final class ClickGui {
 
 	private static void soft(GuiGraphicsExtractor graphics, float x, float y, float w, float h, int fill) {
 		if (glass()) {
-			card(graphics, x, y, w, h, fill, CARD_SHINE);
+			card(graphics, x, y, w, h, denser(fill), CARD_SHINE);
 			return;
 		}
 		flat(graphics, x, y, w, h, fill);
+	}
+
+	/** Pull the feature-card tint up so the lens does not show through the middle. */
+	private static int denser(int fill) {
+		int alpha = (fill >>> 24) & 0xFF;
+		int lifted = Math.min(255, Math.max(alpha + 70, 210));
+		return (lifted << 24) | (fill & 0xFFFFFF);
 	}
 
 	private static void paintColumn(

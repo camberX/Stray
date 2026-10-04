@@ -85,8 +85,10 @@ public final class ClickLook {
 		}
 		if (StrayConfig.get().guiStyleGlass()) {
 			float shortSide = Math.min(w, h);
+			float longSide = Math.max(w, h);
+			boolean slot = shortSide <= 48f && longSide <= shortSide * 1.2f;
 			float shine = shortSide <= 22f ? 0.33f : 1f;
-			float radius = Math.min(8f, shortSide * 0.5f);
+			float radius = slot ? 2f : Math.min(8f, shortSide * 0.5f);
 			int tint = shortSide <= 22f ? fill : 0x6A000000;
 			ControlChrome.glassPane(graphics, x, y, w, h, radius, shine, tint);
 			if ((stroke & 0xFFFFFF) != 0 && (stroke & 0xFFFFFF) != (OUTLINE & 0xFFFFFF)) {

@@ -211,7 +211,7 @@ public final class ControlChrome {
 		if (w < 2f || h < 2f) {
 			return;
 		}
-		float r = Math.min(Math.max(4f, radius), Math.min(w, h) * 0.5f);
+		float r = Math.min(Math.max(1.5f, radius), Math.min(w, h) * 0.5f);
 		GuiDraw.roundedFine(graphics, x, y, w, h, r, 0x66000000);
 		lens(graphics, x, y, w, h, r, shine);
 		if ((tint & 0xFF000000) != 0) {
@@ -229,7 +229,7 @@ public final class ControlChrome {
 		if (w < 2f || h < 2f) {
 			return;
 		}
-		float r = Math.min(Math.max(4f, radius), Math.min(w, h) * 0.5f);
+		float r = Math.min(Math.max(1.5f, radius), Math.min(w, h) * 0.5f);
 		GuiFrostBlur.blitLiquid(graphics, x, y, w, h, r, shine);
 	}
 

@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.5.49", new String[]{
+			"Glass-style inventory slots stay square. Click GUI feature cards are more solid, with less of the lens showing through."
+		}),
 		new Entry("1.5.48", new String[]{
 			"Liquid glass is a style. Click GUI style is under Menus, HUD style adds Glass, and Themed GUIs has a GUI style for inventories, chests, and the other custom screens."
 		}),
