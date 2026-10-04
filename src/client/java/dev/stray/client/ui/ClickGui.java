@@ -33,16 +33,17 @@ public final class ClickGui {
 	private static final int HEADER = 14;
 	private static final int BOX = 14;
 	private static final int V_GAP = 2;
-	private static final int H_PAD = 3;
+	private static final int EDGE = 5;
 	private static final Style FEATURE_FONT = Style.EMPTY.withFont(new FontDescription.Resource(Stray.id("anonymous_pro")));
-	private static final float STROKE = 0.5f;
 	private static final int STRIDE = BOX + V_GAP;
 	private static final int NEST = 3;
 	private static final float SWITCH_W = 16f;
 	private static final float SWITCH_H = 8f;
 	private static final int OUTLINE = 0xFF000000;
 	private static final int PANEL = 0x99000000;
-	private static final float COLUMN_R = 6f;
+	private static final int VEIL = 0x6A000000;
+	private static final float COLUMN_R = 10f;
+	private static final float CARD_R = 4f;
 	private static final int OFF_FILL = 0x88000000;
 	private static final int ACCENT_ALPHA = 115;
 	private static final int TEXT = 0xFFFFFFFF;
@@ -316,10 +317,10 @@ public final class ClickGui {
 		int x = Math.round(column.x);
 		int top = Math.round(column.y);
 		float content = columnContent(screen, mods);
-		int viewTop = top + HEADER + V_GAP;
-		int visible = Math.max(BOX, screen.height - viewTop - H_PAD - BOX - 10);
+		int viewTop = top + EDGE + HEADER + V_GAP;
+		int visible = Math.max(BOX, screen.height - viewTop - EDGE - BOX - 10);
 		int shownH = Math.min(Math.round(content), visible);
-		column.height = HEADER + V_GAP + shownH + H_PAD;
+		column.height = EDGE + HEADER + V_GAP + shownH + EDGE;
 		float maxScroll = Math.max(0f, content - visible);
 		if (reveal) {
 			float cursor = 0f;
@@ -344,13 +345,14 @@ public final class ClickGui {
 		column.scroll = Math.round(Mth.clamp(column.scroll, 0f, maxScroll));
 
 		columnBackdrop(graphics, x, top, COL_W, column.height);
-		outlined(graphics, x, top, COL_W, HEADER, accentFill());
-		departure(graphics, font, display(column.id), x, top, COL_W, HEADER, TEXT);
-		screen.clickHit(x, top, COL_W, HEADER, () -> beginDrag(column.id));
+		int boxX = x + EDGE;
+		int boxW = COL_W - EDGE * 2;
+		int headerY = top + EDGE;
+		card(graphics, boxX, headerY, boxW, HEADER, accentFill());
+		departure(graphics, font, display(column.id), boxX, headerY, boxW, HEADER, TEXT);
+		screen.clickHit(boxX, headerY, boxW, HEADER, () -> beginDrag(column.id));
 
-		int boxX = x + H_PAD;
-		int boxW = COL_W - H_PAD * 2;
-		boolean clipped = GuiDraw.scissor(graphics, x, viewTop, COL_W, shownH);
+		boolean clipped = GuiDraw.scissor(graphics, boxX, viewTop, boxW, shownH);
 		float y = viewTop - column.scroll;
 		for (int i = 0; i < mods.size(); i++) {
 			Mod mod = mods.get(i);
@@ -375,7 +377,7 @@ public final class ClickGui {
 				float open = full * expandT;
 				y += V_GAP;
 				if (open > 1f && y + open > viewTop && y < viewTop + shownH) {
-					drawInline(screen, graphics, font, mouseX, mouseY, mod, x, viewTop, shownH, boxX, y, boxW, open, clipped);
+					drawInline(screen, graphics, font, mouseX, mouseY, mod, viewTop, shownH, boxX, y, boxW, open, clipped);
 				}
 				y += open;
 			}
@@ -403,22 +405,22 @@ public final class ClickGui {
 		}
 		int x = Math.round(column.x);
 		int top = Math.round(column.y);
-		int searchY = top + HEADER + V_GAP;
+		int searchY = top + EDGE + HEADER + V_GAP;
 		int viewTop = searchY + BOX + V_GAP;
-		int room = Math.max(BOX, screen.height - viewTop - H_PAD - BOX - 10);
+		int room = Math.max(BOX, screen.height - viewTop - EDGE - BOX - 10);
 		int visible = Math.min(room, stackH(8));
 		float content = stackH(entries.size());
 		int shownH = Math.min(Math.round(content), visible);
-		column.height = HEADER + V_GAP + BOX + V_GAP + shownH + H_PAD;
+		column.height = EDGE + HEADER + V_GAP + BOX + V_GAP + shownH + EDGE;
 		column.scroll = Math.round(Mth.clamp(column.scroll, 0f, Math.max(0f, content - visible)));
 
 		columnBackdrop(graphics, x, top, COL_W, column.height);
-		outlined(graphics, x, top, COL_W, HEADER, accentFill());
-		departure(graphics, font, display(column.id), x, top, COL_W, HEADER, TEXT);
-		screen.clickHit(x, top, COL_W, HEADER, () -> beginDrag(column.id));
-
-		int boxX = x + H_PAD;
-		int boxW = COL_W - H_PAD * 2;
+		int boxX = x + EDGE;
+		int boxW = COL_W - EDGE * 2;
+		int headerY = top + EDGE;
+		card(graphics, boxX, headerY, boxW, HEADER, accentFill());
+		departure(graphics, font, display(column.id), boxX, headerY, boxW, HEADER, TEXT);
+		screen.clickHit(boxX, headerY, boxW, HEADER, () -> beginDrag(column.id));
 		mobSearchX = boxX;
 		mobSearchY = searchY;
 		mobSearchW = boxW;
@@ -429,7 +431,7 @@ public final class ClickGui {
 		GuiDraw.text(graphics, font, fit(font, shown, boxW - 8), boxX + 4, textY(font, searchY, BOX), placeholder ? DIM : TEXT, true);
 		screen.clickHit(boxX, searchY, boxW, BOX, ClickGui::focusMobSearch);
 
-		boolean clipped = shownH > 0 && GuiDraw.scissor(graphics, x, viewTop, COL_W, shownH);
+		boolean clipped = shownH > 0 && GuiDraw.scissor(graphics, boxX, viewTop, boxW, shownH);
 		StrayConfig config = StrayConfig.get();
 		float y = viewTop - column.scroll;
 		for (int i = 0; i < entries.size(); i++) {
@@ -463,7 +465,6 @@ public final class ClickGui {
 		int mouseX,
 		int mouseY,
 		Mod mod,
-		int columnX,
 		int viewTop,
 		int viewH,
 		int boxX,
@@ -477,7 +478,7 @@ public final class ClickGui {
 		if (columnClipped) {
 			GuiDraw.disableScissor(graphics);
 		}
-		boolean settingsClip = clipBot > clipTop + 0.5f && GuiDraw.scissor(graphics, columnX, clipTop, COL_W, clipBot - clipTop);
+		boolean settingsClip = clipBot > clipTop + 0.5f && GuiDraw.scissor(graphics, boxX, clipTop, boxW, clipBot - clipTop);
 		int mark = screen.clickHitMark();
 		if ("Array list".equals(mod.name)) {
 			drawArrayList(screen, graphics, font, boxX, y, boxW);
@@ -496,18 +497,18 @@ public final class ClickGui {
 		if (expandT < 0.92f) {
 			screen.clickHitRewind(mark);
 		} else {
-			screen.clickClipHits(mark, columnX, clipTop, COL_W, Math.max(0f, clipBot - clipTop));
+			screen.clickClipHits(mark, boxX, clipTop, boxW, Math.max(0f, clipBot - clipTop));
 		}
 		if (settingsClip) {
 			GuiDraw.disableScissor(graphics);
 		}
 		if (columnClipped) {
-			GuiDraw.scissor(graphics, columnX, viewTop, COL_W, viewH);
+			GuiDraw.scissor(graphics, boxX, viewTop, boxW, viewH);
 		}
 		panelLive = true;
-		panelX = columnX;
+		panelX = boxX;
 		panelY = clipTop;
-		panelW = COL_W;
+		panelW = boxW;
 		panelH = Math.max(0f, clipBot - clipTop);
 	}
 
@@ -635,10 +636,10 @@ public final class ClickGui {
 			int iy = Math.round(y);
 			int iw = Math.round(w) - NEST * 2;
 			outlined(graphics, ix, iy, iw, BOX, OFF_FILL);
-			float textLeft = ix + 2f;
+			float textLeft = ix + 4f;
 			if (on) {
-				GuiDraw.fillSmooth(graphics, ix + STROKE, iy + STROKE, 2f, BOX - STROKE * 2f, Theme.ACCENT);
-				textLeft = ix + STROKE + 4f;
+				GuiDraw.roundedFine(graphics, ix + 3f, iy + 3f, 2.5f, BOX - 6f, 1.2f, Theme.ACCENT);
+				textLeft = ix + 8f;
 			}
 			departureLeft(graphics, font, label, textLeft, iy, BOX, on ? TEXT : DIM);
 			screen.clickHit(ix, iy, iw, BOX, () -> {
@@ -810,28 +811,22 @@ public final class ClickGui {
 	}
 
 	private static void moduleBox(GuiGraphicsExtractor graphics, int x, int y, int w, int h, boolean enabled) {
-		frame(graphics, x, y, w, h);
-		GuiDraw.fillSmooth(graphics, x + STROKE, y + STROKE, w - STROKE * 2, h - STROKE * 2, enabled ? accentFill() : OFF_FILL);
+		card(graphics, x, y, w, h, enabled ? accentFill() : OFF_FILL);
 	}
 
 	private static void outlined(GuiGraphicsExtractor graphics, int x, int y, int w, int h, int fill) {
-		frame(graphics, x, y, w, h);
-		GuiDraw.fillSmooth(graphics, x + STROKE, y + STROKE, w - STROKE * 2, h - STROKE * 2, fill);
+		card(graphics, x, y, w, h, fill);
+	}
+
+	private static void card(GuiGraphicsExtractor graphics, float x, float y, float w, float h, int fill) {
+		float r = Math.min(CARD_R, Math.min(w, h) * 0.5f);
+		GuiDraw.roundedFine(graphics, x, y, w, h, r, fill);
 	}
 
 	private static void columnBackdrop(GuiGraphicsExtractor graphics, float x, float y, float w, float h) {
 		GuiDraw.roundedFine(graphics, x, y, w, h, COLUMN_R, PANEL);
 		ControlChrome.backdrop(graphics, x, y, w, h, COLUMN_R);
-	}
-
-	private static void frame(GuiGraphicsExtractor graphics, int x, int y, int w, int h) {
-		if (w < 2 || h < 2) {
-			return;
-		}
-		GuiDraw.fillSmooth(graphics, x, y, w, STROKE, OUTLINE);
-		GuiDraw.fillSmooth(graphics, x, y + h - STROKE, w, STROKE, OUTLINE);
-		GuiDraw.fillSmooth(graphics, x, y, STROKE, h, OUTLINE);
-		GuiDraw.fillSmooth(graphics, x + w - STROKE, y, STROKE, h, OUTLINE);
+		GuiDraw.roundedFine(graphics, x, y, w, h, COLUMN_R, VEIL);
 	}
 
 	public static Component styled(String label) {

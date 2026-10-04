@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.5.44", new String[]{
+			"Click GUI glass is a little darker. Headers, feature cards, and settings sit inside the rounded pane instead of square boxes on top of it."
+		}),
 		new Entry("1.5.43", new String[]{
 			"Click GUI columns use the liquid glass backdrop. The world shows through the pane, with the same blur and rim as the control menu."
 		}),
