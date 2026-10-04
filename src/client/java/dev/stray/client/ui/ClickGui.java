@@ -26,7 +26,8 @@ import java.util.function.Consumer;
 
 /**
  * Column click GUI. Left click toggles a feature. Right click slides its settings
- * open under that row. Headers drag. Each column scrolls on its own.
+ * open under that row. Right click a category header to close that column.
+ * Headers drag. Each column scrolls on its own.
  */
 public final class ClickGui {
 	static final int COL_W = 106;
@@ -197,6 +198,13 @@ public final class ClickGui {
 		if (panelLive && contains(x, y, panelX, panelY, panelW, panelH)) {
 			return;
 		}
+		for (String id : ORDER) {
+			Column column = columns.get(id);
+			if (column != null && headerHit(column, x, y)) {
+				toggleClosed(column);
+				return;
+			}
+		}
 		for (int i = rows.size() - 1; i >= 0; i--) {
 			Row row = rows.get(i);
 			if (!contains(x, y, row.x, row.y, row.w, row.h)) {
@@ -327,6 +335,9 @@ public final class ClickGui {
 			column.height = 0f;
 			return;
 		}
+		if (drawIfClosed(screen, graphics, font, column, display(column.id))) {
+			return;
+		}
 		int x = Math.round(column.x);
 		int top = Math.round(column.y);
 		float content = columnContent(screen, mods);
@@ -419,6 +430,9 @@ public final class ClickGui {
 		}
 		if (!titleHit && entries.isEmpty()) {
 			column.height = 0f;
+			return;
+		}
+		if (drawIfClosed(screen, graphics, font, column, display(column.id))) {
 			return;
 		}
 		int x = Math.round(column.x);
@@ -688,6 +702,57 @@ public final class ClickGui {
 		}
 	}
 
+	private static boolean headerHit(Column column, double x, double y) {
+		if (column.height <= 0f) {
+			return false;
+		}
+		boolean lens = glass();
+		int left = Math.round(column.x);
+		int top = Math.round(column.y);
+		float hx = left + (lens ? EDGE : 0);
+		float hy = top + (lens ? EDGE : 0);
+		float hw = lens ? COL_W - EDGE * 2f : COL_W;
+		return contains(x, y, hx, hy, hw, HEADER);
+	}
+
+	private static void toggleClosed(Column column) {
+		column.closed = !column.closed;
+		if (column.closed && expandedName != null) {
+			for (Mod mod : modules()) {
+				if (column.id.equals(mod.column) && mod.name.equals(expandedName)) {
+					expandedName = null;
+					break;
+				}
+			}
+		}
+		saveColumns();
+	}
+
+	/** Category header only. Returns true when the column is closed. */
+	private static boolean drawIfClosed(
+		StrayScreen screen,
+		GuiGraphicsExtractor graphics,
+		Font font,
+		Column column,
+		String title
+	) {
+		if (!column.closed) {
+			return false;
+		}
+		int x = Math.round(column.x);
+		int top = Math.round(column.y);
+		boolean lens = glass();
+		int pad = lens ? EDGE : 0;
+		column.height = pad + HEADER + pad;
+		int headerX = lens ? x + EDGE : x;
+		int headerW = lens ? COL_W - EDGE * 2 : COL_W;
+		int headerY = top + pad;
+		paintColumn(graphics, x, top, column.height, headerX, headerY, headerW);
+		departure(graphics, font, title, headerX, headerY, headerW, HEADER, TEXT);
+		screen.clickHit(headerX, headerY, headerW, HEADER, () -> beginDrag(column.id));
+		return true;
+	}
+
 	private static void beginDrag(String id) {
 		Column column = columns.get(id);
 		if (column == null) {
@@ -727,6 +792,7 @@ public final class ClickGui {
 				if (pos != null) {
 					column.x = pos.x;
 					column.y = pos.y;
+					column.closed = pos.closed;
 				} else {
 					column.x = 2 + (i % fit) * (COL_W + GAP);
 					column.y = (i / fit) * band;
@@ -752,6 +818,7 @@ public final class ClickGui {
 			pos.id = column.id;
 			pos.x = column.x;
 			pos.y = column.y;
+			pos.closed = column.closed;
 			config.clickColumns.add(pos);
 		}
 		UnloadState.markDirty();
@@ -870,6 +937,9 @@ public final class ClickGui {
 		boolean commands = title || "commands".contains(needle) || "/loadouts".contains(needle) || "/wardrobe".contains(needle) || "/pv".contains(needle);
 		if (!title && binds.isEmpty() && !shortcuts && !commands) {
 			column.height = 0f;
+			return;
+		}
+		if (drawIfClosed(screen, graphics, font, column, "Keys")) {
 			return;
 		}
 		StrayConfig config = StrayConfig.get();
@@ -1308,6 +1378,7 @@ public final class ClickGui {
 		float y;
 		float scroll;
 		float height = HEADER;
+		boolean closed;
 
 		Column(String id) {
 			this.id = id;

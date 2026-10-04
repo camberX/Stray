@@ -2352,6 +2352,7 @@ public final class StrayConfig {
 		public String id = "";
 		public float x;
 		public float y;
+		public boolean closed;
 	}
 
 	public static final class HudSlot {
