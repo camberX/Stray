@@ -21,7 +21,8 @@ out vec4 fragColor;
 // for the red, green, and blue channels (displacementScale 70, aberration 2).
 // vertexColor.rg = corner radius as a fraction of the quad.
 // vertexColor.b = framebuffer pixels per local pixel, packed as s * 40.
-// vertexColor.a = cursor offset, 4 bits each, -100..100 like the library's mouseOffset.
+// vertexColor.a = shine 0-3 in the top two bits, then cursor offset, 3 bits each,
+// -100..100 like the library's mouseOffset. Shine 3 is the full specular.
 
 vec3 saturate(vec3 color, float amount) {
     float luma = dot(color, vec3(0.2126, 0.7152, 0.0722));
@@ -76,16 +77,18 @@ void main() {
     color = saturate(color, 1.4);
 
     float packed = floor(vertexColor.a * 255.0 + 0.5);
-    float mouseX = (floor(packed / 16.0) / 15.0) * 200.0 - 100.0;
-    float mouseY = (mod(packed, 16.0) / 15.0) * 200.0 - 100.0;
+    float shine = floor(packed / 64.0) / 3.0;
+    float mousePack = mod(packed, 64.0);
+    float mouseX = (floor(mousePack / 8.0) / 7.0) * 200.0 - 100.0;
+    float mouseY = (mod(mousePack, 8.0) / 7.0) * 200.0 - 100.0;
     float ang = radians(135.0 + mouseX * 1.2);
     vec2 css = vec2(sin(ang), -cos(ang));
     float along = clamp(dot(texCoord0 - vec2(0.5), css) + 0.5, 0.0, 1.0);
     float s1 = clamp(0.33 + mouseY * 0.003, 0.10, 0.90);
     float s2 = clamp(0.66 + mouseY * 0.004, s1 + 0.05, 0.95);
     float rim = 1.0 - smoothstep(0.4, 1.5 * pxScale + 0.6, max(0.0, -dist) / max(length(vec2(dFdx(dist), dFdy(dist))), 0.0001));
-    float aScreen = gradAlpha(along, s1, s2, 0.12 + abs(mouseX) * 0.008, 0.40 + abs(mouseX) * 0.012) * 0.2 * rim;
-    float aOverlay = gradAlpha(along, s1, s2, 0.32 + abs(mouseX) * 0.008, 0.60 + abs(mouseX) * 0.012) * rim;
+    float aScreen = gradAlpha(along, s1, s2, 0.12 + abs(mouseX) * 0.008, 0.40 + abs(mouseX) * 0.012) * 0.2 * rim * shine;
+    float aOverlay = gradAlpha(along, s1, s2, 0.32 + abs(mouseX) * 0.008, 0.60 + abs(mouseX) * 0.012) * rim * shine;
     color = screenWhite(color, aScreen);
     color = overlayWhite(color, aOverlay);
 
@@ -98,7 +101,7 @@ void main() {
     float hair = (1.0 - smoothstep(0.0, 0.75 * pxScale, edge)) * 0.5;
     float inset = smoothstep(0.5 * pxScale, 0.0, abs(edge - 2.2 * pxScale)) * (0.35 + 0.65 * top);
     color = mix(color, color * 0.72, inset * 0.35);
-    color += hair * (0.55 + 0.45 * top);
+    color += hair * (0.55 + 0.45 * top) * shine;
 
     fragColor = vec4(color, mask) * ColorModulator;
 }

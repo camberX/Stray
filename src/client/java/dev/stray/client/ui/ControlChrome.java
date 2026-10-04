@@ -196,11 +196,16 @@ public final class ControlChrome {
 
 	/** Liquid-glass lens without the column drop shadow. */
 	public static void lens(GuiGraphicsExtractor graphics, float x, float y, float w, float h, float radius) {
+		lens(graphics, x, y, w, h, radius, 1f);
+	}
+
+	/** @param shine specular strength, 0 to 1. 1 matches the column and category panes. */
+	public static void lens(GuiGraphicsExtractor graphics, float x, float y, float w, float h, float radius, float shine) {
 		if (w < 2f || h < 2f) {
 			return;
 		}
 		float r = Math.min(Math.max(4f, radius), Math.min(w, h) * 0.5f);
-		GuiFrostBlur.blitLiquid(graphics, x, y, w, h, r);
+		GuiFrostBlur.blitLiquid(graphics, x, y, w, h, r, shine);
 	}
 
 	public static void face(GuiGraphicsExtractor graphics, float x, float y, float size, PlayerSkin skin) {

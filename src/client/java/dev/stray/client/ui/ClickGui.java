@@ -45,6 +45,8 @@ public final class ClickGui {
 	private static final int VEIL = 0x6A000000;
 	private static final float COLUMN_R = 10f;
 	private static final float CARD_R = 4f;
+	/** Feature-card specular, one step under the category panes. */
+	private static final float CARD_SHINE = 0.67f;
 	private static final int OFF_FILL = 0x88000000;
 	private static final int ACCENT_ALPHA = 115;
 	private static final int TEXT = 0xFFFFFFFF;
@@ -892,7 +894,7 @@ public final class ClickGui {
 			}
 		}
 		if (commands && y + commandsH > viewTop && y < viewTop + shownH) {
-			card(graphics, boxX, y, boxW, commandsH, OFF_FILL);
+			card(graphics, boxX, y, boxW, commandsH, OFF_FILL, CARD_SHINE);
 			String[] lines = {
 				"/loadouts  /ld",
 				"/wardrobe  /wd",
@@ -921,7 +923,7 @@ public final class ClickGui {
 		String label,
 		int which
 	) {
-		card(graphics, x, y, w, BOX, OFF_FILL);
+		card(graphics, x, y, w, BOX, OFF_FILL, CARD_SHINE);
 		boolean listening = screen.clickBindListening(which);
 		String chip = listening ? "..." : OdinClicks.keyLabel(OdinClicks.parseKey(bindKey(which)));
 		int chipW = font.width(featureText(chip));
@@ -947,16 +949,20 @@ public final class ClickGui {
 	}
 
 	private static void moduleBox(GuiGraphicsExtractor graphics, int x, int y, int w, int h, boolean enabled) {
-		card(graphics, x, y, w, h, enabled ? accentFill() : OFF_FILL);
+		card(graphics, x, y, w, h, enabled ? accentFill() : OFF_FILL, CARD_SHINE);
 	}
 
 	private static void outlined(GuiGraphicsExtractor graphics, int x, int y, int w, int h, int fill) {
-		card(graphics, x, y, w, h, fill);
+		card(graphics, x, y, w, h, fill, CARD_SHINE);
 	}
 
 	private static void card(GuiGraphicsExtractor graphics, float x, float y, float w, float h, int fill) {
+		card(graphics, x, y, w, h, fill, 1f);
+	}
+
+	private static void card(GuiGraphicsExtractor graphics, float x, float y, float w, float h, int fill, float shine) {
 		float r = Math.min(CARD_R, Math.min(w, h) * 0.5f);
-		ControlChrome.lens(graphics, x, y, w, h, r);
+		ControlChrome.lens(graphics, x, y, w, h, r, shine);
 		if ((fill & 0xFF000000) != 0) {
 			GuiDraw.roundedFine(graphics, x, y, w, h, r, fill);
 		}

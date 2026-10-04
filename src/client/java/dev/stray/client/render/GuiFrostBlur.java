@@ -192,6 +192,13 @@ public final class GuiFrostBlur {
 	 * at scale 70 with the library's chromatic split.
 	 */
 	public static void blitLiquid(GuiGraphicsExtractor graphics, float x, float y, float w, float h, float radius) {
+		blitLiquid(graphics, x, y, w, h, radius, 1f);
+	}
+
+	/**
+	 * @param shine specular strength, 0 to 1. 1 matches the control-menu lens.
+	 */
+	public static void blitLiquid(GuiGraphicsExtractor graphics, float x, float y, float w, float h, float radius, float shine) {
 		note(LIQUID, graphics, x, y, w, h, true);
 		if (!haveGlass || glass == null || w <= 0f || h <= 0f) {
 			return;
@@ -211,7 +218,7 @@ public final class GuiFrostBlur {
 		int rv = Math.max(1, Math.min(255, Math.round(r / h * 255f)));
 		int scaleByte = packScale(framebufferScale(graphics, x, y, w));
 		float[] cursor = cursorInQuad(graphics, x, y, w, h);
-		int mouse = packMouse((cursor[0] - 0.5f) * 100f, (cursor[1] - 0.5f) * 100f);
+		int mouse = packMouse((cursor[0] - 0.5f) * 100f, (cursor[1] - 0.5f) * 100f, shine);
 		int color = (mouse << 24) | (ru << 16) | (rv << 8) | scaleByte;
 		graphics.pose().pushMatrix();
 		graphics.pose().translate(x, y);
@@ -271,11 +278,15 @@ public final class GuiFrostBlur {
 		return Math.max(1, Math.min(255, Math.round(scale * 40f)));
 	}
 
-	/** Library mouseOffset, about -100..100, 4 bits per axis. */
-	private static int packMouse(float offsetX, float offsetY) {
-		int mx = Math.max(0, Math.min(15, Math.round((offsetX + 100f) / 200f * 15f)));
-		int my = Math.max(0, Math.min(15, Math.round((offsetY + 100f) / 200f * 15f)));
-		return (mx << 4) | my;
+	/**
+	 * Alpha byte: shine 0–3 in the top two bits, mouse offset about -100..100
+	 * in 3 bits per axis. Shine 3 is the full control-menu specular.
+	 */
+	private static int packMouse(float offsetX, float offsetY, float shine) {
+		int level = Math.max(0, Math.min(3, Math.round(Math.max(0f, Math.min(1f, shine)) * 3f)));
+		int mx = Math.max(0, Math.min(7, Math.round((offsetX + 100f) / 200f * 7f)));
+		int my = Math.max(0, Math.min(7, Math.round((offsetY + 100f) / 200f * 7f)));
+		return (level << 6) | (mx << 3) | my;
 	}
 
 	private static float framebufferScale(GuiGraphicsExtractor graphics, float x, float y, float w) {
