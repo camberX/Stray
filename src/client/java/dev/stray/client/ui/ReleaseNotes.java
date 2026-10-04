@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.5.48", new String[]{
+			"Liquid glass is a style. Click GUI style is under Menus, HUD style adds Glass, and Themed GUIs has a GUI style for inventories, chests, and the other custom screens."
+		}),
 		new Entry("1.5.47", new String[]{
 			"Click GUI feature cards use an even softer liquid-glass highlight."
 		}),

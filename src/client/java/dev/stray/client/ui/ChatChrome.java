@@ -47,11 +47,15 @@ public final class ChatChrome {
 
 	public static boolean enabled() {
 		StrayConfig config = StrayConfig.get();
-		return config.themedChatEnabled || config.hudStyleClick();
+		return config.themedChatEnabled || config.hudStyleClick() || config.hudStyleGlass();
 	}
 
 	private static boolean click() {
 		return StrayConfig.get().hudStyleClick();
+	}
+
+	private static boolean glass() {
+		return StrayConfig.get().hudStyleGlass();
 	}
 
 	public static boolean skipFill() {
@@ -113,6 +117,10 @@ public final class ChatChrome {
 			HudChrome.box(graphics, x, y, w, h, 0x99000000);
 			return;
 		}
+		if (glass()) {
+			ControlChrome.glassPane(graphics, x, y, w, h, paneRadius(w, h), 1f, 0x6A000000);
+			return;
+		}
 		float radius = paneRadius(w, h);
 		int fill = chatFill(focused, 1f);
 		GuiFrostBlur.blitWindow(graphics, x, y, w, h, radius);
@@ -151,6 +159,10 @@ public final class ChatChrome {
 			HudChrome.box(graphics, x, y, w, INPUT_H, 0x99000000);
 			return;
 		}
+		if (glass()) {
+			ControlChrome.glassPane(graphics, x, y, w, INPUT_H, 8f, 1f, 0x6A000000);
+			return;
+		}
 		float radius = 8f;
 		GuiFrostBlur.blitWindow(graphics, x, y, w, INPUT_H, radius);
 		GuiDraw.roundedFine(graphics, x, y, w, INPUT_H, radius, ControlChrome.windowFill());
@@ -165,7 +177,7 @@ public final class ChatChrome {
 		if (client == null || !(client.screen instanceof ChatScreen)) {
 			return;
 		}
-		if (click()) {
+		if (click() || glass()) {
 			return;
 		}
 		if (box.isBordered()) {

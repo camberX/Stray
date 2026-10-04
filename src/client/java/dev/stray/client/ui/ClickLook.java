@@ -1,5 +1,6 @@
 package dev.stray.client.ui;
 
+import dev.stray.client.config.StrayConfig;
 import dev.stray.client.render.GuiDraw;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 
@@ -80,6 +81,17 @@ public final class ClickLook {
 	/** Flat fill with a real stroke. Does not turn an accent outline into a fill. */
 	public static void solid(GuiGraphicsExtractor graphics, float x, float y, float w, float h, int fill, int stroke) {
 		if (w < 2f || h < 2f) {
+			return;
+		}
+		if (StrayConfig.get().guiStyleGlass()) {
+			float shortSide = Math.min(w, h);
+			float shine = shortSide <= 22f ? 0.33f : 1f;
+			float radius = Math.min(8f, shortSide * 0.5f);
+			int tint = shortSide <= 22f ? fill : 0x6A000000;
+			ControlChrome.glassPane(graphics, x, y, w, h, radius, shine, tint);
+			if ((stroke & 0xFFFFFF) != 0 && (stroke & 0xFFFFFF) != (OUTLINE & 0xFFFFFF)) {
+				GuiDraw.roundedOutline(graphics, x, y, w, h, radius, stroke, 1f);
+			}
 			return;
 		}
 		GuiDraw.fillSmooth(graphics, x, y, w, h, fill);

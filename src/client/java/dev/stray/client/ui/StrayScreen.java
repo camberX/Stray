@@ -378,6 +378,9 @@ public class StrayScreen extends Screen {
 		new SearchEntry("Vanilla HUD", Tab.SETTINGS, "Theme"),
 		new SearchEntry("Stray HUD", Tab.SETTINGS, "Theme"),
 		new SearchEntry("Click HUD", Tab.SETTINGS, "Theme"),
+		new SearchEntry("Glass HUD", Tab.SETTINGS, "Theme"),
+		new SearchEntry("Click GUI style", Tab.MENUS, "Menus"),
+		new SearchEntry("GUI style", Tab.MENUS, "Menus"),
 		new SearchEntry("Menu stars", Tab.SETTINGS, "Theme"),
 		new SearchEntry("HUD stars", Tab.SETTINGS, "Theme"),
 		new SearchEntry("Accent outlines", Tab.SETTINGS, "Theme"),
@@ -2386,9 +2389,10 @@ public class StrayScreen extends Screen {
 				toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Paths", config.pathsEnabled, v -> config.pathsEnabled = v, Feature.PATHS);
 			}
 			case MENUS -> {
-				float menusH = cardHeight(14);
+				float menusH = cardHeight(16);
 				float y = featureCard(graphics, font, left, top, col, menusH, "Menus");
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Click GUI", config.clickGui, v -> config.clickGui = v);
+				y = cycle(graphics, font, ix, y, iw, mouseX, mouseY, "Click style", config.clickGuiStyleLabel(), config::cycleClickGuiStyle);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Array list", config.arrayList, v -> config.arrayList = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Loadouts menu", config.loadoutsMenuEnabled, v -> config.loadoutsMenuEnabled = v, Feature.LOADOUTS);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Wardrobe menu", config.wardrobeMenuEnabled, v -> config.wardrobeMenuEnabled = v, Feature.WARDROBE);
@@ -2396,6 +2400,7 @@ public class StrayScreen extends Screen {
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Storage preview", config.storagePreviewEnabled, v -> config.storagePreviewEnabled = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Preview needs Shift", config.storagePreviewHoldShift, v -> config.storagePreviewHoldShift = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Themed GUIs", config.themedGuisEnabled, v -> config.themedGuisEnabled = v);
+				y = cycle(graphics, font, ix, y, iw, mouseX, mouseY, "GUI style", config.guiStyleLabel(), config::cycleGuiStyle);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Themed chat", config.themedChatEnabled, v -> config.themedChatEnabled = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Compact stash chat", config.stashChatCompact, v -> config.stashChatCompact = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Cleaner NPC chat", config.npcChatClean, v -> config.npcChatClean = v);
@@ -2654,11 +2659,13 @@ public class StrayScreen extends Screen {
 				y = controlCard(graphics, font, left, y, col, mouseX, mouseY, "Wardrobe menu", config.wardrobeMenuEnabled, v -> config.wardrobeMenuEnabled = v, Feature.WARDROBE);
 				y = toggleCard(graphics, font, left, y, col, mouseX, mouseY, "Global IRC", config.strayIrcEnabled, v -> config.strayIrcEnabled = v);
 				y = toggleCard(graphics, font, left, y, col, mouseX, mouseY, "Lobby pings", config.strayPingEnabled, v -> config.strayPingEnabled = v);
-				y = featureCard(graphics, font, left, y, col, cardHeight(10), "Menus");
+				y = featureCard(graphics, font, left, y, col, cardHeight(12), "Menus");
+				y = cycle(graphics, font, ix, y, iw, mouseX, mouseY, "Click style", config.clickGuiStyleLabel(), config::cycleClickGuiStyle);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Profile viewer", config.profileViewerEnabled, v -> config.profileViewerEnabled = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Storage preview", config.storagePreviewEnabled, v -> config.storagePreviewEnabled = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Preview needs Shift", config.storagePreviewHoldShift, v -> config.storagePreviewHoldShift = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Themed GUIs", config.themedGuisEnabled, v -> config.themedGuisEnabled = v);
+				y = cycle(graphics, font, ix, y, iw, mouseX, mouseY, "GUI style", config.guiStyleLabel(), config::cycleGuiStyle);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Themed chat", config.themedChatEnabled, v -> config.themedChatEnabled = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Compact stash chat", config.stashChatCompact, v -> config.stashChatCompact = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Cleaner NPC chat", config.npcChatClean, v -> config.npcChatClean = v);
@@ -2894,13 +2901,15 @@ public class StrayScreen extends Screen {
 			config.save();
 		});
 
-		float accentH = cardTop() + cardHead() + 14 + swatchBlockH(Theme.PRESETS.length, iw) + rowH() * 5 + cardPad();
+		float accentH = cardTop() + cardHead() + 14 + swatchBlockH(Theme.PRESETS.length, iw) + rowH() * 7 + cardPad();
 		float lookY = sectionLabel(graphics, font, right, top, "Look");
 		y = featureCard(graphics, font, right, lookY, col, accentH, "Accent");
 		GuiDraw.small(graphics, font, "Preset", rx, y + 1, ControlChrome.muted());
 		y = swatchRow(graphics, mouseX, mouseY, rx + 2, y + 12, iw - 2, Theme.PRESETS, true);
 		y = colorRow(graphics, font, rx, y, iw, mouseX, mouseY, "Custom", config.themeAccentRgb, PickerTarget.THEME);
 		y = cycle(graphics, font, rx, y, iw, mouseX, mouseY, "HUD style", config.hudStyleLabel(), config::cycleHudStyle);
+		y = cycle(graphics, font, rx, y, iw, mouseX, mouseY, "Click style", config.clickGuiStyleLabel(), config::cycleClickGuiStyle);
+		y = cycle(graphics, font, rx, y, iw, mouseX, mouseY, "GUI style", config.guiStyleLabel(), config::cycleGuiStyle);
 		y = slider(graphics, font, rx, y, iw, "HUD", Math.round(config.hudOpacity * 100) + "%", (config.hudOpacity - 0.20f) / 0.80f, v -> {
 			config.hudOpacity = StrayConfig.clamp(0.20f + v * 0.80f, 0.20f, 1f);
 			Theme.refresh();

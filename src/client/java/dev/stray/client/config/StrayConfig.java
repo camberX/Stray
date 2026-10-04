@@ -211,6 +211,10 @@ public final class StrayConfig {
 	public int chestEspRgb = 0xF4C14E;
 	public float chestEspOpacity = 0.34f;
 	public boolean clickGui = true;
+	/** Click GUI chrome. {@code glass} is the liquid lens, {@code click} is the flat boxes. */
+	public String clickGuiStyle = "glass";
+	/** Inventory, chests, and the other custom screens. {@code click} is the flat boxes. */
+	public String guiStyle = "click";
 	public boolean arrayList = true;
 	public boolean partyFinderStats = true;
 	public boolean arrayListAccent = false;
@@ -1181,6 +1185,12 @@ public final class StrayConfig {
 				if (!json.has("clickGui")) {
 					loaded.clickGui = true;
 				}
+				loaded.clickGuiStyle = json.has("clickGuiStyle")
+					? normalizeClickGuiStyle(loaded.clickGuiStyle)
+					: "glass";
+				loaded.guiStyle = json.has("guiStyle")
+					? normalizeGuiStyle(loaded.guiStyle)
+					: "click";
 				if (!json.has("arrayList")) {
 					loaded.arrayList = true;
 				}
@@ -1771,6 +1781,10 @@ public final class StrayConfig {
 		return "click".equalsIgnoreCase(hudStyle);
 	}
 
+	public boolean hudStyleGlass() {
+		return "glass".equalsIgnoreCase(hudStyle);
+	}
+
 	public String hudStyleLabel() {
 		if (hudStyleVanilla()) {
 			return "Vanilla";
@@ -1778,17 +1792,46 @@ public final class StrayConfig {
 		if (hudStyleClick()) {
 			return "Click";
 		}
+		if (hudStyleGlass()) {
+			return "Glass";
+		}
 		return "Stray";
 	}
 
 	public void cycleHudStyle() {
 		if (hudStyleVanilla()) {
 			hudStyle = "stray";
-		} else if (hudStyleClick()) {
+		} else if (hudStyleGlass()) {
 			hudStyle = "vanilla";
+		} else if (hudStyleClick()) {
+			hudStyle = "glass";
 		} else {
 			hudStyle = "click";
 		}
+	}
+
+	public boolean clickGuiGlass() {
+		return !"click".equalsIgnoreCase(clickGuiStyle);
+	}
+
+	public String clickGuiStyleLabel() {
+		return clickGuiGlass() ? "Glass" : "Click";
+	}
+
+	public void cycleClickGuiStyle() {
+		clickGuiStyle = clickGuiGlass() ? "click" : "glass";
+	}
+
+	public boolean guiStyleGlass() {
+		return "glass".equalsIgnoreCase(guiStyle);
+	}
+
+	public String guiStyleLabel() {
+		return guiStyleGlass() ? "Glass" : "Click";
+	}
+
+	public void cycleGuiStyle() {
+		guiStyle = guiStyleGlass() ? "click" : "glass";
 	}
 
 	public void setHudStyle(String style) {
@@ -1822,7 +1865,32 @@ public final class StrayConfig {
 		if (key.equals("click") || key.equals("clickgui") || key.equals("list")) {
 			return "click";
 		}
+		if (key.equals("glass") || key.equals("liquid")) {
+			return "glass";
+		}
 		return "stray";
+	}
+
+	public static String normalizeClickGuiStyle(String style) {
+		if (style == null) {
+			return "glass";
+		}
+		String key = style.trim().toLowerCase();
+		if (key.equals("click") || key.equals("boxes") || key.equals("flat")) {
+			return "click";
+		}
+		return "glass";
+	}
+
+	public static String normalizeGuiStyle(String style) {
+		if (style == null) {
+			return "click";
+		}
+		String key = style.trim().toLowerCase();
+		if (key.equals("glass") || key.equals("liquid")) {
+			return "glass";
+		}
+		return "click";
 	}
 
 	public static String normalizeHealthBarSide(String side) {

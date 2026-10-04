@@ -34,6 +34,10 @@ public final class HudChrome {
 		return StrayConfig.get().hudStyleClick();
 	}
 
+	public static boolean glass() {
+		return StrayConfig.get().hudStyleGlass();
+	}
+
 	public static boolean vanillaInk() {
 		return hudPass && vanilla();
 	}
@@ -74,6 +78,12 @@ public final class HudChrome {
 		}
 		if (click()) {
 			box(graphics, x, y, w, h, FILL);
+			return;
+		}
+		if (glass()) {
+			float r = Math.min(Math.max(4f, radius), Math.min(w, h) / 2f);
+			float shine = Math.min(w, h) <= 22f ? 0.33f : 1f;
+			ControlChrome.glassPane(graphics, x, y, w, h, r, shine, 0x6A000000);
 			return;
 		}
 		if (StrayConfig.get().guiDesignControl()) {
@@ -133,6 +143,19 @@ public final class HudChrome {
 	public static void slot(GuiGraphicsExtractor graphics, float x, float y, float size, boolean selected) {
 		if (click()) {
 			box(graphics, x, y, size, size, selected ? Theme.withAlpha(Theme.ACCENT, ACCENT_ALPHA) : OFF);
+			return;
+		}
+		if (glass()) {
+			ControlChrome.glassPane(
+				graphics,
+				x,
+				y,
+				size,
+				size,
+				4f,
+				0.33f,
+				selected ? Theme.withAlpha(Theme.ACCENT, ACCENT_ALPHA) : OFF
+			);
 			return;
 		}
 		int fill = selected ? Theme.HUD_CARD_HOVER : Theme.HUD_TRACK;

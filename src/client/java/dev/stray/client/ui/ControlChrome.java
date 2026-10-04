@@ -194,6 +194,31 @@ public final class ControlChrome {
 		surface(graphics, x, y, w, h, radius);
 	}
 
+	/**
+	 * Liquid-glass pane: a dark fallback, the lens, then a tint. Shine 1 matches
+	 * the click GUI columns. Smaller cards should pass a lower shine.
+	 */
+	public static void glassPane(
+		GuiGraphicsExtractor graphics,
+		float x,
+		float y,
+		float w,
+		float h,
+		float radius,
+		float shine,
+		int tint
+	) {
+		if (w < 2f || h < 2f) {
+			return;
+		}
+		float r = Math.min(Math.max(4f, radius), Math.min(w, h) * 0.5f);
+		GuiDraw.roundedFine(graphics, x, y, w, h, r, 0x66000000);
+		lens(graphics, x, y, w, h, r, shine);
+		if ((tint & 0xFF000000) != 0) {
+			GuiDraw.roundedFine(graphics, x, y, w, h, r, tint);
+		}
+	}
+
 	/** Liquid-glass lens without the column drop shadow. */
 	public static void lens(GuiGraphicsExtractor graphics, float x, float y, float w, float h, float radius) {
 		lens(graphics, x, y, w, h, radius, 1f);

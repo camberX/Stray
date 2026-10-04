@@ -35,6 +35,8 @@ public final class ClickGui {
 	private static final int BOX = 14;
 	private static final int V_GAP = 2;
 	private static final int EDGE = 5;
+	private static final int H_PAD = 3;
+	private static final float STROKE = 0.5f;
 	private static final Style FEATURE_FONT = Style.EMPTY.withFont(new FontDescription.Resource(Stray.id("anonymous_pro")));
 	private static final int STRIDE = BOX + V_GAP;
 	private static final int NEST = 3;
@@ -207,7 +209,7 @@ public final class ClickGui {
 				}
 				return;
 			}
-			if (row.mod.feature != null || row.mod.timeout || row.mod.menuStyle || "Array list".equals(row.mod.name)) {
+			if (row.mod.feature != null || row.mod.timeout || row.mod.menuStyle || "Array list".equals(row.mod.name) || "Themed GUIs".equals(row.mod.name)) {
 				if (row.mod.name.equals(expandedName)) {
 					expandedName = null;
 				} else {
@@ -328,10 +330,14 @@ public final class ClickGui {
 		int x = Math.round(column.x);
 		int top = Math.round(column.y);
 		float content = columnContent(screen, mods);
-		int viewTop = top + EDGE + HEADER + V_GAP;
-		int visible = Math.max(BOX, screen.height - viewTop - EDGE - BOX - 10);
+		boolean lens = glass();
+		int topPad = lens ? EDGE : 0;
+		int rowPad = lens ? EDGE : H_PAD;
+		int bottomPad = lens ? EDGE : H_PAD;
+		int viewTop = top + topPad + HEADER + V_GAP;
+		int visible = Math.max(BOX, screen.height - viewTop - bottomPad - BOX - 10);
 		int shownH = Math.min(Math.round(content), visible);
-		column.height = EDGE + HEADER + V_GAP + shownH + EDGE;
+		column.height = topPad + HEADER + V_GAP + shownH + bottomPad;
 		float maxScroll = Math.max(0f, content - visible);
 		if (reveal) {
 			float cursor = 0f;
@@ -355,15 +361,16 @@ public final class ClickGui {
 		}
 		column.scroll = Math.round(Mth.clamp(column.scroll, 0f, maxScroll));
 
-		columnBackdrop(graphics, x, top, COL_W, column.height);
-		int boxX = x + EDGE;
-		int boxW = COL_W - EDGE * 2;
-		int headerY = top + EDGE;
-		card(graphics, boxX, headerY, boxW, HEADER, accentFill());
-		departure(graphics, font, display(column.id), boxX, headerY, boxW, HEADER, TEXT);
-		screen.clickHit(boxX, headerY, boxW, HEADER, () -> beginDrag(column.id));
+		int boxX = x + rowPad;
+		int boxW = COL_W - rowPad * 2;
+		int headerX = lens ? boxX : x;
+		int headerW = lens ? boxW : COL_W;
+		int headerY = top + topPad;
+		paintColumn(graphics, x, top, column.height, headerX, headerY, headerW);
+		departure(graphics, font, display(column.id), headerX, headerY, headerW, HEADER, TEXT);
+		screen.clickHit(headerX, headerY, headerW, HEADER, () -> beginDrag(column.id));
 
-		boolean clipped = GuiDraw.scissor(graphics, boxX, viewTop, boxW, shownH);
+		boolean clipped = GuiDraw.scissor(graphics, lens ? boxX : x, viewTop, lens ? boxW : COL_W, shownH);
 		float y = viewTop - column.scroll;
 		for (int i = 0; i < mods.size(); i++) {
 			Mod mod = mods.get(i);
@@ -416,22 +423,27 @@ public final class ClickGui {
 		}
 		int x = Math.round(column.x);
 		int top = Math.round(column.y);
-		int searchY = top + EDGE + HEADER + V_GAP;
+		boolean lens = glass();
+		int topPad = lens ? EDGE : 0;
+		int rowPad = lens ? EDGE : H_PAD;
+		int bottomPad = lens ? EDGE : H_PAD;
+		int searchY = top + topPad + HEADER + V_GAP;
 		int viewTop = searchY + BOX + V_GAP;
-		int room = Math.max(BOX, screen.height - viewTop - EDGE - BOX - 10);
+		int room = Math.max(BOX, screen.height - viewTop - bottomPad - BOX - 10);
 		int visible = Math.min(room, stackH(8));
 		float content = stackH(entries.size());
 		int shownH = Math.min(Math.round(content), visible);
-		column.height = EDGE + HEADER + V_GAP + BOX + V_GAP + shownH + EDGE;
+		column.height = topPad + HEADER + V_GAP + BOX + V_GAP + shownH + bottomPad;
 		column.scroll = Math.round(Mth.clamp(column.scroll, 0f, Math.max(0f, content - visible)));
 
-		columnBackdrop(graphics, x, top, COL_W, column.height);
-		int boxX = x + EDGE;
-		int boxW = COL_W - EDGE * 2;
-		int headerY = top + EDGE;
-		card(graphics, boxX, headerY, boxW, HEADER, accentFill());
-		departure(graphics, font, display(column.id), boxX, headerY, boxW, HEADER, TEXT);
-		screen.clickHit(boxX, headerY, boxW, HEADER, () -> beginDrag(column.id));
+		int boxX = x + rowPad;
+		int boxW = COL_W - rowPad * 2;
+		int headerX = lens ? boxX : x;
+		int headerW = lens ? boxW : COL_W;
+		int headerY = top + topPad;
+		paintColumn(graphics, x, top, column.height, headerX, headerY, headerW);
+		departure(graphics, font, display(column.id), headerX, headerY, headerW, HEADER, TEXT);
+		screen.clickHit(headerX, headerY, headerW, HEADER, () -> beginDrag(column.id));
 		mobSearchX = boxX;
 		mobSearchY = searchY;
 		mobSearchW = boxW;
@@ -442,7 +454,7 @@ public final class ClickGui {
 		GuiDraw.text(graphics, font, fit(font, shown, boxW - 8), boxX + 4, textY(font, searchY, BOX), placeholder ? DIM : TEXT, true);
 		screen.clickHit(boxX, searchY, boxW, BOX, ClickGui::focusMobSearch);
 
-		boolean clipped = shownH > 0 && GuiDraw.scissor(graphics, boxX, viewTop, boxW, shownH);
+		boolean clipped = shownH > 0 && GuiDraw.scissor(graphics, lens ? boxX : x, viewTop, lens ? boxW : COL_W, shownH);
 		StrayConfig config = StrayConfig.get();
 		float y = viewTop - column.scroll;
 		for (int i = 0; i < entries.size(); i++) {
@@ -493,6 +505,8 @@ public final class ClickGui {
 		int mark = screen.clickHitMark();
 		if ("Array list".equals(mod.name)) {
 			drawArrayList(screen, graphics, font, boxX, y, boxW);
+		} else if ("Themed GUIs".equals(mod.name)) {
+			drawGuiStyle(screen, graphics, font, boxX, y, boxW);
 		} else if (mod.menuStyle) {
 			if ("HUD".equals(mod.name)) {
 				drawHud(screen, graphics, font, boxX, y, boxW);
@@ -555,7 +569,20 @@ public final class ClickGui {
 	}
 
 	private static void drawMenuStyle(StrayScreen screen, GuiGraphicsExtractor graphics, Font font, float x, float y, float w) {
+		StrayConfig config = StrayConfig.get();
+		drawButton(screen, graphics, font, x, y, w, "Style " + config.clickGuiStyleLabel(), () -> {
+			StrayConfig.get().cycleClickGuiStyle();
+			UnloadState.markDirty();
+		});
+		y += STRIDE;
 		drawButton(screen, graphics, font, x, y, w, "Stray Menu", () -> setClickGui(false));
+	}
+
+	private static void drawGuiStyle(StrayScreen screen, GuiGraphicsExtractor graphics, Font font, float x, float y, float w) {
+		drawButton(screen, graphics, font, x, y, w, "Style " + StrayConfig.get().guiStyleLabel(), () -> {
+			StrayConfig.get().cycleGuiStyle();
+			UnloadState.markDirty();
+		});
 	}
 
 	private static void drawHud(StrayScreen screen, GuiGraphicsExtractor graphics, Font font, float x, float y, float w) {
@@ -756,8 +783,17 @@ public final class ClickGui {
 		if ("Array list".equals(mod.name)) {
 			return stackH(arrayListRows());
 		}
+		if ("Themed GUIs".equals(mod.name)) {
+			return stackH(1);
+		}
 		if (mod.menuStyle) {
-			return "HUD".equals(mod.name) ? stackH(4) : stackH(1);
+			if ("HUD".equals(mod.name)) {
+				return stackH(4);
+			}
+			if ("Click GUI".equals(mod.name)) {
+				return stackH(2);
+			}
+			return stackH(1);
 		}
 		if (mod.timeout) {
 			return stackH(6);
@@ -844,21 +880,26 @@ public final class ClickGui {
 		float content = stackH(binds.size() + extra) + (commandsH > 0f ? V_GAP + commandsH : 0f);
 		int x = Math.round(column.x);
 		int top = Math.round(column.y);
-		int viewTop = top + EDGE + HEADER + V_GAP;
-		int room = Math.max(BOX, screen.height - viewTop - EDGE - BOX - 10);
+		boolean lens = glass();
+		int topPad = lens ? EDGE : 0;
+		int rowPad = lens ? EDGE : H_PAD;
+		int bottomPad = lens ? EDGE : H_PAD;
+		int viewTop = top + topPad + HEADER + V_GAP;
+		int room = Math.max(BOX, screen.height - viewTop - bottomPad - BOX - 10);
 		int shownH = Math.min(Math.round(content), room);
-		column.height = EDGE + HEADER + V_GAP + shownH + EDGE;
+		column.height = topPad + HEADER + V_GAP + shownH + bottomPad;
 		column.scroll = Math.round(Mth.clamp(column.scroll, 0f, Math.max(0f, content - shownH)));
 
-		columnBackdrop(graphics, x, top, COL_W, column.height);
-		int boxX = x + EDGE;
-		int boxW = COL_W - EDGE * 2;
-		int headerY = top + EDGE;
-		card(graphics, boxX, headerY, boxW, HEADER, accentFill());
-		departure(graphics, font, "Keys", boxX, headerY, boxW, HEADER, TEXT);
-		screen.clickHit(boxX, headerY, boxW, HEADER, () -> beginDrag(column.id));
+		int boxX = x + rowPad;
+		int boxW = COL_W - rowPad * 2;
+		int headerX = lens ? boxX : x;
+		int headerW = lens ? boxW : COL_W;
+		int headerY = top + topPad;
+		paintColumn(graphics, x, top, column.height, headerX, headerY, headerW);
+		departure(graphics, font, "Keys", headerX, headerY, headerW, HEADER, TEXT);
+		screen.clickHit(headerX, headerY, headerW, HEADER, () -> beginDrag(column.id));
 
-		boolean clipped = shownH > 0 && GuiDraw.scissor(graphics, boxX, viewTop, boxW, shownH);
+		boolean clipped = shownH > 0 && GuiDraw.scissor(graphics, lens ? boxX : x, viewTop, lens ? boxW : COL_W, shownH);
 		float y = viewTop - column.scroll;
 		for (int index : binds) {
 			if (y + BOX > viewTop && y < viewTop + shownH) {
@@ -894,7 +935,7 @@ public final class ClickGui {
 			}
 		}
 		if (commands && y + commandsH > viewTop && y < viewTop + shownH) {
-			card(graphics, boxX, y, boxW, commandsH, OFF_FILL, CARD_SHINE);
+			soft(graphics, boxX, y, boxW, commandsH, OFF_FILL);
 			String[] lines = {
 				"/loadouts  /ld",
 				"/wardrobe  /wd",
@@ -923,7 +964,7 @@ public final class ClickGui {
 		String label,
 		int which
 	) {
-		card(graphics, x, y, w, BOX, OFF_FILL, CARD_SHINE);
+		soft(graphics, x, y, w, BOX, OFF_FILL);
 		boolean listening = screen.clickBindListening(which);
 		String chip = listening ? "..." : OdinClicks.keyLabel(OdinClicks.parseKey(bindKey(which)));
 		int chipW = font.width(featureText(chip));
@@ -948,12 +989,53 @@ public final class ClickGui {
 		};
 	}
 
+	private static boolean glass() {
+		return StrayConfig.get().clickGuiGlass();
+	}
+
 	private static void moduleBox(GuiGraphicsExtractor graphics, int x, int y, int w, int h, boolean enabled) {
-		card(graphics, x, y, w, h, enabled ? accentFill() : OFF_FILL, CARD_SHINE);
+		soft(graphics, x, y, w, h, enabled ? accentFill() : OFF_FILL);
 	}
 
 	private static void outlined(GuiGraphicsExtractor graphics, int x, int y, int w, int h, int fill) {
-		card(graphics, x, y, w, h, fill, CARD_SHINE);
+		soft(graphics, x, y, w, h, fill);
+	}
+
+	private static void soft(GuiGraphicsExtractor graphics, float x, float y, float w, float h, int fill) {
+		if (glass()) {
+			card(graphics, x, y, w, h, fill, CARD_SHINE);
+			return;
+		}
+		flat(graphics, x, y, w, h, fill);
+	}
+
+	private static void paintColumn(
+		GuiGraphicsExtractor graphics,
+		float x,
+		float y,
+		float h,
+		float headerX,
+		float headerY,
+		float headerW
+	) {
+		if (glass()) {
+			columnBackdrop(graphics, x, y, COL_W, h);
+			card(graphics, headerX, headerY, headerW, HEADER, accentFill());
+			return;
+		}
+		GuiDraw.fill(graphics, x, y, COL_W, h, PANEL);
+		flat(graphics, headerX, headerY, headerW, HEADER, accentFill());
+	}
+
+	private static void flat(GuiGraphicsExtractor graphics, float x, float y, float w, float h, int fill) {
+		if (w < 2f || h < 2f) {
+			return;
+		}
+		GuiDraw.fillSmooth(graphics, x, y, w, STROKE, OUTLINE);
+		GuiDraw.fillSmooth(graphics, x, y + h - STROKE, w, STROKE, OUTLINE);
+		GuiDraw.fillSmooth(graphics, x, y, STROKE, h, OUTLINE);
+		GuiDraw.fillSmooth(graphics, x + w - STROKE, y, STROKE, h, OUTLINE);
+		GuiDraw.fillSmooth(graphics, x + STROKE, y + STROKE, w - STROKE * 2f, h - STROKE * 2f, fill);
 	}
 
 	private static void card(GuiGraphicsExtractor graphics, float x, float y, float w, float h, int fill) {
