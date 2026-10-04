@@ -42,6 +42,7 @@ public final class ClickGui {
 	private static final float SWITCH_H = 8f;
 	private static final int OUTLINE = 0xFF000000;
 	private static final int PANEL = 0x99000000;
+	private static final float COLUMN_R = 6f;
 	private static final int OFF_FILL = 0x88000000;
 	private static final int ACCENT_ALPHA = 115;
 	private static final int TEXT = 0xFFFFFFFF;
@@ -342,7 +343,7 @@ public final class ClickGui {
 		}
 		column.scroll = Math.round(Mth.clamp(column.scroll, 0f, maxScroll));
 
-		GuiDraw.fill(graphics, x, top, COL_W, column.height, PANEL);
+		columnBackdrop(graphics, x, top, COL_W, column.height);
 		outlined(graphics, x, top, COL_W, HEADER, accentFill());
 		departure(graphics, font, display(column.id), x, top, COL_W, HEADER, TEXT);
 		screen.clickHit(x, top, COL_W, HEADER, () -> beginDrag(column.id));
@@ -411,7 +412,7 @@ public final class ClickGui {
 		column.height = HEADER + V_GAP + BOX + V_GAP + shownH + H_PAD;
 		column.scroll = Math.round(Mth.clamp(column.scroll, 0f, Math.max(0f, content - visible)));
 
-		GuiDraw.fill(graphics, x, top, COL_W, column.height, PANEL);
+		columnBackdrop(graphics, x, top, COL_W, column.height);
 		outlined(graphics, x, top, COL_W, HEADER, accentFill());
 		departure(graphics, font, display(column.id), x, top, COL_W, HEADER, TEXT);
 		screen.clickHit(x, top, COL_W, HEADER, () -> beginDrag(column.id));
@@ -816,6 +817,11 @@ public final class ClickGui {
 	private static void outlined(GuiGraphicsExtractor graphics, int x, int y, int w, int h, int fill) {
 		frame(graphics, x, y, w, h);
 		GuiDraw.fillSmooth(graphics, x + STROKE, y + STROKE, w - STROKE * 2, h - STROKE * 2, fill);
+	}
+
+	private static void columnBackdrop(GuiGraphicsExtractor graphics, float x, float y, float w, float h) {
+		GuiDraw.roundedFine(graphics, x, y, w, h, COLUMN_R, PANEL);
+		ControlChrome.backdrop(graphics, x, y, w, h, COLUMN_R);
 	}
 
 	private static void frame(GuiGraphicsExtractor graphics, int x, int y, int w, int h) {

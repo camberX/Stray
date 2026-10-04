@@ -189,6 +189,11 @@ public final class ControlChrome {
 		surface(graphics, x, y, w, h, 16f);
 	}
 
+	/** Click GUI column backdrop. Same lens as the control menu. */
+	public static void backdrop(GuiGraphicsExtractor graphics, float x, float y, float w, float h, float radius) {
+		surface(graphics, x, y, w, h, radius);
+	}
+
 	public static void face(GuiGraphicsExtractor graphics, float x, float y, float size, PlayerSkin skin) {
 		Identifier id = faceTexture(skin);
 		if (id == null) {
