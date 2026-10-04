@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.5.47", new String[]{
+			"Click GUI feature cards use an even softer liquid-glass highlight."
+		}),
 		new Entry("1.5.46", new String[]{
 			"Click GUI feature cards use a softer liquid-glass highlight. Category panes stay as they were."
 		}),

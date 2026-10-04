@@ -45,8 +45,8 @@ public final class ClickGui {
 	private static final int VEIL = 0x6A000000;
 	private static final float COLUMN_R = 10f;
 	private static final float CARD_R = 4f;
-	/** Feature-card specular, one step under the category panes. */
-	private static final float CARD_SHINE = 0.67f;
+	/** Feature-card specular, two steps under the category panes. */
+	private static final float CARD_SHINE = 0.33f;
 	private static final int OFF_FILL = 0x88000000;
 	private static final int ACCENT_ALPHA = 115;
 	private static final int TEXT = 0xFFFFFFFF;
