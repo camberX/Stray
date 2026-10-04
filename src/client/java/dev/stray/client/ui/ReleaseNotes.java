@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.5.51", new String[]{
+			"Glass-style inventory slots no longer warp on their own. The pane behind them keeps the distortion."
+		}),
 		new Entry("1.5.50", new String[]{
 			"Right click a click GUI category header to close that column. Right click it again to open it."
 		}),

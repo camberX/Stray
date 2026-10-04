@@ -146,14 +146,12 @@ public final class HudChrome {
 			return;
 		}
 		if (glass()) {
-			ControlChrome.glassPane(
+			GuiDraw.fillSmooth(
 				graphics,
 				x,
 				y,
 				size,
 				size,
-				4f,
-				0.33f,
 				selected ? Theme.withAlpha(Theme.ACCENT, ACCENT_ALPHA) : OFF
 			);
 			return;
