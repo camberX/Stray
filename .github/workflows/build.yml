@@ -35,7 +35,7 @@ jobs:
         SHA: ${{ github.sha }}
       run: |
         if [ "$EVENT" = "push" ] && [ "$REF" = "refs/heads/main" ]; then
-          ./gradlew remapJar -PstrayChannel=dev -PstraySha="$SHA"
+          ./gradlew assemble -PstrayChannel=dev -PstraySha="$SHA"
         else
           ./gradlew build
         fi
