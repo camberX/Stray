@@ -2,6 +2,8 @@ package dev.stray.client.combat;
 
 import java.util.Locale;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Which SkyBlock book levels an anvil is allowed to combine.
@@ -159,7 +161,101 @@ public final class BookCombineRules {
 		Map.entry("ultimate_flowstate", new int[]{50, 100, 150})
 	);
 
+	/**
+	 * A single enchantment line from a book tooltip, such as "Feather Falling VI".
+	 * The key is the anvil id, already normalized.
+	 */
+	public record EnchantLevel(String key, int level) {
+	}
+
+	private static final Pattern ENCHANT_LINE = Pattern.compile(
+		"^(.*\\S)\\s+(x|ix|viii|vii|vi|iv|v|iii|ii|i)$"
+	);
+
 	private BookCombineRules() {
+	}
+
+	public static boolean known(String enchant) {
+		String key = normalize(enchant);
+		return !key.isEmpty() && (TABLE_MAX.containsKey(key) || COMBINE_COSTS.containsKey(key));
+	}
+
+	/**
+	 * Maps the name printed on a book ("Feather Falling", "Ultimate Wise", "Wise")
+	 * to the anvil id. Unknown names return empty so a description line cannot
+	 * become an enchant.
+	 */
+	public static String fromDisplay(String display) {
+		if (display == null || display.isBlank()) {
+			return "";
+		}
+		String cleaned = display.toLowerCase(Locale.ROOT)
+			.replace("'", "")
+			.replace("\u2019", "")
+			.replaceAll("[^a-z0-9]+", "_")
+			.replaceAll("^_+|_+$", "")
+			.replaceAll("_+", "_");
+		if (cleaned.isEmpty()) {
+			return "";
+		}
+		String direct = normalize(cleaned);
+		if (known(direct)) {
+			return direct;
+		}
+		if (!direct.startsWith("ultimate_")) {
+			String ultimate = normalize("ultimate_" + direct);
+			if (known(ultimate)) {
+				return ultimate;
+			}
+		}
+		return "";
+	}
+
+	/**
+	 * Parses one tooltip line. Returns null unless the whole line is a known
+	 * enchantment and a roman level, so "Combinable in Anvil" and the effect
+	 * text are ignored.
+	 */
+	public static EnchantLevel parseLine(String raw) {
+		if (raw == null || raw.isBlank()) {
+			return null;
+		}
+		String line = raw.toLowerCase(Locale.ROOT)
+			.replace('\u00A0', ' ')
+			.replace("'", "")
+			.replace("\u2019", "")
+			.replaceAll("[^a-z0-9\\s]", " ")
+			.replaceAll("\\s+", " ")
+			.trim();
+		Matcher matcher = ENCHANT_LINE.matcher(line);
+		if (!matcher.matches()) {
+			return null;
+		}
+		String key = fromDisplay(matcher.group(1));
+		if (key.isEmpty()) {
+			return null;
+		}
+		int level = roman(matcher.group(2));
+		if (level < 1) {
+			return null;
+		}
+		return new EnchantLevel(key, level);
+	}
+
+	private static int roman(String token) {
+		return switch (token) {
+			case "i" -> 1;
+			case "ii" -> 2;
+			case "iii" -> 3;
+			case "iv" -> 4;
+			case "v" -> 5;
+			case "vi" -> 6;
+			case "vii" -> 7;
+			case "viii" -> 8;
+			case "ix" -> 9;
+			case "x" -> 10;
+			default -> -1;
+		};
 	}
 
 	public static String normalize(String enchant) {

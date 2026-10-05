@@ -10,6 +10,9 @@ import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.input.KeyEvent;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.Tag;
+import net.minecraft.nbt.TagParser;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.Style;
 import net.minecraft.resources.Identifier;
@@ -17,12 +20,17 @@ import org.lwjgl.glfw.GLFW;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.ContainerInput;
 import net.minecraft.world.inventory.Slot;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.item.component.ItemLore;
 
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -49,6 +57,7 @@ public final class AutoBookCombine {
 	private static String lastPrint = "";
 	private static long lastClick;
 	private static long pauseUntil;
+	private static int seenBooks;
 	private static final Set<String> refused = new HashSet<>();
 
 	private AutoBookCombine() {
@@ -88,6 +97,7 @@ public final class AutoBookCombine {
 		lastSlot = -1;
 		lastPrint = "";
 		pauseUntil = 0L;
+		seenBooks = 0;
 		refused.clear();
 	}
 
@@ -130,7 +140,7 @@ public final class AutoBookCombine {
 				boolean done = combinedAny;
 				reset();
 				if (clear) {
-					tell(done ? "Book combine finished" : "No matching books");
+					tell(done ? "Book combine finished" : seenBooks == 0 ? "No enchanted books found" : "No matching books");
 				} else {
 					tell(done ? "Book combine stopped" : "Empty the anvil first");
 				}
@@ -232,7 +242,7 @@ public final class AutoBookCombine {
 			if (cursor != null || !leftVacant || !rightVacant || !resultVacant || (carried != null && !carried.isEmpty())) {
 				return null;
 			}
-			Pair pair = findPair(slots, playerStart);
+			Pair pair = findPair(slots);
 			if (pair == null) {
 				return null;
 			}
@@ -289,7 +299,7 @@ public final class AutoBookCombine {
 		}
 
 		if (left != null && left.matches(enchant, level) && rightVacant) {
-			Integer match = findMatch(slots, playerStart, enchant, level, -1);
+			Integer match = findMatch(slots, enchant, level, -1);
 			if (match == null) {
 				return LEFT;
 			}
@@ -306,7 +316,7 @@ public final class AutoBookCombine {
 
 		if (leftVacant && rightVacant && resultVacant) {
 			active = false;
-			Pair pair = findPair(slots, playerStart);
+			Pair pair = findPair(slots);
 			if (pair == null) {
 				return null;
 			}
@@ -393,24 +403,33 @@ public final class AutoBookCombine {
 		return text.contains("combine");
 	}
 
-	private static Pair findPair(List<Slot> slots, int playerStart) {
+	private static Pair findPair(List<Slot> slots) {
+		seenBooks = 0;
 		String bestKey = "";
 		int bestLevel = Integer.MAX_VALUE;
 		int first = -1;
 		int second = -1;
-		for (int i = playerStart; i < slots.size(); i++) {
-			Book book = book(slots.get(i).getItem());
+		for (int i = 0; i < slots.size(); i++) {
+			int slot = slots.get(i).index;
+			if (anvilSlot(slot)) {
+				continue;
+			}
+			ItemStack stack = slots.get(i).getItem();
+			if (namedBook(stack)) {
+				seenBooks++;
+			}
+			Book book = book(stack);
 			if (book == null || refused.contains(book.pairId())) {
 				continue;
 			}
-			Integer match = findMatch(slots, playerStart, book.key, book.level, slots.get(i).index);
+			Integer match = findMatch(slots, book.key, book.level, slot);
 			if (match == null) {
 				continue;
 			}
 			if (book.level < bestLevel) {
 				bestLevel = book.level;
 				bestKey = book.key;
-				first = slots.get(i).index;
+				first = slot;
 				second = match;
 			}
 		}
@@ -420,17 +439,22 @@ public final class AutoBookCombine {
 		return new Pair(bestKey, bestLevel, first, second);
 	}
 
-	private static Integer findMatch(List<Slot> slots, int playerStart, String key, int bookLevel, int except) {
-		for (int i = playerStart; i < slots.size(); i++) {
-			if (slots.get(i).index == except) {
+	private static Integer findMatch(List<Slot> slots, String key, int bookLevel, int except) {
+		for (int i = 0; i < slots.size(); i++) {
+			int slot = slots.get(i).index;
+			if (slot == except || anvilSlot(slot)) {
 				continue;
 			}
 			Book book = book(slots.get(i).getItem());
 			if (book != null && book.matches(key, bookLevel)) {
-				return slots.get(i).index;
+				return slot;
 			}
 		}
 		return null;
+	}
+
+	private static boolean anvilSlot(int slot) {
+		return slot == LEFT || slot == RIGHT || slot == RESULT || slot == COMBINE;
 	}
 
 	private static Integer emptyPlayerSlot(List<Slot> slots, int playerStart) {
@@ -496,32 +520,403 @@ public final class AutoBookCombine {
 		if (stack == null || stack.isEmpty() || stack.getCount() != 1 || vacant(stack)) {
 			return null;
 		}
+		NbtRead nbt = readNbt(stack);
+		if (nbt.refused) {
+			return null;
+		}
+		Book lore = bookFromTooltip(stack);
+		if (nbt.book != null) {
+			if (lore != null && !lore.matches(nbt.book.key, nbt.book.level)) {
+				return null;
+			}
+			return nbt.book;
+		}
+		return lore;
+	}
+
+	/**
+	 * Item data wins when it names exactly one enchant. A level the anvil cannot
+	 * raise, or more than one enchant, is refused so the tooltip cannot override it.
+	 * When the data has no enchant map, the tooltip is the book.
+	 */
+	private static NbtRead readNbt(ItemStack stack) {
 		CompoundTag custom = OdinClicks.customData(stack);
-		CompoundTag extra = custom.getCompoundOrEmpty("ExtraAttributes");
-		if (extra.isEmpty()) {
-			extra = custom;
+		String id = custom.isEmpty() ? null : skyblockId(custom);
+		Book product = productBook(id);
+		boolean bookItem = bookId(id) || product != null || vanillaBook(stack);
+		Map<String, Integer> enchants = custom.isEmpty() ? null : enchantments(custom);
+		if (enchants != null && !enchants.isEmpty()) {
+			if (!bookItem && !namedBook(stack)) {
+				return NbtRead.refuse();
+			}
+			if (enchants.size() != 1) {
+				return NbtRead.refuse();
+			}
+			Map.Entry<String, Integer> entry = enchants.entrySet().iterator().next();
+			if (entry.getValue() <= 0 || !BookCombineRules.canUpgrade(entry.getKey(), entry.getValue())) {
+				return NbtRead.refuse();
+			}
+			Book parsed = new Book(BookCombineRules.normalize(entry.getKey()), entry.getValue());
+			if (product != null && !product.matches(parsed.key, parsed.level)) {
+				return NbtRead.refuse();
+			}
+			return NbtRead.ok(parsed);
 		}
-		String id = extra.getStringOr("id", "");
-		if (!"ENCHANTED_BOOK".equals(id)) {
+		if (product != null) {
+			if (!BookCombineRules.canUpgrade(product.key, product.level)) {
+				return NbtRead.refuse();
+			}
+			return NbtRead.ok(product);
+		}
+		return NbtRead.absent();
+	}
+
+	private static Book bookFromTooltip(ItemStack stack) {
+		List<String> lines = tooltipLines(stack);
+		if (lines.isEmpty() || blocked(lines) || !combinable(lines) || !titledBook(lines)) {
 			return null;
 		}
-		CompoundTag enchants = extra.getCompoundOrEmpty("enchantments");
-		if (enchants.isEmpty() || enchants.keySet().size() != 1) {
+		Book found = null;
+		int enchantLines = 0;
+		for (String line : lines) {
+			BookCombineRules.EnchantLevel parsed = BookCombineRules.parseLine(line);
+			if (parsed == null) {
+				continue;
+			}
+			enchantLines++;
+			if (found != null && !found.matches(parsed.key(), parsed.level())) {
+				return null;
+			}
+			found = new Book(parsed.key(), parsed.level());
+		}
+		if (enchantLines < 1 || found == null || !BookCombineRules.canUpgrade(found.key, found.level)) {
 			return null;
 		}
-		String raw = enchants.keySet().iterator().next();
-		int enchantLevel = enchants.getIntOr(raw, -1);
-		if (enchantLevel <= 0) {
-			enchantLevel = (int) enchants.getDoubleOr(raw, -1);
+		return found;
+	}
+
+	private static boolean namedBook(ItemStack stack) {
+		if (stack == null || stack.isEmpty() || vacant(stack)) {
+			return false;
 		}
-		if (enchantLevel <= 0 || !BookCombineRules.canUpgrade(raw, enchantLevel)) {
+		return titledBook(tooltipLines(stack));
+	}
+
+	private static boolean titledBook(List<String> lines) {
+		for (String line : lines) {
+			if (line.equals("enchanted book") || line.startsWith("enchanted book ")) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	private static boolean combinable(List<String> lines) {
+		for (String line : lines) {
+			if (line.contains("combinable")) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	private static boolean blocked(List<String> lines) {
+		for (String line : lines) {
+			if (line.contains("cannot be combined") || line.contains("can't be combined")) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	private static List<String> tooltipLines(ItemStack stack) {
+		List<String> lines = new ArrayList<>();
+		Minecraft client = Minecraft.getInstance();
+		if (client.player != null) {
+			try {
+				Item.TooltipContext context = client.level == null
+					? Item.TooltipContext.EMPTY
+					: Item.TooltipContext.of(client.level);
+				for (Component line : stack.getTooltipLines(context, client.player, TooltipFlag.NORMAL)) {
+					addLine(lines, line);
+				}
+			} catch (RuntimeException ignored) {
+				lines.clear();
+			}
+		}
+		if (!lines.isEmpty()) {
+			return lines;
+		}
+		ItemText text = ItemText.capture(stack);
+		addLine(lines, text.name());
+		ItemLore lore = text.lore();
+		if (lore != null) {
+			for (Component line : lore.lines()) {
+				addLine(lines, line);
+			}
+		}
+		return lines;
+	}
+
+	private static void addLine(List<String> lines, Component component) {
+		if (component == null) {
+			return;
+		}
+		String plain = OdinClicks.noControlCodes(component.getString())
+			.replace('\u00A0', ' ')
+			.toLowerCase(Locale.ROOT)
+			.replaceAll("\\s+", " ")
+			.trim();
+		if (!plain.isEmpty()) {
+			lines.add(plain);
+		}
+	}
+
+	private static boolean vanillaBook(ItemStack stack) {
+		Identifier id = BuiltInRegistries.ITEM.getKey(stack.getItem());
+		return id != null && "enchanted_book".equals(id.getPath());
+	}
+
+	private static boolean bookId(String id) {
+		return "ENCHANTED_BOOK".equals(id) || "MINECRAFT:ENCHANTED_BOOK".equals(id);
+	}
+
+	private static Book productBook(String id) {
+		if (id == null || !id.startsWith("ENCHANTMENT_")) {
 			return null;
 		}
-		String text = plain(stack);
-		if (text.contains("cannot be combined") || text.contains("can't be combined")) {
+		String rest = id.substring("ENCHANTMENT_".length()).toLowerCase(Locale.ROOT);
+		int split = rest.lastIndexOf('_');
+		if (split <= 0 || split >= rest.length() - 1) {
 			return null;
 		}
-		return new Book(BookCombineRules.normalize(raw), enchantLevel);
+		int level;
+		try {
+			level = Integer.parseInt(rest.substring(split + 1));
+		} catch (NumberFormatException ignored) {
+			return null;
+		}
+		String key = BookCombineRules.normalize(rest.substring(0, split));
+		if (level < 1 || !BookCombineRules.known(key)) {
+			return null;
+		}
+		return new Book(key, level);
+	}
+
+	private static String skyblockId(CompoundTag root) {
+		String fallback = null;
+		for (CompoundTag node : attributeNodes(root)) {
+			String id = readId(node);
+			if (id == null) {
+				continue;
+			}
+			if (bookId(id) || id.startsWith("ENCHANTMENT_")) {
+				return id;
+			}
+			if (fallback == null && !id.contains(":")) {
+				fallback = id;
+			}
+		}
+		return fallback;
+	}
+
+	private static String readId(CompoundTag tag) {
+		if (tag == null || tag.isEmpty()) {
+			return null;
+		}
+		for (String key : tag.keySet()) {
+			String lower = key.toLowerCase(Locale.ROOT);
+			if (!lower.equals("id") && !lower.endsWith(":id")) {
+				continue;
+			}
+			String value = readTagString(tag.get(key));
+			if (value != null && !value.isBlank()) {
+				return value.trim().toUpperCase(Locale.ROOT);
+			}
+		}
+		return null;
+	}
+
+	private static Map<String, Integer> enchantments(CompoundTag root) {
+		Map<String, Integer> merged = new LinkedHashMap<>();
+		for (CompoundTag node : attributeNodes(root)) {
+			Map<String, Integer> found = enchantmentsOf(node);
+			if (found != null) {
+				merged.putAll(found);
+			}
+		}
+		return merged.isEmpty() ? null : merged;
+	}
+
+	private static Map<String, Integer> enchantmentsOf(CompoundTag node) {
+		if (node == null || node.isEmpty()) {
+			return null;
+		}
+		for (String key : node.keySet()) {
+			String lower = key.toLowerCase(Locale.ROOT);
+			if (!lower.equals("enchantments") && !lower.endsWith(":enchantments") && !lower.equals("enchants")) {
+				continue;
+			}
+			Map<String, Integer> parsed = readEnchantTag(node.get(key));
+			if (parsed != null && !parsed.isEmpty()) {
+				return parsed;
+			}
+		}
+		return null;
+	}
+
+	private static Map<String, Integer> readEnchantTag(Tag raw) {
+		if (raw == null) {
+			return null;
+		}
+		if (raw.asCompound().isPresent()) {
+			return readEnchantCompound(raw.asCompound().get());
+		}
+		if (raw.asList().isPresent()) {
+			Map<String, Integer> map = new LinkedHashMap<>();
+			ListTag list = raw.asList().get();
+			for (int i = 0; i < list.size(); i++) {
+				CompoundTag entry = list.getCompoundOrEmpty(i);
+				if (entry.isEmpty()) {
+					continue;
+				}
+				String name = firstString(entry, "id", "key", "enchant", "type", "name");
+				int level = firstLevel(entry, "level", "lvl", "value");
+				if (name != null && level > 0) {
+					map.put(name, level);
+				}
+			}
+			return map;
+		}
+		String text = readTagString(raw);
+		if (text != null && text.startsWith("{")) {
+			try {
+				return readEnchantCompound(TagParser.parseCompoundFully(text));
+			} catch (Exception ignored) {
+				return null;
+			}
+		}
+		return null;
+	}
+
+	private static Map<String, Integer> readEnchantCompound(CompoundTag compound) {
+		Map<String, Integer> map = new LinkedHashMap<>();
+		for (String key : compound.keySet()) {
+			int level = readLevel(compound.get(key));
+			if (level > 0) {
+				map.put(stripEnchantKey(key), level);
+			}
+		}
+		return map;
+	}
+
+	private static String stripEnchantKey(String key) {
+		int colon = key.lastIndexOf(':');
+		return colon >= 0 ? key.substring(colon + 1) : key;
+	}
+
+	private static String firstString(CompoundTag tag, String... keys) {
+		for (String key : keys) {
+			String value = readTagString(tag.get(key));
+			if (value != null && !value.isBlank()) {
+				return value.trim();
+			}
+		}
+		return null;
+	}
+
+	private static int firstLevel(CompoundTag tag, String... keys) {
+		for (String key : keys) {
+			if (tag.contains(key)) {
+				int level = readLevel(tag.get(key));
+				if (level > 0) {
+					return level;
+				}
+			}
+		}
+		return -1;
+	}
+
+	private static int readLevel(Tag value) {
+		if (value == null) {
+			return -1;
+		}
+		if (value.asNumber().isPresent()) {
+			int level = value.asNumber().get().intValue();
+			return level > 0 ? level : -1;
+		}
+		String text = readTagString(value);
+		if (text != null) {
+			String raw = text.trim();
+			if (raw.startsWith("{")) {
+				try {
+					return firstLevel(TagParser.parseCompoundFully(raw), "level", "lvl", "value");
+				} catch (Exception ignored) {
+					return -1;
+				}
+			}
+			try {
+				int level = Integer.parseInt(raw);
+				return level > 0 ? level : -1;
+			} catch (NumberFormatException ignored) {
+				return -1;
+			}
+		}
+		if (value.asCompound().isPresent()) {
+			return firstLevel(value.asCompound().get(), "level", "lvl", "value");
+		}
+		return -1;
+	}
+
+	private static String readTagString(Tag value) {
+		if (value == null) {
+			return null;
+		}
+		return value.asString().orElse(null);
+	}
+
+	private static List<CompoundTag> attributeNodes(CompoundTag root) {
+		List<CompoundTag> nodes = new ArrayList<>();
+		if (root != null && !root.isEmpty()) {
+			nodes.add(root);
+			addCompound(nodes, root, "ExtraAttributes");
+			addCompound(nodes, root, "PublicBukkitValues");
+			CompoundTag tag = root.getCompoundOrEmpty("tag");
+			if (!tag.isEmpty()) {
+				nodes.add(tag);
+				addCompound(nodes, tag, "ExtraAttributes");
+			}
+		}
+		return nodes;
+	}
+
+	private static void addCompound(List<CompoundTag> nodes, CompoundTag parent, String key) {
+		CompoundTag child = parent.getCompoundOrEmpty(key);
+		if (!child.isEmpty()) {
+			nodes.add(child);
+		}
+	}
+
+	private static final class NbtRead {
+		private final Book book;
+		private final boolean refused;
+
+		private NbtRead(Book book, boolean refused) {
+			this.book = book;
+			this.refused = refused;
+		}
+
+		private static NbtRead absent() {
+			return new NbtRead(null, false);
+		}
+
+		private static NbtRead refuse() {
+			return new NbtRead(null, true);
+		}
+
+		private static NbtRead ok(Book book) {
+			return new NbtRead(book, false);
+		}
 	}
 
 	private static String plain(ItemStack stack) {

@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.5.56", new String[]{
+			"Book combine reads the book tooltip. Feather Falling VI and other same-level books pair even when the item data does not."
+		}),
 		new Entry("1.5.55", new String[]{
 			"Book combine pairs Feather Falling and Infinite Quiver from VI up to X. Two VI books make VII."
 		}),
