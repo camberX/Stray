@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.5.55", new String[]{
+			"Book combine pairs Feather Falling and Infinite Quiver from VI up to X. Two VI books make VII."
+		}),
 		new Entry("1.5.54", new String[]{
 			"Book combine no longer treats the anvil's empty barrier slot as an item."
 		}),

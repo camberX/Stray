@@ -7,9 +7,10 @@ import java.util.Map;
  * Which SkyBlock book levels an anvil is allowed to combine.
  *
  * Two enchanted books combine into the next level only when they are the same
- * enchantment at the same level. Levels past the enchantment-table cap are not
- * crafted that way: Protection V + Protection V does not become Protection VI,
- * and combining two Luck VI books comes back as Luck V. Those levels are refused.
+ * enchantment at the same level. The enchantment-table cap is the usual ceiling:
+ * Protection V + Protection V does not become Protection VI, and combining two
+ * Luck VI books comes back as Luck V. Feather Falling and Infinite Quiver are
+ * the exception: V does not make VI, but VI through IX combine up to X.
  * Enchants that never come from the table use their real max instead, and a
  * level whose apply cost is 0 is not a real book tier.
  */
@@ -66,6 +67,15 @@ public final class BookCombineRules {
 		Map.entry("magnet", 5),
 		Map.entry("luck_of_the_sea", 5),
 		Map.entry("scavenger", 3)
+	);
+
+	/**
+	 * Dungeon books that keep combining after the table cap. The cap itself still
+	 * does not combine (Feather Falling V + V is not VI). VI through max - 1 do.
+	 */
+	private static final Map<String, Integer> DUNGEON_MAX = Map.of(
+		"feather_falling", 10,
+		"infinite_quiver", 10
 	);
 
 	/**
@@ -170,7 +180,14 @@ public final class BookCombineRules {
 		if (key.isEmpty() || level < 1) {
 			return false;
 		}
+		Integer dungeon = DUNGEON_MAX.get(key);
 		Integer table = TABLE_MAX.get(key);
+		if (dungeon != null && table != null) {
+			if (level < table) {
+				return true;
+			}
+			return level > table && level < dungeon;
+		}
 		if (table != null) {
 			return level < table;
 		}

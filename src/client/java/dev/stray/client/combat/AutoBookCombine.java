@@ -511,6 +511,9 @@ public final class AutoBookCombine {
 		}
 		String raw = enchants.keySet().iterator().next();
 		int enchantLevel = enchants.getIntOr(raw, -1);
+		if (enchantLevel <= 0) {
+			enchantLevel = (int) enchants.getDoubleOr(raw, -1);
+		}
 		if (enchantLevel <= 0 || !BookCombineRules.canUpgrade(raw, enchantLevel)) {
 			return null;
 		}
