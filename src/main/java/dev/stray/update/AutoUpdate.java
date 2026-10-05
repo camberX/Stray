@@ -426,7 +426,7 @@ public final class AutoUpdate implements PreLaunchEntrypoint {
 			log("Dev build is current (" + shortSha(sha) + ").");
 			return null;
 		}
-		log("Newer dev build " + shortSha(remote.sha) + " is on GitHub Actions. Turn on Auto update to install it.");
+		log("Newer dev build " + shortSha(remote.sha) + " is published. Turn on Auto update to install it.");
 		return shortSha(remote.sha);
 	}
 
@@ -472,18 +472,14 @@ public final class AutoUpdate implements PreLaunchEntrypoint {
 	}
 
 	/**
-	 * Latest successful Actions build on main, once that run has published {@code dev-builds}.
+	 * The jar on {@code dev-builds}. Publishing that branch is the dev release;
+	 * the updater does not wait for a GitHub-hosted Actions runner.
 	 */
 	private static Remote fetchDevRemote() {
 		HttpClient http = HttpClient.newBuilder()
 			.followRedirects(HttpClient.Redirect.NORMAL)
 			.connectTimeout(Duration.ofSeconds(6))
 			.build();
-		String runSha = latestActionSha(http);
-		if (runSha == null || runSha.isBlank()) {
-			log("Could not read the latest GitHub Actions run.");
-			return null;
-		}
 		JsonObject json = null;
 		for (String url : List.of(
 			"https://raw.githubusercontent.com/camberX/Stray/dev-builds/dev.json",
@@ -500,8 +496,8 @@ public final class AutoUpdate implements PreLaunchEntrypoint {
 			return null;
 		}
 		String sha = json.get("sha").getAsString().trim();
-		if (!runSha.equalsIgnoreCase(sha)) {
-			log("Latest Actions run " + shortSha(runSha) + " is not published yet (dev jar is " + shortSha(sha) + ").");
+		if (sha.isEmpty()) {
+			log("No published dev build yet.");
 			return null;
 		}
 		String version = json.has("version") ? json.get("version").getAsString().trim() : "";
@@ -513,38 +509,6 @@ public final class AutoUpdate implements PreLaunchEntrypoint {
 		urls.add("https://github.com/camberX/Stray/raw/dev-builds/stray-dev.jar");
 		urls.add("https://raw.githubusercontent.com/camberX/voidmark/dev-builds/stray-dev.jar");
 		return new Remote(version, "stray-dev.jar", urls, sha);
-	}
-
-	private static String latestActionSha(HttpClient http) {
-		for (String url : List.of(
-			"https://api.github.com/repos/camberX/Stray/actions/workflows/build.yml/runs?branch=main&status=success&per_page=8",
-			"https://api.github.com/repos/camberX/voidmark/actions/workflows/build.yml/runs?branch=main&status=success&per_page=8"
-		)) {
-			JsonObject json = UpdateMeta.getJson(http, url, 12, "application/vnd.github+json");
-			if (json == null || !json.has("workflow_runs") || !json.get("workflow_runs").isJsonArray()) {
-				continue;
-			}
-			for (var element : json.getAsJsonArray("workflow_runs")) {
-				if (!element.isJsonObject()) {
-					continue;
-				}
-				JsonObject run = element.getAsJsonObject();
-				String branch = text(run, "head_branch");
-				String event = text(run, "event");
-				String sha = text(run, "head_sha");
-				if ("main".equals(branch) && "push".equals(event) && !sha.isEmpty()) {
-					return sha;
-				}
-			}
-		}
-		return null;
-	}
-
-	private static String text(JsonObject json, String key) {
-		if (json == null || !json.has(key) || json.get(key).isJsonNull()) {
-			return "";
-		}
-		return json.get(key).getAsString().trim();
 	}
 
 	private static boolean devChannel() {

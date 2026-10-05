@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.5.53", new String[]{
+			"Dev updates install from the published jar and no longer wait for a GitHub Actions runner."
+		}),
 		new Entry("1.5.52", new String[]{
 			"Book combine is under Menus. In the anvil, Enter starts it and Enter stops it. It only pairs single-enchant books of the same type and level, and it uses the experiment click."
 		}),
