@@ -1284,6 +1284,7 @@ public final class ClickGui {
 
 		mods.add(mod("Click GUI", "Menus", null, null, () -> config.clickGui, v -> config.clickGui = v, false, false, true));
 		mods.add(mod("Experiments", "Menus", StrayScreen.Feature.AUTO_EXPERIMENTS, null, () -> config.autoExperimentsEnabled, v -> config.autoExperimentsEnabled = v, true, false));
+		mods.add(mod("Book combine", "Menus", StrayScreen.Feature.AUTO_BOOKS, null, () -> config.autoBookCombineEnabled, v -> config.autoBookCombineEnabled = v, true, false));
 		mods.add(mod("Loadouts", "Menus", StrayScreen.Feature.LOADOUTS, null, () -> config.loadoutsMenuEnabled, v -> config.loadoutsMenuEnabled = v, true, false));
 		mods.add(mod("Wardrobe", "Menus", StrayScreen.Feature.WARDROBE, null, () -> config.wardrobeMenuEnabled, v -> config.wardrobeMenuEnabled = v, true, false));
 		mods.add(mod("Profile viewer", "Menus", null, null, () -> config.profileViewerEnabled, v -> config.profileViewerEnabled = v, true, false));

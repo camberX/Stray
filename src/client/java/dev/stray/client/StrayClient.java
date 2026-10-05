@@ -6,6 +6,7 @@ import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import dev.stray.client.combat.AutoClicker;
 import dev.stray.client.combat.AutoClickerCommands;
+import dev.stray.client.combat.AutoBookCombine;
 import dev.stray.client.combat.AutoExperiments;
 import dev.stray.client.combat.AutoRogue;
 import dev.stray.client.combat.Hitmarker;
@@ -241,6 +242,7 @@ public final class StrayClient implements ClientModInitializer {
 		VanillaHud.init();
 		MediaSession.init();
 		AutoExperiments.init();
+		AutoBookCombine.init();
 		AutoDna.init();
 		GardenPlots.init();
 		StoragePreview.init();
@@ -336,6 +338,7 @@ public final class StrayClient implements ClientModInitializer {
 			ChestAimer.tick(client);
 			AutoClicker.tick(client);
 			AutoExperiments.tick(client);
+			AutoBookCombine.tick(client);
 			AutoDna.tick(client);
 			if (itemAppearancesLoaded) {
 				return;

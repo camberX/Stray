@@ -150,6 +150,7 @@ public class StrayScreen extends Screen {
 		FILL("Shader", 8),
 		AUTO_CLICKER("Auto clicker", 8),
 		AUTO_EXPERIMENTS("Auto experiments", 11),
+		AUTO_BOOKS("Book combine", 3),
 		MOB("Mob glow", 3),
 		STAR("Star mobs", 6),
 		BLOCK("Block outline", 1),
@@ -2418,6 +2419,11 @@ public class StrayScreen extends Screen {
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Enable", config.autoExperimentsEnabled, v -> config.autoExperimentsEnabled = v);
 				drawFeatureFields(graphics, font, mouseX, mouseY, ix, y, iw, Feature.AUTO_EXPERIMENTS);
 
+				float booksH = cardHeight(1 + Feature.AUTO_BOOKS.rows());
+				y = featureCard(graphics, font, left, top + menusH + 8 + liveH + 8 + experimentsH + 8, col, booksH, "Book combine");
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Enable", config.autoBookCombineEnabled, v -> config.autoBookCombineEnabled = v);
+				drawFeatureFields(graphics, font, mouseX, mouseY, ix, y, iw, Feature.AUTO_BOOKS);
+
 				float bindsH = cardHeight(8);
 				y = featureCard(graphics, font, right, top, col, bindsH, "Keybinds");
 				y = drawMenuKeybinds(graphics, font, rx, y, iw, mouseX, mouseY);
@@ -2677,10 +2683,17 @@ public class StrayScreen extends Screen {
 				y = featureCard(graphics, font, right, cursorY, col, cursorH, "No cursor reset");
 				drawCursorReset(graphics, font, rx, y, iw, mouseX, mouseY);
 				y = sectionLabel(graphics, font, right, cursorY + cursorH + 8, "Experiments");
+				float expCardTop = y;
 				float expH = cardHeight(config.autoExperimentsEnabled ? Feature.AUTO_EXPERIMENTS.rows() : 0);
-				y = featureCard(graphics, font, right, y, col, expH, "Auto experiments", config.autoExperimentsEnabled, v -> config.autoExperimentsEnabled = v, mouseX, mouseY);
+				y = featureCard(graphics, font, right, expCardTop, col, expH, "Auto experiments", config.autoExperimentsEnabled, v -> config.autoExperimentsEnabled = v, mouseX, mouseY);
 				if (config.autoExperimentsEnabled) {
 					drawFeatureFields(graphics, font, mouseX, mouseY, rx, y, iw, Feature.AUTO_EXPERIMENTS);
+				}
+				y = sectionLabel(graphics, font, right, expCardTop + expH + 8, "Books");
+				float bookH = cardHeight(config.autoBookCombineEnabled ? Feature.AUTO_BOOKS.rows() : 0);
+				y = featureCard(graphics, font, right, y, col, bookH, "Book combine", config.autoBookCombineEnabled, v -> config.autoBookCombineEnabled = v, mouseX, mouseY);
+				if (config.autoBookCombineEnabled) {
+					drawFeatureFields(graphics, font, mouseX, mouseY, rx, y, iw, Feature.AUTO_BOOKS);
 				}
 			}
 			case KEYS -> {
@@ -3608,6 +3621,11 @@ public class StrayScreen extends Screen {
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Skip XP dyes", config.superpairsSkipXp, v -> config.superpairsSkipXp = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Skip bottles", config.superpairsSkipBottles, v -> config.superpairsSkipBottles = v);
 				toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Skip Guardian pet", config.superpairsSkipPets, v -> config.superpairsSkipPets = v);
+			}
+			case AUTO_BOOKS -> {
+				y = slider(graphics, font, ix, y, iw, "Click delay", config.autoBookCombineClickDelay + "ms", (config.autoBookCombineClickDelay - 100) / 900f, v -> config.autoBookCombineClickDelay = snapInt(100 + v * 900f, 100, 1000, 10));
+				y = slider(graphics, font, ix, y, iw, "Delay variety", config.autoBookCombineDelayVariety + "ms", config.autoBookCombineDelayVariety / 1000f, v -> config.autoBookCombineDelayVariety = snapInt(v * 1000f, 0, 1000, 10));
+				hint(graphics, font, ix, y, iw, "Enter in the anvil starts and stops");
 			}
 			case MOB -> {
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Through walls", visuals.glowThroughWalls, v -> visuals.glowThroughWalls = v);

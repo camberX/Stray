@@ -1,5 +1,6 @@
 package dev.stray.client.mixin;
 
+import dev.stray.client.combat.AutoBookCombine;
 import dev.stray.client.farming.AutoDna;
 import dev.stray.client.menu.SackRecipe;
 import dev.stray.client.farming.GardenPlots;
@@ -9,6 +10,7 @@ import dev.stray.client.ui.ContainerChrome;
 import dev.stray.client.ui.LoadoutsScreen;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
+import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.world.inventory.ContainerInput;
 import net.minecraft.world.inventory.Slot;
@@ -35,6 +37,13 @@ public class AbstractContainerScreenMixin {
 	private void stray$blockDnaClose(Slot slot, int slotId, int button, ContainerInput type, CallbackInfo ci) {
 		if (AutoDna.shouldBlock(slotId) || SackRecipe.click((AbstractContainerScreen<?>) (Object) this, slot, button, type)) {
 			ci.cancel();
+		}
+	}
+
+	@Inject(method = "keyPressed", at = @At("HEAD"), cancellable = true)
+	private void stray$bookCombineEnter(KeyEvent event, CallbackInfoReturnable<Boolean> cir) {
+		if (AutoBookCombine.keyPressed((AbstractContainerScreen<?>) (Object) this, event)) {
+			cir.setReturnValue(true);
 		}
 	}
 

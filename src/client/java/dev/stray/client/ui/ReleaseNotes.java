@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.5.52", new String[]{
+			"Book combine is under Menus. In the anvil, Enter starts it and Enter stops it. It only pairs single-enchant books of the same type and level, and it uses the experiment click."
+		}),
 		new Entry("1.5.51", new String[]{
 			"Glass-style inventory slots no longer warp on their own. The pane behind them keeps the distortion."
 		}),

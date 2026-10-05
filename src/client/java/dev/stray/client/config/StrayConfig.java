@@ -261,6 +261,9 @@ public final class StrayConfig {
 	public boolean autoExperimentsEnabled = false;
 	public int autoExperimentsClickDelay = 200;
 	public int autoExperimentsDelayVariety = 50;
+	public boolean autoBookCombineEnabled = false;
+	public int autoBookCombineClickDelay = 200;
+	public int autoBookCombineDelayVariety = 50;
 	public boolean autoExperimentsAutoClose = false;
 	public int autoExperimentsSerumCount = 0;
 	public boolean autoExperimentsGetMaxXp = false;
@@ -1115,6 +1118,9 @@ public final class StrayConfig {
 				if (!json.has("autoExperimentsEnabled")) {
 					loaded.autoExperimentsEnabled = false;
 				}
+				if (!json.has("autoBookCombineEnabled")) {
+					loaded.autoBookCombineEnabled = false;
+				}
 				if (!json.has("autoExperimentsSuperpairs")) {
 					loaded.autoExperimentsSuperpairs = false;
 				}
@@ -1263,6 +1269,12 @@ public final class StrayConfig {
 					: 200;
 				loaded.autoExperimentsDelayVariety = json.has("autoExperimentsDelayVariety")
 					? Math.round(clamp(loaded.autoExperimentsDelayVariety, 0, 1000))
+					: 50;
+				loaded.autoBookCombineClickDelay = json.has("autoBookCombineClickDelay")
+					? Math.round(clamp(loaded.autoBookCombineClickDelay, 100, 1000))
+					: 200;
+				loaded.autoBookCombineDelayVariety = json.has("autoBookCombineDelayVariety")
+					? Math.round(clamp(loaded.autoBookCombineDelayVariety, 0, 1000))
 					: 50;
 				loaded.autoExperimentsSerumCount = json.has("autoExperimentsSerumCount")
 					? Math.round(clamp(loaded.autoExperimentsSerumCount, 0, 3))
