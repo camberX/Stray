@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.5.54", new String[]{
+			"Book combine no longer treats the anvil's empty barrier slot as an item."
+		}),
 		new Entry("1.5.53", new String[]{
 			"Dev updates install from the published jar and no longer wait for a GitHub Actions runner."
 		}),

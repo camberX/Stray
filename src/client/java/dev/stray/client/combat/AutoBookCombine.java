@@ -481,7 +481,15 @@ public final class AutoBookCombine {
 			return true;
 		}
 		Identifier id = BuiltInRegistries.ITEM.getKey(stack.getItem());
-		return id != null && id.getPath().endsWith("glass_pane");
+		if (id == null) {
+			return false;
+		}
+		String path = id.getPath();
+		// Empty anvil slots are fillers: black panes on the inputs, a barrier on the result.
+		return path.equals("barrier")
+			|| path.equals("glass")
+			|| path.endsWith("glass_pane")
+			|| path.endsWith("stained_glass");
 	}
 
 	private static Book book(ItemStack stack) {
