@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.5.58", new String[]{
+			"Book combine looks for items named Enchanted Book, then reads the enchantment and level from the lore."
+		}),
 		new Entry("1.5.57", new String[]{
 			"Book combine follows the enchanted book tooltip. Feather Falling VI in the anvil inventory is a pair."
 		}),

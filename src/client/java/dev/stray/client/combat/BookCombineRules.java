@@ -217,16 +217,10 @@ public final class BookCombineRules {
 	 * text are ignored.
 	 */
 	public static EnchantLevel parseLine(String raw) {
-		if (raw == null || raw.isBlank()) {
+		String line = clean(raw);
+		if (line.isEmpty()) {
 			return null;
 		}
-		String line = raw.toLowerCase(Locale.ROOT)
-			.replace('\u00A0', ' ')
-			.replace("'", "")
-			.replace("\u2019", "")
-			.replaceAll("[^a-z0-9\\s]", " ")
-			.replaceAll("\\s+", " ")
-			.trim();
 		Matcher matcher = ENCHANT_LINE.matcher(line);
 		if (!matcher.matches()) {
 			return null;
@@ -235,11 +229,124 @@ public final class BookCombineRules {
 		if (key.isEmpty()) {
 			return null;
 		}
-		int level = roman(matcher.group(2));
+		int level = levelToken(matcher.group(2));
 		if (level < 1) {
 			return null;
 		}
 		return new EnchantLevel(key, level);
+	}
+
+	/**
+	 * Finds an enchantment inside one lore line. The line may be the enchantment
+	 * by itself ("Feather Falling VI") or that same text with extra words around it.
+	 */
+	public static EnchantLevel findIn(String raw) {
+		EnchantLevel direct = parseLine(raw);
+		if (direct != null) {
+			return direct;
+		}
+		String line = clean(raw);
+		if (line.isEmpty()) {
+			return null;
+		}
+		EnchantLevel best = null;
+		int bestAt = Integer.MAX_VALUE;
+		int bestLen = -1;
+		for (String key : allKeys()) {
+			for (String display : displays(key)) {
+				int at = phraseAt(line, display);
+				if (at < 0) {
+					continue;
+				}
+				int level = levelAfter(line, at + display.length());
+				if (level < 1) {
+					continue;
+				}
+				if (at < bestAt || (at == bestAt && display.length() > bestLen)) {
+					bestAt = at;
+					bestLen = display.length();
+					best = new EnchantLevel(key, level);
+				}
+			}
+		}
+		return best;
+	}
+
+	public static String clean(String raw) {
+		if (raw == null || raw.isBlank()) {
+			return "";
+		}
+		String line = raw.toLowerCase(Locale.ROOT)
+			.replace('\u00A0', ' ')
+			.replace("'", "")
+			.replace("\u2019", "")
+			.replaceAll("§.", "")
+			.replaceAll("(?i)&[0-9a-fk-or]", "")
+			.replaceAll("[^a-z0-9\\s]", " ")
+			.replaceAll("\\s+", " ")
+			.trim();
+		return line;
+	}
+
+	private static java.util.List<String> allKeys() {
+		java.util.ArrayList<String> keys = new java.util.ArrayList<>(TABLE_MAX.size() + COMBINE_COSTS.size());
+		keys.addAll(TABLE_MAX.keySet());
+		keys.addAll(COMBINE_COSTS.keySet());
+		return keys;
+	}
+
+	private static java.util.List<String> displays(String key) {
+		String spaced = key.replace('_', ' ');
+		if (spaced.startsWith("ultimate ") && spaced.length() > "ultimate ".length()) {
+			return java.util.List.of(spaced, spaced.substring("ultimate ".length()));
+		}
+		return java.util.List.of(spaced);
+	}
+
+	private static int phraseAt(String line, String display) {
+		int at = 0;
+		while (at <= line.length() - display.length()) {
+			int found = line.indexOf(display, at);
+			if (found < 0) {
+				return -1;
+			}
+			boolean start = found == 0 || line.charAt(found - 1) == ' ';
+			int after = found + display.length();
+			boolean end = after >= line.length() || line.charAt(after) == ' ';
+			if (start && end) {
+				return found;
+			}
+			at = found + 1;
+		}
+		return -1;
+	}
+
+	private static int levelAfter(String line, int from) {
+		int index = from;
+		while (index < line.length() && line.charAt(index) == ' ') {
+			index++;
+		}
+		if (index >= line.length()) {
+			return -1;
+		}
+		int end = index;
+		while (end < line.length() && line.charAt(end) != ' ') {
+			end++;
+		}
+		return levelToken(line.substring(index, end));
+	}
+
+	private static int levelToken(String token) {
+		int roman = roman(token);
+		if (roman > 0) {
+			return roman;
+		}
+		try {
+			int level = Integer.parseInt(token);
+			return level >= 1 && level <= 10 ? level : -1;
+		} catch (NumberFormatException ignored) {
+			return -1;
+		}
 	}
 
 	private static int roman(String token) {

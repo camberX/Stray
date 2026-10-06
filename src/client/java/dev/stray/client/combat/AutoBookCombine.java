@@ -1,5 +1,8 @@
 package dev.stray.client.combat;
 
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import dev.stray.client.config.StrayConfig;
 import dev.stray.client.item.ItemAppearance;
 import dev.stray.client.item.ItemText;
@@ -418,7 +421,7 @@ public final class AutoBookCombine {
 				continue;
 			}
 			ItemStack stack = slots.get(i).getItem();
-			if (namedBook(stack) || vanillaBook(stack)) {
+			if (enchantedBookItem(stack)) {
 				seenBooks++;
 			}
 			Book book = book(stack);
@@ -523,20 +526,66 @@ public final class AutoBookCombine {
 		if (stack == null || stack.isEmpty() || stack.getCount() < 1 || vacant(stack)) {
 			return null;
 		}
-		// The tooltip is what the anvil shows. Item data is only a fallback, and it
-		// cannot veto a single combinable enchant the tooltip already named.
-		Book lore = bookFromTooltip(stack);
-		if (lore != null) {
-			return lore;
+		if (!enchantedBookItem(stack)) {
+			return null;
+		}
+		List<String> lore = loreLines(stack);
+		if (blocked(lore)) {
+			return null;
+		}
+		Book found = enchantFromLore(lore);
+		if (found != null) {
+			return found;
 		}
 		NbtRead nbt = readNbt(stack);
-		if (nbt.refused || nbt.book == null) {
-			return null;
-		}
-		if (!vanillaBook(stack) && !bookId(skyblockId(OdinClicks.customData(stack)))) {
-			return null;
-		}
 		return nbt.book;
+	}
+
+	/** SkyBlock enchanted books are named Enchanted Book. The enchantment is a lore line. */
+	private static boolean enchantedBookItem(ItemStack stack) {
+		if (stack == null || stack.isEmpty() || vacant(stack)) {
+			return false;
+		}
+		if (enchantedBookName(textOf(stack.get(DataComponents.CUSTOM_NAME)))) {
+			return true;
+		}
+		if (enchantedBookName(textOf(stack.get(DataComponents.ITEM_NAME)))) {
+			return true;
+		}
+		if (enchantedBookName(textOf(stack.getHoverName()))) {
+			return true;
+		}
+		return enchantedBookName(legacyName(OdinClicks.customData(stack)));
+	}
+
+	private static boolean enchantedBookName(String name) {
+		String clean = BookCombineRules.clean(name);
+		return clean.equals("enchanted book")
+			|| clean.startsWith("enchanted book ")
+			|| clean.endsWith(" enchanted book")
+			|| clean.contains(" enchanted book ");
+	}
+
+	private static Book enchantFromLore(List<String> lore) {
+		Book found = null;
+		boolean blockedLevel = false;
+		for (String line : lore) {
+			BookCombineRules.EnchantLevel parsed = BookCombineRules.findIn(line);
+			if (parsed == null) {
+				continue;
+			}
+			if (found != null && !found.matches(parsed.key(), parsed.level())) {
+				return null;
+			}
+			found = new Book(parsed.key(), parsed.level());
+			if (!BookCombineRules.canUpgrade(parsed.key(), parsed.level())) {
+				blockedLevel = true;
+			}
+		}
+		if (found == null || blockedLevel || !BookCombineRules.canUpgrade(found.key, found.level)) {
+			return null;
+		}
+		return found;
 	}
 
 	/**
@@ -551,7 +600,7 @@ public final class AutoBookCombine {
 		boolean bookItem = bookId(id) || product != null || vanillaBook(stack);
 		Map<String, Integer> enchants = custom.isEmpty() ? null : enchantments(custom);
 		if (enchants != null && !enchants.isEmpty()) {
-			if (!bookItem && !namedBook(stack)) {
+			if (!bookItem && !enchantedBookItem(stack)) {
 				return NbtRead.refuse();
 			}
 			if (enchants.size() != 1) {
@@ -576,69 +625,20 @@ public final class AutoBookCombine {
 		return NbtRead.absent();
 	}
 
-	private static Book bookFromTooltip(ItemStack stack) {
-		List<String> lines = tooltipLines(stack);
-		if (lines.isEmpty() || blocked(lines)) {
-			return null;
-		}
-		if (!titledBook(lines) && !combinable(lines) && !vanillaBook(stack)) {
-			return null;
-		}
-		Book found = null;
-		for (String line : lines) {
-			BookCombineRules.EnchantLevel parsed = BookCombineRules.parseLine(line);
-			if (parsed == null) {
-				continue;
-			}
-			if (found != null && !found.matches(parsed.key(), parsed.level())) {
-				return null;
-			}
-			found = new Book(parsed.key(), parsed.level());
-		}
-		if (found == null || !BookCombineRules.canUpgrade(found.key, found.level)) {
-			return null;
-		}
-		return found;
-	}
-
-	private static boolean namedBook(ItemStack stack) {
-		if (stack == null || stack.isEmpty() || vacant(stack)) {
-			return false;
-		}
-		return titledBook(tooltipLines(stack));
-	}
-
-	private static boolean titledBook(List<String> lines) {
-		for (String line : lines) {
-			if (line.equals("enchanted book") || line.startsWith("enchanted book ")) {
-				return true;
-			}
-		}
-		return false;
-	}
-
-	private static boolean combinable(List<String> lines) {
-		for (String line : lines) {
-			if (line.contains("combinable")) {
-				return true;
-			}
-		}
-		return false;
-	}
-
-	private static boolean blocked(List<String> lines) {
-		for (String line : lines) {
-			if (line.contains("cannot be combined") || line.contains("can't be combined")) {
-				return true;
-			}
-		}
-		return false;
-	}
-
-	private static List<String> tooltipLines(ItemStack stack) {
+	private static List<String> loreLines(ItemStack stack) {
 		List<String> lines = new ArrayList<>();
 		boolean prior = ItemAppearance.suppress();
 		try {
+			ItemLore lore = stack.get(DataComponents.LORE);
+			if (lore != null) {
+				for (Component line : lore.lines()) {
+					addLine(lines, line);
+				}
+				for (Component line : lore.styledLines()) {
+					addLine(lines, line);
+				}
+			}
+			addLegacyLore(lines, OdinClicks.customData(stack), 0);
 			Minecraft client = Minecraft.getInstance();
 			if (client.player != null) {
 				try {
@@ -649,19 +649,7 @@ public final class AutoBookCombine {
 						addLine(lines, line);
 					}
 				} catch (RuntimeException ignored) {
-					// The component lore below is the same text the tooltip draws.
-				}
-			}
-			addLine(lines, stack.get(DataComponents.CUSTOM_NAME));
-			addLine(lines, stack.get(DataComponents.ITEM_NAME));
-			addLine(lines, stack.getHoverName());
-			ItemLore lore = stack.get(DataComponents.LORE);
-			if (lore != null) {
-				for (Component line : lore.lines()) {
-					addLine(lines, line);
-				}
-				for (Component line : lore.styledLines()) {
-					addLine(lines, line);
+					// Lore components above are the same lines the tooltip draws.
 				}
 			}
 		} finally {
@@ -670,16 +658,143 @@ public final class AutoBookCombine {
 		return lines;
 	}
 
-	private static void addLine(List<String> lines, Component component) {
-		if (component == null) {
+	private static void addLegacyLore(List<String> lines, CompoundTag tag, int depth) {
+		if (tag == null || tag.isEmpty() || depth > 4) {
 			return;
 		}
-		String plain = OdinClicks.noControlCodes(component.getString())
-			.replace('\u00A0', ' ')
-			.replaceAll("[\\u200B-\\u200D\\uFEFF]", "")
-			.toLowerCase(Locale.ROOT);
+		addLoreTag(lines, tag.get("Lore"));
+		addLoreTag(lines, tag.get("lore"));
+		CompoundTag display = tag.getCompoundOrEmpty("display");
+		if (!display.isEmpty()) {
+			addLoreTag(lines, display.get("Lore"));
+			addLoreTag(lines, display.get("lore"));
+		}
+		for (String key : new String[]{"ExtraAttributes", "tag", "components", "minecraft:custom_data"}) {
+			CompoundTag child = tag.getCompoundOrEmpty(key);
+			if (!child.isEmpty()) {
+				addLegacyLore(lines, child, depth + 1);
+			}
+		}
+	}
+
+	private static void addLoreTag(List<String> lines, Tag lore) {
+		if (lore == null) {
+			return;
+		}
+		if (lore.asList().isPresent()) {
+			ListTag list = lore.asList().get();
+			for (int i = 0; i < list.size(); i++) {
+				String text = readTagString(list.get(i));
+				addPlain(lines, text == null ? "" : unwrapText(text));
+			}
+			return;
+		}
+		String text = readTagString(lore);
+		if (text != null) {
+			addPlain(lines, unwrapText(text));
+		}
+	}
+
+	private static String legacyName(CompoundTag tag) {
+		if (tag == null || tag.isEmpty()) {
+			return "";
+		}
+		CompoundTag display = tag.getCompoundOrEmpty("display");
+		if (display.isEmpty()) {
+			display = tag.getCompoundOrEmpty("tag").getCompoundOrEmpty("display");
+		}
+		String name = readTagString(display.get("Name"));
+		if (name == null || name.isBlank()) {
+			name = readTagString(display.get("name"));
+		}
+		if (name == null || name.isBlank()) {
+			CompoundTag components = tag.getCompoundOrEmpty("components");
+			name = readTagString(components.get("minecraft:custom_name"));
+		}
+		return name == null ? "" : unwrapText(name);
+	}
+
+	private static String textOf(Component component) {
+		if (component == null) {
+			return "";
+		}
+		String plain = component.getString();
+		String json = unwrapText(plain);
+		if (!json.isBlank() && (plain.isBlank() || json.length() > plain.length())) {
+			return json;
+		}
+		return plain == null ? "" : plain;
+	}
+
+	private static String unwrapText(String raw) {
+		if (raw == null || raw.isBlank()) {
+			return "";
+		}
+		String text = raw.trim();
+		if (text.startsWith("{") && text.contains("\"text\"")) {
+			try {
+				return flattenJson(JsonParser.parseString(text));
+			} catch (Exception ignored) {
+				return text;
+			}
+		}
+		if (text.startsWith("\"") && text.endsWith("\"") && text.length() >= 2) {
+			text = text.substring(1, text.length() - 1);
+		}
+		return text.replace("\\u00a7", "§").replace("\\u00A7", "§");
+	}
+
+	private static String flattenJson(JsonElement element) {
+		if (element == null || element.isJsonNull()) {
+			return "";
+		}
+		if (element.isJsonPrimitive()) {
+			return element.getAsString();
+		}
+		if (element.isJsonArray()) {
+			StringBuilder out = new StringBuilder();
+			for (JsonElement child : element.getAsJsonArray()) {
+				out.append(flattenJson(child));
+			}
+			return out.toString();
+		}
+		if (!element.isJsonObject()) {
+			return "";
+		}
+		JsonObject object = element.getAsJsonObject();
+		StringBuilder out = new StringBuilder();
+		if (object.has("text") && object.get("text").isJsonPrimitive()) {
+			out.append(object.get("text").getAsString());
+		}
+		if (object.has("extra") && object.get("extra").isJsonArray()) {
+			for (JsonElement child : object.getAsJsonArray("extra")) {
+				out.append(flattenJson(child));
+			}
+		}
+		return out.toString();
+	}
+
+	private static boolean blocked(List<String> lines) {
+		for (String line : lines) {
+			String clean = BookCombineRules.clean(line);
+			if (clean.contains("cannot be combined") || clean.contains("cant be combined")) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	private static void addLine(List<String> lines, Component component) {
+		addPlain(lines, textOf(component));
+	}
+
+	private static void addPlain(List<String> lines, String raw) {
+		if (raw == null || raw.isBlank()) {
+			return;
+		}
+		String plain = OdinClicks.noControlCodes(raw).replace('\u00A0', ' ').replaceAll("[\\u200B-\\u200D\\uFEFF]", "");
 		for (String part : plain.split("\\n")) {
-			String line = part.replaceAll("\\s+", " ").trim();
+			String line = part.trim();
 			if (!line.isEmpty() && !lines.contains(line)) {
 				lines.add(line);
 			}
