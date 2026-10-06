@@ -16,8 +16,10 @@ import net.minecraft.client.input.KeyEvent;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.NbtOps;
 import net.minecraft.nbt.Tag;
 import net.minecraft.nbt.TagParser;
+import net.minecraft.resources.RegistryOps;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.Style;
 import net.minecraft.resources.Identifier;
@@ -431,12 +433,12 @@ public final class AutoBookCombine {
 				continue;
 			}
 			ItemStack stack = slots.get(i).getItem();
-			if (enchantedBookItem(stack)) {
+			if (enchantedBookItem(stack) || vanillaBook(stack)) {
 				seenBooks++;
 			}
 			Book book = book(stack);
 			if (book == null) {
-				if (missDetail.isEmpty() && enchantedBookItem(stack)) {
+				if (missDetail.isEmpty() && (enchantedBookItem(stack) || vanillaBook(stack))) {
 					missDetail = describe(stack);
 				}
 				continue;
@@ -538,19 +540,36 @@ public final class AutoBookCombine {
 			|| path.endsWith("stained_glass");
 	}
 
+	/**
+	 * Same detection as Skyblock Client's book combiner: an enchanted book whose
+	 * ExtraAttributes.enchantments compound has exactly one entry. The level is
+	 * that entry's integer. On 26.1, ExtraAttributes is the item's custom data.
+	 */
 	private static Book book(ItemStack stack) {
 		if (stack == null || stack.isEmpty() || stack.getCount() < 1 || vacant(stack)) {
 			return null;
 		}
-		// Item data is the enchantment. Lore is only a fallback when the data has none.
-		NbtRead data = readNbt(stack);
-		if (data.refused) {
+		if (!vanillaBook(stack) && !enchantedBookItem(stack)) {
 			return null;
 		}
-		if (data.book != null) {
-			return data.book;
+		CompoundTag attributes = extraAttributes(stack);
+		if (attributes != null && attributes.contains("enchantments")) {
+			CompoundTag tag = attributes.getCompound("enchantments").orElse(null);
+			if (tag == null || tag.size() != 1) {
+				return null;
+			}
+			String raw = tag.keySet().iterator().next();
+			int level = getInteger(tag, raw);
+			if (level <= 0) {
+				return null;
+			}
+			String enchant = enchantKey(raw);
+			if (enchant == null || !BookCombineRules.canUpgrade(enchant, level)) {
+				return null;
+			}
+			return new Book(enchant, level);
 		}
-		if (!enchantedBookItem(stack)) {
+		if (!enchantedBookItem(stack) && !vanillaBook(stack)) {
 			return null;
 		}
 		List<String> lore = loreLines(stack);
@@ -558,6 +577,112 @@ public final class AutoBookCombine {
 			return null;
 		}
 		return enchantFromLore(lore);
+	}
+
+	/** 1.8 {@code stack.getSubCompound("ExtraAttributes", false)}. */
+	private static CompoundTag extraAttributes(ItemStack stack) {
+		CompoundTag found = asExtraAttributes(OdinClicks.customData(stack));
+		if (found != null) {
+			return found;
+		}
+		CompoundTag encoded = encodedItem(stack);
+		return encoded == null ? null : findExtra(encoded, 0);
+	}
+
+	private static CompoundTag asExtraAttributes(CompoundTag tag) {
+		if (tag == null || tag.isEmpty()) {
+			return null;
+		}
+		if (tag.contains("enchantments")) {
+			return tag;
+		}
+		for (String key : tag.keySet()) {
+			String lower = key.toLowerCase(Locale.ROOT);
+			if (!lower.equals("extraattributes") && !lower.endsWith(":extraattributes")) {
+				continue;
+			}
+			CompoundTag child = tag.getCompound(key).orElse(null);
+			if (child != null && child.contains("enchantments")) {
+				return child;
+			}
+		}
+		CompoundTag inner = tag.getCompound("tag").orElse(null);
+		if (inner != null) {
+			CompoundTag nested = asExtraAttributes(inner);
+			if (nested != null) {
+				return nested;
+			}
+		}
+		return null;
+	}
+
+	private static CompoundTag findExtra(Tag tag, int depth) {
+		if (tag == null || depth > 8) {
+			return null;
+		}
+		if (tag.asCompound().isPresent()) {
+			CompoundTag compound = tag.asCompound().get();
+			CompoundTag extra = asExtraAttributes(compound);
+			if (extra != null) {
+				return extra;
+			}
+			for (String key : compound.keySet()) {
+				CompoundTag found = findExtra(compound.get(key), depth + 1);
+				if (found != null) {
+					return found;
+				}
+			}
+			return null;
+		}
+		if (tag.asList().isPresent()) {
+			for (Tag child : tag.asList().get()) {
+				CompoundTag found = findExtra(child, depth + 1);
+				if (found != null) {
+					return found;
+				}
+			}
+		}
+		return null;
+	}
+
+	private static CompoundTag encodedItem(ItemStack stack) {
+		RegistryOps<Tag> ops = itemOps();
+		if (ops == null) {
+			return null;
+		}
+		try {
+			Tag encoded = ItemStack.CODEC.encodeStart(ops, stack).result().orElse(null);
+			return encoded == null ? null : encoded.asCompound().orElse(null);
+		} catch (RuntimeException ignored) {
+			return null;
+		}
+	}
+
+	private static RegistryOps<Tag> itemOps() {
+		Minecraft client = Minecraft.getInstance();
+		if (client.level != null) {
+			return client.level.registryAccess().createSerializationContext(NbtOps.INSTANCE);
+		}
+		if (client.getConnection() != null) {
+			return client.getConnection().registryAccess().createSerializationContext(NbtOps.INSTANCE);
+		}
+		return null;
+	}
+
+	/** 1.8 {@code NBTTagCompound.getInteger}: any number, otherwise 0. */
+	private static int getInteger(CompoundTag tag, String key) {
+		int level = tag.getIntOr(key, 0);
+		if (level > 0) {
+			return level;
+		}
+		Tag value = tag.get(key);
+		if (value != null && value.asNumber().isPresent()) {
+			int number = value.asNumber().get().intValue();
+			if (number > 0) {
+				return number;
+			}
+		}
+		return readLevel(value);
 	}
 
 	/** SkyBlock enchanted books are named Enchanted Book. The enchantment is item data. */
@@ -762,24 +887,24 @@ public final class AutoBookCombine {
 	}
 
 	private static String describe(ItemStack stack) {
+		Identifier item = BuiltInRegistries.ITEM.getKey(stack.getItem());
 		CompoundTag custom = OdinClicks.customData(stack);
-		String id = custom.isEmpty() ? "-" : String.valueOf(skyblockId(custom));
-		String keys = custom.isEmpty() ? "-" : custom.keySet().toString();
-		CompoundTag map = enchantCompound(custom);
-		String ench = map.isEmpty() ? "-" : clip(map.toString(), 80);
-		String line = "";
-		List<String> lines = loreLines(stack);
-		for (String candidate : lines) {
-			String lower = candidate.toLowerCase(Locale.ROOT);
-			if (BookCombineRules.findIn(candidate) != null || lower.contains("fall") || lower.contains("enchant")) {
-				line = candidate;
-				break;
+		CompoundTag attributes = extraAttributes(stack);
+		String ench = "no-enchantments";
+		if (attributes != null && attributes.contains("enchantments")) {
+			CompoundTag tag = attributes.getCompound("enchantments").orElse(null);
+			if (tag == null || tag.isEmpty()) {
+				ench = "enchantments-empty";
+			} else if (tag.size() == 1) {
+				String key = tag.keySet().iterator().next();
+				ench = key + ":" + getInteger(tag, key);
+			} else {
+				ench = "size=" + tag.size();
 			}
 		}
-		if (line.isEmpty() && !lines.isEmpty()) {
-			line = lines.get(Math.min(2, lines.size() - 1));
-		}
-		return clip("id=" + id + " keys=" + keys + " ench=" + ench + " line=" + clip(line, 50), 180);
+		String keys = custom.isEmpty() ? "-" : custom.keySet().toString();
+		String path = item == null ? "?" : item.getPath();
+		return clip("item=" + path + " keys=" + keys + " " + ench, 180);
 	}
 
 	private static String clip(String text, int max) {

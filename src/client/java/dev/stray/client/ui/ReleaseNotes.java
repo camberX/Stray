@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.5.61", new String[]{
+			"Book combine reads ExtraAttributes.enchantments on enchanted books, the same way Skyblock Client does. One enchant, integer level."
+		}),
 		new Entry("1.5.60", new String[]{
 			"Book combine reads feather_falling:6 from the item data, and the level on the tooltip even when it sits on its own."
 		}),
