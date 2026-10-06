@@ -25,10 +25,13 @@ import org.lwjgl.glfw.GLFW;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.ContainerInput;
 import net.minecraft.world.inventory.Slot;
+import net.minecraft.core.Holder;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.item.component.ItemLore;
+import net.minecraft.world.item.enchantment.Enchantment;
+import net.minecraft.world.item.enchantment.ItemEnchantments;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -526,6 +529,14 @@ public final class AutoBookCombine {
 		if (stack == null || stack.isEmpty() || stack.getCount() < 1 || vacant(stack)) {
 			return null;
 		}
+		// Item data is the enchantment. Lore is only a fallback when the data has none.
+		NbtRead data = readNbt(stack);
+		if (data.refused) {
+			return null;
+		}
+		if (data.book != null) {
+			return data.book;
+		}
 		if (!enchantedBookItem(stack)) {
 			return null;
 		}
@@ -533,15 +544,10 @@ public final class AutoBookCombine {
 		if (blocked(lore)) {
 			return null;
 		}
-		Book found = enchantFromLore(lore);
-		if (found != null) {
-			return found;
-		}
-		NbtRead nbt = readNbt(stack);
-		return nbt.book;
+		return enchantFromLore(lore);
 	}
 
-	/** SkyBlock enchanted books are named Enchanted Book. The enchantment is a lore line. */
+	/** SkyBlock enchanted books are named Enchanted Book. The enchantment is item data. */
 	private static boolean enchantedBookItem(ItemStack stack) {
 		if (stack == null || stack.isEmpty() || vacant(stack)) {
 			return false;
@@ -589,19 +595,23 @@ public final class AutoBookCombine {
 	}
 
 	/**
-	 * Item data wins when it names exactly one enchant. A level the anvil cannot
-	 * raise, or more than one enchant, is refused so the tooltip cannot override it.
-	 * When the data has no enchant map, the tooltip is the book.
+	 * Item data is the book. SkyBlock stores one enchant on
+	 * {@code enchantments} and the same fact on the id, {@code FEATHER_FALLING;6}.
+	 * A level the anvil cannot raise, or more than one enchant, is refused so lore
+	 * cannot combine it anyway. Lore is used only when the data has no enchant.
 	 */
 	private static NbtRead readNbt(ItemStack stack) {
 		CompoundTag custom = OdinClicks.customData(stack);
 		String id = custom.isEmpty() ? null : skyblockId(custom);
 		Book product = productBook(id);
-		boolean bookItem = bookId(id) || product != null || vanillaBook(stack);
+		boolean bookItem = bookId(id) || product != null || vanillaBook(stack) || enchantedBookItem(stack);
 		Map<String, Integer> enchants = custom.isEmpty() ? null : enchantments(custom);
+		if ((enchants == null || enchants.isEmpty()) && bookItem) {
+			enchants = storedEnchantments(stack);
+		}
 		if (enchants != null && !enchants.isEmpty()) {
-			if (!bookItem && !enchantedBookItem(stack)) {
-				return NbtRead.refuse();
+			if (!bookItem) {
+				return NbtRead.absent();
 			}
 			if (enchants.size() != 1) {
 				return NbtRead.refuse();
@@ -610,13 +620,13 @@ public final class AutoBookCombine {
 			if (entry.getValue() <= 0 || !BookCombineRules.canUpgrade(entry.getKey(), entry.getValue())) {
 				return NbtRead.refuse();
 			}
-			Book parsed = new Book(BookCombineRules.normalize(entry.getKey()), entry.getValue());
+			Book parsed = new Book(entry.getKey(), entry.getValue());
 			if (product != null && !product.matches(parsed.key, parsed.level)) {
 				return NbtRead.refuse();
 			}
 			return NbtRead.ok(parsed);
 		}
-		if (product != null) {
+		if (product != null && bookItem) {
 			if (!BookCombineRules.canUpgrade(product.key, product.level)) {
 				return NbtRead.refuse();
 			}
@@ -811,42 +821,32 @@ public final class AutoBookCombine {
 	}
 
 	private static Book productBook(String id) {
-		if (id == null || !id.startsWith("ENCHANTMENT_")) {
+		BookCombineRules.EnchantLevel parsed = BookCombineRules.fromSkyblockId(id);
+		if (parsed == null) {
 			return null;
 		}
-		String rest = id.substring("ENCHANTMENT_".length()).toLowerCase(Locale.ROOT);
-		int split = rest.lastIndexOf('_');
-		if (split <= 0 || split >= rest.length() - 1) {
-			return null;
-		}
-		int level;
-		try {
-			level = Integer.parseInt(rest.substring(split + 1));
-		} catch (NumberFormatException ignored) {
-			return null;
-		}
-		String key = BookCombineRules.normalize(rest.substring(0, split));
-		if (level < 1 || !BookCombineRules.known(key)) {
-			return null;
-		}
-		return new Book(key, level);
+		return new Book(parsed.key(), parsed.level());
 	}
 
 	private static String skyblockId(CompoundTag root) {
 		String fallback = null;
+		String genericBook = null;
 		for (CompoundTag node : attributeNodes(root)) {
 			String id = readId(node);
 			if (id == null) {
 				continue;
 			}
-			if (bookId(id) || id.startsWith("ENCHANTMENT_")) {
+			if (BookCombineRules.fromSkyblockId(id) != null) {
 				return id;
+			}
+			if (genericBook == null && bookId(id)) {
+				genericBook = id;
 			}
 			if (fallback == null && !id.contains(":")) {
 				fallback = id;
 			}
 		}
-		return fallback;
+		return genericBook != null ? genericBook : fallback;
 	}
 
 	private static String readId(CompoundTag tag) {
@@ -897,10 +897,7 @@ public final class AutoBookCombine {
 		}
 		if (tag.asCompound().isPresent()) {
 			CompoundTag compound = tag.asCompound().get();
-			Map<String, Integer> known = knownEnchantLevels(compound);
-			if (!known.isEmpty()) {
-				found.add(known);
-			}
+			// Only the enchantments compound. Other numeric fields are not enchants.
 			Map<String, Integer> named = enchantmentsOf(compound);
 			if (named != null && !named.isEmpty()) {
 				found.add(named);
@@ -915,21 +912,6 @@ public final class AutoBookCombine {
 				collectEnchantMaps(child, depth + 1, found);
 			}
 		}
-	}
-
-	private static Map<String, Integer> knownEnchantLevels(CompoundTag compound) {
-		Map<String, Integer> known = new LinkedHashMap<>();
-		for (String key : compound.keySet()) {
-			String normalized = BookCombineRules.normalize(stripEnchantKey(key));
-			if (!BookCombineRules.known(normalized)) {
-				continue;
-			}
-			int level = readLevel(compound.get(key));
-			if (level > 0) {
-				known.put(normalized, level);
-			}
-		}
-		return known;
 	}
 
 	private static Map<String, Integer> enchantmentsOf(CompoundTag node) {
@@ -961,14 +943,16 @@ public final class AutoBookCombine {
 			ListTag list = raw.asList().get();
 			for (int i = 0; i < list.size(); i++) {
 				CompoundTag entry = list.getCompoundOrEmpty(i);
-				if (entry.isEmpty()) {
+				if (!entry.isEmpty()) {
+					String name = firstString(entry, "id", "key", "enchant", "type", "name");
+					int level = firstLevel(entry, "level", "lvl", "value");
+					String enchant = name == null ? null : enchantKey(name);
+					if (enchant != null && level > 0) {
+						map.put(enchant, level);
+					}
 					continue;
 				}
-				String name = firstString(entry, "id", "key", "enchant", "type", "name");
-				int level = firstLevel(entry, "level", "lvl", "value");
-				if (name != null && level > 0) {
-					map.put(name, level);
-				}
+				addEnchantText(map, readTagString(list.get(i)));
 			}
 			return map;
 		}
@@ -977,18 +961,78 @@ public final class AutoBookCombine {
 			try {
 				return readEnchantCompound(TagParser.parseCompoundFully(text));
 			} catch (Exception ignored) {
-				return null;
+				Map<String, Integer> one = new LinkedHashMap<>();
+				addEnchantText(one, text);
+				return one.isEmpty() ? null : one;
 			}
 		}
+		if (text != null) {
+			Map<String, Integer> one = new LinkedHashMap<>();
+			addEnchantText(one, text);
+			return one.isEmpty() ? null : one;
+		}
 		return null;
+	}
+
+	private static void addEnchantText(Map<String, Integer> map, String text) {
+		if (text == null || text.isBlank()) {
+			return;
+		}
+		String raw = text.trim();
+		BookCombineRules.EnchantLevel parsed = BookCombineRules.fromSkyblockId(raw);
+		if (parsed == null && raw.indexOf(':') > 0 && raw.indexOf(';') < 0) {
+			parsed = BookCombineRules.fromSkyblockId(raw.replace(':', ';'));
+		}
+		if (parsed != null) {
+			map.put(parsed.key(), parsed.level());
+		}
 	}
 
 	private static Map<String, Integer> readEnchantCompound(CompoundTag compound) {
 		Map<String, Integer> map = new LinkedHashMap<>();
 		for (String key : compound.keySet()) {
+			String enchant = enchantKey(key);
 			int level = readLevel(compound.get(key));
-			if (level > 0) {
-				map.put(stripEnchantKey(key), level);
+			if (enchant != null && level > 0) {
+				map.put(enchant, level);
+			}
+		}
+		return map;
+	}
+
+	private static String enchantKey(String raw) {
+		String stripped = stripEnchantKey(raw);
+		String normalized = BookCombineRules.normalize(stripped);
+		if (BookCombineRules.known(normalized)) {
+			return normalized;
+		}
+		String display = BookCombineRules.fromDisplay(stripped);
+		return display.isEmpty() ? null : display;
+	}
+
+	/** Vanilla stored/applied enchantments, used when SkyBlock data has no enchant map. */
+	private static Map<String, Integer> storedEnchantments(ItemStack stack) {
+		Map<String, Integer> stored = enchantmentComponent(stack.get(DataComponents.STORED_ENCHANTMENTS));
+		if (stored != null && !stored.isEmpty()) {
+			return stored;
+		}
+		return enchantmentComponent(stack.get(DataComponents.ENCHANTMENTS));
+	}
+
+	private static Map<String, Integer> enchantmentComponent(ItemEnchantments enchants) {
+		if (enchants == null || enchants.isEmpty()) {
+			return null;
+		}
+		Map<String, Integer> map = new LinkedHashMap<>();
+		for (Holder<Enchantment> holder : enchants.keySet()) {
+			Identifier id = holder.unwrapKey().map(key -> key.identifier()).orElse(null);
+			if (id == null) {
+				continue;
+			}
+			String enchant = enchantKey(id.getPath());
+			int level = enchants.getLevel(holder);
+			if (enchant != null && level > 0) {
+				map.put(enchant, level);
 			}
 		}
 		return map;
@@ -1036,11 +1080,15 @@ public final class AutoBookCombine {
 				try {
 					return firstLevel(TagParser.parseCompoundFully(raw), "level", "lvl", "value");
 				} catch (Exception ignored) {
-					return -1;
+					return BookCombineRules.levelNumber(raw);
 				}
 			}
+			int level = BookCombineRules.levelNumber(raw);
+			if (level > 0) {
+				return level;
+			}
 			try {
-				int level = Integer.parseInt(raw);
+				level = Integer.parseInt(raw);
 				return level > 0 ? level : -1;
 			} catch (NumberFormatException ignored) {
 				return -1;

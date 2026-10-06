@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.5.59", new String[]{
+			"Book combine reads the enchantment from the item data. Feather Falling VI is the book id FEATHER_FALLING;6."
+		}),
 		new Entry("1.5.58", new String[]{
 			"Book combine looks for items named Enchanted Book, then reads the enchantment and level from the lore."
 		}),

@@ -212,6 +212,81 @@ public final class BookCombineRules {
 	}
 
 	/**
+	 * SkyBlock item data names a single-enchant book by its id. Anvil and bazaar
+	 * books use {@code FEATHER_FALLING;6}. Older ids use
+	 * {@code ENCHANTMENT_FEATHER_FALLING_6}. Anything else is not a book id.
+	 */
+	public static EnchantLevel fromSkyblockId(String id) {
+		if (id == null || id.isBlank()) {
+			return null;
+		}
+		String raw = id.trim();
+		int colon = raw.lastIndexOf(':');
+		if (colon >= 0 && colon < raw.length() - 1) {
+			raw = raw.substring(colon + 1).trim();
+		}
+		int semi = raw.lastIndexOf(';');
+		if (semi > 0 && semi < raw.length() - 1) {
+			int level = levelNumber(raw.substring(semi + 1));
+			String key = fromDisplay(raw.substring(0, semi));
+			if (!key.isEmpty() && level >= 1) {
+				return new EnchantLevel(key, level);
+			}
+			return null;
+		}
+		String upper = raw.toUpperCase(Locale.ROOT);
+		if (!upper.startsWith("ENCHANTMENT_")) {
+			return null;
+		}
+		String rest = upper.substring("ENCHANTMENT_".length());
+		int split = rest.lastIndexOf('_');
+		if (split <= 0 || split >= rest.length() - 1) {
+			return null;
+		}
+		int level = levelNumber(rest.substring(split + 1));
+		String key = fromDisplay(rest.substring(0, split));
+		if (key.isEmpty() || level < 1) {
+			return null;
+		}
+		return new EnchantLevel(key, level);
+	}
+
+	/** A level written as {@code 6}, {@code 6.0}, or {@code VI}. Unknown text is -1. */
+	public static int levelNumber(String token) {
+		if (token == null || token.isBlank()) {
+			return -1;
+		}
+		String text = token.trim().toLowerCase(Locale.ROOT);
+		text = switch (text) {
+			case "\u2160", "\u2170" -> "i";
+			case "\u2161", "\u2171" -> "ii";
+			case "\u2162", "\u2172" -> "iii";
+			case "\u2163", "\u2173" -> "iv";
+			case "\u2164", "\u2174" -> "v";
+			case "\u2165", "\u2175" -> "vi";
+			case "\u2166", "\u2176" -> "vii";
+			case "\u2167", "\u2177" -> "viii";
+			case "\u2168", "\u2178" -> "ix";
+			case "\u2169", "\u2179" -> "x";
+			default -> text;
+		};
+		int direct = levelToken(text);
+		if (direct > 0) {
+			return direct;
+		}
+		try {
+			double value = Double.parseDouble(text);
+			int level = (int) value;
+			if (Math.abs(value - level) < 0.001d && level >= 1 && level <= 10) {
+				return level;
+			}
+		} catch (NumberFormatException ignored) {
+			return -1;
+		}
+		return -1;
+	}
+
+	/**
 	 * Parses one tooltip line. Returns null unless the whole line is a known
 	 * enchantment and a roman level, so "Combinable in Anvil" and the effect
 	 * text are ignored.
