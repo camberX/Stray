@@ -15,65 +15,17 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
-		new Entry("1.5.61", new String[]{
-			"Book combine reads ExtraAttributes.enchantments on enchanted books, the same way Skyblock Client does. One enchant, integer level."
-		}),
-		new Entry("1.5.60", new String[]{
-			"Book combine reads feather_falling:6 from the item data, and the level on the tooltip even when it sits on its own."
-		}),
-		new Entry("1.5.59", new String[]{
-			"Book combine reads the enchantment from the item data. Feather Falling VI is the book id FEATHER_FALLING;6."
-		}),
-		new Entry("1.5.58", new String[]{
-			"Book combine looks for items named Enchanted Book, then reads the enchantment and level from the lore."
-		}),
-		new Entry("1.5.57", new String[]{
-			"Book combine follows the enchanted book tooltip. Feather Falling VI in the anvil inventory is a pair."
-		}),
-		new Entry("1.5.56", new String[]{
-			"Book combine reads the book tooltip. Feather Falling VI and other same-level books pair even when the item data does not."
-		}),
-		new Entry("1.5.55", new String[]{
-			"Book combine pairs Feather Falling and Infinite Quiver from VI up to X. Two VI books make VII."
-		}),
-		new Entry("1.5.54", new String[]{
-			"Book combine no longer treats the anvil's empty barrier slot as an item."
-		}),
-		new Entry("1.5.53", new String[]{
-			"Dev updates install from the published jar and no longer wait for a GitHub Actions runner."
-		}),
-		new Entry("1.5.52", new String[]{
-			"Book combine is under Menus. In the anvil, Enter starts it and Enter stops it. It only pairs single-enchant books of the same type and level, and it uses the experiment click."
-		}),
-		new Entry("1.5.51", new String[]{
-			"Glass-style inventory slots no longer warp on their own. The pane behind them keeps the distortion."
-		}),
-		new Entry("1.5.50", new String[]{
-			"Right click a click GUI category header to close that column. Right click it again to open it."
-		}),
-		new Entry("1.5.49", new String[]{
-			"Glass-style inventory slots stay square. Click GUI feature cards are more solid, with less of the lens showing through."
-		}),
-		new Entry("1.5.48", new String[]{
-			"Liquid glass is a style. Click GUI style is under Menus, HUD style adds Glass, and Themed GUIs has a GUI style for inventories, chests, and the other custom screens."
-		}),
-		new Entry("1.5.47", new String[]{
-			"Click GUI feature cards use an even softer liquid-glass highlight."
-		}),
-		new Entry("1.5.46", new String[]{
-			"Click GUI feature cards use a softer liquid-glass highlight. Category panes stay as they were."
-		}),
-		new Entry("1.5.45", new String[]{
-			"Click GUI category and feature cards use the liquid glass lens. Keys is its own column again, with the menu binds, shortcuts, and command list that used to live under Misc."
-		}),
-		new Entry("1.5.44", new String[]{
-			"Click GUI glass is a little darker. Headers, feature cards, and settings sit inside the rounded pane instead of square boxes on top of it."
-		}),
-		new Entry("1.5.43", new String[]{
-			"Click GUI columns use the liquid glass backdrop. The world shows through the pane, with the same blur and rim as the control menu."
-		}),
 		new Entry("1.5.42", new String[]{
-			"Route miner keeps every waypoint up while you prepare the route. Regenerated Waypoints turns on the 3-block gemstone check that hides a spot once the glass is mined and brings it back when the vein respawns."
+			"Route miner marks the Crystal Hollows route, including the Magma Fields ruby route. Waypoints stay up while you prepare it. Regenerated Waypoints hides a spot once the gemstone glass is mined and brings it back when the vein respawns. Focus mode colors the selected gemstone.",
+			"Liquid glass is a style. Click GUI style is under Menus, HUD style adds Glass, and Themed GUIs has a GUI style for inventories, chests, and the other custom screens. The control menu uses the same glass. Right click a category header to close that column. Keys is its own column again.",
+			"Glass-style inventory slots stay square and no longer warp. The pane behind them keeps the distortion. Click GUI labels use Anonymous Pro Bold.",
+			"Book combine is under Menus. In the anvil, Enter starts it and Enter stops it. It only pairs single-enchant books of the same type and level, and it uses the experiment click. Feather Falling and Infinite Quiver pair from VI up to X.",
+			"Crop Fever shows a countdown on the garden HUD.",
+			"A custom title fires when chat contains your text. You edit that list the same way as shortcuts.",
+			"Empty bag waits 1-10 ticks, then pauses breaking and walking for the click.",
+			"Raw mats skips materials for a drill you already own and credits intermediates you already have.",
+			"Pest ESP shows one box and nametag per earthworm. The pickaxe ability cooldown uses the real timer.",
+			"Inventory HUD Minimal leaves the slots unfilled and the outline neutral. Adjacent block marks share a beam."
 		}),
 		new Entry("1.5.41", new String[]{
 			"Empty bag keybind runs /call Philip, waits for the Pesthunter menu, and clicks the hopper minecart named Empty Vacuum Bag once."
