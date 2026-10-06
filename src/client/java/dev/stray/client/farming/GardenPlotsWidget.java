@@ -300,36 +300,61 @@ final class GardenPlotsWidget {
 		lastPestRead = now;
 		Arrays.fill(pestPlot, 0);
 		Arrays.fill(pestCount, 0);
-		if (client.player == null || client.player.connection == null) {
-			return;
+		for (PestSpot spot : pestSpots(client)) {
+			pestPlot[spot.slot()] = spot.number();
+			if (spot.count() > 0) {
+				pestCount[spot.slot()] = spot.count();
+			}
 		}
+	}
+
+	/** Plots listed under the pests tab widget. Slot is the garden grid index. */
+	static List<PestSpot> pestSpots(Minecraft client) {
+		List<PestSpot> spots = new ArrayList<>();
+		if (client.player == null || client.player.connection == null) {
+			return spots;
+		}
+		int[] numbers = new int[25];
+		int[] counts = new int[25];
 		List<net.minecraft.client.multiplayer.PlayerInfo> infos = new ArrayList<>(client.player.connection.getListedOnlinePlayers());
 		infos.sort(Comparator.comparingInt((net.minecraft.client.multiplayer.PlayerInfo info) -> -info.getTabListOrder()));
 		for (var info : infos) {
 			var display = info.getTabListDisplayName();
-			if (display == null) {
+			net.minecraft.network.chat.Component component = display != null
+				? display
+				: net.minecraft.world.scores.PlayerTeam.formatNameForTeam(
+					info.getTeam(),
+					net.minecraft.network.chat.Component.literal(info.getProfile().name())
+				);
+			if (component == null) {
 				continue;
 			}
-			String line = ChatFormatting.stripFormatting(display.getString());
+			String line = ChatFormatting.stripFormatting(component.getString());
 			if (line == null) {
 				continue;
 			}
-			line = line.trim();
-			if (line.startsWith("Plots:")) {
+			line = line.replace('\u00A0', ' ').trim();
+			if (line.regionMatches(true, 0, "Plots:", 0, 6)) {
 				String[] parts = line.split(":", 2);
 				if (parts.length < 2) {
 					continue;
 				}
 				for (String part : parts[1].split(",")) {
-					markPest(part.strip());
+					markPest(numbers, counts, part.strip());
 				}
 			} else if (line.regionMatches(true, 0, "Plot ", 0, 5)) {
-				markPest(line.substring(5).strip());
+				markPest(numbers, counts, line.substring(5).strip());
 			}
 		}
+		for (int slot = 0; slot < numbers.length; slot++) {
+			if (numbers[slot] > 0) {
+				spots.add(new PestSpot(numbers[slot], slot, counts[slot]));
+			}
+		}
+		return spots;
 	}
 
-	private void markPest(String raw) {
+	private static void markPest(int[] numbers, int[] counts, String raw) {
 		if (raw.isEmpty()) {
 			return;
 		}
@@ -351,13 +376,16 @@ final class GardenPlotsWidget {
 			return;
 		}
 		int slot = PLOT_TO_SLOT[plot];
-		if (slot < 0 || slot >= pestPlot.length) {
+		if (slot < 0 || slot >= numbers.length) {
 			return;
 		}
-		pestPlot[slot] = plot;
-		if (count > 0) {
-			pestCount[slot] = count;
+		numbers[slot] = plot;
+		if (count > counts[slot]) {
+			counts[slot] = count;
 		}
+	}
+
+	record PestSpot(int number, int slot, int count) {
 	}
 
 	private void drawButton(

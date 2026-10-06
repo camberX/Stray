@@ -23,6 +23,7 @@ import dev.stray.client.farming.GardenPlots;
 import dev.stray.client.menu.DisabledPotions;
 import dev.stray.client.menu.NoCursorReset;
 import dev.stray.client.farming.EmptyVacuum;
+import dev.stray.client.farming.PestPlotTp;
 import dev.stray.client.farming.FarmKeys;
 import dev.stray.client.hunting.LassoReel;
 import dev.stray.client.fairy.FairySoulCommands;
@@ -170,6 +171,7 @@ public final class StrayClient implements ClientModInitializer {
 		wasLoadoutSwap = menuKeyHeld(config.loadoutSwapKey);
 		LoadoutSwap.syncEdge();
 		EmptyVacuum.syncEdge();
+		PestPlotTp.syncEdge();
 		wasWardrobe = menuKeyHeld(config.openWardrobeKey);
 		wasProfile = menuKeyHeld(config.openProfileKey);
 		wasPing = menuKeyHeld(config.strayPingKey);
@@ -409,6 +411,7 @@ public final class StrayClient implements ClientModInitializer {
 			CropFever.reset();
 			LassoReel.reset();
 			EmptyVacuum.reset();
+			PestPlotTp.reset();
 			CrystalHollows.onWorldChange();
 			RouteMiner.reset();
 			MetalDetector.onWorldChange();
@@ -437,6 +440,7 @@ public final class StrayClient implements ClientModInitializer {
 			CropFever.reset();
 			LassoReel.reset();
 			EmptyVacuum.reset();
+			PestPlotTp.reset();
 			DisabledPotions.reset();
 			PickupLogRenderer.clear();
 			JacobContestTracker.reset();
@@ -463,6 +467,7 @@ public final class StrayClient implements ClientModInitializer {
 			CropFever.reset();
 			LassoReel.reset();
 			EmptyVacuum.reset();
+			PestPlotTp.reset();
 			DisabledPotions.reset();
 			PickupLogRenderer.clear();
 			JacobContestTracker.reset();
@@ -481,6 +486,7 @@ public final class StrayClient implements ClientModInitializer {
 			CropFever.reset();
 			LassoReel.reset();
 			EmptyVacuum.reset();
+			PestPlotTp.reset();
 			ChestAimer.stop();
 			MobGlowRenderer.reset();
 			StarMobEsp.reset();
@@ -588,6 +594,7 @@ public final class StrayClient implements ClientModInitializer {
 		wasProfile = profile;
 		wasPing = ping;
 		EmptyVacuum.poll(client, ignoreMenuBinds(client));
+		PestPlotTp.poll(client, ignoreMenuBinds(client));
 	}
 
 	private static boolean ignoreMenuBinds(Minecraft client) {

@@ -180,7 +180,7 @@ public class StrayScreen extends Screen {
 		SKILL("Skill progress", 3),
 		PLOTS("Garden plots", 1),
 		SHOPPING("Shopping list", 1),
-		PEST("Pest ESP", 5),
+		PEST("Pest ESP", 6),
 		PEST_COOLDOWN("Pest cooldown", 3),
 		AUTO_DNA("Auto DNA", 5),
 		NAMETAGS("Nametags", 6),
@@ -482,6 +482,7 @@ public class StrayScreen extends Screen {
 		new SearchEntry("Pest ESP", Tab.GARDEN, "Garden"),
 		new SearchEntry("Pest nametag", Tab.GARDEN, "Garden"),
 		new SearchEntry("Empty vacuum", Tab.GARDEN, "Garden"),
+		new SearchEntry("Pest plot", Tab.GARDEN, "Garden"),
 		new SearchEntry("Bag delay", Tab.GARDEN, "Garden"),
 		new SearchEntry("Empty Vacuum Bag", Tab.GARDEN, "Garden"),
 		new SearchEntry("Pest cooldown", Tab.GARDEN, "Garden"),
@@ -2424,7 +2425,7 @@ public class StrayScreen extends Screen {
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Enable", config.autoBookCombineEnabled, v -> config.autoBookCombineEnabled = v);
 				drawFeatureFields(graphics, font, mouseX, mouseY, ix, y, iw, Feature.AUTO_BOOKS);
 
-				float bindsH = cardHeight(8);
+				float bindsH = cardHeight(9);
 				y = featureCard(graphics, font, right, top, col, bindsH, "Keybinds");
 				y = drawMenuKeybinds(graphics, font, rx, y, iw, mouseX, mouseY);
 				y = featureCard(graphics, font, right, top + bindsH + 8, col, cardHeight(6), "Commands");
@@ -2698,7 +2699,7 @@ public class StrayScreen extends Screen {
 			}
 			case KEYS -> {
 				float y = sectionLabel(graphics, font, left, top, "Binds");
-				y = featureCard(graphics, font, left, y, col, cardHeight(8), "Keybinds");
+				y = featureCard(graphics, font, left, y, col, cardHeight(9), "Keybinds");
 				drawMenuKeybinds(graphics, font, ix, y, iw, mouseX, mouseY);
 				float chatY = sectionLabel(graphics, font, right, top, "Chat");
 				float commandsH = cardHeight(5);
@@ -3763,7 +3764,8 @@ public class StrayScreen extends Screen {
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Through walls", config.pestEspThroughWalls, v -> config.pestEspThroughWalls = v);
 				y = colorRow(graphics, font, ix, y, iw, mouseX, mouseY, "Color", config.pestEspRgb, PickerTarget.PEST);
 				y = slider(graphics, font, ix, y, iw, "Bag delay", config.emptyVacuumDelay + " ticks", (config.emptyVacuumDelay - 1) / 9f, v -> config.emptyVacuumDelay = snapInt(1 + v * 9f, 1, 10, 1));
-				bindRow(graphics, font, ix, y, iw, mouseX, mouseY, "Empty bag", 14, OdinClicks.parseKey(config.emptyVacuumKey));
+				y = bindRow(graphics, font, ix, y, iw, mouseX, mouseY, "Empty bag", 14, OdinClicks.parseKey(config.emptyVacuumKey));
+				bindRow(graphics, font, ix, y, iw, mouseX, mouseY, "Pest plot", 15, OdinClicks.parseKey(config.pestPlotKey));
 			}
 			case PEST_COOLDOWN -> {
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Swap alert", config.pestCooldownTitle, v -> config.pestCooldownTitle = v);
@@ -3921,7 +3923,8 @@ public class StrayScreen extends Screen {
 		y = bindRow(graphics, font, x, y, w, mouseX, mouseY, "Profile", 7, OdinClicks.parseKey(config.openProfileKey));
 		y = bindRow(graphics, font, x, y, w, mouseX, mouseY, "Chat peek", 11, OdinClicks.parseKey(config.chatPeekKey));
 		y = bindRow(graphics, font, x, y, w, mouseX, mouseY, "Lobby ping", 12, OdinClicks.parseKey(config.strayPingKey));
-		return bindRow(graphics, font, x, y, w, mouseX, mouseY, "Empty bag", 14, OdinClicks.parseKey(config.emptyVacuumKey));
+		y = bindRow(graphics, font, x, y, w, mouseX, mouseY, "Empty bag", 14, OdinClicks.parseKey(config.emptyVacuumKey));
+		return bindRow(graphics, font, x, y, w, mouseX, mouseY, "Pest plot", 15, OdinClicks.parseKey(config.pestPlotKey));
 	}
 
 	private float drawSlotKeybinds(
@@ -4004,6 +4007,7 @@ public class StrayScreen extends Screen {
 			case 12 -> config.strayPingKey = name;
 			case 13 -> config.loadoutSwapKey = name;
 			case 14 -> config.emptyVacuumKey = name;
+			case 15 -> config.pestPlotKey = name;
 			case 20, 21, 22, 23, 24, 25, 26, 27, 28 -> config.setMenuSlotKey(bindListen - 20, name);
 		}
 		bindListen = 0;

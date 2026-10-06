@@ -197,6 +197,7 @@ public final class StrayConfig {
 	public String openLoadoutsKey = "key.keyboard.unknown";
 	public String loadoutSwapKey = "key.keyboard.unknown";
 	public String emptyVacuumKey = "key.keyboard.unknown";
+	public String pestPlotKey = "key.keyboard.unknown";
 	public int emptyVacuumDelay = 4;
 	public int loadoutSwapSlotA = 1;
 	public int loadoutSwapSlotB = 2;
@@ -1158,6 +1159,7 @@ public final class StrayConfig {
 				loaded.openLoadoutsKey = blankKey(loaded.openLoadoutsKey, "key.keyboard.unknown");
 				loaded.loadoutSwapKey = blankKey(loaded.loadoutSwapKey, "key.keyboard.unknown");
 				loaded.emptyVacuumKey = blankKey(loaded.emptyVacuumKey, "key.keyboard.unknown");
+				loaded.pestPlotKey = blankKey(loaded.pestPlotKey, "key.keyboard.unknown");
 				if (!json.has("emptyVacuumDelay")) {
 					loaded.emptyVacuumDelay = 4;
 				}

@@ -1055,6 +1055,7 @@ public final class ClickGui {
 			case 12 -> config.strayPingKey;
 			case 13 -> config.loadoutSwapKey;
 			case 14 -> config.emptyVacuumKey;
+			case 15 -> config.pestPlotKey;
 			default -> "";
 		};
 	}
