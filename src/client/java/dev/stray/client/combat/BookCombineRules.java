@@ -329,22 +329,60 @@ public final class BookCombineRules {
 		int bestLen = -1;
 		for (String key : allKeys()) {
 			for (String display : displays(key)) {
-				int at = phraseAt(line, display);
-				if (at < 0) {
-					continue;
-				}
-				int level = levelAfter(line, at + display.length());
-				if (level < 1) {
-					continue;
-				}
-				if (at < bestAt || (at == bestAt && display.length() > bestLen)) {
-					bestAt = at;
-					bestLen = display.length();
-					best = new EnchantLevel(key, level);
+				int from = 0;
+				while (from < line.length()) {
+					int at = phraseAt(line, display, from);
+					if (at < 0) {
+						break;
+					}
+					int level = levelAfter(line, at + display.length());
+					from = at + display.length();
+					if (level < 1) {
+						continue;
+					}
+					if (at < bestAt || (at == bestAt && display.length() > bestLen)) {
+						bestAt = at;
+						bestLen = display.length();
+						best = new EnchantLevel(key, level);
+					}
 				}
 			}
 		}
 		return best;
+	}
+
+	/**
+	 * Every enchant mention in a blob of item data. Returns null when two
+	 * different enchants or levels appear, so a sword's tag cannot become a book.
+	 */
+	public static EnchantLevel findOnly(String raw) {
+		String line = clean(raw);
+		if (line.isEmpty()) {
+			return null;
+		}
+		EnchantLevel found = null;
+		for (String key : allKeys()) {
+			for (String display : displays(key)) {
+				int from = 0;
+				while (from < line.length()) {
+					int at = phraseAt(line, display, from);
+					if (at < 0) {
+						break;
+					}
+					int level = levelAfter(line, at + display.length());
+					from = at + display.length();
+					if (level < 1) {
+						continue;
+					}
+					EnchantLevel parsed = new EnchantLevel(key, level);
+					if (found != null && (!found.key.equals(parsed.key) || found.level != parsed.level)) {
+						return null;
+					}
+					found = parsed;
+				}
+			}
+		}
+		return found;
 	}
 
 	public static String clean(String raw) {
@@ -352,6 +390,16 @@ public final class BookCombineRules {
 			return "";
 		}
 		String line = raw.toLowerCase(Locale.ROOT)
+			.replace("\u2160", "i").replace("\u2170", "i")
+			.replace("\u2161", "ii").replace("\u2171", "ii")
+			.replace("\u2162", "iii").replace("\u2172", "iii")
+			.replace("\u2163", "iv").replace("\u2173", "iv")
+			.replace("\u2164", "v").replace("\u2174", "v")
+			.replace("\u2165", "vi").replace("\u2175", "vi")
+			.replace("\u2166", "vii").replace("\u2176", "vii")
+			.replace("\u2167", "viii").replace("\u2177", "viii")
+			.replace("\u2168", "ix").replace("\u2178", "ix")
+			.replace("\u2169", "x").replace("\u2179", "x")
 			.replace('\u00A0', ' ')
 			.replace("'", "")
 			.replace("\u2019", "")
@@ -360,6 +408,24 @@ public final class BookCombineRules {
 			.replaceAll("[^a-z0-9\\s]", " ")
 			.replaceAll("\\s+", " ")
 			.trim();
+		return unglueLevel(line);
+	}
+
+	/** "feather fallingvi" becomes "feather falling vi". A level that is already a word stays put. */
+	private static String unglueLevel(String line) {
+		if (line.matches(".*\\s(?:x|ix|viii|vii|vi|iv|v|iii|ii|i)$")) {
+			return line;
+		}
+		for (String roman : new String[]{"viii", "vii", "iii", "ii", "ix", "iv", "vi", "x", "v", "i"}) {
+			if (!line.endsWith(roman) || line.length() == roman.length()) {
+				continue;
+			}
+			char before = line.charAt(line.length() - roman.length() - 1);
+			if (before >= 'a' && before <= 'z') {
+				int split = line.length() - roman.length();
+				return line.substring(0, split) + " " + roman;
+			}
+		}
 		return line;
 	}
 
@@ -378,17 +444,17 @@ public final class BookCombineRules {
 		return java.util.List.of(spaced);
 	}
 
-	private static int phraseAt(String line, String display) {
-		int at = 0;
+	private static int phraseAt(String line, String display, int start) {
+		int at = Math.max(0, start);
 		while (at <= line.length() - display.length()) {
 			int found = line.indexOf(display, at);
 			if (found < 0) {
 				return -1;
 			}
-			boolean start = found == 0 || line.charAt(found - 1) == ' ';
+			boolean atWord = found == 0 || line.charAt(found - 1) == ' ';
 			int after = found + display.length();
 			boolean end = after >= line.length() || line.charAt(after) == ' ';
-			if (start && end) {
+			if (atWord && end) {
 				return found;
 			}
 			at = found + 1;

@@ -66,6 +66,7 @@ public final class AutoBookCombine {
 	private static long lastClick;
 	private static long pauseUntil;
 	private static int seenBooks;
+	private static String missDetail = "";
 	private static final Set<String> refused = new HashSet<>();
 
 	private AutoBookCombine() {
@@ -106,6 +107,7 @@ public final class AutoBookCombine {
 		lastPrint = "";
 		pauseUntil = 0L;
 		seenBooks = 0;
+		missDetail = "";
 		refused.clear();
 	}
 
@@ -147,9 +149,14 @@ public final class AutoBookCombine {
 				boolean clear = anvilClear(menu);
 				boolean done = combinedAny;
 				int noticed = seenBooks;
+				String detail = missDetail;
 				reset();
 				if (clear) {
-					tell(done ? "Book combine finished" : noticed == 0 ? "No enchanted books found" : "No matching books");
+					String none = noticed == 0 ? "No enchanted books found" : "No matching books";
+					if (!detail.isEmpty() && noticed > 0) {
+						none = none + " (" + detail + ")";
+					}
+					tell(done ? "Book combine finished" : none);
 				} else {
 					tell(done ? "Book combine stopped" : "Empty the anvil first");
 				}
@@ -428,7 +435,13 @@ public final class AutoBookCombine {
 				seenBooks++;
 			}
 			Book book = book(stack);
-			if (book == null || refused.contains(book.pairId())) {
+			if (book == null) {
+				if (missDetail.isEmpty() && enchantedBookItem(stack)) {
+					missDetail = describe(stack);
+				}
+				continue;
+			}
+			if (refused.contains(book.pairId())) {
 				continue;
 			}
 			Integer match = findMatch(slots, book.key, book.level, slot);
@@ -575,7 +588,8 @@ public final class AutoBookCombine {
 	private static Book enchantFromLore(List<String> lore) {
 		Book found = null;
 		boolean blockedLevel = false;
-		for (String line : lore) {
+		List<String> lines = joinedLevels(lore);
+		for (String line : lines) {
 			BookCombineRules.EnchantLevel parsed = BookCombineRules.findIn(line);
 			if (parsed == null) {
 				continue;
@@ -594,18 +608,63 @@ public final class AutoBookCombine {
 		return found;
 	}
 
+	/** "Feather Falling" on one line and "VI" on the next is one enchant. */
+	private static List<String> joinedLevels(List<String> lore) {
+		List<String> joined = new ArrayList<>();
+		for (int i = 0; i < lore.size(); i++) {
+			String line = lore.get(i);
+			if (i + 1 < lore.size()
+				&& BookCombineRules.findIn(line) == null
+				&& !BookCombineRules.fromDisplay(line).isEmpty()
+				&& BookCombineRules.levelNumber(lore.get(i + 1)) > 0) {
+				joined.add(line + " " + lore.get(i + 1));
+				i++;
+				continue;
+			}
+			joined.add(line);
+		}
+		return joined;
+	}
+
 	/**
-	 * Item data is the book. SkyBlock stores one enchant on
-	 * {@code enchantments} and the same fact on the id, {@code FEATHER_FALLING;6}.
-	 * A level the anvil cannot raise, or more than one enchant, is refused so lore
-	 * cannot combine it anyway. Lore is used only when the data has no enchant.
+	 * Item data is the book. SkyBlock stores {@code enchantments:{feather_falling:6}}
+	 * and the id {@code ENCHANTED_BOOK}. The same text is also scanned, because the
+	 * tag prints as {@code feather_falling:6}. Lore is only used when that data has
+	 * no enchant. A level the anvil cannot raise, or more than one enchant, is refused.
 	 */
 	private static NbtRead readNbt(ItemStack stack) {
 		CompoundTag custom = OdinClicks.customData(stack);
 		String id = custom.isEmpty() ? null : skyblockId(custom);
 		Book product = productBook(id);
 		boolean bookItem = bookId(id) || product != null || vanillaBook(stack) || enchantedBookItem(stack);
-		Map<String, Integer> enchants = custom.isEmpty() ? null : enchantments(custom);
+		CompoundTag map = enchantCompound(custom);
+		int known = knownEnchantCount(map);
+		if (known > 1) {
+			return bookItem ? NbtRead.refuse() : NbtRead.absent();
+		}
+		if (known == 1 && bookItem) {
+			Book parsed = singleEnchant(map);
+			if (parsed == null || !BookCombineRules.canUpgrade(parsed.key, parsed.level)) {
+				return NbtRead.refuse();
+			}
+			if (product != null && !product.matches(parsed.key, parsed.level)) {
+				return NbtRead.refuse();
+			}
+			return NbtRead.ok(parsed);
+		}
+		if (bookItem && !custom.isEmpty()) {
+			BookCombineRules.EnchantLevel inTag = BookCombineRules.findOnly(custom.toString());
+			if (inTag != null) {
+				if (!BookCombineRules.canUpgrade(inTag.key(), inTag.level())) {
+					return NbtRead.refuse();
+				}
+				if (product != null && !product.matches(inTag.key(), inTag.level())) {
+					return NbtRead.refuse();
+				}
+				return NbtRead.ok(new Book(inTag.key(), inTag.level()));
+			}
+		}
+		Map<String, Integer> enchants = (custom.isEmpty() || known > 0) ? null : enchantments(custom);
 		if ((enchants == null || enchants.isEmpty()) && bookItem) {
 			enchants = storedEnchantments(stack);
 		}
@@ -635,6 +694,102 @@ public final class AutoBookCombine {
 		return NbtRead.absent();
 	}
 
+	private static CompoundTag enchantCompound(CompoundTag tag) {
+		if (tag == null || tag.isEmpty()) {
+			return new CompoundTag();
+		}
+		CompoundTag direct = namedCompound(tag, "enchantments");
+		if (!direct.isEmpty()) {
+			return direct;
+		}
+		CompoundTag extra = namedCompound(tag, "extraattributes");
+		if (!extra.isEmpty()) {
+			return namedCompound(extra, "enchantments");
+		}
+		return new CompoundTag();
+	}
+
+	private static CompoundTag namedCompound(CompoundTag tag, String wanted) {
+		for (String key : tag.keySet()) {
+			String lower = key.toLowerCase(Locale.ROOT);
+			if (!lower.equals(wanted) && !lower.endsWith(":" + wanted)) {
+				continue;
+			}
+			CompoundTag child = tag.getCompoundOrEmpty(key);
+			if (!child.isEmpty()) {
+				return child;
+			}
+		}
+		return new CompoundTag();
+	}
+
+	private static int knownEnchantCount(CompoundTag map) {
+		int count = 0;
+		if (map == null || map.isEmpty()) {
+			return 0;
+		}
+		for (String key : map.keySet()) {
+			if (enchantKey(key) != null && levelOf(map, key) > 0) {
+				count++;
+			}
+		}
+		return count;
+	}
+
+	private static Book singleEnchant(CompoundTag map) {
+		Book found = null;
+		for (String key : map.keySet()) {
+			String enchant = enchantKey(key);
+			int level = levelOf(map, key);
+			if (enchant == null || level <= 0) {
+				continue;
+			}
+			Book parsed = new Book(enchant, level);
+			if (found != null && !found.matches(parsed.key, parsed.level)) {
+				return null;
+			}
+			found = parsed;
+		}
+		return found;
+	}
+
+	private static int levelOf(CompoundTag map, String key) {
+		int level = map.getIntOr(key, -1);
+		if (level > 0) {
+			return level;
+		}
+		return readLevel(map.get(key));
+	}
+
+	private static String describe(ItemStack stack) {
+		CompoundTag custom = OdinClicks.customData(stack);
+		String id = custom.isEmpty() ? "-" : String.valueOf(skyblockId(custom));
+		String keys = custom.isEmpty() ? "-" : custom.keySet().toString();
+		CompoundTag map = enchantCompound(custom);
+		String ench = map.isEmpty() ? "-" : clip(map.toString(), 80);
+		String line = "";
+		List<String> lines = loreLines(stack);
+		for (String candidate : lines) {
+			String lower = candidate.toLowerCase(Locale.ROOT);
+			if (BookCombineRules.findIn(candidate) != null || lower.contains("fall") || lower.contains("enchant")) {
+				line = candidate;
+				break;
+			}
+		}
+		if (line.isEmpty() && !lines.isEmpty()) {
+			line = lines.get(Math.min(2, lines.size() - 1));
+		}
+		return clip("id=" + id + " keys=" + keys + " ench=" + ench + " line=" + clip(line, 50), 180);
+	}
+
+	private static String clip(String text, int max) {
+		if (text == null) {
+			return "";
+		}
+		String flat = text.replace('\n', ' ');
+		return flat.length() <= max ? flat : flat.substring(0, max);
+	}
+
 	private static List<String> loreLines(ItemStack stack) {
 		List<String> lines = new ArrayList<>();
 		boolean prior = ItemAppearance.suppress();
@@ -650,6 +805,13 @@ public final class AutoBookCombine {
 			}
 			addLegacyLore(lines, OdinClicks.customData(stack), 0);
 			Minecraft client = Minecraft.getInstance();
+			try {
+				for (Component line : Screen.getTooltipFromItem(client, stack)) {
+					addLine(lines, line);
+				}
+			} catch (RuntimeException ignored) {
+				// The lore lines above are the same text the tooltip draws.
+			}
 			if (client.player != null) {
 				try {
 					Item.TooltipContext context = client.level == null
@@ -658,8 +820,11 @@ public final class AutoBookCombine {
 					for (Component line : stack.getTooltipLines(context, client.player, TooltipFlag.NORMAL)) {
 						addLine(lines, line);
 					}
+					for (Component line : stack.getTooltipLines(context, client.player, TooltipFlag.ADVANCED)) {
+						addLine(lines, line);
+					}
 				} catch (RuntimeException ignored) {
-					// Lore components above are the same lines the tooltip draws.
+					// The screen tooltip above is the list the anvil draws.
 				}
 			}
 		} finally {
