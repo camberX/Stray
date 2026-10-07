@@ -137,7 +137,7 @@ public final class MiningHudRenderer {
 		}
 		boolean live = ScathaTimer.active();
 		String text = ScathaTimer.label();
-		int color = live && ScathaTimer.secondsLeft() <= 10 ? 0xFF5A4A : Theme.ACCENT;
+		int color = live && ScathaTimer.secondsLeft() <= 10 ? 0xFFFF5A4A : Theme.ACCENT;
 		float width = scathaWidth(font);
 		float height = scathaHeight();
 		HudLayout.Box box = HudLayout.box(HudLayout.Id.SCATHA, font, graphics.guiWidth(), graphics.guiHeight());
