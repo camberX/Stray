@@ -2,6 +2,7 @@ package dev.stray.client.render;
 
 import dev.stray.client.config.StrayConfig;
 import dev.stray.client.mining.CrystalHollowsMap;
+import dev.stray.client.mining.ScathaTimer;
 import dev.stray.client.ui.HudEditorScreen;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
@@ -27,6 +28,7 @@ public final class HudLayout {
 		RAWMATS("Raw mats"),
 		PICKUPS("Pickup log"),
 		MINING("Mining"),
+		SCATHA("Scatha"),
 		CRYSTAL_MAP("CH map"),
 		JACOB("Jacob contest"),
 		COMPOSTER("Composter"),
@@ -192,6 +194,17 @@ public final class HudLayout {
 					}
 					y = placed(config.hudMiningY) ? config.hudMiningY : MARGIN + below;
 				}
+				case SCATHA -> {
+					x = MARGIN;
+					float below = WatermarkRenderer.occupiedHeight();
+					if (config.hudEnabled) {
+						below += NodeHudRenderer.drawHeight() * scale(Id.NODES) + 4;
+					}
+					if (config.miningHudEnabled) {
+						below += MiningHudRenderer.drawHeight() * scale(Id.MINING) + 4;
+					}
+					y = MARGIN + below;
+				}
 				case CRYSTAL_MAP -> {
 					x = placed(config.hudCrystalMapX) ? config.hudCrystalMapX : Math.max(MARGIN, guiW - w - MARGIN);
 					y = placed(config.hudCrystalMapY) ? config.hudCrystalMapY : MARGIN;
@@ -205,6 +218,7 @@ public final class HudLayout {
 					if (config.miningHudEnabled) {
 						below += MiningHudRenderer.drawHeight() * scale(Id.MINING) + 4;
 					}
+					below += scathaOffset(font);
 					y = placed(config.hudJacobY) ? config.hudJacobY : MARGIN + below;
 				}
 				case COMPOSTER -> {
@@ -216,6 +230,7 @@ public final class HudLayout {
 					if (config.miningHudEnabled) {
 						below += MiningHudRenderer.drawHeight() * scale(Id.MINING) + 4;
 					}
+					below += scathaOffset(font);
 					if (config.jacobContestHudEnabled) {
 						below += JacobContestHudRenderer.drawHeight() * scale(Id.JACOB) + 4;
 					}
@@ -230,6 +245,7 @@ public final class HudLayout {
 					if (config.miningHudEnabled) {
 						below += MiningHudRenderer.drawHeight() * scale(Id.MINING) + 4;
 					}
+					below += scathaOffset(font);
 					if (config.jacobContestHudEnabled) {
 						below += JacobContestHudRenderer.drawHeight() * scale(Id.JACOB) + 4;
 					}
@@ -456,6 +472,7 @@ public final class HudLayout {
 			case RAWMATS -> config.rawmatsHudEnabled;
 			case PICKUPS -> config.pickupLogEnabled;
 			case MINING -> config.miningHudEnabled;
+			case SCATHA -> config.scathaHudEnabled;
 			case CRYSTAL_MAP -> config.crystalHollowsMap;
 			case JACOB -> config.jacobContestHudEnabled;
 			case COMPOSTER -> config.composterHudEnabled;
@@ -543,6 +560,7 @@ public final class HudLayout {
 			case SHOPPING -> config.slotGardenShopping;
 			case PEST_COOLDOWN -> config.slotGardenPest;
 			case CROP_FEVER -> config.slotGardenFever;
+			case SCATHA -> config.slotScatha;
 			case TOP_DOWN -> config.slotTopDown;
 			default -> null;
 		};
@@ -556,6 +574,7 @@ public final class HudLayout {
 		if (config.miningHudEnabled) {
 			below += MiningHudRenderer.drawHeight() * scale(Id.MINING) + 4;
 		}
+		below += scathaOffset(null);
 		if (config.jacobContestHudEnabled) {
 			below += JacobContestHudRenderer.drawHeight() * scale(Id.JACOB) + 4;
 		}
@@ -646,6 +665,7 @@ public final class HudLayout {
 			case RAWMATS -> RawmatsHudRenderer.drawWidth() * scale;
 			case PICKUPS -> PickupLogRenderer.drawWidth() * scale;
 			case MINING -> MiningHudRenderer.drawWidth() * scale;
+			case SCATHA -> MiningHudRenderer.scathaWidth(font) * scale;
 			case CRYSTAL_MAP -> CrystalHollowsMap.drawWidth() * scale;
 			case JACOB -> JacobContestHudRenderer.drawWidth() * scale;
 			case COMPOSTER -> ComposterHudRenderer.drawWidth() * scale;
@@ -679,6 +699,7 @@ public final class HudLayout {
 			case RAWMATS -> RawmatsHudRenderer.drawHeight() * scale;
 			case PICKUPS -> PickupLogRenderer.drawHeight() * scale;
 			case MINING -> MiningHudRenderer.drawHeight() * scale;
+			case SCATHA -> MiningHudRenderer.scathaHeight() * scale;
 			case CRYSTAL_MAP -> CrystalHollowsMap.drawHeight() * scale;
 			case JACOB -> JacobContestHudRenderer.drawHeight() * scale;
 			case COMPOSTER -> ComposterHudRenderer.drawHeight() * scale;
@@ -703,6 +724,17 @@ public final class HudLayout {
 
 	private static boolean placed(float value) {
 		return value >= 0f;
+	}
+
+	private static boolean scathaInColumn() {
+		return StrayConfig.get().scathaHudEnabled && (ScathaTimer.active() || editorOpen());
+	}
+
+	private static float scathaOffset(Font font) {
+		if (!scathaInColumn()) {
+			return 0f;
+		}
+		return height(Id.SCATHA, font) + 4f;
 	}
 
 	private record Guide(float value, float line) {

@@ -2,6 +2,7 @@ package dev.stray.client.render;
 
 import dev.stray.client.config.StrayConfig;
 import dev.stray.client.mining.MiningTracker;
+import dev.stray.client.mining.ScathaTimer;
 import dev.stray.client.ui.Anim;
 import dev.stray.client.ui.MenuFont;
 import dev.stray.client.ui.Theme;
@@ -16,6 +17,7 @@ import java.util.List;
 public final class MiningHudRenderer {
 	public static final float WIDTH = 148;
 	private static final float PAD = 5;
+	private static final float SCATHA_LINE = 10;
 	private static final float HEAD = 12;
 	private static final float BAR = 2.2f;
 	private static final float COMM_BAR = 2.4f;
@@ -33,6 +35,14 @@ public final class MiningHudRenderer {
 		return WIDTH;
 	}
 
+	public static float scathaWidth(Font font) {
+		return GuiDraw.smallWidth(font, ScathaTimer.label()) + PAD * 2f + 2f;
+	}
+
+	public static float scathaHeight() {
+		return PAD * 2f + SCATHA_LINE;
+	}
+
 	public static float drawHeight() {
 		MiningTracker.Snapshot snap = MiningTracker.snapshot();
 		if (!snap.present() && !HudLayout.editorOpen()) {
@@ -46,6 +56,7 @@ public final class MiningHudRenderer {
 		if (client.player == null || client.options.hideGui) {
 			return;
 		}
+		drawScatha(graphics, client.font);
 		MiningTracker.Snapshot snap = MiningTracker.snapshot();
 		if (snap.alertT() > 0f) {
 			drawAlert(graphics, client.font, graphics.guiWidth(), graphics.guiHeight(), snap);
@@ -116,6 +127,28 @@ public final class MiningHudRenderer {
 				rowY += ROW;
 			}
 		}
+		graphics.pose().popMatrix();
+	}
+
+	private static void drawScatha(GuiGraphicsExtractor graphics, Font font) {
+		StrayConfig config = StrayConfig.get();
+		if (!config.scathaHudEnabled || (!ScathaTimer.active() && !HudLayout.editorOpen())) {
+			return;
+		}
+		boolean live = ScathaTimer.active();
+		String text = ScathaTimer.label();
+		int color = live && ScathaTimer.secondsLeft() <= 10 ? 0xFF5A4A : Theme.ACCENT;
+		float width = scathaWidth(font);
+		float height = scathaHeight();
+		HudLayout.Box box = HudLayout.box(HudLayout.Id.SCATHA, font, graphics.guiWidth(), graphics.guiHeight());
+		graphics.pose().pushMatrix();
+		graphics.pose().translate(box.x(), box.y());
+		float scale = HudLayout.scale(HudLayout.Id.SCATHA);
+		if (scale != 1f) {
+			graphics.pose().scale(scale, scale);
+		}
+		HudChrome.panel(graphics, 0, 0, width, height, 5, Theme.HUD_WINDOW, Theme.HUD_LINE);
+		GuiDraw.small(graphics, font, text, PAD + 1, PAD, color);
 		graphics.pose().popMatrix();
 	}
 

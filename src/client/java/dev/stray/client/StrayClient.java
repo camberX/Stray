@@ -63,6 +63,7 @@ import dev.stray.client.mining.CrystalHollowsMap;
 import dev.stray.client.mining.MetalDetector;
 import dev.stray.client.mining.NucleusAlerts;
 import dev.stray.client.mining.RouteMiner;
+import dev.stray.client.mining.ScathaTimer;
 import dev.stray.client.movement.AotvSim;
 import dev.stray.client.movement.CommandRingCommands;
 import dev.stray.client.movement.CommandRings;
@@ -218,6 +219,7 @@ public final class StrayClient implements ClientModInitializer {
 		ClientReceiveMessageEvents.ALLOW_GAME.register((message, overlay) -> {
 			MetalDetector.onMessage(message, overlay);
 			CropFever.onMessage(message, overlay);
+			ScathaTimer.onMessage(message, overlay);
 			if (overlay) {
 				SkillProgressTracker.onActionBar(message);
 			}
@@ -409,6 +411,7 @@ public final class StrayClient implements ClientModInitializer {
 			PestEsp.reset();
 			PestCooldown.reset();
 			CropFever.reset();
+			ScathaTimer.reset();
 			LassoReel.reset();
 			EmptyVacuum.reset();
 			PestPlotTp.reset();
@@ -438,6 +441,7 @@ public final class StrayClient implements ClientModInitializer {
 			PestEsp.reset();
 			PestCooldown.reset();
 			CropFever.reset();
+			ScathaTimer.reset();
 			LassoReel.reset();
 			EmptyVacuum.reset();
 			PestPlotTp.reset();
@@ -465,6 +469,7 @@ public final class StrayClient implements ClientModInitializer {
 			PestEsp.reset();
 			PestCooldown.reset();
 			CropFever.reset();
+			ScathaTimer.reset();
 			LassoReel.reset();
 			EmptyVacuum.reset();
 			PestPlotTp.reset();
@@ -484,6 +489,7 @@ public final class StrayClient implements ClientModInitializer {
 			PestEsp.reset();
 			PestCooldown.reset();
 			CropFever.reset();
+			ScathaTimer.reset();
 			LassoReel.reset();
 			EmptyVacuum.reset();
 			PestPlotTp.reset();

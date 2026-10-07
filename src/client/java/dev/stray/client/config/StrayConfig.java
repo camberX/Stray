@@ -157,6 +157,7 @@ public final class StrayConfig {
 	public String routeMinerGem = "ruby";
 	public boolean crystalHollowsScan = true;
 	public boolean crystalHollowsMap = false;
+	public boolean scathaHudEnabled = true;
 	public boolean crystalHollowsMapLabels = true;
 	public boolean metalDetectorSolver = false;
 	public boolean metalDetectorToolTitle = false;
@@ -342,6 +343,7 @@ public final class StrayConfig {
 	public HudSlot slotGardenShopping = new HudSlot();
 	public HudSlot slotGardenPest = new HudSlot();
 	public HudSlot slotGardenFever = new HudSlot();
+	public HudSlot slotScatha = new HudSlot();
 	public HudSlot slotTopDown = new HudSlot();
 	public String inventoryHudAnchor = "bottom_right";
 	public float inventoryHudScale = 1.0f;
@@ -1435,6 +1437,9 @@ public final class StrayConfig {
 				if (!json.has("cropFeverHudEnabled")) {
 					loaded.cropFeverHudEnabled = true;
 				}
+				if (!json.has("scathaHudEnabled")) {
+					loaded.scathaHudEnabled = true;
+				}
 				if (!json.has("pestCooldownTitle")) {
 					loaded.pestCooldownTitle = true;
 				}
@@ -1492,6 +1497,7 @@ public final class StrayConfig {
 				loaded.slotGardenShopping = hudSlot(loaded.slotGardenShopping);
 				loaded.slotGardenPest = hudSlot(loaded.slotGardenPest);
 				loaded.slotGardenFever = hudSlot(loaded.slotGardenFever);
+				loaded.slotScatha = hudSlot(loaded.slotScatha);
 				if (loaded.overflowHoeLevels == null) {
 					loaded.overflowHoeLevels = new java.util.LinkedHashMap<>();
 				}
@@ -2347,6 +2353,7 @@ public final class StrayConfig {
 		slotGardenShopping = new HudSlot();
 		slotGardenPest = new HudSlot();
 		slotGardenFever = new HudSlot();
+		slotScatha = new HudSlot();
 		slotTopDown = new HudSlot();
 	}
 

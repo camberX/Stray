@@ -540,6 +540,8 @@ public class StrayScreen extends Screen {
 		new SearchEntry("Scavenged", Tab.HOLLOWS, "Divan"),
 		new SearchEntry("Crystal Hollows waypoints", Tab.HOLLOWS, "Hollows"),
 		new SearchEntry("CH waypoints", Tab.HOLLOWS, "Hollows"),
+		new SearchEntry("Scatha", Tab.HOLLOWS, "Hollows"),
+		new SearchEntry("Scatha timer", Tab.HOLLOWS, "Hollows"),
 		new SearchEntry("Route miner", Tab.HOLLOWS, "Hollows"),
 		new SearchEntry("MF Ruby Route", Tab.HOLLOWS, "Hollows"),
 		new SearchEntry("Ruby route", Tab.HOLLOWS, "Hollows"),
@@ -2766,6 +2768,7 @@ public class StrayScreen extends Screen {
 			}
 			case HOLLOWS -> {
 				float y = sectionLabel(graphics, font, left, top, "Crystal Hollows");
+				y = toggleCard(graphics, font, left, y, col, mouseX, mouseY, "Scatha timer", config.scathaHudEnabled, v -> config.scathaHudEnabled = v);
 				y = controlCard(graphics, font, left, y, col, mouseX, mouseY, "CH waypoints", config.crystalHollowsWaypoints, v -> config.crystalHollowsWaypoints = v, Feature.CRYSTAL, "Dump", CrystalHollows::dumpChat);
 				y = controlCard(graphics, font, left, y, col, mouseX, mouseY, "CH map", config.crystalHollowsMap, v -> config.crystalHollowsMap = v, Feature.CH_MAP);
 				controlCard(graphics, font, left, y, col, mouseX, mouseY, "Route miner", config.routeMiner, v -> config.routeMiner = v, Feature.ROUTE);
