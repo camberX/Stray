@@ -20,9 +20,9 @@ import org.lwjgl.glfw.GLFW;
 /**
  * Keybind: {@code /call Philip}, then one click on the hopper minecart named
  * Empty Vacuum Bag once the Pesthunter chest is open.
- * With farm keys on, breaking and movement are released for that click and
- * pressed again on the next tick, from {@code handleKeybinds} before movement,
- * same as loadout swap.
+ * With farm keys on, breaking and movement stay held until that chest opens.
+ * They are released for the click and pressed again on the next tick, from
+ * {@code handleKeybinds} before movement, same as loadout swap.
  */
 public final class EmptyVacuum {
 	private static final int WAIT_TICKS = 200;
@@ -139,6 +139,9 @@ public final class EmptyVacuum {
 			}
 			return;
 		}
+		if (menuTicks == 0) {
+			armPause(client);
+		}
 		int delay = StrayConfig.clamp(StrayConfig.get().emptyVacuumDelay, 1, 10);
 		if (menuTicks < delay) {
 			menuTicks++;
@@ -155,19 +158,24 @@ public final class EmptyVacuum {
 	}
 
 	private static void begin(Minecraft client) {
-		boolean pause = FarmKeys.enabled()
-			&& (FarmKeys.breaking() || client.options.keyAttack.isDown() || moving(client.options));
-		if (pause) {
-			capture(client);
-			suppress(client);
-			phase = Phase.HELD;
-		} else {
-			released = null;
-			releaseAttack = false;
-		}
 		call(client);
 		waiting = WAIT_TICKS;
 		menuTicks = 0;
+	}
+
+	/** First tick the Pesthunter chest is open. Keys stay down until then. */
+	private static void armPause(Minecraft client) {
+		if (phase != Phase.IDLE || client.options == null) {
+			return;
+		}
+		boolean pause = FarmKeys.enabled()
+			&& (FarmKeys.breaking() || client.options.keyAttack.isDown() || moving(client.options));
+		if (!pause) {
+			return;
+		}
+		capture(client);
+		suppress(client);
+		phase = Phase.HELD;
 	}
 
 	private static void finish() {
