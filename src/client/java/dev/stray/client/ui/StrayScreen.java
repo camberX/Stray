@@ -545,6 +545,7 @@ public class StrayScreen extends Screen {
 		new SearchEntry("Scatha timer", Tab.HOLLOWS, "Hollows"),
 		new SearchEntry("Route miner", Tab.HOLLOWS, "Hollows"),
 		new SearchEntry("Powder Mining", Tab.HOLLOWS, "Hollows"),
+		new SearchEntry("Pingless break", Tab.MINING, "Mining"),
 		new SearchEntry("MF Ruby Route", Tab.HOLLOWS, "Hollows"),
 		new SearchEntry("Ruby route", Tab.HOLLOWS, "Hollows"),
 		new SearchEntry("Focus mode", Tab.HOLLOWS, "Hollows"),
@@ -2455,12 +2456,13 @@ public class StrayScreen extends Screen {
 				statRow(graphics, font, rx, y, iw, "Ping", HudStats.pingLabel());
 			}
 			case MINING -> {
-				float 				y = featureCard(graphics, font, left, top, col, cardHeight(9), "Mining");
+				float 				y = featureCard(graphics, font, left, top, col, cardHeight(10), "Mining");
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Mining HUD", config.miningHudEnabled, v -> config.miningHudEnabled = v, Feature.MINING);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Titanium ESP", config.titaniumEsp, v -> config.titaniumEsp = v, Feature.TITANIUM);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "CH waypoints", config.crystalHollowsWaypoints, v -> config.crystalHollowsWaypoints = v, Feature.CRYSTAL);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Route miner", config.routeMiner, v -> config.routeMiner = v, Feature.ROUTE);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Powder Mining", config.powderMiningEnabled, v -> config.powderMiningEnabled = v, Feature.CHEST);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Pingless break", config.pinglessBreak, v -> config.pinglessBreak = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "CH map", config.crystalHollowsMap, v -> config.crystalHollowsMap = v, Feature.CH_MAP);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Metal detector", config.metalDetectorSolver, v -> config.metalDetectorSolver = v, Feature.METAL);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Robot part alert", config.nucleusAlertParts, v -> config.nucleusAlertParts = v);
@@ -2763,6 +2765,7 @@ public class StrayScreen extends Screen {
 			case MINING -> {
 				float y = sectionLabel(graphics, font, left, top, "Dwarven mines");
 				y = controlCard(graphics, font, left, y, col, mouseX, mouseY, "Mining HUD", config.miningHudEnabled, v -> config.miningHudEnabled = v, Feature.MINING);
+				y = toggleCard(graphics, font, left, y, col, mouseX, mouseY, "Pingless break", config.pinglessBreak, v -> config.pinglessBreak = v);
 				controlCard(graphics, font, left, y, col, mouseX, mouseY, "Titanium ESP", config.titaniumEsp, v -> config.titaniumEsp = v, Feature.TITANIUM);
 				drawMiningLive(graphics, font, right, top, col, rx, iw);
 			}

@@ -1260,6 +1260,7 @@ public final class ClickGui {
 		mods.add(mod("CH waypoints", "Mining", StrayScreen.Feature.CRYSTAL, null, () -> config.crystalHollowsWaypoints, v -> config.crystalHollowsWaypoints = v, true, false));
 		mods.add(mod("Route miner", "Mining", StrayScreen.Feature.ROUTE, null, () -> config.routeMiner, v -> config.routeMiner = v, true, false));
 		mods.add(mod("Powder Mining", "Mining", StrayScreen.Feature.CHEST, null, () -> config.powderMiningEnabled, v -> config.powderMiningEnabled = v, true, false));
+		mods.add(mod("Pingless break", "Mining", null, null, () -> config.pinglessBreak, v -> config.pinglessBreak = v, true, false));
 		mods.add(mod("CH map", "Mining", StrayScreen.Feature.CH_MAP, null, () -> config.crystalHollowsMap, v -> config.crystalHollowsMap = v, true, false));
 		mods.add(mod("Scatha timer", "Mining", null, null, () -> config.scathaHudEnabled, v -> config.scathaHudEnabled = v, true, false));
 		mods.add(mod("Metal detector", "Mining", StrayScreen.Feature.METAL, null, () -> config.metalDetectorSolver, v -> config.metalDetectorSolver = v, true, false));

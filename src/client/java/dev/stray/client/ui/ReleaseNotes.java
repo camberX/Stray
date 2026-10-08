@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.5.49", new String[]{
+			"Pingless break is under Mining. The pause between blocks is skipped, so the next block starts immediately. Break speed and dig packets stay vanilla."
+		}),
 		new Entry("1.5.48", new String[]{
 			"Powder Mining is under Mining. Chest ESP is in there, and Chest triggerbot is the option that right-clicks chests while you mine."
 		}),

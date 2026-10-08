@@ -155,6 +155,8 @@ public final class StrayConfig {
 	public boolean powderMiningEnabled = false;
 	/** Chest triggerbot inside Powder Mining. */
 	public boolean greatExplorerEnabled = false;
+	/** Skips the vanilla pause between blocks. Break speed is unchanged. */
+	public boolean pinglessBreak = false;
 	public boolean routeMinerFocus = false;
 	public boolean routeMinerRegen = false;
 	public String routeMinerGem = "ruby";
@@ -1263,6 +1265,9 @@ public final class StrayConfig {
 				}
 				if (!json.has("powderMiningEnabled")) {
 					loaded.powderMiningEnabled = loaded.chestEspEnabled || loaded.greatExplorerEnabled;
+				}
+				if (!json.has("pinglessBreak")) {
+					loaded.pinglessBreak = false;
 				}
 				if (!json.has("routeMinerFocus")) {
 					loaded.routeMinerFocus = false;
