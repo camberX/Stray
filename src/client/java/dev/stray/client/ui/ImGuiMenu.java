@@ -70,7 +70,7 @@ final class ImGuiMenu {
 	}
 
 	static void draw(StrayScreen screen, GuiGraphicsExtractor graphics, Font font, int mouseX, int mouseY) {
-		place(screen);
+		place(screen, font);
 		winX = Mth.clamp(winX, -winW + 80f, Math.max(0, screen.width - 48));
 		winY = Mth.clamp(winY, 0, Math.max(0, screen.height - TITLE));
 		float shown = collapsed ? TITLE : winH;
@@ -147,12 +147,19 @@ final class ImGuiMenu {
 		return false;
 	}
 
-	private static void place(StrayScreen screen) {
+	private static void place(StrayScreen screen, Font font) {
 		if (placed) {
 			return;
 		}
-		winW = Math.min(460f, Math.max(280f, screen.width - 48f));
-		winH = Math.min(250f, Math.max(160f, screen.height - 48f));
+		float labels = 4f;
+		for (String id : ClickGui.ORDER) {
+			labels += width(font, id) + 12f;
+		}
+		float wantW = labels + 72f + 20f;
+		float maxW = Math.max(280f, screen.width - 24f);
+		float maxH = Math.max(160f, screen.height - 48f);
+		winW = Math.min(Math.max(wantW, 280f), maxW);
+		winH = Math.min(250f, maxH);
 		winX = (screen.width - winW) * 0.5f;
 		winY = (screen.height - winH) * 0.5f;
 		placed = true;
@@ -188,8 +195,12 @@ final class ImGuiMenu {
 		for (int i = 0; i < ClickGui.ORDER.length; i++) {
 			String id = ClickGui.ORDER[i];
 			float tw = width(font, id) + 12f;
-			if (cursor + tw > limit) {
-				tw = Math.max(28f, limit - cursor);
+			float room = limit - cursor;
+			if (room < 8f) {
+				break;
+			}
+			if (tw > room) {
+				tw = room;
 			}
 			menuAnchor[i] = cursor;
 			boolean hot = mouseOver(mouseX, mouseY, cursor, y, tw, BAR);
@@ -200,7 +211,7 @@ final class ImGuiMenu {
 			if (hot || on) {
 				GuiDraw.fill(graphics, cursor, y + 2f, tw, BAR - 4f, on ? ImGuiLook.HEADER : ImGuiLook.HEADER_HOVERED);
 			}
-			label(graphics, font, id, cursor + 8f, y, BAR, ImGuiLook.TEXT);
+			label(graphics, font, fit(font, id, Math.max(4f, tw - 12f)), cursor + 8f, y, BAR, ImGuiLook.TEXT);
 			String pick = id;
 			screen.clickHit(cursor, y, tw, BAR, () -> {
 				if (pick.equals(openMenu)) {

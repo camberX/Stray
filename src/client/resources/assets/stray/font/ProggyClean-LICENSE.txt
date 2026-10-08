@@ -3,7 +3,7 @@ Copyright (c) 2004, 2005 Tristan Grimmer
 
 This is the ProggyClean font shipped with Dear ImGui
 (https://github.com/ocornut/imgui, misc/fonts/ProggyClean.ttf).
-Dear ImGui draws it at 13px. That is the size this menu style uses.
+Dear ImGui draws it at 13px. Minecraft's TrueType loader measures the em square, and 16px there is that same 13px pixel grid, with one glyph pixel per GUI pixel.
 
 The MIT License
 

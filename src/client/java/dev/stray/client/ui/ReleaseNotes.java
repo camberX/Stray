@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.5.54", new String[]{
+			"ProggyClean is drawn on Dear ImGui's 13px pixel grid, one glyph pixel per GUI pixel, instead of a downscaled blur."
+		}),
 		new Entry("1.5.53", new String[]{
 			"The ImGui window is smaller, and ProggyClean is drawn sharp instead of as a blurry pixel font."
 		}),
