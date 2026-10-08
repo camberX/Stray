@@ -26,7 +26,7 @@ import java.util.Set;
 
 /** Session debug flags toggled with {@code /stray debug <flag>}. */
 public final class StrayDebug {
-	private static final Set<String> KNOWN = Set.of("composter", "explorer", "rogue");
+	private static final Set<String> KNOWN = Set.of("composter", "explorer", "pest", "rogue");
 	private static final int[] COMPOSTER_SLOTS = {2, 7};
 	private static final Map<String, Boolean> FLAGS = new LinkedHashMap<>();
 	private static String lastComposterDump = "";
@@ -80,6 +80,11 @@ public final class StrayDebug {
 			tell(next
 				? "Auto rogue sword looks for a golden sword and does not wait for a dungeon start."
 				: "Auto rogue sword looks for an item named rogue after a dungeon starts.");
+		}
+		if ("pest".equals(flag)) {
+			tell(next
+				? "Pest cooldown prints in chat when the widget time jumps by more than 10 seconds."
+				: "Pest cooldown debug is off.");
 		}
 		if ("explorer".equals(flag)) {
 			if (next) {
@@ -191,7 +196,7 @@ public final class StrayDebug {
 		return "\"" + (value == null ? "" : value.replace("\\", "\\\\").replace("\"", "\\\"")) + "\"";
 	}
 
-	private static void tell(String text) {
+	public static void tell(String text) {
 		Minecraft client = Minecraft.getInstance();
 		if (client.player != null) {
 			client.player.sendSystemMessage(

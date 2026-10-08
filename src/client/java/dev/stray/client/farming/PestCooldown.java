@@ -1,6 +1,7 @@
 package dev.stray.client.farming;
 
 import dev.stray.client.config.StrayConfig;
+import dev.stray.client.debug.StrayDebug;
 import dev.stray.client.location.SkyblockLocation;
 import dev.stray.client.visual.NickSteal;
 import net.minecraft.client.Minecraft;
@@ -80,7 +81,8 @@ public final class PestCooldown {
 
 	public static void tick(Minecraft client) {
 		StrayConfig config = StrayConfig.get();
-		if (!config.pestCooldownHudEnabled) {
+		boolean hud = config.pestCooldownHudEnabled;
+		if (!hud && !StrayDebug.enabled("pest")) {
 			if (snap.present() || cycle || titled) {
 				reset();
 			}
@@ -106,7 +108,7 @@ public final class PestCooldown {
 				previousSeconds = -1;
 			}
 		}
-		if (cycle) {
+		if (hud && cycle) {
 			refresh(client, config, now);
 		}
 	}
@@ -148,6 +150,16 @@ public final class PestCooldown {
 			return;
 		}
 		int seconds = read.seconds();
+		if (StrayDebug.enabled("pest")
+			&& previousKind == Kind.COUNTING
+			&& previousSeconds >= 0
+			&& Math.abs(seconds - previousSeconds) > 10) {
+			int diff = seconds - previousSeconds;
+			String sign = diff > 0 ? "+" : "";
+			StrayDebug.tell(
+				"Pest cooldown " + format(previousSeconds) + " -> " + format(seconds) + " (" + sign + diff + "s)"
+			);
+		}
 		boolean secondsShown = showsSeconds(read);
 		boolean jumped = cycle && previousSeconds >= 0 && seconds > previousSeconds + 15;
 		boolean opened = previousKind == Kind.READY || previousKind == Kind.MAX;
