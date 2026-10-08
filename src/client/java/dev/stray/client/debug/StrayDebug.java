@@ -86,7 +86,7 @@ public final class StrayDebug {
 				GreatExplorer.reset();
 			}
 			tell(next
-				? "Great Explorer right-clicks any chest, including ones already placed, and it works outside the Crystal Hollows. The Mining toggle still has to be on."
+				? "Great Explorer right-clicks any chest, including ones already placed, and it works outside the Crystal Hollows. Left click stays off on that chest and comes back on stone. The Mining toggle still has to be on."
 				: "Great Explorer only right-clicks chests that spawn while you mine in the Crystal Hollows.");
 		}
 		if (next && "composter".equals(flag)) {

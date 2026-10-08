@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.5.46", new String[]{
+			"Great Explorer leaves left click off while you are still looking at a chest it opened, so the chest is not mined. Looking at stone mines again if you are still holding left click."
+		}),
 		new Entry("1.5.45", new String[]{
 			"/stray debug explorer makes Great Explorer right-click any chest, including ones already in the world, and it works outside the Crystal Hollows."
 		}),

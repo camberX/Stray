@@ -26,8 +26,9 @@ import java.util.Set;
 
 /**
  * Great Explorer chests spawn next to you while mining hardstone. They do not
- * open a screen. Left click lets go for a tick, the chest is right-clicked,
- * then left click is held again only if it is still down.
+ * open a screen. Left click lets go, the chest is right-clicked, and left
+ * click stays off while the crosshair is still on that chest. It is held
+ * again on stone only if it is still physically down.
  */
 public final class GreatExplorer {
 	private static final double RANGE_SQ = 6.0 * 6.0;
@@ -36,6 +37,7 @@ public final class GreatExplorer {
 	private enum Phase {
 		IDLE,
 		PAUSE,
+		GUARD,
 		SCREEN
 	}
 
@@ -80,17 +82,19 @@ public final class GreatExplorer {
 			}
 			return;
 		}
-		if (phase == Phase.SCREEN) {
-			if (client.screen != null) {
-				releaseAttack(client);
-				return;
-			}
-			resume(client);
+		if (phase == Phase.SCREEN && client.screen != null) {
+			releaseAttack(client);
 			return;
 		}
 		if (phase == Phase.PAUSE) {
 			click(client);
 			return;
+		}
+		if (holdOffChest(client)) {
+			return;
+		}
+		if (phase == Phase.GUARD || phase == Phase.SCREEN) {
+			resume(client);
 		}
 		watch(client);
 	}
@@ -150,13 +154,30 @@ public final class GreatExplorer {
 			client.player.swing(InteractionHand.MAIN_HAND);
 			opened.add(chest.asLong());
 		}
-		// Great Explorer does not open a screen, so mining starts again now.
-		// A normal chest can, and left click stays up until that screen closes.
+		// A chest screen keeps attack released until it closes. Great Explorer
+		// does not open one, so attack stays released while still aimed at
+		// the chest and is held again on the next stone block.
 		if (client.screen != null) {
 			phase = Phase.SCREEN;
 			return;
 		}
+		if (same && chest != null && opened.contains(chest.asLong())) {
+			phase = Phase.GUARD;
+			return;
+		}
 		resume(client);
+	}
+
+	/** Left click does not break a chest this feature already opened. */
+	private static boolean holdOffChest(Minecraft client) {
+		BlockPos chest = crosshairChest(client);
+		if (chest == null || !opened.contains(chest.asLong())) {
+			return false;
+		}
+		aim = chest;
+		phase = Phase.GUARD;
+		releaseAttack(client);
+		return true;
 	}
 
 	private static void resume(Minecraft client) {
@@ -168,10 +189,25 @@ public final class GreatExplorer {
 	}
 
 	private static void releaseAttack(Minecraft client) {
-		client.options.keyAttack.setDown(false);
+		KeyMapping attack = client.options.keyAttack;
+		while (attack.consumeClick()) {
+		}
+		attack.setDown(false);
 		if (client.gameMode != null && client.gameMode.isDestroying()) {
 			client.gameMode.stopDestroyBlock();
 		}
+	}
+
+	private static BlockPos crosshairChest(Minecraft client) {
+		BlockHitResult hit = lookedAtHit(client);
+		if (hit == null || client.level == null) {
+			return null;
+		}
+		BlockPos pos = hit.getBlockPos();
+		if (!isChest(client.level.getBlockState(pos))) {
+			return null;
+		}
+		return pos;
 	}
 
 	private static BlockPos lookedAt(Minecraft client) {
@@ -208,9 +244,11 @@ public final class GreatExplorer {
 			boolean old = now - entry.getValue() > REMEMBER_MS;
 			boolean gone = client.level.hasChunkAt(pos) && !isChest(client.level.getBlockState(pos));
 			boolean far = client.player.distanceToSqr(Vec3.atCenterOf(pos)) > RANGE_SQ * 4.0;
-			if (old || gone || far) {
+			if (gone || far) {
 				it.remove();
 				opened.remove(entry.getKey());
+			} else if (old) {
+				it.remove();
 			}
 		}
 	}
