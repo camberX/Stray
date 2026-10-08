@@ -16,6 +16,10 @@ public final class ImGuiLook {
 	public static final int FRAME_BG_HOVERED = 0x664296FA;
 	public static final int FRAME_BG_ACTIVE = 0xAB4296FA;
 	public static final int TITLE_BG_ACTIVE = 0xFF294A7A;
+	/** 0.14 gray, the menu bar behind File / Edit. */
+	public static final int MENU_BAR_BG = 0xFF242424;
+	/** PopupBg 0.08, 0.08, 0.08, 0.94. Dropdown menus use this, not the window fill. */
+	public static final int POPUP_BG = 0xF0141414;
 	public static final int CHECK = 0xFF4296FA;
 	public static final int BUTTON = 0x664296FA;
 	public static final int BUTTON_HOVERED = 0xFF4296FA;
@@ -65,6 +69,11 @@ public final class ImGuiLook {
 		if (checked) {
 			check(graphics, x, y, size);
 		}
+	}
+
+	/** MenuItem check. A mark in the gutter, with no box behind it. */
+	public static void checkMark(GuiGraphicsExtractor graphics, float x, float y, float size) {
+		check(graphics, x, y, size);
 	}
 
 	public static void border(GuiGraphicsExtractor graphics, float x, float y, float w, float h, int color) {

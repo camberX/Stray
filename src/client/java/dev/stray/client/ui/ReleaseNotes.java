@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.5.52", new String[]{
+			"ImGui is one window with a menu bar. Each category drops down, a check marks what is on, and an arrow opens that module's settings."
+		}),
 		new Entry("1.5.51", new String[]{
 			"ImGui is a Click GUI style and a GUI style. Menus use Dear ImGui's dark colors, square checkboxes, and ProggyClean."
 		}),

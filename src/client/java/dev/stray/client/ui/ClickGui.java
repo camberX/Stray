@@ -53,9 +53,9 @@ public final class ClickGui {
 	private static final int ACCENT_ALPHA = 115;
 	private static final int TEXT = 0xFFFFFFFF;
 	private static final int DIM = 0xFFAAAAAA;
-	private static final String[] ORDER = {"World", "Visuals", "Mobs", "Combat", "HUD", "Mining", "Farming", "Menus", "Keys", "Theme", "Player"};
-	private static final int[] BIND_WHICH = {3, 4, 13, 5, 7, 11, 12, 14};
-	private static final String[] BIND_LABEL = {
+	static final String[] ORDER = {"World", "Visuals", "Mobs", "Combat", "HUD", "Mining", "Farming", "Menus", "Keys", "Theme", "Player"};
+	static final int[] BIND_WHICH = {3, 4, 13, 5, 7, 11, 12, 14};
+	static final String[] BIND_LABEL = {
 		"Open menu", "Loadouts", "Swap loadouts", "Wardrobe", "Profile", "Chat peek", "Lobby ping", "Empty bag"
 	};
 
@@ -110,6 +110,15 @@ public final class ClickGui {
 
 	static void extract(StrayScreen screen, GuiGraphicsExtractor graphics, int mouseX, int mouseY) {
 		Font font = Minecraft.getInstance().font;
+		pointer(mouseX, mouseY);
+		if (imgui()) {
+			ImGuiMenu.draw(screen, graphics, font, mouseX, mouseY);
+			screen.clickPicker(graphics, font);
+			if (StrayConfig.get().arrayList) {
+				ArrayListHud.draw(graphics, font, screen.width);
+			}
+			return;
+		}
 		tickExpand();
 		syncColumns(screen);
 		rows.clear();
@@ -191,6 +200,10 @@ public final class ClickGui {
 	}
 
 	static void rightClick(double x, double y) {
+		if (imgui()) {
+			ImGuiMenu.closePopups();
+			return;
+		}
 		if (searchContains(x, y) || mobSearchContains(x, y)) {
 			return;
 		}
@@ -232,10 +245,17 @@ public final class ClickGui {
 	}
 
 	static void collapse() {
+		if (imgui()) {
+			ImGuiMenu.closePopups();
+			return;
+		}
 		expandedName = null;
 	}
 
 	static boolean drag(double x, double y) {
+		if (imgui()) {
+			return ImGuiMenu.drag(x, y);
+		}
 		if (dragging == null) {
 			return false;
 		}
@@ -250,6 +270,10 @@ public final class ClickGui {
 	}
 
 	static void endDrag() {
+		if (imgui()) {
+			ImGuiMenu.endDrag();
+			return;
+		}
 		if (dragging == null) {
 			return;
 		}
@@ -258,6 +282,9 @@ public final class ClickGui {
 	}
 
 	static boolean scroll(double x, double y, double wheel) {
+		if (imgui()) {
+			return ImGuiMenu.scroll(x, y, wheel);
+		}
 		if (wheel == 0) {
 			return false;
 		}
@@ -790,7 +817,7 @@ public final class ClickGui {
 		dragOffY = (float) pointerY - column.y;
 	}
 
-	private static void toggle(Mod mod) {
+	static void toggle(Mod mod) {
 		mod.set.accept(!mod.on.getAsBoolean());
 		UnloadState.markDirty();
 	}
@@ -1078,7 +1105,7 @@ public final class ClickGui {
 		screen.clickHit(x, y, w, box(), () -> screen.clickListenBind(which));
 	}
 
-	private static String bindKey(int which) {
+	static String bindKey(int which) {
 		StrayConfig config = StrayConfig.get();
 		return switch (which) {
 			case 3 -> config.openGuiKey;
@@ -1327,7 +1354,88 @@ public final class ClickGui {
 		return (Math.round(r * 255f) << 16) | (Math.round(g * 255f) << 8) | Math.round(b * 255f);
 	}
 
-	private static List<Mod> modules() {
+	static String filterText() {
+		return searchQuery;
+	}
+
+	static void searchBox(float x, float y, float w, float h) {
+		searchX = x;
+		searchY = y;
+		searchW = w;
+		searchH = h;
+	}
+
+	static double pointerX() {
+		return pointerX;
+	}
+
+	static double pointerY() {
+		return pointerY;
+	}
+
+	static boolean moduleHasSettings(Mod mod) {
+		return mod.feature != null
+			|| mod.timeout
+			|| mod.menuStyle
+			|| "Array list".equals(mod.name)
+			|| "Themed GUIs".equals(mod.name)
+			|| "Custom title".equals(mod.name);
+	}
+
+	static float moduleSettingsHeight(StrayScreen screen, Mod mod) {
+		if ("Custom title".equals(mod.name)) {
+			return stride();
+		}
+		return settingsFull(screen, mod);
+	}
+
+	static void drawModuleSettings(
+		StrayScreen screen,
+		GuiGraphicsExtractor graphics,
+		Font font,
+		int mouseX,
+		int mouseY,
+		Mod mod,
+		float x,
+		float y,
+		float w
+	) {
+		if ("Custom title".equals(mod.name)) {
+			drawButton(screen, graphics, font, x, y, w, "Edit title", () -> {
+				Minecraft client = Minecraft.getInstance();
+				if (client != null) {
+					client.setScreen(new CustomTitleScreen(client.screen));
+				}
+			});
+			return;
+		}
+		if ("Array list".equals(mod.name)) {
+			drawArrayList(screen, graphics, font, x, y, w);
+			return;
+		}
+		if ("Themed GUIs".equals(mod.name)) {
+			drawGuiStyle(screen, graphics, font, x, y, w);
+			return;
+		}
+		if (mod.menuStyle) {
+			if ("HUD".equals(mod.name)) {
+				drawHud(screen, graphics, font, x, y, w);
+			} else {
+				drawMenuStyle(screen, graphics, font, x, y, w);
+			}
+			return;
+		}
+		if (mod.timeout) {
+			drawTimeout(screen, graphics, font, x, y, w);
+			return;
+		}
+		if (mod.feature != null) {
+			screen.clickVisuals(mod.kind);
+			screen.clickSettings(graphics, font, mouseX, mouseY, x, y, w, mod.feature);
+		}
+	}
+
+	static List<Mod> modules() {
 		StrayConfig config = StrayConfig.get();
 		List<Mod> mods = new ArrayList<>();
 		mods.add(mod("World tint", "World", StrayScreen.Feature.WORLD, null, () -> config.worldTintEnabled, v -> config.worldTintEnabled = v, true, false));
@@ -1483,7 +1591,7 @@ public final class ClickGui {
 		return (config.capeUrl != null && !config.capeUrl.isBlank()) || (config.capePath != null && !config.capePath.isBlank());
 	}
 
-	private record Mod(
+	record Mod(
 		String name,
 		String column,
 		StrayScreen.Feature feature,
