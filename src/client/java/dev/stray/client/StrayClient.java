@@ -57,6 +57,7 @@ import dev.stray.client.media.MediaSession;
 import dev.stray.client.media.SpotifySmtc;
 import dev.stray.client.mining.ChestAimer;
 import dev.stray.client.mining.ChestEsp;
+import dev.stray.client.mining.GreatExplorer;
 import dev.stray.client.mining.CrystalHollows;
 import dev.stray.client.mining.CrystalHollowsRenderer;
 import dev.stray.client.mining.CrystalHollowsMap;
@@ -407,6 +408,7 @@ public final class StrayClient implements ClientModInitializer {
 			MobGlowRenderer.reset();
 			StarMobEsp.reset();
 			ChestAimer.stop();
+			GreatExplorer.reset();
 			ChestEsp.get().clear();
 			PestEsp.reset();
 			PestCooldown.reset();
@@ -452,6 +454,7 @@ public final class StrayClient implements ClientModInitializer {
 			ComposterTracker.reset();
 			GardenHud.reset();
 			SkyblockProfileApi.refresh();
+			GreatExplorer.reset();
 			ShopCape.onJoin();
 			CommandRings.onWorldChange();
 			MovementRings.onWorldChange();
@@ -493,6 +496,7 @@ public final class StrayClient implements ClientModInitializer {
 			LassoReel.reset();
 			EmptyVacuum.reset();
 			PestPlotTp.reset();
+			GreatExplorer.reset();
 			ChestAimer.stop();
 			MobGlowRenderer.reset();
 			StarMobEsp.reset();

@@ -6,6 +6,7 @@ import dev.stray.client.farming.AutoDna;
 import dev.stray.client.farming.GardenHud;
 import dev.stray.client.menu.DisabledPotions;
 import dev.stray.client.mining.ChestEsp;
+import dev.stray.client.mining.GreatExplorer;
 import dev.stray.client.node.EnderNodeTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.particles.ParticleOptions;
@@ -46,6 +47,7 @@ public final class ClientPackets {
 			});
 		}
 		ChestEsp.onPacket(packet);
+		GreatExplorer.onPacket(packet);
 		EspNamePackets.onPacket(packet);
 		AutoExperiments.onPacket(packet);
 		AutoDna.onPacket(packet);

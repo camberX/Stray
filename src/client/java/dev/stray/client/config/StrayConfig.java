@@ -152,6 +152,7 @@ public final class StrayConfig {
 	public boolean crystalHollowsEntrances = false;
 	public boolean crystalHollowsRubyRoute = false;
 	public boolean routeMiner = false;
+	public boolean greatExplorerEnabled = false;
 	public boolean routeMinerFocus = false;
 	public boolean routeMinerRegen = false;
 	public String routeMinerGem = "ruby";
@@ -1254,6 +1255,9 @@ public final class StrayConfig {
 				}
 				if (!json.has("routeMiner")) {
 					loaded.routeMiner = loaded.crystalHollowsRubyRoute;
+				}
+				if (!json.has("greatExplorerEnabled")) {
+					loaded.greatExplorerEnabled = false;
 				}
 				if (!json.has("routeMinerFocus")) {
 					loaded.routeMinerFocus = false;

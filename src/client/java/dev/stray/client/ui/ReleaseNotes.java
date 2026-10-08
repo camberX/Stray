@@ -15,6 +15,12 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.5.43", new String[]{
+			"Great Explorer is under Mining. A chest that spawns while you mine in the Crystal Hollows lets go of left click, right-clicks the chest, and holds left click again if you are still pressing it.",
+			"The Scatha timer counts 30 seconds of server ticks after the approach message. The last 10 seconds are solid.",
+			"Pest plot warps to a plot the pests widget lists. Another press goes to the next infested plot.",
+			"Empty bag keeps farm keys held through /call Philip and lets go when the Pesthunter menu opens."
+		}),
 		new Entry("1.5.42", new String[]{
 			"Route miner marks the Crystal Hollows route, including the Magma Fields ruby route. Waypoints stay up while you prepare it. Regenerated Waypoints hides a spot once the gemstone glass is mined and brings it back when the vein respawns. Focus mode colors the selected gemstone.",
 			"Liquid glass is a style. Click GUI style is under Menus, HUD style adds Glass, and Themed GUIs has a GUI style for inventories, chests, and the other custom screens. The control menu uses the same glass. Right click a category header to close that column. Keys is its own column again.",

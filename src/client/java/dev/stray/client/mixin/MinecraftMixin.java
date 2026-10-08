@@ -10,6 +10,7 @@ import dev.stray.client.movement.MovementRings;
 import dev.stray.client.render.BlockMarks;
 import dev.stray.client.render.MobGlowRenderer;
 import dev.stray.client.farming.EmptyVacuum;
+import dev.stray.client.mining.GreatExplorer;
 import dev.stray.client.ui.LoadoutSwap;
 import dev.stray.client.ui.LoadoutsScreen;
 import dev.stray.client.ui.StrayTitleScreen;
@@ -59,6 +60,7 @@ public class MinecraftMixin {
 		Minecraft client = (Minecraft) (Object) this;
 		LoadoutSwap.preKeybinds(client);
 		EmptyVacuum.preKeybinds(client);
+		GreatExplorer.preKeybinds(client);
 		MovementRings.preKeybinds(client);
 		Triggerbot.tick(client);
 		MageBeamHits.onAttack(client);

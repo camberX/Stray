@@ -543,6 +543,7 @@ public class StrayScreen extends Screen {
 		new SearchEntry("Scatha", Tab.HOLLOWS, "Hollows"),
 		new SearchEntry("Scatha timer", Tab.HOLLOWS, "Hollows"),
 		new SearchEntry("Route miner", Tab.HOLLOWS, "Hollows"),
+		new SearchEntry("Great Explorer", Tab.HOLLOWS, "Hollows"),
 		new SearchEntry("MF Ruby Route", Tab.HOLLOWS, "Hollows"),
 		new SearchEntry("Ruby route", Tab.HOLLOWS, "Hollows"),
 		new SearchEntry("Focus mode", Tab.HOLLOWS, "Hollows"),
@@ -2455,11 +2456,12 @@ public class StrayScreen extends Screen {
 				statRow(graphics, font, rx, y, iw, "Ping", HudStats.pingLabel());
 			}
 			case MINING -> {
-				float 				y = featureCard(graphics, font, left, top, col, cardHeight(8), "Mining");
+				float 				y = featureCard(graphics, font, left, top, col, cardHeight(9), "Mining");
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Mining HUD", config.miningHudEnabled, v -> config.miningHudEnabled = v, Feature.MINING);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Titanium ESP", config.titaniumEsp, v -> config.titaniumEsp = v, Feature.TITANIUM);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "CH waypoints", config.crystalHollowsWaypoints, v -> config.crystalHollowsWaypoints = v, Feature.CRYSTAL);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Route miner", config.routeMiner, v -> config.routeMiner = v, Feature.ROUTE);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Great Explorer", config.greatExplorerEnabled, v -> config.greatExplorerEnabled = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "CH map", config.crystalHollowsMap, v -> config.crystalHollowsMap = v, Feature.CH_MAP);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Metal detector", config.metalDetectorSolver, v -> config.metalDetectorSolver = v, Feature.METAL);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Robot part alert", config.nucleusAlertParts, v -> config.nucleusAlertParts = v);
@@ -2771,6 +2773,7 @@ public class StrayScreen extends Screen {
 				y = toggleCard(graphics, font, left, y, col, mouseX, mouseY, "Scatha timer", config.scathaHudEnabled, v -> config.scathaHudEnabled = v);
 				y = controlCard(graphics, font, left, y, col, mouseX, mouseY, "CH waypoints", config.crystalHollowsWaypoints, v -> config.crystalHollowsWaypoints = v, Feature.CRYSTAL, "Dump", CrystalHollows::dumpChat);
 				y = controlCard(graphics, font, left, y, col, mouseX, mouseY, "CH map", config.crystalHollowsMap, v -> config.crystalHollowsMap = v, Feature.CH_MAP);
+				y = toggleCard(graphics, font, left, y, col, mouseX, mouseY, "Great Explorer", config.greatExplorerEnabled, v -> config.greatExplorerEnabled = v);
 				controlCard(graphics, font, left, y, col, mouseX, mouseY, "Route miner", config.routeMiner, v -> config.routeMiner = v, Feature.ROUTE);
 				y = sectionLabel(graphics, font, right, top, "Mines of Divan");
 				y = controlCard(graphics, font, right, y, col, mouseX, mouseY, "Metal detector", config.metalDetectorSolver, v -> config.metalDetectorSolver = v, Feature.METAL);
