@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.5.51", new String[]{
+			"ImGui is a Click GUI style and a GUI style. Menus use Dear ImGui's dark colors, square checkboxes, and ProggyClean."
+		}),
 		new Entry("1.5.50", new String[]{
 			"Pingless break removes the wait before a block you can instamine disappears. It uses your Mining Speed and Breaking Power, and it still sends the same dig packets vanilla would. A block that was not ready comes back."
 		}),

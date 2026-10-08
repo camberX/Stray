@@ -76,10 +76,11 @@ public final class ContainerChrome {
 		Theme.refresh();
 		float x = hovered.x;
 		float y = hovered.y;
-		GuiDraw.fillSmooth(graphics, x, y, SLOT, ClickLook.STROKE, Theme.ACCENT);
-		GuiDraw.fillSmooth(graphics, x, y + SLOT - ClickLook.STROKE, SLOT, ClickLook.STROKE, Theme.ACCENT);
-		GuiDraw.fillSmooth(graphics, x, y, ClickLook.STROKE, SLOT, Theme.ACCENT);
-		GuiDraw.fillSmooth(graphics, x + SLOT - ClickLook.STROKE, y, ClickLook.STROKE, SLOT, Theme.ACCENT);
+		int color = StrayConfig.get().guiStyleImgui() ? ImGuiLook.HEADER_HOVERED : Theme.ACCENT;
+		GuiDraw.fillSmooth(graphics, x, y, SLOT, ClickLook.STROKE, color);
+		GuiDraw.fillSmooth(graphics, x, y + SLOT - ClickLook.STROKE, SLOT, ClickLook.STROKE, color);
+		GuiDraw.fillSmooth(graphics, x, y, ClickLook.STROKE, SLOT, color);
+		GuiDraw.fillSmooth(graphics, x + SLOT - ClickLook.STROKE, y, ClickLook.STROKE, SLOT, color);
 	}
 
 	public static int labelColor(int color) {

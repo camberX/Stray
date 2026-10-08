@@ -83,6 +83,21 @@ public final class ClickLook {
 		if (w < 2f || h < 2f) {
 			return;
 		}
+		if (StrayConfig.get().guiStyleImgui()) {
+			float shortSide = Math.min(w, h);
+			float longSide = Math.max(w, h);
+			boolean slot = shortSide <= 20f && longSide <= shortSide * 1.25f;
+			boolean widget = !slot && h <= 22f && w > h * 2f;
+			boolean hover = (stroke & 0xFFFFFF) != 0 && (stroke & 0xFFFFFF) != (OUTLINE & 0xFFFFFF);
+			if (slot) {
+				ImGuiLook.frame(graphics, x, y, w, h, hover);
+			} else if (widget) {
+				ImGuiLook.button(graphics, x, y, w, h, hover);
+			} else {
+				ImGuiLook.window(graphics, x, y, w, h);
+			}
+			return;
+		}
 		if (StrayConfig.get().guiStyleGlass()) {
 			float shortSide = Math.min(w, h);
 			float longSide = Math.max(w, h);

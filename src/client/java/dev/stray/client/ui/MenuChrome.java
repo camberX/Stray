@@ -51,6 +51,10 @@ public final class MenuChrome {
 	}
 
 	public static void sky(GuiGraphicsExtractor graphics, int width, int height) {
+		if (StrayConfig.get().guiStyleImgui()) {
+			GuiDraw.fill(graphics, 0, 0, width, height, 0xFF0F0F0F);
+			return;
+		}
 		if (outOfWorld()) {
 			TitleBackdrop.draw(graphics, width, height);
 			return;
@@ -75,17 +79,29 @@ public final class MenuChrome {
 
 	public static Component bodyLabel(Component message, boolean active) {
 		Theme.refresh();
+		if (StrayConfig.get().guiStyleImgui()) {
+			int color = active ? 0xFFFFFF : 0x808080;
+			return message.copy().withStyle(MenuFont.PROGGY.withColor(color));
+		}
 		int color = (active ? Theme.TEXT : Theme.MUTED) & 0xFFFFFF;
 		return message.copy().withStyle(MenuFont.bodyStyle().withColor(color));
 	}
 
 	public static Component titleLabel(Component message) {
 		Theme.refresh();
+		if (StrayConfig.get().guiStyleImgui()) {
+			return message.copy().withStyle(MenuFont.PROGGY.withColor(0xFFFFFF));
+		}
 		return message.copy().withStyle(MenuFont.bodyStyle().withColor(Theme.HEADER & 0xFFFFFF));
 	}
 
 	public static void button(GuiGraphicsExtractor graphics, AbstractWidget widget) {
 		Theme.refresh();
+		if (StrayConfig.get().guiStyleImgui()) {
+			boolean hover = widget.active && widget.isHoveredOrFocused();
+			ImGuiLook.button(graphics, widget.getX(), widget.getY(), widget.getWidth(), widget.getHeight(), hover);
+			return;
+		}
 		float alpha = widget.getAlpha();
 		boolean hover = widget.active && widget.isHoveredOrFocused();
 		int fill = Theme.withAlpha(ClickLook.FILL, Math.round(136 * alpha));
@@ -94,6 +110,12 @@ public final class MenuChrome {
 	}
 
 	public static void field(GuiGraphicsExtractor graphics, AbstractWidget widget) {
+		if (StrayConfig.get().guiStyleImgui()) {
+			boolean focus = widget.isFocused();
+			boolean hover = widget.active && widget.isHovered();
+			ImGuiLook.frame(graphics, widget.getX(), widget.getY(), widget.getWidth(), widget.getHeight(), hover, focus);
+			return;
+		}
 		float alpha = widget.getAlpha();
 		boolean focus = widget.isFocused();
 		int fill = Theme.withAlpha(ClickLook.FILL, Math.round(136 * alpha));
@@ -108,6 +130,14 @@ public final class MenuChrome {
 		int w = widget.getWidth();
 		int h = widget.getHeight();
 		boolean hover = widget.active && widget.isHoveredOrFocused();
+		if (StrayConfig.get().guiStyleImgui()) {
+			ImGuiLook.frame(graphics, x, y, w, h, hover, false);
+			float t = (float) Math.max(0d, Math.min(1d, value));
+			float grabW = Math.max(8f, w * 0.15f);
+			float gx = x + t * (w - grabW);
+			GuiDraw.fill(graphics, gx, y, grabW, h, hover ? ImGuiLook.SLIDER_GRAB_ACTIVE : ImGuiLook.SLIDER_GRAB);
+			return;
+		}
 		ClickLook.solid(
 			graphics,
 			x,
@@ -132,6 +162,10 @@ public final class MenuChrome {
 	}
 
 	public static void listPanel(GuiGraphicsExtractor graphics, int x, int y, int w, int h) {
+		if (StrayConfig.get().guiStyleImgui()) {
+			ImGuiLook.window(graphics, x, y, w, h);
+			return;
+		}
 		ClickLook.outside(graphics, x, y, w, h, 8f, ClickLook.PANEL, Theme.LINE, 0);
 	}
 
@@ -141,6 +175,11 @@ public final class MenuChrome {
 	}
 
 	public static void selection(GuiGraphicsExtractor graphics, int x, int y, int w, int h) {
+		if (StrayConfig.get().guiStyleImgui()) {
+			GuiDraw.fill(graphics, x, y, w, h, ImGuiLook.HEADER_HOVERED);
+			ImGuiLook.border(graphics, x, y, w, h, ImGuiLook.BORDER);
+			return;
+		}
 		ClickLook.outside(
 			graphics,
 			x,
@@ -154,6 +193,13 @@ public final class MenuChrome {
 	}
 
 	public static void scrollbar(GuiGraphicsExtractor graphics, int x, int y, int w, int h, int thumbY, int thumbH, boolean active) {
+		if (StrayConfig.get().guiStyleImgui()) {
+			GuiDraw.fill(graphics, x, y, w, h, ImGuiLook.SCROLLBAR_BG);
+			if (thumbH > 0) {
+				GuiDraw.fill(graphics, x, thumbY, w, thumbH, active ? ImGuiLook.SCROLLBAR_GRAB_HOVERED : ImGuiLook.SCROLLBAR_GRAB);
+			}
+			return;
+		}
 		GuiDraw.rounded(graphics, x, y, w, h, 3f, Theme.withAlpha(Theme.TRACK, 200));
 		if (active && thumbH > 0) {
 			GuiDraw.rounded(graphics, x + 1, thumbY, Math.max(2, w - 2), thumbH, 3f, Theme.ACCENT);

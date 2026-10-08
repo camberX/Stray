@@ -1845,27 +1845,53 @@ public final class StrayConfig {
 	}
 
 	public boolean clickGuiGlass() {
-		return !"click".equalsIgnoreCase(clickGuiStyle);
+		return "glass".equalsIgnoreCase(clickGuiStyle);
+	}
+
+	public boolean clickGuiImgui() {
+		return "imgui".equalsIgnoreCase(clickGuiStyle);
 	}
 
 	public String clickGuiStyleLabel() {
+		if (clickGuiImgui()) {
+			return "ImGui";
+		}
 		return clickGuiGlass() ? "Glass" : "Click";
 	}
 
 	public void cycleClickGuiStyle() {
-		clickGuiStyle = clickGuiGlass() ? "click" : "glass";
+		if (clickGuiGlass()) {
+			clickGuiStyle = "click";
+		} else if ("click".equalsIgnoreCase(clickGuiStyle)) {
+			clickGuiStyle = "imgui";
+		} else {
+			clickGuiStyle = "glass";
+		}
 	}
 
 	public boolean guiStyleGlass() {
 		return "glass".equalsIgnoreCase(guiStyle);
 	}
 
+	public boolean guiStyleImgui() {
+		return "imgui".equalsIgnoreCase(guiStyle);
+	}
+
 	public String guiStyleLabel() {
+		if (guiStyleImgui()) {
+			return "ImGui";
+		}
 		return guiStyleGlass() ? "Glass" : "Click";
 	}
 
 	public void cycleGuiStyle() {
-		guiStyle = guiStyleGlass() ? "click" : "glass";
+		if (guiStyleGlass()) {
+			guiStyle = "imgui";
+		} else if (guiStyleImgui()) {
+			guiStyle = "click";
+		} else {
+			guiStyle = "glass";
+		}
 	}
 
 	public void setHudStyle(String style) {
@@ -1913,6 +1939,9 @@ public final class StrayConfig {
 		if (key.equals("click") || key.equals("boxes") || key.equals("flat")) {
 			return "click";
 		}
+		if (key.equals("imgui") || key.equals("dear")) {
+			return "imgui";
+		}
 		return "glass";
 	}
 
@@ -1923,6 +1952,9 @@ public final class StrayConfig {
 		String key = style.trim().toLowerCase();
 		if (key.equals("glass") || key.equals("liquid")) {
 			return "glass";
+		}
+		if (key.equals("imgui") || key.equals("dear")) {
+			return "imgui";
 		}
 		return "click";
 	}
