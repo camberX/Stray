@@ -23,6 +23,7 @@ public final class LoadoutSwap {
 	private static KeyMapping[] released;
 	private static Phase phase = Phase.IDLE;
 	private static int waited;
+	private static int queued = -1;
 
 	private enum Phase {
 		IDLE,
@@ -36,6 +37,21 @@ public final class LoadoutSwap {
 
 	public static void syncEdge() {
 		wasHeld = held();
+	}
+
+	public static void cancelQueue() {
+		if (phase == Phase.IDLE) {
+			queued = -1;
+		}
+	}
+
+	/** Equip one configured loadout. The click starts on the next keybind pass. */
+	public static boolean queue(int index) {
+		if (index < 0 || index > 8 || phase != Phase.IDLE || queued >= 0) {
+			return false;
+		}
+		queued = index;
+		return true;
 	}
 
 	/**
@@ -83,12 +99,37 @@ public final class LoadoutSwap {
 		boolean down = held();
 		boolean press = down && !wasHeld;
 		wasHeld = down;
+		if (queued >= 0) {
+			if (client.screen != null || client.player == null) {
+				return;
+			}
+			int index = queued;
+			queued = -1;
+			start(client, index);
+			return;
+		}
 		if (!press || client.screen != null || client.player == null) {
 			return;
 		}
-		if (!arm()) {
+		int next = nextSlot();
+		if (next < 0) {
 			return;
 		}
+		start(client, next);
+	}
+
+	/** Keeps the released keys up after farm keys relatch attack. */
+	public static void afterFarmKeys(Minecraft client) {
+		if (client == null || client.options == null) {
+			return;
+		}
+		if (phase == Phase.HELD || phase == Phase.RELEASED) {
+			suppress(client);
+		}
+	}
+
+	private static void start(Minecraft client, int index) {
+		LoadoutsScreen.armHidden(index);
 		boolean pause = FarmKeys.enabled()
 			&& (FarmKeys.breaking() || client.options.keyAttack.isDown() || moving(client.options));
 		if (pause) {
@@ -103,10 +144,10 @@ public final class LoadoutSwap {
 		phase = Phase.HELD;
 	}
 
-	private static boolean arm() {
+	private static int nextSlot() {
 		StrayConfig config = StrayConfig.get();
 		if (!OdinClicks.bound(OdinClicks.parseKey(config.loadoutSwapKey))) {
-			return false;
+			return -1;
 		}
 		int[] cycle = cycle(config);
 		int current = LoadoutsScreen.selectedIndex();
@@ -131,8 +172,7 @@ public final class LoadoutSwap {
 			config.loadoutSwapCursor = (nextPos + 1) % cycle.length;
 		}
 		config.save();
-		LoadoutsScreen.armHidden(next);
-		return true;
+		return next;
 	}
 
 	/** Loadout indexes, in press order, with duplicates dropped. */

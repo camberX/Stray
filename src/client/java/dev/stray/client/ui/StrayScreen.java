@@ -203,6 +203,9 @@ public class StrayScreen extends Screen {
 		}
 
 		int rows() {
+			if (this == PEST_COOLDOWN) {
+				return baseRows + 1 + (StrayConfig.get().pestLoadoutSwap ? 1 : 0);
+			}
 			if (this == LOADOUTS) {
 				return baseRows + 1 + (StrayConfig.get().loadoutSwapTri ? 1 : 0);
 			}
@@ -495,6 +498,8 @@ public class StrayScreen extends Screen {
 		new SearchEntry("Lasso", Tab.GARDEN, "Garden"),
 		new SearchEntry("Reel", Tab.GARDEN, "Garden"),
 		new SearchEntry("Swap alert", Tab.GARDEN, "Garden"),
+		new SearchEntry("Auto loadout", Tab.GARDEN, "Garden"),
+		new SearchEntry("Pest swap", Tab.GARDEN, "Garden"),
 		new SearchEntry("Pest cooldown text", Tab.GARDEN, "Garden"),
 		new SearchEntry("Garden pests", Tab.GARDEN, "Garden"),
 		new SearchEntry("Vacuum", Tab.GARDEN, "Garden"),
@@ -3783,7 +3788,11 @@ public class StrayScreen extends Screen {
 			case PEST_COOLDOWN -> {
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Swap alert", config.pestCooldownTitle, v -> config.pestCooldownTitle = v);
 				y = alertLine(graphics, font, ix, y, iw, mouseX, mouseY, "Title", config.pestCooldownAlert, 1);
-				alertLine(graphics, font, ix, y, iw, mouseX, mouseY, "Subtitle", config.pestCooldownAlertSub, 2);
+				y = alertLine(graphics, font, ix, y, iw, mouseX, mouseY, "Subtitle", config.pestCooldownAlertSub, 2);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Auto loadout", config.pestLoadoutSwap, v -> config.pestLoadoutSwap = v);
+				if (config.pestLoadoutSwap) {
+					slider(graphics, font, ix, y, iw, "Swap at", config.pestLoadoutLead + "s left", config.pestLoadoutLead / 30f, v -> config.pestLoadoutLead = snapInt(v * 30f, 0, 30, 1));
+				}
 			}
 			case AUTO_DNA -> {
 				y = slider(graphics, font, ix, y, iw, "Click delay", config.autoDnaClickDelay + "ms", (config.autoDnaClickDelay - 100) / 900f, v -> config.autoDnaClickDelay = snapInt(100 + v * 900f, 100, 1000, 10));

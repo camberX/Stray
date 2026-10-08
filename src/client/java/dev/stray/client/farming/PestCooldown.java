@@ -58,6 +58,8 @@ public final class PestCooldown {
 	private static long cooldownEndMs;
 	private static boolean titled;
 	private static int parseTick = Integer.MIN_VALUE;
+	private static int alive = -1;
+	private static final Pattern ALIVE = Pattern.compile("(?i)alive:\\s*(\\d+)");
 
 	private PestCooldown() {
 	}
@@ -82,10 +84,12 @@ public final class PestCooldown {
 	public static void tick(Minecraft client) {
 		StrayConfig config = StrayConfig.get();
 		boolean hud = config.pestCooldownHudEnabled;
-		if (!hud && !StrayDebug.enabled("pest")) {
+		boolean watch = hud || StrayDebug.enabled("pest") || config.pestLoadoutSwap;
+		if (!watch) {
 			if (snap.present() || cycle || titled) {
 				reset();
 			}
+			PestLoadoutSwap.tick(client);
 			return;
 		}
 		if (client == null || client.player == null || client.level == null || !wherePestsLive()) {
@@ -97,7 +101,9 @@ public final class PestCooldown {
 		boolean due = parseTick == Integer.MIN_VALUE || tick < parseTick || tick - parseTick >= 5;
 		if (due) {
 			parseTick = tick;
-			Snap read = read(client);
+			List<String> lines = tabLines(client);
+			alive = findAlive(lines);
+			Snap read = read(lines);
 			if (read.present()) {
 				track(read, now);
 				seenAt = now;
@@ -106,11 +112,29 @@ public final class PestCooldown {
 				clearCycle();
 				previousKind = Kind.MISSING;
 				previousSeconds = -1;
+				alive = -1;
 			}
 		}
 		if (hud && cycle) {
 			refresh(client, config, now);
 		}
+		PestLoadoutSwap.tick(client);
+	}
+
+	public static int alive() {
+		return alive;
+	}
+
+	/** Seconds left on the tracked cooldown, or {@code -1} when it is not counting. */
+	public static int secondsLeft() {
+		if (!cycle || cooldownEndMs <= 0L) {
+			return -1;
+		}
+		long leftMs = cooldownEndMs - System.currentTimeMillis();
+		if (leftMs <= 0L) {
+			return 0;
+		}
+		return (int) ((leftMs + 999L) / 1000L);
 	}
 
 	public static Snap snap() {
@@ -124,6 +148,8 @@ public final class PestCooldown {
 		previousKind = Kind.MISSING;
 		clearCycle();
 		parseTick = Integer.MIN_VALUE;
+		alive = -1;
+		PestLoadoutSwap.reset();
 	}
 
 	private static void clearCycle() {
@@ -240,8 +266,7 @@ public final class PestCooldown {
 		client.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.NOTE_BLOCK_PLING.value(), 0.7f, 0.9f));
 	}
 
-	private static Snap read(Minecraft client) {
-		List<String> lines = tabLines(client);
+	private static Snap read(List<String> lines) {
 		Snap inSection = null;
 		Snap anywhere = null;
 		boolean inPests = false;
@@ -294,6 +319,20 @@ public final class PestCooldown {
 			return minutes + "m";
 		}
 		return minutes + "m " + seconds + "s";
+	}
+
+	private static int findAlive(List<String> lines) {
+		for (String line : lines) {
+			Matcher matcher = ALIVE.matcher(line);
+			if (matcher.find()) {
+				try {
+					return Integer.parseInt(matcher.group(1));
+				} catch (NumberFormatException ignored) {
+					return -1;
+				}
+			}
+		}
+		return -1;
 	}
 
 	private static boolean pestsHeader(String line) {

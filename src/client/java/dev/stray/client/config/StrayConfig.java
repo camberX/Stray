@@ -118,6 +118,8 @@ public final class StrayConfig {
 	public boolean pestCooldownHudEnabled = false;
 	public boolean cropFeverHudEnabled = true;
 	public boolean pestCooldownTitle = true;
+	public boolean pestLoadoutSwap = false;
+	public int pestLoadoutLead = 3;
 	public String pestCooldownAlert = "Swap armor";
 	public String pestCooldownAlertSub = "5s left";
 	public boolean customTitleEnabled = false;
@@ -1472,6 +1474,13 @@ public final class StrayConfig {
 				if (!json.has("pestCooldownTitle")) {
 					loaded.pestCooldownTitle = true;
 				}
+				if (!json.has("pestLoadoutSwap")) {
+					loaded.pestLoadoutSwap = false;
+				}
+				if (!json.has("pestLoadoutLead")) {
+					loaded.pestLoadoutLead = 3;
+				}
+				loaded.pestLoadoutLead = clamp(loaded.pestLoadoutLead, 0, 30);
 				if (!json.has("lassoDisplay")) {
 					loaded.lassoDisplay = true;
 				}
