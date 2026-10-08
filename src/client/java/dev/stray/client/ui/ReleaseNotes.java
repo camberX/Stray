@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.5.50", new String[]{
+			"Pingless break removes the wait before a block you can instamine disappears. It uses your Mining Speed and Breaking Power, and it still sends the same dig packets vanilla would. A block that was not ready comes back."
+		}),
 		new Entry("1.5.49", new String[]{
 			"Pingless break is under Mining. The pause between blocks is skipped, so the next block starts immediately. Break speed and dig packets stay vanilla."
 		}),

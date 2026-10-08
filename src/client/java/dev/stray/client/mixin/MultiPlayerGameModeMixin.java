@@ -4,7 +4,9 @@ import dev.stray.client.combat.Hitsound;
 import dev.stray.client.fairy.FairySoulTracker;
 import dev.stray.client.mining.PinglessBreak;
 import dev.stray.client.movement.AotvSim;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.MultiPlayerGameMode;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -25,10 +27,29 @@ public class MultiPlayerGameModeMixin {
 	@Shadow
 	private int destroyDelay;
 
+	@Shadow
+	private boolean isDestroying;
+
 	@Inject(method = "continueDestroyBlock", at = @At("HEAD"))
 	private void stray$pinglessBreak(BlockPos pos, Direction direction, CallbackInfoReturnable<Boolean> cir) {
 		if (PinglessBreak.active()) {
 			this.destroyDelay = 0;
+		}
+	}
+
+	@Inject(method = "startDestroyBlock", at = @At("RETURN"))
+	private void stray$pinglessInstamine(BlockPos pos, Direction direction, CallbackInfoReturnable<Boolean> cir) {
+		if (!cir.getReturnValueZ() || !PinglessBreak.predict(pos)) {
+			return;
+		}
+		Minecraft client = Minecraft.getInstance();
+		if (client.level == null) {
+			return;
+		}
+		BlockState previous = client.level.getBlockState(pos);
+		if (((MultiPlayerGameMode) (Object) this).destroyBlock(pos)) {
+			this.isDestroying = false;
+			PinglessBreak.remember(pos, previous);
 		}
 	}
 

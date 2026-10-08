@@ -75,6 +75,7 @@ import dev.stray.client.movement.PathRecorder;
 import dev.stray.client.movement.PathWalker;
 import dev.stray.client.pip.PipCapture;
 import dev.stray.client.mining.MiningTracker;
+import dev.stray.client.mining.PinglessBreak;
 import dev.stray.client.mining.TitaniumTracker;
 import dev.stray.client.render.PestEspRenderer;
 import dev.stray.client.render.ChestEspRenderer;
@@ -380,6 +381,7 @@ public final class StrayClient implements ClientModInitializer {
 			ConnectionPing.tick(client);
 			RawmatsTracker.tick(client);
 			MiningTracker.tick(client);
+			PinglessBreak.tick(client);
 			TitaniumTracker.get().tick(client);
 			ChestEsp.get().tick(client);
 			PestEsp.tick(client);
