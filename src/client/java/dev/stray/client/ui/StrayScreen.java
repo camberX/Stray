@@ -203,6 +203,9 @@ public class StrayScreen extends Screen {
 		}
 
 		int rows() {
+			if (this == LOADOUTS) {
+				return baseRows + 1 + (StrayConfig.get().loadoutSwapTri ? 1 : 0);
+			}
 			if (this == PATHS) {
 				return baseRows + Math.min(PathRecorder.here().size(), 10);
 			}
@@ -421,6 +424,7 @@ public class StrayScreen extends Screen {
 		new SearchEntry("Swap loadouts", Tab.KEYS, "Keys"),
 		new SearchEntry("Hide default menu", Tab.MENUS, "Menus"),
 		new SearchEntry("Loadout swap", Tab.MENUS, "Menus"),
+		new SearchEntry("TriSwap", Tab.MENUS, "Menus"),
 		new SearchEntry("Loadouts animation", Tab.MENUS, "Menus"),
 		new SearchEntry("Open animation", Tab.MENUS, "Menus"),
 		new SearchEntry("Wardrobe", Tab.MENUS, "Menus"),
@@ -3843,6 +3847,10 @@ public class StrayScreen extends Screen {
 			case LOADOUTS -> {
 				y = cycle(graphics, font, ix, y, iw, mouseX, mouseY, "Swap A", config.loadoutSwapSlotALabel(), config::cycleLoadoutSwapSlotA);
 				y = cycle(graphics, font, ix, y, iw, mouseX, mouseY, "Swap B", config.loadoutSwapSlotBLabel(), config::cycleLoadoutSwapSlotB);
+				if (config.loadoutSwapTri) {
+					y = cycle(graphics, font, ix, y, iw, mouseX, mouseY, "Swap C", config.loadoutSwapSlotCLabel(), config::cycleLoadoutSwapSlotC);
+				}
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "TriSwap", config.loadoutSwapTri, v -> config.loadoutSwapTri = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Hide default menu", config.loadoutHideDefault, v -> config.loadoutHideDefault = v);
 				drawSlotKeybinds(graphics, font, ix, y, iw, mouseX, mouseY);
 			}

@@ -11,7 +11,7 @@ import net.minecraft.client.Options;
 import org.lwjgl.glfw.GLFW;
 
 /**
- * Toggles between two loadout slots without showing the loadouts menu.
+ * Toggles between two loadout slots, or three when TriSwap is on, without showing the loadouts menu.
  * With farm keys on, breaking and movement are released for the click and
  * pressed again on the next tick, from {@code handleKeybinds} before movement
  * so the click is not sent after the position packet.
@@ -108,23 +108,66 @@ public final class LoadoutSwap {
 		if (!OdinClicks.bound(OdinClicks.parseKey(config.loadoutSwapKey))) {
 			return false;
 		}
-		int first = StrayConfig.clampLoadoutSwapSlot(config.loadoutSwapSlotA) - 1;
-		int second = StrayConfig.clampLoadoutSwapSlot(config.loadoutSwapSlotB) - 1;
+		int[] cycle = cycle(config);
 		int current = LoadoutsScreen.selectedIndex();
 		int next;
-		if (first == second) {
-			next = first;
-		} else if (current == first) {
-			next = second;
-		} else if (current == second) {
-			next = first;
+		if (!config.loadoutSwapTri) {
+			int first = cycle[0];
+			int second = cycle.length > 1 ? cycle[1] : first;
+			if (first == second) {
+				next = first;
+			} else if (current == first) {
+				next = second;
+			} else if (current == second) {
+				next = first;
+			} else {
+				next = config.loadoutSwapNextIsB ? second : first;
+			}
+			config.loadoutSwapNextIsB = next == first && first != second;
 		} else {
-			next = config.loadoutSwapNextIsB ? second : first;
+			int pos = indexOf(cycle, current);
+			int nextPos = pos >= 0 ? (pos + 1) % cycle.length : Math.floorMod(config.loadoutSwapCursor, cycle.length);
+			next = cycle[nextPos];
+			config.loadoutSwapCursor = (nextPos + 1) % cycle.length;
 		}
-		config.loadoutSwapNextIsB = next == first && first != second;
 		config.save();
 		LoadoutsScreen.armHidden(next);
 		return true;
+	}
+
+	/** Loadout indexes, in press order, with duplicates dropped. */
+	private static int[] cycle(StrayConfig config) {
+		int first = StrayConfig.clampLoadoutSwapSlot(config.loadoutSwapSlotA) - 1;
+		int second = StrayConfig.clampLoadoutSwapSlot(config.loadoutSwapSlotB) - 1;
+		if (!config.loadoutSwapTri) {
+			return first == second ? new int[] {first} : new int[] {first, second};
+		}
+		int third = StrayConfig.clampLoadoutSwapSlot(config.loadoutSwapSlotC) - 1;
+		int[] raw = {first, second, third};
+		int count = 0;
+		int[] unique = new int[3];
+		for (int slot : raw) {
+			if (indexOf(unique, slot, count) >= 0) {
+				continue;
+			}
+			unique[count++] = slot;
+		}
+		int[] cycle = new int[count];
+		System.arraycopy(unique, 0, cycle, 0, count);
+		return cycle;
+	}
+
+	private static int indexOf(int[] values, int slot) {
+		return indexOf(values, slot, values.length);
+	}
+
+	private static int indexOf(int[] values, int slot, int length) {
+		for (int i = 0; i < length; i++) {
+			if (values[i] == slot) {
+				return i;
+			}
+		}
+		return -1;
 	}
 
 	private static boolean held() {

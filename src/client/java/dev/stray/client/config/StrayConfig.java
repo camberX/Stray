@@ -207,6 +207,10 @@ public final class StrayConfig {
 	public int emptyVacuumDelay = 4;
 	public int loadoutSwapSlotA = 1;
 	public int loadoutSwapSlotB = 2;
+	public int loadoutSwapSlotC = 3;
+	public boolean loadoutSwapTri = false;
+	/** Next index in the TriSwap cycle when the equipped loadout is unknown. */
+	public int loadoutSwapCursor = 0;
 	public boolean loadoutSwapNextIsB = false;
 	public boolean loadoutHideDefault = true;
 	public String openWardrobeKey = "key.keyboard.unknown";
@@ -1173,6 +1177,17 @@ public final class StrayConfig {
 				loaded.emptyVacuumDelay = clamp(loaded.emptyVacuumDelay, 1, 10);
 				loaded.loadoutSwapSlotA = clampLoadoutSwapSlot(loaded.loadoutSwapSlotA);
 				loaded.loadoutSwapSlotB = clampLoadoutSwapSlot(loaded.loadoutSwapSlotB);
+				if (!json.has("loadoutSwapSlotC")) {
+					loaded.loadoutSwapSlotC = 3;
+				}
+				loaded.loadoutSwapSlotC = clampLoadoutSwapSlot(loaded.loadoutSwapSlotC);
+				if (!json.has("loadoutSwapTri")) {
+					loaded.loadoutSwapTri = false;
+				}
+				if (!json.has("loadoutSwapCursor")) {
+					loaded.loadoutSwapCursor = 0;
+				}
+				loaded.loadoutSwapCursor = Math.max(0, loaded.loadoutSwapCursor);
 				if (!json.has("loadoutHideDefault")) {
 					loaded.loadoutHideDefault = true;
 				}
@@ -2250,12 +2265,21 @@ public final class StrayConfig {
 		save();
 	}
 
+	public void cycleLoadoutSwapSlotC() {
+		loadoutSwapSlotC = clampLoadoutSwapSlot(loadoutSwapSlotC) % 9 + 1;
+		save();
+	}
+
 	public String loadoutSwapSlotALabel() {
 		return String.valueOf(clampLoadoutSwapSlot(loadoutSwapSlotA));
 	}
 
 	public String loadoutSwapSlotBLabel() {
 		return String.valueOf(clampLoadoutSwapSlot(loadoutSwapSlotB));
+	}
+
+	public String loadoutSwapSlotCLabel() {
+		return String.valueOf(clampLoadoutSwapSlot(loadoutSwapSlotC));
 	}
 
 	public static int clampLoadoutSwapSlot(int slot) {
