@@ -689,13 +689,66 @@ public final class AutoUpdate implements PreLaunchEntrypoint {
 				log("Moved in-use jar " + old.getFileName() + " to " + dest.getFileName() + ".");
 				dest.toFile().deleteOnExit();
 				rememberPurge(dest);
-				deleteQuiet(dest);
+				if (!deleteQuiet(dest)) {
+					spawnPurge(dest);
+				}
 				return;
 			}
 		}
 		old.toFile().deleteOnExit();
 		rememberPurge(old);
-		log("Could not remove " + old.getFileName() + ". Delete it from the mods folder before the next launch.");
+		spawnPurge(old);
+		log("Could not remove " + old.getFileName() + ". A background purge will retry about once a second.");
+	}
+
+	private static void spawnPurge(Path old) {
+		if (old == null || !windows() || !branded(old)) {
+			return;
+		}
+		Path exe = purgeExe();
+		if (exe == null) {
+			return;
+		}
+		try {
+			new ProcessBuilder(exe.toString(), old.toAbsolutePath().normalize().toString())
+				.redirectOutput(ProcessBuilder.Redirect.DISCARD)
+				.redirectError(ProcessBuilder.Redirect.DISCARD)
+				.start();
+			log("Retrying delete of " + old.getFileName() + " in the background.");
+		} catch (Exception exception) {
+			log("Could not start background delete for " + old.getFileName() + ": " + exception.getMessage());
+		}
+	}
+
+	private static Path purgeExe() {
+		Path dest = FabricLoader.getInstance().getConfigDir().resolve("stray-purge.exe");
+		try (InputStream in = AutoUpdate.class.getResourceAsStream("stray-purge.exe")) {
+			if (in == null) {
+				return Files.isRegularFile(dest) ? dest : null;
+			}
+			byte[] bytes = in.readAllBytes();
+			if (bytes.length < 64) {
+				return null;
+			}
+			boolean same = Files.isRegularFile(dest) && Files.size(dest) == bytes.length;
+			if (!same) {
+				Files.createDirectories(dest.getParent());
+				Path part = dest.resolveSibling("stray-purge.exe.part");
+				Files.write(part, bytes);
+				try {
+					Files.move(part, dest, StandardCopyOption.REPLACE_EXISTING);
+				} catch (Exception moveFailed) {
+					deleteQuiet(part);
+				}
+			}
+		} catch (Exception exception) {
+			log("Could not unpack stray-purge.exe: " + exception.getMessage());
+		}
+		return Files.isRegularFile(dest) ? dest : null;
+	}
+
+	private static boolean windows() {
+		return System.getProperty("os.name", "").toLowerCase(Locale.ROOT).contains("win");
 	}
 
 	private static List<Path> retireTargets(Path old) {
