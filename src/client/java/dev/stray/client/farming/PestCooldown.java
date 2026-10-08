@@ -59,7 +59,10 @@ public final class PestCooldown {
 	private static boolean titled;
 	private static int parseTick = Integer.MIN_VALUE;
 	private static int alive = -1;
+	private static boolean infested;
 	private static final Pattern ALIVE = Pattern.compile("(?i)alive:\\s*(\\d+)");
+	/** Infested-plot line on the pests widget. Present only while pests are up. */
+	private static final Pattern PLOTS = Pattern.compile("(?i)^plots:\\s*\\d");
 
 	private PestCooldown() {
 	}
@@ -103,6 +106,7 @@ public final class PestCooldown {
 			parseTick = tick;
 			List<String> lines = tabLines(client);
 			alive = findAlive(lines);
+			infested = findInfested(lines);
 			Snap read = read(lines);
 			if (read.present()) {
 				track(read, now);
@@ -113,6 +117,7 @@ public final class PestCooldown {
 				previousKind = Kind.MISSING;
 				previousSeconds = -1;
 				alive = -1;
+				infested = false;
 			}
 		}
 		if (hud && cycle) {
@@ -123,6 +128,11 @@ public final class PestCooldown {
 
 	public static int alive() {
 		return alive;
+	}
+
+	/** True when the pests widget lists infested plot numbers. */
+	public static boolean infested() {
+		return infested;
 	}
 
 	/** Seconds left on the tracked cooldown, or {@code -1} when it is not counting. */
@@ -149,6 +159,7 @@ public final class PestCooldown {
 		clearCycle();
 		parseTick = Integer.MIN_VALUE;
 		alive = -1;
+		infested = false;
 		PestLoadoutSwap.reset();
 	}
 
@@ -333,6 +344,15 @@ public final class PestCooldown {
 			}
 		}
 		return -1;
+	}
+
+	private static boolean findInfested(List<String> lines) {
+		for (String line : lines) {
+			if (PLOTS.matcher(line).find()) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	private static boolean pestsHeader(String line) {

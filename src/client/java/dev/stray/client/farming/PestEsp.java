@@ -94,6 +94,26 @@ public final class PestEsp {
 		return view;
 	}
 
+	/** Pest armor stand within range. Does not require the Pest ESP toggle. */
+	public static boolean nearby(Minecraft client) {
+		if (client == null || client.player == null || client.level == null) {
+			return false;
+		}
+		Vec3 at = client.player.position();
+		for (Entity entity : client.level.entitiesForRendering()) {
+			if (!(entity instanceof ArmorStand stand)) {
+				continue;
+			}
+			if (stand.distanceToSqr(at) > RANGE_SQ) {
+				continue;
+			}
+			if (!pestName(stand).isEmpty()) {
+				return true;
+			}
+		}
+		return false;
+	}
+
 	/** One box and one name per worm. Head and tail are separate armor stands. */
 	private static List<Mark> mergeEarthworms(List<AABB> parts) {
 		if (parts.isEmpty()) {

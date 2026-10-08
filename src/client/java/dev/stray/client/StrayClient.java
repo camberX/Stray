@@ -18,6 +18,7 @@ import dev.stray.client.dungeon.PartyFinderStats;
 import dev.stray.client.farming.AutoDna;
 import dev.stray.client.farming.CropFever;
 import dev.stray.client.farming.PestCooldown;
+import dev.stray.client.farming.PestLoadoutSwap;
 import dev.stray.client.farming.PestEsp;
 import dev.stray.client.farming.GardenPlots;
 import dev.stray.client.menu.DisabledPotions;
@@ -221,6 +222,7 @@ public final class StrayClient implements ClientModInitializer {
 		ClientReceiveMessageEvents.ALLOW_GAME.register((message, overlay) -> {
 			MetalDetector.onMessage(message, overlay);
 			CropFever.onMessage(message, overlay);
+			PestLoadoutSwap.onMessage(message, overlay);
 			ScathaTimer.onMessage(message, overlay);
 			if (overlay) {
 				SkillProgressTracker.onActionBar(message);
