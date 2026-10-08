@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.5.45", new String[]{
+			"/stray debug explorer makes Great Explorer right-click any chest, including ones already in the world, and it works outside the Crystal Hollows."
+		}),
 		new Entry("1.5.44", new String[]{
 			"Great Explorer right-clicks the chest and goes straight back to mining. The chest does not open a screen."
 		}),

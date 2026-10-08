@@ -2,6 +2,7 @@ package dev.stray.client.mining;
 
 import com.mojang.blaze3d.platform.InputConstants;
 import dev.stray.client.config.StrayConfig;
+import dev.stray.client.debug.StrayDebug;
 import dev.stray.client.farming.FarmKeys;
 import dev.stray.client.location.SkyblockLocation;
 import net.minecraft.client.KeyMapping;
@@ -34,7 +35,8 @@ public final class GreatExplorer {
 
 	private enum Phase {
 		IDLE,
-		PAUSE
+		PAUSE,
+		SCREEN
 	}
 
 	private static final Map<Long, Long> spawned = new HashMap<>();
@@ -72,10 +74,18 @@ public final class GreatExplorer {
 			reset();
 			return;
 		}
-		if (!StrayConfig.get().greatExplorerEnabled || !SkyblockLocation.inCrystalHollows()) {
+		if (!active()) {
 			if (phase != Phase.IDLE) {
 				resume(client);
 			}
+			return;
+		}
+		if (phase == Phase.SCREEN) {
+			if (client.screen != null) {
+				releaseAttack(client);
+				return;
+			}
+			resume(client);
 			return;
 		}
 		if (phase == Phase.PAUSE) {
@@ -83,6 +93,18 @@ public final class GreatExplorer {
 			return;
 		}
 		watch(client);
+	}
+
+	/** {@code /stray debug explorer} right-clicks any chest, anywhere. */
+	private static boolean active() {
+		if (!StrayConfig.get().greatExplorerEnabled) {
+			return false;
+		}
+		return debug() || SkyblockLocation.inCrystalHollows();
+	}
+
+	private static boolean debug() {
+		return StrayDebug.enabled("explorer");
 	}
 
 	private static void onBlock(BlockPos pos, BlockState state) {
@@ -127,10 +149,12 @@ public final class GreatExplorer {
 			client.gameMode.useItemOn(client.player, InteractionHand.MAIN_HAND, hit);
 			client.player.swing(InteractionHand.MAIN_HAND);
 			opened.add(chest.asLong());
-			// The block can predict a chest menu. Great Explorer does not open one.
-			if (client.screen != null) {
-				client.setScreen(null);
-			}
+		}
+		// Great Explorer does not open a screen, so mining starts again now.
+		// A normal chest can, and left click stays up until that screen closes.
+		if (client.screen != null) {
+			phase = Phase.SCREEN;
+			return;
 		}
 		resume(client);
 	}
@@ -156,7 +180,7 @@ public final class GreatExplorer {
 			return null;
 		}
 		BlockPos pos = hit.getBlockPos();
-		if (!spawned.containsKey(pos.asLong())) {
+		if (!debug() && !spawned.containsKey(pos.asLong())) {
 			return null;
 		}
 		if (!isChest(client.level.getBlockState(pos))) {
