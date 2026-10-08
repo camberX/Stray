@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.5.44", new String[]{
+			"Great Explorer right-clicks the chest and goes straight back to mining. The chest does not open a screen."
+		}),
 		new Entry("1.5.43", new String[]{
 			"Great Explorer is under Mining. A chest that spawns while you mine in the Crystal Hollows lets go of left click, right-clicks the chest, and holds left click again if you are still pressing it.",
 			"The Scatha timer counts 30 seconds of server ticks after the approach message. The last 10 seconds are solid.",

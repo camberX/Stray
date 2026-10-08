@@ -10,7 +10,6 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.ClientboundBlockUpdatePacket;
 import net.minecraft.world.InteractionHand;
-import net.minecraft.world.InteractionResult;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
@@ -25,26 +24,23 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Great Explorer chests spawn next to you while mining hardstone. Left click
- * stays held for the mine, so a chest under the crosshair lets go for a tick,
- * right-clicks that chest, then holds left click again only if it is still down.
+ * Great Explorer chests spawn next to you while mining hardstone. They do not
+ * open a screen. Left click lets go for a tick, the chest is right-clicked,
+ * then left click is held again only if it is still down.
  */
 public final class GreatExplorer {
 	private static final double RANGE_SQ = 6.0 * 6.0;
 	private static final long REMEMBER_MS = 15_000L;
-	private static final int POST_TICKS = 2;
 
 	private enum Phase {
 		IDLE,
-		PAUSE,
-		WAIT
+		PAUSE
 	}
 
 	private static final Map<Long, Long> spawned = new HashMap<>();
 	private static final Set<Long> opened = new HashSet<>();
 	private static Phase phase = Phase.IDLE;
 	private static BlockPos aim;
-	private static int wait;
 
 	private GreatExplorer() {
 	}
@@ -54,7 +50,6 @@ public final class GreatExplorer {
 		opened.clear();
 		phase = Phase.IDLE;
 		aim = null;
-		wait = 0;
 	}
 
 	public static void onPacket(Packet<?> packet) {
@@ -83,18 +78,11 @@ public final class GreatExplorer {
 			}
 			return;
 		}
-		if (client.screen != null) {
-			if (phase != Phase.IDLE) {
-				releaseAttack(client);
-				phase = Phase.WAIT;
-			}
+		if (phase == Phase.PAUSE) {
+			click(client);
 			return;
 		}
-		switch (phase) {
-			case PAUSE -> click(client);
-			case WAIT -> finish(client);
-			case IDLE -> watch(client);
-		}
+		watch(client);
 	}
 
 	private static void onBlock(BlockPos pos, BlockState state) {
@@ -126,7 +114,6 @@ public final class GreatExplorer {
 			return;
 		}
 		aim = chest;
-		wait = 0;
 		phase = Phase.PAUSE;
 		releaseAttack(client);
 	}
@@ -137,35 +124,23 @@ public final class GreatExplorer {
 		BlockHitResult hit = lookedAtHit(client);
 		boolean same = chest != null && hit != null && hit.getBlockPos().equals(chest);
 		if (same && isChest(client.level.getBlockState(chest))) {
-			InteractionResult result = client.gameMode.useItemOn(client.player, InteractionHand.MAIN_HAND, hit);
-			if (result.consumesAction()) {
-				client.player.swing(InteractionHand.MAIN_HAND);
-				opened.add(chest.asLong());
+			client.gameMode.useItemOn(client.player, InteractionHand.MAIN_HAND, hit);
+			client.player.swing(InteractionHand.MAIN_HAND);
+			opened.add(chest.asLong());
+			// The block can predict a chest menu. Great Explorer does not open one.
+			if (client.screen != null) {
+				client.setScreen(null);
 			}
-		}
-		phase = Phase.WAIT;
-		wait = 0;
-	}
-
-	private static void finish(Minecraft client) {
-		releaseAttack(client);
-		if (client.screen != null) {
-			return;
-		}
-		wait++;
-		if (wait < POST_TICKS) {
-			return;
 		}
 		resume(client);
 	}
 
 	private static void resume(Minecraft client) {
-		if (client.screen == null && stillHolding(client)) {
+		if (stillHolding(client)) {
 			client.options.keyAttack.setDown(true);
 		}
 		phase = Phase.IDLE;
 		aim = null;
-		wait = 0;
 	}
 
 	private static void releaseAttack(Minecraft client) {
