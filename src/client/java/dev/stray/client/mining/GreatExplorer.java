@@ -27,12 +27,15 @@ import java.util.Set;
 /**
  * Great Explorer chests spawn next to you while mining hardstone. They do not
  * open a screen. Left click lets go, the chest is right-clicked, and left
- * click stays off while the crosshair is still on that chest. It is held
- * again on stone only if it is still physically down.
+ * click stays off while the crosshair is within half a block of that
+ * chest. It is held again on stone only if it is still physically down.
  */
 public final class GreatExplorer {
 	private static final double RANGE_SQ = 6.0 * 6.0;
 	private static final long REMEMBER_MS = 15_000L;
+	/** Left click is blocked this far outside the chest block. */
+	private static final double CHEST_PAD = 0.5;
+	private static final double CHEST_PAD_SQ = CHEST_PAD * CHEST_PAD;
 
 	private enum Phase {
 		IDLE,
@@ -90,7 +93,13 @@ public final class GreatExplorer {
 			click(client);
 			return;
 		}
-		if (holdOffChest(client)) {
+		if (nearChest(client)) {
+			releaseAttack(client);
+			phase = Phase.GUARD;
+			BlockPos chest = lookedAt(client);
+			if (chest != null && !opened.contains(chest.asLong())) {
+				watch(client);
+			}
 			return;
 		}
 		if (phase == Phase.GUARD || phase == Phase.SCREEN) {
@@ -155,29 +164,68 @@ public final class GreatExplorer {
 			opened.add(chest.asLong());
 		}
 		// A chest screen keeps attack released until it closes. Great Explorer
-		// does not open one, so attack stays released while still aimed at
-		// the chest and is held again on the next stone block.
+		// does not open one, so attack stays released within half a block of
+		// the chest and is held again on stone outside that.
 		if (client.screen != null) {
 			phase = Phase.SCREEN;
 			return;
 		}
-		if (same && chest != null && opened.contains(chest.asLong())) {
+		if (nearChest(client)) {
 			phase = Phase.GUARD;
 			return;
 		}
 		resume(client);
 	}
 
-	/** Left click does not break a chest this feature already opened. */
-	private static boolean holdOffChest(Minecraft client) {
-		BlockPos chest = crosshairChest(client);
-		if (chest == null || !opened.contains(chest.asLong())) {
+	/**
+	 * True when the crosshair is on a chest this feature handles, or within
+	 * half a block of one. Stone past that can still be mined.
+	 */
+	private static boolean nearChest(Minecraft client) {
+		BlockHitResult hit = lookedAtHit(client);
+		if (hit == null || client.level == null) {
 			return false;
 		}
-		aim = chest;
-		phase = Phase.GUARD;
-		releaseAttack(client);
-		return true;
+		Vec3 point = hit.getLocation();
+		BlockPos origin = hit.getBlockPos();
+		for (int dx = -1; dx <= 1; dx++) {
+			for (int dy = -1; dy <= 1; dy++) {
+				for (int dz = -1; dz <= 1; dz++) {
+					BlockPos pos = origin.offset(dx, dy, dz);
+					if (!guards(client, pos)) {
+						continue;
+					}
+					if (withinHalfBlock(point, pos)) {
+						return true;
+					}
+				}
+			}
+		}
+		return false;
+	}
+
+	private static boolean guards(Minecraft client, BlockPos pos) {
+		if (!isChest(client.level.getBlockState(pos))) {
+			return false;
+		}
+		if (debug()) {
+			return true;
+		}
+		long key = pos.asLong();
+		return opened.contains(key) || spawned.containsKey(key);
+	}
+
+	private static boolean withinHalfBlock(Vec3 point, BlockPos pos) {
+		double minX = pos.getX();
+		double minY = pos.getY();
+		double minZ = pos.getZ();
+		double x = Math.max(minX, Math.min(point.x, minX + 1.0));
+		double y = Math.max(minY, Math.min(point.y, minY + 1.0));
+		double z = Math.max(minZ, Math.min(point.z, minZ + 1.0));
+		double dx = point.x - x;
+		double dy = point.y - y;
+		double dz = point.z - z;
+		return dx * dx + dy * dy + dz * dz <= CHEST_PAD_SQ;
 	}
 
 	private static void resume(Minecraft client) {
@@ -196,18 +244,6 @@ public final class GreatExplorer {
 		if (client.gameMode != null && client.gameMode.isDestroying()) {
 			client.gameMode.stopDestroyBlock();
 		}
-	}
-
-	private static BlockPos crosshairChest(Minecraft client) {
-		BlockHitResult hit = lookedAtHit(client);
-		if (hit == null || client.level == null) {
-			return null;
-		}
-		BlockPos pos = hit.getBlockPos();
-		if (!isChest(client.level.getBlockState(pos))) {
-			return null;
-		}
-		return pos;
 	}
 
 	private static BlockPos lookedAt(Minecraft client) {

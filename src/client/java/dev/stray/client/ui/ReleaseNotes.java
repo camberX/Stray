@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.5.47", new String[]{
+			"Great Explorer blocks left click within half a block of a chest it is opening, so looking at the edge does not start breaking it. Stone farther than that still mines."
+		}),
 		new Entry("1.5.46", new String[]{
 			"Great Explorer leaves left click off while you are still looking at a chest it opened, so the chest is not mined. Looking at stone mines again if you are still holding left click."
 		}),
