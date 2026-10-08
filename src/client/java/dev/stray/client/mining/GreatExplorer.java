@@ -25,10 +25,11 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Great Explorer chests spawn next to you while mining hardstone. They do not
- * open a screen. Left click lets go, the chest is right-clicked, and left
- * click stays off while the crosshair is within half a block of that
- * chest. It is held again on stone only if it is still physically down.
+ * Powder Mining's chest triggerbot. Chests spawn next to you while mining
+ * hardstone. They do not open a screen. Left click lets go, the chest is
+ * right-clicked, and left click stays off while the crosshair is within
+ * half a block of that chest. It is held again on stone only if it is
+ * still physically down.
  */
 public final class GreatExplorer {
 	private static final double RANGE_SQ = 6.0 * 6.0;
@@ -60,7 +61,7 @@ public final class GreatExplorer {
 	}
 
 	public static void onPacket(Packet<?> packet) {
-		if (!StrayConfig.get().greatExplorerEnabled) {
+		if (!armed()) {
 			return;
 		}
 		if (!(packet instanceof ClientboundBlockUpdatePacket update)) {
@@ -108,9 +109,15 @@ public final class GreatExplorer {
 		watch(client);
 	}
 
+	/** Powder Mining is on and Chest triggerbot is enabled. */
+	private static boolean armed() {
+		StrayConfig config = StrayConfig.get();
+		return config.powderMiningEnabled && config.greatExplorerEnabled;
+	}
+
 	/** {@code /stray debug explorer} right-clicks any chest, anywhere. */
 	private static boolean active() {
-		if (!StrayConfig.get().greatExplorerEnabled) {
+		if (!armed()) {
 			return false;
 		}
 		return debug() || SkyblockLocation.inCrystalHollows();
@@ -163,7 +170,7 @@ public final class GreatExplorer {
 			client.player.swing(InteractionHand.MAIN_HAND);
 			opened.add(chest.asLong());
 		}
-		// A chest screen keeps attack released until it closes. Great Explorer
+		// A chest screen keeps attack released until it closes. This triggerbot
 		// does not open one, so attack stays released within half a block of
 		// the chest and is held again on stone outside that.
 		if (client.screen != null) {

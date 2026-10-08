@@ -152,6 +152,8 @@ public final class StrayConfig {
 	public boolean crystalHollowsEntrances = false;
 	public boolean crystalHollowsRubyRoute = false;
 	public boolean routeMiner = false;
+	public boolean powderMiningEnabled = false;
+	/** Chest triggerbot inside Powder Mining. */
 	public boolean greatExplorerEnabled = false;
 	public boolean routeMinerFocus = false;
 	public boolean routeMinerRegen = false;
@@ -1258,6 +1260,9 @@ public final class StrayConfig {
 				}
 				if (!json.has("greatExplorerEnabled")) {
 					loaded.greatExplorerEnabled = false;
+				}
+				if (!json.has("powderMiningEnabled")) {
+					loaded.powderMiningEnabled = loaded.chestEspEnabled || loaded.greatExplorerEnabled;
 				}
 				if (!json.has("routeMinerFocus")) {
 					loaded.routeMinerFocus = false;

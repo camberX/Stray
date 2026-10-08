@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.5.48", new String[]{
+			"Powder Mining is under Mining. Chest ESP is in there, and Chest triggerbot is the option that right-clicks chests while you mine."
+		}),
 		new Entry("1.5.47", new String[]{
 			"Great Explorer blocks left click within half a block of a chest it is opening, so looking at the edge does not start breaking it. Stone farther than that still mines."
 		}),

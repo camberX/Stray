@@ -52,7 +52,8 @@ public final class ChestEsp {
 	}
 
 	public static boolean active() {
-		return StrayConfig.get().chestEspEnabled && inIsland();
+		StrayConfig config = StrayConfig.get();
+		return config.powderMiningEnabled && config.chestEspEnabled && inIsland();
 	}
 
 	public static boolean inIsland() {
@@ -99,7 +100,8 @@ public final class ChestEsp {
 	}
 
 	public static void onPacket(Packet<?> packet) {
-		if (!StrayConfig.get().chestEspEnabled) {
+		StrayConfig config = StrayConfig.get();
+		if (!config.powderMiningEnabled || !config.chestEspEnabled) {
 			return;
 		}
 		ChestAimer.onPacket(packet);

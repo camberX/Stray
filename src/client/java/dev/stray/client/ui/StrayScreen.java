@@ -154,7 +154,7 @@ public class StrayScreen extends Screen {
 		MOB("Mob glow", 3),
 		STAR("Star mobs", 6),
 		BLOCK("Block outline", 1),
-		CHEST("Chest ESP", 5),
+		CHEST("Powder Mining", 7),
 		FAIRY("Fairy souls", 1),
 		MARKS("Block marks", 5),
 		PATHS("Paths", 5),
@@ -343,7 +343,7 @@ public class StrayScreen extends Screen {
 		new SearchEntry("Star glow", Tab.STARS, "Stars"),
 		new SearchEntry("Block outline", Tab.ESP, "World"),
 		new SearchEntry("Block outline color", Tab.ESP, "World"),
-		new SearchEntry("Chest ESP", Tab.ESP, "World"),
+		new SearchEntry("Chest ESP", Tab.HOLLOWS, "Hollows"),
 		new SearchEntry("Block marks", Tab.TOOLS, "Tools"),
 		new SearchEntry("Middle click waypoint", Tab.TOOLS, "Tools"),
 		new SearchEntry("Block waypoint", Tab.TOOLS, "Tools"),
@@ -351,8 +351,9 @@ public class StrayScreen extends Screen {
 		new SearchEntry("Fairy souls", Tab.ESP, "World"),
 		new SearchEntry("Fairy soul ESP", Tab.ESP, "World"),
 		new SearchEntry("Fairy soul tracker", Tab.ESP, "World"),
-		new SearchEntry("Chest tracers", Tab.ESP, "World"),
-		new SearchEntry("Chest aim speed", Tab.ESP, "World"),
+		new SearchEntry("Chest tracers", Tab.HOLLOWS, "Hollows"),
+		new SearchEntry("Chest aim speed", Tab.HOLLOWS, "Hollows"),
+		new SearchEntry("Chest triggerbot", Tab.HOLLOWS, "Hollows"),
 		new SearchEntry("Mobs", Tab.CATALOG, "Mobs"),
 		new SearchEntry("Node ESP", Tab.NODES, "Nodes"),
 		new SearchEntry("Nametags", Tab.PLAYERS, "Players"),
@@ -543,7 +544,7 @@ public class StrayScreen extends Screen {
 		new SearchEntry("Scatha", Tab.HOLLOWS, "Hollows"),
 		new SearchEntry("Scatha timer", Tab.HOLLOWS, "Hollows"),
 		new SearchEntry("Route miner", Tab.HOLLOWS, "Hollows"),
-		new SearchEntry("Great Explorer", Tab.HOLLOWS, "Hollows"),
+		new SearchEntry("Powder Mining", Tab.HOLLOWS, "Hollows"),
 		new SearchEntry("MF Ruby Route", Tab.HOLLOWS, "Hollows"),
 		new SearchEntry("Ruby route", Tab.HOLLOWS, "Hollows"),
 		new SearchEntry("Focus mode", Tab.HOLLOWS, "Hollows"),
@@ -1118,15 +1119,13 @@ public class StrayScreen extends Screen {
 		if (controlCenter()) {
 			y = sectionLabel(graphics, font, left, top, "World");
 			y = controlCard(graphics, font, left, y, col, mouseX, mouseY, "Block outline", config.blockOutlineGlow, v -> config.blockOutlineGlow = v, Feature.BLOCK);
-			y = controlCard(graphics, font, left, y, col, mouseX, mouseY, "Chest ESP", config.chestEspEnabled, v -> config.chestEspEnabled = v, Feature.CHEST);
 			y = controlCard(graphics, font, left, y, col, mouseX, mouseY, "Fairy souls", config.fairySoulEsp, v -> config.fairySoulEsp = v, Feature.FAIRY);
 			y = sectionLabel(graphics, font, right, top, "Items");
 			controlCard(graphics, font, right, y, col, mouseX, mouseY, "Held item", config.heldItemShaderEnabled, v -> config.heldItemShaderEnabled = v, Feature.HELD_ITEM);
 			return;
 		}
-		y = featureCard(graphics, font, left, top, col, cardHeight(4), "World");
+		y = featureCard(graphics, font, left, top, col, cardHeight(3), "World");
 		y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Block outline", config.blockOutlineGlow, v -> config.blockOutlineGlow = v, Feature.BLOCK);
-		y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Chest ESP", config.chestEspEnabled, v -> config.chestEspEnabled = v, Feature.CHEST);
 		y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Fairy souls", config.fairySoulEsp, v -> config.fairySoulEsp = v, Feature.FAIRY);
 		toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Held item", config.heldItemShaderEnabled, v -> config.heldItemShaderEnabled = v, Feature.HELD_ITEM);
 	}
@@ -2461,7 +2460,7 @@ public class StrayScreen extends Screen {
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Titanium ESP", config.titaniumEsp, v -> config.titaniumEsp = v, Feature.TITANIUM);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "CH waypoints", config.crystalHollowsWaypoints, v -> config.crystalHollowsWaypoints = v, Feature.CRYSTAL);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Route miner", config.routeMiner, v -> config.routeMiner = v, Feature.ROUTE);
-				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Great Explorer", config.greatExplorerEnabled, v -> config.greatExplorerEnabled = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Powder Mining", config.powderMiningEnabled, v -> config.powderMiningEnabled = v, Feature.CHEST);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "CH map", config.crystalHollowsMap, v -> config.crystalHollowsMap = v, Feature.CH_MAP);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Metal detector", config.metalDetectorSolver, v -> config.metalDetectorSolver = v, Feature.METAL);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Robot part alert", config.nucleusAlertParts, v -> config.nucleusAlertParts = v);
@@ -2594,7 +2593,6 @@ public class StrayScreen extends Screen {
 			case ESP -> {
 				float y = sectionLabel(graphics, font, left, top, "World");
 				y = controlCard(graphics, font, left, y, col, mouseX, mouseY, "Block outline", config.blockOutlineGlow, v -> config.blockOutlineGlow = v, Feature.BLOCK);
-				y = controlCard(graphics, font, left, y, col, mouseX, mouseY, "Chest ESP", config.chestEspEnabled, v -> config.chestEspEnabled = v, Feature.CHEST);
 				y = controlCard(graphics, font, left, y, col, mouseX, mouseY, "Fairy souls", config.fairySoulEsp, v -> config.fairySoulEsp = v, Feature.FAIRY);
 				y = sectionLabel(graphics, font, right, top, "Items");
 				controlCard(graphics, font, right, y, col, mouseX, mouseY, "Held item", config.heldItemShaderEnabled, v -> config.heldItemShaderEnabled = v, Feature.HELD_ITEM);
@@ -2773,7 +2771,7 @@ public class StrayScreen extends Screen {
 				y = toggleCard(graphics, font, left, y, col, mouseX, mouseY, "Scatha timer", config.scathaHudEnabled, v -> config.scathaHudEnabled = v);
 				y = controlCard(graphics, font, left, y, col, mouseX, mouseY, "CH waypoints", config.crystalHollowsWaypoints, v -> config.crystalHollowsWaypoints = v, Feature.CRYSTAL, "Dump", CrystalHollows::dumpChat);
 				y = controlCard(graphics, font, left, y, col, mouseX, mouseY, "CH map", config.crystalHollowsMap, v -> config.crystalHollowsMap = v, Feature.CH_MAP);
-				y = toggleCard(graphics, font, left, y, col, mouseX, mouseY, "Great Explorer", config.greatExplorerEnabled, v -> config.greatExplorerEnabled = v);
+				y = controlCard(graphics, font, left, y, col, mouseX, mouseY, "Powder Mining", config.powderMiningEnabled, v -> config.powderMiningEnabled = v, Feature.CHEST);
 				controlCard(graphics, font, left, y, col, mouseX, mouseY, "Route miner", config.routeMiner, v -> config.routeMiner = v, Feature.ROUTE);
 				y = sectionLabel(graphics, font, right, top, "Mines of Divan");
 				y = controlCard(graphics, font, right, y, col, mouseX, mouseY, "Metal detector", config.metalDetectorSolver, v -> config.metalDetectorSolver = v, Feature.METAL);
@@ -3655,11 +3653,13 @@ public class StrayScreen extends Screen {
 				colorRow(graphics, font, ix, y, iw, mouseX, mouseY, "Color", config.blockOutlineRgb, PickerTarget.BLOCK);
 			}
 			case CHEST -> {
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Chest ESP", config.chestEspEnabled, v -> config.chestEspEnabled = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Tracers", config.chestEspTracers, v -> config.chestEspTracers = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Through walls", config.chestEspThroughWalls, v -> config.chestEspThroughWalls = v);
 				y = slider(graphics, font, ix, y, iw, "Speed", Math.round(config.chestAimSpeed * 100) + "%", (config.chestAimSpeed - 0.25f) / 1.75f, v -> config.chestAimSpeed = StrayConfig.clamp(0.25f + v * 1.75f, 0.25f, 2.00f));
 				y = bindRow(graphics, font, ix, y, iw, mouseX, mouseY, "Chest Aim", 6, OdinClicks.parseKey(config.chestAimKey));
-				colorRow(graphics, font, ix, y, iw, mouseX, mouseY, "Color", config.chestEspRgb, PickerTarget.CHEST);
+				y = colorRow(graphics, font, ix, y, iw, mouseX, mouseY, "Color", config.chestEspRgb, PickerTarget.CHEST);
+				toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Chest triggerbot", config.greatExplorerEnabled, v -> config.greatExplorerEnabled = v);
 			}
 			case FAIRY -> toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Through walls", config.fairySoulThroughWalls, v -> config.fairySoulThroughWalls = v);
 			case MARKS -> {
