@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.5.53", new String[]{
+			"The ImGui window is smaller, and ProggyClean is drawn sharp instead of as a blurry pixel font."
+		}),
 		new Entry("1.5.52", new String[]{
 			"ImGui is one window with a menu bar. Each category drops down, a check marks what is on, and an arrow opens that module's settings."
 		}),

@@ -22,15 +22,15 @@ import java.util.Locale;
  * not a column of module rows.
  */
 final class ImGuiMenu {
-	private static final float TITLE = 22f;
-	private static final float BAR = 22f;
-	private static final float ITEM = 20f;
+	private static final float TITLE = 18f;
+	private static final float BAR = 16f;
+	private static final float ITEM = 16f;
 	private static final float PAD = 8f;
 
 	private static float winX;
 	private static float winY;
-	private static float winW = 680f;
-	private static float winH = 400f;
+	private static float winW = 460f;
+	private static float winH = 250f;
 	private static boolean placed;
 	private static boolean collapsed;
 	private static boolean moving;
@@ -115,8 +115,8 @@ final class ImGuiMenu {
 			return true;
 		}
 		if (resizing) {
-			winW = Math.max(420f, (float) x - winX + resizeOffW);
-			winH = Math.max(220f, (float) y - winY + resizeOffH);
+			winW = Math.max(280f, (float) x - winX + resizeOffW);
+			winH = Math.max(160f, (float) y - winY + resizeOffH);
 			return true;
 		}
 		return false;
@@ -151,8 +151,8 @@ final class ImGuiMenu {
 		if (placed) {
 			return;
 		}
-		winW = Mth.clamp(screen.width - 24f, 420f, 720f);
-		winH = Mth.clamp(screen.height - 24f, 220f, 440f);
+		winW = Math.min(460f, Math.max(280f, screen.width - 48f));
+		winH = Math.min(250f, Math.max(160f, screen.height - 48f));
 		winX = (screen.width - winW) * 0.5f;
 		winY = (screen.height - winH) * 0.5f;
 		placed = true;
@@ -538,7 +538,7 @@ final class ImGuiMenu {
 			GuiDraw.fill(graphics, x + 2f, y, w - 4f, ITEM, ImGuiLook.HEADER_HOVERED);
 		}
 		if (checked) {
-			ImGuiLook.checkMark(graphics, x + 6f, y + 3f, 13f);
+			ImGuiLook.checkMark(graphics, x + 5f, y + 3f, 10f);
 		}
 		float textX = x + 24f;
 		float right = x + w - 10f;
