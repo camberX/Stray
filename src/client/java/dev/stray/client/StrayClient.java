@@ -125,6 +125,9 @@ import dev.stray.client.visual.NickSteal;
 import dev.stray.client.visual.ShopCape;
 import dev.stray.client.visual.motionblur.MotionBlurShaders;
 import net.fabricmc.api.ClientModInitializer;
+import net.fabricmc.loader.api.FabricLoader;
+import net.fabricmc.loader.api.ModContainer;
+import net.fabricmc.loader.api.metadata.CustomValue;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommands;
 import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource;
@@ -138,6 +141,8 @@ import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.ChatScreen;
 import net.minecraft.client.input.KeyEvent;
 import net.minecraft.network.chat.Component;
+
+import java.util.Optional;
 
 public final class StrayClient implements ClientModInitializer {
 	private static boolean itemAppearancesLoaded;
@@ -258,7 +263,14 @@ public final class StrayClient implements ClientModInitializer {
 		UpdateNotifier.init();
 
 		ClientCommandRegistrationCallback.EVENT.register((dispatcher, registryAccess) -> {
-			var root = ClientCommands.literal("stray").executes(context -> openScreen());
+			var root = ClientCommands.literal("stray").executes(context -> {
+				reportVersion(context.getSource());
+				return openScreen();
+			});
+			root.then(ClientCommands.literal("version").executes(context -> {
+				reportVersion(context.getSource());
+				return Command.SINGLE_SUCCESS;
+			}));
 			root.then(ClientCommands.literal("toggle").executes(context -> {
 				StrayConfig config = StrayConfig.get();
 				config.markersEnabled = !config.markersEnabled;
@@ -652,6 +664,45 @@ public final class StrayClient implements ClientModInitializer {
 			client.setScreen(null);
 		} else {
 			openScreen();
+		}
+	}
+
+	private static void reportVersion(FabricClientCommandSource source) {
+		source.sendFeedback(Component.literal("Current Version: " + currentVersion()));
+	}
+
+	/** Dev jars from main carry a commit. Release jars carry the mod version. */
+	private static String currentVersion() {
+		Optional<ModContainer> container = FabricLoader.getInstance().getModContainer("stray");
+		String version = container
+			.map(mod -> mod.getMetadata().getVersion().getFriendlyString())
+			.filter(text -> !text.isBlank())
+			.orElse("unknown");
+		String channel = custom(container, "stray:channel");
+		String sha = custom(container, "stray:sha");
+		if (!"dev".equals(channel) && sha.isEmpty()) {
+			return version;
+		}
+		if (sha.isEmpty()) {
+			return "dev build";
+		}
+		String shortSha = sha.length() <= 7 ? sha : sha.substring(0, 7);
+		return "dev build " + shortSha + (sha.length() > 7 ? "..." : "");
+	}
+
+	private static String custom(Optional<ModContainer> container, String key) {
+		if (container.isEmpty()) {
+			return "";
+		}
+		CustomValue value = container.get().getMetadata().getCustomValue(key);
+		if (value == null) {
+			return "";
+		}
+		try {
+			String text = value.getAsString();
+			return text == null ? "" : text.trim();
+		} catch (Exception ignored) {
+			return "";
 		}
 	}
 
