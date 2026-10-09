@@ -28,10 +28,16 @@ import java.util.regex.Pattern;
  * which is what happens in a pest spawn reduction set. A minutes-only value
  * is treated as having just rolled over. The swap title still fires once the
  * cooldown has been running for 204 seconds.
+ *
+ * <p>Loadout Swap B uses a 5:00 cooldown. A downward jump on the widget, such
+ * as {@code 4m 45s -> 1m 57s}, is the reduction. Swap B is that many seconds
+ * off 5:00, then the configured seconds before the result hits 0.
  */
 public final class PestCooldown {
 	public static final int BASE_SECONDS = 506;
 	public static final int REDUCED_SECONDS = 209;
+	/** Unreduced pest cooldown the loadout swap starts from. */
+	public static final int COOLDOWN_SECONDS = 5 * 60;
 	public static final int SWAP_LEAD_SECONDS = 5;
 	public static final int SWAP_SECONDS = REDUCED_SECONDS - SWAP_LEAD_SECONDS;
 	private static final long HOLD_MS = 2_000L;
@@ -60,6 +66,13 @@ public final class PestCooldown {
 	private static int parseTick = Integer.MIN_VALUE;
 	private static int alive = -1;
 	private static boolean infested;
+	/** Seconds cut off the 5:00 cooldown, learned from a widget drop. Kept for the next cycle. */
+	private static int reductionSeconds;
+	/** This cycle's widget already shows the shortened time. */
+	private static boolean reducedThisCycle;
+	private static int widgetSeconds = -1;
+	private static long widgetAtMs;
+	private static boolean previousShowsSeconds;
 	private static final Pattern ALIVE = Pattern.compile("(?i)alive:\\s*(\\d+)");
 	/** Infested-plot line on the pests widget. Present only while pests are up. */
 	private static final Pattern PLOTS = Pattern.compile("(?i)^plots:\\s*\\d");
@@ -157,19 +170,23 @@ public final class PestCooldown {
 	}
 
 	/**
-	 * End of the reduced pest timer. The countdown is {@link #REDUCED_SECONDS}
-	 * (3:29) after the set's decrease. A shorter widget reading lowers it
-	 * further. A minutes-only tab value cannot push this later.
+	 * When the reduced cooldown hits 0. The length is {@link #COOLDOWN_SECONDS}
+	 * minus the widget's reduction. After {@code 4m 45s -> 1m 57s}, that
+	 * reduction is 168s, so 5:00 becomes 2:12. Swap B fires the configured
+	 * seconds before this moment.
 	 */
 	public static long reducedEndsAt() {
-		if (!cycle || anchorMs <= 0L) {
+		if (!cycle || widgetSeconds < 0 || widgetAtMs <= 0L) {
 			return 0L;
 		}
-		long end = anchorMs + (long) Math.max(0, REDUCED_SECONDS - elapsedAtAnchor) * 1000L;
-		if (cooldownEndMs > anchorMs && cooldownEndMs < end) {
-			return cooldownEndMs;
+		long now = System.currentTimeMillis();
+		long shownMs = widgetSeconds * 1000L - Math.max(0L, now - widgetAtMs);
+		long untilZeroMs = shownMs;
+		int shortened = COOLDOWN_SECONDS - reductionSeconds;
+		if (reductionSeconds > 0 && !reducedThisCycle && widgetSeconds > shortened + 15) {
+			untilZeroMs = shownMs - reductionSeconds * 1000L;
 		}
-		return end;
+		return now + untilZeroMs;
 	}
 
 	public static Snap snap() {
@@ -181,6 +198,7 @@ public final class PestCooldown {
 		seenAt = 0L;
 		previousSeconds = -1;
 		previousKind = Kind.MISSING;
+		previousShowsSeconds = false;
 		clearCycle();
 		parseTick = Integer.MIN_VALUE;
 		alive = -1;
@@ -194,6 +212,9 @@ public final class PestCooldown {
 		elapsedAtAnchor = 0;
 		cooldownEndMs = 0L;
 		titled = false;
+		reducedThisCycle = false;
+		widgetSeconds = -1;
+		widgetAtMs = 0L;
 	}
 
 	private static void track(Snap read, long now) {
@@ -201,6 +222,7 @@ public final class PestCooldown {
 			clearCycle();
 			previousKind = Kind.MAX;
 			previousSeconds = -1;
+			previousShowsSeconds = false;
 			snap = read;
 			return;
 		}
@@ -208,10 +230,12 @@ public final class PestCooldown {
 			clearCycle();
 			previousKind = read.kind();
 			previousSeconds = -1;
+			previousShowsSeconds = false;
 			snap = Snap.missing();
 			return;
 		}
 		int seconds = read.seconds();
+		boolean secondsShown = showsSeconds(read);
 		if (StrayDebug.enabled("pest")
 			&& previousKind == Kind.COUNTING
 			&& previousSeconds >= 0
@@ -222,7 +246,10 @@ public final class PestCooldown {
 				"Pest cooldown " + format(previousSeconds) + " -> " + format(seconds) + " (" + sign + diff + "s)"
 			);
 		}
-		boolean secondsShown = showsSeconds(read);
+		boolean drop = previousKind == Kind.COUNTING
+			&& previousShowsSeconds
+			&& secondsShown
+			&& previousSeconds - seconds > 30;
 		boolean jumped = cycle && previousSeconds >= 0 && seconds > previousSeconds + 15;
 		boolean opened = previousKind == Kind.READY || previousKind == Kind.MAX;
 		if (!cycle || jumped || opened) {
@@ -230,13 +257,28 @@ public final class PestCooldown {
 			anchorMs = now;
 			elapsedAtAnchor = jumped || opened ? 0 : Math.max(0, BASE_SECONDS - seconds);
 			titled = !jumped && !opened && elapsedAtAnchor >= SWAP_SECONDS;
+			reducedThisCycle = false;
 		}
+		if (drop) {
+			reductionSeconds = previousSeconds - seconds;
+			reducedThisCycle = true;
+			if (StrayDebug.enabled("pest")) {
+				int lead = StrayConfig.clamp(StrayConfig.get().pestLoadoutLead, 0, 30);
+				int untilSwap = Math.max(0, COOLDOWN_SECONDS - reductionSeconds - lead);
+				StrayDebug.tell(
+					"Pest reduction " + reductionSeconds + "s off 5:00, swap " + lead + "s before 0 (" + format(untilSwap) + ")"
+				);
+			}
+		}
+		widgetSeconds = seconds;
+		widgetAtMs = now;
 		long tabEnd = now + seconds * 1000L;
 		if (takeTabEnd(tabEnd, secondsShown)) {
 			cooldownEndMs = secondsShown ? tabEnd : tabEnd + 60_000L;
 		}
 		previousKind = Kind.COUNTING;
 		previousSeconds = seconds;
+		previousShowsSeconds = secondsShown;
 	}
 
 	/**
