@@ -15,14 +15,16 @@ import net.minecraft.world.scores.Scoreboard;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Locale;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
  * Pest-farming loadout cycle. Swap B equips when the cooldown reaches the
- * configured seconds left. After pests spawn, TriSwap waits 1–2 seconds and
- * equips Swap C. Swap A comes back once every pest is dead.
+ * configured seconds left. Without TriSwap, Swap A equips when pests spawn.
+ * With TriSwap, Swap C equips 1–2 seconds after the spawn, and Swap A comes
+ * back once every pest is dead.
  *
  * <p>Swap B is the reduced timer minus the configured seconds left. The
  * reduced length is 3:29, or shorter when the widget cuts it. A minutes-only
@@ -74,6 +76,8 @@ public final class PestLoadoutSwap {
 	private static int latchedLead = -1;
 	private static boolean swapWaitTold;
 	private static boolean skippedB;
+	/** Swap A already equipped for this wave. Stops another click while the pests are still up. */
+	private static boolean spawnedA;
 
 	private PestLoadoutSwap() {
 	}
@@ -92,6 +96,7 @@ public final class PestLoadoutSwap {
 		latchedLead = -1;
 		swapWaitTold = false;
 		skippedB = false;
+		spawnedA = false;
 		LoadoutSwap.cancelQueue();
 	}
 
@@ -141,21 +146,20 @@ public final class PestLoadoutSwap {
 		switch (phase) {
 			case FARM -> {
 				if (pestsPresent()) {
+					if (!config.loadoutSwapTri && spawnedA) {
+						return;
+					}
 					if (!skippedB && StrayDebug.enabled("pest")) {
 						int slot = StrayConfig.clampLoadoutSwapSlot(config.loadoutSwapSlotB);
 						StrayDebug.tell("Pests spawned, skipping slot " + slot);
 					}
 					skippedB = true;
 					hold = false;
-					if (config.loadoutSwapTri) {
-						delayUntil = now + 1000L + ThreadLocalRandom.current().nextInt(1001);
-						phase = Phase.DELAY;
-					} else {
-						phase = Phase.WAIT_CLEAR;
-					}
+					armSpawn(config, now);
 					return;
 				}
 				skippedB = false;
+				spawnedA = false;
 				if (hold) {
 					if (latchedEndMs > 0L && latchedEndMs - now > lead * 1000L) {
 						hold = false;
@@ -178,12 +182,7 @@ public final class PestLoadoutSwap {
 			}
 			case WAIT_SPAWN -> {
 				if (pestsPresent()) {
-					if (config.loadoutSwapTri) {
-						delayUntil = now + 1000L + ThreadLocalRandom.current().nextInt(1001);
-						phase = Phase.DELAY;
-					} else {
-						phase = Phase.WAIT_CLEAR;
-					}
+					armSpawn(config, now);
 					return;
 				}
 				if (now - waitSince > (lead + 20L) * 1000L && equip(config.loadoutSwapSlotA, "no pests")) {
@@ -192,7 +191,9 @@ public final class PestLoadoutSwap {
 			}
 			case DELAY -> {
 				if (!config.loadoutSwapTri) {
-					phase = Phase.WAIT_CLEAR;
+					if (equip(config.loadoutSwapSlotA, pestsClear() ? "pests dead" : "pests spawned")) {
+						equippedSpawnA();
+					}
 					return;
 				}
 				if (pestsClear()) {
@@ -206,11 +207,35 @@ public final class PestLoadoutSwap {
 				}
 			}
 			case WAIT_CLEAR -> {
+				if (!config.loadoutSwapTri) {
+					if (equip(config.loadoutSwapSlotA, pestsClear() ? "pests dead" : "pests spawned")) {
+						equippedSpawnA();
+					}
+					return;
+				}
 				if (pestsClear() && equip(config.loadoutSwapSlotA, "pests dead")) {
 					backToFarm();
 				}
 			}
 		}
+	}
+
+	/** TriSwap waits, then equips C. Without TriSwap, Swap A equips on the spawn. */
+	private static void armSpawn(StrayConfig config, long now) {
+		if (config.loadoutSwapTri) {
+			delayUntil = now + 1000L + ThreadLocalRandom.current().nextInt(1001);
+			phase = Phase.DELAY;
+			return;
+		}
+		if (equip(config.loadoutSwapSlotA, "pests spawned")) {
+			equippedSpawnA();
+		}
+	}
+
+	/** Back on the farm set for this wave. The next Swap B waits for a new cooldown. */
+	private static void equippedSpawnA() {
+		backToFarm();
+		spawnedA = true;
 	}
 
 	/** Copy the reduced-timer end while the cycle is counting, and keep it after the widget goes Ready. */
@@ -409,5 +434,94 @@ public final class PestLoadoutSwap {
 
 	private static int slot(int configured) {
 		return StrayConfig.clampLoadoutSwapSlot(configured) - 1;
+	}
+
+	/** Next pest loadout swap while {@code /stray debug pest} is on. */
+	public record DebugHud(String title, String timer, boolean soon) {
+	}
+
+	public static DebugHud debugHud() {
+		if (!StrayDebug.enabled("pest")) {
+			return null;
+		}
+		StrayConfig config = StrayConfig.get();
+		if (!config.pestLoadoutSwap) {
+			return new DebugHud("Swap", "off", false);
+		}
+		long now = System.currentTimeMillis();
+		int lead = StrayConfig.clamp(config.pestLoadoutLead, 0, 30);
+		int slotA = StrayConfig.clampLoadoutSwapSlot(config.loadoutSwapSlotA);
+		int slotB = StrayConfig.clampLoadoutSwapSlot(config.loadoutSwapSlotB);
+		int slotC = StrayConfig.clampLoadoutSwapSlot(config.loadoutSwapSlotC);
+		boolean tri = config.loadoutSwapTri;
+		return switch (phase) {
+			case FARM -> farmHud(now, lead, slotA, slotB, slotC, tri);
+			case WAIT_SPAWN -> spawnHud(now, lead, slotA, slotC, tri);
+			case DELAY -> delayHud(now, slotA, slotC);
+			case WAIT_CLEAR -> clearHud(slotA);
+		};
+	}
+
+	private static DebugHud farmHud(long now, int lead, int slotA, int slotB, int slotC, boolean tri) {
+		if (pestsPresent()) {
+			if (!tri && spawnedA) {
+				return new DebugHud("Swap B " + slotB, "hold", false);
+			}
+			return tri
+				? new DebugHud("Swap C " + slotC, "soon", true)
+				: new DebugHud("Swap A " + slotA, "now", true);
+		}
+		if (hold) {
+			return new DebugHud("Swap B " + slotB, "hold", false);
+		}
+		if (latchedEndMs <= 0L) {
+			return new DebugHud("Swap B " + slotB, "—", false);
+		}
+		long left = latchedEndMs - lead * 1000L - now;
+		return new DebugHud("Swap B " + slotB, clock(left), left <= 2_000L);
+	}
+
+	private static DebugHud spawnHud(long now, int lead, int slotA, int slotC, boolean tri) {
+		long left = waitSince + (lead + 20L) * 1000L - now;
+		if (left <= 5_000L) {
+			return new DebugHud("Swap A " + slotA, clock(left), left <= 2_000L);
+		}
+		if (tri) {
+			return new DebugHud("Swap C " + slotC, "spawn", false);
+		}
+		return new DebugHud("Swap A " + slotA, "spawn", false);
+	}
+
+	private static DebugHud delayHud(long now, int slotA, int slotC) {
+		if (pestsClear()) {
+			return new DebugHud("Swap A " + slotA, "now", true);
+		}
+		long left = delayUntil - now;
+		return new DebugHud("Swap C " + slotC, clock(left), left <= 2_000L);
+	}
+
+	private static DebugHud clearHud(int slotA) {
+		if (pestsClear()) {
+			return new DebugHud("Swap A " + slotA, "now", true);
+		}
+		String timer = wave > 0 ? "x" + wave : "up";
+		return new DebugHud("Swap A " + slotA, timer, false);
+	}
+
+	/** At least a minute is {@code m:ss}. Ten seconds and up is whole seconds. Under that, one decimal. */
+	private static String clock(long leftMs) {
+		if (leftMs <= 0L) {
+			return "now";
+		}
+		if (leftMs < 10_000L) {
+			return String.format(Locale.ROOT, "%.1fs", leftMs / 1000.0);
+		}
+		long sec = (leftMs + 999L) / 1000L;
+		if (sec < 60L) {
+			return sec + "s";
+		}
+		long minutes = sec / 60L;
+		long seconds = sec % 60L;
+		return minutes + ":" + (seconds < 10L ? "0" : "") + seconds;
 	}
 }

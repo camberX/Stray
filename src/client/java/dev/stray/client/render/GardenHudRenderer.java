@@ -12,6 +12,7 @@ import dev.stray.client.farming.GardenVisitors;
 import dev.stray.client.farming.CropFever;
 import dev.stray.client.farming.PestCooldown;
 import dev.stray.client.farming.PestCooldown.Snap;
+import dev.stray.client.farming.PestLoadoutSwap;
 import dev.stray.client.item.ItemIds;
 import dev.stray.client.location.SkyblockLocation;
 import dev.stray.client.ui.HudEditorScreen;
@@ -163,6 +164,7 @@ public final class GardenHudRenderer {
 		if (client.player == null || client.options.hideGui) {
 			return;
 		}
+		drawPestSwapDebug(graphics, client.font);
 		boolean garden = SkyblockLocation.inGarden() || HudLayout.editorOpen();
 		if (!garden) {
 			return;
@@ -253,6 +255,23 @@ public final class GardenHudRenderer {
 
 	private static float timeWidth(Font font, String text) {
 		return GuiDraw.smallWidth(font, text) + PAD * 2f + 2f;
+	}
+
+	private static void drawPestSwapDebug(GuiGraphicsExtractor graphics, Font font) {
+		PestLoadoutSwap.DebugHud hud = PestLoadoutSwap.debugHud();
+		if (hud == null) {
+			return;
+		}
+		float titleW = GuiDraw.smallWidth(font, hud.title());
+		float timerW = GuiDraw.smallWidth(font, hud.timer());
+		float width = PAD * 2f + titleW + 8f + timerW + 2f;
+		float x = Math.max(4f, (graphics.guiWidth() - width) * 0.5f);
+		begin(graphics, x, 32f, 1f, width, PAD * 2f + LINE);
+		int titleColor = hud.soon() ? 0xFFFF5A4A : Theme.ACCENT;
+		int timerColor = hud.soon() ? 0xFFFF5A4A : Theme.TEXT;
+		GuiDraw.small(graphics, font, hud.title(), PAD + 1, PAD, titleColor);
+		GuiDraw.small(graphics, font, hud.timer(), width - PAD - timerW, PAD, timerColor);
+		graphics.pose().popMatrix();
 	}
 
 	private static void drawCropFever(GuiGraphicsExtractor graphics, Font font, float x, float y, float scale) {

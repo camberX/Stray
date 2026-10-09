@@ -83,8 +83,8 @@ public final class StrayDebug {
 		}
 		if ("pest".equals(flag)) {
 			tell(next
-				? "Pest cooldown prints in chat when the widget time jumps by more than 10 seconds."
-				: "Pest cooldown debug is off.");
+				? "Pest debug shows the next loadout swap and its timer, and prints when the cooldown jumps by more than 10 seconds."
+				: "Pest debug is off.");
 		}
 		if ("explorer".equals(flag)) {
 			if (next) {
