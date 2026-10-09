@@ -24,8 +24,8 @@ import java.util.regex.Pattern;
  * configured seconds left. After pests spawn, TriSwap waits 1–2 seconds and
  * equips Swap C. Swap A comes back once every pest is dead.
  *
- * <p>Swap B uses the cooldown end time latched from the widget. The widget
- * can flip to Ready before that window, and the latched time still fires.
+ * <p>Swap B uses the cooldown end time latched from the widget, and only
+ * while seconds are still left. Once pests are up, that swap is skipped.
  *
  * <p>A spawn is the garden chat line ({@code GROSS! A Pest has appeared},
  * {@code YUCK! 4 Pests have spawned}), the scoreboard {@code The Garden} /
@@ -72,6 +72,7 @@ public final class PestLoadoutSwap {
 	private static long latchedEndMs;
 	private static int latchedLead = -1;
 	private static boolean swapWaitTold;
+	private static boolean skippedB;
 
 	private PestLoadoutSwap() {
 	}
@@ -89,6 +90,7 @@ public final class PestLoadoutSwap {
 		latchedEndMs = 0L;
 		latchedLead = -1;
 		swapWaitTold = false;
+		skippedB = false;
 		LoadoutSwap.cancelQueue();
 	}
 
@@ -132,11 +134,27 @@ public final class PestLoadoutSwap {
 			return;
 		}
 		long now = System.currentTimeMillis();
-		sense(client, phase != Phase.FARM);
+		sense(client, true);
 		int lead = StrayConfig.clamp(config.pestLoadoutLead, 0, 30);
 		remember(now, lead, config.loadoutSwapSlotB);
 		switch (phase) {
 			case FARM -> {
+				if (pestsPresent()) {
+					if (!skippedB && StrayDebug.enabled("pest")) {
+						int slot = StrayConfig.clampLoadoutSwapSlot(config.loadoutSwapSlotB);
+						StrayDebug.tell("Pests spawned, skipping slot " + slot);
+					}
+					skippedB = true;
+					hold = false;
+					if (config.loadoutSwapTri) {
+						delayUntil = now + 1000L + ThreadLocalRandom.current().nextInt(1001);
+						phase = Phase.DELAY;
+					} else {
+						phase = Phase.WAIT_CLEAR;
+					}
+					return;
+				}
+				skippedB = false;
 				if (hold) {
 					if (latchedEndMs > 0L && latchedEndMs - now > lead * 1000L) {
 						hold = false;
@@ -147,8 +165,8 @@ public final class PestLoadoutSwap {
 				if (latchedEndMs <= 0L) {
 					return;
 				}
-				long due = latchedEndMs - lead * 1000L;
-				if (now < due) {
+				long leftMs = latchedEndMs - now;
+				if (leftMs <= 0L || leftMs > lead * 1000L) {
 					swapWaitTold = false;
 					return;
 				}
@@ -197,7 +215,7 @@ public final class PestLoadoutSwap {
 	/** Copy the widget end while it is counting, and keep it after the widget goes Ready. */
 	private static void remember(long now, int lead, int slotB) {
 		long end = PestCooldown.endsAt();
-		if (end <= 0L) {
+		if (end <= now) {
 			return;
 		}
 		if (hold && end - now <= lead * 1000L) {
@@ -232,6 +250,7 @@ public final class PestLoadoutSwap {
 		latchedEndMs = 0L;
 		latchedLead = -1;
 		swapWaitTold = false;
+		skippedB = false;
 		phase = Phase.FARM;
 	}
 
