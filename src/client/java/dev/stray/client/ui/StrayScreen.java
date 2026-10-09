@@ -3791,7 +3791,7 @@ public class StrayScreen extends Screen {
 				y = alertLine(graphics, font, ix, y, iw, mouseX, mouseY, "Subtitle", config.pestCooldownAlertSub, 2);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Auto loadout", config.pestLoadoutSwap, v -> config.pestLoadoutSwap = v);
 				if (config.pestLoadoutSwap) {
-					slider(graphics, font, ix, y, iw, "Swap at", config.pestLoadoutLead + "s left", config.pestLoadoutLead / 30f, v -> config.pestLoadoutLead = snapInt(v * 30f, 0, 30, 1));
+					slider(graphics, font, ix, y, iw, "Time left", config.pestLoadoutLead + "s", config.pestLoadoutLead / 30f, v -> config.pestLoadoutLead = snapInt(v * 30f, 0, 30, 1));
 				}
 			}
 			case AUTO_DNA -> {

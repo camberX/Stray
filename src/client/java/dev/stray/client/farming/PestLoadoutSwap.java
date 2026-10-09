@@ -24,8 +24,9 @@ import java.util.regex.Pattern;
  * configured seconds left. After pests spawn, TriSwap waits 1–2 seconds and
  * equips Swap C. Swap A comes back once every pest is dead.
  *
- * <p>Swap B uses the cooldown end time latched from the widget, and only
- * while seconds are still left. Once pests are up, that swap is skipped.
+ * <p>Swap B is the reduced timer minus the configured seconds left. The
+ * reduced length is 3:29, or shorter when the widget cuts it. A minutes-only
+ * tab reading does not push that end later. Once pests are up, Swap B is skipped.
  *
  * <p>A spawn is the garden chat line ({@code GROSS! A Pest has appeared},
  * {@code YUCK! 4 Pests have spawned}), the scoreboard {@code The Garden} /
@@ -212,9 +213,9 @@ public final class PestLoadoutSwap {
 		}
 	}
 
-	/** Copy the widget end while it is counting, and keep it after the widget goes Ready. */
+	/** Copy the reduced-timer end while the cycle is counting, and keep it after the widget goes Ready. */
 	private static void remember(long now, int lead, int slotB) {
-		long end = PestCooldown.endsAt();
+		long end = PestCooldown.reducedEndsAt();
 		if (end <= now) {
 			return;
 		}

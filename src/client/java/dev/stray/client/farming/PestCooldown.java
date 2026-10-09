@@ -156,6 +156,22 @@ public final class PestCooldown {
 		return cooldownEndMs;
 	}
 
+	/**
+	 * End of the reduced pest timer. The countdown is {@link #REDUCED_SECONDS}
+	 * (3:29) after the set's decrease. A shorter widget reading lowers it
+	 * further. A minutes-only tab value cannot push this later.
+	 */
+	public static long reducedEndsAt() {
+		if (!cycle || anchorMs <= 0L) {
+			return 0L;
+		}
+		long end = anchorMs + (long) Math.max(0, REDUCED_SECONDS - elapsedAtAnchor) * 1000L;
+		if (cooldownEndMs > anchorMs && cooldownEndMs < end) {
+			return cooldownEndMs;
+		}
+		return end;
+	}
+
 	public static Snap snap() {
 		return snap;
 	}
