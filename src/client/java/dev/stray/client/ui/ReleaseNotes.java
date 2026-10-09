@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.5.55", new String[]{
+			"The main menu background is the liquid marble loop. Veins and splashes use the accent color. The teal stone stays."
+		}),
 		new Entry("1.5.54", new String[]{
 			"ProggyClean is drawn on Dear ImGui's 13px pixel grid, one glyph pixel per GUI pixel, instead of a downscaled blur."
 		}),
