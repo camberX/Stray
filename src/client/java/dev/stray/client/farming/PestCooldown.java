@@ -137,14 +137,23 @@ public final class PestCooldown {
 
 	/** Seconds left on the tracked cooldown, or {@code -1} when it is not counting. */
 	public static int secondsLeft() {
-		if (!cycle || cooldownEndMs <= 0L) {
+		long end = endsAt();
+		if (end <= 0L) {
 			return -1;
 		}
-		long leftMs = cooldownEndMs - System.currentTimeMillis();
+		long leftMs = end - System.currentTimeMillis();
 		if (leftMs <= 0L) {
 			return 0;
 		}
 		return (int) ((leftMs + 999L) / 1000L);
+	}
+
+	/** Absolute cooldown end, or {@code 0} when the widget is not counting. */
+	public static long endsAt() {
+		if (!cycle || cooldownEndMs <= 0L) {
+			return 0L;
+		}
+		return cooldownEndMs;
 	}
 
 	public static Snap snap() {
