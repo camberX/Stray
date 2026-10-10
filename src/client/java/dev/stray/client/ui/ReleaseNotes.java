@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.5.63", new String[]{
+			"Sodium's chunk draw binds Stray's uniform block, so joining a world no longer crashes."
+		}),
 		new Entry("1.5.62", new String[]{
 			"Sodium's terrain shader keeps its own VULKAN define, so the solid terrain pipeline compiles again."
 		}),

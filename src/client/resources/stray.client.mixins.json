@@ -33,6 +33,8 @@
 		"EditBoxMixin",
 		"EntityRendererMixin",
 		"FeatureRenderDispatcherMixin",
+		"FrontendRenderPassMixin",
+		"GlCommandEncoderMixin",
 		"EntityRenderStateMixin",
 		"FogRendererMixin",
 		"FontMixin",
