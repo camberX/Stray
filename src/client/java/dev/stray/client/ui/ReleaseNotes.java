@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.5.62", new String[]{
+			"Sodium's terrain shader keeps its own VULKAN define, so the solid terrain pipeline compiles again."
+		}),
 		new Entry("1.5.61", new String[]{
 			"Joining a world fills every empty terrain uniform, and Sodium's chunk offset uses the push-constant path."
 		}),
