@@ -11,9 +11,6 @@ import org.lwjgl.opengl.GL31;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.util.Collections;
-import java.util.IdentityHashMap;
-import java.util.Map;
 
 /**
  * Focus, world tint, fog density, and the top-down cut share one std140 block.
@@ -33,8 +30,8 @@ public final class StrayUniforms {
 		#endif
 		""";
 
-	private static final ByteBuffer DATA = ByteBuffer.allocateDirect(48).order(ByteOrder.nativeOrder());
-	private static final Map<Object, Integer> INDICES = Collections.synchronizedMap(new IdentityHashMap<>());
+	private static final int BUFFER_BYTES = 256;
+	private static final ByteBuffer DATA = ByteBuffer.allocateDirect(BUFFER_BYTES).order(ByteOrder.nativeOrder());
 	private static BindGroupLayout layout;
 	private static GpuBuffer buffer;
 
@@ -50,21 +47,6 @@ public final class StrayUniforms {
 			layout = current;
 		}
 		return current;
-	}
-
-	public static void remember(Object pipeline, int index) {
-		if (pipeline == null || index < 0) {
-			return;
-		}
-		INDICES.put(pipeline, index);
-	}
-
-	public static int index(Object pipeline) {
-		if (pipeline == null) {
-			return -1;
-		}
-		Integer found = INDICES.get(pipeline);
-		return found == null ? -1 : found;
 	}
 
 	public static String insertBlock(String source) {
@@ -117,17 +99,17 @@ public final class StrayUniforms {
 			current = RenderSystem.getDevice().createBuffer(
 				() -> "stray block",
 				GpuBuffer.USAGE_UNIFORM | GpuBuffer.USAGE_COPY_DST,
-				48
+				BUFFER_BYTES
 			);
 			buffer = current;
 		}
 		if (current instanceof GlBuffer gl) {
 			DATA.position(0);
-			DATA.limit(48);
+			DATA.limit(BUFFER_BYTES);
 			GL15.glBindBuffer(GL31.GL_UNIFORM_BUFFER, gl.handle());
 			GL15.glBufferSubData(GL31.GL_UNIFORM_BUFFER, 0L, DATA);
 			GL15.glBindBuffer(GL31.GL_UNIFORM_BUFFER, 0);
 		}
-		return current.slice();
+		return current.slice(0, BUFFER_BYTES);
 	}
 }

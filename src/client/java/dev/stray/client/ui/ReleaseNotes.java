@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.5.61", new String[]{
+			"Joining a world fills every empty terrain uniform, and Sodium's chunk offset uses the push-constant path."
+		}),
 		new Entry("1.5.60", new String[]{
 			"Terrain draws supply the Stray uniform buffer, so joining a world no longer crashes."
 		}),
