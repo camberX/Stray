@@ -99,7 +99,7 @@ public final class GuiDraw {
 		if (client == null) {
 			return false;
 		}
-		Screen screen = client.screen;
+		Screen screen = client.gui.screen();
 		if (screen == null) {
 			return false;
 		}
@@ -273,7 +273,7 @@ public final class GuiDraw {
 		graphics.pose().popMatrix();
 	}
 
-	private static com.mojang.blaze3d.pipeline.RenderPipeline circleBlitPipeline;
+	private static com.mojang.renderpearl.api.pipeline.RenderPipeline circleBlitPipeline;
 
 	/**
 	 * Blits a texture region masked to a circle in the shader, so nothing has to
@@ -297,7 +297,7 @@ public final class GuiDraw {
 		}
 		Minecraft client = Minecraft.getInstance();
 		net.minecraft.client.renderer.texture.AbstractTexture texture = client.getTextureManager().getTexture(id);
-		com.mojang.blaze3d.textures.GpuTextureView view = texture == null ? null : texture.getTextureView();
+		com.mojang.renderpearl.api.textures.GpuTextureView view = texture == null ? null : texture.getTextureView();
 		if (view == null) {
 			return false;
 		}
@@ -311,8 +311,8 @@ public final class GuiDraw {
 		int b = Math.max(1, Math.round(Mth.clamp(u1 - u0, 0f, 1f) * 255f));
 		int a = Math.max(1, Math.round(Mth.clamp(v1 - v0, 0f, 1f) * 255f));
 		int packed = (a << 24) | (r << 16) | (g << 8) | b;
-		com.mojang.blaze3d.textures.GpuSampler sampler = com.mojang.blaze3d.systems.RenderSystem.getSamplerCache()
-			.getClampToEdge(com.mojang.blaze3d.textures.FilterMode.NEAREST);
+		com.mojang.renderpearl.api.textures.GpuSampler sampler = com.mojang.blaze3d.systems.RenderSystem.getSamplerCache()
+			.getClampToEdge(com.mojang.renderpearl.api.textures.FilterMode.NEAREST);
 		graphics.pose().pushMatrix();
 		graphics.pose().translate(x, y);
 		graphics.pose().scale(size, size);
@@ -326,16 +326,11 @@ public final class GuiDraw {
 			return;
 		}
 		Identifier shader = Stray.id("core/gui_circle_blit");
-		circleBlitPipeline = com.mojang.blaze3d.pipeline.RenderPipeline.builder()
-			.withLocation(Stray.id("pipeline/gui_circle_blit"))
-			.withVertexShader(shader)
-			.withFragmentShader(shader)
-			.withSampler("Sampler0")
-			.withUniform("DynamicTransforms", com.mojang.blaze3d.shaders.UniformType.UNIFORM_BUFFER)
-			.withUniform("Projection", com.mojang.blaze3d.shaders.UniformType.UNIFORM_BUFFER)
-			.withColorTargetState(new com.mojang.blaze3d.pipeline.ColorTargetState(com.mojang.blaze3d.pipeline.BlendFunction.TRANSLUCENT))
-			.withVertexFormat(com.mojang.blaze3d.vertex.DefaultVertexFormat.POSITION_TEX_COLOR, com.mojang.blaze3d.vertex.VertexFormat.Mode.QUADS)
-			.build();
+		circleBlitPipeline = RenderCompat.guiBlit(
+			Stray.id("pipeline/gui_circle_blit"),
+			shader,
+			com.mojang.renderpearl.api.pipeline.BlendFunction.TRANSLUCENT
+		).build();
 	}
 
 	public static void circleClip(GuiGraphicsExtractor graphics, float x, float y, float size, int cover) {
@@ -370,7 +365,7 @@ public final class GuiDraw {
 
 	public static void blit(
 		GuiGraphicsExtractor graphics,
-		com.mojang.blaze3d.pipeline.RenderPipeline pipeline,
+		com.mojang.renderpearl.api.pipeline.RenderPipeline pipeline,
 		Identifier id,
 		float x,
 		float y,

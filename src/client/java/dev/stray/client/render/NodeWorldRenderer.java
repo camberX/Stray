@@ -46,7 +46,7 @@ public final class NodeWorldRenderer {
 			? GizmoStyle.strokeAndFill(stroke, 2.4f, fill)
 			: config.boxFill ? GizmoStyle.fill(fill) : GizmoStyle.stroke(stroke, 2.4f);
 
-		Vec3 camera = client.gameRenderer.getMainCamera().position();
+		Vec3 camera = client.gameRenderer.mainCamera().position();
 		EnderNodeTracker.TrackedNode nearest = EnderNodeTracker.get().nearest(camera);
 
 		for (EnderNodeTracker.TrackedNode node : nodes) {

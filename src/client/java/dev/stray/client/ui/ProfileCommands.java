@@ -59,17 +59,17 @@ public final class ProfileCommands {
 	public static int open(String name) {
 		Minecraft client = Minecraft.getInstance();
 		if (!StrayConfig.get().profileViewerEnabled) {
-			client.gui.getChat().addClientSystemMessage(
+			client.gui.hud.getChat().addClientSystemMessage(
 				Component.literal("Stray | Turn on Profile viewer in Menus.")
 			);
 			return 0;
 		}
 		client.execute(() -> {
-			if (client.screen instanceof ProfileViewerScreen screen) {
+			if (client.gui.screen() instanceof ProfileViewerScreen screen) {
 				screen.lookup(name);
 				return;
 			}
-			client.setScreen(new ProfileViewerScreen(name));
+			client.gui.setScreen(new ProfileViewerScreen(name));
 		});
 		return Command.SINGLE_SUCCESS;
 	}

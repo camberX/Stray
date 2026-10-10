@@ -1,8 +1,5 @@
 package dev.stray.client.mixin;
 
-import dev.stray.client.combat.AutoExperiments;
-import dev.stray.client.farming.AutoDna;
-import dev.stray.client.menu.DisabledPotions;
 import dev.stray.client.combat.MageBeamHits;
 import dev.stray.client.combat.Triggerbot;
 import dev.stray.client.movement.AotvSim;
@@ -12,45 +9,16 @@ import dev.stray.client.render.MobGlowRenderer;
 import dev.stray.client.farming.EmptyVacuum;
 import dev.stray.client.mining.GreatExplorer;
 import dev.stray.client.ui.LoadoutSwap;
-import dev.stray.client.ui.LoadoutsScreen;
-import dev.stray.client.ui.StrayTitleScreen;
-import dev.stray.client.ui.WardrobeScreen;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.client.gui.screens.TitleScreen;
 import net.minecraft.world.entity.Entity;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.ModifyVariable;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(Minecraft.class)
 public class MinecraftMixin {
-	@ModifyVariable(method = "setScreen", at = @At("HEAD"), argsOnly = true)
-	private Screen stray$titleScreen(Screen screen) {
-		if (screen instanceof TitleScreen) {
-			return new StrayTitleScreen();
-		}
-		return WardrobeScreen.wrap(LoadoutsScreen.wrap(screen));
-	}
-
-	@Inject(method = "setScreen", at = @At("RETURN"))
-	private void stray$hideDefaultLoadouts(Screen screen, CallbackInfo ci) {
-		Minecraft client = (Minecraft) (Object) this;
-		if (client.screen != null && LoadoutsScreen.hideDefaultChest(client.screen) && client.mouseHandler != null) {
-			client.mouseHandler.grabMouse();
-		}
-	}
-
-	@Inject(method = "setScreen", at = @At("HEAD"))
-	private void stray$autoExperimentsOpen(Screen screen, CallbackInfo ci) {
-		AutoExperiments.onOpen(screen);
-		AutoDna.onOpen(screen);
-		DisabledPotions.onOpen(screen);
-	}
-
 	/**
 	 * Same place vanilla left-click is handled, before this tick's movement
 	 * packet is sent.

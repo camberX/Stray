@@ -2,7 +2,7 @@ package dev.stray.client.mixin;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import dev.stray.client.visual.HeldItemShader;
-import net.minecraft.client.renderer.SubmitNodeStorage;
+import net.minecraft.client.renderer.feature.ItemFeatureRenderer;
 import net.minecraft.client.renderer.item.ItemStackRenderState;
 import net.minecraft.client.resources.model.geometry.BakedQuad;
 import net.minecraft.world.item.ItemDisplayContext;
@@ -13,7 +13,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import java.util.List;
 
-@Mixin(SubmitNodeStorage.ItemSubmit.class)
+@Mixin(ItemFeatureRenderer.Submit.class)
 public class ItemSubmitMixin {
 	@Inject(method = "<init>", at = @At("RETURN"))
 	private void stray$markFillItem(

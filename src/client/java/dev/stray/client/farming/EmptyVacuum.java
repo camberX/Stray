@@ -15,7 +15,7 @@ import net.minecraft.world.inventory.ContainerInput;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
-import org.lwjgl.glfw.GLFW;
+import dev.stray.client.input.MouseButtons;
 
 /**
  * Keybind: {@code /call Philip}, then one click on the hopper minecart named
@@ -89,7 +89,7 @@ public final class EmptyVacuum {
 		boolean down = held();
 		boolean press = down && !wasHeld;
 		wasHeld = down;
-		if (!press || client.screen != null || client.player == null) {
+		if (!press || client.gui.screen() != null || client.player == null) {
 			return;
 		}
 		begin(client);
@@ -111,7 +111,7 @@ public final class EmptyVacuum {
 			return;
 		}
 		boolean down = held();
-		if (!ignore && down && !wasHeld && client.screen == null) {
+		if (!ignore && down && !wasHeld && client.gui.screen() == null) {
 			begin(client);
 		}
 		wasHeld = down;
@@ -203,7 +203,7 @@ public final class EmptyVacuum {
 	}
 
 	private static boolean pesthunterOpen(Minecraft client) {
-		if (!(client.screen instanceof AbstractContainerScreen<?> screen)) {
+		if (!(client.gui.screen() instanceof AbstractContainerScreen<?> screen)) {
 			return false;
 		}
 		if (!(screen.getMenu() instanceof ChestMenu)) {
@@ -214,7 +214,7 @@ public final class EmptyVacuum {
 	}
 
 	private static boolean clickBag(Minecraft client) {
-		if (!(client.screen instanceof AbstractContainerScreen<?> screen)) {
+		if (!(client.gui.screen() instanceof AbstractContainerScreen<?> screen)) {
 			return false;
 		}
 		if (!(screen.getMenu() instanceof ChestMenu chest)) {
@@ -312,8 +312,8 @@ public final class EmptyVacuum {
 			return false;
 		}
 		return switch (key.getType()) {
-			case KEYSYM -> InputConstants.isKeyDown(client.getWindow(), key.getValue());
-			case MOUSE -> GLFW.glfwGetMouseButton(client.getWindow().handle(), key.getValue()) == GLFW.GLFW_PRESS;
+			case KEYBOARD -> InputConstants.isKeyDown(key.getValue());
+			case MOUSE -> MouseButtons.down(key.getValue());
 			default -> false;
 		};
 	}

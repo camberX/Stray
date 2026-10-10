@@ -400,9 +400,9 @@ public final class NickSteal {
 		out.append("§r");
 		TextColor color = style.getColor();
 		if (color != null) {
-			ChatFormatting named = ChatFormatting.getByName(color.serialize());
-			if (named != null && named.isColor()) {
-				out.append('§').append(named.getChar());
+			ChatFormatting named = namedColor(color.serialize());
+			if (named != null) {
+				out.append('§').append(legacyCode(named));
 			}
 		}
 		if (style.isBold()) {
@@ -420,6 +420,24 @@ public final class NickSteal {
 		if (style.isObfuscated()) {
 			out.append("§k");
 		}
+	}
+
+	private static ChatFormatting namedColor(String serialized) {
+		if (serialized == null || serialized.isEmpty() || serialized.charAt(0) == '#') {
+			return null;
+		}
+		String key = serialized.toUpperCase(Locale.ROOT);
+		for (ChatFormatting formatting : ChatFormatting.values()) {
+			if (formatting.name().equals(key) && TextColor.fromLegacyFormat(formatting) != null) {
+				return formatting;
+			}
+		}
+		return null;
+	}
+
+	private static char legacyCode(ChatFormatting formatting) {
+		String text = formatting.toString();
+		return text.isEmpty() ? 'r' : text.charAt(text.length() - 1);
 	}
 
 	private static void fail(int gen, String message) {

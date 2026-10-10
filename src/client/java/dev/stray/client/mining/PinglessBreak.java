@@ -1,5 +1,6 @@
 package dev.stray.client.mining;
 
+import net.minecraft.world.item.DyeColor;
 import dev.stray.client.config.StrayConfig;
 import dev.stray.client.item.ItemText;
 import dev.stray.client.location.SkyblockLocation;
@@ -211,7 +212,7 @@ public final class PinglessBreak {
 			return new Profile(2000, 5, true);
 		}
 		if (mithrilIsland()) {
-			if (block == Blocks.GRAY_WOOL || block == Blocks.CYAN_TERRACOTTA) {
+			if (block == Blocks.WOOL.pick(DyeColor.GRAY) || block == Blocks.DYED_TERRACOTTA.pick(DyeColor.CYAN)) {
 				return new Profile(500, 4, true);
 			}
 			if (block == Blocks.PRISMARINE || block == Blocks.PRISMARINE_BRICKS || block == Blocks.DARK_PRISMARINE) {
@@ -219,7 +220,7 @@ public final class PinglessBreak {
 			}
 		}
 		if (glaciteArea()) {
-			if (block == Blocks.SMOOTH_RED_SANDSTONE || block == Blocks.TERRACOTTA || block == Blocks.BROWN_TERRACOTTA) {
+			if (block == Blocks.SMOOTH_RED_SANDSTONE || block == Blocks.TERRACOTTA || block == Blocks.DYED_TERRACOTTA.pick(DyeColor.BROWN)) {
 				return new Profile(5600, 9, true);
 			}
 			if (block == Blocks.CLAY) {
@@ -241,26 +242,26 @@ public final class PinglessBreak {
 	}
 
 	private static Profile gemstone(Block block) {
-		if (block == Blocks.RED_STAINED_GLASS) {
+		if (block == Blocks.STAINED_GLASS.pick(DyeColor.RED)) {
 			return new Profile(2300, 6, true);
 		}
-		if (block == Blocks.ORANGE_STAINED_GLASS
-			|| block == Blocks.PURPLE_STAINED_GLASS
-			|| block == Blocks.LIME_STAINED_GLASS
-			|| block == Blocks.WHITE_STAINED_GLASS
-			|| block == Blocks.LIGHT_BLUE_STAINED_GLASS) {
+		if (block == Blocks.STAINED_GLASS.pick(DyeColor.ORANGE)
+			|| block == Blocks.STAINED_GLASS.pick(DyeColor.PURPLE)
+			|| block == Blocks.STAINED_GLASS.pick(DyeColor.LIME)
+			|| block == Blocks.STAINED_GLASS.pick(DyeColor.WHITE)
+			|| block == Blocks.STAINED_GLASS.pick(DyeColor.LIGHT_BLUE)) {
 			return new Profile(3000, 7, true);
 		}
-		if (block == Blocks.YELLOW_STAINED_GLASS) {
+		if (block == Blocks.STAINED_GLASS.pick(DyeColor.YELLOW)) {
 			return new Profile(3800, 8, true);
 		}
-		if (block == Blocks.MAGENTA_STAINED_GLASS) {
+		if (block == Blocks.STAINED_GLASS.pick(DyeColor.MAGENTA)) {
 			return new Profile(4800, 9, true);
 		}
-		if (block == Blocks.BLUE_STAINED_GLASS
-			|| block == Blocks.GREEN_STAINED_GLASS
-			|| block == Blocks.BROWN_STAINED_GLASS
-			|| block == Blocks.BLACK_STAINED_GLASS) {
+		if (block == Blocks.STAINED_GLASS.pick(DyeColor.BLUE)
+			|| block == Blocks.STAINED_GLASS.pick(DyeColor.GREEN)
+			|| block == Blocks.STAINED_GLASS.pick(DyeColor.BROWN)
+			|| block == Blocks.STAINED_GLASS.pick(DyeColor.BLACK)) {
 			return new Profile(5200, 9, true);
 		}
 		return null;

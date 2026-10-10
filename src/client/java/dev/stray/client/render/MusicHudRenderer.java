@@ -1,6 +1,7 @@
 package dev.stray.client.render;
 
 import dev.stray.client.config.StrayConfig;
+import dev.stray.client.input.MouseButtons;
 import dev.stray.client.media.CoverArt;
 import dev.stray.client.media.MediaSession;
 import dev.stray.client.media.NowPlaying;
@@ -69,14 +70,14 @@ public final class MusicHudRenderer {
 	}
 
 	public static boolean interactive() {
-		return Minecraft.getInstance().screen instanceof ChatScreen;
+		return Minecraft.getInstance().gui.screen() instanceof ChatScreen;
 	}
 
 	public static boolean mouseClicked(MouseButtonEvent event) {
-		if (event.button() != 0 || !StrayConfig.get().musicHudEnabled) {
+		if (!MouseButtons.left(event) || !StrayConfig.get().musicHudEnabled) {
 			return false;
 		}
-		if (Minecraft.getInstance().screen instanceof HudEditorScreen) {
+		if (Minecraft.getInstance().gui.screen() instanceof HudEditorScreen) {
 			return false;
 		}
 		if (!interactive() || reveal < 0.85f) {
@@ -118,7 +119,7 @@ public final class MusicHudRenderer {
 
 	static void extract(GuiGraphicsExtractor graphics, DeltaTracker deltaTracker) {
 		Minecraft client = Minecraft.getInstance();
-		if (client.options.hideGui) {
+		if (client.gui.hud.isHidden()) {
 			clearHits();
 			reveal = 0f;
 			return;

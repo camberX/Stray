@@ -265,7 +265,7 @@ public final class MovementRings {
 		}
 		recordWasDown = down;
 		if (recordingRing != null) {
-			if (serverStep(client) && client.screen == null) {
+			if (serverStep(client) && client.gui.screen() == null) {
 				capture(client);
 				if (recordingRing.frames.size() >= MAX_FRAMES) {
 					stopRecording(true);
@@ -275,7 +275,7 @@ public final class MovementRings {
 				recordingRing.invalidateLabels();
 			}
 		} else if (playingRing != null) {
-			if (client.screen != null) {
+			if (client.gui.screen() != null) {
 				stopPlayback();
 			} else if (!aiming) {
 				syncTape(client);
@@ -294,7 +294,7 @@ public final class MovementRings {
 		if (playingRing == null || client.player == null) {
 			return;
 		}
-		if (client.screen != null || client.level == null || !enabled()) {
+		if (client.gui.screen() != null || client.level == null || !enabled()) {
 			stopPlayback();
 			return;
 		}
@@ -486,7 +486,7 @@ public final class MovementRings {
 			return;
 		}
 		Minecraft client = Minecraft.getInstance();
-		if (client.player == null || client.options.hideGui) {
+		if (client.player == null || client.gui.hud.isHidden()) {
 			return;
 		}
 		if (playing()) {
@@ -495,7 +495,7 @@ public final class MovementRings {
 		if (here().isEmpty()) {
 			return;
 		}
-		Camera camera = client.gameRenderer.getMainCamera();
+		Camera camera = client.gameRenderer.mainCamera();
 		if (!camera.isInitialized()) {
 			return;
 		}
@@ -783,7 +783,7 @@ public final class MovementRings {
 			return;
 		}
 		LocalPlayer player = client.player;
-		boolean allow = client.screen == null && recordingRing == null && playingRing == null;
+		boolean allow = client.gui.screen() == null && recordingRing == null && playingRing == null;
 		for (Ring ring : rings) {
 			boolean inside = occupying(player, ring);
 			if (!inside) {
@@ -1018,7 +1018,7 @@ public final class MovementRings {
 			return;
 		}
 		Minecraft client = Minecraft.getInstance();
-		Camera camera = client.gameRenderer.getMainCamera();
+		Camera camera = client.gameRenderer.mainCamera();
 		Vec3 camPos = camera.isInitialized() ? camera.position() : null;
 		int rgb = StrayConfig.get().movementRingsRgb & 0xFFFFFF;
 		int line = 0xEB000000 | rgb;
@@ -1085,7 +1085,7 @@ public final class MovementRings {
 		if (client.gui == null) {
 			return;
 		}
-		client.gui.getChat().addClientSystemMessage(
+		client.gui.hud.getChat().addClientSystemMessage(
 			Component.literal("Stray move ").withStyle(ChatFormatting.AQUA)
 				.append(Component.literal(text).withStyle(color))
 		);

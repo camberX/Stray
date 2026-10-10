@@ -127,6 +127,6 @@ public final class ContainerChrome {
 
 	private static boolean appliesCurrent() {
 		Minecraft client = Minecraft.getInstance();
-		return client != null && applies(client.screen);
+		return client != null && applies(client.gui.screen());
 	}
 }

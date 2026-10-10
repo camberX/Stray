@@ -4,11 +4,10 @@ import com.mojang.blaze3d.ProjectionType;
 import com.mojang.blaze3d.pipeline.MainTarget;
 import com.mojang.blaze3d.pipeline.RenderTarget;
 import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.textures.GpuTextureView;
+import com.mojang.renderpearl.api.textures.GpuTextureView;
 import dev.stray.client.farming.TopDownView;
 import dev.stray.client.mixin.CameraAccessor;
 import dev.stray.client.mixin.GameRendererAccessor;
-import dev.stray.client.mixin.MinecraftAccessor;
 import net.minecraft.client.Camera;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
@@ -21,6 +20,7 @@ import net.minecraft.client.renderer.state.level.CameraRenderState;
 import net.minecraft.util.Mth;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Matrix4f;
+import org.joml.Vector4f;
 
 /**
  * Overhead picture of the world. The near plane sits just above the player's
@@ -67,7 +67,7 @@ public final class TopDownCapture {
 			ready = false;
 			return;
 		}
-		Camera camera = client.gameRenderer.getMainCamera();
+		Camera camera = client.gameRenderer.mainCamera();
 		if (!camera.isInitialized()) {
 			return;
 		}
@@ -82,10 +82,10 @@ public final class TopDownCapture {
 		int windowW = Math.max(1, client.getWindow().getWidth());
 		int windowH = Math.max(1, client.getWindow().getHeight());
 		GameRenderer renderer = client.gameRenderer;
-		CameraRenderState state = renderer.getGameRenderState().levelRenderState.cameraRenderState;
+		CameraRenderState state = renderer.gameRenderState().levelRenderState.cameraRenderState;
 		FogData savedFog = state.fogData;
 		Matrix4f savedProjection = state.projectionMatrix == null ? new Matrix4f() : new Matrix4f(state.projectionMatrix);
-		RenderTarget main = client.getMainRenderTarget();
+		RenderTarget main = client.gameRenderer.mainRenderTarget();
 		if (main == null) {
 			return;
 		}
@@ -104,7 +104,7 @@ public final class TopDownCapture {
 			access.stray$setPosition(new Vec3(eye.x, eye.y + altitude, eye.z));
 			access.stray$setRotation(client.player.getViewYRot(partial), 90f);
 			access.stray$setupPerspective(near, far, fov, SIZE, SIZE);
-			boolean zeroToOne = RenderSystem.getDevice().isZZeroToOne();
+			boolean zeroToOne = RenderSystem.getDevice().getDeviceInfo().isZZeroToOne();
 			Matrix4f view = camera.getViewRotationMatrix(new Matrix4f());
 			Matrix4f cullProj = new Matrix4f().perspective((float) Math.toRadians(fov), 1f, near, far, zeroToOne);
 			Frustum frustum = new Frustum(view, cullProj);
@@ -113,12 +113,11 @@ public final class TopDownCapture {
 			access.stray$cullFrustum(frustum);
 			GameRendererAccessor game = (GameRendererAccessor) renderer;
 			FogRenderer fog = game.stray$fogRenderer();
-			client.levelRenderer.update(camera);
 			ensureTargets();
 			if (projection == null) {
 				projection = new ProjectionMatrixBuffer("stray-top-down");
 			}
-			((MinecraftAccessor) client).stray$mainRenderTarget(wideTarget);
+			game.stray$mainRenderTarget(wideTarget);
 			swapped = true;
 			drawPass(client, renderer, game, fog, camera, state, delta, partial, cullProj);
 			ready = wideTarget.getColorTextureView() != null;
@@ -126,7 +125,7 @@ public final class TopDownCapture {
 			ready = false;
 		} finally {
 			if (swapped) {
-				((MinecraftAccessor) client).stray$mainRenderTarget(main);
+				((GameRendererAccessor) renderer).stray$mainRenderTarget(main);
 			}
 			access.stray$detached(savedDetached);
 			access.stray$setPosition(savedPos);
@@ -135,7 +134,7 @@ public final class TopDownCapture {
 			if (savedFrustum != null) {
 				access.stray$cullFrustum(savedFrustum);
 			}
-			camera.extractRenderState(state, partial);
+			camera.extractRenderState(state, delta);
 			if (savedFog != null) {
 				state.fogData = savedFog;
 				((GameRendererAccessor) renderer).stray$fogRenderer().updateBuffer(savedFog);
@@ -159,7 +158,7 @@ public final class TopDownCapture {
 		float partial,
 		Matrix4f proj
 	) {
-		camera.extractRenderState(state, partial);
+		camera.extractRenderState(state, delta);
 		if (state.projectionMatrix != null) {
 			state.projectionMatrix.set(proj);
 		}
@@ -167,37 +166,32 @@ public final class TopDownCapture {
 			camera,
 			client.options.getEffectiveRenderDistance(),
 			delta,
-			renderer.getBossOverlayWorldDarkening(partial),
+			renderer.bossOverlayWorldDarkening(partial),
 			client.level
 		);
 		state.fogData = overheadFog;
 		fog.updateBuffer(overheadFog);
-		client.levelRenderer.extractLevel(delta, camera, partial);
-		renderer.getGameRenderState().levelRenderState.haveGlowingEntities = false;
-		if (renderer.getGameRenderState().levelRenderState.chunkSectionsToRender == null) {
-			return;
-		}
-		RenderTarget current = client.getMainRenderTarget();
+		client.levelExtractor.extract(delta, camera, partial);
+		renderer.gameRenderState().levelRenderState.shouldShowEntityOutlines = false;
+		RenderTarget current = client.gameRenderer.mainRenderTarget();
 		if (current == null || current.getColorTexture() == null || current.getDepthTexture() == null) {
 			return;
 		}
 		RenderSystem.getDevice().createCommandEncoder().clearColorAndDepthTextures(
 			current.getColorTexture(),
-			0xFF87CEEB,
+			new Vector4f(0x87 / 255f, 0xCE / 255f, 0xEB / 255f, 1f),
 			current.getDepthTexture(),
 			1.0
 		);
 		RenderSystem.setProjectionMatrix(projection.getBuffer(proj), ProjectionType.PERSPECTIVE);
-		client.levelRenderer.renderLevel(
+		client.levelRenderer.render(
 			game.stray$resourcePool(),
-			delta,
 			false,
 			state,
-			new Matrix4f(state.viewRotationMatrix),
 			fog.getBuffer(FogRenderer.FogMode.WORLD),
 			overheadFog.color,
 			false,
-			renderer.getGameRenderState().levelRenderState.chunkSectionsToRender
+			false
 		);
 	}
 

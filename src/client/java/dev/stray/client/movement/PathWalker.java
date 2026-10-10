@@ -451,7 +451,7 @@ public final class PathWalker {
 		if (client.gui == null) {
 			return;
 		}
-		client.gui.getChat().addClientSystemMessage(
+		client.gui.hud.getChat().addClientSystemMessage(
 			Component.literal("Stray path ").withStyle(ChatFormatting.AQUA)
 				.append(Component.literal(text).withStyle(color))
 		);

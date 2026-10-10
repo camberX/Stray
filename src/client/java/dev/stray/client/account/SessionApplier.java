@@ -1,8 +1,7 @@
 package dev.stray.client.account;
 
 import com.mojang.authlib.minecraft.UserApiService;
-import com.mojang.authlib.yggdrasil.YggdrasilAuthenticationService;
-import com.mojang.authlib.yggdrasil.YggdrasilEnvironment;
+import com.mojang.authlib.services.MinecraftServicesDiscoveryService;
 import dev.stray.client.mixin.MinecraftAccessor;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.User;
@@ -32,10 +31,7 @@ public final class SessionApplier {
 			Optional.empty(),
 			Optional.of(UUID.randomUUID().toString())
 		);
-		YggdrasilAuthenticationService auth = new YggdrasilAuthenticationService(
-			Proxy.NO_PROXY,
-			YggdrasilEnvironment.PROD.getEnvironment()
-		);
+		MinecraftServicesDiscoveryService auth = MinecraftServicesDiscoveryService.create(Proxy.NO_PROXY);
 		UserApiService userApi = auth.createUserApiService(accessToken);
 		ProfileKeyPairManager keys;
 		try {

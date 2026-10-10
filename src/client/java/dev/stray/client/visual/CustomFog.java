@@ -1,6 +1,6 @@
 package dev.stray.client.visual;
 
-import dev.stray.Stray;
+import dev.stray.client.render.StrayUniforms;
 import dev.stray.client.config.StrayConfig;
 import net.minecraft.client.Camera;
 import net.minecraft.client.renderer.fog.FogData;
@@ -20,6 +20,10 @@ public final class CustomFog {
 
 	public static boolean applied() {
 		return applied;
+	}
+
+	public static void bind() {
+		StrayUniforms.fog(applied ? 1f : 0f);
 	}
 
 	public static Sample sample() {
@@ -75,23 +79,22 @@ public final class CustomFog {
 	 * makes higher density fill the span instead of only tinting the far edge.
 	 */
 	public static String injectSodiumShader(String src) {
-		if (src == null || src.contains("u_StrayFog")) {
+		if (src == null || src.contains("strayMix")) {
 			return src;
 		}
 		String needle = "return vec4(mix(fragColor.rgb, fogColor.rgb, fogValue * fogColor.a), fragColor.a);";
 		if (!src.contains(needle)) {
-			Stray.LOGGER.warn("Could not inject custom fog into Sodium fog shader");
 			return src;
 		}
 		String curved = """
 			float strayLin = clamp(fogValue, 0.0, 1.0);
 			float strayMix = fogValue * fogColor.a;
-			if (u_StrayFog > 0.5) {
+			if (u_StrayMisc.y > 0.5) {
 				float strayDensity = clamp(fogColor.a, 0.0, 1.0);
 				strayMix = strayDensity <= 0.001 ? 0.0 : pow(strayLin, mix(3.2, 0.22, strayDensity));
 			}
 			return vec4(mix(fragColor.rgb, fogColor.rgb, strayMix), fragColor.a);""";
-		return "uniform float u_StrayFog;\n" + src.replace(needle, curved);
+		return StrayUniforms.insertBlock(src).replace(needle, curved);
 	}
 
 	public static int fogRgb(StrayConfig config) {

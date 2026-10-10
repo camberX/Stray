@@ -28,7 +28,7 @@ public final class ArrayListHud {
 
 	static void extract(GuiGraphicsExtractor graphics, DeltaTracker delta) {
 		Minecraft client = Minecraft.getInstance();
-		if (client.player == null || client.options.hideGui || client.screen != null) {
+		if (client.player == null || client.gui.hud.isHidden() || client.gui.screen() != null) {
 			return;
 		}
 		if (!StrayConfig.get().arrayList) {

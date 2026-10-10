@@ -638,8 +638,8 @@ public final class PartyFinderStats {
 			return;
 		}
 		client.execute(() -> {
-			if (client.gui != null && client.gui.getChat() != null) {
-				client.gui.getChat().addClientSystemMessage(line);
+			if (client.gui != null && client.gui.hud.getChat() != null) {
+				client.gui.hud.getChat().addClientSystemMessage(line);
 			}
 		});
 	}

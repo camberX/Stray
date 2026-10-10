@@ -13,7 +13,7 @@ import net.minecraft.network.protocol.game.ClientboundBlockUpdatePacket;
 import net.minecraft.network.protocol.game.ClientboundLevelParticlesPacket;
 import net.minecraft.network.protocol.game.ClientboundSectionBlocksUpdatePacket;
 import net.minecraft.world.level.block.Blocks;
-import net.minecraft.world.level.block.entity.BlockEntityType;
+import net.minecraft.world.level.block.entity.BlockEntityTypes;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
@@ -106,12 +106,12 @@ public final class ChestEsp {
 		}
 		ChestAimer.onPacket(packet);
 		if (packet instanceof ClientboundLevelParticlesPacket particles) {
-			if (!isCrit(particles.getParticle().getType())) {
+			if (!isCrit(particles.particle().getType())) {
 				return;
 			}
-			double x = particles.getX();
-			double y = particles.getY();
-			double z = particles.getZ();
+			double x = particles.x();
+			double y = particles.y();
+			double z = particles.z();
 			Minecraft.getInstance().execute(() -> INSTANCE.onCrit(x, y, z));
 			return;
 		}
@@ -129,7 +129,7 @@ public final class ChestEsp {
 			return;
 		}
 		if (packet instanceof ClientboundBlockEntityDataPacket data) {
-			if (data.getType() != BlockEntityType.CHEST && data.getType() != BlockEntityType.TRAPPED_CHEST) {
+			if (data.getType() != BlockEntityTypes.CHEST && data.getType() != BlockEntityTypes.TRAPPED_CHEST) {
 				return;
 			}
 			BlockPos pos = data.getPos();

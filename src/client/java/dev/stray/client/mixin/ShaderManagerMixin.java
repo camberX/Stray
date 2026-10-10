@@ -1,27 +1,16 @@
 package dev.stray.client.mixin;
 
-import com.mojang.blaze3d.shaders.ShaderType;
-import net.minecraft.client.renderer.ShaderManager;
-import net.minecraft.resources.Identifier;
 import dev.stray.client.mining.FocusMode;
 import dev.stray.client.render.TopDownTerrainCut;
+import dev.stray.client.visual.CustomFog;
+import dev.stray.client.visual.WorldTint;
+import net.minecraft.client.renderer.ShaderManager;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.ModifyArg;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(ShaderManager.class)
 public class ShaderManagerMixin {
-	@Inject(method = "getShader", at = @At("RETURN"), cancellable = true)
-	private void stray$topDownCut(Identifier id, ShaderType type, CallbackInfoReturnable<String> cir) {
-		String source = cir.getReturnValue();
-		if (source == null || id == null || !id.getPath().contains("terrain")) {
-			return;
-		}
-		cir.setReturnValue(FocusMode.patchVanilla(TopDownTerrainCut.patchSource(source)));
-	}
-
 	@ModifyArg(
 		method = "loadShader",
 		at = @At(
@@ -34,6 +23,22 @@ public class ShaderManagerMixin {
 		if (!(source instanceof String text)) {
 			return source;
 		}
-		return FocusMode.patchVanilla(TopDownTerrainCut.patchSource(text));
+		text = FocusMode.patchVanilla(TopDownTerrainCut.patchSource(text));
+		text = FocusMode.patchSodiumVertex(TopDownTerrainCut.patchSodiumVertex(text));
+		text = TopDownTerrainCut.patchSodiumFragment(FocusMode.patchSodiumFragment(text));
+		text = WorldTint.injectTerrainFragmentSource(text);
+		return CustomFog.injectSodiumShader(text);
+	}
+
+	@ModifyArg(
+		method = "loadInclude",
+		at = @At(
+			value = "INVOKE",
+			target = "Lcom/mojang/renderpearl/api/pipeline/ShaderSource$CachedIncludeSource;create(Lnet/minecraft/resources/Identifier;Ljava/lang/String;)Lcom/mojang/renderpearl/api/pipeline/ShaderSource$CachedIncludeSource;"
+		),
+		index = 1
+	)
+	private static String stray$patchInclude(String source) {
+		return CustomFog.injectSodiumShader(source);
 	}
 }

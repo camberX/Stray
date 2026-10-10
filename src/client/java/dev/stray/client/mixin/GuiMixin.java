@@ -4,7 +4,7 @@ import dev.stray.client.render.VanillaHud;
 import dev.stray.client.skill.SkillProgressTracker;
 import dev.stray.client.ui.ChatPeek;
 import net.minecraft.client.DeltaTracker;
-import net.minecraft.client.gui.Gui;
+import net.minecraft.client.gui.Hud;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.ChatComponent;
 import net.minecraft.network.chat.Component;
@@ -14,7 +14,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.ModifyArg;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-@Mixin(Gui.class)
+@Mixin(Hud.class)
 public class GuiMixin {
 	@Inject(method = "setOverlayMessage", at = @At("TAIL"))
 	private void stray$skillOverlay(Component message, boolean animateColor, CallbackInfo ci) {

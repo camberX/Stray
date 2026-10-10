@@ -1,6 +1,7 @@
 package dev.stray.client.render;
 
 import dev.stray.client.config.StrayConfig;
+import dev.stray.client.input.MouseButtons;
 import dev.stray.client.farming.GardenHud;
 import dev.stray.client.farming.GardenHud.ContestSnap;
 import dev.stray.client.farming.GardenHud.HoeSnap;
@@ -72,14 +73,14 @@ public final class GardenHudRenderer {
 	}
 
 	public static boolean mouseClicked(MouseButtonEvent event) {
-		if (event.button() != 0 || !StrayConfig.get().gardenShoppingHudEnabled) {
+		if (!MouseButtons.left(event) || !StrayConfig.get().gardenShoppingHudEnabled) {
 			return false;
 		}
 		Minecraft client = Minecraft.getInstance();
-		if (client.screen instanceof HudEditorScreen) {
+		if (client.gui.screen() instanceof HudEditorScreen) {
 			return false;
 		}
-		if (client.screen == null) {
+		if (client.gui.screen() == null) {
 			return false;
 		}
 		for (Hit hit : ITEM_HITS) {
@@ -152,7 +153,7 @@ public final class GardenHudRenderer {
 
 	static void extract(GuiGraphicsExtractor graphics, DeltaTracker deltaTracker) {
 		Minecraft client = Minecraft.getInstance();
-		if (client.screen instanceof AbstractContainerScreen<?>) {
+		if (client.gui.screen() instanceof AbstractContainerScreen<?>) {
 			return;
 		}
 		paint(graphics);
@@ -161,7 +162,7 @@ public final class GardenHudRenderer {
 	private static void paint(GuiGraphicsExtractor graphics) {
 		ITEM_HITS.clear();
 		Minecraft client = Minecraft.getInstance();
-		if (client.player == null || client.options.hideGui) {
+		if (client.player == null || client.gui.hud.isHidden()) {
 			return;
 		}
 		drawPestSwapDebug(graphics, client.font);

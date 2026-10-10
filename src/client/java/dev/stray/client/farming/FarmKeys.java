@@ -7,7 +7,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.network.chat.Style;
-import org.lwjgl.glfw.GLFW;
+import dev.stray.client.input.MouseButtons;
 
 /**
  * Temporary farming controls: swap Attack/Destroy with Jump and latch the
@@ -47,7 +47,7 @@ public final class FarmKeys {
 			return;
 		}
 		boolean physicalDown = physicalDown(client, jumpKey);
-		if (client.screen == null && physicalDown && !physicalWasDown) {
+		if (client.gui.screen() == null && physicalDown && !physicalWasDown) {
 			attackLatched = !attackLatched;
 		}
 		physicalWasDown = physicalDown;
@@ -109,8 +109,8 @@ public final class FarmKeys {
 			return false;
 		}
 		return switch (key.getType()) {
-			case KEYSYM -> InputConstants.isKeyDown(client.getWindow(), key.getValue());
-			case MOUSE -> GLFW.glfwGetMouseButton(client.getWindow().handle(), key.getValue()) == GLFW.GLFW_PRESS;
+			case KEYBOARD -> InputConstants.isKeyDown(key.getValue());
+			case MOUSE -> MouseButtons.down(key.getValue());
 			default -> false;
 		};
 	}
@@ -121,7 +121,7 @@ public final class FarmKeys {
 				.withStyle(style(Theme.ACCENT).withBold(true))
 				.append(Component.literal(" | ").withStyle(style(Theme.MUTED)))
 				.append(Component.literal(text).withStyle(style(Theme.TEXT)));
-			client.gui.getChat().addClientSystemMessage(line);
+			client.gui.hud.getChat().addClientSystemMessage(line);
 		}
 	}
 

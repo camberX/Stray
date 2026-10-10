@@ -26,8 +26,8 @@ public final class LoadoutsCommands {
 		Minecraft client = Minecraft.getInstance();
 		if (LoadoutsMenus.enabled()
 			&& LoadoutsScreen.hasCache()
-			&& !(client.screen instanceof LoadoutsScreen)) {
-			client.setScreen(LoadoutsScreen.fromCache());
+			&& !(client.gui.screen() instanceof LoadoutsScreen)) {
+			client.gui.setScreen(LoadoutsScreen.fromCache());
 		}
 		return Command.SINGLE_SUCCESS;
 	}
@@ -43,7 +43,7 @@ public final class LoadoutsCommands {
 			return false;
 		}
 		if (!SkyblockLocation.inSkyblock && !SkyblockLocation.onHypixel) {
-			client.gui.getChat().addClientSystemMessage(
+			client.gui.hud.getChat().addClientSystemMessage(
 				Component.literal("Stray | Join Skyblock, then /loadouts opens the custom menu.")
 			);
 		}

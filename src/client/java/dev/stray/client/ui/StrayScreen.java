@@ -11,6 +11,7 @@ import dev.stray.client.config.UnloadState;
 import dev.stray.client.farming.FarmingHud;
 import dev.stray.client.farming.JacobContestTracker;
 import dev.stray.client.config.StrayConfig;
+import dev.stray.client.input.MouseButtons;
 import dev.stray.client.location.SkyblockLocation;
 import dev.stray.client.mining.CrystalHollows;
 import dev.stray.client.mining.MiningAreas;
@@ -1839,7 +1840,7 @@ public class StrayScreen extends Screen {
 			GuiDraw.circle(graphics, hudX + 11, y + 11, 10, 0x33FFFFFF);
 		}
 		drawCenteredIcon(graphics, font, MenuFont.HUD, hudX, y, 22, ControlChrome.text());
-		hits.add(new Hit(hudX, y, 22, 22, () -> minecraft.setScreen(new HudEditorScreen())));
+		hits.add(new Hit(hudX, y, 22, 22, () -> minecraft.gui.setScreen(new HudEditorScreen())));
 
 		ControlChrome.face(graphics, faceX, y, face, playerSkin());
 		hits.add(new Hit(faceX, y, face, 22, () -> {
@@ -1882,7 +1883,7 @@ public class StrayScreen extends Screen {
 		boolean hudHover = GuiDraw.hovered(mouseX, mouseY, x, y, ACTION_W, 14);
 		ClickLook.panel(graphics, x, y, ACTION_W, 14, 5, hudHover ? Theme.CARD_HOVER : Theme.CARD, Theme.LINE);
 		GuiDraw.menu(graphics, font, "HUD", x + (ACTION_W - GuiDraw.menuWidth(font, "HUD")) / 2f, labelY, Theme.TEXT);
-		hits.add(new Hit(x, y, ACTION_W, 14, () -> minecraft.setScreen(new HudEditorScreen())));
+		hits.add(new Hit(x, y, ACTION_W, 14, () -> minecraft.gui.setScreen(new HudEditorScreen())));
 
 		float titleX = x + ACTION_W + 8;
 		float searchMax = w - ACTION_W - 8 - ICON_SLOT * 3 - 8;
@@ -2377,7 +2378,7 @@ public class StrayScreen extends Screen {
 				}
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Inventory HUD", config.inventoryHudEnabled, v -> config.inventoryHudEnabled = v, Feature.INVENTORY);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Custom title", config.customTitleEnabled, v -> config.customTitleEnabled = v);
-				clickRow(graphics, font, ix, y, iw, mouseX, mouseY, "Edit titles", () -> minecraft.setScreen(new CustomTitleScreen(this)));
+				clickRow(graphics, font, ix, y, iw, mouseX, mouseY, "Edit titles", () -> minecraft.gui.setScreen(new CustomTitleScreen(this)));
 			}
 			case BARS -> {
 				float y = featureCard(graphics, font, left, top, col, cardHeight(4) + 28, "Info");
@@ -2633,7 +2634,7 @@ public class StrayScreen extends Screen {
 					mouseX,
 					mouseY,
 					"Edit",
-					() -> minecraft.setScreen(new CustomTitleScreen(this))
+					() -> minecraft.gui.setScreen(new CustomTitleScreen(this))
 				);
 			}
 			case MEDIA -> {
@@ -2740,7 +2741,7 @@ public class StrayScreen extends Screen {
 					mouseX,
 					mouseY,
 					"Edit",
-					() -> minecraft.setScreen(new CommandShortcutScreen(this))
+					() -> minecraft.gui.setScreen(new CommandShortcutScreen(this))
 				);
 				if (config.commandShortcutsEnabled) {
 					toggle(
@@ -4431,12 +4432,12 @@ public class StrayScreen extends Screen {
 			double cx = localX(event.x());
 			double cy = localY(event.y());
 			ClickGui.pointer(cx, cy);
-			if (event.button() == 1) {
+			if (MouseButtons.right(event)) {
 				ClickGui.rightClick(cx, cy);
 				return true;
 			}
 		}
-		if (event.button() != 0) {
+		if (!MouseButtons.left(event)) {
 			return super.mouseClicked(event, doubled);
 		}
 		lastClickY = localY(event.y());
@@ -4513,16 +4514,16 @@ public class StrayScreen extends Screen {
 
 	@Override
 	public boolean mouseDragged(MouseButtonEvent event, double dx, double dy) {
-		if (StrayConfig.get().clickGui && event.button() == 0 && ClickGui.drag(localX(event.x()), localY(event.y()))) {
+		if (StrayConfig.get().clickGui && MouseButtons.left(event) && ClickGui.drag(localX(event.x()), localY(event.y()))) {
 			return true;
 		}
-		if (event.button() == 0 && dragging) {
+		if (MouseButtons.left(event) && dragging) {
 			windowX = localX(event.x()) - (float) dragOffX;
 			windowY = localY(event.y()) - (float) dragOffY;
 			moved = true;
 			return true;
 		}
-		if (event.button() == 0) {
+		if (MouseButtons.left(event)) {
 			lastClickY = localY(event.y());
 			double lx = localX(event.x());
 			for (int i = hits.size() - 1; i >= 0; i--) {
@@ -4640,7 +4641,7 @@ public class StrayScreen extends Screen {
 				bindListen = 0;
 				return true;
 			}
-			captureBind(InputConstants.Type.KEYSYM.getOrCreate(event.key()));
+			captureBind(InputConstants.Type.KEYBOARD.getOrCreate(event.key()));
 			return true;
 		}
 		if (event.isEscape()) {

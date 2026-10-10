@@ -1,4 +1,5 @@
 #version 330
+#extension GL_ARB_separate_shader_objects : require
 
 // Liquid marble from the menu backdrop. Loop length and time are seconds.
 // Accent recolors only the magenta veins, splashes, and flecks.
@@ -9,7 +10,7 @@ layout(std140) uniform MarbleConfig {
     vec4 Accent;
 };
 
-out vec4 fragColor;
+layout(location = 0) out vec4 fragColor;
 
 float A;
 

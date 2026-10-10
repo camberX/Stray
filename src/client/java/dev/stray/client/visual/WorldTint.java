@@ -1,7 +1,7 @@
 package dev.stray.client.visual;
 
 import com.mojang.blaze3d.vertex.QuadInstance;
-import dev.stray.Stray;
+import dev.stray.client.render.StrayUniforms;
 import dev.stray.client.config.StrayConfig;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.Minecraft;
@@ -52,6 +52,16 @@ public final class WorldTint {
 		return StrayConfig.get().worldTintRgb;
 	}
 
+	public static void bind() {
+		int rgb = shaderRgb();
+		StrayUniforms.tint(
+			((rgb >> 16) & 0xFF) / 255f,
+			((rgb >> 8) & 0xFF) / 255f,
+			(rgb & 0xFF) / 255f,
+			shaderStrength()
+		);
+	}
+
 	public static float shaderStrength() {
 		if (!shaderTintActive()) {
 			return 0f;
@@ -60,20 +70,16 @@ public final class WorldTint {
 	}
 
 	public static String injectTerrainFragmentSource(String src) {
-		if (src == null || src.contains("u_WorldTint")) {
+		if (src == null || src.contains("mix(color.rgb, u_WorldTint.rgb, u_WorldTint.a)")) {
 			return src;
 		}
-		String withUniform = src.contains("uniform sampler2D u_BlockTex; // The block texture")
-			? src.replace("uniform sampler2D u_BlockTex; // The block texture", "uniform sampler2D u_BlockTex; // The block texture\nuniform vec4 u_WorldTint;")
-			: src.replace("uniform sampler2D u_BlockTex;", "uniform sampler2D u_BlockTex;\nuniform vec4 u_WorldTint;");
-		String tinted = withUniform.contains("color *= v_Color;")
-			? withUniform.replace("color *= v_Color;", "color *= v_Color;\n    color.rgb = mix(color.rgb, u_WorldTint.rgb, u_WorldTint.a);")
-			: withUniform;
-		if (!tinted.contains("mix(color.rgb, u_WorldTint.rgb, u_WorldTint.a)")) {
-			Stray.LOGGER.warn("Could not inject world tint into Sodium terrain shader");
+		if (!src.contains("u_BlockTex") || !src.contains("color *= v_Color;")) {
 			return src;
 		}
-		return tinted;
+		return StrayUniforms.insertBlock(src).replace(
+			"color *= v_Color;",
+			"color *= v_Color;\n    color.rgb = mix(color.rgb, u_WorldTint.rgb, u_WorldTint.a);"
+		);
 	}
 
 	public static boolean skyTintActive() {
@@ -103,6 +109,31 @@ public final class WorldTint {
 			return skyColor;
 		}
 		return mixArgb(skyColor, skyRgb(config), config.skyTintStrength);
+	}
+
+	public static Vector3fc tintSky(Vector3fc skyColor) {
+		StrayConfig config = StrayConfig.get();
+		if (!config.skyTintEnabled || skyColor == null) {
+			return skyColor;
+		}
+		int mixed = mixArgb(packRgb(skyColor.x(), skyColor.y(), skyColor.z()), skyRgb(config), config.skyTintStrength);
+		return new Vector3f(((mixed >> 16) & 0xFF) / 255f, ((mixed >> 8) & 0xFF) / 255f, (mixed & 0xFF) / 255f);
+	}
+
+	public static Vector4fc tintSky(Vector4fc skyColor) {
+		StrayConfig config = StrayConfig.get();
+		if (!config.skyTintEnabled || skyColor == null) {
+			return skyColor;
+		}
+		int mixed = mixArgb(packRgb(skyColor.x(), skyColor.y(), skyColor.z()), skyRgb(config), config.skyTintStrength);
+		return new Vector4f(((mixed >> 16) & 0xFF) / 255f, ((mixed >> 8) & 0xFF) / 255f, (mixed & 0xFF) / 255f, skyColor.w());
+	}
+
+	private static int packRgb(float r, float g, float b) {
+		int red = Math.round(Mth.clamp(r, 0f, 1f) * 255f);
+		int green = Math.round(Mth.clamp(g, 0f, 1f) * 255f);
+		int blue = Math.round(Mth.clamp(b, 0f, 1f) * 255f);
+		return (red << 16) | (green << 8) | blue;
 	}
 
 	public static int skyDiscColor(int fallback) {
@@ -158,7 +189,7 @@ public final class WorldTint {
 			return;
 		}
 		if (client != null && client.levelRenderer != null) {
-			client.levelRenderer.allChanged();
+			client.levelExtractor.allChanged();
 		}
 	}
 

@@ -1,5 +1,6 @@
 package dev.stray.client.combat;
 
+import net.minecraft.world.item.DyeColor;
 import dev.stray.client.config.StrayConfig;
 import net.fabricmc.fabric.api.client.screen.v1.ScreenEvents;
 import net.fabricmc.fabric.api.client.screen.v1.ScreenMouseEvents;
@@ -90,7 +91,7 @@ public final class AutoExperiments {
 		if (current == null) {
 			return;
 		}
-		if (!(client.screen instanceof AbstractContainerScreen<?> screen)) {
+		if (!(client.gui.screen() instanceof AbstractContainerScreen<?> screen)) {
 			return;
 		}
 
@@ -142,7 +143,7 @@ public final class AutoExperiments {
 		@Override
 		void onSlotUpdate() {
 			Minecraft client = Minecraft.getInstance();
-			if (!(client.screen instanceof AbstractContainerScreen<?> screen)) {
+			if (!(client.gui.screen() instanceof AbstractContainerScreen<?> screen)) {
 				return;
 			}
 			List<Slot> slots = screen.getMenu().slots;
@@ -207,7 +208,7 @@ public final class AutoExperiments {
 		@Override
 		void onSlotUpdate() {
 			Minecraft client = Minecraft.getInstance();
-			if (!(client.screen instanceof AbstractContainerScreen<?> screen)) {
+			if (!(client.gui.screen() instanceof AbstractContainerScreen<?> screen)) {
 				return;
 			}
 			List<Slot> slots = screen.getMenu().slots;
@@ -279,7 +280,7 @@ public final class AutoExperiments {
 		@Override
 		Integer nextClick() {
 			Minecraft client = Minecraft.getInstance();
-			if (!(client.screen instanceof AbstractContainerScreen<?> screen)) {
+			if (!(client.gui.screen() instanceof AbstractContainerScreen<?> screen)) {
 				return null;
 			}
 			long now = System.currentTimeMillis();
@@ -296,11 +297,11 @@ public final class AutoExperiments {
 			boolean secondPending = false;
 			for (int index = 9; index <= 44; index++) {
 				ItemStack stack = slots.get(index).getItem();
-				if (stack.isEmpty() || stack.is(Items.BLACK_STAINED_GLASS_PANE)) {
+				if (stack.isEmpty() || stack.is(Items.STAINED_GLASS_PANE.pick(DyeColor.BLACK))) {
 					continue;
 				}
 				String name = OdinClicks.noControlCodes(stack.getHoverName().getString()).trim();
-				if (stack.is(Items.CYAN_STAINED_GLASS)) {
+				if (stack.is(Items.STAINED_GLASS.pick(DyeColor.CYAN))) {
 					hidden.add(index);
 					if (name.toLowerCase(java.util.Locale.ROOT).contains("second")) {
 						secondPending = true;

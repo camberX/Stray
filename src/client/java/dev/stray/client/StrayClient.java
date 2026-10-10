@@ -166,7 +166,7 @@ public final class StrayClient implements ClientModInitializer {
 	}
 
 	public static boolean strayHotkeys(Minecraft client) {
-		return client != null && client.screen == null;
+		return client != null && client.gui.screen() == null;
 	}
 
 	public static boolean menuKeyHeld(String keyName) {
@@ -191,7 +191,7 @@ public final class StrayClient implements ClientModInitializer {
 			return false;
 		}
 		InputConstants.Key mapped = OdinClicks.parseKey(keyName);
-		if (!OdinClicks.bound(mapped) || mapped.getType() != InputConstants.Type.KEYSYM) {
+		if (!OdinClicks.bound(mapped) || mapped.getType() != InputConstants.Type.KEYBOARD) {
 			return false;
 		}
 		return event.key() == mapped.getValue();
@@ -563,7 +563,7 @@ public final class StrayClient implements ClientModInitializer {
 	private static void stealChat(String text) {
 		Minecraft client = Minecraft.getInstance();
 		if (client.gui != null) {
-			client.gui.getChat().addClientSystemMessage(Component.literal("Stray | " + text));
+			client.gui.hud.getChat().addClientSystemMessage(Component.literal("Stray | " + text));
 		}
 	}
 
@@ -590,21 +590,21 @@ public final class StrayClient implements ClientModInitializer {
 				handleOpenGui(client);
 			}
 			if (loadouts && !wasLoadouts) {
-				if (client.screen instanceof LoadoutsScreen screen) {
+				if (client.gui.screen() instanceof LoadoutsScreen screen) {
 					screen.onClose();
 				} else {
 					LoadoutsCommands.open();
 				}
 			}
 			if (wardrobe && !wasWardrobe) {
-				if (client.screen instanceof WardrobeScreen screen) {
+				if (client.gui.screen() instanceof WardrobeScreen screen) {
 					screen.onClose();
 				} else {
 					WardrobeCommands.open();
 				}
 			}
 			if (profile && !wasProfile && StrayConfig.get().profileViewerEnabled) {
-				if (client.screen instanceof ProfileViewerScreen screen) {
+				if (client.gui.screen() instanceof ProfileViewerScreen screen) {
 					screen.onClose();
 				} else {
 					ProfileCommands.open("");
@@ -625,7 +625,7 @@ public final class StrayClient implements ClientModInitializer {
 	}
 
 	private static boolean ignoreMenuBinds(Minecraft client) {
-		var screen = client.screen;
+		var screen = client.gui.screen();
 		if (screen == null) {
 			return false;
 		}
@@ -654,14 +654,14 @@ public final class StrayClient implements ClientModInitializer {
 	}
 
 	private static void handleOpenGui(Minecraft client) {
-		if (client.screen instanceof HudEditorScreen) {
-			client.setScreen(new StrayScreen());
-		} else if (client.screen instanceof CommandShortcutScreen screen) {
+		if (client.gui.screen() instanceof HudEditorScreen) {
+			client.gui.setScreen(new StrayScreen());
+		} else if (client.gui.screen() instanceof CommandShortcutScreen screen) {
 			screen.onClose();
-		} else if (client.screen instanceof StrayScreen screen) {
+		} else if (client.gui.screen() instanceof StrayScreen screen) {
 			screen.requestClose();
-		} else if (client.screen instanceof ItemEditScreen) {
-			client.setScreen(null);
+		} else if (client.gui.screen() instanceof ItemEditScreen) {
+			client.gui.setScreen(null);
 		} else {
 			openScreen();
 		}
@@ -709,10 +709,10 @@ public final class StrayClient implements ClientModInitializer {
 	private static int openScreen() {
 		Minecraft client = Minecraft.getInstance();
 		client.execute(() -> {
-			if (client.screen instanceof StrayScreen screen) {
+			if (client.gui.screen() instanceof StrayScreen screen) {
 				screen.requestClose();
 			} else {
-				client.setScreen(new StrayScreen());
+				client.gui.setScreen(new StrayScreen());
 			}
 		});
 		return Command.SINGLE_SUCCESS;
@@ -720,7 +720,7 @@ public final class StrayClient implements ClientModInitializer {
 
 	private static int openItemEdit() {
 		Minecraft client = Minecraft.getInstance();
-		client.execute(() -> client.setScreen(new ItemEditScreen()));
+		client.execute(() -> client.gui.setScreen(new ItemEditScreen()));
 		return Command.SINGLE_SUCCESS;
 	}
 }

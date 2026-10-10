@@ -83,7 +83,7 @@ public final class AutoRogue {
 			restore(client.player);
 			return;
 		}
-		if (client.screen != null || System.currentTimeMillis() < nextAt) {
+		if (client.gui.screen() != null || System.currentTimeMillis() < nextAt) {
 			return;
 		}
 		Inventory inventory = client.player.getInventory();
@@ -105,7 +105,7 @@ public final class AutoRogue {
 
 	private static void click(Minecraft client) {
 		LocalPlayer player = client.player;
-		if (player == null || client.screen != null || player.getInventory().getSelectedSlot() != targetSlot) {
+		if (player == null || client.gui.screen() != null || player.getInventory().getSelectedSlot() != targetSlot) {
 			step = Step.RESTORE;
 			clicked = false;
 			return;

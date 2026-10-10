@@ -32,10 +32,10 @@ public class MouseHandlerMixin {
 	 * {@code grabMouse} always calls {@code setScreen(null)}. During a hidden
 	 * loadout swap that closes the chest before the slot click is sent.
 	 */
-	@Inject(method = "grabMouse", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/Minecraft;setScreen(Lnet/minecraft/client/gui/screens/Screen;)V"), cancellable = true)
+	@Inject(method = "grabMouse", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/Gui;setScreen(Lnet/minecraft/client/gui/screens/Screen;)V"), cancellable = true)
 	private void stray$keepHiddenLoadouts(CallbackInfo ci) {
 		Minecraft client = Minecraft.getInstance();
-		if (client.screen != null && LoadoutsScreen.hideDefaultChest(client.screen)) {
+		if (client.gui.screen() != null && LoadoutsScreen.hideDefaultChest(client.gui.screen())) {
 			ci.cancel();
 		}
 	}
@@ -49,8 +49,8 @@ public class MouseHandlerMixin {
 	@Inject(method = "releaseMouse", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/Minecraft;getWindow()Lcom/mojang/blaze3d/platform/Window;"))
 	private void stray$keepCursor(CallbackInfo ci) {
 		Minecraft client = Minecraft.getInstance();
-		if (client.screen instanceof ContainerScreen && NoCursorReset.shouldHookMouse()) {
-			InputConstants.grabOrReleaseMouse(client.getWindow(), InputConstants.CURSOR_NORMAL, this.stray$beforeX, this.stray$beforeY);
+		if (client.gui.screen() instanceof ContainerScreen && NoCursorReset.shouldHookMouse()) {
+			InputConstants.releaseMouse(client.getWindow(), this.stray$beforeX, this.stray$beforeY);
 			this.xpos = this.stray$beforeX;
 			this.ypos = this.stray$beforeY;
 		}

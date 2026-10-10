@@ -1,29 +1,29 @@
 package dev.stray.client.render;
 
-import com.mojang.blaze3d.buffers.GpuBuffer;
+import com.mojang.renderpearl.api.buffers.GpuBuffer;
 import com.mojang.blaze3d.buffers.Std140Builder;
 import com.mojang.blaze3d.buffers.Std140SizeCalculator;
-import com.mojang.blaze3d.pipeline.ColorTargetState;
-import com.mojang.blaze3d.pipeline.DepthStencilState;
-import com.mojang.blaze3d.pipeline.RenderPipeline;
+import com.mojang.renderpearl.api.pipeline.ColorTargetState;
+import com.mojang.renderpearl.api.pipeline.DepthStencilState;
+import com.mojang.renderpearl.api.pipeline.RenderPipeline;
 import com.mojang.blaze3d.pipeline.TextureTarget;
-import com.mojang.blaze3d.platform.CompareOp;
-import com.mojang.blaze3d.shaders.UniformType;
-import com.mojang.blaze3d.systems.RenderPass;
+import com.mojang.renderpearl.api.pipeline.CompareOp;
+import com.mojang.renderpearl.api.pipeline.UniformType;
+import com.mojang.renderpearl.api.commands.RenderPass;
 import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.textures.FilterMode;
-import com.mojang.blaze3d.textures.GpuSampler;
+import com.mojang.renderpearl.api.textures.FilterMode;
+import com.mojang.renderpearl.api.textures.GpuSampler;
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
-import com.mojang.blaze3d.vertex.VertexFormat;
+import com.mojang.renderpearl.api.pipeline.PrimitiveTopology;
 import dev.stray.Stray;
 import dev.stray.client.ui.Theme;
+import dev.stray.client.render.RenderCompat;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.resources.Identifier;
 import org.lwjgl.system.MemoryStack;
 
 import java.util.Optional;
-import java.util.OptionalInt;
 
 /**
  * Looping liquid-marble backdrop for the title screen and out-of-world menus.
@@ -135,11 +135,11 @@ public final class TitleBackdrop {
 		try (RenderPass pass = encoder.createRenderPass(
 			() -> "stray title marble",
 			target.getColorTextureView(),
-			OptionalInt.empty()
+			Optional.empty()
 		)) {
-			pass.setPipeline(pipeline);
+			pass.setPipeline(RenderSystem.getCompiledPipeline(pipeline));
 			pass.setUniform("MarbleConfig", config);
-			pass.draw(0, 3);
+			pass.draw(3, 1, 0, 0);
 		}
 	}
 
@@ -151,7 +151,7 @@ public final class TitleBackdrop {
 			target.destroyBuffers();
 			target = null;
 		}
-		target = new TextureTarget("stray title marble", width, height, false);
+		target = RenderCompat.colorTarget("stray title marble", width, height);
 		targetW = width;
 		targetH = height;
 		renderedBucket = Long.MIN_VALUE;
@@ -167,13 +167,9 @@ public final class TitleBackdrop {
 			GpuBuffer.USAGE_UNIFORM | GpuBuffer.USAGE_COPY_DST,
 			configSize
 		);
-		pipeline = RenderPipeline.builder()
-			.withLocation(Stray.id("pipeline/title_marble"))
-			.withVertexShader(Identifier.withDefaultNamespace("core/screenquad"))
-			.withFragmentShader(SHADER)
-			.withUniform("MarbleConfig", UniformType.UNIFORM_BUFFER)
-			.withVertexFormat(DefaultVertexFormat.EMPTY, VertexFormat.Mode.TRIANGLES)
-			.withColorTargetState(new ColorTargetState(Optional.empty(), ColorTargetState.WRITE_ALL))
+		pipeline = RenderCompat.screenQuad(Stray.id("pipeline/title_marble"), SHADER)
+			.withBindGroupLayout(RenderCompat.uniform("MarbleConfig"))
+			.withColorTargetState(RenderCompat.opaqueTarget())
 			.withDepthStencilState(new DepthStencilState(CompareOp.ALWAYS_PASS, false))
 			.build();
 	}

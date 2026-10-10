@@ -4,7 +4,7 @@ import dev.stray.client.config.StrayConfig;
 import dev.stray.client.item.ItemIds;
 import dev.stray.client.render.HudLayout;
 import net.minecraft.client.Minecraft;
-import net.minecraft.world.item.HoeItem;
+import net.minecraft.tags.ItemTags;
 import net.minecraft.world.item.ItemStack;
 
 import java.util.Locale;
@@ -40,7 +40,7 @@ public final class TopDownView {
 		if (stack == null || stack.isEmpty()) {
 			return false;
 		}
-		if (stack.getItem() instanceof HoeItem) {
+		if (stack.typeHolder().is(ItemTags.HOES)) {
 			return true;
 		}
 		String id = ItemIds.skyblockId(stack);

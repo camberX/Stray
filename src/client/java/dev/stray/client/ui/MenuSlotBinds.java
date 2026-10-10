@@ -15,7 +15,7 @@ public final class MenuSlotBinds {
 		String[] keys = StrayConfig.normalizeMenuSlotKeys(StrayConfig.get().menuSlotKeys);
 		for (int i = 0; i < keys.length; i++) {
 			InputConstants.Key key = OdinClicks.parseKey(keys[i]);
-			if (OdinClicks.bound(key) && key.getType() == InputConstants.Type.KEYSYM && key.getValue() == keyCode) {
+			if (OdinClicks.bound(key) && key.getType() == InputConstants.Type.KEYBOARD && key.getValue() == keyCode) {
 				return i;
 			}
 		}

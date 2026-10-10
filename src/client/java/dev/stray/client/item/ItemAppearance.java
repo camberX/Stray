@@ -309,13 +309,10 @@ public final class ItemAppearance {
 
 	private static void playSwap(Player player, boolean offhand) {
 		Minecraft client = Minecraft.getInstance();
-		if (client.gameRenderer == null || client.gameRenderer.itemInHandRenderer == null) {
+		if (client.player == null || player != client.player) {
 			return;
 		}
-		if (player != client.player) {
-			return;
-		}
-		client.gameRenderer.itemInHandRenderer.itemUsed(offhand ? InteractionHand.OFF_HAND : InteractionHand.MAIN_HAND);
+		client.player.itemUsed(offhand ? InteractionHand.OFF_HAND : InteractionHand.MAIN_HAND);
 	}
 
 	private static final class Skin {

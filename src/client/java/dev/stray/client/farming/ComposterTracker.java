@@ -267,7 +267,7 @@ public final class ComposterTracker {
 	}
 
 	private static void readCapacities(Minecraft client) {
-		if (!(client.screen instanceof AbstractContainerScreen<?> screen)) {
+		if (!(client.gui.screen() instanceof AbstractContainerScreen<?> screen)) {
 			return;
 		}
 		String title = clean(screen.getTitle()).toLowerCase(Locale.ROOT);
@@ -490,7 +490,7 @@ public final class ComposterTracker {
 	}
 
 	private static void readUpgrades(Minecraft client, String profile) {
-		if (!(client.screen instanceof AbstractContainerScreen<?> screen)
+		if (!(client.gui.screen() instanceof AbstractContainerScreen<?> screen)
 			|| !"Composter Upgrades".equalsIgnoreCase(clean(screen.getTitle()))) {
 			return;
 		}

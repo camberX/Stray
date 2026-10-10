@@ -1,6 +1,7 @@
 package dev.stray.client.mixin;
 
 import dev.stray.client.combat.AutoBookCombine;
+import dev.stray.client.input.MouseButtons;
 import dev.stray.client.farming.AutoDna;
 import dev.stray.client.menu.SackRecipe;
 import dev.stray.client.farming.GardenPlots;
@@ -33,7 +34,11 @@ public class AbstractContainerScreenMixin {
 		}
 	}
 
-	@Inject(method = "slotClicked", at = @At("HEAD"), cancellable = true)
+	@Inject(
+		method = "slotClicked(Lnet/minecraft/world/inventory/Slot;IILnet/minecraft/world/inventory/ContainerInput;)V",
+		at = @At("HEAD"),
+		cancellable = true
+	)
 	private void stray$blockDnaClose(Slot slot, int slotId, int button, ContainerInput type, CallbackInfo ci) {
 		if (AutoDna.shouldBlock(slotId) || SackRecipe.click((AbstractContainerScreen<?>) (Object) this, slot, button, type)) {
 			ci.cancel();
@@ -49,7 +54,7 @@ public class AbstractContainerScreenMixin {
 
 	@Inject(method = "mouseClicked", at = @At("HEAD"), cancellable = true)
 	private void stray$sackRecipeClick(MouseButtonEvent event, boolean doubled, CallbackInfoReturnable<Boolean> cir) {
-		if (event.button() != 2) {
+		if (!MouseButtons.middle(event)) {
 			return;
 		}
 		if (SackRecipe.click((AbstractContainerScreen<?>) (Object) this, hoveredSlot, 2, ContainerInput.CLONE)) {

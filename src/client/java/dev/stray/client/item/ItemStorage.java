@@ -78,7 +78,7 @@ public final class ItemStorage {
 			resetOpen();
 			return;
 		}
-		Screen screen = client.screen;
+		Screen screen = client.gui.screen();
 		if (!(screen instanceof AbstractContainerScreen<?> container)) {
 			resetOpen();
 			return;
@@ -288,7 +288,7 @@ public final class ItemStorage {
 			addStack(inventory.getItem(i), out, 0, false);
 		}
 		Minecraft client = Minecraft.getInstance();
-		if (client.screen instanceof AbstractContainerScreen<?> container) {
+		if (client.gui.screen() instanceof AbstractContainerScreen<?> container) {
 			AbstractContainerMenu menu = container.getMenu();
 			if (menu != null) {
 				addStack(menu.getCarried(), out, 0, false);

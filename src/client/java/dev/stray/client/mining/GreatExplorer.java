@@ -16,7 +16,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
-import org.lwjgl.glfw.GLFW;
+import dev.stray.client.input.MouseButtons;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -86,7 +86,7 @@ public final class GreatExplorer {
 			}
 			return;
 		}
-		if (phase == Phase.SCREEN && client.screen != null) {
+		if (phase == Phase.SCREEN && client.gui.screen() != null) {
 			releaseAttack(client);
 			return;
 		}
@@ -167,13 +167,13 @@ public final class GreatExplorer {
 		boolean same = chest != null && hit != null && hit.getBlockPos().equals(chest);
 		if (same && isChest(client.level.getBlockState(chest))) {
 			client.gameMode.useItemOn(client.player, InteractionHand.MAIN_HAND, hit);
-			client.player.swing(InteractionHand.MAIN_HAND);
+			client.player.swing(InteractionHand.MAIN_HAND, net.minecraft.world.item.component.SwingAnimation.DEFAULT, false);
 			opened.add(chest.asLong());
 		}
 		// A chest screen keeps attack released until it closes. This triggerbot
 		// does not open one, so attack stays released within half a block of
 		// the chest and is held again on stone outside that.
-		if (client.screen != null) {
+		if (client.gui.screen() != null) {
 			phase = Phase.SCREEN;
 			return;
 		}
@@ -313,8 +313,8 @@ public final class GreatExplorer {
 			return false;
 		}
 		return switch (key.getType()) {
-			case KEYSYM -> InputConstants.isKeyDown(client.getWindow(), key.getValue());
-			case MOUSE -> GLFW.glfwGetMouseButton(client.getWindow().handle(), key.getValue()) == GLFW.GLFW_PRESS;
+			case KEYBOARD -> InputConstants.isKeyDown(key.getValue());
+			case MOUSE -> MouseButtons.down(key.getValue());
 			default -> false;
 		};
 	}

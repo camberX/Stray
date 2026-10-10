@@ -2,6 +2,7 @@ package dev.stray.client.ui;
 
 import com.mojang.blaze3d.platform.InputConstants;
 import dev.stray.client.account.AccountStore;
+import dev.stray.client.input.MouseButtons;
 import dev.stray.client.render.GuiDraw;
 import dev.stray.client.render.TitleBackdrop;
 import net.minecraft.client.gui.Font;
@@ -61,7 +62,7 @@ public class AccountScreen extends Screen {
 
 	@Override
 	public void onClose() {
-		minecraft.setScreen(parent);
+		minecraft.gui.setScreen(parent);
 	}
 
 	@Override
@@ -348,7 +349,7 @@ public class AccountScreen extends Screen {
 
 	@Override
 	public boolean mouseClicked(MouseButtonEvent event, boolean doubled) {
-		if (event.button() != 0) {
+		if (!MouseButtons.left(event)) {
 			return super.mouseClicked(event, doubled);
 		}
 		tokenFocus = false;

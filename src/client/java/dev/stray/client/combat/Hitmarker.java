@@ -36,7 +36,7 @@ public final class Hitmarker {
 
 	public static void extract(GuiGraphicsExtractor graphics, DeltaTracker deltaTracker) {
 		Minecraft client = Minecraft.getInstance();
-		if (client.player == null || client.options.hideGui || client.screen != null) {
+		if (client.player == null || client.gui.hud.isHidden() || client.gui.screen() != null) {
 			return;
 		}
 		StrayConfig config = StrayConfig.get();

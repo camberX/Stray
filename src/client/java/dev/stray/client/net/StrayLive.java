@@ -479,7 +479,7 @@ public final class StrayLive implements WebSocket.Listener {
 		line.append(Component.literal(name).setStyle(NAME));
 		line.append(Component.literal(": ").setStyle(TEXT));
 		line.append(Component.literal(body).setStyle(TEXT));
-		client.gui.getChat().addClientSystemMessage(line);
+		client.gui.hud.getChat().addClientSystemMessage(line);
 	}
 
 	private static void onUsers(JsonObject json) {
@@ -504,7 +504,7 @@ public final class StrayLive implements WebSocket.Listener {
 		line.append(Component.literal("IRC").setStyle(BRACKET));
 		line.append(Component.literal("] ").setStyle(BRACKET));
 		line.append(Component.literal(n == 1 ? "1 user online" : n + " users online").setStyle(TEXT));
-		client.gui.getChat().addClientSystemMessage(line);
+		client.gui.hud.getChat().addClientSystemMessage(line);
 	}
 
 	private static int jsonNumber(JsonObject json, String key) {
@@ -560,7 +560,7 @@ public final class StrayLive implements WebSocket.Listener {
 		if (!label.isEmpty()) {
 			line.append(Component.literal(" · " + label).setStyle(MUTED));
 		}
-		client.gui.getChat().addClientSystemMessage(line);
+		client.gui.hud.getChat().addClientSystemMessage(line);
 	}
 
 	private static void onPingClear(JsonObject json) {
