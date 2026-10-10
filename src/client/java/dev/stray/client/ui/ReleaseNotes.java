@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.5.58", new String[]{
+			"Entity outlines compile on 26.3. The menu, glow, and held-item shaders use the same syntax."
+		}),
 		new Entry("1.5.57", new String[]{
 			"Terrain shader edits stay inside the terrain pipelines, so the rest of the 26.3 shaders can compile."
 		}),

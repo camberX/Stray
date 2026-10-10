@@ -1,4 +1,5 @@
 #version 330
+#extension GL_ARB_separate_shader_objects : require
 
 uniform sampler2D InSampler;
 
@@ -7,9 +8,9 @@ layout(std140) uniform BlurConfig {
     float Radius;
 };
 
-in vec2 texCoord;
+layout(location = 0) in vec2 texCoord;
 
-out vec4 fragColor;
+layout(location = 0) out vec4 fragColor;
 
 // Same kernel as minecraft:post/box_blur (linear taps at step 2 plus a half-weight
 // tail), so three H+V rounds reproduce vanilla's menu blur exactly. Alpha is
