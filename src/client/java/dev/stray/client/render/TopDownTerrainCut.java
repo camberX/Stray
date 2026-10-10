@@ -9,9 +9,9 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Terrain fragments above the player, within 6 blocks, are discarded while the
- * top-down picture is taken. The uniform is cleared afterwards so the main view
- * is unchanged.
+ * Full blocks from 2 above the player's block position, within 6 blocks, are
+ * discarded while the top-down picture is taken. The uniform is cleared
+ * afterwards so the main view is unchanged.
  */
 public final class TopDownTerrainCut {
 	private static final Map<Integer, Integer> locations = new HashMap<>();
@@ -53,6 +53,15 @@ public final class TopDownTerrainCut {
 		return GlStateManager._glGetUniformLocation(program, "StrayCut");
 	}
 
+	/**
+	 * {@code uniform.x} is the camera-relative Y where the block two above the
+	 * player starts. {@code floor} drops that whole block and everything above
+	 * it. The top face of the block below sits on the plane and stays.
+	 */
+	private static String discard(String uniform) {
+		return "if (" + uniform + ".z > 0.5 && dot(strayRel.xz, strayRel.xz) <= " + uniform + ".y * " + uniform + ".y && floor(strayRel.y - " + uniform + ".x - 0.001) >= 0.0) discard;";
+	}
+
 	public static String patchSodiumVertex(String source) {
 		if (source == null || source.contains("strayRel") || !source.contains("vec3 position = _vert_position + translation;")) {
 			return source;
@@ -74,7 +83,7 @@ public final class TopDownTerrainCut {
 			: "in vec3 strayRel;\nuniform vec3 u_StrayCut;\n" + source;
 		return withIn.replace(
 			"void main() {",
-			"void main() {\n    if (u_StrayCut.z > 0.5 && dot(strayRel.xz, strayRel.xz) <= u_StrayCut.y * u_StrayCut.y && strayRel.y > u_StrayCut.x) discard;"
+			"void main() {\n    " + discard("u_StrayCut")
 		);
 	}
 
@@ -92,7 +101,7 @@ public final class TopDownTerrainCut {
 				.replace("in vec2 texCoord0;", "in vec2 texCoord0;\nin vec3 strayRel;\nuniform vec3 StrayCut;")
 				.replace(
 					"void main() {",
-					"void main() {\n    if (StrayCut.z > 0.5 && dot(strayRel.xz, strayRel.xz) <= StrayCut.y * StrayCut.y && strayRel.y > StrayCut.x) discard;\n"
+					"void main() {\n    " + discard("StrayCut") + "\n"
 				);
 		}
 		return source;

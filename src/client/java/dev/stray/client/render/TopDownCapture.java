@@ -23,8 +23,8 @@ import net.minecraft.world.phys.Vec3;
 import org.joml.Matrix4f;
 
 /**
- * Overhead picture of the world. The near plane sits just above the player's
- * head, so blocks between the camera and the player are not drawn. The player
+ * Overhead picture of the world. The camera sits 5 blocks above the player.
+ * Full blocks from 2 above the player's block position are hidden. The player
  * is rendered detached, and the field of view stays the player's.
  */
 public final class TopDownCapture {
@@ -90,18 +90,21 @@ public final class TopDownCapture {
 			return;
 		}
 		float partial = delta.getGameTimeDeltaPartialTick(false);
-		float altitude = TopDownView.height();
-		Vec3 eye = client.player.getEyePosition(partial);
+		float altitude = TopDownView.CAMERA_ABOVE;
+		double x = Mth.lerp(partial, client.player.xo, client.player.getX());
+		double y = Mth.lerp(partial, client.player.yo, client.player.getY());
+		double z = Mth.lerp(partial, client.player.zo, client.player.getZ());
+		double cameraY = y + altitude;
 		float fov = Mth.clamp(savedFov, 30f, 110f);
 		float far = Math.max(savedFar, altitude + 64f);
 		float near = Camera.PROJECTION_Z_NEAR;
-		// Only blocks above the player's head. The floor and the layer they stand on stay.
-		cutThreshold = (float) (client.player.getBlockY() + 2.0 - (eye.y + altitude));
+		// Camera-relative Y of the plane at the bottom of the block two above the player.
+		cutThreshold = (float) (client.player.getBlockY() + 2.0 - cameraY);
 		boolean swapped = false;
 		capturing = true;
 		try {
 			access.stray$detached(true);
-			access.stray$setPosition(new Vec3(eye.x, eye.y + altitude, eye.z));
+			access.stray$setPosition(new Vec3(x, cameraY, z));
 			access.stray$setRotation(client.player.getViewYRot(partial), 90f);
 			access.stray$setupPerspective(near, far, fov, SIZE, SIZE);
 			boolean zeroToOne = RenderSystem.getDevice().isZZeroToOne();
