@@ -11,6 +11,7 @@ import dev.stray.client.config.UnloadState;
 import dev.stray.client.farming.FarmingHud;
 import dev.stray.client.farming.JacobContestTracker;
 import dev.stray.client.config.StrayConfig;
+import dev.stray.client.input.MouseButtons;
 import dev.stray.client.location.SkyblockLocation;
 import dev.stray.client.mining.CrystalHollows;
 import dev.stray.client.mining.MiningAreas;
@@ -4431,12 +4432,12 @@ public class StrayScreen extends Screen {
 			double cx = localX(event.x());
 			double cy = localY(event.y());
 			ClickGui.pointer(cx, cy);
-			if (event.button() == 1) {
+			if (MouseButtons.right(event)) {
 				ClickGui.rightClick(cx, cy);
 				return true;
 			}
 		}
-		if (event.button() != 0) {
+		if (!MouseButtons.left(event)) {
 			return super.mouseClicked(event, doubled);
 		}
 		lastClickY = localY(event.y());
@@ -4513,16 +4514,16 @@ public class StrayScreen extends Screen {
 
 	@Override
 	public boolean mouseDragged(MouseButtonEvent event, double dx, double dy) {
-		if (StrayConfig.get().clickGui && event.button() == 0 && ClickGui.drag(localX(event.x()), localY(event.y()))) {
+		if (StrayConfig.get().clickGui && MouseButtons.left(event) && ClickGui.drag(localX(event.x()), localY(event.y()))) {
 			return true;
 		}
-		if (event.button() == 0 && dragging) {
+		if (MouseButtons.left(event) && dragging) {
 			windowX = localX(event.x()) - (float) dragOffX;
 			windowY = localY(event.y()) - (float) dragOffY;
 			moved = true;
 			return true;
 		}
-		if (event.button() == 0) {
+		if (MouseButtons.left(event)) {
 			lastClickY = localY(event.y());
 			double lx = localX(event.x());
 			for (int i = hits.size() - 1; i >= 0; i--) {

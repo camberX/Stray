@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.5.59", new String[]{
+			"Main menu clicks use 26.3 left-click numbering, so Singleplayer and the other buttons work again."
+		}),
 		new Entry("1.5.58", new String[]{
 			"Entity outlines compile on 26.3. The menu, glow, and held-item shaders use the same syntax."
 		}),

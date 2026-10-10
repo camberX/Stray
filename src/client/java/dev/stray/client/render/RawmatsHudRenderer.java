@@ -1,6 +1,7 @@
 package dev.stray.client.render;
 
 import dev.stray.client.config.StrayConfig;
+import dev.stray.client.input.MouseButtons;
 import dev.stray.client.item.ItemStorage;
 import dev.stray.client.item.RawmatsTracker;
 import dev.stray.client.item.SkyblockProfileApi;
@@ -49,7 +50,7 @@ public final class RawmatsHudRenderer {
 	}
 
 	public static boolean mouseClicked(MouseButtonEvent event) {
-		if (event.button() != 0 || !StrayConfig.get().rawmatsHudEnabled) {
+		if (!MouseButtons.left(event) || !StrayConfig.get().rawmatsHudEnabled) {
 			return false;
 		}
 		if (Minecraft.getInstance().gui.screen() instanceof HudEditorScreen) {

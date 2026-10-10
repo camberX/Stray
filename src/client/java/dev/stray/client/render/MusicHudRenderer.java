@@ -1,6 +1,7 @@
 package dev.stray.client.render;
 
 import dev.stray.client.config.StrayConfig;
+import dev.stray.client.input.MouseButtons;
 import dev.stray.client.media.CoverArt;
 import dev.stray.client.media.MediaSession;
 import dev.stray.client.media.NowPlaying;
@@ -73,7 +74,7 @@ public final class MusicHudRenderer {
 	}
 
 	public static boolean mouseClicked(MouseButtonEvent event) {
-		if (event.button() != 0 || !StrayConfig.get().musicHudEnabled) {
+		if (!MouseButtons.left(event) || !StrayConfig.get().musicHudEnabled) {
 			return false;
 		}
 		if (Minecraft.getInstance().gui.screen() instanceof HudEditorScreen) {

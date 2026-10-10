@@ -1,6 +1,7 @@
 package dev.stray.client.ui;
 
 import dev.stray.client.account.AccountStore;
+import dev.stray.client.input.MouseButtons;
 import dev.stray.client.render.GuiDraw;
 import dev.stray.client.render.TitleBackdrop;
 import net.fabricmc.loader.api.FabricLoader;
@@ -237,7 +238,7 @@ public class StrayTitleScreen extends Screen {
 
 	@Override
 	public boolean mouseClicked(MouseButtonEvent event, boolean doubled) {
-		if (event.button() != 0) {
+		if (!MouseButtons.left(event)) {
 			return super.mouseClicked(event, doubled);
 		}
 		for (int i = hits.size() - 1; i >= 0; i--) {
