@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.5.64", new String[]{
+			"Player fill copies world depth while the solid pass is open, so the silhouette no longer crashes the frame."
+		}),
 		new Entry("1.5.63", new String[]{
 			"Sodium's chunk draw binds Stray's uniform block, so joining a world no longer crashes."
 		}),
