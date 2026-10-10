@@ -91,7 +91,7 @@ public class WardrobeScreen extends Screen {
 			return discardIncoming(chest);
 		}
 		Minecraft client = Minecraft.getInstance();
-		if (client.screen instanceof WardrobeScreen existing) {
+		if (client.gui.screen() instanceof WardrobeScreen existing) {
 			existing.attach(chest);
 			return existing;
 		}
@@ -126,11 +126,11 @@ public class WardrobeScreen extends Screen {
 			return;
 		}
 		if (skipCustomThisOpen) {
-			if (client.screen instanceof WardrobeScreen wardrobe) {
+			if (client.gui.screen() instanceof WardrobeScreen wardrobe) {
 				wardrobe.followServer();
 				return;
 			}
-			boolean vanillaChest = client.screen instanceof AbstractContainerScreen<?> chest
+			boolean vanillaChest = client.gui.screen() instanceof AbstractContainerScreen<?> chest
 				&& WardrobeMenus.matches(chest.getMenu(), chest.getTitle());
 			if (!vanillaChest) {
 				skipCustomThisOpen = false;
@@ -138,22 +138,22 @@ public class WardrobeScreen extends Screen {
 			return;
 		}
 		if (shouldDiscardIncoming()
-			&& client.screen instanceof AbstractContainerScreen<?> chest
+			&& client.gui.screen() instanceof AbstractContainerScreen<?> chest
 			&& WardrobeMenus.matches(chest.getMenu(), chest.getTitle())) {
 			discardIncoming(chest);
-			client.setScreen(null);
+			client.gui.setScreen(null);
 			return;
 		}
-		if (client.screen instanceof WardrobeScreen wardrobe) {
+		if (client.gui.screen() instanceof WardrobeScreen wardrobe) {
 			wardrobe.followServer();
 			return;
 		}
-		if (client.screen instanceof LoadoutsScreen || !WardrobeMenus.enabled() || shouldDiscardIncoming()) {
+		if (client.gui.screen() instanceof LoadoutsScreen || !WardrobeMenus.enabled() || shouldDiscardIncoming()) {
 			return;
 		}
-		if (client.screen instanceof AbstractContainerScreen<?> chest
+		if (client.gui.screen() instanceof AbstractContainerScreen<?> chest
 			&& WardrobeMenus.matches(chest.getMenu(), chest.getTitle())) {
-			client.setScreen(new WardrobeScreen(chest));
+			client.gui.setScreen(new WardrobeScreen(chest));
 		}
 	}
 
@@ -178,7 +178,7 @@ public class WardrobeScreen extends Screen {
 			closingMenu = true;
 			rememberCache();
 			suppressReopen();
-			minecraft.setScreen(null);
+			minecraft.gui.setScreen(null);
 		}
 	}
 
@@ -462,7 +462,7 @@ public class WardrobeScreen extends Screen {
 			return;
 		}
 		handingOff = true;
-		minecraft.setScreen(vanilla);
+		minecraft.gui.setScreen(vanilla);
 	}
 
 	private void drawItem(GuiGraphicsExtractor graphics, ItemStack stack, float x, float y, float scale) {
@@ -694,7 +694,7 @@ public class WardrobeScreen extends Screen {
 		rememberCache();
 		if (vanilla != null && minecraft != null) {
 			handingOff = true;
-			minecraft.setScreen(vanilla);
+			minecraft.gui.setScreen(vanilla);
 			return;
 		}
 		super.onClose();

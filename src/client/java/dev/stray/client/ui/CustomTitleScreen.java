@@ -58,7 +58,7 @@ public class CustomTitleScreen extends Screen {
 	public void onClose() {
 		StrayConfig.get().save();
 		if (minecraft != null) {
-			minecraft.setScreen(parent);
+			minecraft.gui.setScreen(parent);
 		}
 	}
 

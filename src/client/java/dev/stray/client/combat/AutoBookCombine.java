@@ -23,7 +23,7 @@ import net.minecraft.resources.RegistryOps;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.Style;
 import net.minecraft.resources.Identifier;
-import org.lwjgl.glfw.GLFW;
+import com.mojang.blaze3d.platform.InputConstants;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.ContainerInput;
 import net.minecraft.world.inventory.Slot;
@@ -128,7 +128,7 @@ public final class AutoBookCombine {
 			}
 			return;
 		}
-		if (!(client.screen instanceof AbstractContainerScreen<?> screen) || !isAnvil(screen)) {
+		if (!(client.gui.screen() instanceof AbstractContainerScreen<?> screen) || !isAnvil(screen)) {
 			if (running) {
 				reset();
 				tell("Book combine stopped");
@@ -202,7 +202,7 @@ public final class AutoBookCombine {
 
 	private static boolean isEnter(KeyEvent event) {
 		int key = event.key();
-		return key == GLFW.GLFW_KEY_ENTER || key == GLFW.GLFW_KEY_KP_ENTER;
+		return key == InputConstants.KEY_RETURN || key == InputConstants.KEY_NUMPADENTER;
 	}
 
 	private static boolean isAnvil(AbstractContainerScreen<?> screen) {

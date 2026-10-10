@@ -36,10 +36,10 @@ public final class VanillaHud {
 
 	public static boolean hidden() {
 		Minecraft client = Minecraft.getInstance();
-		if (client.player == null || client.options.hideGui) {
+		if (client.player == null || client.gui.hud.isHidden()) {
 			return true;
 		}
-		return (client.screen instanceof AbstractContainerScreen<?> || client.screen instanceof LoadoutsScreen)
+		return (client.gui.screen() instanceof AbstractContainerScreen<?> || client.gui.screen() instanceof LoadoutsScreen)
 			&& !HudLayout.editorOpen();
 	}
 

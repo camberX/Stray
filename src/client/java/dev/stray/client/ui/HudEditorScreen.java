@@ -261,7 +261,7 @@ public class HudEditorScreen extends Screen {
 
 	private void done() {
 		StrayConfig.get().save();
-		minecraft.setScreen(new StrayScreen());
+		minecraft.gui.setScreen(new StrayScreen());
 	}
 
 	private static HudLayout.Box pick(List<HudLayout.Box> boxes, double mx, double my) {

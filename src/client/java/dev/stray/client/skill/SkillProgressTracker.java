@@ -89,7 +89,7 @@ public final class SkillProgressTracker {
 			return;
 		}
 		refreshLevels(client);
-		if (client.gui instanceof GuiAccessor accessor && accessor.stray$overlayMessageTime() > 0) {
+		if (client.gui != null && client.gui.hud instanceof GuiAccessor accessor && accessor.stray$overlayMessageTime() > 0) {
 			onActionBar(accessor.stray$overlayMessage());
 		}
 	}
@@ -240,7 +240,7 @@ public final class SkillProgressTracker {
 	}
 
 	private static void readSkillsMenu(Minecraft client) {
-		if (!(client.screen instanceof AbstractContainerScreen<?> screen)) {
+		if (!(client.gui.screen() instanceof AbstractContainerScreen<?> screen)) {
 			return;
 		}
 		String title = clean(screen.getTitle()).toLowerCase(Locale.ROOT);

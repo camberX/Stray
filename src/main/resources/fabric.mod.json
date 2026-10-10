@@ -3,7 +3,7 @@
 	"id": "stray",
 	"version": "${version}",
 	"name": "Stray",
-	"description": "Hypixel Skyblock QoL for Minecraft 26.1.2. Marks Ender Nodes, tints the world and skybox, and ships a NEVERLOSE-style click GUI.",
+	"description": "Hypixel Skyblock QoL for Minecraft 26.3. Marks Ender Nodes, tints the world and skybox, and ships a NEVERLOSE-style click GUI.",
 	"authors": [
 		"Stray"
 	],
@@ -40,8 +40,8 @@
 		}
 	],
 	"depends": {
-		"fabricloader": ">=0.19.3",
-		"minecraft": "~26.1.2",
+		"fabricloader": ">=0.19.5",
+		"minecraft": "~26.3",
 		"java": ">=25",
 		"fabric-api": "*"
 	}

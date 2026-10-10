@@ -1,25 +1,26 @@
 package dev.stray.client.render;
 
-import com.mojang.blaze3d.buffers.GpuBuffer;
+import com.mojang.renderpearl.api.buffers.GpuBuffer;
 import com.mojang.blaze3d.buffers.Std140Builder;
 import com.mojang.blaze3d.buffers.Std140SizeCalculator;
-import com.mojang.blaze3d.pipeline.BlendFunction;
-import com.mojang.blaze3d.pipeline.ColorTargetState;
-import com.mojang.blaze3d.pipeline.DepthStencilState;
-import com.mojang.blaze3d.pipeline.RenderPipeline;
+import com.mojang.renderpearl.api.pipeline.BlendFunction;
+import com.mojang.renderpearl.api.pipeline.ColorTargetState;
+import com.mojang.renderpearl.api.pipeline.DepthStencilState;
+import com.mojang.renderpearl.api.pipeline.RenderPipeline;
 import com.mojang.blaze3d.pipeline.RenderTarget;
 import com.mojang.blaze3d.pipeline.TextureTarget;
-import com.mojang.blaze3d.platform.CompareOp;
-import com.mojang.blaze3d.shaders.UniformType;
-import com.mojang.blaze3d.systems.CommandEncoder;
-import com.mojang.blaze3d.systems.RenderPass;
+import com.mojang.renderpearl.api.pipeline.CompareOp;
+import com.mojang.renderpearl.api.pipeline.UniformType;
+import com.mojang.renderpearl.api.commands.CommandEncoder;
+import com.mojang.renderpearl.api.commands.RenderPass;
 import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.textures.FilterMode;
-import com.mojang.blaze3d.textures.GpuSampler;
-import com.mojang.blaze3d.textures.GpuTextureView;
+import com.mojang.renderpearl.api.textures.FilterMode;
+import com.mojang.renderpearl.api.textures.GpuSampler;
+import com.mojang.renderpearl.api.textures.GpuTextureView;
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
-import com.mojang.blaze3d.vertex.VertexFormat;
+import com.mojang.renderpearl.api.pipeline.PrimitiveTopology;
 import dev.stray.Stray;
+import dev.stray.client.render.RenderCompat;
 import dev.stray.client.config.StrayConfig;
 import dev.stray.client.mixin.GuiGraphicsExtractorInvoker;
 import dev.stray.client.ui.ContainerChrome;
@@ -98,8 +99,8 @@ public final class GuiFrostBlur {
 			lastFrost = -1f;
 			return;
 		}
-		boolean menu = client.screen instanceof StrayScreen || ContainerChrome.applies(client.screen);
-		boolean hud = client.level != null && (client.options == null || !client.options.hideGui);
+		boolean menu = client.gui.screen() instanceof StrayScreen || ContainerChrome.applies(client.gui.screen());
+		boolean hud = client.level != null && (client.options == null || !client.gui.hud.isHidden());
 		if (!menu && !hud) {
 			haveFrost = false;
 			haveGlass = false;
@@ -134,7 +135,7 @@ public final class GuiFrostBlur {
 			lastFrost = -1f;
 			return;
 		}
-		RenderTarget main = client.getMainRenderTarget();
+		RenderTarget main = client.gameRenderer.mainRenderTarget();
 		if (main == null || main.getColorTextureView() == null || main.width <= 0 || main.height <= 0) {
 			haveFrost = false;
 			return;
@@ -233,7 +234,7 @@ public final class GuiFrostBlur {
 			haveGlass = false;
 			return;
 		}
-		RenderTarget main = client.getMainRenderTarget();
+		RenderTarget main = client.gameRenderer.mainRenderTarget();
 		if (main == null || main.getColorTextureView() == null || main.width <= 0 || main.height <= 0) {
 			haveGlass = false;
 			return;
@@ -338,17 +339,17 @@ public final class GuiFrostBlur {
 		GpuSampler sampler,
 		List<Region> scissors
 	) {
-		try (RenderPass pass = encoder.createRenderPass(() -> "stray control frost", out, OptionalInt.empty())) {
-			pass.setPipeline(blurPipeline);
+		try (RenderPass pass = encoder.createRenderPass(() -> "stray control frost", out, Optional.empty())) {
+			pass.setPipeline(RenderSystem.getCompiledPipeline(blurPipeline));
 			pass.setUniform("BlurConfig", config);
-			pass.bindTexture("InSampler", in, sampler);
+			pass.setUniform("InSampler", in, sampler);
 			if (scissors == null) {
-				pass.draw(0, 3);
+				pass.draw(3, 1, 0, 0);
 				return;
 			}
 			for (Region scissor : scissors) {
 				pass.enableScissor(scissor.x, scissor.y, scissor.w, scissor.h);
-				pass.draw(0, 3);
+				pass.draw(3, 1, 0, 0);
 			}
 			pass.disableScissor();
 		}
@@ -408,7 +409,7 @@ public final class GuiFrostBlur {
 			rects.clear();
 			return null;
 		}
-		RenderTarget main = client.getMainRenderTarget();
+		RenderTarget main = client.gameRenderer.mainRenderTarget();
 		if (main == null) {
 			rects.clear();
 			return null;
@@ -486,16 +487,11 @@ public final class GuiFrostBlur {
 		if (roundedBlitPipeline != null) {
 			return;
 		}
-		roundedBlitPipeline = RenderPipeline.builder()
-			.withLocation(Stray.id("pipeline/gui_rounded_blit"))
-			.withVertexShader(ROUNDED_BLIT_SHADER)
-			.withFragmentShader(ROUNDED_BLIT_SHADER)
-			.withSampler("Sampler0")
-			.withUniform("DynamicTransforms", UniformType.UNIFORM_BUFFER)
-			.withUniform("Projection", UniformType.UNIFORM_BUFFER)
-			.withColorTargetState(new ColorTargetState(BlendFunction.TRANSLUCENT))
-			.withVertexFormat(DefaultVertexFormat.POSITION_TEX_COLOR, VertexFormat.Mode.QUADS)
-			.build();
+		roundedBlitPipeline = RenderCompat.guiBlit(
+			Stray.id("pipeline/gui_rounded_blit"),
+			ROUNDED_BLIT_SHADER,
+			BlendFunction.TRANSLUCENT
+		).build();
 	}
 
 	private static synchronized void ensureLiquidBlitPipeline() {
@@ -506,11 +502,12 @@ public final class GuiFrostBlur {
 			.withLocation(Stray.id("pipeline/gui_liquid_glass"))
 			.withVertexShader(ROUNDED_BLIT_SHADER)
 			.withFragmentShader(LIQUID_BLIT_SHADER)
-			.withSampler("Sampler0")
-			.withUniform("DynamicTransforms", UniformType.UNIFORM_BUFFER)
-			.withUniform("Projection", UniformType.UNIFORM_BUFFER)
+			.withBindGroupLayout(net.minecraft.client.renderer.BindGroupLayouts.PROJECTION)
+			.withBindGroupLayout(net.minecraft.client.renderer.BindGroupLayouts.DYNAMIC_TRANSFORMS)
+			.withBindGroupLayout(net.minecraft.client.renderer.BindGroupLayouts.SAMPLER0)
+			.withVertexBinding(0, DefaultVertexFormat.POSITION_TEX_COLOR)
+			.withPrimitiveTopology(PrimitiveTopology.QUADS)
 			.withColorTargetState(new ColorTargetState(BlendFunction.TRANSLUCENT))
-			.withVertexFormat(DefaultVertexFormat.POSITION_TEX_COLOR, VertexFormat.Mode.QUADS)
 			.build();
 	}
 
@@ -518,14 +515,10 @@ public final class GuiFrostBlur {
 		if (blurPipeline != null) {
 			return;
 		}
-		blurPipeline = RenderPipeline.builder()
-			.withLocation(Stray.id("pipeline/frost_blur"))
-			.withVertexShader(Identifier.withDefaultNamespace("core/screenquad"))
-			.withFragmentShader(BLUR_SHADER)
-			.withSampler("InSampler")
-			.withUniform("BlurConfig", UniformType.UNIFORM_BUFFER)
-			.withVertexFormat(DefaultVertexFormat.EMPTY, VertexFormat.Mode.TRIANGLES)
-			.withColorTargetState(new ColorTargetState(Optional.empty(), ColorTargetState.WRITE_ALL))
+		blurPipeline = RenderCompat.screenQuad(Stray.id("pipeline/frost_blur"), BLUR_SHADER)
+			.withBindGroupLayout(net.minecraft.client.renderer.BindGroupLayouts.IN_SAMPLER)
+			.withBindGroupLayout(RenderCompat.uniform("BlurConfig"))
+			.withColorTargetState(RenderCompat.opaqueTarget())
 			.withDepthStencilState(new DepthStencilState(CompareOp.ALWAYS_PASS, false))
 			.build();
 	}
@@ -548,9 +541,9 @@ public final class GuiFrostBlur {
 		}
 		haveFrost = false;
 		haveGlass = false;
-		frost = new TextureTarget("stray control frost", width, height, false);
-		glass = new TextureTarget("stray liquid glass", width, height, false);
-		swap = new TextureTarget("stray control frost swap", width, height, false);
+		frost = RenderCompat.colorTarget("stray control frost", width, height);
+		glass = RenderCompat.colorTarget("stray liquid glass", width, height);
+		swap = RenderCompat.colorTarget("stray control frost swap", width, height);
 	}
 
 	/** Framebuffer rectangle in GL scissor convention (origin bottom-left). */

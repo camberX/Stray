@@ -10,7 +10,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.ContainerInput;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.component.CustomData;
-import org.lwjgl.glfw.GLFW;
+import dev.stray.client.input.MouseButtons;
 
 /**
  * OdinClient click / item helpers, copied from PlayerUtils.kt, Utils.kt,
@@ -126,13 +126,10 @@ public final class OdinClicks {
 		if (!bound(key)) {
 			return false;
 		}
-		Minecraft client = Minecraft.getInstance();
-		var window = client.getWindow();
-		int value = key.getValue();
-		if (value > 7) {
-			return InputConstants.isKeyDown(window, value);
+		if (key.getType() == InputConstants.Type.MOUSE) {
+			return MouseButtons.down(key.getValue());
 		}
-		return GLFW.glfwGetMouseButton(window.handle(), value) == GLFW.GLFW_PRESS;
+		return InputConstants.isKeyDown(key.getValue());
 	}
 
 	public static boolean bound(InputConstants.Key key) {

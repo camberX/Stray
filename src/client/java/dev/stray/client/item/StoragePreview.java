@@ -92,7 +92,7 @@ public final class StoragePreview {
 		if (!StrayConfig.get().storagePreviewEnabled) {
 			return;
 		}
-		if (client.screen instanceof AbstractContainerScreen<?> container) {
+		if (client.gui.screen() instanceof AbstractContainerScreen<?> container) {
 			capture(container, true);
 		}
 		if (!SkyblockLocation.inSkyblock) {

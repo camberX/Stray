@@ -22,7 +22,7 @@ public final class MenuChrome {
 
 	public static boolean enabled() {
 		Minecraft client = Minecraft.getInstance();
-		return client != null && applies(client.screen);
+		return client != null && applies(client.gui.screen());
 	}
 
 	public static boolean applies(Screen screen) {

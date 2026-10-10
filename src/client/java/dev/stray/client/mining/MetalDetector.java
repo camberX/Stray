@@ -13,7 +13,6 @@ import net.minecraft.client.Camera;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.Gui;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.player.LocalPlayer;
@@ -218,10 +217,10 @@ public final class MetalDetector {
 			return;
 		}
 		Minecraft client = Minecraft.getInstance();
-		if (client.player == null || client.options.hideGui) {
+		if (client.player == null || client.gui.hud.isHidden()) {
 			return;
 		}
-		Camera camera = client.gameRenderer.getMainCamera();
+		Camera camera = client.gameRenderer.mainCamera();
 		if (!camera.isInitialized()) {
 			return;
 		}
@@ -292,7 +291,7 @@ public final class MetalDetector {
 	}
 
 	private static void pollActionBar(Minecraft client) {
-		if (client.gui instanceof GuiAccessor accessor) {
+		if (client.gui != null && client.gui.hud instanceof GuiAccessor accessor) {
 			Component overlay = accessor.stray$overlayMessage();
 			if (overlay != null) {
 				readTreasure(plain(overlay));
@@ -424,13 +423,12 @@ public final class MetalDetector {
 	}
 
 	private static void showTitle(Minecraft client, String title, String subtitle) {
-		Gui gui = client.gui;
-		if (gui == null) {
+		if (client.gui == null) {
 			return;
 		}
-		gui.setTimes(5, 40, 8);
-		gui.setTitle(Component.literal(title));
-		gui.setSubtitle(subtitle == null || subtitle.isEmpty() ? Component.empty() : Component.literal(subtitle));
+		client.gui.hud.setTimes(5, 40, 8);
+		client.gui.hud.setTitle(Component.literal(title));
+		client.gui.hud.setSubtitle(subtitle == null || subtitle.isEmpty() ? Component.empty() : Component.literal(subtitle));
 	}
 
 	private static boolean holdingDetector(LocalPlayer player) {

@@ -3,13 +3,13 @@ package dev.stray.client.render;
 import dev.stray.client.mixin.BossHealthOverlayAccessor;
 import dev.stray.client.ui.MenuFont;
 import dev.stray.client.ui.Theme;
-import net.minecraft.ChatFormatting;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.LerpingBossEvent;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.TextColor;
 import net.minecraft.util.Mth;
 
 import java.util.ArrayList;
@@ -72,7 +72,7 @@ public final class BossBarHudRenderer {
 			eventsCache = List.of();
 			return eventsCache;
 		}
-		var map = ((BossHealthOverlayAccessor) client.gui.getBossOverlay()).stray$events();
+		var map = ((BossHealthOverlayAccessor) client.gui.hud.getBossOverlay()).stray$events();
 		if (map == null || map.isEmpty()) {
 			eventsCache = List.of();
 			return eventsCache;
@@ -125,11 +125,10 @@ public final class BossBarHudRenderer {
 	}
 
 	private static int barColor(LerpingBossEvent event) {
-		ChatFormatting formatting = event.getColor().getFormatting();
-		Integer rgb = formatting == null ? null : formatting.getColor();
-		if (rgb == null) {
+		TextColor color = TextColor.fromLegacyFormat(event.getColor().getFormatting());
+		if (color == null) {
 			return Theme.ACCENT;
 		}
-		return 0xFF000000 | rgb;
+		return 0xFF000000 | color.getValue();
 	}
 }

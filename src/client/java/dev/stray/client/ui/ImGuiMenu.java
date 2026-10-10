@@ -502,7 +502,7 @@ final class ImGuiMenu {
 			}
 			if (config.commandShortcutsEnabled && (query.isEmpty() || "edit".contains(query))) {
 				rows.add(new Row("Edit shortcuts", false, null, null, () ->
-					Minecraft.getInstance().setScreen(new CommandShortcutScreen(screen))
+					Minecraft.getInstance().gui.setScreen(new CommandShortcutScreen(screen))
 				));
 			}
 			return rows;

@@ -496,7 +496,7 @@ public final class MiningTracker {
 		if (config.miningHudEnabled || config.titaniumEsp) {
 			return true;
 		}
-		return client.screen instanceof StrayScreen;
+		return client.gui.screen() instanceof StrayScreen;
 	}
 
 	private static List<Commission> readCommissions(Minecraft client) {

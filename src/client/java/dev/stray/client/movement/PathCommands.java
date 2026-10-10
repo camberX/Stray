@@ -143,7 +143,7 @@ public final class PathCommands {
 	private static void tell(String text, ChatFormatting color) {
 		Minecraft client = Minecraft.getInstance();
 		if (client.gui != null) {
-			client.gui.getChat().addClientSystemMessage(Component.literal(text).withStyle(color));
+			client.gui.hud.getChat().addClientSystemMessage(Component.literal(text).withStyle(color));
 		}
 	}
 }

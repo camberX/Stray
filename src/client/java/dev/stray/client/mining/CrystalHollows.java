@@ -177,18 +177,18 @@ public final class CrystalHollows {
 		for (var entry : WAYPOINTS.entrySet()) {
 			lines.add(new Mark(entry.getKey().label, entry.getValue(), entry.getKey().rgb, false));
 		}
-		client.gui.getChat().addClientSystemMessage(
+		client.gui.hud.getChat().addClientSystemMessage(
 			Component.literal("Stray CH waypoints").withStyle(ChatFormatting.YELLOW)
 		);
 		if (lines.isEmpty()) {
-			client.gui.getChat().addClientSystemMessage(
+			client.gui.hud.getChat().addClientSystemMessage(
 				Component.literal("None stored.").withStyle(ChatFormatting.GRAY)
 			);
 			return;
 		}
 		for (Mark mark : lines) {
 			BlockPos pos = mark.pos();
-			client.gui.getChat().addClientSystemMessage(
+			client.gui.hud.getChat().addClientSystemMessage(
 				Component.literal(mark.label() + "  " + pos.getX() + " " + pos.getY() + " " + pos.getZ())
 					.withStyle(Style.EMPTY.withColor(mark.rgb() & 0xFFFFFF))
 			);

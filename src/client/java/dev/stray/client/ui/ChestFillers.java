@@ -1,5 +1,6 @@
 package dev.stray.client.ui;
 
+import net.minecraft.world.item.DyeColor;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.world.entity.player.Inventory;
@@ -21,13 +22,13 @@ public final class ChestFillers {
 			return false;
 		}
 		Minecraft client = Minecraft.getInstance();
-		if (client == null || !(client.screen instanceof AbstractContainerScreen<?> screen)) {
+		if (client == null || !(client.gui.screen() instanceof AbstractContainerScreen<?> screen)) {
 			return false;
 		}
 		if (!(screen.getMenu() instanceof ChestMenu)) {
 			return false;
 		}
 		ItemStack stack = slot.getItem();
-		return !stack.isEmpty() && stack.is(Items.BLACK_STAINED_GLASS_PANE);
+		return !stack.isEmpty() && stack.is(Items.STAINED_GLASS_PANE.pick(DyeColor.BLACK));
 	}
 }

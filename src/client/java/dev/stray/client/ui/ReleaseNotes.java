@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.5.56", new String[]{
+			"This build targets Minecraft 26.3. The marble menu, Proggy, and the rest of the 26.1.2 features stay."
+		}),
 		new Entry("1.5.55", new String[]{
 			"The main menu background is the liquid marble loop. Veins and splashes use the accent color. The teal stone stays."
 		}),

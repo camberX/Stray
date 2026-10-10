@@ -93,7 +93,7 @@ public class CapeCreatorScreen extends Screen {
 	@Override
 	public void onClose() {
 		ready = false;
-		minecraft.setScreen(parent);
+		minecraft.gui.setScreen(parent);
 	}
 
 	@Override

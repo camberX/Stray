@@ -1,17 +1,15 @@
 package dev.stray.client.mixin;
 
-import com.mojang.blaze3d.buffers.GpuBufferSlice;
+import com.mojang.renderpearl.api.buffers.GpuBufferSlice;
 import com.mojang.blaze3d.resource.GraphicsResourceAllocator;
 import com.mojang.blaze3d.vertex.PoseStack;
 import dev.stray.client.config.StrayConfig;
 import dev.stray.client.render.TopDownCapture;
 import dev.stray.client.visual.motionblur.MotionBlurShaders;
 import net.minecraft.client.CameraType;
-import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.LevelRenderer;
 import net.minecraft.client.renderer.SubmitNodeCollector;
-import net.minecraft.client.renderer.chunk.ChunkSectionsToRender;
 import net.minecraft.client.renderer.state.level.CameraRenderState;
 import net.minecraft.client.renderer.state.level.LevelRenderState;
 import org.joml.Matrix4f;
@@ -42,22 +40,21 @@ public class LevelRendererMixin {
 	@Unique
 	private boolean stray$previousFrameReady;
 
-	@Inject(method = "renderLevel", at = @At("HEAD"))
+	@Inject(method = "render", at = @At("HEAD"))
 	private void stray$motionBlurHead(
 		GraphicsResourceAllocator resourceAllocator,
-		DeltaTracker deltaTracker,
 		boolean renderOutline,
 		CameraRenderState cameraState,
-		Matrix4fc modelViewMatrix,
 		GpuBufferSlice terrainFog,
 		Vector4f fogColor,
 		boolean shouldRenderSky,
-		ChunkSectionsToRender chunkSectionsToRender,
+		boolean consistentDepthRequired,
 		CallbackInfo ci
 	) {
-		if (TopDownCapture.capturing()) {
+		if (TopDownCapture.capturing() || cameraState.viewRotationMatrix == null) {
 			return;
 		}
+		Matrix4fc modelViewMatrix = cameraState.viewRotationMatrix;
 		boolean blurActive = MotionBlurShaders.active();
 		boolean needsVelocity = blurActive && StrayConfig.get().motionBlurUsesVelocity();
 		double cx = cameraState.pos.x();
@@ -126,17 +123,15 @@ public class LevelRendererMixin {
 		MotionBlurShaders.applyPreEntityBlur();
 	}
 
-	@Inject(method = "renderLevel", at = @At("TAIL"))
+	@Inject(method = "render", at = @At("TAIL"))
 	private void stray$motionBlurTail(
 		GraphicsResourceAllocator resourceAllocator,
-		DeltaTracker deltaTracker,
 		boolean renderOutline,
 		CameraRenderState cameraState,
-		Matrix4fc modelViewMatrix,
 		GpuBufferSlice terrainFog,
 		Vector4f fogColor,
 		boolean shouldRenderSky,
-		ChunkSectionsToRender chunkSectionsToRender,
+		boolean consistentDepthRequired,
 		CallbackInfo ci
 	) {
 		if (TopDownCapture.capturing()) {

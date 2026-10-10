@@ -1,7 +1,7 @@
 package dev.stray.client.render;
 
-import com.mojang.blaze3d.opengl.GlRenderPipeline;
-import com.mojang.blaze3d.opengl.GlStateManager;
+import com.mojang.renderpearl.backend.opengl.GlRenderPipeline;
+import com.mojang.renderpearl.backend.opengl.GlStateManager;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL20;
 
@@ -50,7 +50,11 @@ public final class TopDownTerrainCut {
 	}
 
 	private static int find(int program) {
-		return GlStateManager._glGetUniformLocation(program, "StrayCut");
+		int location = GlStateManager._glGetUniformLocation(program, "StrayCut");
+		if (location < 0) {
+			location = GlStateManager._glGetUniformLocation(program, "u_StrayCut");
+		}
+		return location;
 	}
 
 	public static String patchSodiumVertex(String source) {

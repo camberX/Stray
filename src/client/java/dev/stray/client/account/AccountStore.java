@@ -563,7 +563,7 @@ public final class AccountStore {
 			client.execute(() -> {
 				client.keyboardHandler.setClipboard(code.getUserCode());
 				try {
-					net.minecraft.util.Util.getPlatform().openUri(code.getDirectVerificationUri());
+					com.mojang.blaze3d.Blaze3D.openUri(java.net.URI.create(code.getDirectVerificationUri()));
 				} catch (Exception ignored) {
 				}
 			});

@@ -225,7 +225,7 @@ public final class ClickGui {
 			if ("Custom title".equals(row.mod.name)) {
 				Minecraft client = Minecraft.getInstance();
 				if (client != null) {
-					client.setScreen(new CustomTitleScreen(client.screen));
+					client.gui.setScreen(new CustomTitleScreen(client.gui.screen()));
 				}
 				return;
 			}
@@ -642,7 +642,7 @@ public final class ClickGui {
 			UnloadState.markDirty();
 		});
 		y += stride();
-		drawButton(screen, graphics, font, x, y, w, "HUD Editor", () -> Minecraft.getInstance().setScreen(new HudEditorScreen()));
+		drawButton(screen, graphics, font, x, y, w, "HUD Editor", () -> Minecraft.getInstance().gui.setScreen(new HudEditorScreen()));
 	}
 
 	/** Boolean subsetting. A switch on the right, not a module-sized accent fill. */
@@ -1052,7 +1052,7 @@ public final class ClickGui {
 				y += stride();
 				if (y + box() > viewTop && y < viewTop + shownH) {
 					drawButton(screen, graphics, font, boxX, y, boxW, "Edit", () ->
-						Minecraft.getInstance().setScreen(new CommandShortcutScreen(screen))
+						Minecraft.getInstance().gui.setScreen(new CommandShortcutScreen(screen))
 					);
 				}
 				y += stride();
@@ -1404,7 +1404,7 @@ public final class ClickGui {
 			drawButton(screen, graphics, font, x, y, w, "Edit title", () -> {
 				Minecraft client = Minecraft.getInstance();
 				if (client != null) {
-					client.setScreen(new CustomTitleScreen(client.screen));
+					client.gui.setScreen(new CustomTitleScreen(client.gui.screen()));
 				}
 			});
 			return;

@@ -71,7 +71,7 @@ public class ChatScreenMixin {
 			|| ProfileCommands.handleTyped(message)
 			|| (message != null && message.startsWith("/") && CommandShortcuts.handleTyped(message))) {
 			if (addToHistory && message != null && !message.isBlank()) {
-				Minecraft.getInstance().gui.getChat().addRecentChat(message);
+				Minecraft.getInstance().gui.hud.getChat().addRecentChat(message);
 			}
 			ci.cancel();
 		}

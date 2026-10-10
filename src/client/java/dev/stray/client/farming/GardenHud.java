@@ -617,7 +617,7 @@ public final class GardenHud {
 
 	private static void readCropMilestoneMenu(Minecraft client) {
 		milestoneMenuOpen = false;
-		if (!(client.screen instanceof AbstractContainerScreen<?> screen) || client.player == null) {
+		if (!(client.gui.screen() instanceof AbstractContainerScreen<?> screen) || client.player == null) {
 			return;
 		}
 		String title = menuTitle(screen);
@@ -1045,7 +1045,7 @@ public final class GardenHud {
 	}
 
 	private static void readVisitorChest(Minecraft client) {
-		if (!(client.screen instanceof AbstractContainerScreen<?> screen)) {
+		if (!(client.gui.screen() instanceof AbstractContainerScreen<?> screen)) {
 			return;
 		}
 		ItemStack info = slotItem(screen, INFO_SLOT);

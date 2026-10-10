@@ -45,7 +45,7 @@ public final class SackRecipe {
 			return null;
 		}
 		Minecraft client = Minecraft.getInstance();
-		if (!(client.screen instanceof AbstractContainerScreen<?> screen) || !sack(screen)) {
+		if (!(client.gui.screen() instanceof AbstractContainerScreen<?> screen) || !sack(screen)) {
 			return null;
 		}
 		Slot hovered = ((AbstractContainerScreenAccessor) screen).stray$hoveredSlot();

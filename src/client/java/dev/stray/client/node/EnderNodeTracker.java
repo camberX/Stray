@@ -1,5 +1,6 @@
 package dev.stray.client.node;
 
+import net.minecraft.world.item.DyeColor;
 import dev.stray.client.config.StrayConfig;
 import dev.stray.client.location.SkyblockLocation;
 import net.minecraft.client.Minecraft;
@@ -223,7 +224,7 @@ public final class EnderNodeTracker {
 
 	public static boolean isNodeBlock(BlockState state) {
 		Block block = state.getBlock();
-		return block == Blocks.MAGENTA_TERRACOTTA || block == Blocks.PURPLE_TERRACOTTA;
+		return block == Blocks.DYED_TERRACOTTA.pick(DyeColor.MAGENTA) || block == Blocks.DYED_TERRACOTTA.pick(DyeColor.PURPLE);
 	}
 
 	private static boolean isNodeParticle(ParticleType<?> type) {

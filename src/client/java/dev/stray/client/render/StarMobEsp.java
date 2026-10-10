@@ -15,7 +15,7 @@ import net.minecraft.world.entity.ExperienceOrb;
 import net.minecraft.world.entity.ambient.Bat;
 import net.minecraft.world.entity.boss.wither.WitherBoss;
 import net.minecraft.world.entity.decoration.ArmorStand;
-import net.minecraft.world.entity.monster.EnderMan;
+import net.minecraft.world.entity.monster.Enderman;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.projectile.arrow.AbstractArrow;
 import net.minecraft.world.phys.AABB;
@@ -109,7 +109,7 @@ public final class StarMobEsp {
 		if (entity instanceof Bat bat) {
 			return config.starMobBats && !bat.isInvisible() && !bat.isPassenger();
 		}
-		if (entity instanceof EnderMan enderman) {
+		if (entity instanceof Enderman enderman) {
 			Component name = enderman.getCustomName();
 			return config.starMobFels && name != null && "Dinnerbone".equals(name.getString());
 		}

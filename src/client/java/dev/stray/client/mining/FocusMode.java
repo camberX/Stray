@@ -1,7 +1,8 @@
 package dev.stray.client.mining;
 
-import com.mojang.blaze3d.opengl.GlRenderPipeline;
-import com.mojang.blaze3d.opengl.GlStateManager;
+import net.minecraft.world.item.DyeColor;
+import com.mojang.renderpearl.backend.opengl.GlRenderPipeline;
+import com.mojang.renderpearl.backend.opengl.GlStateManager;
 import com.mojang.blaze3d.vertex.QuadInstance;
 import dev.stray.Stray;
 import dev.stray.client.config.StrayConfig;
@@ -223,7 +224,7 @@ public final class FocusMode {
 			}
 		}
 		if (client.levelRenderer != null) {
-			client.levelRenderer.allChanged();
+			client.levelExtractor.allChanged();
 		}
 	}
 
@@ -279,14 +280,14 @@ public final class FocusMode {
 	}
 
 	private enum Gem {
-		RUBY("Ruby", "ruby", Blocks.RED_STAINED_GLASS, Blocks.RED_STAINED_GLASS_PANE),
-		AMBER("Amber", "amber", Blocks.ORANGE_STAINED_GLASS, Blocks.ORANGE_STAINED_GLASS_PANE),
-		TOPAZ("Topaz", "topaz", Blocks.YELLOW_STAINED_GLASS, Blocks.YELLOW_STAINED_GLASS_PANE),
-		JADE("Jade", "jade", Blocks.LIME_STAINED_GLASS, Blocks.LIME_STAINED_GLASS_PANE),
-		SAPPHIRE("Sapphire", "sapphire", Blocks.LIGHT_BLUE_STAINED_GLASS, Blocks.LIGHT_BLUE_STAINED_GLASS_PANE),
-		AMETHYST("Amethyst", "amethyst", Blocks.PURPLE_STAINED_GLASS, Blocks.PURPLE_STAINED_GLASS_PANE),
-		JASPER("Jasper", "jasper", Blocks.MAGENTA_STAINED_GLASS, Blocks.MAGENTA_STAINED_GLASS_PANE),
-		OPAL("Opal", "opal", Blocks.WHITE_STAINED_GLASS, Blocks.WHITE_STAINED_GLASS_PANE);
+		RUBY("Ruby", "ruby", Blocks.STAINED_GLASS.pick(DyeColor.RED), Blocks.STAINED_GLASS_PANE.pick(DyeColor.RED)),
+		AMBER("Amber", "amber", Blocks.STAINED_GLASS.pick(DyeColor.ORANGE), Blocks.STAINED_GLASS_PANE.pick(DyeColor.ORANGE)),
+		TOPAZ("Topaz", "topaz", Blocks.STAINED_GLASS.pick(DyeColor.YELLOW), Blocks.STAINED_GLASS_PANE.pick(DyeColor.YELLOW)),
+		JADE("Jade", "jade", Blocks.STAINED_GLASS.pick(DyeColor.LIME), Blocks.STAINED_GLASS_PANE.pick(DyeColor.LIME)),
+		SAPPHIRE("Sapphire", "sapphire", Blocks.STAINED_GLASS.pick(DyeColor.LIGHT_BLUE), Blocks.STAINED_GLASS_PANE.pick(DyeColor.LIGHT_BLUE)),
+		AMETHYST("Amethyst", "amethyst", Blocks.STAINED_GLASS.pick(DyeColor.PURPLE), Blocks.STAINED_GLASS_PANE.pick(DyeColor.PURPLE)),
+		JASPER("Jasper", "jasper", Blocks.STAINED_GLASS.pick(DyeColor.MAGENTA), Blocks.STAINED_GLASS_PANE.pick(DyeColor.MAGENTA)),
+		OPAL("Opal", "opal", Blocks.STAINED_GLASS.pick(DyeColor.WHITE), Blocks.STAINED_GLASS_PANE.pick(DyeColor.WHITE));
 
 		final String label;
 		final String id;

@@ -1,7 +1,6 @@
 package dev.stray.client.mixin;
 
 import com.mojang.authlib.minecraft.UserApiService;
-import com.mojang.blaze3d.pipeline.RenderTarget;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.User;
 import net.minecraft.client.multiplayer.ProfileKeyPairManager;
@@ -33,11 +32,4 @@ public interface MinecraftAccessor {
 	@Accessor("userApiService")
 	@Mutable
 	void stray$userApiService(UserApiService service);
-
-	@Accessor("mainRenderTarget")
-	RenderTarget stray$mainRenderTarget();
-
-	@Accessor("mainRenderTarget")
-	@Mutable
-	void stray$mainRenderTarget(RenderTarget target);
 }
