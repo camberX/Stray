@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.5.65", new String[]{
+			"Triggerbot sends the punch packet with each hit, the same packet a normal left click sends on 26.3."
+		}),
 		new Entry("1.5.64", new String[]{
 			"Player fill copies world depth while the solid pass is open, so the silhouette no longer crashes the frame."
 		}),
