@@ -1,6 +1,5 @@
 package dev.stray.client.visual;
 
-import com.mojang.renderpearl.backend.opengl.GlRenderPipeline;
 import dev.stray.client.render.StrayUniforms;
 import dev.stray.client.config.StrayConfig;
 import net.minecraft.client.Camera;
@@ -23,9 +22,8 @@ public final class CustomFog {
 		return applied;
 	}
 
-	public static void bind(GlRenderPipeline pipeline) {
+	public static void bind() {
 		StrayUniforms.fog(applied ? 1f : 0f);
-		StrayUniforms.apply(pipeline);
 	}
 
 	public static Sample sample() {

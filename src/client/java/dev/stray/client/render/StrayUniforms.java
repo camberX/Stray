@@ -1,21 +1,25 @@
 package dev.stray.client.render;
 
+import com.mojang.blaze3d.systems.RenderSystem;
+import com.mojang.renderpearl.api.buffers.GpuBuffer;
+import com.mojang.renderpearl.api.buffers.GpuBufferSlice;
 import com.mojang.renderpearl.api.pipeline.BindGroupLayout;
 import com.mojang.renderpearl.api.pipeline.UniformType;
-import com.mojang.renderpearl.backend.opengl.GlRenderPipeline;
+import com.mojang.renderpearl.backend.opengl.GlBuffer;
 import org.lwjgl.opengl.GL15;
-import org.lwjgl.opengl.GL30;
 import org.lwjgl.opengl.GL31;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.util.HashMap;
+import java.util.Collections;
+import java.util.IdentityHashMap;
 import java.util.Map;
 
 /**
  * Focus, world tint, fog density, and the top-down cut share one std140 block.
- * Renderpearl compiles GLSL to SPIR-V, which rejects loose uniforms and inputs
- * without locations, so the values live here and are bound on each draw.
+ * Renderpearl compiles GLSL to SPIR-V and renames the block, then the draw
+ * fails if that slot is still empty. The slice is uploaded here and handed to
+ * the render pass by index.
  */
 public final class StrayUniforms {
 	private static final String BLOCK = """
@@ -30,9 +34,9 @@ public final class StrayUniforms {
 		""";
 
 	private static final ByteBuffer DATA = ByteBuffer.allocateDirect(48).order(ByteOrder.nativeOrder());
-	private static final Map<Integer, Integer> BINDINGS = new HashMap<>();
+	private static final Map<Object, Integer> INDICES = Collections.synchronizedMap(new IdentityHashMap<>());
 	private static BindGroupLayout layout;
-	private static int buffer;
+	private static GpuBuffer buffer;
 
 	private StrayUniforms() {
 	}
@@ -46,6 +50,21 @@ public final class StrayUniforms {
 			layout = current;
 		}
 		return current;
+	}
+
+	public static void remember(Object pipeline, int index) {
+		if (pipeline == null || index < 0) {
+			return;
+		}
+		INDICES.put(pipeline, index);
+	}
+
+	public static int index(Object pipeline) {
+		if (pipeline == null) {
+			return -1;
+		}
+		Integer found = INDICES.get(pipeline);
+		return found == null ? -1 : found;
 	}
 
 	public static String insertBlock(String source) {
@@ -92,47 +111,23 @@ public final class StrayUniforms {
 		DATA.putFloat(36, enabled);
 	}
 
-	public static void apply(GlRenderPipeline pipeline) {
-		if (pipeline == null || pipeline.program() == null) {
-			return;
+	public static GpuBufferSlice upload() {
+		GpuBuffer current = buffer;
+		if (current == null || current.isClosed()) {
+			current = RenderSystem.getDevice().createBuffer(
+				() -> "stray block",
+				GpuBuffer.USAGE_UNIFORM | GpuBuffer.USAGE_COPY_DST,
+				48
+			);
+			buffer = current;
 		}
-		int program = pipeline.program().getProgramId();
-		if (program <= 0) {
-			return;
+		if (current instanceof GlBuffer gl) {
+			DATA.position(0);
+			DATA.limit(48);
+			GL15.glBindBuffer(GL31.GL_UNIFORM_BUFFER, gl.handle());
+			GL15.glBufferSubData(GL31.GL_UNIFORM_BUFFER, 0L, DATA);
+			GL15.glBindBuffer(GL31.GL_UNIFORM_BUFFER, 0);
 		}
-		int binding = BINDINGS.computeIfAbsent(program, StrayUniforms::binding);
-		if (binding < 0) {
-			return;
-		}
-		int id = buffer();
-		DATA.position(0);
-		DATA.limit(48);
-		GL15.glBindBuffer(GL31.GL_UNIFORM_BUFFER, id);
-		GL15.glBufferSubData(GL31.GL_UNIFORM_BUFFER, 0L, DATA);
-		GL30.glBindBufferBase(GL31.GL_UNIFORM_BUFFER, binding, id);
-		GL15.glBindBuffer(GL31.GL_UNIFORM_BUFFER, 0);
-	}
-
-	private static int buffer() {
-		int id = buffer;
-		if (id != 0) {
-			return id;
-		}
-		id = GL15.glGenBuffers();
-		GL15.glBindBuffer(GL31.GL_UNIFORM_BUFFER, id);
-		GL15.glBufferData(GL31.GL_UNIFORM_BUFFER, 48L, GL15.GL_DYNAMIC_DRAW);
-		GL15.glBindBuffer(GL31.GL_UNIFORM_BUFFER, 0);
-		buffer = id;
-		return id;
-	}
-
-	private static int binding(int program) {
-		int index = GL31.glGetUniformBlockIndex(program, "StrayBlock");
-		if (index < 0) {
-			return -1;
-		}
-		int[] params = new int[1];
-		GL31.glGetActiveUniformBlockiv(program, index, GL31.GL_UNIFORM_BLOCK_BINDING, params);
-		return params[0];
+		return current.slice();
 	}
 }
