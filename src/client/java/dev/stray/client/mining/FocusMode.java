@@ -2,8 +2,8 @@ package dev.stray.client.mining;
 
 import net.minecraft.world.item.DyeColor;
 import com.mojang.renderpearl.backend.opengl.GlRenderPipeline;
-import com.mojang.renderpearl.backend.opengl.GlStateManager;
 import com.mojang.blaze3d.vertex.QuadInstance;
+import dev.stray.client.render.StrayUniforms;
 import dev.stray.Stray;
 import dev.stray.client.config.StrayConfig;
 import dev.stray.client.location.SkyblockLocation;
@@ -14,12 +14,8 @@ import net.minecraft.resources.Identifier;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
-import org.lwjgl.opengl.GL11;
-import org.lwjgl.opengl.GL20;
 
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
 
 /**
@@ -63,7 +59,6 @@ public final class FocusMode {
 		    return vec4(rgb * lit, tex.a);
 		}
 		""";
-	private static final Map<Integer, Integer> LOCATIONS = new HashMap<>();
 	private static volatile boolean visual;
 	private static volatile int gemIndex;
 	private static volatile Set<Block> cobble;
@@ -136,30 +131,17 @@ public final class FocusMode {
 	}
 
 	public static void bind(GlRenderPipeline pipeline) {
-		if (pipeline == null || pipeline.program() == null) {
-			return;
-		}
-		int program = pipeline.program().getProgramId();
-		if (program <= 0) {
-			return;
-		}
-		int location = LOCATIONS.computeIfAbsent(program, FocusMode::find);
-		if (location < 0) {
-			return;
-		}
-		int previous = GL11.glGetInteger(GL20.GL_CURRENT_PROGRAM);
-		GL20.glUseProgram(program);
-		GL20.glUniform1f(location, visual ? 1f : 0f);
-		GL20.glUseProgram(previous);
+		StrayUniforms.focus(visual ? 1f : 0f);
+		StrayUniforms.apply(pipeline);
 	}
 
 	public static String patchVanilla(String source) {
 		if (source == null || source.contains("strayTint")) {
 			return source;
 		}
-		if (source.contains("vertexColor = Color * sample_lightmap(Sampler2, UV2);")) {
+		if (source.contains("ChunkPosition") && source.contains("vertexColor = Color * sample_lightmap(Sampler2, UV2);")) {
 			return source
-				.replace("out vec4 vertexColor;", "out vec4 vertexColor;\nflat out vec4 strayTint;\nout vec4 strayLight;")
+				.replace("out vec4 vertexColor;", "out vec4 vertexColor;\nlayout(location = 5) flat out vec4 strayTint;\nlayout(location = 6) out vec4 strayLight;")
 				.replace(
 					"vertexColor = Color * sample_lightmap(Sampler2, UV2);",
 					"strayLight = sample_lightmap(Sampler2, UV2);\n    strayTint = Color;\n    vertexColor = Color * strayLight;"
@@ -170,12 +152,12 @@ public final class FocusMode {
 		}
 		String withIns = source.replace(
 			"in vec4 vertexColor;",
-			"in vec4 vertexColor;\nflat in vec4 strayTint;\nin vec4 strayLight;\nuniform float u_StrayFocus;"
+			"in vec4 vertexColor;\nlayout(location = 5) flat in vec4 strayTint;\nlayout(location = 6) in vec4 strayLight;"
 		);
-		String withFn = withIns.replace("void main() {", FOCUS_FN + "void main() {");
+		String withFn = StrayUniforms.insertBlock(withIns).replace("void main() {", FOCUS_FN + "void main() {");
 		return withFn.replace(
 			"vec4 color = (UseRgss == 1 ? sampleRGSS(Sampler0, texCoord0, 1.0f / TextureSize) : sampleNearest(Sampler0, texCoord0, 1.0f / TextureSize)) * vertexColor;",
-			"vec4 strayTex = (UseRgss == 1 ? sampleRGSS(Sampler0, texCoord0, 1.0f / TextureSize) : sampleNearest(Sampler0, texCoord0, 1.0f / TextureSize));\n    vec4 color = u_StrayFocus > 0.5 ? strayFocus(strayTex, strayTint, strayLight) : strayTex * vertexColor;"
+			"vec4 strayTex = (UseRgss == 1 ? sampleRGSS(Sampler0, texCoord0, 1.0f / TextureSize) : sampleNearest(Sampler0, texCoord0, 1.0f / TextureSize));\n    vec4 color = u_StrayMisc.x > 0.5 ? strayFocus(strayTex, strayTint, strayLight) : strayTex * vertexColor;"
 		);
 	}
 
@@ -184,7 +166,7 @@ public final class FocusMode {
 			return source;
 		}
 		return source
-			.replace("out vec4 v_Color;", "out vec4 v_Color;\nflat out vec4 strayTint;\nout vec4 strayLight;")
+			.replace("out vec4 v_Color;", "out vec4 v_Color;\nlayout(location = 5) flat out vec4 strayTint;\nlayout(location = 6) out vec4 strayLight;")
 			.replace(
 				"v_Color = _vert_color * texture(u_LightTex, _vert_tex_light_coord);",
 				"strayLight = texture(u_LightTex, _vert_tex_light_coord);\n    strayTint = _vert_color;\n    v_Color = _vert_color * strayLight;"
@@ -192,19 +174,19 @@ public final class FocusMode {
 	}
 
 	public static String patchSodiumFragment(String source) {
-		if (source == null || source.contains("u_StrayFocus") || !source.contains("color *= v_Color;")) {
+		if (source == null || source.contains("strayTint") || !source.contains("color *= v_Color;")) {
 			return source;
 		}
 		String withIns = source.contains("in vec4 v_Color; // The interpolated vertex color")
 			? source.replace(
 				"in vec4 v_Color; // The interpolated vertex color",
-				"in vec4 v_Color; // The interpolated vertex color\nflat in vec4 strayTint;\nin vec4 strayLight;\nuniform float u_StrayFocus;"
+				"in vec4 v_Color; // The interpolated vertex color\nlayout(location = 5) flat in vec4 strayTint;\nlayout(location = 6) in vec4 strayLight;"
 			)
-			: source.replace("in vec4 v_Color;", "in vec4 v_Color;\nflat in vec4 strayTint;\nin vec4 strayLight;\nuniform float u_StrayFocus;");
-		String withFn = withIns.replace("void main() {", FOCUS_FN + "void main() {");
+			: source.replace("in vec4 v_Color;", "in vec4 v_Color;\nlayout(location = 5) flat in vec4 strayTint;\nlayout(location = 6) in vec4 strayLight;");
+		String withFn = StrayUniforms.insertBlock(withIns).replace("void main() {", FOCUS_FN + "void main() {");
 		return withFn.replace(
 			"color *= v_Color;",
-			"vec4 strayTex = color;\n    if (u_StrayFocus > 0.5) {\n        color = strayFocus(strayTex, strayTint, strayLight);\n    } else {\n        color *= v_Color;\n    }"
+			"vec4 strayTex = color;\n    if (u_StrayMisc.x > 0.5) {\n        color = strayFocus(strayTex, strayTint, strayLight);\n    } else {\n        color *= v_Color;\n    }"
 		);
 	}
 
@@ -226,10 +208,6 @@ public final class FocusMode {
 		if (client.levelRenderer != null) {
 			client.levelExtractor.allChanged();
 		}
-	}
-
-	private static int find(int program) {
-		return GlStateManager._glGetUniformLocation(program, "u_StrayFocus");
 	}
 
 	private static int indexOf(String id) {

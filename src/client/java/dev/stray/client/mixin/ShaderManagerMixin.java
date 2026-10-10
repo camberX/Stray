@@ -29,4 +29,16 @@ public class ShaderManagerMixin {
 		text = WorldTint.injectTerrainFragmentSource(text);
 		return CustomFog.injectSodiumShader(text);
 	}
+
+	@ModifyArg(
+		method = "loadInclude",
+		at = @At(
+			value = "INVOKE",
+			target = "Lcom/mojang/renderpearl/api/pipeline/ShaderSource$CachedIncludeSource;create(Lnet/minecraft/resources/Identifier;Ljava/lang/String;)Lcom/mojang/renderpearl/api/pipeline/ShaderSource$CachedIncludeSource;"
+		),
+		index = 1
+	)
+	private static String stray$patchInclude(String source) {
+		return CustomFog.injectSodiumShader(source);
+	}
 }

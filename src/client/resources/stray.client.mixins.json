@@ -74,6 +74,7 @@
 		"RenderTypeAccessor",
 		"RenderTypeFeatureRendererInvoker",
 		"RenderTypeFeatureRendererMixin",
+		"RenderPipelineBuilderMixin",
 		"RenderTypeMixin",
 		"SubmitNodeCollectionMixin",
 		"ScreenMixin",
