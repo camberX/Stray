@@ -23,9 +23,6 @@ public abstract class ItemFeatureRendererMixin {
 	@Final
 	private QuadInstance quadInstance;
 
-	@Shadow
-	protected abstract VertexConsumer getVertexBuilder(RenderType renderType);
-
 	@Unique
 	private ItemFeatureRenderer.Submit stray$itemSubmit;
 
@@ -51,7 +48,7 @@ public abstract class ItemFeatureRendererMixin {
 				type = HeldItemShader.wrap(original, submit.quads());
 			}
 		}
-		return this.getVertexBuilder(type);
+		return ((RenderTypeFeatureRendererInvoker) (Object) this).stray$getVertexBuilder(type);
 	}
 
 	@Inject(method = "prepareMainSubmit", at = @At("RETURN"))
@@ -65,7 +62,7 @@ public abstract class ItemFeatureRendererMixin {
 				if (quad != null && quad.materialInfo().sprite() != null) {
 					atlas = quad.materialInfo().sprite().atlasLocation();
 				}
-				this.getVertexBuilder(HeldItemShader.maskRenderType(atlas)).putBakedQuad(submit.pose(), quad, this.quadInstance);
+				((RenderTypeFeatureRendererInvoker) (Object) this).stray$getVertexBuilder(HeldItemShader.maskRenderType(atlas)).putBakedQuad(submit.pose(), quad, this.quadInstance);
 			}
 		}
 		this.stray$itemSubmit = null;
