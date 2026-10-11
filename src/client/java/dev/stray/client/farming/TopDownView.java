@@ -11,11 +11,11 @@ import java.util.Locale;
 
 /**
  * Overhead farming camera shown in a movable HUD window while a farming tool
- * is held. Height is how many blocks above the eyes that camera sits.
+ * is held. The camera sits {@link #CAMERA_ABOVE} blocks above the player.
  */
 public final class TopDownView {
-	public static final float MIN_HEIGHT = 4f;
-	public static final float MAX_HEIGHT = 40f;
+	/** Blocks above the player's feet. */
+	public static final float CAMERA_ABOVE = 5f;
 	public static final float WINDOW = 132f;
 
 	private TopDownView() {
@@ -30,10 +30,6 @@ public final class TopDownView {
 		}
 		Minecraft client = Minecraft.getInstance();
 		return client.player != null && farmingTool(client.player.getMainHandItem());
-	}
-
-	public static float height() {
-		return StrayConfig.clamp(StrayConfig.get().topDownHeight, MIN_HEIGHT, MAX_HEIGHT);
 	}
 
 	public static boolean farmingTool(ItemStack stack) {
