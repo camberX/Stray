@@ -15,6 +15,12 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.5.56", new String[]{
+			"Auto loadout swaps farming sets around a pest wave. Swap B equips a few seconds before the reduced cooldown hits zero. The reduction is how far the tab timer drops off a 5:00 cooldown, and Time left is how many seconds before that zero. With TriSwap off, Swap A equips when pests spawn and stays until they are gone. With TriSwap on, Swap C equips a second or two after they spawn, then Swap A when they are dead.",
+			"/stray debug pest shows the next loadout and a countdown. /stray prints the build you are running.",
+			"Top down sits the camera 5 blocks above you and hides full blocks from two blocks above your feet.",
+			"The Scatha timer counts 30 seconds of server ticks after the approach message. The last 10 seconds are solid. Pest plot warps to a plot the pests widget lists. Another press goes to the next infested plot."
+		}),
 		new Entry("1.5.55", new String[]{
 			"The main menu background is the liquid marble loop. Veins and splashes use the accent color. The teal stone stays."
 		}),
