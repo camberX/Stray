@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.5.66", new String[]{
+			"No cursor reset no longer warps the pointer four times when a chest reopens, so shift-clicking in a menu no longer stalls on Linux."
+		}),
 		new Entry("1.5.65", new String[]{
 			"Triggerbot sends the punch packet with each hit, the same packet a normal left click sends on 26.3."
 		}),

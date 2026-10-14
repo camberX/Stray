@@ -1,6 +1,5 @@
 package dev.stray.client.mixin;
 
-import com.mojang.blaze3d.platform.InputConstants;
 import dev.stray.client.menu.NoCursorReset;
 import dev.stray.client.movement.MovementRings;
 import dev.stray.client.ui.ChatPeek;
@@ -46,11 +45,23 @@ public class MouseHandlerMixin {
 		this.stray$beforeY = this.ypos;
 	}
 
-	@Inject(method = "releaseMouse", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/Minecraft;getWindow()Lcom/mojang/blaze3d/platform/Window;"))
+	/**
+	 * Vanilla warps to the window center, then asks SDL to leave relative mouse
+	 * mode. That pair is a blocking compositor round trip on Linux. Calling it
+	 * again from here ran once per {@code getWindow()} in this method, so a
+	 * chest refresh (shift-click in a menu that reopens) stalled the frame.
+	 * The saved coordinates are substituted into the one warp vanilla already does.
+	 */
+	@Inject(
+		method = "releaseMouse",
+		at = @At(
+			value = "INVOKE",
+			target = "Lcom/mojang/blaze3d/platform/InputConstants;releaseMouse(Lcom/mojang/blaze3d/platform/Window;DD)V"
+		)
+	)
 	private void stray$keepCursor(CallbackInfo ci) {
 		Minecraft client = Minecraft.getInstance();
 		if (client.gui.screen() instanceof ContainerScreen && NoCursorReset.shouldHookMouse()) {
-			InputConstants.releaseMouse(client.getWindow(), this.stray$beforeX, this.stray$beforeY);
 			this.xpos = this.stray$beforeX;
 			this.ypos = this.stray$beforeY;
 		}
