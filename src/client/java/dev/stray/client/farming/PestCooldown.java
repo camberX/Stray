@@ -4,6 +4,7 @@ import dev.stray.client.config.StrayConfig;
 import dev.stray.client.debug.StrayDebug;
 import dev.stray.client.location.SkyblockLocation;
 import dev.stray.client.visual.NickSteal;
+import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientPacketListener;
 import net.minecraft.client.multiplayer.PlayerInfo;
@@ -31,6 +32,10 @@ import java.util.regex.Pattern;
  * <p>Loadout Swap B uses a 5:00 cooldown. A downward jump on the widget, such
  * as {@code 4m 45s -> 1m 57s}, is the reduction. Swap B is that many seconds
  * off 5:00, then the configured seconds before the result hits 0.
+ *
+ * <p>Once the widget says Ready, a timer counts up until pests spawn. Spawn
+ * freezes it. The next tab update that shows the spawn replaces that freeze
+ * with the tab's own time, and a chat line reports it with the session average.
  */
 public final class PestCooldown {
 	public static final int BASE_SECONDS = 506;
@@ -75,6 +80,24 @@ public final class PestCooldown {
 	private static final Pattern ALIVE = Pattern.compile("(?i)alive:\\s*(\\d+)");
 	/** Infested-plot line on the pests widget. Present only while pests are up. */
 	private static final Pattern PLOTS = Pattern.compile("(?i)^plots:\\s*\\d");
+	/** {@code GROSS! A Pest has appeared} and {@code YUCK! 4 Pests have spawned}. */
+	private static final Pattern SPAWN_CHAT = Pattern.compile(
+		"(?i)^\\w+!\\s+(?:a\\s+)?(?:[\\uE018\\uE07F]\\s*)?(?:(\\d+)\\s+)?(?:[\\uE018\\uE07F]\\s*)?pests?\\s+(?:has appeared|have spawned|has spawned)\\b"
+	);
+	/** Counting up from Ready until pests spawn. */
+	private static boolean countingUp;
+	/** Spawn was seen. The displayed time stays put until a tab update revises it. */
+	private static boolean frozen;
+	private static boolean announced;
+	private static long readyAtMs;
+	private static long frozenMs;
+	/** Cooldown seconds on the sample just before Ready. A restart sits well above this. */
+	private static int beforeReady = -1;
+	private static long chatSpawnAt;
+	private static String widgetKey = "";
+	/** Spawn delays since Minecraft opened. Not cleared on world change. */
+	private static long spawnDelayTotalMs;
+	private static int spawnDelaySamples;
 
 	private PestCooldown() {
 	}
@@ -99,19 +122,17 @@ public final class PestCooldown {
 	public static void tick(Minecraft client) {
 		StrayConfig config = StrayConfig.get();
 		boolean hud = config.pestCooldownHudEnabled;
-		boolean watch = hud || StrayDebug.enabled("pest") || config.pestLoadoutSwap;
-		if (!watch) {
-			if (snap.present() || cycle || titled) {
+		if (client == null || client.player == null || client.level == null || !wherePestsLive()) {
+			if (snap.present() || cycle || titled || countingUp || frozen) {
 				reset();
 			}
 			PestLoadoutSwap.tick(client);
 			return;
 		}
-		if (client == null || client.player == null || client.level == null || !wherePestsLive()) {
-			reset();
-			return;
-		}
 		long now = System.currentTimeMillis();
+		if (countingUp && chatSinceReady(now)) {
+			freeze(now);
+		}
 		int tick = client.player.tickCount;
 		boolean due = parseTick == Integer.MIN_VALUE || tick < parseTick || tick - parseTick >= 5;
 		if (due) {
@@ -121,9 +142,17 @@ public final class PestCooldown {
 			infested = findInfested(lines);
 			Snap read = read(lines);
 			if (read.present()) {
-				track(read, now);
+				int board = PestLoadoutSwap.scoreboardCount(client);
+				boolean spawned = chatSinceReady(now) || alive > 0 || infested || board > 0;
+				if (!spawned) {
+					spawned = PestEsp.nearby(client);
+				}
+				String key = read.kind().name() + "|" + read.label() + "|" + alive + "|" + (infested ? 1 : 0);
+				boolean changed = !widgetKey.isEmpty() && !widgetKey.equals(key);
+				track(read, now, client, spawned, changed);
+				widgetKey = key;
 				seenAt = now;
-			} else if (seenAt == 0L || now - seenAt > HOLD_MS) {
+			} else if (!countingUp && !frozen && (seenAt == 0L || now - seenAt > HOLD_MS)) {
 				snap = Snap.missing();
 				clearCycle();
 				previousKind = Kind.MISSING;
@@ -132,10 +161,38 @@ public final class PestCooldown {
 				infested = false;
 			}
 		}
+		if ((countingUp || frozen) && !cycle) {
+			paintWait(now);
+		}
 		if (hud && cycle) {
 			refresh(client, config, now);
 		}
 		PestLoadoutSwap.tick(client);
+	}
+
+	/** Garden pest spawn chat. Offline spawns are not a timed ready window. */
+	public static void onMessage(Component message, boolean overlay) {
+		if (overlay || message == null) {
+			return;
+		}
+		String plain = ChatFormatting.stripFormatting(message.getString());
+		if (plain == null || plain.isEmpty()) {
+			return;
+		}
+		plain = plain.replace('\n', ' ').trim();
+		if (SPAWN_CHAT.matcher(plain).find()) {
+			chatSpawnAt = System.currentTimeMillis();
+		}
+	}
+
+	/** Ready window is on screen, counting or held after a spawn. */
+	public static boolean spawnWaitActive() {
+		return countingUp || frozen;
+	}
+
+	/** Still climbing. A spawn freezes the number. */
+	public static boolean spawnWaitCounting() {
+		return countingUp;
 	}
 
 	public static int alive() {
@@ -202,7 +259,19 @@ public final class PestCooldown {
 		parseTick = Integer.MIN_VALUE;
 		alive = -1;
 		infested = false;
+		clearWait();
 		PestLoadoutSwap.reset();
+	}
+
+	private static void clearWait() {
+		countingUp = false;
+		frozen = false;
+		announced = false;
+		readyAtMs = 0L;
+		frozenMs = 0L;
+		beforeReady = -1;
+		chatSpawnAt = 0L;
+		widgetKey = "";
 	}
 
 	private static void clearCycle() {
@@ -216,8 +285,16 @@ public final class PestCooldown {
 		widgetAtMs = 0L;
 	}
 
-	private static void track(Snap read, long now) {
+	private static void track(Snap read, long now, Minecraft client, boolean spawned, boolean changed) {
+		if (read.kind() == Kind.READY) {
+			noteReady(now, spawned, changed, client);
+			return;
+		}
 		if (read.kind() == Kind.MAX) {
+			if (waiting()) {
+				commit(client, now);
+			}
+			clearWait();
 			clearCycle();
 			previousKind = Kind.MAX;
 			previousSeconds = -1;
@@ -234,6 +311,15 @@ public final class PestCooldown {
 			return;
 		}
 		int seconds = read.seconds();
+		if (readyAtMs > 0L && (countingUp || frozen)) {
+			if (!announced) {
+				boolean restart = beforeReady < 0 || seconds > beforeReady + 10;
+				if (frozen || spawned || restart) {
+					commit(client, now);
+				}
+			}
+			clearWait();
+		}
 		boolean secondsShown = showsSeconds(read);
 		if (StrayDebug.enabled("pest")
 			&& previousKind == Kind.COUNTING
@@ -296,6 +382,90 @@ public final class PestCooldown {
 			return true;
 		}
 		return secondsShown && tabEnd + 1_000L < cooldownEndMs;
+	}
+
+	private static boolean waiting() {
+		return readyAtMs > 0L && (countingUp || frozen) && !announced;
+	}
+
+	/** First Ready sample starts the count-up. A spawn freezes it. A changed tab revises the freeze. */
+	private static void noteReady(long now, boolean spawned, boolean changed, Minecraft client) {
+		if (!countingUp && !frozen && readyAtMs == 0L) {
+			if (spawned) {
+				finishReadySample();
+				return;
+			}
+			countingUp = true;
+			readyAtMs = now;
+			beforeReady = previousKind == Kind.COUNTING && previousSeconds >= 0 ? previousSeconds : -1;
+		} else if (countingUp && spawned) {
+			freeze(now);
+		}
+		if (frozen && !announced && changed && spawned) {
+			commit(client, now);
+		}
+		finishReadySample();
+		if (!cycle) {
+			paintWait(now);
+		}
+	}
+
+	private static void finishReadySample() {
+		clearCycle();
+		previousKind = Kind.READY;
+		previousSeconds = -1;
+		previousShowsSeconds = false;
+	}
+
+	private static void freeze(long now) {
+		if (frozen || readyAtMs <= 0L) {
+			return;
+		}
+		countingUp = false;
+		frozen = true;
+		frozenMs = Math.max(0L, now - readyAtMs);
+	}
+
+	/** Tab update is the time that gets reported. Later updates do not move it again. */
+	private static void commit(Minecraft client, long now) {
+		if (announced || readyAtMs <= 0L) {
+			return;
+		}
+		countingUp = false;
+		frozen = true;
+		frozenMs = Math.max(0L, now - readyAtMs);
+		announced = true;
+		spawnDelayTotalMs += frozenMs;
+		spawnDelaySamples++;
+		long average = spawnDelayTotalMs / spawnDelaySamples;
+		if (client != null && client.player != null) {
+			client.player.sendSystemMessage(
+				Component.literal("Pests took ").withStyle(ChatFormatting.GRAY)
+					.append(Component.literal(formatDelay(frozenMs)).withStyle(ChatFormatting.WHITE))
+					.append(Component.literal(" to spawn (avg " + formatDelay(average) + ")").withStyle(ChatFormatting.GRAY))
+			);
+		}
+	}
+
+	private static boolean chatSinceReady(long now) {
+		return readyAtMs > 0L
+			&& chatSpawnAt >= readyAtMs - 1_000L
+			&& now - chatSpawnAt < 30_000L;
+	}
+
+	private static void paintWait(long now) {
+		long elapsed = countingUp ? Math.max(0L, now - readyAtMs) : Math.max(0L, frozenMs);
+		int seconds = (int) (elapsed / 1000L);
+		snap = new Snap(true, Kind.READY, seconds, formatDelay(elapsed));
+	}
+
+	private static String formatDelay(long ms) {
+		double seconds = Math.max(0L, ms) / 1000.0;
+		if (seconds >= 60.0) {
+			int minutes = (int) (seconds / 60.0);
+			return String.format(Locale.ROOT, "%dm %.1fs", minutes, seconds - minutes * 60.0);
+		}
+		return String.format(Locale.ROOT, "%.1fs", seconds);
 	}
 
 	private static boolean showsSeconds(Snap read) {
