@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.5.58", new String[]{
+			"The Ready timer counts up only while you hold a farming tool. It stops on the pest spawn chat message, and that chat time is what gets reported with the session average."
+		}),
 		new Entry("1.5.57", new String[]{
 			"When the pest cooldown hits Ready, the timer counts up until pests spawn, then freezes. The next tab update sets that time. Chat shows how long the spawn took and the average since Minecraft opened."
 		}),
