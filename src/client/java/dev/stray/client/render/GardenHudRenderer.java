@@ -242,12 +242,18 @@ public final class GardenHudRenderer {
 		if (HudLayout.editorOpen()) {
 			return true;
 		}
-		return snap.present() && snap.kind() != PestCooldown.Kind.READY;
+		if (!snap.present()) {
+			return false;
+		}
+		if (snap.kind() == PestCooldown.Kind.READY) {
+			return PestCooldown.spawnWaitActive();
+		}
+		return true;
 	}
 
 	private static String cooldownLabel() {
 		Snap snap = PestCooldown.snap();
-		if (snap.present() && snap.kind() != PestCooldown.Kind.READY) {
+		if (snap.present() && (snap.kind() != PestCooldown.Kind.READY || PestCooldown.spawnWaitActive())) {
 			return snap.label();
 		}
 		return Snap.sample().label();
@@ -292,9 +298,11 @@ public final class GardenHudRenderer {
 		float scale,
 		Snap value
 	) {
-		String text = value.present() && value.kind() != PestCooldown.Kind.READY ? value.label() : Snap.sample().label();
+		boolean wait = value.present() && value.kind() == PestCooldown.Kind.READY && PestCooldown.spawnWaitActive();
+		String text = value.present() && (value.kind() != PestCooldown.Kind.READY || wait) ? value.label() : Snap.sample().label();
 		boolean swap = value.present() && value.kind() == PestCooldown.Kind.COUNTING && value.seconds() <= PestCooldown.SWAP_LEAD_SECONDS;
-		int color = value.present() && (value.kind() == PestCooldown.Kind.MAX || swap) ? 0xFFFF5A4A : Theme.TEXT;
+		int color = PestCooldown.spawnWaitCounting() ? Theme.ACCENT
+			: value.present() && (value.kind() == PestCooldown.Kind.MAX || swap) ? 0xFFFF5A4A : Theme.TEXT;
 		float width = timeWidth(font, text);
 		begin(graphics, x, y, scale, width, pestCooldownHeight());
 		GuiDraw.small(graphics, font, text, PAD + 1, PAD, color);

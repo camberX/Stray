@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.5.57", new String[]{
+			"When the pest cooldown hits Ready, the timer counts up until pests spawn, then freezes. The next tab update sets that time. Chat shows how long the spawn took and the average since Minecraft opened."
+		}),
 		new Entry("1.5.56", new String[]{
 			"Auto loadout swaps farming sets around a pest wave. Swap B equips a few seconds before the reduced cooldown hits zero. The reduction is how far the tab timer drops off a 5:00 cooldown, and Time left is how many seconds before that zero. With TriSwap off, Swap A equips when pests spawn and stays until they are gone. With TriSwap on, Swap C equips a second or two after they spawn, then Swap A when they are dead.",
 			"/stray debug pest shows the next loadout and a countdown. /stray prints the build you are running.",

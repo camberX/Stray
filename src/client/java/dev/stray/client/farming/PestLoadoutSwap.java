@@ -368,6 +368,11 @@ public final class PestLoadoutSwap {
 		return board == 0 || PestCooldown.alive() == 0;
 	}
 
+	/** Pest count on the garden scoreboard, or {@code -1} when that row is absent. */
+	public static int scoreboardCount(Minecraft client) {
+		return scoreboardPests(client);
+	}
+
 	private static int scoreboardPests(Minecraft client) {
 		int count = -1;
 		for (String line : sidebar(client)) {

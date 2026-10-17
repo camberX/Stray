@@ -228,6 +228,7 @@ public final class StrayClient implements ClientModInitializer {
 			MetalDetector.onMessage(message, overlay);
 			CropFever.onMessage(message, overlay);
 			PestLoadoutSwap.onMessage(message, overlay);
+			PestCooldown.onMessage(message, overlay);
 			ScathaTimer.onMessage(message, overlay);
 			if (overlay) {
 				SkillProgressTracker.onActionBar(message);
