@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.5.59", new String[]{
+			"The pest cooldown timer hides while a screen is open."
+		}),
 		new Entry("1.5.58", new String[]{
 			"The Ready timer counts up only while you hold a farming tool. It stops on the pest spawn chat message, and that chat time is what gets reported with the session average."
 		}),
