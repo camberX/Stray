@@ -3246,6 +3246,10 @@ public class StrayScreen extends Screen {
 	}
 
 	private void editPestAlert(int key, boolean paste, String typed) {
+		if (pestAlertFocus == 3) {
+			editSwapAt(key, paste, typed);
+			return;
+		}
 		if (pestAlertFocus != 1 && pestAlertFocus != 2) {
 			return;
 		}
@@ -3271,6 +3275,37 @@ public class StrayScreen extends Screen {
 			config.pestCooldownAlert = current;
 		} else {
 			config.pestCooldownAlertSub = current;
+		}
+	}
+
+	private void editSwapAt(int key, boolean paste, String typed) {
+		StrayConfig config = StrayConfig.get();
+		String current = config.pestLoadoutAt == null ? "" : config.pestLoadoutAt;
+		if (paste) {
+			String clip = minecraft.keyboardHandler.getClipboard();
+			if (clip != null && !clip.isBlank()) {
+				current += clip.replace("\n", "").replace("\r", "").trim();
+			}
+		} else if (typed != null) {
+			current += typed;
+		} else if (key == InputConstants.KEY_BACKSPACE && !current.isEmpty()) {
+			current = current.substring(0, current.length() - 1);
+		}
+		StringBuilder kept = new StringBuilder();
+		boolean colon = false;
+		for (int i = 0; i < current.length() && kept.length() < 5; i++) {
+			char c = current.charAt(i);
+			if (c == ':' && !colon) {
+				colon = true;
+				kept.append(c);
+			} else if (c >= '0' && c <= '9') {
+				kept.append(c);
+			}
+		}
+		config.pestLoadoutAt = kept.toString();
+		int parsed = StrayConfig.parsePestClock(config.pestLoadoutAt);
+		if (parsed >= 0) {
+			config.pestLoadoutAtSeconds = StrayConfig.clamp(parsed, 0, 600);
 		}
 	}
 
@@ -3782,7 +3817,8 @@ public class StrayScreen extends Screen {
 				y = alertLine(graphics, font, ix, y, iw, mouseX, mouseY, "Subtitle", config.pestCooldownAlertSub, 2);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Auto loadout", config.pestLoadoutSwap, v -> config.pestLoadoutSwap = v);
 				if (config.pestLoadoutSwap) {
-					slider(graphics, font, ix, y, iw, "Time left", config.pestLoadoutLead + "s", config.pestLoadoutLead / 30f, v -> config.pestLoadoutLead = snapInt(v * 30f, 0, 30, 1));
+					String at = config.pestLoadoutAt == null ? "" : config.pestLoadoutAt;
+					y = alertLine(graphics, font, ix, y, iw, mouseX, mouseY, "Swap at", at, 3);
 				}
 			}
 			case AUTO_DNA -> {
@@ -4444,6 +4480,9 @@ public class StrayScreen extends Screen {
 			nickFocused = false;
 		}
 		if (pestAlertFocus != 0 && !(pestAlertLive && GuiDraw.hovered(lx, ly, pestAlertX, pestAlertY, pestAlertW, pestAlertH))) {
+			if (pestAlertFocus == 3) {
+				StrayConfig.get().commitPestLoadoutAt();
+			}
 			pestAlertFocus = 0;
 		}
 		boolean onSteal = GuiDraw.hovered(lx, ly, stealFieldX, stealFieldY, stealFieldW, ROW);
@@ -4710,6 +4749,9 @@ public class StrayScreen extends Screen {
 			return true;
 		}
 		if (pestAlertFocus != 0 && event.key() == InputConstants.KEY_RETURN) {
+			if (pestAlertFocus == 3) {
+				StrayConfig.get().commitPestLoadoutAt();
+			}
 			pestAlertFocus = 0;
 			return true;
 		}

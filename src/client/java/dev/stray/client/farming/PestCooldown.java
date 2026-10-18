@@ -229,10 +229,8 @@ public final class PestCooldown {
 	}
 
 	/**
-	 * When the reduced cooldown hits 0. The length is {@link #COOLDOWN_SECONDS}
-	 * minus the widget's reduction. After {@code 4m 45s -> 1m 57s}, that
-	 * reduction is 168s, so 5:00 becomes 2:12. Swap B fires the configured
-	 * seconds before this moment.
+	 * When a 5:00 cooldown shortened by the learned reduction would hit 0.
+	 * After {@code 4m 45s -> 1m 57s}, that reduction is 168s, so 5:00 becomes 2:12.
 	 */
 	public static long reducedEndsAt() {
 		if (!cycle || widgetSeconds < 0 || widgetAtMs <= 0L) {
@@ -342,10 +340,9 @@ public final class PestCooldown {
 			reductionSeconds = previousSeconds - seconds;
 			reducedThisCycle = true;
 			if (StrayDebug.enabled("pest")) {
-				int lead = StrayConfig.clamp(StrayConfig.get().pestLoadoutLead, 0, 30);
-				int untilSwap = Math.max(0, COOLDOWN_SECONDS - reductionSeconds - lead);
+				int at = StrayConfig.get().spawnSwapSeconds();
 				StrayDebug.tell(
-					"Pest reduction " + reductionSeconds + "s off 5:00, swap " + lead + "s before 0 (" + format(untilSwap) + ")"
+					"Pest reduction " + reductionSeconds + "s off 5:00, swap at " + StrayConfig.formatPestClock(at)
 				);
 			}
 		}
