@@ -18,8 +18,8 @@ import net.minecraft.world.item.Items;
 import org.lwjgl.glfw.GLFW;
 
 /**
- * Keybind: {@code /call Philip}, then one click on the hopper minecart named
- * Empty Vacuum Bag once the Pesthunter chest is open.
+ * Keybind: {@code /call Philip} while a farming tool is held, then one click on
+ * the hopper minecart named Empty Vacuum Bag once the Pesthunter chest is open.
  * With farm keys on, breaking and movement stay held until that chest opens.
  * They are released for the click and pressed again on the next tick, from
  * {@code handleKeybinds} before movement, same as loadout swap.
@@ -158,6 +158,9 @@ public final class EmptyVacuum {
 	}
 
 	private static void begin(Minecraft client) {
+		if (client.player == null || !FarmingHud.holdingTool(client.player)) {
+			return;
+		}
 		call(client);
 		waiting = WAIT_TICKS;
 		menuTicks = 0;

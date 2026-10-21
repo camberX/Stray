@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.5.61", new String[]{
+			"Empty bag only runs while you hold a farming tool."
+		}),
 		new Entry("1.5.60", new String[]{
 			"Auto loadout Swap at is a clock. Type 2:48 and the spawn set equips when the pest cooldown timer reaches that time."
 		}),
