@@ -149,11 +149,18 @@ public final class HudLayout {
 		float total = 0f;
 		int count = 0;
 		float before = 0f;
+		boolean attached = MusicHudRenderer.attachedToWatermark();
 		for (Id other : Id.values()) {
 			if (retired(other) || !docked(other) || !enabled(other)) {
 				continue;
 			}
+			if (attached && other == Id.MUSIC) {
+				continue;
+			}
 			float w = width(other, font);
+			if (attached && other == Id.WATERMARK) {
+				w = (MusicHudRenderer.attachOffset(WatermarkRenderer.width(font)) + MusicHudRenderer.attachedWidth()) * scale(Id.WATERMARK);
+			}
 			if (other == id) {
 				before = total + (count > 0 ? DOCK_GAP : 0f);
 			}
@@ -211,6 +218,13 @@ public final class HudLayout {
 	}
 
 	public static Box box(Id id, Font font, int guiW, int guiH) {
+		if (id == Id.MUSIC && MusicHudRenderer.attachedToWatermark()) {
+			// Ride along with the watermark, docked or not, animated or not.
+			Box mark = box(Id.WATERMARK, font, guiW, guiH);
+			float s = scale(Id.WATERMARK);
+			float x = mark.x() + MusicHudRenderer.attachOffset(WatermarkRenderer.width(font)) * s;
+			return new Box(id, x, mark.y(), width(id, font), height(id, font));
+		}
 		Box target = targetBox(id, font, guiW, guiH);
 		if (!docked(id) || editorOpen()) {
 			DOCK_LIVE[id.ordinal()] = false;
@@ -471,7 +485,9 @@ public final class HudLayout {
 			case WATERMARK -> StrayConfig.clampHudScale(config.hudWatermarkScale);
 			case INVENTORY -> StrayConfig.clampHudScale(config.inventoryHudScale);
 			case NODES -> StrayConfig.clampHudScale(config.hudNodesScale);
-			case MUSIC -> StrayConfig.clampHudScale(config.hudMusicScale);
+			case MUSIC -> MusicHudRenderer.attachedToWatermark()
+				? StrayConfig.clampHudScale(config.hudWatermarkScale)
+				: StrayConfig.clampHudScale(config.hudMusicScale);
 			case PIP -> StrayConfig.clampHudScale(config.hudPipScale);
 			case RAWMATS -> StrayConfig.clampHudScale(config.hudRawmatsScale);
 			case PICKUPS -> StrayConfig.clampHudScale(config.hudPickupScale);

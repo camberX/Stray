@@ -446,6 +446,28 @@ public final class MusicHudRenderer {
 	private static final float BAR_CONTROLS = 46f;
 	private static final String NOTE = "\uE405";
 
+	/**
+	 * Bar layout next to a Hyprland watermark: it takes the watermark's place
+	 * and scale and shares its background, so the two read as one bar.
+	 */
+	public static boolean attachedToWatermark() {
+		StrayConfig config = StrayConfig.get();
+		if (!config.musicHudEnabled || !config.watermarkEnabled || !config.watermarkHypr() || layout() != Layout.BAR) {
+			return false;
+		}
+		return drawHeight() > 0f;
+	}
+
+	/** Where the attached bar starts, in watermark units: right after its last pill. */
+	public static float attachOffset(float watermarkWidth) {
+		return watermarkWidth - BAR_PAD;
+	}
+
+	/** Extra width the attached bar adds to the shared background, in watermark units. */
+	public static float attachedWidth() {
+		return barWidth(Minecraft.getInstance().font, resolveTrack());
+	}
+
 	private static Component barText(String value) {
 		return Component.literal(value == null ? "" : value).withStyle(MenuFont.hyprStyle(0));
 	}
@@ -482,8 +504,10 @@ public final class MusicHudRenderer {
 		MaterialPalette.refresh();
 		float w = barWidth(font, track);
 		float r = BAR_H * 0.5f;
-		GuiFrostBlur.blitWindow(graphics, 0, 0, w, BAR_H, r);
-		GuiDraw.roundedFine(graphics, 0, 0, w, BAR_H, r, MaterialPalette.withAlpha(MaterialPalette.surface, 0xD8));
+		if (!attachedToWatermark()) {
+			GuiFrostBlur.blitWindow(graphics, 0, 0, w, BAR_H, r);
+			GuiDraw.roundedFine(graphics, 0, 0, w, BAR_H, r, MaterialPalette.withAlpha(MaterialPalette.surface, 0xD8));
+		}
 		float pr = BAR_PILL * 0.5f;
 
 		// note pill

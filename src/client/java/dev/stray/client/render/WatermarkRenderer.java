@@ -168,8 +168,12 @@ public final class WatermarkRenderer {
 		List<Pill> pills = hyprPills();
 		float w = width(font);
 		float radius = HEIGHT * 0.5f;
-		GuiFrostBlur.blitWindow(graphics, 0, 0, w, HEIGHT, radius);
-		GuiDraw.roundedFine(graphics, 0, 0, w, HEIGHT, radius, MaterialPalette.withAlpha(MaterialPalette.surface, 0xD8));
+		// A Bar-layout music HUD continues this bar: one background for both.
+		float bg = MusicHudRenderer.attachedToWatermark()
+			? MusicHudRenderer.attachOffset(w) + MusicHudRenderer.attachedWidth()
+			: w;
+		GuiFrostBlur.blitWindow(graphics, 0, 0, bg, HEIGHT, radius);
+		GuiDraw.roundedFine(graphics, 0, 0, bg, HEIGHT, radius, MaterialPalette.withAlpha(MaterialPalette.surface, 0xD8));
 		float x = HY_PAD;
 		float pillR = HY_PILL * 0.5f;
 		for (Pill pill : pills) {
