@@ -15,6 +15,10 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.5.65", new String[]{
+			"Every HUD element has a Background switch in the HUD editor",
+			"Fixed the click GUI and HUD breaking (square corners, missing blur) with SkyHanni installed"
+		}),
 		new Entry("1.5.64", new String[]{
 			"Item customization: /stray customize (or Player > Customize item) edits the held item",
 			"Dyes with previews, animated and gradient dyes, hex colors and armor trims for armor",
