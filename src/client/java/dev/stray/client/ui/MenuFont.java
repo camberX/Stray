@@ -26,6 +26,22 @@ public final class MenuFont {
 	public static final Style ICON = Style.EMPTY.withFont(new FontDescription.Resource(ICON_ID));
 	public static final Style PROGGY = Style.EMPTY.withFont(new FontDescription.Resource(PROGGY_ID));
 	public static final Style VANILLA = Style.EMPTY.withFont(FontDescription.DEFAULT);
+	/** Google Sans Flex, the illogical-impulse UI font, for the Hyprland look. */
+	public static final Style HYPR = Style.EMPTY.withFont(new FontDescription.Resource(Stray.id("hypr")));
+	public static final Style HYPR_SMALL = Style.EMPTY.withFont(new FontDescription.Resource(Stray.id("hypr_small")));
+	public static final Style HYPR_TITLE = Style.EMPTY.withFont(new FontDescription.Resource(Stray.id("hypr_title")));
+
+	public static Component hypr(String value) {
+		return Component.literal(value == null ? "" : value).withStyle(HYPR);
+	}
+
+	public static Component hyprSmall(String value) {
+		return Component.literal(value == null ? "" : value).withStyle(HYPR_SMALL);
+	}
+
+	public static Component hyprTitle(String value) {
+		return Component.literal(value == null ? "" : value).withStyle(HYPR_TITLE);
+	}
 	public static final String MINECRAFT_FAMILY = "Minecraft";
 	private static final Style UI_BODY = Style.EMPTY.withFont(new FontDescription.Resource(UI_ID));
 	private static final Style UI_SMALL = Style.EMPTY.withFont(new FontDescription.Resource(UI_SMALL_ID));

@@ -61,6 +61,8 @@ public final class HyprMenu {
 
 	/** True while this menu draws, so shared widgets can switch to the Material look. */
 	private static boolean drawing;
+	/** Opacity of the settings content, so every widget in it fades with its window. */
+	private static float contentAlpha = 1f;
 	private static Object lastScreen;
 	private static long lastNs;
 	private static float dt;
@@ -102,6 +104,16 @@ public final class HyprMenu {
 	/** Whether the Hyprland click GUI is drawing right now. */
 	public static boolean drawing() {
 		return drawing;
+	}
+
+	/** 1 normally; while settings draw, the fade of the settings window. */
+	public static float alpha() {
+		return drawing ? contentAlpha : 1f;
+	}
+
+	/** {@code color} faded by {@link #alpha()}. */
+	public static int faded(int color) {
+		return drawing && contentAlpha < 0.999f ? Anim.fade(color, contentAlpha) : color;
 	}
 
 	static void draw(StrayScreen screen, GuiGraphicsExtractor graphics, Font font, int mouseX, int mouseY) {
@@ -356,7 +368,24 @@ public final class HyprMenu {
 
 	// --------------------------------------------------------------- windows
 
-	private static void window(GuiGraphicsExtractor graphics, float x, float y, float w, float h, float focus, float t) {
+	/** Color picker over the menu, in the same Material look. */
+	static void drawPicker(StrayScreen screen, GuiGraphicsExtractor graphics, Font font) {
+		drawing = true;
+		int[] saved = swapTheme();
+		try {
+			screen.clickPicker(graphics, font);
+		} finally {
+			restoreTheme(saved);
+			drawing = false;
+		}
+	}
+
+	/**
+	 * One Hyprland window: blur, Material surface and a 1px border that is
+	 * primary when focused and a third of that when not (ii's colors.lua).
+	 */
+	public static void window(GuiGraphicsExtractor graphics, float x, float y, float w, float h, float focus, float t) {
+		MaterialPalette.refresh();
 		GuiFrostBlur.blitWindow(graphics, x, y, w, h, RADIUS, t);
 		GuiDraw.roundedFine(graphics, x, y, w, h, RADIUS, Anim.fade(withAlpha(MaterialPalette.surfaceLow, 0xE6), t));
 		// ii: active border is primary, inactive is primary at a third (colors.lua)
@@ -530,15 +559,20 @@ public final class HyprMenu {
 			text(graphics, font, "No settings for this one", x, bodyY, ROW, Anim.fade(MaterialPalette.onSurfaceVariant, st));
 			return;
 		}
+		if (st < 0.06f) {
+			return;
+		}
 		float content = ClickGui.moduleSettingsHeight(screen, mod);
 		setScroll = Mth.clamp(setScroll, 0f, Math.max(0f, content - bodyH));
 		boolean clip = GuiDraw.scissor(graphics, setX + 2f, bodyY, setW - 4f, bodyH);
 		int mark = screen.clickHitMark();
+		contentAlpha = st;
 		int[] saved = swapTheme();
 		try {
 			ClickGui.drawModuleSettings(screen, graphics, font, mouseX, mouseY, mod, x - 3f, bodyY - setScroll + lift, w + 6f);
 		} finally {
 			restoreTheme(saved);
+			contentAlpha = 1f;
 		}
 		screen.clickClipHits(mark, setX, bodyY, setW, bodyH);
 		if (clip) {
@@ -630,16 +664,15 @@ public final class HyprMenu {
 		if (((color >>> 24) & 0xFF) < 8) {
 			return;
 		}
-		// Nunito at this size sits about 5px below the line top, not 4.5 like
-		// the vanilla font, so center on that.
-		GuiDraw.text(graphics, font, body(value), x, Math.round(y + h * 0.5f - 5f), color, false);
+		// hypr.json shifts Google Sans Flex so it centers like the vanilla font.
+		GuiDraw.text(graphics, font, body(value), x, Math.round(GuiDraw.middle(y, h)), color, false);
 	}
 
 	private static void title(GuiGraphicsExtractor graphics, Font font, String value, float x, float y, int color) {
 		if (((color >>> 24) & 0xFF) < 8) {
 			return;
 		}
-		GuiDraw.text(graphics, font, Component.literal(value).withStyle(MenuFont.TITLE), x, y, color, false);
+		GuiDraw.text(graphics, font, MenuFont.hyprTitle(value), x, y, color, false);
 	}
 
 	private static void glyph(GuiGraphicsExtractor graphics, Font font, String code, float x, float y, float h, int color) {
@@ -650,7 +683,7 @@ public final class HyprMenu {
 	}
 
 	private static Component body(String value) {
-		return Component.literal(value == null ? "" : value).withStyle(MenuFont.BODY);
+		return MenuFont.hypr(value);
 	}
 
 	private static float width(Font font, String value) {
@@ -681,18 +714,18 @@ public final class HyprMenu {
 	 */
 	private static int[] swapTheme() {
 		int[] old = {Theme.ACCENT, Theme.ACCENT_DIM, Theme.CARD, Theme.CARD_HOVER, Theme.LINE, Theme.TRACK, Theme.PANEL, Theme.TEXT, Theme.MUTED, Theme.OFF, Theme.WINDOW, Theme.WINDOW_SOLID};
-		Theme.ACCENT = MaterialPalette.primary;
-		Theme.ACCENT_DIM = MaterialPalette.secondaryContainer;
-		Theme.CARD = MaterialPalette.surfaceHigh;
-		Theme.CARD_HOVER = MaterialPalette.surfaceHighest;
-		Theme.LINE = MaterialPalette.outlineVariant;
-		Theme.TRACK = MaterialPalette.surfaceHighest;
-		Theme.PANEL = MaterialPalette.surfaceContainer;
-		Theme.TEXT = MaterialPalette.onSurface;
-		Theme.MUTED = MaterialPalette.onSurfaceVariant;
-		Theme.OFF = MaterialPalette.outline;
-		Theme.WINDOW = MaterialPalette.surfaceLow;
-		Theme.WINDOW_SOLID = MaterialPalette.surfaceLow;
+		Theme.ACCENT = faded(MaterialPalette.primary);
+		Theme.ACCENT_DIM = faded(MaterialPalette.secondaryContainer);
+		Theme.CARD = faded(MaterialPalette.surfaceHigh);
+		Theme.CARD_HOVER = faded(MaterialPalette.surfaceHighest);
+		Theme.LINE = faded(MaterialPalette.outlineVariant);
+		Theme.TRACK = faded(MaterialPalette.surfaceHighest);
+		Theme.PANEL = faded(MaterialPalette.surfaceContainer);
+		Theme.TEXT = faded(MaterialPalette.onSurface);
+		Theme.MUTED = faded(MaterialPalette.onSurfaceVariant);
+		Theme.OFF = faded(MaterialPalette.outline);
+		Theme.WINDOW = faded(MaterialPalette.surfaceLow);
+		Theme.WINDOW_SOLID = faded(MaterialPalette.surfaceLow);
 		return old;
 	}
 

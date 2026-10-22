@@ -617,6 +617,11 @@ public class StrayScreen extends Screen {
 	private int bindListen;
 	private boolean capeFocused;
 	private boolean nickFocused;
+	private boolean hexFocused;
+	private String hexDraft = "";
+	private float hexFieldX;
+	private float hexFieldY;
+	private float hexFieldW;
 	private boolean stealFocused;
 	private int pestAlertFocus;
 	private boolean pestAlertLive;
@@ -881,7 +886,7 @@ public class StrayScreen extends Screen {
 
 	private int ink() {
 		if (HyprMenu.drawing()) {
-			return MaterialPalette.onSurface;
+			return HyprMenu.faded(MaterialPalette.onSurface);
 		}
 		if (ClickGui.lightInk()) {
 			return 0xFFF4F6FA;
@@ -891,7 +896,7 @@ public class StrayScreen extends Screen {
 
 	private int fade() {
 		if (HyprMenu.drawing()) {
-			return MaterialPalette.onSurfaceVariant;
+			return HyprMenu.faded(MaterialPalette.onSurfaceVariant);
 		}
 		if (ClickGui.lightInk()) {
 			return 0xFF9AA6B8;
@@ -2424,7 +2429,7 @@ public class StrayScreen extends Screen {
 				toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Paths", config.pathsEnabled, v -> config.pathsEnabled = v, Feature.PATHS);
 			}
 			case MENUS -> {
-				float menusH = cardHeight(16) + dropExtra("click.a", "gui.a");
+				float menusH = cardHeight(17) + dropExtra("click.a", "gui.a", "chat.a");
 				float y = featureCard(graphics, font, left, top, col, menusH, "Menus");
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Click GUI", config.clickGui, v -> config.clickGui = v);
 				y = dropdown(graphics, font, ix, y, iw, mouseX, mouseY, "click.a", "Click style", StrayConfig.CLICK_GUI_STYLE_LABELS, config.clickGuiStyleIndex(), i -> config.setClickGuiStyle(StrayConfig.CLICK_GUI_STYLES[i]));
@@ -2437,6 +2442,7 @@ public class StrayScreen extends Screen {
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Themed GUIs", config.themedGuisEnabled, v -> config.themedGuisEnabled = v);
 				y = dropdown(graphics, font, ix, y, iw, mouseX, mouseY, "gui.a", "GUI style", StrayConfig.GUI_STYLE_LABELS, config.guiStyleIndex(), i -> config.setGuiStyle(StrayConfig.GUI_STYLES[i]));
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Themed chat", config.themedChatEnabled, v -> config.themedChatEnabled = v);
+				y = dropdown(graphics, font, ix, y, iw, mouseX, mouseY, "chat.a", "Chat style", StrayConfig.CHAT_STYLE_LABELS, config.chatStyleIndex(), i -> config.setChatStyle(StrayConfig.CHAT_STYLES[i]));
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Compact stash chat", config.stashChatCompact, v -> config.stashChatCompact = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Cleaner NPC chat", config.npcChatClean, v -> config.npcChatClean = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Open animation", config.loadoutsOpenAnim, v -> config.loadoutsOpenAnim = v);
@@ -2700,7 +2706,7 @@ public class StrayScreen extends Screen {
 				y = controlCard(graphics, font, left, y, col, mouseX, mouseY, "Wardrobe menu", config.wardrobeMenuEnabled, v -> config.wardrobeMenuEnabled = v, Feature.WARDROBE);
 				y = toggleCard(graphics, font, left, y, col, mouseX, mouseY, "Global IRC", config.strayIrcEnabled, v -> config.strayIrcEnabled = v);
 				y = toggleCard(graphics, font, left, y, col, mouseX, mouseY, "Lobby pings", config.strayPingEnabled, v -> config.strayPingEnabled = v);
-				y = featureCard(graphics, font, left, y, col, cardHeight(12) + dropExtra("click.b", "gui.b"), "Menus");
+				y = featureCard(graphics, font, left, y, col, cardHeight(13) + dropExtra("click.b", "gui.b", "chat.b"), "Menus");
 				y = dropdown(graphics, font, ix, y, iw, mouseX, mouseY, "click.b", "Click style", StrayConfig.CLICK_GUI_STYLE_LABELS, config.clickGuiStyleIndex(), i -> config.setClickGuiStyle(StrayConfig.CLICK_GUI_STYLES[i]));
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Profile viewer", config.profileViewerEnabled, v -> config.profileViewerEnabled = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Storage preview", config.storagePreviewEnabled, v -> config.storagePreviewEnabled = v);
@@ -2708,6 +2714,7 @@ public class StrayScreen extends Screen {
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Themed GUIs", config.themedGuisEnabled, v -> config.themedGuisEnabled = v);
 				y = dropdown(graphics, font, ix, y, iw, mouseX, mouseY, "gui.b", "GUI style", StrayConfig.GUI_STYLE_LABELS, config.guiStyleIndex(), i -> config.setGuiStyle(StrayConfig.GUI_STYLES[i]));
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Themed chat", config.themedChatEnabled, v -> config.themedChatEnabled = v);
+				y = dropdown(graphics, font, ix, y, iw, mouseX, mouseY, "chat.b", "Chat style", StrayConfig.CHAT_STYLE_LABELS, config.chatStyleIndex(), i -> config.setChatStyle(StrayConfig.CHAT_STYLES[i]));
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Compact stash chat", config.stashChatCompact, v -> config.stashChatCompact = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Cleaner NPC chat", config.npcChatClean, v -> config.npcChatClean = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Open animation", config.loadoutsOpenAnim, v -> config.loadoutsOpenAnim = v);
@@ -3389,7 +3396,7 @@ public class StrayScreen extends Screen {
 
 	private void clickToggle(GuiGraphicsExtractor graphics, float x, float y, float w, float h, float t) {
 		if (HyprMenu.drawing()) {
-			HyprMenu.m3Switch(graphics, x, y, w, h, t, false, 1f);
+			HyprMenu.m3Switch(graphics, x, y, w, h, t, false, HyprMenu.alpha());
 			return;
 		}
 		float stroke = 0.5f;
@@ -4313,7 +4320,11 @@ public class StrayScreen extends Screen {
 		float y = pickerY;
 		float w = PICKER_W;
 		float h = pickerHeight();
-		GuiDraw.sheet(graphics, x, y, w, h, 8, Anim.fade(Theme.SHEET, pickerT), Anim.fade(Theme.ACCENT, pickerT));
+		if (HyprMenu.drawing()) {
+			HyprMenu.window(graphics, x, y, w, h, 1f, pickerT);
+		} else {
+			GuiDraw.sheet(graphics, x, y, w, h, 8, Anim.fade(Theme.SHEET, pickerT), Anim.fade(Theme.ACCENT, pickerT));
+		}
 		if (pickerT < 0.7f) {
 			return;
 		}
@@ -4362,7 +4373,47 @@ public class StrayScreen extends Screen {
 			commitPicker();
 		}, true));
 
-		GuiDraw.menu(graphics, font, hex(current) + "  " + Math.round(sliderToOpacity(pickerTarget, pickerAlpha) * 100f) + "%", x + 6, y + h - 12, Theme.MUTED);
+		// Hex field: click to type a color, Enter or six digits applies it.
+		float fieldH = 13f;
+		float fieldY = y + h - fieldH - 4f;
+		String percent = Math.round(sliderToOpacity(pickerTarget, pickerAlpha) * 100f) + "%";
+		float percentW = GuiDraw.menuWidth(font, percent);
+		float fieldW = w - 12f - percentW - 6f;
+		hexFieldX = svX;
+		hexFieldY = fieldY;
+		hexFieldW = fieldW;
+		boolean hexHover = StrayConfig.get().clickGui && GuiDraw.hovered(ClickGui.pointerX(), ClickGui.pointerY(), svX, fieldY, fieldW, fieldH);
+		ClickLook.panel(graphics, svX, fieldY, fieldW, fieldH, 4, hexFocused || hexHover ? Theme.CARD_HOVER : Theme.CARD, hexFocused ? Theme.ACCENT : Theme.LINE);
+		String hexShown = hexFocused ? "#" + hexDraft + ((System.currentTimeMillis() / 500L) % 2L == 0L ? "|" : "") : hex(current);
+		GuiDraw.menu(graphics, font, hexShown, svX + 4, GuiDraw.middle(fieldY, fieldH), hexFocused ? Theme.TEXT : Theme.MUTED);
+		hits.add(new Hit(svX, fieldY, fieldW, fieldH, () -> {
+			hexFocused = true;
+			hexDraft = "";
+		}));
+		GuiDraw.menu(graphics, font, percent, x + w - 6 - percentW, GuiDraw.middle(fieldY, fieldH), Theme.MUTED);
+	}
+
+	/** Applies the typed hex when it is a full color. Returns true if it was. */
+	private boolean commitHex() {
+		String digits = hexDraft.startsWith("#") ? hexDraft.substring(1) : hexDraft;
+		if (digits.length() == 3) {
+			digits = "" + digits.charAt(0) + digits.charAt(0) + digits.charAt(1) + digits.charAt(1) + digits.charAt(2) + digits.charAt(2);
+		}
+		if (digits.length() != 6 || pickerTarget == null) {
+			return false;
+		}
+		try {
+			int rgb = Integer.parseInt(digits, 16);
+			float[] hsv = WorldTint.rgbToHsv(rgb);
+			pickerHue = hsv[0];
+			pickerSat = hsv[1];
+			pickerVal = hsv[2];
+			commitPicker();
+			UnloadState.markDirty();
+			return true;
+		} catch (NumberFormatException ignored) {
+			return false;
+		}
 	}
 
 	private static float pickerHeight() {
@@ -4594,6 +4645,9 @@ public class StrayScreen extends Screen {
 		if (nickFocused && !onNick) {
 			nickFocused = false;
 		}
+		if (hexFocused && !(pickerTarget != null && GuiDraw.hovered(lx, ly, hexFieldX, hexFieldY, hexFieldW, 13f))) {
+			hexFocused = false;
+		}
 		if (pestAlertFocus != 0 && !(pestAlertLive && GuiDraw.hovered(lx, ly, pestAlertX, pestAlertY, pestAlertW, pestAlertH))) {
 			if (pestAlertFocus == 3) {
 				StrayConfig.get().commitPestLoadoutAt();
@@ -4741,6 +4795,36 @@ public class StrayScreen extends Screen {
 
 	@Override
 	public boolean keyPressed(KeyEvent event) {
+		if (hexFocused) {
+			if (event.isEscape()) {
+				hexFocused = false;
+				return true;
+			}
+			if (event.key() == InputConstants.KEY_RETURN || event.key() == InputConstants.KEY_NUMPADENTER) {
+				commitHex();
+				hexFocused = false;
+				return true;
+			}
+			if (event.key() == InputConstants.KEY_BACKSPACE) {
+				if (!hexDraft.isEmpty()) {
+					hexDraft = hexDraft.substring(0, hexDraft.length() - 1);
+				}
+				return true;
+			}
+			if (event.key() == InputConstants.KEY_V && event.hasControlDown()) {
+				String clip = minecraft.keyboardHandler.getClipboard();
+				if (clip != null) {
+					hexDraft = clip.trim().replace("#", "").replaceAll("[^0-9a-fA-F]", "");
+					if (hexDraft.length() > 6) {
+						hexDraft = hexDraft.substring(0, 6);
+					}
+					if (commitHex()) {
+						hexFocused = false;
+					}
+				}
+				return true;
+			}
+		}
 		if (StrayConfig.get().clickGui && ClickGui.mobSearchFocused()) {
 			if (event.isEscape() || event.key() == InputConstants.KEY_RETURN) {
 				ClickGui.blurMobSearch();
@@ -4974,6 +5058,16 @@ public class StrayScreen extends Screen {
 
 	@Override
 	public boolean charTyped(CharacterEvent event) {
+		if (hexFocused) {
+			String typed = event.codepointAsString();
+			if (typed.matches("[0-9a-fA-F]") && hexDraft.length() < 6) {
+				hexDraft += typed.toUpperCase(Locale.ROOT);
+				if (hexDraft.length() == 6) {
+					commitHex();
+				}
+			}
+			return true;
+		}
 		if (StrayConfig.get().clickGui && ClickGui.mobSearchFocused() && event.isAllowedChatCharacter()) {
 			ClickGui.typeMobSearch(event.codepointAsString());
 			return true;
@@ -5032,7 +5126,7 @@ public class StrayScreen extends Screen {
 	}
 
 	public boolean shouldIgnoreMenuBinds() {
-		return bindListen != 0 || capeFocused || nickFocused || stealFocused || pestAlertFocus != 0 || searchOpen || ClickGui.searchFocused() || ClickGui.mobSearchFocused() || mobSearchFocused || fontSearchFocused;
+		return bindListen != 0 || hexFocused || capeFocused || nickFocused || stealFocused || pestAlertFocus != 0 || searchOpen || ClickGui.searchFocused() || ClickGui.mobSearchFocused() || mobSearchFocused || fontSearchFocused;
 	}
 
 	public void requestClose() {
@@ -5107,6 +5201,29 @@ public class StrayScreen extends Screen {
 		}
 		visualsKind = kind;
 		pickerKind = kind;
+	}
+
+	/**
+	 * The menu's own dropdown (as in the watermark settings), for the click GUI.
+	 * Returns the y below it, open list included.
+	 */
+	float clickDropdown(GuiGraphicsExtractor graphics, Font font, float x, float y, float w, String key, String label, String[] options, int selected, java.util.function.IntConsumer pick) {
+		boolean light = !HyprMenu.drawing();
+		if (light) {
+			ClickGui.useLightInk(true);
+		}
+		try {
+			return dropdown(graphics, font, x + 3f, y, w - 6f, (int) Math.round(ClickGui.pointerX()), (int) Math.round(ClickGui.pointerY()), "click/" + key, label, options, selected, pick);
+		} finally {
+			if (light) {
+				ClickGui.useLightInk(false);
+			}
+		}
+	}
+
+	/** Height {@link #clickDropdown} takes, header row plus however much of the list is open. */
+	float clickDropdownHeight(String key) {
+		return rowH() + dropExtra("click/" + key);
 	}
 
 	float clickAppear() {

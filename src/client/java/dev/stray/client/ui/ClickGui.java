@@ -114,7 +114,7 @@ public final class ClickGui {
 		if (hypr()) {
 			// No array list here: it sat on top of the tiled windows.
 			HyprMenu.draw(screen, graphics, font, mouseX, mouseY);
-			screen.clickPicker(graphics, font);
+			HyprMenu.drawPicker(screen, graphics, font);
 			return;
 		}
 		if (imgui()) {
@@ -239,7 +239,7 @@ public final class ClickGui {
 				}
 				return;
 			}
-			if (row.mod.feature != null || row.mod.timeout || row.mod.menuStyle || "Array list".equals(row.mod.name) || "Themed GUIs".equals(row.mod.name)) {
+			if (row.mod.feature != null || row.mod.timeout || row.mod.menuStyle || "Array list".equals(row.mod.name) || "Themed GUIs".equals(row.mod.name) || "Themed chat".equals(row.mod.name)) {
 				if (row.mod.name.equals(expandedName)) {
 					expandedName = null;
 				} else {
@@ -566,6 +566,8 @@ public final class ClickGui {
 			drawArrayList(screen, graphics, font, boxX, y, boxW);
 		} else if ("Themed GUIs".equals(mod.name)) {
 			drawGuiStyle(screen, graphics, font, boxX, y, boxW);
+		} else if ("Themed chat".equals(mod.name)) {
+			drawChatStyle(screen, graphics, font, boxX, y, boxW);
 		} else if (mod.menuStyle) {
 			if ("HUD".equals(mod.name)) {
 				drawHud(screen, graphics, font, boxX, y, boxW);
@@ -730,15 +732,9 @@ public final class ClickGui {
 		screen.clickHit(ix, iy, iw, box(), pick);
 	}
 
-	private static String styleDrop;
-
-	private static int dropRows(String key, int options) {
-		return key.equals(styleDrop) ? options : 0;
-	}
-
 	/**
-	 * Style dropdown: "Style  Glass v". Clicking it lists every style under it;
-	 * picking one closes the list. Returns the y below everything it drew.
+	 * Style picker: the Stray menu's dropdown (the one in the watermark
+	 * settings). Returns the y where the next row starts.
 	 */
 	private static float drawDropdown(
 		StrayScreen screen,
@@ -753,25 +749,13 @@ public final class ClickGui {
 		int selected,
 		java.util.function.IntConsumer pick
 	) {
-		boolean open = key.equals(styleDrop);
-		String value = selected >= 0 && selected < options.length ? options[selected] : "";
-		drawButton(screen, graphics, font, x, y, w, label + ": " + value + (open ? "  ^" : "  v"),
-			() -> styleDrop = key.equals(styleDrop) ? null : key);
-		y += stride();
-		if (!open) {
-			return y;
-		}
-		for (int i = 0; i < options.length; i++) {
-			int index = i;
-			drawChoice(screen, graphics, font, x + NEST, y, w - NEST, options[i], i == selected, () -> {
-				pick.accept(index);
-				styleDrop = null;
-				Theme.refresh();
-				UnloadState.markDirty();
-			});
-			y += stride();
-		}
-		return y;
+		float bottom = screen.clickDropdown(graphics, font, x + NEST, y, w - NEST * 2, key, label, options, selected, pick);
+		return bottom + gap();
+	}
+
+	private static void drawChatStyle(StrayScreen screen, GuiGraphicsExtractor graphics, Font font, float x, float y, float w) {
+		drawDropdown(screen, graphics, font, x, y, w, "chat", "Style", StrayConfig.CHAT_STYLE_LABELS, StrayConfig.get().chatStyleIndex(),
+			i -> StrayConfig.get().setChatStyle(StrayConfig.CHAT_STYLES[i]));
 	}
 
 	private static void setClickGui(boolean click) {
@@ -963,14 +947,17 @@ public final class ClickGui {
 			return stackH(arrayListRows());
 		}
 		if ("Themed GUIs".equals(mod.name)) {
-			return stackH(1 + dropRows("gui", StrayConfig.GUI_STYLES.length));
+			return screen.clickDropdownHeight("gui");
+		}
+		if ("Themed chat".equals(mod.name)) {
+			return screen.clickDropdownHeight("chat");
 		}
 		if (mod.menuStyle) {
 			if ("HUD".equals(mod.name)) {
-				return stackH(4 + dropRows("hud", StrayConfig.HUD_STYLES.length));
+				return stackH(3) + gap() + screen.clickDropdownHeight("hud");
 			}
 			if ("Click GUI".equals(mod.name)) {
-				return stackH(2 + dropRows("click", StrayConfig.CLICK_GUI_STYLES.length));
+				return screen.clickDropdownHeight("click") + gap() + stackH(1);
 			}
 			return stackH(1);
 		}
@@ -1026,7 +1013,7 @@ public final class ClickGui {
 
 	private static void drawSwitch(GuiGraphicsExtractor graphics, float x, float y, float w, float h, boolean on) {
 		if (hypr()) {
-			HyprMenu.m3Switch(graphics, x, y, w, h, on ? 1f : 0f, false, 1f);
+			HyprMenu.m3Switch(graphics, x, y, w, h, on ? 1f : 0f, false, HyprMenu.alpha());
 			return;
 		}
 		float stroke = 0.5f;
@@ -1224,7 +1211,7 @@ public final class ClickGui {
 			boolean on = fill == accentFill();
 			boolean hot = contains(pointerX, pointerY, x, y, w, h);
 			int paint = on ? MaterialPalette.secondaryContainer : hot ? MaterialPalette.surfaceHighest : MaterialPalette.surfaceHigh;
-			ClickLook.material(graphics, x, y, w, h, paint, 0);
+			ClickLook.material(graphics, x, y, w, h, HyprMenu.faded(paint), 0);
 			return;
 		}
 		if (imgui()) {
@@ -1299,10 +1286,16 @@ public final class ClickGui {
 	}
 
 	public static Component styled(String label) {
+		if (hypr()) {
+			return MenuFont.hypr(label);
+		}
 		return Component.literal(label == null ? "" : label).withStyle(FEATURE_FONT);
 	}
 
 	private static Component featureText(String label) {
+		if (hypr()) {
+			return MenuFont.hypr(label);
+		}
 		if (imgui()) {
 			return Component.literal(label == null ? "" : label).withStyle(MenuFont.PROGGY);
 		}
@@ -1366,10 +1359,24 @@ public final class ClickGui {
 	private static void departure(GuiGraphicsExtractor graphics, Font font, String label, float x, float y, float w, int h, int color) {
 		Component text = featureText(label);
 		float width = font.width(text);
+		if (hypr()) {
+			int ink = HyprMenu.faded(color == TEXT ? MaterialPalette.onSurface : color);
+			if ((ink >>> 24) >= 8) {
+				GuiDraw.text(graphics, font, text, x + (w - width) / 2f, Math.round(y + (h - font.lineHeight) / 2f), 1f, ink, false);
+			}
+			return;
+		}
 		GuiDraw.text(graphics, font, text, x + (w - width) / 2f, y + (h - font.lineHeight) / 2f, 1f, color, true);
 	}
 
 	private static void departureLeft(GuiGraphicsExtractor graphics, Font font, String label, float x, float y, int h, int color) {
+		if (hypr()) {
+			int ink = HyprMenu.faded(color == TEXT ? MaterialPalette.onSurface : color == DIM ? MaterialPalette.onSurfaceVariant : color);
+			if ((ink >>> 24) >= 8) {
+				GuiDraw.text(graphics, font, featureText(label), x, Math.round(y + (h - font.lineHeight) / 2f), 1f, ink, false);
+			}
+			return;
+		}
 		GuiDraw.text(graphics, font, featureText(label), x, y + (h - font.lineHeight) / 2f, 1f, color, true);
 	}
 
@@ -1452,6 +1459,7 @@ public final class ClickGui {
 			|| mod.menuStyle
 			|| "Array list".equals(mod.name)
 			|| "Themed GUIs".equals(mod.name)
+			|| "Themed chat".equals(mod.name)
 			|| "Custom title".equals(mod.name);
 	}
 
@@ -1488,6 +1496,10 @@ public final class ClickGui {
 		}
 		if ("Themed GUIs".equals(mod.name)) {
 			drawGuiStyle(screen, graphics, font, x, y, w);
+			return;
+		}
+		if ("Themed chat".equals(mod.name)) {
+			drawChatStyle(screen, graphics, font, x, y, w);
 			return;
 		}
 		if (mod.menuStyle) {

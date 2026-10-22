@@ -834,6 +834,16 @@ public final class GuiDraw {
 
 	public static void menu(GuiGraphicsExtractor graphics, Font font, String value, float x, float y, int color) {
 		String shown = clickWords(value);
+		if (HudChrome.hyprInk()) {
+			text(graphics, font, MenuFont.hypr(shown), x, y, 1f, color, false);
+			return;
+		}
+		if (dev.stray.client.ui.HyprMenu.drawing()) {
+			if ((color >>> 24) >= 8) {
+				text(graphics, font, MenuFont.hypr(shown), x, y, 1f, color, false);
+			}
+			return;
+		}
 		if (ClickGui.lightInk()) {
 			text(graphics, font, ClickGui.styled(shown), x, y, 1f, color, true);
 			return;
@@ -844,6 +854,16 @@ public final class GuiDraw {
 
 	public static void small(GuiGraphicsExtractor graphics, Font font, String value, float x, float y, int color) {
 		String shown = clickWords(value);
+		if (HudChrome.hyprInk()) {
+			text(graphics, font, MenuFont.hyprSmall(shown), x, y, 1f, color, false);
+			return;
+		}
+		if (dev.stray.client.ui.HyprMenu.drawing()) {
+			if ((color >>> 24) >= 8) {
+				text(graphics, font, MenuFont.hyprSmall(shown), x, y, 1f, color, false);
+			}
+			return;
+		}
 		if (ClickGui.lightInk()) {
 			text(graphics, font, ClickGui.styled(shown), x, y, 1f, color, true);
 			return;
@@ -866,6 +886,10 @@ public final class GuiDraw {
 	}
 
 	public static void hud(GuiGraphicsExtractor graphics, Font font, Component value, float x, float y, int color) {
+		if (HudChrome.hypr()) {
+			text(graphics, font, value.copy().withStyle(MenuFont.HYPR), x, y, 1f, color, false);
+			return;
+		}
 		float scale = MenuFont.bodyScale();
 		text(graphics, font, MenuFont.applyBody(value), x, MenuFont.hudY(y, scale), scale, color, HudChrome.clickInk());
 	}
@@ -892,6 +916,9 @@ public final class GuiDraw {
 
 	public static int menuWidth(Font font, String value) {
 		String shown = clickWords(value);
+		if (HudChrome.hyprInk() || dev.stray.client.ui.HyprMenu.drawing()) {
+			return font.width(MenuFont.hypr(shown));
+		}
 		if (ClickGui.lightInk()) {
 			return font.width(ClickGui.styled(shown));
 		}
@@ -900,6 +927,9 @@ public final class GuiDraw {
 
 	public static int smallWidth(Font font, String value) {
 		String shown = clickWords(value);
+		if (HudChrome.hyprInk() || dev.stray.client.ui.HyprMenu.drawing()) {
+			return font.width(MenuFont.hyprSmall(shown));
+		}
 		if (ClickGui.lightInk()) {
 			return font.width(ClickGui.styled(shown));
 		}
@@ -951,6 +981,9 @@ public final class GuiDraw {
 	}
 
 	public static int hudWidth(Font font, Component value) {
+		if (HudChrome.hypr()) {
+			return font.width(value.copy().withStyle(MenuFont.HYPR));
+		}
 		return scaledWidth(font.width(MenuFont.applyBody(value)), MenuFont.bodyScale());
 	}
 

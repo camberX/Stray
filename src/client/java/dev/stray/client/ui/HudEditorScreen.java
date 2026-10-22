@@ -17,7 +17,10 @@ import java.util.List;
 public class HudEditorScreen extends Screen {
 	private static final float BAR_W = 268;
 	private static final float INSPECT_W = 248;
-	private static final float INSPECT_H = 22;
+	private static final float INSPECT_H = 38;
+	private float dockX;
+	private float dockY;
+	private static final float DOCK_H = 12;
 	private static final float SLIDER_W = 110;
 
 	private HudLayout.Id selected;
@@ -138,6 +141,22 @@ public class HudEditorScreen extends Screen {
 
 		String pct = Math.round(scale * 100) + "%";
 		GuiDraw.small(graphics, font, pct, inspectX + INSPECT_W - GuiDraw.smallWidth(font, pct) - 8, inspectY + 6, Theme.TEXT);
+
+		// Dock to top: lines this element up with the others along the top edge.
+		boolean docked = HudLayout.docked(selected);
+		dockX = inspectX + 8;
+		dockY = inspectY + 21;
+		GuiDraw.small(graphics, font, "Dock to top", dockX, dockY + 2, Theme.MUTED);
+		float sw = 18;
+		float sh = 10;
+		float sx = inspectX + INSPECT_W - 8 - sw;
+		float sy = dockY + 1;
+		GuiDraw.pill(graphics, sx, sy, sw, sh, docked ? Theme.ACCENT : Theme.TRACK);
+		GuiDraw.circle(graphics, docked ? sx + sw - 5 : sx + 5, sy + sh * 0.5f, 3.2f, docked ? Theme.WINDOW_SOLID : Theme.OFF);
+	}
+
+	private boolean onDock(double mouseX, double mouseY) {
+		return selected != null && GuiDraw.hovered(mouseX, mouseY, inspectX, dockY - 2, INSPECT_W, DOCK_H + 4);
 	}
 
 	private boolean onDone(double mouseX, double mouseY, int guiW) {
@@ -151,7 +170,7 @@ public class HudEditorScreen extends Screen {
 	}
 
 	private boolean onSlider(double mouseX, double mouseY) {
-		return selected != null && GuiDraw.hovered(mouseX, mouseY, sliderX - 4, inspectY, SLIDER_W + 8, INSPECT_H);
+		return selected != null && GuiDraw.hovered(mouseX, mouseY, sliderX - 4, inspectY, SLIDER_W + 8, 20);
 	}
 
 	private void applySlider(double mouseX) {
@@ -171,6 +190,10 @@ public class HudEditorScreen extends Screen {
 		int guiH = minecraft.getWindow().getGuiScaledHeight();
 		if (onDone(event.x(), event.y(), guiW)) {
 			done();
+			return true;
+		}
+		if (onDock(event.x(), event.y())) {
+			HudLayout.setDocked(selected, !HudLayout.docked(selected));
 			return true;
 		}
 		if (onSlider(event.x(), event.y())) {

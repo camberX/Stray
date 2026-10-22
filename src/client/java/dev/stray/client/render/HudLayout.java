@@ -118,7 +118,91 @@ public final class HudLayout {
 	private static int boxGuiH;
 	private static final Box[] BOX = new Box[Id.values().length];
 
+	// ---- top dock: docked elements sit in one centered row along the top
+
+	private static final float DOCK_TOP = 5f;
+	private static final float DOCK_GAP = 5f;
+	private static final float[] DOCK_X = new float[Id.values().length];
+	private static final float[] DOCK_Y = new float[Id.values().length];
+	private static final boolean[] DOCK_LIVE = new boolean[Id.values().length];
+	private static final long[] DOCK_NS = new long[Id.values().length];
+
+	public static boolean docked(Id id) {
+		List<String> list = StrayConfig.get().hudDocked;
+		return list != null && list.contains(id.name());
+	}
+
+	public static void setDocked(Id id, boolean dock) {
+		StrayConfig config = StrayConfig.get();
+		if (config.hudDocked == null) {
+			config.hudDocked = new ArrayList<>();
+		}
+		config.hudDocked.remove(id.name());
+		if (dock) {
+			config.hudDocked.add(id.name());
+		}
+		boxTick = Integer.MIN_VALUE;
+	}
+
+	/** Target spot in the dock row: elements in enum order, centered as a group. */
+	private static float[] dockTarget(Id id, Font font, int guiW) {
+		float total = 0f;
+		int count = 0;
+		float before = 0f;
+		for (Id other : Id.values()) {
+			if (retired(other) || !docked(other) || !enabled(other)) {
+				continue;
+			}
+			float w = width(other, font);
+			if (other == id) {
+				before = total + (count > 0 ? DOCK_GAP : 0f);
+			}
+			total += (count > 0 ? DOCK_GAP : 0f) + w;
+			count++;
+		}
+		return new float[]{Math.max(0f, (guiW - total) * 0.5f) + before, DOCK_TOP};
+	}
+
+	/** Eases a docked box toward its target once per frame; new arrivals drop in from above. */
+	private static Box animateDock(Box target) {
+		int i = target.id().ordinal();
+		long now = System.nanoTime();
+		if (!DOCK_LIVE[i]) {
+			DOCK_LIVE[i] = true;
+			DOCK_X[i] = target.x();
+			DOCK_Y[i] = -target.h() - 4f;
+			DOCK_NS[i] = now;
+		}
+		if (DOCK_NS[i] != now) {
+			float dt = Math.min(0.05f, (now - DOCK_NS[i]) / 1_000_000_000f);
+			DOCK_NS[i] = now;
+			float k = 1f - (float) Math.exp(-12f * dt);
+			DOCK_X[i] += (target.x() - DOCK_X[i]) * k;
+			DOCK_Y[i] += (target.y() - DOCK_Y[i]) * k;
+			if (Math.abs(target.x() - DOCK_X[i]) < 0.05f) {
+				DOCK_X[i] = target.x();
+			}
+			if (Math.abs(target.y() - DOCK_Y[i]) < 0.05f) {
+				DOCK_Y[i] = target.y();
+			}
+		}
+		return new Box(target.id(), DOCK_X[i], DOCK_Y[i], target.w(), target.h());
+	}
+
 	public static Box box(Id id, Font font, int guiW, int guiH) {
+		Box target = targetBox(id, font, guiW, guiH);
+		if (!docked(id) || editorOpen()) {
+			DOCK_LIVE[id.ordinal()] = false;
+			return target;
+		}
+		if (!enabled(id)) {
+			DOCK_LIVE[id.ordinal()] = false;
+			return target;
+		}
+		return animateDock(target);
+	}
+
+	private static Box targetBox(Id id, Font font, int guiW, int guiH) {
 		Minecraft client = Minecraft.getInstance();
 		int tick = client.player == null ? -1 : client.player.tickCount;
 		if (tick == boxTick && guiW == boxGuiW && guiH == boxGuiH) {
@@ -144,6 +228,10 @@ public final class HudLayout {
 		float y;
 		StrayConfig config = StrayConfig.get();
 		StrayConfig.HudSlot slot = slot(id);
+		if (docked(id)) {
+			float[] spot = dockTarget(id, font, guiW);
+			return new Box(id, Mth.clamp(spot[0], 0f, Math.max(0f, guiW - w)), spot[1], w, h);
+		}
 		if (slot != null && placed(slot.x) && placed(slot.y)) {
 			x = slot.x;
 			y = slot.y;
@@ -287,6 +375,10 @@ public final class HudLayout {
 
 	public static void set(Id id, float x, float y) {
 		boxTick = Integer.MIN_VALUE;
+		if (docked(id)) {
+			// Dragging a docked element takes it out of the top row.
+			setDocked(id, false);
+		}
 		StrayConfig config = StrayConfig.get();
 		StrayConfig.HudSlot slot = slot(id);
 		if (slot != null) {

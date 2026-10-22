@@ -160,7 +160,7 @@ public final class WatermarkRenderer {
 	}
 
 	private static Component hyText(String value) {
-		return Component.literal(value == null ? "" : value).withStyle(MenuFont.BODY);
+		return MenuFont.hypr(value);
 	}
 
 	private static void drawHypr(GuiGraphicsExtractor graphics, Font font) {
@@ -180,7 +180,7 @@ public final class WatermarkRenderer {
 			GuiDraw.roundedFine(graphics, x, HY_PAD, pw, HY_PILL, pillR, fill);
 			float iconY = Math.round(HY_PAD + (HY_PILL - font.lineHeight) * 0.5f);
 			GuiDraw.text(graphics, font, Component.literal(pill.icon()).withStyle(MenuFont.ICON), x + 5f, iconY, iconInk, false);
-			float textY = Math.round(HY_PAD + HY_PILL * 0.5f - 5f);
+			float textY = Math.round(GuiDraw.middle(HY_PAD, HY_PILL));
 			GuiDraw.text(graphics, font, hyText(pill.text()), x + 17f, textY, ink, false);
 			x += pw + HY_GAP;
 		}

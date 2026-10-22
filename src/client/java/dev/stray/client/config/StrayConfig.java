@@ -78,6 +78,10 @@ public final class StrayConfig {
 	public boolean watermarkTime = false;
 	public boolean watermarkName = false;
 	public String watermarkStyle = "panel";
+	/** HUD element ids (HudLayout.Id names) lined up along the top edge. */
+	public java.util.List<String> hudDocked = new java.util.ArrayList<>();
+	/** "stray" or "hypr": look of themed chat. */
+	public String chatStyle = "stray";
 	public boolean musicHudEnabled = false;
 	public boolean pipEnabled = false;
 	public String pipWindowId = "";
@@ -1877,7 +1881,14 @@ public final class StrayConfig {
 		return "glass".equalsIgnoreCase(hudStyle);
 	}
 
+	public boolean hudStyleHypr() {
+		return "hypr".equalsIgnoreCase(hudStyle);
+	}
+
 	public String hudStyleLabel() {
+		if (hudStyleHypr()) {
+			return "Hyprland";
+		}
 		if (hudStyleVanilla()) {
 			return "Vanilla";
 		}
@@ -1921,8 +1932,22 @@ public final class StrayConfig {
 	public static final String[] GUI_STYLE_LABELS = {"Glass", "ImGui", "Click", "Hyprland"};
 	public static final String[] WATERMARK_STYLES = {"panel", "client", "hypr"};
 	public static final String[] WATERMARK_STYLE_LABELS = {"Panel", "Client", "Hyprland"};
-	public static final String[] HUD_STYLES = {"stray", "click", "glass", "vanilla"};
-	public static final String[] HUD_STYLE_LABELS = {"Stray", "Click", "Glass", "Vanilla"};
+	public static final String[] HUD_STYLES = {"stray", "click", "glass", "vanilla", "hypr"};
+	public static final String[] HUD_STYLE_LABELS = {"Stray", "Click", "Glass", "Vanilla", "Hyprland"};
+	public static final String[] CHAT_STYLES = {"stray", "hypr"};
+	public static final String[] CHAT_STYLE_LABELS = {"Stray", "Hyprland"};
+
+	public boolean chatStyleHypr() {
+		return "hypr".equalsIgnoreCase(chatStyle);
+	}
+
+	public int chatStyleIndex() {
+		return chatStyleHypr() ? 1 : 0;
+	}
+
+	public void setChatStyle(String style) {
+		chatStyle = "hypr".equalsIgnoreCase(style) ? "hypr" : "stray";
+	}
 
 	public int clickGuiStyleIndex() {
 		return indexOf(CLICK_GUI_STYLES, normalizeClickGuiStyle(clickGuiStyle));
@@ -2042,6 +2067,9 @@ public final class StrayConfig {
 		}
 		if (key.equals("glass") || key.equals("liquid")) {
 			return "glass";
+		}
+		if (key.equals("hypr") || key.equals("hyprland")) {
+			return "hypr";
 		}
 		return "stray";
 	}

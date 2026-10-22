@@ -118,11 +118,8 @@ public final class ClickLook {
 			material(graphics, x, y, w, h, hover ? MaterialPalette.surfaceHighest : MaterialPalette.surfaceHigh, hover ? MaterialPalette.primary : 0);
 			return;
 		}
-		float radius = Math.min(9f, shortSide * 0.5f);
-		dev.stray.client.render.GuiFrostBlur.blitWindow(graphics, x, y, w, h, radius);
-		int border = StrayConfig.get().accentOutlines ? MaterialPalette.primary : MaterialPalette.withAlpha(MaterialPalette.primary, 0x55);
-		GuiDraw.roundedFine(graphics, x, y, w, h, radius, border);
-		GuiDraw.roundedFine(graphics, x + 1f, y + 1f, w - 2f, h - 2f, radius - 1f, MaterialPalette.withAlpha(MaterialPalette.surfaceLow, 0xEE));
+		// The same window as the Hyprland click GUI: blur, surface, thin ring.
+		HyprMenu.window(graphics, x, y, w, h, StrayConfig.get().accentOutlines ? 1f : 0f, 1f);
 	}
 
 	/** Flat fill with a real stroke. Does not turn an accent outline into a fill. */

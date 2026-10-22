@@ -2,6 +2,7 @@ package dev.stray.client.render;
 
 import dev.stray.client.config.StrayConfig;
 import dev.stray.client.ui.ControlChrome;
+import dev.stray.client.ui.MaterialPalette;
 import dev.stray.client.ui.Theme;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 
@@ -36,6 +37,15 @@ public final class HudChrome {
 
 	public static boolean glass() {
 		return StrayConfig.get().hudStyleGlass();
+	}
+
+	public static boolean hypr() {
+		return StrayConfig.get().hudStyleHypr();
+	}
+
+	/** HUD text in the Hyprland style: Google Sans Flex, no shadow. */
+	public static boolean hyprInk() {
+		return hudPass && hypr();
 	}
 
 	public static boolean vanillaInk() {
@@ -74,6 +84,15 @@ public final class HudChrome {
 		int accent
 	) {
 		if (vanilla()) {
+			return;
+		}
+		if (hypr()) {
+			MaterialPalette.refresh();
+			float r = Math.min(9f, Math.min(w, h) * 0.5f);
+			GuiFrostBlur.blitWindow(graphics, x, y, w, h, r);
+			GuiDraw.roundedFine(graphics, x, y, w, h, r, Theme.HUD_WINDOW);
+			int ring = StrayConfig.get().accentOutlines && !neutralOutline ? MaterialPalette.primary : MaterialPalette.withAlpha(MaterialPalette.primary, 0x40);
+			GuiDraw.roundedOutline(graphics, x, y, w, h, r, ring, 1f);
 			return;
 		}
 		if (click()) {
@@ -141,6 +160,14 @@ public final class HudChrome {
 	}
 
 	public static void slot(GuiGraphicsExtractor graphics, float x, float y, float size, boolean selected) {
+		if (hypr()) {
+			MaterialPalette.refresh();
+			GuiDraw.roundedFine(graphics, x, y, size, size, 3f, selected ? MaterialPalette.secondaryContainer : MaterialPalette.surfaceHigh);
+			if (selected) {
+				GuiDraw.roundedOutline(graphics, x, y, size, size, 3f, MaterialPalette.primary, 1f);
+			}
+			return;
+		}
 		if (click()) {
 			box(graphics, x, y, size, size, selected ? Theme.withAlpha(Theme.ACCENT, ACCENT_ALPHA) : OFF);
 			return;

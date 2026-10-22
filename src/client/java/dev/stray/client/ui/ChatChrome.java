@@ -58,6 +58,12 @@ public final class ChatChrome {
 		return StrayConfig.get().hudStyleGlass();
 	}
 
+	/** Hyprland chat: a Material window for messages and a pill-shaped input. */
+	private static boolean hypr() {
+		StrayConfig config = StrayConfig.get();
+		return config.themedChatEnabled && config.chatStyleHypr();
+	}
+
 	public static boolean skipFill() {
 		return skipFill && enabled();
 	}
@@ -113,6 +119,10 @@ public final class ChatChrome {
 		float h = rows * lineH * scale + PAD * 2f;
 		float x = 4f * scale - PAD;
 		float y = graphics.guiHeight() - 40f - rows * lineH * scale - PAD + bumpY;
+		if (hypr()) {
+			HyprMenu.window(graphics, x, y, w, h, focused ? 1f : 0f, 1f);
+			return;
+		}
 		if (click()) {
 			HudChrome.box(graphics, x, y, w, h, 0x99000000);
 			return;
@@ -155,6 +165,14 @@ public final class ChatChrome {
 		float x = 2f;
 		float y = screen.height - INPUT_MARGIN - INPUT_H;
 		float w = screen.width - 4f;
+		if (hypr()) {
+			MaterialPalette.refresh();
+			float r = INPUT_H * 0.5f;
+			GuiFrostBlur.blitWindow(graphics, x, y, w, INPUT_H, r);
+			GuiDraw.roundedFine(graphics, x, y, w, INPUT_H, r, MaterialPalette.primary);
+			GuiDraw.roundedFine(graphics, x + 1f, y + 1f, w - 2f, INPUT_H - 2f, r - 1f, MaterialPalette.withAlpha(MaterialPalette.surfaceContainer, 0xF0));
+			return;
+		}
 		if (click()) {
 			HudChrome.box(graphics, x, y, w, INPUT_H, 0x99000000);
 			return;
@@ -177,7 +195,7 @@ public final class ChatChrome {
 		if (client == null || !(client.screen instanceof ChatScreen)) {
 			return;
 		}
-		if (click() || glass()) {
+		if (click() || glass() || hypr()) {
 			return;
 		}
 		if (box.isBordered()) {

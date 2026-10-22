@@ -95,6 +95,9 @@ public final class Theme {
 			HEADER = TEXT;
 			NAV_PILL = ControlChrome.selectedFill();
 			SIDEBAR = ControlChrome.railFill();
+			if (StrayConfig.get().hudStyleHypr()) {
+				hyprHud(hudA);
+			}
 			applyAccentOutlines(accent);
 			return;
 		}
@@ -120,6 +123,18 @@ public final class Theme {
 		NAV_PILL = withAlpha(mix(pane, accent, 0.55f), Math.round(230 * opacity));
 		SIDEBAR = withAlpha(mix(0x101820, pane, 0.45f), Math.round(185 * opacity));
 		applyAccentOutlines(accent);
+	}
+
+	/** HUD colors for the Hyprland style: Material surfaces tinted by the accent. */
+	private static void hyprHud(int hudA) {
+		MaterialPalette.refresh();
+		HUD_WINDOW = withAlpha(MaterialPalette.surface, Math.min(hudA, 0xD8));
+		HUD_LINE = withAlpha(MaterialPalette.primary, 0x40);
+		HUD_LINE_NEUTRAL = HUD_LINE;
+		HUD_TRACK = MaterialPalette.surfaceHighest;
+		HUD_CARD = MaterialPalette.surfaceHigh;
+		HUD_CARD_HOVER = MaterialPalette.surfaceHighest;
+		HUD_PANEL = MaterialPalette.surfaceContainer;
 	}
 
 	private static void applyAccentOutlines(int accent) {
