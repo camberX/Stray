@@ -87,7 +87,10 @@ public final class CustomizeScreen extends Screen {
 		EquipmentSlot equipSlot = equippable == null ? null : equippable.slot();
 		boolean armorSlot = equipSlot != null && equipSlot.getType() == EquipmentSlot.Type.HUMANOID_ARMOR;
 		this.slot = armorSlot ? equipSlot : null;
-		this.dyeable = armorSlot && !head && stack.is(ItemTags.DYEABLE);
+		// Leather armor, or anything already carrying a dye color (Hypixel dyed armor).
+		this.dyeable = armorSlot && !head && (stack.has(DataComponents.DYED_COLOR)
+			|| stack.is(Items.LEATHER_HELMET) || stack.is(Items.LEATHER_CHESTPLATE)
+			|| stack.is(Items.LEATHER_LEGGINGS) || stack.is(Items.LEATHER_BOOTS));
 		this.trimmable = armorSlot && !head && stack.is(ItemTags.TRIMMABLE_ARMOR);
 		this.shared = CustomItems.sharedKey(CustomItems.keyOf(stack));
 		CustomItems.ColorSpec color = data.color;
