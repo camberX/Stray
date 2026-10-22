@@ -267,7 +267,7 @@ public final class ClickGui {
 
 	static boolean drag(double x, double y) {
 		if (hypr()) {
-			return false;
+			return HyprMenu.drag(x, y);
 		}
 		if (imgui()) {
 			return ImGuiMenu.drag(x, y);
@@ -287,6 +287,7 @@ public final class ClickGui {
 
 	static void endDrag() {
 		if (hypr()) {
+			HyprMenu.endDrag();
 			return;
 		}
 		if (imgui()) {
@@ -633,6 +634,14 @@ public final class ClickGui {
 		StrayConfig config = StrayConfig.get();
 		y = drawDropdown(screen, graphics, font, x, y, w, "click", "Style", StrayConfig.CLICK_GUI_STYLE_LABELS, config.clickGuiStyleIndex(),
 			i -> StrayConfig.get().setClickGuiStyle(StrayConfig.CLICK_GUI_STYLES[i]));
+		if (config.clickGuiHypr()) {
+			drawChoice(screen, graphics, font, x, y, w, "Floating window", config.hyprFloating, () -> {
+				StrayConfig current = StrayConfig.get();
+				current.hyprFloating = !current.hyprFloating;
+				UnloadState.markDirty();
+			});
+			y += stride();
+		}
 		drawButton(screen, graphics, font, x, y, w, "Stray Menu", () -> setClickGui(false));
 	}
 
@@ -957,7 +966,8 @@ public final class ClickGui {
 				return stackH(3) + gap() + screen.clickDropdownHeight("hud");
 			}
 			if ("Click GUI".equals(mod.name)) {
-				return screen.clickDropdownHeight("click") + gap() + stackH(1);
+				int rows = StrayConfig.get().clickGuiHypr() ? 2 : 1;
+				return screen.clickDropdownHeight("click") + gap() + stackH(rows);
 			}
 			return stackH(1);
 		}

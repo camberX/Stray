@@ -89,6 +89,22 @@ public final class HyprMenu {
 	private static final Map<String, Float> knob = new HashMap<>();
 	private static final List<RowHit> rowHits = new ArrayList<>();
 
+	// floating mode: the whole menu is one movable, resizable area
+	private static final float MIN_W = 340f;
+	private static final float MIN_H = 190f;
+	private static final float GRIP = 10f;
+	private static final String FLOAT_ON = "\uE5D1";
+	private static final String FLOAT_OFF = "\uE5D0";
+	private static boolean moving;
+	private static boolean resizing;
+	private static float grabX;
+	private static float grabY;
+	private static float areaX;
+	private static float areaY;
+	private static float areaW;
+	private static float areaH;
+	private static float floatT;
+
 	private static float listX;
 	private static float listY;
 	private static float listW;
@@ -133,20 +149,25 @@ public final class HyprMenu {
 		float tList = curve(EMPHASIZED_DECEL, stagger(openT, 0.10f)) * fade;
 		float tSet = curve(EMPHASIZED_DECEL, stagger(openT, 0.20f)) * fade;
 
-		GuiDraw.fill(graphics, 0, 0, screen.width, screen.height, Anim.fade(DIM, fade));
+		layoutArea(screen);
+		floatT = approach(floatT, StrayConfig.get().hyprFloating ? 1f : 0f, 12f);
+		// Floating keeps more of the game visible, so dim less.
+		GuiDraw.fill(graphics, 0, 0, screen.width, screen.height, Anim.fade(DIM, fade * (1f - 0.6f * floatT)));
 
-		float w = screen.width - OUT * 2f;
-		float barY = OUT - (1f - tBar) * 14f;
-		drawBar(screen, graphics, font, mouseX, mouseY, OUT, barY, w, tBar);
+		float ax = areaX;
+		float ay = areaY;
+		float w = areaW;
+		float barY = ay - (1f - tBar) * 14f;
+		drawBar(screen, graphics, font, mouseX, mouseY, ax, barY, w, tBar);
 
-		float top = OUT + BAR + GAP;
-		float h = Math.max(60f, screen.height - top - OUT);
+		float top = ay + BAR + GAP;
+		float h = Math.max(60f, ay + areaH - top);
 		float split = Math.round((w - GAP) * 0.55f);
-		listX = OUT - (1f - tList) * 22f;
+		listX = ax - (1f - tList) * 22f;
 		listY = top;
 		listW = split;
 		listH = h;
-		setX = OUT + split + GAP + (1f - tSet) * 22f;
+		setX = ax + split + GAP + (1f - tSet) * 22f;
 		setY = top;
 		setW = w - split - GAP;
 		setH = h;
@@ -164,6 +185,94 @@ public final class HyprMenu {
 		rowHits.clear();
 		drawList(screen, graphics, font, mouseX, mouseY, items, tList);
 		drawSettings(screen, graphics, font, mouseX, mouseY, tSet);
+		if (StrayConfig.get().hyprFloating && tSet > 0.5f) {
+			drawGrip(screen, graphics, mouseX, mouseY, tSet);
+		}
+	}
+
+	/** The menu's area: the whole screen inset by the gaps, or the floating window. */
+	private static void layoutArea(StrayScreen screen) {
+		StrayConfig config = StrayConfig.get();
+		float fullX = OUT;
+		float fullY = OUT;
+		float fullW = screen.width - OUT * 2f;
+		float fullH = screen.height - OUT * 2f;
+		if (!config.hyprFloating) {
+			areaX = fullX;
+			areaY = fullY;
+			areaW = fullW;
+			areaH = fullH;
+			return;
+		}
+		float maxW = Math.max(MIN_W, screen.width - 8f);
+		float maxH = Math.max(MIN_H, screen.height - 8f);
+		if (config.hyprFloatW < MIN_W || config.hyprFloatH < MIN_H) {
+			config.hyprFloatW = Math.min(maxW, Math.max(MIN_W, screen.width * 0.66f));
+			config.hyprFloatH = Math.min(maxH, Math.max(MIN_H, screen.height * 0.66f));
+			config.hyprFloatX = (screen.width - config.hyprFloatW) * 0.5f;
+			config.hyprFloatY = (screen.height - config.hyprFloatH) * 0.5f;
+		}
+		config.hyprFloatW = Mth.clamp(config.hyprFloatW, MIN_W, maxW);
+		config.hyprFloatH = Mth.clamp(config.hyprFloatH, MIN_H, maxH);
+		config.hyprFloatX = Mth.clamp(config.hyprFloatX, 4f - config.hyprFloatW + 60f, screen.width - 60f);
+		config.hyprFloatY = Mth.clamp(config.hyprFloatY, 0f, screen.height - BAR);
+		areaX = config.hyprFloatX;
+		areaY = config.hyprFloatY;
+		areaW = config.hyprFloatW;
+		areaH = config.hyprFloatH;
+	}
+
+	/** Resize handle in the bottom-right corner of the floating window. */
+	private static void drawGrip(StrayScreen screen, GuiGraphicsExtractor graphics, int mouseX, int mouseY, float t) {
+		float right = areaX + areaW;
+		float bottom = areaY + areaH;
+		boolean hot = resizing || contains(mouseX, mouseY, right - GRIP - 2f, bottom - GRIP - 2f, GRIP + 2f, GRIP + 2f);
+		int ink = Anim.fade(hot ? MaterialPalette.primary : MaterialPalette.outline, t);
+		GuiDraw.stroke(graphics, right - 4f, bottom - 9f, right - 9f, bottom - 4f, 1.2f, ink);
+		GuiDraw.stroke(graphics, right - 4f, bottom - 6f, right - 6f, bottom - 4f, 1.2f, ink);
+		screen.clickHit(right - GRIP - 2f, bottom - GRIP - 2f, GRIP + 2f, GRIP + 2f, () -> {
+			resizing = true;
+			grabX = (float) (areaX + areaW - ClickGui.pointerX());
+			grabY = (float) (areaY + areaH - ClickGui.pointerY());
+		});
+	}
+
+	private static void beginMove() {
+		if (!StrayConfig.get().hyprFloating) {
+			return;
+		}
+		moving = true;
+		grabX = (float) ClickGui.pointerX() - areaX;
+		grabY = (float) ClickGui.pointerY() - areaY;
+	}
+
+	private static void toggleFloating() {
+		StrayConfig config = StrayConfig.get();
+		config.hyprFloating = !config.hyprFloating;
+		UnloadState.markDirty();
+	}
+
+	static boolean drag(double x, double y) {
+		StrayConfig config = StrayConfig.get();
+		if (moving) {
+			config.hyprFloatX = (float) x - grabX;
+			config.hyprFloatY = (float) y - grabY;
+			return true;
+		}
+		if (resizing) {
+			config.hyprFloatW = Math.max(MIN_W, (float) x + grabX - config.hyprFloatX);
+			config.hyprFloatH = Math.max(MIN_H, (float) y + grabY - config.hyprFloatY);
+			return true;
+		}
+		return false;
+	}
+
+	static void endDrag() {
+		if (moving || resizing) {
+			UnloadState.markDirty();
+		}
+		moving = false;
+		resizing = false;
 	}
 
 	static boolean scroll(double x, double y, double wheel) {
@@ -255,6 +364,11 @@ public final class HyprMenu {
 		}
 		GuiFrostBlur.blitWindow(graphics, x, y, w, BAR, RADIUS, t);
 		GuiDraw.roundedFine(graphics, x, y, w, BAR, RADIUS, Anim.fade(withAlpha(MaterialPalette.surface, 0xD8), t));
+		if (StrayConfig.get().hyprFloating) {
+			// Grab the bar anywhere a button is not to move the window.
+			GuiDraw.roundedOutline(graphics, x, y, w, BAR, RADIUS, Anim.fade(withAlpha(MaterialPalette.primary, 0x40), t * floatT), 1f);
+			screen.clickHit(x, y, w, BAR, HyprMenu::beginMove);
+		}
 
 		float groupY = y + 3f;
 		float groupH = BAR - 6f;
@@ -271,8 +385,9 @@ public final class HyprMenu {
 		// right: search and close
 		float closeW = groupH;
 		float closeX = x + w - 4f - closeW;
+		float floatX = closeX - 4f - closeW;
 		float searchW = Math.min(130f, Math.max(76f, w * 0.18f));
-		float searchX = closeX - 5f - searchW;
+		float searchX = floatX - 5f - searchW;
 
 		// middle: workspaces
 		String[] ids = ClickGui.ORDER;
@@ -360,6 +475,12 @@ public final class HyprMenu {
 		GuiDraw.roundedFine(graphics, closeX, groupY, closeW, groupH, half, Anim.fade(closeHot ? MaterialPalette.surfaceHigh : MaterialPalette.surfaceLow, t));
 		glyph(graphics, font, CLOSE, closeX + (closeW - 9f) * 0.5f, groupY, groupH, Anim.fade(closeHot ? MaterialPalette.onSurface : MaterialPalette.onSurfaceVariant, t));
 		screen.clickHit(closeX, groupY, closeW, groupH, screen::onClose);
+
+		boolean floatHot = contains(mouseX, mouseY, floatX, groupY, closeW, groupH);
+		GuiDraw.roundedFine(graphics, floatX, groupY, closeW, groupH, half, Anim.fade(floatHot ? MaterialPalette.surfaceHigh : MaterialPalette.surfaceLow, t));
+		String floatGlyph = StrayConfig.get().hyprFloating ? FLOAT_ON : FLOAT_OFF;
+		glyph(graphics, font, floatGlyph, floatX + (closeW - 9f) * 0.5f, groupY, groupH, Anim.fade(floatHot ? MaterialPalette.onSurface : MaterialPalette.onSurfaceVariant, t));
+		screen.clickHit(floatX, groupY, closeW, groupH, HyprMenu::toggleFloating);
 	}
 
 	private static float tabWidth(Font font, String id, boolean withLabel) {

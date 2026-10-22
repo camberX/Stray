@@ -84,6 +84,12 @@ public final class StrayConfig {
 	public String chatStyle = "stray";
 	/** "left", "center" or "right": where the docked HUD row lines up. */
 	public String hudDockAlign = "left";
+	/** Hyprland click GUI as one floating window instead of fullscreen tiles. */
+	public boolean hyprFloating = false;
+	public float hyprFloatX = -1f;
+	public float hyprFloatY = -1f;
+	public float hyprFloatW = -1f;
+	public float hyprFloatH = -1f;
 	public boolean musicHudEnabled = false;
 	public boolean pipEnabled = false;
 	public String pipWindowId = "";
