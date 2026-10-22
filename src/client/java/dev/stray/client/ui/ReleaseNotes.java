@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.5.63", new String[]{
+			"Hotfix: the party stats card also shows Mimic (Faker) and Folf (Catacombs Cap) next to Murkbat and Prince, as the attribute level."
+		}),
 		new Entry("1.5.62", new String[]{
 			"New Hyprland style, themed after illogical-impulse. The click GUI is a top bar with icon categories and two tiled windows, modules on the left and settings on the right, over the blurred game. The window under the mouse gets the focused border. Drag the gap between the windows to resize them. Turn on Floating window to move and resize the whole menu.",
 			"Colors are Material You roles built from your accent, and text uses Google Sans Flex. Corners, outlines and text are drawn to stay smooth at any GUI or HUD scale.",
