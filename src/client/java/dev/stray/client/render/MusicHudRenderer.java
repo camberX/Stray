@@ -533,13 +533,15 @@ public final class MusicHudRenderer {
 		float tx = cx + cover + 5f;
 		float textMax = pw - (tx - px) - 7f - BAR_CONTROLS * reveal;
 		String line = GuiDraw.ellipsize(font, barLine(track, live), textMax, false);
-		float textY = Math.round(GuiDraw.middle(BAR_PAD, BAR_PILL));
+		// Text sits a little high so the progress line under it has room.
+		float textY = Math.round(GuiDraw.middle(BAR_PAD, BAR_PILL) - (live ? 1.5f : 0f));
 		GuiDraw.text(graphics, font, barText(line), tx, textY, live ? MaterialPalette.onSurface : MaterialPalette.onSurfaceVariant, false);
 		if (live) {
 			float progress = progressOf(track);
 			float lineW = pw - (tx - px) - 8f;
-			GuiDraw.fill(graphics, tx, BAR_PAD + BAR_PILL - 2f, lineW, 1f, MaterialPalette.outlineVariant);
-			GuiDraw.fill(graphics, tx, BAR_PAD + BAR_PILL - 2f, lineW * progress, 1f, MaterialPalette.primary);
+			float lineY = BAR_PAD + BAR_PILL - 2.5f;
+			GuiDraw.roundedFine(graphics, tx, lineY, lineW, 1f, 0.5f, MaterialPalette.outlineVariant);
+			GuiDraw.roundedFine(graphics, tx, lineY, Math.max(1f, lineW * progress), 1f, 0.5f, MaterialPalette.primary);
 		}
 		if (live) {
 			drawControls(graphics, font, ox, oy, scale, w - 2f, BAR_PAD + (BAR_PILL - 10f) * 0.5f, chat, editor, track, false);

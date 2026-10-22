@@ -93,8 +93,7 @@ public final class HyprMenu {
 	private static final float MIN_W = 340f;
 	private static final float MIN_H = 190f;
 	private static final float GRIP = 10f;
-	private static final String FLOAT_ON = "\uE5D1";
-	private static final String FLOAT_OFF = "\uE5D0";
+	private static final String HUD_EDIT = "\uE99B";
 	private static boolean moving;
 	private static boolean resizing;
 	private static boolean splitting;
@@ -250,12 +249,6 @@ public final class HyprMenu {
 		moving = true;
 		grabX = (float) ClickGui.pointerX() - areaX;
 		grabY = (float) ClickGui.pointerY() - areaY;
-	}
-
-	private static void toggleFloating() {
-		StrayConfig config = StrayConfig.get();
-		config.hyprFloating = !config.hyprFloating;
-		UnloadState.markDirty();
 	}
 
 	/** The saved split, kept so neither window gets narrower than MIN_PANE. */
@@ -526,9 +519,9 @@ public final class HyprMenu {
 
 		boolean floatHot = contains(mouseX, mouseY, floatX, groupY, closeW, groupH);
 		GuiDraw.roundedFine(graphics, floatX, groupY, closeW, groupH, half, Anim.fade(floatHot ? MaterialPalette.surfaceHigh : MaterialPalette.surfaceLow, t));
-		String floatGlyph = StrayConfig.get().hyprFloating ? FLOAT_ON : FLOAT_OFF;
-		glyph(graphics, font, floatGlyph, floatX + (closeW - 9f) * 0.5f, groupY, groupH, Anim.fade(floatHot ? MaterialPalette.onSurface : MaterialPalette.onSurfaceVariant, t));
-		screen.clickHit(floatX, groupY, closeW, groupH, HyprMenu::toggleFloating);
+		// HUD editor button (floating mode is under Click GUI settings).
+		glyph(graphics, font, HUD_EDIT, floatX + (closeW - 9f) * 0.5f, groupY, groupH, Anim.fade(floatHot ? MaterialPalette.onSurface : MaterialPalette.onSurfaceVariant, t));
+		screen.clickHit(floatX, groupY, closeW, groupH, () -> Minecraft.getInstance().setScreen(new HudEditorScreen()));
 	}
 
 	private static float tabWidth(Font font, String id, boolean withLabel) {
@@ -554,9 +547,14 @@ public final class HyprMenu {
 	 * primary when focused and a third of that when not (ii's colors.lua).
 	 */
 	public static void window(GuiGraphicsExtractor graphics, float x, float y, float w, float h, float focus, float t) {
+		window(graphics, x, y, w, h, focus, t, 0xE6);
+	}
+
+	/** Same window with a chosen surface opacity (chat uses a lighter one). */
+	public static void window(GuiGraphicsExtractor graphics, float x, float y, float w, float h, float focus, float t, int fillAlpha) {
 		MaterialPalette.refresh();
 		GuiFrostBlur.blitWindow(graphics, x, y, w, h, RADIUS, t);
-		GuiDraw.roundedFine(graphics, x, y, w, h, RADIUS, Anim.fade(withAlpha(MaterialPalette.surfaceLow, 0xE6), t));
+		GuiDraw.roundedFine(graphics, x, y, w, h, RADIUS, Anim.fade(withAlpha(MaterialPalette.surfaceLow, fillAlpha), t));
 		// ii: active border is primary, inactive is primary at a third (colors.lua)
 		int border = Anim.mix(withAlpha(MaterialPalette.primary, 0x40), MaterialPalette.primary, focus);
 		GuiDraw.hairline(graphics, x, y, w, h, RADIUS, Anim.fade(border, t));

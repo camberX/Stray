@@ -642,7 +642,7 @@ public final class ClickGui {
 			});
 			y += stride();
 		}
-		drawButton(screen, graphics, font, x, y, w, "Stray Menu", () -> setClickGui(false));
+
 	}
 
 	private static void drawGuiStyle(StrayScreen screen, GuiGraphicsExtractor graphics, Font font, float x, float y, float w) {
@@ -765,11 +765,6 @@ public final class ClickGui {
 	private static void drawChatStyle(StrayScreen screen, GuiGraphicsExtractor graphics, Font font, float x, float y, float w) {
 		drawDropdown(screen, graphics, font, x, y, w, "chat", "Style", StrayConfig.CHAT_STYLE_LABELS, StrayConfig.get().chatStyleIndex(),
 			i -> StrayConfig.get().setChatStyle(StrayConfig.CHAT_STYLES[i]));
-	}
-
-	private static void setClickGui(boolean click) {
-		StrayConfig.get().clickGui = click;
-		UnloadState.markDirty();
 	}
 
 	private static void drawTimeout(StrayScreen screen, GuiGraphicsExtractor graphics, Font font, float x, float y, float w) {
@@ -966,8 +961,9 @@ public final class ClickGui {
 				return stackH(3) + gap() + screen.clickDropdownHeight("hud");
 			}
 			if ("Click GUI".equals(mod.name)) {
-				int rows = StrayConfig.get().clickGuiHypr() ? 2 : 1;
-				return screen.clickDropdownHeight("click") + gap() + stackH(rows);
+				return StrayConfig.get().clickGuiHypr()
+					? screen.clickDropdownHeight("click") + gap() + stackH(1)
+					: screen.clickDropdownHeight("click");
 			}
 			return stackH(1);
 		}
@@ -1609,7 +1605,8 @@ public final class ClickGui {
 		mods.add(mod("Lasso", "Farming", null, null, () -> config.lassoDisplay, v -> config.lassoDisplay = v, true, false));
 		mods.add(mod("Auto DNA", "Farming", StrayScreen.Feature.AUTO_DNA, null, () -> config.autoDnaEnabled, v -> config.autoDnaEnabled = v, true, false));
 
-		mods.add(mod("Click GUI", "Menus", null, null, () -> config.clickGui, v -> config.clickGui = v, false, false, true));
+		// Settings only: the click GUI is always the menu now.
+		mods.add(new Mod("Click GUI", "Menus", null, null, () -> true, v -> { }, false, false, true, true));
 		mods.add(mod("Experiments", "Menus", StrayScreen.Feature.AUTO_EXPERIMENTS, null, () -> config.autoExperimentsEnabled, v -> config.autoExperimentsEnabled = v, true, false));
 		mods.add(mod("Book combine", "Menus", StrayScreen.Feature.AUTO_BOOKS, null, () -> config.autoBookCombineEnabled, v -> config.autoBookCombineEnabled = v, true, false));
 		mods.add(mod("Loadouts", "Menus", StrayScreen.Feature.LOADOUTS, null, () -> config.loadoutsMenuEnabled, v -> config.loadoutsMenuEnabled = v, true, false));

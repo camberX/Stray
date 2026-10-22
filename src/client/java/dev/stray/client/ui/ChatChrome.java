@@ -120,7 +120,8 @@ public final class ChatChrome {
 		float x = 4f * scale - PAD;
 		float y = graphics.guiHeight() - 40f - rows * lineH * scale - PAD + bumpY;
 		if (hypr()) {
-			HyprMenu.window(graphics, x, y, w, h, focused ? 1f : 0f, 1f);
+			// Mostly blur, a light tint: chat text stays readable without a slab.
+			HyprMenu.window(graphics, x, y, w, h, focused ? 1f : 0f, 1f, 0x70);
 			return;
 		}
 		if (click()) {
@@ -169,7 +170,7 @@ public final class ChatChrome {
 			MaterialPalette.refresh();
 			float r = INPUT_H * 0.5f;
 			GuiFrostBlur.blitWindow(graphics, x, y, w, INPUT_H, r);
-			GuiDraw.roundedFine(graphics, x, y, w, INPUT_H, r, MaterialPalette.withAlpha(MaterialPalette.surfaceContainer, 0xF0));
+			GuiDraw.roundedFine(graphics, x, y, w, INPUT_H, r, MaterialPalette.withAlpha(MaterialPalette.surfaceContainer, 0x90));
 			GuiDraw.hairline(graphics, x, y, w, INPUT_H, r, MaterialPalette.primary);
 			return;
 		}

@@ -2067,7 +2067,7 @@ public class StrayScreen extends Screen {
 		GuiDraw.menu(graphics, font, "Theme", settingsX + 8, settingsY + 6, Theme.HEADER);
 		float y = cycle(graphics, font, settingsX + 8, settingsY + 20, PANEL_W - 16, mouseX, mouseY, "Menu", StrayConfig.get().clickGui ? "Click GUI" : "Stray", () -> {
 			StrayConfig config = StrayConfig.get();
-			config.clickGui = !config.clickGui;
+			config.clickGui = true;
 			UnloadState.markDirty();
 		});
 		y = colorRow(graphics, font, settingsX + 8, y, PANEL_W - 16, mouseX, mouseY, "Glass", StrayConfig.get().controlPaneRgb, PickerTarget.CONTROL);
@@ -2432,9 +2432,8 @@ public class StrayScreen extends Screen {
 				toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Paths", config.pathsEnabled, v -> config.pathsEnabled = v, Feature.PATHS);
 			}
 			case MENUS -> {
-				float menusH = cardHeight(17) + dropExtra("click.a", "gui.a", "chat.a");
+				float menusH = cardHeight(16) + dropExtra("click.a", "gui.a", "chat.a");
 				float y = featureCard(graphics, font, left, top, col, menusH, "Menus");
-				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Click GUI", config.clickGui, v -> config.clickGui = v);
 				y = dropdown(graphics, font, ix, y, iw, mouseX, mouseY, "click.a", "Click style", StrayConfig.CLICK_GUI_STYLE_LABELS, config.clickGuiStyleIndex(), i -> config.setClickGuiStyle(StrayConfig.CLICK_GUI_STYLES[i]));
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Array list", config.arrayList, v -> config.arrayList = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Loadouts menu", config.loadoutsMenuEnabled, v -> config.loadoutsMenuEnabled = v, Feature.LOADOUTS);
@@ -2703,7 +2702,6 @@ public class StrayScreen extends Screen {
 			}
 			case MENUS -> {
 				float y = sectionLabel(graphics, font, left, top, "Skyblock");
-				y = toggleCard(graphics, font, left, y, col, mouseX, mouseY, "Click GUI", config.clickGui, v -> config.clickGui = v);
 				y = toggleCard(graphics, font, left, y, col, mouseX, mouseY, "Array list", config.arrayList, v -> config.arrayList = v);
 				y = controlCard(graphics, font, left, y, col, mouseX, mouseY, "Loadouts menu", config.loadoutsMenuEnabled, v -> config.loadoutsMenuEnabled = v, Feature.LOADOUTS);
 				y = controlCard(graphics, font, left, y, col, mouseX, mouseY, "Wardrobe menu", config.wardrobeMenuEnabled, v -> config.wardrobeMenuEnabled = v, Feature.WARDROBE);
@@ -2941,7 +2939,7 @@ public class StrayScreen extends Screen {
 		float y = sectionLabel(graphics, font, left, top, "Window");
 		y = featureCard(graphics, font, left, y, col, cardHeight(9), "Control");
 		y = cycle(graphics, font, ix, y, iw, mouseX, mouseY, "Menu", config.clickGui ? "Click GUI" : "Stray", () -> {
-			config.clickGui = !config.clickGui;
+			config.clickGui = true;
 			UnloadState.markDirty();
 		});
 		y = colorRow(graphics, font, ix, y, iw, mouseX, mouseY, "Glass", config.controlPaneRgb, PickerTarget.CONTROL);

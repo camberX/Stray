@@ -15,6 +15,14 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.5.62", new String[]{
+			"New Hyprland style, themed after illogical-impulse. The click GUI is a top bar with icon categories and two tiled windows, modules on the left and settings on the right, over the blurred game. The window under the mouse gets the focused border. Drag the gap between the windows to resize them. Turn on Floating window to move and resize the whole menu.",
+			"Colors are Material You roles built from your accent, and text uses Google Sans Flex. Corners, outlines and text are drawn to stay smooth at any GUI or HUD scale.",
+			"Hyprland styles for themed GUIs, chat, the HUD and the watermark. The music HUD has a Bar layout that joins the Hyprland watermark as one bar.",
+			"HUD elements can dock to the top from the HUD editor. Docked elements line up left, centered or right and slide into place.",
+			"Color pickers have a hex field. Style settings are dropdowns. Only the Click and Hyprland styles remain, and the click GUI is always the menu.",
+			"Storage preview no longer lags chest pages on every click."
+		}),
 		new Entry("1.5.61", new String[]{
 			"Empty bag only runs while you hold a farming tool."
 		}),

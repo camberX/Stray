@@ -1233,12 +1233,11 @@ public final class StrayConfig {
 				if (!json.has("noCursorReset")) {
 					loaded.noCursorReset = true;
 				}
-				if (!json.has("clickGui")) {
-					loaded.clickGui = true;
-				}
+				// The Stray menu is gone: the click GUI is the menu.
+				loaded.clickGui = true;
 				loaded.clickGuiStyle = json.has("clickGuiStyle")
 					? normalizeClickGuiStyle(loaded.clickGuiStyle)
-					: "glass";
+					: "click";
 				loaded.guiStyle = json.has("guiStyle")
 					? normalizeGuiStyle(loaded.guiStyle)
 					: "click";
@@ -1890,7 +1889,8 @@ public final class StrayConfig {
 	}
 
 	public boolean hudStyleVanilla() {
-		return "vanilla".equalsIgnoreCase(hudStyle);
+		// Removed style: only Click and Hyprland remain.
+		return false;
 	}
 
 	public boolean hudStyleClick() {
@@ -1898,7 +1898,8 @@ public final class StrayConfig {
 	}
 
 	public boolean hudStyleGlass() {
-		return "glass".equalsIgnoreCase(hudStyle);
+		// Removed style: only Click and Hyprland remain.
+		return false;
 	}
 
 	public boolean hudStyleHypr() {
@@ -1922,23 +1923,17 @@ public final class StrayConfig {
 	}
 
 	public void cycleHudStyle() {
-		if (hudStyleVanilla()) {
-			hudStyle = "stray";
-		} else if (hudStyleGlass()) {
-			hudStyle = "vanilla";
-		} else if (hudStyleClick()) {
-			hudStyle = "glass";
-		} else {
-			hudStyle = "click";
-		}
+		hudStyle = hudStyleHypr() ? "click" : "hypr";
 	}
 
 	public boolean clickGuiGlass() {
-		return "glass".equalsIgnoreCase(clickGuiStyle);
+		// Removed style: only Click and Hyprland remain.
+		return false;
 	}
 
 	public boolean clickGuiImgui() {
-		return "imgui".equalsIgnoreCase(clickGuiStyle);
+		// Removed style: only Click and Hyprland remain.
+		return false;
 	}
 
 	public boolean clickGuiHypr() {
@@ -1946,14 +1941,14 @@ public final class StrayConfig {
 	}
 
 	/** Keys and labels for the style dropdowns, in menu order. */
-	public static final String[] CLICK_GUI_STYLES = {"glass", "click", "imgui", "hypr"};
-	public static final String[] CLICK_GUI_STYLE_LABELS = {"Glass", "Click", "ImGui", "Hyprland"};
-	public static final String[] GUI_STYLES = {"glass", "imgui", "click", "hypr"};
-	public static final String[] GUI_STYLE_LABELS = {"Glass", "ImGui", "Click", "Hyprland"};
+	public static final String[] CLICK_GUI_STYLES = {"click", "hypr"};
+	public static final String[] CLICK_GUI_STYLE_LABELS = {"Click", "Hyprland"};
+	public static final String[] GUI_STYLES = {"click", "hypr"};
+	public static final String[] GUI_STYLE_LABELS = {"Click", "Hyprland"};
 	public static final String[] WATERMARK_STYLES = {"panel", "client", "hypr"};
 	public static final String[] WATERMARK_STYLE_LABELS = {"Panel", "Client", "Hyprland"};
-	public static final String[] HUD_STYLES = {"stray", "click", "glass", "vanilla", "hypr"};
-	public static final String[] HUD_STYLE_LABELS = {"Stray", "Click", "Glass", "Vanilla", "Hyprland"};
+	public static final String[] HUD_STYLES = {"click", "hypr"};
+	public static final String[] HUD_STYLE_LABELS = {"Click", "Hyprland"};
 	public static final String[] CHAT_STYLES = {"stray", "hypr"};
 	public static final String[] CHAT_STYLE_LABELS = {"Stray", "Hyprland"};
 
@@ -2009,23 +2004,17 @@ public final class StrayConfig {
 	}
 
 	public void cycleClickGuiStyle() {
-		if (clickGuiGlass()) {
-			clickGuiStyle = "click";
-		} else if ("click".equalsIgnoreCase(clickGuiStyle)) {
-			clickGuiStyle = "imgui";
-		} else if (clickGuiImgui()) {
-			clickGuiStyle = "hypr";
-		} else {
-			clickGuiStyle = "glass";
-		}
+		clickGuiStyle = clickGuiHypr() ? "click" : "hypr";
 	}
 
 	public boolean guiStyleGlass() {
-		return "glass".equalsIgnoreCase(guiStyle);
+		// Removed style: only Click and Hyprland remain.
+		return false;
 	}
 
 	public boolean guiStyleImgui() {
-		return "imgui".equalsIgnoreCase(guiStyle);
+		// Removed style: only Click and Hyprland remain.
+		return false;
 	}
 
 	public boolean guiStyleHypr() {
@@ -2043,15 +2032,7 @@ public final class StrayConfig {
 	}
 
 	public void cycleGuiStyle() {
-		if (guiStyleGlass()) {
-			guiStyle = "imgui";
-		} else if (guiStyleImgui()) {
-			guiStyle = "click";
-		} else if (guiStyleHypr()) {
-			guiStyle = "glass";
-		} else {
-			guiStyle = "hypr";
-		}
+		guiStyle = guiStyleHypr() ? "click" : "hypr";
 	}
 
 	public void setHudStyle(String style) {
@@ -2075,57 +2056,15 @@ public final class StrayConfig {
 	}
 
 	public static String normalizeHudStyle(String style) {
-		if (style == null) {
-			return "stray";
-		}
-		String key = style.trim().toLowerCase();
-		if (key.equals("vanilla") || key.equals("minecraft") || key.equals("mc")) {
-			return "vanilla";
-		}
-		if (key.equals("click") || key.equals("clickgui") || key.equals("list")) {
-			return "click";
-		}
-		if (key.equals("glass") || key.equals("liquid")) {
-			return "glass";
-		}
-		if (key.equals("hypr") || key.equals("hyprland")) {
-			return "hypr";
-		}
-		return "stray";
+		return style != null && (style.trim().equalsIgnoreCase("hypr") || style.trim().equalsIgnoreCase("hyprland")) ? "hypr" : "click";
 	}
 
 	public static String normalizeClickGuiStyle(String style) {
-		if (style == null) {
-			return "glass";
-		}
-		String key = style.trim().toLowerCase();
-		if (key.equals("click") || key.equals("boxes") || key.equals("flat")) {
-			return "click";
-		}
-		if (key.equals("imgui") || key.equals("dear")) {
-			return "imgui";
-		}
-		if (key.equals("hypr") || key.equals("hyprland")) {
-			return "hypr";
-		}
-		return "glass";
+		return style != null && (style.trim().equalsIgnoreCase("hypr") || style.trim().equalsIgnoreCase("hyprland")) ? "hypr" : "click";
 	}
 
 	public static String normalizeGuiStyle(String style) {
-		if (style == null) {
-			return "click";
-		}
-		String key = style.trim().toLowerCase();
-		if (key.equals("glass") || key.equals("liquid")) {
-			return "glass";
-		}
-		if (key.equals("imgui") || key.equals("dear")) {
-			return "imgui";
-		}
-		if (key.equals("hypr") || key.equals("hyprland")) {
-			return "hypr";
-		}
-		return "click";
+		return style != null && (style.trim().equalsIgnoreCase("hypr") || style.trim().equalsIgnoreCase("hyprland")) ? "hypr" : "click";
 	}
 
 	public static String normalizeHealthBarSide(String side) {
