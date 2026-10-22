@@ -19,29 +19,45 @@ import java.util.Locale;
 import java.util.Map;
 
 /**
- * Hyprland-style click GUI: a Waybar-like top bar where categories are
- * workspaces, and two tiled windows (modules, settings) with gaps. The window
- * under the mouse gets the focused gradient border, like focus-follows-mouse.
+ * Hyprland click GUI in the style of the illogical-impulse dotfiles: a
+ * quickshell-like bar where categories are workspaces, and two tiled Material
+ * You windows (modules, settings) over the blurred game. The window under the
+ * mouse gets the focused border, like focus-follows-mouse. Colors come from
+ * {@link MaterialPalette}; motion uses ii's own bezier curves.
  * Left click toggles a module, right click shows its settings on the right.
  */
 final class HyprMenu {
-	private static final float OUT = 10f;
+	private static final float OUT = 7f;
 	private static final float GAP = 5f;
-	private static final float BAR = 20f;
-	private static final float RADIUS = 6f;
-	private static final float ROW = 17f;
-	private static final float ROW_GAP = 3f;
-	private static final float PAD = 8f;
+	private static final float BAR = 22f;
+	/** ii rounds windows at 18px; at GUI scale 2 that is 9. */
+	private static final float RADIUS = 9f;
+	private static final float ROW = 18f;
+	private static final float ROW_GAP = 2f;
+	private static final float PAD = 9f;
+	private static final int DIM = 0x40000000;
 
-	private static final int TEXT = 0xFFE6EAF0;
-	private static final int MUTED = 0xFF9AA6B4;
-	private static final int FILL = 0xC8111419;
-	private static final int BAR_FILL = 0xB8111419;
-	private static final int ROW_FILL = 0x0AFFFFFF;
-	private static final int ROW_HOT = 0x18FFFFFF;
-	private static final int INACTIVE = 0xAA595959;
-	private static final int OFF_TRACK = 0x30FFFFFF;
-	private static final int DIM = 0x50000000;
+	/** Material Icons codepoints, the set quickshell's bar uses. */
+	private static final Map<String, String> GLYPHS = Map.ofEntries(
+		Map.entry("World", "\uE80B"),
+		Map.entry("Visuals", "\uE8F4"),
+		Map.entry("Mobs", "\uE91D"),
+		Map.entry("Combat", "\uF889"),
+		Map.entry("HUD", "\uE871"),
+		Map.entry("Mining", "\uEAD5"),
+		Map.entry("Farming", "\uEA79"),
+		Map.entry("Menus", "\uE5C3"),
+		Map.entry("Keys", "\uE312"),
+		Map.entry("Theme", "\uE40A"),
+		Map.entry("Player", "\uE7FD")
+	);
+	private static final String SEARCH = "\uE8B6";
+	private static final String CLOSE = "\uE5CD";
+	private static final String TUNE = "\uE429";
+
+	// ii curves (hyprland/general.lua)
+	private static final float[] EMPHASIZED_DECEL = {0.05f, 0.7f, 0.1f, 1f};
+	private static final float[] EXPRESSIVE_SPATIAL = {0.38f, 1.21f, 0.22f, 1f};
 
 	private static Object lastScreen;
 	private static long lastNs;
@@ -52,6 +68,11 @@ final class HyprMenu {
 	private static float catT = 1f;
 	private static float pillX = -1f;
 	private static float pillW;
+	private static float pillFromX;
+	private static float pillFromW;
+	private static float pillToX = -1f;
+	private static float pillToW;
+	private static float pillT = 1f;
 	private static String selected;
 	private static float selT = 1f;
 	private static boolean focusList;
@@ -78,25 +99,26 @@ final class HyprMenu {
 
 	static void draw(StrayScreen screen, GuiGraphicsExtractor graphics, Font font, int mouseX, int mouseY) {
 		tick(screen);
+		MaterialPalette.refresh();
 		float fade = Mth.clamp(screen.clickAppear(), 0f, 1f);
-		float tBar = ease(stagger(openT, 0f)) * fade;
-		float tList = ease(stagger(openT, 0.12f)) * fade;
-		float tSet = ease(stagger(openT, 0.24f)) * fade;
+		float tBar = curve(EMPHASIZED_DECEL, stagger(openT, 0f)) * fade;
+		float tList = curve(EMPHASIZED_DECEL, stagger(openT, 0.10f)) * fade;
+		float tSet = curve(EMPHASIZED_DECEL, stagger(openT, 0.20f)) * fade;
 
 		GuiDraw.fill(graphics, 0, 0, screen.width, screen.height, Anim.fade(DIM, fade));
 
 		float w = screen.width - OUT * 2f;
-		float barY = OUT - (1f - tBar) * 10f;
+		float barY = OUT - (1f - tBar) * 14f;
 		drawBar(screen, graphics, font, mouseX, mouseY, OUT, barY, w, tBar);
 
 		float top = OUT + BAR + GAP;
 		float h = Math.max(60f, screen.height - top - OUT);
 		float split = Math.round((w - GAP) * 0.55f);
-		listX = OUT - (1f - tList) * 16f;
+		listX = OUT - (1f - tList) * 22f;
 		listY = top;
 		listW = split;
 		listH = h;
-		setX = OUT + split + GAP + (1f - tSet) * 16f;
+		setX = OUT + split + GAP + (1f - tSet) * 22f;
 		setY = top;
 		setW = w - split - GAP;
 		setH = h;
@@ -153,10 +175,13 @@ final class HyprMenu {
 			catT = 1f;
 			selT = 1f;
 			pillX = -1f;
+			pillToX = -1f;
+			pillT = 1f;
 			hover.clear();
 			knob.clear();
 		}
-		openT = Math.min(1f, openT + dt * 2.6f);
+		openT = Math.min(1f, openT + dt * 2.2f);
+		pillT = Math.min(1f, pillT + dt * 3.2f);
 		catT = approach(catT, 1f, 9f);
 		selT = approach(selT, 1f, 11f);
 	}
@@ -201,113 +226,126 @@ final class HyprMenu {
 			return;
 		}
 		GuiFrostBlur.blitWindow(graphics, x, y, w, BAR, RADIUS);
-		GuiDraw.roundedFine(graphics, x, y, w, BAR, RADIUS, Anim.fade(BAR_FILL, t));
+		GuiDraw.roundedFine(graphics, x, y, w, BAR, RADIUS, Anim.fade(withAlpha(MaterialPalette.surface, 0xD8), t));
 
-		int accent = Theme.ACCENT;
-		float cursor = x + 8f;
-		text(graphics, font, "stray", cursor, y, BAR, Anim.fade(accent, t));
-		cursor += width(font, "stray") + 10f;
+		float groupY = y + 3f;
+		float groupH = BAR - 6f;
+		float half = groupH * 0.5f;
 
-		float closeW = 16f;
-		float searchW = Math.min(130f, Math.max(70f, w * 0.18f));
-		float searchX = x + w - 4f - closeW - 4f - searchW;
-		float room = searchX - 8f - cursor;
+		// left: logo group
+		float cursor = x + 4f;
+		float logoW = 12f + 4f + width(font, "Stray") + 9f;
+		GuiDraw.roundedFine(graphics, cursor, groupY, logoW, groupH, half, Anim.fade(MaterialPalette.surfaceLow, t));
+		glyph(graphics, font, TUNE, cursor + 6f, groupY, groupH, Anim.fade(MaterialPalette.primary, t));
+		text(graphics, font, "Stray", cursor + 19f, groupY, groupH, Anim.fade(MaterialPalette.onSurface, t));
+		cursor += logoW + 6f;
 
+		// right: search and close
+		float closeW = groupH;
+		float closeX = x + w - 4f - closeW;
+		float searchW = Math.min(130f, Math.max(76f, w * 0.18f));
+		float searchX = closeX - 5f - searchW;
+
+		// middle: workspaces
 		String[] ids = ClickGui.ORDER;
-		float full = 0f;
+		float room = searchX - 6f - cursor - 6f;
+		float full = 6f;
 		for (String id : ids) {
 			full += tabWidth(font, id, true) + 2f;
 		}
 		boolean labels = full <= room;
-
 		float[] tabX = new float[ids.length];
 		float[] tabW = new float[ids.length];
-		float tx = cursor;
+		float groupW = 4f;
 		for (int i = 0; i < ids.length; i++) {
-			boolean active = ids[i].equals(category);
+			tabW[i] = tabWidth(font, ids[i], labels || ids[i].equals(category));
+			groupW += tabW[i] + 2f;
+		}
+		groupW += 2f;
+		float groupX = Math.max(cursor, x + (w - groupW) * 0.5f);
+		if (groupX + groupW > searchX - 6f) {
+			groupX = cursor;
+		}
+		GuiDraw.roundedFine(graphics, groupX, groupY, groupW, groupH, half, Anim.fade(MaterialPalette.surfaceLow, t));
+		float tx = groupX + 3f;
+		for (int i = 0; i < ids.length; i++) {
 			tabX[i] = tx;
-			tabW[i] = tabWidth(font, ids[i], labels || active);
 			tx += tabW[i] + 2f;
 		}
-		float tabY = y + 3f;
-		float tabH = BAR - 6f;
+		float tabY = groupY + 2f;
+		float tabH = groupH - 4f;
 		for (int i = 0; i < ids.length; i++) {
-			if (ids[i].equals(category)) {
-				if (pillX < 0f) {
-					pillX = tabX[i];
-					pillW = tabW[i];
-				}
-				pillX = approach(pillX, tabX[i], 16f);
-				pillW = approach(pillW, tabW[i], 16f);
+			if (!ids[i].equals(category)) {
+				continue;
 			}
+			if (pillToX < 0f) {
+				pillFromX = pillToX = pillX = tabX[i];
+				pillFromW = pillToW = pillW = tabW[i];
+				pillT = 1f;
+			} else if (Math.abs(pillToX - tabX[i]) > 0.1f || Math.abs(pillToW - tabW[i]) > 0.1f) {
+				pillFromX = pillX;
+				pillFromW = pillW;
+				pillToX = tabX[i];
+				pillToW = tabW[i];
+				pillT = 0f;
+			}
+			float k = curve(EXPRESSIVE_SPATIAL, pillT);
+			pillX = pillFromX + (pillToX - pillFromX) * k;
+			pillW = Math.max(tabH, pillFromW + (pillToW - pillFromW) * k);
 		}
 		for (int i = 0; i < ids.length; i++) {
-			String id = ids[i];
-			if (!id.equals(category) && contains(mouseX, mouseY, tabX[i], tabY, tabW[i], tabH)) {
-				GuiDraw.roundedFine(graphics, tabX[i], tabY, tabW[i], tabH, 4f, Anim.fade(ROW_HOT, t));
+			if (!ids[i].equals(category) && contains(mouseX, mouseY, tabX[i], tabY, tabW[i], tabH)) {
+				GuiDraw.roundedFine(graphics, tabX[i], tabY, tabW[i], tabH, tabH * 0.5f, Anim.fade(withAlpha(MaterialPalette.onSurface, 0x14), t));
 			}
 		}
 		if (pillW > 0f) {
-			GuiDraw.roundedFine(graphics, pillX, tabY, pillW, tabH, 4f, Anim.fade(accent, t));
+			GuiDraw.roundedFine(graphics, pillX, tabY, pillW, tabH, tabH * 0.5f, Anim.fade(MaterialPalette.primary, t));
 		}
 		for (int i = 0; i < ids.length; i++) {
 			String id = ids[i];
 			boolean active = id.equals(category);
-			boolean underPill = tabX[i] + tabW[i] > pillX + 1f && tabX[i] < pillX + pillW - 1f;
-			int ink = active && underPill ? 0xFF0B0E14 : (active ? TEXT : 0xFFAEB8C4);
+			float mid = tabX[i] + tabW[i] * 0.5f;
+			boolean underPill = mid > pillX && mid < pillX + pillW;
+			int ink = underPill ? MaterialPalette.onPrimary : MaterialPalette.onSurfaceVariant;
 			float ix = tabX[i] + 5f;
-			icon(graphics, id, ix, tabY + (tabH - 9f) * 0.5f, Anim.fade(ink, t));
+			glyph(graphics, font, GLYPHS.getOrDefault(id, TUNE), ix, tabY, tabH, Anim.fade(ink, t));
 			if (labels || active) {
-				text(graphics, font, label(id), ix + 12f, tabY, tabH, Anim.fade(ink, t));
+				text(graphics, font, label(id), ix + 13f, tabY, tabH, Anim.fade(ink, t));
 			}
 			screen.clickHit(tabX[i], tabY, tabW[i], tabH, () -> pickCategory(id));
 		}
 
-		float fieldY = y + 3f;
-		float fieldH = BAR - 6f;
 		boolean focused = ClickGui.searchFocused();
-		GuiDraw.roundedFine(graphics, searchX, fieldY, searchW, fieldH, 4f, Anim.fade(focused ? 0x1EFFFFFF : 0x10FFFFFF, t));
+		GuiDraw.roundedFine(graphics, searchX, groupY, searchW, groupH, half, Anim.fade(focused ? MaterialPalette.surfaceHigh : MaterialPalette.surfaceLow, t));
 		if (focused) {
-			GuiDraw.roundedOutline(graphics, searchX, fieldY, searchW, fieldH, 4f, Anim.fade(accent, t), 1f);
+			GuiDraw.roundedOutline(graphics, searchX, groupY, searchW, groupH, half, Anim.fade(MaterialPalette.primary, t), 1f);
 		}
-		ClickGui.searchBox(searchX, fieldY, searchW, fieldH);
+		ClickGui.searchBox(searchX, groupY, searchW, groupH);
 		String query = ClickGui.filterText();
 		boolean empty = query.isEmpty() && !focused;
-		text(graphics, font, ">", searchX + 5f, fieldY, fieldH, Anim.fade(hueShift(accent), t));
-		String shown = empty ? "search" : query + (focused && (System.currentTimeMillis() / 500L) % 2L == 0L ? "_" : "");
-		text(graphics, font, fit(font, shown, searchW - 20f), searchX + 14f, fieldY, fieldH, Anim.fade(empty ? MUTED : TEXT, t));
-		screen.clickHit(searchX, fieldY, searchW, fieldH, ClickGui::focusSearch);
+		glyph(graphics, font, SEARCH, searchX + 6f, groupY, groupH, Anim.fade(MaterialPalette.onSurfaceVariant, t));
+		String shown = empty ? "Search" : query + (focused && (System.currentTimeMillis() / 500L) % 2L == 0L ? "|" : "");
+		text(graphics, font, fit(font, shown, searchW - 24f), searchX + 19f, groupY, groupH, Anim.fade(empty ? MaterialPalette.onSurfaceVariant : MaterialPalette.onSurface, t));
+		screen.clickHit(searchX, groupY, searchW, groupH, ClickGui::focusSearch);
 
-		float closeX = x + w - 4f - closeW;
-		boolean closeHot = contains(mouseX, mouseY, closeX, fieldY, closeW, fieldH);
-		if (closeHot) {
-			GuiDraw.roundedFine(graphics, closeX, fieldY, closeW, fieldH, 4f, Anim.fade(ROW_HOT, t));
-		}
-		float cx = closeX + closeW * 0.5f;
-		float cy = fieldY + fieldH * 0.5f;
-		int crossInk = Anim.fade(closeHot ? TEXT : MUTED, t);
-		GuiDraw.stroke(graphics, cx - 3f, cy - 3f, cx + 3f, cy + 3f, 1.2f, crossInk);
-		GuiDraw.stroke(graphics, cx + 3f, cy - 3f, cx - 3f, cy + 3f, 1.2f, crossInk);
-		screen.clickHit(closeX, fieldY, closeW, fieldH, screen::onClose);
+		boolean closeHot = contains(mouseX, mouseY, closeX, groupY, closeW, groupH);
+		GuiDraw.roundedFine(graphics, closeX, groupY, closeW, groupH, half, Anim.fade(closeHot ? MaterialPalette.surfaceHigh : MaterialPalette.surfaceLow, t));
+		glyph(graphics, font, CLOSE, closeX + (closeW - 9f) * 0.5f, groupY, groupH, Anim.fade(closeHot ? MaterialPalette.onSurface : MaterialPalette.onSurfaceVariant, t));
+		screen.clickHit(closeX, groupY, closeW, groupH, screen::onClose);
 	}
 
 	private static float tabWidth(Font font, String id, boolean withLabel) {
-		return withLabel ? 5f + 9f + 3f + width(font, label(id)) + 6f : 19f;
+		return withLabel ? 5f + 9f + 4f + width(font, label(id)) + 7f : 19f;
 	}
 
 	// --------------------------------------------------------------- windows
 
 	private static void window(GuiGraphicsExtractor graphics, float x, float y, float w, float h, float focus, float t) {
 		GuiFrostBlur.blitWindow(graphics, x, y, w, h, RADIUS);
-		GuiDraw.roundedFine(graphics, x, y, w, h, RADIUS, Anim.fade(FILL, t));
-		float idle = (1f - focus) * t;
-		if (idle > 0.01f) {
-			GuiDraw.roundedOutline(graphics, x, y, w, h, RADIUS, Anim.fade(INACTIVE, idle), 1f);
-		}
-		float lit = focus * t;
-		if (lit > 0.01f) {
-			GuiDraw.gradientRim(graphics, x, y, w, h, RADIUS, Anim.fade(Theme.ACCENT, lit), Anim.fade(hueShift(Theme.ACCENT), lit));
-		}
+		GuiDraw.roundedFine(graphics, x, y, w, h, RADIUS, Anim.fade(withAlpha(MaterialPalette.surfaceLow, 0xE6), t));
+		// ii: active border is primary, inactive is primary at a third (colors.lua)
+		int border = Anim.mix(withAlpha(MaterialPalette.primary, 0x40), MaterialPalette.primary, focus);
+		GuiDraw.roundedOutline(graphics, x, y, w, h, RADIUS, Anim.fade(border, t), 1f);
 	}
 
 	private static void drawList(StrayScreen screen, GuiGraphicsExtractor graphics, Font font, int mouseX, int mouseY, List<Item> items, float t) {
@@ -319,8 +357,8 @@ final class HyprMenu {
 		float y = listY + PAD;
 		float w = listW - PAD * 2f;
 		boolean searching = !ClickGui.filterText().isBlank();
-		String title = searching ? "search" : label(category);
-		text(graphics, font, title, x, y, 10f, Anim.fade(TEXT, t));
+		String title = searching ? "Search" : ClickGui.display(category);
+		title(graphics, font, title, x, y, Anim.fade(MaterialPalette.onSurface, t));
 		int on = 0;
 		int toggles = 0;
 		for (Item item : items) {
@@ -331,10 +369,12 @@ final class HyprMenu {
 				}
 			}
 		}
-		String count = toggles > 0 ? on + "/" + toggles + " on" : items.size() + "";
-		text(graphics, font, count, x + w - width(font, count), y, 10f, Anim.fade(MUTED, t));
+		String count = toggles > 0 ? on + " of " + toggles + " on" : items.size() + " items";
+		float cw = width(font, count) + 12f;
+		GuiDraw.roundedFine(graphics, x + w - cw, y, cw, 12f, 6f, Anim.fade(MaterialPalette.secondaryContainer, t));
+		text(graphics, font, count, x + w - cw + 6f, y, 12f, Anim.fade(MaterialPalette.onSecondaryContainer, t));
 
-		float bodyY = y + 16f;
+		float bodyY = y + 20f;
 		float bodyH = listY + listH - PAD - bodyY;
 		int cols = w >= 250f ? 2 : 1;
 		float colGap = 6f;
@@ -344,7 +384,7 @@ final class HyprMenu {
 		listScroll = Mth.clamp(listScroll, 0f, Math.max(0f, content - bodyH));
 
 		if (items.isEmpty()) {
-			text(graphics, font, searching ? "no matches" : "nothing here", x, bodyY, ROW, Anim.fade(MUTED, t));
+			text(graphics, font, searching ? "No matches" : "Nothing here", x, bodyY, ROW, Anim.fade(MaterialPalette.onSurfaceVariant, t));
 			return;
 		}
 		boolean clip = GuiDraw.scissor(graphics, listX + 2f, bodyY, listW - 4f, bodyH);
@@ -352,9 +392,9 @@ final class HyprMenu {
 		for (int i = 0; i < items.size(); i++) {
 			int col = i % cols;
 			int row = i / cols;
-			float rowT = ease(Mth.clamp(catT * 2.2f - row * 0.08f, 0f, 1f)) * t;
+			float rowT = curve(EMPHASIZED_DECEL, Mth.clamp(catT * 2.0f - row * 0.07f, 0f, 1f)) * t;
 			float rx = x + col * (cellW + colGap);
-			float ry = bodyY + row * (ROW + ROW_GAP) - listScroll + (1f - rowT) * 6f;
+			float ry = bodyY + row * (ROW + ROW_GAP) - listScroll + (1f - rowT) * 8f;
 			if (ry + ROW < bodyY || ry > bodyY + bodyH) {
 				continue;
 			}
@@ -365,10 +405,9 @@ final class HyprMenu {
 			GuiDraw.disableScissor(graphics);
 		}
 		if (content > bodyH) {
-			float track = bodyH;
-			float thumb = Math.max(14f, track * bodyH / content);
-			float ty = bodyY + (track - thumb) * (listScroll / Math.max(1f, content - bodyH));
-			GuiDraw.roundedFine(graphics, listX + listW - 4f, ty, 2f, thumb, 1f, Anim.fade(0x40FFFFFF, t));
+			float thumb = Math.max(14f, bodyH * bodyH / content);
+			float ty = bodyY + (bodyH - thumb) * (listScroll / Math.max(1f, content - bodyH));
+			GuiDraw.roundedFine(graphics, listX + listW - 4.5f, ty, 2.5f, thumb, 1.25f, Anim.fade(MaterialPalette.outlineVariant, t));
 		}
 	}
 
@@ -390,40 +429,55 @@ final class HyprMenu {
 		boolean hot = inside && contains(mouseX, mouseY, x, y, w, ROW);
 		boolean chosen = item.mod != null && item.mod.name().equals(selected);
 		float hv = approachIn(hover, item.key, hot ? 1f : 0f, 16f);
-		int fill = Anim.mix(ROW_FILL, ROW_HOT, Math.max(hv, chosen ? 0.6f : 0f));
-		GuiDraw.roundedFine(graphics, x, y, w, ROW, 4f, Anim.fade(fill, t));
+		float r = ROW * 0.5f;
 		if (chosen) {
-			GuiDraw.roundedOutline(graphics, x, y, w, ROW, 4f, Anim.fade(Theme.ACCENT, t * 0.9f), 1f);
+			GuiDraw.roundedFine(graphics, x, y, w, ROW, r, Anim.fade(MaterialPalette.secondaryContainer, t));
 		}
-		float textX = x + 6f;
+		if (hv > 0.01f) {
+			// Material state layer: on-surface at 8% on hover
+			GuiDraw.roundedFine(graphics, x, y, w, ROW, r, Anim.fade(withAlpha(MaterialPalette.onSurface, 0x14), hv * t));
+		}
+		float textX = x + 8f;
+		float right = x + w - 6f;
 		if (item.on != null) {
-			float k = approachIn(knob, item.key, item.on ? 1f : 0f, 18f);
-			GuiDraw.circle(graphics, x + 6f, y + ROW * 0.5f, 1.6f, Anim.fade(Anim.mix(0x30FFFFFF, hueShift(Theme.ACCENT), k), t));
-			textX = x + 11f;
-			float sw = 16f;
-			float sh = 9f;
-			float sx = x + w - 5f - sw;
-			float sy = y + (ROW - sh) * 0.5f;
-			GuiDraw.roundedFine(graphics, sx, sy, sw, sh, sh * 0.5f, Anim.fade(Anim.mix(OFF_TRACK, Theme.ACCENT, k), t));
-			float r = 3f;
-			float kx = sx + 1.5f + r + k * (sw - 3f - r * 2f);
-			GuiDraw.circle(graphics, kx, sy + sh * 0.5f, r, Anim.fade(Anim.mix(0xFFAEB8C4, 0xFF0B0E14, k), t));
+			float k = approachIn(knob, item.key, item.on ? 1f : 0f, 16f);
+			drawSwitch(graphics, x + w - 6f - 20f, y + (ROW - 11f) * 0.5f, k, hot, t);
+			right -= 24f;
 		}
-		float right = x + w - 6f - (item.on != null ? 20f : 0f);
 		if (item.chip != null && !item.chip.isEmpty()) {
-			float cw = width(font, item.chip) + 8f;
+			float cw = width(font, item.chip) + 10f;
 			float cx = right - cw;
-			GuiDraw.roundedFine(graphics, cx, y + 3f, cw, ROW - 6f, 3f, Anim.fade(0x14FFFFFF, t));
-			text(graphics, font, item.chip, cx + 4f, y + 3f, ROW - 6f, Anim.fade(MUTED, t));
+			GuiDraw.roundedFine(graphics, cx, y + 3f, cw, ROW - 6f, (ROW - 6f) * 0.5f, Anim.fade(MaterialPalette.surfaceHighest, t));
+			text(graphics, font, item.chip, cx + 5f, y + 3f, ROW - 6f, Anim.fade(MaterialPalette.onSurfaceVariant, t));
 			right = cx - 4f;
 		}
 		boolean lit = item.on == null || item.on;
-		text(graphics, font, fit(font, item.label, Math.max(8f, right - textX)), textX, y, ROW, Anim.fade(lit ? TEXT : MUTED, t));
+		int ink = chosen ? MaterialPalette.onSecondaryContainer : (lit ? MaterialPalette.onSurface : MaterialPalette.onSurfaceVariant);
+		text(graphics, font, fit(font, item.label, Math.max(8f, right - textX)), textX, y, ROW, Anim.fade(ink, t));
 		rowHits.add(new RowHit(item, x, y, w, ROW));
 		Runnable click = item.left != null ? item.left : (item.mod != null ? () -> select(item.mod.name()) : null);
 		if (click != null) {
 			screen.clickHit(x, y, w, ROW, click);
 		}
+	}
+
+	/**
+	 * Material 3 switch. Off: outlined track, small outline-colored thumb.
+	 * On: primary track, bigger on-primary thumb. The thumb grows as it slides.
+	 */
+	private static void drawSwitch(GuiGraphicsExtractor graphics, float x, float y, float k, boolean hot, float t) {
+		float w = 20f;
+		float h = 11f;
+		float half = h * 0.5f;
+		int track = Anim.mix(MaterialPalette.surfaceHighest, MaterialPalette.primary, k);
+		GuiDraw.roundedFine(graphics, x, y, w, h, half, Anim.fade(track, t));
+		if (k < 0.99f) {
+			GuiDraw.roundedOutline(graphics, x, y, w, h, half, Anim.fade(MaterialPalette.outline, (1f - k) * t), 1f);
+		}
+		float radius = 2.4f + 1.6f * k + (hot ? 0.4f : 0f);
+		float cx = x + half + k * (w - h);
+		int thumb = Anim.mix(MaterialPalette.outline, MaterialPalette.onPrimary, k);
+		GuiDraw.circle(graphics, cx, y + half, radius, Anim.fade(thumb, t));
 	}
 
 	private static void drawSettings(StrayScreen screen, GuiGraphicsExtractor graphics, Font font, int mouseX, int mouseY, float t) {
@@ -435,23 +489,21 @@ final class HyprMenu {
 		float x = setX + PAD + 2f;
 		float y = setY + PAD;
 		float w = setW - PAD * 2f - 4f;
-		float st = ease(selT) * t;
-		float lift = (1f - ease(selT)) * 5f;
+		float st = curve(EMPHASIZED_DECEL, selT) * t;
+		float lift = (1f - curve(EMPHASIZED_DECEL, selT)) * 8f;
 		if (mod == null) {
-			text(graphics, font, "right click a module", x, y, 10f, Anim.fade(MUTED, t));
+			text(graphics, font, "Right click a module", x, y, 12f, Anim.fade(MaterialPalette.onSurfaceVariant, t));
 			return;
 		}
-		String path = label(mod.column()) + " / " + label(mod.name()).replace(' ', '-');
-		text(graphics, font, fit(font, path, w), x, y + lift, 10f, Anim.fade(MUTED, st));
-		Component title = ClickGui.styled(ClickGui.display(mod.name()));
-		GuiDraw.text(graphics, font, title, x, y + 13f + lift, 1.25f, Anim.fade(TEXT, st), false);
+		text(graphics, font, fit(font, ClickGui.display(mod.column()), w), x, y + lift, 10f, Anim.fade(MaterialPalette.primary, st));
+		title(graphics, font, fit(font, ClickGui.display(mod.name()), w), x, y + 12f + lift, Anim.fade(MaterialPalette.onSurface, st));
 		float lineY = y + 30f;
-		GuiDraw.fill(graphics, x, lineY, w, 1f, Anim.fade(0x14FFFFFF, t));
+		GuiDraw.fill(graphics, x, lineY, w, 1f, Anim.fade(MaterialPalette.outlineVariant, t));
 
 		float bodyY = lineY + 6f;
 		float bodyH = setY + setH - PAD - bodyY;
 		if (!ClickGui.moduleHasSettings(mod)) {
-			text(graphics, font, "no settings for this one", x, bodyY, ROW, Anim.fade(MUTED, st));
+			text(graphics, font, "No settings for this one", x, bodyY, ROW, Anim.fade(MaterialPalette.onSurfaceVariant, st));
 			return;
 		}
 		float content = ClickGui.moduleSettingsHeight(screen, mod);
@@ -494,7 +546,7 @@ final class HyprMenu {
 			for (int i = 0; i < ClickGui.BIND_LABEL.length; i++) {
 				int which = ClickGui.BIND_WHICH[i];
 				String chip = screen.clickBindListening(which)
-					? "press a key"
+					? "Press a key"
 					: OdinClicks.keyLabel(OdinClicks.parseKey(ClickGui.bindKey(which)));
 				out.add(new Item("bind:" + which, ClickGui.BIND_LABEL[i], null, chip, () -> screen.clickListenBind(which), null));
 			}
@@ -511,7 +563,7 @@ final class HyprMenu {
 					current.commandShortcutsPassArgs = !current.commandShortcutsPassArgs;
 					UnloadState.markDirty();
 				}, null));
-				out.add(new Item("keys:edit", "Edit shortcuts", null, "open", () ->
+				out.add(new Item("keys:edit", "Edit shortcuts", null, "Open", () ->
 					Minecraft.getInstance().setScreen(new CommandShortcutScreen(screen)), null));
 			}
 			return out;
@@ -549,11 +601,29 @@ final class HyprMenu {
 		if (((color >>> 24) & 0xFF) < 8) {
 			return;
 		}
-		GuiDraw.text(graphics, font, ClickGui.styled(value), x, y + (h - font.lineHeight) * 0.5f + 1f, color, false);
+		GuiDraw.text(graphics, font, body(value), x, y + (h - font.lineHeight) * 0.5f + 1f, color, false);
+	}
+
+	private static void title(GuiGraphicsExtractor graphics, Font font, String value, float x, float y, int color) {
+		if (((color >>> 24) & 0xFF) < 8) {
+			return;
+		}
+		GuiDraw.text(graphics, font, Component.literal(value).withStyle(MenuFont.TITLE), x, y, color, false);
+	}
+
+	private static void glyph(GuiGraphicsExtractor graphics, Font font, String code, float x, float y, float h, int color) {
+		if (((color >>> 24) & 0xFF) < 8) {
+			return;
+		}
+		GuiDraw.text(graphics, font, Component.literal(code).withStyle(MenuFont.ICON), x, y + (h - font.lineHeight) * 0.5f, color, false);
+	}
+
+	private static Component body(String value) {
+		return Component.literal(value == null ? "" : value).withStyle(MenuFont.BODY);
 	}
 
 	private static float width(Font font, String value) {
-		return font.width(ClickGui.styled(value));
+		return font.width(body(value));
 	}
 
 	private static String fit(Font font, String value, float max) {
@@ -564,75 +634,19 @@ final class HyprMenu {
 			return value;
 		}
 		String trimmed = value;
-		while (trimmed.length() > 1 && width(font, trimmed + "..") > max) {
+		while (trimmed.length() > 1 && width(font, trimmed + "...") > max) {
 			trimmed = trimmed.substring(0, trimmed.length() - 1);
 		}
-		return trimmed + "..";
+		return trimmed + "...";
 	}
 
 	private static String label(String id) {
-		return id == null ? "" : id.toLowerCase(Locale.ROOT);
+		return ClickGui.display(id);
 	}
 
-	/** 9x9 pixel icon per category, one GUI pixel per cell so it stays crisp. */
-	private static void icon(GuiGraphicsExtractor graphics, String id, float x, float y, int color) {
-		String[] rows = ICONS.get(id);
-		if (rows == null) {
-			GuiDraw.circle(graphics, x + 4.5f, y + 4.5f, 2f, color);
-			return;
-		}
-		float ox = Math.round(x);
-		float oy = Math.round(y);
-		for (int r = 0; r < rows.length; r++) {
-			String line = rows[r];
-			int run = -1;
-			for (int c = 0; c <= line.length(); c++) {
-				boolean on = c < line.length() && line.charAt(c) == '#';
-				if (on && run < 0) {
-					run = c;
-				} else if (!on && run >= 0) {
-					GuiDraw.fill(graphics, ox + run, oy + r, c - run, 1f, color);
-					run = -1;
-				}
-			}
-		}
+	private static int withAlpha(int color, int alpha) {
+		return (alpha << 24) | (color & 0x00FFFFFF);
 	}
-
-	private static final Map<String, String[]> ICONS = Map.ofEntries(
-		Map.entry("World", new String[]{
-			"..#####..", ".#..#..#.", "#...#...#", "#########", "#...#...#",
-			"#########", "#...#...#", ".#..#..#.", "..#####.."}),
-		Map.entry("Visuals", new String[]{
-			".........", "..#####..", ".#.....#.", "#...#...#", "#..###..#",
-			"#...#...#", ".#.....#.", "..#####..", "........."}),
-		Map.entry("Mobs", new String[]{
-			"..#####..", ".#.....#.", "#.......#", "#.##.##.#", "#.......#",
-			"#.......#", "#.......#", "#.#.#.#.#", ".#.#.#.#."}),
-		Map.entry("Combat", new String[]{
-			"......###", ".....#..#", "....#..#.", "#..#..#..", ".##..#...",
-			".#.##....", "#.#.#....", "##...#...", "#........"}),
-		Map.entry("HUD", new String[]{
-			"#########", "#.......#", "#.###...#", "#.......#", "#.#####.#",
-			"#.......#", "#########", "....#....", "..#####.."}),
-		Map.entry("Mining", new String[]{
-			"..#####..", ".#..#..#.", "#...#...#", "....#....", "....#....",
-			"....#....", "....#....", "....#....", "....#...."}),
-		Map.entry("Farming", new String[]{
-			".##...##.", "#..#.#..#", "#...#...#", ".#..#..#.", "..#.#.#..",
-			"....#....", "....#....", "....#....", "..#####.."}),
-		Map.entry("Menus", new String[]{
-			".........", "#########", ".........", ".........", "#########",
-			".........", ".........", "#####....", "........."}),
-		Map.entry("Keys", new String[]{
-			".........", "#########", "#.#.#.#.#", "#########", "#.#.#.#.#",
-			"#########", "#..###..#", "#########", "........."}),
-		Map.entry("Theme", new String[]{
-			"..#####..", ".#.....#.", "#.#...#.#", "#.......#", "#.#.....#",
-			"#....##.#", ".#..#..#.", "..##...#.", "......#.."}),
-		Map.entry("Player", new String[]{
-			"...###...", "..#...#..", "..#...#..", "...###...", ".........",
-			"..#####..", ".#.....#.", "#.......#", "#########"})
-	);
 
 	// ------------------------------------------------------------- animation
 
@@ -653,49 +667,35 @@ final class HyprMenu {
 		return Mth.clamp((t - delay) / (1f - delay), 0f, 1f);
 	}
 
-	/** Ease-out cubic: fast start, soft landing. */
-	private static float ease(float t) {
-		float inv = 1f - Mth.clamp(t, 0f, 1f);
-		return 1f - inv * inv * inv;
+	/**
+	 * CSS-style cubic bezier from (0,0) to (1,1) with control points
+	 * (x1,y1) and (x2,y2): solve x for t with Newton steps, return y.
+	 */
+	private static float curve(float[] p, float x) {
+		x = Mth.clamp(x, 0f, 1f);
+		if (x <= 0f || x >= 1f) {
+			return x;
+		}
+		float t = x;
+		for (int i = 0; i < 8; i++) {
+			float bx = bez(p[0], p[2], t) - x;
+			float d = bezSlope(p[0], p[2], t);
+			if (Math.abs(bx) < 1e-4f || Math.abs(d) < 1e-6f) {
+				break;
+			}
+			t = Mth.clamp(t - bx / d, 0f, 1f);
+		}
+		return bez(p[1], p[3], t);
 	}
 
-	/** Second border color: the accent turned about 60 degrees back around the hue wheel (cyan to green, like the Hyprland default). */
-	private static int hueShift(int argb) {
-		float r = ((argb >> 16) & 0xFF) / 255f;
-		float g = ((argb >> 8) & 0xFF) / 255f;
-		float b = (argb & 0xFF) / 255f;
-		float max = Math.max(r, Math.max(g, b));
-		float min = Math.min(r, Math.min(g, b));
-		float d = max - min;
-		float hue = 0f;
-		if (d > 0f) {
-			if (max == r) {
-				hue = ((g - b) / d) % 6f;
-			} else if (max == g) {
-				hue = (b - r) / d + 2f;
-			} else {
-				hue = (r - g) / d + 4f;
-			}
-			hue /= 6f;
-		}
-		float sat = max == 0f ? 0f : d / max;
-		hue = (hue + 0.83f) % 1f;
-		float h6 = hue * 6f;
-		float c = max * sat;
-		float x = c * (1f - Math.abs(h6 % 2f - 1f));
-		float m = max - c;
-		float[] rgb = switch ((int) h6) {
-			case 0 -> new float[]{c, x, 0f};
-			case 1 -> new float[]{x, c, 0f};
-			case 2 -> new float[]{0f, c, x};
-			case 3 -> new float[]{0f, x, c};
-			case 4 -> new float[]{x, 0f, c};
-			default -> new float[]{c, 0f, x};
-		};
-		int ri = Math.round((rgb[0] + m) * 255f);
-		int gi = Math.round((rgb[1] + m) * 255f);
-		int bi = Math.round((rgb[2] + m) * 255f);
-		return (argb & 0xFF000000) | (ri << 16) | (gi << 8) | bi;
+	private static float bez(float a, float b, float t) {
+		float u = 1f - t;
+		return 3f * u * u * t * a + 3f * u * t * t * b + t * t * t;
+	}
+
+	private static float bezSlope(float a, float b, float t) {
+		float u = 1f - t;
+		return 3f * u * u * a + 6f * u * t * (b - a) + 3f * t * t * (1f - b);
 	}
 
 	private static boolean contains(double x, double y, float rx, float ry, float rw, float rh) {

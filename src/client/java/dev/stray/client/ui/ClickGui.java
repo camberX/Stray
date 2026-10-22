@@ -112,11 +112,9 @@ public final class ClickGui {
 		Font font = Minecraft.getInstance().font;
 		pointer(mouseX, mouseY);
 		if (hypr()) {
+			// No array list here: it sat on top of the tiled windows.
 			HyprMenu.draw(screen, graphics, font, mouseX, mouseY);
 			screen.clickPicker(graphics, font);
-			if (StrayConfig.get().arrayList) {
-				ArrayListHud.draw(graphics, font, screen.width);
-			}
 			return;
 		}
 		if (imgui()) {
