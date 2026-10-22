@@ -157,6 +157,8 @@ public final class PartyFinderStats {
 		Integer blood = bloodMobs(member);
 		int murkbat = shardLevel(member, "rekindle", RARE_SYPHON);
 		int prince = shardLevel(member, "reborn", EPIC_SYPHON);
+		int mimic = shardLevel(member, "faker", EPIC_SYPHON);
+		int folf = shardLevel(member, "catacombs_cap", RARE_SYPHON);
 		List<ProfileViewer.SlotItem> armor = ProfileViewer.storedItems(member, "inv_armor", "armor");
 		boolean apiOff = armor.isEmpty() && mp <= 0;
 
@@ -185,7 +187,9 @@ public final class PartyFinderStats {
 		));
 		lines.add(stats(
 			label("Murkbat", ChatFormatting.GOLD), value(shard(murkbat)),
-			label("Prince", ChatFormatting.YELLOW), value(shard(prince))
+			label("Prince", ChatFormatting.YELLOW), value(shard(prince)),
+			label("Mimic", ChatFormatting.LIGHT_PURPLE), value(shard(mimic)),
+			label("Folf", ChatFormatting.AQUA), value(shard(folf))
 		));
 		lines.add(pets(member));
 		lines.add(stats(
@@ -351,7 +355,8 @@ public final class PartyFinderStats {
 
 	/**
 	 * {@code attributes.stacks} stores how many shards were syphoned, not the level.
-	 * Murkbat is Rekindle (rare) and Prince is Reborn (epic).
+	 * Murkbat is Rekindle (rare), Prince is Reborn (epic), Mimic is Faker
+	 * (epic) and Folf is Catacombs Cap (rare).
 	 */
 	private static int shardLevel(JsonObject member, String attribute, int[] cumulative) {
 		JsonObject stacks = object(object(member, "attributes"), "stacks");
