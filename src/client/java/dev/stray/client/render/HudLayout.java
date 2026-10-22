@@ -160,7 +160,28 @@ public final class HudLayout {
 			total += (count > 0 ? DOCK_GAP : 0f) + w;
 			count++;
 		}
-		return new float[]{Math.max(0f, (guiW - total) * 0.5f) + before, DOCK_TOP};
+		String align = StrayConfig.get().hudDockAlign;
+		float start;
+		if ("center".equals(align)) {
+			start = Math.max(0f, (guiW - total) * 0.5f);
+		} else if ("right".equals(align)) {
+			start = Math.max(0f, guiW - MARGIN - total);
+		} else {
+			start = MARGIN;
+		}
+		return new float[]{start + before, DOCK_TOP};
+	}
+
+	public static String dockAlignLabel() {
+		String align = StrayConfig.get().hudDockAlign;
+		return "center".equals(align) ? "Center" : "right".equals(align) ? "Right" : "Left";
+	}
+
+	public static void cycleDockAlign() {
+		StrayConfig config = StrayConfig.get();
+		String align = config.hudDockAlign;
+		config.hudDockAlign = "center".equals(align) ? "right" : "right".equals(align) ? "left" : "center";
+		boxTick = Integer.MIN_VALUE;
 	}
 
 	/** Eases a docked box toward its target once per frame; new arrivals drop in from above. */

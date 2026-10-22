@@ -206,6 +206,9 @@ public class StrayScreen extends Screen {
 			if (this == WATERMARK && "watermark".equals(dropdownOpen)) {
 				return baseRows + StrayConfig.WATERMARK_STYLES.length;
 			}
+			if (this == MUSIC && "music".equals(dropdownOpen)) {
+				return baseRows + StrayConfig.MUSIC_LAYOUTS.length;
+			}
 			if (this == PEST_COOLDOWN) {
 				return baseRows + 1 + (StrayConfig.get().pestLoadoutSwap ? 1 : 0);
 			}
@@ -3801,7 +3804,7 @@ public class StrayScreen extends Screen {
 				toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Name", config.watermarkName, v -> config.watermarkName = v);
 			}
 			case MUSIC -> {
-				y = cycle(graphics, font, ix, y, iw, mouseX, mouseY, "Layout", config.musicLayoutLabel(), config::cycleMusicLayout);
+				y = dropdown(graphics, font, ix, y, iw, mouseX, mouseY, "music", "Layout", StrayConfig.MUSIC_LAYOUT_LABELS, config.musicLayoutIndexOf(), i -> config.setMusicLayout(StrayConfig.MUSIC_LAYOUTS[i]));
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Hide when idle", config.musicHideIdle, v -> config.musicHideIdle = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Song Notification", config.musicChatAnnounce, v -> config.musicChatAnnounce = v);
 				toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Spotify", config.spotifyEnabled, v -> config.spotifyEnabled = v);

@@ -82,6 +82,8 @@ public final class StrayConfig {
 	public java.util.List<String> hudDocked = new java.util.ArrayList<>();
 	/** "stray" or "hypr": look of themed chat. */
 	public String chatStyle = "stray";
+	/** "left", "center" or "right": where the docked HUD row lines up. */
+	public String hudDockAlign = "left";
 	public boolean musicHudEnabled = false;
 	public boolean pipEnabled = false;
 	public String pipWindowId = "";
@@ -1727,7 +1729,16 @@ public final class StrayConfig {
 		return "panel";
 	}
 
-	private static final String[] MUSIC_LAYOUTS = {"card", "compact", "poster", "dock"};
+	public static final String[] MUSIC_LAYOUTS = {"card", "compact", "poster", "dock", "bar"};
+	public static final String[] MUSIC_LAYOUT_LABELS = {"Card", "Compact", "Poster", "Dock", "Bar"};
+
+	public int musicLayoutIndexOf() {
+		return musicLayoutIndex();
+	}
+
+	public void setMusicLayout(String layout) {
+		musicHudLayout = normalizeMusicLayout(layout);
+	}
 
 	public void cycleMusicLayout() {
 		musicHudLayout = MUSIC_LAYOUTS[(musicLayoutIndex() + 1) % MUSIC_LAYOUTS.length];
@@ -1746,6 +1757,7 @@ public final class StrayConfig {
 			case "compact" -> "Compact";
 			case "poster" -> "Poster";
 			case "dock" -> "Dock";
+			case "bar" -> "Bar";
 			default -> "Card";
 		};
 	}
@@ -1773,7 +1785,7 @@ public final class StrayConfig {
 		if ("stacked".equals(key) || "cover".equals(key)) {
 			return "poster";
 		}
-		if ("thin".equals(key) || "banner".equals(key) || "bar".equals(key)) {
+		if ("thin".equals(key) || "banner".equals(key)) {
 			return "dock";
 		}
 		if ("mini".equals(key) || "small".equals(key)) {

@@ -1208,10 +1208,10 @@ public final class ClickGui {
 
 	private static void soft(GuiGraphicsExtractor graphics, float x, float y, float w, float h, int fill) {
 		if (hypr()) {
-			boolean on = fill == accentFill();
-			boolean hot = contains(pointerX, pointerY, x, y, w, h);
-			int paint = on ? MaterialPalette.secondaryContainer : hot ? MaterialPalette.surfaceHighest : MaterialPalette.surfaceHigh;
-			ClickLook.material(graphics, x, y, w, h, HyprMenu.faded(paint), 0);
+			// No pill behind rows: just the Material hover layer.
+			if (contains(pointerX, pointerY, x, y, w, h)) {
+				ClickLook.material(graphics, x, y, w, h, HyprMenu.faded(MaterialPalette.withAlpha(MaterialPalette.onSurface, 0x12)), 0);
+			}
 			return;
 		}
 		if (imgui()) {

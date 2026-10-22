@@ -153,6 +153,23 @@ public class HudEditorScreen extends Screen {
 		float sy = dockY + 1;
 		GuiDraw.pill(graphics, sx, sy, sw, sh, docked ? Theme.ACCENT : Theme.TRACK);
 		GuiDraw.circle(graphics, docked ? sx + sw - 5 : sx + 5, sy + sh * 0.5f, 3.2f, docked ? Theme.WINDOW_SOLID : Theme.OFF);
+		if (docked) {
+			String align = "Align " + HudLayout.dockAlignLabel();
+			alignW = GuiDraw.smallWidth(font, align) + 10;
+			alignX = sx - 8 - alignW;
+			boolean hover = GuiDraw.hovered(mouseX, mouseY, alignX, dockY, alignW, DOCK_H);
+			ClickLook.outside(graphics, alignX, dockY, alignW, DOCK_H, 3, hover ? Theme.CARD_HOVER : Theme.CARD, hover ? Theme.ACCENT : Theme.LINE);
+			GuiDraw.small(graphics, font, align, alignX + 5, dockY + 2, Theme.TEXT);
+		} else {
+			alignW = 0;
+		}
+	}
+
+	private float alignX;
+	private float alignW;
+
+	private boolean onAlign(double mouseX, double mouseY) {
+		return selected != null && alignW > 0 && GuiDraw.hovered(mouseX, mouseY, alignX, dockY, alignW, DOCK_H);
 	}
 
 	private boolean onDock(double mouseX, double mouseY) {
@@ -190,6 +207,10 @@ public class HudEditorScreen extends Screen {
 		int guiH = minecraft.getWindow().getGuiScaledHeight();
 		if (onDone(event.x(), event.y(), guiW)) {
 			done();
+			return true;
+		}
+		if (onAlign(event.x(), event.y())) {
+			HudLayout.cycleDockAlign();
 			return true;
 		}
 		if (onDock(event.x(), event.y())) {

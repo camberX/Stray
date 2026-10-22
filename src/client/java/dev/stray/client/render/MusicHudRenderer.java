@@ -6,6 +6,8 @@ import dev.stray.client.media.MediaSession;
 import dev.stray.client.media.NowPlaying;
 import dev.stray.client.media.SpotifySmtc;
 import dev.stray.client.ui.Anim;
+import dev.stray.client.ui.MaterialPalette;
+import dev.stray.client.ui.MenuFont;
 import dev.stray.client.ui.HudEditorScreen;
 import dev.stray.client.ui.Theme;
 import net.minecraft.client.DeltaTracker;
@@ -14,6 +16,7 @@ import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.ChatScreen;
 import net.minecraft.client.input.MouseButtonEvent;
+import net.minecraft.network.chat.Component;
 
 public final class MusicHudRenderer {
 	public static final float WIDTH = 248;
@@ -50,6 +53,9 @@ public final class MusicHudRenderer {
 	}
 
 	public static float drawWidth() {
+		if (layout() == Layout.BAR) {
+			return barWidth(Minecraft.getInstance().font, resolveTrack());
+		}
 		return layout().width();
 	}
 
@@ -182,6 +188,11 @@ public final class MusicHudRenderer {
 			graphics.pose().scale(scale, scale);
 		}
 
+		if (layout == Layout.BAR) {
+			drawBarLayout(graphics, font, x, y, scale, track, live, chat, editor);
+			graphics.pose().popMatrix();
+			return;
+		}
 		float radius = layout == Layout.COMPACT || layout == Layout.DOCK ? 5 : 6;
 		HudChrome.panel(graphics, 0, 0, width, h, radius, Theme.WINDOW, Theme.LINE);
 
@@ -424,6 +435,91 @@ public final class MusicHudRenderer {
 		return size;
 	}
 
+	// ---- Bar: the Hyprland watermark's pill bar, for sitting next to it
+
+	private static final float BAR_H = 18f;
+	private static final float BAR_PAD = 3f;
+	private static final float BAR_PILL = BAR_H - BAR_PAD * 2f;
+	private static final float BAR_TEXT_MAX = 150f;
+	private static final float BAR_CONTROLS = 46f;
+	private static final String NOTE = "\uE405";
+
+	private static Component barText(String value) {
+		return Component.literal(value == null ? "" : value).withStyle(MenuFont.HYPR);
+	}
+
+	private static String barLine(NowPlaying track, boolean live) {
+		if (!live) {
+			return HudLayout.editorOpen() ? "Music" : "Nothing playing";
+		}
+		String line = track.title();
+		if (!track.artistLine().isBlank()) {
+			line = line + "  ·  " + track.artistLine();
+		}
+		return line;
+	}
+
+	private static float barWidth(Font font, NowPlaying track) {
+		boolean live = track.present();
+		float text = Math.min(BAR_TEXT_MAX, font.width(barText(barLine(track, live))));
+		float trackPill = 4f + BAR_PILL - 2f + 5f + text + 7f + BAR_CONTROLS * reveal;
+		return BAR_PAD + BAR_PILL + 3f + trackPill + BAR_PAD;
+	}
+
+	private static void drawBarLayout(
+		GuiGraphicsExtractor graphics,
+		Font font,
+		float ox,
+		float oy,
+		float scale,
+		NowPlaying track,
+		boolean live,
+		boolean chat,
+		boolean editor
+	) {
+		MaterialPalette.refresh();
+		float w = barWidth(font, track);
+		float r = BAR_H * 0.5f;
+		GuiFrostBlur.blitWindow(graphics, 0, 0, w, BAR_H, r);
+		GuiDraw.roundedFine(graphics, 0, 0, w, BAR_H, r, MaterialPalette.withAlpha(MaterialPalette.surface, 0xD8));
+		float pr = BAR_PILL * 0.5f;
+
+		// note pill
+		GuiDraw.roundedFine(graphics, BAR_PAD, BAR_PAD, BAR_PILL, BAR_PILL, pr, MaterialPalette.primary);
+		float iconY = Math.round(BAR_PAD + (BAR_PILL - font.lineHeight) * 0.5f);
+		GuiDraw.text(graphics, font, Component.literal(track.playing() ? NOTE : PAUSE).withStyle(MenuFont.ICON), BAR_PAD + 1.5f, iconY, MaterialPalette.onPrimary, false);
+
+		// track pill: cover, text, progress
+		float px = BAR_PAD + BAR_PILL + 3f;
+		float pw = w - px - BAR_PAD;
+		GuiDraw.roundedFine(graphics, px, BAR_PAD, pw, BAR_PILL, pr, MaterialPalette.surfaceLow);
+		float cover = BAR_PILL - 2f;
+		float cx = px + 2f;
+		CoverArt.bind(track);
+		if (live && CoverArt.ready()) {
+			int tex = CoverArt.size();
+			GuiDraw.roundedBlit(graphics, CoverArt.id(), cx, BAR_PAD + 1f, cover, cover, cover * 0.5f, tex, MaterialPalette.surfaceLow);
+		} else {
+			GuiDraw.roundedFine(graphics, cx, BAR_PAD + 1f, cover, cover, cover * 0.5f, MaterialPalette.surfaceHighest);
+		}
+		float tx = cx + cover + 5f;
+		float textMax = pw - (tx - px) - 7f - BAR_CONTROLS * reveal;
+		String line = GuiDraw.ellipsize(font, barLine(track, live), textMax, false);
+		float textY = Math.round(GuiDraw.middle(BAR_PAD, BAR_PILL));
+		GuiDraw.text(graphics, font, barText(line), tx, textY, live ? MaterialPalette.onSurface : MaterialPalette.onSurfaceVariant, false);
+		if (live) {
+			float progress = progressOf(track);
+			float lineW = pw - (tx - px) - 8f;
+			GuiDraw.fill(graphics, tx, BAR_PAD + BAR_PILL - 2f, lineW, 1f, MaterialPalette.outlineVariant);
+			GuiDraw.fill(graphics, tx, BAR_PAD + BAR_PILL - 2f, lineW * progress, 1f, MaterialPalette.primary);
+		}
+		if (live) {
+			drawControls(graphics, font, ox, oy, scale, w - 2f, BAR_PAD + (BAR_PILL - 10f) * 0.5f, chat, editor, track, false);
+		} else {
+			clearControlHits();
+		}
+	}
+
 	private static Rect screenRect(float originX, float originY, float scale, float lx, float ly, float lw, float lh) {
 		return new Rect(originX + lx * scale, originY + ly * scale, lw * scale, lh * scale);
 	}
@@ -467,7 +563,9 @@ public final class MusicHudRenderer {
 		CARD("Card", 248, 46, 36, true),
 		COMPACT("Compact", 196, 26, 22, false),
 		POSTER("Poster", 132, 148, 120, true),
-		DOCK("Dock", 300, 30, 26, false);
+		DOCK("Dock", 300, 30, 26, false),
+		/** Watermark-height bar of pills (Hyprland look); width follows the track. */
+		BAR("Bar", 200, 18, 18, false);
 
 		private final String label;
 		private final float width;
