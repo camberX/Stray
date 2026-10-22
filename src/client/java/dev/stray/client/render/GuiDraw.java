@@ -599,6 +599,17 @@ public final class GuiDraw {
 			fillSmooth(graphics, x + w - px, y + px, px, h - 2f * px, color);
 			return;
 		}
+		// Snap the outer edges to whole screen pixels: a 1px line that falls
+		// between two pixel rows otherwise covers neither and disappears.
+		float left = snapX(graphics, x);
+		float top = snapY(graphics, y);
+		float right = snapX(graphics, x + w);
+		float bottom = snapY(graphics, y + h);
+		w = right - left;
+		h = bottom - top;
+		x = left;
+		y = top;
+		r = Math.min(r, Math.min(w, h) / 2f);
 		boolean ok = sdfCorner(graphics, x, y, r, 0, color, true)
 			&& sdfCorner(graphics, x + w - r, y, r, 1, color, true)
 			&& sdfCorner(graphics, x + w - r, y + h - r, r, 2, color, true)
@@ -611,6 +622,22 @@ public final class GuiDraw {
 		fillSmooth(graphics, x + r, y + h - px, w - 2f * r, px, color);
 		fillSmooth(graphics, x, y + r, px, h - 2f * r, color);
 		fillSmooth(graphics, x + w - px, y + r, px, h - 2f * r, color);
+	}
+
+	/** Rounds a local x to the nearest screen pixel through the current pose. */
+	private static float snapX(GuiGraphicsExtractor graphics, float x) {
+		var pose = graphics.pose();
+		float gui = 1f / pixel();
+		float sx = (pose.m00() * x + pose.m20()) * gui;
+		return pose.m00() == 0f ? x : (Math.round(sx) / gui - pose.m20()) / pose.m00();
+	}
+
+	/** Rounds a local y to the nearest screen pixel through the current pose. */
+	private static float snapY(GuiGraphicsExtractor graphics, float y) {
+		var pose = graphics.pose();
+		float gui = 1f / pixel();
+		float sy = (pose.m11() * y + pose.m21()) * gui;
+		return pose.m11() == 0f ? y : (Math.round(sy) / gui - pose.m21()) / pose.m11();
 	}
 
 	private static void cornerFine(GuiGraphicsExtractor graphics, float x, float y, float radius, float u, float v, int color) {
