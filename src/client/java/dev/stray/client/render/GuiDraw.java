@@ -512,6 +512,52 @@ public final class GuiDraw {
 		return true;
 	}
 
+	private static com.mojang.blaze3d.pipeline.RenderPipeline coverPipeline;
+
+	/**
+	 * Album art: supersampled and masked to a rounded square in the shader, so
+	 * a 256px cover shrunk into a HUD stays smooth. Returns false if unavailable.
+	 */
+	public static boolean coverBlit(GuiGraphicsExtractor graphics, Identifier id, float x, float y, float size, float radius) {
+		if (size <= 0f || id == null || !(graphics instanceof dev.stray.client.mixin.GuiGraphicsExtractorInvoker invoker)) {
+			return false;
+		}
+		Minecraft client = Minecraft.getInstance();
+		net.minecraft.client.renderer.texture.AbstractTexture texture = client.getTextureManager().getTexture(id);
+		com.mojang.blaze3d.textures.GpuTextureView view = texture == null ? null : texture.getTextureView();
+		if (view == null) {
+			return false;
+		}
+		ensureCoverPipeline();
+		int r = Math.round(Mth.clamp(radius / size, 0f, 0.5f) * 255f);
+		int color = 0xFF000000 | (r << 16);
+		com.mojang.blaze3d.textures.GpuSampler sampler = com.mojang.blaze3d.systems.RenderSystem.getSamplerCache()
+			.getClampToEdge(com.mojang.blaze3d.textures.FilterMode.LINEAR);
+		graphics.pose().pushMatrix();
+		graphics.pose().translate(x, y);
+		graphics.pose().scale(size, size);
+		invoker.stray$innerBlit(coverPipeline, view, sampler, 0, 0, 1, 1, 0f, 1f, 0f, 1f, color);
+		graphics.pose().popMatrix();
+		return true;
+	}
+
+	private static synchronized void ensureCoverPipeline() {
+		if (coverPipeline != null) {
+			return;
+		}
+		Identifier shader = Stray.id("core/gui_cover_blit");
+		coverPipeline = com.mojang.blaze3d.pipeline.RenderPipeline.builder()
+			.withLocation(Stray.id("pipeline/gui_cover_blit"))
+			.withVertexShader(shader)
+			.withFragmentShader(shader)
+			.withSampler("Sampler0")
+			.withUniform("DynamicTransforms", com.mojang.blaze3d.shaders.UniformType.UNIFORM_BUFFER)
+			.withUniform("Projection", com.mojang.blaze3d.shaders.UniformType.UNIFORM_BUFFER)
+			.withColorTargetState(new com.mojang.blaze3d.pipeline.ColorTargetState(com.mojang.blaze3d.pipeline.BlendFunction.TRANSLUCENT))
+			.withVertexFormat(com.mojang.blaze3d.vertex.DefaultVertexFormat.POSITION_TEX_COLOR, com.mojang.blaze3d.vertex.VertexFormat.Mode.QUADS)
+			.build();
+	}
+
 	private static synchronized void ensureSdfPipeline() {
 		if (sdfPipeline != null) {
 			return;
@@ -544,7 +590,7 @@ public final class GuiDraw {
 		if (w <= 0 || h <= 0 || (color >>> 24) == 0) {
 			return;
 		}
-		float px = pixel();
+		float px = pixel() / poseScale(graphics);
 		float r = Math.min(Math.max(0f, radius), Math.min(w, h) / 2f);
 		if (r < 0.75f) {
 			fillSmooth(graphics, x, y, w, px, color);
@@ -909,7 +955,14 @@ public final class GuiDraw {
 	}
 
 	public static void text(GuiGraphicsExtractor graphics, Font font, Component value, float x, float y, int color, boolean shadow) {
-		graphics.text(font, value, Math.round(x), Math.round(y), hudInk(color), hudShadow(shadow));
+		graphics.text(font, MenuFont.crisp(value, poseScale(graphics)), Math.round(x), Math.round(y), hudInk(color), hudShadow(shadow));
+	}
+
+	/** How much the current pose scales things, so text and hairlines can match real pixels. */
+	public static float poseScale(GuiGraphicsExtractor graphics) {
+		var pose = graphics.pose();
+		float s = (float) Math.sqrt(pose.m00() * pose.m00() + pose.m01() * pose.m01());
+		return s > 0.0001f ? s : 1f;
 	}
 
 	public static void text(GuiGraphicsExtractor graphics, Font font, Component value, float x, float y, float scale, int color, boolean shadow) {
@@ -920,7 +973,7 @@ public final class GuiDraw {
 		graphics.pose().pushMatrix();
 		graphics.pose().translate(x, y);
 		graphics.pose().scale(scale, scale);
-		graphics.text(font, value, 0, 0, hudInk(color), hudShadow(shadow));
+		graphics.text(font, MenuFont.crisp(value, poseScale(graphics)), 0, 0, hudInk(color), hudShadow(shadow));
 		graphics.pose().popMatrix();
 	}
 

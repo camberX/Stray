@@ -36,15 +36,48 @@ public final class MenuFont {
 	 * smoothing, so a glyph is only crisp when its texels match screen pixels:
 	 * pick the copy for the current GUI scale.
 	 */
-	private static final Style[][] HYPR_SCALED = new Style[3][6];
+	private static final Style[][] HYPR_SCALED = new Style[4][6];
+	/** Every scaled copy (and the base icon font) mapped to its family, for {@link #crisp}. */
+	private static final java.util.Map<FontDescription, Integer> FAMILY = new java.util.HashMap<>();
 
 	static {
-		String[] names = {"hypr", "hypr_small", "hypr_title"};
+		String[] names = {"hypr", "hypr_small", "hypr_title", "nl_icon"};
 		for (int f = 0; f < names.length; f++) {
 			for (int s = 0; s < 6; s++) {
-				HYPR_SCALED[f][s] = Style.EMPTY.withFont(new FontDescription.Resource(Stray.id(names[f] + "_" + (s + 1))));
+				FontDescription desc = new FontDescription.Resource(Stray.id(names[f] + "_" + (s + 1)));
+				HYPR_SCALED[f][s] = Style.EMPTY.withFont(desc);
+				FAMILY.put(desc, f);
 			}
 		}
+		FAMILY.put(new FontDescription.Resource(ICON_ID), 3);
+		FAMILY.put(new FontDescription.Resource(Stray.id("hypr")), 0);
+		FAMILY.put(new FontDescription.Resource(Stray.id("hypr_small")), 1);
+		FAMILY.put(new FontDescription.Resource(Stray.id("hypr_title")), 2);
+	}
+
+	/**
+	 * Swaps a TTF label to the copy rasterized for where it actually lands:
+	 * GUI scale times whatever the pose scales it by (HUD element scale, title
+	 * scale). Text drawn at 70% then still maps glyph texels 1:1 to pixels.
+	 */
+	public static Component crisp(Component value, float poseScale) {
+		if (value == null) {
+			return null;
+		}
+		Integer family = FAMILY.get(value.getStyle().getFont());
+		if (family == null) {
+			return value;
+		}
+		net.minecraft.client.Minecraft client = net.minecraft.client.Minecraft.getInstance();
+		double gui = client == null || client.getWindow() == null ? 2.0 : client.getWindow().getGuiScale();
+		int step = (int) Math.round(gui * poseScale);
+		step = Math.max(1, Math.min(6, step));
+		Style target = HYPR_SCALED[family][step - 1];
+		if (target.getFont().equals(value.getStyle().getFont())) {
+			return value;
+		}
+		FontDescription font = target.getFont();
+		return value.copy().withStyle(style -> style.withFont(font));
 	}
 
 	public static Style hyprStyle(int family) {

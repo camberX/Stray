@@ -425,8 +425,10 @@ public final class MusicHudRenderer {
 		if (CoverArt.ready()) {
 			int tex = CoverArt.size();
 			if (HudChrome.click()) {
-				GuiDraw.blit(graphics, CoverArt.id(), x, y, size, size, 0f, 0f, tex, tex, tex, tex);
-			} else {
+				if (!GuiDraw.coverBlit(graphics, CoverArt.id(), x, y, size, 0f)) {
+					GuiDraw.blit(graphics, CoverArt.id(), x, y, size, size, 0f, 0f, tex, tex, tex, tex);
+				}
+			} else if (!GuiDraw.coverBlit(graphics, CoverArt.id(), x, y, size, Math.min(5, size * 0.2f))) {
 				GuiDraw.roundedBlit(graphics, CoverArt.id(), x, y, size, size, Math.min(5, size * 0.2f), tex, Theme.HUD_CARD);
 			}
 			return size;
@@ -498,7 +500,9 @@ public final class MusicHudRenderer {
 		CoverArt.bind(track);
 		if (live && CoverArt.ready()) {
 			int tex = CoverArt.size();
-			GuiDraw.roundedBlit(graphics, CoverArt.id(), cx, BAR_PAD + 1f, cover, cover, cover * 0.5f, tex, MaterialPalette.surfaceLow);
+			if (!GuiDraw.coverBlit(graphics, CoverArt.id(), cx, BAR_PAD + 1f, cover, cover * 0.5f)) {
+				GuiDraw.roundedBlit(graphics, CoverArt.id(), cx, BAR_PAD + 1f, cover, cover, cover * 0.5f, tex, MaterialPalette.surfaceLow);
+			}
 		} else {
 			GuiDraw.roundedFine(graphics, cx, BAR_PAD + 1f, cover, cover, cover * 0.5f, MaterialPalette.surfaceHighest);
 		}
