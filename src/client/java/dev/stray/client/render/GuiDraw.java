@@ -599,17 +599,6 @@ public final class GuiDraw {
 			fillSmooth(graphics, x + w - px, y + px, px, h - 2f * px, color);
 			return;
 		}
-		// Snap the outer edges to whole screen pixels: a 1px line that falls
-		// between two pixel rows otherwise covers neither and disappears.
-		float left = snapX(graphics, x);
-		float top = snapY(graphics, y);
-		float right = snapX(graphics, x + w);
-		float bottom = snapY(graphics, y + h);
-		w = right - left;
-		h = bottom - top;
-		x = left;
-		y = top;
-		r = Math.min(r, Math.min(w, h) / 2f);
 		boolean ok = sdfCorner(graphics, x, y, r, 0, color, true)
 			&& sdfCorner(graphics, x + w - r, y, r, 1, color, true)
 			&& sdfCorner(graphics, x + w - r, y + h - r, r, 2, color, true)
@@ -618,26 +607,43 @@ public final class GuiDraw {
 			roundedOutline(graphics, x, y, w, h, radius, color, 1f);
 			return;
 		}
-		fillSmooth(graphics, x + r, y, w - 2f * r, px, color);
-		fillSmooth(graphics, x + r, y + h - px, w - 2f * r, px, color);
-		fillSmooth(graphics, x, y + r, px, h - 2f * r, color);
-		fillSmooth(graphics, x + w - px, y + r, px, h - 2f * r, color);
+		// Straight sides through the same shader: a radius-thick strip whose
+		// outer edge is the 1px line, so no side can round away to nothing.
+		sdfEdge(graphics, x + r, y, w - 2f * r, r, 0, color);
+		sdfEdge(graphics, x + w - r, y + r, r, h - 2f * r, 1, color);
+		sdfEdge(graphics, x + r, y + h - r, w - 2f * r, r, 2, color);
+		sdfEdge(graphics, x, y + r, r, h - 2f * r, 3, color);
 	}
 
-	/** Rounds a local x to the nearest screen pixel through the current pose. */
-	private static float snapX(GuiGraphicsExtractor graphics, float x) {
-		var pose = graphics.pose();
-		float gui = 1f / pixel();
-		float sx = (pose.m00() * x + pose.m20()) * gui;
-		return pose.m00() == 0f ? x : (Math.round(sx) / gui - pose.m20()) / pose.m00();
-	}
-
-	/** Rounds a local y to the nearest screen pixel through the current pose. */
-	private static float snapY(GuiGraphicsExtractor graphics, float y) {
-		var pose = graphics.pose();
-		float gui = 1f / pixel();
-		float sy = (pose.m11() * y + pose.m21()) * gui;
-		return pose.m11() == 0f ? y : (Math.round(sy) / gui - pose.m21()) / pose.m11();
+	/** One straight side of a hairline. side: 0 top, 1 right, 2 bottom, 3 left. */
+	private static void sdfEdge(GuiGraphicsExtractor graphics, float x, float y, float w, float h, int side, int color) {
+		if (w <= 0f || h <= 0f || !(graphics instanceof dev.stray.client.mixin.GuiGraphicsExtractorInvoker invoker)) {
+			return;
+		}
+		Minecraft client = Minecraft.getInstance();
+		net.minecraft.client.renderer.texture.AbstractTexture texture = client.getTextureManager().getTexture(WHITE);
+		com.mojang.blaze3d.textures.GpuTextureView view = texture == null ? null : texture.getTextureView();
+		if (view == null) {
+			return;
+		}
+		ensureSdfPipeline();
+		float u0 = 0f;
+		float u1 = 0f;
+		float v0 = 0f;
+		float v1 = 0f;
+		switch (side) {
+			case 0 -> v0 = -1f;
+			case 1 -> u1 = -1f;
+			case 2 -> v1 = -1f;
+			default -> u0 = -1f;
+		}
+		com.mojang.blaze3d.textures.GpuSampler sampler = com.mojang.blaze3d.systems.RenderSystem.getSamplerCache()
+			.getClampToEdge(com.mojang.blaze3d.textures.FilterMode.NEAREST);
+		graphics.pose().pushMatrix();
+		graphics.pose().translate(x, y);
+		graphics.pose().scale(w, h);
+		invoker.stray$innerBlit(sdfPipeline, view, sampler, 0, 0, 1, 1, u0, u1, v0, v1, color);
+		graphics.pose().popMatrix();
 	}
 
 	private static void cornerFine(GuiGraphicsExtractor graphics, float x, float y, float radius, float u, float v, int color) {

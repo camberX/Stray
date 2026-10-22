@@ -421,14 +421,17 @@ public final class HyprMenu {
 			if (!ids[i].equals(category)) {
 				continue;
 			}
+			// Animate relative to the group, so dragging the window moves the
+			// pill with it instead of making it chase the tabs.
+			float relX = tabX[i] - groupX;
 			if (pillToX < 0f) {
-				pillFromX = pillToX = pillX = tabX[i];
+				pillFromX = pillToX = pillX = relX;
 				pillFromW = pillToW = pillW = tabW[i];
 				pillT = 1f;
-			} else if (Math.abs(pillToX - tabX[i]) > 0.1f || Math.abs(pillToW - tabW[i]) > 0.1f) {
+			} else if (Math.abs(pillToX - relX) > 0.1f || Math.abs(pillToW - tabW[i]) > 0.1f) {
 				pillFromX = pillX;
 				pillFromW = pillW;
-				pillToX = tabX[i];
+				pillToX = relX;
 				pillToW = tabW[i];
 				pillT = 0f;
 			}
@@ -442,13 +445,13 @@ public final class HyprMenu {
 			}
 		}
 		if (pillW > 0f) {
-			GuiDraw.roundedFine(graphics, pillX, tabY, pillW, tabH, tabH * 0.5f, Anim.fade(MaterialPalette.primary, t));
+			GuiDraw.roundedFine(graphics, groupX + pillX, tabY, pillW, tabH, tabH * 0.5f, Anim.fade(MaterialPalette.primary, t));
 		}
 		for (int i = 0; i < ids.length; i++) {
 			String id = ids[i];
 			boolean active = id.equals(category);
 			float mid = tabX[i] + tabW[i] * 0.5f;
-			boolean underPill = mid > pillX && mid < pillX + pillW;
+			boolean underPill = mid > groupX + pillX && mid < groupX + pillX + pillW;
 			int ink = underPill ? MaterialPalette.onPrimary : MaterialPalette.onSurfaceVariant;
 			float ix = tabX[i] + 5f;
 			glyph(graphics, font, GLYPHS.getOrDefault(id, TUNE), ix, tabY, tabH, Anim.fade(ink, t));
