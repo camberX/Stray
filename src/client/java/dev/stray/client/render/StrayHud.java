@@ -43,35 +43,65 @@ public final class StrayHud {
 	}
 
 	private static void extractHud(GuiGraphicsExtractor graphics, DeltaTracker delta) {
+		HudChrome.element(null);
 		VanillaHud.extract(graphics, delta);
+		HudChrome.element(null);
 		Hitmarker.extract(graphics, delta);
+		HudChrome.element(null);
 		FarmingHud.extract(graphics, delta);
+		HudChrome.element(null);
 		NametagRenderer.extract(graphics, delta);
+		HudChrome.element(null);
 		PestEspRenderer.extract(graphics);
+		HudChrome.element(null);
 		EntityBoxEsp.extract(graphics, delta);
+		HudChrome.element(null);
 		EntityHealthBars.extract(graphics, delta);
+		HudChrome.element(null);
 		CrystalHollowsRenderer.extract(graphics, delta);
+		HudChrome.element(null);
 		LobbyPings.extract(graphics, delta);
+		HudChrome.element(null);
 		CrystalHollowsMap.extract(graphics, delta);
+		HudChrome.element(null);
 		MetalDetector.extract(graphics, delta);
+		HudChrome.element(null);
 		BlockMarks.extract(graphics, delta);
+		HudChrome.element(null);
 		CommandRings.extract(graphics, delta);
+		HudChrome.element(null);
 		MovementRings.extract(graphics, delta);
+		HudChrome.element(null);
 		WatermarkRenderer.extract(graphics, delta);
+		HudChrome.element(null);
 		ArrayListHud.extract(graphics, delta);
+		HudChrome.element(null);
 		MusicHudRenderer.extract(graphics, delta);
+		HudChrome.element(null);
 		PipHudRenderer.extract(graphics, delta);
+		HudChrome.element(null);
 		TopDownHudRenderer.extract(graphics, delta);
+		HudChrome.element(null);
 		RawmatsHudRenderer.extract(graphics, delta);
+		HudChrome.element(null);
 		PickupLogRenderer.extract(graphics, delta);
+		HudChrome.element(null);
 		InventoryHudRenderer.extract(graphics, delta);
+		HudChrome.element(null);
 		NodeHudRenderer.extract(graphics, delta);
+		HudChrome.element(null);
 		MiningHudRenderer.extract(graphics, delta);
+		HudChrome.element(null);
 		JacobContestHudRenderer.extract(graphics, delta);
+		HudChrome.element(null);
 		ComposterHudRenderer.extract(graphics, delta);
+		HudChrome.element(null);
 		GardenHudRenderer.extract(graphics, delta);
+		HudChrome.element(null);
 		LassoReel.extract(graphics);
+		HudChrome.element(null);
 		SkillProgressHudRenderer.extract(graphics, delta);
+		HudChrome.element(null);
 		UpdateToast.extract(graphics);
 	}
 }

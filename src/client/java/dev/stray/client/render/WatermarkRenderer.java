@@ -57,6 +57,7 @@ public final class WatermarkRenderer {
 			return;
 		}
 		HudLayout.Box box = HudLayout.box(HudLayout.Id.WATERMARK, client.font, graphics.guiWidth(), graphics.guiHeight());
+		HudChrome.element(HudLayout.Id.WATERMARK);
 		draw(graphics, client.font, box.x(), box.y(), HudLayout.scale(HudLayout.Id.WATERMARK));
 	}
 
@@ -172,8 +173,10 @@ public final class WatermarkRenderer {
 		float bg = MusicHudRenderer.attachedToWatermark()
 			? MusicHudRenderer.attachOffset(w) + MusicHudRenderer.attachedWidth()
 			: w;
-		GuiFrostBlur.blitWindow(graphics, 0, 0, bg, HEIGHT, radius);
-		GuiDraw.roundedFine(graphics, 0, 0, bg, HEIGHT, radius, MaterialPalette.withAlpha(MaterialPalette.surface, 0xD8));
+		if (HudChrome.background()) {
+			GuiFrostBlur.blitWindow(graphics, 0, 0, bg, HEIGHT, radius);
+			GuiDraw.roundedFine(graphics, 0, 0, bg, HEIGHT, radius, MaterialPalette.withAlpha(MaterialPalette.surface, 0xD8));
+		}
 		float x = HY_PAD;
 		float pillR = HY_PILL * 0.5f;
 		for (Pill pill : pills) {

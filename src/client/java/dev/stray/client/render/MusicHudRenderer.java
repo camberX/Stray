@@ -142,6 +142,7 @@ public final class MusicHudRenderer {
 			return;
 		}
 		HudLayout.Box box = HudLayout.box(HudLayout.Id.MUSIC, client.font, graphics.guiWidth(), graphics.guiHeight());
+		HudChrome.element(HudLayout.Id.MUSIC);
 		draw(graphics, client.font, box.x(), box.y(), HudLayout.scale(HudLayout.Id.MUSIC), track, deltaTracker);
 	}
 
@@ -504,7 +505,7 @@ public final class MusicHudRenderer {
 		MaterialPalette.refresh();
 		float w = barWidth(font, track);
 		float r = BAR_H * 0.5f;
-		if (!attachedToWatermark()) {
+		if (!attachedToWatermark() && HudChrome.background()) {
 			GuiFrostBlur.blitWindow(graphics, 0, 0, w, BAR_H, r);
 			GuiDraw.roundedFine(graphics, 0, 0, w, BAR_H, r, MaterialPalette.withAlpha(MaterialPalette.surface, 0xD8));
 		}

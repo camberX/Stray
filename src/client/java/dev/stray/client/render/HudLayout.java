@@ -132,6 +132,23 @@ public final class HudLayout {
 		return list != null && list.contains(id.name());
 	}
 
+	/** Whether the element draws its background panel (on unless turned off in the HUD editor). */
+	public static boolean background(Id id) {
+		List<String> list = StrayConfig.get().hudNoBackground;
+		return list == null || !list.contains(id.name());
+	}
+
+	public static void setBackground(Id id, boolean on) {
+		StrayConfig config = StrayConfig.get();
+		if (config.hudNoBackground == null) {
+			config.hudNoBackground = new ArrayList<>();
+		}
+		config.hudNoBackground.remove(id.name());
+		if (!on) {
+			config.hudNoBackground.add(id.name());
+		}
+	}
+
 	public static void setDocked(Id id, boolean dock) {
 		StrayConfig config = StrayConfig.get();
 		if (config.hudDocked == null) {
@@ -404,7 +421,12 @@ public final class HudLayout {
 		if (scale != 1.0f) {
 			graphics.pose().scale(scale, scale);
 		}
-		draw.run();
+		HudChrome.element(id);
+		try {
+			draw.run();
+		} finally {
+			HudChrome.element(null);
+		}
 		graphics.pose().popMatrix();
 	}
 

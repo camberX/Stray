@@ -52,6 +52,7 @@ public final class NodeHudRenderer {
 
 		Font font = client.font;
 		HudLayout.Box box = HudLayout.box(HudLayout.Id.NODES, font, graphics.guiWidth(), graphics.guiHeight());
+		HudChrome.element(HudLayout.Id.NODES);
 		draw(graphics, client, font, box.x(), box.y(), HudLayout.scale(HudLayout.Id.NODES), deltaTracker);
 	}
 

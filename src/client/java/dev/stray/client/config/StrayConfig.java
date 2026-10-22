@@ -80,6 +80,8 @@ public final class StrayConfig {
 	public String watermarkStyle = "panel";
 	/** HUD element ids (HudLayout.Id names) lined up along the top edge. */
 	public java.util.List<String> hudDocked = new java.util.ArrayList<>();
+	/** HUD elements drawn without their background panel. */
+	public java.util.List<String> hudNoBackground = new java.util.ArrayList<>();
 	/** "stray" or "hypr": look of themed chat. */
 	public String chatStyle = "stray";
 	/** "left", "center" or "right": where the docked HUD row lines up. */

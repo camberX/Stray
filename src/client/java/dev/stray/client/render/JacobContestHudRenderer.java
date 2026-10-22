@@ -43,6 +43,7 @@ public final class JacobContestHudRenderer {
 			return;
 		}
 		HudLayout.Box box = HudLayout.box(HudLayout.Id.JACOB, client.font, graphics.guiWidth(), graphics.guiHeight());
+		HudChrome.element(HudLayout.Id.JACOB);
 		draw(graphics, client.font, box.x(), box.y(), HudLayout.scale(HudLayout.Id.JACOB), snap);
 	}
 

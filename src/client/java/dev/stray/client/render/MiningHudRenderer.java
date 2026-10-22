@@ -69,6 +69,7 @@ public final class MiningHudRenderer {
 			return;
 		}
 		HudLayout.Box box = HudLayout.box(HudLayout.Id.MINING, client.font, graphics.guiWidth(), graphics.guiHeight());
+		HudChrome.element(HudLayout.Id.MINING);
 		draw(graphics, client.font, box.x(), box.y(), HudLayout.scale(HudLayout.Id.MINING), snap);
 	}
 
@@ -141,6 +142,7 @@ public final class MiningHudRenderer {
 		float width = scathaWidth(font);
 		float height = scathaHeight();
 		HudLayout.Box box = HudLayout.box(HudLayout.Id.SCATHA, font, graphics.guiWidth(), graphics.guiHeight());
+		HudChrome.element(HudLayout.Id.SCATHA);
 		graphics.pose().pushMatrix();
 		graphics.pose().translate(box.x(), box.y());
 		float scale = HudLayout.scale(HudLayout.Id.SCATHA);

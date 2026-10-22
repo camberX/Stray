@@ -43,6 +43,7 @@ public final class SkillProgressHudRenderer {
 		SkillProgressTracker.poll(client);
 		SkillProgressTracker.Snapshot snap = SkillProgressTracker.snapshot();
 		HudLayout.Box box = HudLayout.box(HudLayout.Id.SKILL, client.font, graphics.guiWidth(), graphics.guiHeight());
+		HudChrome.element(HudLayout.Id.SKILL);
 		draw(graphics, client.font, client.player, box.x(), box.y(), HudLayout.scale(HudLayout.Id.SKILL), snap);
 	}
 

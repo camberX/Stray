@@ -21,10 +21,24 @@ public final class HudChrome {
 
 	public static void beginHud() {
 		hudPass = true;
+		element = null;
 	}
 
 	public static void endHud() {
 		hudPass = false;
+		element = null;
+	}
+
+	/** The HUD element being drawn, so its background toggle applies. */
+	private static HudLayout.Id element;
+
+	public static void element(HudLayout.Id id) {
+		element = id;
+	}
+
+	/** False when the element being drawn has its background turned off. */
+	public static boolean background() {
+		return element == null || HudLayout.background(element);
 	}
 
 	public static boolean vanilla() {
@@ -83,7 +97,7 @@ public final class HudChrome {
 		int outline,
 		int accent
 	) {
-		if (vanilla()) {
+		if (vanilla() || !background()) {
 			return;
 		}
 		if (hypr()) {

@@ -45,6 +45,7 @@ public final class ComposterHudRenderer {
 			return;
 		}
 		HudLayout.Box box = HudLayout.box(HudLayout.Id.COMPOSTER, client.font, graphics.guiWidth(), graphics.guiHeight());
+		HudChrome.element(HudLayout.Id.COMPOSTER);
 		draw(graphics, client.font, box.x(), box.y(), HudLayout.scale(HudLayout.Id.COMPOSTER), snapshot);
 	}
 

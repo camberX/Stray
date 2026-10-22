@@ -77,6 +77,7 @@
 		"SkyRendererMixin",
 		"StringWidgetMixin",
 		"WeatherEffectRendererMixin",
+		"compat.SkyHanniGuiPipelineMixin",
 		"customize.DyedItemColorMixin",
 		"customize.EquipmentLayerRendererMixin",
 		"customize.GuiSelectedNameMixin",

@@ -17,7 +17,7 @@ import java.util.List;
 public class HudEditorScreen extends Screen {
 	private static final float BAR_W = 268;
 	private static final float INSPECT_W = 248;
-	private static final float INSPECT_H = 38;
+	private static final float INSPECT_H = 52;
 	private float dockX;
 	private float dockY;
 	private static final float DOCK_H = 12;
@@ -163,6 +163,20 @@ public class HudEditorScreen extends Screen {
 		} else {
 			alignW = 0;
 		}
+
+		// Background: draws the element's panel, or just its contents.
+		boolean background = HudLayout.background(selected);
+		bgY = inspectY + 35;
+		GuiDraw.small(graphics, font, "Background", dockX, bgY + 2, Theme.MUTED);
+		float by = bgY + 1;
+		GuiDraw.pill(graphics, sx, by, sw, sh, background ? Theme.ACCENT : Theme.TRACK);
+		GuiDraw.circle(graphics, background ? sx + sw - 5 : sx + 5, by + sh * 0.5f, 3.2f, background ? Theme.WINDOW_SOLID : Theme.OFF);
+	}
+
+	private float bgY;
+
+	private boolean onBackground(double mouseX, double mouseY) {
+		return selected != null && GuiDraw.hovered(mouseX, mouseY, inspectX, bgY - 2, INSPECT_W, DOCK_H + 4);
 	}
 
 	private float alignX;
@@ -211,6 +225,11 @@ public class HudEditorScreen extends Screen {
 		}
 		if (onAlign(event.x(), event.y())) {
 			HudLayout.cycleDockAlign();
+			return true;
+		}
+		if (onBackground(event.x(), event.y())) {
+			HudLayout.setBackground(selected, !HudLayout.background(selected));
+			StrayConfig.get().save();
 			return true;
 		}
 		if (onDock(event.x(), event.y())) {

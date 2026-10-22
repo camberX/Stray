@@ -174,6 +174,7 @@ public final class GardenHudRenderer {
 			ContestSnap snap = GardenHud.contest();
 			if (snap.present() || HudLayout.editorOpen()) {
 				HudLayout.Box box = HudLayout.box(HudLayout.Id.NEXT_CONTEST, client.font, graphics.guiWidth(), graphics.guiHeight());
+				HudChrome.element(HudLayout.Id.NEXT_CONTEST);
 				drawContest(graphics, client.font, box.x(), box.y(), HudLayout.scale(HudLayout.Id.NEXT_CONTEST), snap);
 			}
 		}
@@ -181,6 +182,7 @@ public final class GardenHudRenderer {
 			VisitorSnap snap = GardenHud.visitors();
 			if (snap.present() || HudLayout.editorOpen()) {
 				HudLayout.Box box = HudLayout.box(HudLayout.Id.VISITOR, client.font, graphics.guiWidth(), graphics.guiHeight());
+				HudChrome.element(HudLayout.Id.VISITOR);
 				drawVisitor(graphics, client.font, client.player, box.x(), box.y(), HudLayout.scale(HudLayout.Id.VISITOR), snap);
 			}
 		}
@@ -188,6 +190,7 @@ public final class GardenHudRenderer {
 			HoeSnap snap = GardenHud.hoe();
 			if (snap.present() || HudLayout.editorOpen()) {
 				HudLayout.Box box = HudLayout.box(HudLayout.Id.HOE, client.font, graphics.guiWidth(), graphics.guiHeight());
+				HudChrome.element(HudLayout.Id.HOE);
 				drawHoe(graphics, client.font, box.x(), box.y(), HudLayout.scale(HudLayout.Id.HOE), snap);
 			}
 		}
@@ -195,6 +198,7 @@ public final class GardenHudRenderer {
 			MilestoneSnap snap = GardenHud.milestone();
 			if (snap.present() || HudLayout.editorOpen()) {
 				HudLayout.Box box = HudLayout.box(HudLayout.Id.MILESTONE, client.font, graphics.guiWidth(), graphics.guiHeight());
+				HudChrome.element(HudLayout.Id.MILESTONE);
 				drawMilestone(graphics, client.font, box.x(), box.y(), HudLayout.scale(HudLayout.Id.MILESTONE), snap);
 			}
 		}
@@ -202,6 +206,7 @@ public final class GardenHudRenderer {
 			ShoppingSnap snap = GardenHud.shopping();
 			if (snap.present() || HudLayout.editorOpen()) {
 				HudLayout.Box box = HudLayout.box(HudLayout.Id.SHOPPING, client.font, graphics.guiWidth(), graphics.guiHeight());
+				HudChrome.element(HudLayout.Id.SHOPPING);
 				drawShopping(graphics, client.font, box.x(), box.y(), HudLayout.scale(HudLayout.Id.SHOPPING), snap);
 			}
 		}
@@ -209,11 +214,13 @@ public final class GardenHudRenderer {
 			Snap snap = PestCooldown.snap();
 			if (showPestCooldown(snap)) {
 				HudLayout.Box box = HudLayout.box(HudLayout.Id.PEST_COOLDOWN, client.font, graphics.guiWidth(), graphics.guiHeight());
+				HudChrome.element(HudLayout.Id.PEST_COOLDOWN);
 				drawPestCooldown(graphics, client.font, box.x(), box.y(), HudLayout.scale(HudLayout.Id.PEST_COOLDOWN), snap);
 			}
 		}
 		if (config.cropFeverHudEnabled && (CropFever.active() || HudLayout.editorOpen())) {
 			HudLayout.Box box = HudLayout.box(HudLayout.Id.CROP_FEVER, client.font, graphics.guiWidth(), graphics.guiHeight());
+			HudChrome.element(HudLayout.Id.CROP_FEVER);
 			drawCropFever(graphics, client.font, box.x(), box.y(), HudLayout.scale(HudLayout.Id.CROP_FEVER));
 		}
 	}

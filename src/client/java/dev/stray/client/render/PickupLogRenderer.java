@@ -105,6 +105,7 @@ public final class PickupLogRenderer {
 			return;
 		}
 		HudLayout.Box box = HudLayout.box(HudLayout.Id.PICKUPS, client.font, graphics.guiWidth(), graphics.guiHeight());
+		HudChrome.element(HudLayout.Id.PICKUPS);
 		draw(graphics, client, box.x(), box.y(), HudLayout.scale(HudLayout.Id.PICKUPS));
 	}
 

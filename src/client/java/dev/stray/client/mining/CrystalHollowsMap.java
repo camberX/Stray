@@ -120,6 +120,7 @@ public final class CrystalHollowsMap {
 		}
 		ensureTexture(client);
 		HudLayout.Box box = HudLayout.box(HudLayout.Id.CRYSTAL_MAP, client.font, graphics.guiWidth(), graphics.guiHeight());
+		dev.stray.client.render.HudChrome.element(HudLayout.Id.CRYSTAL_MAP);
 		draw(graphics, client.font, box.x(), box.y(), HudLayout.scale(HudLayout.Id.CRYSTAL_MAP), client);
 	}
 

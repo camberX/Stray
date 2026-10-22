@@ -93,6 +93,7 @@ public final class RawmatsHudRenderer {
 			return;
 		}
 		HudLayout.Box box = HudLayout.box(HudLayout.Id.RAWMATS, client.font, graphics.guiWidth(), graphics.guiHeight());
+		HudChrome.element(HudLayout.Id.RAWMATS);
 		draw(graphics, client, box.x(), box.y(), HudLayout.scale(HudLayout.Id.RAWMATS), snap);
 	}
 

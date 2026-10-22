@@ -73,6 +73,7 @@ public final class InventoryHudRenderer {
 			return;
 		}
 		HudLayout.Box box = HudLayout.box(HudLayout.Id.INVENTORY, client.font, graphics.guiWidth(), graphics.guiHeight());
+		HudChrome.element(HudLayout.Id.INVENTORY);
 		draw(graphics, client, config, box.x(), box.y());
 	}
 
