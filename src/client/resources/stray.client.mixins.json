@@ -76,7 +76,14 @@
 		"ShaderManagerAccessor",
 		"SkyRendererMixin",
 		"StringWidgetMixin",
-		"WeatherEffectRendererMixin"
+		"WeatherEffectRendererMixin",
+		"customize.DyedItemColorMixin",
+		"customize.EquipmentLayerRendererMixin",
+		"customize.GuiSelectedNameMixin",
+		"customize.HumanoidMobRendererMixin",
+		"customize.ItemEnchantmentGlintMixin",
+		"customize.PlayerHeadSpecialRendererMixin",
+		"customize.TrimMaterialPropertyMixin"
 	],
 	"injectors": {
 		"defaultRequire": 1

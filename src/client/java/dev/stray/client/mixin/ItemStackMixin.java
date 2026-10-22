@@ -40,6 +40,15 @@ public class ItemStackMixin {
 		}
 	}
 
+	/** Item customization: the custom name wins over the item's own (SkyOcean port). */
+	@Inject(method = "getStyledHoverName", at = @At("RETURN"), cancellable = true, require = 0)
+	private void stray$customizedName(CallbackInfoReturnable<Component> cir) {
+		Component custom = dev.stray.client.item.custom.CustomItems.customName((ItemStack) (Object) this);
+		if (custom != null) {
+			cir.setReturnValue(custom);
+		}
+	}
+
 	@Inject(method = "getTooltipLines", at = @At("HEAD"), cancellable = true)
 	private void stray$tooltip(
 		Item.TooltipContext context,

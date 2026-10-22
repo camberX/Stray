@@ -239,7 +239,7 @@ public final class ClickGui {
 				}
 				return;
 			}
-			if (row.mod.feature != null || row.mod.timeout || row.mod.menuStyle || "Array list".equals(row.mod.name) || "Themed GUIs".equals(row.mod.name) || "Themed chat".equals(row.mod.name)) {
+			if (row.mod.feature != null || row.mod.timeout || row.mod.menuStyle || "Array list".equals(row.mod.name) || "Themed GUIs".equals(row.mod.name) || "Themed chat".equals(row.mod.name) || CUSTOMIZE.equals(row.mod.name)) {
 				if (row.mod.name.equals(expandedName)) {
 					expandedName = null;
 				} else {
@@ -569,6 +569,8 @@ public final class ClickGui {
 			drawGuiStyle(screen, graphics, font, boxX, y, boxW);
 		} else if ("Themed chat".equals(mod.name)) {
 			drawChatStyle(screen, graphics, font, boxX, y, boxW);
+		} else if (CUSTOMIZE.equals(mod.name)) {
+			drawCustomize(screen, graphics, font, boxX, y, boxW);
 		} else if (mod.menuStyle) {
 			if ("HUD".equals(mod.name)) {
 				drawHud(screen, graphics, font, boxX, y, boxW);
@@ -760,6 +762,14 @@ public final class ClickGui {
 	) {
 		float bottom = screen.clickDropdown(graphics, font, x + NEST, y, w - NEST * 2, key, label, options, selected, pick);
 		return bottom + gap();
+	}
+
+	static final String CUSTOMIZE = "Customize item";
+
+	/** Item customization: open the editor for the held item, or reset it. */
+	private static void drawCustomize(StrayScreen screen, GuiGraphicsExtractor graphics, Font font, float x, float y, float w) {
+		drawButton(screen, graphics, font, x, y, w, "Edit held item", CustomizeScreen::openForHeld);
+		drawButton(screen, graphics, font, x, y + stride(), w, "Reset held item", CustomizeScreen::resetHeld);
 	}
 
 	private static void drawChatStyle(StrayScreen screen, GuiGraphicsExtractor graphics, Font font, float x, float y, float w) {
@@ -955,6 +965,9 @@ public final class ClickGui {
 		}
 		if ("Themed chat".equals(mod.name)) {
 			return screen.clickDropdownHeight("chat");
+		}
+		if (CUSTOMIZE.equals(mod.name)) {
+			return stackH(2);
 		}
 		if (mod.menuStyle) {
 			if ("HUD".equals(mod.name)) {
@@ -1466,6 +1479,7 @@ public final class ClickGui {
 			|| "Array list".equals(mod.name)
 			|| "Themed GUIs".equals(mod.name)
 			|| "Themed chat".equals(mod.name)
+			|| CUSTOMIZE.equals(mod.name)
 			|| "Custom title".equals(mod.name);
 	}
 
@@ -1506,6 +1520,10 @@ public final class ClickGui {
 		}
 		if ("Themed chat".equals(mod.name)) {
 			drawChatStyle(screen, graphics, font, x, y, w);
+			return;
+		}
+		if (CUSTOMIZE.equals(mod.name)) {
+			drawCustomize(screen, graphics, font, x, y, w);
 			return;
 		}
 		if (mod.menuStyle) {
@@ -1637,6 +1655,7 @@ public final class ClickGui {
 			config.save();
 		}, false, false));
 
+		mods.add(new Mod(CUSTOMIZE, "Player", null, null, () -> true, v -> { }, false, false, false, true));
 		mods.add(mod("Nick hider", "Player", StrayScreen.Feature.NICK, null, () -> config.nickEnabled, v -> config.nickEnabled = v, true, false));
 		mods.add(hold("Cape", "Player", StrayScreen.Feature.CAPE, ClickGui::capeOn));
 		return mods;

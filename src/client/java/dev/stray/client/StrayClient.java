@@ -301,6 +301,7 @@ public final class StrayClient implements ClientModInitializer {
 			root.then(MovementRingCommands.command());
 			root.then(ClientCommands.literal("shortcuts").executes(context -> CommandShortcuts.open()));
 			root.then(ClientCommands.literal("titles").executes(context -> CustomTitle.open()));
+			root.then(customizeCommand());
 			root.then(LiveCommands.irc());
 			root.then(LiveCommands.ping());
 			root.then(UpdateCommands.command());
@@ -327,6 +328,7 @@ public final class StrayClient implements ClientModInitializer {
 			vm.then(MovementRingCommands.command());
 			vm.then(ClientCommands.literal("shortcuts").executes(context -> CommandShortcuts.open()));
 			vm.then(ClientCommands.literal("titles").executes(context -> CustomTitle.open()));
+			vm.then(customizeCommand());
 			vm.then(LiveCommands.irc());
 			vm.then(LiveCommands.ping());
 			vm.then(UpdateCommands.command());
@@ -377,6 +379,11 @@ public final class StrayClient implements ClientModInitializer {
 
 		ClientTickEvents.END_CLIENT_TICK.register(client -> {
 			pollMenuKeys(client);
+			dev.stray.client.item.custom.CustomItems.tick();
+			if (client.level != customizeLevel) {
+				customizeLevel = client.level;
+				dev.stray.client.item.custom.CustomItems.clearWorldCaches();
+			}
 			StrayConfig running = StrayConfig.get();
 			SpotifySmtc.tick(running.musicHudEnabled && running.spotifyEnabled);
 			SkyblockLocation.tick(client);
@@ -717,6 +724,15 @@ public final class StrayClient implements ClientModInitializer {
 			}
 		});
 		return Command.SINGLE_SUCCESS;
+	}
+
+	private static Object customizeLevel;
+
+	/** /stray customize [reset]: edit the held item's look (SkyOcean port). */
+	private static com.mojang.brigadier.builder.LiteralArgumentBuilder<net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource> customizeCommand() {
+		return ClientCommands.literal("customize")
+			.executes(context -> dev.stray.client.ui.CustomizeScreen.openForHeld())
+			.then(ClientCommands.literal("reset").executes(context -> dev.stray.client.ui.CustomizeScreen.resetHeld()));
 	}
 
 	private static int openItemEdit() {
