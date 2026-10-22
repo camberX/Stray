@@ -1894,7 +1894,51 @@ public final class StrayConfig {
 		return "imgui".equalsIgnoreCase(clickGuiStyle);
 	}
 
+	public boolean clickGuiHypr() {
+		return "hypr".equalsIgnoreCase(clickGuiStyle);
+	}
+
+	/** Keys and labels for the style dropdowns, in menu order. */
+	public static final String[] CLICK_GUI_STYLES = {"glass", "click", "imgui", "hypr"};
+	public static final String[] CLICK_GUI_STYLE_LABELS = {"Glass", "Click", "ImGui", "Hyprland"};
+	public static final String[] GUI_STYLES = {"glass", "imgui", "click"};
+	public static final String[] GUI_STYLE_LABELS = {"Glass", "ImGui", "Click"};
+	public static final String[] HUD_STYLES = {"stray", "click", "glass", "vanilla"};
+	public static final String[] HUD_STYLE_LABELS = {"Stray", "Click", "Glass", "Vanilla"};
+
+	public int clickGuiStyleIndex() {
+		return indexOf(CLICK_GUI_STYLES, normalizeClickGuiStyle(clickGuiStyle));
+	}
+
+	public int guiStyleIndex() {
+		return indexOf(GUI_STYLES, normalizeGuiStyle(guiStyle));
+	}
+
+	public int hudStyleIndex() {
+		return indexOf(HUD_STYLES, normalizeHudStyle(hudStyle));
+	}
+
+	public void setClickGuiStyle(String style) {
+		clickGuiStyle = normalizeClickGuiStyle(style);
+	}
+
+	public void setGuiStyle(String style) {
+		guiStyle = normalizeGuiStyle(style);
+	}
+
+	private static int indexOf(String[] keys, String key) {
+		for (int i = 0; i < keys.length; i++) {
+			if (keys[i].equalsIgnoreCase(key)) {
+				return i;
+			}
+		}
+		return 0;
+	}
+
 	public String clickGuiStyleLabel() {
+		if (clickGuiHypr()) {
+			return "Hyprland";
+		}
 		if (clickGuiImgui()) {
 			return "ImGui";
 		}
@@ -1906,6 +1950,8 @@ public final class StrayConfig {
 			clickGuiStyle = "click";
 		} else if ("click".equalsIgnoreCase(clickGuiStyle)) {
 			clickGuiStyle = "imgui";
+		} else if (clickGuiImgui()) {
+			clickGuiStyle = "hypr";
 		} else {
 			clickGuiStyle = "glass";
 		}
@@ -1983,6 +2029,9 @@ public final class StrayConfig {
 		}
 		if (key.equals("imgui") || key.equals("dear")) {
 			return "imgui";
+		}
+		if (key.equals("hypr") || key.equals("hyprland")) {
+			return "hypr";
 		}
 		return "glass";
 	}

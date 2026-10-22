@@ -111,6 +111,14 @@ public final class ClickGui {
 	static void extract(StrayScreen screen, GuiGraphicsExtractor graphics, int mouseX, int mouseY) {
 		Font font = Minecraft.getInstance().font;
 		pointer(mouseX, mouseY);
+		if (hypr()) {
+			HyprMenu.draw(screen, graphics, font, mouseX, mouseY);
+			screen.clickPicker(graphics, font);
+			if (StrayConfig.get().arrayList) {
+				ArrayListHud.draw(graphics, font, screen.width);
+			}
+			return;
+		}
 		if (imgui()) {
 			ImGuiMenu.draw(screen, graphics, font, mouseX, mouseY);
 			screen.clickPicker(graphics, font);
@@ -200,6 +208,10 @@ public final class ClickGui {
 	}
 
 	static void rightClick(double x, double y) {
+		if (hypr()) {
+			HyprMenu.rightClick(x, y);
+			return;
+		}
 		if (imgui()) {
 			ImGuiMenu.closePopups();
 			return;
@@ -245,6 +257,9 @@ public final class ClickGui {
 	}
 
 	static void collapse() {
+		if (hypr()) {
+			return;
+		}
 		if (imgui()) {
 			ImGuiMenu.closePopups();
 			return;
@@ -253,6 +268,9 @@ public final class ClickGui {
 	}
 
 	static boolean drag(double x, double y) {
+		if (hypr()) {
+			return false;
+		}
 		if (imgui()) {
 			return ImGuiMenu.drag(x, y);
 		}
@@ -270,6 +288,9 @@ public final class ClickGui {
 	}
 
 	static void endDrag() {
+		if (hypr()) {
+			return;
+		}
 		if (imgui()) {
 			ImGuiMenu.endDrag();
 			return;
@@ -282,6 +303,9 @@ public final class ClickGui {
 	}
 
 	static boolean scroll(double x, double y, double wheel) {
+		if (hypr()) {
+			return HyprMenu.scroll(x, y, wheel);
+		}
 		if (imgui()) {
 			return ImGuiMenu.scroll(x, y, wheel);
 		}
@@ -607,19 +631,14 @@ public final class ClickGui {
 
 	private static void drawMenuStyle(StrayScreen screen, GuiGraphicsExtractor graphics, Font font, float x, float y, float w) {
 		StrayConfig config = StrayConfig.get();
-		drawButton(screen, graphics, font, x, y, w, "Style " + config.clickGuiStyleLabel(), () -> {
-			StrayConfig.get().cycleClickGuiStyle();
-			UnloadState.markDirty();
-		});
-		y += stride();
+		y = drawDropdown(screen, graphics, font, x, y, w, "click", "Style", StrayConfig.CLICK_GUI_STYLE_LABELS, config.clickGuiStyleIndex(),
+			i -> StrayConfig.get().setClickGuiStyle(StrayConfig.CLICK_GUI_STYLES[i]));
 		drawButton(screen, graphics, font, x, y, w, "Stray Menu", () -> setClickGui(false));
 	}
 
 	private static void drawGuiStyle(StrayScreen screen, GuiGraphicsExtractor graphics, Font font, float x, float y, float w) {
-		drawButton(screen, graphics, font, x, y, w, "Style " + StrayConfig.get().guiStyleLabel(), () -> {
-			StrayConfig.get().cycleGuiStyle();
-			UnloadState.markDirty();
-		});
+		drawDropdown(screen, graphics, font, x, y, w, "gui", "Style", StrayConfig.GUI_STYLE_LABELS, StrayConfig.get().guiStyleIndex(),
+			i -> StrayConfig.get().setGuiStyle(StrayConfig.GUI_STYLES[i]));
 	}
 
 	private static void drawHud(StrayScreen screen, GuiGraphicsExtractor graphics, Font font, float x, float y, float w) {
@@ -630,11 +649,8 @@ public final class ClickGui {
 			UnloadState.markDirty();
 		});
 		y += stride();
-		drawButton(screen, graphics, font, x, y, w, "Style " + config.hudStyleLabel(), () -> {
-			StrayConfig.get().cycleHudStyle();
-			UnloadState.markDirty();
-		});
-		y += stride();
+		y = drawDropdown(screen, graphics, font, x, y, w, "hud", "Style", StrayConfig.HUD_STYLE_LABELS, config.hudStyleIndex(),
+			i -> StrayConfig.get().setHudStyle(StrayConfig.HUD_STYLES[i]));
 		drawChoice(screen, graphics, font, x, y, w, "Accent Outlines", config.accentOutlines, () -> {
 			StrayConfig current = StrayConfig.get();
 			current.accentOutlines = !current.accentOutlines;
@@ -714,6 +730,50 @@ public final class ClickGui {
 		String shown = fitFeature(font, label, max);
 		departureLeft(graphics, font, shown, ix + 2f, iy, box(), TEXT);
 		screen.clickHit(ix, iy, iw, box(), pick);
+	}
+
+	private static String styleDrop;
+
+	private static int dropRows(String key, int options) {
+		return key.equals(styleDrop) ? options : 0;
+	}
+
+	/**
+	 * Style dropdown: "Style  Glass v". Clicking it lists every style under it;
+	 * picking one closes the list. Returns the y below everything it drew.
+	 */
+	private static float drawDropdown(
+		StrayScreen screen,
+		GuiGraphicsExtractor graphics,
+		Font font,
+		float x,
+		float y,
+		float w,
+		String key,
+		String label,
+		String[] options,
+		int selected,
+		java.util.function.IntConsumer pick
+	) {
+		boolean open = key.equals(styleDrop);
+		String value = selected >= 0 && selected < options.length ? options[selected] : "";
+		drawButton(screen, graphics, font, x, y, w, label + ": " + value + (open ? "  ^" : "  v"),
+			() -> styleDrop = key.equals(styleDrop) ? null : key);
+		y += stride();
+		if (!open) {
+			return y;
+		}
+		for (int i = 0; i < options.length; i++) {
+			int index = i;
+			drawChoice(screen, graphics, font, x + NEST, y, w - NEST, options[i], i == selected, () -> {
+				pick.accept(index);
+				styleDrop = null;
+				Theme.refresh();
+				UnloadState.markDirty();
+			});
+			y += stride();
+		}
+		return y;
 	}
 
 	private static void setClickGui(boolean click) {
@@ -905,14 +965,14 @@ public final class ClickGui {
 			return stackH(arrayListRows());
 		}
 		if ("Themed GUIs".equals(mod.name)) {
-			return stackH(1);
+			return stackH(1 + dropRows("gui", StrayConfig.GUI_STYLES.length));
 		}
 		if (mod.menuStyle) {
 			if ("HUD".equals(mod.name)) {
-				return stackH(4);
+				return stackH(4 + dropRows("hud", StrayConfig.HUD_STYLES.length));
 			}
 			if ("Click GUI".equals(mod.name)) {
-				return stackH(2);
+				return stackH(2 + dropRows("click", StrayConfig.CLICK_GUI_STYLES.length));
 			}
 			return stackH(1);
 		}
@@ -1127,6 +1187,10 @@ public final class ClickGui {
 
 	private static boolean imgui() {
 		return StrayConfig.get().clickGuiImgui();
+	}
+
+	private static boolean hypr() {
+		return StrayConfig.get().clickGuiHypr();
 	}
 
 	private static int box() {

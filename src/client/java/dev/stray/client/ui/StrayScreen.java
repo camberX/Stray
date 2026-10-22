@@ -632,6 +632,9 @@ public class StrayScreen extends Screen {
 	private long lastNs = System.nanoTime();
 	private float dt = 0.016f;
 	private float appear;
+	private String dropdownOpen;
+	private final java.util.Map<String, Float> dropdownT = new java.util.HashMap<>();
+	private final java.util.Map<String, Float> dropdownH = new java.util.HashMap<>();
 	private boolean closing;
 	private boolean finishedClose;
 	private float pageT = 1f;
@@ -2069,7 +2072,7 @@ public class StrayScreen extends Screen {
 			StrayConfig.get().hudOpacity = StrayConfig.clamp(0.20f + v * 0.80f, 0.20f, 1f);
 			Theme.refresh();
 		});
-		y = cycle(graphics, font, settingsX + 8, y, PANEL_W - 16, mouseX, mouseY, "HUD style", StrayConfig.get().hudStyleLabel(), StrayConfig.get()::cycleHudStyle);
+		y = dropdown(graphics, font, settingsX + 8, y, PANEL_W - 16, mouseX, mouseY, "settings.hud", "HUD style", StrayConfig.HUD_STYLE_LABELS, StrayConfig.get().hudStyleIndex(), i -> StrayConfig.get().setHudStyle(StrayConfig.HUD_STYLES[i]));
 		y = toggle(graphics, font, settingsX + 8, y, PANEL_W - 16, mouseX, mouseY, "Menu stars", StrayConfig.get().menuStarfield, v -> StrayConfig.get().menuStarfield = v);
 		y = toggle(graphics, font, settingsX + 8, y, PANEL_W - 16, mouseX, mouseY, "HUD stars", StrayConfig.get().hudStarfield, v -> StrayConfig.get().hudStarfield = v);
 		y = toggle(graphics, font, settingsX + 8, y, PANEL_W - 16, mouseX, mouseY, "Accent outlines", StrayConfig.get().accentOutlines, v -> {
@@ -2092,7 +2095,16 @@ public class StrayScreen extends Screen {
 	}
 
 	private float settingsHeight() {
-		return SETTINGS_H;
+		return SETTINGS_H + dropExtra("settings.hud");
+	}
+
+	/** Extra height the named dropdowns take up while open (last frame's value). */
+	private float dropExtra(String... keys) {
+		float sum = 0f;
+		for (String key : keys) {
+			sum += dropdownH.getOrDefault(key, 0f);
+		}
+		return sum;
 	}
 
 	private static String currentFontLabel() {
@@ -2403,10 +2415,10 @@ public class StrayScreen extends Screen {
 				toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Paths", config.pathsEnabled, v -> config.pathsEnabled = v, Feature.PATHS);
 			}
 			case MENUS -> {
-				float menusH = cardHeight(16);
+				float menusH = cardHeight(16) + dropExtra("click.a", "gui.a");
 				float y = featureCard(graphics, font, left, top, col, menusH, "Menus");
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Click GUI", config.clickGui, v -> config.clickGui = v);
-				y = cycle(graphics, font, ix, y, iw, mouseX, mouseY, "Click style", config.clickGuiStyleLabel(), config::cycleClickGuiStyle);
+				y = dropdown(graphics, font, ix, y, iw, mouseX, mouseY, "click.a", "Click style", StrayConfig.CLICK_GUI_STYLE_LABELS, config.clickGuiStyleIndex(), i -> config.setClickGuiStyle(StrayConfig.CLICK_GUI_STYLES[i]));
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Array list", config.arrayList, v -> config.arrayList = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Loadouts menu", config.loadoutsMenuEnabled, v -> config.loadoutsMenuEnabled = v, Feature.LOADOUTS);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Wardrobe menu", config.wardrobeMenuEnabled, v -> config.wardrobeMenuEnabled = v, Feature.WARDROBE);
@@ -2414,7 +2426,7 @@ public class StrayScreen extends Screen {
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Storage preview", config.storagePreviewEnabled, v -> config.storagePreviewEnabled = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Preview needs Shift", config.storagePreviewHoldShift, v -> config.storagePreviewHoldShift = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Themed GUIs", config.themedGuisEnabled, v -> config.themedGuisEnabled = v);
-				y = cycle(graphics, font, ix, y, iw, mouseX, mouseY, "GUI style", config.guiStyleLabel(), config::cycleGuiStyle);
+				y = dropdown(graphics, font, ix, y, iw, mouseX, mouseY, "gui.a", "GUI style", StrayConfig.GUI_STYLE_LABELS, config.guiStyleIndex(), i -> config.setGuiStyle(StrayConfig.GUI_STYLES[i]));
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Themed chat", config.themedChatEnabled, v -> config.themedChatEnabled = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Compact stash chat", config.stashChatCompact, v -> config.stashChatCompact = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Cleaner NPC chat", config.npcChatClean, v -> config.npcChatClean = v);
@@ -2679,13 +2691,13 @@ public class StrayScreen extends Screen {
 				y = controlCard(graphics, font, left, y, col, mouseX, mouseY, "Wardrobe menu", config.wardrobeMenuEnabled, v -> config.wardrobeMenuEnabled = v, Feature.WARDROBE);
 				y = toggleCard(graphics, font, left, y, col, mouseX, mouseY, "Global IRC", config.strayIrcEnabled, v -> config.strayIrcEnabled = v);
 				y = toggleCard(graphics, font, left, y, col, mouseX, mouseY, "Lobby pings", config.strayPingEnabled, v -> config.strayPingEnabled = v);
-				y = featureCard(graphics, font, left, y, col, cardHeight(12), "Menus");
-				y = cycle(graphics, font, ix, y, iw, mouseX, mouseY, "Click style", config.clickGuiStyleLabel(), config::cycleClickGuiStyle);
+				y = featureCard(graphics, font, left, y, col, cardHeight(12) + dropExtra("click.b", "gui.b"), "Menus");
+				y = dropdown(graphics, font, ix, y, iw, mouseX, mouseY, "click.b", "Click style", StrayConfig.CLICK_GUI_STYLE_LABELS, config.clickGuiStyleIndex(), i -> config.setClickGuiStyle(StrayConfig.CLICK_GUI_STYLES[i]));
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Profile viewer", config.profileViewerEnabled, v -> config.profileViewerEnabled = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Storage preview", config.storagePreviewEnabled, v -> config.storagePreviewEnabled = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Preview needs Shift", config.storagePreviewHoldShift, v -> config.storagePreviewHoldShift = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Themed GUIs", config.themedGuisEnabled, v -> config.themedGuisEnabled = v);
-				y = cycle(graphics, font, ix, y, iw, mouseX, mouseY, "GUI style", config.guiStyleLabel(), config::cycleGuiStyle);
+				y = dropdown(graphics, font, ix, y, iw, mouseX, mouseY, "gui.b", "GUI style", StrayConfig.GUI_STYLE_LABELS, config.guiStyleIndex(), i -> config.setGuiStyle(StrayConfig.GUI_STYLES[i]));
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Themed chat", config.themedChatEnabled, v -> config.themedChatEnabled = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Compact stash chat", config.stashChatCompact, v -> config.stashChatCompact = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Cleaner NPC chat", config.npcChatClean, v -> config.npcChatClean = v);
@@ -2931,15 +2943,15 @@ public class StrayScreen extends Screen {
 			config.save();
 		});
 
-		float accentH = cardTop() + cardHead() + 14 + swatchBlockH(Theme.PRESETS.length, iw) + rowH() * 7 + cardPad();
+		float accentH = cardTop() + cardHead() + 14 + swatchBlockH(Theme.PRESETS.length, iw) + rowH() * 7 + cardPad() + dropExtra("hud.c", "click.c", "gui.c");
 		float lookY = sectionLabel(graphics, font, right, top, "Look");
 		y = featureCard(graphics, font, right, lookY, col, accentH, "Accent");
 		GuiDraw.small(graphics, font, "Preset", rx, y + 1, ControlChrome.muted());
 		y = swatchRow(graphics, mouseX, mouseY, rx + 2, y + 12, iw - 2, Theme.PRESETS, true);
 		y = colorRow(graphics, font, rx, y, iw, mouseX, mouseY, "Custom", config.themeAccentRgb, PickerTarget.THEME);
-		y = cycle(graphics, font, rx, y, iw, mouseX, mouseY, "HUD style", config.hudStyleLabel(), config::cycleHudStyle);
-		y = cycle(graphics, font, rx, y, iw, mouseX, mouseY, "Click style", config.clickGuiStyleLabel(), config::cycleClickGuiStyle);
-		y = cycle(graphics, font, rx, y, iw, mouseX, mouseY, "GUI style", config.guiStyleLabel(), config::cycleGuiStyle);
+		y = dropdown(graphics, font, rx, y, iw, mouseX, mouseY, "hud.c", "HUD style", StrayConfig.HUD_STYLE_LABELS, config.hudStyleIndex(), i -> config.setHudStyle(StrayConfig.HUD_STYLES[i]));
+		y = dropdown(graphics, font, rx, y, iw, mouseX, mouseY, "click.c", "Click style", StrayConfig.CLICK_GUI_STYLE_LABELS, config.clickGuiStyleIndex(), i -> config.setClickGuiStyle(StrayConfig.CLICK_GUI_STYLES[i]));
+		y = dropdown(graphics, font, rx, y, iw, mouseX, mouseY, "gui.c", "GUI style", StrayConfig.GUI_STYLE_LABELS, config.guiStyleIndex(), i -> config.setGuiStyle(StrayConfig.GUI_STYLES[i]));
 		y = slider(graphics, font, rx, y, iw, "HUD", Math.round(config.hudOpacity * 100) + "%", (config.hudOpacity - 0.20f) / 0.80f, v -> {
 			config.hudOpacity = StrayConfig.clamp(0.20f + v * 0.80f, 0.20f, 1f);
 			Theme.refresh();
@@ -4083,6 +4095,96 @@ public class StrayScreen extends Screen {
 		return y + row;
 	}
 
+	/**
+	 * Dropdown: the row shows the current value and a chevron. Clicking it slides
+	 * the options open underneath; picking one closes it again.
+	 */
+	private float dropdown(
+		GuiGraphicsExtractor graphics,
+		Font font,
+		float x,
+		float y,
+		float w,
+		int mouseX,
+		int mouseY,
+		String key,
+		String label,
+		String[] options,
+		int selected,
+		java.util.function.IntConsumer pick
+	) {
+		float row = rowH();
+		boolean open = key.equals(dropdownOpen);
+		float t = dropdownT.getOrDefault(key, 0f);
+		t = Anim.exp(t, open ? 1f : 0f, 18f, dt);
+		if (!StrayConfig.get().uiAnimations) {
+			t = open ? 1f : 0f;
+		}
+		if (t <= 0.001f && !open) {
+			dropdownT.remove(key);
+		} else {
+			dropdownT.put(key, t);
+		}
+		boolean hovered = GuiDraw.hovered(mouseX, mouseY, x, y, w, row);
+		if (hovered || t > 0.01f) {
+			GuiDraw.rounded(graphics, x - 3, y, w + 6, row, 6, hovered ? 0x10FFFFFF : 0x08FFFFFF);
+		}
+		float labelY = GuiDraw.middle(y, row);
+		GuiDraw.menu(graphics, font, label, x + 1, labelY, ink());
+		String value = selected >= 0 && selected < options.length ? options[selected] : "";
+		float chevW = 7f;
+		float chevX = x + w - chevW - 1f;
+		chevron(graphics, chevX, y + row * 0.5f, chevW, t, Theme.ACCENT);
+		int valueWidth = GuiDraw.menuWidth(font, value);
+		GuiDraw.menu(graphics, font, value, chevX - 5f - valueWidth, labelY, Theme.ACCENT);
+		hits.add(new Hit(x, y, w, row, () -> dropdownOpen = key.equals(dropdownOpen) ? null : key));
+		float bottom = y + row;
+		if (t <= 0.01f) {
+			dropdownH.remove(key);
+			return bottom;
+		}
+		float itemH = Math.max(12f, row - 2f);
+		float listH = options.length * itemH + 4f;
+		float shownH = listH * t;
+		dropdownH.put(key, shownH);
+		float listX = x - 3f;
+		float listW = w + 6f;
+		GuiDraw.rounded(graphics, listX, bottom, listW, shownH, 6, Anim.fade(0x20FFFFFF, t));
+		for (int i = 0; i < options.length; i++) {
+			float iy = bottom + 2f + i * itemH;
+			if (iy + itemH > bottom + shownH + 0.5f) {
+				break;
+			}
+			boolean on = i == selected;
+			boolean hot = GuiDraw.hovered(mouseX, mouseY, listX, iy, listW, itemH);
+			if (hot) {
+				GuiDraw.rounded(graphics, listX + 2f, iy, listW - 4f, itemH, 5, Anim.fade(0x18FFFFFF, t));
+			}
+			if (on) {
+				GuiDraw.circle(graphics, x + 4f, iy + itemH * 0.5f, 1.8f, Anim.fade(Theme.ACCENT, t));
+			}
+			GuiDraw.menu(graphics, font, options[i], x + 10f, GuiDraw.middle(iy, itemH), Anim.fade(on ? Theme.ACCENT : ink(), t));
+			int index = i;
+			if (open) {
+				hits.add(new Hit(listX, iy, listW, itemH, () -> {
+					pick.accept(index);
+					dropdownOpen = null;
+					Theme.refresh();
+					UnloadState.markDirty();
+				}));
+			}
+		}
+		return bottom + shownH;
+	}
+
+	/** A small V that turns into a ^ as the dropdown opens. */
+	private static void chevron(GuiGraphicsExtractor graphics, float x, float cy, float w, float open, int color) {
+		float half = w * 0.5f;
+		float rise = 1.6f * (1f - 2f * open);
+		GuiDraw.stroke(graphics, x, cy - rise, x + half, cy + rise, 1.2f, color);
+		GuiDraw.stroke(graphics, x + half, cy + rise, x + w, cy - rise, 1.2f, color);
+	}
+
 	private float chipRow(GuiGraphicsExtractor graphics, Font font, float x, float y, float w, int mouseX, int mouseY, String[] labels, int selected, java.util.function.IntConsumer pick) {
 		float cx = x;
 		float rowY = y;
@@ -4992,6 +5094,10 @@ public class StrayScreen extends Screen {
 		}
 		visualsKind = kind;
 		pickerKind = kind;
+	}
+
+	float clickAppear() {
+		return appear;
 	}
 
 	float clickSettingRow() {
