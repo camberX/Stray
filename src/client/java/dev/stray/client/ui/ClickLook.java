@@ -89,17 +89,10 @@ public final class ClickLook {
 	 */
 	public static void material(GuiGraphicsExtractor graphics, float x, float y, float w, float h, int fill, int ring) {
 		float radius = h <= 24f ? h * 0.5f : Math.min(9f, Math.min(w, h) * 0.5f);
-		if ((ring & 0xFF000000) != 0) {
-			GuiDraw.roundedFine(graphics, x, y, w, h, radius, ring);
-			float r = Math.max(0f, radius - 1f);
-			GuiDraw.roundedFine(graphics, x + 1f, y + 1f, w - 2f, h - 2f, r, opaque(fill));
-			return;
-		}
 		GuiDraw.roundedFine(graphics, x, y, w, h, radius, fill);
-	}
-
-	private static int opaque(int color) {
-		return (color & 0xFF000000) == 0 ? 0xFF000000 | MaterialPalette.surfaceHigh : color;
+		if ((ring & 0xFF000000) != 0) {
+			GuiDraw.hairline(graphics, x, y, w, h, radius, ring);
+		}
 	}
 
 	/** Themed GUIs in the Hyprland look: blurred Material window, rounded slots and pill buttons. */

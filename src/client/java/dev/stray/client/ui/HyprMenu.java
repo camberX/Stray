@@ -366,7 +366,7 @@ public final class HyprMenu {
 		GuiDraw.roundedFine(graphics, x, y, w, BAR, RADIUS, Anim.fade(withAlpha(MaterialPalette.surface, 0xD8), t));
 		if (StrayConfig.get().hyprFloating) {
 			// Grab the bar anywhere a button is not to move the window.
-			GuiDraw.roundedOutline(graphics, x, y, w, BAR, RADIUS, Anim.fade(withAlpha(MaterialPalette.primary, 0x40), t * floatT), 1f);
+			GuiDraw.hairline(graphics, x, y, w, BAR, RADIUS, Anim.fade(withAlpha(MaterialPalette.primary, 0x40), t * floatT));
 			screen.clickHit(x, y, w, BAR, HyprMenu::beginMove);
 		}
 
@@ -461,7 +461,7 @@ public final class HyprMenu {
 		boolean focused = ClickGui.searchFocused();
 		GuiDraw.roundedFine(graphics, searchX, groupY, searchW, groupH, half, Anim.fade(focused ? MaterialPalette.surfaceHigh : MaterialPalette.surfaceLow, t));
 		if (focused) {
-			GuiDraw.roundedOutline(graphics, searchX, groupY, searchW, groupH, half, Anim.fade(MaterialPalette.primary, t), 1f);
+			GuiDraw.hairline(graphics, searchX, groupY, searchW, groupH, half, Anim.fade(MaterialPalette.primary, t));
 		}
 		ClickGui.searchBox(searchX, groupY, searchW, groupH);
 		String query = ClickGui.filterText();
@@ -511,7 +511,7 @@ public final class HyprMenu {
 		GuiDraw.roundedFine(graphics, x, y, w, h, RADIUS, Anim.fade(withAlpha(MaterialPalette.surfaceLow, 0xE6), t));
 		// ii: active border is primary, inactive is primary at a third (colors.lua)
 		int border = Anim.mix(withAlpha(MaterialPalette.primary, 0x40), MaterialPalette.primary, focus);
-		GuiDraw.roundedOutline(graphics, x, y, w, h, RADIUS, Anim.fade(border, t), 1f);
+		GuiDraw.hairline(graphics, x, y, w, h, RADIUS, Anim.fade(border, t));
 	}
 
 	private static void drawList(StrayScreen screen, GuiGraphicsExtractor graphics, Font font, int mouseX, int mouseY, List<Item> items, float t) {

@@ -80,7 +80,7 @@ public final class ContainerChrome {
 			MaterialPalette.refresh();
 			// Material state layer plus a primary ring, rounded like the slot
 			GuiDraw.roundedFine(graphics, x, y, SLOT, SLOT, 3f, MaterialPalette.withAlpha(MaterialPalette.onSurface, 0x1C));
-			GuiDraw.roundedOutline(graphics, x, y, SLOT, SLOT, 3f, MaterialPalette.primary, 1f);
+			GuiDraw.hairline(graphics, x, y, SLOT, SLOT, 3f, MaterialPalette.primary);
 			return;
 		}
 		int color = StrayConfig.get().guiStyleImgui() ? ImGuiLook.HEADER_HOVERED : Theme.ACCENT;

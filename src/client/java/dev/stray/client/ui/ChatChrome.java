@@ -169,8 +169,8 @@ public final class ChatChrome {
 			MaterialPalette.refresh();
 			float r = INPUT_H * 0.5f;
 			GuiFrostBlur.blitWindow(graphics, x, y, w, INPUT_H, r);
-			GuiDraw.roundedFine(graphics, x, y, w, INPUT_H, r, MaterialPalette.primary);
-			GuiDraw.roundedFine(graphics, x + 1f, y + 1f, w - 2f, INPUT_H - 2f, r - 1f, MaterialPalette.withAlpha(MaterialPalette.surfaceContainer, 0xF0));
+			GuiDraw.roundedFine(graphics, x, y, w, INPUT_H, r, MaterialPalette.withAlpha(MaterialPalette.surfaceContainer, 0xF0));
+			GuiDraw.hairline(graphics, x, y, w, INPUT_H, r, MaterialPalette.primary);
 			return;
 		}
 		if (click()) {

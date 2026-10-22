@@ -189,6 +189,12 @@ public final class GuiDraw {
 		if (radius <= 0 || (color >>> 24) < 2) {
 			return;
 		}
+		if (sdfCorner(graphics, cx - radius, cy - radius, radius, 0, color, false)) {
+			sdfCorner(graphics, cx, cy - radius, radius, 1, color, false);
+			sdfCorner(graphics, cx, cy, radius, 2, color, false);
+			sdfCorner(graphics, cx - radius, cy, radius, 3, color, false);
+			return;
+		}
 		if (radius <= 1.05f) {
 			fill(graphics, cx - radius, cy - radius, radius * 2f, radius * 2f, color);
 			return;
@@ -241,6 +247,13 @@ public final class GuiDraw {
 
 	private static void dot(GuiGraphicsExtractor graphics, float cx, float cy, float radius, int color) {
 		if (radius <= 0f || (color >>> 24) < 2) {
+			return;
+		}
+		// Four shader corners make a smooth circle at any size.
+		if (sdfCorner(graphics, cx - radius, cy - radius, radius, 0, color, false)) {
+			sdfCorner(graphics, cx, cy - radius, radius, 1, color, false);
+			sdfCorner(graphics, cx, cy, radius, 2, color, false);
+			sdfCorner(graphics, cx - radius, cy, radius, 3, color, false);
 			return;
 		}
 		float d = radius * 2f;
@@ -459,8 +472,107 @@ public final class GuiDraw {
 		cornerFine(graphics, x, y + h - r, r, 0f, RING_HALF, color);
 	}
 
+	private static final Identifier WHITE = Stray.id("textures/gui/white.png");
+	private static com.mojang.blaze3d.pipeline.RenderPipeline sdfPipeline;
+
+	/**
+	 * One rounded corner computed per pixel in a shader (gui_sdf_corner), so it
+	 * stays smooth at any radius and GUI scale. corner: 0 top-left, 1 top-right,
+	 * 2 bottom-right, 3 bottom-left. ring draws a 1 screen-pixel outline instead.
+	 */
+	private static boolean sdfCorner(GuiGraphicsExtractor graphics, float x, float y, float radius, int corner, int color, boolean ring) {
+		if (!(graphics instanceof dev.stray.client.mixin.GuiGraphicsExtractorInvoker invoker)) {
+			return false;
+		}
+		Minecraft client = Minecraft.getInstance();
+		net.minecraft.client.renderer.texture.AbstractTexture texture = client.getTextureManager().getTexture(WHITE);
+		com.mojang.blaze3d.textures.GpuTextureView view = texture == null ? null : texture.getTextureView();
+		if (view == null) {
+			return false;
+		}
+		ensureSdfPipeline();
+		float s = ring ? -1f : 1f;
+		float u0;
+		float u1;
+		float v0;
+		float v1;
+		switch (corner) {
+			case 0 -> { u0 = s; u1 = 0f; v0 = s; v1 = 0f; }
+			case 1 -> { u0 = 0f; u1 = s; v0 = s; v1 = 0f; }
+			case 2 -> { u0 = 0f; u1 = s; v0 = 0f; v1 = s; }
+			default -> { u0 = s; u1 = 0f; v0 = 0f; v1 = s; }
+		}
+		com.mojang.blaze3d.textures.GpuSampler sampler = com.mojang.blaze3d.systems.RenderSystem.getSamplerCache()
+			.getClampToEdge(com.mojang.blaze3d.textures.FilterMode.NEAREST);
+		graphics.pose().pushMatrix();
+		graphics.pose().translate(x, y);
+		graphics.pose().scale(radius, radius);
+		invoker.stray$innerBlit(sdfPipeline, view, sampler, 0, 0, 1, 1, u0, u1, v0, v1, color);
+		graphics.pose().popMatrix();
+		return true;
+	}
+
+	private static synchronized void ensureSdfPipeline() {
+		if (sdfPipeline != null) {
+			return;
+		}
+		Identifier shader = Stray.id("core/gui_sdf_corner");
+		sdfPipeline = com.mojang.blaze3d.pipeline.RenderPipeline.builder()
+			.withLocation(Stray.id("pipeline/gui_sdf_corner"))
+			.withVertexShader(shader)
+			.withFragmentShader(shader)
+			.withSampler("Sampler0")
+			.withUniform("DynamicTransforms", com.mojang.blaze3d.shaders.UniformType.UNIFORM_BUFFER)
+			.withUniform("Projection", com.mojang.blaze3d.shaders.UniformType.UNIFORM_BUFFER)
+			.withColorTargetState(new com.mojang.blaze3d.pipeline.ColorTargetState(com.mojang.blaze3d.pipeline.BlendFunction.TRANSLUCENT))
+			.withVertexFormat(com.mojang.blaze3d.vertex.DefaultVertexFormat.POSITION_TEX_COLOR, com.mojang.blaze3d.vertex.VertexFormat.Mode.QUADS)
+			.build();
+	}
+
+	/** One screen pixel, in GUI units. */
+	public static float pixel() {
+		Minecraft client = Minecraft.getInstance();
+		double scale = client == null || client.getWindow() == null ? 2.0 : client.getWindow().getGuiScale();
+		return (float) (1.0 / Math.max(1.0, scale));
+	}
+
+	/**
+	 * A 1 screen-pixel rounded outline (a Hyprland border), with shader-drawn
+	 * corners so it stays even and smooth instead of stepping.
+	 */
+	public static void hairline(GuiGraphicsExtractor graphics, float x, float y, float w, float h, float radius, int color) {
+		if (w <= 0 || h <= 0 || (color >>> 24) == 0) {
+			return;
+		}
+		float px = pixel();
+		float r = Math.min(Math.max(0f, radius), Math.min(w, h) / 2f);
+		if (r < 0.75f) {
+			fillSmooth(graphics, x, y, w, px, color);
+			fillSmooth(graphics, x, y + h - px, w, px, color);
+			fillSmooth(graphics, x, y + px, px, h - 2f * px, color);
+			fillSmooth(graphics, x + w - px, y + px, px, h - 2f * px, color);
+			return;
+		}
+		boolean ok = sdfCorner(graphics, x, y, r, 0, color, true)
+			&& sdfCorner(graphics, x + w - r, y, r, 1, color, true)
+			&& sdfCorner(graphics, x + w - r, y + h - r, r, 2, color, true)
+			&& sdfCorner(graphics, x, y + h - r, r, 3, color, true);
+		if (!ok) {
+			roundedOutline(graphics, x, y, w, h, radius, color, 1f);
+			return;
+		}
+		fillSmooth(graphics, x + r, y, w - 2f * r, px, color);
+		fillSmooth(graphics, x + r, y + h - px, w - 2f * r, px, color);
+		fillSmooth(graphics, x, y + r, px, h - 2f * r, color);
+		fillSmooth(graphics, x + w - px, y + r, px, h - 2f * r, color);
+	}
+
 	private static void cornerFine(GuiGraphicsExtractor graphics, float x, float y, float radius, float u, float v, int color) {
 		if (radius <= 0) {
+			return;
+		}
+		int corner = u == 0f ? (v == 0f ? 0 : 3) : (v == 0f ? 1 : 2);
+		if (sdfCorner(graphics, x, y, radius, corner, color, false)) {
 			return;
 		}
 		graphics.pose().pushMatrix();
@@ -887,7 +999,7 @@ public final class GuiDraw {
 
 	public static void hud(GuiGraphicsExtractor graphics, Font font, Component value, float x, float y, int color) {
 		if (HudChrome.hypr()) {
-			text(graphics, font, value.copy().withStyle(MenuFont.HYPR), x, y, 1f, color, false);
+			text(graphics, font, value.copy().withStyle(MenuFont.hyprStyle(0)), x, y, 1f, color, false);
 			return;
 		}
 		float scale = MenuFont.bodyScale();
@@ -982,7 +1094,7 @@ public final class GuiDraw {
 
 	public static int hudWidth(Font font, Component value) {
 		if (HudChrome.hypr()) {
-			return font.width(value.copy().withStyle(MenuFont.HYPR));
+			return font.width(value.copy().withStyle(MenuFont.hyprStyle(0)));
 		}
 		return scaledWidth(font.width(MenuFont.applyBody(value)), MenuFont.bodyScale());
 	}

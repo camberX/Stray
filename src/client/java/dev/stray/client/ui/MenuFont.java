@@ -31,16 +31,42 @@ public final class MenuFont {
 	public static final Style HYPR_SMALL = Style.EMPTY.withFont(new FontDescription.Resource(Stray.id("hypr_small")));
 	public static final Style HYPR_TITLE = Style.EMPTY.withFont(new FontDescription.Resource(Stray.id("hypr_title")));
 
+	/**
+	 * The same font rasterized at 1x to 6x. Minecraft samples glyphs without
+	 * smoothing, so a glyph is only crisp when its texels match screen pixels:
+	 * pick the copy for the current GUI scale.
+	 */
+	private static final Style[][] HYPR_SCALED = new Style[3][6];
+
+	static {
+		String[] names = {"hypr", "hypr_small", "hypr_title"};
+		for (int f = 0; f < names.length; f++) {
+			for (int s = 0; s < 6; s++) {
+				HYPR_SCALED[f][s] = Style.EMPTY.withFont(new FontDescription.Resource(Stray.id(names[f] + "_" + (s + 1))));
+			}
+		}
+	}
+
+	public static Style hyprStyle(int family) {
+		net.minecraft.client.Minecraft client = net.minecraft.client.Minecraft.getInstance();
+		int scale = 2;
+		if (client != null && client.getWindow() != null) {
+			scale = (int) Math.round(client.getWindow().getGuiScale());
+		}
+		scale = Math.max(1, Math.min(6, scale));
+		return HYPR_SCALED[family][scale - 1];
+	}
+
 	public static Component hypr(String value) {
-		return Component.literal(value == null ? "" : value).withStyle(HYPR);
+		return Component.literal(value == null ? "" : value).withStyle(hyprStyle(0));
 	}
 
 	public static Component hyprSmall(String value) {
-		return Component.literal(value == null ? "" : value).withStyle(HYPR_SMALL);
+		return Component.literal(value == null ? "" : value).withStyle(hyprStyle(1));
 	}
 
 	public static Component hyprTitle(String value) {
-		return Component.literal(value == null ? "" : value).withStyle(HYPR_TITLE);
+		return Component.literal(value == null ? "" : value).withStyle(hyprStyle(2));
 	}
 	public static final String MINECRAFT_FAMILY = "Minecraft";
 	private static final Style UI_BODY = Style.EMPTY.withFont(new FontDescription.Resource(UI_ID));

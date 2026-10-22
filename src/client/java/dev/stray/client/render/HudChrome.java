@@ -92,7 +92,7 @@ public final class HudChrome {
 			GuiFrostBlur.blitWindow(graphics, x, y, w, h, r);
 			GuiDraw.roundedFine(graphics, x, y, w, h, r, Theme.HUD_WINDOW);
 			int ring = StrayConfig.get().accentOutlines && !neutralOutline ? MaterialPalette.primary : MaterialPalette.withAlpha(MaterialPalette.primary, 0x40);
-			GuiDraw.roundedOutline(graphics, x, y, w, h, r, ring, 1f);
+			GuiDraw.hairline(graphics, x, y, w, h, r, ring);
 			return;
 		}
 		if (click()) {
@@ -164,7 +164,7 @@ public final class HudChrome {
 			MaterialPalette.refresh();
 			GuiDraw.roundedFine(graphics, x, y, size, size, 3f, selected ? MaterialPalette.secondaryContainer : MaterialPalette.surfaceHigh);
 			if (selected) {
-				GuiDraw.roundedOutline(graphics, x, y, size, size, 3f, MaterialPalette.primary, 1f);
+				GuiDraw.hairline(graphics, x, y, size, size, 3f, MaterialPalette.primary);
 			}
 			return;
 		}
