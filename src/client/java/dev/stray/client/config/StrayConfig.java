@@ -86,6 +86,8 @@ public final class StrayConfig {
 	public String hudDockAlign = "left";
 	/** Hyprland click GUI as one floating window instead of fullscreen tiles. */
 	public boolean hyprFloating = false;
+	/** Share of the width the module window takes; the settings window gets the rest. */
+	public float hyprSplit = 0.55f;
 	public float hyprFloatX = -1f;
 	public float hyprFloatY = -1f;
 	public float hyprFloatW = -1f;

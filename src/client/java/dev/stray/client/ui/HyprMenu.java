@@ -97,6 +97,9 @@ public final class HyprMenu {
 	private static final String FLOAT_OFF = "\uE5D0";
 	private static boolean moving;
 	private static boolean resizing;
+	private static boolean splitting;
+	private static float splitT;
+	private static final float MIN_PANE = 150f;
 	private static float grabX;
 	private static float grabY;
 	private static float areaX;
@@ -162,7 +165,7 @@ public final class HyprMenu {
 
 		float top = ay + BAR + GAP;
 		float h = Math.max(60f, ay + areaH - top);
-		float split = Math.round((w - GAP) * 0.55f);
+		float split = Math.round((w - GAP) * splitRatio(w));
 		listX = ax - (1f - tList) * 22f;
 		listY = top;
 		listW = split;
@@ -185,6 +188,9 @@ public final class HyprMenu {
 		rowHits.clear();
 		drawList(screen, graphics, font, mouseX, mouseY, items, tList);
 		drawSettings(screen, graphics, font, mouseX, mouseY, tSet);
+		if (tSet > 0.5f && tList > 0.5f) {
+			drawSplitter(screen, graphics, mouseX, mouseY, Math.min(tList, tSet));
+		}
 		if (StrayConfig.get().hyprFloating && tSet > 0.5f) {
 			drawGrip(screen, graphics, mouseX, mouseY, tSet);
 		}
@@ -252,8 +258,46 @@ public final class HyprMenu {
 		UnloadState.markDirty();
 	}
 
+	/** The saved split, kept so neither window gets narrower than MIN_PANE. */
+	private static float splitRatio(float w) {
+		float usable = Math.max(1f, w - GAP);
+		float min = Math.min(0.45f, MIN_PANE / usable);
+		return Mth.clamp(StrayConfig.get().hyprSplit, min, 1f - min);
+	}
+
+	/**
+	 * The facing edges of the two windows: grab the gap between them and drag
+	 * to give one window more room, like resizing tiled windows in Hyprland.
+	 */
+	private static void drawSplitter(StrayScreen screen, GuiGraphicsExtractor graphics, int mouseX, int mouseY, float t) {
+		float left = listX + listW;
+		float right = setX;
+		float hitX = left - 3f;
+		float hitW = right - left + 6f;
+		float top = listY;
+		float h = listH;
+		boolean hot = splitting || contains(mouseX, mouseY, hitX, top, hitW, h);
+		splitT = approach(splitT, hot ? 1f : 0f, 16f);
+		if (splitT > 0.01f) {
+			// A short pill in the gap shows the edge can move.
+			float cx = (left + right) * 0.5f;
+			float barH = Math.min(36f, h * 0.25f);
+			GuiDraw.roundedFine(graphics, cx - 1f, top + (h - barH) * 0.5f, 2f, barH, 1f, Anim.fade(MaterialPalette.primary, splitT * t));
+		}
+		if (hot) {
+			graphics.requestCursor(com.mojang.blaze3d.platform.cursor.CursorTypes.RESIZE_EW);
+		}
+		screen.clickHit(hitX, top, hitW, h, () -> splitting = true);
+	}
+
 	static boolean drag(double x, double y) {
 		StrayConfig config = StrayConfig.get();
+		if (splitting) {
+			float usable = Math.max(1f, areaW - GAP);
+			config.hyprSplit = (float) ((x - areaX - GAP * 0.5f) / usable);
+			config.hyprSplit = splitRatio(areaW);
+			return true;
+		}
 		if (moving) {
 			config.hyprFloatX = (float) x - grabX;
 			config.hyprFloatY = (float) y - grabY;
@@ -268,11 +312,12 @@ public final class HyprMenu {
 	}
 
 	static void endDrag() {
-		if (moving || resizing) {
+		if (moving || resizing || splitting) {
 			UnloadState.markDirty();
 		}
 		moving = false;
 		resizing = false;
+		splitting = false;
 	}
 
 	static boolean scroll(double x, double y, double wheel) {
