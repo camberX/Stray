@@ -15,6 +15,12 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.5.64", new String[]{
+			"Item customization: /stray customize (or Player > Customize item) edits the held item",
+			"Dyes with previews, animated and gradient dyes, hex colors and armor trims for armor",
+			"Skull skins, enchant glint on or off and a custom item model for any item",
+			"Custom names support & color codes and &#RRGGBB hex and are no longer italic"
+		}),
 		new Entry("1.5.63", new String[]{
 			"Hotfix: the party stats card also shows Mimic (Faker) and Folf (Catacombs Cap) next to Murkbat and Prince, as the attribute level."
 		}),
