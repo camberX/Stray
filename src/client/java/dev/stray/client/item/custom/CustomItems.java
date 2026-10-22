@@ -24,7 +24,10 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.item.component.CustomData;
 import net.minecraft.world.item.component.DyedItemColor;
 import net.minecraft.world.item.component.ResolvableProfile;
@@ -91,9 +94,12 @@ public final class CustomItems {
 		public String trimPattern;
 		public SkinSpec skin;
 		public Boolean glint;
+		/** Minecraft item id whose model the item is drawn with, e.g. minecraft:diamond_sword. */
+		public String model;
 
 		boolean empty() {
-			return (name == null || name.isEmpty()) && color == null && trimPattern == null && skin == null && glint == null;
+			return (name == null || name.isEmpty()) && color == null && trimPattern == null && skin == null && glint == null
+				&& (model == null || model.isEmpty());
 		}
 	}
 
@@ -303,7 +309,76 @@ public final class CustomItems {
 		if (type == DataComponents.TRIM) {
 			return (T) trim(data);
 		}
+		if (type == DataComponents.ITEM_MODEL) {
+			return (T) model(data.model);
+		}
 		return null;
+	}
+
+	/** The item model id of a Minecraft item, or null if the id isn't an item. */
+	public static Identifier model(String raw) {
+		Item item = item(raw);
+		return item == null ? null : item.components().get(DataComponents.ITEM_MODEL);
+	}
+
+	/** The Minecraft item for an id like "diamond_sword" or "minecraft:diamond_sword". */
+	public static Item item(String raw) {
+		if (raw == null || raw.isBlank()) {
+			return null;
+		}
+		Identifier id = Identifier.tryParse(raw.trim().toLowerCase(Locale.ROOT));
+		if (id == null || !BuiltInRegistries.ITEM.containsKey(id)) {
+			return null;
+		}
+		Item item = BuiltInRegistries.ITEM.getValue(id);
+		return item == Items.AIR ? null : item;
+	}
+
+	/** Every Minecraft item id, for the model picker. */
+	public static List<String> itemIds() {
+		List<String> out = new ArrayList<>();
+		for (Identifier id : BuiltInRegistries.ITEM.keySet()) {
+			if (!"minecraft:air".equals(id.toString())) {
+				out.add(id.toString());
+			}
+		}
+		out.sort(null);
+		return out;
+	}
+
+	/** Dye or skull id as a name: DYE_PURE_BLACK -> Pure Black. */
+	public static String displayName(String id) {
+		if (id == null || id.isEmpty()) {
+			return "";
+		}
+		String raw = id.startsWith("DYE_") ? id.substring(4) : id;
+		int colon = raw.indexOf(':');
+		if (colon >= 0) {
+			raw = raw.substring(colon + 1);
+		}
+		StringBuilder out = new StringBuilder();
+		for (String word : raw.toLowerCase(Locale.ROOT).split("[_\\s-]+")) {
+			if (word.isEmpty()) {
+				continue;
+			}
+			if (out.length() > 0) {
+				out.append(' ');
+			}
+			out.append(Character.toUpperCase(word.charAt(0))).append(word.substring(1));
+		}
+		return out.toString();
+	}
+
+	/** A head item showing an animated skull's current frame, for list icons. */
+	public static ItemStack skullIcon(String id) {
+		loadData();
+		Skull skull = id == null ? null : SKULLS.get(id.toUpperCase(Locale.ROOT));
+		if (skull == null) {
+			return ItemStack.EMPTY;
+		}
+		ItemStack icon = new ItemStack(Items.PLAYER_HEAD);
+		icon.set(DataComponents.PROFILE, texture(skull.textures[0]));
+		return icon;
 	}
 
 	/** Custom name for tooltips and the held-item name, or null. */

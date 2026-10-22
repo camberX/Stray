@@ -83,7 +83,8 @@
 		"customize.HumanoidMobRendererMixin",
 		"customize.ItemEnchantmentGlintMixin",
 		"customize.PlayerHeadSpecialRendererMixin",
-		"customize.TrimMaterialPropertyMixin"
+		"customize.TrimMaterialPropertyMixin",
+		"customize.ItemModelOverrideMixin"
 	],
 	"injectors": {
 		"defaultRequire": 1
