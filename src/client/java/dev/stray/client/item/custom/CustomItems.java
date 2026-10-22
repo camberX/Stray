@@ -20,7 +20,11 @@ import net.minecraft.core.component.DataComponentType;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.network.chat.Style;
+import net.minecraft.network.chat.TextColor;
 import net.minecraft.resources.Identifier;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.entity.EquipmentSlot;
@@ -387,8 +391,55 @@ public final class CustomItems {
 		return data == null || data.name == null || data.name.isEmpty() ? null : name(data.name);
 	}
 
+	/**
+	 * Builds the custom name from & codes: &0-&f colors, &l &o &n &m &k
+	 * formats, &r reset and &#RRGGBB hex. Not italic unless &o asks for it,
+	 * and white unless a color is given.
+	 */
 	public static Component name(String raw) {
-		return Component.literal(raw.replace('&', '§'));
+		Style base = Style.EMPTY.withItalic(false).withColor(ChatFormatting.WHITE);
+		MutableComponent out = Component.empty().setStyle(base);
+		Style style = base;
+		StringBuilder run = new StringBuilder();
+		String text = raw.replace('\u00A7', '&');
+		for (int i = 0; i < text.length(); i++) {
+			char c = text.charAt(i);
+			if (c == '&' && i + 7 < text.length() + 1 && text.charAt(i + 1) == '#') {
+				Integer rgb = hex(text.substring(i + 2, i + 8));
+				if (rgb != null) {
+					flush(out, run, style);
+					style = base.withColor(TextColor.fromRgb(rgb));
+					i += 7;
+					continue;
+				}
+			}
+			if (c == '&' && i + 1 < text.length()) {
+				ChatFormatting format = ChatFormatting.getByCode(Character.toLowerCase(text.charAt(i + 1)));
+				if (format != null) {
+					flush(out, run, style);
+					if (format == ChatFormatting.RESET) {
+						style = base;
+					} else if (format.isColor()) {
+						// A color starts fresh, like vanilla: formats before it are cleared.
+						style = base.withColor(format);
+					} else {
+						style = style.applyFormat(format);
+					}
+					i++;
+					continue;
+				}
+			}
+			run.append(c);
+		}
+		flush(out, run, style);
+		return out;
+	}
+
+	private static void flush(MutableComponent out, StringBuilder run, Style style) {
+		if (run.length() > 0) {
+			out.append(Component.literal(run.toString()).setStyle(style));
+			run.setLength(0);
+		}
 	}
 
 	/** The rgb an item shows right now, or null for its own color. */
