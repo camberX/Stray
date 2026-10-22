@@ -95,7 +95,7 @@ public final class ChatChrome {
 		Theme.refresh();
 		boolean focused = mode != null && mode.foreground;
 		Minecraft client = Minecraft.getInstance();
-		if (client == null || client.gui.hud.isHidden()) {
+		if (client == null || client.options.hideGui) {
 			return;
 		}
 		ChatComponentAccessor access = (ChatComponentAccessor) chat;
@@ -174,7 +174,7 @@ public final class ChatChrome {
 			return;
 		}
 		Minecraft client = Minecraft.getInstance();
-		if (client == null || !(client.gui.screen() instanceof ChatScreen)) {
+		if (client == null || !(client.screen instanceof ChatScreen)) {
 			return;
 		}
 		if (click() || glass()) {

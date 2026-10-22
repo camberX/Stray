@@ -45,7 +45,7 @@ public final class LassoReel {
 			reset();
 			return;
 		}
-		if (client.gui.screen() != null) {
+		if (client.screen != null) {
 			return;
 		}
 		if (!holdingLasso(client.player)) {

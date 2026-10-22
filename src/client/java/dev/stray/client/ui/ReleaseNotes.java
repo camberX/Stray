@@ -15,35 +15,26 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
-		new Entry("1.5.65", new String[]{
-			"Triggerbot sends the punch packet with each hit, the same packet a normal left click sends on 26.3."
-		}),
-		new Entry("1.5.64", new String[]{
-			"Player fill copies world depth while the solid pass is open, so the silhouette no longer crashes the frame."
-		}),
-		new Entry("1.5.63", new String[]{
-			"Sodium's chunk draw binds Stray's uniform block, so joining a world no longer crashes."
-		}),
-		new Entry("1.5.62", new String[]{
-			"Sodium's terrain shader keeps its own VULKAN define, so the solid terrain pipeline compiles again."
-		}),
 		new Entry("1.5.61", new String[]{
-			"Joining a world fills every empty terrain uniform, and Sodium's chunk offset uses the push-constant path."
+			"Empty bag only runs while you hold a farming tool."
 		}),
 		new Entry("1.5.60", new String[]{
-			"Terrain draws supply the Stray uniform buffer, so joining a world no longer crashes."
+			"Auto loadout Swap at is a clock. Type 2:48 and the spawn set equips when the pest cooldown timer reaches that time."
 		}),
 		new Entry("1.5.59", new String[]{
-			"Main menu clicks use 26.3 left-click numbering, so Singleplayer and the other buttons work again."
+			"The pest cooldown timer hides while a screen is open."
 		}),
 		new Entry("1.5.58", new String[]{
-			"Entity outlines compile on 26.3. The menu, glow, and held-item shaders use the same syntax."
+			"The Ready timer counts up only while you hold a farming tool. It stops on the pest spawn chat message, and that chat time is what gets reported with the session average."
 		}),
 		new Entry("1.5.57", new String[]{
-			"Terrain shader edits stay inside the terrain pipelines, so the rest of the 26.3 shaders can compile."
+			"When the pest cooldown hits Ready, the timer counts up until pests spawn, then freezes. The next tab update sets that time. Chat shows how long the spawn took and the average since Minecraft opened."
 		}),
 		new Entry("1.5.56", new String[]{
-			"This build targets Minecraft 26.3. The marble menu, Proggy, and the rest of the 26.1.2 features stay."
+			"Auto loadout swaps farming sets around a pest wave. Swap B equips a few seconds before the reduced cooldown hits zero. The reduction is how far the tab timer drops off a 5:00 cooldown, and Time left is how many seconds before that zero. With TriSwap off, Swap A equips when pests spawn and stays until they are gone. With TriSwap on, Swap C equips a second or two after they spawn, then Swap A when they are dead.",
+			"/stray debug pest shows the next loadout and a countdown. /stray prints the build you are running.",
+			"Top down sits the camera 5 blocks above you and hides full blocks from two blocks above your feet.",
+			"The Scatha timer counts 30 seconds of server ticks after the approach message. The last 10 seconds are solid. Pest plot warps to a plot the pests widget lists. Another press goes to the next infested plot."
 		}),
 		new Entry("1.5.55", new String[]{
 			"The main menu background is the liquid marble loop. Veins and splashes use the accent color. The teal stone stays."

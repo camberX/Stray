@@ -5,6 +5,7 @@ import dev.stray.client.config.StrayConfig;
 import dev.stray.client.ui.CustomTitleScreen;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Gui;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.network.chat.Style;
@@ -52,11 +53,11 @@ public final class CustomTitle {
 	public static int open() {
 		Minecraft client = Minecraft.getInstance();
 		client.execute(() -> {
-			if (client.gui.screen() instanceof CustomTitleScreen) {
-				client.gui.screen().onClose();
+			if (client.screen instanceof CustomTitleScreen) {
+				client.screen.onClose();
 				return;
 			}
-			client.gui.setScreen(new CustomTitleScreen(client.gui.screen()));
+			client.setScreen(new CustomTitleScreen(client.screen));
 		});
 		return Command.SINGLE_SUCCESS;
 	}
@@ -146,12 +147,13 @@ public final class CustomTitle {
 		if (client == null) {
 			return;
 		}
-		if (client.gui == null) {
+		Gui gui = client.gui;
+		if (gui == null) {
 			return;
 		}
-		client.gui.hud.setTimes(10, 70, 20);
-		client.gui.hud.setSubtitle(Component.empty());
-		client.gui.hud.setTitle(parse(title));
+		gui.setTimes(10, 70, 20);
+		gui.setSubtitle(Component.empty());
+		gui.setTitle(parse(title));
 	}
 
 	private static String needle(String trigger) {

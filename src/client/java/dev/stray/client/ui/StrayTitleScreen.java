@@ -1,7 +1,6 @@
 package dev.stray.client.ui;
 
 import dev.stray.client.account.AccountStore;
-import dev.stray.client.input.MouseButtons;
 import dev.stray.client.render.GuiDraw;
 import dev.stray.client.render.TitleBackdrop;
 import net.fabricmc.loader.api.FabricLoader;
@@ -194,7 +193,7 @@ public class StrayTitleScreen extends Screen {
 
 	private void openSingleplayer() {
 		clickSound();
-		minecraft.gui.setScreen(new SelectWorldScreen(this));
+		minecraft.setScreen(new SelectWorldScreen(this));
 	}
 
 	private void openMultiplayer() {
@@ -203,32 +202,32 @@ public class StrayTitleScreen extends Screen {
 			return;
 		}
 		clickSound();
-		minecraft.gui.setScreen(new JoinMultiplayerScreen(this));
+		minecraft.setScreen(new JoinMultiplayerScreen(this));
 	}
 
 	private void openAccounts() {
 		clickSound();
-		minecraft.gui.setScreen(new AccountScreen(this));
+		minecraft.setScreen(new AccountScreen(this));
 	}
 
 	private void openOptions() {
 		clickSound();
-		minecraft.gui.setScreen(new OptionsScreen(this, minecraft.options));
+		minecraft.setScreen(new OptionsScreen(this, minecraft.options, false));
 	}
 
 	private void openLanguage() {
 		clickSound();
-		minecraft.gui.setScreen(new LanguageSelectScreen(this, minecraft.options, minecraft.getLanguageManager()));
+		minecraft.setScreen(new LanguageSelectScreen(this, minecraft.options, minecraft.getLanguageManager()));
 	}
 
 	private void openAccessibility() {
 		clickSound();
-		minecraft.gui.setScreen(new AccessibilityOptionsScreen(this, minecraft.options));
+		minecraft.setScreen(new AccessibilityOptionsScreen(this, minecraft.options));
 	}
 
 	private void openCredits() {
 		clickSound();
-		minecraft.gui.setScreen(new CreditsAndAttributionScreen(this));
+		minecraft.setScreen(new CreditsAndAttributionScreen(this));
 	}
 
 	private void quit() {
@@ -238,7 +237,7 @@ public class StrayTitleScreen extends Screen {
 
 	@Override
 	public boolean mouseClicked(MouseButtonEvent event, boolean doubled) {
-		if (!MouseButtons.left(event)) {
+		if (event.button() != 0) {
 			return super.mouseClicked(event, doubled);
 		}
 		for (int i = hits.size() - 1; i >= 0; i--) {

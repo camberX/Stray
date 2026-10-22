@@ -1,6 +1,5 @@
 package dev.stray.client.mining;
 
-import net.minecraft.world.item.DyeColor;
 import dev.stray.client.config.StrayConfig;
 import dev.stray.client.location.SkyblockLocation;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientChunkEvents;
@@ -54,7 +53,7 @@ final class CrystalHollowsScanner {
 	private enum Structure {
 		KING(
 			CrystalStructure.KING_YOLKAR,
-			List.of(Blocks.WOOL.pick(DyeColor.RED), Blocks.DARK_OAK_STAIRS, Blocks.DARK_OAK_STAIRS, Blocks.DARK_OAK_STAIRS),
+			List.of(Blocks.RED_WOOL, Blocks.DARK_OAK_STAIRS, Blocks.DARK_OAK_STAIRS, Blocks.DARK_OAK_STAIRS),
 			Quarter.GOBLIN,
 			new BlockPos(1, -1, 2)
 		),
@@ -99,9 +98,9 @@ final class CrystalHollowsScanner {
 				Blocks.CLAY,
 				Blocks.OAK_LEAVES,
 				Blocks.OAK_LEAVES,
-				Blocks.DYED_TERRACOTTA.pick(DyeColor.LIME),
-				Blocks.DYED_TERRACOTTA.pick(DyeColor.LIME),
-				Blocks.DYED_TERRACOTTA.pick(DyeColor.GREEN)
+				Blocks.LIME_TERRACOTTA,
+				Blocks.LIME_TERRACOTTA,
+				Blocks.GREEN_TERRACOTTA
 			),
 			Quarter.ANY,
 			new BlockPos(-45, 47, -18)
@@ -187,11 +186,11 @@ final class CrystalHollowsScanner {
 			CrystalStructure.DRAGONS_LAIR,
 			List.of(
 				Blocks.STONE,
-				Blocks.DYED_TERRACOTTA.pick(DyeColor.RED),
-				Blocks.DYED_TERRACOTTA.pick(DyeColor.RED),
-				Blocks.DYED_TERRACOTTA.pick(DyeColor.RED),
+				Blocks.RED_TERRACOTTA,
+				Blocks.RED_TERRACOTTA,
+				Blocks.RED_TERRACOTTA,
 				Blocks.PLAYER_HEAD,
-				Blocks.WOOL.pick(DyeColor.RED)
+				Blocks.RED_WOOL
 			),
 			Quarter.ANY,
 			new BlockPos(0, -3, 5)
@@ -300,7 +299,7 @@ final class CrystalHollowsScanner {
 		int worldZ,
 		BlockPos.MutableBlockPos cursor
 	) {
-		if (block == Blocks.WOOL.pick(DyeColor.RED)) {
+		if (block == Blocks.RED_WOOL) {
 			tryMatch(chunk, x, y, z, worldX, worldZ, Structure.KING, cursor);
 			return;
 		}
@@ -344,7 +343,7 @@ final class CrystalHollowsScanner {
 			tryMatch(chunk, x, y, z, worldX, worldZ, Structure.ODAWA, cursor);
 			return;
 		}
-		if ((block == Blocks.STAINED_GLASS.pick(DyeColor.MAGENTA) || block == Blocks.STAINED_GLASS_PANE.pick(DyeColor.MAGENTA))
+		if ((block == Blocks.MAGENTA_STAINED_GLASS || block == Blocks.MAGENTA_STAINED_GLASS_PANE)
 			&& !nucleus(worldX, worldZ)
 			&& !CrystalHollows.locked(CrystalStructure.FAIRY_GROTTO)) {
 			CrystalHollows.refine(CrystalStructure.FAIRY_GROTTO, cursor.set(worldX, y, worldZ).immutable(), true);

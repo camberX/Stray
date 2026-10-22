@@ -9,7 +9,6 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.Display;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
-import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
@@ -215,7 +214,7 @@ public final class MobGlowRenderer {
 	}
 
 	private static int computeOutlineColor(StrayConfig config, Minecraft client, Entity entity) {
-		Vec3 camera = client.gameRenderer.mainCamera().position();
+		Vec3 camera = client.gameRenderer.getMainCamera().position();
 		if (entity.distanceToSqr(camera) > MAX_RANGE_SQ) {
 			return 0;
 		}
@@ -601,8 +600,8 @@ public final class MobGlowRenderer {
 	}
 
 	private static boolean isHologram(Entity entity) {
-		return entity.getType() == EntityTypes.ARMOR_STAND
-			|| entity.getType() == EntityTypes.TEXT_DISPLAY
+		return entity.getType() == EntityType.ARMOR_STAND
+			|| entity.getType() == EntityType.TEXT_DISPLAY
 			|| entity instanceof Display.TextDisplay;
 	}
 

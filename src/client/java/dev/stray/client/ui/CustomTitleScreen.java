@@ -3,7 +3,6 @@ package dev.stray.client.ui;
 import com.mojang.blaze3d.platform.InputConstants;
 import dev.stray.client.config.StrayConfig;
 import dev.stray.client.hud.CustomTitle;
-import dev.stray.client.input.MouseButtons;
 import dev.stray.client.render.GuiDraw;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
@@ -59,7 +58,7 @@ public class CustomTitleScreen extends Screen {
 	public void onClose() {
 		StrayConfig.get().save();
 		if (minecraft != null) {
-			minecraft.gui.setScreen(parent);
+			minecraft.setScreen(parent);
 		}
 	}
 
@@ -317,7 +316,7 @@ public class CustomTitleScreen extends Screen {
 
 	@Override
 	public boolean mouseClicked(MouseButtonEvent event, boolean doubled) {
-		if (!MouseButtons.left(event)) {
+		if (event.button() != 0) {
 			return super.mouseClicked(event, doubled);
 		}
 		for (int i = hits.size() - 1; i >= 0; i--) {

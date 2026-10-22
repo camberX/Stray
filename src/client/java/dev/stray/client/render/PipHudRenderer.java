@@ -36,7 +36,7 @@ public final class PipHudRenderer {
 
 	static void extract(GuiGraphicsExtractor graphics, DeltaTracker delta) {
 		Minecraft client = Minecraft.getInstance();
-		if (client == null || client.player == null || client.gui.hud.isHidden()) {
+		if (client == null || client.player == null || client.options.hideGui) {
 			return;
 		}
 		StrayConfig config = StrayConfig.get();

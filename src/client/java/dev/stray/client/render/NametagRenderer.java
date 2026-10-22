@@ -21,7 +21,6 @@ import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Avatar;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
-import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.decoration.ArmorStand;
 import net.minecraft.world.level.ClipContext;
@@ -84,7 +83,7 @@ public final class NametagRenderer {
 		if (state.entityType == null) {
 			return false;
 		}
-		if (state.entityType != EntityTypes.PLAYER && state.entityType != EntityTypes.MANNEQUIN) {
+		if (state.entityType != EntityType.PLAYER && state.entityType != EntityType.MANNEQUIN) {
 			return false;
 		}
 		return StrayConfig.get().playerVisuals.nametagsEnabled;
@@ -92,7 +91,7 @@ public final class NametagRenderer {
 
 	static void extract(GuiGraphicsExtractor graphics, DeltaTracker deltaTracker) {
 		Minecraft client = Minecraft.getInstance();
-		if (client.player == null || client.level == null || client.gui.hud.isHidden()) {
+		if (client.player == null || client.level == null || client.options.hideGui) {
 			return;
 		}
 		StrayConfig config = StrayConfig.get();
@@ -101,7 +100,7 @@ public final class NametagRenderer {
 		boolean plates = players.nametagsEnabled && players.nametagCustom();
 		boolean own = config.nametagSelf;
 		float partial = deltaTracker.getGameTimeDeltaPartialTick(true);
-		Camera camera = client.gameRenderer.mainCamera();
+		Camera camera = client.gameRenderer.getMainCamera();
 		if (!camera.isInitialized()) {
 			return;
 		}

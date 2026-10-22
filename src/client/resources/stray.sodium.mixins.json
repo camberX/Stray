@@ -4,6 +4,8 @@
 	"compatibilityLevel": "JAVA_25",
 	"plugin": "dev.stray.client.mixin.sodium.StraySodiumMixinPlugin",
 	"client": [
+		"SodiumShaderLoaderMixin",
+		"SodiumDefaultShaderInterfaceMixin",
 		"SodiumBlockRendererMixin",
 		"SodiumChunkFogMixin"
 	],

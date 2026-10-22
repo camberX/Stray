@@ -137,7 +137,7 @@ public final class LobbyPings {
 		if (client.player == null || client.level == null) {
 			return false;
 		}
-		Camera camera = client.gameRenderer.mainCamera();
+		Camera camera = client.gameRenderer.getMainCamera();
 		if (!camera.isInitialized()) {
 			return false;
 		}
@@ -176,10 +176,10 @@ public final class LobbyPings {
 			return;
 		}
 		Minecraft client = Minecraft.getInstance();
-		if (client.player == null || client.gui.hud.isHidden()) {
+		if (client.player == null || client.options.hideGui) {
 			return;
 		}
-		Camera camera = client.gameRenderer.mainCamera();
+		Camera camera = client.gameRenderer.getMainCamera();
 		if (!camera.isInitialized()) {
 			return;
 		}
@@ -240,7 +240,7 @@ public final class LobbyPings {
 		if (client.player == null) {
 			return;
 		}
-		Camera camera = client.gameRenderer.mainCamera();
+		Camera camera = client.gameRenderer.getMainCamera();
 		if (!camera.isInitialized()) {
 			return;
 		}

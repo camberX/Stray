@@ -8,13 +8,11 @@ import net.minecraft.client.multiplayer.MultiPlayerGameMode;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.protocol.game.ServerboundPunchPacket;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.Display;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
-import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.ExperienceOrb;
 import net.minecraft.world.entity.Interaction;
 import net.minecraft.world.entity.LivingEntity;
@@ -72,7 +70,7 @@ public final class Triggerbot {
 		if (client.player == null || client.level == null || client.gameMode == null) {
 			return;
 		}
-		if (client.gui.screen() != null || client.gui.overlay() != null || client.isPaused()) {
+		if (client.screen != null || client.getOverlay() != null || client.isPaused()) {
 			clearAim();
 			return;
 		}
@@ -132,8 +130,7 @@ public final class Triggerbot {
 		lastHit = tick;
 		extraWait = extraTicks(humanize);
 		gameMode.attack(player, target);
-		player.swing(InteractionHand.MAIN_HAND, held.getAttackAnimation(), false);
-		player.connection.send(ServerboundPunchPacket.INSTANCE);
+		player.swing(InteractionHand.MAIN_HAND);
 	}
 
 	private static boolean delayReady(LocalPlayer player) {
@@ -247,8 +244,8 @@ public final class Triggerbot {
 	private static boolean isNameHologram(Entity entity) {
 		return entity instanceof ArmorStand
 			|| entity instanceof Display.TextDisplay
-			|| entity.getType() == EntityTypes.ARMOR_STAND
-			|| entity.getType() == EntityTypes.TEXT_DISPLAY;
+			|| entity.getType() == EntityType.ARMOR_STAND
+			|| entity.getType() == EntityType.TEXT_DISPLAY;
 	}
 
 	private static boolean labelHasClick(Entity entity) {
@@ -313,7 +310,7 @@ public final class Triggerbot {
 			return true;
 		}
 		EntityType<?> type = entity.getType();
-		if (type == EntityTypes.ARMOR_STAND || type == EntityTypes.MANNEQUIN) {
+		if (type == EntityType.ARMOR_STAND || type == EntityType.MANNEQUIN) {
 			return true;
 		}
 		Identifier id = EntityType.getKey(type);

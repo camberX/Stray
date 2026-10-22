@@ -61,10 +61,10 @@ public final class InventoryHudRenderer {
 
 	static void extract(GuiGraphicsExtractor graphics, DeltaTracker deltaTracker) {
 		Minecraft client = Minecraft.getInstance();
-		if (client.player == null || client.gui.hud.isHidden()) {
+		if (client.player == null || client.options.hideGui) {
 			return;
 		}
-		if ((client.gui.screen() instanceof AbstractContainerScreen<?> || client.gui.screen() instanceof LoadoutsScreen)
+		if ((client.screen instanceof AbstractContainerScreen<?> || client.screen instanceof LoadoutsScreen)
 			&& !HudLayout.editorOpen()) {
 			return;
 		}

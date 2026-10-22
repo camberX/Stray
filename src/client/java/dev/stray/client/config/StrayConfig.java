@@ -17,6 +17,7 @@ import java.io.Reader;
 import java.io.Writer;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Locale;
 
 public final class StrayConfig {
 	private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
@@ -120,6 +121,10 @@ public final class StrayConfig {
 	public boolean pestCooldownTitle = true;
 	public boolean pestLoadoutSwap = false;
 	public int pestLoadoutLead = 3;
+	/** When the pest cooldown timer hits this, Auto loadout equips the spawn set. {@code 2:48}. */
+	public String pestLoadoutAt = "0:03";
+	/** Parsed seconds for {@link #pestLoadoutAt}. Kept while the text box is half typed. */
+	public int pestLoadoutAtSeconds = 3;
 	public String pestCooldownAlert = "Swap armor";
 	public String pestCooldownAlertSub = "5s left";
 	public boolean customTitleEnabled = false;
@@ -1481,6 +1486,19 @@ public final class StrayConfig {
 					loaded.pestLoadoutLead = 3;
 				}
 				loaded.pestLoadoutLead = clamp(loaded.pestLoadoutLead, 0, 30);
+				if (!json.has("pestLoadoutAt") || loaded.pestLoadoutAt == null || loaded.pestLoadoutAt.isBlank()) {
+					loaded.pestLoadoutAtSeconds = loaded.pestLoadoutLead;
+					loaded.pestLoadoutAt = formatPestClock(loaded.pestLoadoutLead);
+				} else {
+					int parsed = parsePestClock(loaded.pestLoadoutAt);
+					if (parsed < 0) {
+						loaded.pestLoadoutAtSeconds = 3;
+						loaded.pestLoadoutAt = "0:03";
+					} else {
+						loaded.pestLoadoutAtSeconds = clamp(parsed, 0, 600);
+						loaded.pestLoadoutAt = formatPestClock(loaded.pestLoadoutAtSeconds);
+					}
+				}
 				if (!json.has("lassoDisplay")) {
 					loaded.lassoDisplay = true;
 				}
@@ -2289,6 +2307,64 @@ public final class StrayConfig {
 
 	public String loadoutSwapSlotCLabel() {
 		return String.valueOf(clampLoadoutSwapSlot(loadoutSwapSlotC));
+	}
+
+	/** Seconds left on the pest cooldown when Auto loadout equips the spawn set. */
+	public int spawnSwapSeconds() {
+		int parsed = parsePestClock(pestLoadoutAt);
+		if (parsed >= 0) {
+			return clamp(parsed, 0, 600);
+		}
+		return clamp(pestLoadoutAtSeconds, 0, 600);
+	}
+
+	/** {@code 2:48} or a plain number of seconds. {@code -1} when the text is incomplete. */
+	public static int parsePestClock(String text) {
+		if (text == null) {
+			return -1;
+		}
+		String trimmed = text.trim();
+		if (trimmed.isEmpty()) {
+			return -1;
+		}
+		int colon = trimmed.indexOf(':');
+		try {
+			if (colon < 0) {
+				int seconds = Integer.parseInt(trimmed);
+				return seconds < 0 ? -1 : seconds;
+			}
+			if (trimmed.indexOf(':', colon + 1) >= 0) {
+				return -1;
+			}
+			String minutesText = trimmed.substring(0, colon);
+			String secondsText = trimmed.substring(colon + 1);
+			if (minutesText.isEmpty() || secondsText.isEmpty()) {
+				return -1;
+			}
+			int minutes = Integer.parseInt(minutesText);
+			int seconds = Integer.parseInt(secondsText);
+			if (minutes < 0 || seconds < 0 || seconds >= 60) {
+				return -1;
+			}
+			return minutes * 60 + seconds;
+		} catch (NumberFormatException ignored) {
+			return -1;
+		}
+	}
+
+	public static String formatPestClock(int totalSeconds) {
+		int clamped = clamp(totalSeconds, 0, 600);
+		return (clamped / 60) + ":" + String.format(Locale.ROOT, "%02d", clamped % 60);
+	}
+
+	public void commitPestLoadoutAt() {
+		int parsed = parsePestClock(pestLoadoutAt);
+		if (parsed < 0) {
+			pestLoadoutAt = formatPestClock(pestLoadoutAtSeconds);
+			return;
+		}
+		pestLoadoutAtSeconds = clamp(parsed, 0, 600);
+		pestLoadoutAt = formatPestClock(pestLoadoutAtSeconds);
 	}
 
 	public static int clampLoadoutSwapSlot(int slot) {

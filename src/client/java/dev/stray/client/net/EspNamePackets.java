@@ -45,7 +45,7 @@ public final class EspNamePackets {
 			return;
 		}
 		if (packet instanceof ClientboundRemoveEntitiesPacket remove) {
-			var ids = remove.entityIds();
+			var ids = remove.getEntityIds();
 			Minecraft.getInstance().execute(() -> {
 				MobGlowRenderer.onRemoveEntities(ids);
 				StarMobEsp.onRemoveEntities(ids);

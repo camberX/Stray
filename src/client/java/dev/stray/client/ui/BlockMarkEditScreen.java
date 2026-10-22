@@ -1,7 +1,6 @@
 package dev.stray.client.ui;
 
 import com.mojang.blaze3d.platform.InputConstants;
-import dev.stray.client.input.MouseButtons;
 import dev.stray.client.item.ItemIds;
 import dev.stray.client.render.BlockMarks;
 import dev.stray.client.render.GuiDraw;
@@ -230,7 +229,7 @@ public class BlockMarkEditScreen extends Screen {
 
 	@Override
 	public boolean mouseClicked(MouseButtonEvent event, boolean doubled) {
-		if (!MouseButtons.left(event)) {
+		if (event.button() != 0) {
 			return super.mouseClicked(event, doubled);
 		}
 		for (int i = hits.size() - 1; i >= 0; i--) {

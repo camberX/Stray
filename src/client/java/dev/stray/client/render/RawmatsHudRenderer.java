@@ -1,7 +1,6 @@
 package dev.stray.client.render;
 
 import dev.stray.client.config.StrayConfig;
-import dev.stray.client.input.MouseButtons;
 import dev.stray.client.item.ItemStorage;
 import dev.stray.client.item.RawmatsTracker;
 import dev.stray.client.item.SkyblockProfileApi;
@@ -50,13 +49,13 @@ public final class RawmatsHudRenderer {
 	}
 
 	public static boolean mouseClicked(MouseButtonEvent event) {
-		if (!MouseButtons.left(event) || !StrayConfig.get().rawmatsHudEnabled) {
+		if (event.button() != 0 || !StrayConfig.get().rawmatsHudEnabled) {
 			return false;
 		}
-		if (Minecraft.getInstance().gui.screen() instanceof HudEditorScreen) {
+		if (Minecraft.getInstance().screen instanceof HudEditorScreen) {
 			return false;
 		}
-		if (!(Minecraft.getInstance().gui.screen() instanceof ChatScreen)) {
+		if (!(Minecraft.getInstance().screen instanceof ChatScreen)) {
 			return false;
 		}
 		if (displayHit.contains(event.x(), event.y())) {
@@ -76,7 +75,7 @@ public final class RawmatsHudRenderer {
 
 	static void extract(GuiGraphicsExtractor graphics, DeltaTracker deltaTracker) {
 		Minecraft client = Minecraft.getInstance();
-		if (client.gui.hud.isHidden()) {
+		if (client.options.hideGui) {
 			modeHit = Rect.EMPTY;
 			displayHit = Rect.EMPTY;
 			return;
@@ -108,7 +107,7 @@ public final class RawmatsHudRenderer {
 
 		HudChrome.panel(graphics, 0, 0, WIDTH, h, 6, Theme.WINDOW, Theme.LINE);
 		GuiDraw.small(graphics, font, "RAW MATS", PAD + 4, PAD + 1, Theme.ACCENT);
-		boolean chat = client.gui.screen() instanceof ChatScreen;
+		boolean chat = client.screen instanceof ChatScreen;
 		StrayConfig config = StrayConfig.get();
 		String mode = config.rawmatsModeLabel();
 		String display = config.rawmatsDisplayLabel();

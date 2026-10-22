@@ -53,7 +53,7 @@ public final class MiningHudRenderer {
 
 	static void extract(GuiGraphicsExtractor graphics, DeltaTracker deltaTracker) {
 		Minecraft client = Minecraft.getInstance();
-		if (client.player == null || client.gui.hud.isHidden()) {
+		if (client.player == null || client.options.hideGui) {
 			return;
 		}
 		drawScatha(graphics, client.font);

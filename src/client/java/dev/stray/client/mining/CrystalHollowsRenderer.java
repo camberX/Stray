@@ -41,10 +41,10 @@ public final class CrystalHollowsRenderer {
 			return;
 		}
 		Minecraft client = Minecraft.getInstance();
-		if (client.player == null || client.gui.hud.isHidden()) {
+		if (client.player == null || client.options.hideGui) {
 			return;
 		}
-		Camera camera = client.gameRenderer.mainCamera();
+		Camera camera = client.gameRenderer.getMainCamera();
 		if (!camera.isInitialized()) {
 			return;
 		}

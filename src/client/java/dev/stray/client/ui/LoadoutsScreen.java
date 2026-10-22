@@ -2,7 +2,6 @@ package dev.stray.client.ui;
 
 import dev.stray.client.config.StrayConfig;
 import dev.stray.client.StrayClient;
-import dev.stray.client.input.MouseButtons;
 import dev.stray.client.item.LoadoutsMenus;
 import dev.stray.client.mixin.AbstractContainerScreenInvoker;
 import dev.stray.client.render.GuiDraw;
@@ -101,7 +100,7 @@ public class LoadoutsScreen extends Screen {
 			return discardIncoming(chest);
 		}
 		Minecraft client = Minecraft.getInstance();
-		if (client.gui.screen() instanceof LoadoutsScreen existing) {
+		if (client.screen instanceof LoadoutsScreen existing) {
 			existing.attach(chest);
 			return existing;
 		}
@@ -109,7 +108,7 @@ public class LoadoutsScreen extends Screen {
 	}
 
 	public static boolean open() {
-		return Minecraft.getInstance().gui.screen() instanceof LoadoutsScreen;
+		return Minecraft.getInstance().screen instanceof LoadoutsScreen;
 	}
 
 	public static boolean hasCache() {
@@ -140,7 +139,7 @@ public class LoadoutsScreen extends Screen {
 	public static int selectedIndex() {
 		Minecraft client = Minecraft.getInstance();
 		LoadoutsMenus.Snapshot snap = cache;
-		if (client.gui.screen() instanceof LoadoutsScreen screen && screen.snapshot != null) {
+		if (client.screen instanceof LoadoutsScreen screen && screen.snapshot != null) {
 			snap = screen.snapshot;
 		}
 		if (snap == null || snap.loadouts() == null) {
@@ -161,11 +160,11 @@ public class LoadoutsScreen extends Screen {
 		}
 		pendingEquipIndex = index;
 		Minecraft client = Minecraft.getInstance();
-		if (client.gui.screen() instanceof LoadoutsScreen screen) {
+		if (client.screen instanceof LoadoutsScreen screen) {
 			screen.tryPendingEquip();
 			return;
 		}
-		if (client.gui.screen() instanceof AbstractContainerScreen<?> chest
+		if (client.screen instanceof AbstractContainerScreen<?> chest
 			&& LoadoutsMenus.matches(chest.getMenu(), chest.getTitle())) {
 			flushPendingEquip(client);
 			return;
@@ -202,7 +201,7 @@ public class LoadoutsScreen extends Screen {
 		skipCustomThisOpen = false;
 		Minecraft client = Minecraft.getInstance();
 		if (client.player != null
-			&& client.gui.screen() instanceof AbstractContainerScreen<?> chest
+			&& client.screen instanceof AbstractContainerScreen<?> chest
 			&& LoadoutsMenus.matches(chest.getMenu(), chest.getTitle())) {
 			client.player.closeContainer();
 		}
@@ -218,10 +217,10 @@ public class LoadoutsScreen extends Screen {
 		}
 		AbstractContainerScreen<?> chest = null;
 		AbstractContainerMenu menu = null;
-		if (client.gui.screen() instanceof LoadoutsScreen screen && screen.vanilla != null && screen.menu != null) {
+		if (client.screen instanceof LoadoutsScreen screen && screen.vanilla != null && screen.menu != null) {
 			chest = screen.vanilla;
 			menu = screen.menu;
-		} else if (client.gui.screen() instanceof AbstractContainerScreen<?> found
+		} else if (client.screen instanceof AbstractContainerScreen<?> found
 			&& LoadoutsMenus.matches(found.getMenu(), found.getTitle())) {
 			chest = found;
 			menu = found.getMenu();
@@ -247,8 +246,8 @@ public class LoadoutsScreen extends Screen {
 		suppressReopen();
 		skipCustomThisOpen = true;
 		client.player.closeContainer();
-		if (client.gui.screen() instanceof LoadoutsScreen) {
-			client.gui.setScreen(null);
+		if (client.screen instanceof LoadoutsScreen) {
+			client.setScreen(null);
 		}
 		return true;
 	}
@@ -261,11 +260,11 @@ public class LoadoutsScreen extends Screen {
 			flushPendingEquip(client);
 		}
 		if (skipCustomThisOpen || silentSwap) {
-			if (client.gui.screen() instanceof LoadoutsScreen loadouts) {
+			if (client.screen instanceof LoadoutsScreen loadouts) {
 				loadouts.followServer();
 				return;
 			}
-			boolean vanillaChest = client.gui.screen() instanceof AbstractContainerScreen<?> chest
+			boolean vanillaChest = client.screen instanceof AbstractContainerScreen<?> chest
 				&& LoadoutsMenus.matches(chest.getMenu(), chest.getTitle());
 			if (!vanillaChest && !silentSwap) {
 				skipCustomThisOpen = false;
@@ -273,22 +272,22 @@ public class LoadoutsScreen extends Screen {
 			return;
 		}
 		if (shouldDiscardIncoming()
-			&& client.gui.screen() instanceof AbstractContainerScreen<?> chest
+			&& client.screen instanceof AbstractContainerScreen<?> chest
 			&& LoadoutsMenus.matches(chest.getMenu(), chest.getTitle())) {
 			discardIncoming(chest);
-			client.gui.setScreen(null);
+			client.setScreen(null);
 			return;
 		}
-		if (client.gui.screen() instanceof LoadoutsScreen loadouts) {
+		if (client.screen instanceof LoadoutsScreen loadouts) {
 			loadouts.followServer();
 			return;
 		}
 		if (!LoadoutsMenus.enabled() || shouldDiscardIncoming()) {
 			return;
 		}
-		if (client.gui.screen() instanceof AbstractContainerScreen<?> chest
+		if (client.screen instanceof AbstractContainerScreen<?> chest
 			&& LoadoutsMenus.matches(chest.getMenu(), chest.getTitle())) {
-			client.gui.setScreen(new LoadoutsScreen(chest));
+			client.setScreen(new LoadoutsScreen(chest));
 		}
 	}
 
@@ -313,7 +312,7 @@ public class LoadoutsScreen extends Screen {
 			closingMenu = true;
 			rememberCache();
 			suppressReopen();
-			minecraft.gui.setScreen(null);
+			minecraft.setScreen(null);
 		}
 	}
 
@@ -656,7 +655,7 @@ public class LoadoutsScreen extends Screen {
 			return;
 		}
 		handingOff = true;
-		minecraft.gui.setScreen(vanilla);
+		minecraft.setScreen(vanilla);
 	}
 
 	private void drawItem(GuiGraphicsExtractor graphics, ItemStack stack, float x, float y, float scale) {
@@ -831,17 +830,17 @@ public class LoadoutsScreen extends Screen {
 	}
 
 	private static void flushPendingEquip(Minecraft client) {
-		if (pendingEquipIndex < 0 || client.gui.screen() == null) {
+		if (pendingEquipIndex < 0 || client.screen == null) {
 			return;
 		}
-		if (client.gui.screen() instanceof LoadoutsScreen screen) {
+		if (client.screen instanceof LoadoutsScreen screen) {
 			screen.tryPendingEquip();
 			return;
 		}
 		if (LoadoutsMenus.enabled()) {
 			return;
 		}
-		if (!(client.gui.screen() instanceof AbstractContainerScreen<?> chest)) {
+		if (!(client.screen instanceof AbstractContainerScreen<?> chest)) {
 			return;
 		}
 		if (!LoadoutsMenus.matches(chest.getMenu(), chest.getTitle())) {
@@ -882,22 +881,22 @@ public class LoadoutsScreen extends Screen {
 				continue;
 			}
 			if (hit.close) {
-				if (MouseButtons.left(event)) {
+				if (event.button() == 0) {
 					onClose();
 				}
 				return true;
 			}
 			if (hit.vanillaMenu) {
-				if (MouseButtons.left(event)) {
+				if (event.button() == 0) {
 					showVanillaMenu();
 				}
 				return true;
 			}
-			if (hit.slot >= 0 && (MouseButtons.left(event) || MouseButtons.right(event))) {
-				if (MouseButtons.left(event)) {
+			if (hit.slot >= 0 && (event.button() == 0 || event.button() == 1)) {
+				if (event.button() == 0) {
 					markSelected(hit.slot);
 				}
-				clickSlot(hit.slot, MouseButtons.containerButton(event));
+				clickSlot(hit.slot, event.button());
 				return true;
 			}
 			return true;
@@ -961,7 +960,7 @@ public class LoadoutsScreen extends Screen {
 		rememberCache();
 		if (vanilla != null && minecraft != null) {
 			handingOff = true;
-			minecraft.gui.setScreen(vanilla);
+			minecraft.setScreen(vanilla);
 			return;
 		}
 		super.onClose();

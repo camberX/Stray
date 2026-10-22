@@ -24,7 +24,7 @@ public final class WardrobeCommands {
 			return 0;
 		}
 		if (!SkyblockLocation.inSkyblock && !SkyblockLocation.onHypixel) {
-			client.gui.hud.getChat().addClientSystemMessage(
+			client.gui.getChat().addClientSystemMessage(
 				Component.literal("Stray | Join Skyblock, then /wardrobe opens the custom menu.")
 			);
 		}
@@ -39,8 +39,8 @@ public final class WardrobeCommands {
 		WardrobeScreen.allowReopen();
 		if (WardrobeMenus.enabled()
 			&& WardrobeScreen.hasCache()
-			&& !(client.gui.screen() instanceof WardrobeScreen)) {
-			client.gui.setScreen(WardrobeScreen.fromCache());
+			&& !(client.screen instanceof WardrobeScreen)) {
+			client.setScreen(WardrobeScreen.fromCache());
 		}
 		return Command.SINGLE_SUCCESS;
 	}

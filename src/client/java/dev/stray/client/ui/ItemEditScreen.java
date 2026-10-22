@@ -1,7 +1,6 @@
 package dev.stray.client.ui;
 
 import com.mojang.blaze3d.platform.InputConstants;
-import dev.stray.client.input.MouseButtons;
 import dev.stray.client.item.ItemAppearance;
 import dev.stray.client.item.ItemIds;
 import dev.stray.client.item.SkyblockItems;
@@ -334,7 +333,7 @@ public class ItemEditScreen extends Screen {
 
 	@Override
 	public boolean mouseClicked(MouseButtonEvent event, boolean doubled) {
-		if (!MouseButtons.left(event)) {
+		if (event.button() != 0) {
 			return super.mouseClicked(event, doubled);
 		}
 		dragging = false;
@@ -353,7 +352,7 @@ public class ItemEditScreen extends Screen {
 
 	@Override
 	public boolean mouseDragged(MouseButtonEvent event, double dx, double dy) {
-		if (MouseButtons.left(event) && dragging) {
+		if (event.button() == 0 && dragging) {
 			windowX = (float) (event.x() - dragOffX);
 			windowY = (float) (event.y() - dragOffY);
 			return true;

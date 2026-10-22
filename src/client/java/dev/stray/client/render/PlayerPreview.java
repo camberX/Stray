@@ -15,6 +15,7 @@ import net.minecraft.world.entity.Pose;
 import net.minecraft.world.entity.player.PlayerSkin;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.item.SwingAnimationType;
 import net.minecraft.world.item.component.ResolvableProfile;
 import net.minecraft.world.level.block.SkullBlock;
 import org.joml.Quaternionf;
@@ -285,8 +286,8 @@ public final class PlayerPreview {
 			armed.leftHandItemState.clear();
 			armed.rightArmPose = HumanoidModel.ArmPose.EMPTY;
 			armed.leftArmPose = HumanoidModel.ArmPose.EMPTY;
-			armed.swingAnimation = 0f;
-			armed.currentSwing = null;
+			armed.attackTime = 0f;
+			armed.swingAnimationType = SwingAnimationType.NONE;
 		}
 		if (state instanceof HumanoidRenderState humanoid) {
 			humanoid.isCrouching = false;

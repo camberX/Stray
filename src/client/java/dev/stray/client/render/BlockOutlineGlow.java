@@ -4,6 +4,8 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import dev.stray.client.config.StrayConfig;
 import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderEvents;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.OutlineBufferSource;
 import net.minecraft.client.renderer.rendertype.RenderTypes;
 import net.minecraft.client.renderer.state.level.BlockOutlineRenderState;
 import net.minecraft.core.BlockPos;
@@ -29,14 +31,14 @@ public final class BlockOutlineGlow {
 				return;
 			}
 			if (active(context.levelState().blockOutlineRenderState)) {
-				cheapBlur = !context.levelState().shouldShowEntityOutlines;
-				context.levelState().shouldShowEntityOutlines = true;
+				cheapBlur = !context.levelState().haveGlowingEntities;
+				context.levelState().haveGlowingEntities = true;
 			} else {
 				cheapBlur = false;
 			}
 		});
 		LevelRenderEvents.BEFORE_BLOCK_OUTLINE.register((context, outline) -> !TopDownCapture.capturing() && !active(outline));
-		LevelRenderEvents.COLLECT_SUBMITS.register(context -> {
+		LevelRenderEvents.AFTER_TRANSLUCENT_FEATURES.register(context -> {
 			if (TopDownCapture.capturing()) {
 				return;
 			}
@@ -44,26 +46,33 @@ public final class BlockOutlineGlow {
 			if (!active(outline) || context.poseStack() == null) {
 				return;
 			}
+			Minecraft client = Minecraft.getInstance();
+			if (client.player == null) {
+				return;
+			}
+			OutlineBufferSource buffers = client.renderBuffers().outlineBufferSource();
+			buffers.setColor(color());
+			VertexConsumer consumer = buffers.getBuffer(RenderTypes.outline(WHITE));
 			Vec3 camera = context.levelState().cameraRenderState.pos;
 			BlockPos pos = outline.pos();
 			double ox = pos.getX() - camera.x;
 			double oy = pos.getY() - camera.y;
 			double oz = pos.getZ() - camera.z;
+			PoseStack.Pose pose = context.poseStack().last();
 			VoxelShape shape = outline.shape();
-			int color = color();
-			context.submitNodeCollector().submitCustomGeometry(context.poseStack(), RenderTypes.outline(WHITE), (pose, consumer) ->
-				shape.forAllBoxes((x0, y0, z0, x1, y1, z1) -> emitBox(
-					consumer,
-					pose,
-					color,
-					(float) (ox + x0),
-					(float) (oy + y0),
-					(float) (oz + z0),
-					(float) (ox + x1),
-					(float) (oy + y1),
-					(float) (oz + z1)
-				))
-			);
+			if (shape == null || shape.isEmpty()) {
+				return;
+			}
+			shape.forAllBoxes((x0, y0, z0, x1, y1, z1) -> emitBox(
+				consumer,
+				pose,
+				(float) (ox + x0),
+				(float) (oy + y0),
+				(float) (oz + z0),
+				(float) (ox + x1),
+				(float) (oy + y1),
+				(float) (oz + z1)
+			));
 		});
 	}
 
@@ -89,7 +98,6 @@ public final class BlockOutlineGlow {
 	private static void emitBox(
 		VertexConsumer consumer,
 		PoseStack.Pose pose,
-		int color,
 		float x0,
 		float y0,
 		float z0,
@@ -97,18 +105,17 @@ public final class BlockOutlineGlow {
 		float y1,
 		float z1
 	) {
-		quad(consumer, pose, color, x0, y0, z0, x1, y0, z0, x1, y0, z1, x0, y0, z1);
-		quad(consumer, pose, color, x0, y1, z0, x0, y1, z1, x1, y1, z1, x1, y1, z0);
-		quad(consumer, pose, color, x0, y0, z0, x0, y1, z0, x1, y1, z0, x1, y0, z0);
-		quad(consumer, pose, color, x0, y0, z1, x1, y0, z1, x1, y1, z1, x0, y1, z1);
-		quad(consumer, pose, color, x0, y0, z0, x0, y0, z1, x0, y1, z1, x0, y1, z0);
-		quad(consumer, pose, color, x1, y0, z0, x1, y1, z0, x1, y1, z1, x1, y0, z1);
+		quad(consumer, pose, x0, y0, z0, x1, y0, z0, x1, y0, z1, x0, y0, z1);
+		quad(consumer, pose, x0, y1, z0, x0, y1, z1, x1, y1, z1, x1, y1, z0);
+		quad(consumer, pose, x0, y0, z0, x0, y1, z0, x1, y1, z0, x1, y0, z0);
+		quad(consumer, pose, x0, y0, z1, x1, y0, z1, x1, y1, z1, x0, y1, z1);
+		quad(consumer, pose, x0, y0, z0, x0, y0, z1, x0, y1, z1, x0, y1, z0);
+		quad(consumer, pose, x1, y0, z0, x1, y1, z0, x1, y1, z1, x1, y0, z1);
 	}
 
 	private static void quad(
 		VertexConsumer consumer,
 		PoseStack.Pose pose,
-		int color,
 		float x0,
 		float y0,
 		float z0,
@@ -122,13 +129,13 @@ public final class BlockOutlineGlow {
 		float y3,
 		float z3
 	) {
-		vertex(consumer, pose, color, x0, y0, z0, 0f, 0f);
-		vertex(consumer, pose, color, x1, y1, z1, 1f, 0f);
-		vertex(consumer, pose, color, x2, y2, z2, 1f, 1f);
-		vertex(consumer, pose, color, x3, y3, z3, 0f, 1f);
+		vertex(consumer, pose, x0, y0, z0, 0f, 0f);
+		vertex(consumer, pose, x1, y1, z1, 1f, 0f);
+		vertex(consumer, pose, x2, y2, z2, 1f, 1f);
+		vertex(consumer, pose, x3, y3, z3, 0f, 1f);
 	}
 
-	private static void vertex(VertexConsumer consumer, PoseStack.Pose pose, int color, float x, float y, float z, float u, float v) {
-		consumer.addVertex(pose, x, y, z).setUv(u, v).setColor(color);
+	private static void vertex(VertexConsumer consumer, PoseStack.Pose pose, float x, float y, float z, float u, float v) {
+		consumer.addVertex(pose, x, y, z).setUv(u, v);
 	}
 }

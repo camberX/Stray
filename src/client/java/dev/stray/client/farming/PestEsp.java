@@ -54,7 +54,7 @@ public final class PestEsp {
 			view = List.of();
 			return;
 		}
-		Vec3 camera = client.gameRenderer.mainCamera().position();
+		Vec3 camera = client.gameRenderer.getMainCamera().position();
 		List<Mark> next = new ArrayList<>();
 		List<AABB> worms = new ArrayList<>();
 		for (Entity entity : client.level.entitiesForRendering()) {

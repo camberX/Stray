@@ -61,7 +61,7 @@ public final class EntityHealthBars {
 
 	static void extract(GuiGraphicsExtractor graphics, DeltaTracker delta) {
 		Minecraft client = Minecraft.getInstance();
-		if (client.player == null || client.level == null || client.gui.hud.isHidden()) {
+		if (client.player == null || client.level == null || client.options.hideGui) {
 			return;
 		}
 		StrayConfig config = StrayConfig.get();
@@ -73,7 +73,7 @@ public final class EntityHealthBars {
 		long now = System.nanoTime();
 		float dt = Math.min(0.05f, (now - lastNs) / 1_000_000_000f);
 		lastNs = now;
-		Camera camera = client.gameRenderer.mainCamera();
+		Camera camera = client.gameRenderer.getMainCamera();
 		if (!camera.isInitialized()) {
 			return;
 		}

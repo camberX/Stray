@@ -8,8 +8,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.input.MouseButtonEvent;
-import com.mojang.blaze3d.platform.InputConstants;
-import dev.stray.client.input.MouseButtons;
+import org.lwjgl.glfw.GLFW;
 
 /**
  * Bottom-right update card. Slides in, holds, slides out. Click dismisses.
@@ -115,7 +114,7 @@ public final class UpdateToast {
 	}
 
 	public static boolean mouseClicked(MouseButtonEvent event) {
-		if (!MouseButtons.left(event)) {
+		if (event.button() != 0) {
 			return false;
 		}
 		return click(event.x(), event.y());
@@ -137,7 +136,7 @@ public final class UpdateToast {
 			mouseWasDown = false;
 			return;
 		}
-		if (client.gui.screen() != null) {
+		if (client.screen != null) {
 			mouseWasDown = false;
 			return;
 		}
@@ -145,7 +144,7 @@ public final class UpdateToast {
 			mouseWasDown = false;
 			return;
 		}
-		boolean down = MouseButtons.down(InputConstants.MOUSE_BUTTON_LEFT);
+		boolean down = GLFW.glfwGetMouseButton(client.getWindow().handle(), GLFW.GLFW_MOUSE_BUTTON_LEFT) == GLFW.GLFW_PRESS;
 		if (down && !mouseWasDown) {
 			double mx = client.mouseHandler.getScaledXPos(client.getWindow());
 			double my = client.mouseHandler.getScaledYPos(client.getWindow());

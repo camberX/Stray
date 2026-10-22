@@ -2,10 +2,9 @@ package dev.stray.client.mixin;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import dev.stray.client.visual.LegacySkullHold;
-import net.minecraft.client.renderer.FirstPersonHandsAndItemsRenderer;
+import net.minecraft.client.player.AbstractClientPlayer;
+import net.minecraft.client.renderer.ItemInHandRenderer;
 import net.minecraft.client.renderer.SubmitNodeCollector;
-import net.minecraft.client.renderer.state.level.FirstPersonHandsAndItemsRenderState;
-import net.minecraft.client.renderer.state.level.PlayerRenderState;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.item.ItemStack;
 import org.spongepowered.asm.mixin.Mixin;
@@ -13,29 +12,28 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-@Mixin(FirstPersonHandsAndItemsRenderer.class)
+@Mixin(ItemInHandRenderer.class)
 public class ItemInHandRendererMixin {
 	@Inject(
-		method = "submitArmWithItem",
+		method = "renderArmWithItem",
 		at = @At(
 			value = "INVOKE",
-			target = "Lnet/minecraft/client/renderer/item/ItemStackRenderState;submit(Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/SubmitNodeCollector;III)V"
+			target = "Lnet/minecraft/client/renderer/ItemInHandRenderer;renderItem(Lnet/minecraft/world/entity/LivingEntity;Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/world/item/ItemDisplayContext;Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/SubmitNodeCollector;I)V"
 		)
 	)
 	private void stray$skullHold(
-		PlayerRenderState player,
-		FirstPersonHandsAndItemsRenderState hands,
-		float partialTick,
+		AbstractClientPlayer player,
+		float tickDelta,
 		float pitch,
 		InteractionHand hand,
 		float swingProgress,
-		ItemStack stack,
+		ItemStack itemStack,
 		float equippedProgress,
 		PoseStack poseStack,
-		SubmitNodeCollector collector,
-		int light,
+		SubmitNodeCollector submitNodeCollector,
+		int lightCoords,
 		CallbackInfo ci
 	) {
-		LegacySkullHold.applyFirstPerson(poseStack, stack);
+		LegacySkullHold.applyFirstPerson(poseStack, itemStack);
 	}
 }

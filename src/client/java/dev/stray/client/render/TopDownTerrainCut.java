@@ -1,24 +1,56 @@
 package dev.stray.client.render;
 
+import com.mojang.blaze3d.opengl.GlRenderPipeline;
+import com.mojang.blaze3d.opengl.GlStateManager;
+import org.lwjgl.opengl.GL11;
+import org.lwjgl.opengl.GL20;
+
+import java.util.HashMap;
+import java.util.Map;
+
 /**
  * Full blocks from 2 above the player's block position, within 6 blocks, are
  * discarded while the top-down picture is taken. The uniform is cleared
  * afterwards so the main view is unchanged.
  */
 public final class TopDownTerrainCut {
+	private static final Map<Integer, Integer> locations = new HashMap<>();
+
 	private TopDownTerrainCut() {
 	}
 
-	public static void bind() {
-		if (TopDownCapture.capturing()) {
-			StrayUniforms.cut(TopDownCapture.cutThreshold(), 6f, 1f);
-		} else {
-			StrayUniforms.cut(0f, 0f, 0f);
+	public static void bind(GlRenderPipeline pipeline) {
+		if (!TopDownCapture.capturing() || pipeline == null || pipeline.program() == null) {
+			return;
 		}
+		int program = pipeline.program().getProgramId();
+		if (program <= 0) {
+			return;
+		}
+		int location = locations.computeIfAbsent(program, TopDownTerrainCut::find);
+		if (location < 0) {
+			return;
+		}
+		uniform(program, location, TopDownCapture.cutThreshold(), 6f, 1f);
 	}
 
 	public static void clear() {
-		StrayUniforms.cut(0f, 0f, 0f);
+		for (Map.Entry<Integer, Integer> entry : locations.entrySet()) {
+			if (entry.getKey() > 0 && entry.getValue() >= 0) {
+				uniform(entry.getKey(), entry.getValue(), 0f, 0f, 0f);
+			}
+		}
+	}
+
+	private static void uniform(int program, int location, float x, float y, float z) {
+		int previous = GL11.glGetInteger(GL20.GL_CURRENT_PROGRAM);
+		GL20.glUseProgram(program);
+		GL20.glUniform3f(location, x, y, z);
+		GL20.glUseProgram(previous);
+	}
+
+	private static int find(int program) {
+		return GlStateManager._glGetUniformLocation(program, "StrayCut");
 	}
 
 	/**
@@ -35,7 +67,7 @@ public final class TopDownTerrainCut {
 			return source;
 		}
 		return source
-			.replace("out vec2 v_TexCoord;", "out vec2 v_TexCoord;\nlayout(location = 7) out vec3 strayRel;")
+			.replace("out vec2 v_TexCoord;", "out vec2 v_TexCoord;\nout vec3 strayRel;")
 			.replace(
 				"vec3 position = _vert_position + translation;",
 				"vec3 position = _vert_position + translation;\n    strayRel = position;"
@@ -43,14 +75,13 @@ public final class TopDownTerrainCut {
 	}
 
 	public static String patchSodiumFragment(String source) {
-		if (source == null || source.contains("u_StrayCut.z") || !source.contains("in vec2 v_TexCoord;") || !source.contains("color *= v_Color;")) {
+		if (source == null || source.contains("u_StrayCut") || !source.contains("void main() {")) {
 			return source;
 		}
-		String withIn = source.replace(
-			"in vec2 v_TexCoord;",
-			"in vec2 v_TexCoord;\nlayout(location = 7) in vec3 strayRel;"
-		);
-		return StrayUniforms.insertBlock(withIn).replace(
+		String withIn = source.contains("in vec2 v_TexCoord;")
+			? source.replace("in vec2 v_TexCoord;", "in vec2 v_TexCoord;\nin vec3 strayRel;\nuniform vec3 u_StrayCut;")
+			: "in vec3 strayRel;\nuniform vec3 u_StrayCut;\n" + source;
+		return withIn.replace(
 			"void main() {",
 			"void main() {\n    " + discard("u_StrayCut")
 		);
@@ -62,18 +93,16 @@ public final class TopDownTerrainCut {
 		}
 		if (source.contains("ChunkPosition") && source.contains("vec3 pos =")) {
 			return source
-				.replace("out vec2 texCoord0;", "out vec2 texCoord0;\nlayout(location = 7) out vec3 strayRel;")
+				.replace("out vec2 texCoord0;", "out vec2 texCoord0;\nout vec3 strayRel;")
 				.replace("texCoord0 = UV0;", "texCoord0 = UV0;\n    strayRel = pos;");
 		}
-		if (source.contains("chunkVisibility") && source.contains("in vec2 texCoord0;") && source.contains("void main() {")) {
-			String withIn = source.replace(
-				"in vec2 texCoord0;",
-				"in vec2 texCoord0;\nlayout(location = 7) in vec3 strayRel;"
-			);
-			return StrayUniforms.insertBlock(withIn).replace(
-				"void main() {",
-				"void main() {\n    " + discard("u_StrayCut")
-			);
+		if (source.contains("ChunkVisibility") && source.contains("in vec2 texCoord0;") && source.contains("void main() {")) {
+			return source
+				.replace("in vec2 texCoord0;", "in vec2 texCoord0;\nin vec3 strayRel;\nuniform vec3 StrayCut;")
+				.replace(
+					"void main() {",
+					"void main() {\n    " + discard("StrayCut") + "\n"
+				);
 		}
 		return source;
 	}

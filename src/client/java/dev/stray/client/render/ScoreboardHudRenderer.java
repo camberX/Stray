@@ -14,7 +14,6 @@ import net.minecraft.world.scores.Objective;
 import net.minecraft.world.scores.PlayerScoreEntry;
 import net.minecraft.world.scores.PlayerTeam;
 import net.minecraft.world.scores.Scoreboard;
-import net.minecraft.world.scores.TeamColor;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -102,11 +101,13 @@ public final class ScoreboardHudRenderer {
 	private static Objective sidebar(Scoreboard scoreboard, LocalPlayer player) {
 		Objective objective = scoreboard.getDisplayObjective(DisplaySlot.SIDEBAR);
 		PlayerTeam team = scoreboard.getPlayersTeam(player.getScoreboardName());
-		DisplaySlot colored = team == null ? null : team.getColor().map(TeamColor::displaySlot).orElse(null);
-		if (colored != null) {
-			Objective teamObjective = scoreboard.getDisplayObjective(colored);
-			if (teamObjective != null) {
-				return teamObjective;
+		if (team != null && team.getColor().isColor()) {
+			DisplaySlot colored = DisplaySlot.teamColorToSlot(team.getColor());
+			if (colored != null) {
+				Objective teamObjective = scoreboard.getDisplayObjective(colored);
+				if (teamObjective != null) {
+					return teamObjective;
+				}
 			}
 		}
 		return objective;

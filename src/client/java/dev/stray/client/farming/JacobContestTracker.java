@@ -10,7 +10,6 @@ import net.minecraft.world.scores.Objective;
 import net.minecraft.world.scores.PlayerScoreEntry;
 import net.minecraft.world.scores.PlayerTeam;
 import net.minecraft.world.scores.Scoreboard;
-import net.minecraft.world.scores.TeamColor;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -268,11 +267,13 @@ public final class JacobContestTracker {
 	private static Objective sidebarObjective(Scoreboard scoreboard, String playerName) {
 		Objective objective = scoreboard.getDisplayObjective(DisplaySlot.SIDEBAR);
 		PlayerTeam team = scoreboard.getPlayersTeam(playerName);
-		DisplaySlot colored = team == null ? null : team.getColor().map(TeamColor::displaySlot).orElse(null);
-		if (colored != null) {
-			Objective teamObjective = scoreboard.getDisplayObjective(colored);
-			if (teamObjective != null) {
-				return teamObjective;
+		if (team != null && team.getColor().isColor()) {
+			DisplaySlot colored = DisplaySlot.teamColorToSlot(team.getColor());
+			if (colored != null) {
+				Objective teamObjective = scoreboard.getDisplayObjective(colored);
+				if (teamObjective != null) {
+					return teamObjective;
+				}
 			}
 		}
 		return objective;

@@ -36,9 +36,6 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -63,22 +60,12 @@ public final class StoragePreview {
 	private static final int PAD = 7;
 	private static final int HEAD = 16;
 	private static final int COLS = 9;
-	private static final long SAVE_DELAY_MS = 2000L;
-	private static final Pattern FORMATTING = Pattern.compile("§.");
-	private static final Pattern CONTROL = Pattern.compile("[\\p{C}]");
-	private static final ExecutorService WRITER = Executors.newSingleThreadExecutor(runnable -> {
-		Thread thread = new Thread(runnable, "Stray storage preview writer");
-		thread.setDaemon(true);
-		return thread;
-	});
 
 	private static final Page[] pages = new Page[PAGES];
 	private static String loadedKey = "";
 	private static String lastProfile = "";
 	private static Path saveDir;
 	private static boolean dirty;
-	private static final boolean[] dirtyPages = new boolean[PAGES];
-	private static long lastChange;
 
 	private StoragePreview() {
 	}
@@ -88,25 +75,14 @@ public final class StoragePreview {
 			if (!(screen instanceof AbstractContainerScreen<?> container)) {
 				return;
 			}
-			ScreenEvents.remove(screen).register(closed -> {
-				capture(container, false);
-				flush();
-			});
+			ScreenEvents.remove(screen).register(closed -> capture(container, false));
 			ScreenEvents.afterExtract(screen).register((opened, graphics, mouseX, mouseY, tickDelta) -> {
 				if (opened instanceof AbstractContainerScreen<?> open) {
 					extract(open, graphics, mouseX, mouseY, hovered(open), false);
 				}
 			});
 		});
-		ClientLifecycleEvents.CLIENT_STOPPING.register(client -> {
-			flush();
-			WRITER.shutdown();
-			try {
-				WRITER.awaitTermination(5, TimeUnit.SECONDS);
-			} catch (InterruptedException ignored) {
-				Thread.currentThread().interrupt();
-			}
-		});
+		ClientLifecycleEvents.CLIENT_STOPPING.register(client -> flush());
 	}
 
 	public static void tick(Minecraft client) {
@@ -116,7 +92,7 @@ public final class StoragePreview {
 		if (!StrayConfig.get().storagePreviewEnabled) {
 			return;
 		}
-		if (client.gui.screen() instanceof AbstractContainerScreen<?> container) {
+		if (client.screen instanceof AbstractContainerScreen<?> container) {
 			capture(container, true);
 		}
 		if (!SkyblockLocation.inSkyblock) {
@@ -135,10 +111,7 @@ public final class StoragePreview {
 				.resolve(key);
 			load();
 		}
-		// Debounced: clicking around a page used to rewrite every page file
-		// on the render thread each tick. Now only changed pages are saved,
-		// in the background, once the page has settled (or on close).
-		if (dirty && System.currentTimeMillis() - lastChange >= SAVE_DELAY_MS) {
+		if (dirty) {
 			flush();
 		}
 	}
@@ -210,11 +183,6 @@ public final class StoragePreview {
 		if (chest < 9) {
 			return;
 		}
-		Page prior = pages[index];
-		// Cheap check first so an unchanged page costs no copies per tick.
-		if (prior != null && sameItems(prior.items, menu, chest)) {
-			return;
-		}
 		List<ItemStack> items = new ArrayList<>(chest);
 		int filled = 0;
 		for (int i = 0; i < chest; i++) {
@@ -229,25 +197,23 @@ public final class StoragePreview {
 		if (live && filled == 0) {
 			return;
 		}
+		Page prior = pages[index];
 		if (filled == 0 && prior != null && !prior.empty()) {
 			return;
 		}
+		if (prior != null && sameItems(prior.items, items)) {
+			return;
+		}
 		pages[index] = new Page(name, items);
-		dirtyPages[index] = true;
 		dirty = true;
-		lastChange = System.currentTimeMillis();
 	}
 
-	private static boolean sameItems(List<ItemStack> stored, AbstractContainerMenu menu, int chest) {
-		if (stored.size() != chest) {
+	private static boolean sameItems(List<ItemStack> left, List<ItemStack> right) {
+		if (left.size() != right.size()) {
 			return false;
 		}
-		for (int i = 0; i < chest; i++) {
-			ItemStack live = menu.slots.get(i).getItem();
-			if (live == null) {
-				live = ItemStack.EMPTY;
-			}
-			if (!ItemStack.matches(stored.get(i), live)) {
+		for (int i = 0; i < left.size(); i++) {
+			if (!ItemStack.matches(left.get(i), right.get(i))) {
 				return false;
 			}
 		}
@@ -430,10 +396,7 @@ public final class StoragePreview {
 	}
 
 	private static String strip(String raw) {
-		if (raw == null || raw.isEmpty()) {
-			return "";
-		}
-		return CONTROL.matcher(FORMATTING.matcher(raw).replaceAll("")).replaceAll("").trim();
+		return raw == null ? "" : raw.replaceAll("§.", "").replaceAll("[\\p{C}]", "").trim();
 	}
 
 	private static String profileKey(Minecraft client) {
@@ -484,7 +447,6 @@ public final class StoragePreview {
 	private static void load() {
 		for (int i = 0; i < PAGES; i++) {
 			pages[i] = null;
-			dirtyPages[i] = false;
 		}
 		if (saveDir == null || !Files.isDirectory(saveDir)) {
 			return;
@@ -527,15 +489,17 @@ public final class StoragePreview {
 		if (ops == null) {
 			return;
 		}
-		Path dir = saveDir;
-		List<CompoundTag> tags = new ArrayList<>();
-		List<Path> files = new ArrayList<>();
+		try {
+			Files.createDirectories(saveDir);
+		} catch (IOException exception) {
+			Stray.LOGGER.warn("Could not create storage preview folder", exception);
+			return;
+		}
 		for (int i = 0; i < PAGES; i++) {
 			Page page = pages[i];
-			if (!dirtyPages[i] || page == null) {
+			if (page == null) {
 				continue;
 			}
-			dirtyPages[i] = false;
 			try {
 				Tag items = ITEMS.encodeStart(ops, page.items).result().orElse(null);
 				if (items == null) {
@@ -544,31 +508,12 @@ public final class StoragePreview {
 				CompoundTag tag = new CompoundTag();
 				tag.putString("name", page.name);
 				tag.put("items", items);
-				tags.add(tag);
-				files.add(dir.resolve(i + ".nbt"));
+				NbtIo.write(tag, saveDir.resolve(i + ".nbt"));
 			} catch (Exception exception) {
-				Stray.LOGGER.warn("Could not encode storage preview {}", i, exception);
+				Stray.LOGGER.warn("Could not write storage preview {}", i, exception);
 			}
 		}
 		dirty = false;
-		if (tags.isEmpty()) {
-			return;
-		}
-		WRITER.execute(() -> {
-			try {
-				Files.createDirectories(dir);
-			} catch (IOException exception) {
-				Stray.LOGGER.warn("Could not create storage preview folder", exception);
-				return;
-			}
-			for (int i = 0; i < tags.size(); i++) {
-				try {
-					NbtIo.write(tags.get(i), files.get(i));
-				} catch (Exception exception) {
-					Stray.LOGGER.warn("Could not write storage preview {}", files.get(i).getFileName(), exception);
-				}
-			}
-		});
 	}
 
 	private static RegistryOps<Tag> ops() {

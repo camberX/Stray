@@ -124,11 +124,11 @@ public final class CommandShortcuts {
 	public static int open() {
 		Minecraft client = Minecraft.getInstance();
 		client.execute(() -> {
-			if (client.gui.screen() instanceof CommandShortcutScreen) {
-				client.gui.screen().onClose();
+			if (client.screen instanceof CommandShortcutScreen) {
+				client.screen.onClose();
 				return;
 			}
-			client.gui.setScreen(new CommandShortcutScreen(client.gui.screen()));
+			client.setScreen(new CommandShortcutScreen(client.screen));
 		});
 		return Command.SINGLE_SUCCESS;
 	}

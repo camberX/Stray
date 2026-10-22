@@ -1,45 +1,38 @@
 package dev.stray.client.visual;
 
-import com.mojang.renderpearl.api.pipeline.BlendFunction;
-import com.mojang.renderpearl.api.pipeline.ColorTargetState;
-import com.mojang.renderpearl.api.pipeline.DepthStencilState;
-import com.mojang.renderpearl.api.pipeline.RenderPipeline;
+import com.mojang.blaze3d.pipeline.BlendFunction;
+import com.mojang.blaze3d.pipeline.ColorTargetState;
+import com.mojang.blaze3d.pipeline.DepthStencilState;
+import com.mojang.blaze3d.pipeline.RenderPipeline;
 import com.mojang.blaze3d.pipeline.RenderTarget;
 import com.mojang.blaze3d.pipeline.TextureTarget;
-import com.mojang.renderpearl.api.pipeline.CompareOp;
-import com.mojang.renderpearl.api.pipeline.BindGroupLayout;
-import com.mojang.renderpearl.api.pipeline.UniformType;
-import com.mojang.renderpearl.api.commands.CommandEncoder;
-import com.mojang.renderpearl.api.commands.RenderPass;
+import com.mojang.blaze3d.platform.CompareOp;
+import com.mojang.blaze3d.shaders.UniformType;
+import com.mojang.blaze3d.systems.CommandEncoder;
+import com.mojang.blaze3d.systems.RenderPass;
 import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.renderpearl.api.textures.FilterMode;
-import com.mojang.renderpearl.api.textures.GpuSampler;
-import com.mojang.renderpearl.api.textures.GpuTexture;
-import com.mojang.renderpearl.backend.opengl.GlStateManager;
-import com.mojang.renderpearl.frontend.FrontendCommandEncoder;
-import org.lwjgl.opengl.GL11;
+import com.mojang.blaze3d.textures.FilterMode;
+import com.mojang.blaze3d.textures.GpuSampler;
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.QuadInstance;
-import com.mojang.renderpearl.api.pipeline.PrimitiveTopology;
+import com.mojang.blaze3d.vertex.VertexFormat;
 import dev.stray.Stray;
 import dev.stray.client.config.EntityKind;
 import dev.stray.client.config.EntityVisuals;
 import dev.stray.client.config.StrayConfig;
-import dev.stray.client.mixin.RenderPipelinesInvoker;
 import dev.stray.client.mixin.RenderSetupAccessor;
 import dev.stray.client.mixin.RenderSetupTextureBindingAccessor;
 import dev.stray.client.mixin.RenderTypeAccessor;
-import dev.stray.client.render.RenderCompat;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.model.geom.ModelPart;
-import net.minecraft.client.renderer.BindGroupLayouts;
+import net.minecraft.client.renderer.MultiBufferSource;
+import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.client.renderer.blockentity.AbstractEndPortalRenderer;
 import net.minecraft.client.renderer.entity.state.LivingEntityRenderState;
 import net.minecraft.client.renderer.feature.ItemFeatureRenderer;
-import net.minecraft.client.renderer.StagedVertexBuffer;
-import net.minecraft.client.renderer.rendertype.PreparedRenderType;
+import net.minecraft.client.renderer.rendertype.OutputTarget;
 import net.minecraft.client.renderer.rendertype.RenderSetup;
 import net.minecraft.client.renderer.rendertype.RenderType;
 import net.minecraft.client.renderer.texture.OverlayTexture;
@@ -55,12 +48,10 @@ import org.joml.Vector3fc;
 import org.joml.Vector4f;
 import org.joml.Vector4fc;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.IdentityHashMap;
-import java.util.List;
 import java.util.Optional;
-import java.util.OptionalDouble;
+import java.util.OptionalInt;
 import java.util.Set;
 import java.util.function.Function;
 
@@ -72,6 +63,8 @@ public final class HeldItemShader {
 	private static final Identifier SILHOUETTE_SHADER_ID = Stray.id("post/held_item_silhouette");
 	private static final Identifier ROWDIST_SHADER_ID = Stray.id("post/held_item_rowdist");
 	private static final Identifier ESP_BLIT_SHADER_ID = Stray.id("post/fill_esp_blit");
+	private static final OutputTarget MASK_OUTPUT = new OutputTarget("stray_held_item_mask", HeldItemShader::maskTarget);
+	private static final OutputTarget ESP_OUTPUT = new OutputTarget("stray_fill_esp", HeldItemShader::espTarget);
 	private static final Function<Identifier, RenderType> FILL_TYPES = Util.memoize(HeldItemShader::createFillType);
 	private static final Function<Identifier, RenderType> PLAYER_FILL_TYPES = Util.memoize(HeldItemShader::createPlayerFillType);
 	private static final Function<Identifier, RenderType> ESP_FILL_TYPES = Util.memoize(HeldItemShader::createEspFillType);
@@ -92,8 +85,6 @@ public final class HeldItemShader {
 	private static int playerFillDepth;
 	private static EntityVisuals fillVisuals;
 	private static final Set<Object> FILL_ITEMS = Collections.newSetFromMap(new IdentityHashMap<>());
-	private static final List<OffscreenDraw> MASK_DRAWS = new ArrayList<>();
-	private static final List<OffscreenDraw> ESP_DRAWS = new ArrayList<>();
 
 	private HeldItemShader() {
 	}
@@ -227,39 +218,49 @@ public final class HeldItemShader {
 		if (fillPipeline != null) {
 			return;
 		}
-		fillPipeline = itemPipeline(FILL_PIPELINE_ID, 0.1f, true);
-		espFillPipeline = itemPipeline(ESP_FILL_PIPELINE_ID, 0.5f, true, "ESP_FILL");
-		maskPipeline = itemPipeline(MASK_PIPELINE_ID, 0.1f, false, "COVERAGE_MASK");
-	}
-
-	private static RenderPipeline itemPipeline(Identifier location, float alphaCutout, boolean portal, String... defines) {
-		RenderPipeline.Builder builder = RenderPipeline.builder()
-			.withLocation(location)
-			.withVertexShader(FILL_SHADER_ID)
-			.withFragmentShader(FILL_SHADER_ID)
-			.withBindGroupLayout(BindGroupLayouts.GLOBALS)
-			.withBindGroupLayout(BindGroupLayouts.PROJECTION)
-			.withBindGroupLayout(BindGroupLayouts.DYNAMIC_TRANSFORMS)
-			.withBindGroupLayout(BindGroupLayouts.FOG)
-			.withBindGroupLayout(BindGroupLayouts.LIGHTING)
-			.withBindGroupLayout(BindGroupLayouts.SAMPLER0_SAMPLER1_SAMPLER2)
-			.withBindGroupLayout(BindGroupLayout.builder()
-				.withUniform("Sampler3", UniformType.COMBINED_IMAGE_SAMPLER)
-				.withUniform("Sampler4", UniformType.COMBINED_IMAGE_SAMPLER)
-				.build())
-			.withVertexBinding(0, DefaultVertexFormat.ENTITY)
-			.withPrimitiveTopology(PrimitiveTopology.QUADS)
-			.withDepthStencilState(DepthStencilState.DEFAULT)
-			.withShaderDefine("ALPHA_CUTOUT", alphaCutout)
-			.withColorTargetState(ColorTargetState.DEFAULT)
-			.withCull(false);
-		if (portal) {
-			builder.withShaderDefine("PORTAL_LAYERS", 15);
-		}
-		for (String define : defines) {
-			builder.withShaderDefine(define);
-		}
-		return RenderPipelinesInvoker.stray$register(builder.build());
+		fillPipeline = RenderPipelines.register(
+			RenderPipeline.builder(RenderPipelines.ITEM_SNIPPET, RenderPipelines.GLOBALS_SNIPPET)
+				.withLocation(FILL_PIPELINE_ID)
+				.withVertexShader(FILL_SHADER_ID)
+				.withFragmentShader(FILL_SHADER_ID)
+				.withSampler("Sampler1")
+				.withSampler("Sampler3")
+				.withSampler("Sampler4")
+				.withShaderDefine("ALPHA_CUTOUT", 0.1f)
+				.withShaderDefine("PORTAL_LAYERS", 15)
+				.withColorTargetState(ColorTargetState.DEFAULT)
+				.withCull(false)
+				.build()
+		);
+		espFillPipeline = RenderPipelines.register(
+			RenderPipeline.builder(RenderPipelines.ITEM_SNIPPET, RenderPipelines.GLOBALS_SNIPPET)
+				.withLocation(ESP_FILL_PIPELINE_ID)
+				.withVertexShader(FILL_SHADER_ID)
+				.withFragmentShader(FILL_SHADER_ID)
+				.withSampler("Sampler1")
+				.withSampler("Sampler3")
+				.withSampler("Sampler4")
+				.withShaderDefine("ALPHA_CUTOUT", 0.5f)
+				.withShaderDefine("ESP_FILL")
+				.withShaderDefine("PORTAL_LAYERS", 15)
+				.withColorTargetState(ColorTargetState.DEFAULT)
+				.withCull(false)
+				.build()
+		);
+		maskPipeline = RenderPipelines.register(
+			RenderPipeline.builder(RenderPipelines.ITEM_SNIPPET, RenderPipelines.GLOBALS_SNIPPET)
+				.withLocation(MASK_PIPELINE_ID)
+				.withVertexShader(FILL_SHADER_ID)
+				.withFragmentShader(FILL_SHADER_ID)
+				.withSampler("Sampler1")
+				.withSampler("Sampler3")
+				.withSampler("Sampler4")
+				.withShaderDefine("ALPHA_CUTOUT", 0.1f)
+				.withShaderDefine("COVERAGE_MASK")
+				.withColorTargetState(ColorTargetState.DEFAULT)
+				.withCull(false)
+				.build()
+		);
 	}
 
 	public static RenderType wrap(RenderType original, Iterable<BakedQuad> quads) {
@@ -340,12 +341,12 @@ public final class HeldItemShader {
 			return;
 		}
 		Minecraft client = Minecraft.getInstance();
-		RenderTarget main = client.gameRenderer.mainRenderTarget();
+		RenderTarget main = client.getMainRenderTarget();
 		if (main == null || main.width <= 0 || main.height <= 0) {
 			return;
 		}
 		if (espTarget == null) {
-			espTarget = RenderCompat.colorDepthTarget("stray fill esp", main.width, main.height);
+			espTarget = new TextureTarget("stray fill esp", main.width, main.height, true);
 		} else if (espTarget.width != main.width || espTarget.height != main.height) {
 			espTarget.resize(main.width, main.height);
 		}
@@ -354,9 +355,9 @@ public final class HeldItemShader {
 		}
 		CommandEncoder encoder = RenderSystem.getDevice().createCommandEncoder();
 		if (espTarget.getDepthTexture() != null) {
-			encoder.clearColorAndDepthTextures(espTarget.getColorTexture(), RenderCompat.CLEAR_TRANSPARENT, espTarget.getDepthTexture(), 1.0);
+			encoder.clearColorAndDepthTextures(espTarget.getColorTexture(), 0, espTarget.getDepthTexture(), 1.0);
 		} else {
-			encoder.clearColorTexture(espTarget.getColorTexture(), RenderCompat.CLEAR_TRANSPARENT);
+			encoder.clearColorTexture(espTarget.getColorTexture(), 0);
 		}
 		espThisFrame = true;
 	}
@@ -367,7 +368,7 @@ public final class HeldItemShader {
 		}
 		espThisFrame = false;
 		Minecraft client = Minecraft.getInstance();
-		RenderTarget main = client.gameRenderer.mainRenderTarget();
+		RenderTarget main = client.getMainRenderTarget();
 		if (espTarget == null || main == null || espTarget.getColorTextureView() == null || main.getColorTextureView() == null) {
 			return;
 		}
@@ -377,12 +378,12 @@ public final class HeldItemShader {
 		try (RenderPass pass = encoder.createRenderPass(
 			() -> "stray fill esp blit",
 			main.getColorTextureView(),
-			Optional.empty()
+			OptionalInt.empty()
 		)) {
-			pass.setPipeline(RenderSystem.getCompiledPipeline(espBlitPipeline));
+			pass.setPipeline(espBlitPipeline);
 			RenderSystem.bindDefaultUniforms(pass);
-			pass.setUniform("InSampler", espTarget.getColorTextureView(), nearest);
-			pass.draw(3, 1, 0, 0);
+			pass.bindTexture("InSampler", espTarget.getColorTextureView(), nearest);
+			pass.draw(0, 3);
 		}
 	}
 
@@ -414,49 +415,22 @@ public final class HeldItemShader {
 			return;
 		}
 		Minecraft client = Minecraft.getInstance();
-		RenderTarget main = client.gameRenderer.mainRenderTarget();
+		RenderTarget main = client.getMainRenderTarget();
 		if (main == null || maskTarget == null || main.getDepthTexture() == null || maskTarget.getDepthTexture() == null) {
 			return;
 		}
-		copyDepth(main.getDepthTexture(), maskTarget.getDepthTexture(), maskTarget.width, maskTarget.height);
+		maskTarget.copyDepthFrom(main);
 		playerMaskDepthReady = true;
-	}
-
-	/**
-	 * World depth has to be snapshotted after opaque terrain and before solid
-	 * entities, while the main pass is still open. The frontend encoder refuses
-	 * copies in that state. The OpenGL blit uses its own framebuffers, so it can
-	 * run here; the pass scissor is put back before the next draw.
-	 */
-	private static void copyDepth(GpuTexture source, GpuTexture destination, int width, int height) {
-		CommandEncoder encoder = RenderSystem.getDevice().createCommandEncoder();
-		if (!(encoder instanceof FrontendCommandEncoder frontend) || !frontend.isInRenderPass()) {
-			encoder.copyTextureToTexture(source, destination, 0, 0, 0, 0, 0, width, height);
-			return;
-		}
-		boolean scissor = GL11.glIsEnabled(GL11.GL_SCISSOR_TEST);
-		int[] box = new int[4];
-		if (scissor) {
-			GL11.glGetIntegerv(GL11.GL_SCISSOR_BOX, box);
-		}
-		try {
-			frontend.backend().copyTextureToTexture(source, destination, 0, 0, 0, 0, 0, width, height);
-		} finally {
-			if (scissor) {
-				GlStateManager._enableScissorTest();
-				GlStateManager._scissorBox(box[0], box[1], box[2], box[3]);
-			}
-		}
 	}
 
 	private static boolean prepareMaskTarget() {
 		Minecraft client = Minecraft.getInstance();
-		RenderTarget main = client.gameRenderer.mainRenderTarget();
+		RenderTarget main = client.getMainRenderTarget();
 		if (main == null || main.width <= 0 || main.height <= 0) {
 			return false;
 		}
 		if (maskTarget == null) {
-			maskTarget = RenderCompat.colorDepthTarget("stray held item mask", main.width, main.height);
+			maskTarget = new TextureTarget("stray held item mask", main.width, main.height, true);
 		} else if (maskTarget.width != main.width || maskTarget.height != main.height) {
 			maskTarget.resize(main.width, main.height);
 		}
@@ -465,64 +439,30 @@ public final class HeldItemShader {
 		}
 		CommandEncoder encoder = RenderSystem.getDevice().createCommandEncoder();
 		if (maskTarget.getDepthTexture() != null) {
-			encoder.clearColorAndDepthTextures(maskTarget.getColorTexture(), RenderCompat.CLEAR_TRANSPARENT, maskTarget.getDepthTexture(), 1.0);
+			encoder.clearColorAndDepthTextures(maskTarget.getColorTexture(), 0, maskTarget.getDepthTexture(), 1.0);
 		} else {
-			encoder.clearColorTexture(maskTarget.getColorTexture(), RenderCompat.CLEAR_TRANSPARENT);
+			encoder.clearColorTexture(maskTarget.getColorTexture(), 0);
 		}
 		return true;
 	}
 
-	public static RenderType maskRenderType(Identifier atlas) {
+	public static void drawViewMask(
+		MultiBufferSource.BufferSource buffers,
+		PoseStack.Pose pose,
+		Iterable<BakedQuad> quads,
+		QuadInstance quadInstance
+	) {
+		if (!masking() || buffers == null || quads == null || pose == null || quadInstance == null) {
+			return;
+		}
 		ensureRegistered();
-		Identifier texture = atlas == null ? TextureAtlas.LOCATION_ITEMS : atlas;
-		return MASK_TYPES.apply(texture);
-	}
-
-	public static boolean captureOffscreen(PreparedRenderType type, StagedVertexBuffer.ExecuteInfo info) {
-		if (type == null || info == null || type.name() == null) {
-			return false;
-		}
-		String name = type.name();
-		if (name.startsWith("stray_held_item_mask")) {
-			MASK_DRAWS.add(new OffscreenDraw(type, info));
-			return true;
-		}
-		if (name.startsWith("stray_fill_esp")) {
-			ESP_DRAWS.add(new OffscreenDraw(type, info));
-			return true;
-		}
-		return false;
-	}
-
-	public static void flushOffscreen() {
-		drawOffscreen(MASK_DRAWS, maskTarget);
-		drawOffscreen(ESP_DRAWS, espTarget);
-	}
-
-	private static void drawOffscreen(List<OffscreenDraw> draws, RenderTarget target) {
-		if (draws.isEmpty()) {
-			return;
-		}
-		List<OffscreenDraw> pending = List.copyOf(draws);
-		draws.clear();
-		if (target == null || target.getColorTextureView() == null) {
-			return;
-		}
-		try (RenderPass pass = RenderSystem.getDevice().createCommandEncoder().createRenderPass(
-			() -> "stray offscreen",
-			target.getColorTextureView(),
-			Optional.empty(),
-			target.getDepthTextureView(),
-			OptionalDouble.empty()
-		)) {
-			RenderSystem.bindDefaultUniforms(pass);
-			for (OffscreenDraw draw : pending) {
-				draw.type.drawFromBuffer(draw.info, pass);
+		for (BakedQuad quad : quads) {
+			Identifier atlas = TextureAtlas.LOCATION_ITEMS;
+			if (quad != null) {
+				atlas = quad.materialInfo().sprite().atlasLocation();
 			}
+			buffers.getBuffer(MASK_TYPES.apply(atlas)).putBakedQuad(pose, quad, quadInstance);
 		}
-	}
-
-	private record OffscreenDraw(PreparedRenderType type, StagedVertexBuffer.ExecuteInfo info) {
 	}
 
 	public static void compositeSilhouette() {
@@ -547,12 +487,12 @@ public final class HeldItemShader {
 
 	private static void runSilhouette(String label, Vector4fc outline, float thickness) {
 		Minecraft client = Minecraft.getInstance();
-		RenderTarget main = client.gameRenderer.mainRenderTarget();
+		RenderTarget main = client.getMainRenderTarget();
 		if (maskTarget == null || main == null || maskTarget.getColorTextureView() == null || main.getColorTextureView() == null) {
 			return;
 		}
 		if (rowTarget == null) {
-			rowTarget = RenderCompat.colorTarget("stray held item row distance", main.width, main.height);
+			rowTarget = new TextureTarget("stray held item row distance", main.width, main.height, false);
 		} else if (rowTarget.width != main.width || rowTarget.height != main.height) {
 			rowTarget.resize(main.width, main.height);
 		}
@@ -563,7 +503,7 @@ public final class HeldItemShader {
 		// Mapping a UBO is illegal while a RenderPass is open.
 		var transforms = RenderSystem.getDynamicUniforms().writeTransform(
 			new Matrix4f(),
-			new Vector4f(outline),
+			outline,
 			new Vector3f(thickness, 0f, 0f),
 			new Matrix4f()
 		);
@@ -574,25 +514,25 @@ public final class HeldItemShader {
 		try (RenderPass pass = encoder.createRenderPass(
 			() -> label + " row distance",
 			rowTarget.getColorTextureView(),
-			Optional.empty()
+			OptionalInt.empty()
 		)) {
-			pass.setPipeline(RenderSystem.getCompiledPipeline(rowDistPipeline));
+			pass.setPipeline(rowDistPipeline);
 			RenderSystem.bindDefaultUniforms(pass);
 			pass.setUniform("DynamicTransforms", transforms);
-			pass.setUniform("InSampler", maskTarget.getColorTextureView(), nearest);
-			pass.draw(3, 1, 0, 0);
+			pass.bindTexture("InSampler", maskTarget.getColorTextureView(), nearest);
+			pass.draw(0, 3);
 		}
 		try (RenderPass pass = encoder.createRenderPass(
 			() -> label + " silhouette",
 			main.getColorTextureView(),
-			Optional.empty()
+			OptionalInt.empty()
 		)) {
-			pass.setPipeline(RenderSystem.getCompiledPipeline(silhouettePipeline));
+			pass.setPipeline(silhouettePipeline);
 			RenderSystem.bindDefaultUniforms(pass);
 			pass.setUniform("DynamicTransforms", transforms);
-			pass.setUniform("InSampler", maskTarget.getColorTextureView(), nearest);
-			pass.setUniform("RowSampler", rowTarget.getColorTextureView(), nearest);
-			pass.draw(3, 1, 0, 0);
+			pass.bindTexture("InSampler", maskTarget.getColorTextureView(), nearest);
+			pass.bindTexture("RowSampler", rowTarget.getColorTextureView(), nearest);
+			pass.draw(0, 3);
 		}
 	}
 
@@ -666,6 +606,14 @@ public final class HeldItemShader {
 		return isPlayerFillPipeline(pipeline) || playerFill();
 	}
 
+	private static RenderTarget maskTarget() {
+		return maskTarget;
+	}
+
+	private static RenderTarget espTarget() {
+		return espTarget;
+	}
+
 	private static Identifier atlas(RenderType original, Iterable<BakedQuad> quads) {
 		Identifier atlas = TextureAtlas.LOCATION_ITEMS;
 		if (quads != null) {
@@ -696,8 +644,8 @@ public final class HeldItemShader {
 			return false;
 		}
 		ensureRegistered();
-		return pipeline.getVertexFormatBinding(0) == espFillPipeline.getVertexFormatBinding(0)
-			&& pipeline.getPrimitiveTopology() == espFillPipeline.getPrimitiveTopology();
+		return pipeline.getVertexFormat() == espFillPipeline.getVertexFormat()
+			&& pipeline.getVertexFormatMode() == espFillPipeline.getVertexFormatMode();
 	}
 
 	private static Identifier sampler0(RenderType original) {
@@ -718,7 +666,7 @@ public final class HeldItemShader {
 
 	private static RenderType createFillType(Identifier atlas) {
 		ensureRegistered();
-		return RenderTypeAccessor.stray$create(
+		return RenderType.create(
 			"stray_held_item",
 			RenderSetup.builder(fillPipeline)
 				.withTexture("Sampler0", atlas)
@@ -734,7 +682,7 @@ public final class HeldItemShader {
 
 	private static RenderType createPlayerFillType(Identifier atlas) {
 		ensureRegistered();
-		return RenderTypeAccessor.stray$create(
+		return RenderType.create(
 			"stray_player_fill",
 			RenderSetup.builder(espFillPipeline)
 				.withTexture("Sampler0", atlas)
@@ -750,7 +698,7 @@ public final class HeldItemShader {
 
 	private static RenderType createEspFillType(Identifier atlas) {
 		ensureRegistered();
-		return RenderTypeAccessor.stray$create(
+		return RenderType.create(
 			"stray_fill_esp",
 			RenderSetup.builder(espFillPipeline)
 				.withTexture("Sampler0", atlas)
@@ -759,6 +707,7 @@ public final class HeldItemShader {
 				.withTexture("Sampler4", AbstractEndPortalRenderer.END_PORTAL_LOCATION)
 				.useLightmap()
 				.affectsCrumbling()
+				.setOutputTarget(ESP_OUTPUT)
 				.setOutline(RenderSetup.OutlineProperty.AFFECTS_OUTLINE)
 				.createRenderSetup()
 		);
@@ -766,7 +715,7 @@ public final class HeldItemShader {
 
 	private static RenderType createMaskType(Identifier atlas) {
 		ensureRegistered();
-		return RenderTypeAccessor.stray$create(
+		return RenderType.create(
 			"stray_held_item_mask",
 			RenderSetup.builder(maskPipeline)
 				.withTexture("Sampler0", atlas)
@@ -774,6 +723,7 @@ public final class HeldItemShader {
 				.withTexture("Sampler3", AbstractEndPortalRenderer.END_SKY_LOCATION)
 				.withTexture("Sampler4", AbstractEndPortalRenderer.END_PORTAL_LOCATION)
 				.useLightmap()
+				.setOutputTarget(MASK_OUTPUT)
 				.setOutline(RenderSetup.OutlineProperty.NONE)
 				.createRenderSetup()
 		);
@@ -783,16 +733,24 @@ public final class HeldItemShader {
 		if (silhouettePipeline != null) {
 			return;
 		}
-		rowDistPipeline = RenderCompat.screenQuad(Stray.id("pipeline/held_item_rowdist"), ROWDIST_SHADER_ID)
-			.withBindGroupLayout(BindGroupLayouts.IN_SAMPLER)
-			.withBindGroupLayout(BindGroupLayouts.DYNAMIC_TRANSFORMS)
-			.withColorTargetState(RenderCompat.opaqueTarget())
+		rowDistPipeline = RenderPipeline.builder()
+			.withLocation(Stray.id("pipeline/held_item_rowdist"))
+			.withVertexShader(Identifier.withDefaultNamespace("core/screenquad"))
+			.withFragmentShader(ROWDIST_SHADER_ID)
+			.withSampler("InSampler")
+			.withUniform("DynamicTransforms", UniformType.UNIFORM_BUFFER)
+			.withVertexFormat(DefaultVertexFormat.EMPTY, VertexFormat.Mode.TRIANGLES)
+			.withColorTargetState(new ColorTargetState(Optional.empty(), ColorTargetState.WRITE_ALL))
 			.withDepthStencilState(new DepthStencilState(CompareOp.ALWAYS_PASS, false))
 			.build();
-		silhouettePipeline = RenderCompat.screenQuad(Stray.id("pipeline/held_item_silhouette"), SILHOUETTE_SHADER_ID)
-			.withBindGroupLayout(BindGroupLayouts.IN_SAMPLER)
-			.withBindGroupLayout(RenderCompat.sampler("RowSampler"))
-			.withBindGroupLayout(BindGroupLayouts.DYNAMIC_TRANSFORMS)
+		silhouettePipeline = RenderPipeline.builder()
+			.withLocation(Stray.id("pipeline/held_item_silhouette"))
+			.withVertexShader(Identifier.withDefaultNamespace("core/screenquad"))
+			.withFragmentShader(SILHOUETTE_SHADER_ID)
+			.withSampler("InSampler")
+			.withSampler("RowSampler")
+			.withUniform("DynamicTransforms", UniformType.UNIFORM_BUFFER)
+			.withVertexFormat(DefaultVertexFormat.EMPTY, VertexFormat.Mode.TRIANGLES)
 			.withColorTargetState(new ColorTargetState(BlendFunction.ENTITY_OUTLINE_BLIT))
 			.withDepthStencilState(new DepthStencilState(CompareOp.ALWAYS_PASS, false))
 			.build();
@@ -802,8 +760,12 @@ public final class HeldItemShader {
 		if (espBlitPipeline != null) {
 			return;
 		}
-		espBlitPipeline = RenderCompat.screenQuad(Stray.id("pipeline/fill_esp_blit"), ESP_BLIT_SHADER_ID)
-			.withBindGroupLayout(BindGroupLayouts.IN_SAMPLER)
+		espBlitPipeline = RenderPipeline.builder()
+			.withLocation(Stray.id("pipeline/fill_esp_blit"))
+			.withVertexShader(Identifier.withDefaultNamespace("core/screenquad"))
+			.withFragmentShader(ESP_BLIT_SHADER_ID)
+			.withSampler("InSampler")
+			.withVertexFormat(DefaultVertexFormat.EMPTY, VertexFormat.Mode.TRIANGLES)
 			.withColorTargetState(new ColorTargetState(BlendFunction.TRANSLUCENT))
 			.withDepthStencilState(new DepthStencilState(CompareOp.ALWAYS_PASS, false))
 			.build();

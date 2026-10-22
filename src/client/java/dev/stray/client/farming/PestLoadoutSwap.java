@@ -11,7 +11,6 @@ import net.minecraft.world.scores.Objective;
 import net.minecraft.world.scores.PlayerScoreEntry;
 import net.minecraft.world.scores.PlayerTeam;
 import net.minecraft.world.scores.Scoreboard;
-import net.minecraft.world.scores.TeamColor;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -27,10 +26,8 @@ import java.util.regex.Pattern;
  * With TriSwap, Swap C equips 1–2 seconds after the spawn, and Swap A comes
  * back once every pest is dead.
  *
- * <p>Swap B is 5:00 minus the reduction on the pests tab, then the configured
- * seconds before that hits 0. {@code 4m 45s -> 1m 57s} is a 168s reduction,
- * so the swap clock is 2:12 with Time left still to run. Once pests are up,
- * Swap B is skipped.
+ * <p>Swap B equips when the pest cooldown timer reaches the time typed under
+ * Auto loadout, such as {@code 2:48}. Once pests are up, Swap B is skipped.
  *
  * <p>A spawn is the garden chat line ({@code GROSS! A Pest has appeared},
  * {@code YUCK! 4 Pests have spawned}), the scoreboard {@code The Garden} /
@@ -143,7 +140,7 @@ public final class PestLoadoutSwap {
 		}
 		long now = System.currentTimeMillis();
 		sense(client, true);
-		int lead = StrayConfig.clamp(config.pestLoadoutLead, 0, 30);
+		int lead = config.spawnSwapSeconds();
 		remember(now, lead, config.loadoutSwapSlotB);
 		switch (phase) {
 			case FARM -> {
@@ -177,7 +174,7 @@ public final class PestLoadoutSwap {
 					swapWaitTold = false;
 					return;
 				}
-				if (equip(config.loadoutSwapSlotB, lead + "s left")) {
+				if (equip(config.loadoutSwapSlotB, StrayConfig.formatPestClock(lead) + " left")) {
 					phase = Phase.WAIT_SPAWN;
 					waitSince = now;
 				}
@@ -240,9 +237,9 @@ public final class PestLoadoutSwap {
 		spawnedA = true;
 	}
 
-	/** Copy the reduced-timer end while the cycle is counting, and keep it after the widget goes Ready. */
+	/** Copy the cooldown end while it is counting, and keep it after the widget goes Ready. */
 	private static void remember(long now, int lead, int slotB) {
-		long end = PestCooldown.reducedEndsAt();
+		long end = PestCooldown.endsAt();
 		if (end <= 0L) {
 			return;
 		}
@@ -272,11 +269,12 @@ public final class PestLoadoutSwap {
 		}
 		long due = latchedEndMs - lead * 1000L;
 		int slot = StrayConfig.clampLoadoutSwapSlot(slotB);
+		String at = StrayConfig.formatPestClock(lead);
 		if (due <= now) {
-			StrayDebug.tell("Pest swap B now (slot " + slot + ", " + lead + "s left)");
+			StrayDebug.tell("Pest swap B now (slot " + slot + ", at " + at + ")");
 		} else {
 			long inSec = (due - now + 999L) / 1000L;
-			StrayDebug.tell("Pest swap B in " + inSec + "s (slot " + slot + ", " + lead + "s left)");
+			StrayDebug.tell("Pest swap B in " + inSec + "s (slot " + slot + ", at " + at + ")");
 		}
 	}
 
@@ -423,11 +421,13 @@ public final class PestLoadoutSwap {
 	private static Objective sidebarObjective(Scoreboard scoreboard, String playerName) {
 		Objective objective = scoreboard.getDisplayObjective(DisplaySlot.SIDEBAR);
 		PlayerTeam team = scoreboard.getPlayersTeam(playerName);
-		DisplaySlot colored = team == null ? null : team.getColor().map(TeamColor::displaySlot).orElse(null);
-		if (colored != null) {
-			Objective teamObjective = scoreboard.getDisplayObjective(colored);
-			if (teamObjective != null) {
-				return teamObjective;
+		if (team != null && team.getColor().isColor()) {
+			DisplaySlot colored = DisplaySlot.teamColorToSlot(team.getColor());
+			if (colored != null) {
+				Objective teamObjective = scoreboard.getDisplayObjective(colored);
+				if (teamObjective != null) {
+					return teamObjective;
+				}
 			}
 		}
 		return objective;
@@ -461,7 +461,7 @@ public final class PestLoadoutSwap {
 			return new DebugHud("Swap", "off", false);
 		}
 		long now = System.currentTimeMillis();
-		int lead = StrayConfig.clamp(config.pestLoadoutLead, 0, 30);
+		int lead = config.spawnSwapSeconds();
 		int slotA = StrayConfig.clampLoadoutSwapSlot(config.loadoutSwapSlotA);
 		int slotB = StrayConfig.clampLoadoutSwapSlot(config.loadoutSwapSlotB);
 		int slotC = StrayConfig.clampLoadoutSwapSlot(config.loadoutSwapSlotC);

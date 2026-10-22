@@ -1,7 +1,6 @@
 package dev.stray.client.render;
 
 import dev.stray.client.config.StrayConfig;
-import dev.stray.client.input.MouseButtons;
 import dev.stray.client.farming.GardenHud;
 import dev.stray.client.farming.GardenHud.ContestSnap;
 import dev.stray.client.farming.GardenHud.HoeSnap;
@@ -73,14 +72,14 @@ public final class GardenHudRenderer {
 	}
 
 	public static boolean mouseClicked(MouseButtonEvent event) {
-		if (!MouseButtons.left(event) || !StrayConfig.get().gardenShoppingHudEnabled) {
+		if (event.button() != 0 || !StrayConfig.get().gardenShoppingHudEnabled) {
 			return false;
 		}
 		Minecraft client = Minecraft.getInstance();
-		if (client.gui.screen() instanceof HudEditorScreen) {
+		if (client.screen instanceof HudEditorScreen) {
 			return false;
 		}
-		if (client.gui.screen() == null) {
+		if (client.screen == null) {
 			return false;
 		}
 		for (Hit hit : ITEM_HITS) {
@@ -153,7 +152,7 @@ public final class GardenHudRenderer {
 
 	static void extract(GuiGraphicsExtractor graphics, DeltaTracker deltaTracker) {
 		Minecraft client = Minecraft.getInstance();
-		if (client.gui.screen() instanceof AbstractContainerScreen<?>) {
+		if (client.screen instanceof AbstractContainerScreen<?>) {
 			return;
 		}
 		paint(graphics);
@@ -162,7 +161,7 @@ public final class GardenHudRenderer {
 	private static void paint(GuiGraphicsExtractor graphics) {
 		ITEM_HITS.clear();
 		Minecraft client = Minecraft.getInstance();
-		if (client.player == null || client.gui.hud.isHidden()) {
+		if (client.player == null || client.options.hideGui) {
 			return;
 		}
 		drawPestSwapDebug(graphics, client.font);
@@ -206,7 +205,7 @@ public final class GardenHudRenderer {
 				drawShopping(graphics, client.font, box.x(), box.y(), HudLayout.scale(HudLayout.Id.SHOPPING), snap);
 			}
 		}
-		if (config.pestCooldownHudEnabled) {
+		if (config.pestCooldownHudEnabled && (client.screen == null || HudLayout.editorOpen())) {
 			Snap snap = PestCooldown.snap();
 			if (showPestCooldown(snap)) {
 				HudLayout.Box box = HudLayout.box(HudLayout.Id.PEST_COOLDOWN, client.font, graphics.guiWidth(), graphics.guiHeight());

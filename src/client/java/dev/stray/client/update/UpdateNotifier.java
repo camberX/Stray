@@ -2,7 +2,6 @@ package dev.stray.client.update;
 
 import dev.stray.Stray;
 import dev.stray.client.config.StrayConfig;
-import dev.stray.client.input.MouseButtons;
 import dev.stray.update.UpdateMeta;
 import net.fabricmc.fabric.api.client.screen.v1.ScreenEvents;
 import net.fabricmc.fabric.api.client.screen.v1.ScreenMouseEvents;
@@ -19,7 +18,7 @@ public final class UpdateNotifier {
 				UpdateToast.extract(graphics)
 			);
 			ScreenMouseEvents.allowMouseClick(screen).register((opened, event) -> {
-				if (!MouseButtons.left(event)) {
+				if (event.button() != 0) {
 					return true;
 				}
 				return !UpdateToast.mouseClicked(event);

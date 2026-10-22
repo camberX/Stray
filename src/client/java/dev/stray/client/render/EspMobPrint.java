@@ -5,7 +5,6 @@ import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.EntityType;
-import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.ItemStack;
@@ -124,7 +123,7 @@ public final class EspMobPrint {
 			return null;
 		}
 		Identifier type = BuiltInRegistries.ENTITY_TYPE.getKey(entity.getType());
-		if (type == null || entity.getType() == EntityTypes.PLAYER) {
+		if (type == null || entity.getType() == EntityType.PLAYER) {
 			return null;
 		}
 		Saved sample = new Saved();

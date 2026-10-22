@@ -2,7 +2,6 @@ package dev.stray.client.ui;
 
 import com.mojang.blaze3d.platform.cursor.CursorTypes;
 import dev.stray.client.config.StrayConfig;
-import dev.stray.client.input.MouseButtons;
 import dev.stray.client.render.GuiDraw;
 import dev.stray.client.render.HudLayout;
 import net.minecraft.client.gui.Font;
@@ -165,7 +164,7 @@ public class HudEditorScreen extends Screen {
 
 	@Override
 	public boolean mouseClicked(MouseButtonEvent event, boolean doubled) {
-		if (!MouseButtons.left(event)) {
+		if (event.button() != 0) {
 			return super.mouseClicked(event, doubled);
 		}
 		int guiW = minecraft.getWindow().getGuiScaledWidth();
@@ -198,7 +197,7 @@ public class HudEditorScreen extends Screen {
 
 	@Override
 	public boolean mouseDragged(MouseButtonEvent event, double dx, double dy) {
-		if (!MouseButtons.left(event)) {
+		if (event.button() != 0) {
 			return super.mouseDragged(event, dx, dy);
 		}
 		if (scaling && selected != null) {
@@ -262,7 +261,7 @@ public class HudEditorScreen extends Screen {
 
 	private void done() {
 		StrayConfig.get().save();
-		minecraft.gui.setScreen(new StrayScreen());
+		minecraft.setScreen(new StrayScreen());
 	}
 
 	private static HudLayout.Box pick(List<HudLayout.Box> boxes, double mx, double my) {
