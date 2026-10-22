@@ -162,6 +162,14 @@ public final class GuiFrostBlur {
 	}
 
 	public static void blitWindow(GuiGraphicsExtractor graphics, float x, float y, float w, float h, float radius) {
+		blitWindow(graphics, x, y, w, h, radius, 1f);
+	}
+
+	/** Like {@link #blitWindow(GuiGraphicsExtractor, float, float, float, float, float)} but faded, so it can animate out. */
+	public static void blitWindow(GuiGraphicsExtractor graphics, float x, float y, float w, float h, float radius, float alpha) {
+		if (alpha <= 0.004f) {
+			return;
+		}
 		noteBlit(graphics, x, y, w, h);
 		if (!haveFrost || frost == null || w <= 0f || h <= 0f) {
 			return;
@@ -179,7 +187,8 @@ public final class GuiFrostBlur {
 		ensureRoundedBlitPipeline();
 		int ru = Math.max(1, Math.min(255, Math.round(r / w * 255f)));
 		int rv = Math.max(1, Math.min(255, Math.round(r / h * 255f)));
-		int color = 0xFF000000 | (ru << 16) | (rv << 8) | 0xFF;
+		int alphaByte = Math.max(0, Math.min(255, Math.round(alpha * 255f)));
+		int color = (alphaByte << 24) | (ru << 16) | (rv << 8) | 0xFF;
 		graphics.pose().pushMatrix();
 		graphics.pose().translate(x, y);
 		graphics.pose().scale(w, h);

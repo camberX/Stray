@@ -1694,17 +1694,33 @@ public final class StrayConfig {
 		return "client".equals(watermarkStyle);
 	}
 
+	public boolean watermarkHypr() {
+		return "hypr".equals(watermarkStyle);
+	}
+
 	public void cycleWatermarkStyle() {
-		watermarkStyle = watermarkClient() ? "panel" : "client";
+		watermarkStyle = watermarkClient() ? "hypr" : watermarkHypr() ? "panel" : "client";
+		UnloadState.markDirty();
+	}
+
+	public int watermarkStyleIndex() {
+		return indexOf(WATERMARK_STYLES, normalizeWatermarkStyle(watermarkStyle));
+	}
+
+	public void setWatermarkStyle(String style) {
+		watermarkStyle = normalizeWatermarkStyle(style);
 		UnloadState.markDirty();
 	}
 
 	public String watermarkStyleLabel() {
-		return watermarkClient() ? "Client" : "Panel";
+		return watermarkClient() ? "Client" : watermarkHypr() ? "Hyprland" : "Panel";
 	}
 
 	private static String normalizeWatermarkStyle(String style) {
-		return "client".equals(style) ? "client" : "panel";
+		if ("client".equals(style) || "hypr".equals(style)) {
+			return style;
+		}
+		return "panel";
 	}
 
 	private static final String[] MUSIC_LAYOUTS = {"card", "compact", "poster", "dock"};
@@ -1901,8 +1917,10 @@ public final class StrayConfig {
 	/** Keys and labels for the style dropdowns, in menu order. */
 	public static final String[] CLICK_GUI_STYLES = {"glass", "click", "imgui", "hypr"};
 	public static final String[] CLICK_GUI_STYLE_LABELS = {"Glass", "Click", "ImGui", "Hyprland"};
-	public static final String[] GUI_STYLES = {"glass", "imgui", "click"};
-	public static final String[] GUI_STYLE_LABELS = {"Glass", "ImGui", "Click"};
+	public static final String[] GUI_STYLES = {"glass", "imgui", "click", "hypr"};
+	public static final String[] GUI_STYLE_LABELS = {"Glass", "ImGui", "Click", "Hyprland"};
+	public static final String[] WATERMARK_STYLES = {"panel", "client", "hypr"};
+	public static final String[] WATERMARK_STYLE_LABELS = {"Panel", "Client", "Hyprland"};
 	public static final String[] HUD_STYLES = {"stray", "click", "glass", "vanilla"};
 	public static final String[] HUD_STYLE_LABELS = {"Stray", "Click", "Glass", "Vanilla"};
 
@@ -1965,7 +1983,14 @@ public final class StrayConfig {
 		return "imgui".equalsIgnoreCase(guiStyle);
 	}
 
+	public boolean guiStyleHypr() {
+		return "hypr".equalsIgnoreCase(guiStyle);
+	}
+
 	public String guiStyleLabel() {
+		if (guiStyleHypr()) {
+			return "Hyprland";
+		}
 		if (guiStyleImgui()) {
 			return "ImGui";
 		}
@@ -1977,8 +2002,10 @@ public final class StrayConfig {
 			guiStyle = "imgui";
 		} else if (guiStyleImgui()) {
 			guiStyle = "click";
-		} else {
+		} else if (guiStyleHypr()) {
 			guiStyle = "glass";
+		} else {
+			guiStyle = "hypr";
 		}
 	}
 
@@ -2046,6 +2073,9 @@ public final class StrayConfig {
 		}
 		if (key.equals("imgui") || key.equals("dear")) {
 			return "imgui";
+		}
+		if (key.equals("hypr") || key.equals("hyprland")) {
+			return "hypr";
 		}
 		return "click";
 	}

@@ -1025,6 +1025,10 @@ public final class ClickGui {
 	}
 
 	private static void drawSwitch(GuiGraphicsExtractor graphics, float x, float y, float w, float h, boolean on) {
+		if (hypr()) {
+			HyprMenu.m3Switch(graphics, x, y, w, h, on ? 1f : 0f, false, 1f);
+			return;
+		}
 		float stroke = 0.5f;
 		GuiDraw.roundedFine(graphics, x, y, w, h, h * 0.5f, OUTLINE);
 		int fill = on ? Theme.ACCENT : OFF_FILL;
@@ -1216,6 +1220,13 @@ public final class ClickGui {
 	}
 
 	private static void soft(GuiGraphicsExtractor graphics, float x, float y, float w, float h, int fill) {
+		if (hypr()) {
+			boolean on = fill == accentFill();
+			boolean hot = contains(pointerX, pointerY, x, y, w, h);
+			int paint = on ? MaterialPalette.secondaryContainer : hot ? MaterialPalette.surfaceHighest : MaterialPalette.surfaceHigh;
+			ClickLook.material(graphics, x, y, w, h, paint, 0);
+			return;
+		}
 		if (imgui()) {
 			boolean hot = contains(pointerX, pointerY, x, y, w, h);
 			ImGuiLook.frame(graphics, x, y, w, h, hot, fill == accentFill());

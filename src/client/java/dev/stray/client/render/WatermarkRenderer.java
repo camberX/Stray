@@ -1,6 +1,7 @@
 package dev.stray.client.render;
 
 import dev.stray.client.config.StrayConfig;
+import dev.stray.client.ui.MaterialPalette;
 import dev.stray.client.ui.MenuFont;
 import dev.stray.client.ui.Theme;
 import net.fabricmc.loader.api.FabricLoader;
@@ -67,6 +68,8 @@ public final class WatermarkRenderer {
 		}
 		if (StrayConfig.get().watermarkClient()) {
 			drawClient(graphics, font);
+		} else if (StrayConfig.get().watermarkHypr()) {
+			drawHypr(graphics, font);
 		} else {
 			drawPanel(graphics, font);
 		}
@@ -117,6 +120,82 @@ public final class WatermarkRenderer {
 				cx += gap / 2f + 1;
 			}
 		}
+	}
+
+	// ---- Hyprland (illogical-impulse bar) style: pills on a blurred bar
+
+	private static final float HY_PAD = 3f;
+	private static final float HY_PILL = HEIGHT - HY_PAD * 2f;
+	private static final float HY_GAP = 3f;
+	private static final String HY_TUNE = "\uE429";
+	private static final String HY_FPS = "\uE9E1";
+	private static final String HY_PING = "\uE63E";
+	private static final String HY_TIME = "\uE8B5";
+	private static final String HY_NAME = "\uE7FD";
+
+	private record Pill(String icon, String text, boolean brand) {
+	}
+
+	private static List<Pill> hyprPills() {
+		StrayConfig config = StrayConfig.get();
+		List<Pill> pills = new ArrayList<>();
+		pills.add(new Pill(HY_TUNE, "Stray", true));
+		if (config.watermarkFps) {
+			pills.add(new Pill(HY_FPS, HudStats.fps() + " fps", false));
+		}
+		if (config.watermarkPing) {
+			pills.add(new Pill(HY_PING, HudStats.pingLabel(), false));
+		}
+		if (config.watermarkTime) {
+			pills.add(new Pill(HY_TIME, HudStats.time(), false));
+		}
+		if (config.watermarkName) {
+			pills.add(new Pill(HY_NAME, HudStats.playerName(), false));
+		}
+		return pills;
+	}
+
+	private static float pillWidth(Font font, Pill pill) {
+		return 5f + 9f + 3f + font.width(hyText(pill.text())) + 6f;
+	}
+
+	private static Component hyText(String value) {
+		return Component.literal(value == null ? "" : value).withStyle(MenuFont.BODY);
+	}
+
+	private static void drawHypr(GuiGraphicsExtractor graphics, Font font) {
+		MaterialPalette.refresh();
+		List<Pill> pills = hyprPills();
+		float w = width(font);
+		float radius = HEIGHT * 0.5f;
+		GuiFrostBlur.blitWindow(graphics, 0, 0, w, HEIGHT, radius);
+		GuiDraw.roundedFine(graphics, 0, 0, w, HEIGHT, radius, MaterialPalette.withAlpha(MaterialPalette.surface, 0xD8));
+		float x = HY_PAD;
+		float pillR = HY_PILL * 0.5f;
+		for (Pill pill : pills) {
+			float pw = pillWidth(font, pill);
+			int fill = pill.brand() ? MaterialPalette.primary : MaterialPalette.surfaceLow;
+			int ink = pill.brand() ? MaterialPalette.onPrimary : MaterialPalette.onSurface;
+			int iconInk = pill.brand() ? MaterialPalette.onPrimary : MaterialPalette.primary;
+			GuiDraw.roundedFine(graphics, x, HY_PAD, pw, HY_PILL, pillR, fill);
+			float iconY = Math.round(HY_PAD + (HY_PILL - font.lineHeight) * 0.5f);
+			GuiDraw.text(graphics, font, Component.literal(pill.icon()).withStyle(MenuFont.ICON), x + 5f, iconY, iconInk, false);
+			float textY = Math.round(HY_PAD + HY_PILL * 0.5f - 5f);
+			GuiDraw.text(graphics, font, hyText(pill.text()), x + 17f, textY, ink, false);
+			x += pw + HY_GAP;
+		}
+	}
+
+	private static float hyprWidth(Font font) {
+		float w = HY_PAD * 2f;
+		List<Pill> pills = hyprPills();
+		for (int i = 0; i < pills.size(); i++) {
+			w += pillWidth(font, pills.get(i));
+			if (i + 1 < pills.size()) {
+				w += HY_GAP;
+			}
+		}
+		return w;
 	}
 
 	private static void drawClient(GuiGraphicsExtractor graphics, Font font) {
@@ -172,20 +251,20 @@ public final class WatermarkRenderer {
 	}
 
 	private static int widthTick = Integer.MIN_VALUE;
-	private static boolean widthClient;
+	private static String widthStyle = "";
 	private static float widthCache;
 
 	public static float width(Font font) {
 		Minecraft client = Minecraft.getInstance();
 		StrayConfig config = StrayConfig.get();
 		int tick = client.player == null ? -1 : client.player.tickCount;
-		boolean clientStyle = config.watermarkClient();
-		if (tick == widthTick && widthCache > 0f && widthClient == clientStyle) {
+		String style = config.watermarkStyle == null ? "" : config.watermarkStyle;
+		if (tick == widthTick && widthCache > 0f && widthStyle.equals(style)) {
 			return widthCache;
 		}
-		float w = clientStyle ? clientWidth(font, config) : panelWidth(font, config);
+		float w = config.watermarkClient() ? clientWidth(font, config) : config.watermarkHypr() ? hyprWidth(font) : panelWidth(font, config);
 		widthTick = tick;
-		widthClient = clientStyle;
+		widthStyle = style;
 		widthCache = w;
 		return w;
 	}

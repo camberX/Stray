@@ -203,6 +203,9 @@ public class StrayScreen extends Screen {
 		}
 
 		int rows() {
+			if (this == WATERMARK && "watermark".equals(dropdownOpen)) {
+				return baseRows + StrayConfig.WATERMARK_STYLES.length;
+			}
 			if (this == PEST_COOLDOWN) {
 				return baseRows + 1 + (StrayConfig.get().pestLoadoutSwap ? 1 : 0);
 			}
@@ -632,7 +635,7 @@ public class StrayScreen extends Screen {
 	private long lastNs = System.nanoTime();
 	private float dt = 0.016f;
 	private float appear;
-	private String dropdownOpen;
+	private static String dropdownOpen;
 	private final java.util.Map<String, Float> dropdownT = new java.util.HashMap<>();
 	private final java.util.Map<String, Float> dropdownH = new java.util.HashMap<>();
 	private boolean closing;
@@ -877,6 +880,9 @@ public class StrayScreen extends Screen {
 	}
 
 	private int ink() {
+		if (HyprMenu.drawing()) {
+			return MaterialPalette.onSurface;
+		}
 		if (ClickGui.lightInk()) {
 			return 0xFFF4F6FA;
 		}
@@ -884,6 +890,9 @@ public class StrayScreen extends Screen {
 	}
 
 	private int fade() {
+		if (HyprMenu.drawing()) {
+			return MaterialPalette.onSurfaceVariant;
+		}
 		if (ClickGui.lightInk()) {
 			return 0xFF9AA6B8;
 		}
@@ -3379,6 +3388,10 @@ public class StrayScreen extends Screen {
 	}
 
 	private void clickToggle(GuiGraphicsExtractor graphics, float x, float y, float w, float h, float t) {
+		if (HyprMenu.drawing()) {
+			HyprMenu.m3Switch(graphics, x, y, w, h, t, false, 1f);
+			return;
+		}
 		float stroke = 0.5f;
 		GuiDraw.roundedFine(graphics, x, y, w, h, h * 0.5f, 0xFF000000);
 		int fill = t > 0.5f ? Theme.ACCENT : 0x88000000;
@@ -3774,7 +3787,7 @@ public class StrayScreen extends Screen {
 				colorRow(graphics, font, ix, y, iw, mouseX, mouseY, "Color", config.colorRgb, PickerTarget.NODE);
 			}
 			case WATERMARK -> {
-				y = cycle(graphics, font, ix, y, iw, mouseX, mouseY, "Style", config.watermarkStyleLabel(), config::cycleWatermarkStyle);
+				y = dropdown(graphics, font, ix, y, iw, mouseX, mouseY, "watermark", "Style", StrayConfig.WATERMARK_STYLE_LABELS, config.watermarkStyleIndex(), i -> config.setWatermarkStyle(StrayConfig.WATERMARK_STYLES[i]));
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "FPS", config.watermarkFps, v -> config.watermarkFps = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Ping", config.watermarkPing, v -> config.watermarkPing = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Clock", config.watermarkTime, v -> config.watermarkTime = v);

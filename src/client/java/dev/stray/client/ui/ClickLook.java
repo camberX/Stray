@@ -48,6 +48,10 @@ public final class ClickLook {
 		if (w < 2f || h < 2f) {
 			return;
 		}
+		if (HyprMenu.drawing()) {
+			material(graphics, x, y, w, h, fill, accentOutline(outline) ? Theme.ACCENT : 0);
+			return;
+		}
 		int paint = accentOutline(outline) ? Theme.withAlpha(Theme.ACCENT, ACCENT_ALPHA) : fill;
 		frame(graphics, x, y, w, h);
 		GuiDraw.fillSmooth(graphics, x + STROKE, y + STROKE, w - STROKE * 2f, h - STROKE * 2f, paint);
@@ -78,9 +82,56 @@ public final class ClickLook {
 		}
 	}
 
+	/**
+	 * Material You surface: a rounded fill (pill-shaped for short widgets) and,
+	 * when {@code ring} is set, a smooth 1px ring drawn as a filled shape under
+	 * an inset fill rather than a stroke.
+	 */
+	public static void material(GuiGraphicsExtractor graphics, float x, float y, float w, float h, int fill, int ring) {
+		float radius = h <= 24f ? h * 0.5f : Math.min(9f, Math.min(w, h) * 0.5f);
+		if ((ring & 0xFF000000) != 0) {
+			GuiDraw.roundedFine(graphics, x, y, w, h, radius, ring);
+			float r = Math.max(0f, radius - 1f);
+			GuiDraw.roundedFine(graphics, x + 1f, y + 1f, w - 2f, h - 2f, r, opaque(fill));
+			return;
+		}
+		GuiDraw.roundedFine(graphics, x, y, w, h, radius, fill);
+	}
+
+	private static int opaque(int color) {
+		return (color & 0xFF000000) == 0 ? 0xFF000000 | MaterialPalette.surfaceHigh : color;
+	}
+
+	/** Themed GUIs in the Hyprland look: blurred Material window, rounded slots and pill buttons. */
+	private static void hypr(GuiGraphicsExtractor graphics, float x, float y, float w, float h, int stroke) {
+		MaterialPalette.refresh();
+		float shortSide = Math.min(w, h);
+		float longSide = Math.max(w, h);
+		boolean slot = shortSide <= 20f && longSide <= shortSide * 1.25f;
+		boolean widget = !slot && h <= 22f && w > h * 2f;
+		boolean hover = (stroke & 0xFFFFFF) != 0 && (stroke & 0xFFFFFF) != (OUTLINE & 0xFFFFFF);
+		if (slot) {
+			GuiDraw.roundedFine(graphics, x, y, w, h, 3f, hover ? MaterialPalette.surfaceHighest : MaterialPalette.surfaceHigh);
+			return;
+		}
+		if (widget) {
+			material(graphics, x, y, w, h, hover ? MaterialPalette.surfaceHighest : MaterialPalette.surfaceHigh, hover ? MaterialPalette.primary : 0);
+			return;
+		}
+		float radius = Math.min(9f, shortSide * 0.5f);
+		dev.stray.client.render.GuiFrostBlur.blitWindow(graphics, x, y, w, h, radius);
+		int border = StrayConfig.get().accentOutlines ? MaterialPalette.primary : MaterialPalette.withAlpha(MaterialPalette.primary, 0x55);
+		GuiDraw.roundedFine(graphics, x, y, w, h, radius, border);
+		GuiDraw.roundedFine(graphics, x + 1f, y + 1f, w - 2f, h - 2f, radius - 1f, MaterialPalette.withAlpha(MaterialPalette.surfaceLow, 0xEE));
+	}
+
 	/** Flat fill with a real stroke. Does not turn an accent outline into a fill. */
 	public static void solid(GuiGraphicsExtractor graphics, float x, float y, float w, float h, int fill, int stroke) {
 		if (w < 2f || h < 2f) {
+			return;
+		}
+		if (StrayConfig.get().guiStyleHypr()) {
+			hypr(graphics, x, y, w, h, stroke);
 			return;
 		}
 		if (StrayConfig.get().guiStyleImgui()) {

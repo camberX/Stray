@@ -76,6 +76,13 @@ public final class ContainerChrome {
 		Theme.refresh();
 		float x = hovered.x;
 		float y = hovered.y;
+		if (StrayConfig.get().guiStyleHypr()) {
+			MaterialPalette.refresh();
+			// Material state layer plus a primary ring, rounded like the slot
+			GuiDraw.roundedFine(graphics, x, y, SLOT, SLOT, 3f, MaterialPalette.withAlpha(MaterialPalette.onSurface, 0x1C));
+			GuiDraw.roundedOutline(graphics, x, y, SLOT, SLOT, 3f, MaterialPalette.primary, 1f);
+			return;
+		}
 		int color = StrayConfig.get().guiStyleImgui() ? ImGuiLook.HEADER_HOVERED : Theme.ACCENT;
 		GuiDraw.fillSmooth(graphics, x, y, SLOT, ClickLook.STROKE, color);
 		GuiDraw.fillSmooth(graphics, x, y + SLOT - ClickLook.STROKE, SLOT, ClickLook.STROKE, color);
@@ -92,6 +99,10 @@ public final class ContainerChrome {
 			return color;
 		}
 		Theme.refresh();
+		if (StrayConfig.get().guiStyleHypr()) {
+			MaterialPalette.refresh();
+			return MaterialPalette.onSurface;
+		}
 		return ClickLook.TEXT;
 	}
 

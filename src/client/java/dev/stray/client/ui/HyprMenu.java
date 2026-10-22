@@ -26,7 +26,7 @@ import java.util.Map;
  * {@link MaterialPalette}; motion uses ii's own bezier curves.
  * Left click toggles a module, right click shows its settings on the right.
  */
-final class HyprMenu {
+public final class HyprMenu {
 	private static final float OUT = 7f;
 	private static final float GAP = 5f;
 	private static final float BAR = 22f;
@@ -59,6 +59,8 @@ final class HyprMenu {
 	private static final float[] EMPHASIZED_DECEL = {0.05f, 0.7f, 0.1f, 1f};
 	private static final float[] EXPRESSIVE_SPATIAL = {0.38f, 1.21f, 0.22f, 1f};
 
+	/** True while this menu draws, so shared widgets can switch to the Material look. */
+	private static boolean drawing;
 	private static Object lastScreen;
 	private static long lastNs;
 	private static float dt;
@@ -97,7 +99,21 @@ final class HyprMenu {
 	private HyprMenu() {
 	}
 
+	/** Whether the Hyprland click GUI is drawing right now. */
+	public static boolean drawing() {
+		return drawing;
+	}
+
 	static void draw(StrayScreen screen, GuiGraphicsExtractor graphics, Font font, int mouseX, int mouseY) {
+		drawing = true;
+		try {
+			drawFrame(screen, graphics, font, mouseX, mouseY);
+		} finally {
+			drawing = false;
+		}
+	}
+
+	private static void drawFrame(StrayScreen screen, GuiGraphicsExtractor graphics, Font font, int mouseX, int mouseY) {
 		tick(screen);
 		MaterialPalette.refresh();
 		float fade = Mth.clamp(screen.clickAppear(), 0f, 1f);
@@ -225,7 +241,7 @@ final class HyprMenu {
 		if (t <= 0.01f) {
 			return;
 		}
-		GuiFrostBlur.blitWindow(graphics, x, y, w, BAR, RADIUS);
+		GuiFrostBlur.blitWindow(graphics, x, y, w, BAR, RADIUS, t);
 		GuiDraw.roundedFine(graphics, x, y, w, BAR, RADIUS, Anim.fade(withAlpha(MaterialPalette.surface, 0xD8), t));
 
 		float groupY = y + 3f;
@@ -341,7 +357,7 @@ final class HyprMenu {
 	// --------------------------------------------------------------- windows
 
 	private static void window(GuiGraphicsExtractor graphics, float x, float y, float w, float h, float focus, float t) {
-		GuiFrostBlur.blitWindow(graphics, x, y, w, h, RADIUS);
+		GuiFrostBlur.blitWindow(graphics, x, y, w, h, RADIUS, t);
 		GuiDraw.roundedFine(graphics, x, y, w, h, RADIUS, Anim.fade(withAlpha(MaterialPalette.surfaceLow, 0xE6), t));
 		// ii: active border is primary, inactive is primary at a third (colors.lua)
 		int border = Anim.mix(withAlpha(MaterialPalette.primary, 0x40), MaterialPalette.primary, focus);
@@ -461,20 +477,28 @@ final class HyprMenu {
 		}
 	}
 
+	private static void drawSwitch(GuiGraphicsExtractor graphics, float x, float y, float k, boolean hot, float t) {
+		m3Switch(graphics, x, y, 20f, 11f, k, hot, t);
+	}
+
 	/**
 	 * Material 3 switch. Off: outlined track, small outline-colored thumb.
-	 * On: primary track, bigger on-primary thumb. The thumb grows as it slides.
+	 * On: primary track, bigger on-primary thumb that grows as it slides.
+	 * The outline is a filled pill under an inset pill, not a stroked ring,
+	 * so its edge stays smooth at small sizes.
 	 */
-	private static void drawSwitch(GuiGraphicsExtractor graphics, float x, float y, float k, boolean hot, float t) {
-		float w = 20f;
-		float h = 11f;
+	public static void m3Switch(GuiGraphicsExtractor graphics, float x, float y, float w, float h, float k, boolean hot, float t) {
+		MaterialPalette.refresh();
 		float half = h * 0.5f;
-		int track = Anim.mix(MaterialPalette.surfaceHighest, MaterialPalette.primary, k);
-		GuiDraw.roundedFine(graphics, x, y, w, h, half, Anim.fade(track, t));
-		if (k < 0.99f) {
-			GuiDraw.roundedOutline(graphics, x, y, w, h, half, Anim.fade(MaterialPalette.outline, (1f - k) * t), 1f);
+		int edge = Anim.mix(MaterialPalette.outline, MaterialPalette.primary, k);
+		GuiDraw.roundedFine(graphics, x, y, w, h, half, Anim.fade(edge, t));
+		float inset = 1f - k;
+		if (inset > 0.02f) {
+			float ih = h - inset * 2f;
+			int inner = Anim.mix(MaterialPalette.surfaceHighest, MaterialPalette.primary, k);
+			GuiDraw.roundedFine(graphics, x + inset, y + inset, w - inset * 2f, ih, ih * 0.5f, Anim.fade(inner, t));
 		}
-		float radius = 2.4f + 1.6f * k + (hot ? 0.4f : 0f);
+		float radius = h * (0.22f + 0.14f * k) + (hot ? 0.35f : 0f);
 		float cx = x + half + k * (w - h);
 		int thumb = Anim.mix(MaterialPalette.outline, MaterialPalette.onPrimary, k);
 		GuiDraw.circle(graphics, cx, y + half, radius, Anim.fade(thumb, t));
@@ -510,7 +534,12 @@ final class HyprMenu {
 		setScroll = Mth.clamp(setScroll, 0f, Math.max(0f, content - bodyH));
 		boolean clip = GuiDraw.scissor(graphics, setX + 2f, bodyY, setW - 4f, bodyH);
 		int mark = screen.clickHitMark();
-		ClickGui.drawModuleSettings(screen, graphics, font, mouseX, mouseY, mod, x - 3f, bodyY - setScroll + lift, w + 6f);
+		int[] saved = swapTheme();
+		try {
+			ClickGui.drawModuleSettings(screen, graphics, font, mouseX, mouseY, mod, x - 3f, bodyY - setScroll + lift, w + 6f);
+		} finally {
+			restoreTheme(saved);
+		}
 		screen.clickClipHits(mark, setX, bodyY, setW, bodyH);
 		if (clip) {
 			GuiDraw.disableScissor(graphics);
@@ -601,7 +630,9 @@ final class HyprMenu {
 		if (((color >>> 24) & 0xFF) < 8) {
 			return;
 		}
-		GuiDraw.text(graphics, font, body(value), x, y + (h - font.lineHeight) * 0.5f + 1f, color, false);
+		// Nunito at this size sits about 5px below the line top, not 4.5 like
+		// the vanilla font, so center on that.
+		GuiDraw.text(graphics, font, body(value), x, Math.round(y + h * 0.5f - 5f), color, false);
 	}
 
 	private static void title(GuiGraphicsExtractor graphics, Font font, String value, float x, float y, int color) {
@@ -615,7 +646,7 @@ final class HyprMenu {
 		if (((color >>> 24) & 0xFF) < 8) {
 			return;
 		}
-		GuiDraw.text(graphics, font, Component.literal(code).withStyle(MenuFont.ICON), x, y + (h - font.lineHeight) * 0.5f, color, false);
+		GuiDraw.text(graphics, font, Component.literal(code).withStyle(MenuFont.ICON), x, Math.round(y + (h - font.lineHeight) * 0.5f), color, false);
 	}
 
 	private static Component body(String value) {
@@ -642,6 +673,42 @@ final class HyprMenu {
 
 	private static String label(String id) {
 		return ClickGui.display(id);
+	}
+
+	/**
+	 * The settings widgets read {@link Theme}; point it at the Material roles
+	 * while they draw so they match the windows. Returns the old values.
+	 */
+	private static int[] swapTheme() {
+		int[] old = {Theme.ACCENT, Theme.ACCENT_DIM, Theme.CARD, Theme.CARD_HOVER, Theme.LINE, Theme.TRACK, Theme.PANEL, Theme.TEXT, Theme.MUTED, Theme.OFF, Theme.WINDOW, Theme.WINDOW_SOLID};
+		Theme.ACCENT = MaterialPalette.primary;
+		Theme.ACCENT_DIM = MaterialPalette.secondaryContainer;
+		Theme.CARD = MaterialPalette.surfaceHigh;
+		Theme.CARD_HOVER = MaterialPalette.surfaceHighest;
+		Theme.LINE = MaterialPalette.outlineVariant;
+		Theme.TRACK = MaterialPalette.surfaceHighest;
+		Theme.PANEL = MaterialPalette.surfaceContainer;
+		Theme.TEXT = MaterialPalette.onSurface;
+		Theme.MUTED = MaterialPalette.onSurfaceVariant;
+		Theme.OFF = MaterialPalette.outline;
+		Theme.WINDOW = MaterialPalette.surfaceLow;
+		Theme.WINDOW_SOLID = MaterialPalette.surfaceLow;
+		return old;
+	}
+
+	private static void restoreTheme(int[] old) {
+		Theme.ACCENT = old[0];
+		Theme.ACCENT_DIM = old[1];
+		Theme.CARD = old[2];
+		Theme.CARD_HOVER = old[3];
+		Theme.LINE = old[4];
+		Theme.TRACK = old[5];
+		Theme.PANEL = old[6];
+		Theme.TEXT = old[7];
+		Theme.MUTED = old[8];
+		Theme.OFF = old[9];
+		Theme.WINDOW = old[10];
+		Theme.WINDOW_SOLID = old[11];
 	}
 
 	private static int withAlpha(int color, int alpha) {
