@@ -157,8 +157,8 @@ public class HudEditorScreen extends Screen {
 			String align = "Align " + HudLayout.dockAlignLabel();
 			alignW = GuiDraw.smallWidth(font, align) + 10;
 			alignX = sx - 8 - alignW;
-			boolean hover = GuiDraw.hovered(mouseX, mouseY, alignX, dockY, alignW, DOCK_H);
-			ClickLook.outside(graphics, alignX, dockY, alignW, DOCK_H, 3, hover ? Theme.CARD_HOVER : Theme.CARD, hover ? Theme.ACCENT : Theme.LINE);
+			boolean alignHover = GuiDraw.hovered(mouseX, mouseY, alignX, dockY, alignW, DOCK_H);
+			ClickLook.outside(graphics, alignX, dockY, alignW, DOCK_H, 3, alignHover ? Theme.CARD_HOVER : Theme.CARD, alignHover ? Theme.ACCENT : Theme.LINE);
 			GuiDraw.small(graphics, font, align, alignX + 5, dockY + 2, Theme.TEXT);
 		} else {
 			alignW = 0;
