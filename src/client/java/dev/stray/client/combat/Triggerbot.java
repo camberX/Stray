@@ -34,10 +34,10 @@ import java.util.concurrent.ThreadLocalRandom;
  * Attacks the crosshair entity using vanilla {@code gameMode.attack} plus a
  * swing, from {@code handleKeybinds} so the attack goes out before this tick's
  * movement packet. Fires only when Minecraft already resolved an entity hit
- * that is inside reach. Vanilla worlds wait for weapon charge; Skyblock waits
- * for tab Attack Speed. Humanize adds a short reaction wait, extra delay after
- * hits, and occasional one-tick hesitation. Entities whose nametag (or a
- * hologram above them) includes {@code CLICK} are skipped.
+ * that is inside reach. The CPS slider sets the gap between clicks. Vanilla
+ * worlds still wait for the weapon charge. Humanize adds a short reaction
+ * wait, extra delay after hits, and occasional one-tick hesitation. Entities
+ * whose nametag (or a hologram above them) includes {@code CLICK} are skipped.
  */
 public final class Triggerbot {
 	private static final double CLICK_XZ = 0.9;
@@ -134,7 +134,7 @@ public final class Triggerbot {
 	}
 
 	private static boolean delayReady(LocalPlayer player) {
-		int wait = Math.max(1, AttackSpeed.triggerDelay(player)) + extraWait;
+		int wait = cpsTicks() + extraWait;
 		if (lastHit != Integer.MIN_VALUE && tick - lastHit < wait) {
 			return false;
 		}
@@ -143,6 +143,12 @@ public final class Triggerbot {
 			return false;
 		}
 		return true;
+	}
+
+	/** Ticks between clicks for the CPS slider. 20 CPS is every tick. */
+	private static int cpsTicks() {
+		float cps = StrayConfig.snapTriggerbotCps(StrayConfig.get().triggerbotCps);
+		return Math.max(1, Math.round(20f / cps));
 	}
 
 	private static boolean reactionReady(int entityId, float humanize) {

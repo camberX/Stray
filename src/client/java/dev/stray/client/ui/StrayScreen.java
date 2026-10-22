@@ -282,6 +282,7 @@ public class StrayScreen extends Screen {
 		new SearchEntry("Party stats", Tab.ASSIST, "Assist"),
 		new SearchEntry("Triggerbot players", Tab.ASSIST, "Assist"),
 		new SearchEntry("Triggerbot humanize", Tab.ASSIST, "Assist"),
+		new SearchEntry("Triggerbot CPS", Tab.ASSIST, "Assist"),
 		new SearchEntry("Auto clicker", Tab.ASSIST, "Assist"),
 		new SearchEntry("Command rings", Tab.TOOLS, "Tools"),
 		new SearchEntry("Show rings", Tab.TOOLS, "Tools"),
@@ -2374,11 +2375,12 @@ public class StrayScreen extends Screen {
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Mage beam", config.hitsoundMage, v -> config.hitsoundMage = v);
 				toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Hitmarker", config.hitmarkerEnabled, v -> config.hitmarkerEnabled = v);
 
-				y = featureCard(graphics, font, left, top + cardHeight(5) + 8, col, cardHeight(3), "Triggerbot");
+				y = featureCard(graphics, font, left, top + cardHeight(5) + 8, col, cardHeight(4), "Triggerbot");
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Enable", config.triggerbotEnabled, v -> config.triggerbotEnabled = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Players", config.triggerbotPlayers, v -> config.triggerbotPlayers = v);
-				slider(graphics, font, ix, y, iw, "Humanize", Math.round(config.triggerbotHumanize * 100) + "%", config.triggerbotHumanize, v -> config.triggerbotHumanize = StrayConfig.clamp(v, 0f, 1f));
-				float rogueY = top + cardHeight(5) + 8 + cardHeight(3) + 8;
+				y = slider(graphics, font, ix, y, iw, "Humanize", Math.round(config.triggerbotHumanize * 100) + "%", config.triggerbotHumanize, v -> config.triggerbotHumanize = StrayConfig.clamp(v, 0f, 1f));
+				slider(graphics, font, ix, y, iw, "CPS", cpsLabel(config.triggerbotCps), (config.triggerbotCps - 1f) / 19f, v -> config.triggerbotCps = StrayConfig.snapTriggerbotCps(1f + v * 19f));
+				float rogueY = top + cardHeight(5) + 8 + cardHeight(4) + 8;
 				y = featureCard(graphics, font, left, rogueY, col, cardHeight(1), "Auto rogue sword");
 				toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Enable", config.autoRogueEnabled, v -> config.autoRogueEnabled = v);
 				float partyY = rogueY + cardHeight(1) + 8;
@@ -2615,11 +2617,12 @@ public class StrayScreen extends Screen {
 			}
 			case ASSIST -> {
 				float aim = sectionLabel(graphics, font, left, top, "Aim");
-				float triggerH = cardHeight(3);
+				float triggerH = cardHeight(4);
 				float y = featureCard(graphics, font, left, aim, col, triggerH, "Triggerbot");
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Enable", config.triggerbotEnabled, v -> config.triggerbotEnabled = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Players", config.triggerbotPlayers, v -> config.triggerbotPlayers = v);
-				slider(graphics, font, ix, y, iw, "Humanize", Math.round(config.triggerbotHumanize * 100) + "%", config.triggerbotHumanize, v -> config.triggerbotHumanize = StrayConfig.clamp(v, 0f, 1f));
+				y = slider(graphics, font, ix, y, iw, "Humanize", Math.round(config.triggerbotHumanize * 100) + "%", config.triggerbotHumanize, v -> config.triggerbotHumanize = StrayConfig.clamp(v, 0f, 1f));
+				slider(graphics, font, ix, y, iw, "CPS", cpsLabel(config.triggerbotCps), (config.triggerbotCps - 1f) / 19f, v -> config.triggerbotCps = StrayConfig.snapTriggerbotCps(1f + v * 19f));
 				float rogueY = toggleCard(graphics, font, left, aim + triggerH + 8, col, mouseX, mouseY, "Auto rogue sword", config.autoRogueEnabled, v -> config.autoRogueEnabled = v);
 				toggleCard(graphics, font, left, rogueY, col, mouseX, mouseY, "Party stats", config.partyFinderStats, v -> config.partyFinderStats = v);
 
@@ -5233,6 +5236,18 @@ public class StrayScreen extends Screen {
 
 	float clickSettingRow() {
 		return rowH();
+	}
+
+	void clickTriggerbot(GuiGraphicsExtractor graphics, Font font, int mouseX, int mouseY, float x, float y, float w) {
+		ClickGui.useLightInk(true);
+		try {
+			StrayConfig config = StrayConfig.get();
+			y = toggle(graphics, font, x, y, w, mouseX, mouseY, "Players", config.triggerbotPlayers, v -> config.triggerbotPlayers = v);
+			y = slider(graphics, font, x, y, w, "Humanize", Math.round(config.triggerbotHumanize * 100) + "%", config.triggerbotHumanize, v -> config.triggerbotHumanize = StrayConfig.clamp(v, 0f, 1f));
+			slider(graphics, font, x, y, w, "CPS", cpsLabel(config.triggerbotCps), (config.triggerbotCps - 1f) / 19f, v -> config.triggerbotCps = StrayConfig.snapTriggerbotCps(1f + v * 19f));
+		} finally {
+			ClickGui.useLightInk(false);
+		}
 	}
 
 	void clickSettings(GuiGraphicsExtractor graphics, Font font, int mouseX, int mouseY, float x, float y, float w, Feature feature) {

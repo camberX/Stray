@@ -185,6 +185,17 @@ public final class ClickGui {
 		return contains(x, y, mobSearchX, mobSearchY, mobSearchW, mobSearchH);
 	}
 
+	static String mobQuery() {
+		return mobQuery;
+	}
+
+	static void mobSearchBox(float x, float y, float w, float h) {
+		mobSearchX = x;
+		mobSearchY = y;
+		mobSearchW = w;
+		mobSearchH = h;
+	}
+
 	static void typeSearch(String text) {
 		if (text == null || text.isEmpty() || searchQuery.length() >= 32) {
 			return;
@@ -983,6 +994,9 @@ public final class ClickGui {
 		if (mod.timeout) {
 			return stackH(6);
 		}
+		if ("Triggerbot".equals(mod.name)) {
+			return 3f * screen.clickSettingRow();
+		}
 		if (mod.feature == null) {
 			return 0f;
 		}
@@ -1480,7 +1494,8 @@ public final class ClickGui {
 			|| "Themed GUIs".equals(mod.name)
 			|| "Themed chat".equals(mod.name)
 			|| CUSTOMIZE.equals(mod.name)
-			|| "Custom title".equals(mod.name);
+			|| "Custom title".equals(mod.name)
+			|| "Triggerbot".equals(mod.name);
 	}
 
 	static float moduleSettingsHeight(StrayScreen screen, Mod mod) {
@@ -1536,6 +1551,10 @@ public final class ClickGui {
 		}
 		if (mod.timeout) {
 			drawTimeout(screen, graphics, font, x, y, w);
+			return;
+		}
+		if ("Triggerbot".equals(mod.name)) {
+			screen.clickTriggerbot(graphics, font, mouseX, mouseY, x, y, w);
 			return;
 		}
 		if (mod.feature != null) {

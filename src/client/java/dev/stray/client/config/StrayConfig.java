@@ -278,6 +278,8 @@ public final class StrayConfig {
 	public boolean autoRogueEnabled = false;
 	public boolean triggerbotPlayers = false;
 	public float triggerbotHumanize = 0.50f;
+	/** Clicks per second. 1 to 20, in steps of 0.5. */
+	public float triggerbotCps = 10f;
 	public boolean autoClickerEnabled = false;
 	public boolean autoClickerWhiteListOnly = false;
 	public boolean autoClickerAllowBreaking = false;
@@ -1405,6 +1407,9 @@ public final class StrayConfig {
 				loaded.triggerbotHumanize = json.has("triggerbotHumanize")
 					? clamp(loaded.triggerbotHumanize, 0f, 1f)
 					: 0.50f;
+				loaded.triggerbotCps = json.has("triggerbotCps")
+					? snapTriggerbotCps(loaded.triggerbotCps)
+					: 10f;
 				loaded.hitmarkerScale = json.has("hitmarkerScale")
 					? clampHudScale(loaded.hitmarkerScale)
 					: 1.00f;
@@ -2590,6 +2595,12 @@ public final class StrayConfig {
 
 	public static float clamp(float value, float min, float max) {
 		return Math.max(min, Math.min(max, value));
+	}
+
+	/** Triggerbot clicks per second, 1 to 20 in steps of a half. */
+	public static float snapTriggerbotCps(float value) {
+		float clamped = clamp(value, 1f, 20f);
+		return Math.round(clamped * 2f) / 2f;
 	}
 
 	public static final class ClickColumnPos {

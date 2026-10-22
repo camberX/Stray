@@ -84,6 +84,7 @@ public final class HyprMenu {
 	private static float focusSetT = 1f;
 	private static float listScroll;
 	private static float setScroll;
+	private static String mobQueryShown = "";
 
 	private static final Map<String, Float> hover = new HashMap<>();
 	private static final Map<String, Float> knob = new HashMap<>();
@@ -365,6 +366,9 @@ public final class HyprMenu {
 		if (id.equals(category)) {
 			return;
 		}
+		if ("Mobs".equals(category)) {
+			ClickGui.blurMobSearch();
+		}
 		category = id;
 		catT = 0f;
 		listScroll = 0f;
@@ -560,6 +564,23 @@ public final class HyprMenu {
 		GuiDraw.hairline(graphics, x, y, w, h, RADIUS, Anim.fade(border, t));
 	}
 
+	/** Same pill as the bar search, for the mob list. */
+	private static void drawMobSearch(StrayScreen screen, GuiGraphicsExtractor graphics, Font font, float x, float y, float w, float h, float t) {
+		boolean focused = ClickGui.mobSearchFocused();
+		float half = h * 0.5f;
+		GuiDraw.roundedFine(graphics, x, y, w, h, half, Anim.fade(focused ? MaterialPalette.surfaceHigh : MaterialPalette.surfaceLow, t));
+		if (focused) {
+			GuiDraw.hairline(graphics, x, y, w, h, half, Anim.fade(MaterialPalette.primary, t));
+		}
+		ClickGui.mobSearchBox(x, y, w, h);
+		String query = ClickGui.mobQuery();
+		boolean empty = query.isEmpty() && !focused;
+		glyph(graphics, font, SEARCH, x + 6f, y, h, Anim.fade(MaterialPalette.onSurfaceVariant, t));
+		String shown = empty ? "Search" : query + (focused && (System.currentTimeMillis() / 500L) % 2L == 0L ? "|" : "");
+		text(graphics, font, fit(font, shown, w - 24f), x + 19f, y, h, Anim.fade(empty ? MaterialPalette.onSurfaceVariant : MaterialPalette.onSurface, t));
+		screen.clickHit(x, y, w, h, ClickGui::focusMobSearch);
+	}
+
 	private static void drawList(StrayScreen screen, GuiGraphicsExtractor graphics, Font font, int mouseX, int mouseY, List<Item> items, float t) {
 		if (t <= 0.01f) {
 			return;
@@ -586,7 +607,20 @@ public final class HyprMenu {
 		GuiDraw.roundedFine(graphics, x + w - cw, y, cw, 12f, 6f, Anim.fade(MaterialPalette.secondaryContainer, t));
 		text(graphics, font, count, x + w - cw + 6f, y, 12f, Anim.fade(MaterialPalette.onSecondaryContainer, t));
 
-		float bodyY = y + 20f;
+		boolean mobList = "Mobs".equals(category) && !searching;
+		if (!mobList) {
+			ClickGui.mobSearchBox(0f, 0f, 0f, 0f);
+		}
+		float searchH = 16f;
+		if (mobList) {
+			String mobQuery = ClickGui.mobQuery();
+			if (!mobQuery.equals(mobQueryShown)) {
+				mobQueryShown = mobQuery;
+				listScroll = 0f;
+			}
+			drawMobSearch(screen, graphics, font, x, y + 18f, w, searchH, t);
+		}
+		float bodyY = y + 20f + (mobList ? searchH + 6f : 0f);
 		float bodyH = listY + listH - PAD - bodyY;
 		int cols = w >= 250f ? 2 : 1;
 		float colGap = 6f;
@@ -596,7 +630,8 @@ public final class HyprMenu {
 		listScroll = Mth.clamp(listScroll, 0f, Math.max(0f, content - bodyH));
 
 		if (items.isEmpty()) {
-			text(graphics, font, searching ? "No matches" : "Nothing here", x, bodyY, ROW, Anim.fade(MaterialPalette.onSurfaceVariant, t));
+			boolean mobQuerying = mobList && !ClickGui.mobQuery().isBlank();
+			text(graphics, font, searching || mobQuerying ? "No matches" : "Nothing here", x, bodyY, ROW, Anim.fade(MaterialPalette.onSurfaceVariant, t));
 			return;
 		}
 		boolean clip = GuiDraw.scissor(graphics, listX + 2f, bodyY, listW - 4f, bodyH);
@@ -604,7 +639,9 @@ public final class HyprMenu {
 		for (int i = 0; i < items.size(); i++) {
 			int col = i % cols;
 			int row = i / cols;
-			float rowT = curve(EMPHASIZED_DECEL, Mth.clamp(catT * 2.0f - row * 0.07f, 0f, 1f)) * t;
+			// Cap the stagger so rows past the first screen still finish when the tab opens.
+			float delay = Math.min(row, 14) * 0.05f;
+			float rowT = curve(EMPHASIZED_DECEL, stagger(catT, delay)) * t;
 			float rx = x + col * (cellW + colGap);
 			float ry = bodyY + row * (ROW + ROW_GAP) - listScroll + (1f - rowT) * 8f;
 			if (ry + ROW < bodyY || ry > bodyY + bodyH) {
@@ -763,7 +800,7 @@ public final class HyprMenu {
 		}
 		if ("Mobs".equals(category)) {
 			StrayConfig config = StrayConfig.get();
-			for (MobCatalog.Entry entry : MobCatalog.filtered("")) {
+			for (MobCatalog.Entry entry : MobCatalog.filtered(ClickGui.mobQuery())) {
 				String id = entry.id().toString();
 				out.add(new Item("mob:" + id, entry.name(), config.isMobGlowSelected(id), null, () -> {
 					StrayConfig.get().toggleMobGlow(id);

@@ -15,6 +15,10 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.5.66", new String[]{
+			"The Hyprland Mobs tab lists every mob. The fade no longer hides the ones past the first screen, and a search bar in the bar's style filters the list.",
+			"Triggerbot has a CPS slider, from 1 to 20. Right click Triggerbot in the click GUI for Players, Humanize and CPS."
+		}),
 		new Entry("1.5.65", new String[]{
 			"Every HUD element has a Background switch in the HUD editor",
 			"Fixed the click GUI and HUD breaking (square corners, missing blur) with SkyHanni installed"
