@@ -95,7 +95,8 @@ public final class Cs2KnifeScreen extends Screen {
 	private final Map<String, Float> hover = new HashMap<>();
 
 	// dragging
-	private int dragging = -1; // 0..6 grip slider, 10 = float slider
+	private int dragging = -1;
+	private boolean bindListen; // 0..6 grip slider, 10 = float slider
 
 	// previews
 	private final Map<String, Identifier> tiles = new ConcurrentHashMap<>();
@@ -468,20 +469,36 @@ public final class Cs2KnifeScreen extends Screen {
 		int x = left + PAD;
 		title(g, "CS2 Knife", x, top + 10, ink());
 		StrayConfig c = StrayConfig.get();
-		String sub = "Inspect with " + keyName(c.cs2InspectKey);
+		String sub = "";
 		if (lib != null) {
 			Cs2Library.Knife k = lib.knives().get(c.cs2Knife);
-			sub = (k == null ? "" : k.name() + "  ·  " + finishName(lib) + "  ·  ") + sub;
+			sub = k == null ? "" : k.name() + "  ·  " + finishName(lib);
 		}
+		// inspect key chip: click, then press a key (or mouse button) to rebind
+		String key = bindListen ? "Press a key…" : keyName(c.cs2InspectKey);
+		int kw = Math.max(26, textW(key) + 16);
+		int kx = left + W - PAD - 18 - 8 - kw;
+		boolean khot = GuiDraw.hovered(mouseX, mouseY, kx, top + 11, kw, 18);
+		float kh = hoverAmount("bind", khot || bindListen);
+		GuiDraw.rounded(g, kx, top + 11, kw, 18, 9, bindListen ? Theme.withAlpha(accent(), 70) : Anim.mix(card(), cardHover(), kh));
+		if (bindListen) {
+			GuiDraw.roundedOutline(g, kx, top + 11, kw, 18, 9, accent(), 1f);
+		}
+		text(g, key, kx + kw / 2f - textW(key) / 2f, mid(top + 11, 18), bindListen ? accent() : Anim.mix(dim(), ink(), kh));
+		String label = "Inspect";
+		int lx = kx - 6 - textW(label);
+		text(g, label, lx, mid(top + 11, 18), dim());
+
 		String status = Cs2Knives.status();
-		int pillW = status.isEmpty() ? 0 : smallW(status) + 24;
-		small(g, fit(sub, W - PAD * 2 - 30 - pillW, true), x, top + 25, dim());
+		int right = lx - 10;
 		if (!status.isEmpty()) {
-			int sw = smallW(status) + 16;
-			int sx = left + W - PAD - 22 - 8 - sw;
-			GuiDraw.rounded(g, sx, top + 12, sw, 16, 8, Theme.withAlpha(accent(), 40));
-			small(g, status, sx + 8, mid(top + 12, 16), accent());
+			int sw = textW(status) + 16;
+			int sx = right - sw;
+			GuiDraw.rounded(g, sx, top + 11, sw, 18, 9, Theme.withAlpha(accent(), 40));
+			text(g, status, sx + 8, mid(top + 11, 18), accent());
+			right = sx - 10;
 		}
+		small(g, fit(sub, right - x, true), x, top + 25, dim());
 		// close button
 		int bx = left + W - PAD - 18;
 		int by = top + 11;
@@ -700,9 +717,9 @@ public final class Cs2KnifeScreen extends Screen {
 		GuiDraw.rounded(g, x + 92, sy, 18, 18, 5, Anim.mix(card(), cardHover(), dh));
 		drawDice(g, x + 92, sy, Anim.mix(dim(), ink(), dh));
 		String tier = wearName(c.cs2Wear);
-		int tierW = smallW(tier) + 12;
-		GuiDraw.rounded(g, x + SIDE_W - tierW, sy + 1, tierW, 16, 8, Theme.withAlpha(wearColor(c.cs2Wear), 52));
-		small(g, tier, x + SIDE_W - tierW + 6, mid(sy + 1, 16), wearColor(c.cs2Wear));
+		int tierW = textW(tier) + 14;
+		GuiDraw.rounded(g, x + SIDE_W - tierW, sy, tierW, 18, 9, Theme.withAlpha(wearColor(c.cs2Wear), 52));
+		text(g, tier, x + SIDE_W - tierW + 7, mid(sy, 18), wearColor(c.cs2Wear));
 
 		// float slider
 		int fy = floatY();
@@ -730,7 +747,7 @@ public final class Cs2KnifeScreen extends Screen {
 		for (int i = 0; i < 3; i++) {
 			float on = Math.max(0f, 1f - Math.abs(applyT - i));
 			String l = APPLY_LABELS[i];
-			small(g, l, x + segW * i + segW / 2f - smallW(l) / 2f, mid(ay, 18), Anim.mix(dim(), onAccent(), on));
+			text(g, l, x + segW * i + segW / 2f - textW(l) / 2f, mid(ay, 18), Anim.mix(dim(), onAccent(), on));
 		}
 
 		// switches
@@ -824,8 +841,7 @@ public final class Cs2KnifeScreen extends Screen {
 	}
 
 	private static String keyName(String key) {
-		String k = key == null ? "" : key.replace("key.keyboard.", "").replace("key.mouse.", "mouse ");
-		return k.toUpperCase(Locale.ROOT);
+		return dev.stray.client.combat.OdinClicks.keyLabel(dev.stray.client.combat.OdinClicks.parseKey(key));
 	}
 
 	static String wearName(float w) {
@@ -928,6 +944,11 @@ public final class Cs2KnifeScreen extends Screen {
 
 	@Override
 	public boolean mouseClicked(MouseButtonEvent event, boolean doubled) {
+		if (bindListen) {
+			StrayConfig.get().cs2InspectKey = dev.stray.client.combat.OdinClicks.keyName(com.mojang.blaze3d.platform.InputConstants.Type.MOUSE.getOrCreate(event.button()));
+			bindListen = false;
+			return true;
+		}
 		if (super.mouseClicked(event, doubled)) {
 			return true;
 		}
@@ -936,6 +957,11 @@ public final class Cs2KnifeScreen extends Screen {
 		}
 		double mx = event.x();
 		double my = event.y();
+		if (inspectChip(mx, my)) {
+			bindListen = true;
+			setFocused(null);
+			return true;
+		}
 		if (GuiDraw.hovered(mx, my, left + W - PAD - 18, top + 11, 18, 18)) {
 			onClose();
 			return true;
@@ -1096,6 +1122,26 @@ public final class Cs2KnifeScreen extends Screen {
 			return true;
 		}
 		return false;
+	}
+
+	private boolean inspectChip(double mx, double my) {
+		String key = keyName(StrayConfig.get().cs2InspectKey);
+		int kw = Math.max(26, textW(key) + 16);
+		int kx = left + W - PAD - 18 - 8 - kw;
+		return GuiDraw.hovered(mx, my, kx, top + 11, kw, 18);
+	}
+
+	@Override
+	public boolean keyPressed(net.minecraft.client.input.KeyEvent event) {
+		if (bindListen) {
+			int k = event.key();
+			if (k != com.mojang.blaze3d.platform.InputConstants.KEY_ESCAPE) {
+				StrayConfig.get().cs2InspectKey = dev.stray.client.combat.OdinClicks.keyName(com.mojang.blaze3d.platform.InputConstants.Type.KEYSYM.getOrCreate(k));
+			}
+			bindListen = false;
+			return true;
+		}
+		return super.keyPressed(event);
 	}
 
 	@Override
