@@ -94,6 +94,14 @@ public final class AutoClicker {
 		}
 	}
 
+	/** True while the autoclicker is on and its left click key is held (in game, not in a menu). */
+	public static boolean leftHeld() {
+		StrayConfig config = StrayConfig.get();
+		Minecraft client = Minecraft.getInstance();
+		return config.autoClickerEnabled && config.autoClickerEnableLeftClick && !config.autoClickerTerminatorOnly && client.screen == null
+			&& client.player != null && OdinClicks.isPressed(leftKey());
+	}
+
 	public static String held() {
 		return OdinClicks.held();
 	}

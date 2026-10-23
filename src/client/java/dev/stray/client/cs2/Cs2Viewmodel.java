@@ -111,9 +111,10 @@ public final class Cs2Viewmodel {
 		}
 		lastSwing = swingProgress;
 		// Holding left click on a block keeps swinging: start the next swing as the current one winds down.
-		if (mining()) {
-			NmClip current = action == Action.SWING ? knife.clip(swingClip) : null;
-			if (action != Action.SWING || current == null || elapsed() * SWING_RATE >= current.duration * 0.5f) {
+		// Holding left click on a block, or holding the autoclicker's key, swings back to back at
+		// the same top speed as spam clicking.
+		if (mining() || dev.stray.client.combat.AutoClicker.leftHeld()) {
+			if (action != Action.SWING || elapsed() >= MIN_SWING_GAP) {
 				nextSwing();
 			}
 		}
