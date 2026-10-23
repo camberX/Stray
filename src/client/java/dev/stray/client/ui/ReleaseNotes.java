@@ -15,6 +15,12 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.5.68", new String[]{
+			"The knife blade shader has its own style, color, strength and detail in the knife menu's new Blade tab, separate from the held item shader",
+			"New View tab in the knife menu moves your arm and knife together: left/right, up/down and distance",
+			"The inspect key can be changed: click the key chip in the top right of the knife menu, then press a key or mouse button",
+			"Wear tier and Apply to labels are centered"
+		}),
 		new Entry("1.5.67", new String[]{
 			"The CS2 knife menu no longer lists the plain default knives or the Shadow Daggers",
 			"Text in the knife menu is centered in its rows, tabs, pills and fields"

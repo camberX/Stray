@@ -52,7 +52,10 @@ public final class Cs2KnifeScreen extends Screen {
 	private static final int TILE_GAP = 6;
 	private static final int PREVIEW_H = 128;
 	private static final int HEADER_H = 40;
-	private static final int TABS_W = 104;
+	private static final String[] TABS = {"Finishes", "Grip", "View", "Blade"};
+	private static final String[] STYLES = {"smoke", "stars", "portal", "galaxy"};
+	private static final String[] STYLE_LABELS = {"Smoke", "Stars", "Portal", "Galaxy"};
+	private static final int[] SWATCHES = {0xB46CFF, 0x4FD6EA, 0xFF4F8B, 0xFF9F1C, 0xFFD23F, 0x3DDC84, 0x4F7CFF, 0xF2F4F7};
 	private static final String[] APPLY = {"swords", "held", "empty"};
 	private static final String[] APPLY_LABELS = {"Swords", "Any item", "Empty hand"};
 	private static final String[] GRIP_NAMES = {"Edge / spine", "Sideways", "Along handle", "Pitch", "Yaw", "Roll", "Size"};
@@ -74,7 +77,7 @@ public final class Cs2KnifeScreen extends Screen {
 	private EditBox knifeSearch;
 	private EditBox finishSearch;
 	private EditBox seedBox;
-	private boolean gripTab;
+	private int tab;
 
 	// scrolling (target + eased)
 	private float knifeScroll;
@@ -90,6 +93,7 @@ public final class Cs2KnifeScreen extends Screen {
 	private float tabT;
 	private float applyT = -1f;
 	private float bladeT;
+	private float styleT = -1f;
 	private float animT;
 	private long tilesShown;
 	private final Map<String, Float> hover = new HashMap<>();
@@ -132,12 +136,12 @@ public final class Cs2KnifeScreen extends Screen {
 		String finishQuery = finishSearch == null ? "" : finishSearch.getValue();
 		knifeSearch = box(listX() + 18, bodyY() + 5, LIST_W - 22, "Search knives", knifeQuery);
 		knifeSearch.setResponder(v -> knifeScroll = 0f);
-		finishSearch = box(midX() + TABS_W + 6 + 18, bodyY() + 5, midW() - TABS_W - 6 - 22, "Search", finishQuery);
+		finishSearch = box(midX() + 18, panelTop() + 5, midW() - 22, "Search finishes", finishQuery);
 		finishSearch.setResponder(v -> {
 			finishScroll = 0f;
 			tilesShown = System.currentTimeMillis();
 		});
-		finishSearch.visible = !gripTab;
+		finishSearch.visible = tab == 0;
 		seedBox = box(sideX() + 34, seedY() + 5, 50, "0-1000", String.valueOf(c.cs2Seed));
 		seedBox.setResponder(v -> {
 			try {
@@ -276,8 +280,12 @@ public final class Cs2KnifeScreen extends Screen {
 		return sideX() - GAP - midX();
 	}
 
-	private int gridTop() {
+	private int panelTop() {
 		return bodyY() + 24;
+	}
+
+	private int gridTop() {
+		return bodyY() + 48;
 	}
 
 	private int gridH() {
@@ -432,7 +440,7 @@ public final class Cs2KnifeScreen extends Screen {
 		}
 		knifeScrollT = ease(knifeScrollT, knifeScroll, 16f);
 		finishScrollT = ease(finishScrollT, finishScroll, 16f);
-		tabT = ease(tabT, gripTab ? 1f : 0f, 14f);
+		tabT = ease(tabT, tab, 14f);
 
 		Cs2Library lib = Cs2Knives.library();
 		drawHeader(g, lib, mouseX, mouseY);
@@ -444,8 +452,8 @@ public final class Cs2KnifeScreen extends Screen {
 			drawSide(g, lib, mouseX, mouseY, now);
 		}
 		drawSearchBack(g, listX(), bodyY(), LIST_W, knifeSearch.isFocused());
-		if (!gripTab) {
-			drawSearchBack(g, midX() + TABS_W + 6, bodyY(), midW() - TABS_W - 6, finishSearch.isFocused());
+		if (tab == 0 && Math.abs(tabT) < 0.05f) {
+			drawSearchBack(g, midX(), panelTop(), midW(), finishSearch.isFocused());
 		}
 		GuiDraw.rounded(g, sideX() + 30, seedY(), 58, 18, 5, seedBox.isFocused() ? cardHover() : card());
 		if (seedBox.isFocused()) {
@@ -575,30 +583,180 @@ public final class Cs2KnifeScreen extends Screen {
 	}
 
 	private void drawMiddle(GuiGraphicsExtractor g, Cs2Library lib, int mouseX, int mouseY, long now) {
-		// tabs
+		// tabs: a pill slides under the active one; panels slide and fade between them
 		int tx = midX();
 		int ty = bodyY();
-		int tw = TABS_W;
+		float tw = midW();
+		float seg = tw / TABS.length;
 		GuiDraw.rounded(g, tx, ty, tw, 18, 9, card());
-		float pill = tx + 2 + tabT * (tw / 2f - 2);
-		GuiDraw.rounded(g, pill, ty + 2, tw / 2f - 2, 14, 7, accent());
-		text(g, "Finishes", tx + tw / 4f - textW("Finishes") / 2f, mid(ty, 18), Anim.mix(onAccent(), dim(), tabT));
-		text(g, "Grip", tx + tw * 3 / 4f - textW("Grip") / 2f, mid(ty, 18), Anim.mix(dim(), onAccent(), tabT));
+		GuiDraw.rounded(g, tx + 2 + tabT * seg, ty + 2, seg - 4, 14, 7, accent());
+		for (int i = 0; i < TABS.length; i++) {
+			float on = Math.max(0f, 1f - Math.abs(tabT - i));
+			boolean hot = GuiDraw.hovered(mouseX, mouseY, tx + seg * i, ty, seg, 18);
+			float hv = hoverAmount("tab" + i, hot);
+			int col = Anim.mix(Anim.mix(dim(), ink(), hv), onAccent(), on);
+			text(g, TABS[i], tx + seg * i + seg / 2f - textW(TABS[i]) / 2f, mid(ty, 18), col);
+		}
+		for (int i = 0; i < TABS.length; i++) {
+			float d = i - tabT;
+			float a = smooth(1f - Math.abs(d));
+			if (a <= 0.001f) {
+				continue;
+			}
+			g.pose().pushMatrix();
+			g.pose().translate(d * 24f, 0f);
+			switch (i) {
+				case 0 -> drawFinishes(g, lib, mouseX, mouseY, now, a);
+				case 1 -> drawGrip(g, mouseX, mouseY, a);
+				case 2 -> drawView(g, mouseX, mouseY, a);
+				default -> drawBlade(g, mouseX, mouseY, a);
+			}
+			g.pose().popMatrix();
+		}
+	}
 
-		float slide = smooth(tabT);
-		// finishes slide out to the left, grip in from the right
-		if (slide < 0.999f) {
-			g.pose().pushMatrix();
-			g.pose().translate(-slide * 24f, 0f);
-			drawFinishes(g, lib, mouseX, mouseY, now, 1f - slide);
-			g.pose().popMatrix();
+	private static final String[] VIEW_NAMES = {"Left / right", "Up / down", "Distance"};
+
+	private float[] viewOffset() {
+		float[] o = StrayConfig.get().cs2ViewOffset;
+		if (o == null || o.length < 3) {
+			o = new float[] {0f, 0f, 0f};
+			StrayConfig.get().cs2ViewOffset = o;
 		}
-		if (slide > 0.001f) {
-			g.pose().pushMatrix();
-			g.pose().translate((1f - slide) * 24f, 0f);
-			drawGrip(g, mouseX, mouseY, slide);
-			g.pose().popMatrix();
+		return o;
+	}
+
+	private void drawView(GuiGraphicsExtractor g, int mouseX, int mouseY, float alpha) {
+		int x = midX();
+		int y = panelTop();
+		int w = midW();
+		small(g, "Moves your arm and knife together in first person.", x, y + 2, Anim.fade(dim(), alpha));
+		float[] o = viewOffset();
+		for (int i = 0; i < 3; i++) {
+			float sy = y + 18 + i * 26;
+			sliderRow(g, VIEW_NAMES[i], String.format(Locale.ROOT, "%+.2f", o[i]), x, sy, w, (o[i] + 0.6f) / 1.2f, 30 + i, mouseX, mouseY, alpha);
 		}
+		button(g, "viewreset", "Reset", x, y + 18 + 3 * 26 + 2, 70, mouseX, mouseY, false, alpha);
+	}
+
+	private void drawBlade(GuiGraphicsExtractor g, int mouseX, int mouseY, float alpha) {
+		StrayConfig c = StrayConfig.get();
+		int x = midX();
+		int y = panelTop();
+		int w = midW();
+		boolean live = alpha > 0.5f;
+		// enable
+		bladeT = ease(bladeT, c.cs2BladeShader ? 1f : 0f, 16f);
+		boolean hot = live && GuiDraw.hovered(mouseX, mouseY, x, y, w, 16);
+		text(g, "Blade shader", x, mid(y + 2, 13), Anim.fade(ink(), alpha));
+		drawSwitch(g, x + w - 26, y + 2, bladeT, hot, alpha);
+		small(g, "Its own look, separate from the held item shader.", x, y + 20, Anim.fade(dim(), alpha));
+
+		// style
+		int sy = y + 38;
+		text(g, "Style", x, mid(sy, 9), Anim.fade(dim(), alpha));
+		int st = indexOf(STYLES, StrayConfig.normalizeHeldItemShaderStyle(c.cs2BladeShaderStyle));
+		styleT = styleT < 0 ? st : ease(styleT, st, 16f);
+		float seg = w / 4f;
+		int by = sy + 12;
+		GuiDraw.rounded(g, x, by, w, 18, 9, Anim.fade(card(), alpha));
+		GuiDraw.rounded(g, x + 2 + styleT * seg, by + 2, seg - 4, 14, 7, Anim.fade(accent(), alpha));
+		for (int i = 0; i < 4; i++) {
+			float on = Math.max(0f, 1f - Math.abs(styleT - i));
+			text(g, STYLE_LABELS[i], x + seg * i + seg / 2f - textW(STYLE_LABELS[i]) / 2f, mid(by, 18), Anim.fade(Anim.mix(dim(), onAccent(), on), alpha));
+		}
+
+		// color: swatches + hue bar
+		int cy = by + 28;
+		text(g, "Color", x, mid(cy, 9), Anim.fade(dim(), alpha));
+		int rgb = c.cs2BladeShaderRgb & 0xFFFFFF;
+		GuiDraw.rounded(g, x + w - 26, cy - 1, 26, 11, 5.5f, Anim.fade(0xFF000000 | rgb, alpha));
+		int sw = 16;
+		float gap = (w - SWATCHES.length * sw) / (float) (SWATCHES.length - 1);
+		int swy = cy + 14;
+		for (int i = 0; i < SWATCHES.length; i++) {
+			float sx = x + i * (sw + gap);
+			boolean h = live && GuiDraw.hovered(mouseX, mouseY, sx, swy, sw, sw);
+			float hv = hoverAmount("sw" + i, h);
+			boolean on = SWATCHES[i] == rgb;
+			float grow = hv * 1.5f;
+			GuiDraw.rounded(g, sx - grow, swy - grow, sw + grow * 2, sw + grow * 2, 8 + grow, Anim.fade(0xFF000000 | SWATCHES[i], alpha));
+			if (on) {
+				GuiDraw.roundedOutline(g, sx - 2.5f, swy - 2.5f, sw + 5, sw + 5, 10, Anim.fade(ink(), alpha), 1.2f);
+			}
+		}
+		int hy = swy + sw + 8;
+		GuiDraw.scissor(g, x, hy, w, 8);
+		GuiDraw.hueBar(g, x, hy, w, 8);
+		GuiDraw.disableScissor(g);
+		float hue = hue(rgb);
+		float hx = x + w * hue;
+		GuiDraw.circle(g, hx, hy + 4, 5.5f, Anim.fade(0xFFFFFFFF, alpha));
+		GuiDraw.circle(g, hx, hy + 4, 4f, Anim.fade(0xFF000000 | rgb, alpha));
+
+		// strength / detail
+		int ly = hy + 20;
+		sliderRow(g, "Strength", String.format(Locale.ROOT, "%.0f%%", c.cs2BladeShaderFill * 100f), x, ly, w, (c.cs2BladeShaderFill - 0.08f) / (0.85f - 0.08f), 21, mouseX, mouseY, alpha);
+		sliderRow(g, "Detail", String.format(Locale.ROOT, "%.2f", c.cs2BladeShaderSmoke), x, ly + 28, w, (c.cs2BladeShaderSmoke - 0.10f) / (1.50f - 0.10f), 22, mouseX, mouseY, alpha);
+	}
+
+	private void sliderRow(GuiGraphicsExtractor g, String label, String value, float x, float y, float w, float k, int id, int mouseX, int mouseY, float alpha) {
+		boolean hot = alpha > 0.5f && GuiDraw.hovered(mouseX, mouseY, x, y, w, 22);
+		float hv = hoverAmount("sl" + id, hot || dragging == id);
+		text(g, label, x, mid(y, 10), Anim.fade(ink(), alpha));
+		small(g, value, x + w - smallW(value), mid(y, 10), Anim.fade(Anim.mix(dim(), accent(), hv), alpha));
+		slider(g, x, y + 13, w, k, hv, alpha);
+	}
+
+	private void drawSwitch(GuiGraphicsExtractor g, float sx, float y, float k, boolean hot, float alpha) {
+		float sw = 26;
+		if (hypr()) {
+			HyprMenu.m3Switch(g, sx, y, sw, 13, k, hot, alpha);
+		} else {
+			GuiDraw.rounded(g, sx, y, sw, 13, 6.5f, Anim.fade(Anim.mix(track(), accent(), k), alpha));
+			GuiDraw.circle(g, sx + 6.5f + k * (sw - 13), y + 6.5f, 4.5f, Anim.fade(Anim.mix(dim(), 0xFFFFFFFF, k), alpha));
+		}
+	}
+
+	private static float hue(int rgb) {
+		float r = ((rgb >> 16) & 0xFF) / 255f;
+		float g = ((rgb >> 8) & 0xFF) / 255f;
+		float b = (rgb & 0xFF) / 255f;
+		float max = Math.max(r, Math.max(g, b));
+		float min = Math.min(r, Math.min(g, b));
+		float d = max - min;
+		if (d < 1e-5f) {
+			return 0f;
+		}
+		float h;
+		if (max == r) {
+			h = ((g - b) / d) % 6f;
+		} else if (max == g) {
+			h = (b - r) / d + 2f;
+		} else {
+			h = (r - g) / d + 4f;
+		}
+		h /= 6f;
+		return h < 0f ? h + 1f : h;
+	}
+
+	private static int fromHue(float h) {
+		h = (h % 1f + 1f) % 1f * 6f;
+		int i = (int) Math.floor(h);
+		float f = h - i;
+		float q = 1f - f;
+		float r;
+		float g;
+		float b;
+		switch (i) {
+			case 0 -> { r = 1; g = f; b = 0; }
+			case 1 -> { r = q; g = 1; b = 0; }
+			case 2 -> { r = 0; g = 1; b = f; }
+			case 3 -> { r = 0; g = q; b = 1; }
+			case 4 -> { r = f; g = 0; b = 1; }
+			default -> { r = 1; g = 0; b = q; }
+		}
+		return (Math.round(r * 255) << 16) | (Math.round(g * 255) << 8) | Math.round(b * 255);
 	}
 
 	private void drawFinishes(GuiGraphicsExtractor g, Cs2Library lib, int mouseX, int mouseY, long now, float alpha) {
@@ -654,7 +812,7 @@ public final class Cs2KnifeScreen extends Screen {
 
 	private void drawGrip(GuiGraphicsExtractor g, int mouseX, int mouseY, float alpha) {
 		int x = midX();
-		int y = gridTop();
+		int y = panelTop();
 		int w = midW();
 		small(g, "Moves the knife in your hand. Changes show live in first person.", x, y + 2, Anim.fade(dim(), alpha));
 		float[] grip = grip();
@@ -752,10 +910,8 @@ public final class Cs2KnifeScreen extends Screen {
 
 		// switches
 		int wy = switchY();
-		bladeT = ease(bladeT, c.cs2BladeShader ? 1f : 0f, 16f);
 		animT = ease(animT, c.cs2Animations ? 1f : 0f, 16f);
-		switchRow(g, "Blade shader", x, wy, bladeT, mouseX, mouseY);
-		switchRow(g, "CS2 animations", x, wy + 18, animT, mouseX, mouseY);
+		switchRow(g, "CS2 animations", x, wy, animT, mouseX, mouseY);
 	}
 
 	private void switchRow(GuiGraphicsExtractor g, String label, int x, int y, float k, int mouseX, int mouseY) {
@@ -991,19 +1147,19 @@ public final class Cs2KnifeScreen extends Screen {
 			}
 		}
 		// tabs
-		if (GuiDraw.hovered(mx, my, midX(), bodyY(), TABS_W, 18)) {
-			boolean grip = mx >= midX() + TABS_W / 2;
-			if (grip != gripTab) {
-				gripTab = grip;
-				finishSearch.visible = !gripTab;
+		if (GuiDraw.hovered(mx, my, midX(), bodyY(), midW(), 18)) {
+			int t = Math.max(0, Math.min(TABS.length - 1, (int) ((mx - midX()) / (midW() / (float) TABS.length))));
+			if (t != tab) {
+				tab = t;
+				finishSearch.visible = tab == 0;
 				finishSearch.setFocused(false);
-				if (!gripTab) {
+				if (tab == 0) {
 					tilesShown = System.currentTimeMillis();
 				}
 			}
 			return true;
 		}
-		if (!gripTab && GuiDraw.hovered(mx, my, midX(), gridTop(), midW(), gridH())) {
+		if (tab == 0 && GuiDraw.hovered(mx, my, midX(), gridTop(), midW(), gridH())) {
 			int cols = columns();
 			int tw = tileW();
 			int col = (int) ((mx - midX()) / (tw + TILE_GAP));
@@ -1016,9 +1172,28 @@ public final class Cs2KnifeScreen extends Screen {
 				return true;
 			}
 		}
-		if (gripTab) {
+		if (tab == 2) {
+			int vx = midX();
+			int vy = panelTop();
+			for (int i = 0; i < 3; i++) {
+				float sy = vy + 18 + i * 26;
+				if (GuiDraw.hovered(mx, my, vx - 4, sy + 8, midW() + 8, 14)) {
+					dragging = 30 + i;
+					dragView(mx);
+					return true;
+				}
+			}
+			if (GuiDraw.hovered(mx, my, vx, vy + 18 + 3 * 26 + 2, 70, 18)) {
+				c.cs2ViewOffset = new float[] {0f, 0f, 0f};
+				return true;
+			}
+		}
+		if (tab == 3 && bladeClick(mx, my)) {
+			return true;
+		}
+		if (tab == 1) {
 			int x = midX();
-			int y = gridTop();
+			int y = panelTop();
 			for (int i = 0; i < 7; i++) {
 				float sy = y + 18 + i * 26;
 				if (GuiDraw.hovered(mx, my, x - 4, sy + 8, midW() + 8, 14)) {
@@ -1051,10 +1226,6 @@ public final class Cs2KnifeScreen extends Screen {
 			return true;
 		}
 		if (GuiDraw.hovered(mx, my, x, switchY(), SIDE_W, 16)) {
-			c.cs2BladeShader = !c.cs2BladeShader;
-			return true;
-		}
-		if (GuiDraw.hovered(mx, my, x, switchY() + 18, SIDE_W, 16)) {
 			c.cs2Animations = !c.cs2Animations;
 			return true;
 		}
@@ -1071,6 +1242,14 @@ public final class Cs2KnifeScreen extends Screen {
 			dragGrip(event.x());
 			return true;
 		}
+		if (dragging >= 30) {
+			dragView(event.x());
+			return true;
+		}
+		if (dragging >= 20) {
+			dragBlade(event.x());
+			return true;
+		}
 		return super.mouseDragged(event, dx, dy);
 	}
 
@@ -1078,6 +1257,69 @@ public final class Cs2KnifeScreen extends Screen {
 	public boolean mouseReleased(MouseButtonEvent event) {
 		dragging = -1;
 		return super.mouseReleased(event);
+	}
+
+	/** Blade tab layout, mirrored from drawBlade. */
+	private boolean bladeClick(double mx, double my) {
+		StrayConfig c = StrayConfig.get();
+		int x = midX();
+		int y = panelTop();
+		int w = midW();
+		if (GuiDraw.hovered(mx, my, x, y, w, 16)) {
+			c.cs2BladeShader = !c.cs2BladeShader;
+			return true;
+		}
+		int by = y + 38 + 12;
+		if (GuiDraw.hovered(mx, my, x, by, w, 18)) {
+			int i = Math.max(0, Math.min(3, (int) ((mx - x) / (w / 4f))));
+			c.cs2BladeShaderStyle = STYLES[i];
+			return true;
+		}
+		int swy = by + 28 + 14;
+		int sw = 16;
+		float gap = (w - SWATCHES.length * sw) / (float) (SWATCHES.length - 1);
+		for (int i = 0; i < SWATCHES.length; i++) {
+			float sx = x + i * (sw + gap);
+			if (GuiDraw.hovered(mx, my, sx - 2, swy - 2, sw + 4, sw + 4)) {
+				c.cs2BladeShaderRgb = SWATCHES[i];
+				return true;
+			}
+		}
+		int hy = swy + sw + 8;
+		if (GuiDraw.hovered(mx, my, x - 4, hy - 3, w + 8, 14)) {
+			dragging = 20;
+			dragBlade(mx);
+			return true;
+		}
+		int ly = hy + 20;
+		if (GuiDraw.hovered(mx, my, x - 4, ly + 8, w + 8, 14)) {
+			dragging = 21;
+			dragBlade(mx);
+			return true;
+		}
+		if (GuiDraw.hovered(mx, my, x - 4, ly + 28 + 8, w + 8, 14)) {
+			dragging = 22;
+			dragBlade(mx);
+			return true;
+		}
+		return false;
+	}
+
+	private void dragView(double mx) {
+		float k = (float) Math.max(0, Math.min(1, (mx - midX()) / midW()));
+		viewOffset()[dragging - 30] = Math.round((-0.6f + k * 1.2f) * 100f) / 100f;
+	}
+
+	private void dragBlade(double mx) {
+		StrayConfig c = StrayConfig.get();
+		float k = (float) Math.max(0, Math.min(1, (mx - midX()) / midW()));
+		switch (dragging) {
+			case 20 -> c.cs2BladeShaderRgb = fromHue(Math.min(0.999f, k));
+			case 21 -> c.cs2BladeShaderFill = Math.round((0.08f + k * (0.85f - 0.08f)) * 100f) / 100f;
+			case 22 -> c.cs2BladeShaderSmoke = Math.round((0.10f + k * (1.50f - 0.10f)) * 100f) / 100f;
+			default -> {
+			}
+		}
 	}
 
 	private void dragFloat(double mx) {
@@ -1109,7 +1351,7 @@ public final class Cs2KnifeScreen extends Screen {
 			knifeScroll = Math.max(0, Math.min(max, knifeScroll - (float) sy * ROW_H * 2));
 			return true;
 		}
-		if (mx < sideX() && !gripTab) {
+		if (mx < sideX() && tab == 0) {
 			int rows = (finishes(lib).size() + columns() - 1) / columns();
 			float max = Math.max(0, rows * (TILE_H + TILE_GAP) - gridH());
 			finishScroll = Math.max(0, Math.min(max, finishScroll - (float) sy * (TILE_H + TILE_GAP) / 2f));

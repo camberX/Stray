@@ -71,7 +71,7 @@ public final class KnifeRender {
 		S2Model model = knife.model;
 		collector.submitCustomGeometry(pose, type(), (p, consumer) -> emit(p, consumer, model, toView, skin, light, false));
 		if (StrayConfig.get().cs2BladeShader) {
-			RenderType fill = HeldItemShader.fillTypeFor(Cs2Knives.BLADE);
+			RenderType fill = HeldItemShader.bladeTypeFor(Cs2Knives.BLADE);
 			if (fill != null) {
 				collector.submitCustomGeometry(pose, fill, (p, consumer) -> emit(p, consumer, model, toView, skin, light, true));
 			}

@@ -59,6 +59,7 @@ public final class HeldItemShader {
 	private static final Identifier FILL_PIPELINE_ID = Stray.id("pipeline/held_item");
 	private static final Identifier ESP_FILL_PIPELINE_ID = Stray.id("pipeline/held_item_esp");
 	private static final Identifier MASK_PIPELINE_ID = Stray.id("pipeline/held_item_mask");
+	private static final Identifier BLADE_PIPELINE_ID = Stray.id("pipeline/cs2_blade");
 	private static final Identifier FILL_SHADER_ID = Stray.id("core/held_item");
 	private static final Identifier SILHOUETTE_SHADER_ID = Stray.id("post/held_item_silhouette");
 	private static final Identifier ROWDIST_SHADER_ID = Stray.id("post/held_item_rowdist");
@@ -69,6 +70,8 @@ public final class HeldItemShader {
 	private static final Function<Identifier, RenderType> PLAYER_FILL_TYPES = Util.memoize(HeldItemShader::createPlayerFillType);
 	private static final Function<Identifier, RenderType> ESP_FILL_TYPES = Util.memoize(HeldItemShader::createEspFillType);
 	private static final Function<Identifier, RenderType> MASK_TYPES = Util.memoize(HeldItemShader::createMaskType);
+	private static final Function<Identifier, RenderType> BLADE_TYPES = Util.memoize(HeldItemShader::createBladeType);
+	private static RenderPipeline bladePipeline;
 	private static RenderPipeline fillPipeline;
 	private static RenderPipeline espFillPipeline;
 	private static RenderPipeline maskPipeline;
@@ -203,7 +206,7 @@ public final class HeldItemShader {
 			return false;
 		}
 		Identifier location = value.getLocation();
-		return FILL_PIPELINE_ID.equals(location) || ESP_FILL_PIPELINE_ID.equals(location);
+		return FILL_PIPELINE_ID.equals(location) || ESP_FILL_PIPELINE_ID.equals(location) || BLADE_PIPELINE_ID.equals(location);
 	}
 
 	public static boolean isMaskPipeline(RenderPipeline value) {
@@ -247,6 +250,20 @@ public final class HeldItemShader {
 				.withCull(false)
 				.build()
 		);
+		bladePipeline = RenderPipelines.register(
+			RenderPipeline.builder(RenderPipelines.ITEM_SNIPPET, RenderPipelines.GLOBALS_SNIPPET)
+				.withLocation(BLADE_PIPELINE_ID)
+				.withVertexShader(FILL_SHADER_ID)
+				.withFragmentShader(FILL_SHADER_ID)
+				.withSampler("Sampler1")
+				.withSampler("Sampler3")
+				.withSampler("Sampler4")
+				.withShaderDefine("ALPHA_CUTOUT", 0.1f)
+				.withShaderDefine("PORTAL_LAYERS", 15)
+				.withColorTargetState(ColorTargetState.DEFAULT)
+				.withCull(false)
+				.build()
+		);
 		maskPipeline = RenderPipelines.register(
 			RenderPipeline.builder(RenderPipelines.ITEM_SNIPPET, RenderPipelines.GLOBALS_SNIPPET)
 				.withLocation(MASK_PIPELINE_ID)
@@ -263,9 +280,18 @@ public final class HeldItemShader {
 		);
 	}
 
-	/** The held item fill for an arbitrary texture (alpha = where to draw); used for CS2 knife blades. */
+	/** The held item fill for an arbitrary texture (alpha = where to draw). */
 	public static RenderType fillTypeFor(Identifier texture) {
 		return FILL_TYPES.apply(texture);
+	}
+
+	/** The CS2 knife blade fill: same shader, but its own style and colors (cs2BladeShader*). */
+	public static RenderType bladeTypeFor(Identifier texture) {
+		return BLADE_TYPES.apply(texture);
+	}
+
+	public static boolean isBladePipeline(RenderPipeline value) {
+		return value != null && BLADE_PIPELINE_ID.equals(value.getLocation());
 	}
 
 	public static RenderType wrap(RenderType original, Iterable<BakedQuad> quads) {
@@ -547,6 +573,9 @@ public final class HeldItemShader {
 
 	public static Vector4fc colorModulator(RenderPipeline pipeline) {
 		StrayConfig config = StrayConfig.get();
+		if (isBladePipeline(pipeline)) {
+			return packColor(config.cs2BladeShaderRgb, config.cs2BladeShaderFill);
+		}
 		if (playerFillUniforms(pipeline)) {
 			EntityVisuals visuals = fillOrPlayer();
 			return packColor(visuals.shaderRgb, visuals.shaderFill);
@@ -592,6 +621,13 @@ public final class HeldItemShader {
 
 	public static Vector3fc modelOffset(RenderPipeline pipeline) {
 		StrayConfig config = StrayConfig.get();
+		if (isBladePipeline(pipeline)) {
+			return new Vector3f(
+				StrayConfig.clamp(config.heldItemShaderOutline, 0.15f, 1.50f),
+				StrayConfig.clamp(config.cs2BladeShaderSmoke, 0.10f, 1.50f),
+				StrayConfig.shaderStyleIndex(config.cs2BladeShaderStyle)
+			);
+		}
 		if (playerFillUniforms(pipeline)) {
 			EntityVisuals visuals = fillOrPlayer();
 			return new Vector3f(
@@ -680,6 +716,21 @@ public final class HeldItemShader {
 				.withTexture("Sampler4", AbstractEndPortalRenderer.END_PORTAL_LOCATION)
 				.useLightmap()
 				.affectsCrumbling()
+				.setOutline(RenderSetup.OutlineProperty.NONE)
+				.createRenderSetup()
+		);
+	}
+
+	private static RenderType createBladeType(Identifier texture) {
+		ensureRegistered();
+		return RenderType.create(
+			"stray_cs2_blade",
+			RenderSetup.builder(bladePipeline)
+				.withTexture("Sampler0", texture)
+				.withTexture("Sampler1", ItemFeatureRenderer.ENCHANTED_GLINT_ITEM)
+				.withTexture("Sampler3", AbstractEndPortalRenderer.END_SKY_LOCATION)
+				.withTexture("Sampler4", AbstractEndPortalRenderer.END_PORTAL_LOCATION)
+				.useLightmap()
 				.setOutline(RenderSetup.OutlineProperty.NONE)
 				.createRenderSetup()
 		);

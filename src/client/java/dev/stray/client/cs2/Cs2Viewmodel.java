@@ -127,6 +127,11 @@ public final class Cs2Viewmodel {
 		}
 
 		pose.pushPose();
+		float[] off = StrayConfig.get().cs2ViewOffset;
+		if (off != null && off.length >= 3) {
+			// Arm and knife move together; positive distance pushes the viewmodel away.
+			pose.translate(left ? -off[0] : off[0], off[1], -off[2]);
+		}
 		Matrix4f knifeView = new Matrix4f(view);
 		float[] g = StrayConfig.get().cs2Grip.get(knife.id + "#hand");
 		if (g == null || g.length < 7) {

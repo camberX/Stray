@@ -90,6 +90,13 @@ public final class StrayConfig {
 	/** "swords" (swords and axes), "held" (whatever is in the main hand) or "empty" (empty main hand). */
 	public String cs2ApplyTo = "swords";
 	public boolean cs2BladeShader = false;
+	/** The knife blade shader has its own look, separate from the held item shader. */
+	public String cs2BladeShaderStyle = "galaxy";
+	public int cs2BladeShaderRgb = 0xB46CFF;
+	public float cs2BladeShaderFill = 0.40f;
+	public float cs2BladeShaderSmoke = 0.60f;
+	/** Moves the whole first-person viewmodel (arm and knife): right, up, distance (blocks). */
+	public float[] cs2ViewOffset = {0f, 0f, 0f};
 	public boolean cs2Animations = true;
 	public String cs2InspectKey = "key.keyboard.g";
 	/** Per knife grip tweak: x y z (blocks), pitch yaw roll (degrees), scale. */
