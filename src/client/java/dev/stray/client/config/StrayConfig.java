@@ -97,6 +97,39 @@ public final class StrayConfig {
 	public float cs2BladeShaderSmoke = 0.60f;
 	/** Moves the whole first-person viewmodel (arm and knife): right, up, distance (blocks). */
 	public float[] cs2ViewOffset = {0f, 0f, 0f};
+	/** Per sword: each sword (by SkyBlock id, else item id) can have its own knife and skin. */
+	public boolean cs2PerSword = false;
+	public java.util.Map<String, Cs2Skin> cs2SwordSkins = new java.util.HashMap<>();
+	public Cs2Skin cs2DefaultSkin;
+
+	/** One knife choice: knife, finish, seed and float. */
+	public static final class Cs2Skin {
+		public String knife;
+		public String finish;
+		public int seed;
+		public float wear;
+
+		public Cs2Skin() {
+		}
+
+		public Cs2Skin(String knife, String finish, int seed, float wear) {
+			this.knife = knife;
+			this.finish = finish;
+			this.seed = seed;
+			this.wear = wear;
+		}
+
+		@Override
+		public boolean equals(Object o) {
+			return o instanceof Cs2Skin s && java.util.Objects.equals(knife, s.knife) && java.util.Objects.equals(finish, s.finish)
+				&& seed == s.seed && Float.compare(wear, s.wear) == 0;
+		}
+
+		@Override
+		public int hashCode() {
+			return java.util.Objects.hash(knife, finish, seed, wear);
+		}
+	}
 	public boolean cs2Animations = true;
 	public String cs2InspectKey = "key.keyboard.g";
 	/** Per knife grip tweak: x y z (blocks), pitch yaw roll (degrees), scale. */

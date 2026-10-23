@@ -29,6 +29,7 @@ public final class OdinClicks {
 		KeyMapping.set(key, true);
 		KeyMapping.click(key);
 		KeyMapping.set(key, false);
+		dev.stray.client.cs2.Cs2Viewmodel.clicked();
 	}
 
 	public static void leftClick() {

@@ -56,6 +56,13 @@ public final class Cs2Viewmodel {
 	/** CS2's swing clips play this much faster, so clicks and mining keep up with Minecraft. */
 	private static final float SWING_RATE = 1.7f;
 	private static boolean lastAttackDown;
+	private static boolean clickQueued;
+	private static volatile boolean externalClick;
+
+	/** A click sent by the mod (autoclicker); swings like a real click. */
+	public static void clicked() {
+		externalClick = true;
+	}
 	/** Shortest time between two swings started by clicking (seconds), so spam clicking stays readable. */
 	private static final float MIN_SWING_GAP = 0.16f;
 
@@ -89,9 +96,17 @@ public final class Cs2Viewmodel {
 		boolean clicked = attackDown && !lastAttackDown;
 		lastAttackDown = attackDown;
 		boolean swingRestarted = swingProgress > 0f && swingProgress < 0.5f && (lastSwing == 0f || swingProgress < lastSwing - 0.05f);
-		// Each click alternates between the two swings, but not faster than MIN_SWING_GAP apart.
-		boolean spacedOut = action != Action.SWING || elapsed() >= MIN_SWING_GAP;
-		if ((clicked || swingRestarted && action != Action.SWING) && spacedOut) {
+		// Each click (yours or the autoclicker's) alternates between the two
+		// swings. Clicks inside MIN_SWING_GAP wait for it instead of being dropped, so spam clicking
+		// and the autoclicker both swing at the top speed.
+		// A restarted Minecraft swing only counts when nothing is swinging (e.g. the triggerbot);
+		// otherwise it is the swing of a click already counted.
+		if (clicked || externalClick || swingRestarted && action != Action.SWING) {
+			clickQueued = true;
+		}
+		externalClick = false;
+		if (clickQueued && (action != Action.SWING || elapsed() >= MIN_SWING_GAP)) {
+			clickQueued = false;
 			nextSwing();
 		}
 		lastSwing = swingProgress;

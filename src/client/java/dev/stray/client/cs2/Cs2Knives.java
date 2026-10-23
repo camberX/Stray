@@ -224,6 +224,11 @@ public final class Cs2Knives {
 		if (!enabled() || current == null) {
 			return false;
 		}
+		return matches(stack);
+	}
+
+	/** Whether the Apply-to rule picks this stack (regardless of whether a knife is loaded). */
+	public static boolean matches(ItemStack stack) {
 		String rule = StrayConfig.get().cs2ApplyTo;
 		if ("empty".equals(rule)) {
 			return stack == null || stack.isEmpty();
@@ -246,6 +251,97 @@ public final class Cs2Knives {
 		return c.cs2Knife + "|" + c.cs2Finish + "|" + c.cs2Seed + "|" + Math.round(c.cs2Wear * 10000f);
 	}
 
+	/** The last few built knives, so switching between swords with different skins is instant. */
+	private static final Map<String, Knife> CACHE = new java.util.LinkedHashMap<>(8, 0.75f, true) {
+		@Override
+		protected boolean removeEldestEntry(Map.Entry<String, Knife> eldest) {
+			return size() > 4;
+		}
+	};
+
+	/** Item key of the sword whose skin is in the config fields right now (null = the default skin). */
+	private static String activeSword;
+	private static String activeSwordName;
+
+	/** Display name of the sword being edited in per-sword mode, or null for the default skin. */
+	public static String activeSwordName() {
+		return StrayConfig.get().cs2PerSword ? activeSwordName : null;
+	}
+
+	/** A sword's identity: its SkyBlock id when it has one, else the item id. */
+	public static String swordKey(ItemStack stack) {
+		if (stack == null || stack.isEmpty()) {
+			return null;
+		}
+		var data = stack.get(net.minecraft.core.component.DataComponents.CUSTOM_DATA);
+		if (data != null && !data.isEmpty()) {
+			String id = data.copyTag().getStringOr("id", "");
+			if (!id.isEmpty()) {
+				return "sb:" + id;
+			}
+		}
+		return BuiltInRegistries.ITEM.getKey(stack.getItem()).toString();
+	}
+
+	private static StrayConfig.Cs2Skin selection(StrayConfig c) {
+		return new StrayConfig.Cs2Skin(c.cs2Knife, c.cs2Finish, c.cs2Seed, c.cs2Wear);
+	}
+
+	private static void apply(StrayConfig c, StrayConfig.Cs2Skin s) {
+		if (s == null) {
+			return;
+		}
+		c.cs2Knife = s.knife == null ? c.cs2Knife : s.knife;
+		c.cs2Finish = s.finish == null ? "" : s.finish;
+		c.cs2Seed = s.seed;
+		c.cs2Wear = s.wear;
+	}
+
+	/**
+	 * Per-sword mode keeps the config's knife fields pointing at the held sword's skin: when the
+	 * held sword changes, the edited skin is stored for the old one and the new one's is loaded
+	 * (swords without their own skin use the default). Turning the mode off restores the default.
+	 */
+	private static void syncPerSword(Minecraft client) {
+		StrayConfig c = StrayConfig.get();
+		if (c.cs2DefaultSkin == null) {
+			c.cs2DefaultSkin = selection(c);
+		}
+		if (!c.cs2PerSword) {
+			if (activeSword != null) {
+				stash(c, activeSword);
+				apply(c, c.cs2DefaultSkin);
+				activeSword = null;
+				activeSwordName = null;
+			}
+			c.cs2DefaultSkin = selection(c);
+			return;
+		}
+		ItemStack held = client.player == null ? ItemStack.EMPTY : client.player.getMainHandItem();
+		String key = matches(held) ? swordKey(held) : null;
+		if (key != null && "empty".equals(c.cs2ApplyTo)) {
+			key = null;
+		}
+		if (java.util.Objects.equals(key, activeSword)) {
+			return;
+		}
+		stash(c, activeSword);
+		apply(c, key == null ? c.cs2DefaultSkin : c.cs2SwordSkins.getOrDefault(key, c.cs2DefaultSkin));
+		activeSword = key;
+		activeSwordName = key == null ? null : held.getHoverName().getString();
+	}
+
+	private static void stash(StrayConfig c, String key) {
+		StrayConfig.Cs2Skin now = selection(c);
+		if (key == null) {
+			c.cs2DefaultSkin = now;
+		} else if (now.equals(c.cs2DefaultSkin)) {
+			c.cs2SwordSkins.remove(key);
+		} else {
+			c.cs2SwordSkins.put(key, now);
+		}
+	}
+
 	/** Called every client tick. */
 	public static void tick(Minecraft client) {
 		StrayConfig c = StrayConfig.get();
@@ -261,6 +357,7 @@ public final class Cs2Knives {
 		if (library == null) {
 			return;
 		}
+		syncPerSword(client);
 		String key = key();
 		wantedKey = key;
 		CompletableFuture<Knife> job = pending;
@@ -268,12 +365,20 @@ public final class Cs2Knives {
 			pending = null;
 			Knife knife = job.getNow(null);
 			if (knife != null) {
+				CACHE.put(knife.key, knife);
 				upload(knife);
 				current = knife;
 				status = "";
 				Cs2Viewmodel.draw();
 			}
 			loadingKey = null;
+		}
+		if (pending == null && (current == null || !current.key.equals(key)) && CACHE.containsKey(key)) {
+			// Switching back to a sword whose knife was built recently: no rebuild.
+			Knife cached = CACHE.get(key);
+			upload(cached);
+			current = cached;
+			Cs2Viewmodel.draw();
 		}
 		if (pending == null && (current == null || !current.key.equals(key)) && !key.equals(loadingKey)) {
 			loadingKey = key;

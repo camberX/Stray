@@ -95,6 +95,7 @@ public final class Cs2KnifeScreen extends Screen {
 	private float bladeT;
 	private float styleT = -1f;
 	private float animT;
+	private float perSwordT;
 	private long tilesShown;
 	private final Map<String, Float> hover = new HashMap<>();
 
@@ -481,6 +482,10 @@ public final class Cs2KnifeScreen extends Screen {
 		if (lib != null) {
 			Cs2Library.Knife k = lib.knives().get(c.cs2Knife);
 			sub = k == null ? "" : k.name() + "  ·  " + finishName(lib);
+			if (c.cs2PerSword) {
+				String sword = Cs2Knives.activeSwordName();
+				sub = (sword == null ? "Editing the default skin" : "Editing " + sword) + "  ·  " + sub;
+			}
 		}
 		// inspect key chip: click, then press a key (or mouse button) to rebind
 		String key = bindListen ? "Press a key…" : keyName(c.cs2InspectKey);
@@ -912,6 +917,8 @@ public final class Cs2KnifeScreen extends Screen {
 		int wy = switchY();
 		animT = ease(animT, c.cs2Animations ? 1f : 0f, 16f);
 		switchRow(g, "CS2 animations", x, wy, animT, mouseX, mouseY);
+		perSwordT = ease(perSwordT, c.cs2PerSword ? 1f : 0f, 16f);
+		switchRow(g, "Skin per sword", x, wy + 18, perSwordT, mouseX, mouseY);
 	}
 
 	private void switchRow(GuiGraphicsExtractor g, String label, int x, int y, float k, int mouseX, int mouseY) {
@@ -1227,6 +1234,10 @@ public final class Cs2KnifeScreen extends Screen {
 		}
 		if (GuiDraw.hovered(mx, my, x, switchY(), SIDE_W, 16)) {
 			c.cs2Animations = !c.cs2Animations;
+			return true;
+		}
+		if (GuiDraw.hovered(mx, my, x, switchY() + 18, SIDE_W, 16)) {
+			c.cs2PerSword = !c.cs2PerSword;
 			return true;
 		}
 		return false;
