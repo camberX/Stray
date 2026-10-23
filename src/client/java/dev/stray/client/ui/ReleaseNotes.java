@@ -17,7 +17,9 @@ public final class ReleaseNotes {
 	public static final Entry[] ENTRIES = {
 		new Entry("1.5.66", new String[]{
 			"The Hyprland Mobs tab lists every mob. The fade no longer hides the ones past the first screen, and a search bar in the bar's style filters the list.",
-			"Triggerbot has a CPS slider, from 1 to 20. Right click Triggerbot in the click GUI for Players, Humanize and CPS."
+			"Triggerbot has a CPS slider, from 1 to 20. Right click Triggerbot in the click GUI for Players, Humanize and CPS.",
+			"CS2 knives (Visuals > CS2 knife): every CS2 knife with all its finishes, real pattern seeds and float, held in your own Minecraft arm. Press G to inspect with CS2's animations. Knife data downloads once on first use.",
+			"The knife menu has search, finish tiles, a live 3D preview, a float slider with wear tiers, and a Grip tab to move the knife in your hand. Held item shaders can go on the blade."
 		}),
 		new Entry("1.5.65", new String[]{
 			"Every HUD element has a Background switch in the HUD editor",
