@@ -15,6 +15,10 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.5.67", new String[]{
+			"The CS2 knife menu no longer lists the plain default knives or the Shadow Daggers",
+			"Text in the knife menu is centered in its rows, tabs, pills and fields"
+		}),
 		new Entry("1.5.66", new String[]{
 			"The Hyprland Mobs tab lists every mob. The fade no longer hides the ones past the first screen, and a search bar in the bar's style filters the list.",
 			"Triggerbot has a CPS slider, from 1 to 20. Right click Triggerbot in the click GUI for Players, Humanize and CPS.",
