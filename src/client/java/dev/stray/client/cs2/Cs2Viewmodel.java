@@ -53,6 +53,12 @@ public final class Cs2Viewmodel {
 	}
 
 
+	private static boolean mining() {
+		Minecraft mc = Minecraft.getInstance();
+		return mc.screen == null && mc.options.keyAttack.isDown() && mc.hitResult != null
+			&& mc.hitResult.getType() == net.minecraft.world.phys.HitResult.Type.BLOCK;
+	}
+
 	private static float elapsed() {
 		return (System.nanoTime() - startNs) / 1_000_000_000f;
 	}
@@ -70,6 +76,15 @@ public final class Cs2Viewmodel {
 			start(Action.SWING);
 		}
 		lastSwing = swingProgress;
+		// Holding left click on a block keeps swinging: start the next swing as the current one winds down.
+		if (mining()) {
+			NmClip current = action == Action.SWING ? knife.clip(swingClip) : null;
+			if (action != Action.SWING || current == null || elapsed() >= current.duration * 0.7f) {
+				swingAlt = !swingAlt;
+				swingClip = swingAlt ? "light_miss1" : "light_miss2";
+				start(Action.SWING);
+			}
+		}
 		if (!StrayConfig.get().cs2Animations) {
 			pose.sample(knife.clip("idle"), 0f);
 			return;

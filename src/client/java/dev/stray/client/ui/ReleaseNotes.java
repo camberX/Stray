@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.5.69", new String[]{
+			"CS2 knives keep swinging while you hold left click on a block, until you let go"
+		}),
 		new Entry("1.5.68", new String[]{
 			"The knife blade shader has its own style, color, strength and detail in the knife menu's new Blade tab, separate from the held item shader",
 			"New View tab in the knife menu moves your arm and knife together: left/right, up/down and distance",
