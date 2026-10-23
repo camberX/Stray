@@ -53,6 +53,91 @@ public final class Cs2Knives {
 		public final Map<String, NmClip> clips;
 		final Composer.Result skin;
 
+		private int[][] bladeTriangles;
+
+		/**
+		 * Per model part, the first index of every triangle that can show the blade shader: its
+		 * UV bounds touch texels the blade mask keeps (the fill pass discards everything else, so
+		 * skipping the rest changes nothing on screen).
+		 */
+		public synchronized int[][] bladeTriangles() {
+			if (bladeTriangles != null) {
+				return bladeTriangles;
+			}
+			int cells = 64;
+			boolean[] keep = new boolean[cells * cells];
+			int n = skin.size;
+			for (int y = 0; y < n; y++) {
+				for (int x = 0; x < n; x++) {
+					int i = y * n + x;
+					int alpha = Math.max(skin.material[i * 4 + 3] & 0xFF, skin.material[i * 4 + 1] & 0xFF);
+					if (alpha >= 16) {
+						int cx = x * cells / n;
+						int cy = y * cells / n;
+						// dilate by one cell for texture filtering at cell edges
+						for (int dy = -1; dy <= 1; dy++) {
+							for (int dx = -1; dx <= 1; dx++) {
+								int ex = cx + dx;
+								int ey = cy + dy;
+								if (ex >= 0 && ey >= 0 && ex < cells && ey < cells) {
+									keep[ey * cells + ex] = true;
+								}
+							}
+						}
+					}
+				}
+			}
+			int[][] out = new int[model.parts.size()][];
+			for (int pi = 0; pi < out.length; pi++) {
+				S2Model.Part part = model.parts.get(pi);
+				int[] idx = part.indices;
+				int[] list = new int[idx.length / 3];
+				int count = 0;
+				for (int t = 0; t + 2 < idx.length; t += 3) {
+					if (part.uv == null) {
+						list[count++] = t;
+						continue;
+					}
+					float u0 = Float.MAX_VALUE;
+					float v0 = Float.MAX_VALUE;
+					float u1 = -Float.MAX_VALUE;
+					float v1 = -Float.MAX_VALUE;
+					for (int k = 0; k < 3; k++) {
+						int vi = idx[t + k];
+						float u = part.uv[vi * 2];
+						float v = part.uv[vi * 2 + 1];
+						u0 = Math.min(u0, u);
+						v0 = Math.min(v0, v);
+						u1 = Math.max(u1, u);
+						v1 = Math.max(v1, v);
+					}
+					if (u0 < 0f || v0 < 0f || u1 > 1f || v1 > 1f) {
+						list[count++] = t; // wrapped UVs: keep, to be safe
+						continue;
+					}
+					int cx0 = Math.min(cells - 1, (int) (u0 * cells));
+					int cx1 = Math.min(cells - 1, (int) (u1 * cells));
+					int cy0 = Math.min(cells - 1, (int) (v0 * cells));
+					int cy1 = Math.min(cells - 1, (int) (v1 * cells));
+					boolean hit = false;
+					for (int cy = cy0; cy <= cy1 && !hit; cy++) {
+						for (int cx = cx0; cx <= cx1; cx++) {
+							if (keep[cy * cells + cx]) {
+								hit = true;
+								break;
+							}
+						}
+					}
+					if (hit) {
+						list[count++] = t;
+					}
+				}
+				out[pi] = java.util.Arrays.copyOf(list, count);
+			}
+			bladeTriangles = out;
+			return out;
+		}
+
 		Knife(String id, String key, S2Model model, Pose pose, Map<String, NmClip> clips, Composer.Result skin) {
 			this.id = id;
 			this.key = key;
