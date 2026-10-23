@@ -53,6 +53,16 @@ public final class Cs2Viewmodel {
 	}
 
 
+	/** CS2's swing clips play this much faster, so clicks and mining keep up with Minecraft. */
+	private static final float SWING_RATE = 1.7f;
+	private static boolean lastAttackDown;
+
+	private static void nextSwing() {
+		swingAlt = !swingAlt;
+		swingClip = swingAlt ? "light_miss1" : "light_miss2";
+		start(Action.SWING);
+	}
+
 	private static boolean mining() {
 		Minecraft mc = Minecraft.getInstance();
 		return mc.screen == null && mc.options.keyAttack.isDown() && mc.hitResult != null
@@ -70,19 +80,22 @@ public final class Cs2Viewmodel {
 			lastStack = stack;
 			start(Action.DRAW);
 		}
-		if (swingProgress > 0f && lastSwing == 0f && swingProgress < 0.5f) {
-			swingAlt = !swingAlt;
-			swingClip = swingAlt ? "light_miss1" : "light_miss2";
-			start(Action.SWING);
+		// A new swing: a fresh left click (so spam clicking restarts the swing each time), or the
+		// player's swing starting over for any other reason.
+		Minecraft mc = Minecraft.getInstance();
+		boolean attackDown = mc.screen == null && mc.options.keyAttack.isDown();
+		boolean clicked = attackDown && !lastAttackDown;
+		lastAttackDown = attackDown;
+		boolean swingRestarted = swingProgress > 0f && swingProgress < 0.5f && (lastSwing == 0f || swingProgress < lastSwing - 0.05f);
+		if (clicked || swingRestarted && action != Action.SWING) {
+			nextSwing();
 		}
 		lastSwing = swingProgress;
 		// Holding left click on a block keeps swinging: start the next swing as the current one winds down.
 		if (mining()) {
 			NmClip current = action == Action.SWING ? knife.clip(swingClip) : null;
-			if (action != Action.SWING || current == null || elapsed() >= current.duration * 0.7f) {
-				swingAlt = !swingAlt;
-				swingClip = swingAlt ? "light_miss1" : "light_miss2";
-				start(Action.SWING);
+			if (action != Action.SWING || current == null || elapsed() * SWING_RATE >= current.duration * 0.5f) {
+				nextSwing();
 			}
 		}
 		if (!StrayConfig.get().cs2Animations) {
@@ -98,7 +111,7 @@ public final class Cs2Viewmodel {
 			case SWING -> knife.clip(swingClip) != null ? knife.clip(swingClip) : knife.clip("light_miss");
 			default -> null;
 		};
-		float t = elapsed();
+		float t = action == Action.SWING ? elapsed() * SWING_RATE : elapsed();
 		if (clip != null && t < clip.duration) {
 			pose.sample(clip, t);
 			return;
