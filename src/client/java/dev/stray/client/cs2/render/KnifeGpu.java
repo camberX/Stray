@@ -78,6 +78,8 @@ public final class KnifeGpu {
 	private static GpuBuffer bones;
 	private static int slotSize;
 	private static int slot;
+	private static boolean warned;
+	private static final ByteBuffer STAGING = ByteBuffer.allocateDirect(BLOCK_SIZE).order(ByteOrder.nativeOrder());
 
 	private KnifeGpu() {
 	}
@@ -208,7 +210,7 @@ public final class KnifeGpu {
 		// Uniform writes must happen before the render pass opens.
 		GpuBufferSlice[] boneSlices = new GpuBufferSlice[list.size()];
 		GpuBufferSlice[] transforms = new GpuBufferSlice[list.size()];
-		ByteBuffer data = ByteBuffer.allocateDirect(BLOCK_SIZE).order(ByteOrder.nativeOrder());
+		ByteBuffer data = STAGING;
 		Matrix4f modelView = new Matrix4f(RenderSystem.getModelViewMatrix());
 		for (int r = 0; r < list.size(); r++) {
 			Request req = list.get(r);
@@ -230,6 +232,8 @@ public final class KnifeGpu {
 			Vector3f offset = req.blade ? new Vector3f(HeldItemShader.modelOffset(type.pipeline())) : new Vector3f();
 			transforms[r] = RenderSystem.getDynamicUniforms().writeTransform(modelView, color, offset, new Matrix4f());
 		}
+		// Textures may still need loading (an upload), which is not allowed inside a render pass.
+		Map<String, RenderSetup.TextureAndSampler> textures = setup.getTextures();
 		RenderTarget target = type.outputTarget().getRenderTarget();
 		GpuTextureView colorView = RenderSystem.outputColorTextureOverride != null ? RenderSystem.outputColorTextureOverride : target.getColorTextureView();
 		GpuTextureView depthView = target.useDepth
@@ -242,7 +246,7 @@ public final class KnifeGpu {
 				pass.enableScissor(scissor.x(), scissor.y(), scissor.width(), scissor.height());
 			}
 			RenderSystem.bindDefaultUniforms(pass);
-			for (Map.Entry<String, RenderSetup.TextureAndSampler> e : setup.getTextures().entrySet()) {
+			for (Map.Entry<String, RenderSetup.TextureAndSampler> e : textures.entrySet()) {
 				pass.bindTexture(e.getKey(), e.getValue().textureView(), e.getValue().sampler());
 			}
 			for (int r = 0; r < list.size(); r++) {
@@ -259,7 +263,10 @@ public final class KnifeGpu {
 				pass.drawIndexed(0, 0, count, 1);
 			}
 		} catch (RuntimeException e) {
-			Stray.LOGGER.warn("CS2 knives: GPU draw failed", e);
+			if (!warned) {
+				warned = true;
+				Stray.LOGGER.warn("CS2 knives: GPU draw failed (further failures are not logged)", e);
+			}
 		}
 	}
 
