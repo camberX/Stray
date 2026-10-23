@@ -50,3 +50,6 @@ web/.wrangler/
 web/.dev.vars
 web/data/codes.json
 web/data/tokens.json
+
+# CS2 knife data pack (local builds only; published on the cs2-data branch)
+src/client/resources/assets/stray/cs2/

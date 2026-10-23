@@ -10,7 +10,7 @@ def strayChannel = (findProperty('strayChannel') ?: 'release').toString().trim()
 def straySha = (findProperty('straySha') ?: '').toString().trim()
 
 base {
-	archivesName = strayChannel == 'dev' ? 'stray-dev' : 'stray'
+	archivesName = strayChannel == 'dev' ? 'stray-dev' : strayChannel == 'local' ? 'stray-cs2' : 'stray'
 }
 
 repositories {
@@ -126,7 +126,7 @@ tasks.register("syncWebMod") {
 	}
 }
 
-if (strayChannel != 'dev') {
+if (strayChannel != 'dev' && strayChannel != 'local') {
 	tasks.named("build") {
 		finalizedBy "syncWebMod"
 	}
@@ -138,4 +138,28 @@ publishing {
 			from components.java
 		}
 	}
+}
+
+// Packs the client compile classpath jars so the CS2 code can be compile-checked elsewhere.
+// Writes ~/cs2/classpath.zip.
+tasks.register("cs2DevClasspath", Zip) {
+	from(sourceSets.client.compileClasspath.filter { it.name.endsWith(".jar") })
+	archiveFileName = "classpath.zip"
+	destinationDirectory = file("${System.getProperty('user.home')}/cs2")
+}
+
+// Rebuilds the knife data pack from a local CS2 install. Release builds download the pack from
+// the cs2-data branch instead; a pack left here (gitignored) is bundled into local builds.
+tasks.register("cs2Pack", JavaExec) {
+	// Only compiled code is needed; resources must be processed after the pack is written.
+	dependsOn "compileJava", "compileClientJava"
+	classpath = files(sourceSets.main.output.classesDirs, sourceSets.client.output.classesDirs) + sourceSets.client.runtimeClasspath
+	mainClass = "dev.stray.client.cs2.pack.Cs2PackBuilder"
+	args file("src/client/resources/assets/stray/cs2/cs2.pack").absolutePath
+	maxHeapSize = "4g"
+	doFirst { file("src/client/resources/assets/stray/cs2").mkdirs() }
+}
+
+tasks.named("processClientResources") {
+	mustRunAfter "cs2Pack"
 }

@@ -250,7 +250,7 @@ public final class ClickGui {
 				}
 				return;
 			}
-			if (row.mod.feature != null || row.mod.timeout || row.mod.menuStyle || "Array list".equals(row.mod.name) || "Themed GUIs".equals(row.mod.name) || "Themed chat".equals(row.mod.name) || CUSTOMIZE.equals(row.mod.name)) {
+			if (row.mod.feature != null || row.mod.timeout || row.mod.menuStyle || "Array list".equals(row.mod.name) || "Themed GUIs".equals(row.mod.name) || "Themed chat".equals(row.mod.name) || CUSTOMIZE.equals(row.mod.name) || CS2.equals(row.mod.name)) {
 				if (row.mod.name.equals(expandedName)) {
 					expandedName = null;
 				} else {
@@ -582,6 +582,8 @@ public final class ClickGui {
 			drawChatStyle(screen, graphics, font, boxX, y, boxW);
 		} else if (CUSTOMIZE.equals(mod.name)) {
 			drawCustomize(screen, graphics, font, boxX, y, boxW);
+		} else if (CS2.equals(mod.name)) {
+			drawCs2(screen, graphics, font, boxX, y, boxW);
 		} else if (mod.menuStyle) {
 			if ("HUD".equals(mod.name)) {
 				drawHud(screen, graphics, font, boxX, y, boxW);
@@ -776,6 +778,15 @@ public final class ClickGui {
 	}
 
 	static final String CUSTOMIZE = "Customize item";
+	static final String CS2 = "CS2 knife";
+
+	/** CS2 knives (local build): pick the knife, finish, seed and wear. */
+	private static void drawCs2(StrayScreen screen, GuiGraphicsExtractor graphics, Font font, float x, float y, float w) {
+		drawButton(screen, graphics, font, x, y, w, "Choose knife & skin", () -> {
+			Minecraft client = Minecraft.getInstance();
+			client.setScreen(new Cs2KnifeScreen(client.screen));
+		});
+	}
 
 	/** Item customization: open the editor for the held item, or reset it. */
 	private static void drawCustomize(StrayScreen screen, GuiGraphicsExtractor graphics, Font font, float x, float y, float w) {
@@ -979,6 +990,9 @@ public final class ClickGui {
 		}
 		if (CUSTOMIZE.equals(mod.name)) {
 			return stackH(2);
+		}
+		if (CS2.equals(mod.name)) {
+			return stackH(1);
 		}
 		if (mod.menuStyle) {
 			if ("HUD".equals(mod.name)) {
@@ -1494,6 +1508,7 @@ public final class ClickGui {
 			|| "Themed GUIs".equals(mod.name)
 			|| "Themed chat".equals(mod.name)
 			|| CUSTOMIZE.equals(mod.name)
+			|| CS2.equals(mod.name)
 			|| "Custom title".equals(mod.name)
 			|| "Triggerbot".equals(mod.name);
 	}
@@ -1539,6 +1554,10 @@ public final class ClickGui {
 		}
 		if (CUSTOMIZE.equals(mod.name)) {
 			drawCustomize(screen, graphics, font, x, y, w);
+			return;
+		}
+		if (CS2.equals(mod.name)) {
+			drawCs2(screen, graphics, font, x, y, w);
 			return;
 		}
 		if (mod.menuStyle) {
@@ -1589,6 +1608,7 @@ public final class ClickGui {
 			config.starVisuals.glowEnabled = v;
 			config.starMobEsp = v;
 		}, true, false));
+		mods.add(mod(CS2, "Visuals", null, null, () -> config.cs2KnifeEnabled, v -> config.cs2KnifeEnabled = v, true, false));
 		mods.add(mod("Held item", "Visuals", StrayScreen.Feature.HELD_ITEM, null, () -> config.heldItemShaderEnabled, v -> config.heldItemShaderEnabled = v, true, false));
 		mods.add(mod("Block outline", "Visuals", StrayScreen.Feature.BLOCK, null, () -> config.blockOutlineGlow, v -> config.blockOutlineGlow = v, true, false));
 		mods.add(mod("Fairy souls", "Visuals", StrayScreen.Feature.FAIRY, null, () -> config.fairySoulEsp, v -> config.fairySoulEsp = v, true, false));

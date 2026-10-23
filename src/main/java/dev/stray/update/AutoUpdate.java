@@ -50,6 +50,9 @@ public final class AutoUpdate implements PreLaunchEntrypoint {
 	}
 
 	public static boolean enabled() {
+		if (localChannel()) {
+			return false;
+		}
 		Path dir = FabricLoader.getInstance().getConfigDir();
 		Path path = dir.resolve("stray.json");
 		if (!Files.isRegularFile(path)) {
@@ -87,6 +90,10 @@ public final class AutoUpdate implements PreLaunchEntrypoint {
 	 */
 	public static String clientLaunchCheck(boolean autoUpdate, boolean notify) {
 		log("Client launch: auto-update " + (autoUpdate ? "on" : "off") + ", notify " + (notify ? "on" : "off") + ".");
+		if (localChannel()) {
+			log("Local build: auto-update is off.");
+			return null;
+		}
 		if (devChannel()) {
 			return clientLaunchCheckDev(autoUpdate, notify);
 		}
@@ -133,6 +140,9 @@ public final class AutoUpdate implements PreLaunchEntrypoint {
 	 */
 	public static UpdateOutcome updateNow() {
 		String installed = installedVersion();
+		if (localChannel()) {
+			return UpdateOutcome.current(installed, "This is a local build; updates are off.");
+		}
 		log("Checking stray.gay for a newer jar (you have " + (installed.isEmpty() ? "unknown" : installed) + ")…");
 		UpdateOutcome onDisk = adoptNewerJar(installed);
 		if (onDisk != null) {
@@ -217,6 +227,9 @@ public final class AutoUpdate implements PreLaunchEntrypoint {
 	 * @return the new version, or {@code null} if nothing was installed
 	 */
 	public static String installNewer(boolean closeGame) {
+		if (localChannel()) {
+			return null;
+		}
 		UpdateOutcome outcome = fetchAndApply(closeGame);
 		return outcome.status() == UpdateStatus.UPDATED ? outcome.version() : null;
 	}
@@ -509,6 +522,11 @@ public final class AutoUpdate implements PreLaunchEntrypoint {
 		urls.add("https://github.com/camberX/Stray/raw/dev-builds/stray-dev.jar");
 		urls.add("https://raw.githubusercontent.com/camberX/voidmark/dev-builds/stray-dev.jar");
 		return new Remote(version, "stray-dev.jar", urls, sha);
+	}
+
+	/** Local builds (e.g. the cs2-knives branch) are never replaced by the updater. */
+	public static boolean localChannel() {
+		return "local".equals(installedCustom("stray:channel"));
 	}
 
 	private static boolean devChannel() {

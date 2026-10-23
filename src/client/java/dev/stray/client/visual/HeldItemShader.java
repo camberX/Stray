@@ -263,6 +263,11 @@ public final class HeldItemShader {
 		);
 	}
 
+	/** The held item fill for an arbitrary texture (alpha = where to draw); used for CS2 knife blades. */
+	public static RenderType fillTypeFor(Identifier texture) {
+		return FILL_TYPES.apply(texture);
+	}
+
 	public static RenderType wrap(RenderType original, Iterable<BakedQuad> quads) {
 		if (original == null || isPipeline(original.pipeline())) {
 			return original;

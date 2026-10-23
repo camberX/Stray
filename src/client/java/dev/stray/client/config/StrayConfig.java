@@ -80,6 +80,20 @@ public final class StrayConfig {
 	public String watermarkStyle = "panel";
 	/** HUD element ids (HudLayout.Id names) lined up along the top edge. */
 	public java.util.List<String> hudDocked = new java.util.ArrayList<>();
+	/** CS2 knives (local build only): read from the player's own CS2 install. */
+	public boolean cs2KnifeEnabled = false;
+	public String cs2Path = "";
+	public String cs2Knife = "weapon_knife_karambit";
+	public String cs2Finish = "";
+	public int cs2Seed = 0;
+	public float cs2Wear = 0.01f;
+	/** "swords" (swords and axes), "held" (whatever is in the main hand) or "empty" (empty main hand). */
+	public String cs2ApplyTo = "swords";
+	public boolean cs2BladeShader = false;
+	public boolean cs2Animations = true;
+	public String cs2InspectKey = "key.keyboard.g";
+	/** Per knife grip tweak: x y z (blocks), pitch yaw roll (degrees), scale. */
+	public java.util.Map<String, float[]> cs2Grip = new java.util.HashMap<>();
 	/** HUD elements drawn without their background panel. */
 	public java.util.List<String> hudNoBackground = new java.util.ArrayList<>();
 	/** "stray" or "hypr": look of themed chat. */

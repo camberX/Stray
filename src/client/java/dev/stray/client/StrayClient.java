@@ -380,6 +380,7 @@ public final class StrayClient implements ClientModInitializer {
 		ClientTickEvents.END_CLIENT_TICK.register(client -> {
 			pollMenuKeys(client);
 			dev.stray.client.item.custom.CustomItems.tick();
+			dev.stray.client.cs2.Cs2Knives.tick(client);
 			if (client.level != customizeLevel) {
 				customizeLevel = client.level;
 				dev.stray.client.item.custom.CustomItems.clearWorldCaches();

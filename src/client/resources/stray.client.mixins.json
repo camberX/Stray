@@ -78,6 +78,8 @@
 		"StringWidgetMixin",
 		"WeatherEffectRendererMixin",
 		"compat.SkyHanniGuiPipelineMixin",
+		"cs2.Cs2FirstPersonMixin",
+		"cs2.Cs2ThirdPersonMixin",
 		"customize.DyedItemColorMixin",
 		"customize.EquipmentLayerRendererMixin",
 		"customize.GuiSelectedNameMixin",
