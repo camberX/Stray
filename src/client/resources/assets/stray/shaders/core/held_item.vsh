@@ -18,6 +18,15 @@ in vec3 Normal;
 uniform sampler2D Sampler2;
 #endif
 
+#ifdef CS2_GPU_SKIN
+// CS2 knives: the mesh sits on the GPU in its bind pose; the bone index is in Color.r and
+// each bone's matrix (pose, view and skinning combined) comes in per draw.
+layout(std140) uniform KnifeBones {
+    mat4 Bones[16];
+    ivec4 KnifeLight;
+};
+#endif
+
 out float sphericalVertexDistance;
 out float cylindricalVertexDistance;
 out vec4 vertexColor;
@@ -25,14 +34,26 @@ out vec2 texCoord0;
 out vec4 texProj0;
 
 void main() {
-    sphericalVertexDistance = fog_spherical_distance(Position);
-    cylindricalVertexDistance = fog_cylindrical_distance(Position);
-#ifdef ESP_FILL
-    vertexColor = minecraft_mix_light(Light0_Direction, Light1_Direction, Normal, Color) * sample_lightmap(Sampler2, UV2);
+#ifdef CS2_GPU_SKIN
+    mat4 bone = Bones[clamp(int(Color.r * 255.0 + 0.5), 0, 15)];
+    vec3 position = (bone * vec4(Position, 1.0)).xyz;
+    vec3 normal = normalize(mat3(bone) * Normal);
+    ivec2 lightUv = KnifeLight.xy;
+    vec4 color = vec4(1.0);
 #else
-    vertexColor = Color;
+    vec3 position = Position;
+    vec3 normal = Normal;
+    ivec2 lightUv = UV2;
+    vec4 color = Color;
+#endif
+    sphericalVertexDistance = fog_spherical_distance(position);
+    cylindricalVertexDistance = fog_cylindrical_distance(position);
+#ifdef ESP_FILL
+    vertexColor = minecraft_mix_light(Light0_Direction, Light1_Direction, normal, color) * sample_lightmap(Sampler2, lightUv);
+#else
+    vertexColor = color;
 #endif
     texCoord0 = UV0;
-    gl_Position = ProjMat * ModelViewMat * vec4(Position, 1.0);
+    gl_Position = ProjMat * ModelViewMat * vec4(position, 1.0);
     texProj0 = projection_from_position(gl_Position);
 }

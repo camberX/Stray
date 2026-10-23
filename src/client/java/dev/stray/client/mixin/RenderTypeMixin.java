@@ -4,12 +4,34 @@ import dev.stray.client.visual.HeldItemShader;
 import net.minecraft.client.renderer.rendertype.RenderType;
 import org.joml.Vector3fc;
 import org.joml.Vector4fc;
+import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.ModifyArg;
 
 @Mixin(RenderType.class)
 public class RenderTypeMixin {
+	@Shadow
+	@Final
+	private net.minecraft.client.renderer.rendertype.RenderSetup state;
+
+	/** CS2 knives: draw the knife from its GPU mesh instead of the batch's placeholder triangle. */
+	@Inject(method = "draw", at = @At("HEAD"), cancellable = true)
+	private void stray$cs2KnifeDraw(com.mojang.blaze3d.vertex.MeshData mesh, CallbackInfo ci) {
+		RenderType self = (RenderType) (Object) this;
+		if (dev.stray.client.cs2.render.KnifeGpu.handles(self)) {
+			try {
+				dev.stray.client.cs2.render.KnifeGpu.draw(self, state);
+			} finally {
+				mesh.close();
+			}
+			ci.cancel();
+		}
+	}
+
 	@ModifyArg(
 		method = "draw",
 		at = @At(
