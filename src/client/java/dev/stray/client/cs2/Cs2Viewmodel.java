@@ -56,6 +56,8 @@ public final class Cs2Viewmodel {
 	/** CS2's swing clips play this much faster, so clicks and mining keep up with Minecraft. */
 	private static final float SWING_RATE = 1.7f;
 	private static boolean lastAttackDown;
+	/** Shortest time between two swings started by clicking (seconds), so spam clicking stays readable. */
+	private static final float MIN_SWING_GAP = 0.16f;
 
 	private static void nextSwing() {
 		swingAlt = !swingAlt;
@@ -87,7 +89,9 @@ public final class Cs2Viewmodel {
 		boolean clicked = attackDown && !lastAttackDown;
 		lastAttackDown = attackDown;
 		boolean swingRestarted = swingProgress > 0f && swingProgress < 0.5f && (lastSwing == 0f || swingProgress < lastSwing - 0.05f);
-		if (clicked || swingRestarted && action != Action.SWING) {
+		// Each click alternates between the two swings, but not faster than MIN_SWING_GAP apart.
+		boolean spacedOut = action != Action.SWING || elapsed() >= MIN_SWING_GAP;
+		if ((clicked || swingRestarted && action != Action.SWING) && spacedOut) {
 			nextSwing();
 		}
 		lastSwing = swingProgress;

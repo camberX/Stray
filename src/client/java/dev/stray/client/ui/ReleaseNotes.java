@@ -16,7 +16,7 @@ public final class ReleaseNotes {
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
 		new Entry("1.5.70", new String[]{
-			"CS2 knife swings play faster, and every left click starts a new swing, so spam clicking and mining keep up"
+			"CS2 knife swings play faster and keep up with mining. Spam clicking alternates between the two swings on every click, with a short minimum gap so it never turns into a blur"
 		}),
 		new Entry("1.5.69", new String[]{
 			"CS2 knives keep swinging while you hold left click on a block, until you let go"
