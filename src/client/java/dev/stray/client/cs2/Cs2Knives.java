@@ -237,6 +237,12 @@ public final class Cs2Knives {
 				} else {
 					Resource skel = lib.assets().resource("animation/skeletons/characters/viewmodel.vnmskel");
 					viewmodel = skel == null ? null : new NmSkeleton(skel);
+					StrayConfig cfg = StrayConfig.get();
+					if (!lib.knives().containsKey(cfg.cs2Knife)) {
+						// A knife that is no longer offered (e.g. the default knives): fall back to the Karambit.
+						cfg.cs2Knife = "weapon_knife_karambit";
+						cfg.cs2Finish = "";
+					}
 					status = "";
 				}
 				library = lib;

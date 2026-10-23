@@ -129,15 +129,15 @@ public final class Cs2KnifeScreen extends Screen {
 		StrayConfig c = StrayConfig.get();
 		String knifeQuery = knifeSearch == null ? "" : knifeSearch.getValue();
 		String finishQuery = finishSearch == null ? "" : finishSearch.getValue();
-		knifeSearch = box(listX() + 18, bodyY() + 4, LIST_W - 22, "Search knives", knifeQuery);
+		knifeSearch = box(listX() + 18, bodyY() + 5, LIST_W - 22, "Search knives", knifeQuery);
 		knifeSearch.setResponder(v -> knifeScroll = 0f);
-		finishSearch = box(midX() + TABS_W + 6 + 18, bodyY() + 4, midW() - TABS_W - 6 - 22, "Search", finishQuery);
+		finishSearch = box(midX() + TABS_W + 6 + 18, bodyY() + 5, midW() - TABS_W - 6 - 22, "Search", finishQuery);
 		finishSearch.setResponder(v -> {
 			finishScroll = 0f;
 			tilesShown = System.currentTimeMillis();
 		});
 		finishSearch.visible = !gripTab;
-		seedBox = box(sideX() + 34, seedY() + 4, 50, "0-1000", String.valueOf(c.cs2Seed));
+		seedBox = box(sideX() + 34, seedY() + 5, 50, "0-1000", String.valueOf(c.cs2Seed));
 		seedBox.setResponder(v -> {
 			try {
 				c.cs2Seed = v.isEmpty() ? 0 : Math.max(0, Math.min(1000, Integer.parseInt(v.trim())));
@@ -219,6 +219,11 @@ public final class Cs2KnifeScreen extends Screen {
 		} else {
 			GuiDraw.title(g, font, s, x, y, color);
 		}
+	}
+
+	/** Text top that centers a line in a box (all menu fonts are tuned to a 9px line box). */
+	private static float mid(float boxY, float boxH) {
+		return Math.round(GuiDraw.middle(boxY, boxH));
 	}
 
 	private int textW(String s) {
@@ -475,7 +480,7 @@ public final class Cs2KnifeScreen extends Screen {
 			int sw = smallW(status) + 16;
 			int sx = left + W - PAD - 22 - 8 - sw;
 			GuiDraw.rounded(g, sx, top + 12, sw, 16, 8, Theme.withAlpha(accent(), 40));
-			small(g, status, sx + 8, top + 16, accent());
+			small(g, status, sx + 8, mid(top + 12, 16), accent());
 		}
 		// close button
 		int bx = left + W - PAD - 18;
@@ -534,7 +539,7 @@ public final class Cs2KnifeScreen extends Screen {
 				GuiDraw.rounded(g, x, ry, LIST_W, ROW_H - 2, 6, Anim.fade(cardHover(), hv));
 			}
 			float nudge = on ? 2f : hv * 2f;
-			text(g, fit(k.name(), LIST_W - 14, false), x + 8 + nudge, ry + 3, on ? ink() : Anim.mix(dim(), ink(), hv));
+			text(g, fit(k.name(), LIST_W - 14, false), x + 8 + nudge, mid(ry, ROW_H - 2), on ? ink() : Anim.mix(dim(), ink(), hv));
 		}
 		GuiDraw.disableScissor(g);
 		if (list.isEmpty()) {
@@ -560,8 +565,8 @@ public final class Cs2KnifeScreen extends Screen {
 		GuiDraw.rounded(g, tx, ty, tw, 18, 9, card());
 		float pill = tx + 2 + tabT * (tw / 2f - 2);
 		GuiDraw.rounded(g, pill, ty + 2, tw / 2f - 2, 14, 7, accent());
-		text(g, "Finishes", tx + tw / 4f - textW("Finishes") / 2f, ty + 5, Anim.mix(onAccent(), dim(), tabT));
-		text(g, "Grip", tx + tw * 3 / 4f - textW("Grip") / 2f, ty + 5, Anim.mix(dim(), onAccent(), tabT));
+		text(g, "Finishes", tx + tw / 4f - textW("Finishes") / 2f, mid(ty, 18), Anim.mix(onAccent(), dim(), tabT));
+		text(g, "Grip", tx + tw * 3 / 4f - textW("Grip") / 2f, mid(ty, 18), Anim.mix(dim(), onAccent(), tabT));
 
 		float slide = smooth(tabT);
 		// finishes slide out to the left, grip in from the right
@@ -620,7 +625,7 @@ public final class Cs2KnifeScreen extends Screen {
 				GuiDraw.stroke(g, mx0 - 14, my0 + 8, mx0 + 14, my0 - 8, 3f, Anim.fade(Theme.withAlpha(dim(), 140), a));
 				GuiDraw.stroke(g, mx0 - 14, my0 + 8, mx0 - 20, my0 + 12, 4f, Anim.fade(Theme.withAlpha(dim(), 200), a));
 			}
-			small(g, fit(f.name(), tw - 8, true), px + 5, py - lift + TILE_H - 14, Anim.fade(on ? ink() : Anim.mix(dim(), ink(), hv), a));
+			small(g, fit(f.name(), tw - 8, true), px + 5, mid(py - lift + TILE_H - 17, 14), Anim.fade(on ? ink() : Anim.mix(dim(), ink(), hv), a));
 		}
 		GuiDraw.disableScissor(g);
 		if (list.isEmpty()) {
@@ -646,8 +651,8 @@ public final class Cs2KnifeScreen extends Screen {
 				: String.format(Locale.ROOT, "%+.2f", v);
 			boolean hot = alpha > 0.5f && GuiDraw.hovered(mouseX, mouseY, x, sy, w, 22);
 			float hv = hoverAmount("g" + i, hot || dragging == i);
-			text(g, GRIP_NAMES[i], x, sy, Anim.fade(ink(), alpha));
-			small(g, value, x + w - smallW(value), sy + 1, Anim.fade(Anim.mix(dim(), accent(), hv), alpha));
+			text(g, GRIP_NAMES[i], x, mid(sy, 10), Anim.fade(ink(), alpha));
+			small(g, value, x + w - smallW(value), mid(sy, 10), Anim.fade(Anim.mix(dim(), accent(), hv), alpha));
 			slider(g, x, sy + 13, w, (v - lo) / (hi - lo), hv, alpha);
 		}
 		float ry = y + 18 + 7 * 26 + 2;
@@ -669,7 +674,7 @@ public final class Cs2KnifeScreen extends Screen {
 		int fill = primary ? Anim.mix(accent(), Anim.mix(accent(), 0xFFFFFFFF, 0.15f), hv) : Anim.mix(card(), cardHover(), hv);
 		GuiDraw.rounded(g, x, y, w, 18, 9, Anim.fade(fill, alpha));
 		int col = primary ? onAccent() : Anim.mix(dim(), ink(), hv);
-		text(g, label, x + w / 2f - textW(label) / 2f, y + 5, Anim.fade(col, alpha));
+		text(g, label, x + w / 2f - textW(label) / 2f, mid(y, 18), Anim.fade(col, alpha));
 		return hot;
 	}
 
@@ -689,7 +694,7 @@ public final class Cs2KnifeScreen extends Screen {
 
 		// seed
 		int sy = seedY();
-		small(g, "Seed", x, sy + 5, dim());
+		small(g, "Seed", x, mid(sy, 18), dim());
 		boolean diceHot = GuiDraw.hovered(mouseX, mouseY, x + 92, sy, 18, 18);
 		float dh = hoverAmount("dice", diceHot);
 		GuiDraw.rounded(g, x + 92, sy, 18, 18, 5, Anim.mix(card(), cardHover(), dh));
@@ -697,13 +702,13 @@ public final class Cs2KnifeScreen extends Screen {
 		String tier = wearName(c.cs2Wear);
 		int tierW = smallW(tier) + 12;
 		GuiDraw.rounded(g, x + SIDE_W - tierW, sy + 1, tierW, 16, 8, Theme.withAlpha(wearColor(c.cs2Wear), 52));
-		small(g, tier, x + SIDE_W - tierW + 6, sy + 5, wearColor(c.cs2Wear));
+		small(g, tier, x + SIDE_W - tierW + 6, mid(sy + 1, 16), wearColor(c.cs2Wear));
 
 		// float slider
 		int fy = floatY();
-		small(g, "Float", x, fy, dim());
+		small(g, "Float", x, mid(fy, 9), dim());
 		String fv = String.format(Locale.ROOT, "%.4f", c.cs2Wear);
-		small(g, fv, x + SIDE_W - smallW(fv), fy, ink());
+		small(g, fv, x + SIDE_W - smallW(fv), mid(fy, 9), ink());
 		boolean fhot = GuiDraw.hovered(mouseX, mouseY, x, fy + 8, SIDE_W, 14);
 		float fh = hoverAmount("float", fhot || dragging == 10);
 		// wear tier bands under the track
@@ -725,7 +730,7 @@ public final class Cs2KnifeScreen extends Screen {
 		for (int i = 0; i < 3; i++) {
 			float on = Math.max(0f, 1f - Math.abs(applyT - i));
 			String l = APPLY_LABELS[i];
-			small(g, l, x + segW * i + segW / 2f - smallW(l) / 2f, ay + 6, Anim.mix(dim(), onAccent(), on));
+			small(g, l, x + segW * i + segW / 2f - smallW(l) / 2f, mid(ay, 18), Anim.mix(dim(), onAccent(), on));
 		}
 
 		// switches
@@ -738,7 +743,7 @@ public final class Cs2KnifeScreen extends Screen {
 
 	private void switchRow(GuiGraphicsExtractor g, String label, int x, int y, float k, int mouseX, int mouseY) {
 		boolean hot = GuiDraw.hovered(mouseX, mouseY, x, y, SIDE_W, 16);
-		text(g, label, x, y + 4, Anim.mix(dim(), ink(), Math.max(k, hoverAmount("s:" + label, hot))));
+		text(g, label, x, mid(y + 2, 13), Anim.mix(dim(), ink(), Math.max(k, hoverAmount("s:" + label, hot))));
 		float sw = 26;
 		float sx = x + SIDE_W - sw;
 		if (hypr()) {

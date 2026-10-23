@@ -24,6 +24,9 @@ import java.util.regex.Pattern;
  * Nothing from CS2 ships with Stray; without an install this stays empty.
  */
 public final class Cs2Library {
+	/** Knives not offered: the plain CT and T knives and the Shadow Daggers. */
+	private static final java.util.Set<String> HIDDEN = java.util.Set.of("weapon_knife", "weapon_knife_t", "weapon_knife_push");
+
 	public record Finish(String kit, String name) {
 	}
 
@@ -334,7 +337,10 @@ public final class Cs2Library {
 			found.sort(Comparator.comparing(Finish::name));
 			list.addAll(found);
 			String name = string((String) item.get("item_name"), pretty(id.replace("weapon_", "")));
-			knives.put(id, new Knife(id, name, model, List.copyOf(list)));
+			// The plain default knives and the Shadow Daggers are left out of the picker.
+			if (!HIDDEN.contains(id)) {
+				knives.put(id, new Knife(id, name, model, List.copyOf(list)));
+			}
 		}
 	}
 
