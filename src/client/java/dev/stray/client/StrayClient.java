@@ -208,6 +208,7 @@ public final class StrayClient implements ClientModInitializer {
 		SkyblockRecipes.load();
 		RawmatsTracker.init();
 		CustomCape.init();
+		dev.stray.client.visual.CustomSkin.init();
 		NickSteal.init();
 		NodeWorldRenderer.init();
 		MobGlowRenderer.init();

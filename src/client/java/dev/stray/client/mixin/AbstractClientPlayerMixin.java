@@ -16,10 +16,14 @@ public class AbstractClientPlayerMixin {
 	private void stray$customCape(CallbackInfoReturnable<PlayerSkin> cir) {
 		AbstractClientPlayer player = (AbstractClientPlayer) (Object) this;
 		Minecraft client = Minecraft.getInstance();
-		if (NickSteal.active() && client.player != null && player.getUUID().equals(client.player.getUUID())) {
+		boolean self = client.player != null && player.getUUID().equals(client.player.getUUID());
+		if (NickSteal.active() && self) {
 			cir.setReturnValue(NickSteal.skin(cir.getReturnValue()));
-			return;
+		} else {
+			cir.setReturnValue(ShopCape.patch(player.getUUID(), cir.getReturnValue()));
 		}
-		cir.setReturnValue(ShopCape.patch(player.getUUID(), cir.getReturnValue()));
+		if (self && dev.stray.client.visual.CustomSkin.active()) {
+			cir.setReturnValue(dev.stray.client.visual.CustomSkin.patch(cir.getReturnValue()));
+		}
 	}
 }

@@ -1698,6 +1698,7 @@ public final class ClickGui {
 		mods.add(new Mod(CUSTOMIZE, "Player", null, null, () -> true, v -> { }, false, false, false, true));
 		mods.add(mod("Nick hider", "Player", StrayScreen.Feature.NICK, null, () -> config.nickEnabled, v -> config.nickEnabled = v, true, false));
 		mods.add(hold("Cape", "Player", StrayScreen.Feature.CAPE, ClickGui::capeOn));
+		mods.add(mod("Skin", "Player", StrayScreen.Feature.SKIN, null, () -> config.skinEnabled, v -> config.skinEnabled = v, true, false));
 		return mods;
 	}
 

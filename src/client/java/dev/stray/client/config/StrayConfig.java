@@ -489,6 +489,10 @@ public final class StrayConfig {
 	public float hudOpacity = 0.90f;
 	public String capeUrl = "";
 	public String capePath = "";
+	/** Client-side skin: a PNG on disk shown as your own skin, only on this client. */
+	public boolean skinEnabled = false;
+	public String skinPath = "";
+	public boolean skinSlim = false;
 	public String capeShopKey = "";
 	public boolean nickEnabled = false;
 	public String nick = "";

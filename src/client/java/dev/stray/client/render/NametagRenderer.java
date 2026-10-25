@@ -316,15 +316,18 @@ public final class NametagRenderer {
 	}
 
 	private static Component label(AbstractClientPlayer player) {
-		if (player == Minecraft.getInstance().player && StrayConfig.get().nickEnabled) {
-			Component nick = NickHider.formattedNick();
-			if (nick != null && !nick.getString().isBlank()) {
-				return nick;
-			}
-		}
 		Component name = player.getDisplayName();
 		if (player == Minecraft.getInstance().player) {
-			name = NickHider.rewrite(name);
+			// Only the name is swapped, so Hypixel's level, rank and emblem around it stay.
+			Component rewritten = NickHider.rewrite(name);
+			if (rewritten == name && StrayConfig.get().nickEnabled && name != null
+				&& !name.getString().contains(NickHider.realName())) {
+				Component nick = NickHider.formattedNick();
+				if (nick != null && !nick.getString().isBlank()) {
+					rewritten = nick;
+				}
+			}
+			name = rewritten;
 		}
 		return name == null ? Component.literal(player.getScoreboardName()) : name;
 	}

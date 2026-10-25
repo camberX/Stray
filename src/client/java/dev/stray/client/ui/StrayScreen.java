@@ -193,6 +193,7 @@ public class StrayScreen extends Screen {
 		SCALE("Menu scale", 2),
 		NICK("Nick hider", 2),
 		CAPE("Cape", 5),
+		SKIN("Client skin", 4),
 		SLAYER_HUD("Slayer HUD", 5),
 		SLAYER_PROFIT("Profit tracker", 5),
 		SLAYER_RNG("RNG meter", 2),
@@ -4118,6 +4119,12 @@ public class StrayScreen extends Screen {
 			});
 			case NICK -> drawNickFields(graphics, font, mouseX, mouseY, ix, y, iw);
 			case CAPE -> drawCapeFields(graphics, font, mouseX, mouseY, ix, y, iw);
+			case SKIN -> {
+				y = hint(graphics, font, ix, y, iw, dev.stray.client.visual.CustomSkin.status());
+				y = clickButton(graphics, font, ix, y, iw, mouseX, mouseY, "Choose skin (PNG)", dev.stray.client.visual.CustomSkin::pick);
+				y = chipRow(graphics, font, ix, y, iw, mouseX, mouseY, new String[]{"Steve (wide)", "Alex (slim)"}, config.skinSlim ? 1 : 0, i -> config.skinSlim = i == 1);
+				clickButton(graphics, font, ix, y, iw, mouseX, mouseY, "Remove skin", dev.stray.client.visual.CustomSkin::clear);
+			}
 		}
 		fieldScope = previousScope;
 	}
