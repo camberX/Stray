@@ -474,6 +474,8 @@ public final class GuiDraw {
 
 	private static final Identifier WHITE = Stray.id("textures/gui/white.png");
 	private static com.mojang.blaze3d.pipeline.RenderPipeline sdfPipeline;
+	/** Added to u for 1px rings (outlines) in gui_sdf_corner. */
+	private static final float RING_U = 4f;
 
 	/**
 	 * One rounded corner computed per pixel in a shader (gui_sdf_corner), so it
@@ -501,6 +503,12 @@ public final class GuiDraw {
 			case 1 -> { u0 = 0f; u1 = s; v0 = s; v1 = 0f; }
 			case 2 -> { u0 = 0f; u1 = s; v0 = 0f; v1 = s; }
 			default -> { u0 = s; u1 = 0f; v0 = 0f; v1 = s; }
+		}
+		if (ring) {
+			// Rings are flagged by u >= 3 (see gui_sdf_corner.fsh), not by the sign of the
+			// coordinates, which is ambiguous where they reach 0.
+			u0 += RING_U;
+			u1 += RING_U;
 		}
 		com.mojang.blaze3d.textures.GpuSampler sampler = com.mojang.blaze3d.systems.RenderSystem.getSamplerCache()
 			.getClampToEdge(com.mojang.blaze3d.textures.FilterMode.NEAREST);
@@ -637,6 +645,8 @@ public final class GuiDraw {
 			case 2 -> v1 = -1f;
 			default -> u0 = -1f;
 		}
+		u0 += RING_U;
+		u1 += RING_U;
 		com.mojang.blaze3d.textures.GpuSampler sampler = com.mojang.blaze3d.systems.RenderSystem.getSamplerCache()
 			.getClampToEdge(com.mojang.blaze3d.textures.FilterMode.NEAREST);
 		graphics.pose().pushMatrix();

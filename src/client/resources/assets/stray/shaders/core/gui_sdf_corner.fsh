@@ -16,10 +16,12 @@ out vec4 fragColor;
 
 // One rounded-rect corner, drawn analytically so it stays smooth at any
 // size and GUI scale. texCoord0 is the position in radius units with the
-// circle center at (0,0); a negative range means "ring" (a 1px outline).
+// circle center at (0,0). Rings (1px outlines) are flagged by u shifted up by 4;
+// a sign test missed rows where the coordinates reach 0, filling a stray line.
 void main() {
-    bool ring = (texCoord0.x + texCoord0.y) < 0.0;
-    float d = length(abs(texCoord0));
+    bool ring = texCoord0.x > 2.5;
+    vec2 p = ring ? vec2(texCoord0.x - 4.0, texCoord0.y) : texCoord0;
+    float d = length(abs(p));
     float fw = max(fwidth(d), 1e-5);
     float mask = clamp((1.0 - d) / fw + 0.5, 0.0, 1.0);
     if (ring) {
