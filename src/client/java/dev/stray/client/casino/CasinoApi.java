@@ -95,7 +95,7 @@ public final class CasinoApi {
 			HttpResponse<String> response = HTTP.send(request, HttpResponse.BodyHandlers.ofString());
 			JsonObject body = parse(response.body());
 			if (response.statusCode() != 200 || body == null || !body.has("token")) {
-				return new Result(null, message(body, "Casino login failed (" + response.statusCode() + ")."));
+				return new Result(null, explain(response.statusCode(), body, "/login"));
 			}
 			token = body.get("token").getAsString();
 			return new Result(body, null);
@@ -121,7 +121,7 @@ public final class CasinoApi {
 				return new Result(null, "auth");
 			}
 			if (response.statusCode() != 200) {
-				return new Result(json, message(json, "Casino error (" + response.statusCode() + ")."));
+				return new Result(json, explain(response.statusCode(), json, path));
 			}
 			return new Result(json, null);
 		} catch (Exception e) {
@@ -183,6 +183,22 @@ public final class CasinoApi {
 		} catch (RuntimeException e) {
 			return null;
 		}
+	}
+
+	/**
+	 * The casino's own errors are full sentences. Anything else (a bare "Not Found", an HTML
+	 * page) means the request never reached the casino code: the Worker on the site is an
+	 * older build without it, or the route doesn't point at it.
+	 */
+	private static String explain(int status, JsonObject body, String path) {
+		String msg = message(body, "");
+		if (!msg.isBlank() && (msg.endsWith(".") || msg.endsWith(")"))) {
+			return msg;
+		}
+		if (status == 404 || status == 405) {
+			return "The casino isn't on the Worker (" + status + " on " + path + "). Redeploy worker.js.";
+		}
+		return "Casino error (" + status + (msg.isBlank() ? "" : ": " + msg) + ").";
 	}
 
 	private static String message(JsonObject body, String fallback) {
