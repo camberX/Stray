@@ -311,6 +311,7 @@ public final class SlayerApi {
 			}
 		}
 		out.add(SlayerWorld.debug());
+		out.addAll(SlayerProfit.debug());
 		List<SlayerTags.Tag> tags = new ArrayList<>(SlayerTags.all());
 		int owned = 0;
 		for (SlayerTags.Tag t : tags) {

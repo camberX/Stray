@@ -120,6 +120,9 @@ public final class SlayerProfit {
 
 	public static void onItemGain(ItemStack stack, int amount) {
 		if (!tracking()) {
+			if (SlayerApi.type() != null) {
+				note("  gain " + amount + "x " + NeuIds.of(stack) + " ignored (area " + SlayerApi.areaType() + ")");
+			}
 			return;
 		}
 		String id = NeuIds.of(stack);
@@ -133,9 +136,28 @@ public final class SlayerProfit {
 		add(id, amount);
 	}
 
+	private static final java.util.ArrayDeque<String> RECENT = new java.util.ArrayDeque<>();
+
+	private static void note(String text) {
+		RECENT.addFirst(text);
+		while (RECENT.size() > 6) {
+			RECENT.removeLast();
+		}
+	}
+
+	/** Recent item gains and whether they counted, for /stray slayer. */
+	public static List<String> debug() {
+		List<String> out = new ArrayList<>();
+		out.add("profit tracking=" + tracking() + " category='" + SlayerApi.category() + "'");
+		out.addAll(RECENT);
+		return out;
+	}
+
 	private static void add(String id, long amount) {
 		SlayerType type = SlayerApi.type();
-		if (id == null || type == null || amount <= 0 || !SlayerData.isDrop(type, id)) {
+		boolean drop = id != null && type != null && SlayerData.isDrop(type, id);
+		note("  gain " + amount + "x " + id + (drop ? " counted" : " not a " + (type == null ? "slayer" : type.displayName) + " drop"));
+		if (id == null || type == null || amount <= 0 || !drop) {
 			return;
 		}
 		for (SlayerSettings.Profit p : targets()) {

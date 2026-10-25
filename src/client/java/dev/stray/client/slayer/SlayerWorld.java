@@ -221,7 +221,8 @@ public final class SlayerWorld {
 					String text = null;
 					if (s.shieldText) {
 						StringBuilder b = new StringBuilder(shield.name());
-						for (String line : mobTags) {
+						// Hits only on the Demonlord itself, not on its demons (Quazii, Typhoeus).
+						for (String line : SlayerType.INFERNO.matches(mob) ? mobTags : List.<String>of()) {
 							Matcher m = SHIELD_HITS.matcher(line);
 							if (line.contains(shield.name()) && m.find()) {
 								int hits = Integer.parseInt(m.group(1));
