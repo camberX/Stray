@@ -268,6 +268,7 @@ public final class SlayerApi {
 	}
 
 	private static List<String> lastLines = List.of();
+	private static String bossReason = "none";
 
 	/** The tab list lines under the "Slayer:" header (empty when the widget is off). */
 	static List<String> tabSlayer(Minecraft client) {
@@ -303,6 +304,13 @@ public final class SlayerApi {
 		LivingEntity b = boss();
 		out.add("boss=" + (b == null ? "none" : b.getType().toShortString() + " hp=" + bossHealth + "/" + bossMaxHealth + " tags=" + BOSS_TAGS));
 		out.add("lines=" + lastLines);
+		out.add("boss found by: " + bossReason + ", me='" + playerName() + "'");
+		for (SlayerTags.Tag t : SlayerTags.all()) {
+			if (t.has("Spawned by")) {
+				out.add("  spawned-by tag " + t.lines() + " -> " + (t.owner() == null ? "no mob" : t.owner().getType().toShortString()));
+			}
+		}
+		out.add(SlayerWorld.debug());
 		List<SlayerTags.Tag> tags = new ArrayList<>(SlayerTags.all());
 		int owned = 0;
 		for (SlayerTags.Tag t : tags) {
@@ -442,6 +450,7 @@ public final class SlayerApi {
 				Matcher m = SPAWNED_BY.matcher(line);
 				if (m.find() && m.group(1).equalsIgnoreCase(me)) {
 					found = tag.owner() != null ? tag.owner() : bossNear(client, tag.entity());
+					bossReason = found == null ? "spawned-by tag without a mob" : "spawned-by tag";
 					break;
 				}
 			}
@@ -470,6 +479,7 @@ public final class SlayerApi {
 				if (marked && d < best && d < 30 * 30) {
 					best = d;
 					found = mob;
+					bossReason = "closest [SLAYER BOSS]";
 				}
 			}
 		}
@@ -480,6 +490,7 @@ public final class SlayerApi {
 			}
 		}
 		if (found == null) {
+			bossReason = "none (state " + state + ")";
 			if (boss != null) {
 				onBossGone();
 			}

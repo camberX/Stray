@@ -80,6 +80,7 @@ public final class SlayerBosses {
 	private static String pillar;
 	private static long pillarSeen;
 	private static String tabFooter = "";
+	private static long gummyAte;
 	private static int tick;
 
 	private SlayerBosses() {
@@ -148,6 +149,9 @@ public final class SlayerBosses {
 	/** Returns false to hide the line. */
 	public static boolean onChat(String text) {
 		SlayerSettings s = settings();
+		if (text.startsWith("You ate a Re-heated Gummy Polar Bear")) {
+			gummyAte = System.currentTimeMillis();
+		}
 		if (text.startsWith(HATCHLINGS) && SlayerApi.boss() != null) {
 			stuck = true;
 			stuckX = SlayerApi.boss().getX();
@@ -223,7 +227,7 @@ public final class SlayerBosses {
 		if (!habanero && !smolderingArea) {
 			return;
 		}
-		if (tabFooter.contains("Smoldering Polarization")) {
+		if (smoldering(client)) {
 			return;
 		}
 		long now = System.currentTimeMillis();
@@ -234,6 +238,22 @@ public final class SlayerBosses {
 		SlayerAlerts.sound(SoundEvents.ANVIL_LAND, 1f, 0.5f);
 		SlayerAlerts.title("No polar bear active!", 0xAA0000, 60);
 		SlayerAlerts.chat("You do not have an active Re-Heated Gummy Polar Bear!");
+	}
+
+	/** Smoldering Polarization (Re-heated Gummy Polar Bear) is active: tab footer, tab list or eaten this hour. */
+	private static boolean smoldering(Minecraft client) {
+		if (System.currentTimeMillis() - gummyAte < 3_600_000L) {
+			return true;
+		}
+		if (tabFooter.contains("Smoldering Polarization")) {
+			return true;
+		}
+		for (String line : dev.stray.client.farming.PestCooldown.tabLines(client)) {
+			if (line.contains("Smoldering Polarization")) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	public static void onTabFooter(Component footer) {
@@ -310,7 +330,12 @@ public final class SlayerBosses {
 
 	/** The hellion shield the own boss has now, or null. */
 	public static Shield bossShield() {
-		for (String tag : SlayerApi.bossTags()) {
+		return shieldOf(SlayerApi.bossTags());
+	}
+
+	/** The hellion shield named in a mob's tags ("ASHEN ♨3"), or null. */
+	public static Shield shieldOf(java.util.List<String> tags) {
+		for (String tag : tags) {
 			for (Shield shield : Shield.values()) {
 				if (tag.contains(shield.name()) && tag.contains("♨")) {
 					return shield;

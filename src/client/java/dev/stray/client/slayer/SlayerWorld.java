@@ -85,6 +85,23 @@ public final class SlayerWorld {
 		return !glow.isEmpty();
 	}
 
+	public static String debug() {
+		Int2IntOpenHashMap map = glow;
+		Minecraft client = Minecraft.getInstance();
+		StringBuilder out = new StringBuilder("glow=" + map.size() + " (render on=" + dev.stray.client.render.MobGlowRenderer.glowEnabled() + ")");
+		int n = 0;
+		for (var e : map.int2IntEntrySet()) {
+			Entity entity = client.level == null ? null : client.level.getEntity(e.getIntKey());
+			out.append(n == 0 ? ": " : ", ").append(entity == null ? "gone" : entity.getType().toShortString())
+				.append(String.format(java.util.Locale.ROOT, " #%06X", e.getIntValue() & 0xFFFFFF));
+			if (++n >= 6) {
+				break;
+			}
+		}
+		out.append(" lines=").append(lines.size());
+		return out.toString();
+	}
+
 	/** ARGB outline for an entity, 0 for none. */
 	public static int glow(Entity entity) {
 		Int2IntOpenHashMap map = glow;
@@ -149,6 +166,20 @@ public final class SlayerWorld {
 			}
 			if (s.esp && s.bossLine && (type == SlayerType.VOID || type == SlayerType.TARANTULA) && boss.distanceTo(client.player) < 30) {
 				nextLines.add(new Line(boss, null, s.bossLineRgb, 1.0));
+			}
+		}
+
+		// Hellion shields: colour every Inferno boss / demon by the shield on its tags.
+		if (s.inferno && s.shieldColors) {
+			for (SlayerTags.Tag tag : SlayerTags.all()) {
+				LivingEntity mob = tag.owner();
+				if (mob == null || nextGlow.containsKey(mob.getId())) {
+					continue;
+				}
+				SlayerBosses.Shield shield = SlayerBosses.shieldOf(SlayerTags.of(mob));
+				if (shield != null) {
+					nextGlow.put(mob.getId(), 0xFF000000 | shield.rgb);
+				}
 			}
 		}
 
