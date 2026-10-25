@@ -157,7 +157,34 @@ public final class WatermarkRenderer {
 	}
 
 	private static float pillWidth(Font font, Pill pill) {
-		return 5f + 9f + 3f + font.width(hyText(pill.text())) + 6f;
+		return 5f + 9f + 3f + stableWidth(font, hyText(pill.text()), "hypr:" + pill.icon()) + 6f;
+	}
+
+	/**
+	 * Width for a live stat (fps, ping, time) that doesn't jump around: every digit is measured
+	 * as a 0, so 87 and 91 fps take the same room, and when the digit count does change
+	 * (99 to 100 fps) the width eases there instead of snapping.
+	 */
+	private static final java.util.Map<String, double[]> STABLE = new java.util.HashMap<>();
+
+	static float stableWidth(Font font, Component text, String key) {
+		String digits = text.getString().replaceAll("[0-9]", "0");
+		float target = font.width(Component.literal(digits).withStyle(text.getStyle()));
+		long now = System.nanoTime();
+		double[] state = STABLE.get(key);
+		if (state == null) {
+			STABLE.put(key, new double[] {target, now});
+			return target;
+		}
+		double dt = Math.min(0.25, (now - state[1]) / 1_000_000_000.0);
+		if (dt > 0) {
+			state[0] += (target - state[0]) * (1.0 - Math.exp(-dt * 8.0));
+			if (Math.abs(target - state[0]) < 0.02) {
+				state[0] = target;
+			}
+			state[1] = now;
+		}
+		return (float) state[0];
 	}
 
 	private static Component hyText(String value) {
@@ -280,13 +307,13 @@ public final class WatermarkRenderer {
 		float w = 16 + brandExtra(font);
 		w += GuiDraw.brandWidth(font, "STRAY");
 		if (config.watermarkFps) {
-			w += 9 + GuiDraw.menuWidth(font, "000 fps");
+			w += 9 + Math.max(GuiDraw.menuWidth(font, "000 fps"), GuiDraw.menuWidth(font, (HudStats.fps() + " fps").replaceAll("[0-9]", "0")));
 		}
 		if (config.watermarkPing) {
-			w += 9 + GuiDraw.menuWidth(font, "000 ms");
+			w += 9 + Math.max(GuiDraw.menuWidth(font, "000 ms"), GuiDraw.menuWidth(font, HudStats.pingLabel().replaceAll("[0-9]", "0")));
 		}
 		if (config.watermarkTime) {
-			w += 9 + GuiDraw.menuWidth(font, "00:00");
+			w += 9 + Math.max(GuiDraw.menuWidth(font, "00:00"), GuiDraw.menuWidth(font, HudStats.time().replaceAll("[0-9]", "0")));
 		}
 		if (config.watermarkName) {
 			w += 9 + GuiDraw.menuWidth(font, HudStats.playerName());
@@ -306,7 +333,7 @@ public final class WatermarkRenderer {
 			if (top > 0f) {
 				top += PART_GAP;
 			}
-			top += font.width(MenuFont.brand(extra)) * VERSION_SCALE;
+			top += stableWidth(font, MenuFont.brand(extra), "client:extra") * VERSION_SCALE;
 		}
 		float trayW = font.width(MenuFont.title("tray")) * TRAY_SCALE;
 		float right = Math.max(top, trayW);
