@@ -61,27 +61,42 @@ public final class SlayerWorld {
 	private static volatile List<Fill> texts = List.of();
 	/** Hypixel name tags replaced by Stray's own text (shielded Inferno bosses and demons). */
 	private static volatile IntOpenHashSet hidden = new IntOpenHashSet();
-	private static final Pattern HEALTH = Pattern.compile("([\\d.,]+[kKmMbB]?)(?:/[\\d.,]+[kKmMbB]?)?\\s*❤");
+	private static final Pattern HEALTH = Pattern.compile("([\\d.,]+[kKmMbB]?)(?:/([\\d.,]+[kKmMbB]?))?\\s*❤");
+	/** Highest health seen per mob, for tags that only show current health. */
+	private static final it.unimi.dsi.fastutil.ints.Int2LongOpenHashMap MAX_SEEN = new it.unimi.dsi.fastutil.ints.Int2LongOpenHashMap();
 
 	public static boolean hiddenTag(Entity entity) {
 		IntOpenHashSet set = hidden;
 		return !set.isEmpty() && set.contains(entity.getId());
 	}
 
-	/** "20.3M❤" from a mob's tags (current health only). */
-	private static String health(List<String> tags) {
+	/** "20.3M❤" from a mob's tags, coloured from green (full) to dark red (almost dead). */
+	private static String health(Entity mob, List<String> tags) {
 		for (String line : tags) {
 			if (!line.contains("❤")) {
 				continue;
 			}
 			Matcher m = HEALTH.matcher(line);
-			String last = null;
+			String cur = null;
+			String max = null;
 			while (m.find()) {
-				last = m.group(1);
+				cur = m.group(1);
+				max = m.group(2);
 			}
-			if (last != null) {
-				return last + "❤";
+			if (cur == null) {
+				continue;
 			}
+			long now = SlayerApi.parseShort(cur);
+			long full = max != null ? SlayerApi.parseShort(max) : 0;
+			if (mob == SlayerApi.boss() && SlayerApi.bossMaxHealth() > full) {
+				full = SlayerApi.bossMaxHealth();
+			}
+			long seen = Math.max(MAX_SEEN.get(mob.getId()), now);
+			MAX_SEEN.put(mob.getId(), seen);
+			full = Math.max(full, seen);
+			double f = full <= 0 ? 1 : (double) now / full;
+			String color = f > 0.75 ? "§a" : f > 0.5 ? "§e" : f > 0.3 ? "§6" : f > 0.12 ? "§c" : "§4";
+			return color + cur + "❤";
 		}
 		return null;
 	}
@@ -194,6 +209,7 @@ public final class SlayerWorld {
 		fills = List.of();
 		texts = List.of();
 		hidden = new IntOpenHashSet();
+		MAX_SEEN.clear();
 		TAGGED.clear();
 		SITTING.clear();
 		FLYING.clear();
@@ -275,8 +291,8 @@ public final class SlayerWorld {
 							}
 						}
 						// Health above the shield, in place of Hypixel's name tags (hidden below).
-						String hp = health(mobTags);
-						text = hp == null ? b.toString() : "§c" + hp + "\n" + b;
+						String hp = health(mob, mobTags);
+						text = hp == null ? b.toString() : hp + "\n" + b;
 						for (SlayerTags.Tag t : SlayerTags.all()) {
 							if (t.owner() == mob || t.owner() == null
 								&& mob.getBoundingBox().inflate(1.5, 3.5, 1.5).contains(t.entity().position())) {
