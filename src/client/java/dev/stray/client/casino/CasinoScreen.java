@@ -5,6 +5,9 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.mojang.blaze3d.platform.InputConstants;
 import dev.stray.client.render.GuiDraw;
+import dev.stray.client.render.GuiFrostBlur;
+import dev.stray.client.render.RoundRect;
+import dev.stray.client.ui.MaterialPalette;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
@@ -26,30 +29,35 @@ import java.util.Map;
  * server; this screen sends the bet or move and animates the answer.
  */
 public final class CasinoScreen extends Screen {
-	// ---- palette
-	private static final int BG = 0xF50F1115;
-	private static final int SURFACE = 0xFF171A20;
-	private static final int SURFACE_HI = 0xFF20242C;
-	private static final int SURFACE_HOVER = 0xFF2A2F39;
-	private static final int LINE = 0xFF2C313B;
-	private static final int INPUT = 0xFF0C0E12;
-	private static final int FELT = 0xFF0F4A33;
+	// ---- palette: the click GUI's Material roles (MaterialPalette), refreshed every frame
+	// so the casino follows the Stray accent like the Hyprland menu does.
+	private int primary;
+	private int primary2;
+	private int onPrimary;
+	private int surface;
+	private int surfaceLow;
+	private int container;
+	private int containerHigh;
+	private int containerHighest;
+	private int line;
+	private int TEXT;
+	private int MUTED;
+	private int FAINT;
 	private static final int GOLD = 0xFFF5C451;
-	private static final int GOLD_DARK = 0xFFB8862B;
-	private static final int INK = 0xFF1A1205;
-	private static final int TEXT = 0xFFF4F6F9;
-	private static final int MUTED = 0xFFB3BCC8;
-	private static final int FAINT = 0xFF838D9B;
 	private static final int RED = 0xFFF0565B;
 	private static final int GREEN = 0xFF46DC95;
 	private static final int CARD_RED = 0xFFD62F3A;
+	private static final int FELT_TOP = 0xFF17694A;
+	private static final int FELT_BOTTOM = 0xFF0A3524;
+	/** Window corner radius; ii rounds windows at 18px, 9 at GUI scale 2, a bit more for a big panel. */
+	private static final float R = 12f;
 
 	private static final int W = 460;
 	private static final int H = 326;
 	/** Content area inside the window. */
 	private static final int CW = W - 28;
-	private static final int CH = H - 56 - 36;
-	private static final int TABLE_H = 172;
+	private static final int CH = H - 46 - 36;
+	private static final int TABLE_H = 190;
 
 	private enum T { SMALL, BODY, TITLE }
 	private static final String[] TABS = {"Slots", "Blackjack", "Roulette", "Send"};
@@ -77,6 +85,8 @@ public final class CasinoScreen extends Screen {
 
 	private int left;
 	private float ui = 1f;
+	/** Screen pixels per casino unit, for snapping text to whole pixels. */
+	private float pixel = 2f;
 	private int top;
 	private int tab;
 	private float tabT;
@@ -196,18 +206,16 @@ public final class CasinoScreen extends Screen {
 		mouseX = Math.round(mouseX / ui);
 		mouseY = Math.round(mouseY / ui);
 
-		// window
-		GuiDraw.rounded(g, left - 1, top - 1, W + 2, H + 2, 13, LINE);
-		GuiDraw.rounded(g, left, top, W, H, 12, BG);
-		// gold glow fading down from the top (stacked rounded layers keep the corners)
-		for (int i = 0; i < 6; i++) {
-			GuiDraw.rounded(g, left, top, W, 46 - i * 6, 12, 0x07F5C451);
-		}
-		text(g, "Casino", left + 16, top + 12, TEXT, T.TITLE);
-		text(g, "Play money", left + 16, top + 27, FAINT, T.SMALL);
-		drawTabs(g, mouseX, mouseY);
-		drawBalance(g);
-		GuiDraw.fill(g, left + 12, top + 46, W - 24, 1, LINE);
+		palette();
+		pixel = (float) Minecraft.getInstance().getWindow().getGuiScale() * ui;
+
+		// window: frosted like the click GUI, a top-to-bottom surface gradient, an accent
+		// glow fading down from the top-left and a gradient border.
+		GuiFrostBlur.blitWindow(g, left, top, W, H, R, 1f);
+		RoundRect.vertical(g, left, top, W, H, R, withA(surfaceLow, 0xEC), withA(surface, 0xF6));
+		RoundRect.draw(g, left, top, W, H, R, withA(primary, 0x30), withA(primary2, 0x18), withA(primary2, 0x00), withA(primary, 0x00), false);
+		RoundRect.outline(g, left, top, W, H, R, withA(primary, 0xE0), withA(primary2, 0x50));
+		drawHeader(g, mouseX, mouseY);
 
 		switch (tab) {
 			case 0 -> drawSlots(g, mouseX, mouseY, dt, cy0(), CH);
@@ -220,19 +228,69 @@ public final class CasinoScreen extends Screen {
 		g.pose().popMatrix();
 	}
 
-	private void drawTabs(GuiGraphicsExtractor g, int mx, int my) {
-		float tw = 62;
-		float tx = left + 104;
-		float ty = top + 11;
-		GuiDraw.rounded(g, tx, ty, tw * TABS.length, 24, 12, SURFACE);
-		GuiDraw.rounded(g, tx + 2 + tabT * tw, ty + 2, tw - 4, 20, 10, GOLD);
+	private void palette() {
+		MaterialPalette.refresh();
+		primary = MaterialPalette.primary;
+		primary2 = hueShift(primary, 0.11f);
+		onPrimary = MaterialPalette.onPrimary;
+		surface = MaterialPalette.surface;
+		surfaceLow = MaterialPalette.surfaceLow;
+		container = MaterialPalette.surfaceContainer;
+		containerHigh = MaterialPalette.surfaceHigh;
+		containerHighest = MaterialPalette.surfaceHighest;
+		line = MaterialPalette.outlineVariant;
+		TEXT = MaterialPalette.onSurface;
+		MUTED = MaterialPalette.onSurfaceVariant;
+		FAINT = MaterialPalette.outline;
+	}
+
+	private static final String[] TAB_ICONS = {"", "", "", ""};
+	private static final float HEAD_Y = 10;
+	private static final float HEAD_H = 26;
+
+	/** The bar: title group, workspace-style tabs, balance; the same pill groups as the click GUI's bar. */
+	private void drawHeader(GuiGraphicsExtractor g, int mx, int my) {
+		float y = top + HEAD_Y;
+		float h = HEAD_H;
+		// title group
+		float gx = left + 10;
+		float titleW = 12 + 14 + tw("Casino", T.TITLE) + 12;
+		pill(g, gx, y, titleW, h, container, containerHigh);
+		icon(g, "", gx + 10, y, h, primary);
+		label(g, "Casino", gx + 26, y, h, TEXT, T.TITLE);
+
+		// balance (laid out first: the tabs take the room between it and the title)
+		String value = balance < 0 ? "..." : fmt(Math.round(shownBalance));
+		float bw = 10 + 12 + 5 + tw(value, T.TITLE) + 4 + tw("chips", T.SMALL) + 11;
+		float bx = left + W - 10 - bw;
+		pill(g, bx, y, bw, h, container, containerHigh);
+		RoundRect.diagonal(g, bx + 10, y + h / 2f - 6, 12, 12, 6, primary, primary2);
+		RoundRect.fill(g, bx + 13, y + h / 2f - 3, 6, 6, 3, withA(onPrimary, 0xB0));
+		label(g, value, bx + 27, y, h, TEXT, T.TITLE);
+		label(g, "chips", bx + 27 + tw(value, T.TITLE) + 4, y, h, MUTED, T.SMALL);
+
+		// tabs, like the bar's workspaces
+		float tx0 = gx + titleW + 8;
+		float tabW = Math.min(76, (bx - 8 - tx0 - 6) / TABS.length);
+		float groupW = tabW * TABS.length + 6;
+		float tx = Math.max(tx0, Math.min(left + (W - groupW) / 2f, bx - 8 - groupW));
+		pill(g, tx, y, groupW, h, container, containerHigh);
+		float px = tx + 3 + tabT * tabW;
+		RoundRect.horizontal(g, px, y + 3, tabW, h - 6, (h - 6) / 2f, primary, primary2);
 		for (int i = 0; i < TABS.length; i++) {
-			boolean hot = hovered(mx, my, tx + i * tw, ty, tw, 24);
+			float ix = tx + 3 + i * tabW;
+			boolean hot = hovered(mx, my, ix, y, tabW, h);
 			float on = Math.max(0f, 1f - Math.abs(tabT - i));
-			int c = mixColor(hot ? TEXT : MUTED, INK, on);
-			centered(g, TABS[i], tx + i * tw + tw / 2f, ty, 24, c, T.BODY);
+			if (hot && on < 0.5f) {
+				RoundRect.fill(g, ix, y + 3, tabW, h - 6, (h - 6) / 2f, withA(TEXT, 0x14));
+			}
+			int c = mixColor(hot ? TEXT : MUTED, onPrimary, on);
+			float cw = 9 + 4 + tw(TABS[i], T.BODY);
+			float cx = ix + (tabW - cw) / 2f;
+			icon(g, TAB_ICONS[i], cx, y, h, c);
+			label(g, TABS[i], cx + 13, y, h, c, T.BODY);
 			final int idx = i;
-			hit(tx + i * tw, ty, tw, 24, () -> {
+			hit(ix, y, tabW, h, () -> {
 				tab = idx;
 				focus = -1;
 				if (idx == 3) {
@@ -242,14 +300,16 @@ public final class CasinoScreen extends Screen {
 		}
 	}
 
-	private void drawBalance(GuiGraphicsExtractor g) {
-		String value = balance < 0 ? "..." : fmt(Math.round(shownBalance));
-		float w = tw(value, T.TITLE) + 36;
-		float x = left + W - 14 - w;
-		float y = top + 11;
-		GuiDraw.rounded(g, x, y, w, 24, 12, SURFACE);
-		drawChip(g, x + 13, y + 12, 7, GOLD);
-		label(g, value, x + 26, y, 24, GOLD, T.TITLE);
+	/** A bar group: vertical gradient pill with a faint rim. */
+	private void pill(GuiGraphicsExtractor g, float x, float y, float w, float h, int from, int to) {
+		RoundRect.vertical(g, x, y, w, h, h / 2f, to, from);
+		RoundRect.outline(g, x, y, w, h, h / 2f, withA(TEXT, 0x18), withA(TEXT, 0x06));
+	}
+
+	/** A content card: Material surface container with a soft top-lit gradient. */
+	private void card(GuiGraphicsExtractor g, float x, float y, float w, float h) {
+		RoundRect.vertical(g, x, y, w, h, 10, withA(containerHigh, 0xF0), withA(container, 0xE8));
+		RoundRect.outline(g, x, y, w, h, 10, withA(TEXT, 0x1C), withA(TEXT, 0x08));
 	}
 
 	private void drawToast(GuiGraphicsExtractor g) {
@@ -261,34 +321,42 @@ public final class CasinoScreen extends Screen {
 		if (a <= 0.01f) {
 			return;
 		}
-		float w = Math.min(W - 40, tw(status, T.BODY) + 32);
+		float h = 22;
+		float w = Math.min(W - 40, tw(status, T.BODY) + 34);
 		float x = left + (W - w) / 2f;
-		float y = top + H - 29 + (1f - Math.min(1f, age / 0.2f)) * 6f;
-		GuiDraw.rounded(g, x, y + 1, w, 22, 11, alpha(0x80000000, a));
-		GuiDraw.rounded(g, x, y, w, 22, 11, alpha(SURFACE_HI, a));
-		GuiDraw.circle(g, x + 12, y + 11, 3.5f, alpha(statusBad ? RED : GREEN, a));
-		label(g, fitText(status, w - 30, T.BODY), x + 21, y, 22, alpha(TEXT, a), T.BODY);
+		float y = top + H - 30 + (1f - Math.min(1f, age / 0.2f)) * 6f;
+		int accent = statusBad ? RED : GREEN;
+		RoundRect.fill(g, x, y + 2, w, h, h / 2f, alpha(0x70000000, a));
+		RoundRect.vertical(g, x, y, w, h, h / 2f, alpha(containerHighest, a), alpha(containerHigh, a));
+		RoundRect.horizontal(g, x, y, w * 0.5f, h, h / 2f, alpha(withA(accent, 0x38), a), alpha(withA(accent, 0x00), a));
+		RoundRect.outline(g, x, y, w, h, h / 2f, alpha(withA(accent, 0x90), a), alpha(withA(accent, 0x30), a));
+		RoundRect.fill(g, x + 9, y + h / 2f - 3.5f, 7, 7, 3.5f, alpha(accent, a));
+		label(g, fitText(status, w - 34, T.BODY), x + 22, y, h, alpha(TEXT, a), T.BODY);
 	}
 
 	// ================================================================== slots
 
 	private void drawSlots(GuiGraphicsExtractor g, int mx, int my, float dt, int y, int h) {
 		int x0 = cx0();
+		int mw = 244;
 		// machine card
-		GuiDraw.rounded(g, x0, y, 240, h, 10, SURFACE);
-		int cell = 42;
-		int reelW = 60;
-		int gap = 8;
-		int rx0 = x0 + (240 - (reelW * 3 + gap * 2)) / 2;
+		card(g, x0, y, mw, h);
+		int cell = 44;
+		int reelW = 62;
+		int gap = 7;
+		int framesW = reelW * 3 + gap * 2;
+		int rx0 = x0 + (mw - framesW) / 2;
 		int ry = y + 16;
-		GuiDraw.rounded(g, rx0 - 7, ry - 7, reelW * 3 + gap * 2 + 14, cell * 3 + 14, 9, GOLD_DARK);
-		GuiDraw.rounded(g, rx0 - 5, ry - 5, reelW * 3 + gap * 2 + 10, cell * 3 + 10, 8, 0xFF140C05);
+		// accent frame around the reels
+		RoundRect.diagonal(g, rx0 - 7, ry - 7, framesW + 14, cell * 3 + 14, 11, primary, primary2);
+		RoundRect.fill(g, rx0 - 5, ry - 5, framesW + 10, cell * 3 + 10, 9, 0xFF0D0E12);
 		advanceReels(dt);
 		for (int i = 0; i < 3; i++) {
 			int rx = rx0 + i * (reelW + gap);
-			GuiDraw.fillGradient(g, rx, ry, reelW, cell * 1.5f, 0xFFD9D2C5, 0xFFFFFFFF);
-			GuiDraw.fillGradient(g, rx, ry + cell * 1.5f, reelW, cell * 1.5f, 0xFFFFFFFF, 0xFFD9D2C5);
+			RoundRect.draw(g, rx, ry, reelW, cell * 3, 5, 0xFFD5CEC2, 0xFFD5CEC2, 0xFFD5CEC2, 0xFFD5CEC2, false);
 			GuiDraw.scissor(g, rx, ry, reelW, cell * 3);
+			GuiDraw.fillGradient(g, rx, ry, reelW, cell * 1.5f, 0xFFD5CEC2, 0xFFFFFFFF);
+			GuiDraw.fillGradient(g, rx, ry + cell * 1.5f, reelW, cell * 1.5f, 0xFFFFFFFF, 0xFFD5CEC2);
 			double p = reel[i];
 			int base = (int) Math.floor(p);
 			for (int j = base - 2; j <= base + 3; j++) {
@@ -296,65 +364,71 @@ public final class CasinoScreen extends Screen {
 				char sym = SLOT_STRIP.charAt(Math.floorMod(j, SLOT_STRIP.length()));
 				drawSymbol(g, sym, rx + reelW / 2f, sy + cell / 2f);
 			}
+			GuiDraw.fillGradient(g, rx, ry, reelW, 18, 0xB0000000, 0x00000000);
+			GuiDraw.fillGradient(g, rx, ry + cell * 3 - 18, reelW, 18, 0x00000000, 0xB0000000);
 			GuiDraw.disableScissor(g);
-			GuiDraw.fillGradient(g, rx, ry, reelW, 16, 0xA0000000, 0x00000000);
-			GuiDraw.fillGradient(g, rx, ry + cell * 3 - 16, reelW, 16, 0x00000000, 0xA0000000);
 		}
 		boolean winning = !spinning && slotWin > 0 && time - slotWinAt < 5f;
 		float pulse = winning ? 0.5f + 0.5f * (float) Math.sin(time * 10f) : 0f;
-		int lineC = winning ? mixColor(GOLD, 0xFFFFFFFF, pulse) : 0xB0E5484D;
+		int lineC = winning ? mixColor(primary, 0xFFFFFFFF, pulse) : withA(primary, 0xB0);
 		float lineY = ry + cell * 1.5f;
-		GuiDraw.fill(g, rx0 - 4, lineY - 1, reelW * 3 + gap * 2 + 8, 2, lineC);
+		RoundRect.horizontal(g, rx0 - 3, lineY - 1, framesW + 6, 2, 1, withA(lineC, 0x40), lineC);
 		drawChevron(g, rx0 - 9, lineY, lineC, true);
-		drawChevron(g, rx0 + reelW * 3 + gap * 2 + 9, lineY, lineC, false);
+		drawChevron(g, rx0 + framesW + 9, lineY, lineC, false);
 
 		// result
-		float mid = x0 + 120;
-		int resY = ry + cell * 3 + 14;
+		float mid = x0 + mw / 2f;
+		float resY = ry + cell * 3 + 12;
+		float resH = y + h - resY - 10;
 		if (winning) {
 			float t = Math.min(1f, (time - slotWinAt) / 0.35f);
-			float s = 1.6f * (1f + 0.35f * (1f - easeOutBack(t)));
+			float s = 1.5f * (1f + 0.35f * (1f - easeOutBack(t)));
 			String txt = slotMultiplier >= 50 ? "BIG WIN" : "WIN";
-			text(g, txt, mid - tw(txt, T.TITLE) * s / 2f, resY, alpha(GOLD, t), T.TITLE, s);
-			String amt = "+" + fmt(slotWin) + " chips  (" + slotMultiplier + "x)";
-			centered(g, amt, mid, resY + 22, 14, alpha(GREEN, t), T.BODY);
+			float tx = tw(txt, T.TITLE) * s;
+			text(g, txt, mid - tx / 2f, resY + 4 - CAP_MID[2] * (s - 1f), alpha(primary, t), T.TITLE, s);
+			centered(g, "+" + fmt(slotWin) + " chips  ·  " + slotMultiplier + "x", mid, resY + 22, 14, alpha(GREEN, t), T.BODY);
 		} else if (!spinning && slotsResult) {
-			centered(g, "No win this time", mid, resY + 6, 14, MUTED, T.BODY);
+			centered(g, "No win this time", mid, resY, resH, MUTED, T.BODY);
 		} else if (!spinning) {
-			centered(g, "Set your bet and spin", mid, resY + 2, 14, MUTED, T.BODY);
-			centered(g, "Space also spins", mid, resY + 16, 12, FAINT, T.SMALL);
+			centered(g, "Set your bet and spin", mid, resY, resH / 2f + 4, MUTED, T.BODY);
+			centered(g, "Space also spins", mid, resY + resH / 2f, resH / 2f - 4, FAINT, T.SMALL);
 		}
 
 		// controls
-		int px = x0 + 250;
-		int pw = CW - 250;
-		GuiDraw.rounded(g, px, y, pw, h, 10, SURFACE);
+		int px = x0 + mw + 10;
+		int pw = CW - mw - 10;
+		card(g, px, y, pw, h);
 		px += 12;
 		pw -= 24;
-		text(g, "Bet", px, y + 12, MUTED, T.SMALL);
+		label(g, "Bet", px, y + 8, 12, MUTED, T.SMALL);
 		betField(g, mx, my, 0, px, y + 22, pw);
 		boolean canSpin = !spinning && !busy && balance > 0;
-		button(g, mx, my, px, y + 72, pw, 30, spinning ? "Spinning..." : "Spin", canSpin, true, null, this::spin);
-		GuiDraw.fill(g, px, y + 112, pw, 1, LINE);
-		text(g, "Paytable", px, y + 118, MUTED, T.SMALL);
-		float py = y + 130;
-		for (String[] row : PAYTABLE) {
+		button(g, mx, my, px, y + 80, pw, 30, spinning ? "Spinning..." : "Spin", canSpin, true, spinning ? null : "Space", this::spin);
+		RoundRect.fill(g, px, y + 122, pw, 1, 0.5f, withA(TEXT, 0x16));
+		label(g, "Paytable", px, y + 128, 12, MUTED, T.SMALL);
+		float py = y + 142;
+		float rowH = 9.4f;
+		for (int i = 0; i < PAYTABLE.length; i++) {
+			String[] row = PAYTABLE[i];
+			if ((i & 1) == 0) {
+				RoundRect.fill(g, px - 4, py, pw + 8, rowH, 3, withA(TEXT, 0x07));
+			}
 			if (row[0].length() == 3 && !row[0].contains(" ")) {
 				float ix = px + 5;
 				for (int k = 0; k < 3; k++) {
 					char c = row[0].charAt(k);
 					if (c != '_') {
-						drawSymbolSmall(g, c, ix, py + 5);
+						drawSymbolSmall(g, c, ix, py + rowH / 2f);
 					} else {
-						text(g, "any", ix - 4, py + 1, FAINT, T.SMALL);
+						label(g, "any", ix - 5, py, rowH, FAINT, T.SMALL);
 					}
 					ix += 13;
 				}
 			} else {
-				label(g, row[0], px, py, 10, TEXT, T.BODY);
+				label(g, row[0], px, py, rowH, TEXT, T.SMALL);
 			}
-			label(g, row[1], px + pw - tw(row[1], T.BODY), py, 10, GOLD, T.BODY);
-			py += 10;
+			label(g, row[1], px + pw - tw(row[1], T.BODY), py, rowH, primary, T.BODY);
+			py += rowH;
 		}
 	}
 
@@ -505,19 +579,27 @@ public final class CasinoScreen extends Screen {
 		int index;
 	}
 
+	// Table layout (offsets from the table's top): dealer label, dealer cards, the message
+	// band in the middle, player cards, then each hand's label under its own cards.
+	private static final int CARD_W = 30;
+	private static final int CARD_H = 42;
+	private static final int DEALER_LABEL_Y = 10;
+	private static final int DEALER_CARDS_Y = 32;
+	private static final int MESSAGE_Y = 84;
+	private static final int PLAYER_CARDS_Y = 118;
+	private static final int PLAYER_LABEL_Y = 166;
+
 	private void drawBlackjack(GuiGraphicsExtractor g, int mx, int my, float dt, int y, int h) {
 		int tx = cx0();
 		int tw = CW;
 		int th = TABLE_H;
-		GuiDraw.rounded(g, tx - 3, y - 3, tw + 6, th + 6, 13, 0xFF4A2F17);
-		GuiDraw.rounded(g, tx, y, tw, th, 11, FELT);
-		for (int i = 0; i < 5; i++) {
-			GuiDraw.rounded(g, tx, y, tw, th - i * 30, 11, 0x06FFFFFF);
-		}
+		// felt with a soft light in the middle, an accent rim
+		RoundRect.vertical(g, tx, y, tw, th, 12, FELT_TOP, FELT_BOTTOM);
+		RoundRect.vertical(g, tx + tw * 0.15f, y, tw * 0.7f, th * 0.6f, 40, 0x14FFFFFF, 0x00FFFFFF);
+		RoundRect.outline(g, tx, y, tw, th, 12, withA(primary, 0xC0), withA(primary2, 0x50));
 		// shoe
-		GuiDraw.rounded(g, tx + tw - 48, y + 8, 38, 26, 5, 0xFF2A1C10);
-		drawCardBack(g, tx + tw - 43, y + 5, 0.62f);
-		text(g, "Dealer", tx + 12, y + 10, 0xC0F5C451, T.SMALL);
+		RoundRect.vertical(g, tx + tw - 50, y + 10, 40, 30, 6, 0xFF2B2E36, 0xFF15171C);
+		drawCardBack(g, tx + tw - 44, y + 6, 0.62f);
 
 		for (DCard c : cards) {
 			if (time < c.appearAt) {
@@ -534,25 +616,37 @@ public final class CasinoScreen extends Screen {
 		float last = lastCardTime();
 		String phase = bj == null ? "none" : str(bj, "phase");
 		boolean settled = bj != null && "done".equals(phase) && time >= last + 0.2f;
+		float center = tx + tw / 2f;
+
+		// dealer label: centred over the dealer's cards
 		if (bj != null) {
-			int dealerTotal = bj.get("dealerTotal").getAsInt();
-			if (!"done".equals(phase) || time >= last) {
-				badge(g, tx + 12, y + 22, String.valueOf(dealerTotal), 0xD0101317, TEXT);
-			}
+			String dealerTotal = (!"done".equals(phase) || time >= last) ? String.valueOf(bj.get("dealerTotal").getAsInt()) : "";
+			handLabel(g, center, y + DEALER_LABEL_Y, "Dealer", dealerTotal, false);
+		} else {
+			handLabel(g, center, y + DEALER_LABEL_Y, "Dealer", "", false);
+		}
+
+		if (bj != null) {
 			JsonArray hands = bj.getAsJsonArray("hands");
 			int n = hands.size();
 			int active = bj.get("active").getAsInt();
 			for (int i = 0; i < n; i++) {
 				JsonObject hnd = hands.get(i).getAsJsonObject();
-				float hx = handX(i, n);
-				float hy = handY();
+				float hcx = handCenter(i, n);
+				int count = hnd.getAsJsonArray("cards").size();
+				float handW = CARD_W + (count - 1) * fanStep(n);
 				if ("player".equals(phase) && i == active && n > 1) {
-					GuiDraw.roundedOutline(g, hx - 6, hy - 22, 86, 70, 7, alpha(GOLD, 0.55f + 0.45f * (float) Math.sin(time * 6f)), 1.2f);
+					float boxW = Math.max(handW, 70) + 12;
+					float pulse = 0.55f + 0.45f * (float) Math.sin(time * 6f);
+					RoundRect.outline(g, hcx - boxW / 2f, y + PLAYER_CARDS_Y - 6, boxW, PLAYER_LABEL_Y - PLAYER_CARDS_Y + 24, 9, alpha(primary, pulse), alpha(primary2, pulse * 0.5f));
 				}
 				int total = hnd.get("total").getAsInt();
 				String totalTxt = (hnd.get("soft").getAsBoolean() && total < 21 ? "Soft " : "") + total;
-				float bx = badge(g, hx, hy - 17, totalTxt, 0xD0101317, TEXT);
-				String betTxt = fmt(hnd.get("bet").getAsLong()) + (hnd.get("doubled").getAsBoolean() ? " (doubled)" : "");
+				String who = n == 1 ? "You" : n == 2 ? "Hand " + (i + 1) : "";
+				String side;
+				int sideFrom;
+				int sideTo;
+				int sideInk;
 				if (settled && !hnd.get("result").isJsonNull()) {
 					String res = str(hnd, "result");
 					int col = switch (res) {
@@ -560,7 +654,7 @@ public final class CasinoScreen extends Screen {
 						case "push" -> MUTED;
 						default -> RED;
 					};
-					String lbl = switch (res) {
+					side = switch (res) {
 						case "blackjack" -> "Blackjack +" + fmt(hnd.get("payout").getAsLong() - hnd.get("bet").getAsLong());
 						case "win" -> "Win +" + fmt(hnd.get("bet").getAsLong());
 						case "push" -> "Push";
@@ -568,51 +662,97 @@ public final class CasinoScreen extends Screen {
 						default -> "Lose";
 					};
 					float pop = Math.min(1f, (time - last - 0.2f) / 0.3f);
-					badge(g, bx + 4, hy - 17, lbl, alpha(0xE0101317, pop), alpha(col, pop));
+					sideFrom = alpha(withA(col, 0xF0), pop);
+					sideTo = alpha(withA(mixColor(col, 0xFF000000, 0.25f), 0xF0), pop);
+					sideInk = alpha(0xFF0B0D10, pop);
 				} else {
-					drawChip(g, bx + 10, hy - 10, 5.5f, GOLD);
-					label(g, betTxt, bx + 18, hy - 17, 14, GOLD, T.SMALL);
+					side = shortAmount(hnd.get("bet").getAsLong()) + (hnd.get("doubled").getAsBoolean() ? " x2" : "");
+					sideFrom = primary;
+					sideTo = primary2;
+					sideInk = onPrimary;
 				}
-			}
-			if (settled) {
-				String msg = str(bj, "message");
-				centered(g, msg, tx + tw / 2f, y + 62, 14, TEXT, T.TITLE);
-				long insPay = bj.has("insurancePayout") ? bj.get("insurancePayout").getAsLong() : 0;
-				if (insPay > 0) {
-					centered(g, "Insurance pays " + fmt(insPay), tx + tw / 2f, y + 78, 12, GREEN, T.BODY);
-				}
+				// one row under the hand: [You 15] [bet or result], centred on the cards
+				float h1 = 18;
+				float w1 = handLabelWidth(who, totalTxt);
+				float w2 = badgeWidth(side, 16);
+				float rowX = hcx - (w1 + 4 + w2) / 2f;
+				handLabel(g, rowX + w1 / 2f, y + PLAYER_LABEL_Y, who, totalTxt, i == active && "player".equals(phase));
+				badge(g, rowX + w1 + 4, y + PLAYER_LABEL_Y + 1, 16, side, sideFrom, sideTo, sideInk);
 			}
 		}
-		if (!settled) {
-			centered(g, "BLACKJACK PAYS 3 TO 2", tx + tw / 2f, y + 64, 12, 0x90F5C451, T.SMALL);
-			centered(g, "Dealer stands on all 17s  ·  Insurance pays 2 to 1", tx + tw / 2f, y + 76, 12, 0x70FFFFFF, T.SMALL);
+
+		// message band between dealer and player
+		float band = y + MESSAGE_Y;
+		if (settled) {
+			centered(g, str(bj, "message"), center, band, 16, TEXT, T.TITLE);
+			long insPay = bj.has("insurancePayout") ? bj.get("insurancePayout").getAsLong() : 0;
+			if (insPay > 0) {
+				centered(g, "Insurance pays " + fmt(insPay), center, band + 16, 12, GREEN, T.BODY);
+			}
+		} else {
+			centered(g, "BLACKJACK PAYS 3 TO 2", center, band, 14, 0xB0FFFFFF, T.BODY);
+			centered(g, "Dealer stands on all 17s  ·  Insurance pays 2 to 1", center, band + 14, 12, 0x80FFFFFF, T.SMALL);
 		}
 
 		// controls under the table
 		boolean animating = time < last + 0.1f;
-		int cy = y + th + 8;
+		float cy = y + th + 10;
+		float ch = Math.min(32, h - th - 10);
 		if (bj == null || "done".equals(phase)) {
 			if (!animating) {
-				text(g, "Bet", tx, cy, MUTED, T.SMALL);
-				betField(g, mx, my, 1, tx, cy + 9, 170);
-				button(g, mx, my, tx + 182, cy + 9, 140, 42, "Deal", !busy && balance > 0, true, "Space", this::deal);
+				float fw = 120;
+				field(g, mx, my, 1, tx, cy + (ch - 24) / 2f, fw, "Bet");
+				float qx = tx + fw + 6;
+				float qw = 36;
+				for (int i = 0; i < QUICK.length; i++) {
+					quickButton(g, mx, my, 1, i, qx + i * (qw + 4), cy + (ch - 24) / 2f, qw, 24);
+				}
+				float dx = qx + QUICK.length * (qw + 4) + 6;
+				button(g, mx, my, dx, cy, tx + tw - dx, ch, "Deal", !busy && balance > 0, true, "Space", this::deal);
 			}
 		} else if ("insurance".equals(phase)) {
 			if (!animating) {
-				label(g, "The dealer shows an Ace. Take insurance for " + fmt(insuranceCost()) + "?", tx, cy, 14, TEXT, T.BODY);
-				button(g, mx, my, tx, cy + 18, 140, 28, "Insure", !busy, true, "Y", () -> act("insurance"));
-				button(g, mx, my, tx + 148, cy + 18, 140, 28, "No thanks", !busy, false, "N", () -> act("noinsurance"));
+				label(g, "Dealer shows an Ace. Insure for " + fmt(insuranceCost()) + "?", tx, cy, ch, TEXT, T.BODY);
+				float bw = 112;
+				button(g, mx, my, tx + tw - bw * 2 - 8, cy, bw, ch, "No thanks", !busy, false, "N", () -> act("noinsurance"));
+				button(g, mx, my, tx + tw - bw, cy, bw, ch, "Insure", !busy, true, "Y", () -> act("insurance"));
 			}
 		} else if (!animating) {
 			float bw = (tw - 3 * 8) / 4f;
-			button(g, mx, my, tx, cy + 6, bw, 32, "Hit", !busy, true, "H", () -> act("hit"));
-			button(g, mx, my, tx + (bw + 8), cy + 6, bw, 32, "Stand", !busy, false, "S", () -> act("stand"));
-			button(g, mx, my, tx + 2 * (bw + 8), cy + 6, bw, 32, "Double", !busy && bj.get("canDouble").getAsBoolean(), false, "D", () -> act("double"));
-			button(g, mx, my, tx + 3 * (bw + 8), cy + 6, bw, 32, "Split", !busy && bj.get("canSplit").getAsBoolean(), false, "P", () -> act("split"));
+			button(g, mx, my, tx, cy, bw, ch, "Hit", !busy, true, "H", () -> act("hit"));
+			button(g, mx, my, tx + (bw + 8), cy, bw, ch, "Stand", !busy, false, "S", () -> act("stand"));
+			button(g, mx, my, tx + 2 * (bw + 8), cy, bw, ch, "Double", !busy && bj.get("canDouble").getAsBoolean(), false, "D", () -> act("double"));
+			button(g, mx, my, tx + 3 * (bw + 8), cy, bw, ch, "Split", !busy && bj.get("canSplit").getAsBoolean(), false, "P", () -> act("split"));
 		}
 	}
 
+	/** "Dealer 17" / "You Soft 15": a dark pill, name muted, total bold; centred on cx. */
+	private void handLabel(GuiGraphicsExtractor g, float cx, float y, String who, String total, boolean active) {
+		float h = 18;
+		float w = handLabelWidth(who, total);
+		float x = cx - w / 2f;
+		RoundRect.vertical(g, x, y, w, h, h / 2f, 0xC0101215, 0xC0080A0C);
+		RoundRect.outline(g, x, y, w, h, h / 2f, active ? primary : 0x30FFFFFF, active ? primary2 : 0x10FFFFFF);
+		float ix = x + 9;
+		if (!who.isEmpty()) {
+			label(g, who, ix, y, h, 0xC0FFFFFF, T.BODY);
+			ix += tw(who, T.BODY) + (total.isEmpty() ? 0 : 5);
+		}
+		if (!total.isEmpty()) {
+			label(g, total, ix, y, h, 0xFFFFFFFF, T.TITLE);
+		}
+	}
 
+	private float handLabelWidth(String who, String total) {
+		float w = 18;
+		if (!who.isEmpty()) {
+			w += tw(who, T.BODY);
+		}
+		if (!total.isEmpty()) {
+			w += tw(total, T.TITLE) + (who.isEmpty() ? 0 : 5);
+		}
+		return w;
+	}
 
 	private long insuranceCost() {
 		if (bj == null) {
@@ -630,13 +770,20 @@ public final class CasinoScreen extends Screen {
 		return last;
 	}
 
-	private float handX(int i, int n) {
-		float spacing = 104;
-		return cx0() + CW / 2f - (n - 1) * spacing / 2f + i * spacing - 22;
+	/** Horizontal centre of player hand i of n. */
+	private float handCenter(int i, int n) {
+		float spacing = n <= 2 ? 150 : CW / (float) n;
+		return cx0() + CW / 2f + (i - (n - 1) / 2f) * spacing;
 	}
 
-	private float handY() {
-		return cy0() + TABLE_H - 50;
+	private static float fanStep(int hands) {
+		return hands > 2 ? 11 : 17;
+	}
+
+	/** Left edge of card i in a fan of count cards centred on cx. */
+	private static float fanX(float cx, int i, int count, float step) {
+		float w = CARD_W + (count - 1) * step;
+		return cx - w / 2f + i * step;
 	}
 
 	private void deal() {
@@ -699,16 +846,16 @@ public final class CasinoScreen extends Screen {
 		List<DCard> unused = new ArrayList<>(cards);
 		List<DCard> next = new ArrayList<>();
 		float stagger = Math.max(time, lastCardTime() - 0.35f);
-		float shoeX = tx + tw - 43;
-		float shoeY = y + 5;
+		float shoeX = tx + tw - 44;
+		float shoeY = y + 6;
 		// dealer
 		JsonArray dealer = view.getAsJsonArray("dealer");
 		boolean done = "done".equals(str(view, "phase"));
 		for (int i = 0; i < dealer.size(); i++) {
 			JsonElement e = dealer.get(i);
 			String code = e.isJsonNull() ? "?" : e.getAsString();
-			float cx = tx + tw / 2f - 30 + i * 20;
-			float cy = y + 14;
+			float cx = fanX(tx + tw / 2f, i, dealer.size(), 18);
+			float cy = y + DEALER_CARDS_Y;
 			DCard c = take(unused, i == 1 ? null : code, true, i);
 			if (c == null) {
 				c = new DCard();
@@ -748,8 +895,8 @@ public final class CasinoScreen extends Screen {
 				}
 				c.code = code;
 				c.faceUp = true;
-				c.tx = handX(hIdx, hands.size()) + i * (hands.size() > 2 ? 10 : 14);
-				c.ty = handY() - i * 2;
+				c.tx = fanX(handCenter(hIdx, hands.size()), i, hc.size(), fanStep(hands.size()));
+				c.ty = y + PLAYER_CARDS_Y;
 				c.owner = hIdx;
 				c.index = i;
 				next.add(c);
@@ -796,29 +943,33 @@ public final class CasinoScreen extends Screen {
 	}
 
 	private void drawCard(GuiGraphicsExtractor g, float x, float y, float scaleX, String code) {
-		float w = 30;
-		float h = 42;
+		float w = CARD_W;
+		float h = CARD_H;
 		g.pose().pushMatrix();
 		g.pose().translate(x + w / 2f, y);
 		g.pose().scale(Math.max(0.02f, scaleX), 1f);
 		g.pose().translate(-w / 2f, 0);
-		GuiDraw.rounded(g, 0.5f, 1.5f, w, h, 3, 0x70000000);
+		RoundRect.fill(g, 0.5f, 1.5f, w, h, 3.5f, 0x60000000);
 		if (code == null) {
 			drawCardBackLocal(g, w, h);
 		} else {
-			GuiDraw.rounded(g, 0, 0, w, h, 3, 0xFFFBFAF6);
+			RoundRect.vertical(g, 0, 0, w, h, 3.5f, 0xFFFFFFFF, 0xFFEDEAE3);
+			RoundRect.outline(g, 0, 0, w, h, 3.5f, 0x30000000, 0x50000000);
 			String rank = code.substring(0, code.length() - 1);
 			char suit = code.charAt(code.length() - 1);
 			String suitGlyph = switch (suit) {
-				case 'H' -> "♥";
-				case 'D' -> "♦";
-				case 'C' -> "♣";
-				default -> "♠";
+				case 'H' -> "\u2665";
+				case 'D' -> "\u2666";
+				case 'C' -> "\u2663";
+				default -> "\u2660";
 			};
 			int col = suit == 'H' || suit == 'D' ? CARD_RED : 0xFF16181D;
-			text(g, rank, 3, 3, col, T.TITLE);
-			glyph(g, suitGlyph, 3.5f, 14, col, 0.8f);
-			glyph(g, suitGlyph, w / 2f - glyphWidth(suitGlyph) * 1.7f / 2f + 2, h / 2f - 2, col, 1.7f);
+			float rw = tw(rank, T.TITLE);
+			// rank and small suit stacked in the top-left corner, big suit in the middle
+			text(g, rank, 3.5f, 2.5f, col, T.TITLE);
+			glyph(g, suitGlyph, 3.5f + (rw - glyphWidth(suitGlyph) * 0.75f) / 2f, 12.5f, col, 0.75f);
+			float big = 1.6f;
+			glyph(g, suitGlyph, w / 2f - glyphWidth(suitGlyph) * big / 2f + 0.5f, h / 2f - 3.5f * big + 3f, col, big);
 		}
 		g.pose().popMatrix();
 	}
@@ -827,59 +978,79 @@ public final class CasinoScreen extends Screen {
 		g.pose().pushMatrix();
 		g.pose().translate(x, y);
 		g.pose().scale(s, s);
-		drawCardBackLocal(g, 30, 42);
+		drawCardBackLocal(g, CARD_W, CARD_H);
 		g.pose().popMatrix();
 	}
 
+	/** Card backs in the accent gradient, so the deck matches the menu. */
 	private void drawCardBackLocal(GuiGraphicsExtractor g, float w, float h) {
-		GuiDraw.rounded(g, 0, 0, w, h, 3, 0xFFFAFAF7);
-		GuiDraw.rounded(g, 2, 2, w - 4, h - 4, 2, 0xFF8E1B24);
-		for (int i = 0; i < 7; i++) {
-			GuiDraw.fill(g, 4, 5 + i * 5, w - 8, 1, 0x40FFFFFF);
+		RoundRect.fill(g, 0, 0, w, h, 3.5f, 0xFFF7F6F2);
+		RoundRect.diagonal(g, 2, 2, w - 4, h - 4, 2.5f, primary, mixColor(primary2, 0xFF000000, 0.35f));
+		for (int i = 0; i < 6; i++) {
+			RoundRect.fill(g, 4, 6 + i * 5.5f, w - 8, 1, 0.5f, 0x26FFFFFF);
 		}
-		GuiDraw.roundedOutline(g, 4, 4, w - 8, h - 8, 2, 0x80F5C451, 0.8f);
+		RoundRect.outline(g, 4, 4, w - 8, h - 8, 2, 0x90FFFFFF, 0x40FFFFFF);
 	}
 
 	// ================================================================== roulette
 
 	private void drawRoulette(GuiGraphicsExtractor g, int mx, int my, float dt, int y, int h) {
 		int x0 = cx0();
-		float cx = x0 + 80;
+		int ww = 154;
+		card(g, x0, y, ww, h);
+		float cx = x0 + ww / 2f;
 		float cy = y + 82;
-		float r = 70;
+		float r = 64;
 		advanceWheel(dt);
 		drawWheel(g, cx, cy, r);
 		boolean showResult = !rolling && rouletteNumber >= 0 && time - rouletteDoneAt < 8f;
 		if (showResult) {
 			int col = rouletteNumber == 0 ? 0xFF16A34A : isRed(rouletteNumber) ? 0xFFC81E28 : 0xFF16181D;
 			float pop = Math.min(1f, (time - rouletteDoneAt) / 0.3f);
-			GuiDraw.circle(g, cx, cy, 16 * easeOutBack(pop), col);
-			centered(g, String.valueOf(rouletteNumber), cx, cy - 7, 14, 0xFFFFFFFF, T.TITLE);
+			float rad = 16 * easeOutBack(pop);
+			GuiDraw.circle(g, cx, cy, rad + 1.5f, 0xFFFFFFFF);
+			GuiDraw.circle(g, cx, cy, rad, col);
+			centered(g, String.valueOf(rouletteNumber), cx, cy - 8, 16, 0xFFFFFFFF, T.TITLE);
 		}
 		// result line + history under the wheel
+		float resY = y + 160;
 		if (showResult) {
 			String res = rouletteWin > 0 ? "Won " + fmt(rouletteWin) : "No win";
-			centered(g, res, cx, y + 160, 14, rouletteWin > 0 ? GREEN : MUTED, T.TITLE);
+			centered(g, res, cx, resY, 18, rouletteWin > 0 ? GREEN : MUTED, T.TITLE);
 		} else if (rolling) {
-			centered(g, "No more bets", cx, y + 160, 14, MUTED, T.BODY);
+			centered(g, "No more bets", cx, resY, 18, MUTED, T.BODY);
+		} else {
+			centered(g, "Place your chips", cx, resY, 18, FAINT, T.BODY);
 		}
-		float hx = x0 + 2;
-		float hy = y + 184;
-		text(g, "Last", hx, hy + 2, FAINT, T.SMALL);
-		hx += 22;
-		for (String s : rouletteHistory) {
+		RoundRect.fill(g, x0 + 10, y + 186, ww - 20, 1, 0.5f, withA(TEXT, 0x16));
+		label(g, "Last numbers", x0 + 10, y + 192, 12, MUTED, T.SMALL);
+		float hx = x0 + 10;
+		float hy = y + 208;
+		for (int i = 0; i < rouletteHistory.size(); i++) {
+			String s = rouletteHistory.get(i);
 			int n = Integer.parseInt(s);
 			int col = n == 0 ? 0xFF16A34A : isRed(n) ? 0xFFC81E28 : 0xFF2A2F38;
-			GuiDraw.rounded(g, hx, hy - 1, 15, 13, 4, col);
-			centered(g, s, hx + 7.5f, hy - 1, 13, 0xFFFFFFFF, T.SMALL);
-			hx += 17;
+			float pw = 14.5f;
+			if (hx + pw > x0 + ww - 10) {
+				break;
+			}
+			RoundRect.vertical(g, hx, hy, pw, 16, 5, mixColor(col, 0xFFFFFFFF, 0.12f), col);
+			if (i == 0) {
+				RoundRect.outline(g, hx, hy, pw, 16, 5, 0xC0FFFFFF, 0x60FFFFFF);
+			}
+			centered(g, s, hx + pw / 2f, hy, 16, 0xFFFFFFFF, T.SMALL);
+			hx += pw + 1.5f;
 		}
 
 		// board
-		float bx = x0 + 168;
-		float by = y;
+		int bxCard = x0 + ww + 10;
+		int bwCard = CW - ww - 10;
+		card(g, bxCard, y, bwCard, h);
 		float cw = 18;
 		float ch = 22;
+		float boardW = cw * 13 + 24;
+		float bx = bxCard + (bwCard - boardW) / 2f;
+		float by = y + 10;
 		boolean locked = rolling || busy;
 		boardCell(g, mx, my, bx, by, cw, ch * 3, "0", 0xFF15803D, "straight:0", locked);
 		for (int c = 0; c < 12; c++) {
@@ -900,29 +1071,31 @@ public final class CasinoScreen extends Screen {
 			int col = o == 2 ? 0xFFB91C1C : o == 3 ? 0xFF16181D : 0xFF14532D;
 			boardCell(g, mx, my, bx + cw + o * cw * 2, by + ch * 4, cw * 2, ch, outs[o][0], col, outs[o][1] + ":0", locked);
 		}
+		RoundRect.outline(g, bx, by, boardW, ch * 5, 3, 0x50FFFFFF, 0x30FFFFFF);
 		// chips
 		float ry = by + ch * 5 + 12;
-		text(g, "Chip", bx, ry + 5, MUTED, T.SMALL);
+		label(g, "Chip", bx, ry, 22, MUTED, T.SMALL);
 		for (int i = 0; i < CHIPS.length; i++) {
 			float x = bx + 30 + i * 30;
 			boolean sel = i == chip;
-			float lift = sel ? -3 : 0;
+			float lift = sel ? -2 : 0;
+			float ccy = ry + 11 + lift;
 			if (sel) {
-				GuiDraw.circle(g, x + 10, ry + 9 + lift, 12.5f, GOLD);
+				RoundRect.diagonal(g, x + 10 - 13.5f, ccy - 13.5f, 27, 27, 13.5f, primary, primary2);
 			}
-			drawChip(g, x + 10, ry + 9 + lift, 11, CHIP_COLORS[i]);
-			String lbl = shortAmount(CHIPS[i]);
-			centered(g, lbl, x + 10, ry + 2 + lift, 14, i == 0 || i == 4 ? 0xFF111111 : 0xFFFFFFFF, T.SMALL);
+			drawChip(g, x + 10, ccy, 11, CHIP_COLORS[i]);
+			centered(g, shortAmount(CHIPS[i]), x + 10, ccy - 6, 12, i == 0 || i == 4 ? 0xFF111111 : 0xFFFFFFFF, T.SMALL);
 			final int idx = i;
-			hit(x - 2, ry - 4, 24, 26, () -> chip = idx);
+			hit(x - 2, ry - 4, 24, 30, () -> chip = idx);
 		}
 		long total = 0;
 		for (long v : bets.values()) {
 			total += v;
 		}
-		label(g, "Total bet", bx, ry + 26, 14, MUTED, T.BODY);
-		label(g, fmt(total), bx + tw("Total bet", T.BODY) + 6, ry + 26, 14, GOLD, T.BODY);
-		float ay = ry + 44;
+		float ty = ry + 30;
+		label(g, "Total bet", bx, ty, 16, MUTED, T.BODY);
+		label(g, fmt(total), bx + tw("Total bet", T.BODY) + 6, ty, 16, total > 0 ? primary : FAINT, T.TITLE);
+		float ay = ty + 22;
 		float ax = bx;
 		ax = chipButton(g, mx, my, ax, ay, "Clear", !locked && !bets.isEmpty(), bets::clear);
 		ax = chipButton(g, mx, my, ax, ay, "Rebet", !locked && !lastBets.isEmpty(), () -> {
@@ -930,8 +1103,8 @@ public final class CasinoScreen extends Screen {
 			bets.putAll(lastBets);
 		});
 		ax = chipButton(g, mx, my, ax, ay, "2x", !locked && !bets.isEmpty(), () -> bets.replaceAll((k, v) -> v * 2));
-		button(g, mx, my, ax, ay, x0 + CW - ax, 26, rolling ? "Rolling..." : "Spin", !locked && !bets.isEmpty(), true, "Space", this::spinRoulette);
-		text(g, "Left click adds a chip, right click takes one off. 1-6 picks a chip.", bx, ay + 34, FAINT, T.SMALL);
+		button(g, mx, my, ax, ay - 3, bx + boardW - ax, 30, rolling ? "Rolling..." : "Spin", !locked && !bets.isEmpty(), true, rolling ? null : "Space", this::spinRoulette);
+		label(g, "Left click adds a chip, right click removes one. 1-6 picks a chip.", bx, ay + 30, 12, FAINT, T.SMALL);
 	}
 
 	private void boardCell(GuiGraphicsExtractor g, int mx, int my, float x, float y, float w, float h, String lbl, int color, String key, boolean locked) {
@@ -939,10 +1112,10 @@ public final class CasinoScreen extends Screen {
 		boolean winner = !rolling && rouletteNumber >= 0 && time - rouletteDoneAt < 8f && wins(key, rouletteNumber);
 		int fill = hot ? mixColor(color, 0xFFFFFFFF, 0.2f) : color;
 		if (winner) {
-			fill = mixColor(color, GOLD, 0.35f + 0.25f * (float) Math.sin(time * 8f));
+			fill = mixColor(color, primary, 0.45f + 0.25f * (float) Math.sin(time * 8f));
 		}
-		GuiDraw.fill(g, x, y, w, h, fill);
-		GuiDraw.border(g, x, y, w, h, 0x50FFFFFF, 0.5f);
+		GuiDraw.fillGradient(g, x, y, w, h, mixColor(fill, 0xFFFFFFFF, 0.08f), mixColor(fill, 0xFF000000, 0.12f));
+		GuiDraw.border(g, x, y, w, h, 0x40FFFFFF, 0.5f);
 		Long amount = bets.get(key);
 		if (amount != null && amount > 0) {
 			int ci = 0;
@@ -952,9 +1125,9 @@ public final class CasinoScreen extends Screen {
 				}
 			}
 			drawChip(g, x + w / 2f, y + h / 2f, 7.5f, CHIP_COLORS[ci]);
-			centered(g, shortAmount(amount), x + w / 2f, y + h / 2f - 6, 12, ci == 0 || ci == 4 ? 0xFF111111 : 0xFFFFFFFF, T.SMALL);
+			centered(g, shortAmount(amount), x + w / 2f, y + h / 2f - 5, 10, ci == 0 || ci == 4 ? 0xFF111111 : 0xFFFFFFFF, T.SMALL);
 		} else {
-			centered(g, lbl, x + w / 2f, y, h, 0xFFFFFFFF, T.BODY);
+			centered(g, lbl, x + w / 2f, y, h, 0xFFFFFFFF, lbl.length() > 2 ? T.SMALL : T.BODY);
 		}
 		hits.add(new Hit(x, y, w, h, () -> {
 			if (!locked) {
@@ -1094,7 +1267,7 @@ public final class CasinoScreen extends Screen {
 				rouletteHistory.remove(rouletteHistory.size() - 1);
 			}
 			if (rouletteWin > 0) {
-				burstCoins(cx0() + 80, cy0() + 82, rouletteWin >= 10L * Math.max(1, sum(lastBets)) ? 50 : 18);
+				burstCoins(cx0() + 77, cy0() + 82, rouletteWin >= 10L * Math.max(1, sum(lastBets)) ? 50 : 18);
 				setStatus(rouletteNumber + " " + colorName(rouletteNumber) + ". You won " + fmt(rouletteWin) + ".", false);
 			} else {
 				setStatus(rouletteNumber + " " + colorName(rouletteNumber) + ". No win.", false);
@@ -1164,43 +1337,51 @@ public final class CasinoScreen extends Screen {
 	private void drawSend(GuiGraphicsExtractor g, int mx, int my, int y, int h) {
 		int x0 = cx0();
 		int cw = (CW - 10) / 2;
-		GuiDraw.rounded(g, x0, y, cw, h, 10, SURFACE);
+		card(g, x0, y, cw, h);
 		float x = x0 + 14;
 		float w = cw - 28;
-		text(g, "Send chips", x, y + 12, TEXT, T.TITLE);
-		text(g, "Player", x, y + 34, MUTED, T.SMALL);
-		field(g, mx, my, 2, x, y + 44, w, "Minecraft name");
-		text(g, "Amount", x, y + 76, MUTED, T.SMALL);
-		field(g, mx, my, 3, x, y + 86, w, "0");
-		button(g, mx, my, x, y + 118, w, 28, "Send", !busy && !fields[2].isBlank() && parse(fields[3]) > 0, true, null, this::sendChips);
-		text(g, "Arrives right away. New players start with 1,000.", x, y + 152, FAINT, T.SMALL);
-		text(g, "Inbox", x, y + 172, MUTED, T.SMALL);
+		label(g, "Send chips", x, y + 10, 16, TEXT, T.TITLE);
+		label(g, "Player", x, y + 32, 12, MUTED, T.SMALL);
+		field(g, mx, my, 2, x, y + 45, w, "Minecraft name");
+		label(g, "Amount", x, y + 76, 12, MUTED, T.SMALL);
+		field(g, mx, my, 3, x, y + 89, w, "0");
+		button(g, mx, my, x, y + 122, w, 28, "Send", !busy && !fields[2].isBlank() && parse(fields[3]) > 0, true, null, this::sendChips);
+		label(g, "Arrives right away. New players start with 1,000.", x, y + 154, 12, FAINT, T.SMALL);
+		RoundRect.fill(g, x, y + 172, w, 1, 0.5f, withA(TEXT, 0x16));
+		label(g, "Inbox", x, y + 178, 12, MUTED, T.SMALL);
 		if (inbox.isEmpty()) {
-			text(g, "Nothing yet", x, y + 184, FAINT, T.BODY);
+			label(g, "Nothing yet", x, y + 192, 12, FAINT, T.BODY);
 		}
 		for (int i = 0; i < Math.min(4, inbox.size()); i++) {
-			text(g, fitText(inbox.get(i), w, T.BODY), x, y + 184 + i * 11, TEXT, T.BODY);
+			label(g, fitText(inbox.get(i), w, T.BODY), x, y + 192 + i * 12, 12, TEXT, T.BODY);
 		}
 
 		int lx = x0 + cw + 10;
-		GuiDraw.rounded(g, lx, y, cw, h, 10, SURFACE);
-		text(g, "Leaderboard", lx + 14, y + 12, TEXT, T.TITLE);
-		chipButton(g, mx, my, lx + cw - 14 - (tw("Refresh", T.BODY) + 16), y + 9, "Refresh", !busy, this::refreshTop);
+		card(g, lx, y, cw, h);
+		label(g, "Leaderboard", lx + 14, y + 10, 16, TEXT, T.TITLE);
+		float rw = tw("Refresh", T.BODY) + 20;
+		chipButton(g, mx, my, lx + cw - 12 - rw, y + 6, "Refresh", !busy, this::refreshTop);
+		float rowH = 19;
 		for (int i = 0; i < top10.size(); i++) {
 			String[] row = top10.get(i);
-			float ry = y + 34 + i * 19;
+			float ry = y + 36 + i * (rowH + 1);
 			boolean me = row[0].equalsIgnoreCase(name);
 			if (me) {
-				GuiDraw.rounded(g, lx + 8, ry - 2, cw - 16, 18, 6, SURFACE_HI);
+				RoundRect.horizontal(g, lx + 8, ry, cw - 16, rowH, rowH / 2f, withA(primary, 0x40), withA(primary2, 0x14));
+			} else if ((i & 1) == 0) {
+				RoundRect.fill(g, lx + 8, ry, cw - 16, rowH, rowH / 2f, withA(TEXT, 0x06));
 			}
-			int medal = i == 0 ? GOLD : i == 1 ? 0xFFC9D1DB : i == 2 ? 0xFFD08A4A : 0xFF3A414C;
-			GuiDraw.circle(g, lx + 22, ry + 7, 6.5f, medal);
-			centered(g, String.valueOf(i + 1), lx + 22, ry, 14, i < 3 ? 0xFF15110A : TEXT, T.SMALL);
-			label(g, row[0], lx + 34, ry, 14, me ? GOLD : TEXT, T.BODY);
-			label(g, row[1], lx + cw - 14 - tw(row[1], T.BODY), ry, 14, GOLD, T.BODY);
+			int medal = i == 0 ? GOLD : i == 1 ? 0xFFC9D1DB : i == 2 ? 0xFFD08A4A : 0;
+			float mcx = lx + 20;
+			if (medal != 0) {
+				RoundRect.vertical(g, mcx - 7, ry + rowH / 2f - 7, 14, 14, 7, mixColor(medal, 0xFFFFFFFF, 0.25f), mixColor(medal, 0xFF000000, 0.15f));
+			}
+			centered(g, String.valueOf(i + 1), mcx, ry, rowH, medal != 0 ? 0xFF15110A : MUTED, T.SMALL);
+			label(g, fitText(row[0], cw - 100, T.BODY), lx + 34, ry, rowH, me ? primary : TEXT, T.BODY);
+			label(g, row[1], lx + cw - 16 - tw(row[1], T.BODY), ry, rowH, me ? primary : MUTED, T.BODY);
 		}
 		if (top10.isEmpty()) {
-			text(g, "Loading...", lx + 14, y + 36, FAINT, T.BODY);
+			label(g, "Loading...", lx + 14, y + 36, 16, FAINT, T.BODY);
 		}
 	}
 
@@ -1240,96 +1421,123 @@ public final class CasinoScreen extends Screen {
 
 	// ================================================================== shared widgets
 
+	private static final String[] QUICK = {"1/2", "2x", "+100", "Max"};
+
+	/** Bet field with the quick buttons in a row under it. */
 	private void betField(GuiGraphicsExtractor g, int mx, int my, int idx, float x, float y, float w) {
 		field(g, mx, my, idx, x, y, w, "Bet");
-		float by = y + 28;
-		String[] labels = {"1/2", "2x", "+100", "Max"};
+		float by = y + 30;
 		float bw = (w - 3 * 5) / 4f;
-		for (int i = 0; i < labels.length; i++) {
-			final int k = i;
-			float bx = x + i * (bw + 5);
-			boolean hot = hovered(mx, my, bx, by, bw, 18);
-			GuiDraw.rounded(g, bx, by, bw, 18, 6, hot ? SURFACE_HOVER : SURFACE_HI);
-			centered(g, labels[i], bx + bw / 2f, by, 18, TEXT, T.BODY);
-			hit(bx, by, bw, 18, () -> {
-				long v = parse(fields[idx]);
-				long max = Math.max(1, balance);
-				v = switch (k) {
-					case 0 -> Math.max(1, v / 2);
-					case 1 -> Math.min(max, Math.max(1, v * 2));
-					case 2 -> Math.min(max, v + 100);
-					default -> max;
-				};
-				fields[idx] = String.valueOf(v);
-			});
+		for (int i = 0; i < QUICK.length; i++) {
+			quickButton(g, mx, my, idx, i, x + i * (bw + 5), by, bw, 20);
 		}
+	}
+
+	private void quickButton(GuiGraphicsExtractor g, int mx, int my, int idx, int k, float x, float y, float w, float h) {
+		boolean hot = hovered(mx, my, x, y, w, h);
+		RoundRect.vertical(g, x, y, w, h, h / 2f, hot ? containerHighest : containerHigh, hot ? containerHigh : container);
+		RoundRect.outline(g, x, y, w, h, h / 2f, withA(TEXT, hot ? 0x30 : 0x18), withA(TEXT, 0x08));
+		centered(g, QUICK[k], x + w / 2f, y, h, hot ? TEXT : MUTED, T.BODY);
+		hit(x, y, w, h, () -> {
+			long v = parse(fields[idx]);
+			long max = Math.max(1, balance);
+			v = switch (k) {
+				case 0 -> Math.max(1, v / 2);
+				case 1 -> Math.min(max, Math.max(1, v * 2));
+				case 2 -> Math.min(max, v + 100);
+				default -> max;
+			};
+			fields[idx] = String.valueOf(v);
+		});
 	}
 
 	private void field(GuiGraphicsExtractor g, int mx, int my, int idx, float x, float y, float w, String placeholder) {
+		float h = 24;
 		boolean focused = focus == idx;
-		boolean hot = hovered(mx, my, x, y, w, 24);
-		GuiDraw.rounded(g, x, y, w, 24, 7, focused ? GOLD : hot ? 0xFF4A5260 : LINE);
-		GuiDraw.rounded(g, x + 1, y + 1, w - 2, 22, 6, INPUT);
+		boolean hot = hovered(mx, my, x, y, w, h);
+		RoundRect.vertical(g, x, y, w, h, 8, withA(surface, 0xF0), withA(surfaceLow, 0xF0));
+		if (focused) {
+			RoundRect.outline(g, x, y, w, h, 8, primary, primary2);
+		} else {
+			RoundRect.outline(g, x, y, w, h, 8, withA(TEXT, hot ? 0x40 : 0x22), withA(TEXT, hot ? 0x28 : 0x12));
+		}
 		String value = fields[idx];
 		boolean empty = value.isEmpty();
 		String shown = empty ? placeholder : (idx == 2 ? value : grouped(value));
-		label(g, shown, x + 9, y, 24, empty ? FAINT : TEXT, T.BODY);
+		label(g, shown, x + 10, y, h, empty ? FAINT : TEXT, T.BODY);
 		if (focused && (int) (time * 2) % 2 == 0) {
-			float cxp = x + 9 + (empty ? 0 : tw(shown, T.BODY)) + 1;
-			GuiDraw.fill(g, cxp, y + 6, 1, 12, GOLD);
+			float cxp = x + 10 + (empty ? 0 : tw(shown, T.BODY)) + 1;
+			RoundRect.fill(g, cxp, y + 6, 1, 12, 0.5f, primary);
 		}
-		hit(x, y, w, 24, () -> focus = idx);
+		hit(x, y, w, h, () -> focus = idx);
 	}
 
-	private void button(GuiGraphicsExtractor g, int mx, int my, float x, float y, float w, float h, String lbl, boolean on, boolean primary, String hint, Runnable action) {
+	/**
+	 * Material button: primary is the accent gradient with on-primary text, secondary a tonal
+	 * surface. A key hint sits in its own small chip after the label.
+	 */
+	private void button(GuiGraphicsExtractor g, int mx, int my, float x, float y, float w, float h, String lbl, boolean on, boolean primaryStyle, String hint, Runnable action) {
 		boolean hot = on && hovered(mx, my, x, y, w, h);
-		int fill;
-		if (primary) {
-			fill = on ? (hot ? 0xFFFFD36B : GOLD) : 0xFF3A3F48;
+		float r = h / 2f;
+		int tc;
+		if (!on) {
+			RoundRect.fill(g, x, y, w, h, r, withA(container, 0xD0));
+			RoundRect.outline(g, x, y, w, h, r, withA(TEXT, 0x10), withA(TEXT, 0x06));
+			tc = FAINT;
+		} else if (primaryStyle) {
+			int a = hot ? mixColor(primary, 0xFFFFFFFF, 0.14f) : primary;
+			int b = hot ? mixColor(primary2, 0xFFFFFFFF, 0.14f) : primary2;
+			RoundRect.fill(g, x, y + 2, w, h, r, withA(primary, 0x30));
+			// accent left to right, a touch lighter along the top edge
+			RoundRect.draw(g, x, y, w, h, r, mixColor(a, 0xFFFFFFFF, 0.12f), mixColor(b, 0xFFFFFFFF, 0.12f), b, a, false);
+			tc = onPrimary;
 		} else {
-			fill = on ? (hot ? SURFACE_HOVER : SURFACE_HI) : SURFACE;
+			RoundRect.vertical(g, x, y, w, h, r, hot ? containerHighest : containerHigh, hot ? containerHigh : container);
+			RoundRect.outline(g, x, y, w, h, r, withA(TEXT, hot ? 0x34 : 0x1E), withA(TEXT, 0x0A));
+			tc = TEXT;
 		}
-		GuiDraw.rounded(g, x, y + 1.5f, w, h, 8, 0x60000000);
-		GuiDraw.rounded(g, x, y, w, h, 8, fill);
-		if (!primary) {
-			GuiDraw.roundedOutline(g, x, y, w, h, 8, on ? LINE : 0xFF22262D, 1f);
-		}
-		int tc = primary ? (on ? INK : 0xFF7A808A) : (on ? TEXT : FAINT);
-		T font = h >= 28 ? T.TITLE : T.BODY;
-		float labelW = tw(lbl, font);
+		T fontSize = h >= 28 ? T.TITLE : T.BODY;
+		float labelW = tw(lbl, fontSize);
 		if (hint != null && on) {
-			float hw = tw(hint, T.SMALL) + 8;
+			float hh = 13;
+			float hw = Math.max(hh, tw(hint, T.SMALL) + 8);
 			float total = labelW + 6 + hw;
-			float sx = x + w / 2f - total / 2f;
-			label(g, lbl, sx, y, h, tc, font);
+			float sx = x + (w - total) / 2f;
+			label(g, lbl, sx, y, h, tc, fontSize);
 			float hx = sx + labelW + 6;
-			GuiDraw.rounded(g, hx, y + h / 2f - 6, hw, 12, 4, primary ? 0x30000000 : 0x40FFFFFF);
-			centered(g, hint, hx + hw / 2f, y + h / 2f - 6, 12, primary ? 0xC0201406 : MUTED, T.SMALL);
+			float hy = y + (h - hh) / 2f;
+			RoundRect.fill(g, hx, hy, hw, hh, 4, primaryStyle ? withA(onPrimary, 0x30) : withA(TEXT, 0x16));
+			centered(g, hint, hx + hw / 2f, hy, hh, primaryStyle ? withA(onPrimary, 0xD0) : MUTED, T.SMALL);
 		} else {
-			centered(g, lbl, x + w / 2f, y, h, tc, font);
+			centered(g, lbl, x + w / 2f, y, h, tc, fontSize);
 		}
 		if (on) {
 			hit(x, y, w, h, action);
 		}
 	}
 
+	/** A small tonal pill button sized to its label. Returns the x after it (with a gap). */
 	private float chipButton(GuiGraphicsExtractor g, int mx, int my, float x, float y, String lbl, boolean on, Runnable action) {
-		float w = tw(lbl, T.BODY) + 16;
-		boolean hot = on && hovered(mx, my, x, y, w, 24);
-		GuiDraw.rounded(g, x, y, w, 24, 8, on ? (hot ? SURFACE_HOVER : SURFACE_HI) : SURFACE);
-		GuiDraw.roundedOutline(g, x, y, w, 24, 8, on ? LINE : 0xFF22262D, 1f);
-		centered(g, lbl, x + w / 2f, y, 24, on ? TEXT : FAINT, T.BODY);
-		if (on) {
-			hit(x, y, w, 24, action);
-		}
+		float h = 24;
+		float w = tw(lbl, T.BODY) + 20;
+		button(g, mx, my, x, y, w, h, lbl, on, false, null, action);
 		return x + w + 6;
 	}
 
+	/** A label pill; returns its right edge. */
 	private float badge(GuiGraphicsExtractor g, float x, float y, String lbl, int bg, int fg) {
-		float w = tw(lbl, T.BODY) + 12;
-		GuiDraw.rounded(g, x, y, w, 14, 7, bg);
-		centered(g, lbl, x + w / 2f, y, 14, fg, T.BODY);
+		return badge(g, x, y, 16, lbl, bg, bg, fg);
+	}
+
+	private float badge(GuiGraphicsExtractor g, float x, float y, float h, String lbl, int from, int to, int fg) {
+		float w = badgeWidth(lbl, h);
+		RoundRect.horizontal(g, x, y, w, h, h / 2f, from, to);
+		centered(g, lbl, x + w / 2f, y, h, fg, T.BODY);
 		return x + w;
+	}
+
+	private float badgeWidth(String lbl, float h) {
+		return tw(lbl, T.BODY) + h;
 	}
 
 	private void drawChip(GuiGraphicsExtractor g, float cx, float cy, float r, int color) {
@@ -1557,7 +1765,7 @@ public final class CasinoScreen extends Screen {
 	}
 
 	private int cy0() {
-		return top + 56;
+		return top + 46;
 	}
 
 	private static Component comp(String s, T t) {
@@ -1568,27 +1776,54 @@ public final class CasinoScreen extends Screen {
 		};
 	}
 
+	/**
+	 * How far below the draw position the middle of a capital letter sits, per font: the
+	 * baseline (7 + the font's shift) minus half the cap height (Google Sans Flex caps are
+	 * 0.716 em). Centring on this instead of the vanilla 9px line box keeps every size
+	 * optically centred in its pill.
+	 */
+	private static final float[] CAP_MID = {7.25f - 0.358f * 5.5f, 6.75f - 0.358f * 6.5f, 6.0f - 0.358f * 8.0f};
+
 	/** Text in the Hyprland click GUI's fonts (small, body, title), drawn at their native size. */
 	private void text(GuiGraphicsExtractor g, String s, float x, float y, int color, T t) {
 		text(g, s, x, y, color, t, 1f);
 	}
 
 	private void text(GuiGraphicsExtractor g, String s, float x, float y, int color, T t, float scale) {
-		GuiDraw.text(g, font, comp(s, t), Math.round(x), Math.round(y), scale, color, false);
+		if (((color >>> 24) & 0xFF) < 6) {
+			return;
+		}
+		// Snap to whole screen pixels (not whole GUI units), so half-unit centring isn't lost.
+		g.pose().pushMatrix();
+		g.pose().translate(snap(x), snap(y));
+		GuiDraw.text(g, font, comp(s, t), 0, 0, scale, color, false);
+		g.pose().popMatrix();
+	}
+
+	private float snap(float v) {
+		return Math.round(v * pixel) / pixel;
 	}
 
 	private float tw(String s, T t) {
 		return font.width(comp(s, t));
 	}
 
-	/** Left-aligned, vertically centred in a box. */
+	/** Left-aligned, optically centred on the box's middle. */
 	private void label(GuiGraphicsExtractor g, String s, float x, float boxY, float boxH, int color, T t) {
-		text(g, s, x, GuiDraw.middle(boxY, boxH), color, t);
+		text(g, s, x, boxY + boxH / 2f - CAP_MID[t.ordinal()], color, t);
 	}
 
 	/** Centred in a box. */
 	private void centered(GuiGraphicsExtractor g, String s, float cx, float boxY, float boxH, int color, T t) {
-		text(g, s, cx - tw(s, t) / 2f, GuiDraw.middle(boxY, boxH), color, t);
+		label(g, s, cx - tw(s, t) / 2f, boxY, boxH, color, t);
+	}
+
+	/** A Material icon (the click GUI's icon font), centred on the box's middle. */
+	private void icon(GuiGraphicsExtractor g, String code, float x, float boxY, float boxH, int color) {
+		g.pose().pushMatrix();
+		g.pose().translate(snap(x), snap(boxY + (boxH - 9f) / 2f));
+		GuiDraw.text(g, font, Component.literal(code).withStyle(dev.stray.client.ui.MenuFont.ICON), 0, 0, color, false);
+		g.pose().popMatrix();
 	}
 
 	private String fitText(String s, float max, T t) {
@@ -1664,6 +1899,47 @@ public final class CasinoScreen extends Screen {
 
 	private static String str(JsonObject o, String key) {
 		return o != null && o.has(key) && o.get(key).isJsonPrimitive() ? o.get(key).getAsString() : "";
+	}
+
+	private static int withA(int color, int a) {
+		return (a << 24) | (color & 0xFFFFFF);
+	}
+
+	/** The accent with its hue turned a little (turn is a fraction of the colour wheel), for two-tone gradients. */
+	private static int hueShift(int color, float turn) {
+		float r = ((color >> 16) & 0xFF) / 255f;
+		float g = ((color >> 8) & 0xFF) / 255f;
+		float b = (color & 0xFF) / 255f;
+		float max = Math.max(r, Math.max(g, b));
+		float min = Math.min(r, Math.min(g, b));
+		float d = max - min;
+		float hue = 0f;
+		if (d > 1e-5f) {
+			if (max == r) {
+				hue = ((g - b) / d) / 6f;
+			} else if (max == g) {
+				hue = ((b - r) / d + 2f) / 6f;
+			} else {
+				hue = ((r - g) / d + 4f) / 6f;
+			}
+		}
+		float sat = max <= 0f ? 0f : d / max;
+		hue = ((hue + turn) % 1f + 1f) % 1f;
+		float h6 = hue * 6f;
+		int sector = (int) Math.floor(h6) % 6;
+		float f = h6 - (float) Math.floor(h6);
+		float p = max * (1f - sat);
+		float q = max * (1f - f * sat);
+		float t = max * (1f - (1f - f) * sat);
+		float[] rgb = switch (sector) {
+			case 0 -> new float[] {max, t, p};
+			case 1 -> new float[] {q, max, p};
+			case 2 -> new float[] {p, max, t};
+			case 3 -> new float[] {p, q, max};
+			case 4 -> new float[] {t, p, max};
+			default -> new float[] {max, p, q};
+		};
+		return (color & 0xFF000000) | (Math.round(rgb[0] * 255f) << 16) | (Math.round(rgb[1] * 255f) << 8) | Math.round(rgb[2] * 255f);
 	}
 
 	private static int alpha(int color, float a) {
