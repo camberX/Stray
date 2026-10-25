@@ -92,7 +92,7 @@ public final class CasinoApi {
 				.header("x-minecraft-server", server)
 				.POST(HttpRequest.BodyPublishers.ofString(proof == null ? "{}" : proof.toString()))
 				.build();
-			HttpResponse<String> response = HTTP.send(request, HttpResponse.BodyHandlers.ofString());
+			HttpResponse<String> response = exchange(request, "/login");
 			JsonObject body = parse(response.body());
 			if (response.statusCode() != 200 || body == null || !body.has("token")) {
 				return new Result(null, explain(response.statusCode(), body, "/login"));
@@ -114,7 +114,7 @@ public final class CasinoApi {
 				.header("Authorization", "Bearer " + token)
 				.POST(HttpRequest.BodyPublishers.ofString(body == null ? "{}" : body.toString()))
 				.build();
-			HttpResponse<String> response = HTTP.send(request, HttpResponse.BodyHandlers.ofString());
+			HttpResponse<String> response = exchange(request, path);
 			JsonObject json = parse(response.body());
 			if (response.statusCode() == 401) {
 				token = null;
@@ -128,6 +128,28 @@ public final class CasinoApi {
 			Stray.LOGGER.warn("Casino call {} failed", path, e);
 			return new Result(null, "Can't reach the casino.");
 		}
+	}
+
+	/**
+	 * Sends a request, retrying a 404/405 that didn't come from the casino code (it tags its
+	 * answers with X-Stray-Casino). Those come from another Worker version answering some of
+	 * the requests, e.g. a gradual deployment still sending part of the traffic to an old one.
+	 * Every casino call is safe to repeat in that case: the request never reached the casino.
+	 */
+	private static HttpResponse<String> exchange(HttpRequest request, String path) throws Exception {
+		HttpResponse<String> response = null;
+		for (int attempt = 0; attempt < 4; attempt++) {
+			response = HTTP.send(request, HttpResponse.BodyHandlers.ofString());
+			int code = response.statusCode();
+			boolean foreign = (code == 404 || code == 405) && response.headers().firstValue("X-Stray-Casino").isEmpty();
+			if (!foreign) {
+				return response;
+			}
+			String body = response.body() == null ? "" : response.body();
+			Stray.LOGGER.warn("Casino {} got a {} from outside the casino (try {}): {}", path, code, attempt + 1, body.length() > 200 ? body.substring(0, 200) : body);
+			Thread.sleep(250L * (attempt + 1));
+		}
+		return response;
 	}
 
 	private static JsonObject keyProof(Minecraft client, User user, String server) {
@@ -196,7 +218,7 @@ public final class CasinoApi {
 			return msg;
 		}
 		if (status == 404 || status == 405) {
-			return "The casino isn't on the Worker (" + status + " on " + path + "). Redeploy worker.js.";
+			return "A Worker without the casino answered (" + status + " on " + path + "). Check the Worker's Deployments.";
 		}
 		return "Casino error (" + status + (msg.isBlank() ? "" : ": " + msg) + ").";
 	}
