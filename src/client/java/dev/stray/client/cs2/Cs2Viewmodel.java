@@ -156,6 +156,7 @@ public final class Cs2Viewmodel {
 		AbstractClientPlayer player,
 		HumanoidArm arm,
 		float swingProgress,
+		float equippedProgress,
 		Object stack,
 		net.minecraft.world.item.ItemStack held,
 		PoseStack pose,
@@ -180,6 +181,10 @@ public final class Cs2Viewmodel {
 		if (off != null && off.length >= 3) {
 			// Arm and knife move together; positive distance pushes the viewmodel away.
 			pose.translate(left ? -off[0] : off[0], off[1], -off[2]);
+		}
+		if (action != Action.DRAW && equippedProgress > 0f) {
+			// Switching away: lower the viewmodel like Minecraft lowers a held item.
+			pose.translate(0f, -0.6f * equippedProgress, 0f);
 		}
 		Matrix4f knifeView = new Matrix4f(view);
 		float[] g = StrayConfig.get().cs2Grip.get(knife.id + "#hand");

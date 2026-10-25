@@ -33,9 +33,10 @@ public class Cs2FirstPersonMixin {
 		if (hand != InteractionHand.MAIN_HAND || !Cs2Knives.applies(itemStack) || player.isScoping()) {
 			return;
 		}
-		// Replay the draw only when the slot or item type changes, not when the server resends the stack.
-		Object equipKey = player.getInventory().getSelectedSlot() + ":" + itemStack.getItem();
-		if (Cs2Viewmodel.render(player, player.getMainArm(), swingProgress, equipKey, itemStack, poseStack, collector, light)) {
+		// Replay the draw only when the drawn sword changes. Keyed on the stack being drawn (not the
+		// selected slot): while switching away, Minecraft keeps drawing the old item as it lowers.
+		Object equipKey = Cs2Knives.swordKey(itemStack);
+		if (Cs2Viewmodel.render(player, player.getMainArm(), swingProgress, equippedProgress, equipKey, itemStack, poseStack, collector, light)) {
 			ci.cancel();
 		}
 	}
