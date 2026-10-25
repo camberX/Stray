@@ -675,7 +675,10 @@ public final class Cs2KnifeScreen extends Screen {
 		int cy = by + 28;
 		text(g, "Color", x, mid(cy, 9), Anim.fade(dim(), alpha));
 		int rgb = c.cs2BladeShaderRgb & 0xFFFFFF;
+		syncBladeHue(rgb);
 		GuiDraw.rounded(g, x + w - 26, cy - 1, 26, 11, 5.5f, Anim.fade(0xFF000000 | rgb, alpha));
+		String hex = String.format(Locale.ROOT, "#%06X", rgb);
+		small(g, hex, x + w - 32 - smallW(hex), mid(cy, 9), Anim.fade(dim(), alpha));
 		int sw = 16;
 		float gap = (w - SWATCHES.length * sw) / (float) (SWATCHES.length - 1);
 		int swy = cy + 14;
@@ -694,13 +697,23 @@ public final class Cs2KnifeScreen extends Screen {
 		GuiDraw.scissor(g, x, hy, w, 8);
 		GuiDraw.hueBar(g, x, hy, w, 8);
 		GuiDraw.disableScissor(g);
-		float hue = hue(rgb);
-		float hx = x + w * hue;
+		float hx = x + w * (bladeHue / 360f);
 		GuiDraw.circle(g, hx, hy + 4, 5.5f, Anim.fade(0xFFFFFFFF, alpha));
-		GuiDraw.circle(g, hx, hy + 4, 4f, Anim.fade(0xFF000000 | rgb, alpha));
+		GuiDraw.circle(g, hx, hy + 4, 4f, Anim.fade(0xFF000000 | dev.stray.client.visual.WorldTint.hsvToRgb(bladeHue, 1f, 1f), alpha));
+
+		// saturation / brightness square for the chosen hue
+		int svy = hy + 14;
+		float[] hsv = dev.stray.client.visual.WorldTint.rgbToHsv(rgb);
+		GuiDraw.scissor(g, x, svy, w, SV_H);
+		GuiDraw.hsvSquare(g, x, svy, w, SV_H, bladeHue);
+		GuiDraw.disableScissor(g);
+		float px = x + w * hsv[1];
+		float py = svy + SV_H * (1f - hsv[2]);
+		GuiDraw.circle(g, px, py, 4.5f, Anim.fade(0xFFFFFFFF, alpha));
+		GuiDraw.circle(g, px, py, 3f, Anim.fade(0xFF000000 | rgb, alpha));
 
 		// strength / detail
-		int ly = hy + 20;
+		int ly = svy + SV_H + 8;
 		sliderRow(g, "Strength", String.format(Locale.ROOT, "%.0f%%", c.cs2BladeShaderFill * 100f), x, ly, w, (c.cs2BladeShaderFill - 0.08f) / (0.85f - 0.08f), 21, mouseX, mouseY, alpha);
 		sliderRow(g, "Detail", String.format(Locale.ROOT, "%.2f", c.cs2BladeShaderSmoke), x, ly + 28, w, (c.cs2BladeShaderSmoke - 0.10f) / (1.50f - 0.10f), 22, mouseX, mouseY, alpha);
 	}
@@ -743,6 +756,29 @@ public final class Cs2KnifeScreen extends Screen {
 		}
 		h /= 6f;
 		return h < 0f ? h + 1f : h;
+	}
+
+	private static final int SV_H = 40;
+	/** The picker's hue in degrees; kept apart so greys and black keep their hue while editing. */
+	private float bladeHue = 270f;
+	private int bladeHueFor = -1;
+
+	private void syncBladeHue(int rgb) {
+		if (rgb != bladeHueFor) {
+			float[] hsv = dev.stray.client.visual.WorldTint.rgbToHsv(rgb);
+			if (hsv[1] > 0.01f && hsv[2] > 0.01f) {
+				bladeHue = hsv[0];
+			}
+			bladeHueFor = rgb;
+		}
+	}
+
+	/** Top of the saturation/brightness square (same layout as drawBlade). */
+	private int bladeSvTop() {
+		int by = panelTop() + 38 + 12;
+		int swy = by + 28 + 14;
+		int hy = swy + 16 + 8;
+		return hy + 14;
 	}
 
 	private static int fromHue(float h) {
@@ -1258,7 +1294,7 @@ public final class Cs2KnifeScreen extends Screen {
 			return true;
 		}
 		if (dragging >= 20) {
-			dragBlade(event.x());
+			dragBlade(event.x(), event.y());
 			return true;
 		}
 		return super.mouseDragged(event, dx, dy);
@@ -1293,24 +1329,31 @@ public final class Cs2KnifeScreen extends Screen {
 			float sx = x + i * (sw + gap);
 			if (GuiDraw.hovered(mx, my, sx - 2, swy - 2, sw + 4, sw + 4)) {
 				c.cs2BladeShaderRgb = SWATCHES[i];
+				bladeHueFor = -1;
 				return true;
 			}
 		}
 		int hy = swy + sw + 8;
 		if (GuiDraw.hovered(mx, my, x - 4, hy - 3, w + 8, 14)) {
 			dragging = 20;
-			dragBlade(mx);
+			dragBlade(mx, my);
 			return true;
 		}
-		int ly = hy + 20;
+		int svy = hy + 14;
+		if (GuiDraw.hovered(mx, my, x - 2, svy - 2, w + 4, SV_H + 4)) {
+			dragging = 23;
+			dragBlade(mx, my);
+			return true;
+		}
+		int ly = svy + SV_H + 8;
 		if (GuiDraw.hovered(mx, my, x - 4, ly + 8, w + 8, 14)) {
 			dragging = 21;
-			dragBlade(mx);
+			dragBlade(mx, my);
 			return true;
 		}
 		if (GuiDraw.hovered(mx, my, x - 4, ly + 28 + 8, w + 8, 14)) {
 			dragging = 22;
-			dragBlade(mx);
+			dragBlade(mx, my);
 			return true;
 		}
 		return false;
@@ -1321,11 +1364,23 @@ public final class Cs2KnifeScreen extends Screen {
 		viewOffset()[dragging - 30] = Math.round((-0.6f + k * 1.2f) * 100f) / 100f;
 	}
 
-	private void dragBlade(double mx) {
+	private void dragBlade(double mx, double my) {
 		StrayConfig c = StrayConfig.get();
 		float k = (float) Math.max(0, Math.min(1, (mx - midX()) / midW()));
 		switch (dragging) {
-			case 20 -> c.cs2BladeShaderRgb = fromHue(Math.min(0.999f, k));
+			case 20 -> {
+				// Hue keeps the saturation and brightness picked in the square.
+				float[] hsv = dev.stray.client.visual.WorldTint.rgbToHsv(c.cs2BladeShaderRgb & 0xFFFFFF);
+				bladeHue = Math.min(359.9f, k * 360f);
+				c.cs2BladeShaderRgb = dev.stray.client.visual.WorldTint.hsvToRgb(bladeHue, hsv[1], hsv[2]) & 0xFFFFFF;
+				bladeHueFor = c.cs2BladeShaderRgb;
+			}
+			case 23 -> {
+				int svy = bladeSvTop();
+				float v = 1f - (float) Math.max(0, Math.min(1, (my - svy) / SV_H));
+				c.cs2BladeShaderRgb = dev.stray.client.visual.WorldTint.hsvToRgb(bladeHue, k, v) & 0xFFFFFF;
+				bladeHueFor = c.cs2BladeShaderRgb;
+			}
 			case 21 -> c.cs2BladeShaderFill = Math.round((0.08f + k * (0.85f - 0.08f)) * 100f) / 100f;
 			case 22 -> c.cs2BladeShaderSmoke = Math.round((0.10f + k * (1.50f - 0.10f)) * 100f) / 100f;
 			default -> {

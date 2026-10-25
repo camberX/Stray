@@ -762,6 +762,7 @@ public final class HyprMenu {
 		float bodyH = setY + setH - PAD - bodyY;
 		if (!ClickGui.moduleHasSettings(mod)) {
 			text(graphics, font, "No settings for this one", x, bodyY, ROW, Anim.fade(MaterialPalette.onSurfaceVariant, st));
+			describe(graphics, font, ClickGui.description(mod), x, bodyY + ROW + 8f, w, setY + setH - PAD, st);
 			return;
 		}
 		if (st < 0.06f) {
@@ -782,6 +783,38 @@ public final class HyprMenu {
 		screen.clickClipHits(mark, setX, bodyY, setW, bodyH);
 		if (clip) {
 			GuiDraw.disableScissor(graphics);
+		}
+		// What the module does, in the space left under its settings.
+		float below = bodyY - setScroll + content + 10f;
+		if (below + 12f < setY + setH - PAD) {
+			describe(graphics, font, ClickGui.description(mod), x, below, w, setY + setH - PAD, st);
+		}
+	}
+
+	private static void describe(GuiGraphicsExtractor graphics, Font font, String text, float x, float y, float w, float bottom, float t) {
+		if (text == null || text.isEmpty() || t <= 0.01f) {
+			return;
+		}
+		GuiDraw.fill(graphics, x, y, w, 1f, Anim.fade(MaterialPalette.outlineVariant, t * 0.6f));
+		y += 6f;
+		StringBuilder line = new StringBuilder();
+		for (String word : text.split(" ")) {
+			String next = line.isEmpty() ? word : line + " " + word;
+			if (!line.isEmpty() && width(font, next) > w) {
+				if (y + 11f > bottom) {
+					return;
+				}
+				text(graphics, font, line.toString(), x, y, 11f, Anim.fade(MaterialPalette.onSurfaceVariant, t));
+				y += 11f;
+				line.setLength(0);
+				line.append(word);
+			} else {
+				line.setLength(0);
+				line.append(next);
+			}
+		}
+		if (!line.isEmpty() && y + 11f <= bottom) {
+			text(graphics, font, line.toString(), x, y, 11f, Anim.fade(MaterialPalette.onSurfaceVariant, t));
 		}
 	}
 
