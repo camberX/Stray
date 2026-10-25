@@ -1,1516 +1,1725 @@
-const MAX_BYTES = 2 * 1024 * 1024;
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
-const NAME_RE = /^[A-Za-z0-9_]{1,16}$/;
-const SERVER_RE = /^[A-Za-z0-9_\-]{1,64}$/;
-const IRC_COOL_MS = 1500;
-const PING_COOL_MS = 3000;
-const IRC_MAX = 180;
-const HISTORY_MAX = 30;
-const PING_LIFE_MS = 30000;
+var __defProp = Object.defineProperty;
+var __name = (target, value) => __defProp(target, "name", { value, configurable: true });
 
-export class StrayLive {
-	constructor(ctx, env) {
-		this.ctx = ctx;
-		this.env = env;
-		this.recent = [];
-	}
-
-	async fetch(request) {
-		if (request.headers.get("Upgrade") !== "websocket") {
-			return new Response("Expected websocket", { status: 426 });
-		}
-		const pair = new WebSocketPair();
-		this.ctx.acceptWebSocket(pair[1]);
-		pair[1].serializeAttachment({
-			uuid: "",
-			name: "",
-			server: "",
-			ircAt: 0,
-			pingAt: 0
-		});
-		return new Response(null, { status: 101, webSocket: pair[0] });
-	}
-
-	async webSocketMessage(ws, raw) {
-		let msg;
-		try {
-			msg = JSON.parse(typeof raw === "string" ? raw : new TextDecoder().decode(raw));
-		} catch {
-			return;
-		}
-		if (!msg || typeof msg !== "object") {
-			return;
-		}
-		const type = String(msg.type || "");
-		if (type === "hello") {
-			this.onHello(ws, msg);
-			return;
-		}
-		const meta = ws.deserializeAttachment() || {};
-		if (!meta.uuid || !meta.name) {
-			ws.send(JSON.stringify({ type: "error", message: "Say hello first." }));
-			return;
-		}
-		if (type === "server") {
-			meta.server = cleanServer(msg.server);
-			ws.serializeAttachment(meta);
-			return;
-		}
-		if (type === "irc") {
-			this.onIrc(ws, meta, msg);
-			return;
-		}
-		if (type === "ping") {
-			this.onPing(ws, meta, msg);
-			return;
-		}
-		if (type === "ping_clear") {
-			this.onPingClear(ws, meta, msg);
-			return;
-		}
-		if (type === "users") {
-			this.onUsers(ws);
-		}
-	}
-
-	async webSocketClose(ws) {
-		try {
-			ws.close(1000, "bye");
-		} catch {
-			/* already closed */
-		}
-	}
-
-	onHello(ws, msg) {
-		const name = String(msg.name || "").trim();
-		const uuid = String(msg.uuid || "").trim().toLowerCase();
-		if (!NAME_RE.test(name) || !UUID_RE.test(uuid)) {
-			ws.send(JSON.stringify({ type: "error", message: "Bad hello." }));
-			ws.close(1008, "bad hello");
-			return;
-		}
-		const meta = {
-			uuid,
-			name,
-			server: cleanServer(msg.server),
-			ircAt: 0,
-			pingAt: 0
-		};
-		ws.serializeAttachment(meta);
-		ws.send(JSON.stringify({ type: "hello", ok: true, users: this.onlineUsers() }));
-		if (this.recent.length) {
-			ws.send(JSON.stringify({ type: "history", messages: this.recent }));
-		}
-	}
-
-	onIrc(ws, meta, msg) {
-		const now = Date.now();
-		if (now - meta.ircAt < IRC_COOL_MS) {
-			ws.send(JSON.stringify({ type: "error", message: "Slow down." }));
-			return;
-		}
-		const text = cleanIrc(msg.text);
-		if (!text) {
-			return;
-		}
-		meta.ircAt = now;
-		ws.serializeAttachment(meta);
-		const payload = { type: "irc", name: meta.name, uuid: meta.uuid, text, at: now };
-		this.recent.push(payload);
-		if (this.recent.length > HISTORY_MAX) {
-			this.recent.shift();
-		}
-		this.broadcast(payload);
-	}
-
-	onUsers(ws) {
-		ws.send(JSON.stringify({ type: "users", users: this.onlineUsers() }));
-	}
-
-	onlineUsers() {
-		const seen = new Set();
-		for (const socket of this.ctx.getWebSockets()) {
-			const meta = socket.deserializeAttachment() || {};
-			if (meta.uuid) {
-				seen.add(meta.uuid);
-			}
-		}
-		return seen.size;
-	}
-
-	onPing(ws, meta, msg) {
-		const now = Date.now();
-		if (now - meta.pingAt < PING_COOL_MS) {
-			ws.send(JSON.stringify({ type: "error", message: "Slow down." }));
-			return;
-		}
-		const server = cleanServer(msg.server) || meta.server || "world";
-		if (!server) {
-			ws.send(JSON.stringify({ type: "error", message: "Join a lobby to ping." }));
-			return;
-		}
-		if (server !== meta.server) {
-			meta.server = server;
-		}
-		const x = toCoord(msg.x);
-		const y = toCoord(msg.y);
-		const z = toCoord(msg.z);
-		if (x === null || y === null || z === null || y < -2048 || y > 2048) {
-			return;
-		}
-		meta.pingAt = now;
-		ws.serializeAttachment(meta);
-		const payload = {
-			type: "ping",
-			name: meta.name,
-			uuid: meta.uuid,
-			server,
-			x,
-			y,
-			z,
-			label: cleanIrc(msg.label || ""),
-			at: now,
-			until: now + PING_LIFE_MS
-		};
-		this.broadcast(payload, (other) => other.server === meta.server);
-	}
-
-	onPingClear(ws, meta, msg) {
-		const server = cleanServer(msg.server) || meta.server || "world";
-		if (!server) {
-			ws.send(JSON.stringify({ type: "error", message: "Join a lobby to ping." }));
-			return;
-		}
-		if (server !== meta.server) {
-			meta.server = server;
-			ws.serializeAttachment(meta);
-		}
-		this.broadcast(
-			{ type: "ping_clear", name: meta.name, uuid: meta.uuid, server, at: Date.now() },
-			(other) => other.server === meta.server
-		);
-	}
-
-	broadcast(payload, filter) {
-		const data = JSON.stringify(payload);
-		for (const socket of this.ctx.getWebSockets()) {
-			const meta = socket.deserializeAttachment() || {};
-			if (filter && !filter(meta)) {
-				continue;
-			}
-			try {
-				socket.send(data);
-			} catch {
-				/* drop */
-			}
-		}
-	}
-}
-
-function cleanServer(value) {
-	const text = String(value || "").trim();
-	return SERVER_RE.test(text) ? text : "";
-}
-
-function cleanIrc(value) {
-	let text = String(value || "").replace(/[\r\n\u0000-\u001f]/g, " ").replace(/§./g, "").trim();
-	if (text.length > IRC_MAX) {
-		text = text.slice(0, IRC_MAX);
-	}
-	return text;
-}
-
-function toInt(value) {
-	const n = Number(value);
-	if (!Number.isFinite(n)) {
-		return null;
-	}
-	const i = Math.round(n);
-	if (i < -30000000 || i > 30000000) {
-		return null;
-	}
-	return i;
-}
-
-function toCoord(value) {
-	const n = Number(value);
-	if (!Number.isFinite(n)) {
-		return null;
-	}
-	const v = Math.round(n * 20) / 20;
-	if (v < -30000000 || v > 30000000) {
-		return null;
-	}
-	return v;
-}
-
-export default {
-	async fetch(request, env) {
-		try {
-			return await route(request, env);
-		} catch (error) {
-			console.error(error);
-			return json(500, { error: "Server error" });
-		}
-	}
+// worker.js
+var MAX_BYTES = 2 * 1024 * 1024;
+var UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
+var NAME_RE = /^[A-Za-z0-9_]{1,16}$/;
+var SERVER_RE = /^[A-Za-z0-9_\-]{1,64}$/;
+var IRC_COOL_MS = 1500;
+var PING_COOL_MS = 3e3;
+var IRC_MAX = 180;
+var HISTORY_MAX = 30;
+var PING_LIFE_MS = 3e4;
+var StrayLive = class {
+  static {
+    __name(this, "StrayLive");
+  }
+  constructor(ctx, env) {
+    this.ctx = ctx;
+    this.env = env;
+    this.recent = [];
+  }
+  async fetch(request) {
+    const casinoUrl = new URL(request.url);
+    if (casinoUrl.hostname === CASINO_HOST) {
+      return casinoHandle(this.ctx.storage, casinoUrl.pathname.slice("/casino".length), await request.json());
+    }
+    if (request.headers.get("Upgrade") !== "websocket") {
+      return new Response("Expected websocket", { status: 426 });
+    }
+    const pair = new WebSocketPair();
+    this.ctx.acceptWebSocket(pair[1]);
+    pair[1].serializeAttachment({
+      uuid: "",
+      name: "",
+      server: "",
+      ircAt: 0,
+      pingAt: 0
+    });
+    return new Response(null, { status: 101, webSocket: pair[0] });
+  }
+  async webSocketMessage(ws, raw) {
+    let msg;
+    try {
+      msg = JSON.parse(typeof raw === "string" ? raw : new TextDecoder().decode(raw));
+    } catch {
+      return;
+    }
+    if (!msg || typeof msg !== "object") {
+      return;
+    }
+    const type = String(msg.type || "");
+    if (type === "hello") {
+      this.onHello(ws, msg);
+      return;
+    }
+    const meta = ws.deserializeAttachment() || {};
+    if (!meta.uuid || !meta.name) {
+      ws.send(JSON.stringify({ type: "error", message: "Say hello first." }));
+      return;
+    }
+    if (type === "server") {
+      meta.server = cleanServer(msg.server);
+      ws.serializeAttachment(meta);
+      return;
+    }
+    if (type === "irc") {
+      this.onIrc(ws, meta, msg);
+      return;
+    }
+    if (type === "ping") {
+      this.onPing(ws, meta, msg);
+      return;
+    }
+    if (type === "ping_clear") {
+      this.onPingClear(ws, meta, msg);
+      return;
+    }
+    if (type === "users") {
+      this.onUsers(ws);
+    }
+  }
+  async webSocketClose(ws) {
+    try {
+      ws.close(1e3, "bye");
+    } catch {
+    }
+  }
+  onHello(ws, msg) {
+    const name = String(msg.name || "").trim();
+    const uuid = String(msg.uuid || "").trim().toLowerCase();
+    if (!NAME_RE.test(name) || !UUID_RE.test(uuid)) {
+      ws.send(JSON.stringify({ type: "error", message: "Bad hello." }));
+      ws.close(1008, "bad hello");
+      return;
+    }
+    const meta = {
+      uuid,
+      name,
+      server: cleanServer(msg.server),
+      ircAt: 0,
+      pingAt: 0
+    };
+    ws.serializeAttachment(meta);
+    ws.send(JSON.stringify({ type: "hello", ok: true, users: this.onlineUsers() }));
+    if (this.recent.length) {
+      ws.send(JSON.stringify({ type: "history", messages: this.recent }));
+    }
+  }
+  onIrc(ws, meta, msg) {
+    const now = Date.now();
+    if (now - meta.ircAt < IRC_COOL_MS) {
+      ws.send(JSON.stringify({ type: "error", message: "Slow down." }));
+      return;
+    }
+    const text = cleanIrc(msg.text);
+    if (!text) {
+      return;
+    }
+    meta.ircAt = now;
+    ws.serializeAttachment(meta);
+    const payload = { type: "irc", name: meta.name, uuid: meta.uuid, text, at: now };
+    this.recent.push(payload);
+    if (this.recent.length > HISTORY_MAX) {
+      this.recent.shift();
+    }
+    this.broadcast(payload);
+  }
+  onUsers(ws) {
+    ws.send(JSON.stringify({ type: "users", users: this.onlineUsers() }));
+  }
+  onlineUsers() {
+    const seen = /* @__PURE__ */ new Set();
+    for (const socket of this.ctx.getWebSockets()) {
+      const meta = socket.deserializeAttachment() || {};
+      if (meta.uuid) {
+        seen.add(meta.uuid);
+      }
+    }
+    return seen.size;
+  }
+  onPing(ws, meta, msg) {
+    const now = Date.now();
+    if (now - meta.pingAt < PING_COOL_MS) {
+      ws.send(JSON.stringify({ type: "error", message: "Slow down." }));
+      return;
+    }
+    const server = cleanServer(msg.server) || meta.server || "world";
+    if (!server) {
+      ws.send(JSON.stringify({ type: "error", message: "Join a lobby to ping." }));
+      return;
+    }
+    if (server !== meta.server) {
+      meta.server = server;
+    }
+    const x = toCoord(msg.x);
+    const y = toCoord(msg.y);
+    const z = toCoord(msg.z);
+    if (x === null || y === null || z === null || y < -2048 || y > 2048) {
+      return;
+    }
+    meta.pingAt = now;
+    ws.serializeAttachment(meta);
+    const payload = {
+      type: "ping",
+      name: meta.name,
+      uuid: meta.uuid,
+      server,
+      x,
+      y,
+      z,
+      label: cleanIrc(msg.label || ""),
+      at: now,
+      until: now + PING_LIFE_MS
+    };
+    this.broadcast(payload, (other) => other.server === meta.server);
+  }
+  onPingClear(ws, meta, msg) {
+    const server = cleanServer(msg.server) || meta.server || "world";
+    if (!server) {
+      ws.send(JSON.stringify({ type: "error", message: "Join a lobby to ping." }));
+      return;
+    }
+    if (server !== meta.server) {
+      meta.server = server;
+      ws.serializeAttachment(meta);
+    }
+    this.broadcast(
+      { type: "ping_clear", name: meta.name, uuid: meta.uuid, server, at: Date.now() },
+      (other) => other.server === meta.server
+    );
+  }
+  broadcast(payload, filter) {
+    const data = JSON.stringify(payload);
+    for (const socket of this.ctx.getWebSockets()) {
+      const meta = socket.deserializeAttachment() || {};
+      if (filter && !filter(meta)) {
+        continue;
+      }
+      try {
+        socket.send(data);
+      } catch {
+      }
+    }
+  }
 };
-
+function cleanServer(value) {
+  const text = String(value || "").trim();
+  return SERVER_RE.test(text) ? text : "";
+}
+__name(cleanServer, "cleanServer");
+function cleanIrc(value) {
+  let text = String(value || "").replace(/[\r\n\u0000-\u001f]/g, " ").replace(/§./g, "").trim();
+  if (text.length > IRC_MAX) {
+    text = text.slice(0, IRC_MAX);
+  }
+  return text;
+}
+__name(cleanIrc, "cleanIrc");
+function toCoord(value) {
+  const n = Number(value);
+  if (!Number.isFinite(n)) {
+    return null;
+  }
+  const v = Math.round(n * 20) / 20;
+  if (v < -3e7 || v > 3e7) {
+    return null;
+  }
+  return v;
+}
+__name(toCoord, "toCoord");
+var worker_default = {
+  async fetch(request, env) {
+    try {
+      return await route(request, env);
+    } catch (error) {
+      console.error(error);
+      return json(500, { error: "Server error" });
+    }
+  }
+};
 async function route(request, env) {
-	const url = new URL(request.url);
-	const path = canonicalizePath(url.pathname);
-
-	if (request.headers.get("Upgrade") === "websocket" && (path === "/ws" || path === "/api/ws")) {
-		if (!env.STRAY_LIVE) {
-			return json(501, { error: "Live socket is not bound. Deploy wrangler.toml Durable Objects." });
-		}
-		const id = env.STRAY_LIVE.idFromName("hub");
-		return env.STRAY_LIVE.get(id).fetch(request);
-	}
-
-	if (request.method === "OPTIONS") {
-		return new Response(null, { status: 204, headers: cors() });
-	}
-	if (request.method === "GET" && path === "/api/config") {
-		const state = await loadState(env);
-		return json(200, shopConfig(state, env));
-	}
-	if (request.method === "GET" && path === "/api/mod") {
-		return serveModInfo(request, env);
-	}
-	if (request.method === "GET" && path === "/api/spotify") {
-		return json(200, { clientId: String(env.SPOTIFY_CLIENT_ID || "9d11fac0f4774593bc06a0edb93423e7") });
-	}
-	if (request.method === "GET" && (path === "/download" || path === "/stray.jar" || path === "/eisenmann.jar" || path === "/voidmark.jar")) {
-		return serveModJar(request, env);
-	}
-	if (request.method === "PUT" && path === "/api/config") {
-		return handleShopConfig(request, env);
-	}
-	if (request.method === "GET" && path.startsWith("/api/cape/")) {
-		const id = normalizeUuid(path.slice("/api/cape/".length));
-		if (!id) {
-			return json(400, { error: "Bad UUID" });
-		}
-		const state = await loadState(env);
-		const listed = state.whitelist.includes(id);
-		const tag = tagFor(state, id);
-		const head = await env.CAPES.head(capeKey(id));
-		const wings = wingsFor(state, id);
-		if (!head) {
-			return json(200, { has: false, hash: "", allowed: listed, tag, wings: wings.style, wingsRgb: wings.rgb, bypass: hasBypass(state, id), retryIn: capeRetrySec(state, id) });
-		}
-		return json(200, { has: true, hash: head.customMetadata?.hash || "", allowed: listed, tag, wings: wings.style, wingsRgb: wings.rgb, bypass: hasBypass(state, id), retryIn: capeRetrySec(state, id) });
-	}
-	if (request.method === "GET" && path.startsWith("/capes/") && path.endsWith(".png")) {
-		const id = normalizeUuid(path.slice("/capes/".length, -4));
-		if (!id) {
-			return new Response(null, { status: 400, headers: cors() });
-		}
-		const object = await env.CAPES.get(capeKey(id));
-		if (!object) {
-			return new Response(null, { status: 404, headers: cors() });
-		}
-		const hash = object.customMetadata?.hash || "";
-		return new Response(object.body, {
-			headers: {
-				...cors(),
-				"Content-Type": "image/png",
-				"Cache-Control": "no-store",
-				ETag: `"${hash}"`
-			}
-		});
-	}
-	if ((request.method === "POST" || request.method === "PUT") && path === "/api/cape") {
-		return handlePublish(request, env);
-	}
-	if (request.method === "POST" && path === "/api/cape/import") {
-		return handleImport(request, env);
-	}
-	if (request.method === "DELETE" && path === "/api/cape") {
-		return handleDelete(request, env);
-	}
-	if ((request.method === "GET" || request.method === "POST" || request.method === "PUT" || request.method === "DELETE") && path === "/api/whitelist") {
-		return handleWhitelist(request, env);
-	}
-	if ((request.method === "PUT" || request.method === "DELETE") && path === "/api/tag") {
-		return handleTag(request, env);
-	}
-	if ((request.method === "PUT" || request.method === "DELETE") && path === "/api/wings") {
-		return handleWings(request, env);
-	}
-	if (request.method === "PUT" && path === "/api/bypass") {
-		return handleBypass(request, env);
-	}
-	if ((request.method === "PUT" || request.method === "DELETE") && path === "/api/note") {
-		return handleNote(request, env);
-	}
-	if (request.method === "DELETE" && path === "/api/cooldown") {
-		return handleCooldown(request, env);
-	}
-	if (request.method === "PUT" && path === "/api/bulk") {
-		return handleBulk(request, env);
-	}
-	if (request.method === "POST" && path === "/api/logout") {
-		return json(200, { ok: true }, { "Set-Cookie": deskCookieHeader(request, "", true) });
-	}
-	if (request.method === "GET" && (path === "/admin.html" || path === "/manage.html" || path === "/index.html")) {
-		const pretty = path === "/admin.html" ? "/admin" : path === "/manage.html" ? "/manage" : "/";
-		return new Response(null, { status: 302, headers: { Location: pretty, "Cache-Control": "no-store" } });
-	}
-	if (request.method === "GET" && isManagePath(path)) {
-		return serveManage(request, env);
-	}
-	if (request.method === "GET" && path === "/admin") {
-		return page(LOGIN_HTML);
-	}
-	if (request.method === "GET" && path === "/") {
-		return page(STORE_HTML);
-	}
-	if (request.method === "GET" && env.ASSETS) {
-		const asset = await env.ASSETS.fetch(request);
-		if (asset.status !== 404) {
-			return asset;
-		}
-	}
-	if (request.method === "GET" && path === "/cape-crop.js") {
-		return new Response(CAPE_CROP_JS, {
-			headers: { ...cors(), "Content-Type": "text/javascript; charset=utf-8", "Cache-Control": "no-store" }
-		});
-	}
-	return json(404, { error: "Not found" });
+  const url = new URL(request.url);
+  const path = canonicalizePath(url.pathname);
+  if (request.headers.get("Upgrade") === "websocket" && (path === "/ws" || path === "/api/ws")) {
+    if (!env.STRAY_LIVE) {
+      return json(501, { error: "Live socket is not bound. Deploy wrangler.toml Durable Objects." });
+    }
+    const id = env.STRAY_LIVE.idFromName("hub");
+    return env.STRAY_LIVE.get(id).fetch(request);
+  }
+  if (request.method === "OPTIONS") {
+    return new Response(null, { status: 204, headers: cors() });
+  }
+  if (path === "/api/casino" || path.startsWith("/api/casino/")) {
+    // Tag every casino answer, so the mod can tell it apart from a 404 served by some other
+    // Worker version or route (gradual deployments, an old version still bound somewhere).
+    const casinoRes = await casinoRoute(request, env, path);
+    const tagged = new Response(casinoRes.body, casinoRes);
+    tagged.headers.set("X-Stray-Casino", "4");
+    return tagged;
+  }
+  if (request.method === "GET" && path === "/api/config") {
+    const state = await loadState(env);
+    return json(200, shopConfig(state, env));
+  }
+  if (request.method === "GET" && path === "/api/mod") {
+    return serveModInfo(request, env);
+  }
+  if (request.method === "GET" && path === "/api/spotify") {
+    return json(200, { clientId: String(env.SPOTIFY_CLIENT_ID || "9d11fac0f4774593bc06a0edb93423e7") });
+  }
+  if (request.method === "GET" && (path === "/download" || path === "/stray.jar" || path === "/eisenmann.jar" || path === "/voidmark.jar")) {
+    return serveModJar(request, env);
+  }
+  if (request.method === "PUT" && path === "/api/config") {
+    return handleShopConfig(request, env);
+  }
+  if (request.method === "GET" && path.startsWith("/api/cape/")) {
+    const id = normalizeUuid(path.slice("/api/cape/".length));
+    if (!id) {
+      return json(400, { error: "Bad UUID" });
+    }
+    const state = await loadState(env);
+    const listed = state.whitelist.includes(id);
+    const tag = tagFor(state, id);
+    const head = await env.CAPES.head(capeKey(id));
+    const wings = wingsFor(state, id);
+    if (!head) {
+      return json(200, { has: false, hash: "", allowed: listed, tag, wings: wings.style, wingsRgb: wings.rgb, bypass: hasBypass(state, id), retryIn: capeRetrySec(state, id) });
+    }
+    return json(200, { has: true, hash: head.customMetadata?.hash || "", allowed: listed, tag, wings: wings.style, wingsRgb: wings.rgb, bypass: hasBypass(state, id), retryIn: capeRetrySec(state, id) });
+  }
+  if (request.method === "GET" && path.startsWith("/capes/") && path.endsWith(".png")) {
+    const id = normalizeUuid(path.slice("/capes/".length, -4));
+    if (!id) {
+      return new Response(null, { status: 400, headers: cors() });
+    }
+    const object = await env.CAPES.get(capeKey(id));
+    if (!object) {
+      return new Response(null, { status: 404, headers: cors() });
+    }
+    const hash = object.customMetadata?.hash || "";
+    return new Response(object.body, {
+      headers: {
+        ...cors(),
+        "Content-Type": "image/png",
+        "Cache-Control": "no-store",
+        ETag: `"${hash}"`
+      }
+    });
+  }
+  if ((request.method === "POST" || request.method === "PUT") && path === "/api/cape") {
+    return handlePublish(request, env);
+  }
+  if (request.method === "POST" && path === "/api/cape/import") {
+    return handleImport(request, env);
+  }
+  if (request.method === "DELETE" && path === "/api/cape") {
+    return handleDelete(request, env);
+  }
+  if ((request.method === "GET" || request.method === "POST" || request.method === "PUT" || request.method === "DELETE") && path === "/api/whitelist") {
+    return handleWhitelist(request, env);
+  }
+  if ((request.method === "PUT" || request.method === "DELETE") && path === "/api/tag") {
+    return handleTag(request, env);
+  }
+  if ((request.method === "PUT" || request.method === "DELETE") && path === "/api/wings") {
+    return handleWings(request, env);
+  }
+  if (request.method === "PUT" && path === "/api/bypass") {
+    return handleBypass(request, env);
+  }
+  if ((request.method === "PUT" || request.method === "DELETE") && path === "/api/note") {
+    return handleNote(request, env);
+  }
+  if (request.method === "DELETE" && path === "/api/cooldown") {
+    return handleCooldown(request, env);
+  }
+  if (request.method === "PUT" && path === "/api/bulk") {
+    return handleBulk(request, env);
+  }
+  if (request.method === "POST" && path === "/api/logout") {
+    return json(200, { ok: true }, { "Set-Cookie": deskCookieHeader(request, "", true) });
+  }
+  if (request.method === "GET" && (path === "/admin.html" || path === "/manage.html" || path === "/index.html")) {
+    const pretty = path === "/admin.html" ? "/admin" : path === "/manage.html" ? "/manage" : "/";
+    return new Response(null, { status: 302, headers: { Location: pretty, "Cache-Control": "no-store" } });
+  }
+  if (request.method === "GET" && isManagePath(path)) {
+    return serveManage(request, env);
+  }
+  if (request.method === "GET" && path === "/admin") {
+    return page(LOGIN_HTML);
+  }
+  if (request.method === "GET" && path === "/") {
+    return page(STORE_HTML);
+  }
+  if (request.method === "GET" && env.ASSETS) {
+    const asset = await env.ASSETS.fetch(request);
+    if (asset.status !== 404) {
+      return asset;
+    }
+  }
+  if (request.method === "GET" && path === "/cape-crop.js") {
+    return new Response(CAPE_CROP_JS, {
+      headers: { ...cors(), "Content-Type": "text/javascript; charset=utf-8", "Cache-Control": "no-store" }
+    });
+  }
+  return json(404, { error: "Not found" });
 }
-
+__name(route, "route");
 async function handlePublish(request, env) {
-	const uuid = normalizeUuid(request.headers.get("x-uuid"));
-	if (!uuid) {
-		return json(400, { error: "Need a valid UUID" });
-	}
-	const state = await loadState(env);
-	if (!state.whitelist.includes(uuid)) {
-		return json(403, { error: "uuid not whitelisted" });
-	}
-	const adminOk = await adminCapeOk(request, env);
-	const locked = capeRetryMs(state, uuid);
-	if (!adminOk && locked > 0) {
-		return json(429, { error: "Cape can be changed once per 24 hours", retryIn: Math.ceil(locked / 1000) });
-	}
-	const body = await readCapeBytes(request, adminOk);
-	if (!body) {
-		return json(400, { error: adminOk ? "Need a PNG or a cape URL" : "Not a PNG" });
-	}
-	if (!isPng(body)) {
-		return json(400, { error: "Not a PNG" });
-	}
-	const hash = await hashBytes(body);
-	await env.CAPES.put(capeKey(uuid), body, {
-		httpMetadata: { contentType: "image/png" },
-		customMetadata: { hash }
-	});
-	if (!adminOk) {
-		touchCapeAt(state, uuid);
-		await saveState(env, state);
-	}
-	return json(200, { ok: true, uuid });
+  const uuid = normalizeUuid(request.headers.get("x-uuid"));
+  if (!uuid) {
+    return json(400, { error: "Need a valid UUID" });
+  }
+  const state = await loadState(env);
+  if (!state.whitelist.includes(uuid)) {
+    return json(403, { error: "uuid not whitelisted" });
+  }
+  const adminOk = await adminCapeOk(request, env);
+  const locked = capeRetryMs(state, uuid);
+  if (!adminOk && locked > 0) {
+    return json(429, { error: "Cape can be changed once per 24 hours", retryIn: Math.ceil(locked / 1e3) });
+  }
+  const body = await readCapeBytes(request, adminOk);
+  if (!body) {
+    return json(400, { error: adminOk ? "Need a PNG or a cape URL" : "Not a PNG" });
+  }
+  if (!isPng(body)) {
+    return json(400, { error: "Not a PNG" });
+  }
+  const hash = await hashBytes(body);
+  await env.CAPES.put(capeKey(uuid), body, {
+    httpMetadata: { contentType: "image/png" },
+    customMetadata: { hash }
+  });
+  if (!adminOk) {
+    touchCapeAt(state, uuid);
+    await saveState(env, state);
+  }
+  return json(200, { ok: true, uuid });
 }
-
+__name(handlePublish, "handlePublish");
 async function handleImport(request, env) {
-	if (!(await adminCapeOk(request, env))) {
-		return json(403, { error: "Not authorized" });
-	}
-	let payload;
-	try {
-		payload = await request.json();
-	} catch {
-		return json(400, { error: "Need a URL" });
-	}
-	const url = String(payload.url || "").trim();
-	if (!/^https?:\/\//i.test(url)) {
-		return json(400, { error: "Need http(s) URL" });
-	}
-	try {
-		const response = await fetch(url, {
-			headers: { "User-Agent": "Stray" },
-			signal: AbortSignal.timeout(10000)
-		});
-		if (!response.ok) {
-			return json(400, { error: "Fetch failed" });
-		}
-		const buf = new Uint8Array(await response.arrayBuffer());
-		if (buf.length < 24 || buf.length > MAX_BYTES) {
-			return json(400, { error: "Bad size" });
-		}
-		const type = response.headers.get("content-type") || "application/octet-stream";
-		return new Response(buf, {
-			headers: { ...cors(), "Content-Type": type, "Cache-Control": "no-store" }
-		});
-	} catch {
-		return json(400, { error: "Fetch failed" });
-	}
+  if (!await adminCapeOk(request, env)) {
+    return json(403, { error: "Not authorized" });
+  }
+  let payload;
+  try {
+    payload = await request.json();
+  } catch {
+    return json(400, { error: "Need a URL" });
+  }
+  const url = String(payload.url || "").trim();
+  if (!/^https?:\/\//i.test(url)) {
+    return json(400, { error: "Need http(s) URL" });
+  }
+  try {
+    const response = await fetch(url, {
+      headers: { "User-Agent": "Stray" },
+      signal: AbortSignal.timeout(1e4)
+    });
+    if (!response.ok) {
+      return json(400, { error: "Fetch failed" });
+    }
+    const buf = new Uint8Array(await response.arrayBuffer());
+    if (buf.length < 24 || buf.length > MAX_BYTES) {
+      return json(400, { error: "Bad size" });
+    }
+    const type = response.headers.get("content-type") || "application/octet-stream";
+    return new Response(buf, {
+      headers: { ...cors(), "Content-Type": type, "Cache-Control": "no-store" }
+    });
+  } catch {
+    return json(400, { error: "Fetch failed" });
+  }
 }
-
+__name(handleImport, "handleImport");
 async function handleDelete(request, env) {
-	const uuid = normalizeUuid(request.headers.get("x-uuid"));
-	if (!uuid) {
-		return json(400, { error: "Need a UUID" });
-	}
-	const state = await loadState(env);
-	if (!state.whitelist.includes(uuid)) {
-		return json(403, { error: "uuid not whitelisted" });
-	}
-	const adminOk = await adminCapeOk(request, env);
-	const locked = capeRetryMs(state, uuid);
-	if (!adminOk && locked > 0) {
-		return json(429, { error: "Cape can be changed once per 24 hours", retryIn: Math.ceil(locked / 1000) });
-	}
-	await env.CAPES.delete(capeKey(uuid));
-	if (!adminOk) {
-		touchCapeAt(state, uuid);
-		await saveState(env, state);
-	}
-	return json(200, { ok: true });
+  const uuid = normalizeUuid(request.headers.get("x-uuid"));
+  if (!uuid) {
+    return json(400, { error: "Need a UUID" });
+  }
+  const state = await loadState(env);
+  if (!state.whitelist.includes(uuid)) {
+    return json(403, { error: "uuid not whitelisted" });
+  }
+  const adminOk = await adminCapeOk(request, env);
+  const locked = capeRetryMs(state, uuid);
+  if (!adminOk && locked > 0) {
+    return json(429, { error: "Cape can be changed once per 24 hours", retryIn: Math.ceil(locked / 1e3) });
+  }
+  await env.CAPES.delete(capeKey(uuid));
+  if (!adminOk) {
+    touchCapeAt(state, uuid);
+    await saveState(env, state);
+  }
+  return json(200, { ok: true });
 }
-
+__name(handleDelete, "handleDelete");
 async function handleWhitelist(request, env) {
-	const admin = env.ADMIN || "";
-	if (!admin) {
-		return json(500, { error: "Admin key is not set on the Worker" });
-	}
-	if (request.method === "GET") {
-		if (!(await deskSessionOk(request, env))) {
-			return json(403, { error: "Not authorized" });
-		}
-		const state = await loadState(env);
-		const players = await playersFor(env, state, true);
-		await saveState(env, state);
-		return json(200, { uuids: state.whitelist, players });
-	}
-	let body;
-	try {
-		body = await request.json();
-	} catch {
-		body = {};
-	}
-	if ((body.admin || "") !== admin) {
-		return json(403, { error: "Bad admin key" }, { "Set-Cookie": deskCookieHeader(request, "", true) });
-	}
-	if (request.method === "POST" && !body.uuid && !body.name) {
-		return adminJson(request, env, 200, { ok: true });
-	}
-	if (!(await deskCookieOk(request, env))) {
-		return json(403, { error: "Not authorized" });
-	}
-	const state = await loadState(env);
-	const resolved = await resolvePlayer(body.uuid || body.name);
-	if (!resolved.uuid) {
-		const raw = String(body.uuid || body.name || "").trim();
-		if (!raw) {
-			return json(400, { error: "Need a username or UUID" });
-		}
-		if (sanitizeUsername(raw)) {
-			return json(404, { error: "Unknown player" });
-		}
-		return json(400, { error: "Need a username or UUID" });
-	}
-	const uuid = resolved.uuid;
-	if (request.method === "DELETE") {
-		state.whitelist = state.whitelist.filter((id) => id !== uuid);
-		forgetPlayer(state, uuid);
-		await env.CAPES.delete(capeKey(uuid));
-	} else if (!state.whitelist.includes(uuid)) {
-		state.whitelist.push(uuid);
-	}
-	if (request.method !== "DELETE" && resolved.name) {
-		rememberName(state, uuid, resolved.name);
-	}
-	await saveState(env, state);
-	const players = await playersFor(env, state, request.method !== "DELETE" && !resolved.name);
-	if (request.method !== "DELETE" && resolved.name) {
-		rememberName(state, uuid, resolved.name);
-		await saveState(env, state);
-	}
-	return adminJson(request, env, 200, { ok: true, uuids: state.whitelist, players });
+  const admin = env.ADMIN || "";
+  if (!admin) {
+    return json(500, { error: "Admin key is not set on the Worker" });
+  }
+  if (request.method === "GET") {
+    if (!await deskSessionOk(request, env)) {
+      return json(403, { error: "Not authorized" });
+    }
+    const state2 = await loadState(env);
+    const players2 = await playersFor(env, state2, true);
+    await saveState(env, state2);
+    return json(200, { uuids: state2.whitelist, players: players2 });
+  }
+  let body;
+  try {
+    body = await request.json();
+  } catch {
+    body = {};
+  }
+  if ((body.admin || "") !== admin) {
+    return json(403, { error: "Bad admin key" }, { "Set-Cookie": deskCookieHeader(request, "", true) });
+  }
+  if (request.method === "POST" && !body.uuid && !body.name) {
+    return adminJson(request, env, 200, { ok: true });
+  }
+  if (!await deskCookieOk(request, env)) {
+    return json(403, { error: "Not authorized" });
+  }
+  const state = await loadState(env);
+  const resolved = await resolvePlayer(body.uuid || body.name);
+  if (!resolved.uuid) {
+    const raw = String(body.uuid || body.name || "").trim();
+    if (!raw) {
+      return json(400, { error: "Need a username or UUID" });
+    }
+    if (sanitizeUsername(raw)) {
+      return json(404, { error: "Unknown player" });
+    }
+    return json(400, { error: "Need a username or UUID" });
+  }
+  const uuid = resolved.uuid;
+  if (request.method === "DELETE") {
+    state.whitelist = state.whitelist.filter((id) => id !== uuid);
+    forgetPlayer(state, uuid);
+    await env.CAPES.delete(capeKey(uuid));
+  } else if (!state.whitelist.includes(uuid)) {
+    state.whitelist.push(uuid);
+  }
+  if (request.method !== "DELETE" && resolved.name) {
+    rememberName(state, uuid, resolved.name);
+  }
+  await saveState(env, state);
+  const players = await playersFor(env, state, request.method !== "DELETE" && !resolved.name);
+  if (request.method !== "DELETE" && resolved.name) {
+    rememberName(state, uuid, resolved.name);
+    await saveState(env, state);
+  }
+  return adminJson(request, env, 200, { ok: true, uuids: state.whitelist, players });
 }
-
+__name(handleWhitelist, "handleWhitelist");
 async function handleTag(request, env) {
-	const checked = await adminBody(request, env);
-	if (checked.error) {
-		return checked.error;
-	}
-	const uuid = normalizeUuid(checked.body.uuid);
-	if (!uuid) {
-		return json(400, { error: "Need a valid UUID" });
-	}
-	const state = await loadState(env);
-	if (!state.whitelist.includes(uuid)) {
-		return json(403, { error: "uuid not whitelisted" });
-	}
-	state.tags = state.tags && typeof state.tags === "object" && !Array.isArray(state.tags) ? state.tags : {};
-	const tag = request.method === "DELETE" ? "" : sanitizeTag(checked.body.tag);
-	if (tag) {
-		state.tags[uuid] = tag;
-	} else {
-		delete state.tags[uuid];
-	}
-	await saveState(env, state);
-	return json(200, { ok: true, tag, players: await playersFor(env, state) });
+  const checked = await adminBody(request, env);
+  if (checked.error) {
+    return checked.error;
+  }
+  const uuid = normalizeUuid(checked.body.uuid);
+  if (!uuid) {
+    return json(400, { error: "Need a valid UUID" });
+  }
+  const state = await loadState(env);
+  if (!state.whitelist.includes(uuid)) {
+    return json(403, { error: "uuid not whitelisted" });
+  }
+  state.tags = state.tags && typeof state.tags === "object" && !Array.isArray(state.tags) ? state.tags : {};
+  const tag = request.method === "DELETE" ? "" : sanitizeTag(checked.body.tag);
+  if (tag) {
+    state.tags[uuid] = tag;
+  } else {
+    delete state.tags[uuid];
+  }
+  await saveState(env, state);
+  return json(200, { ok: true, tag, players: await playersFor(env, state) });
 }
-
+__name(handleTag, "handleTag");
 async function handleWings(request, env) {
-	const checked = await adminBody(request, env);
-	if (checked.error) {
-		return checked.error;
-	}
-	const uuid = normalizeUuid(checked.body.uuid);
-	if (!uuid) {
-		return json(400, { error: "Need a valid UUID" });
-	}
-	const state = await loadState(env);
-	if (!state.whitelist.includes(uuid)) {
-		return json(403, { error: "uuid not whitelisted" });
-	}
-	state.wings = objectMap(state.wings);
-	const style = request.method === "DELETE" ? "" : sanitizeWingStyle(checked.body.style);
-	const rgb = sanitizeRgb(checked.body.rgb);
-	if (style) {
-		state.wings[uuid] = { style, rgb: rgb || WING_DEFAULT_RGB[style] || "FFFFFF" };
-	} else {
-		delete state.wings[uuid];
-	}
-	await saveState(env, state);
-	return json(200, { ok: true, wings: wingsFor(state, uuid), players: await playersFor(env, state) });
+  const checked = await adminBody(request, env);
+  if (checked.error) {
+    return checked.error;
+  }
+  const uuid = normalizeUuid(checked.body.uuid);
+  if (!uuid) {
+    return json(400, { error: "Need a valid UUID" });
+  }
+  const state = await loadState(env);
+  if (!state.whitelist.includes(uuid)) {
+    return json(403, { error: "uuid not whitelisted" });
+  }
+  state.wings = objectMap(state.wings);
+  const style = request.method === "DELETE" ? "" : sanitizeWingStyle(checked.body.style);
+  const rgb = sanitizeRgb(checked.body.rgb);
+  if (style) {
+    state.wings[uuid] = { style, rgb: rgb || WING_DEFAULT_RGB[style] || "FFFFFF" };
+  } else {
+    delete state.wings[uuid];
+  }
+  await saveState(env, state);
+  return json(200, { ok: true, wings: wingsFor(state, uuid), players: await playersFor(env, state) });
 }
-
+__name(handleWings, "handleWings");
 async function handleBypass(request, env) {
-	const checked = await adminBody(request, env);
-	if (checked.error) {
-		return checked.error;
-	}
-	const uuid = normalizeUuid(checked.body.uuid);
-	if (!uuid) {
-		return json(400, { error: "Need a valid UUID" });
-	}
-	const state = await loadState(env);
-	if (!state.whitelist.includes(uuid)) {
-		return json(403, { error: "uuid not whitelisted" });
-	}
-	state.bypass = objectMap(state.bypass);
-	if (checked.body.bypass) {
-		state.bypass[uuid] = true;
-	} else {
-		delete state.bypass[uuid];
-	}
-	await saveState(env, state);
-	return json(200, { ok: true, bypass: Boolean(state.bypass[uuid]), players: await playersFor(env, state) });
+  const checked = await adminBody(request, env);
+  if (checked.error) {
+    return checked.error;
+  }
+  const uuid = normalizeUuid(checked.body.uuid);
+  if (!uuid) {
+    return json(400, { error: "Need a valid UUID" });
+  }
+  const state = await loadState(env);
+  if (!state.whitelist.includes(uuid)) {
+    return json(403, { error: "uuid not whitelisted" });
+  }
+  state.bypass = objectMap(state.bypass);
+  if (checked.body.bypass) {
+    state.bypass[uuid] = true;
+  } else {
+    delete state.bypass[uuid];
+  }
+  await saveState(env, state);
+  return json(200, { ok: true, bypass: Boolean(state.bypass[uuid]), players: await playersFor(env, state) });
 }
-
+__name(handleBypass, "handleBypass");
 async function handleNote(request, env) {
-	const checked = await adminBody(request, env);
-	if (checked.error) {
-		return checked.error;
-	}
-	const uuid = normalizeUuid(checked.body.uuid);
-	if (!uuid) {
-		return json(400, { error: "Need a valid UUID" });
-	}
-	const state = await loadState(env);
-	if (!state.whitelist.includes(uuid)) {
-		return json(403, { error: "uuid not whitelisted" });
-	}
-	state.notes = objectMap(state.notes);
-	const note = request.method === "DELETE" ? "" : sanitizeNote(checked.body.note);
-	if (note) {
-		state.notes[uuid] = note;
-	} else {
-		delete state.notes[uuid];
-	}
-	await saveState(env, state);
-	return json(200, { ok: true, note, players: await playersFor(env, state) });
+  const checked = await adminBody(request, env);
+  if (checked.error) {
+    return checked.error;
+  }
+  const uuid = normalizeUuid(checked.body.uuid);
+  if (!uuid) {
+    return json(400, { error: "Need a valid UUID" });
+  }
+  const state = await loadState(env);
+  if (!state.whitelist.includes(uuid)) {
+    return json(403, { error: "uuid not whitelisted" });
+  }
+  state.notes = objectMap(state.notes);
+  const note = request.method === "DELETE" ? "" : sanitizeNote(checked.body.note);
+  if (note) {
+    state.notes[uuid] = note;
+  } else {
+    delete state.notes[uuid];
+  }
+  await saveState(env, state);
+  return json(200, { ok: true, note, players: await playersFor(env, state) });
 }
-
+__name(handleNote, "handleNote");
 async function handleCooldown(request, env) {
-	const checked = await adminBody(request, env);
-	if (checked.error) {
-		return checked.error;
-	}
-	const uuid = normalizeUuid(checked.body.uuid);
-	if (!uuid) {
-		return json(400, { error: "Need a valid UUID" });
-	}
-	const state = await loadState(env);
-	if (!state.whitelist.includes(uuid)) {
-		return json(403, { error: "uuid not whitelisted" });
-	}
-	state.capeAt = objectMap(state.capeAt);
-	delete state.capeAt[uuid];
-	await saveState(env, state);
-	return json(200, { ok: true, retryIn: 0, players: await playersFor(env, state) });
+  const checked = await adminBody(request, env);
+  if (checked.error) {
+    return checked.error;
+  }
+  const uuid = normalizeUuid(checked.body.uuid);
+  if (!uuid) {
+    return json(400, { error: "Need a valid UUID" });
+  }
+  const state = await loadState(env);
+  if (!state.whitelist.includes(uuid)) {
+    return json(403, { error: "uuid not whitelisted" });
+  }
+  state.capeAt = objectMap(state.capeAt);
+  delete state.capeAt[uuid];
+  await saveState(env, state);
+  return json(200, { ok: true, retryIn: 0, players: await playersFor(env, state) });
 }
-
+__name(handleCooldown, "handleCooldown");
 async function handleBulk(request, env) {
-	const checked = await adminBody(request, env);
-	if (checked.error) {
-		return checked.error;
-	}
-	const raw = Array.isArray(checked.body.names)
-		? checked.body.names
-		: String(checked.body.text || "").split(/[\n,]+/);
-	const names = raw.map((value) => String(value || "").trim()).filter(Boolean).slice(0, 25);
-	if (!names.length) {
-		return json(400, { error: "Paste usernames or UUIDs, one per line" });
-	}
-	const state = await loadState(env);
-	const added = [];
-	const skipped = [];
-	const failed = [];
-	for (const name of names) {
-		const resolved = await resolvePlayer(name);
-		if (!resolved.uuid) {
-			failed.push(name);
-			continue;
-		}
-		if (state.whitelist.includes(resolved.uuid)) {
-			skipped.push(name);
-			continue;
-		}
-		state.whitelist.push(resolved.uuid);
-		if (resolved.name) {
-			rememberName(state, resolved.uuid, resolved.name);
-		}
-		added.push(resolved.name || resolved.uuid);
-	}
-	await saveState(env, state);
-	const players = await playersFor(env, state, true);
-	await saveState(env, state);
-	return json(200, { ok: true, added: added.length, skipped: skipped.length, failed, players });
+  const checked = await adminBody(request, env);
+  if (checked.error) {
+    return checked.error;
+  }
+  const raw = Array.isArray(checked.body.names) ? checked.body.names : String(checked.body.text || "").split(/[\n,]+/);
+  const names = raw.map((value) => String(value || "").trim()).filter(Boolean).slice(0, 25);
+  if (!names.length) {
+    return json(400, { error: "Paste usernames or UUIDs, one per line" });
+  }
+  const state = await loadState(env);
+  const added = [];
+  const skipped = [];
+  const failed = [];
+  for (const name of names) {
+    const resolved = await resolvePlayer(name);
+    if (!resolved.uuid) {
+      failed.push(name);
+      continue;
+    }
+    if (state.whitelist.includes(resolved.uuid)) {
+      skipped.push(name);
+      continue;
+    }
+    state.whitelist.push(resolved.uuid);
+    if (resolved.name) {
+      rememberName(state, resolved.uuid, resolved.name);
+    }
+    added.push(resolved.name || resolved.uuid);
+  }
+  await saveState(env, state);
+  const players = await playersFor(env, state, true);
+  await saveState(env, state);
+  return json(200, { ok: true, added: added.length, skipped: skipped.length, failed, players });
 }
-
+__name(handleBulk, "handleBulk");
 async function handleShopConfig(request, env) {
-	const checked = await adminBody(request, env);
-	if (checked.error) {
-		return checked.error;
-	}
-	const state = await loadState(env);
-	state.config = {
-		...shopConfig(state, env),
-		paypal: sanitizePaypal(checked.body.paypal),
-		price: sanitizePrice(checked.body.price),
-		title: sanitizeTitle(checked.body.title),
-		blurb: sanitizeBlurb(checked.body.blurb)
-	};
-	await saveState(env, state);
-	return json(200, { ok: true, ...state.config });
+  const checked = await adminBody(request, env);
+  if (checked.error) {
+    return checked.error;
+  }
+  const state = await loadState(env);
+  state.config = {
+    ...shopConfig(state, env),
+    paypal: sanitizePaypal(checked.body.paypal),
+    price: sanitizePrice(checked.body.price),
+    title: sanitizeTitle(checked.body.title),
+    blurb: sanitizeBlurb(checked.body.blurb)
+  };
+  await saveState(env, state);
+  return json(200, { ok: true, ...state.config });
 }
-
+__name(handleShopConfig, "handleShopConfig");
 async function adminBody(request, env) {
-	const admin = env.ADMIN || "";
-	if (!admin) {
-		return { error: json(500, { error: "Admin key is not set on the Worker" }) };
-	}
-	if (!(await deskCookieOk(request, env))) {
-		return { error: json(403, { error: "Not authorized" }) };
-	}
-	let body;
-	try {
-		body = await request.json();
-	} catch {
-		body = {};
-	}
-	if ((body.admin || "") !== admin) {
-		return { error: json(403, { error: "Not authorized" }) };
-	}
-	return { body };
+  const admin = env.ADMIN || "";
+  if (!admin) {
+    return { error: json(500, { error: "Admin key is not set on the Worker" }) };
+  }
+  if (!await deskCookieOk(request, env)) {
+    return { error: json(403, { error: "Not authorized" }) };
+  }
+  let body;
+  try {
+    body = await request.json();
+  } catch {
+    body = {};
+  }
+  if ((body.admin || "") !== admin) {
+    return { error: json(403, { error: "Not authorized" }) };
+  }
+  return { body };
 }
-
+__name(adminBody, "adminBody");
 async function readCapeBytes(request, adminOk) {
-	const type = (request.headers.get("content-type") || "").toLowerCase();
-	if (type.includes("application/json")) {
-		if (!adminOk) {
-			return null;
-		}
-		let payload;
-		try {
-			payload = await request.json();
-		} catch {
-			return null;
-		}
-		const url = String(payload.url || "").trim();
-		if (!/^https?:\/\//i.test(url)) {
-			return null;
-		}
-		try {
-			const response = await fetch(url, {
-				headers: { "User-Agent": "Stray" },
-				signal: AbortSignal.timeout(10000)
-			});
-			if (!response.ok) {
-				return null;
-			}
-			return new Uint8Array(await response.arrayBuffer());
-		} catch {
-			return null;
-		}
-	}
-	return new Uint8Array(await request.arrayBuffer());
+  const type = (request.headers.get("content-type") || "").toLowerCase();
+  if (type.includes("application/json")) {
+    if (!adminOk) {
+      return null;
+    }
+    let payload;
+    try {
+      payload = await request.json();
+    } catch {
+      return null;
+    }
+    const url = String(payload.url || "").trim();
+    if (!/^https?:\/\//i.test(url)) {
+      return null;
+    }
+    try {
+      const response = await fetch(url, {
+        headers: { "User-Agent": "Stray" },
+        signal: AbortSignal.timeout(1e4)
+      });
+      if (!response.ok) {
+        return null;
+      }
+      return new Uint8Array(await response.arrayBuffer());
+    } catch {
+      return null;
+    }
+  }
+  return new Uint8Array(await request.arrayBuffer());
 }
-
+__name(readCapeBytes, "readCapeBytes");
 function tagFor(state, uuid) {
-	return sanitizeTag(objectMap(state.tags)[uuid]);
+  return sanitizeTag(objectMap(state.tags)[uuid]);
 }
-
-const WING_STYLES = ["angel", "demon", "fairy", "phoenix", "butterfly"];
-const WING_DEFAULT_RGB = { angel: "F4F6FF", demon: "2B1D2E", fairy: "9AE6FF", phoenix: "FF7A1A", butterfly: "3D98CB" };
-
+__name(tagFor, "tagFor");
+var WING_STYLES = ["angel", "demon", "fairy", "phoenix", "butterfly"];
+var WING_DEFAULT_RGB = { angel: "F4F6FF", demon: "2B1D2E", fairy: "9AE6FF", phoenix: "FF7A1A", butterfly: "3D98CB" };
 function sanitizeWingStyle(value) {
-	const style = String(value || "").trim().toLowerCase();
-	return WING_STYLES.includes(style) ? style : "";
+  const style = String(value || "").trim().toLowerCase();
+  return WING_STYLES.includes(style) ? style : "";
 }
-
+__name(sanitizeWingStyle, "sanitizeWingStyle");
 function sanitizeRgb(value) {
-	const hex = String(value || "").trim().replace(/^#/, "").toUpperCase();
-	return /^[0-9A-F]{6}$/.test(hex) ? hex : "";
+  const hex = String(value || "").trim().replace(/^#/, "").toUpperCase();
+  return /^[0-9A-F]{6}$/.test(hex) ? hex : "";
 }
-
+__name(sanitizeRgb, "sanitizeRgb");
 function wingsFor(state, uuid) {
-	const entry = objectMap(state.wings)[uuid];
-	if (!entry || typeof entry !== "object") {
-		return { style: "", rgb: "" };
-	}
-	const style = sanitizeWingStyle(entry.style);
-	if (!style) {
-		return { style: "", rgb: "" };
-	}
-	return { style, rgb: sanitizeRgb(entry.rgb) || WING_DEFAULT_RGB[style] };
+  const entry = objectMap(state.wings)[uuid];
+  if (!entry || typeof entry !== "object") {
+    return { style: "", rgb: "" };
+  }
+  const style = sanitizeWingStyle(entry.style);
+  if (!style) {
+    return { style: "", rgb: "" };
+  }
+  return { style, rgb: sanitizeRgb(entry.rgb) || WING_DEFAULT_RGB[style] };
 }
-
+__name(wingsFor, "wingsFor");
 function noteFor(state, uuid) {
-	return sanitizeNote(objectMap(state.notes)[uuid]);
+  return sanitizeNote(objectMap(state.notes)[uuid]);
 }
-
+__name(noteFor, "noteFor");
 function shopConfig(state, env) {
-	const stored = objectMap(state.config);
-	return {
-		title: stored.title || env.TITLE || "STRAY Capes",
-		discord: "@evilkitten911",
-		blurb: stored.blurb || ""
-	};
+  const stored = objectMap(state.config);
+  return {
+    title: stored.title || env.TITLE || "STRAY Capes",
+    discord: "@evilkitten911",
+    blurb: stored.blurb || ""
+  };
 }
-
-const MAX_TAG = 48;
-const MAX_NOTE = 160;
-const DAY_MS = 24 * 60 * 60 * 1000;
-
+__name(shopConfig, "shopConfig");
+var MAX_TAG = 48;
+var MAX_NOTE = 160;
+var DAY_MS = 24 * 60 * 60 * 1e3;
 function sanitizeTag(value) {
-	return String(value || "")
-		.replace(/[\u0000-\u001f\\"]/g, "")
-		.replace(/\s+/g, " ")
-		.trim()
-		.slice(0, MAX_TAG);
+  return String(value || "").replace(/[\u0000-\u001f\\"]/g, "").replace(/\s+/g, " ").trim().slice(0, MAX_TAG);
 }
-
+__name(sanitizeTag, "sanitizeTag");
 function sanitizeNote(value) {
-	return String(value || "")
-		.replace(/[\u0000-\u001f]/g, "")
-		.replace(/\s+/g, " ")
-		.trim()
-		.slice(0, MAX_NOTE);
+  return String(value || "").replace(/[\u0000-\u001f]/g, "").replace(/\s+/g, " ").trim().slice(0, MAX_NOTE);
 }
-
+__name(sanitizeNote, "sanitizeNote");
 function sanitizePaypal(value) {
-	return String(value || "")
-		.replace(/\s+/g, "")
-		.slice(0, 80);
+  return String(value || "").replace(/\s+/g, "").slice(0, 80);
 }
-
+__name(sanitizePaypal, "sanitizePaypal");
 function sanitizePrice(value) {
-	const price = String(value || "").replace(/\s+/g, " ").trim().slice(0, 24);
-	return price || "$1";
+  const price = String(value || "").replace(/\s+/g, " ").trim().slice(0, 24);
+  return price || "$1";
 }
-
+__name(sanitizePrice, "sanitizePrice");
 function sanitizeTitle(value) {
-	const title = String(value || "").replace(/\s+/g, " ").trim().slice(0, 48);
-	return title || "STRAY Capes";
+  const title = String(value || "").replace(/\s+/g, " ").trim().slice(0, 48);
+  return title || "STRAY Capes";
 }
-
+__name(sanitizeTitle, "sanitizeTitle");
 function sanitizeBlurb(value) {
-	return String(value || "")
-		.replace(/[\u0000-\u001f]/g, "")
-		.replace(/\s+/g, " ")
-		.trim()
-		.slice(0, 280);
+  return String(value || "").replace(/[\u0000-\u001f]/g, "").replace(/\s+/g, " ").trim().slice(0, 280);
 }
-
+__name(sanitizeBlurb, "sanitizeBlurb");
 function objectMap(value) {
-	return value && typeof value === "object" && !Array.isArray(value) ? value : {};
+  return value && typeof value === "object" && !Array.isArray(value) ? value : {};
 }
-
+__name(objectMap, "objectMap");
 function hasBypass(state, uuid) {
-	return Boolean(objectMap(state.bypass)[uuid]);
+  return Boolean(objectMap(state.bypass)[uuid]);
 }
-
+__name(hasBypass, "hasBypass");
 function capeRetryMs(state, uuid) {
-	if (hasBypass(state, uuid)) {
-		return 0;
-	}
-	const last = Number(objectMap(state.capeAt)[uuid]) || 0;
-	if (!last) {
-		return 0;
-	}
-	return Math.max(0, last + DAY_MS - Date.now());
+  if (hasBypass(state, uuid)) {
+    return 0;
+  }
+  const last = Number(objectMap(state.capeAt)[uuid]) || 0;
+  if (!last) {
+    return 0;
+  }
+  return Math.max(0, last + DAY_MS - Date.now());
 }
-
+__name(capeRetryMs, "capeRetryMs");
 function capeRetrySec(state, uuid) {
-	return Math.ceil(capeRetryMs(state, uuid) / 1000);
+  return Math.ceil(capeRetryMs(state, uuid) / 1e3);
 }
-
+__name(capeRetrySec, "capeRetrySec");
 function touchCapeAt(state, uuid) {
-	state.capeAt = objectMap(state.capeAt);
-	state.capeAt[uuid] = Date.now();
+  state.capeAt = objectMap(state.capeAt);
+  state.capeAt[uuid] = Date.now();
 }
-
+__name(touchCapeAt, "touchCapeAt");
 function adminHeaderOk(request, env) {
-	const admin = env.ADMIN || "";
-	return Boolean(admin) && (request.headers.get("x-admin") || "") === admin;
+  const admin = env.ADMIN || "";
+  return Boolean(admin) && (request.headers.get("x-admin") || "") === admin;
 }
-
+__name(adminHeaderOk, "adminHeaderOk");
 async function adminCapeOk(request, env) {
-	return adminHeaderOk(request, env) && await deskCookieOk(request, env);
+  return adminHeaderOk(request, env) && await deskCookieOk(request, env);
 }
-
+__name(adminCapeOk, "adminCapeOk");
 async function deskSessionOk(request, env) {
-	return adminHeaderOk(request, env) && await deskCookieOk(request, env);
+  return adminHeaderOk(request, env) && await deskCookieOk(request, env);
 }
-
+__name(deskSessionOk, "deskSessionOk");
 async function playersFor(env, state, forceNames) {
-	return Promise.all(state.whitelist.map(async (uuid) => {
-		const head = await env.CAPES.head(capeKey(uuid));
-		return {
-			uuid,
-			name: await mojangName(uuid, state, forceNames),
-			cape: Boolean(head),
-			hash: head?.customMetadata?.hash || "",
-			tag: tagFor(state, uuid),
-			wings: wingsFor(state, uuid),
-			bypass: hasBypass(state, uuid),
-			retryIn: capeRetrySec(state, uuid),
-			note: noteFor(state, uuid)
-		};
-	}));
+  return Promise.all(state.whitelist.map(async (uuid) => {
+    const head = await env.CAPES.head(capeKey(uuid));
+    return {
+      uuid,
+      name: await mojangName(uuid, state, forceNames),
+      cape: Boolean(head),
+      hash: head?.customMetadata?.hash || "",
+      tag: tagFor(state, uuid),
+      wings: wingsFor(state, uuid),
+      bypass: hasBypass(state, uuid),
+      retryIn: capeRetrySec(state, uuid),
+      note: noteFor(state, uuid)
+    };
+  }));
 }
-
-const NAME_TTL_MS = 10 * 60 * 1000;
-
+__name(playersFor, "playersFor");
+var NAME_TTL_MS = 10 * 60 * 1e3;
 function rememberName(state, uuid, name) {
-	const clean = String(name || "").trim();
-	if (!uuid || !clean) {
-		return;
-	}
-	state.names = objectMap(state.names);
-	state.namesAt = objectMap(state.namesAt);
-	state.names[uuid] = clean;
-	state.namesAt[uuid] = Date.now();
+  const clean = String(name || "").trim();
+  if (!uuid || !clean) {
+    return;
+  }
+  state.names = objectMap(state.names);
+  state.namesAt = objectMap(state.namesAt);
+  state.names[uuid] = clean;
+  state.namesAt[uuid] = Date.now();
 }
-
+__name(rememberName, "rememberName");
 function forgetPlayer(state, uuid) {
-	if (state.names) {
-		delete state.names[uuid];
-	}
-	if (state.namesAt) {
-		delete state.namesAt[uuid];
-	}
-	if (state.tags) {
-		delete state.tags[uuid];
-	}
-	if (state.bypass) {
-		delete state.bypass[uuid];
-	}
-	if (state.capeAt) {
-		delete state.capeAt[uuid];
-	}
-	if (state.notes) {
-		delete state.notes[uuid];
-	}
-	if (state.wings) {
-		delete state.wings[uuid];
-	}
+  if (state.names) {
+    delete state.names[uuid];
+  }
+  if (state.namesAt) {
+    delete state.namesAt[uuid];
+  }
+  if (state.tags) {
+    delete state.tags[uuid];
+  }
+  if (state.bypass) {
+    delete state.bypass[uuid];
+  }
+  if (state.capeAt) {
+    delete state.capeAt[uuid];
+  }
+  if (state.notes) {
+    delete state.notes[uuid];
+  }
+  if (state.wings) {
+    delete state.wings[uuid];
+  }
 }
-
+__name(forgetPlayer, "forgetPlayer");
 function sanitizeUsername(value) {
-	const name = String(value || "").trim();
-	return /^[A-Za-z0-9_]{1,16}$/.test(name) ? name : "";
+  const name = String(value || "").trim();
+  return /^[A-Za-z0-9_]{1,16}$/.test(name) ? name : "";
 }
-
+__name(sanitizeUsername, "sanitizeUsername");
 async function resolvePlayer(raw) {
-	const uuid = normalizeUuid(raw);
-	if (uuid) {
-		return { uuid, name: "" };
-	}
-	const name = sanitizeUsername(raw);
-	if (!name) {
-		return { uuid: "", name: "" };
-	}
-	const found = await lookupUuid(name);
-	return { uuid: found, name: found ? name : "" };
+  const uuid = normalizeUuid(raw);
+  if (uuid) {
+    return { uuid, name: "" };
+  }
+  const name = sanitizeUsername(raw);
+  if (!name) {
+    return { uuid: "", name: "" };
+  }
+  const found = await lookupUuid(name);
+  return { uuid: found, name: found ? name : "" };
 }
-
+__name(resolvePlayer, "resolvePlayer");
 async function mojangName(uuid, state, force) {
-	state.names = objectMap(state.names);
-	state.namesAt = objectMap(state.namesAt);
-	const cached = typeof state.names[uuid] === "string" ? state.names[uuid] : "";
-	const at = Number(state.namesAt[uuid]) || 0;
-	if (!force && cached && Date.now() - at < NAME_TTL_MS) {
-		return cached;
-	}
-	const name = await lookupName(uuid);
-	if (name) {
-		rememberName(state, uuid, name);
-		return name;
-	}
-	return cached;
+  state.names = objectMap(state.names);
+  state.namesAt = objectMap(state.namesAt);
+  const cached = typeof state.names[uuid] === "string" ? state.names[uuid] : "";
+  const at = Number(state.namesAt[uuid]) || 0;
+  if (!force && cached && Date.now() - at < NAME_TTL_MS) {
+    return cached;
+  }
+  const name = await lookupName(uuid);
+  if (name) {
+    rememberName(state, uuid, name);
+    return name;
+  }
+  return cached;
 }
-
+__name(mojangName, "mojangName");
 async function lookupName(uuid) {
-	const id = String(uuid || "").replaceAll("-", "");
-	if (id.length !== 32) {
-		return "";
-	}
-	const dashed = `${id.slice(0, 8)}-${id.slice(8, 12)}-${id.slice(12, 16)}-${id.slice(16, 20)}-${id.slice(20)}`;
-	const attempts = [
-		{ url: "https://sessionserver.mojang.com/session/minecraft/profile/" + id, read: (data) => data.name },
-		{ url: "https://crafthead.net/profile/" + id, read: (data) => data.name },
-		{ url: "https://mowojang.matdoes.dev/" + dashed, read: (data) => data.name },
-		{ url: "https://playerdb.co/api/player/minecraft/" + dashed, read: (data) => data?.data?.player?.username },
-		{ url: "https://api.ashcon.app/mojang/v2/user/" + dashed, read: (data) => data.username || data.name }
-	];
-	return firstString(attempts);
+  const id = String(uuid || "").replaceAll("-", "");
+  if (id.length !== 32) {
+    return "";
+  }
+  const dashed = `${id.slice(0, 8)}-${id.slice(8, 12)}-${id.slice(12, 16)}-${id.slice(16, 20)}-${id.slice(20)}`;
+  const attempts = [
+    { url: "https://sessionserver.mojang.com/session/minecraft/profile/" + id, read: /* @__PURE__ */ __name((data) => data.name, "read") },
+    { url: "https://crafthead.net/profile/" + id, read: /* @__PURE__ */ __name((data) => data.name, "read") },
+    { url: "https://mowojang.matdoes.dev/" + dashed, read: /* @__PURE__ */ __name((data) => data.name, "read") },
+    { url: "https://playerdb.co/api/player/minecraft/" + dashed, read: /* @__PURE__ */ __name((data) => data?.data?.player?.username, "read") },
+    { url: "https://api.ashcon.app/mojang/v2/user/" + dashed, read: /* @__PURE__ */ __name((data) => data.username || data.name, "read") }
+  ];
+  return firstString(attempts);
 }
-
+__name(lookupName, "lookupName");
 async function lookupUuid(name) {
-	const encoded = encodeURIComponent(name);
-	const attempts = [
-		{ url: "https://api.mojang.com/users/profiles/minecraft/" + encoded, read: (data) => data.id },
-		{ url: "https://mowojang.matdoes.dev/" + encoded, read: (data) => data.id },
-		{ url: "https://crafthead.net/profile/" + encoded, read: (data) => data.id },
-		{ url: "https://playerdb.co/api/player/minecraft/" + encoded, read: (data) => data?.data?.player?.id || data?.data?.player?.raw_id },
-		{ url: "https://api.ashcon.app/mojang/v2/user/" + encoded, read: (data) => data.uuid }
-	];
-	for (const attempt of attempts) {
-		const data = await fetchJson(attempt.url);
-		if (!data) {
-			continue;
-		}
-		const uuid = normalizeUuid(attempt.read(data));
-		if (uuid) {
-			return uuid;
-		}
-	}
-	return "";
+  const encoded = encodeURIComponent(name);
+  const attempts = [
+    { url: "https://api.mojang.com/users/profiles/minecraft/" + encoded, read: /* @__PURE__ */ __name((data) => data.id, "read") },
+    { url: "https://mowojang.matdoes.dev/" + encoded, read: /* @__PURE__ */ __name((data) => data.id, "read") },
+    { url: "https://crafthead.net/profile/" + encoded, read: /* @__PURE__ */ __name((data) => data.id, "read") },
+    { url: "https://playerdb.co/api/player/minecraft/" + encoded, read: /* @__PURE__ */ __name((data) => data?.data?.player?.id || data?.data?.player?.raw_id, "read") },
+    { url: "https://api.ashcon.app/mojang/v2/user/" + encoded, read: /* @__PURE__ */ __name((data) => data.uuid, "read") }
+  ];
+  for (const attempt of attempts) {
+    const data = await fetchJson(attempt.url);
+    if (!data) {
+      continue;
+    }
+    const uuid = normalizeUuid(attempt.read(data));
+    if (uuid) {
+      return uuid;
+    }
+  }
+  return "";
 }
-
+__name(lookupUuid, "lookupUuid");
 async function firstString(attempts) {
-	for (const attempt of attempts) {
-		const data = await fetchJson(attempt.url);
-		if (!data) {
-			continue;
-		}
-		const value = String(attempt.read(data) || "").trim();
-		if (value) {
-			return value;
-		}
-	}
-	return "";
+  for (const attempt of attempts) {
+    const data = await fetchJson(attempt.url);
+    if (!data) {
+      continue;
+    }
+    const value = String(attempt.read(data) || "").trim();
+    if (value) {
+      return value;
+    }
+  }
+  return "";
 }
-
+__name(firstString, "firstString");
 async function fetchJson(url) {
-	try {
-		const response = await fetch(url, {
-			headers: { "User-Agent": "Stray" },
-			signal: AbortSignal.timeout(5000)
-		});
-		if (!response.ok) {
-			return null;
-		}
-		return await response.json();
-	} catch {
-		return null;
-	}
+  try {
+    const response = await fetch(url, {
+      headers: { "User-Agent": "Stray" },
+      signal: AbortSignal.timeout(5e3)
+    });
+    if (!response.ok) {
+      return null;
+    }
+    return await response.json();
+  } catch {
+    return null;
+  }
 }
-
+__name(fetchJson, "fetchJson");
 async function loadState(env) {
-	const empty = { whitelist: [], names: {}, namesAt: {}, tags: {}, wings: {}, bypass: {}, capeAt: {}, notes: {}, config: {} };
-	const object = await env.CAPES.get("state.json");
-	if (!object) {
-		return empty;
-	}
-	try {
-		const parsed = JSON.parse(await object.text());
-		return {
-			whitelist: Array.isArray(parsed.whitelist) ? parsed.whitelist : [],
-			names: objectMap(parsed.names),
-			namesAt: objectMap(parsed.namesAt),
-			tags: objectMap(parsed.tags),
-			wings: objectMap(parsed.wings),
-			bypass: objectMap(parsed.bypass),
-			capeAt: objectMap(parsed.capeAt),
-			notes: objectMap(parsed.notes),
-			config: objectMap(parsed.config)
-		};
-	} catch {
-		return empty;
-	}
+  const empty = { whitelist: [], names: {}, namesAt: {}, tags: {}, wings: {}, bypass: {}, capeAt: {}, notes: {}, config: {} };
+  const object = await env.CAPES.get("state.json");
+  if (!object) {
+    return empty;
+  }
+  try {
+    const parsed = JSON.parse(await object.text());
+    return {
+      whitelist: Array.isArray(parsed.whitelist) ? parsed.whitelist : [],
+      names: objectMap(parsed.names),
+      namesAt: objectMap(parsed.namesAt),
+      tags: objectMap(parsed.tags),
+      wings: objectMap(parsed.wings),
+      bypass: objectMap(parsed.bypass),
+      capeAt: objectMap(parsed.capeAt),
+      notes: objectMap(parsed.notes),
+      config: objectMap(parsed.config)
+    };
+  } catch {
+    return empty;
+  }
 }
-
+__name(loadState, "loadState");
 async function saveState(env, state) {
-	const copy = { ...state };
-	delete copy.bans;
-	await env.CAPES.put("state.json", JSON.stringify(copy));
+  const copy = { ...state };
+  delete copy.bans;
+  await env.CAPES.put("state.json", JSON.stringify(copy));
 }
-
+__name(saveState, "saveState");
 function capeKey(uuid) {
-	return `capes/${uuid}.png`;
+  return `capes/${uuid}.png`;
 }
-
+__name(capeKey, "capeKey");
 async function hashBytes(bytes) {
-	const digest = await crypto.subtle.digest("SHA-256", bytes);
-	return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, "0")).join("").slice(0, 16);
+  const digest = await crypto.subtle.digest("SHA-256", bytes);
+  return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, "0")).join("").slice(0, 16);
 }
-
+__name(hashBytes, "hashBytes");
 function normalizeUuid(value) {
-	const raw = (value || "").trim().toLowerCase().replace(/[^0-9a-f]/g, "");
-	if (raw.length !== 32) {
-		return "";
-	}
-	const dashed = `${raw.slice(0, 8)}-${raw.slice(8, 12)}-${raw.slice(12, 16)}-${raw.slice(16, 20)}-${raw.slice(20)}`;
-	return UUID_RE.test(dashed) ? dashed : "";
+  const raw = (value || "").trim().toLowerCase().replace(/[^0-9a-f]/g, "");
+  if (raw.length !== 32) {
+    return "";
+  }
+  const dashed = `${raw.slice(0, 8)}-${raw.slice(8, 12)}-${raw.slice(12, 16)}-${raw.slice(16, 20)}-${raw.slice(20)}`;
+  return UUID_RE.test(dashed) ? dashed : "";
 }
-
+__name(normalizeUuid, "normalizeUuid");
 function isPng(bytes) {
-	return bytes.length >= 24 && bytes.length <= MAX_BYTES && bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4e && bytes[3] === 0x47;
+  return bytes.length >= 24 && bytes.length <= MAX_BYTES && bytes[0] === 137 && bytes[1] === 80 && bytes[2] === 78 && bytes[3] === 71;
 }
-
+__name(isPng, "isPng");
 function json(status, body, extraHeaders) {
-	return new Response(JSON.stringify(body), {
-		status,
-		headers: {
-			...cors(),
-			"Content-Type": "application/json; charset=utf-8",
-			"Cache-Control": "no-store",
-			...(extraHeaders || {})
-		}
-	});
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: {
+      ...cors(),
+      "Content-Type": "application/json; charset=utf-8",
+      "Cache-Control": "no-store",
+      ...extraHeaders || {}
+    }
+  });
 }
-
-const DESK_COOKIE = "stray_desk";
-const DESK_TTL_SEC = 60 * 60 * 24 * 7;
-
+__name(json, "json");
+var DESK_COOKIE = "stray_desk";
+var DESK_TTL_SEC = 60 * 60 * 24 * 7;
 function canonicalizePath(pathname) {
-	let raw = String(pathname || "/");
-	try {
-		raw = decodeURIComponent(raw);
-	} catch {
-		return "/";
-	}
-	raw = raw.replace(/\\/g, "/");
-	const parts = [];
-	for (const seg of raw.split("/")) {
-		if (!seg || seg === ".") {
-			continue;
-		}
-		if (seg === "..") {
-			parts.pop();
-			continue;
-		}
-		if (seg.includes("\0")) {
-			return "/";
-		}
-		parts.push(seg);
-	}
-	return "/" + parts.join("/");
+  let raw = String(pathname || "/");
+  try {
+    raw = decodeURIComponent(raw);
+  } catch {
+    return "/";
+  }
+  raw = raw.replace(/\\/g, "/");
+  const parts = [];
+  for (const seg of raw.split("/")) {
+    if (!seg || seg === ".") {
+      continue;
+    }
+    if (seg === "..") {
+      parts.pop();
+      continue;
+    }
+    if (seg.includes("\0")) {
+      return "/";
+    }
+    parts.push(seg);
+  }
+  return "/" + parts.join("/");
 }
-
+__name(canonicalizePath, "canonicalizePath");
 function isManagePath(path) {
-	return path === "/manage";
+  return path === "/manage";
 }
-
+__name(isManagePath, "isManagePath");
 function cookieOf(request, name) {
-	const raw = request.headers.get("Cookie") || "";
-	const parts = raw.split(";");
-	for (let i = 0; i < parts.length; i++) {
-		const piece = parts[i].trim();
-		const eq = piece.indexOf("=");
-		if (eq < 0) {
-			continue;
-		}
-		if (piece.slice(0, eq) === name) {
-			return piece.slice(eq + 1);
-		}
-	}
-	return "";
+  const raw = request.headers.get("Cookie") || "";
+  const parts = raw.split(";");
+  for (let i = 0; i < parts.length; i++) {
+    const piece = parts[i].trim();
+    const eq = piece.indexOf("=");
+    if (eq < 0) {
+      continue;
+    }
+    if (piece.slice(0, eq) === name) {
+      return piece.slice(eq + 1);
+    }
+  }
+  return "";
 }
-
+__name(cookieOf, "cookieOf");
 function deskSecure(request) {
-	try {
-		return new URL(request.url).protocol === "https:";
-	} catch {
-		return true;
-	}
+  try {
+    return new URL(request.url).protocol === "https:";
+  } catch {
+    return true;
+  }
 }
-
+__name(deskSecure, "deskSecure");
 function deskCookieHeader(request, token, clear) {
-	const parts = [
-		DESK_COOKIE + "=" + (clear ? "" : token),
-		"Path=/",
-		"HttpOnly",
-		"SameSite=Lax",
-		clear ? "Max-Age=0" : ("Max-Age=" + DESK_TTL_SEC)
-	];
-	if (deskSecure(request)) {
-		parts.push("Secure");
-	}
-	return parts.join("; ");
+  const parts = [
+    DESK_COOKIE + "=" + (clear ? "" : token),
+    "Path=/",
+    "HttpOnly",
+    "SameSite=Lax",
+    clear ? "Max-Age=0" : "Max-Age=" + DESK_TTL_SEC
+  ];
+  if (deskSecure(request)) {
+    parts.push("Secure");
+  }
+  return parts.join("; ");
 }
-
+__name(deskCookieHeader, "deskCookieHeader");
 function bytesToHex(bytes) {
-	const arr = new Uint8Array(bytes);
-	let out = "";
-	for (let i = 0; i < arr.length; i++) {
-		out += arr[i].toString(16).padStart(2, "0");
-	}
-	return out;
+  const arr = new Uint8Array(bytes);
+  let out = "";
+  for (let i = 0; i < arr.length; i++) {
+    out += arr[i].toString(16).padStart(2, "0");
+  }
+  return out;
 }
-
+__name(bytesToHex, "bytesToHex");
 function timingSafeEqualStr(a, b) {
-	if (a.length !== b.length) {
-		return false;
-	}
-	let diff = 0;
-	for (let i = 0; i < a.length; i++) {
-		diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
-	}
-	return diff === 0;
+  if (a.length !== b.length) {
+    return false;
+  }
+  let diff = 0;
+  for (let i = 0; i < a.length; i++) {
+    diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  }
+  return diff === 0;
 }
-
+__name(timingSafeEqualStr, "timingSafeEqualStr");
 async function hmacHex(secret, msg) {
-	const key = await crypto.subtle.importKey(
-		"raw",
-		new TextEncoder().encode(secret),
-		{ name: "HMAC", hash: "SHA-256" },
-		false,
-		["sign"]
-	);
-	const sig = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(msg));
-	return bytesToHex(sig);
+  const key = await crypto.subtle.importKey(
+    "raw",
+    new TextEncoder().encode(secret),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"]
+  );
+  const sig = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(msg));
+  return bytesToHex(sig);
 }
-
+__name(hmacHex, "hmacHex");
 async function mintDeskToken(secret) {
-	const exp = Math.floor(Date.now() / 1000) + DESK_TTL_SEC;
-	const msg = "v1." + exp;
-	return msg + "." + await hmacHex(secret, msg);
+  const exp = Math.floor(Date.now() / 1e3) + DESK_TTL_SEC;
+  const msg = "v1." + exp;
+  return msg + "." + await hmacHex(secret, msg);
 }
-
+__name(mintDeskToken, "mintDeskToken");
 async function verifyDeskToken(secret, token) {
-	const parts = String(token || "").split(".");
-	if (parts.length !== 3 || parts[0] !== "v1") {
-		return false;
-	}
-	const exp = Number(parts[1]);
-	if (!Number.isFinite(exp) || exp < Date.now() / 1000) {
-		return false;
-	}
-	const sig = await hmacHex(secret, "v1." + parts[1]);
-	return timingSafeEqualStr(sig, parts[2]);
+  const parts = String(token || "").split(".");
+  if (parts.length !== 3 || parts[0] !== "v1") {
+    return false;
+  }
+  const exp = Number(parts[1]);
+  if (!Number.isFinite(exp) || exp < Date.now() / 1e3) {
+    return false;
+  }
+  const sig = await hmacHex(secret, "v1." + parts[1]);
+  return timingSafeEqualStr(sig, parts[2]);
 }
-
+__name(verifyDeskToken, "verifyDeskToken");
 async function deskCookieOk(request, env) {
-	const secret = env.ADMIN || "";
-	if (!secret) {
-		return false;
-	}
-	return verifyDeskToken(secret, cookieOf(request, DESK_COOKIE));
+  const secret = env.ADMIN || "";
+  if (!secret) {
+    return false;
+  }
+  return verifyDeskToken(secret, cookieOf(request, DESK_COOKIE));
 }
-
+__name(deskCookieOk, "deskCookieOk");
 async function adminJson(request, env, status, body) {
-	const token = await mintDeskToken(env.ADMIN || "");
-	return json(status, body, { "Set-Cookie": deskCookieHeader(request, token, false) });
+  const token = await mintDeskToken(env.ADMIN || "");
+  return json(status, body, { "Set-Cookie": deskCookieHeader(request, token, false) });
 }
-
+__name(adminJson, "adminJson");
 function redirectLogin() {
-	return new Response(null, {
-		status: 302,
-		headers: {
-			Location: "/admin",
-			"Cache-Control": "no-store",
-			Pragma: "no-cache"
-		}
-	});
+  return new Response(null, {
+    status: 302,
+    headers: {
+      Location: "/admin",
+      "Cache-Control": "no-store",
+      Pragma: "no-cache"
+    }
+  });
 }
-
+__name(redirectLogin, "redirectLogin");
 async function serveManage(request, env) {
-	if (!(await deskCookieOk(request, env))) {
-		return redirectLogin();
-	}
-	if (env.ASSETS) {
-		const asset = await env.ASSETS.fetch(request);
-		if (asset.status !== 404) {
-			const headers = new Headers(asset.headers);
-			headers.set("Cache-Control", "private, no-store, no-cache");
-			headers.set("Pragma", "no-cache");
-			return new Response(asset.body, { status: asset.status, headers });
-		}
-	}
-	return page(MANAGE_HTML);
+  if (!await deskCookieOk(request, env)) {
+    return redirectLogin();
+  }
+  if (env.ASSETS) {
+    const asset = await env.ASSETS.fetch(request);
+    if (asset.status !== 404) {
+      const headers = new Headers(asset.headers);
+      headers.set("Cache-Control", "private, no-store, no-cache");
+      headers.set("Pragma", "no-cache");
+      return new Response(asset.body, { status: asset.status, headers });
+    }
+  }
+  return page(MANAGE_HTML);
 }
-
-const DEFAULT_MOD_GITHUB = "camberX/Stray";
-const LEGACY_MOD_GITHUB = "camberX/voidmark";
-const DEFAULT_MOD_BRANCH = "main";
-const DEFAULT_MOD_PATH = "web/public/mod";
-
+__name(serveManage, "serveManage");
+var DEFAULT_MOD_GITHUB = "camberX/Stray";
+var LEGACY_MOD_GITHUB = "camberX/voidmark";
+var DEFAULT_MOD_BRANCH = "main";
+var DEFAULT_MOD_PATH = "web/public/mod";
 async function readModMeta(request, env) {
-	const github = await readGithubMeta(env);
-	const asset = await readAssetMeta(request, env);
-	if (github && github.version && asset && asset.version) {
-		return compareModVersion(github.version, asset.version) >= 0 ? github : asset;
-	}
-	return github || asset || null;
+  const github = await readGithubMeta(env);
+  const asset = await readAssetMeta(request, env);
+  if (github && github.version && asset && asset.version) {
+    return compareModVersion(github.version, asset.version) >= 0 ? github : asset;
+  }
+  return github || asset || null;
 }
-
+__name(readModMeta, "readModMeta");
 async function readAssetMeta(request, env) {
-	if (!env.ASSETS) {
-		return null;
-	}
-	const assetPaths = ["/mod.json", "/mod/latest.json"];
-	for (let i = 0; i < assetPaths.length; i++) {
-		try {
-			const response = await env.ASSETS.fetch(new URL(assetPaths[i], request.url));
-			if (response.ok) {
-				const meta = await response.json();
-				if (meta && meta.version) {
-					meta.source = "assets";
-					return meta;
-				}
-			}
-		} catch {
-			// try next
-		}
-	}
-	return null;
+  if (!env.ASSETS) {
+    return null;
+  }
+  const assetPaths = ["/mod.json", "/mod/latest.json"];
+  for (let i = 0; i < assetPaths.length; i++) {
+    try {
+      const response = await env.ASSETS.fetch(new URL(assetPaths[i], request.url));
+      if (response.ok) {
+        const meta = await response.json();
+        if (meta && meta.version) {
+          meta.source = "assets";
+          return meta;
+        }
+      }
+    } catch {
+    }
+  }
+  return null;
 }
-
+__name(readAssetMeta, "readAssetMeta");
 function cleanGithubRepo(value) {
-	return String(value || "")
-		.trim()
-		.replace(/^https?:\/\/github\.com\//i, "")
-		.replace(/\.git$/i, "")
-		.replace(/\/+$/, "");
+  return String(value || "").trim().replace(/^https?:\/\/github\.com\//i, "").replace(/\.git$/i, "").replace(/\/+$/, "");
 }
-
+__name(cleanGithubRepo, "cleanGithubRepo");
 function modGithubRepos(env) {
-	const seen = {};
-	const list = [];
-	function add(value) {
-		const repo = cleanGithubRepo(value);
-		const key = repo.toLowerCase();
-		if (!repo || seen[key]) {
-			return;
-		}
-		seen[key] = true;
-		list.push(repo);
-	}
-	add(DEFAULT_MOD_GITHUB);
-	add("camberX/Eisenmann");
-	add(LEGACY_MOD_GITHUB);
-	add(env && env.MOD_GITHUB);
-	return list;
+  const seen = {};
+  const list = [];
+  function add(value) {
+    const repo = cleanGithubRepo(value);
+    const key = repo.toLowerCase();
+    if (!repo || seen[key]) {
+      return;
+    }
+    seen[key] = true;
+    list.push(repo);
+  }
+  __name(add, "add");
+  add(DEFAULT_MOD_GITHUB);
+  add("camberX/Eisenmann");
+  add(LEGACY_MOD_GITHUB);
+  add(env && env.MOD_GITHUB);
+  return list;
 }
-
+__name(modGithubRepos, "modGithubRepos");
 function modGithubBranch(env, meta) {
-	return String((meta && meta.branch) || (env && env.MOD_GITHUB_BRANCH) || DEFAULT_MOD_BRANCH).trim() || DEFAULT_MOD_BRANCH;
+  return String(meta && meta.branch || env && env.MOD_GITHUB_BRANCH || DEFAULT_MOD_BRANCH).trim() || DEFAULT_MOD_BRANCH;
 }
-
+__name(modGithubBranch, "modGithubBranch");
 function modGithubDir(env, meta) {
-	return String((meta && meta.dir) || (env && env.MOD_GITHUB_PATH) || DEFAULT_MOD_PATH).replace(/^\/+|\/+$/g, "") || DEFAULT_MOD_PATH;
+  return String(meta && meta.dir || env && env.MOD_GITHUB_PATH || DEFAULT_MOD_PATH).replace(/^\/+|\/+$/g, "") || DEFAULT_MOD_PATH;
 }
-
+__name(modGithubDir, "modGithubDir");
 function githubFileUrls(repo, branch, dir, fileName) {
-	const file = String(fileName || "stray.jar").replace(/^\/+/, "");
-	const path = dir + "/" + file;
-	return [
-		"https://cdn.jsdelivr.net/gh/" + repo + "@" + branch + "/" + path,
-		"https://github.com/" + repo + "/raw/" + branch + "/" + path,
-		"https://raw.githubusercontent.com/" + repo + "/" + branch + "/" + path,
-		"https://api.github.com/repos/" + repo + "/contents/" + path + "?ref=" + encodeURIComponent(branch)
-	];
+  const file = String(fileName || "stray.jar").replace(/^\/+/, "");
+  const path = dir + "/" + file;
+  return [
+    "https://cdn.jsdelivr.net/gh/" + repo + "@" + branch + "/" + path,
+    "https://github.com/" + repo + "/raw/" + branch + "/" + path,
+    "https://raw.githubusercontent.com/" + repo + "/" + branch + "/" + path,
+    "https://api.github.com/repos/" + repo + "/contents/" + path + "?ref=" + encodeURIComponent(branch)
+  ];
 }
-
+__name(githubFileUrls, "githubFileUrls");
 function githubFetchHeaders(url) {
-	const headers = { "User-Agent": "Stray-Shop" };
-	if (url.includes("api.github.com")) {
-		headers.Accept = "application/vnd.github.raw";
-	}
-	return headers;
+  const headers = { "User-Agent": "Stray-Shop" };
+  if (url.includes("api.github.com")) {
+    headers.Accept = "application/vnd.github.raw";
+  }
+  return headers;
 }
-
+__name(githubFetchHeaders, "githubFetchHeaders");
 async function fetchGithubFile(url) {
-	// Workers reject the standard fetch `cache` field, which made every GitHub
-	// read throw and left /api/mod stuck on the jar baked into the last deploy.
-	const response = await fetch(url, {
-		headers: githubFetchHeaders(url),
-		redirect: "follow",
-		cf: { cacheTtl: 0, cacheEverything: false }
-	});
-	return response.ok ? response : null;
+  const response = await fetch(url, {
+    headers: githubFetchHeaders(url),
+    redirect: "follow",
+    cf: { cacheTtl: 0, cacheEverything: false }
+  });
+  return response.ok ? response : null;
 }
-
+__name(fetchGithubFile, "fetchGithubFile");
 function githubModFileUrls(env, meta, fileName) {
-	const repo = (meta && meta.repo) || DEFAULT_MOD_GITHUB;
-	if (!repo) {
-		return [];
-	}
-	const urls = githubFileUrls(repo, modGithubBranch(env, meta), modGithubDir(env, meta), fileName);
-	const version = meta && meta.version ? String(meta.version) : "";
-	const file = String(fileName || "").replace(/^\/+/, "");
-	if (version && file) {
-		urls.push("https://github.com/" + repo + "/releases/download/v" + version + "/" + file);
-	}
-	return urls;
+  const repo = meta && meta.repo || DEFAULT_MOD_GITHUB;
+  if (!repo) {
+    return [];
+  }
+  const urls = githubFileUrls(repo, modGithubBranch(env, meta), modGithubDir(env, meta), fileName);
+  const version = meta && meta.version ? String(meta.version) : "";
+  const file = String(fileName || "").replace(/^\/+/, "");
+  if (version && file) {
+    urls.push("https://github.com/" + repo + "/releases/download/v" + version + "/" + file);
+  }
+  return urls;
 }
-
+__name(githubModFileUrls, "githubModFileUrls");
 async function readGithubMeta(env) {
-	const repos = modGithubRepos(env);
-	const branch = modGithubBranch(env);
-	const dir = modGithubDir(env);
-	let best = null;
-	for (let r = 0; r < repos.length; r++) {
-		const repo = repos[r];
-		const urls = githubFileUrls(repo, branch, dir, "latest.json");
-		for (let i = 0; i < urls.length; i++) {
-			try {
-				const response = await fetchGithubFile(urls[i]);
-				if (!response) {
-					continue;
-				}
-				const meta = await response.json();
-				if (!meta || !meta.version) {
-					continue;
-				}
-				meta.repo = repo;
-				meta.branch = branch;
-				meta.dir = dir;
-				meta.source = "github";
-				if (!best || compareModVersion(meta.version, best.version) > 0) {
-					best = meta;
-				}
-			} catch {
-				// try next mirror
-			}
-		}
-	}
-	return best;
+  const repos = modGithubRepos(env);
+  const branch = modGithubBranch(env);
+  const dir = modGithubDir(env);
+  let best = null;
+  for (let r = 0; r < repos.length; r++) {
+    const repo = repos[r];
+    const urls = githubFileUrls(repo, branch, dir, "latest.json");
+    for (let i = 0; i < urls.length; i++) {
+      try {
+        const response = await fetchGithubFile(urls[i]);
+        if (!response) {
+          continue;
+        }
+        const meta = await response.json();
+        if (!meta || !meta.version) {
+          continue;
+        }
+        meta.repo = repo;
+        meta.branch = branch;
+        meta.dir = dir;
+        meta.source = "github";
+        if (!best || compareModVersion(meta.version, best.version) > 0) {
+          best = meta;
+        }
+      } catch {
+      }
+    }
+  }
+  return best;
 }
-
+__name(readGithubMeta, "readGithubMeta");
 function compareModVersion(left, right) {
-	const a = String(left || "").split(/[^0-9]+/).filter(Boolean).map(Number);
-	const b = String(right || "").split(/[^0-9]+/).filter(Boolean).map(Number);
-	const n = Math.max(a.length, b.length);
-	for (let i = 0; i < n; i++) {
-		const av = i < a.length ? a[i] : 0;
-		const bv = i < b.length ? b[i] : 0;
-		if (av !== bv) {
-			return av - bv;
-		}
-	}
-	return 0;
+  const a = String(left || "").split(/[^0-9]+/).filter(Boolean).map(Number);
+  const b = String(right || "").split(/[^0-9]+/).filter(Boolean).map(Number);
+  const n = Math.max(a.length, b.length);
+  for (let i = 0; i < n; i++) {
+    const av = i < a.length ? a[i] : 0;
+    const bv = i < b.length ? b[i] : 0;
+    if (av !== bv) {
+      return av - bv;
+    }
+  }
+  return 0;
 }
-
+__name(compareModVersion, "compareModVersion");
 async function serveModInfo(request, env) {
-	const meta = await readModMeta(request, env);
-	if (!meta || !meta.version) {
-		return json(404, { error: "Mod build is not published yet" });
-	}
-	return json(200, {
-		version: String(meta.version),
-		minecraft: String(meta.minecraft || "26.1.2"),
-		file: String(meta.file || ("stray-" + meta.version + ".jar")),
-		url: "/download",
-		source: meta.source || "assets"
-	});
+  const meta = await readModMeta(request, env);
+  if (!meta || !meta.version) {
+    return json(404, { error: "Mod build is not published yet" });
+  }
+  return json(200, {
+    version: String(meta.version),
+    minecraft: String(meta.minecraft || "26.1.2"),
+    file: String(meta.file || "stray-" + meta.version + ".jar"),
+    url: "/download",
+    source: meta.source || "assets"
+  });
 }
-
+__name(serveModInfo, "serveModInfo");
 async function fetchModBytes(request, env, meta) {
-	const names = [];
-	if (meta && meta.file) {
-		names.push(String(meta.file));
-	}
-	// Do not fall back to stray.jar here. That file can still be the previous
-	// build for a few seconds after latest.json flips, and the launcher then
-	// rejects the download as the wrong version.
-	for (let i = 0; i < names.length; i++) {
-		const urls = githubModFileUrls(env, meta, names[i]);
-		for (let u = 0; u < urls.length; u++) {
-			try {
-				const upstream = await fetchGithubFile(urls[u]);
-				if (upstream) {
-					return { body: upstream.body, file: names[i] };
-				}
-			} catch {
-				// try next mirror
-			}
-		}
-	}
-	if (env.ASSETS) {
-		for (let i = 0; i < names.length; i++) {
-			try {
-				const asset = await env.ASSETS.fetch(new URL("/mod/" + names[i], request.url));
-				if (asset.ok) {
-					return { body: asset.body, file: names[i] };
-				}
-			} catch {
-				// try next
-			}
-		}
-	}
-	return null;
+  const names = [];
+  if (meta && meta.file) {
+    names.push(String(meta.file));
+  }
+  for (let i = 0; i < names.length; i++) {
+    const urls = githubModFileUrls(env, meta, names[i]);
+    for (let u = 0; u < urls.length; u++) {
+      try {
+        const upstream = await fetchGithubFile(urls[u]);
+        if (upstream) {
+          return { body: upstream.body, file: names[i] };
+        }
+      } catch {
+      }
+    }
+  }
+  if (env.ASSETS) {
+    for (let i = 0; i < names.length; i++) {
+      try {
+        const asset = await env.ASSETS.fetch(new URL("/mod/" + names[i], request.url));
+        if (asset.ok) {
+          return { body: asset.body, file: names[i] };
+        }
+      } catch {
+      }
+    }
+  }
+  return null;
 }
-
+__name(fetchModBytes, "fetchModBytes");
 async function serveModJar(request, env) {
-	const meta = await readModMeta(request, env);
-	const got = await fetchModBytes(request, env, meta);
-	if (!got) {
-		return json(404, { error: "Mod build is not published yet" });
-	}
-	const name = String((meta && meta.file) || got.file || "stray.jar").replace(/"/g, "");
-	const headers = new Headers();
-	headers.set("Content-Type", "application/java-archive");
-	headers.set("Content-Disposition", "attachment; filename=\"" + name + "\"");
-	headers.set("Cache-Control", "no-store");
-	const extra = cors();
-	for (const key of Object.keys(extra)) {
-		headers.set(key, extra[key]);
-	}
-	return new Response(got.body, { status: 200, headers });
+  const meta = await readModMeta(request, env);
+  const got = await fetchModBytes(request, env, meta);
+  if (!got) {
+    return json(404, { error: "Mod build is not published yet" });
+  }
+  const name = String(meta && meta.file || got.file || "stray.jar").replace(/"/g, "");
+  const headers = new Headers();
+  headers.set("Content-Type", "application/java-archive");
+  headers.set("Content-Disposition", 'attachment; filename="' + name + '"');
+  headers.set("Cache-Control", "no-store");
+  const extra = cors();
+  for (const key of Object.keys(extra)) {
+    headers.set(key, extra[key]);
+  }
+  return new Response(got.body, { status: 200, headers });
 }
-
+__name(serveModJar, "serveModJar");
 function cors() {
-	return {
-		"Access-Control-Allow-Origin": "*",
-		"Access-Control-Allow-Methods": "GET,PUT,POST,DELETE,OPTIONS",
-		"Access-Control-Allow-Headers": "Content-Type, X-UUID, X-Key, X-Code, X-Token, X-Admin"
-	};
+  return {
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Methods": "GET,PUT,POST,DELETE,OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type, X-UUID, X-Key, X-Code, X-Token, X-Admin"
+  };
 }
-
+__name(cors, "cors");
 function page(html) {
-	return new Response(html, {
-		headers: {
-			"Content-Type": "text/html; charset=utf-8",
-			"Cache-Control": "private, no-store, no-cache",
-			Pragma: "no-cache"
-		}
-	});
+  return new Response(html, {
+    headers: {
+      "Content-Type": "text/html; charset=utf-8",
+      "Cache-Control": "private, no-store, no-cache",
+      Pragma: "no-cache"
+    }
+  });
 }
+__name(page, "page");
+var CAPE_CROP_JS = `window.StrayCapeCrop = (function () {
+	var ASPECT = 10 / 16;
+	var FACE_W = 10;
+	var FACE_H = 16;
+	var LAYOUT_W = 64;
+	var LAYOUT_H = 32;
+	var MAX_SCALE = 16;
+	var overlay = null;
 
-const CAPE_CROP_JS = "window.StrayCapeCrop = (function () {\n\tvar ASPECT = 10 / 16;\n\tvar FACE_W = 10;\n\tvar FACE_H = 16;\n\tvar LAYOUT_W = 64;\n\tvar LAYOUT_H = 32;\n\tvar MAX_SCALE = 16;\n\tvar overlay = null;\n\n\tfunction isVanilla(w, h) {\n\t\treturn w >= 64 && h >= 32 && w % 64 === 0 && h % 32 === 0 && w / 64 === h / 32;\n\t}\n\n\tfunction cover(srcW, srcH) {\n\t\tvar srcAspect = srcW / Math.max(1, srcH);\n\t\tvar crop = { x: 0, y: 0, w: 1, h: 1 };\n\t\tif (srcAspect > ASPECT) {\n\t\t\tcrop.h = 1;\n\t\t\tcrop.w = ASPECT / srcAspect;\n\t\t\tcrop.x = (1 - crop.w) * 0.5;\n\t\t\tcrop.y = 0;\n\t\t} else {\n\t\t\tcrop.w = 1;\n\t\t\tcrop.h = srcAspect / ASPECT;\n\t\t\tcrop.x = 0;\n\t\t\tcrop.y = (1 - crop.h) * 0.5;\n\t\t}\n\t\treturn crop;\n\t}\n\n\tfunction clampCrop(crop, srcW, srcH) {\n\t\tsrcW = Math.max(1, srcW);\n\t\tsrcH = Math.max(1, srcH);\n\t\tvar srcAspect = srcW / srcH;\n\t\tvar normAspect = ASPECT / srcAspect;\n\t\tvar max = cover(srcW, srcH);\n\t\tvar minW = Math.max(10 / srcW, max.w * 0.12);\n\t\tcrop.w = Math.min(max.w, Math.max(minW, crop.w));\n\t\tcrop.h = crop.w / normAspect;\n\t\tif (crop.h > max.h) {\n\t\t\tcrop.h = max.h;\n\t\t\tcrop.w = crop.h * normAspect;\n\t\t}\n\t\tcrop.x = Math.min(Math.max(0, crop.x), Math.max(0, 1 - crop.w));\n\t\tcrop.y = Math.min(Math.max(0, crop.y), Math.max(0, 1 - crop.h));\n\t}\n\n\tfunction loadImage(file) {\n\t\treturn new Promise(function (resolve, reject) {\n\t\t\tvar url = URL.createObjectURL(file);\n\t\t\tvar img = new Image();\n\t\t\timg.onload = function () {\n\t\t\t\tURL.revokeObjectURL(url);\n\t\t\t\tresolve(img);\n\t\t\t};\n\t\t\timg.onerror = function () {\n\t\t\t\tURL.revokeObjectURL(url);\n\t\t\t\treject(new Error(\"Could not read that image.\"));\n\t\t\t};\n\t\t\timg.src = url;\n\t\t});\n\t}\n\n\tfunction pickScale(sw, sh) {\n\t\tvar needed = Math.max(4, Math.min(MAX_SCALE, Math.max(Math.floor(sw / FACE_W), Math.floor(sh / FACE_H))));\n\t\treturn Math.min(MAX_SCALE, Math.max(4, needed));\n\t}\n\n\tfunction bakeAtlas(img, crop) {\n\t\tvar sw = img.width;\n\t\tvar sh = img.height;\n\t\t\tvar scale = pickScale(img.width, img.height);\n\t\tvar aw = LAYOUT_W * scale;\n\t\tvar ah = LAYOUT_H * scale;\n\t\tvar out = document.createElement(\"canvas\");\n\t\tout.width = aw;\n\t\tout.height = ah;\n\t\tvar ctx = out.getContext(\"2d\");\n\t\tctx.fillStyle = \"#000\";\n\t\tctx.fillRect(0, 0, aw, ah);\n\t\tctx.imageSmoothingEnabled = crop.w * sw > 10 * scale || crop.h * sh > 16 * scale;\n\t\tvar fu = scale;\n\t\tvar fv = scale;\n\t\tvar fw = FACE_W * scale;\n\t\tvar fh = FACE_H * scale;\n\t\tvar sx = crop.x * sw;\n\t\tvar sy = crop.y * sh;\n\t\tvar sWidth = crop.w * sw;\n\t\tvar sHeight = crop.h * sh;\n\t\tctx.drawImage(img, sx, sy, sWidth, sHeight, fu, fv, fw, fh);\n\t\tctx.drawImage(out, fu, fv, fw, fh, 12 * scale, fv, fw, fh);\n\t\tvar edge = ctx.getImageData(fu, fv, fw, fh);\n\t\tfor (var y = 0; y < fh; y++) {\n\t\t\tvar left = (y * fw) * 4;\n\t\t\tvar right = (y * fw + fw - 1) * 4;\n\t\t\tfor (var x = 0; x < scale; x++) {\n\t\t\t\tctx.fillStyle = \"rgb(\" + edge.data[left] + \",\" + edge.data[left + 1] + \",\" + edge.data[left + 2] + \")\";\n\t\t\t\tctx.fillRect(x, fv + y, 1, 1);\n\t\t\t\tctx.fillStyle = \"rgb(\" + edge.data[right] + \",\" + edge.data[right + 1] + \",\" + edge.data[right + 2] + \")\";\n\t\t\t\tctx.fillRect(11 * scale + x, fv + y, 1, 1);\n\t\t\t}\n\t\t}\n\t\tfor (var i = 0; i < fw; i++) {\n\t\t\tvar top = i * 4;\n\t\t\tvar bot = ((fh - 1) * fw + i) * 4;\n\t\t\tfor (var t = 0; t < scale; t++) {\n\t\t\t\tctx.fillStyle = \"rgb(\" + edge.data[top] + \",\" + edge.data[top + 1] + \",\" + edge.data[top + 2] + \")\";\n\t\t\t\tctx.fillRect(fu + i, t, 1, 1);\n\t\t\t\tctx.fillStyle = \"rgb(\" + edge.data[bot] + \",\" + edge.data[bot + 1] + \",\" + edge.data[bot + 2] + \")\";\n\t\t\t\tctx.fillRect(11 * scale + i, t, 1, 1);\n\t\t\t}\n\t\t}\n\t\treturn out;\n\t}\n\n\tfunction canvasPng(canvas) {\n\t\treturn new Promise(function (resolve, reject) {\n\t\t\tcanvas.toBlob(function (blob) {\n\t\t\t\tif (!blob) reject(new Error(\"Could not encode cape.\"));\n\t\t\t\telse resolve(blob);\n\t\t\t}, \"image/png\");\n\t\t});\n\t}\n\n\tfunction close() {\n\t\tif (overlay && overlay.parentNode) overlay.parentNode.removeChild(overlay);\n\t\toverlay = null;\n\t}\n\n\tfunction open(file, onDone, onCancel) {\n\t\tclose();\n\t\tloadImage(file).then(function (img) {\n\t\t\tif (isVanilla(img.width, img.height)) {\n\t\t\t\tonDone(file);\n\t\t\t\treturn;\n\t\t\t}\n\t\t\tvar crop = cover(img.width, img.height);\n\t\t\toverlay = document.createElement(\"div\");\n\t\t\toverlay.className = \"overlay center\";\n\t\t\toverlay.innerHTML = \"\"\n\t\t\t\t+ '<div class=\"sheet crop-sheet\">'\n\t\t\t\t+ \"<h1 style=\\\"font-size:16px\\\">CAPE CREATOR</h1>\"\n\t\t\t\t+ '<p class=\"who\">Drag to pan. Scroll or pinch to zoom. The box is the 10\u00d716 face other players see.</p>'\n\t\t\t\t+ '<div class=\"crop-wrap\">'\n\t\t\t\t+ '<div class=\"crop-stage\" id=\"crop-stage\"><div class=\"crop-holder\"><canvas id=\"crop-src\"></canvas><div id=\"crop-box\"></div></div></div>'\n\t\t\t\t+ '<div class=\"crop-side\"><div class=\"crop-face\"><canvas id=\"crop-face\"></canvas></div><p class=\"hint\">In-game face</p></div>'\n\t\t\t\t+ \"</div>\"\n\t\t\t\t+ '<div class=\"row\">'\n\t\t\t\t+ '<button type=\"button\" class=\"ghost\" id=\"crop-reset\">Reset</button>'\n\t\t\t\t+ '<button type=\"button\" class=\"ghost\" id=\"crop-cancel\">Cancel</button>'\n\t\t\t\t+ '<button type=\"button\" class=\"primary\" id=\"crop-apply\">Apply cape</button>'\n\t\t\t\t+ \"</div></div>\";\n\t\t\tdocument.body.appendChild(overlay);\n\t\t\tvar stage = overlay.querySelector(\"#crop-stage\");\n\t\t\tvar srcCanvas = overlay.querySelector(\"#crop-src\");\n\t\t\tvar faceCanvas = overlay.querySelector(\"#crop-face\");\n\t\t\tvar box = overlay.querySelector(\"#crop-box\");\n\t\t\tvar dragging = false;\n\t\t\tvar lastX = 0;\n\t\t\tvar lastY = 0;\n\n\t\t\tfunction layout() {\n\t\t\t\tvar maxW = Math.min(420, stage.clientWidth || 420);\n\t\t\t\tvar maxH = 280;\n\t\t\t\tvar fit = Math.min(maxW / img.width, maxH / img.height);\n\t\t\t\tsrcCanvas.width = Math.max(1, Math.round(img.width * fit));\n\t\t\t\tsrcCanvas.height = Math.max(1, Math.round(img.height * fit));\n\t\t\t\tvar sctx = srcCanvas.getContext(\"2d\");\n\t\t\t\tsctx.imageSmoothingEnabled = true;\n\t\t\t\tsctx.drawImage(img, 0, 0, srcCanvas.width, srcCanvas.height);\n\t\t\t\tbox.style.left = crop.x * srcCanvas.width + \"px\";\n\t\t\t\tbox.style.top = crop.y * srcCanvas.height + \"px\";\n\t\t\t\tbox.style.width = crop.w * srcCanvas.width + \"px\";\n\t\t\t\tbox.style.height = crop.h * srcCanvas.height + \"px\";\n\t\t\t\tfaceCanvas.width = 50;\n\t\t\t\tfaceCanvas.height = 80;\n\t\t\t\tvar fctx = faceCanvas.getContext(\"2d\");\n\t\t\t\tfctx.imageSmoothingEnabled = true;\n\t\t\t\tfctx.drawImage(\n\t\t\t\t\timg,\n\t\t\t\t\tcrop.x * img.width,\n\t\t\t\t\tcrop.y * img.height,\n\t\t\t\t\tcrop.w * img.width,\n\t\t\t\t\tcrop.h * img.height,\n\t\t\t\t\t0,\n\t\t\t\t\t0,\n\t\t\t\t\t50,\n\t\t\t\t\t80\n\t\t\t\t);\n\t\t\t}\n\n\t\t\toverlay.querySelector(\"#crop-reset\").onclick = function () {\n\t\t\t\tcrop = cover(img.width, img.height);\n\t\t\t\tlayout();\n\t\t\t};\n\t\t\toverlay.querySelector(\"#crop-cancel\").onclick = function () {\n\t\t\t\tclose();\n\t\t\t\tif (onCancel) onCancel();\n\t\t\t};\n\t\t\toverlay.querySelector(\"#crop-apply\").onclick = function () {\n\t\t\t\tcanvasPng(bakeAtlas(img, crop)).then(function (blob) {\n\t\t\t\t\tclose();\n\t\t\t\t\tonDone(blob);\n\t\t\t\t}).catch(function (error) {\n\t\t\t\t\talert(error.message);\n\t\t\t\t});\n\t\t\t};\n\t\t\toverlay.addEventListener(\"click\", function (event) {\n\t\t\t\tif (event.target === overlay) {\n\t\t\t\t\tclose();\n\t\t\t\t\tif (onCancel) onCancel();\n\t\t\t\t}\n\t\t\t});\n\t\t\tstage.addEventListener(\"pointerdown\", function (event) {\n\t\t\t\tdragging = true;\n\t\t\t\tlastX = event.clientX;\n\t\t\t\tlastY = event.clientY;\n\t\t\t\tstage.setPointerCapture(event.pointerId);\n\t\t\t});\n\t\t\tstage.addEventListener(\"pointerup\", function () { dragging = false; });\n\t\t\tstage.addEventListener(\"pointermove\", function (event) {\n\t\t\t\tif (!dragging) return;\n\t\t\t\tvar dx = (event.clientX - lastX) / srcCanvas.width;\n\t\t\t\tvar dy = (event.clientY - lastY) / srcCanvas.height;\n\t\t\t\tlastX = event.clientX;\n\t\t\t\tlastY = event.clientY;\n\t\t\t\tcrop.x += dx;\n\t\t\t\tcrop.y += dy;\n\t\t\t\tclampCrop(crop, img.width, img.height);\n\t\t\t\tlayout();\n\t\t\t});\n\t\t\tstage.addEventListener(\"wheel\", function (event) {\n\t\t\t\tevent.preventDefault();\n\t\t\t\tvar rect = srcCanvas.getBoundingClientRect();\n\t\t\t\tvar px = (event.clientX - rect.left) / srcCanvas.width;\n\t\t\t\tvar py = (event.clientY - rect.top) / srcCanvas.height;\n\t\t\t\tvar factor = event.deltaY < 0 ? 0.88 : 1.14;\n\t\t\t\tcrop.x = px - (px - crop.x) * factor;\n\t\t\t\tcrop.y = py - (py - crop.y) * factor;\n\t\t\t\tcrop.w *= factor;\n\t\t\t\tcrop.h *= factor;\n\t\t\t\tclampCrop(crop, img.width, img.height);\n\t\t\t\tlayout();\n\t\t\t}, { passive: false });\n\t\t\trequestAnimationFrame(layout);\n\t\t}).catch(function (error) {\n\t\t\tif (onCancel) onCancel();\n\t\t\talert(error.message);\n\t\t});\n\t}\n\n\treturn { open: open, isVanilla: isVanilla };\n})();\n";
+	function isVanilla(w, h) {
+		return w >= 64 && h >= 32 && w % 64 === 0 && h % 32 === 0 && w / 64 === h / 32;
+	}
 
-const STORE_HTML = `<!DOCTYPE html>
+	function cover(srcW, srcH) {
+		var srcAspect = srcW / Math.max(1, srcH);
+		var crop = { x: 0, y: 0, w: 1, h: 1 };
+		if (srcAspect > ASPECT) {
+			crop.h = 1;
+			crop.w = ASPECT / srcAspect;
+			crop.x = (1 - crop.w) * 0.5;
+			crop.y = 0;
+		} else {
+			crop.w = 1;
+			crop.h = srcAspect / ASPECT;
+			crop.x = 0;
+			crop.y = (1 - crop.h) * 0.5;
+		}
+		return crop;
+	}
+
+	function clampCrop(crop, srcW, srcH) {
+		srcW = Math.max(1, srcW);
+		srcH = Math.max(1, srcH);
+		var srcAspect = srcW / srcH;
+		var normAspect = ASPECT / srcAspect;
+		var max = cover(srcW, srcH);
+		var minW = Math.max(10 / srcW, max.w * 0.12);
+		crop.w = Math.min(max.w, Math.max(minW, crop.w));
+		crop.h = crop.w / normAspect;
+		if (crop.h > max.h) {
+			crop.h = max.h;
+			crop.w = crop.h * normAspect;
+		}
+		crop.x = Math.min(Math.max(0, crop.x), Math.max(0, 1 - crop.w));
+		crop.y = Math.min(Math.max(0, crop.y), Math.max(0, 1 - crop.h));
+	}
+
+	function loadImage(file) {
+		return new Promise(function (resolve, reject) {
+			var url = URL.createObjectURL(file);
+			var img = new Image();
+			img.onload = function () {
+				URL.revokeObjectURL(url);
+				resolve(img);
+			};
+			img.onerror = function () {
+				URL.revokeObjectURL(url);
+				reject(new Error("Could not read that image."));
+			};
+			img.src = url;
+		});
+	}
+
+	function pickScale(sw, sh) {
+		var needed = Math.max(4, Math.min(MAX_SCALE, Math.max(Math.floor(sw / FACE_W), Math.floor(sh / FACE_H))));
+		return Math.min(MAX_SCALE, Math.max(4, needed));
+	}
+
+	function bakeAtlas(img, crop) {
+		var sw = img.width;
+		var sh = img.height;
+			var scale = pickScale(img.width, img.height);
+		var aw = LAYOUT_W * scale;
+		var ah = LAYOUT_H * scale;
+		var out = document.createElement("canvas");
+		out.width = aw;
+		out.height = ah;
+		var ctx = out.getContext("2d");
+		ctx.fillStyle = "#000";
+		ctx.fillRect(0, 0, aw, ah);
+		ctx.imageSmoothingEnabled = crop.w * sw > 10 * scale || crop.h * sh > 16 * scale;
+		var fu = scale;
+		var fv = scale;
+		var fw = FACE_W * scale;
+		var fh = FACE_H * scale;
+		var sx = crop.x * sw;
+		var sy = crop.y * sh;
+		var sWidth = crop.w * sw;
+		var sHeight = crop.h * sh;
+		ctx.drawImage(img, sx, sy, sWidth, sHeight, fu, fv, fw, fh);
+		ctx.drawImage(out, fu, fv, fw, fh, 12 * scale, fv, fw, fh);
+		var edge = ctx.getImageData(fu, fv, fw, fh);
+		for (var y = 0; y < fh; y++) {
+			var left = (y * fw) * 4;
+			var right = (y * fw + fw - 1) * 4;
+			for (var x = 0; x < scale; x++) {
+				ctx.fillStyle = "rgb(" + edge.data[left] + "," + edge.data[left + 1] + "," + edge.data[left + 2] + ")";
+				ctx.fillRect(x, fv + y, 1, 1);
+				ctx.fillStyle = "rgb(" + edge.data[right] + "," + edge.data[right + 1] + "," + edge.data[right + 2] + ")";
+				ctx.fillRect(11 * scale + x, fv + y, 1, 1);
+			}
+		}
+		for (var i = 0; i < fw; i++) {
+			var top = i * 4;
+			var bot = ((fh - 1) * fw + i) * 4;
+			for (var t = 0; t < scale; t++) {
+				ctx.fillStyle = "rgb(" + edge.data[top] + "," + edge.data[top + 1] + "," + edge.data[top + 2] + ")";
+				ctx.fillRect(fu + i, t, 1, 1);
+				ctx.fillStyle = "rgb(" + edge.data[bot] + "," + edge.data[bot + 1] + "," + edge.data[bot + 2] + ")";
+				ctx.fillRect(11 * scale + i, t, 1, 1);
+			}
+		}
+		return out;
+	}
+
+	function canvasPng(canvas) {
+		return new Promise(function (resolve, reject) {
+			canvas.toBlob(function (blob) {
+				if (!blob) reject(new Error("Could not encode cape."));
+				else resolve(blob);
+			}, "image/png");
+		});
+	}
+
+	function close() {
+		if (overlay && overlay.parentNode) overlay.parentNode.removeChild(overlay);
+		overlay = null;
+	}
+
+	function open(file, onDone, onCancel) {
+		close();
+		loadImage(file).then(function (img) {
+			if (isVanilla(img.width, img.height)) {
+				onDone(file);
+				return;
+			}
+			var crop = cover(img.width, img.height);
+			overlay = document.createElement("div");
+			overlay.className = "overlay center";
+			overlay.innerHTML = ""
+				+ '<div class="sheet crop-sheet">'
+				+ "<h1 style=\\"font-size:16px\\">CAPE CREATOR</h1>"
+				+ '<p class="who">Drag to pan. Scroll or pinch to zoom. The box is the 10\xD716 face other players see.</p>'
+				+ '<div class="crop-wrap">'
+				+ '<div class="crop-stage" id="crop-stage"><div class="crop-holder"><canvas id="crop-src"></canvas><div id="crop-box"></div></div></div>'
+				+ '<div class="crop-side"><div class="crop-face"><canvas id="crop-face"></canvas></div><p class="hint">In-game face</p></div>'
+				+ "</div>"
+				+ '<div class="row">'
+				+ '<button type="button" class="ghost" id="crop-reset">Reset</button>'
+				+ '<button type="button" class="ghost" id="crop-cancel">Cancel</button>'
+				+ '<button type="button" class="primary" id="crop-apply">Apply cape</button>'
+				+ "</div></div>";
+			document.body.appendChild(overlay);
+			var stage = overlay.querySelector("#crop-stage");
+			var srcCanvas = overlay.querySelector("#crop-src");
+			var faceCanvas = overlay.querySelector("#crop-face");
+			var box = overlay.querySelector("#crop-box");
+			var dragging = false;
+			var lastX = 0;
+			var lastY = 0;
+
+			function layout() {
+				var maxW = Math.min(420, stage.clientWidth || 420);
+				var maxH = 280;
+				var fit = Math.min(maxW / img.width, maxH / img.height);
+				srcCanvas.width = Math.max(1, Math.round(img.width * fit));
+				srcCanvas.height = Math.max(1, Math.round(img.height * fit));
+				var sctx = srcCanvas.getContext("2d");
+				sctx.imageSmoothingEnabled = true;
+				sctx.drawImage(img, 0, 0, srcCanvas.width, srcCanvas.height);
+				box.style.left = crop.x * srcCanvas.width + "px";
+				box.style.top = crop.y * srcCanvas.height + "px";
+				box.style.width = crop.w * srcCanvas.width + "px";
+				box.style.height = crop.h * srcCanvas.height + "px";
+				faceCanvas.width = 50;
+				faceCanvas.height = 80;
+				var fctx = faceCanvas.getContext("2d");
+				fctx.imageSmoothingEnabled = true;
+				fctx.drawImage(
+					img,
+					crop.x * img.width,
+					crop.y * img.height,
+					crop.w * img.width,
+					crop.h * img.height,
+					0,
+					0,
+					50,
+					80
+				);
+			}
+
+			overlay.querySelector("#crop-reset").onclick = function () {
+				crop = cover(img.width, img.height);
+				layout();
+			};
+			overlay.querySelector("#crop-cancel").onclick = function () {
+				close();
+				if (onCancel) onCancel();
+			};
+			overlay.querySelector("#crop-apply").onclick = function () {
+				canvasPng(bakeAtlas(img, crop)).then(function (blob) {
+					close();
+					onDone(blob);
+				}).catch(function (error) {
+					alert(error.message);
+				});
+			};
+			overlay.addEventListener("click", function (event) {
+				if (event.target === overlay) {
+					close();
+					if (onCancel) onCancel();
+				}
+			});
+			stage.addEventListener("pointerdown", function (event) {
+				dragging = true;
+				lastX = event.clientX;
+				lastY = event.clientY;
+				stage.setPointerCapture(event.pointerId);
+			});
+			stage.addEventListener("pointerup", function () { dragging = false; });
+			stage.addEventListener("pointermove", function (event) {
+				if (!dragging) return;
+				var dx = (event.clientX - lastX) / srcCanvas.width;
+				var dy = (event.clientY - lastY) / srcCanvas.height;
+				lastX = event.clientX;
+				lastY = event.clientY;
+				crop.x += dx;
+				crop.y += dy;
+				clampCrop(crop, img.width, img.height);
+				layout();
+			});
+			stage.addEventListener("wheel", function (event) {
+				event.preventDefault();
+				var rect = srcCanvas.getBoundingClientRect();
+				var px = (event.clientX - rect.left) / srcCanvas.width;
+				var py = (event.clientY - rect.top) / srcCanvas.height;
+				var factor = event.deltaY < 0 ? 0.88 : 1.14;
+				crop.x = px - (px - crop.x) * factor;
+				crop.y = py - (py - crop.y) * factor;
+				crop.w *= factor;
+				crop.h *= factor;
+				clampCrop(crop, img.width, img.height);
+				layout();
+			}, { passive: false });
+			requestAnimationFrame(layout);
+		}).catch(function (error) {
+			if (onCancel) onCancel();
+			alert(error.message);
+		});
+	}
+
+	return { open: open, isVanilla: isVanilla };
+})();
+`;
+var STORE_HTML = `<!DOCTYPE html>
 <html lang="en">
 <head>
 	<meta charset="utf-8">
@@ -1596,7 +1805,7 @@ const STORE_HTML = `<!DOCTYPE html>
 			</div>
 			<p>Message that Discord with your Minecraft name. After you are added, open the Cape card in Stray.</p>
 		</section>
-		<p class="note">Minecraft <span id="mc-ver">26.1.2</span> · latest build <span id="stat-ver">—</span></p>
+		<p class="note">Minecraft <span id="mc-ver">26.1.2</span> \xB7 latest build <span id="stat-ver">\u2014</span></p>
 		<div class="foot">
 			<span>stray.gay</span>
 			<a href="/admin">Desk</a>
@@ -1663,11 +1872,11 @@ const STORE_HTML = `<!DOCTYPE html>
 				}).catch(function () { consider(null); });
 			});
 		})();
-	</script>
+	<\/script>
 </body>
 </html>
 `;
-const LOGIN_HTML = `<!DOCTYPE html>
+var LOGIN_HTML = `<!DOCTYPE html>
 <html lang="en">
 <head>
 	<meta charset="utf-8">
@@ -1779,7 +1988,7 @@ const LOGIN_HTML = `<!DOCTYPE html>
 		admin.value = sessionStorage.getItem("stray-admin") || "";
 		async function enter() {
 			const key = admin.value.trim();
-			status.textContent = "Checking…";
+			status.textContent = "Checking\u2026";
 			status.className = "status";
 			go.disabled = true;
 			try {
@@ -1803,11 +2012,11 @@ const LOGIN_HTML = `<!DOCTYPE html>
 		go.onclick = enter;
 		admin.addEventListener("keydown", function (event) { if (event.key === "Enter") enter(); });
 		if (admin.value) enter();
-	</script>
+	<\/script>
 </body>
 </html>
 `;
-const MANAGE_HTML = `<!DOCTYPE html>
+var MANAGE_HTML = `<!DOCTYPE html>
 <html lang="en" class="locked">
 <head>
 	<meta charset="utf-8">
@@ -1965,7 +2174,7 @@ const MANAGE_HTML = `<!DOCTYPE html>
 			<div class="tick"></div>
 			<div class="sub">Cape desk</div>
 			<button type="button" class="out ghost" id="out">Log out</button>
-			<div class="recycle">♲</div>
+			<div class="recycle">\u2672</div>
 		</aside>
 		<main class="content">
 			<div class="status" id="status"></div>
@@ -2015,6 +2224,26 @@ const MANAGE_HTML = `<!DOCTYPE html>
 						<button type="button" class="primary" id="bulkadd">Add all</button>
 					</div>
 				</div>
+				<div class="card">
+					<label for="casino-player">Casino chips</label>
+					<div class="row">
+						<input class="grow" id="casino-player" type="text" autocomplete="off" spellcheck="false" placeholder="Username or UUID">
+						<input id="casino-amount" type="number" step="1" placeholder="Amount" style="width:140px">
+						<button type="button" class="primary" id="casino-add">Add</button>
+						<button type="button" class="ghost" id="casino-set">Set to</button>
+					</div>
+					<p class="hint">Add takes negative amounts too. New players start with 1000.</p>
+					<div class="row" style="margin-top:12px">
+						<button type="button" class="ghost" id="casino-load">Show balances</button>
+					</div>
+					<label for="casino-keys" style="margin-top:14px">Mojang keys for casino logins</label>
+					<p class="hint">Mojang blocks this Worker, so logins are checked against Mojang's public keys. Open https://api.minecraftservices.com/publickeys in your browser, copy all of it and paste it here. Only needed again if Mojang changes its keys.</p>
+					<textarea id="casino-keys" placeholder="Paste the whole publickeys page" style="min-height:70px"></textarea>
+					<div class="row" style="margin-top:8px">
+						<button type="button" class="ghost" id="casino-keys-save">Save keys</button>
+					</div>
+					<div class="list" id="casino-list"></div>
+				</div>
 			</section>
 		</main>
 	</div>
@@ -2038,12 +2267,12 @@ const MANAGE_HTML = `<!DOCTYPE html>
 			</div>
 			<div class="field">
 				<label>Note</label>
-				<input id="d-note" maxlength="160" placeholder="Paid, cape pending…">
+				<input id="d-note" maxlength="160" placeholder="Paid, cape pending\u2026">
 			</div>
 			<div class="field">
 				<label>Cape from URL</label>
 				<div class="row">
-					<input class="grow" id="d-url" placeholder="https://…/cape.png">
+					<input class="grow" id="d-url" placeholder="https://\u2026/cape.png">
 					<button type="button" class="ghost" id="d-urlgo">Fetch</button>
 				</div>
 			</div>
@@ -2092,8 +2321,8 @@ const MANAGE_HTML = `<!DOCTYPE html>
 			</div>
 		</div>
 	</div>
-	<script src="https://cdn.jsdelivr.net/npm/skinview3d@3.4.1/bundles/skinview3d.bundle.js"></script>
-	<script src="/cape-crop.js"></script>
+	<script src="https://cdn.jsdelivr.net/npm/skinview3d@3.4.1/bundles/skinview3d.bundle.js"><\/script>
+	<script src="/cape-crop.js"><\/script>
 	<script>
 		const key = sessionStorage.getItem("stray-admin") || "";
 		if (!key) {
@@ -2428,7 +2657,7 @@ const MANAGE_HTML = `<!DOCTYPE html>
 
 		function fillDrawer(player) {
 			selected = player.uuid;
-			document.getElementById("d-who").textContent = (player.name || "Unknown") + "  ·  " + player.uuid;
+			document.getElementById("d-who").textContent = (player.name || "Unknown") + "  \xB7  " + player.uuid;
 			document.getElementById("d-note").value = player.note || "";
 			document.getElementById("d-bypass").checked = Boolean(player.bypass);
 			document.getElementById("d-url").value = "";
@@ -2798,6 +3027,46 @@ const MANAGE_HTML = `<!DOCTYPE html>
 				setStatus(true, "Added " + data.added + ". Skipped " + data.skipped + "." + (fail ? " Unknown: " + fail : ""));
 			}).catch(function (error) { setStatus(false, error.message); });
 		};
+		function casinoAdjust(mode) {
+			const player = document.getElementById("casino-player").value.trim();
+			const amount = Number(document.getElementById("casino-amount").value);
+			if (!player) { setStatus(false, "Enter a username or UUID"); return; }
+			if (!Number.isFinite(amount)) { setStatus(false, "Enter an amount"); return; }
+			admin("/api/casino/admin", "POST", { player: player, amount: Math.trunc(amount), mode: mode }).then(function (data) {
+				setStatus(true, (data.name || player) + " now has " + Number(data.balance).toLocaleString() + " chips.");
+				casinoLoad();
+			}).catch(function (error) { setStatus(false, error.message); });
+		}
+		function casinoLoad() {
+			return admin("/api/casino/admin/list", "POST", {}).then(function (data) {
+				const list = document.getElementById("casino-list");
+				list.innerHTML = "";
+				(data.players || []).forEach(function (p) {
+					const row = document.createElement("div");
+					row.className = "row";
+					row.style.justifyContent = "space-between";
+					row.style.padding = "6px 2px";
+					const who = document.createElement("span");
+					who.textContent = p.name || p.uuid;
+					const bal = document.createElement("b");
+					bal.textContent = Number(p.balance).toLocaleString();
+					row.appendChild(who);
+					row.appendChild(bal);
+					row.onclick = function () { document.getElementById("casino-player").value = p.name || p.uuid; };
+					list.appendChild(row);
+				});
+				setStatus(true, data.count + " casino accounts.");
+			}).catch(function (error) { setStatus(false, error.message); });
+		}
+		document.getElementById("casino-add").onclick = function () { casinoAdjust("add"); };
+		document.getElementById("casino-set").onclick = function () { casinoAdjust("set"); };
+		document.getElementById("casino-load").onclick = casinoLoad;
+		document.getElementById("casino-keys-save").onclick = function () {
+			admin("/api/casino/admin/keys", "POST", { keys: document.getElementById("casino-keys").value }).then(function (data) {
+				document.getElementById("casino-keys").value = "";
+				setStatus(true, "Saved " + data.keys + " Mojang keys. Casino logins work now.");
+			}).catch(function (error) { setStatus(false, error.message); });
+		};
 		document.getElementById("out").onclick = function () {
 			disarmDesk();
 			sessionStorage.removeItem("stray-admin");
@@ -2938,7 +3207,913 @@ const MANAGE_HTML = `<!DOCTYPE html>
 		if (key) {
 			loadPlayers(false).catch(function (error) { setStatus(false, error.message); });
 		}
-	</script>
+	<\/script>
 </body>
 </html>
 `;
+// ---------------------------------------------------------------------------
+// Stray casino (play money only). Balances and every game result live on the
+// server: the mod only sends what you want to do and animates what comes back.
+//
+// Accounts are kept in a Durable Object (the STRAY_LIVE class, instance
+// "casino"), so balance changes never race each other. Players log in by
+// proving their Minecraft account to Mojang (the same "join server" check
+// servers use); the Worker then hands out a signed token.
+// ---------------------------------------------------------------------------
+var CASINO_START = 1e3;
+var CASINO_MAX_BET = 1e9;
+var CASINO_TOKEN_MS = 12 * 60 * 60 * 1e3;
+var CASINO_HOST = "casino.internal";
+
+// Slots: one strip per reel (32 stops), the middle row pays.
+// Paytable (total return per 1 bet), RTP 96.1 %, a win on 27.6 % of spins:
+//   3 Diamonds 500, 3 Sevens 150, 3 Bars 50, 3 Bells 25, 3 Grapes 15,
+//   3 Lemons 10, 3 Cherries 8, any 3 of Bar/Seven/Diamond 10,
+//   Cherry Cherry on reels 1-2 pays 4, any other 3 fruits (Cherry/Lemon/Grape) 1.
+var SLOT_STRIP = ["C", "L", "G", "B", "C", "R", "L", "G", "C", "B", "L", "S", "G", "C", "R", "L", "B", "G", "C", "D", "L", "R", "C", "G", "B", "L", "C", "S", "G", "R", "L", "B"];
+var SLOT_THREE = { D: 500, S: 150, R: 50, B: 25, G: 15, L: 10, C: 8 };
+var SLOT_ANY_HIGH = 10;
+var SLOT_TWO_CHERRY = 4;
+var SLOT_ANY_FRUIT = 1;
+
+// European roulette (single zero).
+var ROULETTE_RED = [1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 34, 36];
+
+function casinoSecret(env) {
+  return String(env.CASINO_SECRET || env.ADMIN || "");
+}
+__name(casinoSecret, "casinoSecret");
+
+function casinoRandom(n) {
+  // Uniform integer in [0, n) without modulo bias.
+  const limit = Math.floor(4294967296 / n) * n;
+  const buf = new Uint32Array(1);
+  for (; ; ) {
+    crypto.getRandomValues(buf);
+    if (buf[0] < limit) {
+      return buf[0] % n;
+    }
+  }
+}
+__name(casinoRandom, "casinoRandom");
+
+function casinoB64(text) {
+  return btoa(unescape(encodeURIComponent(text))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+__name(casinoB64, "casinoB64");
+
+function casinoUnB64(text) {
+  const pad = text.replace(/-/g, "+").replace(/_/g, "/");
+  return decodeURIComponent(escape(atob(pad + "===".slice((pad.length + 3) % 4))));
+}
+__name(casinoUnB64, "casinoUnB64");
+
+async function casinoMintToken(env, uuid, name) {
+  const payload = uuid + "|" + name + "|" + (Date.now() + CASINO_TOKEN_MS);
+  const sig = await hmacHex(casinoSecret(env), "casino|" + payload);
+  return casinoB64(payload) + "." + sig;
+}
+__name(casinoMintToken, "casinoMintToken");
+
+async function casinoAuth(request, env) {
+  const header = request.headers.get("Authorization") || "";
+  const token = header.startsWith("Bearer ") ? header.slice(7).trim() : "";
+  const dot = token.indexOf(".");
+  if (dot < 1) {
+    return null;
+  }
+  let payload;
+  try {
+    payload = casinoUnB64(token.slice(0, dot));
+  } catch {
+    return null;
+  }
+  const sig = await hmacHex(casinoSecret(env), "casino|" + payload);
+  if (!timingSafeEqualStr(sig, token.slice(dot + 1))) {
+    return null;
+  }
+  const parts = payload.split("|");
+  if (parts.length !== 3 || Number(parts[2]) < Date.now()) {
+    return null;
+  }
+  return { uuid: parts[0], name: parts[1] };
+}
+__name(casinoAuth, "casinoAuth");
+
+async function casinoRoute(request, env, path) {
+  const sub = path.slice("/api/casino".length) || "/";
+  if (sub === "/ping" || sub === "/") {
+    // Open https://<your site>/api/casino/ping in a browser to check the casino is deployed.
+    return json(200, { ok: true, casino: "stray-casino-4", durableObject: !!env.STRAY_LIVE, secret: !!casinoSecret(env) });
+  }
+  if (!env.STRAY_LIVE) {
+    return json(501, { error: "The casino needs the STRAY_LIVE Durable Object binding." });
+  }
+  if (!casinoSecret(env)) {
+    return json(500, { error: "Set CASINO_SECRET (or ADMIN) on the Worker." });
+  }
+  if (sub === "/admin" || sub === "/admin/list" || sub === "/admin/keys") {
+    return casinoAdmin(request, env, sub);
+  }
+  if (request.method === "POST" && sub === "/login") {
+    return casinoLogin(request, env);
+  }
+  const who = await casinoAuth(request, env);
+  if (!who) {
+    return json(401, { error: "Log in again." });
+  }
+  let body = {};
+  if (request.method === "POST") {
+    try {
+      body = await request.json();
+    } catch {
+      body = {};
+    }
+  }
+  if (sub === "/send") {
+    const target = await resolvePlayer(String(body.to || ""));
+    if (!target.uuid) {
+      return json(404, { error: "No Minecraft player called " + String(body.to || "").slice(0, 16) + "." });
+    }
+    body = { amount: body.amount, toUuid: target.uuid, toName: target.name || String(body.to || "") };
+  }
+  const ops = ["/me", "/slots", "/roulette", "/blackjack", "/send", "/top"];
+  if (!ops.includes(sub)) {
+    return json(404, { error: "Unknown casino call." });
+  }
+  return casinoBank(env, sub, { who, body });
+}
+__name(casinoRoute, "casinoRoute");
+
+async function casinoBank(env, op, payload) {
+  const stub = env.STRAY_LIVE.get(env.STRAY_LIVE.idFromName("casino"));
+  const response = await stub.fetch(new Request("https://" + CASINO_HOST + "/casino" + op, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload)
+  }));
+  const text = await response.text();
+  return new Response(text, {
+    status: response.status,
+    headers: { ...cors(), "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store" }
+  });
+}
+__name(casinoBank, "casinoBank");
+
+async function casinoLogin(request, env) {
+  // Proof one: the mod joined a "server" with this id at Mojang; Mojang confirms it.
+  // Proof two (when Mojang can't be reached from the Worker): the mod's chat signing key,
+  // which Mojang signed for this account, signs this login.
+  const name = String(request.headers.get("x-minecraft-username") || "").trim();
+  const server = String(request.headers.get("x-minecraft-server") || "").trim();
+  if (!NAME_RE.test(name) || !/^[A-Za-z0-9_\-]{8,64}$/.test(server)) {
+    return json(400, { error: "Bad login." });
+  }
+  let body = {};
+  try {
+    body = await request.json();
+  } catch {
+    body = {};
+  }
+  let uuid = "";
+  let realName = "";
+  const joined = await casinoHasJoined(name, server);
+  if (joined.profile) {
+    uuid = normalizeUuid(joined.profile.id);
+    realName = String(joined.profile.name || "");
+  }
+  let why = "Mojang said " + joined.status;
+  if (!uuid && body && body.cert) {
+    const checked = await casinoCertLogin(env, name, server, body);
+    if (checked.uuid) {
+      uuid = checked.uuid;
+      realName = await lookupName(uuid) || name;
+    } else {
+      why += ", key check: " + checked.error;
+    }
+  }
+  if (!uuid || !realName) {
+    return json(403, { error: "Could not verify your account (" + why + ")." });
+  }
+  const token = await casinoMintToken(env, uuid, realName);
+  const bank = await casinoBank(env, "/me", { who: { uuid, name: realName }, body: {} });
+  const data = await bank.json();
+  return json(200, { ...data, token, uuid, name: realName });
+}
+__name(casinoLogin, "casinoLogin");
+
+async function casinoHasJoined(name, server) {
+  const url = "https://sessionserver.mojang.com/session/minecraft/hasJoined?username=" + encodeURIComponent(name) + "&serverId=" + encodeURIComponent(server);
+  let status = "nothing";
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      const response = await fetch(url, { headers: { "User-Agent": "Stray casino" } });
+      status = String(response.status);
+      if (response.status === 200) {
+        return { profile: await response.json(), status };
+      }
+      if (response.status !== 204) {
+        break;
+      }
+    } catch (error) {
+      status = "unreachable";
+    }
+    await new Promise((resolve) => setTimeout(resolve, 600 * (attempt + 1)));
+  }
+  return { profile: null, status };
+}
+__name(casinoHasJoined, "casinoHasJoined");
+
+var CASINO_BUILTIN_CERT_KEYS = [
+  "MIICIjANBgkqhkiG9w0BAQEFAAOCAg8AMIICCgKCAgEAylB4B6m5lz7jwrcFz6Fd/fnfUhcvlxsTSn5kIK/2aGG1C3kMy4VjhwlxF6BFUSnfxhNswPjh3ZitkBxEAFY25uzkJFRwHwVA9mdwjashXILtR6OqdLXXFVyUPIURLOSWqGNBtb08EN5fMnG8iFLgEJIBMxs9BvF3s3/FhuHyPKiVTZmXY0WY4ZyYqvoKR+XjaTRPPvBsDa4WI2u1zxXMeHlodT3lnCzVvyOYBLXL6CJgByuOxccJ8hnXfF9yY4F0aeL080Jz/3+EBNG8RO4ByhtBf4Ny8NQ6stWsjfeUIvH7bU/4zCYcYOq4WrInXHqS8qruDmIl7P5XXGcabuzQstPf/h2CRAUpP/PlHXcMlvewjmGU6MfDK+lifScNYwjPxRo4nKTGFZf/0aqHCh/EAsQyLKrOIYRE0lDG3bzBh8ogIMLAugsAfBb6M3mqCqKaTMAf/VAjh5FFJnjS+7bE+bZEV0qwax1CEoPPJL1fIQjOS8zj086gjpGRCtSy9+bTPTfTR/SJ+VUB5G2IeCItkNHpJX2ygojFZ9n5Fnj7R9ZnOM+L8nyIjPu3aePvtcrXlyLhH/hvOfIOjPxOlqW+O5QwSFP4OEcyLAUgDdUgyW36Z5mB285uKW/ighzZsOTevVUG2QwDItObIV6i8RCxFbN2oDHyPaO5j1tTaBNyVt8CAwEAAQ==",
+  "MIICIjANBgkqhkiG9w0BAQEFAAOCAg8AMIICCgKCAgEAt4t9NPuu7cktclnaH7eZj0omkLcJHeLz5MKsyJEntHZ0INtuBjSSul3Pp3pBeJN8k3ADdcdBLUN90bcAi7WsQqTx3Ft363q3W7TbM8j2iTEdp/0uVspoRt/DP1tkaWFs/w2WwUv9jbVoBUzfUc4pSTIxRwdjmqjZQfvjwKNDbOx3IhP2H0WXodbISejPi1wBZqNW4m1rnZAXp/EpUguxA8mobCa4vUCBkyFDyXdl69/wUSJHyCPmgcMJ364OlAhIqtwVPShBZObvrK/f0BYk6ShJD3N7TFDatSYsIIdcTKRknaIm91s+EsMrdB9U4Yw+ZJ/pyCB4S3vk8zfDCnb0DWIxYH3/EMzaxl77djmTmMzi/JDITup5z3jfWtRZmrAhU2/+W5IO5hEpo3/bCS9PXIY5xb41Lmp2ZO8dXKtyD66Chchy0W129n8vPl2GIruOdrxsjZAHnneyAb9jm0uaGaphwnEnuecX/qgHY6ZMtayvLLsPst8PO6R1vufMy8WqjK+j7LnC1krL7CPDg0NEhyQTmw5l+NCNjSlvB1juM9V4PARg0bYCOkGXm7ydRCjSSH8CJXZpwnd5cBB5WKAX3KPzutRgMi/LFwNSMZzFuUyXaYOZPpD259yqph1LmGqegEdDriACVU+dVEONFMm8eIuBofe7ljmsAFKW9BINwK0CAwEAAQ=="
+];
+var casinoMojangKeys = null;
+var casinoMojangKeysAt = 0;
+// Mojang's keys for player chat certificates. Fetched when Mojang answers the Worker;
+// otherwise the copy pasted into the admin panel (saved in the CAPES bucket) is used.
+async function casinoCertKeys(env) {
+  if (casinoMojangKeys && Date.now() - casinoMojangKeysAt < 6 * 60 * 60 * 1e3) {
+    return casinoMojangKeys;
+  }
+  let data = null;
+  try {
+    const response = await fetch("https://api.minecraftservices.com/publickeys", { headers: { "User-Agent": "Stray casino" } });
+    if (response.ok) {
+      data = await response.json();
+    }
+  } catch {
+    data = null;
+  }
+  if (!data && env.CAPES) {
+    const saved = await env.CAPES.get("casino-mojang-keys.json");
+    if (saved) {
+      data = JSON.parse(await saved.text());
+    }
+  }
+  if (!data || !Array.isArray(data.playerCertificateKeys)) {
+    // Built-in copy from api.minecraftservices.com/publickeys (October 2026).
+    data = { playerCertificateKeys: CASINO_BUILTIN_CERT_KEYS.map((publicKey) => ({ publicKey })) };
+  }
+  const keys = [];
+  for (const entry of data.playerCertificateKeys || []) {
+    keys.push(await crypto.subtle.importKey("spki", casinoBytes(entry.publicKey), { name: "RSASSA-PKCS1-v1_5", hash: "SHA-1" }, false, ["verify"]));
+  }
+  casinoMojangKeys = keys;
+  casinoMojangKeysAt = Date.now();
+  return keys;
+}
+__name(casinoCertKeys, "casinoCertKeys");
+
+function casinoBytes(b64) {
+  const raw = atob(String(b64 || "").replace(/-/g, "+").replace(/_/g, "/"));
+  const out = new Uint8Array(raw.length);
+  for (let i = 0; i < raw.length; i++) {
+    out[i] = raw.charCodeAt(i);
+  }
+  return out;
+}
+__name(casinoBytes, "casinoBytes");
+
+async function casinoCertLogin(env, name, server, body) {
+  try {
+    const cert = body.cert || {};
+    const uuid = normalizeUuid(String(body.uuid || ""));
+    const expires = Number(cert.expires);
+    if (!uuid || !Number.isFinite(expires) || expires < Date.now()) {
+      return { error: "expired key" };
+    }
+    const time = Number(body.time);
+    if (!Number.isFinite(time) || Math.abs(Date.now() - time) > 5 * 60 * 1e3) {
+      return { error: "clock" };
+    }
+    const keyDer = casinoBytes(cert.key);
+    // Mojang signed: uuid (16 bytes) + expiry in ms (8 bytes) + the player's public key.
+    const signed = new Uint8Array(24 + keyDer.length);
+    const view = new DataView(signed.buffer);
+    const hex = uuid.replace(/-/g, "");
+    for (let i = 0; i < 16; i++) {
+      signed[i] = parseInt(hex.substr(i * 2, 2), 16);
+    }
+    view.setBigInt64(16, BigInt(Math.trunc(expires)));
+    signed.set(keyDer, 24);
+    const mojangSig = casinoBytes(cert.sig);
+    let trusted = false;
+    for (const key of await casinoCertKeys(env)) {
+      if (await crypto.subtle.verify("RSASSA-PKCS1-v1_5", key, mojangSig, signed)) {
+        trusted = true;
+        break;
+      }
+    }
+    if (!trusted) {
+      return { error: "key not signed by Mojang" };
+    }
+    const playerKey = await crypto.subtle.importKey("spki", keyDer, { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" }, false, ["verify"]);
+    const message = new TextEncoder().encode("stray-casino|" + name + "|" + server + "|" + Math.trunc(time) + "|" + uuid);
+    if (!await crypto.subtle.verify("RSASSA-PKCS1-v1_5", playerKey, casinoBytes(body.proof), message)) {
+      return { error: "bad proof" };
+    }
+    return { uuid };
+  } catch (error) {
+    return { error: String(error && error.message || error).slice(0, 80) };
+  }
+}
+__name(casinoCertLogin, "casinoCertLogin");
+
+async function casinoAdmin(request, env, sub) {
+  const checked = await adminBody(request, env);
+  if (checked.error) {
+    return checked.error;
+  }
+  const body = checked.body || {};
+  if (sub === "/admin/list") {
+    return casinoBank(env, "/admin-list", { body: {} });
+  }
+  if (sub === "/admin/keys") {
+    let data;
+    try {
+      data = JSON.parse(String(body.keys || ""));
+    } catch {
+      return json(400, { error: "That is not the JSON from the publickeys page." });
+    }
+    const list = data && Array.isArray(data.playerCertificateKeys) ? data.playerCertificateKeys.filter((k) => k && typeof k.publicKey === "string") : [];
+    if (!list.length) {
+      return json(400, { error: "No playerCertificateKeys in that text." });
+    }
+    for (const k of list) {
+      try {
+        await crypto.subtle.importKey("spki", casinoBytes(k.publicKey), { name: "RSASSA-PKCS1-v1_5", hash: "SHA-1" }, false, ["verify"]);
+      } catch {
+        return json(400, { error: "One of the keys is not a valid public key." });
+      }
+    }
+    if (!env.CAPES) {
+      return json(500, { error: "The CAPES bucket is not bound." });
+    }
+    await env.CAPES.put("casino-mojang-keys.json", JSON.stringify({ playerCertificateKeys: list }), { httpMetadata: { contentType: "application/json" } });
+    casinoMojangKeys = null;
+    return json(200, { ok: true, keys: list.length });
+  }
+  const target = await resolvePlayer(String(body.player || ""));
+  if (!target.uuid) {
+    return json(404, { error: "Unknown player." });
+  }
+  return casinoBank(env, "/admin-adjust", {
+    body: { uuid: target.uuid, name: target.name || "", amount: body.amount, mode: body.mode === "set" ? "set" : "add" }
+  });
+}
+__name(casinoAdmin, "casinoAdmin");
+
+// ----------------------------------------------------------------- bank (Durable Object)
+
+async function casinoHandle(storage, op, payload) {
+  const who = payload.who || {};
+  const body = payload.body || {};
+  const reply = /* @__PURE__ */ __name((status, data) => new Response(JSON.stringify(data), { status, headers: { "Content-Type": "application/json" } }), "reply");
+  try {
+    if (op === "/admin-list") {
+      const all = await storage.list({ prefix: "acct:" });
+      const rows = [];
+      for (const [key, acct] of all) {
+        rows.push({ uuid: key.slice(5), name: acct.name || "", balance: acct.bal, wagered: acct.wagered || 0, won: acct.won || 0 });
+      }
+      rows.sort((a, b) => b.balance - a.balance);
+      return reply(200, { ok: true, count: rows.length, players: rows.slice(0, 200) });
+    }
+    if (op === "/admin-adjust") {
+      const amount = Math.trunc(Number(body.amount));
+      if (!Number.isFinite(amount) || Math.abs(amount) > 1e12) {
+        return reply(400, { error: "Bad amount." });
+      }
+      const acct = await casinoAccount(storage, body.uuid, body.name);
+      const before = acct.bal;
+      acct.bal = body.mode === "set" ? Math.max(0, amount) : Math.max(0, acct.bal + amount);
+      casinoNote(acct, "admin", before < acct.bal ? "An admin gave you " + (acct.bal - before) : before > acct.bal ? "An admin took " + (before - acct.bal) : "An admin set your balance");
+      await casinoSave(storage, body.uuid, acct);
+      return reply(200, { ok: true, uuid: body.uuid, name: acct.name, balance: acct.bal });
+    }
+    if (!who.uuid) {
+      return reply(401, { error: "Log in again." });
+    }
+    const acct = await casinoAccount(storage, who.uuid, who.name);
+    if (op === "/me") {
+      const notes = acct.inbox || [];
+      acct.inbox = [];
+      await casinoSave(storage, who.uuid, acct);
+      const bj = await storage.get("bj:" + who.uuid);
+      return reply(200, { ok: true, balance: acct.bal, name: acct.name, inbox: notes, blackjack: bj ? casinoBjView(bj, acct.bal) : null });
+    }
+    if (op === "/top") {
+      const all = await storage.list({ prefix: "acct:" });
+      const rows = [];
+      for (const [, a] of all) {
+        rows.push({ name: a.name || "?", balance: a.bal });
+      }
+      rows.sort((a, b) => b.balance - a.balance);
+      return reply(200, { ok: true, top: rows.slice(0, 10), balance: acct.bal });
+    }
+    if (op === "/slots") {
+      const bet = casinoBet(body.bet, acct.bal);
+      if (typeof bet === "string") {
+        return reply(400, { error: bet, balance: acct.bal });
+      }
+      const stops = [casinoRandom(SLOT_STRIP.length), casinoRandom(SLOT_STRIP.length), casinoRandom(SLOT_STRIP.length)];
+      const grid = stops.map((s) => [-1, 0, 1].map((o) => SLOT_STRIP[(s + o + SLOT_STRIP.length) % SLOT_STRIP.length]));
+      const line = grid.map((col) => col[1]);
+      const mult = slotMultiplier(line);
+      const win = bet * mult;
+      acct.bal += win - bet;
+      acct.wagered = (acct.wagered || 0) + bet;
+      acct.won = (acct.won || 0) + win;
+      await casinoSave(storage, who.uuid, acct);
+      return reply(200, { ok: true, stops, grid, line, multiplier: mult, bet, win, balance: acct.bal });
+    }
+    if (op === "/roulette") {
+      const bets = Array.isArray(body.bets) ? body.bets.slice(0, 60) : [];
+      if (!bets.length) {
+        return reply(400, { error: "Place a bet first.", balance: acct.bal });
+      }
+      let total = 0;
+      const clean = [];
+      for (const b of bets) {
+        const type = String(b.type || "");
+        const value = Math.trunc(Number(b.value) || 0);
+        const amount = Math.trunc(Number(b.amount));
+        if (!Number.isFinite(amount) || amount < 1) {
+          return reply(400, { error: "Bad bet amount.", balance: acct.bal });
+        }
+        if (!rouletteValid(type, value)) {
+          return reply(400, { error: "Bad bet.", balance: acct.bal });
+        }
+        total += amount;
+        clean.push({ type, value, amount });
+      }
+      if (total > acct.bal) {
+        return reply(400, { error: "Not enough chips.", balance: acct.bal });
+      }
+      if (total > CASINO_MAX_BET) {
+        return reply(400, { error: "Bet too large.", balance: acct.bal });
+      }
+      const number = casinoRandom(37);
+      let win = 0;
+      const results = clean.map((b) => {
+        const mult = rouletteMultiplier(b.type, b.value, number);
+        win += b.amount * mult;
+        return { ...b, win: b.amount * mult };
+      });
+      acct.bal += win - total;
+      acct.wagered = (acct.wagered || 0) + total;
+      acct.won = (acct.won || 0) + win;
+      await casinoSave(storage, who.uuid, acct);
+      return reply(200, { ok: true, number, color: rouletteColor(number), bets: results, bet: total, win, balance: acct.bal });
+    }
+    if (op === "/blackjack") {
+      return casinoBlackjack(storage, who, acct, body, reply);
+    }
+    if (op === "/send") {
+      const amount = Math.trunc(Number(body.amount));
+      if (!Number.isFinite(amount) || amount < 1) {
+        return reply(400, { error: "Enter an amount.", balance: acct.bal });
+      }
+      if (body.toUuid === who.uuid) {
+        return reply(400, { error: "You can't send chips to yourself.", balance: acct.bal });
+      }
+      if (amount > acct.bal) {
+        return reply(400, { error: "Not enough chips.", balance: acct.bal });
+      }
+      const other = await casinoAccount(storage, body.toUuid, body.toName);
+      acct.bal -= amount;
+      other.bal += amount;
+      casinoNote(other, "gift", acct.name + " sent you " + amount);
+      await casinoSave(storage, who.uuid, acct);
+      await casinoSave(storage, body.toUuid, other);
+      return reply(200, { ok: true, to: other.name || body.toName, amount, balance: acct.bal });
+    }
+    return reply(404, { error: "Unknown casino call." });
+  } catch (error) {
+    console.error(error);
+    return reply(500, { error: "Casino error." });
+  }
+}
+__name(casinoHandle, "casinoHandle");
+
+async function casinoAccount(storage, uuid, name) {
+  let acct = await storage.get("acct:" + uuid);
+  if (!acct) {
+    acct = { name: name || "", bal: CASINO_START, created: Date.now(), wagered: 0, won: 0, inbox: [] };
+  }
+  if (name && acct.name !== name) {
+    acct.name = name;
+  }
+  return acct;
+}
+__name(casinoAccount, "casinoAccount");
+
+async function casinoSave(storage, uuid, acct) {
+  await storage.put("acct:" + uuid, acct);
+}
+__name(casinoSave, "casinoSave");
+
+function casinoNote(acct, kind, text) {
+  acct.inbox = (acct.inbox || []).concat([{ kind, text, at: Date.now() }]).slice(-10);
+}
+__name(casinoNote, "casinoNote");
+
+function casinoBet(raw, balance) {
+  const bet = Math.trunc(Number(raw));
+  if (!Number.isFinite(bet) || bet < 1) {
+    return "Enter a bet.";
+  }
+  if (bet > CASINO_MAX_BET) {
+    return "Bet too large.";
+  }
+  if (bet > balance) {
+    return "Not enough chips.";
+  }
+  return bet;
+}
+__name(casinoBet, "casinoBet");
+
+function slotMultiplier(line) {
+  const [a, b, c] = line;
+  const high = /* @__PURE__ */ __name((s) => s === "R" || s === "S" || s === "D", "high");
+  const fruit = /* @__PURE__ */ __name((s) => s === "C" || s === "L" || s === "G", "fruit");
+  if (a === b && b === c) {
+    return SLOT_THREE[a] || 0;
+  }
+  if (high(a) && high(b) && high(c)) {
+    return SLOT_ANY_HIGH;
+  }
+  if (a === "C" && b === "C") {
+    return SLOT_TWO_CHERRY;
+  }
+  if (fruit(a) && fruit(b) && fruit(c)) {
+    return SLOT_ANY_FRUIT;
+  }
+  return 0;
+}
+__name(slotMultiplier, "slotMultiplier");
+
+function rouletteColor(n) {
+  return n === 0 ? "green" : ROULETTE_RED.includes(n) ? "red" : "black";
+}
+__name(rouletteColor, "rouletteColor");
+
+function rouletteValid(type, value) {
+  switch (type) {
+    case "straight":
+      return value >= 0 && value <= 36;
+    case "red":
+    case "black":
+    case "odd":
+    case "even":
+    case "low":
+    case "high":
+      return true;
+    case "dozen":
+    case "column":
+      return value >= 1 && value <= 3;
+    default:
+      return false;
+  }
+}
+__name(rouletteValid, "rouletteValid");
+
+// Total return per 1 staked (0 = lost). Zero loses every outside bet.
+function rouletteMultiplier(type, value, n) {
+  switch (type) {
+    case "straight":
+      return n === value ? 36 : 0;
+    case "red":
+      return rouletteColor(n) === "red" ? 2 : 0;
+    case "black":
+      return rouletteColor(n) === "black" ? 2 : 0;
+    case "odd":
+      return n !== 0 && n % 2 === 1 ? 2 : 0;
+    case "even":
+      return n !== 0 && n % 2 === 0 ? 2 : 0;
+    case "low":
+      return n >= 1 && n <= 18 ? 2 : 0;
+    case "high":
+      return n >= 19 ? 2 : 0;
+    case "dozen":
+      return n !== 0 && Math.ceil(n / 12) === value ? 3 : 0;
+    case "column":
+      return n !== 0 && (n - 1) % 3 + 1 === value ? 3 : 0;
+    default:
+      return 0;
+  }
+}
+__name(rouletteMultiplier, "rouletteMultiplier");
+
+// ----------------------------------------------------------------- blackjack
+// 6 decks shuffled for every round. Dealer stands on soft 17 and peeks for
+// blackjack under an Ace or a ten. Blackjack pays 3:2, insurance 2:1. Double
+// on any first two cards (also after a split); split pairs (same value, so
+// any two tens) up to 4 hands; split Aces get one card each and can't be
+// split again. No surrender.
+
+var BJ_RANKS = ["A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"];
+var BJ_SUITS = ["S", "H", "D", "C"];
+
+function bjShoe() {
+  const shoe = [];
+  for (let d = 0; d < 6; d++) {
+    for (const s of BJ_SUITS) {
+      for (const r of BJ_RANKS) {
+        shoe.push(r + s);
+      }
+    }
+  }
+  for (let i = shoe.length - 1; i > 0; i--) {
+    const j = casinoRandom(i + 1);
+    const t = shoe[i];
+    shoe[i] = shoe[j];
+    shoe[j] = t;
+  }
+  return shoe;
+}
+__name(bjShoe, "bjShoe");
+
+function bjRank(card) {
+  return card.slice(0, -1);
+}
+__name(bjRank, "bjRank");
+
+function bjValue(card) {
+  const r = bjRank(card);
+  if (r === "A") {
+    return 11;
+  }
+  if (r === "J" || r === "Q" || r === "K") {
+    return 10;
+  }
+  return Number(r);
+}
+__name(bjValue, "bjValue");
+
+function bjTotal(cards) {
+  let total = 0;
+  let aces = 0;
+  for (const c of cards) {
+    total += bjValue(c);
+    if (bjRank(c) === "A") {
+      aces++;
+    }
+  }
+  while (total > 21 && aces > 0) {
+    total -= 10;
+    aces--;
+  }
+  return { total, soft: aces > 0 };
+}
+__name(bjTotal, "bjTotal");
+
+function bjNatural(cards) {
+  return cards.length === 2 && bjTotal(cards).total === 21;
+}
+__name(bjNatural, "bjNatural");
+
+function bjView(g, balance) {
+  const done = g.phase === "done";
+  const dealer = done ? g.dealer : [g.dealer[0], null];
+  return {
+    phase: g.phase,
+    active: g.active,
+    hands: g.hands.map((h) => ({ cards: h.cards, bet: h.bet, total: bjTotal(h.cards).total, soft: bjTotal(h.cards).soft, done: h.done, doubled: !!h.doubled, result: h.result || null, payout: h.payout || 0 })),
+    dealer,
+    dealerTotal: done ? bjTotal(g.dealer).total : bjValue(g.dealer[0]),
+    insurance: g.insurance || 0,
+    insurancePayout: g.insurancePayout || 0,
+    canDouble: g.phase === "player" && bjCanDouble(g, balance),
+    canSplit: g.phase === "player" && bjCanSplit(g, balance),
+    message: g.message || "",
+    balance
+  };
+}
+__name(bjView, "bjView");
+var casinoBjView = bjView;
+
+function bjActive(g) {
+  return g.hands[g.active];
+}
+__name(bjActive, "bjActive");
+
+function bjCanDouble(g, balance) {
+  const h = bjActive(g);
+  return !!h && !h.done && h.cards.length === 2 && balance >= h.bet;
+}
+__name(bjCanDouble, "bjCanDouble");
+
+function bjCanSplit(g, balance) {
+  const h = bjActive(g);
+  return !!h && !h.done && h.cards.length === 2 && g.hands.length < 4 && !h.splitAces && bjValue(h.cards[0]) === bjValue(h.cards[1]) && balance >= h.bet;
+}
+__name(bjCanSplit, "bjCanSplit");
+
+async function casinoBlackjack(storage, who, acct, body, reply) {
+  const key = "bj:" + who.uuid;
+  let g = await storage.get(key);
+  const action = String(body.action || "");
+  const save = /* @__PURE__ */ __name(async () => {
+    if (g.phase === "done") {
+      await storage.delete(key);
+    } else {
+      await storage.put(key, g);
+    }
+    await casinoSave(storage, who.uuid, acct);
+    return reply(200, { ok: true, blackjack: bjView(g, acct.bal), balance: acct.bal });
+  }, "save");
+  if (action === "state") {
+    return reply(200, { ok: true, blackjack: g ? bjView(g, acct.bal) : null, balance: acct.bal });
+  }
+  if (action === "start") {
+    if (g) {
+      return reply(400, { error: "Finish the current hand first.", blackjack: bjView(g, acct.bal), balance: acct.bal });
+    }
+    const bet = casinoBet(body.bet, acct.bal);
+    if (typeof bet === "string") {
+      return reply(400, { error: bet, balance: acct.bal });
+    }
+    acct.bal -= bet;
+    acct.wagered = (acct.wagered || 0) + bet;
+    const shoe = bjShoe();
+    const p1 = shoe.pop();
+    const d1 = shoe.pop();
+    const p2 = shoe.pop();
+    const d2 = shoe.pop();
+    g = { shoe, dealer: [d1, d2], hands: [{ cards: [p1, p2], bet, done: false }], active: 0, phase: "player", insurance: 0, base: bet };
+    if (bjRank(d1) === "A") {
+      g.phase = "insurance";
+      g.message = "Insurance?";
+      return save();
+    }
+    bjAfterPeek(g, acct);
+    return save();
+  }
+  if (!g) {
+    return reply(400, { error: "Deal a hand first.", balance: acct.bal });
+  }
+  if (g.phase === "insurance") {
+    if (action !== "insurance" && action !== "noinsurance") {
+      return reply(400, { error: "Take or decline insurance first.", blackjack: bjView(g, acct.bal), balance: acct.bal });
+    }
+    if (action === "insurance") {
+      const cost = Math.floor(g.hands[0].bet / 2);
+      if (cost < 1 || cost > acct.bal) {
+        return reply(400, { error: "Not enough chips for insurance.", blackjack: bjView(g, acct.bal), balance: acct.bal });
+      }
+      acct.bal -= cost;
+      acct.wagered = (acct.wagered || 0) + cost;
+      g.insurance = cost;
+    }
+    if (bjNatural(g.dealer) && g.insurance) {
+      g.insurancePayout = g.insurance * 3;
+      acct.bal += g.insurancePayout;
+      acct.won = (acct.won || 0) + g.insurancePayout;
+    }
+    g.phase = "player";
+    bjAfterPeek(g, acct);
+    return save();
+  }
+  if (g.phase !== "player") {
+    return reply(400, { error: "This hand is over.", balance: acct.bal });
+  }
+  const h = bjActive(g);
+  if (action === "hit") {
+    h.cards.push(g.shoe.pop());
+    if (bjTotal(h.cards).total >= 21) {
+      h.done = true;
+      bjNext(g, acct);
+    }
+    return save();
+  }
+  if (action === "stand") {
+    h.done = true;
+    bjNext(g, acct);
+    return save();
+  }
+  if (action === "double") {
+    if (!bjCanDouble(g, acct.bal)) {
+      return reply(400, { error: "You can't double now.", blackjack: bjView(g, acct.bal), balance: acct.bal });
+    }
+    acct.bal -= h.bet;
+    acct.wagered = (acct.wagered || 0) + h.bet;
+    h.bet *= 2;
+    h.doubled = true;
+    h.cards.push(g.shoe.pop());
+    h.done = true;
+    bjNext(g, acct);
+    return save();
+  }
+  if (action === "split") {
+    if (!bjCanSplit(g, acct.bal)) {
+      return reply(400, { error: "You can't split this hand.", blackjack: bjView(g, acct.bal), balance: acct.bal });
+    }
+    acct.bal -= h.bet;
+    acct.wagered = (acct.wagered || 0) + h.bet;
+    const aces = bjRank(h.cards[0]) === "A";
+    const second = { cards: [h.cards[1]], bet: h.bet, done: false, split: true, splitAces: aces };
+    h.cards = [h.cards[0]];
+    h.split = true;
+    h.splitAces = aces;
+    h.cards.push(g.shoe.pop());
+    second.cards.push(g.shoe.pop());
+    g.hands.splice(g.active + 1, 0, second);
+    if (aces) {
+      // One card on each split Ace, nothing more.
+      h.done = true;
+      second.done = true;
+    } else if (bjTotal(h.cards).total === 21) {
+      h.done = true;
+    }
+    bjNext(g, acct);
+    return save();
+  }
+  return reply(400, { error: "Unknown action.", blackjack: bjView(g, acct.bal), balance: acct.bal });
+}
+__name(casinoBlackjack, "casinoBlackjack");
+
+// After the deal (and insurance): the dealer's blackjack ends the round, a
+// player blackjack pays at once, otherwise play starts.
+function bjAfterPeek(g, acct) {
+  const up = bjValue(g.dealer[0]);
+  const dealerBj = (up === 10 || up === 11) && bjNatural(g.dealer);
+  const playerBj = bjNatural(g.hands[0].cards);
+  if (dealerBj || playerBj) {
+    g.hands[0].done = true;
+    bjSettle(g, acct);
+    return;
+  }
+  g.message = "";
+}
+__name(bjAfterPeek, "bjAfterPeek");
+
+function bjNext(g, acct) {
+  while (g.active < g.hands.length && g.hands[g.active].done) {
+    g.active++;
+  }
+  if (g.active < g.hands.length) {
+    const h = g.hands[g.active];
+    // A split hand that reached 21 needs no more cards.
+    if (bjTotal(h.cards).total === 21) {
+      h.done = true;
+      bjNext(g, acct);
+    }
+    return;
+  }
+  g.active = g.hands.length - 1;
+  bjSettle(g, acct);
+}
+__name(bjNext, "bjNext");
+
+function bjSettle(g, acct) {
+  const single = g.hands.length === 1;
+  const live = g.hands.some((h) => bjTotal(h.cards).total <= 21 && !(single && bjNatural(h.cards)));
+  if (live) {
+    // Dealer stands on all 17s.
+    while (bjTotal(g.dealer).total < 17) {
+      g.dealer.push(g.shoe.pop());
+    }
+  }
+  const dealer = bjTotal(g.dealer).total;
+  const dealerBj = bjNatural(g.dealer);
+  let paid = 0;
+  for (const h of g.hands) {
+    const t = bjTotal(h.cards).total;
+    const natural = single && !h.split && bjNatural(h.cards);
+    if (natural && dealerBj) {
+      h.result = "push";
+      h.payout = h.bet;
+    } else if (natural) {
+      h.result = "blackjack";
+      h.payout = h.bet + Math.floor(h.bet * 3 / 2);
+    } else if (dealerBj) {
+      h.result = "lose";
+      h.payout = 0;
+    } else if (t > 21) {
+      h.result = "bust";
+      h.payout = 0;
+    } else if (dealer > 21 || t > dealer) {
+      h.result = "win";
+      h.payout = h.bet * 2;
+    } else if (t === dealer) {
+      h.result = "push";
+      h.payout = h.bet;
+    } else {
+      h.result = "lose";
+      h.payout = 0;
+    }
+    paid += h.payout;
+  }
+  acct.bal += paid;
+  acct.won = (acct.won || 0) + paid;
+  g.phase = "done";
+  g.message = dealerBj ? "Dealer blackjack" : dealer > 21 ? "Dealer busts" : "Dealer has " + dealer;
+}
+__name(bjSettle, "bjSettle");
+
+export {
+  StrayLive,
+  worker_default as default
+};
