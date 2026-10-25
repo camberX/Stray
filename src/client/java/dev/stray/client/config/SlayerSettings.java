@@ -52,6 +52,8 @@ public final class SlayerSettings {
 	public int miniRgb = 0x55FFFF;
 	public boolean miniLine = false;
 	public int lineWidth = 3;
+	public boolean bossGlow = true;
+	public int bossRgb = 0xFF5555;
 	public boolean bossLine = true;
 	public int bossLineRgb = 0x55FFFF;
 	public boolean itemsOnGround = true;
@@ -145,6 +147,7 @@ public final class SlayerSettings {
 		return switch (key) {
 			case "mini" -> miniRgb;
 			case "bossLine" -> bossLineRgb;
+			case "boss" -> bossRgb;
 			case "eggSac" -> eggSacRgb;
 			case "invincible" -> invincibleRgb;
 			case "beacon" -> beaconRgb;
@@ -164,6 +167,7 @@ public final class SlayerSettings {
 		switch (key) {
 			case "mini" -> miniRgb = c;
 			case "bossLine" -> bossLineRgb = c;
+			case "boss" -> bossRgb = c;
 			case "eggSac" -> eggSacRgb = c;
 			case "invincible" -> invincibleRgb = c;
 			case "beacon" -> beaconRgb = c;

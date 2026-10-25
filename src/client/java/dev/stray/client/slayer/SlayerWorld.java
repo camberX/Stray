@@ -141,6 +141,9 @@ public final class SlayerWorld {
 				SlayerBosses.Shield shield = SlayerBosses.bossShield();
 				rgb = shield == null ? 0 : shield.rgb;
 			}
+			if (rgb == 0 && s.esp && s.bossGlow) {
+				rgb = s.bossRgb;
+			}
 			if (rgb != 0) {
 				nextGlow.put(boss.getId(), 0xFF000000 | rgb);
 			}

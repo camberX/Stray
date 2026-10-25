@@ -449,6 +449,30 @@ public final class SlayerApi {
 				break;
 			}
 		}
+		if (found == null && type != null && (state == State.BOSS_FIGHT || state == State.COCOONED)) {
+			// No "Spawned by" tag in sight: take the closest "[SLAYER BOSS]" of the quest's boss.
+			String name = category;
+			double best = Double.MAX_VALUE;
+			for (SlayerTags.Tag tag : SlayerTags.all()) {
+				LivingEntity mob = tag.owner();
+				if (mob == null || !tag.has(type.displayName) && !otherName(tag)) {
+					continue;
+				}
+				List<String> lines = SlayerTags.of(mob);
+				boolean marked = false;
+				for (String line : lines) {
+					if (line.contains("SLAYER BOSS") || line.contains(name)) {
+						marked = true;
+						break;
+					}
+				}
+				double d = mob.distanceToSqr(client.player);
+				if (marked && d < best && d < 30 * 30) {
+					best = d;
+					found = mob;
+				}
+			}
+		}
 		if (found == null) {
 			LivingEntity old = boss();
 			if (old != null && old.distanceTo(client.player) < 48 && !SlayerTags.of(old).isEmpty()) {
@@ -492,6 +516,15 @@ public final class SlayerApi {
 				break;
 			}
 		}
+	}
+
+	private static boolean otherName(SlayerTags.Tag tag) {
+		for (String other : type.otherNames) {
+			if (tag.has(other)) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	/** A boss next to a "Spawned by" tag that was not matched to a mob. */

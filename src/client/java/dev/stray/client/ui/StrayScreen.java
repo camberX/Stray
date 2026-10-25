@@ -198,7 +198,7 @@ public class StrayScreen extends Screen {
 		SLAYER_RNG("RNG meter", 2),
 		SLAYER_KILLS("Remaining kills", 4),
 		SLAYER_ALERTS("Slayer alerts", 12),
-		SLAYER_ESP("Slayer ESP", 12),
+		SLAYER_ESP("Slayer ESP", 14),
 		SLAYER_VOID("Voidgloom", 7),
 		SLAYER_INFERNO("Inferno", 8),
 		SLAYER_VAMPIRE("Bloodfiend", 20),
@@ -3662,6 +3662,8 @@ public class StrayScreen extends Screen {
 				toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Compact messages", s.timeCompact, v -> s.timeCompact = v);
 			}
 			case SLAYER_ESP -> {
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Boss glow", s.bossGlow, v -> s.bossGlow = v);
+				y = slayerColor(graphics, font, ix, y, iw, mouseX, mouseY, "Boss color", "boss");
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Mini-boss glow", s.miniHighlight, v -> s.miniHighlight = v);
 				y = slayerColor(graphics, font, ix, y, iw, mouseX, mouseY, "Mini-boss color", "mini");
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Mini-boss line", s.miniLine, v -> s.miniLine = v);
