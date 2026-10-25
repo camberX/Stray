@@ -198,9 +198,9 @@ public class StrayScreen extends Screen {
 		SLAYER_RNG("RNG meter", 2),
 		SLAYER_KILLS("Remaining kills", 4),
 		SLAYER_ALERTS("Slayer alerts", 12),
-		SLAYER_ESP("Slayer ESP", 14),
+		SLAYER_ESP("Slayer ESP", 18),
 		SLAYER_VOID("Voidgloom", 7),
-		SLAYER_INFERNO("Inferno", 11),
+		SLAYER_INFERNO("Inferno", 9),
 		SLAYER_VAMPIRE("Bloodfiend", 20),
 		SLAYER_CLEANUP("Slayer cleanup", 7);
 
@@ -3662,6 +3662,11 @@ public class StrayScreen extends Screen {
 				toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Compact messages", s.timeCompact, v -> s.timeCompact = v);
 			}
 			case SLAYER_ESP -> {
+				y = chipRow(graphics, font, ix, y, iw, mouseX, mouseY, new String[]{"Outline", "Box", "Both"}, Math.max(0, Math.min(2, s.espStyle)), i -> s.espStyle = i);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Outline fill", s.outlineFill, v -> s.outlineFill = v);
+				int fillLevel = dev.stray.client.slayer.SlayerWorld.fillLevel(s.fillOpacity);
+				y = slider(graphics, font, ix, y, iw, "Fill opacity", (20 + 15 * fillLevel) + "%", fillLevel / 3f, v -> s.fillOpacity = 0.2f + 0.15f * Math.round(v * 3f));
+				y = slider(graphics, font, ix, y, iw, "Box opacity", Math.round(s.boxOpacity * 100) + "%", (s.boxOpacity - 0.05f) / 0.85f, v -> s.boxOpacity = StrayConfig.clamp(0.05f + v * 0.85f, 0.05f, 0.9f));
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Boss glow", s.bossGlow, v -> s.bossGlow = v);
 				y = slayerColor(graphics, font, ix, y, iw, mouseX, mouseY, "Boss color", "boss");
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Mini-boss glow", s.miniHighlight, v -> s.miniHighlight = v);
@@ -3688,8 +3693,6 @@ public class StrayScreen extends Screen {
 			}
 			case SLAYER_INFERNO -> {
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Shield colors", s.shieldColors, v -> s.shieldColors = v);
-				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Shield fill", s.shieldFill, v -> s.shieldFill = v);
-				y = slider(graphics, font, ix, y, iw, "Fill opacity", Math.round(s.shieldFillOpacity * 100) + "%", (s.shieldFillOpacity - 0.1f) / 0.8f, v -> s.shieldFillOpacity = StrayConfig.clamp(0.1f + v * 0.8f, 0.1f, 0.9f));
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Shield + phase text", s.shieldText, v -> s.shieldText = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Dagger helper", s.daggers, v -> s.daggers = v);
 				y = chipRow(graphics, font, ix, y, iw, mouseX, mouseY, new String[]{"Twilight first", "Firedust first"}, s.firstDagger, i -> s.firstDagger = i);

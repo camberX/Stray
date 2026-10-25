@@ -18,7 +18,9 @@ void main() {
     if (color.a > 0.92) {
         fragColor = vec4(0.0);
     } else {
+        // Alpha 231..234/255 marks "outline + fill" ESP; its halo uses a strong fixed opacity.
+        float a = color.a > 0.9045 ? 0.85 : color.a;
         // Premultiply so empty texels cannot pull the halo RGB toward black.
-        fragColor = vec4(color.rgb * color.a, color.a);
+        fragColor = vec4(color.rgb * a, a);
     }
 }

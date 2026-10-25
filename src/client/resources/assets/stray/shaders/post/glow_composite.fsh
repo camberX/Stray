@@ -17,7 +17,20 @@ float vanillaA(vec4 sampleColor) {
 }
 
 float espA(vec4 sampleColor) {
+    if (sampleColor.a > 0.9045 && sampleColor.a <= 0.92) {
+        return 0.85;
+    }
     return (sampleColor.a > 0.001 && sampleColor.a <= 0.92) ? sampleColor.a : 0.0;
+}
+
+// Alpha 231..234/255 (between the ESP opacity range and vanilla glow) marks "outline + fill":
+// the shape itself is filled at 20/35/50/65%.
+float fillA(vec4 sampleColor) {
+    if (sampleColor.a <= 0.9045 || sampleColor.a > 0.92) {
+        return 0.0;
+    }
+    float level = clamp(floor(sampleColor.a * 255.0 + 0.5) - 231.0, 0.0, 3.0);
+    return 0.2 + 0.15 * level;
 }
 
 vec4 vanillaSobel(vec2 oneTexel) {
@@ -72,5 +85,12 @@ void main() {
     vec3 rgb = alpha > 0.001
         ? (color * espAout + vanillaColor * vanilla.a) / alpha
         : vec3(0.0);
+    float fill = fillA(mask);
+    if (fill > 0.001) {
+        vec3 fillColor = mask.rgb / max(mask.a, 0.001);
+        float outA = alpha + fill * (1.0 - alpha);
+        rgb = (rgb * alpha + fillColor * fill * (1.0 - alpha)) / max(outA, 0.001);
+        alpha = outA;
+    }
     fragColor = vec4(rgb, alpha);
 }

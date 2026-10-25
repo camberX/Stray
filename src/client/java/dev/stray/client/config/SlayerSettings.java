@@ -48,6 +48,11 @@ public final class SlayerSettings {
 
 	// ---- ESP: mini-bosses, lines, drops, Tarantula
 	public boolean esp = false;
+	/** 0 outline, 1 box, 2 outline + box. */
+	public int espStyle = 0;
+	public boolean outlineFill = false;
+	public float fillOpacity = 0.35f;
+	public float boxOpacity = 0.3f;
 	public boolean miniHighlight = true;
 	public int miniRgb = 0x55FFFF;
 	public boolean miniLine = false;
@@ -76,8 +81,6 @@ public final class SlayerSettings {
 	// ---- Inferno Demonlord
 	public boolean inferno = false;
 	public boolean shieldColors = true;
-	public boolean shieldFill = true;
-	public float shieldFillOpacity = 0.35f;
 	public boolean shieldText = true;
 	public boolean daggers = true;
 	public int firstDagger = 0;

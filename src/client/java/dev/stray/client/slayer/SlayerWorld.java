@@ -58,6 +58,7 @@ public final class SlayerWorld {
 	}
 
 	private static volatile List<Fill> fills = List.of();
+	private static volatile List<Fill> texts = List.of();
 	private static final Pattern ZERO_HP = Pattern.compile("(?:^|\\s)0(?:/[\\d.,]+[kKmMbB]?)?\\s*❤");
 	private static final Pattern SHIELD_HITS = Pattern.compile("♨\\s*(\\d+)");
 
@@ -111,6 +112,20 @@ public final class SlayerWorld {
 		return out.toString();
 	}
 
+	private static volatile Int2IntOpenHashMap marks = new Int2IntOpenHashMap();
+
+	/**
+	 * Outline alpha that tells the glow shader to also fill the mob's shape: 231..234 out of
+	 * 255, between normal ESP glow (at most 230) and vanilla glowing (235+), for 20/35/50/65% fill.
+	 */
+	public static int fillAlpha(float opacity) {
+		return 231 + fillLevel(opacity);
+	}
+
+	public static int fillLevel(float opacity) {
+		return Math.max(0, Math.min(3, Math.round((opacity - 0.2f) / 0.15f)));
+	}
+
 	/** ARGB outline for an entity, 0 for none. */
 	public static int glow(Entity entity) {
 		Int2IntOpenHashMap map = glow;
@@ -151,6 +166,7 @@ public final class SlayerWorld {
 		lines = List.of();
 		labels = List.of();
 		fills = List.of();
+		texts = List.of();
 		TAGGED.clear();
 		SITTING.clear();
 		FLYING.clear();
@@ -202,7 +218,7 @@ public final class SlayerWorld {
 		// Hellion shields: colour every Inferno boss / demon by the shield on its tags, with a
 		// see-through fill and the shield, hits left on it and the boss phase above it.
 		List<Fill> nextFills = new ArrayList<>();
-		if (s.inferno && (s.shieldColors || s.shieldFill || s.shieldText)) {
+		if (s.inferno && (s.shieldColors || s.shieldText)) {
 			java.util.Set<Integer> seen = new java.util.HashSet<>();
 			for (SlayerTags.Tag tag : SlayerTags.all()) {
 				LivingEntity mob = tag.owner();
@@ -217,9 +233,9 @@ public final class SlayerWorld {
 				if (s.shieldColors && !nextGlow.containsKey(mob.getId())) {
 					nextGlow.put(mob.getId(), 0xFF000000 | shield.rgb);
 				}
-				if (s.shieldFill || s.shieldText) {
+				if (s.shieldText) {
 					String text = null;
-					if (s.shieldText) {
+					{
 						StringBuilder b = new StringBuilder(shield.name());
 						// Hits only on the Demonlord itself, not on its demons (Quazii, Typhoeus).
 						for (String line : SlayerType.INFERNO.matches(mob) ? mobTags : List.<String>of()) {
@@ -472,10 +488,29 @@ public final class SlayerWorld {
 			}
 		}
 
-		glow = nextGlow;
+		// Style: outline (glow), box, or both; the outline can also fill the mob's shape.
+		int style = Math.max(0, Math.min(2, s.espStyle));
+		Int2IntOpenHashMap outGlow = new Int2IntOpenHashMap();
+		List<Fill> boxes = new ArrayList<>();
+		int outlineAlpha = s.outlineFill ? fillAlpha(s.fillOpacity) : 0xD9;
+		for (var e : nextGlow.int2IntEntrySet()) {
+			int rgb = e.getIntValue() & 0xFFFFFF;
+			if (style != 1) {
+				outGlow.put(e.getIntKey(), (outlineAlpha << 24) | rgb);
+			}
+			if (style != 0) {
+				Entity entity = client.level.getEntity(e.getIntKey());
+				if (entity != null) {
+					boxes.add(new Fill(entity, rgb, null));
+				}
+			}
+		}
+		marks = nextGlow;
+		glow = outGlow;
 		lines = List.copyOf(nextLines);
 		labels = List.copyOf(nextLabels);
-		fills = List.copyOf(nextFills);
+		fills = List.copyOf(boxes);
+		texts = List.copyOf(nextFills);
 	}
 
 	private static boolean twinclaws(Minecraft client, Entity bf) {
@@ -576,8 +611,8 @@ public final class SlayerWorld {
 			return;
 		}
 		float partial = client.getDeltaTracker().getGameTimeDeltaPartialTick(true);
-		if (settings().shieldFill) {
-			int alpha = Math.round(StrayConfig.clamp(settings().shieldFillOpacity, 0.1f, 0.9f) * 255f);
+		{
+			int alpha = Math.round(StrayConfig.clamp(settings().boxOpacity, 0.05f, 0.9f) * 255f);
 			for (Fill fill : boxes) {
 				if (dying(fill.entity)) {
 					continue;
@@ -611,7 +646,7 @@ public final class SlayerWorld {
 
 	public static void extract(GuiGraphicsExtractor graphics) {
 		List<Label> current = labels;
-		List<Fill> boxes = fills;
+		List<Fill> boxes = texts;
 		if (!boxes.isEmpty()) {
 			Minecraft client = Minecraft.getInstance();
 			if (client.player != null && client.font != null && !client.options.hideGui && client.gameRenderer.getMainCamera().isInitialized()) {
