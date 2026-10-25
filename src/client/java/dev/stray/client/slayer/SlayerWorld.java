@@ -58,6 +58,7 @@ public final class SlayerWorld {
 	}
 
 	private static volatile List<Fill> fills = List.of();
+	private static final Pattern ZERO_HP = Pattern.compile("(?:^|\\s)0(?:/[\\d.,]+[kKmMbB]?)?\\s*❤");
 	private static final Pattern SHIELD_HITS = Pattern.compile("♨\\s*(\\d+)");
 
 	private static final String NUKEKUBI = "eb07594e2df273921a77c101d0bfdfa1115abed5b9b2029eb496ceba9bdbb4b3";
@@ -113,7 +114,27 @@ public final class SlayerWorld {
 	/** ARGB outline for an entity, 0 for none. */
 	public static int glow(Entity entity) {
 		Int2IntOpenHashMap map = glow;
-		return map.isEmpty() || entity == null ? 0 : map.getOrDefault(entity.getId(), 0);
+		if (map.isEmpty() || entity == null) {
+			return 0;
+		}
+		int rgb = map.getOrDefault(entity.getId(), 0);
+		return rgb == 0 || dying(entity) ? 0 : rgb;
+	}
+
+	/** Dead or playing the death animation (or its tag already reads 0 health). */
+	static boolean dying(Entity entity) {
+		if (entity.isRemoved()) {
+			return true;
+		}
+		if (entity instanceof LivingEntity living && (living.isDeadOrDying() || living.deathTime > 0)) {
+			return true;
+		}
+		for (String line : SlayerTags.of(entity)) {
+			if (ZERO_HP.matcher(line).find()) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	public static void onAttack(Entity target) {
@@ -557,7 +578,7 @@ public final class SlayerWorld {
 		if (settings().shieldFill) {
 			int alpha = Math.round(StrayConfig.clamp(settings().shieldFillOpacity, 0.1f, 0.9f) * 255f);
 			for (Fill fill : boxes) {
-				if (fill.entity.isRemoved()) {
+				if (dying(fill.entity)) {
 					continue;
 				}
 				AABB box = fill.entity.getBoundingBox().move(fill.entity.getPosition(partial).subtract(fill.entity.position())).inflate(0.05);
@@ -573,7 +594,7 @@ public final class SlayerWorld {
 			Vec3 to;
 			Vec3 from = eye;
 			if (line.entity != null) {
-				if (line.entity.isRemoved()) {
+				if (dying(line.entity)) {
 					continue;
 				}
 				to = line.entity.getPosition(partial).add(0, line.up, 0);
@@ -596,8 +617,9 @@ public final class SlayerWorld {
 				float partial = client.getDeltaTracker().getGameTimeDeltaPartialTick(true);
 				List<Label> moving = new ArrayList<>(current);
 				for (Fill fill : boxes) {
-					if (fill.text != null && !fill.entity.isRemoved()) {
-						Vec3 at = fill.entity.getPosition(partial).add(0, fill.entity.getBbHeight() + 0.6, 0);
+					if (fill.text != null && !dying(fill.entity)) {
+						// In the middle of the mob, so it sits on the fill and stays readable.
+						Vec3 at = fill.entity.getPosition(partial).add(0, fill.entity.getBbHeight() * 0.5, 0);
 						moving.add(new Label(at, fill.text, fill.rgb, true));
 					}
 				}
