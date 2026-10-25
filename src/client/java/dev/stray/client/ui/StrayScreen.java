@@ -3693,7 +3693,7 @@ public class StrayScreen extends Screen {
 			}
 			case SLAYER_INFERNO -> {
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Shield colors", s.shieldColors, v -> s.shieldColors = v);
-				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Shield + phase text", s.shieldText, v -> s.shieldText = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Shield text", s.shieldText, v -> s.shieldText = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Dagger helper", s.daggers, v -> s.daggers = v);
 				y = chipRow(graphics, font, ix, y, iw, mouseX, mouseY, new String[]{"Twilight first", "Firedust first"}, s.firstDagger, i -> s.firstDagger = i);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Mark boss shield", s.markShield, v -> s.markShield = v);

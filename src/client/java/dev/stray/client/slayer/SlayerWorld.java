@@ -246,14 +246,6 @@ public final class SlayerWorld {
 								break;
 							}
 						}
-						if (mob == boss) {
-							for (SlayerBosses.Phase phase : SlayerBosses.phases()) {
-								if (phase.text().startsWith("Phase")) {
-									b.append("  ").append(phase.text());
-									break;
-								}
-							}
-						}
 						text = b.toString();
 					}
 					nextFills.add(new Fill(mob, shield.rgb, text));
