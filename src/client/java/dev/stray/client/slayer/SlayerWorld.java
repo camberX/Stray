@@ -427,6 +427,10 @@ public final class SlayerWorld {
 
 	private static boolean miniBoss(List<String> lines) {
 		for (String name : lines) {
+			// Hypixel marks them with a "[SLAYER MINIBOSS]" tag.
+			if (name.toUpperCase(java.util.Locale.ROOT).contains("SLAYER MINIBOSS")) {
+				return true;
+			}
 			for (SlayerType type : SlayerType.values()) {
 				for (String mini : type.miniBosses) {
 					if (name.contains(mini)) {
