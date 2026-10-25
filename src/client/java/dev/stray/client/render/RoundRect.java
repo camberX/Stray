@@ -79,6 +79,54 @@ public final class RoundRect {
 		g.guiRenderState.addGuiElement(new State(pipeline, pose, x, y, x + w, y + h, u, v, tl, tr, br, bl, scissor, bounds));
 	}
 
+	/**
+	 * A texture tinted by a gradient: the GUI's textured pipeline multiplies the texture by the
+	 * vertex colors, so a white logo takes on whatever two-tone gradient the corners get.
+	 */
+	public static void texture(GuiGraphicsExtractor g, net.minecraft.resources.Identifier id, float x, float y, float w, float h, int tl, int tr, int br, int bl) {
+		net.minecraft.client.renderer.texture.AbstractTexture tex = net.minecraft.client.Minecraft.getInstance().getTextureManager().getTexture(id);
+		com.mojang.blaze3d.textures.GpuTextureView view = tex == null ? null : tex.getTextureView();
+		if (view == null || w <= 0f || h <= 0f) {
+			return;
+		}
+		Matrix3x2f pose = new Matrix3x2f(g.pose());
+		ScreenRectangle scissor = g.scissorStack.peek();
+		ScreenRectangle bounds = new ScreenRectangle((int) Math.floor(x), (int) Math.floor(y), (int) Math.ceil(w + 1), (int) Math.ceil(h + 1)).transformMaxBounds(pose);
+		if (scissor != null) {
+			bounds = scissor.intersection(bounds);
+			if (bounds == null) {
+				return;
+			}
+		}
+		com.mojang.blaze3d.textures.GpuSampler sampler = com.mojang.blaze3d.systems.RenderSystem.getSamplerCache()
+			.getClampToEdge(com.mojang.blaze3d.textures.FilterMode.LINEAR);
+		g.guiRenderState.addGuiElement(new Textured(net.minecraft.client.renderer.RenderPipelines.GUI_TEXTURED, TextureSetup.singleTexture(view, sampler), pose, x, y, x + w, y + h, tl, tr, br, bl, scissor, bounds));
+	}
+
+	private record Textured(
+		RenderPipeline pipeline,
+		TextureSetup textureSetup,
+		Matrix3x2f pose,
+		float x0,
+		float y0,
+		float x1,
+		float y1,
+		int tl,
+		int tr,
+		int br,
+		int bl,
+		ScreenRectangle scissorArea,
+		ScreenRectangle bounds
+	) implements GuiElementRenderState {
+		@Override
+		public void buildVertices(VertexConsumer out) {
+			out.addVertexWith2DPose(pose, x0, y0).setUv(0f, 0f).setColor(tl);
+			out.addVertexWith2DPose(pose, x0, y1).setUv(0f, 1f).setColor(bl);
+			out.addVertexWith2DPose(pose, x1, y1).setUv(1f, 1f).setColor(br);
+			out.addVertexWith2DPose(pose, x1, y0).setUv(1f, 0f).setColor(tr);
+		}
+	}
+
 	private record State(
 		RenderPipeline pipeline,
 		Matrix3x2f pose,

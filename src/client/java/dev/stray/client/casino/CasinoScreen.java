@@ -136,16 +136,10 @@ public final class CasinoScreen extends Screen {
 	private final LinkedHashMap<String, Long> bets = new LinkedHashMap<>();
 	private LinkedHashMap<String, Long> lastBets = new LinkedHashMap<>();
 	private float wheelAngle;
-	private float wheelSpeed = 0.25f;
 	private float ballAngle;
 	private float ballRadius = 1f;
 	private boolean rolling;
 	private float rollStart;
-	private float rollDur = 5.5f;
-	private float ballFrom;
-	private float ballTo;
-	private float wheelFrom;
-	private float wheelOmega;
 	private int rouletteNumber = -1;
 	private float rouletteDoneAt = -10f;
 	private long rouletteWin;
@@ -172,7 +166,15 @@ public final class CasinoScreen extends Screen {
 				}
 				name = str(r.body(), "name");
 				applyAccount(r.body(), true);
-				setStatus("Welcome, " + name + ". Play money only.", false);
+				long daily = r.body().has("daily") ? r.body().get("daily").getAsLong() : 0;
+				if (daily > 0) {
+					// count up from before the reward, so the pill rolls it in
+					shownBalance = Math.max(0, balance - daily);
+					burstCoins(left + W - 60, top + HEAD_Y + HEAD_H / 2f, 24);
+					setStatus("Daily reward: +" + fmt(daily) + " chips. Come back tomorrow for more.", false);
+				} else {
+					setStatus("Welcome back, " + name + ". Next daily reward " + untilNextDaily(r.body()) + ".", false);
+				}
 			}));
 		}
 	}
@@ -247,6 +249,8 @@ public final class CasinoScreen extends Screen {
 		FAINT = MaterialPalette.outline;
 	}
 
+	private static final net.minecraft.resources.Identifier LOGO = dev.stray.Stray.id("textures/gui/catbet.png");
+	private static final float LOGO_ASPECT = 266f / 64f;
 	private static final String[] TAB_ICONS = {"", "", "", ""};
 	private static final float HEAD_Y = 10;
 	private static final float HEAD_H = 26;
@@ -257,10 +261,14 @@ public final class CasinoScreen extends Screen {
 		float h = HEAD_H;
 		// title group
 		float gx = left + 10;
-		float titleW = 12 + 14 + tw("Casino", T.TITLE) + 12;
+		// catbet logo (a white texture), tinted with the Stray accent: a lighter shade of it on
+		// the left into the accent itself, the same hue throughout
+		float logoH = 13;
+		float logoW = logoH * LOGO_ASPECT;
+		float titleW = logoW + 22;
 		pill(g, gx, y, titleW, h, container, containerHigh);
-		icon(g, "", gx + 10, y, h, primary);
-		label(g, "Casino", gx + 26, y, h, TEXT, T.TITLE);
+		int light = mixColor(primary, 0xFFFFFFFF, 0.22f);
+		RoundRect.texture(g, LOGO, snap(gx + 11), snap(y + (h - logoH) / 2f), logoW, logoH, light, primary, primary, light);
 
 		// balance (laid out first: the tabs take the room between it and the title)
 		// The pill is sized for the balance the count is heading to, and eases to that width
@@ -1200,12 +1208,13 @@ public final class CasinoScreen extends Screen {
 		rolling = true;
 		rouletteNumber = -1;
 		rouletteWin = 0;
-		rollStart = time;
-		wheelFrom = wheelAngle;
-		wheelOmega = 2.6f;
-		ballFrom = ballAngle;
-		ballTo = Float.NaN;
-		ballRadius = 1f;
+		planned = false;
+		if (rouletteNumber < 0 && ballRadius < 0.9f) {
+			// first spin: the ball starts on the rim
+			ballRadius = BALL_RIM;
+		}
+		launchFrom = ballRadius;
+		launchAt = time;
 		lastBets = new LinkedHashMap<>(bets);
 		balance -= total;
 		final long staked = total;
@@ -1222,20 +1231,11 @@ public final class CasinoScreen extends Screen {
 			}
 			rouletteResult = r.body();
 			int number = r.body().get("number").getAsInt();
-			rollStart = time;
-			wheelFrom = wheelAngle;
-			ballFrom = ballAngle;
-			// where the pocket will be when the wheel stops, plus a few laps for the ball
-			float wheelEnd = wheelFrom + wheelOmega * rollDur / 2f;
-			float pocket = pocketAngle(number);
-			float target = wheelEnd + pocket;
-			float laps = 3f * (float) (Math.PI * 2);
-			float k = ballFrom - laps;
-			ballTo = k - floorModF(k - target, (float) (Math.PI * 2));
+			planRoll(number);
 			rouletteNumber = -1;
 			pendingNumber = number;
 			pendingBalance = r.body().get("balance").getAsLong();
-			pendingBalanceAt = time + rollDur;
+			pendingBalanceAt = rollStart + ROLL_TIME;
 			rouletteWinPending = r.body().get("win").getAsLong();
 		}));
 	}
@@ -1243,34 +1243,108 @@ public final class CasinoScreen extends Screen {
 	private int pendingNumber = -1;
 	private long rouletteWinPending;
 
+	// Roulette motion. Everything is driven by velocities that change continuously: the wheel
+	// spins up, the ball is launched against it, and once the server's number is known the
+	// ball's path is a cubic that starts at its current angle and speed and ends in the
+	// winning pocket moving exactly with the wheel, so it never jumps or snaps.
+	private static final float WHEEL_IDLE = 0.25f;
+	private static final float WHEEL_SPIN = 2.6f;
+	private static final float BALL_SPIN = -8.5f;
+	/** From the result arriving to the wheel back at idle speed; the ball lands at LAND_TIME. */
+	private static final float ROLL_TIME = 5.2f;
+	private static final float LAND_TIME = 4.1f;
+	private static final float BALL_RIM = 1.04f;
+	private static final float BALL_POCKET = 0.74f;
+	private float wheelVel = WHEEL_IDLE;
+	private float ballVel;
+	private boolean planned;
+	private float planW0;
+	private float planWv0;
+	private float planB0;
+	private float planBv0;
+	private float planB1;
+	private float planPocket;
+	private float launchFrom = BALL_RIM;
+	private float launchAt;
+
+	private void planRoll(int number) {
+		rollStart = time;
+		planned = true;
+		planW0 = wheelAngle;
+		planWv0 = wheelVel;
+		planB0 = ballAngle;
+		planBv0 = ballVel;
+		planPocket = pocketAngle(number);
+		float wheelLand = wheelAt(LAND_TIME);
+		float wheelVelLand = wheelVelAt(LAND_TIME);
+		// land after roughly the distance the average speed covers, on the right pocket
+		float guess = planB0 + (planBv0 + wheelVelLand) * 0.5f * LAND_TIME;
+		float target = wheelLand + planPocket;
+		float tau = (float) (Math.PI * 2);
+		// rounded towards more travel, so the ball never has to run backwards to make it
+		planB1 = target + (float) Math.floor((guess - target) / tau) * tau;
+	}
+
+	private float wheelAt(float s) {
+		float d = Math.min(s, ROLL_TIME);
+		float a = (WHEEL_IDLE - planWv0) / ROLL_TIME;
+		float angle = planW0 + planWv0 * d + 0.5f * a * d * d;
+		return angle + Math.max(0f, s - ROLL_TIME) * WHEEL_IDLE;
+	}
+
+	private float wheelVelAt(float s) {
+		return s >= ROLL_TIME ? WHEEL_IDLE : planWv0 + (WHEEL_IDLE - planWv0) * s / ROLL_TIME;
+	}
+
 	private void advanceWheel(float dt) {
 		if (!rolling) {
-			wheelAngle += dt * wheelSpeed;
+			wheelVel += (WHEEL_IDLE - wheelVel) * Math.min(1f, dt * 3f);
+			wheelAngle += dt * wheelVel;
 			if (rouletteNumber >= 0) {
 				ballAngle = wheelAngle + pocketAngle(rouletteNumber);
+				ballVel = wheelVel;
 			}
 			return;
 		}
-		if (Float.isNaN(ballTo)) {
-			// waiting for the server: spin freely
-			wheelAngle += dt * wheelOmega;
-			ballAngle -= dt * 9f;
-			wheelFrom = wheelAngle;
-			ballFrom = ballAngle;
-			rollStart = time;
+		if (!planned) {
+			// waiting for the server: the wheel spins up, the ball is thrown the other way and
+			// climbs back up to the rim
+			wheelVel += (WHEEL_SPIN - wheelVel) * Math.min(1f, dt * 2.5f);
+			ballVel += (BALL_SPIN - ballVel) * Math.min(1f, dt * 4f);
+			wheelAngle += dt * wheelVel;
+			ballAngle += dt * ballVel;
+			float up = smooth(Math.min(1f, (time - launchAt) / 0.5f));
+			ballRadius = launchFrom + (BALL_RIM - launchFrom) * up;
 			return;
 		}
-		float t = Math.min(1f, (time - rollStart) / rollDur);
-		float s = t * rollDur;
-		wheelAngle = wheelFrom + wheelOmega * (s - s * s / (2f * rollDur));
-		float e = 1f - (float) Math.pow(1f - t, 3);
-		ballAngle = ballFrom + (ballTo - ballFrom) * e;
-		// the ball drops off the rim into the pockets near the end, with a few hops
-		float drop = Math.max(0f, (t - 0.55f) / 0.45f);
-		float hop = drop > 0 && drop < 0.8f ? 0.05f * Math.abs((float) Math.sin(drop * 20f)) * (1f - drop) : 0f;
-		ballRadius = 1f - 0.22f * Math.min(1f, drop * 1.6f) + hop;
-		if (t >= 1f) {
+		float s = time - rollStart;
+		wheelAngle = wheelAt(s);
+		wheelVel = wheelVelAt(s);
+		float tau = (float) (Math.PI * 2);
+		if (s < LAND_TIME) {
+			float u = s / LAND_TIME;
+			float u2 = u * u;
+			float u3 = u2 * u;
+			float m0 = planBv0 * LAND_TIME;
+			float m1 = wheelVelAt(LAND_TIME) * LAND_TIME;
+			ballAngle = (2 * u3 - 3 * u2 + 1) * planB0 + (u3 - 2 * u2 + u) * m0 + (-2 * u3 + 3 * u2) * planB1 + (u3 - u2) * m1;
+			ballVel = ((6 * u2 - 6 * u) * planB0 + (3 * u2 - 4 * u + 1) * m0 + (-6 * u2 + 6 * u) * planB1 + (3 * u2 - 2 * u) * m1) / LAND_TIME;
+			// off the rim from 55% on, easing into the pocket ring, with small bounces that die out
+			float drop = Math.max(0f, (u - 0.55f) / 0.45f);
+			float fall = smooth(Math.min(1f, drop * 1.35f));
+			float bounce = drop > 0f ? 0.045f * (float) Math.sin(drop * Math.PI * 5f) * (1f - drop) * (1f - drop) : 0f;
+			ballRadius = BALL_RIM + (BALL_POCKET - BALL_RIM) * fall + Math.abs(bounce);
+		} else {
+			// in the pocket: it turns with the wheel
+			float landWheel = wheelAt(LAND_TIME);
+			ballAngle = planB1 + (wheelAngle - landWheel);
+			ballVel = wheelVel;
+			ballRadius = BALL_POCKET;
+		}
+		if (s >= ROLL_TIME) {
 			rolling = false;
+			planned = false;
+			wheelAngle = floorModF(wheelAngle, tau);
 			rouletteNumber = pendingNumber;
 			rouletteDoneAt = time;
 			rouletteWin = rouletteWinPending;
@@ -1286,6 +1360,10 @@ public final class CasinoScreen extends Screen {
 			}
 			bets.clear();
 		}
+	}
+
+	private static float smooth(float t) {
+		return t * t * (3f - 2f * t);
 	}
 
 	private float pocketAngle(int number) {
@@ -1338,7 +1416,7 @@ public final class CasinoScreen extends Screen {
 		// ball
 		if (rolling || rouletteNumber >= 0) {
 			float ba = ballAngle - (float) Math.PI / 2f;
-			float rad = rolling ? r * (0.86f + 0.12f * (ballRadius - 0.78f) / 0.22f) : r * 0.86f;
+			float rad = r * ballRadius;
 			GuiDraw.circle(g, cx + (float) Math.cos(ba) * rad, cy + (float) Math.sin(ba) * rad, 3.2f, 0xFFFFFFFF);
 			GuiDraw.circle(g, cx + (float) Math.cos(ba) * rad - 0.8f, cy + (float) Math.sin(ba) * rad - 0.8f, 1.2f, 0xFFFFFFFF);
 		}
@@ -1911,6 +1989,19 @@ public final class CasinoScreen extends Screen {
 
 	private static String str(JsonObject o, String key) {
 		return o != null && o.has(key) && o.get(key).isJsonPrimitive() ? o.get(key).getAsString() : "";
+	}
+
+	private static String untilNextDaily(JsonObject body) {
+		if (body == null || !body.has("nextDaily")) {
+			return "tomorrow";
+		}
+		long ms = body.get("nextDaily").getAsLong() - System.currentTimeMillis();
+		if (ms <= 0) {
+			return "now";
+		}
+		long h = ms / 3_600_000L;
+		long m = (ms / 60_000L) % 60;
+		return "in " + (h > 0 ? h + "h " : "") + m + "m";
 	}
 
 	private static int withA(int color, int a) {
