@@ -45,7 +45,7 @@ public final class SlayerProfit {
 	}
 
 	private static boolean tracking() {
-		return SlayerApi.hasQuest() && SlayerApi.inCorrectArea();
+		return SlayerApi.hasQuest() && SlayerApi.plausibleArea();
 	}
 
 	private static List<SlayerSettings.Profit> targets() {

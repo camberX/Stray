@@ -172,7 +172,11 @@ public final class SlayerData {
 	public static List<Mob> normalMobs(SlayerType type, String area) {
 		load();
 		Map<String, List<Mob>> byArea = NORMAL.get(type.dataKey);
-		return byArea == null ? List.of() : byArea.getOrDefault(area, List.of());
+		if (byArea == null) {
+			return List.of();
+		}
+		List<Mob> here = byArea.get(area);
+		return here != null ? here : byArea.getOrDefault("no_area", List.of());
 	}
 
 	public static List<Mob> miniBosses(SlayerType type, int tier) {

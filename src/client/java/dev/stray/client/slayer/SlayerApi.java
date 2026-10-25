@@ -37,7 +37,8 @@ public final class SlayerApi {
 	private static final Pattern COCOONED = Pattern.compile("^\\s+YOU COCOONED YOUR SLAYER BOSS");
 	private static final Pattern BANK_AUTO = Pattern.compile("Took (?<coins>[\\d.,]+[kKmM]?) coins from your bank for auto-slayer");
 	private static final Pattern PURSE = Pattern.compile("^(?:Purse|Piggy): ([\\d,]+(?:\\.\\d+)?)");
-	private static final Pattern HEALTH = Pattern.compile("([\\d.,]+[kKmMbB]?)\\s*❤");
+	private static final Pattern HEALTH = Pattern.compile("([\\d.,]+[kKmMbB]?)(?:/([\\d.,]+[kKmMbB]?))?\\s*❤");
+	private static final Pattern SPAWNED_BY = Pattern.compile("Spawned by: (\\w+)");
 	private static final Pattern ROMAN = Pattern.compile("\\b(I|II|III|IV|V)$");
 
 	// quest
@@ -115,6 +116,14 @@ public final class SlayerApi {
 		return areaType != null;
 	}
 
+	/**
+	 * In the active slayer's area, or somewhere the area is not known (the scoreboard location
+	 * names do not cover every spot a boss can be fought).
+	 */
+	public static boolean plausibleArea() {
+		return type != null && (areaType == null || areaType == type);
+	}
+
 	/** In the area of the slayer whose quest is active. */
 	public static boolean inCorrectArea() {
 		return areaType != null && areaType == type;
@@ -174,6 +183,7 @@ public final class SlayerApi {
 		}
 		tickCount++;
 		areaType = SlayerType.forArea(SkyblockLocation.area, SkyblockLocation.poi);
+		SlayerTags.tick(client);
 		if (tickCount % 4 == 0) {
 			readSidebar(client);
 		}
@@ -293,6 +303,22 @@ public final class SlayerApi {
 		LivingEntity b = boss();
 		out.add("boss=" + (b == null ? "none" : b.getType().toShortString() + " hp=" + bossHealth + "/" + bossMaxHealth + " tags=" + BOSS_TAGS));
 		out.add("lines=" + lastLines);
+		List<SlayerTags.Tag> tags = new ArrayList<>(SlayerTags.all());
+		int owned = 0;
+		for (SlayerTags.Tag t : tags) {
+			if (t.owner() != null) {
+				owned++;
+			}
+		}
+		out.add("name tags=" + tags.size() + " matched to a mob=" + owned);
+		if (client.player != null) {
+			tags.sort(Comparator.comparingDouble(t -> t.entity().distanceToSqr(client.player)));
+			for (int i = 0; i < Math.min(6, tags.size()); i++) {
+				SlayerTags.Tag t = tags.get(i);
+				out.add("  " + t.entity().getType().toShortString() + " " + t.lines() + " -> "
+					+ (t.owner() == null ? "no mob" : t.owner().getType().toShortString()));
+			}
+		}
 		if (client.player != null) {
 			out.add("tab slayer=" + tabSlayer(client));
 		}
@@ -409,27 +435,30 @@ public final class SlayerApi {
 	private static void trackBoss(Minecraft client) {
 		String me = playerName();
 		BOSS_TAGS.clear();
-		LivingEntity found = boss();
-		ArmorStand owner = null;
-		AABB around = client.player.getBoundingBox().inflate(48);
-		for (Entity entity : client.level.getEntities(client.player, around, e -> e instanceof ArmorStand && e.hasCustomName())) {
-			String name = clean(entity.getCustomName());
-			if (name.startsWith("Spawned by: ") && name.substring(12).trim().equalsIgnoreCase(me)) {
-				owner = (ArmorStand) entity;
+		LivingEntity found = null;
+		// The own boss: the mob whose tags say "Spawned by: <me>".
+		for (SlayerTags.Tag tag : SlayerTags.all()) {
+			for (String line : tag.lines()) {
+				Matcher m = SPAWNED_BY.matcher(line);
+				if (m.find() && m.group(1).equalsIgnoreCase(me)) {
+					found = tag.owner() != null ? tag.owner() : bossNear(client, tag.entity());
+					break;
+				}
+			}
+			if (found != null) {
 				break;
 			}
 		}
-		if (owner == null) {
-			if (found == null && boss != null) {
-				onBossGone();
+		if (found == null) {
+			LivingEntity old = boss();
+			if (old != null && old.distanceTo(client.player) < 48 && !SlayerTags.of(old).isEmpty()) {
+				found = old;
 			}
-			if (found == null) {
-				return;
-			}
-		} else if (found == null || found.distanceToSqr(owner) > 16) {
-			found = bossBelow(client, owner);
 		}
 		if (found == null) {
+			if (boss != null) {
+				onBossGone();
+			}
 			return;
 		}
 		if (boss == null || boss != found) {
@@ -440,45 +469,41 @@ public final class SlayerApi {
 			}
 			SlayerBosses.onBossSpawn(found);
 		}
-		// Name tags stacked above the boss (name + health, phase, timer...).
-		AABB tags = found.getBoundingBox().inflate(1.5, 3.5, 1.5);
-		ArmorStand nameStand = null;
-		for (Entity entity : client.level.getEntities(found, tags, e -> e instanceof ArmorStand && e.hasCustomName())) {
-			String name = clean(entity.getCustomName());
-			BOSS_TAGS.add(name);
-			if (nameStand == null && HEALTH.matcher(name).find() && (type == null || SlayerType.byName(name) != null)) {
-				nameStand = (ArmorStand) entity;
+		// Every tag of the boss (name + health, phase, hits, shield, timer...), plus loose tags right
+		// above it that were not matched to any mob.
+		BOSS_TAGS.addAll(SlayerTags.of(found));
+		AABB above = found.getBoundingBox().inflate(1.5, 3.5, 1.5);
+		for (SlayerTags.Tag tag : SlayerTags.all()) {
+			if (tag.owner() == null && above.contains(tag.entity().position())) {
+				BOSS_TAGS.addAll(tag.lines());
 			}
 		}
-		bossNameStand = nameStand;
-		if (nameStand != null) {
-			Matcher m = HEALTH.matcher(clean(nameStand.getCustomName()));
-			String last = null;
-			while (m.find()) {
-				last = m.group(1);
+		for (String line : BOSS_TAGS) {
+			if (!line.contains("❤") || type != null && SlayerType.byName(line) == null) {
+				continue;
 			}
-			if (last != null) {
-				bossHealth = parseShort(last);
-				if (bossMaxHealth < bossHealth) {
-					bossMaxHealth = bossHealth;
+			Matcher m = HEALTH.matcher(line);
+			if (m.find()) {
+				bossHealth = parseShort(m.group(1));
+				long max = m.group(2) != null ? parseShort(m.group(2)) : bossHealth;
+				if (bossMaxHealth < max) {
+					bossMaxHealth = max;
 				}
+				break;
 			}
 		}
 	}
 
-	private static LivingEntity bossBelow(Minecraft client, ArmorStand owner) {
+	/** A boss next to a "Spawned by" tag that was not matched to a mob. */
+	private static LivingEntity bossNear(Minecraft client, Entity tag) {
 		LivingEntity best = null;
 		double bestDist = Double.MAX_VALUE;
-		AABB box = owner.getBoundingBox().inflate(1.5, 4.0, 1.5);
-		for (Entity entity : client.level.getEntities(owner, box, e -> e instanceof LivingEntity && !(e instanceof ArmorStand) && e != client.player)) {
+		AABB box = tag.getBoundingBox().inflate(1.5, 4.0, 1.5);
+		for (Entity entity : client.level.getEntities(tag, box, e -> e instanceof LivingEntity && !SlayerTags.isTag(e) && e != client.player)) {
 			if (type != null && !type.matches(entity)) {
 				continue;
 			}
-			double dy = owner.getY() - entity.getY();
-			if (dy < -0.5) {
-				continue;
-			}
-			double d = entity.distanceToSqr(owner.getX(), owner.getY(), owner.getZ());
+			double d = entity.distanceToSqr(tag.getX(), tag.getY(), tag.getZ());
 			if (d < bestDist) {
 				bestDist = d;
 				best = (LivingEntity) entity;
@@ -503,7 +528,7 @@ public final class SlayerApi {
 	// ---------------------------------------------------------------- helpers
 
 	public static String clean(Component component) {
-		return component == null ? "" : component.getString().replaceAll("§.", "").trim();
+		return SlayerTags.clean(component);
 	}
 
 	/** "1,234", "45.5M", "1.9k" -> number. */

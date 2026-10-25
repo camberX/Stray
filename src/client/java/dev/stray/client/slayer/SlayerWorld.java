@@ -56,7 +56,7 @@ public final class SlayerWorld {
 	private static final String ICHOR = "c0340923a6de4825a176813d133503eff186db0896e32b6704928c2a2bf68422";
 	private static final String SPRING = "77f7a7bc8ac86f23ca7bf98afeb76960227e1832fe209a3026f6ceb8bde74f54";
 	private static final Pattern EGG_TIMER = Pattern.compile("^\\d+s \\d+/\\d+$");
-	private static final Pattern SPAWNED_BY = Pattern.compile("^Spawned by: (\\w+)");
+	private static final Pattern SPAWNED_BY = Pattern.compile("Spawned by: (\\w+)");
 
 	private static volatile Int2IntOpenHashMap glow = new Int2IntOpenHashMap();
 	private static volatile List<Line> lines = List.of();
@@ -156,18 +156,12 @@ public final class SlayerWorld {
 			}
 		}
 
-		// Mini-bosses: the name tag stand above them.
-		if (s.esp && inArea && (s.miniHighlight || s.miniLine)) {
-			for (ArmorStand stand : stands) {
-				if (!stand.hasCustomName()) {
-					continue;
-				}
-				String name = SlayerApi.clean(stand.getCustomName());
-				if (!miniBossName(name)) {
-					continue;
-				}
-				LivingEntity mob = below(client, stand);
-				if (mob == null) {
+		// Mini-bosses (and their cocoons): any mob whose name tags name a slayer mini-boss.
+		if (s.esp && (s.miniHighlight || s.miniLine)) {
+			java.util.Set<Integer> done = new java.util.HashSet<>();
+			for (SlayerTags.Tag tag : SlayerTags.all()) {
+				LivingEntity mob = tag.owner();
+				if (mob == null || !done.add(mob.getId()) || !miniBoss(SlayerTags.of(mob))) {
 					continue;
 				}
 				if (s.miniHighlight) {
@@ -177,22 +171,34 @@ public final class SlayerWorld {
 					nextLines.add(new Line(mob, null, s.miniRgb, 1.0));
 				}
 			}
+			for (Entity entity : nearby) {
+				if (entity instanceof LivingEntity mob && !SlayerTags.isTag(mob) && done.add(mob.getId()) && miniBoss(SlayerTags.of(mob))) {
+					if (s.miniHighlight) {
+						nextGlow.put(mob.getId(), 0xFF000000 | s.miniRgb);
+					}
+					if (s.miniLine && mob.distanceTo(client.player) < 10) {
+						nextLines.add(new Line(mob, null, s.miniRgb, 1.0));
+					}
+				}
+			}
 		}
 
 		// Tarantula egg sacs during the boss fight.
 		if (s.esp && s.eggSacs && type == SlayerType.TARANTULA && SlayerApi.inBossFight()) {
-			List<ArmorStand> shoot = new ArrayList<>();
-			for (ArmorStand stand : stands) {
-				if (stand.hasCustomName() && SlayerApi.clean(stand.getCustomName()).equalsIgnoreCase("SHOOT ME!")) {
-					shoot.add(stand);
+			List<Entity> shoot = new ArrayList<>();
+			List<Entity> timers = new ArrayList<>();
+			for (SlayerTags.Tag tag : SlayerTags.all()) {
+				for (String line : tag.lines()) {
+					if (line.equalsIgnoreCase("SHOOT ME!")) {
+						shoot.add(tag.entity());
+					} else if (EGG_TIMER.matcher(line).matches()) {
+						timers.add(tag.entity());
+					}
 				}
 			}
-			for (ArmorStand timer : stands) {
-				if (!timer.hasCustomName() || !EGG_TIMER.matcher(SlayerApi.clean(timer.getCustomName())).matches()) {
-					continue;
-				}
+			for (Entity timer : timers) {
 				boolean near = false;
-				for (ArmorStand sh : shoot) {
+				for (Entity sh : shoot) {
 					if (sh.distanceTo(timer) < 2.5) {
 						near = true;
 					}
@@ -347,7 +353,7 @@ public final class SlayerWorld {
 		}
 
 		// Valuable drops on the ground.
-		if (s.esp && s.itemsOnGround && SlayerApi.hasQuest() && SlayerApi.inCorrectArea()) {
+		if (s.esp && s.itemsOnGround && SlayerApi.hasQuest() && SlayerApi.plausibleArea()) {
 			for (Entity entity : nearby) {
 				if (!(entity instanceof ItemEntity item) || item.distanceTo(client.player) > 15) {
 					continue;
@@ -376,13 +382,24 @@ public final class SlayerWorld {
 	}
 
 	private static boolean twinclaws(Minecraft client, Entity bf) {
-		for (Entity e : client.level.getEntities(bf, bf.getBoundingBox().inflate(1.5, 3.5, 1.5), x -> x instanceof ArmorStand && x.hasCustomName())) {
-			String name = SlayerApi.clean(e.getCustomName());
-			if (name.contains("TWINCLAWS") && name.matches(".*TWINCLAWS [0-9.,]+s.*")) {
+		for (String name : linesNear(bf)) {
+			if (name.matches(".*TWINCLAWS [0-9.,]+s.*")) {
 				return true;
 			}
 		}
 		return false;
+	}
+
+	/** A mob's tags plus unmatched tags floating right above it. */
+	private static List<String> linesNear(Entity mob) {
+		List<String> out = new ArrayList<>(SlayerTags.of(mob));
+		AABB above = mob.getBoundingBox().inflate(1.5, 3.5, 1.5);
+		for (SlayerTags.Tag tag : SlayerTags.all()) {
+			if (tag.owner() == null && above.contains(tag.entity().position())) {
+				out.addAll(tag.lines());
+			}
+		}
+		return out;
 	}
 
 	private static boolean coop(String owner) {
@@ -399,9 +416,8 @@ public final class SlayerWorld {
 	}
 
 	private static String owner(Entity mob) {
-		Minecraft client = Minecraft.getInstance();
-		for (Entity e : client.level.getEntities(mob, mob.getBoundingBox().inflate(1.5, 3.5, 1.5), x -> x instanceof ArmorStand && x.hasCustomName())) {
-			var m = SPAWNED_BY.matcher(SlayerApi.clean(e.getCustomName()));
+		for (String line : linesNear(mob)) {
+			var m = SPAWNED_BY.matcher(line);
 			if (m.find()) {
 				return m.group(1);
 			}
@@ -409,32 +425,17 @@ public final class SlayerWorld {
 		return null;
 	}
 
-	private static boolean miniBossName(String name) {
-		for (SlayerType type : SlayerType.values()) {
-			for (String mini : type.miniBosses) {
-				if (name.contains(mini)) {
-					return true;
+	private static boolean miniBoss(List<String> lines) {
+		for (String name : lines) {
+			for (SlayerType type : SlayerType.values()) {
+				for (String mini : type.miniBosses) {
+					if (name.contains(mini)) {
+						return true;
+					}
 				}
 			}
 		}
 		return false;
-	}
-
-	private static LivingEntity below(Minecraft client, ArmorStand stand) {
-		LivingEntity best = null;
-		double bestDist = Double.MAX_VALUE;
-		AABB box = stand.getBoundingBox().inflate(0.8, 3.5, 0.8);
-		for (Entity entity : client.level.getEntities(stand, box, e -> e instanceof LivingEntity && !(e instanceof ArmorStand) && e != client.player)) {
-			if (entity.getY() > stand.getY() + 0.5) {
-				continue;
-			}
-			double d = entity.distanceToSqr(stand);
-			if (d < bestDist) {
-				bestDist = d;
-				best = (LivingEntity) entity;
-			}
-		}
-		return best;
 	}
 
 	private static String texture(ItemStack stack) {

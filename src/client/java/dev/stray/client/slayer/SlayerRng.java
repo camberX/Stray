@@ -71,7 +71,7 @@ public final class SlayerRng {
 		if (!settings().rng) {
 			return true;
 		}
-		if (settings().rngHideChat && SlayerApi.inCorrectArea() && SET_ITEM.matcher(text).find()) {
+		if (settings().rngHideChat && SlayerApi.plausibleArea() && SET_ITEM.matcher(text).find()) {
 			return false;
 		}
 		Matcher m = METER.matcher(text);

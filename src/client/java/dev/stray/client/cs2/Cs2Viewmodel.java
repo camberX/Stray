@@ -30,6 +30,7 @@ public final class Cs2Viewmodel {
 	private static boolean swingAlt;
 	private static float lastSwing;
 	private static Object lastStack;
+	private static long lastRenderNs;
 	private static int inspectVariant;
 
 	private Cs2Viewmodel() {
@@ -85,7 +86,12 @@ public final class Cs2Viewmodel {
 	/** Picks the clip for this frame and samples it into the pose. */
 	private static void sample(Cs2Knives.Knife knife, float swingProgress, Object stack) {
 		Pose pose = knife.pose;
-		if (!java.util.Objects.equals(stack, lastStack)) {
+		// Draw when the sword changes, or when the knife comes back after something else was held
+		// (the knife was not drawn for a moment).
+		long now = System.nanoTime();
+		boolean returned = lastRenderNs != 0 && now - lastRenderNs > 150_000_000L;
+		lastRenderNs = now;
+		if (!java.util.Objects.equals(stack, lastStack) || returned) {
 			lastStack = stack;
 			start(Action.DRAW);
 		}

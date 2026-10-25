@@ -87,7 +87,7 @@ public final class SlayerAlerts {
 
 	public static void onProgress(String progress) {
 		SlayerSettings s = settings();
-		if (!s.alerts || !s.spawnSoon || !SlayerApi.inCorrectArea() || !SlayerApi.hasQuest()) {
+		if (!s.alerts || !s.spawnSoon || !SlayerApi.plausibleArea() || !SlayerApi.hasQuest()) {
 			return;
 		}
 		Matcher m = PROGRESS.matcher(progress + " ");

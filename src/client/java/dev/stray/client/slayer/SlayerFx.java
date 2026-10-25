@@ -60,7 +60,7 @@ public final class SlayerFx {
 		long now = System.currentTimeMillis();
 		DEATHS.removeIf(d -> now - d.ms > 3000);
 		SlayerSettings s = settings();
-		if (s.cleanup && (s.hideSpawnWhite || s.hideSpawnPurple || s.hideSpawnSpecific) && SlayerApi.hasQuest() && SlayerApi.inCorrectArea()) {
+		if (s.cleanup && (s.hideSpawnWhite || s.hideSpawnPurple || s.hideSpawnSpecific) && SlayerApi.hasQuest() && SlayerApi.plausibleArea()) {
 			for (Entity e : client.level.getEntities(client.player, client.player.getBoundingBox().inflate(24),
 				x -> x instanceof LivingEntity l && !(x instanceof ArmorStand) && l.isDeadOrDying())) {
 				Vec3 at = e.position();
@@ -132,8 +132,13 @@ public final class SlayerFx {
 		if (!s.cleanup) {
 			return false;
 		}
-		if (entity instanceof ArmorStand stand && stand.hasCustomName()) {
-			String name = SlayerApi.clean(stand.getCustomName());
+		if ((s.hideMobNames || s.hideDamageNear) && SlayerTags.isTag(entity)) {
+			Entity stand = entity;
+			List<String> text = SlayerTags.text(entity);
+			if (text.isEmpty()) {
+				return false;
+			}
+			String name = text.get(0);
 			if (s.hideMobNames) {
 				Matcher m = MOB_NAME.matcher(name);
 				if (m.find() && (m.group(1).equals(m.group(2)) || m.group(1).equals("0"))) {

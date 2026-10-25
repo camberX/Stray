@@ -276,14 +276,18 @@ public final class SlayerBosses {
 	}
 
 	private static void scanPillar(Minecraft client) {
-		AABB box = client.player.getBoundingBox().inflate(40);
 		String found = null;
 		int foundId = -1;
-		for (Entity entity : client.level.getEntities(client.player, box, e -> e instanceof ArmorStand && e.hasCustomName())) {
-			Matcher m = PILLAR.matcher(SlayerApi.clean(entity.getCustomName()));
-			if (m.find()) {
-				found = m.group(1);
-				foundId = entity.getId();
+		for (SlayerTags.Tag tag : SlayerTags.all()) {
+			for (String line : tag.lines()) {
+				Matcher m = PILLAR.matcher(line);
+				if (m.find()) {
+					found = m.group(1);
+					foundId = tag.entity().getId();
+					break;
+				}
+			}
+			if (found != null) {
 				break;
 			}
 		}

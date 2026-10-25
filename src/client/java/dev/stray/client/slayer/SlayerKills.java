@@ -78,8 +78,8 @@ public final class SlayerKills {
 	}
 
 	public static Snapshot snapshot() {
-		SlayerType area = SlayerApi.areaType();
 		SlayerType type = SlayerApi.type();
+		SlayerType area = SlayerApi.areaType() != null ? SlayerApi.areaType() : type;
 		if (area == null || type == null || missing < 0 || max <= 0) {
 			return new Snapshot("", List.of(), -1, tabWisdom >= 0);
 		}
