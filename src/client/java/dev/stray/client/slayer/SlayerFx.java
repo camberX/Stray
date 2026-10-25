@@ -124,6 +124,9 @@ public final class SlayerFx {
 		if (!SkyblockLocation.inSkyblock || entity == null) {
 			return false;
 		}
+		if (SlayerWorld.hiddenTag(entity)) {
+			return true;
+		}
 		SlayerSettings s = settings();
 		EntityType<?> type = entity.getType();
 		if ((type == EntityType.FIREBALL || type == EntityType.SMALL_FIREBALL) && clearView()) {

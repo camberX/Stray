@@ -59,6 +59,32 @@ public final class SlayerWorld {
 
 	private static volatile List<Fill> fills = List.of();
 	private static volatile List<Fill> texts = List.of();
+	/** Hypixel name tags replaced by Stray's own text (shielded Inferno bosses and demons). */
+	private static volatile IntOpenHashSet hidden = new IntOpenHashSet();
+	private static final Pattern HEALTH = Pattern.compile("([\\d.,]+[kKmMbB]?)(?:/[\\d.,]+[kKmMbB]?)?\\s*❤");
+
+	public static boolean hiddenTag(Entity entity) {
+		IntOpenHashSet set = hidden;
+		return !set.isEmpty() && set.contains(entity.getId());
+	}
+
+	/** "20.3M❤" from a mob's tags (current health only). */
+	private static String health(List<String> tags) {
+		for (String line : tags) {
+			if (!line.contains("❤")) {
+				continue;
+			}
+			Matcher m = HEALTH.matcher(line);
+			String last = null;
+			while (m.find()) {
+				last = m.group(1);
+			}
+			if (last != null) {
+				return last + "❤";
+			}
+		}
+		return null;
+	}
 	private static final Pattern ZERO_HP = Pattern.compile("(?:^|\\s)0(?:/[\\d.,]+[kKmMbB]?)?\\s*❤");
 	private static final Pattern SHIELD_HITS = Pattern.compile("♨\\s*(\\d+)");
 
@@ -167,6 +193,7 @@ public final class SlayerWorld {
 		labels = List.of();
 		fills = List.of();
 		texts = List.of();
+		hidden = new IntOpenHashSet();
 		TAGGED.clear();
 		SITTING.clear();
 		FLYING.clear();
@@ -218,6 +245,7 @@ public final class SlayerWorld {
 		// Hellion shields: colour every Inferno boss / demon by the shield on its tags, with a
 		// see-through fill and the shield, hits left on it and the boss phase above it.
 		List<Fill> nextFills = new ArrayList<>();
+		IntOpenHashSet nextHidden = new IntOpenHashSet();
 		if (s.inferno && (s.shieldColors || s.shieldText)) {
 			java.util.Set<Integer> seen = new java.util.HashSet<>();
 			for (SlayerTags.Tag tag : SlayerTags.all()) {
@@ -246,7 +274,15 @@ public final class SlayerWorld {
 								break;
 							}
 						}
-						text = b.toString();
+						// Health above the shield, in place of Hypixel's name tags (hidden below).
+						String hp = health(mobTags);
+						text = hp == null ? b.toString() : "§c" + hp + "\n" + b;
+						for (SlayerTags.Tag t : SlayerTags.all()) {
+							if (t.owner() == mob || t.owner() == null
+								&& mob.getBoundingBox().inflate(1.5, 3.5, 1.5).contains(t.entity().position())) {
+								nextHidden.add(t.entity().getId());
+							}
+						}
 					}
 					nextFills.add(new Fill(mob, shield.rgb, text));
 				}
@@ -503,6 +539,7 @@ public final class SlayerWorld {
 		labels = List.copyOf(nextLabels);
 		fills = List.copyOf(boxes);
 		texts = List.copyOf(nextFills);
+		hidden = nextHidden;
 	}
 
 	private static boolean twinclaws(Minecraft client, Entity bf) {
@@ -680,9 +717,14 @@ public final class SlayerWorld {
 			float x = (float) ((ndc.x * 0.5 + 0.5) * graphics.guiWidth());
 			float y = (float) ((-ndc.y * 0.5 + 0.5) * graphics.guiHeight());
 			float scale = NametagRenderer.distanceScale(rel.length()) * 1.4f;
-			Component text = Component.literal(label.text);
-			float w = font.width(text);
-			GuiDraw.text(graphics, font, text, x - w * scale * 0.5f, y - font.lineHeight * scale, scale, 0xFF000000 | label.rgb, true);
+			// Several lines stack upwards from the point, first line on top.
+			String[] rows = label.text.split("\n");
+			for (int i = 0; i < rows.length; i++) {
+				Component text = Component.literal(rows[i]);
+				float w = font.width(text);
+				float rowY = y - (rows.length - i) * (font.lineHeight + 1) * scale;
+				GuiDraw.text(graphics, font, text, x - w * scale * 0.5f, rowY, scale, 0xFF000000 | label.rgb, true);
+			}
 		}
 	}
 }
