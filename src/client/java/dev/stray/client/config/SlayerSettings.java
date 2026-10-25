@@ -76,6 +76,9 @@ public final class SlayerSettings {
 	// ---- Inferno Demonlord
 	public boolean inferno = false;
 	public boolean shieldColors = true;
+	public boolean shieldFill = true;
+	public float shieldFillOpacity = 0.35f;
+	public boolean shieldText = true;
 	public boolean daggers = true;
 	public int firstDagger = 0;
 	public boolean markShield = true;

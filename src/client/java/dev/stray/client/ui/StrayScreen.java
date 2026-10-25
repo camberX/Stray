@@ -200,7 +200,7 @@ public class StrayScreen extends Screen {
 		SLAYER_ALERTS("Slayer alerts", 12),
 		SLAYER_ESP("Slayer ESP", 14),
 		SLAYER_VOID("Voidgloom", 7),
-		SLAYER_INFERNO("Inferno", 8),
+		SLAYER_INFERNO("Inferno", 11),
 		SLAYER_VAMPIRE("Bloodfiend", 20),
 		SLAYER_CLEANUP("Slayer cleanup", 7);
 
@@ -3688,6 +3688,9 @@ public class StrayScreen extends Screen {
 			}
 			case SLAYER_INFERNO -> {
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Shield colors", s.shieldColors, v -> s.shieldColors = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Shield fill", s.shieldFill, v -> s.shieldFill = v);
+				y = slider(graphics, font, ix, y, iw, "Fill opacity", Math.round(s.shieldFillOpacity * 100) + "%", (s.shieldFillOpacity - 0.1f) / 0.8f, v -> s.shieldFillOpacity = StrayConfig.clamp(0.1f + v * 0.8f, 0.1f, 0.9f));
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Shield + phase text", s.shieldText, v -> s.shieldText = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Dagger helper", s.daggers, v -> s.daggers = v);
 				y = chipRow(graphics, font, ix, y, iw, mouseX, mouseY, new String[]{"Twilight first", "Firedust first"}, s.firstDagger, i -> s.firstDagger = i);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Mark boss shield", s.markShield, v -> s.markShield = v);

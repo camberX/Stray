@@ -39,6 +39,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.regex.Pattern;
+import java.util.regex.Matcher;
 
 /**
  * Slayer things drawn in the world: glow on mini-bosses, egg sacs, beacons, Nukekubi skulls,
@@ -51,6 +52,13 @@ public final class SlayerWorld {
 
 	private record Label(Vec3 at, String text, int rgb, boolean through) {
 	}
+
+	/** A see-through box around a mob with an optional text above it, following the mob. */
+	private record Fill(Entity entity, int rgb, String text) {
+	}
+
+	private static volatile List<Fill> fills = List.of();
+	private static final Pattern SHIELD_HITS = Pattern.compile("♨\\s*(\\d+)");
 
 	private static final String NUKEKUBI = "eb07594e2df273921a77c101d0bfdfa1115abed5b9b2029eb496ceba9bdbb4b3";
 	private static final String ICHOR = "c0340923a6de4825a176813d133503eff186db0896e32b6704928c2a2bf68422";
@@ -121,6 +129,7 @@ public final class SlayerWorld {
 		glow = new Int2IntOpenHashMap();
 		lines = List.of();
 		labels = List.of();
+		fills = List.of();
 		TAGGED.clear();
 		SITTING.clear();
 		FLYING.clear();
@@ -169,16 +178,47 @@ public final class SlayerWorld {
 			}
 		}
 
-		// Hellion shields: colour every Inferno boss / demon by the shield on its tags.
-		if (s.inferno && s.shieldColors) {
+		// Hellion shields: colour every Inferno boss / demon by the shield on its tags, with a
+		// see-through fill and the shield, hits left on it and the boss phase above it.
+		List<Fill> nextFills = new ArrayList<>();
+		if (s.inferno && (s.shieldColors || s.shieldFill || s.shieldText)) {
+			java.util.Set<Integer> seen = new java.util.HashSet<>();
 			for (SlayerTags.Tag tag : SlayerTags.all()) {
 				LivingEntity mob = tag.owner();
-				if (mob == null || nextGlow.containsKey(mob.getId())) {
+				if (mob == null || !seen.add(mob.getId())) {
 					continue;
 				}
-				SlayerBosses.Shield shield = SlayerBosses.shieldOf(SlayerTags.of(mob));
-				if (shield != null) {
+				List<String> mobTags = SlayerTags.of(mob);
+				SlayerBosses.Shield shield = SlayerBosses.shieldOf(mobTags);
+				if (shield == null) {
+					continue;
+				}
+				if (s.shieldColors && !nextGlow.containsKey(mob.getId())) {
 					nextGlow.put(mob.getId(), 0xFF000000 | shield.rgb);
+				}
+				if (s.shieldFill || s.shieldText) {
+					String text = null;
+					if (s.shieldText) {
+						StringBuilder b = new StringBuilder(shield.name());
+						for (String line : mobTags) {
+							Matcher m = SHIELD_HITS.matcher(line);
+							if (line.contains(shield.name()) && m.find()) {
+								int hits = Integer.parseInt(m.group(1));
+								b.append("  ").append(hits).append(hits == 1 ? " hit" : " hits");
+								break;
+							}
+						}
+						if (mob == boss) {
+							for (SlayerBosses.Phase phase : SlayerBosses.phases()) {
+								if (phase.text().startsWith("Phase")) {
+									b.append("  ").append(phase.text());
+									break;
+								}
+							}
+						}
+						text = b.toString();
+					}
+					nextFills.add(new Fill(mob, shield.rgb, text));
 				}
 			}
 		}
@@ -413,6 +453,7 @@ public final class SlayerWorld {
 		glow = nextGlow;
 		lines = List.copyOf(nextLines);
 		labels = List.copyOf(nextLabels);
+		fills = List.copyOf(nextFills);
 	}
 
 	private static boolean twinclaws(Minecraft client, Entity bf) {
@@ -504,7 +545,8 @@ public final class SlayerWorld {
 
 	private static void emit() {
 		List<Line> current = lines;
-		if (current.isEmpty()) {
+		List<Fill> boxes = fills;
+		if (current.isEmpty() && boxes.isEmpty()) {
 			return;
 		}
 		Minecraft client = Minecraft.getInstance();
@@ -512,6 +554,17 @@ public final class SlayerWorld {
 			return;
 		}
 		float partial = client.getDeltaTracker().getGameTimeDeltaPartialTick(true);
+		if (settings().shieldFill) {
+			int alpha = Math.round(StrayConfig.clamp(settings().shieldFillOpacity, 0.1f, 0.9f) * 255f);
+			for (Fill fill : boxes) {
+				if (fill.entity.isRemoved()) {
+					continue;
+				}
+				AABB box = fill.entity.getBoundingBox().move(fill.entity.getPosition(partial).subtract(fill.entity.position())).inflate(0.05);
+				int edge = 0xFF000000 | fill.rgb;
+				net.minecraft.gizmos.Gizmos.cuboid(box, net.minecraft.gizmos.GizmoStyle.strokeAndFill(edge, 2.0f, (alpha << 24) | fill.rgb)).setAlwaysOnTop();
+			}
+		}
 		Vec3 camera = client.gameRenderer.getMainCamera().position();
 		Vec3 look = client.player.getViewVector(partial);
 		Vec3 eye = camera.add(look.scale(0.4));
@@ -536,6 +589,21 @@ public final class SlayerWorld {
 
 	public static void extract(GuiGraphicsExtractor graphics) {
 		List<Label> current = labels;
+		List<Fill> boxes = fills;
+		if (!boxes.isEmpty()) {
+			Minecraft client = Minecraft.getInstance();
+			if (client.player != null && client.font != null && !client.options.hideGui && client.gameRenderer.getMainCamera().isInitialized()) {
+				float partial = client.getDeltaTracker().getGameTimeDeltaPartialTick(true);
+				List<Label> moving = new ArrayList<>(current);
+				for (Fill fill : boxes) {
+					if (fill.text != null && !fill.entity.isRemoved()) {
+						Vec3 at = fill.entity.getPosition(partial).add(0, fill.entity.getBbHeight() + 0.6, 0);
+						moving.add(new Label(at, fill.text, fill.rgb, true));
+					}
+				}
+				current = moving;
+			}
+		}
 		if (current.isEmpty()) {
 			return;
 		}
