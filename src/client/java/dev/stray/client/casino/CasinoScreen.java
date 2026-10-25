@@ -85,6 +85,8 @@ public final class CasinoScreen extends Screen {
 
 	private int left;
 	private float ui = 1f;
+	private float balancePillW;
+	private float frameDt;
 	/** Screen pixels per casino unit, for snapping text to whole pixels. */
 	private float pixel = 2f;
 	private int top;
@@ -188,6 +190,7 @@ public final class CasinoScreen extends Screen {
 		float dt = Math.min(0.1f, (now - lastNanos) / 1_000_000_000f);
 		lastNanos = now;
 		time += dt;
+		frameDt = dt;
 		hits.clear();
 		tabT += (tab - tabT) * Math.min(1f, dt * 14f);
 		if (pendingBalance != Long.MIN_VALUE && time >= pendingBalanceAt) {
@@ -260,14 +263,24 @@ public final class CasinoScreen extends Screen {
 		label(g, "Casino", gx + 26, y, h, TEXT, T.TITLE);
 
 		// balance (laid out first: the tabs take the room between it and the title)
+		// The pill is sized for the balance the count is heading to, and eases to that width
+		// once, instead of resizing with every number the count passes through.
 		String value = balance < 0 ? "..." : fmt(Math.round(shownBalance));
-		float bw = 10 + 12 + 5 + tw(value, T.TITLE) + 4 + tw("chips", T.SMALL) + 11;
+		String target = balance < 0 ? "..." : fmt(balance);
+		float targetW = 10 + 12 + 5 + tw(target, T.TITLE) + 4 + tw("chips", T.SMALL) + 11;
+		balancePillW = balancePillW <= 0 ? targetW : balancePillW + (targetW - balancePillW) * Math.min(1f, frameDt * 10f);
+		if (Math.abs(targetW - balancePillW) < 0.05f) {
+			balancePillW = targetW;
+		}
+		float bw = balancePillW;
 		float bx = left + W - 10 - bw;
 		pill(g, bx, y, bw, h, container, containerHigh);
 		RoundRect.diagonal(g, bx + 10, y + h / 2f - 6, 12, 12, 6, primary, primary2);
 		RoundRect.fill(g, bx + 13, y + h / 2f - 3, 6, 6, 3, withA(onPrimary, 0xB0));
-		label(g, value, bx + 27, y, h, TEXT, T.TITLE);
-		label(g, "chips", bx + 27 + tw(value, T.TITLE) + 4, y, h, MUTED, T.SMALL);
+		// right-aligned against "chips", so the number grows leftwards inside the pill
+		float chipsX = bx + bw - 11 - tw("chips", T.SMALL);
+		label(g, value, chipsX - 4 - tw(value, T.TITLE), y, h, TEXT, T.TITLE);
+		label(g, "chips", chipsX, y, h, MUTED, T.SMALL);
 
 		// tabs, like the bar's workspaces
 		float tx0 = gx + titleW + 8;
@@ -595,7 +608,6 @@ public final class CasinoScreen extends Screen {
 		int th = TABLE_H;
 		// felt with a soft light in the middle, an accent rim
 		RoundRect.vertical(g, tx, y, tw, th, 12, FELT_TOP, FELT_BOTTOM);
-		RoundRect.vertical(g, tx + tw * 0.15f, y, tw * 0.7f, th * 0.6f, 40, 0x14FFFFFF, 0x00FFFFFF);
 		RoundRect.outline(g, tx, y, tw, th, 12, withA(primary, 0xC0), withA(primary2, 0x50));
 		// shoe
 		RoundRect.vertical(g, tx + tw - 50, y + 10, 40, 30, 6, 0xFF2B2E36, 0xFF15171C);
