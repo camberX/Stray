@@ -96,7 +96,15 @@ public final class SlayerWorld {
 			full = Math.max(full, seen);
 			double f = full <= 0 ? 1 : (double) now / full;
 			String color = f > 0.75 ? "§a" : f > 0.5 ? "§e" : f > 0.3 ? "§6" : f > 0.12 ? "§c" : "§4";
-			return color + cur + "❤";
+			// Twilight Arrow Poison shows as a purple ᛤ in the boss's tags.
+			String twilight = "";
+			for (String t : tags) {
+				if (t.contains("ᛤ")) {
+					twilight = " §5ᛤ";
+					break;
+				}
+			}
+			return color + cur + "❤" + twilight;
 		}
 		return null;
 	}
