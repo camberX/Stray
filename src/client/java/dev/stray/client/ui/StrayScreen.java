@@ -3628,7 +3628,7 @@ public class StrayScreen extends Screen {
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Boss health", s.hudBoss, v -> s.hudBoss = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Boss phase", s.hudPhase, v -> s.hudPhase = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Fight timer", s.hudTimer, v -> s.hudTimer = v);
-				toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Only in slayer area", s.hudOnlyInArea, v -> s.hudOnlyInArea = v);
+				toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Only in slayer area", s.hudAreaOnly, v -> s.hudAreaOnly = v);
 			}
 			case SLAYER_PROFIT -> {
 				y = chipRow(graphics, font, ix, y, iw, mouseX, mouseY, new String[]{"Total", "Session"}, s.profitSession ? 1 : 0, i -> s.profitSession = i == 1);

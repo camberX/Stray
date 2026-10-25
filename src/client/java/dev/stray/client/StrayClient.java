@@ -294,6 +294,12 @@ public final class StrayClient implements ClientModInitializer {
 			root.then(musicCommand());
 			root.then(RawmatsCommands.command());
 			root.then(EspCommands.command());
+			root.then(ClientCommands.literal("slayer").executes(context -> {
+				for (String line : dev.stray.client.slayer.SlayerApi.debug(Minecraft.getInstance())) {
+					context.getSource().sendFeedback(Component.literal("§bStray slayer §8» §7" + line));
+				}
+				return Command.SINGLE_SUCCESS;
+			}));
 			root.then(FairySoulCommands.command());
 			root.then(FairySoulCommands.shortCommand());
 			root.then(LoadoutsCommands.command());

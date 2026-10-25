@@ -607,7 +607,7 @@ public final class PestCooldown {
 			&& !key.startsWith("plots");
 	}
 
-	private static List<String> tabLines(Minecraft client) {
+	public static List<String> tabLines(Minecraft client) {
 		ClientPacketListener connection = client.player.connection;
 		if (connection == null) {
 			return List.of();

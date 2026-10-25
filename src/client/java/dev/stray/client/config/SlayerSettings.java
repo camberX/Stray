@@ -11,7 +11,7 @@ public final class SlayerSettings {
 	public boolean hudBoss = true;
 	public boolean hudPhase = true;
 	public boolean hudTimer = true;
-	public boolean hudOnlyInArea = true;
+	public boolean hudAreaOnly = false;
 
 	// ---- profit tracker
 	public boolean profit = false;

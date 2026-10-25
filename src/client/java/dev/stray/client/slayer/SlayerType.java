@@ -95,13 +95,21 @@ public enum SlayerType {
 				return TARANTULA;
 			case "Ruins", "Howling Cave", "Soul Cave", "Spirit Cave":
 				return SVEN;
-			case "Void Sepulture", "Zealot Bruiser Hideout", "Dragon's Nest":
+			case "Void Sepulture", "Zealot Bruiser Hideout":
 				return VOID;
 			case "Stronghold", "The Wasteland", "Smoldering Tomb":
 				return INFERNO;
 			case "Stillgore Château", "Stillgore Chateau", "Oubliette":
 				return VAMPIRE;
+			case "Dragon's Nest", "Void Slate", "The End":
+				return isle.equalsIgnoreCase("The End") ? VOID : null;
 			default:
+				if (area.contains("Stillgore")) {
+					return VAMPIRE;
+				}
+				if (isle.equalsIgnoreCase("Spider's Den") && !area.equals("Spider's Den Entrance")) {
+					return TARANTULA;
+				}
 				return isle.equalsIgnoreCase("The End") && area.isEmpty() ? VOID : null;
 		}
 	}

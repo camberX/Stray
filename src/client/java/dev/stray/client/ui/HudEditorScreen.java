@@ -48,12 +48,23 @@ public class HudEditorScreen extends Screen {
 	public void extractBackground(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float delta) {
 	}
 
+	/** Only the elements that are turned on (and the one being dragged). */
+	private List<HudLayout.Box> shown(Font font, int guiW, int guiH) {
+		List<HudLayout.Box> out = new java.util.ArrayList<>();
+		for (HudLayout.Box box : HudLayout.boxes(font, guiW, guiH)) {
+			if (HudLayout.enabled(box.id()) || box.id() == dragging) {
+				out.add(box);
+			}
+		}
+		return out;
+	}
+
 	@Override
 	public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float delta) {
 		Font font = minecraft.font;
 		int guiW = graphics.guiWidth();
 		int guiH = graphics.guiHeight();
-		List<HudLayout.Box> boxes = HudLayout.boxes(font, guiW, guiH);
+		List<HudLayout.Box> boxes = shown(font, guiW, guiH);
 
 		GuiDraw.fill(graphics, 0, 0, guiW, guiH, 0x22000000);
 		drawBar(graphics, font, mouseX, mouseY, guiW);
@@ -244,7 +255,7 @@ public class HudEditorScreen extends Screen {
 		if (onInspector(event.x(), event.y())) {
 			return true;
 		}
-		List<HudLayout.Box> boxes = HudLayout.boxes(minecraft.font, guiW, guiH);
+		List<HudLayout.Box> boxes = shown(minecraft.font, guiW, guiH);
 		HudLayout.Box hit = pick(boxes, event.x(), event.y());
 		if (hit != null) {
 			selected = hit.id();
@@ -272,7 +283,7 @@ public class HudEditorScreen extends Screen {
 		}
 		int guiW = minecraft.getWindow().getGuiScaledWidth();
 		int guiH = minecraft.getWindow().getGuiScaledHeight();
-		List<HudLayout.Box> boxes = HudLayout.boxes(minecraft.font, guiW, guiH);
+		List<HudLayout.Box> boxes = shown(minecraft.font, guiW, guiH);
 		HudLayout.Box current = HudLayout.box(dragging, minecraft.font, guiW, guiH);
 		float nx = (float) (event.x() - grabX);
 		float ny = (float) (event.y() - grabY);
@@ -299,7 +310,7 @@ public class HudEditorScreen extends Screen {
 		int guiH = minecraft.getWindow().getGuiScaledHeight();
 		HudLayout.Id id = selected;
 		if (id == null) {
-			HudLayout.Box hit = pick(HudLayout.boxes(minecraft.font, guiW, guiH), mouseX, mouseY);
+			HudLayout.Box hit = pick(shown(minecraft.font, guiW, guiH), mouseX, mouseY);
 			id = hit == null ? null : hit.id();
 			if (id != null) {
 				selected = id;

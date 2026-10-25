@@ -82,9 +82,9 @@ public final class SlayerHudRenderer {
 			return false;
 		}
 		return switch (id) {
-			case SLAYER -> SlayerApi.hasQuest() && (!s.hudOnlyInArea || SlayerApi.inAnyArea());
+			case SLAYER -> SlayerApi.hasQuest() && (!s.hudAreaOnly || SlayerApi.inAnyArea());
 			case SLAYER_PROFIT -> SlayerApi.hasQuest() && SlayerApi.inCorrectArea();
-			case SLAYER_RNG -> SlayerApi.hasQuest() && SlayerApi.inCorrectArea();
+			case SLAYER_RNG -> SlayerApi.hasQuest();
 			case SLAYER_KILLS -> SlayerApi.hasQuest() && !SlayerKills.snapshot().lines().isEmpty();
 			case SLAYER_DAGGER -> SlayerBosses.daggerLines() != null;
 			case SLAYER_PILLAR -> SlayerBosses.pillar() != null;

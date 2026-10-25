@@ -217,6 +217,18 @@ public final class SlayerApi {
 				}
 			}
 		}
+		if (at < 0) {
+			// Not on the scoreboard (hidden by the scoreboard settings): read the tab list's "Slayer:" widget.
+			List<String> tab = tabSlayer(client);
+			for (int i = 0; i < tab.size(); i++) {
+				if (SlayerType.byName(tab.get(i)) != null && ROMAN.matcher(tab.get(i)).find()) {
+					lines = tab;
+					at = i;
+					break;
+				}
+			}
+		}
+		lastLines = lines;
 		String newCategory = at < 0 ? "" : lines.get(at);
 		String newProgress = at < 0 || at + 1 >= lines.size() ? "" : lines.get(at + 1);
 		if (!newCategory.equals(category)) {
@@ -237,6 +249,48 @@ public final class SlayerApi {
 			next = State.COCOONED;
 		}
 		setState(next);
+	}
+
+	private static List<String> lastLines = List.of();
+
+	/** The tab list lines under the "Slayer:" header (empty when the widget is off). */
+	static List<String> tabSlayer(Minecraft client) {
+		List<String> tab = dev.stray.client.farming.PestCooldown.tabLines(client);
+		List<String> out = new ArrayList<>();
+		boolean in = false;
+		for (String line : tab) {
+			String t = line.replaceAll("[\\p{Cf}\\p{Co}]", "").trim();
+			if (t.startsWith("Slayer:")) {
+				in = true;
+				String rest = t.substring(7).trim();
+				if (!rest.isEmpty()) {
+					out.add(rest);
+				}
+				continue;
+			}
+			if (in) {
+				if (t.isEmpty() || t.endsWith(":") && !t.contains("/")) {
+					break;
+				}
+				out.add(t);
+			}
+		}
+		return out;
+	}
+
+	/** State dump for /stray slayer. */
+	public static List<String> debug(Minecraft client) {
+		List<String> out = new ArrayList<>();
+		out.add("skyblock=" + SkyblockLocation.inSkyblock + " area='" + SkyblockLocation.area + "' poi='" + SkyblockLocation.poi + "'");
+		out.add("quest='" + category + "' type=" + type + " tier=" + tier + " state=" + state);
+		out.add("progress='" + progress + "' areaType=" + areaType + " correctArea=" + inCorrectArea());
+		LivingEntity b = boss();
+		out.add("boss=" + (b == null ? "none" : b.getType().toShortString() + " hp=" + bossHealth + "/" + bossMaxHealth + " tags=" + BOSS_TAGS));
+		out.add("lines=" + lastLines);
+		if (client.player != null) {
+			out.add("tab slayer=" + tabSlayer(client));
+		}
+		return out;
 	}
 
 	private static State detect(String line) {
