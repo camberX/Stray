@@ -80,7 +80,14 @@ public final class SlayerData {
 				for (String type : pets.keySet()) {
 					JsonObject byPet = pets.getAsJsonObject(type);
 					for (String pet : byPet.keySet()) {
+						if (!byPet.get(pet).isJsonObject()) {
+							continue;
+						}
 						JsonObject petData = byPet.getAsJsonObject(pet);
+						if (!petData.has("scaling") || !petData.get("scaling").isJsonArray()) {
+							// The repo nests some entries one level deeper; skip what does not fit.
+							continue;
+						}
 						List<Double> scaling = new ArrayList<>();
 						for (JsonElement e : petData.getAsJsonArray("scaling")) {
 							scaling.add(e.getAsDouble());
@@ -103,6 +110,10 @@ public final class SlayerData {
 				habanero = slayer.get("habanero_wisdom_per_level").getAsDouble();
 				arbitrary = slayer.get("arbitrary_multiplier").getAsDouble();
 			}
+		} catch (RuntimeException e) {
+			Stray.LOGGER.warn("Slayer data could not be read", e);
+		}
+		try {
 			JsonObject items = read("/assets/stray/slayer/SlayerProfitTrackerItems.json");
 			if (items != null) {
 				JsonObject slayers = items.getAsJsonObject("slayers");
