@@ -101,6 +101,8 @@ public final class StrayConfig {
 	public boolean cs2PerSword = false;
 	public java.util.Map<String, Cs2Skin> cs2SwordSkins = new java.util.HashMap<>();
 	public Cs2Skin cs2DefaultSkin;
+	/** Which sword's skin the knife fields hold (per-sword mode), so a restart stores it back to the right sword. */
+	public String cs2ActiveSword;
 
 	/** One knife choice: knife, finish, seed and float. */
 	public static final class Cs2Skin {

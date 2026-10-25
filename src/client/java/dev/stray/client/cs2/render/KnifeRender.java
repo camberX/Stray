@@ -84,19 +84,11 @@ public final class KnifeRender {
 		Matrix4f view = new Matrix4f(toView);
 		Matrix4f[] bones = copy(skin);
 		RenderType main = type(knife);
+		RenderType blade = StrayConfig.get().cs2BladeShader ? HeldItemShader.bladeTypeFor(knife.bladeId) : null;
 		collector.submitCustomGeometry(pose, main, (p, consumer) -> {
-			KnifeGpu.queue(main, KnifeGpu.mesh(knife), false, p.pose(), view, bones, light);
+			KnifeGpu.queue(main, KnifeGpu.mesh(knife), false, p.pose(), view, bones, light, blade);
 			placeholder(consumer, light);
 		});
-		if (StrayConfig.get().cs2BladeShader) {
-			RenderType fill = HeldItemShader.bladeTypeFor(knife.bladeId);
-			if (fill != null) {
-				collector.submitCustomGeometry(pose, fill, (p, consumer) -> {
-					KnifeGpu.queue(fill, KnifeGpu.mesh(knife), true, p.pose(), view, bones, light);
-					placeholder(consumer, light);
-				});
-			}
-		}
 	}
 
 	private static Matrix4f[] copy(Matrix4f[] skin) {

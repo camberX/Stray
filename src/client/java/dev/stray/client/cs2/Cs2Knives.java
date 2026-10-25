@@ -363,8 +363,16 @@ public final class Cs2Knives {
 	 * held sword changes, the edited skin is stored for the old one and the new one's is loaded
 	 * (swords without their own skin use the default). Turning the mode off restores the default.
 	 */
+	private static boolean activeRestored;
+
 	private static void syncPerSword(Minecraft client) {
 		StrayConfig c = StrayConfig.get();
+		if (!activeRestored) {
+			// The knife fields were saved holding this sword's skin: without this, the first switch
+			// after a restart stored it as the default (and other swords then showed it).
+			activeRestored = true;
+			activeSword = c.cs2PerSword ? c.cs2ActiveSword : null;
+		}
 		if (c.cs2DefaultSkin == null) {
 			c.cs2DefaultSkin = selection(c);
 		}
@@ -375,6 +383,7 @@ public final class Cs2Knives {
 				activeSword = null;
 				activeSwordName = null;
 			}
+			c.cs2ActiveSword = null;
 			c.cs2DefaultSkin = selection(c);
 			return;
 		}
@@ -384,11 +393,15 @@ public final class Cs2Knives {
 			key = null;
 		}
 		if (java.util.Objects.equals(key, activeSword)) {
+			if (key != null && activeSwordName == null) {
+				activeSwordName = held.getHoverName().getString();
+			}
 			return;
 		}
 		stash(c, activeSword);
 		apply(c, key == null ? c.cs2DefaultSkin : c.cs2SwordSkins.getOrDefault(key, c.cs2DefaultSkin));
 		activeSword = key;
+		c.cs2ActiveSword = key;
 		activeSwordName = key == null ? null : held.getHoverName().getString();
 	}
 

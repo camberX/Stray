@@ -44,7 +44,8 @@ public final class KnifeGpu {
 	private static final int BLOCK_SIZE = MAX_BONES * 64 + 16;
 	private static final int SLOTS = 64;
 
-	private record Request(Mesh mesh, boolean blade, Matrix4f[] bones, int light) {
+	/** {@code bladeType}: the blade shader pass to draw right after this knife (null for none). */
+	private record Request(Mesh mesh, boolean blade, Matrix4f[] bones, int light, RenderType bladeType) {
 	}
 
 	/** One knife's buffers on the GPU. */
@@ -176,6 +177,10 @@ public final class KnifeGpu {
 
 	/** Records a knife draw for the batch of {@code type}; called while that batch is built. */
 	public static void queue(RenderType type, Mesh mesh, boolean blade, Matrix4f pose, Matrix4f toView, Matrix4f[] skin, int light) {
+		queue(type, mesh, blade, pose, toView, skin, light, null);
+	}
+
+	public static void queue(RenderType type, Mesh mesh, boolean blade, Matrix4f pose, Matrix4f toView, Matrix4f[] skin, int light, RenderType bladeType) {
 		int n = skin == null ? 1 : Math.min(MAX_BONES, skin.length);
 		Matrix4f[] out = new Matrix4f[n];
 		for (int b = 0; b < n; b++) {
@@ -184,7 +189,7 @@ public final class KnifeGpu {
 				out[b].mul(skin[b]);
 			}
 		}
-		QUEUE.computeIfAbsent(type, k -> new ArrayList<>()).add(new Request(mesh, blade, out, light));
+		QUEUE.computeIfAbsent(type, k -> new ArrayList<>()).add(new Request(mesh, blade, out, light, bladeType));
 	}
 
 	/** Whether this batch is a knife batch to draw from the GPU mesh instead of its (empty) vertices. */
@@ -199,6 +204,23 @@ public final class KnifeGpu {
 		if (list == null || list.isEmpty()) {
 			return;
 		}
+		pass(type, setup, list);
+		// The blade shader goes right after its knife, in the same draw: as its own batch it could be
+		// drawn before the knife (batch order is not fixed) and the knife would cover it.
+		java.util.LinkedHashMap<RenderType, List<Request>> blades = new java.util.LinkedHashMap<>();
+		for (Request req : list) {
+			if (req.bladeType != null) {
+				blades.computeIfAbsent(req.bladeType, k -> new ArrayList<>())
+					.add(new Request(req.mesh, true, req.bones, req.light, null));
+			}
+		}
+		for (Map.Entry<RenderType, List<Request>> e : blades.entrySet()) {
+			RenderSetup bladeSetup = ((dev.stray.client.mixin.RenderTypeAccessor) (Object) e.getKey()).stray$setup();
+			pass(e.getKey(), bladeSetup, e.getValue());
+		}
+	}
+
+	private static void pass(RenderType type, RenderSetup setup, List<Request> list) {
 		GpuDevice device = RenderSystem.getDevice();
 		if (bones == null || bones.isClosed()) {
 			int align = Math.max(16, device.getUniformOffsetAlignment());
