@@ -183,7 +183,10 @@ public final class CasinoScreen extends Screen {
 		// window
 		GuiDraw.rounded(g, left - 1, top - 1, W + 2, H + 2, 12, PANEL_LINE);
 		GuiDraw.rounded(g, left, top, W, H, 11, PANEL);
-		GuiDraw.fillGradient(g, left + 1, top + 1, W - 2, 34, 0x40F5C451, 0x00000000);
+		// Gold glow fading down from the top: stacked rounded layers keep the window's corners.
+		for (int i = 0; i < 8; i++) {
+			GuiDraw.rounded(g, left, top, W, 36 - i * 4, 11, 0x08F5C451);
+		}
 		text(g, "STRAY", left + 14, top + 11, GOLD, 1.4f);
 		text(g, "CASINO", left + 14 + width("STRAY") * 1.4f + 4, top + 11, TEXT, 1.4f);
 		drawTabs(g, mouseX, mouseY);
@@ -321,7 +324,7 @@ public final class CasinoScreen extends Screen {
 	private void drawSymbol(GuiGraphicsExtractor g, char sym, float cx, float cy, float alphaK) {
 		if (sym == 'S') {
 			float s = 2.6f;
-			text(g, "7", cx - width("7") * s / 2f + 1, cy - 4.5f * s, alpha(0xFFE11D2A, alphaK), s);
+			glyph(g, "7", cx - glyphWidth("7") * s / 2f + 1, cy - 4.5f * s, alpha(0xFFE11D2A, alphaK), s);
 			return;
 		}
 		ItemStack stack = SLOT_ITEMS.get(sym);
@@ -340,7 +343,7 @@ public final class CasinoScreen extends Screen {
 
 	private void drawSymbolSmall(GuiGraphicsExtractor g, char sym, float cx, float cy) {
 		if (sym == 'S') {
-			text(g, "7", cx - 2.5f, cy - 4.5f, 0xFFE11D2A, 1f);
+			glyph(g, "7", cx - 2.5f, cy - 4.5f, 0xFFE11D2A, 1f);
 			return;
 		}
 		ItemStack stack = SLOT_ITEMS.get(sym);
@@ -774,7 +777,7 @@ public final class CasinoScreen extends Screen {
 			GuiDraw.rounded(g, 0, 0, w, h, 3, 0xFFFAFAF7);
 			String rank = code.substring(0, code.length() - 1);
 			char suit = code.charAt(code.length() - 1);
-			String glyph = switch (suit) {
+			String suitGlyph = switch (suit) {
 				case 'H' -> "♥";
 				case 'D' -> "♦";
 				case 'C' -> "♣";
@@ -782,8 +785,8 @@ public final class CasinoScreen extends Screen {
 			};
 			int col = suit == 'H' || suit == 'D' ? CARD_RED : 0xFF16181D;
 			text(g, rank, 3, 3, col, 0.85f);
-			text(g, glyph, 3, 11, col, 0.85f);
-			text(g, glyph, w / 2f - width(glyph) * 1.6f / 2f, h / 2f - 6, col, 1.6f);
+			glyph(g, suitGlyph, 3, 11, col, 0.85f);
+			glyph(g, suitGlyph, w / 2f - glyphWidth(suitGlyph) * 1.6f / 2f, h / 2f - 6, col, 1.6f);
 		}
 		g.pose().popMatrix();
 	}
@@ -1431,7 +1434,13 @@ public final class CasinoScreen extends Screen {
 
 	// ================================================================== helpers
 
+	/** The Hyprland click GUI's font. */
 	private void text(GuiGraphicsExtractor g, String s, float x, float y, int color, float scale) {
+		GuiDraw.text(g, font, dev.stray.client.ui.MenuFont.hypr(s), x, y, scale, color, false);
+	}
+
+	/** Minecraft's font, for card suits and the slot 7 (the menu font has no such glyphs). */
+	private void glyph(GuiGraphicsExtractor g, String s, float x, float y, int color, float scale) {
 		GuiDraw.text(g, font, s, x, y, scale, color, false);
 	}
 
@@ -1440,6 +1449,10 @@ public final class CasinoScreen extends Screen {
 	}
 
 	private float width(String s) {
+		return font.width(dev.stray.client.ui.MenuFont.hypr(s));
+	}
+
+	private float glyphWidth(String s) {
 		return font.width(s);
 	}
 

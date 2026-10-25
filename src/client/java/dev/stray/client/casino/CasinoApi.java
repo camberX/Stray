@@ -76,16 +76,21 @@ public final class CasinoApi {
 			return new Result(null, "You need to be logged in to a Minecraft account.");
 		}
 		String server = UUID.randomUUID().toString().replace("-", "");
-		if (!join(user, server)) {
+		boolean joined = join(user, server);
+		// Second proof for when the Worker can't reach Mojang: the chat signing key Mojang
+		// issued for this account signs the login.
+		JsonObject proof = keyProof(client, user, server);
+		if (!joined && proof == null) {
 			return new Result(null, "Mojang refused the login. Try again in a moment.");
 		}
 		try {
 			HttpRequest request = HttpRequest.newBuilder(URI.create(BASE + "/login"))
-				.timeout(Duration.ofSeconds(12))
+				.timeout(Duration.ofSeconds(20))
 				.header("User-Agent", "Stray")
+				.header("Content-Type", "application/json")
 				.header("x-minecraft-username", user.getName())
 				.header("x-minecraft-server", server)
-				.POST(HttpRequest.BodyPublishers.noBody())
+				.POST(HttpRequest.BodyPublishers.ofString(proof == null ? "{}" : proof.toString()))
 				.build();
 			HttpResponse<String> response = HTTP.send(request, HttpResponse.BodyHandlers.ofString());
 			JsonObject body = parse(response.body());
@@ -122,6 +127,35 @@ public final class CasinoApi {
 		} catch (Exception e) {
 			Stray.LOGGER.warn("Casino call {} failed", path, e);
 			return new Result(null, "Can't reach the casino.");
+		}
+	}
+
+	private static JsonObject keyProof(Minecraft client, User user, String server) {
+		try {
+			var pair = client.getProfileKeyPairManager().prepareKeyPair().get(10, java.util.concurrent.TimeUnit.SECONDS);
+			if (pair.isEmpty()) {
+				return null;
+			}
+			var data = pair.get().publicKey().data();
+			java.util.Base64.Encoder b64 = java.util.Base64.getEncoder();
+			String uuid = user.getProfileId().toString();
+			long time = System.currentTimeMillis();
+			java.security.Signature sign = java.security.Signature.getInstance("SHA256withRSA");
+			sign.initSign(pair.get().privateKey());
+			sign.update(("stray-casino|" + user.getName() + "|" + server + "|" + time + "|" + uuid).getBytes(java.nio.charset.StandardCharsets.UTF_8));
+			JsonObject cert = new JsonObject();
+			cert.addProperty("key", b64.encodeToString(data.key().getEncoded()));
+			cert.addProperty("expires", data.expiresAt().toEpochMilli());
+			cert.addProperty("sig", b64.encodeToString(data.keySignature()));
+			JsonObject body = new JsonObject();
+			body.addProperty("uuid", uuid);
+			body.addProperty("time", time);
+			body.addProperty("proof", b64.encodeToString(sign.sign()));
+			body.add("cert", cert);
+			return body;
+		} catch (Exception e) {
+			Stray.LOGGER.warn("Casino key proof unavailable", e);
+			return null;
 		}
 	}
 
