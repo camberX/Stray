@@ -60,6 +60,8 @@ public final class SlayerApi {
 	private static ArmorStand bossNameStand;
 	private static final List<String> BOSS_TAGS = new ArrayList<>();
 	private static long bossSpawnMs;
+	/** When this boss fight started; kept while the boss swaps entities (Inferno demons, Tarantula phases). */
+	private static long fightStartMs;
 	private static long bossHealth = -1;
 	private static long bossMaxHealth = -1;
 	private static int bossTier;
@@ -140,7 +142,11 @@ public final class SlayerApi {
 	}
 
 	public static long bossAliveMs() {
-		return boss() == null || bossSpawnMs == 0 ? 0 : System.currentTimeMillis() - bossSpawnMs;
+		return fightStartMs == 0 ? 0 : System.currentTimeMillis() - fightStartMs;
+	}
+
+	public static long fightStartMs() {
+		return fightStartMs;
 	}
 
 	public static String bossTag(String containing) {
@@ -315,6 +321,9 @@ public final class SlayerApi {
 		}
 		State old = state;
 		state = next;
+		if (next == State.BOSS_FIGHT && fightStartMs == 0) {
+			startFight();
+		}
 		if ((old == State.BOSS_FIGHT || old == State.COCOONED) && next == State.GRINDING) {
 			SlayerAlerts.onState(State.SLAIN);
 		}
@@ -325,6 +334,16 @@ public final class SlayerApi {
 		if (next == State.SLAIN) {
 			SlayerBosses.onSlain();
 		}
+		if (next != State.BOSS_FIGHT && next != State.COCOONED) {
+			fightStartMs = 0;
+		}
+	}
+
+	private static void startFight() {
+		fightStartMs = System.currentTimeMillis();
+		bossMaxHealth = -1;
+		bossTier = tier;
+		SlayerBosses.onFightStart();
 	}
 
 	private static int parseTier(String line) {
@@ -416,8 +435,9 @@ public final class SlayerApi {
 		if (boss == null || boss != found) {
 			boss = found;
 			bossSpawnMs = System.currentTimeMillis();
-			bossMaxHealth = -1;
-			bossTier = tier;
+			if (fightStartMs == 0) {
+				startFight();
+			}
 			SlayerBosses.onBossSpawn(found);
 		}
 		// Name tags stacked above the boss (name + health, phase, timer...).
@@ -474,7 +494,6 @@ public final class SlayerApi {
 		boss = null;
 		bossNameStand = null;
 		bossHealth = -1;
-		bossMaxHealth = -1;
 		bossSpawnMs = 0;
 		if (t != null && alive > 0) {
 			SlayerBosses.onBossGone(t, bt, alive, state);

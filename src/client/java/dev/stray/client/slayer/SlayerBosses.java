@@ -91,11 +91,15 @@ public final class SlayerBosses {
 
 	// ---------------------------------------------------------------- lifecycle
 
-	public static void onBossSpawn(LivingEntity boss) {
-		spawnMs = System.currentTimeMillis();
+	/** A new boss fight began (first boss entity or "Slay the boss!"), not every entity swap. */
+	public static void onFightStart() {
+		spawnMs = SlayerApi.fightStartMs();
 		spawnType = SlayerApi.type();
 		spawnTier = SlayerApi.tier();
 		lastHealth = -1;
+	}
+
+	public static void onBossSpawn(LivingEntity boss) {
 		stuck = false;
 	}
 
