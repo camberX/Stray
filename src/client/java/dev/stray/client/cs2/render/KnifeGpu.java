@@ -73,8 +73,7 @@ public final class KnifeGpu {
 	}
 
 	private static final Map<RenderType, List<Request>> QUEUE = new IdentityHashMap<>();
-	private static Cs2Knives.Knife meshKnife;
-	private static Mesh mesh;
+	private static final Map<Cs2Knives.Knife, Mesh> MESHES = new IdentityHashMap<>();
 	private static GpuBuffer bones;
 	private static int slotSize;
 	private static int slot;
@@ -84,18 +83,18 @@ public final class KnifeGpu {
 	private KnifeGpu() {
 	}
 
-	/** The GPU mesh for this knife, built on first use (and the previous knife's freed). */
+	/** The GPU mesh for this knife, built on first use. */
 	public static Mesh mesh(Cs2Knives.Knife knife) {
-		if (knife == meshKnife && mesh != null) {
-			return mesh;
+		return MESHES.computeIfAbsent(knife, KnifeGpu::build);
+	}
+
+	/** Frees a knife's GPU buffers (when it leaves the knife cache). */
+	public static void release(Cs2Knives.Knife knife) {
+		Mesh m = MESHES.remove(knife);
+		if (m != null) {
+			m.close();
 		}
-		if (mesh != null) {
-			mesh.close();
-			mesh = null;
-		}
-		meshKnife = knife;
-		mesh = build(knife);
-		return mesh;
+		KnifeRender.forget(knife);
 	}
 
 	private static Mesh build(Cs2Knives.Knife knife) {

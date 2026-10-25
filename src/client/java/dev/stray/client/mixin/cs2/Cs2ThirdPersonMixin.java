@@ -46,7 +46,7 @@ public abstract class Cs2ThirdPersonMixin<S extends ArmedEntityRenderState, M ex
 		if (player == null || avatar.id != player.getId() || !Cs2Knives.applies(stack)) {
 			return;
 		}
-		Cs2Knives.Knife knife = Cs2Knives.current();
+		Cs2Knives.Knife knife = Cs2Knives.forStack(stack);
 		if (knife == null) {
 			return;
 		}

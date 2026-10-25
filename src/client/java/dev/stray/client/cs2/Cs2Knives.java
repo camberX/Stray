@@ -32,9 +32,6 @@ import java.util.concurrent.Executors;
  * on the main thread.
  */
 public final class Cs2Knives {
-	public static final Identifier ALBEDO = Stray.id("cs2/knife_albedo");
-	public static final Identifier MATERIAL = Stray.id("cs2/knife_material");
-	public static final Identifier BLADE = Stray.id("cs2/knife_blade");
 	public static final int SKIN_SIZE = 1024;
 
 	private static final ExecutorService WORKER = Executors.newSingleThreadExecutor(r -> {
@@ -52,6 +49,11 @@ public final class Cs2Knives {
 		public final Pose pose;
 		public final Map<String, NmClip> clips;
 		final Composer.Result skin;
+		/** This knife's own textures (so several built knives can be drawn without re-uploading). */
+		public final Identifier albedoId;
+		public final Identifier materialId;
+		public final Identifier bladeId;
+		boolean uploaded;
 
 		private int[][] bladeTriangles;
 
@@ -139,6 +141,10 @@ public final class Cs2Knives {
 		}
 
 		Knife(String id, String key, S2Model model, Pose pose, Map<String, NmClip> clips, Composer.Result skin) {
+			String tag = Integer.toHexString(key.hashCode()) + Integer.toHexString(System.identityHashCode(this));
+			this.albedoId = Stray.id("cs2/k/" + tag + "/albedo");
+			this.materialId = Stray.id("cs2/k/" + tag + "/material");
+			this.bladeId = Stray.id("cs2/k/" + tag + "/blade");
 			this.id = id;
 			this.key = key;
 			this.model = model;
@@ -221,7 +227,7 @@ public final class Cs2Knives {
 
 	/** True when the held stack should be drawn as the CS2 knife. */
 	public static boolean applies(ItemStack stack) {
-		if (!enabled() || current == null) {
+		if (!enabled() || library == null) {
 			return false;
 		}
 		return matches(stack);
@@ -252,12 +258,67 @@ public final class Cs2Knives {
 	}
 
 	/** The last few built knives, so switching between swords with different skins is instant. */
-	private static final Map<String, Knife> CACHE = new java.util.LinkedHashMap<>(8, 0.75f, true) {
+	private static final Map<String, Knife> CACHE = new java.util.LinkedHashMap<>(16, 0.75f, true) {
 		@Override
 		protected boolean removeEldestEntry(Map.Entry<String, Knife> eldest) {
-			return size() > 4;
+			if (size() > 12) {
+				release(eldest.getValue());
+				return true;
+			}
+			return false;
 		}
 	};
+	/** Builds in flight, by knife key (one worker, so they run one after another). */
+	private static final Map<String, CompletableFuture<Knife>> BUILDING = new HashMap<>();
+
+	private static void release(Knife knife) {
+		if (knife == current) {
+			return;
+		}
+		var textures = Minecraft.getInstance().getTextureManager();
+		textures.release(knife.albedoId);
+		textures.release(knife.materialId);
+		textures.release(knife.bladeId);
+		knife.uploaded = false;
+		dev.stray.client.cs2.render.KnifeGpu.release(knife);
+	}
+
+	private static String keyFor(StrayConfig.Cs2Skin s) {
+		return s.knife + "|" + (s.finish == null ? "" : s.finish) + "|" + s.seed + "|" + Math.round(s.wear * 10000f);
+	}
+
+	/** The skin a held stack should show right now (the edited one for the active sword). */
+	private static StrayConfig.Cs2Skin skinFor(ItemStack stack) {
+		StrayConfig c = StrayConfig.get();
+		if (!c.cs2PerSword || c.cs2DefaultSkin == null) {
+			return selection(c);
+		}
+		String sk = matches(stack) && !"empty".equals(c.cs2ApplyTo) ? swordKey(stack) : null;
+		if (java.util.Objects.equals(sk, activeSword)) {
+			return selection(c);
+		}
+		return sk == null ? c.cs2DefaultSkin : c.cs2SwordSkins.getOrDefault(sk, c.cs2DefaultSkin);
+	}
+
+	/**
+	 * The knife to draw for this held stack, decided when it is drawn (not on the next tick), so
+	 * switching between swords with different skins never shows the previous one. Null while that
+	 * knife is still being built.
+	 */
+	public static Knife forStack(ItemStack stack) {
+		if (library == null) {
+			return null;
+		}
+		String key = keyFor(skinFor(stack));
+		Knife k = CACHE.get(key);
+		if (k == null && current != null && current.key.equals(key)) {
+			k = current;
+		}
+		if (k != null && !k.uploaded) {
+			upload(k);
+		}
+		return k;
+	}
 
 	/** Item key of the sword whose skin is in the config fields right now (null = the default skin). */
 	private static String activeSword;
@@ -360,35 +421,44 @@ public final class Cs2Knives {
 		syncPerSword(client);
 		String key = key();
 		wantedKey = key;
-		CompletableFuture<Knife> job = pending;
-		if (job != null && job.isDone()) {
-			pending = null;
-			Knife knife = job.getNow(null);
+		// Finished builds join the cache.
+		for (var it = BUILDING.entrySet().iterator(); it.hasNext(); ) {
+			var e = it.next();
+			if (!e.getValue().isDone()) {
+				continue;
+			}
+			it.remove();
+			Knife knife = e.getValue().getNow(null);
 			if (knife != null) {
 				CACHE.put(knife.key, knife);
-				upload(knife);
-				current = knife;
-				status = "";
-				Cs2Viewmodel.draw();
 			}
-			loadingKey = null;
 		}
-		if (pending == null && (current == null || !current.key.equals(key)) && CACHE.containsKey(key)) {
-			// Switching back to a sword whose knife was built recently: no rebuild.
-			Knife cached = CACHE.get(key);
-			upload(cached);
-			current = cached;
-			Cs2Viewmodel.draw();
+		Knife ready = CACHE.get(key);
+		if (ready != null) {
+			current = ready;
 		}
-		if (pending == null && (current == null || !current.key.equals(key)) && !key.equals(loadingKey)) {
-			loadingKey = key;
-			String knifeId = c.cs2Knife;
-			String finish = c.cs2Finish;
-			int seed = c.cs2Seed;
-			float wear = c.cs2Wear;
-			status = "Building knife...";
-			pending = CompletableFuture.supplyAsync(() -> build(key, knifeId, finish, seed, wear), WORKER);
+		// Wanted: the edited skin, plus every sword in the hotbar (per-sword mode), so switching is instant.
+		java.util.LinkedHashMap<String, StrayConfig.Cs2Skin> wanted = new java.util.LinkedHashMap<>();
+		wanted.put(key, selection(c));
+		if (c.cs2PerSword && client.player != null) {
+			var inv = client.player.getInventory();
+			for (int i = 0; i < 9; i++) {
+				ItemStack st = inv.getItem(i);
+				if (matches(st)) {
+					StrayConfig.Cs2Skin s = skinFor(st);
+					wanted.putIfAbsent(keyFor(s), s);
+				}
+			}
 		}
+		for (var e : wanted.entrySet()) {
+			String k = e.getKey();
+			if (CACHE.containsKey(k) || BUILDING.containsKey(k) || (current != null && current.key.equals(k))) {
+				continue;
+			}
+			StrayConfig.Cs2Skin s = e.getValue();
+			BUILDING.put(k, CompletableFuture.supplyAsync(() -> build(k, s.knife, s.finish == null ? "" : s.finish, s.seed, s.wear), WORKER));
+		}
+		status = CACHE.containsKey(key) ? "" : "Building knife...";
 	}
 
 	/** Reopens the install (after changing the path). */
@@ -398,6 +468,8 @@ public final class Cs2Knives {
 		current = null;
 		pending = null;
 		loadingKey = null;
+		BUILDING.clear();
+		CACHE.clear();
 	}
 
 	private static void ensureLibrary() {
@@ -630,9 +702,10 @@ public final class Cs2Knives {
 			}
 		}
 		var textures = Minecraft.getInstance().getTextureManager();
-		textures.register(ALBEDO, new DynamicTexture(() -> "stray-cs2-albedo", albedo));
-		textures.register(MATERIAL, new DynamicTexture(() -> "stray-cs2-material", material));
-		textures.register(BLADE, new DynamicTexture(() -> "stray-cs2-blade", blade));
+		textures.register(knife.albedoId, new DynamicTexture(() -> "stray-cs2-albedo", albedo));
+		textures.register(knife.materialId, new DynamicTexture(() -> "stray-cs2-material", material));
+		textures.register(knife.bladeId, new DynamicTexture(() -> "stray-cs2-blade", blade));
+		knife.uploaded = true;
 	}
 
 	public static List<Cs2Library.Knife> knives() {

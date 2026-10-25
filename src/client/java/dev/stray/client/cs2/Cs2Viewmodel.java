@@ -157,11 +157,12 @@ public final class Cs2Viewmodel {
 		HumanoidArm arm,
 		float swingProgress,
 		Object stack,
+		net.minecraft.world.item.ItemStack held,
 		PoseStack pose,
 		SubmitNodeCollector collector,
 		int light
 	) {
-		Cs2Knives.Knife knife = Cs2Knives.current();
+		Cs2Knives.Knife knife = Cs2Knives.forStack(held);
 		if (knife == null || knife.pose == null) {
 			return false;
 		}
