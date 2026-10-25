@@ -200,7 +200,7 @@ public final class PestEsp {
 		}
 	}
 
-	private static String headTexture(ItemStack stack) {
+	public static String headTexture(ItemStack stack) {
 		if (stack == null || stack.isEmpty() || !stack.is(Items.PLAYER_HEAD)) {
 			return "";
 		}
@@ -224,7 +224,7 @@ public final class PestEsp {
 		return "";
 	}
 
-	private static String textureHash(String texture) {
+	public static String textureHash(String texture) {
 		try {
 			byte[] decoded = Base64.getDecoder().decode(texture);
 			String json = new String(decoded, StandardCharsets.UTF_8);

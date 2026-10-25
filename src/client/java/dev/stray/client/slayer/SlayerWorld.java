@@ -1,0 +1,531 @@
+package dev.stray.client.slayer;
+
+import dev.stray.client.config.SlayerSettings;
+import dev.stray.client.config.StrayConfig;
+import dev.stray.client.farming.PestEsp;
+import dev.stray.client.location.SkyblockLocation;
+import dev.stray.client.profile.ProfileViewer;
+import dev.stray.client.render.GuiDraw;
+import dev.stray.client.render.NametagRenderer;
+import it.unimi.dsi.fastutil.ints.Int2IntOpenHashMap;
+import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
+import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderEvents;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.player.RemotePlayer;
+import net.minecraft.core.BlockPos;
+import net.minecraft.gizmos.Gizmos;
+import net.minecraft.network.chat.Component;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.decoration.ArmorStand;
+import net.minecraft.world.entity.item.ItemEntity;
+import net.minecraft.world.entity.monster.EnderMan;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.SpawnEggItem;
+import net.minecraft.world.level.ClipContext;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.HitResult;
+import net.minecraft.world.phys.Vec3;
+import org.joml.Vector3fc;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.regex.Pattern;
+
+/**
+ * Slayer things drawn in the world: glow on mini-bosses, egg sacs, beacons, Nukekubi skulls,
+ * Bloodfiend bosses, ichors and springs, the own boss (hellion shield / invincible colours),
+ * lines from the crosshair to them, and labels for beacons, skulls, ichors and valuable drops.
+ */
+public final class SlayerWorld {
+	private record Line(Entity entity, Vec3 fixed, int rgb, double up) {
+	}
+
+	private record Label(Vec3 at, String text, int rgb, boolean through) {
+	}
+
+	private static final String NUKEKUBI = "eb07594e2df273921a77c101d0bfdfa1115abed5b9b2029eb496ceba9bdbb4b3";
+	private static final String ICHOR = "c0340923a6de4825a176813d133503eff186db0896e32b6704928c2a2bf68422";
+	private static final String SPRING = "77f7a7bc8ac86f23ca7bf98afeb76960227e1832fe209a3026f6ceb8bde74f54";
+	private static final Pattern EGG_TIMER = Pattern.compile("^\\d+s \\d+/\\d+$");
+	private static final Pattern SPAWNED_BY = Pattern.compile("^Spawned by: (\\w+)");
+
+	private static volatile Int2IntOpenHashMap glow = new Int2IntOpenHashMap();
+	private static volatile List<Line> lines = List.of();
+	private static volatile List<Label> labels = List.of();
+	private static final IntOpenHashSet TAGGED = new IntOpenHashSet();
+	private static final Map<BlockPos, Long> SITTING = new HashMap<>();
+	private static final Map<Integer, Vec3> FLYING = new HashMap<>();
+	private static final IntOpenHashSet WARNED = new IntOpenHashSet();
+	private static long steakTitle;
+	private static long clawTitle;
+	private static int tick;
+
+	private SlayerWorld() {
+	}
+
+	public static void init() {
+		LevelRenderEvents.BEFORE_GIZMOS.register(context -> emit());
+	}
+
+	private static SlayerSettings settings() {
+		return StrayConfig.get().slayer;
+	}
+
+	/** Whether any slayer glow can be on (so the glow pipeline runs). */
+	public static boolean glowActive() {
+		return !glow.isEmpty();
+	}
+
+	/** ARGB outline for an entity, 0 for none. */
+	public static int glow(Entity entity) {
+		Int2IntOpenHashMap map = glow;
+		return map.isEmpty() || entity == null ? 0 : map.getOrDefault(entity.getId(), 0);
+	}
+
+	public static void onAttack(Entity target) {
+		if (target instanceof RemotePlayer && target.getName().getString().trim().equals("Bloodfiend")) {
+			String owner = owner(target);
+			if (owner != null && !owner.equalsIgnoreCase(SlayerApi.playerName()) && !coop(owner)) {
+				TAGGED.add(target.getId());
+			}
+		}
+	}
+
+	public static void reset() {
+		glow = new Int2IntOpenHashMap();
+		lines = List.of();
+		labels = List.of();
+		TAGGED.clear();
+		SITTING.clear();
+		FLYING.clear();
+		WARNED.clear();
+	}
+
+	// ---------------------------------------------------------------- scan
+
+	public static void tick(Minecraft client) {
+		if (client.player == null || client.level == null || !SkyblockLocation.inSkyblock) {
+			if (!glow.isEmpty() || !lines.isEmpty() || !labels.isEmpty()) {
+				reset();
+			}
+			return;
+		}
+		if (++tick % 4 != 0) {
+			return;
+		}
+		SlayerSettings s = settings();
+		Int2IntOpenHashMap nextGlow = new Int2IntOpenHashMap();
+		List<Line> nextLines = new ArrayList<>();
+		List<Label> nextLabels = new ArrayList<>();
+		SlayerType area = SlayerApi.areaType();
+		boolean inArea = area != null;
+		AABB around = client.player.getBoundingBox().inflate(32);
+		List<Entity> nearby = client.level.getEntities(client.player, around, e -> true);
+
+		LivingEntity boss = SlayerApi.boss();
+		SlayerType type = SlayerApi.type();
+		if (boss != null && type != null) {
+			int rgb = 0;
+			if (s.esp && s.invincible && type == SlayerType.TARANTULA && SlayerBosses.stuck()) {
+				rgb = s.invincibleRgb;
+			} else if (s.inferno && s.shieldColors && type == SlayerType.INFERNO) {
+				SlayerBosses.Shield shield = SlayerBosses.bossShield();
+				rgb = shield == null ? 0 : shield.rgb;
+			}
+			if (rgb != 0) {
+				nextGlow.put(boss.getId(), 0xFF000000 | rgb);
+			}
+			if (s.esp && s.bossLine && (type == SlayerType.VOID || type == SlayerType.TARANTULA) && boss.distanceTo(client.player) < 30) {
+				nextLines.add(new Line(boss, null, s.bossLineRgb, 1.0));
+			}
+		}
+
+		List<ArmorStand> stands = new ArrayList<>();
+		for (Entity entity : nearby) {
+			if (entity instanceof ArmorStand stand) {
+				stands.add(stand);
+			}
+		}
+
+		// Mini-bosses: the name tag stand above them.
+		if (s.esp && inArea && (s.miniHighlight || s.miniLine)) {
+			for (ArmorStand stand : stands) {
+				if (!stand.hasCustomName()) {
+					continue;
+				}
+				String name = SlayerApi.clean(stand.getCustomName());
+				if (!miniBossName(name)) {
+					continue;
+				}
+				LivingEntity mob = below(client, stand);
+				if (mob == null) {
+					continue;
+				}
+				if (s.miniHighlight) {
+					nextGlow.put(mob.getId(), 0xFF000000 | s.miniRgb);
+				}
+				if (s.miniLine && mob.distanceTo(client.player) < 10) {
+					nextLines.add(new Line(mob, null, s.miniRgb, 1.0));
+				}
+			}
+		}
+
+		// Tarantula egg sacs during the boss fight.
+		if (s.esp && s.eggSacs && type == SlayerType.TARANTULA && SlayerApi.inBossFight()) {
+			List<ArmorStand> shoot = new ArrayList<>();
+			for (ArmorStand stand : stands) {
+				if (stand.hasCustomName() && SlayerApi.clean(stand.getCustomName()).equalsIgnoreCase("SHOOT ME!")) {
+					shoot.add(stand);
+				}
+			}
+			for (ArmorStand timer : stands) {
+				if (!timer.hasCustomName() || !EGG_TIMER.matcher(SlayerApi.clean(timer.getCustomName())).matches()) {
+					continue;
+				}
+				boolean near = false;
+				for (ArmorStand sh : shoot) {
+					if (sh.distanceTo(timer) < 2.5) {
+						near = true;
+					}
+				}
+				if (!near) {
+					continue;
+				}
+				nextGlow.put(timer.getId(), 0xFF000000 | s.eggSacRgb);
+				for (ArmorStand part : stands) {
+					if (!part.hasCustomName() && part.distanceTo(timer) < 1.2) {
+						nextGlow.put(part.getId(), 0xFF000000 | s.eggSacRgb);
+					}
+				}
+			}
+		}
+
+		// Voidgloom: beacons (carried, flying, placed) and Nukekubi skulls.
+		boolean end = "The End".equalsIgnoreCase(SkyblockLocation.area);
+		if (s.voidgloom && end) {
+			boolean beaconAny = s.beaconHighlight || s.beaconWarning || s.beaconLine;
+			java.util.Set<Integer> seenFlying = new java.util.HashSet<>();
+			for (Entity entity : nearby) {
+				if (beaconAny && entity instanceof EnderMan man && s.beaconHighlight) {
+					BlockState carried = man.getCarriedBlock();
+					if (carried != null && carried.is(Blocks.BEACON) && man.distanceTo(client.player) < 15) {
+						nextGlow.put(man.getId(), 0xFF000000 | s.beaconRgb);
+					}
+				}
+				if (!(entity instanceof ArmorStand stand)) {
+					continue;
+				}
+				ItemStack helmet = stand.getItemBySlot(EquipmentSlot.HEAD);
+				if (beaconAny && !helmet.isEmpty() && helmet.getHoverName().getString().equals("Beacon") && stand.distanceTo(client.player) < 15) {
+					seenFlying.add(stand.getId());
+					FLYING.put(stand.getId(), stand.position());
+					if (s.beaconHighlight) {
+						nextGlow.put(stand.getId(), 0xFF000000 | s.beaconRgb);
+						nextLabels.add(new Label(stand.position().add(0, 2.2, 0), "Beacon", 0xAA0000, true));
+					}
+					if (s.beaconLine) {
+						nextLines.add(new Line(stand, null, s.beaconRgb, 1.5));
+					}
+					if (s.beaconWarning && WARNED.add(stand.getId())) {
+						SlayerAlerts.title("Beacon", 0xAA0000, 40);
+					}
+					continue;
+				}
+				if (s.skulls && texture(helmet).equals(NUKEKUBI)) {
+					nextGlow.put(stand.getId(), 0xFFFFAA00);
+					nextLabels.add(new Label(stand.position().add(0, 2.0, 0), "Nukekubi Skull", 0xFFAA00, false));
+					if (s.skullLine && stand.distanceTo(client.player) < 20 && visible(client, stand.position().add(0, 1.5, 0))) {
+						nextLines.add(new Line(stand, null, 0xFFAA00, 1.5));
+					}
+				}
+			}
+			// A flying beacon that vanished landed: find the placed block.
+			FLYING.entrySet().removeIf(entry -> {
+				if (seenFlying.contains(entry.getKey())) {
+					return false;
+				}
+				BlockPos center = BlockPos.containing(entry.getValue());
+				for (BlockPos pos : BlockPos.betweenClosed(center.offset(-3, -3, -3), center.offset(3, 3, 3))) {
+					if (client.level.getBlockState(pos).is(Blocks.BEACON)) {
+						SITTING.put(pos.immutable(), System.currentTimeMillis());
+						break;
+					}
+				}
+				return true;
+			});
+			long now = System.currentTimeMillis();
+			SITTING.entrySet().removeIf(entry -> now - entry.getValue() > 7000 || !client.level.getBlockState(entry.getKey()).is(Blocks.BEACON));
+			for (Map.Entry<BlockPos, Long> entry : SITTING.entrySet()) {
+				Vec3 center = Vec3.atCenterOf(entry.getKey());
+				if (center.distanceTo(client.player.position()) > 20) {
+					continue;
+				}
+				if (s.beaconLine) {
+					nextLines.add(new Line(null, center.add(0, 0.5, 0), s.beaconRgb, 0));
+				}
+				if (s.beaconHighlight) {
+					double left = Math.max(0, 5.0 - (now - entry.getValue()) / 1000.0);
+					nextLabels.add(new Label(center.add(0, 1.0, 0), String.format(Locale.ROOT, "Beacon %.1fs", left), 0xAA0000, true));
+				}
+			}
+		} else if (!SITTING.isEmpty() || !FLYING.isEmpty()) {
+			SITTING.clear();
+			FLYING.clear();
+		}
+
+		// Riftstalker Bloodfiend: bosses, ichors, springs.
+		if (s.bloodfiend && type == SlayerType.VAMPIRE || s.bloodfiend && area == SlayerType.VAMPIRE) {
+			String me = SlayerApi.playerName();
+			long now = System.currentTimeMillis();
+			for (Entity entity : nearby) {
+				if (!(entity instanceof RemotePlayer bf) || !bf.getName().getString().trim().equals("Bloodfiend") || bf.distanceTo(client.player) > 15) {
+					continue;
+				}
+				String owner = owner(bf);
+				if (owner == null) {
+					continue;
+				}
+				boolean own = owner.equalsIgnoreCase(me);
+				boolean coop = !own && coop(owner);
+				boolean other = !own && !coop && TAGGED.contains(bf.getId());
+				boolean show = own && s.ownBoss || coop && s.coopBoss || other && s.othersBoss;
+				if (!show) {
+					continue;
+				}
+				float max = bf.getMaxHealth();
+				boolean steak = max > 0 && bf.getHealth() <= max * 0.2f;
+				if (own) {
+					long h = SlayerApi.bossHealth();
+					long m = SlayerApi.bossMaxHealth();
+					if (h >= 0 && m > 0) {
+						steak = h <= m * 0.2;
+					}
+				}
+				int rgb = steak && s.steakColor ? s.steakRgb : own ? s.ownRgb : coop ? s.coopRgb : s.othersRgb;
+				nextGlow.put(bf.getId(), 0xFF000000 | rgb);
+				if (s.bloodLine && visible(client, bf.getEyePosition())) {
+					nextLines.add(new Line(bf, null, s.bloodLineRgb, 1.4));
+				}
+				if (steak && s.ownSteakAlert && (own || coop) && now - steakTitle > 300) {
+					steakTitle = now;
+					SlayerAlerts.title("STEAK!", 0xFF5555, 6);
+				}
+				if (s.ownTwinclaws && (own || coop) && now - clawTitle > 5000 && twinclaws(client, bf)) {
+					clawTitle = now + Math.max(0, s.twinclawsDelay);
+					int ticks = Math.max(5, (1750 - Math.max(0, s.twinclawsDelay)) / 50);
+					SlayerAlerts.title("TWINCLAWS", 0xFFAA00, ticks);
+				}
+			}
+			for (ArmorStand stand : stands) {
+				if (stand.distanceTo(client.player) > 15) {
+					continue;
+				}
+				String tex = texture(stand.getItemBySlot(EquipmentSlot.HEAD));
+				boolean ichor = s.ichor && tex.equals(ICHOR);
+				boolean spring = s.spring && tex.equals(SPRING);
+				if (!ichor && !spring) {
+					continue;
+				}
+				int rgb = ichor ? s.ichorRgb : s.springRgb;
+				nextGlow.put(stand.getId(), 0xFF000000 | rgb);
+				nextLabels.add(new Label(stand.position().add(0, 2.5, 0), ichor ? "Ichor" : "Spring", 0xAA0000, false));
+				if ((ichor && s.ichorLines || spring && s.springLines) && boss != null && visible(client, stand.position().add(0, 1.5, 0))) {
+					nextLines.add(new Line(stand, boss.getEyePosition(), rgb, 1.5));
+				}
+			}
+		} else {
+			TAGGED.clear();
+		}
+
+		// Valuable drops on the ground.
+		if (s.esp && s.itemsOnGround && SlayerApi.hasQuest() && SlayerApi.inCorrectArea()) {
+			for (Entity entity : nearby) {
+				if (!(entity instanceof ItemEntity item) || item.distanceTo(client.player) > 15) {
+					continue;
+				}
+				ItemStack stack = item.getItem();
+				if (stack.getItem() instanceof SpawnEggItem) {
+					continue;
+				}
+				String id = NeuIds.of(stack);
+				if (id == null) {
+					continue;
+				}
+				double price = ProfileViewer.price(id) * stack.getCount();
+				if (price < s.itemsMinPrice) {
+					continue;
+				}
+				String name = (stack.getCount() > 1 ? stack.getCount() + "x " : "") + stack.getHoverName().getString().replaceAll("§.", "")
+					+ " §6" + shortCoins(price);
+				nextLabels.add(new Label(item.position().add(0, 0.8, 0), name, 0xFFFFFF, false));
+			}
+		}
+
+		glow = nextGlow;
+		lines = List.copyOf(nextLines);
+		labels = List.copyOf(nextLabels);
+	}
+
+	private static boolean twinclaws(Minecraft client, Entity bf) {
+		for (Entity e : client.level.getEntities(bf, bf.getBoundingBox().inflate(1.5, 3.5, 1.5), x -> x instanceof ArmorStand && x.hasCustomName())) {
+			String name = SlayerApi.clean(e.getCustomName());
+			if (name.contains("TWINCLAWS") && name.matches(".*TWINCLAWS [0-9.,]+s.*")) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	private static boolean coop(String owner) {
+		String members = settings().coopMembers;
+		if (members == null || members.isBlank()) {
+			return false;
+		}
+		for (String m : members.split(",")) {
+			if (m.trim().equalsIgnoreCase(owner)) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	private static String owner(Entity mob) {
+		Minecraft client = Minecraft.getInstance();
+		for (Entity e : client.level.getEntities(mob, mob.getBoundingBox().inflate(1.5, 3.5, 1.5), x -> x instanceof ArmorStand && x.hasCustomName())) {
+			var m = SPAWNED_BY.matcher(SlayerApi.clean(e.getCustomName()));
+			if (m.find()) {
+				return m.group(1);
+			}
+		}
+		return null;
+	}
+
+	private static boolean miniBossName(String name) {
+		for (SlayerType type : SlayerType.values()) {
+			for (String mini : type.miniBosses) {
+				if (name.contains(mini)) {
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+
+	private static LivingEntity below(Minecraft client, ArmorStand stand) {
+		LivingEntity best = null;
+		double bestDist = Double.MAX_VALUE;
+		AABB box = stand.getBoundingBox().inflate(0.8, 3.5, 0.8);
+		for (Entity entity : client.level.getEntities(stand, box, e -> e instanceof LivingEntity && !(e instanceof ArmorStand) && e != client.player)) {
+			if (entity.getY() > stand.getY() + 0.5) {
+				continue;
+			}
+			double d = entity.distanceToSqr(stand);
+			if (d < bestDist) {
+				bestDist = d;
+				best = (LivingEntity) entity;
+			}
+		}
+		return best;
+	}
+
+	private static String texture(ItemStack stack) {
+		String raw = PestEsp.headTexture(stack);
+		return raw.isEmpty() ? "" : PestEsp.textureHash(raw);
+	}
+
+	private static boolean visible(Minecraft client, Vec3 to) {
+		Vec3 from = client.player.getEyePosition();
+		HitResult hit = client.level.clip(new ClipContext(from, to, ClipContext.Block.VISUAL, ClipContext.Fluid.NONE, client.player));
+		return hit.getType() == HitResult.Type.MISS || hit.getLocation().distanceToSqr(from) + 0.36 >= to.distanceToSqr(from);
+	}
+
+	private static String shortCoins(double v) {
+		if (v >= 1e9) {
+			return String.format(Locale.ROOT, "%.1fB", v / 1e9);
+		}
+		if (v >= 1e6) {
+			return String.format(Locale.ROOT, "%.1fM", v / 1e6);
+		}
+		if (v >= 1e3) {
+			return String.format(Locale.ROOT, "%.1fk", v / 1e3);
+		}
+		return String.format(Locale.ROOT, "%.0f", v);
+	}
+
+	// ---------------------------------------------------------------- draw
+
+	private static void emit() {
+		List<Line> current = lines;
+		if (current.isEmpty()) {
+			return;
+		}
+		Minecraft client = Minecraft.getInstance();
+		if (client.player == null) {
+			return;
+		}
+		float partial = client.getDeltaTracker().getGameTimeDeltaPartialTick(true);
+		Vec3 camera = client.gameRenderer.getMainCamera().position();
+		Vec3 look = client.player.getViewVector(partial);
+		Vec3 eye = camera.add(look.scale(0.4));
+		float width = Math.max(1, Math.min(10, settings().lineWidth));
+		for (Line line : current) {
+			Vec3 to;
+			Vec3 from = eye;
+			if (line.entity != null) {
+				if (line.entity.isRemoved()) {
+					continue;
+				}
+				to = line.entity.getPosition(partial).add(0, line.up, 0);
+				if (line.fixed != null) {
+					from = line.fixed;
+				}
+			} else {
+				to = line.fixed;
+			}
+			Gizmos.line(from, to, 0xFF000000 | line.rgb, width).setAlwaysOnTop();
+		}
+	}
+
+	public static void extract(GuiGraphicsExtractor graphics) {
+		List<Label> current = labels;
+		if (current.isEmpty()) {
+			return;
+		}
+		Minecraft client = Minecraft.getInstance();
+		if (client.player == null || client.level == null || client.font == null || client.options.hideGui
+			|| !client.gameRenderer.getMainCamera().isInitialized()) {
+			return;
+		}
+		Vec3 camera = client.gameRenderer.getMainCamera().position();
+		Vector3fc forward = client.gameRenderer.getMainCamera().forwardVector();
+		Font font = client.font;
+		for (Label label : current) {
+			Vec3 rel = label.at.subtract(camera);
+			if (rel.x * forward.x() + rel.y * forward.y() + rel.z * forward.z() <= 0.12) {
+				continue;
+			}
+			if (!label.through && !visible(client, label.at)) {
+				continue;
+			}
+			Vec3 ndc = client.gameRenderer.projectPointToScreen(label.at);
+			if (ndc.x < -1.2 || ndc.x > 1.2 || ndc.y < -1.2 || ndc.y > 1.2) {
+				continue;
+			}
+			float x = (float) ((ndc.x * 0.5 + 0.5) * graphics.guiWidth());
+			float y = (float) ((-ndc.y * 0.5 + 0.5) * graphics.guiHeight());
+			float scale = NametagRenderer.distanceScale(rel.length()) * 1.4f;
+			Component text = Component.literal(label.text);
+			float w = font.width(text);
+			GuiDraw.text(graphics, font, text, x - w * scale * 0.5f, y - font.lineHeight * scale, scale, 0xFF000000 | label.rgb, true);
+		}
+	}
+}

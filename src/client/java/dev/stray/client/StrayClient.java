@@ -221,6 +221,8 @@ public final class StrayClient implements ClientModInitializer {
 		MiningWorldRenderer.init();
 		ChestEspRenderer.init();
 		PestEspRenderer.init();
+		dev.stray.client.slayer.SlayerWorld.init();
+		dev.stray.client.slayer.SlayerData.load();
 		FairySoulRenderer.init();
 		FairySoulTracker.init();
 		CrystalHollowsRenderer.init();
@@ -233,7 +235,8 @@ public final class StrayClient implements ClientModInitializer {
 			if (overlay) {
 				SkillProgressTracker.onActionBar(message);
 			}
-			return CrystalHollows.allowChat(message, overlay);
+			boolean slayerShow = overlay || dev.stray.client.slayer.SlayerApi.onChat(message);
+			return CrystalHollows.allowChat(message, overlay) && slayerShow;
 		});
 		ChestAimer.init();
 		Hitmarker.init();
@@ -384,10 +387,21 @@ public final class StrayClient implements ClientModInitializer {
 			if (client.level != customizeLevel) {
 				customizeLevel = client.level;
 				dev.stray.client.item.custom.CustomItems.clearWorldCaches();
+				dev.stray.client.slayer.SlayerWorld.reset();
 			}
 			StrayConfig running = StrayConfig.get();
 			SpotifySmtc.tick(running.musicHudEnabled && running.spotifyEnabled);
 			SkyblockLocation.tick(client);
+			dev.stray.client.slayer.SlayerApi.tick(client);
+			if (SkyblockLocation.inSkyblock) {
+				dev.stray.client.slayer.SlayerProfit.tick();
+				dev.stray.client.slayer.SlayerRng.tick(client);
+				dev.stray.client.slayer.SlayerKills.tick(client);
+				dev.stray.client.slayer.SlayerAlerts.tick();
+				dev.stray.client.slayer.SlayerBosses.tick(client);
+			}
+			dev.stray.client.slayer.SlayerWorld.tick(client);
+			dev.stray.client.slayer.SlayerFx.tick(client);
 			ItemStorage.tick(client);
 			StoragePreview.tick(client);
 			LoadoutsScreen.tickSwap(client);

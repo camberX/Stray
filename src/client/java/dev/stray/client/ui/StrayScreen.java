@@ -192,7 +192,17 @@ public class StrayScreen extends Screen {
 		WINDOW("Window", 3),
 		SCALE("Menu scale", 2),
 		NICK("Nick hider", 2),
-		CAPE("Cape", 5);
+		CAPE("Cape", 5),
+		SLAYER_HUD("Slayer HUD", 5),
+		SLAYER_PROFIT("Profit tracker", 5),
+		SLAYER_RNG("RNG meter", 2),
+		SLAYER_KILLS("Remaining kills", 4),
+		SLAYER_ALERTS("Slayer alerts", 12),
+		SLAYER_ESP("Slayer ESP", 12),
+		SLAYER_VOID("Voidgloom", 7),
+		SLAYER_INFERNO("Inferno", 8),
+		SLAYER_VAMPIRE("Bloodfiend", 20),
+		SLAYER_CLEANUP("Slayer cleanup", 7);
 
 		final String title;
 		private final int baseRows;
@@ -233,8 +243,11 @@ public class StrayScreen extends Screen {
 	}
 
 	private enum PickerTarget {
-		WORLD, SKY, FOG, NODE, THEME, PANE, CONTROL, PILL, MOB, STAR, BLOCK, TITANIUM, CHEST, PEST, HELD_ITEM, HELD_ITEM_OUTLINE, FILL, FILL_OUTLINE, MARKS, PATHS, RINGS, MOVE, HEALTH_FULL, HEALTH_EMPTY, BOX
+		WORLD, SKY, FOG, NODE, THEME, PANE, CONTROL, PILL, MOB, STAR, BLOCK, TITANIUM, CHEST, PEST, HELD_ITEM, HELD_ITEM_OUTLINE, FILL, FILL_OUTLINE, MARKS, PATHS, RINGS, MOVE, HEALTH_FULL, HEALTH_EMPTY, BOX, SLAYER
 	}
+
+	/** Which slayer colour the SLAYER picker edits (see SlayerSettings.color). */
+	private static String slayerColorKey = "mini";
 
 	private record SearchEntry(String label, Tab tab, String hint) {
 	}
@@ -3278,6 +3291,22 @@ public class StrayScreen extends Screen {
 	}
 
 	private void editPestAlert(int key, boolean paste, String typed) {
+		if (pestAlertFocus == 4) {
+			StrayConfig config = StrayConfig.get();
+			String current = config.slayer.coopMembers == null ? "" : config.slayer.coopMembers;
+			if (paste) {
+				String clip = minecraft.keyboardHandler.getClipboard();
+				if (clip != null) {
+					current += clip.replace("\n", "").replace("\r", "");
+				}
+			} else if (typed != null) {
+				current += typed;
+			} else if (key == InputConstants.KEY_BACKSPACE && !current.isEmpty()) {
+				current = current.substring(0, current.length() - 1);
+			}
+			config.slayer.coopMembers = current.length() > 96 ? current.substring(0, 96) : current;
+			return;
+		}
 		if (pestAlertFocus == 3) {
 			editSwapAt(key, paste, typed);
 			return;
@@ -3591,6 +3620,126 @@ public class StrayScreen extends Screen {
 		return y + row;
 	}
 
+	private void drawSlayerFields(GuiGraphicsExtractor graphics, Font font, int mouseX, int mouseY, float ix, float y, float iw, Feature feature) {
+		dev.stray.client.config.SlayerSettings s = StrayConfig.get().slayer;
+		switch (feature) {
+			case SLAYER_HUD -> {
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Quest progress", s.hudProgress, v -> s.hudProgress = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Boss health", s.hudBoss, v -> s.hudBoss = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Boss phase", s.hudPhase, v -> s.hudPhase = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Fight timer", s.hudTimer, v -> s.hudTimer = v);
+				toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Only in slayer area", s.hudOnlyInArea, v -> s.hudOnlyInArea = v);
+			}
+			case SLAYER_PROFIT -> {
+				y = chipRow(graphics, font, ix, y, iw, mouseX, mouseY, new String[]{"Total", "Session"}, s.profitSession ? 1 : 0, i -> s.profitSession = i == 1);
+				y = slider(graphics, font, ix, y, iw, "Item rows", String.valueOf(s.profitRows), (s.profitRows - 1) / 19f, v -> s.profitRows = snapInt(1 + v * 19f, 1, 20, 1));
+				y = slider(graphics, font, ix, y, iw, "Hide below", s.profitMinPrice <= 0 ? "Off" : coinsLabel(s.profitMinPrice), s.profitMinPrice / 1_000_000f, v -> s.profitMinPrice = snapInt(v * 1_000_000f, 0, 1_000_000, 10_000));
+				y = clickRow(graphics, font, ix, y, iw, mouseX, mouseY, "Reset session", () -> dev.stray.client.slayer.SlayerProfit.reset(false));
+				clickRow(graphics, font, ix, y, iw, mouseX, mouseY, "Reset total (this boss)", () -> dev.stray.client.slayer.SlayerProfit.reset(true));
+			}
+			case SLAYER_RNG -> {
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Hide RNG chat", s.rngHideChat, v -> s.rngHideChat = v);
+				toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Warn no item", s.rngWarnEmpty, v -> s.rngWarnEmpty = v);
+			}
+			case SLAYER_KILLS -> {
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Mob level", s.killsLevel, v -> s.killsLevel = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Mob health", s.killsHealth, v -> s.killsHealth = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "XP per kill", s.killsXp, v -> s.killsXp = v);
+				toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Mark overkill", s.killsOverkill, v -> s.killsOverkill = v);
+			}
+			case SLAYER_ALERTS -> {
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Boss spawn soon", s.spawnSoon, v -> s.spawnSoon = v);
+				y = slider(graphics, font, ix, y, iw, "Spawn soon at", s.spawnSoonPercent + "%", (s.spawnSoonPercent - 50) / 49f, v -> s.spawnSoonPercent = snapInt(50 + v * 49f, 50, 99, 1));
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Repeat soon alert", s.spawnSoonRepeat, v -> s.spawnSoonRepeat = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Quest warning", s.questWarning, v -> s.questWarning = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Warning title", s.questWarningTitle, v -> s.questWarningTitle = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Cocoon title", s.cocoonTitle, v -> s.cocoonTitle = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Cocoon sound", s.cocoonSound, v -> s.cocoonSound = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Gummy bear warning", s.gummyWarning, v -> s.gummyWarning = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Time to kill", s.timeToKill, v -> s.timeToKill = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Personal best", s.timePb, v -> s.timePb = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Quest time", s.questTime, v -> s.questTime = v);
+				toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Compact messages", s.timeCompact, v -> s.timeCompact = v);
+			}
+			case SLAYER_ESP -> {
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Mini-boss glow", s.miniHighlight, v -> s.miniHighlight = v);
+				y = slayerColor(graphics, font, ix, y, iw, mouseX, mouseY, "Mini-boss color", "mini");
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Mini-boss line", s.miniLine, v -> s.miniLine = v);
+				y = slider(graphics, font, ix, y, iw, "Line width", String.valueOf(s.lineWidth), (s.lineWidth - 1) / 9f, v -> s.lineWidth = snapInt(1 + v * 9f, 1, 10, 1));
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Line to boss", s.bossLine, v -> s.bossLine = v);
+				y = slayerColor(graphics, font, ix, y, iw, mouseX, mouseY, "Boss line color", "bossLine");
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Drops on ground", s.itemsOnGround, v -> s.itemsOnGround = v);
+				y = slider(graphics, font, ix, y, iw, "Drop min price", coinsLabel(s.itemsMinPrice), s.itemsMinPrice / 1_000_000f, v -> s.itemsMinPrice = snapInt(v * 1_000_000f, 0, 1_000_000, 5_000));
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Egg sacs", s.eggSacs, v -> s.eggSacs = v);
+				y = slayerColor(graphics, font, ix, y, iw, mouseX, mouseY, "Egg sac color", "eggSac");
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Invincible Tarantula", s.invincible, v -> s.invincible = v);
+				slayerColor(graphics, font, ix, y, iw, mouseX, mouseY, "Invincible color", "invincible");
+			}
+			case SLAYER_VOID -> {
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Beacon highlight", s.beaconHighlight, v -> s.beaconHighlight = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Beacon warning", s.beaconWarning, v -> s.beaconWarning = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Beacon line", s.beaconLine, v -> s.beaconLine = v);
+				y = slayerColor(graphics, font, ix, y, iw, mouseX, mouseY, "Beacon color", "beacon");
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Nukekubi skulls", s.skulls, v -> s.skulls = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Line to skulls", s.skullLine, v -> s.skullLine = v);
+				toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Hide particles", s.voidHideParticles, v -> s.voidHideParticles = v);
+			}
+			case SLAYER_INFERNO -> {
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Shield colors", s.shieldColors, v -> s.shieldColors = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Dagger helper", s.daggers, v -> s.daggers = v);
+				y = chipRow(graphics, font, ix, y, iw, mouseX, mouseY, new String[]{"Twilight first", "Firedust first"}, s.firstDagger, i -> s.firstDagger = i);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Mark boss shield", s.markShield, v -> s.markShield = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Hide dagger chat", s.hideDaggerChat, v -> s.hideDaggerChat = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Fire pits warning", s.firePits, v -> s.firePits = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Fire pillar timer", s.pillar, v -> s.pillar = v);
+				toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Clear view", s.clearView, v -> s.clearView = v);
+			}
+			case SLAYER_VAMPIRE -> {
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Own boss", s.ownBoss, v -> s.ownBoss = v);
+				y = slayerColor(graphics, font, ix, y, iw, mouseX, mouseY, "Own color", "own");
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Steak alert", s.ownSteakAlert, v -> s.ownSteakAlert = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Twinclaws title", s.ownTwinclaws, v -> s.ownTwinclaws = v);
+				y = slider(graphics, font, ix, y, iw, "Twinclaws delay", s.twinclawsDelay + "ms", s.twinclawsDelay / 1000f, v -> s.twinclawsDelay = snapInt(v * 1000f, 0, 1000, 50));
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Others' bosses (hit)", s.othersBoss, v -> s.othersBoss = v);
+				y = slayerColor(graphics, font, ix, y, iw, mouseX, mouseY, "Others color", "others");
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Co-op bosses", s.coopBoss, v -> s.coopBoss = v);
+				y = slayerColor(graphics, font, ix, y, iw, mouseX, mouseY, "Co-op color", "coop");
+				y = alertLine(graphics, font, ix, y, iw, mouseX, mouseY, "Co-op names", s.coopMembers, 4);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Steak color", s.steakColor, v -> s.steakColor = v);
+				y = slayerColor(graphics, font, ix, y, iw, mouseX, mouseY, "Steak highlight", "steak");
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Line to boss", s.bloodLine, v -> s.bloodLine = v);
+				y = slayerColor(graphics, font, ix, y, iw, mouseX, mouseY, "Line color", "bloodLine");
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Blood ichors", s.ichor, v -> s.ichor = v);
+				y = slayerColor(graphics, font, ix, y, iw, mouseX, mouseY, "Ichor color", "ichor");
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Ichor lines", s.ichorLines, v -> s.ichorLines = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Killer springs", s.spring, v -> s.spring = v);
+				y = slayerColor(graphics, font, ix, y, iw, mouseX, mouseY, "Spring color", "spring");
+				toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Spring lines", s.springLines, v -> s.springLines = v);
+			}
+			case SLAYER_CLEANUP -> {
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Hide mob names", s.hideMobNames, v -> s.hideMobNames = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Hide white spawn fx", s.hideSpawnWhite, v -> s.hideSpawnWhite = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Hide purple spawn fx", s.hideSpawnPurple, v -> s.hideSpawnPurple = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Hide slayer spawn fx", s.hideSpawnSpecific, v -> s.hideSpawnSpecific = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Hide magma cubes", s.hideIrrelevant, v -> s.hideIrrelevant = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Hide boss damage", s.hideDamageNear, v -> s.hideDamageNear = v);
+				toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Block unspawnable", s.blockNotSpawnable, v -> s.blockNotSpawnable = v);
+			}
+			default -> {
+			}
+		}
+	}
+
+	private static String coinsLabel(long coins) {
+		if (coins >= 1_000_000) {
+			return String.format(Locale.ROOT, "%.1fM", coins / 1_000_000d);
+		}
+		if (coins >= 1_000) {
+			return String.format(Locale.ROOT, "%.0fk", coins / 1_000d);
+		}
+		return String.valueOf(coins);
+	}
+
 	private void drawFeatureFields(
 		GuiGraphicsExtractor graphics,
 		Font font,
@@ -3857,6 +4006,8 @@ public class StrayScreen extends Screen {
 					y = alertLine(graphics, font, ix, y, iw, mouseX, mouseY, "Swap at", at, 3);
 				}
 			}
+			case SLAYER_HUD, SLAYER_PROFIT, SLAYER_RNG, SLAYER_KILLS, SLAYER_ALERTS, SLAYER_ESP, SLAYER_VOID, SLAYER_INFERNO, SLAYER_VAMPIRE, SLAYER_CLEANUP ->
+				drawSlayerFields(graphics, font, mouseX, mouseY, ix, y, iw, feature);
 			case AUTO_DNA -> {
 				y = slider(graphics, font, ix, y, iw, "Click delay", config.autoDnaClickDelay + "ms", (config.autoDnaClickDelay - 100) / 900f, v -> config.autoDnaClickDelay = snapInt(100 + v * 900f, 100, 1000, 10));
 				y = slider(graphics, font, ix, y, iw, "Delay variety", config.autoDnaDelayVariety + "ms", config.autoDnaDelayVariety / 1000f, v -> config.autoDnaDelayVariety = snapInt(v * 1000f, 0, 1000, 10));
@@ -4271,7 +4422,15 @@ public class StrayScreen extends Screen {
 		return y + row;
 	}
 
+	private float slayerColor(GuiGraphicsExtractor graphics, Font font, float x, float y, float w, int mouseX, int mouseY, String label, String key) {
+		return colorRow(graphics, font, x, y, w, mouseX, mouseY, label, StrayConfig.get().slayer.color(key), PickerTarget.SLAYER, () -> slayerColorKey = key);
+	}
+
 	private float colorRow(GuiGraphicsExtractor graphics, Font font, float x, float y, float w, int mouseX, int mouseY, String label, int rgb, PickerTarget target) {
+		return colorRow(graphics, font, x, y, w, mouseX, mouseY, label, rgb, target, null);
+	}
+
+	private float colorRow(GuiGraphicsExtractor graphics, Font font, float x, float y, float w, int mouseX, int mouseY, String label, int rgb, PickerTarget target, Runnable before) {
 		float row = rowH();
 		float labelY = GuiDraw.middle(y, row);
 		GuiDraw.menu(graphics, font, label, x + 1, labelY, ink());
@@ -4285,6 +4444,9 @@ public class StrayScreen extends Screen {
 		GuiDraw.rounded(graphics, px, py, pw, ph, 2, swatch);
 		boolean fromPage = contentHitMode;
 		hits.add(new Hit(px - 2, y, pw + 4, row, () -> {
+			if (before != null) {
+				before.run();
+			}
 			if (target == PickerTarget.SKY) {
 				StrayConfig.get().matchSkyToWorld = false;
 			}
@@ -4482,6 +4644,7 @@ public class StrayScreen extends Screen {
 			case HEALTH_FULL -> config.visuals(pickerKind).healthFullRgb = packed == 0 ? 0x17EB17 : packed;
 			case HEALTH_EMPTY -> config.visuals(pickerKind).healthEmptyRgb = packed == 0 ? 0xEB1717 : packed;
 			case BOX -> config.visuals(pickerKind).boxRgb = packed == 0 ? 0x2FB5FF : packed;
+			case SLAYER -> config.slayer.setColor(slayerColorKey, packed == 0 ? 0xFFFFFF : packed);
 			case THEME -> Theme.applyCustom(packed);
 			case PANE -> Theme.applyPane(packed);
 			case CONTROL -> {
@@ -4501,7 +4664,7 @@ public class StrayScreen extends Screen {
 			case PANE -> 0.20f;
 			case MOB, STAR, BLOCK -> 0.15f;
 			case NODE, HELD_ITEM, FILL, CHEST, TITANIUM, PEST, BOX -> 0.08f;
-			case THEME, HELD_ITEM_OUTLINE, FILL_OUTLINE, MARKS, PATHS, RINGS, MOVE, HEALTH_FULL, HEALTH_EMPTY -> 1f;
+			case THEME, HELD_ITEM_OUTLINE, FILL_OUTLINE, MARKS, PATHS, RINGS, MOVE, HEALTH_FULL, HEALTH_EMPTY, SLAYER -> 1f;
 			default -> 0f;
 		};
 	}
@@ -4534,7 +4697,7 @@ public class StrayScreen extends Screen {
 			case WORLD -> config.worldTintStrength;
 			case SKY -> config.skyTintStrength;
 			case FOG -> config.fogDensity;
-			case THEME, HELD_ITEM_OUTLINE, FILL_OUTLINE, MARKS, PATHS, RINGS, MOVE, HEALTH_FULL, HEALTH_EMPTY -> 1f;
+			case THEME, HELD_ITEM_OUTLINE, FILL_OUTLINE, MARKS, PATHS, RINGS, MOVE, HEALTH_FULL, HEALTH_EMPTY, SLAYER -> 1f;
 		};
 	}
 
@@ -4558,7 +4721,7 @@ public class StrayScreen extends Screen {
 			case WORLD -> config.worldTintStrength = clamped;
 			case SKY -> config.skyTintStrength = clamped;
 			case FOG -> config.fogDensity = clamped;
-			case THEME, HELD_ITEM_OUTLINE, FILL_OUTLINE, MARKS, PATHS, RINGS, MOVE, HEALTH_FULL, HEALTH_EMPTY -> {
+			case THEME, HELD_ITEM_OUTLINE, FILL_OUTLINE, MARKS, PATHS, RINGS, MOVE, HEALTH_FULL, HEALTH_EMPTY, SLAYER -> {
 				return;
 			}
 		}

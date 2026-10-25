@@ -164,7 +164,7 @@ public final class MobGlowRenderer {
 	}
 
 	public static boolean glowEnabled() {
-		return StrayConfig.get().anyGlow();
+		return StrayConfig.get().anyGlow() || dev.stray.client.slayer.SlayerWorld.glowActive();
 	}
 
 	public static int outlineColor(Entity entity) {
@@ -176,7 +176,14 @@ public final class MobGlowRenderer {
 		if (client.player == null || client.level == null || entity == client.player) {
 			return 0;
 		}
-		if (hasVanillaGlow(entity) || !isEspTarget(entity, client.player)) {
+		if (hasVanillaGlow(entity)) {
+			return 0;
+		}
+		int slayer = dev.stray.client.slayer.SlayerWorld.glow(entity);
+		if (slayer != 0) {
+			return slayer;
+		}
+		if (!config.anyGlow() || !isEspTarget(entity, client.player)) {
 			return 0;
 		}
 		if (colorFrame != frame) {
@@ -198,7 +205,10 @@ public final class MobGlowRenderer {
 		if (client.player == null || entity == null || entity == client.player) {
 			return false;
 		}
-		if (!isEspTarget(entity, client.player)) {
+		if (dev.stray.client.slayer.SlayerWorld.glow(entity) != 0) {
+			return true;
+		}
+		if (!StrayConfig.get().anyGlow() || !isEspTarget(entity, client.player)) {
 			return false;
 		}
 		StrayConfig config = StrayConfig.get();

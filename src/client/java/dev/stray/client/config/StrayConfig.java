@@ -433,6 +433,14 @@ public final class StrayConfig {
 	public HudSlot slotGardenFever = new HudSlot();
 	public HudSlot slotScatha = new HudSlot();
 	public HudSlot slotTopDown = new HudSlot();
+	public HudSlot slotSlayer = new HudSlot();
+	public HudSlot slotSlayerProfit = new HudSlot();
+	public HudSlot slotSlayerRng = new HudSlot();
+	public HudSlot slotSlayerKills = new HudSlot();
+	public HudSlot slotSlayerDagger = new HudSlot();
+	public HudSlot slotSlayerPillar = new HudSlot();
+	/** Slayer features (ported from SkyHanni). */
+	public SlayerSettings slayer = new SlayerSettings();
 	public String inventoryHudAnchor = "bottom_right";
 	public float inventoryHudScale = 1.0f;
 	public float hudWatermarkScale = 1.0f;
@@ -1648,6 +1656,15 @@ public final class StrayConfig {
 				}
 				loaded.topDownHeight = clamp(loaded.topDownHeight, 4f, 40f);
 				loaded.slotTopDown = hudSlot(loaded.slotTopDown);
+				loaded.slotSlayer = hudSlot(loaded.slotSlayer);
+				loaded.slotSlayerProfit = hudSlot(loaded.slotSlayerProfit);
+				loaded.slotSlayerRng = hudSlot(loaded.slotSlayerRng);
+				loaded.slotSlayerKills = hudSlot(loaded.slotSlayerKills);
+				loaded.slotSlayerDagger = hudSlot(loaded.slotSlayerDagger);
+				loaded.slotSlayerPillar = hudSlot(loaded.slotSlayerPillar);
+				if (loaded.slayer == null) {
+					loaded.slayer = new SlayerSettings();
+				}
 				if (!json.has("gardenShoppingHudEnabled")) {
 					loaded.gardenShoppingHudEnabled = false;
 				}
@@ -2637,6 +2654,12 @@ public final class StrayConfig {
 		slotGardenFever = new HudSlot();
 		slotScatha = new HudSlot();
 		slotTopDown = new HudSlot();
+		slotSlayer = new HudSlot();
+		slotSlayerProfit = new HudSlot();
+		slotSlayerRng = new HudSlot();
+		slotSlayerKills = new HudSlot();
+		slotSlayerDagger = new HudSlot();
+		slotSlayerPillar = new HudSlot();
 	}
 
 	public static int clamp(int value, int min, int max) {

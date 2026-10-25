@@ -53,7 +53,7 @@ public final class ClickGui {
 	private static final int ACCENT_ALPHA = 115;
 	private static final int TEXT = 0xFFFFFFFF;
 	private static final int DIM = 0xFFAAAAAA;
-	static final String[] ORDER = {"World", "Visuals", "Mobs", "Combat", "HUD", "Mining", "Farming", "Menus", "Keys", "Theme", "Player"};
+	static final String[] ORDER = {"World", "Visuals", "Mobs", "Combat", "Slayer", "HUD", "Mining", "Farming", "Menus", "Keys", "Theme", "Player"};
 	static final int[] BIND_WHICH = {3, 4, 13, 5, 7, 11, 12, 14};
 	static final String[] BIND_LABEL = {
 		"Open menu", "Loadouts", "Swap loadouts", "Wardrobe", "Profile", "Chat peek", "Lobby ping", "Empty bag"
@@ -1618,6 +1618,7 @@ public final class ClickGui {
 		mods.add(mod("Auto rogue", "Combat", null, null, () -> config.autoRogueEnabled, v -> config.autoRogueEnabled = v, true, false));
 		mods.add(mod("Triggerbot", "Combat", null, null, () -> config.triggerbotEnabled, v -> config.triggerbotEnabled = v, true, false));
 		mods.add(mod("Party stats", "Combat", null, null, () -> config.partyFinderStats, v -> config.partyFinderStats = v, true, false));
+		addSlayer(mods, config);
 		mods.add(mod("Array list", "HUD", null, null, () -> config.arrayList, v -> config.arrayList = v, false, false));
 		mods.add(mod("Watermark", "HUD", StrayScreen.Feature.WATERMARK, null, () -> config.watermarkEnabled, v -> config.watermarkEnabled = v, true, false));
 		mods.add(mod("Music", "HUD", StrayScreen.Feature.MUSIC, null, () -> config.musicHudEnabled, v -> config.musicHudEnabled = v, true, false));
@@ -1698,6 +1699,20 @@ public final class ClickGui {
 		mods.add(mod("Nick hider", "Player", StrayScreen.Feature.NICK, null, () -> config.nickEnabled, v -> config.nickEnabled = v, true, false));
 		mods.add(hold("Cape", "Player", StrayScreen.Feature.CAPE, ClickGui::capeOn));
 		return mods;
+	}
+
+	private static void addSlayer(List<Mod> mods, StrayConfig config) {
+		var s = config.slayer;
+		mods.add(mod("Slayer HUD", "Slayer", StrayScreen.Feature.SLAYER_HUD, null, () -> s.hud, v -> s.hud = v, true, false));
+		mods.add(mod("Slayer profit", "Slayer", StrayScreen.Feature.SLAYER_PROFIT, null, () -> s.profit, v -> s.profit = v, true, false));
+		mods.add(mod("RNG meter", "Slayer", StrayScreen.Feature.SLAYER_RNG, null, () -> s.rng, v -> s.rng = v, true, false));
+		mods.add(mod("Remaining kills", "Slayer", StrayScreen.Feature.SLAYER_KILLS, null, () -> s.kills, v -> s.kills = v, true, false));
+		mods.add(mod("Slayer alerts", "Slayer", StrayScreen.Feature.SLAYER_ALERTS, null, () -> s.alerts, v -> s.alerts = v, true, false));
+		mods.add(mod("Slayer ESP", "Slayer", StrayScreen.Feature.SLAYER_ESP, null, () -> s.esp, v -> s.esp = v, true, false));
+		mods.add(mod("Voidgloom", "Slayer", StrayScreen.Feature.SLAYER_VOID, null, () -> s.voidgloom, v -> s.voidgloom = v, true, false));
+		mods.add(mod("Inferno", "Slayer", StrayScreen.Feature.SLAYER_INFERNO, null, () -> s.inferno, v -> s.inferno = v, true, false));
+		mods.add(mod("Bloodfiend", "Slayer", StrayScreen.Feature.SLAYER_VAMPIRE, null, () -> s.bloodfiend, v -> s.bloodfiend = v, true, false));
+		mods.add(mod("Slayer cleanup", "Slayer", StrayScreen.Feature.SLAYER_CLEANUP, null, () -> s.cleanup, v -> s.cleanup = v, true, false));
 	}
 
 	private static Mod mod(

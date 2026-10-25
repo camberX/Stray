@@ -102,6 +102,10 @@ public final class StrayHud {
 		HudChrome.element(null);
 		SkillProgressHudRenderer.extract(graphics, delta);
 		HudChrome.element(null);
+		SlayerHudRenderer.extract(graphics, delta);
+		HudChrome.element(null);
+		dev.stray.client.slayer.SlayerWorld.extract(graphics);
+		HudChrome.element(null);
 		UpdateToast.extract(graphics);
 	}
 }

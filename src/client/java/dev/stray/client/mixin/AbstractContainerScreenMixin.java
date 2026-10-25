@@ -35,7 +35,7 @@ public class AbstractContainerScreenMixin {
 
 	@Inject(method = "slotClicked", at = @At("HEAD"), cancellable = true)
 	private void stray$blockDnaClose(Slot slot, int slotId, int button, ContainerInput type, CallbackInfo ci) {
-		if (AutoDna.shouldBlock(slotId) || SackRecipe.click((AbstractContainerScreen<?>) (Object) this, slot, button, type)) {
+		if (AutoDna.shouldBlock(slotId) || dev.stray.client.slayer.SlayerFx.blockClick((AbstractContainerScreen<?>) (Object) this, slot) || SackRecipe.click((AbstractContainerScreen<?>) (Object) this, slot, button, type)) {
 			ci.cancel();
 		}
 	}

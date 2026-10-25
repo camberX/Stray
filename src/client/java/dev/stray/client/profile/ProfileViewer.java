@@ -2991,6 +2991,26 @@ public final class ProfileViewer {
 		return total;
 	}
 
+	private static volatile boolean priceLoading;
+
+	/**
+	 * Item value for trackers (bazaar buy price, else lowest BIN). Starts a background refresh
+	 * when the cache is empty or old and returns 0 until it lands.
+	 */
+	public static double price(String id) {
+		if ((PRICES.isEmpty() || System.currentTimeMillis() - pricesAt > 30 * 60 * 1000L) && !priceLoading) {
+			priceLoading = true;
+			CompletableFuture.runAsync(() -> {
+				try {
+					ensurePrices();
+				} finally {
+					priceLoading = false;
+				}
+			});
+		}
+		return priceOf(id);
+	}
+
 	private static double priceOf(String id) {
 		if (id == null || id.isBlank() || PRICES.isEmpty()) {
 			return 0d;

@@ -103,6 +103,9 @@ public final class SackLive {
 			}
 			ItemStorage.applySackDelta(entry.getKey(), delta);
 			SEEN.add(new Seen(entry.getKey(), delta, now));
+			if (delta > 0L) {
+				dev.stray.client.slayer.SlayerProfit.onSackGain(entry.getKey(), delta);
+			}
 		}
 	}
 

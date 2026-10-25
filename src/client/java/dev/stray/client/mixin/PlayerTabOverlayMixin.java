@@ -11,6 +11,11 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(PlayerTabOverlay.class)
 public class PlayerTabOverlayMixin {
+	@Inject(method = "setFooter", at = @At("HEAD"))
+	private void stray$slayerFooter(Component footer, org.spongepowered.asm.mixin.injection.callback.CallbackInfo ci) {
+		dev.stray.client.slayer.SlayerBosses.onTabFooter(footer);
+	}
+
 	@Inject(method = "getNameForDisplay", at = @At("RETURN"), cancellable = true)
 	private void stray$nick(PlayerInfo info, CallbackInfoReturnable<Component> cir) {
 		cir.setReturnValue(NickHider.rewrite(cir.getReturnValue()));

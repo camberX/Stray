@@ -51,7 +51,13 @@ public final class HudLayout {
 		SCOREBOARD("Scoreboard"),
 		BOSS("Boss bar"),
 		EFFECTS("Effects"),
-		HELD_ITEM("Held item");
+		HELD_ITEM("Held item"),
+		SLAYER("Slayer"),
+		SLAYER_PROFIT("Slayer profit"),
+		SLAYER_RNG("Slayer RNG meter"),
+		SLAYER_KILLS("Slayer kills"),
+		SLAYER_DAGGER("Blaze daggers"),
+		SLAYER_PILLAR("Fire pillar");
 
 		public final String label;
 
@@ -641,6 +647,7 @@ public final class HudLayout {
 			case BOSS -> config.hudBossBar;
 			case EFFECTS -> config.hudEffects;
 			case HELD_ITEM -> config.hudHeldItem;
+			case SLAYER, SLAYER_PROFIT, SLAYER_RNG, SLAYER_KILLS, SLAYER_DAGGER, SLAYER_PILLAR -> SlayerHudRenderer.configured(id);
 		};
 	}
 
@@ -713,6 +720,12 @@ public final class HudLayout {
 			case CROP_FEVER -> config.slotGardenFever;
 			case SCATHA -> config.slotScatha;
 			case TOP_DOWN -> config.slotTopDown;
+			case SLAYER -> config.slotSlayer;
+			case SLAYER_PROFIT -> config.slotSlayerProfit;
+			case SLAYER_RNG -> config.slotSlayerRng;
+			case SLAYER_KILLS -> config.slotSlayerKills;
+			case SLAYER_DAGGER -> config.slotSlayerDagger;
+			case SLAYER_PILLAR -> config.slotSlayerPillar;
 			default -> null;
 		};
 	}
@@ -764,6 +777,8 @@ public final class HudLayout {
 			case EXPERIENCE, HELD_ITEM -> (guiW - w) * 0.5f;
 			case SCOREBOARD, EFFECTS -> guiW - w - MARGIN;
 			case BOSS -> (guiW - w) * 0.5f;
+			case SLAYER, SLAYER_PROFIT, SLAYER_RNG, SLAYER_KILLS -> guiW - w - MARGIN;
+			case SLAYER_DAGGER, SLAYER_PILLAR -> (guiW - w) * 0.5f;
 			default -> MARGIN;
 		};
 	}
@@ -780,8 +795,24 @@ public final class HudLayout {
 			case HELD_ITEM -> status - 6 - h;
 			case SCOREBOARD, EFFECTS -> MARGIN;
 			case BOSS -> MARGIN;
+			case SLAYER, SLAYER_PROFIT, SLAYER_RNG, SLAYER_KILLS -> slayerDefaultY(id, font, guiH);
+			case SLAYER_DAGGER -> guiH * 0.5f + 18f;
+			case SLAYER_PILLAR -> guiH * 0.5f + 18f + (enabled(Id.SLAYER_DAGGER) ? height(Id.SLAYER_DAGGER, font) + 4f : 0f);
 			default -> MARGIN;
 		};
+	}
+
+	private static float slayerDefaultY(Id id, Font font, int guiH) {
+		float y = guiH * 0.22f;
+		for (Id other : new Id[] {Id.SLAYER, Id.SLAYER_RNG, Id.SLAYER_KILLS, Id.SLAYER_PROFIT}) {
+			if (other == id) {
+				break;
+			}
+			if (enabled(other)) {
+				y += height(other, font) + 4f;
+			}
+		}
+		return y;
 	}
 
 	private static void addV(List<Guide> list, float value, float line) {
@@ -836,6 +867,7 @@ public final class HudLayout {
 			case BOSS -> BossBarHudRenderer.drawWidth() * scale;
 			case EFFECTS -> EffectsHudRenderer.drawWidth(font) * scale;
 			case HELD_ITEM -> HeldItemHudRenderer.drawWidth(font) * scale;
+			case SLAYER, SLAYER_PROFIT, SLAYER_RNG, SLAYER_KILLS, SLAYER_DAGGER, SLAYER_PILLAR -> SlayerHudRenderer.width(id, font) * scale;
 		};
 	}
 
@@ -870,6 +902,7 @@ public final class HudLayout {
 			case BOSS -> BossBarHudRenderer.drawHeight() * scale;
 			case EFFECTS -> EffectsHudRenderer.drawHeight() * scale;
 			case HELD_ITEM -> HeldItemHudRenderer.HEIGHT * scale;
+			case SLAYER, SLAYER_PROFIT, SLAYER_RNG, SLAYER_KILLS, SLAYER_DAGGER, SLAYER_PILLAR -> SlayerHudRenderer.height(id) * scale;
 		};
 	}
 

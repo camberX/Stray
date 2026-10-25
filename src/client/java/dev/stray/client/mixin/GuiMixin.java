@@ -16,6 +16,13 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(Gui.class)
 public class GuiMixin {
+	@Inject(method = "setTitle", at = @At("HEAD"), cancellable = true)
+	private void stray$slayerTitle(Component title, CallbackInfo ci) {
+		if (!dev.stray.client.slayer.SlayerBosses.onTitle(title)) {
+			ci.cancel();
+		}
+	}
+
 	@Inject(method = "setOverlayMessage", at = @At("TAIL"))
 	private void stray$skillOverlay(Component message, boolean animateColor, CallbackInfo ci) {
 		SkillProgressTracker.onActionBar(message);

@@ -56,6 +56,12 @@ public class MultiPlayerGameModeMixin {
 	@Inject(method = "attack", at = @At("HEAD"))
 	private void stray$hitsoundMelee(Player player, Entity target, CallbackInfo ci) {
 		Hitsound.onMelee(player, target);
+		dev.stray.client.slayer.SlayerBosses.onAttack(target);
+	}
+
+	@Inject(method = "useItem", at = @At("HEAD"))
+	private void stray$slayerDagger(Player player, InteractionHand hand, CallbackInfoReturnable<InteractionResult> cir) {
+		dev.stray.client.slayer.SlayerBosses.onUse(player.getItemInHand(hand));
 	}
 
 	@Inject(method = "useItemOn", at = @At("HEAD"))

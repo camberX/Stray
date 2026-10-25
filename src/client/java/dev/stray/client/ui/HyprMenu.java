@@ -43,6 +43,7 @@ public final class HyprMenu {
 		Map.entry("Visuals", "\uE8F4"),
 		Map.entry("Mobs", "\uE91D"),
 		Map.entry("Combat", "\uF889"),
+		Map.entry("Slayer", "\uEBE9"),
 		Map.entry("HUD", "\uE871"),
 		Map.entry("Mining", "\uEAD5"),
 		Map.entry("Farming", "\uEA79"),
