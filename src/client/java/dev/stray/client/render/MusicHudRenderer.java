@@ -485,9 +485,26 @@ public final class MusicHudRenderer {
 		return line;
 	}
 
+	private static String widthLine;
+	private static Font widthFont;
+	private static Object widthStyle;
+	private static float widthValue;
+
+	/** Measured once per track line, not every frame. */
+	private static float barTextWidth(Font font, String line) {
+		Object style = MenuFont.hyprStyle(0);
+		if (font != widthFont || style != widthStyle || !line.equals(widthLine)) {
+			widthValue = font.width(barText(line));
+			widthLine = line;
+			widthFont = font;
+			widthStyle = style;
+		}
+		return widthValue;
+	}
+
 	private static float barWidth(Font font, NowPlaying track) {
 		boolean live = track.present();
-		float text = Math.min(BAR_TEXT_MAX, font.width(barText(barLine(track, live))));
+		float text = Math.min(BAR_TEXT_MAX, barTextWidth(font, barLine(track, live)));
 		float trackPill = 4f + BAR_PILL - 2f + 5f + text + 7f + BAR_CONTROLS * reveal;
 		return BAR_PAD + BAR_PILL + 3f + trackPill + BAR_PAD;
 	}
@@ -566,8 +583,17 @@ public final class MusicHudRenderer {
 		nextHit = Rect.EMPTY;
 	}
 
+	private static String layoutKey;
+	private static Layout layoutValue = Layout.CARD;
+
+	/** The config string only changes from the menu; parse it once instead of every frame. */
 	private static Layout layout() {
-		return Layout.from(StrayConfig.get().musicHudLayout);
+		String key = StrayConfig.get().musicHudLayout;
+		if (key != layoutKey) {
+			layoutValue = Layout.from(key);
+			layoutKey = key;
+		}
+		return layoutValue;
 	}
 
 	private static String ellipsize(Font font, String value, float max, boolean small) {

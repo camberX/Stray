@@ -168,9 +168,27 @@ public final class WatermarkRenderer {
 	 */
 	private static final java.util.Map<String, double[]> STABLE = new java.util.HashMap<>();
 
-	static float stableWidth(Font font, Component text, String key) {
+	private static final java.util.Map<String, Float> MEASURED = new java.util.HashMap<>();
+	private static Font measuredFont;
+
+	/** Width of the text with every digit as 0, cached per string (fps and time change every frame or second). */
+	private static float measuredWidth(Font font, Component text) {
+		if (font != measuredFont || MEASURED.size() > 256) {
+			MEASURED.clear();
+			measuredFont = font;
+		}
 		String digits = Text.zeroDigits(text.getString());
-		float target = font.width(Component.literal(digits).withStyle(text.getStyle()));
+		String key = digits + '\u0000' + text.getStyle().getFont() + (text.getStyle().isBold() ? "\u0001" : "");
+		Float width = MEASURED.get(key);
+		if (width == null) {
+			width = (float) font.width(Component.literal(digits).withStyle(text.getStyle()));
+			MEASURED.put(key, width);
+		}
+		return width;
+	}
+
+	static float stableWidth(Font font, Component text, String key) {
+		float target = measuredWidth(font, text);
 		long now = System.nanoTime();
 		double[] state = STABLE.get(key);
 		if (state == null) {
