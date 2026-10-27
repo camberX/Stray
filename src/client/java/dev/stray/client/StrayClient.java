@@ -293,7 +293,7 @@ public final class StrayClient implements ClientModInitializer {
 			root.then(ClientCommands.literal("edit").executes(context -> openItemEdit()));
 			root.then(ClientCommands.literal("casino").executes(context -> {
 				Minecraft client = Minecraft.getInstance();
-				client.execute(() -> client.setScreen(new dev.stray.client.casino.CasinoScreen()));
+				client.execute(() -> client.gui.setScreen(new dev.stray.client.casino.CasinoScreen()));
 				return Command.SINGLE_SUCCESS;
 			}));
 			root.then(ClientCommands.literal("farmkeys").executes(context -> FarmKeys.toggle()));

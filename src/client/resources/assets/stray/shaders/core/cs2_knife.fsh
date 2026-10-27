@@ -1,22 +1,23 @@
 #version 330
+#extension GL_ARB_separate_shader_objects : require
 
-#moj_import <minecraft:fog.glsl>
-#moj_import <minecraft:dynamictransforms.glsl>
+#include <minecraft:fog.glsl>
+#include <minecraft:dynamictransforms.glsl>
 
 // Albedo and material (r = roughness, g = metalness, b = ambient occlusion) baked from the CS2 finish.
 uniform sampler2D Sampler0;
 uniform sampler2D Sampler3;
 
-in float sphericalVertexDistance;
-in float cylindricalVertexDistance;
-in vec4 vertexColor;
-in vec4 lightMapColor;
-in vec2 texCoord0;
-in vec3 viewPos;
-in vec3 viewNormal;
-in float diffuseLight;
+layout(location = 0) in float sphericalVertexDistance;
+layout(location = 1) in float cylindricalVertexDistance;
+layout(location = 2) in vec4 vertexColor;
+layout(location = 3) in vec4 lightMapColor;
+layout(location = 4) in vec2 texCoord0;
+layout(location = 5) in vec3 viewPos;
+layout(location = 6) in vec3 viewNormal;
+layout(location = 7) in float diffuseLight;
 
-out vec4 fragColor;
+layout(location = 0) out vec4 fragColor;
 
 // A soft studio environment: bright overhead, a horizon band, darker floor.
 vec3 environment(vec3 r, float rough) {

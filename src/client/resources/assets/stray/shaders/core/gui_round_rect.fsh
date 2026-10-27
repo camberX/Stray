@@ -1,17 +1,13 @@
 #version 330
+#extension GL_ARB_separate_shader_objects : require
 
-layout(std140) uniform DynamicTransforms {
-    mat4 ModelViewMat;
-    vec4 ColorModulator;
-    vec3 ModelOffset;
-    mat4 TextureMat;
-};
+#include <minecraft:dynamictransforms.glsl>
 
-in vec2 local;
-flat in vec2 extent;
-in vec4 vertexColor;
+layout(location = 0) in vec2 local;
+layout(location = 1) flat in vec2 extent;
+layout(location = 2) in vec4 vertexColor;
 
-out vec4 fragColor;
+layout(location = 0) out vec4 fragColor;
 
 // Rounded rectangle from RoundRect: the color is the interpolated corner colors (the
 // gradient), the shape a signed distance. extent.y is 1 + radius (fill) or 3 + radius

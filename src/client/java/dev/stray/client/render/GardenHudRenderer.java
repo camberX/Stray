@@ -211,7 +211,7 @@ public final class GardenHudRenderer {
 				drawShopping(graphics, client.font, box.x(), box.y(), HudLayout.scale(HudLayout.Id.SHOPPING), snap);
 			}
 		}
-		if (config.pestCooldownHudEnabled && (client.screen == null || HudLayout.editorOpen())) {
+		if (config.pestCooldownHudEnabled && (client.gui.screen() == null || HudLayout.editorOpen())) {
 			Snap snap = PestCooldown.snap();
 			if (showPestCooldown(snap)) {
 				HudLayout.Box box = HudLayout.box(HudLayout.Id.PEST_COOLDOWN, client.font, graphics.guiWidth(), graphics.guiHeight());

@@ -1,12 +1,14 @@
 package dev.stray.client.cs2.render;
 
-import com.mojang.blaze3d.pipeline.RenderPipeline;
 import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.textures.FilterMode;
-import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
-import com.mojang.blaze3d.vertex.VertexFormat;
+import com.mojang.renderpearl.api.pipeline.ColorTargetState;
+import com.mojang.renderpearl.api.pipeline.PrimitiveTopology;
+import com.mojang.renderpearl.api.pipeline.RenderPipeline;
+import com.mojang.renderpearl.api.textures.FilterMode;
+import dev.stray.client.mixin.RenderPipelinesInvoker;
+import dev.stray.client.render.RenderCompat;
 import dev.stray.Stray;
 import dev.stray.client.config.StrayConfig;
 import dev.stray.client.cs2.Cs2Knives;
@@ -26,7 +28,7 @@ import org.joml.Vector3f;
 public final class KnifeRender {
 	private static final Identifier PIPELINE_ID = Stray.id("pipeline/cs2_knife");
 	private static final Identifier SHADER_ID = Stray.id("core/cs2_knife");
-	private static RenderPipeline pipeline;
+	private static volatile RenderPipeline pipeline;
 
 	/** Source units (inches) to blocks for the first-person rig. Projection makes this mostly a depth choice. */
 	public static final float VIEW_SCALE = 0.04f;
@@ -38,16 +40,17 @@ public final class KnifeRender {
 
 	private static synchronized RenderPipeline pipeline() {
 		if (pipeline == null) {
-			pipeline = RenderPipelines.register(
+			pipeline = RenderPipelinesInvoker.stray$register(
 				RenderPipeline.builder(RenderPipelines.ENTITY_SNIPPET)
 					.withLocation(PIPELINE_ID)
 					.withVertexShader(SHADER_ID)
 					.withFragmentShader(SHADER_ID)
-					.withSampler("Sampler3")
+					.withBindGroupLayout(RenderCompat.sampler("Sampler3"))
+					.withBindGroupLayout(RenderCompat.uniform("KnifeBones"))
 					.withShaderDefine("NO_OVERLAY")
 					.withShaderDefine("CS2_GPU_SKIN")
-					.withUniform("KnifeBones", com.mojang.blaze3d.shaders.UniformType.UNIFORM_BUFFER)
-					.withVertexFormat(DefaultVertexFormat.ENTITY, VertexFormat.Mode.TRIANGLES)
+					.withPrimitiveTopology(PrimitiveTopology.TRIANGLES)
+					.withColorTargetState(ColorTargetState.DEFAULT)
 					.withCull(false)
 					.build()
 			);
@@ -67,6 +70,12 @@ public final class KnifeRender {
 				.setOutline(RenderSetup.OutlineProperty.NONE)
 				.createRenderSetup()
 		));
+	}
+
+	/** Whether this render type is a CS2 knife (drawn from its GPU mesh). */
+	public static boolean isKnife(RenderType type) {
+		RenderPipeline knife = pipeline;
+		return knife != null && type.pipeline() == knife;
 	}
 
 	/** Forgets a released knife's render type. */

@@ -15,6 +15,7 @@ import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.tags.ItemTags;
 import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.decoration.ArmorStand;
 import net.minecraft.world.item.Item;
@@ -121,7 +122,7 @@ public final class CustomizeScreen extends Screen {
 			if (slot != null) {
 				// Item icons draw one generic trim overlay for every pattern, so
 				// show the armor worn on a stand where patterns and dyes are real.
-				stand = new ArmorStand(EntityType.ARMOR_STAND, client.level);
+				stand = new ArmorStand(EntityTypes.ARMOR_STAND, client.level);
 				stand.setSilent(true);
 				stand.setItemSlot(slot, stack.copy());
 			}
@@ -148,7 +149,7 @@ public final class CustomizeScreen extends Screen {
 		if (CustomItems.sharedKey(CustomItems.keyOf(held))) {
 			say("This item has no UUID, so changes apply to every item with the same id.");
 		}
-		client.execute(() -> client.setScreen(new CustomizeScreen(held)));
+		client.execute(() -> client.gui.setScreen(new CustomizeScreen(held)));
 		return 1;
 	}
 
@@ -505,7 +506,7 @@ public final class CustomizeScreen extends Screen {
 
 	@Override
 	public boolean mouseClicked(MouseButtonEvent event, boolean doubled) {
-		if (event.button() == 0 && listKind != ListKind.NONE
+		if (dev.stray.client.input.MouseButtons.left(event) && listKind != ListKind.NONE
 			&& event.x() >= listX && event.x() < listX + listW && event.y() >= listY && event.y() < listY + listH) {
 			int cols = columns();
 			int cellW = (listW - (cols - 1) * 3) / cols;

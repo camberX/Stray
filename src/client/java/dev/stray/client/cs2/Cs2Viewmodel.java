@@ -6,11 +6,10 @@ import dev.stray.client.cs2.anim.NmClip;
 import dev.stray.client.cs2.anim.Pose;
 import dev.stray.client.cs2.render.KnifeRender;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.player.AbstractClientPlayer;
+import net.minecraft.client.renderer.entity.state.AvatarRenderState;
 import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.client.renderer.entity.player.AvatarRenderer;
 import net.minecraft.world.entity.HumanoidArm;
-import net.minecraft.world.entity.player.PlayerModelPart;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
 
@@ -75,7 +74,7 @@ public final class Cs2Viewmodel {
 
 	private static boolean mining() {
 		Minecraft mc = Minecraft.getInstance();
-		return mc.screen == null && mc.options.keyAttack.isDown() && mc.hitResult != null
+		return mc.gui.screen() == null && mc.options.keyAttack.isDown() && mc.hitResult != null
 			&& mc.hitResult.getType() == net.minecraft.world.phys.HitResult.Type.BLOCK;
 	}
 
@@ -98,7 +97,7 @@ public final class Cs2Viewmodel {
 		// A new swing: a fresh left click (so spam clicking restarts the swing each time), or the
 		// player's swing starting over for any other reason.
 		Minecraft mc = Minecraft.getInstance();
-		boolean attackDown = mc.screen == null && mc.options.keyAttack.isDown();
+		boolean attackDown = mc.gui.screen() == null && mc.options.keyAttack.isDown();
 		boolean clicked = attackDown && !lastAttackDown;
 		lastAttackDown = attackDown;
 		boolean swingRestarted = swingProgress > 0f && swingProgress < 0.5f && (lastSwing == 0f || swingProgress < lastSwing - 0.05f);
@@ -159,7 +158,7 @@ public final class Cs2Viewmodel {
 	 * cannot (nothing loaded), so vanilla draws as usual.
 	 */
 	public static boolean render(
-		AbstractClientPlayer player,
+		AvatarRenderState player,
 		HumanoidArm arm,
 		float swingProgress,
 		float equippedProgress,
@@ -215,7 +214,7 @@ public final class Cs2Viewmodel {
 	}
 
 	/** Puts the Minecraft arm along CS2's forearm with its hand end at CS2's hand bone. */
-	private static void drawArm(AbstractClientPlayer player, Pose rig, Matrix4f view, boolean left, PoseStack pose, SubmitNodeCollector collector, int light) {
+	private static void drawArm(AvatarRenderState player, Pose rig, Matrix4f view, boolean left, PoseStack pose, SubmitNodeCollector collector, int light) {
 		if (rig.handR < 0 || rig.lowerArmR < 0) {
 			return;
 		}
@@ -260,13 +259,12 @@ public final class Cs2Viewmodel {
 		pose.pushPose();
 		pose.last().pose().mul(m);
 		pose.last().normal().mul(new org.joml.Matrix3f(m).normal());
-		AvatarRenderer<AbstractClientPlayer> renderer = (AvatarRenderer<AbstractClientPlayer>) Minecraft.getInstance()
-			.getEntityRenderDispatcher().getPlayerRenderer(player);
-		var skin = player.getSkin().body().texturePath();
+		AvatarRenderer<?> renderer = Minecraft.getInstance().getEntityRenderDispatcher().getRenderer(player);
+		var skin = player.skin.body().texturePath();
 		if (left) {
-			renderer.renderLeftHand(pose, collector, light, skin, player.isModelPartShown(PlayerModelPart.LEFT_SLEEVE));
+			renderer.renderLeftHand(pose, collector, light, skin, player.showLeftSleeve);
 		} else {
-			renderer.renderRightHand(pose, collector, light, skin, player.isModelPartShown(PlayerModelPart.RIGHT_SLEEVE));
+			renderer.renderRightHand(pose, collector, light, skin, player.showRightSleeve);
 		}
 		pose.popPose();
 	}

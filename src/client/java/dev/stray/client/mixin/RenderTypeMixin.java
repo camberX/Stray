@@ -10,7 +10,9 @@ import org.joml.Vector3f;
 import org.joml.Vector4f;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.Redirect;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(RenderType.class)
 public class RenderTypeMixin {
@@ -33,5 +35,11 @@ public class RenderTypeMixin {
 		);
 		Vector3f offset = new Vector3f(HeldItemShader.modelOffset(pipeline));
 		return uniforms.writeTransform(modelView, color, offset, texture);
+	}
+
+	/** CS2 knives: remember the prepared knife batch so the knife's GPU draw can be attached to it. */
+	@Inject(method = "prepare", at = @At("RETURN"))
+	private void stray$knifePrepared(CallbackInfoReturnable<net.minecraft.client.renderer.rendertype.PreparedRenderType> cir) {
+		dev.stray.client.cs2.render.KnifeGpu.prepared((RenderType) (Object) this, cir.getReturnValue());
 	}
 }

@@ -784,7 +784,7 @@ public final class ClickGui {
 	private static void drawCs2(StrayScreen screen, GuiGraphicsExtractor graphics, Font font, float x, float y, float w) {
 		drawButton(screen, graphics, font, x, y, w, "Choose knife & skin", () -> {
 			Minecraft client = Minecraft.getInstance();
-			client.setScreen(new Cs2KnifeScreen(client.screen));
+			client.gui.setScreen(new Cs2KnifeScreen(client.gui.screen()));
 		});
 	}
 

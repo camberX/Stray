@@ -1,35 +1,28 @@
 package dev.stray.client.cs2.render;
 
-import com.mojang.blaze3d.buffers.GpuBuffer;
-import com.mojang.blaze3d.buffers.GpuBufferSlice;
-import com.mojang.blaze3d.pipeline.RenderTarget;
-import com.mojang.blaze3d.systems.CommandEncoder;
-import com.mojang.blaze3d.systems.GpuDevice;
-import com.mojang.blaze3d.systems.RenderPass;
 import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.systems.ScissorState;
-import com.mojang.blaze3d.textures.GpuTextureView;
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
-import com.mojang.blaze3d.vertex.VertexFormat;
-import com.mojang.blaze3d.vertex.VertexFormatElement;
+import com.mojang.renderpearl.api.buffers.GpuBuffer;
+import com.mojang.renderpearl.api.buffers.GpuBufferSlice;
+import com.mojang.renderpearl.api.commands.RenderPass;
+import com.mojang.renderpearl.api.device.GpuDevice;
+import com.mojang.renderpearl.api.pipeline.IndexType;
+import com.mojang.renderpearl.api.vertex.VertexFormat;
 import dev.stray.Stray;
 import dev.stray.client.cs2.Cs2Knives;
 import dev.stray.client.cs2.s2.S2Model;
-import dev.stray.client.visual.HeldItemShader;
-import net.minecraft.client.renderer.rendertype.RenderSetup;
+import net.minecraft.client.renderer.rendertype.PreparedRenderType;
 import net.minecraft.client.renderer.rendertype.RenderType;
 import org.joml.Matrix4f;
-import org.joml.Vector3f;
-import org.joml.Vector4f;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.IdentityHashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.OptionalDouble;
-import java.util.OptionalInt;
 
 /**
  * GPU skinning for CS2 knives. Each knife mesh is uploaded once in its bind pose (bone index
@@ -37,15 +30,26 @@ import java.util.OptionalInt;
  * submitted through the normal render queue (as a single empty triangle) so it draws at the
  * right moment with the right targets; when Minecraft draws that batch, the knife's own
  * buffers are drawn instead.
+ *
+ * <p>26.3: batches are prepared (uniforms written, textures resolved) before any render pass
+ * opens and drawn later inside a shared pass, so bone matrices are written when the knife is
+ * queued and the knife is drawn from {@link PreparedRenderType#drawFromBuffer}.
  */
 public final class KnifeGpu {
 	/** Bones per draw (the knife models use at most 8). */
 	public static final int MAX_BONES = 16;
 	private static final int BLOCK_SIZE = MAX_BONES * 64 + 16;
 	private static final int SLOTS = 64;
+	/** Queued knives whose batch never drew (culled, menu closed) are dropped after this long. */
+	private static final long STALE_NS = 1_000_000_000L;
 
-	/** {@code bladeType}: the blade shader pass to draw right after this knife (null for none). */
-	private record Request(Mesh mesh, boolean blade, Matrix4f[] bones, int light, RenderType bladeType) {
+	/** {@code blade}: the prepared blade shader pass to draw right after this knife (null for none). */
+	private record Request(Mesh mesh, GpuBufferSlice bones, PreparedRenderType blade) {
+	}
+
+	private static final class Pending {
+		final List<Request> requests = new ArrayList<>();
+		long queuedNs = System.nanoTime();
 	}
 
 	/** One knife's buffers on the GPU. */
@@ -73,8 +77,11 @@ public final class KnifeGpu {
 		}
 	}
 
-	private static final Map<RenderType, List<Request>> QUEUE = new IdentityHashMap<>();
+	/** Keyed by the prepared knife batch (a record, so equal batches share requests like Minecraft merges them). */
+	private static final Map<PreparedRenderType, Pending> QUEUE = new HashMap<>();
 	private static final Map<Cs2Knives.Knife, Mesh> MESHES = new IdentityHashMap<>();
+	/** The knife batch Minecraft prepared last: the one the knife's placeholder vertices go into. */
+	private static PreparedRenderType lastPrepared;
 	private static GpuBuffer bones;
 	private static int slotSize;
 	private static int slot;
@@ -102,12 +109,12 @@ public final class KnifeGpu {
 		S2Model model = knife.model;
 		VertexFormat format = DefaultVertexFormat.ENTITY;
 		int stride = format.getVertexSize();
-		int oPos = format.getOffset(VertexFormatElement.POSITION);
-		int oColor = format.getOffset(VertexFormatElement.COLOR);
-		int oUv = format.getOffset(VertexFormatElement.UV0);
-		int oUv1 = format.getOffset(VertexFormatElement.UV1);
-		int oUv2 = format.getOffset(VertexFormatElement.UV2);
-		int oNormal = format.getOffset(VertexFormatElement.NORMAL);
+		int oPos = format.getElement("Position").offset();
+		int oColor = format.getElement("Color").offset();
+		int oUv = format.getElement("UV0").offset();
+		int oUv1 = format.getElement("UV1").offset();
+		int oUv2 = format.getElement("UV2").offset();
+		int oNormal = format.getElement("Normal").offset();
 		int total = 0;
 		int indexTotal = 0;
 		for (S2Model.Part part : model.parts) {
@@ -175,120 +182,133 @@ public final class KnifeGpu {
 		return (byte) Math.round(Math.max(-1f, Math.min(1f, f)) * 127f);
 	}
 
-	/** Records a knife draw for the batch of {@code type}; called while that batch is built. */
+	/** Called (from a mixin) for every prepared render type; remembers knife batches. */
+	public static void prepared(RenderType type, PreparedRenderType prepared) {
+		if (KnifeRender.isKnife(type)) {
+			lastPrepared = prepared;
+		}
+	}
+
 	public static void queue(RenderType type, Mesh mesh, boolean blade, Matrix4f pose, Matrix4f toView, Matrix4f[] skin, int light) {
 		queue(type, mesh, blade, pose, toView, skin, light, null);
 	}
 
+	/**
+	 * Records a knife draw for the batch being built (called from the knife's custom geometry, right
+	 * after Minecraft prepared its batch). Bone matrices are written now, before the render pass.
+	 */
 	public static void queue(RenderType type, Mesh mesh, boolean blade, Matrix4f pose, Matrix4f toView, Matrix4f[] skin, int light, RenderType bladeType) {
-		int n = skin == null ? 1 : Math.min(MAX_BONES, skin.length);
-		Matrix4f[] out = new Matrix4f[n];
-		for (int b = 0; b < n; b++) {
-			out[b] = new Matrix4f(pose).mul(toView);
-			if (skin != null) {
-				out[b].mul(skin[b]);
-			}
-		}
-		QUEUE.computeIfAbsent(type, k -> new ArrayList<>()).add(new Request(mesh, blade, out, light, bladeType));
-	}
-
-	/** Whether this batch is a knife batch to draw from the GPU mesh instead of its (empty) vertices. */
-	public static boolean handles(RenderType type) {
-		List<Request> list = QUEUE.get(type);
-		return list != null && !list.isEmpty();
-	}
-
-	/** Draws every queued knife for this batch. */
-	public static void draw(RenderType type, RenderSetup setup) {
-		List<Request> list = QUEUE.remove(type);
-		if (list == null || list.isEmpty()) {
+		PreparedRenderType batch = lastPrepared;
+		if (batch == null) {
 			return;
 		}
-		pass(type, setup, list);
-		// The blade shader goes right after its knife, in the same draw: as its own batch it could be
-		// drawn before the knife (batch order is not fixed) and the knife would cover it.
-		java.util.LinkedHashMap<RenderType, List<Request>> blades = new java.util.LinkedHashMap<>();
-		for (Request req : list) {
-			if (req.bladeType != null) {
-				blades.computeIfAbsent(req.bladeType, k -> new ArrayList<>())
-					.add(new Request(req.mesh, true, req.bones, req.light, null));
+		long now = System.nanoTime();
+		for (Iterator<Pending> it = QUEUE.values().iterator(); it.hasNext(); ) {
+			if (now - it.next().queuedNs > STALE_NS) {
+				it.remove();
 			}
 		}
-		for (Map.Entry<RenderType, List<Request>> e : blades.entrySet()) {
-			RenderSetup bladeSetup = ((dev.stray.client.mixin.RenderTypeAccessor) (Object) e.getKey()).stray$setup();
-			pass(e.getKey(), bladeSetup, e.getValue());
+		GpuBufferSlice bonesSlice;
+		try {
+			bonesSlice = writeBones(pose, toView, skin, light);
+		} catch (RuntimeException e) {
+			warn(e);
+			return;
 		}
+		// The blade shader goes right after its knife, in the same draw: as its own batch it could be
+		// drawn before the knife (batch order is not fixed) and the knife would cover it.
+		PreparedRenderType bladeBatch = bladeType == null ? null : bladeType.prepare();
+		Pending pending = QUEUE.computeIfAbsent(batch, k -> new Pending());
+		pending.queuedNs = now;
+		pending.requests.add(new Request(mesh, bonesSlice, bladeBatch));
 	}
 
-	private static void pass(RenderType type, RenderSetup setup, List<Request> list) {
+	private static GpuBufferSlice writeBones(Matrix4f pose, Matrix4f toView, Matrix4f[] skin, int light) {
 		GpuDevice device = RenderSystem.getDevice();
 		if (bones == null || bones.isClosed()) {
-			int align = Math.max(16, device.getUniformOffsetAlignment());
+			int align = Math.max(16, device.getDeviceInfo().limits().minUniformOffsetAlignment());
 			slotSize = (BLOCK_SIZE + align - 1) / align * align;
 			bones = device.createBuffer(() -> "Stray CS2 knife bones", GpuBuffer.USAGE_UNIFORM | GpuBuffer.USAGE_COPY_DST, (long) slotSize * SLOTS);
 		}
-		CommandEncoder encoder = device.createCommandEncoder();
-		// Uniform writes must happen before the render pass opens.
-		GpuBufferSlice[] boneSlices = new GpuBufferSlice[list.size()];
-		GpuBufferSlice[] transforms = new GpuBufferSlice[list.size()];
+		int n = skin == null ? 1 : Math.min(MAX_BONES, skin.length);
 		ByteBuffer data = STAGING;
-		Matrix4f modelView = new Matrix4f(RenderSystem.getModelViewMatrix());
-		for (int r = 0; r < list.size(); r++) {
-			Request req = list.get(r);
-			data.clear();
-			for (int b = 0; b < MAX_BONES; b++) {
-				Matrix4f m = b < req.bones.length ? req.bones[b] : req.bones[0];
-				m.get(b * 64, data);
+		data.clear();
+		Matrix4f m = new Matrix4f();
+		for (int b = 0; b < MAX_BONES; b++) {
+			m.set(pose).mul(toView);
+			if (skin != null) {
+				m.mul(skin[b < n ? b : 0]);
 			}
-			data.putInt(MAX_BONES * 64, req.light & 0xFFFF);
-			data.putInt(MAX_BONES * 64 + 4, (req.light >> 16) & 0xFFFF);
-			data.putInt(MAX_BONES * 64 + 8, 0);
-			data.putInt(MAX_BONES * 64 + 12, 0);
-			data.position(0).limit(BLOCK_SIZE);
-			GpuBufferSlice slice = bones.slice((long) slot * slotSize, BLOCK_SIZE);
-			slot = (slot + 1) % SLOTS;
-			encoder.writeToBuffer(slice, data);
-			boneSlices[r] = slice;
-			Vector4f color = req.blade ? new Vector4f(HeldItemShader.colorModulator(type.pipeline())) : new Vector4f(1f, 1f, 1f, 1f);
-			Vector3f offset = req.blade ? new Vector3f(HeldItemShader.modelOffset(type.pipeline())) : new Vector3f();
-			transforms[r] = RenderSystem.getDynamicUniforms().writeTransform(modelView, color, offset, new Matrix4f());
+			m.get(b * 64, data);
 		}
-		// Textures may still need loading (an upload), which is not allowed inside a render pass.
-		Map<String, RenderSetup.TextureAndSampler> textures = setup.getTextures();
-		RenderTarget target = type.outputTarget().getRenderTarget();
-		GpuTextureView colorView = RenderSystem.outputColorTextureOverride != null ? RenderSystem.outputColorTextureOverride : target.getColorTextureView();
-		GpuTextureView depthView = target.useDepth
-			? (RenderSystem.outputDepthTextureOverride != null ? RenderSystem.outputDepthTextureOverride : target.getDepthTextureView())
-			: null;
-		try (RenderPass pass = encoder.createRenderPass(() -> "Stray CS2 knife", colorView, OptionalInt.empty(), depthView, OptionalDouble.empty())) {
-			pass.setPipeline(type.pipeline());
-			ScissorState scissor = RenderSystem.getScissorStateForRenderTypeDraws();
-			if (scissor.enabled()) {
-				pass.enableScissor(scissor.x(), scissor.y(), scissor.width(), scissor.height());
+		data.putInt(MAX_BONES * 64, light & 0xFFFF);
+		data.putInt(MAX_BONES * 64 + 4, (light >> 16) & 0xFFFF);
+		data.putInt(MAX_BONES * 64 + 8, 0);
+		data.putInt(MAX_BONES * 64 + 12, 0);
+		data.position(0).limit(BLOCK_SIZE);
+		GpuBufferSlice slice = bones.slice((long) slot * slotSize, BLOCK_SIZE);
+		slot = (slot + 1) % SLOTS;
+		device.createCommandEncoder().writeToBuffer(slice, data);
+		return slice;
+	}
+
+	/** Whether this prepared batch is a knife batch to draw from the GPU mesh instead of its (empty) vertices. */
+	public static boolean handles(PreparedRenderType batch) {
+		Pending pending = QUEUE.get(batch);
+		return pending != null && !pending.requests.isEmpty();
+	}
+
+	/** Draws every queued knife for this batch inside Minecraft's render pass. */
+	public static void draw(PreparedRenderType batch, RenderPass pass) {
+		Pending pending = QUEUE.remove(batch);
+		if (pending == null || pending.requests.isEmpty()) {
+			return;
+		}
+		try {
+			bind(batch, pass);
+			for (Request req : pending.requests) {
+				drawMesh(pass, req, false);
 			}
-			RenderSystem.bindDefaultUniforms(pass);
-			for (Map.Entry<String, RenderSetup.TextureAndSampler> e : textures.entrySet()) {
-				pass.bindTexture(e.getKey(), e.getValue().textureView(), e.getValue().sampler());
-			}
-			for (int r = 0; r < list.size(); r++) {
-				Request req = list.get(r);
-				GpuBuffer indices = req.blade ? req.mesh.bladeIndices : req.mesh.indices;
-				int count = req.blade ? req.mesh.bladeCount : req.mesh.indexCount;
-				if (indices == null || count == 0) {
+			for (Request req : pending.requests) {
+				if (req.blade == null) {
 					continue;
 				}
-				pass.setUniform("DynamicTransforms", transforms[r]);
-				pass.setUniform("KnifeBones", boneSlices[r]);
-				pass.setVertexBuffer(0, req.mesh.vertices);
-				pass.setIndexBuffer(indices, VertexFormat.IndexType.INT);
-				pass.drawIndexed(0, 0, count, 1);
+				bind(req.blade, pass);
+				drawMesh(pass, req, true);
 			}
 		} catch (RuntimeException e) {
-			if (!warned) {
-				warned = true;
-				Stray.LOGGER.warn("CS2 knives: GPU draw failed (further failures are not logged)", e);
-			}
+			warn(e);
 		}
 	}
 
+	private static void bind(PreparedRenderType batch, RenderPass pass) {
+		pass.setPipeline(RenderSystem.getCompiledPipeline(batch.pipeline()));
+		if (batch.scissorState().enabled()) {
+			pass.enableScissor(batch.scissorState().x(), batch.scissorState().y(), batch.scissorState().width(), batch.scissorState().height());
+		}
+		RenderSystem.bindDefaultUniforms(pass);
+		pass.setUniform("DynamicTransforms", batch.dynamicTransforms());
+		for (PreparedRenderType.Texture texture : batch.textures()) {
+			pass.setUniform(texture.name(), texture.textureView(), texture.sampler());
+		}
+	}
+
+	private static void drawMesh(RenderPass pass, Request req, boolean blade) {
+		GpuBuffer indices = blade ? req.mesh.bladeIndices : req.mesh.indices;
+		int count = blade ? req.mesh.bladeCount : req.mesh.indexCount;
+		if (indices == null || count == 0) {
+			return;
+		}
+		pass.setUniform("KnifeBones", req.bones);
+		pass.setVertexBuffer(0, req.mesh.vertices.slice());
+		pass.setIndexBuffer(indices, IndexType.INT);
+		pass.drawIndexed(count, 1, 0, 0, 0);
+	}
+
+	private static void warn(RuntimeException e) {
+		if (!warned) {
+			warned = true;
+			Stray.LOGGER.warn("CS2 knives: GPU draw failed (further failures are not logged)", e);
+		}
+	}
 }

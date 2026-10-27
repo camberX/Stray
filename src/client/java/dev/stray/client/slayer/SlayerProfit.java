@@ -112,7 +112,7 @@ public final class SlayerProfit {
 			return;
 		}
 		flushCost();
-		if (delta > 0 && delta < 100_000 && tracking() && net.minecraft.client.Minecraft.getInstance().screen == null) {
+		if (delta > 0 && delta < 100_000 && tracking() && net.minecraft.client.Minecraft.getInstance().gui.screen() == null) {
 			for (SlayerSettings.Profit p : targets()) {
 				p.mobCoins += delta;
 			}

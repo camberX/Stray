@@ -1,12 +1,12 @@
 package dev.stray.client.render;
 
-import com.mojang.blaze3d.pipeline.BlendFunction;
-import com.mojang.blaze3d.pipeline.ColorTargetState;
-import com.mojang.blaze3d.pipeline.RenderPipeline;
-import com.mojang.blaze3d.shaders.UniformType;
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.VertexConsumer;
-import com.mojang.blaze3d.vertex.VertexFormat;
+import com.mojang.renderpearl.api.pipeline.BlendFunction;
+import com.mojang.renderpearl.api.pipeline.ColorTargetState;
+import com.mojang.renderpearl.api.pipeline.PrimitiveTopology;
+import com.mojang.renderpearl.api.pipeline.RenderPipeline;
+import net.minecraft.client.renderer.BindGroupLayouts;
 import dev.stray.Stray;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.navigation.ScreenRectangle;
@@ -85,7 +85,7 @@ public final class RoundRect {
 	 */
 	public static void texture(GuiGraphicsExtractor g, net.minecraft.resources.Identifier id, float x, float y, float w, float h, int tl, int tr, int br, int bl) {
 		net.minecraft.client.renderer.texture.AbstractTexture tex = net.minecraft.client.Minecraft.getInstance().getTextureManager().getTexture(id);
-		com.mojang.blaze3d.textures.GpuTextureView view = tex == null ? null : tex.getTextureView();
+		com.mojang.renderpearl.api.textures.GpuTextureView view = tex == null ? null : tex.getTextureView();
 		if (view == null || w <= 0f || h <= 0f) {
 			return;
 		}
@@ -98,8 +98,8 @@ public final class RoundRect {
 				return;
 			}
 		}
-		com.mojang.blaze3d.textures.GpuSampler sampler = com.mojang.blaze3d.systems.RenderSystem.getSamplerCache()
-			.getClampToEdge(com.mojang.blaze3d.textures.FilterMode.LINEAR);
+		com.mojang.renderpearl.api.textures.GpuSampler sampler = com.mojang.blaze3d.systems.RenderSystem.getSamplerCache()
+			.getClampToEdge(com.mojang.renderpearl.api.textures.FilterMode.LINEAR);
 		g.guiRenderState.addGuiElement(new Textured(net.minecraft.client.renderer.RenderPipelines.GUI_TEXTURED, TextureSetup.singleTexture(view, sampler), pose, x, y, x + w, y + h, tl, tr, br, bl, scissor, bounds));
 	}
 
@@ -165,10 +165,11 @@ public final class RoundRect {
 			.withLocation(Stray.id("pipeline/gui_round_rect"))
 			.withVertexShader(Stray.id("core/gui_round_rect"))
 			.withFragmentShader(Stray.id("core/gui_round_rect"))
-			.withUniform("DynamicTransforms", UniformType.UNIFORM_BUFFER)
-			.withUniform("Projection", UniformType.UNIFORM_BUFFER)
+			.withBindGroupLayout(BindGroupLayouts.PROJECTION)
+			.withBindGroupLayout(BindGroupLayouts.DYNAMIC_TRANSFORMS)
+			.withVertexBinding(0, DefaultVertexFormat.POSITION_TEX_COLOR)
+			.withPrimitiveTopology(PrimitiveTopology.QUADS)
 			.withColorTargetState(new ColorTargetState(BlendFunction.TRANSLUCENT))
-			.withVertexFormat(DefaultVertexFormat.POSITION_TEX_COLOR, VertexFormat.Mode.QUADS)
 			.build();
 	}
 

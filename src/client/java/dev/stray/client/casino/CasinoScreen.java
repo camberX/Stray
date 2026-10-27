@@ -1696,7 +1696,7 @@ public final class CasinoScreen extends Screen {
 		for (int i = hits.size() - 1; i >= 0; i--) {
 			Hit h = hits.get(i);
 			if (mx >= h.x && mx < h.x + h.w && my >= h.y && my < h.y + h.h) {
-				Runnable r = event.button() == 1 ? h.right : h.left;
+				Runnable r = dev.stray.client.input.MouseButtons.right(event) ? h.right : h.left;
 				if (r != null) {
 					r.run();
 					return true;

@@ -129,11 +129,11 @@ public final class SlayerHudRenderer {
 
 	static void extract(GuiGraphicsExtractor graphics, DeltaTracker delta) {
 		Minecraft client = Minecraft.getInstance();
-		if (client.player == null || client.options.hideGui) {
+		if (client.player == null || client.gui.hud.isHidden()) {
 			return;
 		}
 		boolean editing = editor();
-		if (client.screen != null && !editing) {
+		if (client.gui.screen() != null && !editing) {
 			drawAlert(graphics, client.font);
 			return;
 		}

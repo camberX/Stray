@@ -72,7 +72,7 @@ public final class PickupLogRenderer {
 				if (gained > 0 && StrayConfig.get().pickupLogEnabled) {
 					add(row.getValue().stack, gained);
 				}
-				if (gained > 0 && client.screen == null) {
+				if (gained > 0 && client.gui.screen() == null) {
 					dev.stray.client.slayer.SlayerProfit.onItemGain(row.getValue().stack, gained);
 				}
 			}

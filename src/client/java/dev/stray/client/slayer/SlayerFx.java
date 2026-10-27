@@ -12,9 +12,10 @@ import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.decoration.ArmorStand;
-import net.minecraft.world.entity.monster.EnderMan;
+import net.minecraft.world.entity.monster.Enderman;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.component.ItemLore;
@@ -101,7 +102,7 @@ public final class SlayerFx {
 		if (s.voidgloom && s.voidHideParticles && "The End".equalsIgnoreCase(SkyblockLocation.area)
 			&& (type == ParticleTypes.LARGE_SMOKE || type == ParticleTypes.FLAME || type == ParticleTypes.WITCH)) {
 			Minecraft client = Minecraft.getInstance();
-			if (client.level != null && !client.level.getEntitiesOfClass(EnderMan.class, new AABB(x - 3, y - 3, z - 3, x + 3, y + 3, z + 3)).isEmpty()) {
+			if (client.level != null && !client.level.getEntitiesOfClass(Enderman.class, new AABB(x - 3, y - 3, z - 3, x + 3, y + 3, z + 3)).isEmpty()) {
 				return true;
 			}
 		}
@@ -130,7 +131,7 @@ public final class SlayerFx {
 		}
 		SlayerSettings s = settings();
 		EntityType<?> type = entity.getType();
-		if ((type == EntityType.FIREBALL || type == EntityType.SMALL_FIREBALL) && clearView()) {
+		if ((type == EntityTypes.FIREBALL || type == EntityTypes.SMALL_FIREBALL) && clearView()) {
 			return true;
 		}
 		if (!s.cleanup) {
@@ -157,7 +158,7 @@ public final class SlayerFx {
 			}
 			return false;
 		}
-		if (s.hideIrrelevant && type == EntityType.MAGMA_CUBE && SlayerApi.inCorrectArea()
+		if (s.hideIrrelevant && type == EntityTypes.MAGMA_CUBE && SlayerApi.inCorrectArea()
 			&& "Burning Desert".equals(SkyblockLocation.poi)) {
 			return true;
 		}

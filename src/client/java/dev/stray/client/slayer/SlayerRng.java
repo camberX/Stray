@@ -114,7 +114,7 @@ public final class SlayerRng {
 
 	/** Polls open menus for the selected RNG item. */
 	public static void tick(Minecraft client) {
-		if (!settings().rng || !(client.screen instanceof AbstractContainerScreen<?> screen)) {
+		if (!settings().rng || !(client.gui.screen() instanceof AbstractContainerScreen<?> screen)) {
 			return;
 		}
 		if (++scanTick % 10 != 0) {

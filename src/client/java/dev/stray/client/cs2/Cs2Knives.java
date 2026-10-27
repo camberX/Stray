@@ -422,7 +422,7 @@ public final class Cs2Knives {
 		if (!c.cs2KnifeEnabled) {
 			return;
 		}
-		boolean inspect = client.screen == null && dev.stray.client.StrayClient.menuKeyHeld(c.cs2InspectKey);
+		boolean inspect = client.gui.screen() == null && dev.stray.client.StrayClient.menuKeyHeld(c.cs2InspectKey);
 		if (inspect && !wasInspect) {
 			Cs2Viewmodel.inspect();
 		}

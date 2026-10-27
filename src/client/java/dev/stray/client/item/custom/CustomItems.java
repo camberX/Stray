@@ -419,7 +419,7 @@ public final class CustomItems {
 					flush(out, run, style);
 					if (format == ChatFormatting.RESET) {
 						style = base;
-					} else if (format.isColor()) {
+					} else if (format.ordinal() <= ChatFormatting.WHITE.ordinal()) {
 						// A color starts fresh, like vanilla: formats before it are cleared.
 						style = base.withColor(format);
 					} else {

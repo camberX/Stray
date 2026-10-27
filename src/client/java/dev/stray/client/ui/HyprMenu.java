@@ -526,7 +526,7 @@ public final class HyprMenu {
 		GuiDraw.roundedFine(graphics, floatX, groupY, closeW, groupH, half, Anim.fade(floatHot ? MaterialPalette.surfaceHigh : MaterialPalette.surfaceLow, t));
 		// HUD editor button (floating mode is under Click GUI settings).
 		glyph(graphics, font, HUD_EDIT, floatX + (closeW - 9f) * 0.5f, groupY, groupH, Anim.fade(floatHot ? MaterialPalette.onSurface : MaterialPalette.onSurfaceVariant, t));
-		screen.clickHit(floatX, groupY, closeW, groupH, () -> Minecraft.getInstance().setScreen(new HudEditorScreen()));
+		screen.clickHit(floatX, groupY, closeW, groupH, () -> Minecraft.getInstance().gui.setScreen(new HudEditorScreen()));
 	}
 
 	private static float tabWidth(Font font, String id, boolean withLabel) {
@@ -865,7 +865,7 @@ public final class HyprMenu {
 					UnloadState.markDirty();
 				}, null));
 				out.add(new Item("keys:edit", "Edit shortcuts", null, "Open", () ->
-					Minecraft.getInstance().setScreen(new CommandShortcutScreen(screen)), null));
+					Minecraft.getInstance().gui.setScreen(new CommandShortcutScreen(screen)), null));
 			}
 			return out;
 		}

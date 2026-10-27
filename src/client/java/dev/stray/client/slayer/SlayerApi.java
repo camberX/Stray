@@ -618,8 +618,8 @@ public final class SlayerApi {
 		Scoreboard scoreboard = client.level.getScoreboard();
 		Objective objective = scoreboard.getDisplayObjective(DisplaySlot.SIDEBAR);
 		PlayerTeam own = scoreboard.getPlayersTeam(client.player.getScoreboardName());
-		if (own != null && own.getColor().isColor()) {
-			DisplaySlot slot = DisplaySlot.teamColorToSlot(own.getColor());
+		if (own != null && own.getColor().isPresent()) {
+			DisplaySlot slot = own.getColor().get().displaySlot();
 			if (slot != null && scoreboard.getDisplayObjective(slot) != null) {
 				objective = scoreboard.getDisplayObjective(slot);
 			}

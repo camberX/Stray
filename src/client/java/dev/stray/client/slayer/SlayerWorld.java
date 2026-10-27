@@ -23,7 +23,7 @@ import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.decoration.ArmorStand;
 import net.minecraft.world.entity.item.ItemEntity;
-import net.minecraft.world.entity.monster.EnderMan;
+import net.minecraft.world.entity.monster.Enderman;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.SpawnEggItem;
 import net.minecraft.world.level.ClipContext;
@@ -386,7 +386,7 @@ public final class SlayerWorld {
 			boolean beaconAny = s.beaconHighlight || s.beaconWarning || s.beaconLine;
 			java.util.Set<Integer> seenFlying = new java.util.HashSet<>();
 			for (Entity entity : nearby) {
-				if (beaconAny && entity instanceof EnderMan man && s.beaconHighlight) {
+				if (beaconAny && entity instanceof Enderman man && s.beaconHighlight) {
 					BlockState carried = man.getCarriedBlock();
 					if (carried != null && carried.is(Blocks.BEACON) && man.distanceTo(client.player) < 15) {
 						nextGlow.put(man.getId(), 0xFF000000 | s.beaconRgb);
@@ -676,7 +676,7 @@ public final class SlayerWorld {
 				net.minecraft.gizmos.Gizmos.cuboid(box, net.minecraft.gizmos.GizmoStyle.strokeAndFill(edge, 2.0f, (alpha << 24) | fill.rgb)).setAlwaysOnTop();
 			}
 		}
-		Vec3 camera = client.gameRenderer.getMainCamera().position();
+		Vec3 camera = client.gameRenderer.mainCamera().position();
 		Vec3 look = client.player.getViewVector(partial);
 		Vec3 eye = camera.add(look.scale(0.4));
 		float width = Math.max(1, Math.min(10, settings().lineWidth));
@@ -703,7 +703,7 @@ public final class SlayerWorld {
 		List<Fill> boxes = texts;
 		if (!boxes.isEmpty()) {
 			Minecraft client = Minecraft.getInstance();
-			if (client.player != null && client.font != null && !client.options.hideGui && client.gameRenderer.getMainCamera().isInitialized()) {
+			if (client.player != null && client.font != null && !client.gui.hud.isHidden() && client.gameRenderer.mainCamera().isInitialized()) {
 				float partial = client.getDeltaTracker().getGameTimeDeltaPartialTick(true);
 				List<Label> moving = new ArrayList<>(current);
 				for (Fill fill : boxes) {
@@ -720,12 +720,12 @@ public final class SlayerWorld {
 			return;
 		}
 		Minecraft client = Minecraft.getInstance();
-		if (client.player == null || client.level == null || client.font == null || client.options.hideGui
-			|| !client.gameRenderer.getMainCamera().isInitialized()) {
+		if (client.player == null || client.level == null || client.font == null || client.gui.hud.isHidden()
+			|| !client.gameRenderer.mainCamera().isInitialized()) {
 			return;
 		}
-		Vec3 camera = client.gameRenderer.getMainCamera().position();
-		Vector3fc forward = client.gameRenderer.getMainCamera().forwardVector();
+		Vec3 camera = client.gameRenderer.mainCamera().position();
+		Vector3fc forward = client.gameRenderer.mainCamera().forwardVector();
 		Font font = client.font;
 		for (Label label : current) {
 			Vec3 rel = label.at.subtract(camera);

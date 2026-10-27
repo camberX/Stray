@@ -468,7 +468,7 @@ public final class GuiDraw {
 	}
 
 	private static final Identifier WHITE = Stray.id("textures/gui/white.png");
-	private static com.mojang.blaze3d.pipeline.RenderPipeline sdfPipeline;
+	private static com.mojang.renderpearl.api.pipeline.RenderPipeline sdfPipeline;
 	/** Added to u for 1px rings (outlines) in gui_sdf_corner. */
 	private static final float RING_U = 4f;
 
@@ -483,7 +483,7 @@ public final class GuiDraw {
 		}
 		Minecraft client = Minecraft.getInstance();
 		net.minecraft.client.renderer.texture.AbstractTexture texture = client.getTextureManager().getTexture(WHITE);
-		com.mojang.blaze3d.textures.GpuTextureView view = texture == null ? null : texture.getTextureView();
+		com.mojang.renderpearl.api.textures.GpuTextureView view = texture == null ? null : texture.getTextureView();
 		if (view == null) {
 			return false;
 		}
@@ -505,8 +505,8 @@ public final class GuiDraw {
 			u0 += RING_U;
 			u1 += RING_U;
 		}
-		com.mojang.blaze3d.textures.GpuSampler sampler = com.mojang.blaze3d.systems.RenderSystem.getSamplerCache()
-			.getClampToEdge(com.mojang.blaze3d.textures.FilterMode.NEAREST);
+		com.mojang.renderpearl.api.textures.GpuSampler sampler = com.mojang.blaze3d.systems.RenderSystem.getSamplerCache()
+			.getClampToEdge(com.mojang.renderpearl.api.textures.FilterMode.NEAREST);
 		graphics.pose().pushMatrix();
 		graphics.pose().translate(x, y);
 		graphics.pose().scale(radius, radius);
@@ -515,7 +515,7 @@ public final class GuiDraw {
 		return true;
 	}
 
-	private static com.mojang.blaze3d.pipeline.RenderPipeline coverPipeline;
+	private static com.mojang.renderpearl.api.pipeline.RenderPipeline coverPipeline;
 
 	/**
 	 * Album art: supersampled and masked to a rounded square in the shader, so
@@ -527,15 +527,15 @@ public final class GuiDraw {
 		}
 		Minecraft client = Minecraft.getInstance();
 		net.minecraft.client.renderer.texture.AbstractTexture texture = client.getTextureManager().getTexture(id);
-		com.mojang.blaze3d.textures.GpuTextureView view = texture == null ? null : texture.getTextureView();
+		com.mojang.renderpearl.api.textures.GpuTextureView view = texture == null ? null : texture.getTextureView();
 		if (view == null) {
 			return false;
 		}
 		ensureCoverPipeline();
 		int r = Math.round(Mth.clamp(radius / size, 0f, 0.5f) * 255f);
 		int color = 0xFF000000 | (r << 16);
-		com.mojang.blaze3d.textures.GpuSampler sampler = com.mojang.blaze3d.systems.RenderSystem.getSamplerCache()
-			.getClampToEdge(com.mojang.blaze3d.textures.FilterMode.LINEAR);
+		com.mojang.renderpearl.api.textures.GpuSampler sampler = com.mojang.blaze3d.systems.RenderSystem.getSamplerCache()
+			.getClampToEdge(com.mojang.renderpearl.api.textures.FilterMode.LINEAR);
 		graphics.pose().pushMatrix();
 		graphics.pose().translate(x, y);
 		graphics.pose().scale(size, size);
@@ -549,16 +549,7 @@ public final class GuiDraw {
 			return;
 		}
 		Identifier shader = Stray.id("core/gui_cover_blit");
-		coverPipeline = com.mojang.blaze3d.pipeline.RenderPipeline.builder()
-			.withLocation(Stray.id("pipeline/gui_cover_blit"))
-			.withVertexShader(shader)
-			.withFragmentShader(shader)
-			.withSampler("Sampler0")
-			.withUniform("DynamicTransforms", com.mojang.blaze3d.shaders.UniformType.UNIFORM_BUFFER)
-			.withUniform("Projection", com.mojang.blaze3d.shaders.UniformType.UNIFORM_BUFFER)
-			.withColorTargetState(new com.mojang.blaze3d.pipeline.ColorTargetState(com.mojang.blaze3d.pipeline.BlendFunction.TRANSLUCENT))
-			.withVertexFormat(com.mojang.blaze3d.vertex.DefaultVertexFormat.POSITION_TEX_COLOR, com.mojang.blaze3d.vertex.VertexFormat.Mode.QUADS)
-			.build();
+		coverPipeline = RenderCompat.guiBlit(Stray.id("pipeline/gui_cover_blit"), shader, com.mojang.renderpearl.api.pipeline.BlendFunction.TRANSLUCENT).build();
 	}
 
 	private static synchronized void ensureSdfPipeline() {
@@ -566,16 +557,7 @@ public final class GuiDraw {
 			return;
 		}
 		Identifier shader = Stray.id("core/gui_sdf_corner");
-		sdfPipeline = com.mojang.blaze3d.pipeline.RenderPipeline.builder()
-			.withLocation(Stray.id("pipeline/gui_sdf_corner"))
-			.withVertexShader(shader)
-			.withFragmentShader(shader)
-			.withSampler("Sampler0")
-			.withUniform("DynamicTransforms", com.mojang.blaze3d.shaders.UniformType.UNIFORM_BUFFER)
-			.withUniform("Projection", com.mojang.blaze3d.shaders.UniformType.UNIFORM_BUFFER)
-			.withColorTargetState(new com.mojang.blaze3d.pipeline.ColorTargetState(com.mojang.blaze3d.pipeline.BlendFunction.TRANSLUCENT))
-			.withVertexFormat(com.mojang.blaze3d.vertex.DefaultVertexFormat.POSITION_TEX_COLOR, com.mojang.blaze3d.vertex.VertexFormat.Mode.QUADS)
-			.build();
+		sdfPipeline = RenderCompat.guiBlit(Stray.id("pipeline/gui_sdf_corner"), shader, com.mojang.renderpearl.api.pipeline.BlendFunction.TRANSLUCENT).build();
 	}
 
 	/** One screen pixel, in GUI units. */
@@ -625,7 +607,7 @@ public final class GuiDraw {
 		}
 		Minecraft client = Minecraft.getInstance();
 		net.minecraft.client.renderer.texture.AbstractTexture texture = client.getTextureManager().getTexture(WHITE);
-		com.mojang.blaze3d.textures.GpuTextureView view = texture == null ? null : texture.getTextureView();
+		com.mojang.renderpearl.api.textures.GpuTextureView view = texture == null ? null : texture.getTextureView();
 		if (view == null) {
 			return;
 		}
@@ -642,8 +624,8 @@ public final class GuiDraw {
 		}
 		u0 += RING_U;
 		u1 += RING_U;
-		com.mojang.blaze3d.textures.GpuSampler sampler = com.mojang.blaze3d.systems.RenderSystem.getSamplerCache()
-			.getClampToEdge(com.mojang.blaze3d.textures.FilterMode.NEAREST);
+		com.mojang.renderpearl.api.textures.GpuSampler sampler = com.mojang.blaze3d.systems.RenderSystem.getSamplerCache()
+			.getClampToEdge(com.mojang.renderpearl.api.textures.FilterMode.NEAREST);
 		graphics.pose().pushMatrix();
 		graphics.pose().translate(x, y);
 		graphics.pose().scale(w, h);
