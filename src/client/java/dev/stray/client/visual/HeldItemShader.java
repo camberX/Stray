@@ -14,6 +14,10 @@ import com.mojang.renderpearl.api.commands.RenderPass;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.renderpearl.api.textures.FilterMode;
 import com.mojang.renderpearl.api.textures.GpuSampler;
+import com.mojang.renderpearl.api.textures.GpuTexture;
+import com.mojang.renderpearl.backend.opengl.GlStateManager;
+import com.mojang.renderpearl.frontend.FrontendCommandEncoder;
+import org.lwjgl.opengl.GL11;
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.QuadInstance;
@@ -462,8 +466,35 @@ public final class HeldItemShader {
 		if (main == null || maskTarget == null || main.getDepthTexture() == null || maskTarget.getDepthTexture() == null) {
 			return;
 		}
-		maskTarget.copyDepthFrom(main);
+		copyDepth(main.getDepthTexture(), maskTarget.getDepthTexture(), maskTarget.width, maskTarget.height);
 		playerMaskDepthReady = true;
+	}
+
+	/**
+	 * World depth has to be snapshotted after opaque terrain and before solid
+	 * entities, while the main pass is still open. The frontend encoder refuses
+	 * copies in that state. The OpenGL blit uses its own framebuffers, so it can
+	 * run here; the pass scissor is put back before the next draw.
+	 */
+	private static void copyDepth(GpuTexture source, GpuTexture destination, int width, int height) {
+		CommandEncoder encoder = RenderSystem.getDevice().createCommandEncoder();
+		if (!(encoder instanceof FrontendCommandEncoder frontend) || !frontend.isInRenderPass()) {
+			encoder.copyTextureToTexture(source, destination, 0, 0, 0, 0, 0, width, height);
+			return;
+		}
+		boolean scissor = GL11.glIsEnabled(GL11.GL_SCISSOR_TEST);
+		int[] box = new int[4];
+		if (scissor) {
+			GL11.glGetIntegerv(GL11.GL_SCISSOR_BOX, box);
+		}
+		try {
+			frontend.backend().copyTextureToTexture(source, destination, 0, 0, 0, 0, 0, width, height);
+		} finally {
+			if (scissor) {
+				GlStateManager._enableScissorTest();
+				GlStateManager._scissorBox(box[0], box[1], box[2], box[3]);
+			}
+		}
 	}
 
 	private static boolean prepareMaskTarget() {
