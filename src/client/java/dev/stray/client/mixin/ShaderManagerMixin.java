@@ -23,11 +23,6 @@ public class ShaderManagerMixin {
 		if (!(source instanceof String text)) {
 			return source;
 		}
-		// 26.3 compiles shaders as Vulkan SPIR-V. Sodium still writes the chunk
-		// offset with pushConstants, so the loose-uniform branch never gets a buffer.
-		if (text.contains("#ifdef VULKAN") && !text.contains("#define VULKAN")) {
-			text = text.replace("#ifdef VULKAN", "#define VULKAN 1\n#ifdef VULKAN");
-		}
 		text = FocusMode.patchVanilla(TopDownTerrainCut.patchSource(text));
 		text = FocusMode.patchSodiumVertex(TopDownTerrainCut.patchSodiumVertex(text));
 		text = TopDownTerrainCut.patchSodiumFragment(FocusMode.patchSodiumFragment(text));
