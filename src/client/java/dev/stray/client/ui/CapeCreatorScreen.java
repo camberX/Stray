@@ -3,6 +3,7 @@ package dev.stray.client.ui;
 import com.mojang.blaze3d.platform.InputConstants;
 import com.mojang.blaze3d.platform.NativeImage;
 import dev.stray.Stray;
+import dev.stray.client.input.MouseButtons;
 import dev.stray.client.render.GuiDraw;
 import dev.stray.client.visual.CapeCrop;
 import dev.stray.client.visual.CustomCape;
@@ -194,7 +195,7 @@ public class CapeCreatorScreen extends Screen {
 
 	@Override
 	public boolean mouseClicked(MouseButtonEvent event, boolean doubled) {
-		if (event.button() != 0 || !ready) {
+		if (!MouseButtons.left(event) || !ready) {
 			return super.mouseClicked(event, doubled);
 		}
 		double mx = event.x();
@@ -220,12 +221,12 @@ public class CapeCreatorScreen extends Screen {
 
 	@Override
 	public boolean mouseDragged(MouseButtonEvent event, double dx, double dy) {
-		if (event.button() == 0 && draggingWindow) {
+		if (MouseButtons.left(event) && draggingWindow) {
 			windowX = (float) (event.x() - dragOffX);
 			windowY = (float) (event.y() - dragOffY);
 			return true;
 		}
-		if (event.button() == 0 && panning && crop != null && imgW > 1f && imgH > 1f) {
+		if (MouseButtons.left(event) && panning && crop != null && imgW > 1f && imgH > 1f) {
 			crop.pan((float) (dx / imgW), (float) (dy / imgH), srcW, srcH);
 			return true;
 		}

@@ -1,6 +1,7 @@
 package dev.stray.client.render;
 
 import dev.stray.client.config.StrayConfig;
+import dev.stray.client.input.MouseButtons;
 import dev.stray.client.farming.GardenHud;
 import dev.stray.client.farming.GardenHud.ContestSnap;
 import dev.stray.client.farming.GardenHud.HoeSnap;
@@ -72,7 +73,7 @@ public final class GardenHudRenderer {
 	}
 
 	public static boolean mouseClicked(MouseButtonEvent event) {
-		if (event.button() != 0 || !StrayConfig.get().gardenShoppingHudEnabled) {
+		if (!MouseButtons.left(event) || !StrayConfig.get().gardenShoppingHudEnabled) {
 			return false;
 		}
 		Minecraft client = Minecraft.getInstance();

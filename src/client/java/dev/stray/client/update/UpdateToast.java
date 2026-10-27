@@ -115,7 +115,7 @@ public final class UpdateToast {
 	}
 
 	public static boolean mouseClicked(MouseButtonEvent event) {
-		if (event.button() != 0) {
+		if (!MouseButtons.left(event)) {
 			return false;
 		}
 		return click(event.x(), event.y());

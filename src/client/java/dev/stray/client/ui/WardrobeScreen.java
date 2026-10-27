@@ -2,6 +2,7 @@ package dev.stray.client.ui;
 
 import dev.stray.client.StrayClient;
 import dev.stray.client.config.StrayConfig;
+import dev.stray.client.input.MouseButtons;
 import dev.stray.client.item.WardrobeMenus;
 import dev.stray.client.mixin.AbstractContainerScreenInvoker;
 import dev.stray.client.render.GuiDraw;
@@ -625,19 +626,19 @@ public class WardrobeScreen extends Screen {
 				continue;
 			}
 			if (hit.close) {
-				if (event.button() == 0) {
+				if (MouseButtons.left(event)) {
 					onClose();
 				}
 				return true;
 			}
 			if (hit.vanillaMenu) {
-				if (event.button() == 0) {
+				if (MouseButtons.left(event)) {
 					showVanillaMenu();
 				}
 				return true;
 			}
-			if (hit.slot >= 0 && (event.button() == 0 || event.button() == 1)) {
-				clickSlot(hit.slot, event.button());
+			if (hit.slot >= 0 && (MouseButtons.left(event) || MouseButtons.right(event))) {
+				clickSlot(hit.slot, MouseButtons.containerButton(event));
 				return true;
 			}
 			return true;
