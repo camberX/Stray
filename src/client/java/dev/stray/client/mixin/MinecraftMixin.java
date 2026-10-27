@@ -1,7 +1,6 @@
 package dev.stray.client.mixin;
 
 import dev.stray.client.combat.MageBeamHits;
-import dev.stray.client.combat.Triggerbot;
 import dev.stray.client.movement.AotvSim;
 import dev.stray.client.movement.MovementRings;
 import dev.stray.client.render.BlockMarks;
@@ -24,13 +23,12 @@ public class MinecraftMixin {
 	 * packet is sent.
 	 */
 	@Inject(method = "handleKeybinds", at = @At("HEAD"))
-	private void stray$triggerbot(CallbackInfo ci) {
+	private void stray$preKeybinds(CallbackInfo ci) {
 		Minecraft client = (Minecraft) (Object) this;
 		LoadoutSwap.preKeybinds(client);
 		EmptyVacuum.preKeybinds(client);
 		GreatExplorer.preKeybinds(client);
 		MovementRings.preKeybinds(client);
-		Triggerbot.tick(client);
 		MageBeamHits.onAttack(client);
 	}
 

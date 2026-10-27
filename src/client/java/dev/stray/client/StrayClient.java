@@ -12,7 +12,6 @@ import dev.stray.client.combat.AutoRogue;
 import dev.stray.client.combat.Hitmarker;
 import dev.stray.client.combat.Hitsound;
 import dev.stray.client.combat.OdinClicks;
-import dev.stray.client.combat.Triggerbot;
 import dev.stray.client.debug.StrayDebug;
 import dev.stray.client.dungeon.PartyFinderStats;
 import dev.stray.client.farming.AutoDna;
@@ -489,7 +488,6 @@ public final class StrayClient implements ClientModInitializer {
 			StarMobEsp.reset();
 			Hitsound.reset();
 			Hitmarker.reset();
-			Triggerbot.reset();
 			AutoClicker.reset();
 			AutoExperiments.reset();
 			AutoDna.reset();
@@ -518,7 +516,6 @@ public final class StrayClient implements ClientModInitializer {
 			SkyblockLocation.reset();
 			Hitsound.reset();
 			Hitmarker.reset();
-			Triggerbot.reset();
 			AutoClicker.reset();
 			AutoExperiments.reset();
 			AutoDna.reset();
