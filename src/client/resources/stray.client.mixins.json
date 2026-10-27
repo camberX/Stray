@@ -98,7 +98,8 @@
 		"customize.PlayerHeadSpecialRendererMixin",
 		"customize.TrimMaterialPropertyMixin",
 		"customize.ItemModelOverrideMixin",
-		"DynamicUniformsMixin"
+		"DynamicUniformsMixin",
+		"VulkanCommandEncoderMixin"
 	],
 	"injectors": {
 		"defaultRequire": 1
