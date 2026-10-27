@@ -74,6 +74,7 @@
 		"RenderSetupAccessor",
 		"RenderSetupTextureBindingAccessor",
 		"RenderTypeAccessor",
+		"RenderTypeFeatureRendererInvoker",
 		"RenderTypeFeatureRendererMixin",
 		"RenderTypeMixin",
 		"SubmitNodeCollectionMixin",
