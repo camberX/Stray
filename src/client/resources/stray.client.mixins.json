@@ -95,7 +95,8 @@
 		"customize.ItemModelOverrideMixin",
 		"RenderPipelineBuilderMixin",
 		"RenderPassMixin",
-		"DynamicUniformsMixin"
+		"DynamicUniformsMixin",
+		"VulkanCommandEncoderMixin"
 	],
 	"injectors": {
 		"defaultRequire": 1
