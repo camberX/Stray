@@ -35,7 +35,7 @@ public final class JacobContestHudRenderer {
 
 	static void extract(GuiGraphicsExtractor graphics, DeltaTracker deltaTracker) {
 		Minecraft client = Minecraft.getInstance();
-		if (client.player == null || client.options.hideGui || !StrayConfig.get().jacobContestHudEnabled) {
+		if (client.player == null || client.gui.hud.isHidden() || !StrayConfig.get().jacobContestHudEnabled) {
 			return;
 		}
 		JacobContestTracker.Snapshot snap = JacobContestTracker.snapshot();

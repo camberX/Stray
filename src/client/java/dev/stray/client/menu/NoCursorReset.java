@@ -15,7 +15,7 @@ public final class NoCursorReset {
 	}
 
 	public static void tick(Minecraft client) {
-		if (client.screen != null) {
+		if (client.gui.screen() != null) {
 			wasNotNull = true;
 			clock = System.currentTimeMillis();
 		} else if (wasNotNull) {

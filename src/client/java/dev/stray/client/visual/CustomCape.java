@@ -279,8 +279,8 @@ public final class CustomCape {
 						loadPath(path, true);
 						return;
 					}
-					Screen parent = Minecraft.getInstance().screen;
-					Minecraft.getInstance().setScreen(new CapeCreatorScreen(parent, bytes));
+					Screen parent = Minecraft.getInstance().gui.screen();
+					Minecraft.getInstance().gui.setScreen(new CapeCreatorScreen(parent, bytes));
 				});
 			} catch (Exception exception) {
 				failOn(generation, "Can't read file");
@@ -290,7 +290,7 @@ public final class CustomCape {
 
 	private static void restoreMouse() {
 		Minecraft client = Minecraft.getInstance();
-		if (client.screen == null) {
+		if (client.gui.screen() == null) {
 			try {
 				client.mouseHandler.grabMouse();
 			} catch (Exception ignored) {
@@ -499,8 +499,8 @@ public final class CustomCape {
 			if (gen != generation) {
 				return;
 			}
-			Screen parent = Minecraft.getInstance().screen;
-			Minecraft.getInstance().setScreen(new CapeCreatorScreen(parent, bytes));
+			Screen parent = Minecraft.getInstance().gui.screen();
+			Minecraft.getInstance().gui.setScreen(new CapeCreatorScreen(parent, bytes));
 		});
 		return true;
 	}

@@ -29,7 +29,7 @@ public final class AutoClicker {
 		if (!config.autoClickerEnabled) {
 			return;
 		}
-		if (client.screen != null) {
+		if (client.gui.screen() != null) {
 			return;
 		}
 		LocalPlayer player = client.player;

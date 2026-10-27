@@ -115,7 +115,7 @@ public final class StashChat {
 		reentry = true;
 		try {
 			for (Component line : held) {
-				client.gui.getChat().addClientSystemMessage(line);
+				client.gui.hud.getChat().addClientSystemMessage(line);
 			}
 		} finally {
 			reentry = false;
@@ -188,7 +188,7 @@ public final class StashChat {
 		}
 		reentry = true;
 		try {
-			client.gui.getChat().addClientSystemMessage(blank);
+			client.gui.hud.getChat().addClientSystemMessage(blank);
 		} finally {
 			reentry = false;
 		}
@@ -199,7 +199,7 @@ public final class StashChat {
 		if (client == null || client.gui == null) {
 			return;
 		}
-		ChatComponentAccessor access = (ChatComponentAccessor) client.gui.getChat();
+		ChatComponentAccessor access = (ChatComponentAccessor) client.gui.hud.getChat();
 		List<GuiMessage> all = access.stray$allMessages();
 		if (all == null || all.isEmpty()) {
 			return;

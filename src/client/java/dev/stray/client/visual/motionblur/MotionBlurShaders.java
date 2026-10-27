@@ -1,12 +1,11 @@
 package dev.stray.client.visual.motionblur;
 
-import com.mojang.blaze3d.buffers.GpuBuffer;
+import com.mojang.renderpearl.api.buffers.GpuBuffer;
 import com.mojang.blaze3d.resource.GraphicsResourceAllocator;
 import dev.stray.Stray;
 import dev.stray.client.config.StrayConfig;
 import dev.stray.client.mixin.PostChainAccessor;
 import dev.stray.client.mixin.PostPassAccessor;
-import dev.stray.client.mixin.ShaderManagerAccessor;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.LevelTargetBundle;
 import net.minecraft.client.renderer.PostChain;
@@ -153,8 +152,8 @@ public final class MotionBlurShaders {
 		}
 
 		BlurStrengthCalculator.Result blur = velocityBlur(config);
-		float viewW = client.getMainRenderTarget().width;
-		float viewH = client.getMainRenderTarget().height;
+		float viewW = client.gameRenderer.mainRenderTarget().width;
+		float viewH = client.gameRenderer.mainRenderTarget().height;
 		int algo = config.motionBlurAlgorithm().ordinal();
 		switch (pass) {
 			case NORMAL_PRE -> {
@@ -210,32 +209,15 @@ public final class MotionBlurShaders {
 	}
 
 	static PostChain loadProcessor(Minecraft client, String shaderName) {
-		try {
-			net.minecraft.client.renderer.ShaderManager.CompilationCache cache =
-				((ShaderManagerAccessor) client.getShaderManager()).getCompilationCache();
-			if (cache == null) {
-				return null;
-			}
-			PostChain chain = cache.getOrLoadPostChain(Stray.id(shaderName), LevelTargetBundle.MAIN_TARGETS);
-			LOAD_ERRORS.remove(shaderName);
-			return chain;
-		} catch (Exception e) {
-			if (LOAD_ERRORS.add(shaderName)) {
-				Stray.LOGGER.warn("Failed to load motion blur shader {}", shaderName, e);
-			}
-			return null;
-		}
+		return loadProcessor(client, Stray.id(shaderName), shaderName);
 	}
 
 	static PostChain loadProcessor(Minecraft client, Identifier id, String shaderName) {
 		try {
-			net.minecraft.client.renderer.ShaderManager.CompilationCache cache =
-				((ShaderManagerAccessor) client.getShaderManager()).getCompilationCache();
-			if (cache == null) {
-				return null;
+			PostChain chain = client.getShaderManager().getPostChain(id, LevelTargetBundle.MAIN_TARGETS);
+			if (chain != null) {
+				LOAD_ERRORS.remove(shaderName);
 			}
-			PostChain chain = cache.getOrLoadPostChain(id, LevelTargetBundle.MAIN_TARGETS);
-			LOAD_ERRORS.remove(shaderName);
 			return chain;
 		} catch (Exception e) {
 			if (LOAD_ERRORS.add(shaderName)) {
@@ -278,7 +260,7 @@ public final class MotionBlurShaders {
 				builder.putInt(blurAlgorithm);
 				builder.putInt(1);
 			});
-			processor.process(client.getMainRenderTarget(), frameAllocator);
+			processor.process(client.gameRenderer.mainRenderTarget(), frameAllocator);
 		} catch (RuntimeException e) {
 			if (managed.resetIfClosed(e)) {
 				return;

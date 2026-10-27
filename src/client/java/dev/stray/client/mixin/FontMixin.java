@@ -17,7 +17,7 @@ public class FontMixin {
 
 	/**
 	 * Nametag backgrounds and centering are measured here before the text is
-	 * swapped in drawInBatch, so measure the same rewritten component.
+	 * prepared, so measure the same rewritten component.
 	 */
 	@ModifyVariable(method = "width(Lnet/minecraft/network/chat/FormattedText;)I", at = @At("HEAD"), argsOnly = true, ordinal = 0)
 	private FormattedText stray$nickWidthText(FormattedText text) {
@@ -28,22 +28,12 @@ public class FontMixin {
 	}
 
 	@ModifyVariable(
-		method = "drawInBatch(Ljava/lang/String;FFIZLorg/joml/Matrix4fc;Lnet/minecraft/client/renderer/MultiBufferSource;Lnet/minecraft/client/gui/Font$DisplayMode;II)V",
+		method = "prepareText(Ljava/lang/String;FFIZI)Lnet/minecraft/client/gui/Font$PreparedText;",
 		at = @At("HEAD"),
 		argsOnly = true,
 		ordinal = 0
 	)
-	private String stray$nickDrawString(String text) {
-		return NickHider.rewrite(text);
-	}
-
-	@ModifyVariable(
-		method = "drawInBatch(Lnet/minecraft/network/chat/Component;FFIZLorg/joml/Matrix4fc;Lnet/minecraft/client/renderer/MultiBufferSource;Lnet/minecraft/client/gui/Font$DisplayMode;II)V",
-		at = @At("HEAD"),
-		argsOnly = true,
-		ordinal = 0
-	)
-	private Component stray$nickDrawComponent(Component text) {
+	private String stray$nickPrepare(String text) {
 		return NickHider.rewrite(text);
 	}
 }

@@ -5,7 +5,7 @@ import dev.stray.client.ui.Theme;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.Gui;
+import net.minecraft.client.gui.Hud;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.renderer.RenderPipelines;
@@ -110,7 +110,7 @@ public final class EffectsHudRenderer {
 		graphics.pose().pushMatrix();
 		graphics.pose().translate(x + 6, y + 2);
 		graphics.pose().scale(ICON / 18f, ICON / 18f);
-		graphics.blitSprite(RenderPipelines.GUI_TEXTURED, Gui.getMobEffectSprite(chip.instance.getEffect()), 0, 0, 18, 18);
+		graphics.blitSprite(RenderPipelines.GUI_TEXTURED, Hud.getMobEffectSprite(chip.instance.getEffect()), 0, 0, 18, 18);
 		graphics.pose().popMatrix();
 		float tx = x + 6 + ICON + 3;
 		GuiDraw.hud(graphics, font, chip.name, tx, y + 3, 0xFFFFFFFF);

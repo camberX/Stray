@@ -1,69 +1,37 @@
 package dev.stray.client.mixin;
 
+import com.mojang.renderpearl.api.buffers.GpuBufferSlice;
+import com.mojang.renderpearl.api.pipeline.RenderPipeline;
 import dev.stray.client.visual.HeldItemShader;
+import net.minecraft.client.renderer.DynamicGpuData;
 import net.minecraft.client.renderer.rendertype.RenderType;
-import org.joml.Vector3fc;
-import org.joml.Vector4fc;
-import org.spongepowered.asm.mixin.Final;
+import org.joml.Matrix4f;
+import org.joml.Vector3f;
+import org.joml.Vector4f;
 import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Shadow;
-import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.ModifyArg;
+import org.spongepowered.asm.mixin.injection.Redirect;
 
 @Mixin(RenderType.class)
 public class RenderTypeMixin {
-	@Shadow
-	@Final
-	private net.minecraft.client.renderer.rendertype.RenderSetup state;
-
-	/** CS2 knives: draw the knife from its GPU mesh instead of the batch's placeholder triangle. */
-	@Inject(method = "draw", at = @At("HEAD"), cancellable = true)
-	private void stray$cs2KnifeDraw(com.mojang.blaze3d.vertex.MeshData mesh, CallbackInfo ci) {
-		RenderType self = (RenderType) (Object) this;
-		if (dev.stray.client.cs2.render.KnifeGpu.handles(self)) {
-			try {
-				dev.stray.client.cs2.render.KnifeGpu.draw(self, state);
-			} finally {
-				mesh.close();
-			}
-			ci.cancel();
-		}
-	}
-
-	@ModifyArg(
-		method = "draw",
+	@Redirect(
+		method = "writeDynamicTransforms",
 		at = @At(
 			value = "INVOKE",
-			target = "Lnet/minecraft/client/renderer/DynamicUniforms;writeTransform(Lorg/joml/Matrix4fc;Lorg/joml/Vector4fc;Lorg/joml/Vector3fc;Lorg/joml/Matrix4fc;)Lcom/mojang/blaze3d/buffers/GpuBufferSlice;"
-		),
-		index = 1
+			target = "Lnet/minecraft/client/renderer/DynamicGpuData;writeTransform(Lorg/joml/Matrix4f;Lorg/joml/Matrix4f;)Lcom/mojang/renderpearl/api/buffers/GpuBufferSlice;"
+		)
 	)
-	private Vector4fc stray$heldItemColor(Vector4fc color) {
-		var pipeline = ((RenderType) (Object) this).pipeline();
-		if (HeldItemShader.isMaskPipeline(pipeline)) {
-			return HeldItemShader.outlineColorModulator();
-		}
-		if (HeldItemShader.isFillPipeline(pipeline)) {
-			return HeldItemShader.colorModulator(pipeline);
-		}
-		return color;
-	}
-
-	@ModifyArg(
-		method = "draw",
-		at = @At(
-			value = "INVOKE",
-			target = "Lnet/minecraft/client/renderer/DynamicUniforms;writeTransform(Lorg/joml/Matrix4fc;Lorg/joml/Vector4fc;Lorg/joml/Vector3fc;Lorg/joml/Matrix4fc;)Lcom/mojang/blaze3d/buffers/GpuBufferSlice;"
-		),
-		index = 2
-	)
-	private Vector3fc stray$heldItemOffset(Vector3fc offset) {
-		var pipeline = ((RenderType) (Object) this).pipeline();
+	private GpuBufferSlice stray$heldItemTransform(DynamicGpuData uniforms, Matrix4f modelView, Matrix4f texture) {
+		RenderPipeline pipeline = ((RenderType) (Object) this).pipeline();
 		if (!HeldItemShader.isPipeline(pipeline)) {
-			return offset;
+			return uniforms.writeTransform(modelView, texture);
 		}
-		return HeldItemShader.modelOffset(pipeline);
+		Vector4f color = new Vector4f(
+			HeldItemShader.isMaskPipeline(pipeline)
+				? HeldItemShader.outlineColorModulator()
+				: HeldItemShader.colorModulator(pipeline)
+		);
+		Vector3f offset = new Vector3f(HeldItemShader.modelOffset(pipeline));
+		return uniforms.writeTransform(modelView, color, offset, texture);
 	}
 }

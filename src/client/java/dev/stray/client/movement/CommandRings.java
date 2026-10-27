@@ -195,7 +195,7 @@ public final class CommandRings {
 		double x = player.getX();
 		double y = player.getY();
 		double z = player.getZ();
-		boolean allow = enabled() && client.level != null && client.screen == null;
+		boolean allow = enabled() && client.level != null && client.gui.screen() == null;
 		for (Ring ring : rings) {
 			double dx = x - ring.x;
 			double dz = z - ring.z;
@@ -226,10 +226,10 @@ public final class CommandRings {
 			return;
 		}
 		Minecraft client = Minecraft.getInstance();
-		if (client.player == null || client.options.hideGui) {
+		if (client.player == null || client.gui.hud.isHidden()) {
 			return;
 		}
-		Camera camera = client.gameRenderer.getMainCamera();
+		Camera camera = client.gameRenderer.mainCamera();
 		if (!camera.isInitialized()) {
 			return;
 		}
@@ -281,7 +281,7 @@ public final class CommandRings {
 			return;
 		}
 		Minecraft client = Minecraft.getInstance();
-		Camera camera = client.gameRenderer.getMainCamera();
+		Camera camera = client.gameRenderer.mainCamera();
 		Vec3 camPos = camera.isInitialized() ? camera.position() : null;
 		int rgb = StrayConfig.get().commandRingsRgb & 0xFFFFFF;
 		int line = 0xEB000000 | rgb;

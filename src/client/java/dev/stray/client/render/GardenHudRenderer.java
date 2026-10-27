@@ -76,10 +76,10 @@ public final class GardenHudRenderer {
 			return false;
 		}
 		Minecraft client = Minecraft.getInstance();
-		if (client.screen instanceof HudEditorScreen) {
+		if (client.gui.screen() instanceof HudEditorScreen) {
 			return false;
 		}
-		if (client.screen == null) {
+		if (client.gui.screen() == null) {
 			return false;
 		}
 		for (Hit hit : ITEM_HITS) {
@@ -152,7 +152,7 @@ public final class GardenHudRenderer {
 
 	static void extract(GuiGraphicsExtractor graphics, DeltaTracker deltaTracker) {
 		Minecraft client = Minecraft.getInstance();
-		if (client.screen instanceof AbstractContainerScreen<?>) {
+		if (client.gui.screen() instanceof AbstractContainerScreen<?>) {
 			return;
 		}
 		paint(graphics);
@@ -161,7 +161,7 @@ public final class GardenHudRenderer {
 	private static void paint(GuiGraphicsExtractor graphics) {
 		ITEM_HITS.clear();
 		Minecraft client = Minecraft.getInstance();
-		if (client.player == null || client.options.hideGui) {
+		if (client.player == null || client.gui.hud.isHidden()) {
 			return;
 		}
 		drawPestSwapDebug(graphics, client.font);

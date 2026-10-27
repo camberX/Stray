@@ -4,7 +4,6 @@ import dev.stray.client.config.StrayConfig;
 import dev.stray.client.item.ItemIds;
 import dev.stray.client.location.SkyblockLocation;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.Gui;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.network.chat.Component;
@@ -166,12 +165,11 @@ public final class NucleusAlerts {
 	}
 
 	private static void title(Minecraft client, String main, String sub, int color) {
-		Gui gui = client.gui;
-		if (gui == null) {
+		if (client.gui == null) {
 			return;
 		}
-		gui.setTimes(5, 45, 10);
-		gui.setTitle(Component.literal(main).withColor(color & 0xFFFFFF));
-		gui.setSubtitle(sub == null || sub.isEmpty() ? Component.empty() : Component.literal(sub));
+		client.gui.hud.setTimes(5, 45, 10);
+		client.gui.hud.setTitle(Component.literal(main).withColor(color & 0xFFFFFF));
+		client.gui.hud.setSubtitle(sub == null || sub.isEmpty() ? Component.empty() : Component.literal(sub));
 	}
 }

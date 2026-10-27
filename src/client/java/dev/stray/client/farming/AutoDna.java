@@ -124,7 +124,7 @@ public final class AutoDna {
 	}
 
 	public static void tick(Minecraft client) {
-		if (!(client.screen instanceof AbstractContainerScreen<?> screen)) {
+		if (!(client.gui.screen() instanceof AbstractContainerScreen<?> screen)) {
 			return;
 		}
 		if (!inInventory || waitingForUpdate) {
@@ -171,7 +171,7 @@ public final class AutoDna {
 
 	private static void readBoard() {
 		Minecraft client = Minecraft.getInstance();
-		if (!(client.screen instanceof AbstractContainerScreen<?> screen)) {
+		if (!(client.gui.screen() instanceof AbstractContainerScreen<?> screen)) {
 			return;
 		}
 		if (!isDnaInventory(screen)) {
@@ -463,7 +463,7 @@ public final class AutoDna {
 			}
 			ChatFormatting formatting = formattingOf(style);
 			if (formatting != null) {
-				out.append('\u00A7').append(formatting.getChar());
+				out.append('\u00A7').append(legacyCode(formatting));
 			}
 			out.append(text);
 			return Optional.empty();
@@ -504,13 +504,13 @@ public final class AutoDna {
 		if (color == null) {
 			return null;
 		}
-		ChatFormatting named = ChatFormatting.getByName(color.serialize());
-		if (named != null && named.isColor()) {
+		ChatFormatting named = namedColor(color.serialize());
+		if (named != null) {
 			return named;
 		}
 		int rgb = color.getValue();
 		for (ChatFormatting formatting : ChatFormatting.values()) {
-			Integer value = formatting.getColor();
+			Integer value = legacyRgb(formatting);
 			if (value != null && value == rgb) {
 				return formatting;
 			}
@@ -518,11 +518,34 @@ public final class AutoDna {
 		return nearestNamed(rgb);
 	}
 
+	private static ChatFormatting namedColor(String serialized) {
+		if (serialized == null || serialized.isEmpty() || serialized.charAt(0) == '#') {
+			return null;
+		}
+		String key = serialized.toUpperCase(Locale.ROOT);
+		for (ChatFormatting formatting : ChatFormatting.values()) {
+			if (formatting.name().equals(key) && TextColor.fromLegacyFormat(formatting) != null) {
+				return formatting;
+			}
+		}
+		return null;
+	}
+
+	private static char legacyCode(ChatFormatting formatting) {
+		String text = formatting.toString();
+		return text.isEmpty() ? 'r' : text.charAt(text.length() - 1);
+	}
+
+	private static Integer legacyRgb(ChatFormatting formatting) {
+		TextColor color = TextColor.fromLegacyFormat(formatting);
+		return color == null ? null : color.getValue();
+	}
+
 	private static ChatFormatting nearestNamed(int rgb) {
 		int best = Integer.MAX_VALUE;
 		ChatFormatting found = null;
 		for (ChatFormatting formatting : ChatFormatting.values()) {
-			Integer value = formatting.getColor();
+			Integer value = legacyRgb(formatting);
 			if (value == null) {
 				continue;
 			}

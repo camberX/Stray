@@ -37,7 +37,7 @@ public final class ComposterHudRenderer {
 
 	static void extract(GuiGraphicsExtractor graphics, DeltaTracker deltaTracker) {
 		Minecraft client = Minecraft.getInstance();
-		if (client.player == null || client.options.hideGui || !StrayConfig.get().composterHudEnabled) {
+		if (client.player == null || client.gui.hud.isHidden() || !StrayConfig.get().composterHudEnabled) {
 			return;
 		}
 		ComposterTracker.Snapshot snapshot = ComposterTracker.snapshot();

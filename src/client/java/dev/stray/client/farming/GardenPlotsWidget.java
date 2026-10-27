@@ -1,5 +1,6 @@
 package dev.stray.client.farming;
 
+import net.minecraft.world.item.DyeColor;
 import com.mojang.blaze3d.platform.InputConstants;
 import dev.stray.client.config.StrayConfig;
 import dev.stray.client.item.ItemIds;
@@ -116,7 +117,7 @@ final class GardenPlotsWidget {
 
 		drawButton(graphics, font, client.player, mouseX, mouseY, x + 7, y + HEIGHT - 24, new ItemStack(Items.BOOK), "Desk");
 		drawButton(graphics, font, client.player, mouseX, mouseY, x + WIDTH - 49, y + HEIGHT - 24, new ItemStack(Items.ENDER_EYE), "Garden spawn");
-		drawButton(graphics, font, client.player, mouseX, mouseY, x + WIDTH - 27, y + HEIGHT - 24, new ItemStack(Items.RED_BED), "Set spawn");
+		drawButton(graphics, font, client.player, mouseX, mouseY, x + WIDTH - 27, y + HEIGHT - 24, new ItemStack(Items.BED.pick(DyeColor.RED)), "Set spawn");
 	}
 
 	boolean mouseClicked(MouseButtonEvent event) {
@@ -176,8 +177,8 @@ final class GardenPlotsWidget {
 		}
 		if (StrayConfig.get().gardenPlotsCloseOnClick) {
 			Minecraft client = Minecraft.getInstance();
-			if (client.screen != null) {
-				client.screen.onClose();
+			if (client.gui.screen() != null) {
+				client.gui.screen().onClose();
 			}
 		}
 		if (hovered == BARN) {

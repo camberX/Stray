@@ -53,7 +53,7 @@ public final class PestEspRenderer {
 		if (!PestEsp.holdingVacuum(client.player)) {
 			return;
 		}
-		Vec3 camera = client.gameRenderer.getMainCamera().position();
+		Vec3 camera = client.gameRenderer.mainCamera().position();
 		Vec3 look = client.player.getViewVector(1.0f);
 		Vec3 from = camera.add(look.scale(0.4));
 		for (PestEsp.Mark pest : pests) {
@@ -70,18 +70,18 @@ public final class PestEspRenderer {
 			return;
 		}
 		Minecraft client = Minecraft.getInstance();
-		if (client.player == null || client.level == null || client.font == null || client.options.hideGui) {
+		if (client.player == null || client.level == null || client.font == null || client.gui.hud.isHidden()) {
 			return;
 		}
-		if (!client.gameRenderer.getMainCamera().isInitialized()) {
+		if (!client.gameRenderer.mainCamera().isInitialized()) {
 			return;
 		}
 		List<PestEsp.Mark> pests = PestEsp.snapshot();
 		if (pests.isEmpty()) {
 			return;
 		}
-		Vec3 camera = client.gameRenderer.getMainCamera().position();
-		Vector3fc forward = client.gameRenderer.getMainCamera().forwardVector();
+		Vec3 camera = client.gameRenderer.mainCamera().position();
+		Vector3fc forward = client.gameRenderer.mainCamera().forwardVector();
 		float userScale = StrayConfig.clampHudScale(config.playerVisuals.nametagScale);
 		boolean through = config.pestEspThroughWalls;
 		Font font = client.font;

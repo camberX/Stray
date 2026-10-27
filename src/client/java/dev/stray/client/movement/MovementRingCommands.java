@@ -66,7 +66,7 @@ public final class MovementRingCommands {
 	private static void tell(String text, ChatFormatting color) {
 		Minecraft client = Minecraft.getInstance();
 		if (client.gui != null) {
-			client.gui.getChat().addClientSystemMessage(
+			client.gui.hud.getChat().addClientSystemMessage(
 				Component.literal("Stray | ").withStyle(ChatFormatting.AQUA)
 					.append(Component.literal(text).withStyle(color))
 			);

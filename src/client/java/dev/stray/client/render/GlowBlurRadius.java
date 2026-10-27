@@ -1,9 +1,10 @@
 package dev.stray.client.render;
 
-import com.mojang.blaze3d.buffers.GpuBuffer;
+import com.mojang.renderpearl.api.buffers.GpuBuffer;
 import com.mojang.blaze3d.buffers.Std140Builder;
 import com.mojang.blaze3d.buffers.Std140SizeCalculator;
-import com.mojang.blaze3d.pipeline.RenderPipeline;
+import com.mojang.renderpearl.api.pipeline.RenderPipeline;
+import com.mojang.renderpearl.api.pipeline.ShaderType;
 import com.mojang.blaze3d.systems.RenderSystem;
 import dev.stray.Stray;
 import dev.stray.client.config.StrayConfig;
@@ -51,7 +52,7 @@ public final class GlowBlurRadius {
 	}
 
 	public static boolean isGlowBlur(RenderPipeline pipeline) {
-		return pipeline != null && SHADER.equals(pipeline.getFragmentShader());
+		return pipeline != null && SHADER.equals(pipeline.getShaders().get(ShaderType.FRAGMENT));
 	}
 
 	public static void register(PostPass pass, RenderPipeline pipeline, Map<String, List<UniformValue>> uniforms) {

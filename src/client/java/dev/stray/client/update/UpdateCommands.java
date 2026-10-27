@@ -78,6 +78,6 @@ public final class UpdateCommands {
 			client.player.sendSystemMessage(line);
 			return;
 		}
-		client.gui.getChat().addClientSystemMessage(line);
+		client.gui.hud.getChat().addClientSystemMessage(line);
 	}
 }

@@ -57,7 +57,7 @@ public final class ChestEspRenderer {
 		if (!config.chestEspTracers) {
 			return;
 		}
-		Vec3 camera = client.gameRenderer.getMainCamera().position();
+		Vec3 camera = client.gameRenderer.mainCamera().position();
 		ChestEsp.Mark nearest = ChestEsp.get().nearestChest(camera);
 		if (nearest == null) {
 			return;

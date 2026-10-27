@@ -8,7 +8,7 @@ import dev.stray.client.farming.FarmKeys;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.Options;
-import org.lwjgl.glfw.GLFW;
+import dev.stray.client.input.MouseButtons;
 
 /**
  * Toggles between two loadout slots, or three when TriSwap is on, without showing the loadouts menu.
@@ -100,7 +100,7 @@ public final class LoadoutSwap {
 		boolean press = down && !wasHeld;
 		wasHeld = down;
 		if (queued >= 0) {
-			if (client.screen != null || client.player == null) {
+			if (client.gui.screen() != null || client.player == null) {
 				return;
 			}
 			int index = queued;
@@ -108,7 +108,7 @@ public final class LoadoutSwap {
 			start(client, index);
 			return;
 		}
-		if (!press || client.screen != null || client.player == null) {
+		if (!press || client.gui.screen() != null || client.player == null) {
 			return;
 		}
 		int next = nextSlot();
@@ -287,8 +287,8 @@ public final class LoadoutSwap {
 			return false;
 		}
 		return switch (key.getType()) {
-			case KEYSYM -> InputConstants.isKeyDown(client.getWindow(), key.getValue());
-			case MOUSE -> GLFW.glfwGetMouseButton(client.getWindow().handle(), key.getValue()) == GLFW.GLFW_PRESS;
+			case KEYBOARD -> InputConstants.isKeyDown(key.getValue());
+			case MOUSE -> MouseButtons.down(key.getValue());
 			default -> false;
 		};
 	}

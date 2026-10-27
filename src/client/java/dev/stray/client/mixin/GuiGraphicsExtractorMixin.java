@@ -1,6 +1,6 @@
 package dev.stray.client.mixin;
 
-import com.mojang.blaze3d.pipeline.RenderPipeline;
+import com.mojang.renderpearl.api.pipeline.RenderPipeline;
 import dev.stray.client.ui.ContainerChrome;
 import dev.stray.client.visual.NickHider;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
@@ -55,7 +55,7 @@ public class GuiGraphicsExtractorMixin {
 	}
 
 	@Inject(
-		method = "innerBlit(Lcom/mojang/blaze3d/pipeline/RenderPipeline;Lnet/minecraft/resources/Identifier;IIIIFFFFI)V",
+		method = "innerBlit(Lcom/mojang/renderpearl/api/pipeline/RenderPipeline;Lnet/minecraft/resources/Identifier;IIIIFFFFI)V",
 		at = @At("HEAD"),
 		cancellable = true
 	)

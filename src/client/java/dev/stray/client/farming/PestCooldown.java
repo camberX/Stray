@@ -7,7 +7,6 @@ import dev.stray.client.location.SkyblockLocation;
 import dev.stray.client.visual.NickSteal;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.Gui;
 import net.minecraft.client.multiplayer.ClientPacketListener;
 import net.minecraft.client.multiplayer.PlayerInfo;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
@@ -499,14 +498,13 @@ public final class PestCooldown {
 	}
 
 	private static void title(Minecraft client) {
-		Gui gui = client.gui;
-		if (gui != null) {
+		if (client.gui != null) {
 			StrayConfig config = StrayConfig.get();
 			String title = config.pestCooldownAlert == null || config.pestCooldownAlert.isBlank() ? "Swap armor" : config.pestCooldownAlert;
 			String subtitle = config.pestCooldownAlertSub == null || config.pestCooldownAlertSub.isBlank() ? "5s left" : config.pestCooldownAlertSub;
-			gui.setTimes(8, 50, 12);
-			gui.setTitle(Component.literal(title).withColor(0xFF5A4A));
-			gui.setSubtitle(Component.literal(subtitle));
+			client.gui.hud.setTimes(8, 50, 12);
+			client.gui.hud.setTitle(Component.literal(title).withColor(0xFF5A4A));
+			client.gui.hud.setSubtitle(Component.literal(subtitle));
 		}
 		client.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.NOTE_BLOCK_PLING.value(), 0.7f, 0.9f));
 	}

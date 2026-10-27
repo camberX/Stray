@@ -37,7 +37,7 @@ public final class SkillProgressHudRenderer {
 
 	static void extract(GuiGraphicsExtractor graphics, DeltaTracker deltaTracker) {
 		Minecraft client = Minecraft.getInstance();
-		if (client.player == null || client.options.hideGui || !StrayConfig.get().skillProgressHudEnabled) {
+		if (client.player == null || client.gui.hud.isHidden() || !StrayConfig.get().skillProgressHudEnabled) {
 			return;
 		}
 		SkillProgressTracker.poll(client);

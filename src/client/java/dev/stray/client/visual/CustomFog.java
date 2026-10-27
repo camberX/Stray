@@ -1,6 +1,10 @@
 package dev.stray.client.visual;
 
+import com.mojang.renderpearl.backend.opengl.GlRenderPipeline;
+import com.mojang.renderpearl.backend.opengl.GlStateManager;
 import dev.stray.Stray;
+import org.lwjgl.opengl.GL11;
+import org.lwjgl.opengl.GL20;
 import dev.stray.client.config.StrayConfig;
 import net.minecraft.client.Camera;
 import net.minecraft.client.renderer.fog.FogData;
@@ -14,12 +18,35 @@ public final class CustomFog {
 
 	private static boolean applied;
 	private static Sample sample = Sample.OFF;
+	private static final java.util.Map<Integer, Integer> FOG_LOCATIONS = new java.util.HashMap<>();
 
 	private CustomFog() {
 	}
 
 	public static boolean applied() {
 		return applied;
+	}
+
+	public static void bind(GlRenderPipeline pipeline) {
+		if (pipeline == null || pipeline.program() == null) {
+			return;
+		}
+		int program = pipeline.program().getProgramId();
+		if (program <= 0) {
+			return;
+		}
+		int location = FOG_LOCATIONS.computeIfAbsent(program, CustomFog::fogLocation);
+		if (location < 0) {
+			return;
+		}
+		int previous = GL11.glGetInteger(GL20.GL_CURRENT_PROGRAM);
+		GL20.glUseProgram(program);
+		GL20.glUniform1f(location, applied ? 1f : 0f);
+		GL20.glUseProgram(previous);
+	}
+
+	private static int fogLocation(int program) {
+		return GlStateManager._glGetUniformLocation(program, "u_StrayFog");
 	}
 
 	public static Sample sample() {

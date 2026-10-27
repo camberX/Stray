@@ -54,13 +54,13 @@ public final class AotvSim {
 		if (player.isShiftKeyDown()) {
 			if (etherwarp(client, player)) {
 				cooldown = 4;
-				player.swing(InteractionHand.MAIN_HAND);
+				player.swing(InteractionHand.MAIN_HAND, net.minecraft.world.item.component.SwingAnimation.DEFAULT, false);
 			}
 			return true;
 		}
 		if (transmit(client, player)) {
 			cooldown = 4;
-			player.swing(InteractionHand.MAIN_HAND);
+			player.swing(InteractionHand.MAIN_HAND, net.minecraft.world.item.component.SwingAnimation.DEFAULT, false);
 			return true;
 		}
 		return false;
@@ -73,7 +73,7 @@ public final class AotvSim {
 		if (!StrayConfig.get().aotvSimEnabled) {
 			return false;
 		}
-		if (client.player == null || client.level == null || client.screen != null) {
+		if (client.player == null || client.level == null || client.gui.screen() != null) {
 			return false;
 		}
 		return client.player.getMainHandItem().getItem() == Items.DIAMOND_SHOVEL;

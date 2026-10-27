@@ -77,7 +77,7 @@ public final class BlockMarks {
 		if (!config.blockMarksEnabled || client == null || client.player == null || client.level == null) {
 			return false;
 		}
-		if (client.screen != null) {
+		if (client.gui.screen() != null) {
 			return false;
 		}
 		HitResult hit = client.hitResult;
@@ -127,12 +127,12 @@ public final class BlockMarks {
 			editWasDown = false;
 			return;
 		}
-		hovered = client.screen == null ? findHovered(client, marks) : null;
+		hovered = client.gui.screen() == null ? findHovered(client, marks) : null;
 		boolean down = StrayClient.strayHotkeys(client) && OdinClicks.isPressed(OdinClicks.parseKey(config.blockMarkEditKey));
 		if (down && !editWasDown && hovered != null) {
 			Mark mark = marks.get(hovered);
 			if (mark != null) {
-				client.setScreen(new BlockMarkEditScreen(mark.pos, mark.name, mark.icon));
+				client.gui.setScreen(new BlockMarkEditScreen(mark.pos, mark.name, mark.icon));
 			}
 		}
 		editWasDown = down;
@@ -196,7 +196,7 @@ public final class BlockMarks {
 	}
 
 	private static BlockPos findHovered(Minecraft client, Map<BlockPos, Mark> marks) {
-		Camera camera = client.gameRenderer.getMainCamera();
+		Camera camera = client.gameRenderer.mainCamera();
 		if (!camera.isInitialized()) {
 			return null;
 		}
@@ -226,10 +226,10 @@ public final class BlockMarks {
 			return;
 		}
 		Minecraft client = Minecraft.getInstance();
-		if (client.player == null || client.options.hideGui) {
+		if (client.player == null || client.gui.hud.isHidden()) {
 			return;
 		}
-		Camera camera = client.gameRenderer.getMainCamera();
+		Camera camera = client.gameRenderer.mainCamera();
 		if (!camera.isInitialized()) {
 			return;
 		}
@@ -300,7 +300,7 @@ public final class BlockMarks {
 		int rgb = config.blockMarksRgb & 0xFFFFFF;
 		int line = 0xEB000000 | rgb;
 		int fill = 0x48000000 | rgb;
-		Camera camera = client.gameRenderer.getMainCamera();
+		Camera camera = client.gameRenderer.mainCamera();
 		Vec3 start = null;
 		if (config.blockMarksTracers && camera.isInitialized()) {
 			// Start a little in front of and below the camera so the line is

@@ -193,7 +193,7 @@ public class StrayTitleScreen extends Screen {
 
 	private void openSingleplayer() {
 		clickSound();
-		minecraft.setScreen(new SelectWorldScreen(this));
+		minecraft.gui.setScreen(new SelectWorldScreen(this));
 	}
 
 	private void openMultiplayer() {
@@ -202,32 +202,32 @@ public class StrayTitleScreen extends Screen {
 			return;
 		}
 		clickSound();
-		minecraft.setScreen(new JoinMultiplayerScreen(this));
+		minecraft.gui.setScreen(new JoinMultiplayerScreen(this));
 	}
 
 	private void openAccounts() {
 		clickSound();
-		minecraft.setScreen(new AccountScreen(this));
+		minecraft.gui.setScreen(new AccountScreen(this));
 	}
 
 	private void openOptions() {
 		clickSound();
-		minecraft.setScreen(new OptionsScreen(this, minecraft.options, false));
+		minecraft.gui.setScreen(new OptionsScreen(this, minecraft.options));
 	}
 
 	private void openLanguage() {
 		clickSound();
-		minecraft.setScreen(new LanguageSelectScreen(this, minecraft.options, minecraft.getLanguageManager()));
+		minecraft.gui.setScreen(new LanguageSelectScreen(this, minecraft.options, minecraft.getLanguageManager()));
 	}
 
 	private void openAccessibility() {
 		clickSound();
-		minecraft.setScreen(new AccessibilityOptionsScreen(this, minecraft.options));
+		minecraft.gui.setScreen(new AccessibilityOptionsScreen(this, minecraft.options));
 	}
 
 	private void openCredits() {
 		clickSound();
-		minecraft.setScreen(new CreditsAndAttributionScreen(this));
+		minecraft.gui.setScreen(new CreditsAndAttributionScreen(this));
 	}
 
 	private void quit() {

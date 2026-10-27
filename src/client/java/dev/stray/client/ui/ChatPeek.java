@@ -18,7 +18,7 @@ public final class ChatPeek {
 		if (wasHolding && !hold) {
 			Minecraft client = Minecraft.getInstance();
 			if (client != null && client.gui != null) {
-				client.gui.getChat().resetChatScroll();
+				client.gui.hud.getChat().resetChatScroll();
 			}
 		}
 		wasHolding = hold;
@@ -39,7 +39,7 @@ public final class ChatPeek {
 		}
 		int ticks = (int) amount;
 		if (ticks != 0) {
-			client.gui.getChat().scrollChat(ticks);
+			client.gui.hud.getChat().scrollChat(ticks);
 		}
 		return true;
 	}
@@ -49,10 +49,10 @@ public final class ChatPeek {
 		if (client == null || client.player == null) {
 			return false;
 		}
-		if (client.screen instanceof ChatScreen) {
+		if (client.gui.screen() instanceof ChatScreen) {
 			return false;
 		}
-		if (client.screen != null || client.options.hideGui) {
+		if (client.gui.screen() != null || client.gui.hud.isHidden()) {
 			return false;
 		}
 		return OdinClicks.isPressed(OdinClicks.parseKey(StrayConfig.get().chatPeekKey));

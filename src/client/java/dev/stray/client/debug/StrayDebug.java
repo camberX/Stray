@@ -106,7 +106,7 @@ public final class StrayDebug {
 		if (client.player == null) {
 			return;
 		}
-		if (!(client.screen instanceof AbstractContainerScreen<?> screen)) {
+		if (!(client.gui.screen() instanceof AbstractContainerScreen<?> screen)) {
 			if (force) {
 				tell("Open a chest (Composter) so slots 2 and 7 can be dumped.");
 			}

@@ -121,7 +121,7 @@ public final class EspCommands {
 	private static void tell(Component message) {
 		Minecraft client = Minecraft.getInstance();
 		if (client.gui != null) {
-			client.gui.getChat().addClientSystemMessage(message);
+			client.gui.hud.getChat().addClientSystemMessage(message);
 		}
 	}
 }

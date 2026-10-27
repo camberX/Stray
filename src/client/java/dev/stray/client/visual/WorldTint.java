@@ -1,6 +1,10 @@
 package dev.stray.client.visual;
 
 import com.mojang.blaze3d.vertex.QuadInstance;
+import com.mojang.renderpearl.backend.opengl.GlRenderPipeline;
+import com.mojang.renderpearl.backend.opengl.GlStateManager;
+import org.lwjgl.opengl.GL11;
+import org.lwjgl.opengl.GL20;
 import dev.stray.Stray;
 import dev.stray.client.config.StrayConfig;
 import net.fabricmc.loader.api.FabricLoader;
@@ -17,6 +21,7 @@ public final class WorldTint {
 	private static int lastMeshKey = Integer.MIN_VALUE;
 	private static Boolean sodiumLoaded;
 	private static boolean lastLightmapActive;
+	private static final java.util.Map<Integer, Integer> TINT_LOCATIONS = new java.util.HashMap<>();
 
 	private WorldTint() {
 	}
@@ -50,6 +55,35 @@ public final class WorldTint {
 
 	public static int shaderRgb() {
 		return StrayConfig.get().worldTintRgb;
+	}
+
+	public static void bind(GlRenderPipeline pipeline) {
+		if (pipeline == null || pipeline.program() == null) {
+			return;
+		}
+		int program = pipeline.program().getProgramId();
+		if (program <= 0) {
+			return;
+		}
+		int location = TINT_LOCATIONS.computeIfAbsent(program, WorldTint::tintLocation);
+		if (location < 0) {
+			return;
+		}
+		int rgb = shaderRgb();
+		int previous = GL11.glGetInteger(GL20.GL_CURRENT_PROGRAM);
+		GL20.glUseProgram(program);
+		GL20.glUniform4f(
+			location,
+			((rgb >> 16) & 0xFF) / 255f,
+			((rgb >> 8) & 0xFF) / 255f,
+			(rgb & 0xFF) / 255f,
+			shaderStrength()
+		);
+		GL20.glUseProgram(previous);
+	}
+
+	private static int tintLocation(int program) {
+		return GlStateManager._glGetUniformLocation(program, "u_WorldTint");
 	}
 
 	public static float shaderStrength() {
@@ -105,6 +139,31 @@ public final class WorldTint {
 		return mixArgb(skyColor, skyRgb(config), config.skyTintStrength);
 	}
 
+	public static Vector3fc tintSky(Vector3fc skyColor) {
+		StrayConfig config = StrayConfig.get();
+		if (!config.skyTintEnabled || skyColor == null) {
+			return skyColor;
+		}
+		int mixed = mixArgb(packRgb(skyColor.x(), skyColor.y(), skyColor.z()), skyRgb(config), config.skyTintStrength);
+		return new Vector3f(((mixed >> 16) & 0xFF) / 255f, ((mixed >> 8) & 0xFF) / 255f, (mixed & 0xFF) / 255f);
+	}
+
+	public static Vector4fc tintSky(Vector4fc skyColor) {
+		StrayConfig config = StrayConfig.get();
+		if (!config.skyTintEnabled || skyColor == null) {
+			return skyColor;
+		}
+		int mixed = mixArgb(packRgb(skyColor.x(), skyColor.y(), skyColor.z()), skyRgb(config), config.skyTintStrength);
+		return new Vector4f(((mixed >> 16) & 0xFF) / 255f, ((mixed >> 8) & 0xFF) / 255f, (mixed & 0xFF) / 255f, skyColor.w());
+	}
+
+	private static int packRgb(float r, float g, float b) {
+		int red = Math.round(Mth.clamp(r, 0f, 1f) * 255f);
+		int green = Math.round(Mth.clamp(g, 0f, 1f) * 255f);
+		int blue = Math.round(Mth.clamp(b, 0f, 1f) * 255f);
+		return (red << 16) | (green << 8) | blue;
+	}
+
 	public static int skyDiscColor(int fallback) {
 		StrayConfig config = StrayConfig.get();
 		if (!config.skyTintEnabled) {
@@ -158,7 +217,7 @@ public final class WorldTint {
 			return;
 		}
 		if (client != null && client.levelRenderer != null) {
-			client.levelRenderer.allChanged();
+			client.levelExtractor.allChanged();
 		}
 	}
 

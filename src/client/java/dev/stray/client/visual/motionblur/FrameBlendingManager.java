@@ -1,13 +1,13 @@
 package dev.stray.client.visual.motionblur;
 
-import com.mojang.blaze3d.buffers.GpuBuffer;
+import com.mojang.renderpearl.api.buffers.GpuBuffer;
 import com.mojang.blaze3d.framegraph.FramePass;
 import com.mojang.blaze3d.pipeline.MainTarget;
 import com.mojang.blaze3d.pipeline.RenderTarget;
 import com.mojang.blaze3d.resource.GraphicsResourceAllocator;
 import com.mojang.blaze3d.resource.ResourceHandle;
 import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.textures.GpuTextureView;
+import com.mojang.renderpearl.api.textures.GpuTextureView;
 import dev.stray.Stray;
 import dev.stray.client.mixin.PostChainAccessor;
 import dev.stray.client.mixin.PostPassAccessor;
@@ -69,7 +69,7 @@ public final class FrameBlendingManager {
 
 	public static void applyFrameBlending(GraphicsResourceAllocator allocator, float fps, int refreshRate, float strength) {
 		Minecraft client = Minecraft.getInstance();
-		RenderTarget main = client.getMainRenderTarget();
+		RenderTarget main = client.gameRenderer.mainRenderTarget();
 		updateSmoothedFps(fps);
 		if (refreshRate <= 0 || strength <= 0.0f) {
 			historyWriteIndex = 0;
@@ -303,7 +303,7 @@ public final class FrameBlendingManager {
 		boolean max
 	) {
 		Minecraft client = Minecraft.getInstance();
-		RenderTarget main = client.getMainRenderTarget();
+		RenderTarget main = client.gameRenderer.mainRenderTarget();
 		ensureTargets(main.width, main.height);
 		if (!accumHasPrevious) {
 			copyTexture(main, accumRead);

@@ -25,14 +25,14 @@ public final class EntityBoxEsp {
 
 	static void extract(GuiGraphicsExtractor graphics, DeltaTracker delta) {
 		Minecraft client = Minecraft.getInstance();
-		if (client.player == null || client.level == null || client.options.hideGui) {
+		if (client.player == null || client.level == null || client.gui.hud.isHidden()) {
 			return;
 		}
 		StrayConfig config = StrayConfig.get();
 		if (!config.anyBox()) {
 			return;
 		}
-		Camera camera = client.gameRenderer.getMainCamera();
+		Camera camera = client.gameRenderer.mainCamera();
 		if (!camera.isInitialized()) {
 			return;
 		}

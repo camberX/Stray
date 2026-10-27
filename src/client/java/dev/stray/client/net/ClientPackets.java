@@ -37,10 +37,10 @@ public final class ClientPackets {
 			return;
 		}
 		if (packet instanceof ClientboundLevelParticlesPacket particles) {
-			ParticleOptions options = particles.getParticle();
-			double x = particles.getX();
-			double y = particles.getY();
-			double z = particles.getZ();
+			ParticleOptions options = particles.particle();
+			double x = particles.x();
+			double y = particles.y();
+			double z = particles.z();
 			var type = options.getType();
 			Minecraft.getInstance().execute(() -> {
 				EnderNodeTracker.get().onParticle(x, y, z, type);

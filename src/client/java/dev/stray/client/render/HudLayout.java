@@ -95,7 +95,7 @@ public final class HudLayout {
 	}
 
 	public static boolean editorOpen() {
-		return Minecraft.getInstance().screen instanceof HudEditorScreen;
+		return Minecraft.getInstance().gui.screen() instanceof HudEditorScreen;
 	}
 
 	public static boolean retired(Id id) {

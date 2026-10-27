@@ -35,7 +35,7 @@ public final class PestPlotTp {
 
 	public static void poll(Minecraft client, boolean ignore) {
 		boolean down = held();
-		if (!ignore && down && !wasHeld && client.screen == null) {
+		if (!ignore && down && !wasHeld && client.gui.screen() == null) {
 			go(client);
 		}
 		wasHeld = down;
