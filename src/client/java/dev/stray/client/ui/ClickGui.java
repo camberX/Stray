@@ -1008,9 +1008,6 @@ public final class ClickGui {
 		if (mod.timeout) {
 			return stackH(6);
 		}
-		if ("Triggerbot".equals(mod.name)) {
-			return 3f * screen.clickSettingRow();
-		}
 		if (mod.feature == null) {
 			return 0f;
 		}
@@ -1527,7 +1524,6 @@ public final class ClickGui {
 		java.util.Map.entry("Hitsound", "Plays a sound when you hit something."),
 		java.util.Map.entry("Auto clicker", "Clicks for you while you hold the bind."),
 		java.util.Map.entry("Auto rogue", "Uses your Rogue Sword after Mort hands out the dungeon map."),
-		java.util.Map.entry("Triggerbot", "Attacks when your crosshair is on a target."),
 		java.util.Map.entry("Party stats", "Shows a stats card when someone joins from the party finder."),
 		java.util.Map.entry("Array list", "Lists the modules you have turned on."),
 		java.util.Map.entry("Watermark", "The Stray watermark in a corner of the screen."),
@@ -1625,8 +1621,7 @@ public final class ClickGui {
 			|| "Themed chat".equals(mod.name)
 			|| CUSTOMIZE.equals(mod.name)
 			|| CS2.equals(mod.name)
-			|| "Custom title".equals(mod.name)
-			|| "Triggerbot".equals(mod.name);
+			|| "Custom title".equals(mod.name);
 	}
 
 	static float moduleSettingsHeight(StrayScreen screen, Mod mod) {
@@ -1688,10 +1683,6 @@ public final class ClickGui {
 			drawTimeout(screen, graphics, font, x, y, w);
 			return;
 		}
-		if ("Triggerbot".equals(mod.name)) {
-			screen.clickTriggerbot(graphics, font, mouseX, mouseY, x, y, w);
-			return;
-		}
 		if (mod.feature != null) {
 			screen.clickVisuals(mod.kind);
 			screen.clickSettings(graphics, font, mouseX, mouseY, x, y, w, mod.feature);
@@ -1732,7 +1723,6 @@ public final class ClickGui {
 		mods.add(mod("Hitsound", "Combat", StrayScreen.Feature.HITSOUND, null, () -> config.hitsoundEnabled, v -> config.hitsoundEnabled = v, true, false));
 		mods.add(mod("Auto clicker", "Combat", StrayScreen.Feature.AUTO_CLICKER, null, () -> config.autoClickerEnabled, v -> config.autoClickerEnabled = v, true, false));
 		mods.add(mod("Auto rogue", "Combat", null, null, () -> config.autoRogueEnabled, v -> config.autoRogueEnabled = v, true, false));
-		mods.add(mod("Triggerbot", "Combat", null, null, () -> config.triggerbotEnabled, v -> config.triggerbotEnabled = v, true, false));
 		mods.add(mod("Party stats", "Combat", null, null, () -> config.partyFinderStats, v -> config.partyFinderStats = v, true, false));
 		addSlayer(mods, config);
 		mods.add(mod("Array list", "HUD", null, null, () -> config.arrayList, v -> config.arrayList = v, false, false));
