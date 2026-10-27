@@ -2,14 +2,14 @@ package dev.stray.client.render;
 
 import com.mojang.blaze3d.pipeline.TextureTarget;
 import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.renderpearl.api.GpuFormat;
-import com.mojang.renderpearl.api.commands.RenderPass;
-import com.mojang.renderpearl.api.pipeline.BindGroupLayout;
-import com.mojang.renderpearl.api.pipeline.BlendFunction;
-import com.mojang.renderpearl.api.pipeline.ColorTargetState;
-import com.mojang.renderpearl.api.pipeline.PrimitiveTopology;
-import com.mojang.renderpearl.api.pipeline.RenderPipeline;
-import com.mojang.renderpearl.api.pipeline.UniformType;
+import com.mojang.blaze3d.GpuFormat;
+import com.mojang.blaze3d.systems.RenderPass;
+import com.mojang.blaze3d.pipeline.BindGroupLayout;
+import com.mojang.blaze3d.pipeline.BlendFunction;
+import com.mojang.blaze3d.pipeline.ColorTargetState;
+import com.mojang.blaze3d.PrimitiveTopology;
+import com.mojang.blaze3d.pipeline.RenderPipeline;
+import com.mojang.blaze3d.shaders.UniformType;
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import net.minecraft.client.renderer.BindGroupLayouts;
 import net.minecraft.resources.Identifier;
@@ -28,15 +28,15 @@ public final class RenderCompat {
 	}
 
 	public static void setPipeline(RenderPass pass, RenderPipeline pipeline) {
-		pass.setPipeline(RenderSystem.getCompiledPipeline(pipeline));
+		pass.setPipeline(pipeline);
 	}
 
 	public static TextureTarget colorTarget(String name, int width, int height) {
-		return new TextureTarget(name, width, height, GpuFormat.RGBA8_UNORM, null);
+		return new TextureTarget(name, width, height, false, GpuFormat.RGBA8_UNORM);
 	}
 
 	public static TextureTarget colorDepthTarget(String name, int width, int height) {
-		return new TextureTarget(name, width, height, GpuFormat.RGBA8_UNORM, GpuFormat.D32_FLOAT);
+		return new TextureTarget(name, width, height, true, GpuFormat.RGBA8_UNORM);
 	}
 
 	public static ColorTargetState opaqueTarget() {
@@ -44,7 +44,7 @@ public final class RenderCompat {
 	}
 
 	public static BindGroupLayout sampler(String name) {
-		return BindGroupLayout.builder().withUniform(name, UniformType.COMBINED_IMAGE_SAMPLER).build();
+		return BindGroupLayout.builder().withSampler(name).build();
 	}
 
 	public static BindGroupLayout uniform(String name) {

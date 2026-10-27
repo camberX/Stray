@@ -13,6 +13,7 @@ import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.ModifyArg;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(MouseHandler.class)
@@ -46,25 +47,46 @@ public class MouseHandlerMixin {
 	}
 
 	/**
-	 * Vanilla warps to the window center, then asks SDL to leave relative mouse
-	 * mode. That pair is a blocking compositor round trip on Linux. Calling it
-	 * again from here ran once per {@code getWindow()} in this method, so a
-	 * chest refresh (shift-click in a menu that reopens) stalled the frame.
-	 * The saved coordinates are substituted into the one warp vanilla already does.
+	 * Vanilla warps the cursor to the window center when it releases the mouse.
+	 * When a container opens straight from another one, keep the cursor where it
+	 * was instead: swap the warp target and the stored position.
 	 */
-	@Inject(
+	@ModifyArg(
 		method = "releaseMouse",
 		at = @At(
 			value = "INVOKE",
-			target = "Lcom/mojang/blaze3d/platform/InputConstants;releaseMouse(Lcom/mojang/blaze3d/platform/Window;DD)V"
-		)
+			target = "Lcom/mojang/blaze3d/platform/InputConstants;grabOrReleaseMouse(Lcom/mojang/blaze3d/platform/Window;IDD)V"
+		),
+		index = 2
 	)
+	private double stray$keepCursorX(double x) {
+		return stray$keep() ? this.stray$beforeX : x;
+	}
+
+	@ModifyArg(
+		method = "releaseMouse",
+		at = @At(
+			value = "INVOKE",
+			target = "Lcom/mojang/blaze3d/platform/InputConstants;grabOrReleaseMouse(Lcom/mojang/blaze3d/platform/Window;IDD)V"
+		),
+		index = 3
+	)
+	private double stray$keepCursorY(double y) {
+		return stray$keep() ? this.stray$beforeY : y;
+	}
+
+	@Inject(method = "releaseMouse", at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/platform/InputConstants;grabOrReleaseMouse(Lcom/mojang/blaze3d/platform/Window;IDD)V", shift = At.Shift.AFTER))
 	private void stray$keepCursor(CallbackInfo ci) {
-		Minecraft client = Minecraft.getInstance();
-		if (client.gui.screen() instanceof ContainerScreen && NoCursorReset.shouldHookMouse()) {
+		if (stray$keep()) {
 			this.xpos = this.stray$beforeX;
 			this.ypos = this.stray$beforeY;
 		}
+	}
+
+	@Unique
+	private static boolean stray$keep() {
+		Minecraft client = Minecraft.getInstance();
+		return client.gui.screen() instanceof ContainerScreen && NoCursorReset.shouldHookMouse();
 	}
 
 	@Inject(method = "turnPlayer", at = @At("HEAD"), cancellable = true)

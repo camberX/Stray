@@ -3,7 +3,7 @@ package dev.stray.client.slayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.animal.wolf.Wolf;
 import net.minecraft.world.entity.monster.Blaze;
-import net.minecraft.world.entity.monster.Enderman;
+import net.minecraft.world.entity.monster.EnderMan;
 import net.minecraft.world.entity.monster.spider.Spider;
 import net.minecraft.world.entity.monster.zombie.Zombie;
 import net.minecraft.world.entity.player.Player;
@@ -66,7 +66,7 @@ public enum SlayerType {
 			case REVENANT -> entity instanceof Zombie;
 			case TARANTULA -> entity instanceof Spider;
 			case SVEN -> entity instanceof Wolf;
-			case VOID -> entity instanceof Enderman;
+			case VOID -> entity instanceof EnderMan;
 			case INFERNO -> entity instanceof Blaze;
 			case VAMPIRE -> entity instanceof Player;
 		};

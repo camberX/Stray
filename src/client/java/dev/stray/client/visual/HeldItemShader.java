@@ -1,27 +1,26 @@
 package dev.stray.client.visual;
 
-import com.mojang.renderpearl.api.pipeline.BlendFunction;
-import com.mojang.renderpearl.api.pipeline.ColorTargetState;
-import com.mojang.renderpearl.api.pipeline.DepthStencilState;
-import com.mojang.renderpearl.api.pipeline.RenderPipeline;
+import com.mojang.blaze3d.pipeline.BlendFunction;
+import com.mojang.blaze3d.pipeline.ColorTargetState;
+import com.mojang.blaze3d.pipeline.DepthStencilState;
+import com.mojang.blaze3d.pipeline.RenderPipeline;
 import com.mojang.blaze3d.pipeline.RenderTarget;
 import com.mojang.blaze3d.pipeline.TextureTarget;
-import com.mojang.renderpearl.api.pipeline.CompareOp;
-import com.mojang.renderpearl.api.pipeline.BindGroupLayout;
-import com.mojang.renderpearl.api.pipeline.UniformType;
-import com.mojang.renderpearl.api.commands.CommandEncoder;
-import com.mojang.renderpearl.api.commands.RenderPass;
+import com.mojang.blaze3d.platform.CompareOp;
+import com.mojang.blaze3d.pipeline.BindGroupLayout;
+import com.mojang.blaze3d.shaders.UniformType;
+import com.mojang.blaze3d.systems.CommandEncoder;
+import com.mojang.blaze3d.systems.RenderPass;
 import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.renderpearl.api.textures.FilterMode;
-import com.mojang.renderpearl.api.textures.GpuSampler;
-import com.mojang.renderpearl.api.textures.GpuTexture;
-import com.mojang.renderpearl.backend.opengl.GlStateManager;
-import com.mojang.renderpearl.frontend.FrontendCommandEncoder;
+import com.mojang.blaze3d.textures.FilterMode;
+import com.mojang.blaze3d.textures.GpuSampler;
+import com.mojang.blaze3d.textures.GpuTexture;
+import com.mojang.blaze3d.opengl.GlStateManager;
 import org.lwjgl.opengl.GL11;
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.QuadInstance;
-import com.mojang.renderpearl.api.pipeline.PrimitiveTopology;
+import com.mojang.blaze3d.PrimitiveTopology;
 import dev.stray.Stray;
 import dev.stray.client.config.EntityKind;
 import dev.stray.client.config.EntityVisuals;
@@ -41,6 +40,7 @@ import net.minecraft.client.renderer.feature.ItemFeatureRenderer;
 import net.minecraft.client.renderer.StagedVertexBuffer;
 import net.minecraft.client.renderer.rendertype.PreparedRenderType;
 import net.minecraft.client.renderer.rendertype.RenderSetup;
+import net.minecraft.client.renderer.rendertype.OutputTarget;
 import net.minecraft.client.renderer.rendertype.RenderType;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.client.renderer.texture.TextureAtlas;
@@ -95,8 +95,8 @@ public final class HeldItemShader {
 	private static int playerFillDepth;
 	private static EntityVisuals fillVisuals;
 	private static final Set<Object> FILL_ITEMS = Collections.newSetFromMap(new IdentityHashMap<>());
-	private static final List<OffscreenDraw> MASK_DRAWS = new ArrayList<>();
-	private static final List<OffscreenDraw> ESP_DRAWS = new ArrayList<>();
+	private static final OutputTarget MASK_OUTPUT = new OutputTarget("stray_held_item_mask", HeldItemShader::maskTarget);
+	private static final OutputTarget ESP_OUTPUT = new OutputTarget("stray_fill_esp", HeldItemShader::espTarget);
 
 	private HeldItemShader() {
 	}
@@ -249,8 +249,8 @@ public final class HeldItemShader {
 			.withBindGroupLayout(BindGroupLayouts.LIGHTING)
 			.withBindGroupLayout(BindGroupLayouts.SAMPLER0_SAMPLER1_SAMPLER2)
 			.withBindGroupLayout(BindGroupLayout.builder()
-				.withUniform("Sampler3", UniformType.COMBINED_IMAGE_SAMPLER)
-				.withUniform("Sampler4", UniformType.COMBINED_IMAGE_SAMPLER)
+				.withSampler("Sampler3")
+				.withSampler("Sampler4")
 				.build())
 			.withBindGroupLayout(BindGroupLayout.builder()
 				.withUniform("KnifeBones", UniformType.UNIFORM_BUFFER)
@@ -278,8 +278,8 @@ public final class HeldItemShader {
 			.withBindGroupLayout(BindGroupLayouts.LIGHTING)
 			.withBindGroupLayout(BindGroupLayouts.SAMPLER0_SAMPLER1_SAMPLER2)
 			.withBindGroupLayout(BindGroupLayout.builder()
-				.withUniform("Sampler3", UniformType.COMBINED_IMAGE_SAMPLER)
-				.withUniform("Sampler4", UniformType.COMBINED_IMAGE_SAMPLER)
+				.withSampler("Sampler3")
+				.withSampler("Sampler4")
 				.build())
 			.withVertexBinding(0, DefaultVertexFormat.ENTITY)
 			.withPrimitiveTopology(PrimitiveTopology.QUADS)
@@ -427,9 +427,9 @@ public final class HeldItemShader {
 			main.getColorTextureView(),
 			Optional.empty()
 		)) {
-			pass.setPipeline(RenderSystem.getCompiledPipeline(espBlitPipeline));
+			pass.setPipeline(espBlitPipeline);
 			RenderSystem.bindDefaultUniforms(pass);
-			pass.setUniform("InSampler", espTarget.getColorTextureView(), nearest);
+			pass.bindTexture("InSampler", espTarget.getColorTextureView(), nearest);
 			pass.draw(3, 1, 0, 0);
 		}
 	}
@@ -470,31 +470,9 @@ public final class HeldItemShader {
 		playerMaskDepthReady = true;
 	}
 
-	/**
-	 * World depth has to be snapshotted after opaque terrain and before solid
-	 * entities, while the main pass is still open. The frontend encoder refuses
-	 * copies in that state. The OpenGL blit uses its own framebuffers, so it can
-	 * run here; the pass scissor is put back before the next draw.
-	 */
+	/** 26.2 opens a render pass per draw, so the depth copy can go through the normal encoder. */
 	private static void copyDepth(GpuTexture source, GpuTexture destination, int width, int height) {
-		CommandEncoder encoder = RenderSystem.getDevice().createCommandEncoder();
-		if (!(encoder instanceof FrontendCommandEncoder frontend) || !frontend.isInRenderPass()) {
-			encoder.copyTextureToTexture(source, destination, 0, 0, 0, 0, 0, width, height);
-			return;
-		}
-		boolean scissor = GL11.glIsEnabled(GL11.GL_SCISSOR_TEST);
-		int[] box = new int[4];
-		if (scissor) {
-			GL11.glGetIntegerv(GL11.GL_SCISSOR_BOX, box);
-		}
-		try {
-			frontend.backend().copyTextureToTexture(source, destination, 0, 0, 0, 0, 0, width, height);
-		} finally {
-			if (scissor) {
-				GlStateManager._enableScissorTest();
-				GlStateManager._scissorBox(box[0], box[1], box[2], box[3]);
-			}
-		}
+		RenderSystem.getDevice().createCommandEncoder().copyTextureToTexture(source, destination, 0, 0, 0, 0, 0, width, height);
 	}
 
 	private static boolean prepareMaskTarget() {
@@ -524,53 +502,6 @@ public final class HeldItemShader {
 		ensureRegistered();
 		Identifier texture = atlas == null ? TextureAtlas.LOCATION_ITEMS : atlas;
 		return MASK_TYPES.apply(texture);
-	}
-
-	public static boolean captureOffscreen(PreparedRenderType type, StagedVertexBuffer.ExecuteInfo info) {
-		if (type == null || info == null || type.name() == null) {
-			return false;
-		}
-		String name = type.name();
-		if (name.startsWith("stray_held_item_mask")) {
-			MASK_DRAWS.add(new OffscreenDraw(type, info));
-			return true;
-		}
-		if (name.startsWith("stray_fill_esp")) {
-			ESP_DRAWS.add(new OffscreenDraw(type, info));
-			return true;
-		}
-		return false;
-	}
-
-	public static void flushOffscreen() {
-		drawOffscreen(MASK_DRAWS, maskTarget);
-		drawOffscreen(ESP_DRAWS, espTarget);
-	}
-
-	private static void drawOffscreen(List<OffscreenDraw> draws, RenderTarget target) {
-		if (draws.isEmpty()) {
-			return;
-		}
-		List<OffscreenDraw> pending = List.copyOf(draws);
-		draws.clear();
-		if (target == null || target.getColorTextureView() == null) {
-			return;
-		}
-		try (RenderPass pass = RenderSystem.getDevice().createCommandEncoder().createRenderPass(
-			() -> "stray offscreen",
-			target.getColorTextureView(),
-			Optional.empty(),
-			target.getDepthTextureView(),
-			OptionalDouble.empty()
-		)) {
-			RenderSystem.bindDefaultUniforms(pass);
-			for (OffscreenDraw draw : pending) {
-				draw.type.drawFromBuffer(draw.info, pass);
-			}
-		}
-	}
-
-	private record OffscreenDraw(PreparedRenderType type, StagedVertexBuffer.ExecuteInfo info) {
 	}
 
 	public static void compositeSilhouette() {
@@ -624,10 +555,10 @@ public final class HeldItemShader {
 			rowTarget.getColorTextureView(),
 			Optional.empty()
 		)) {
-			pass.setPipeline(RenderSystem.getCompiledPipeline(rowDistPipeline));
+			pass.setPipeline(rowDistPipeline);
 			RenderSystem.bindDefaultUniforms(pass);
 			pass.setUniform("DynamicTransforms", transforms);
-			pass.setUniform("InSampler", maskTarget.getColorTextureView(), nearest);
+			pass.bindTexture("InSampler", maskTarget.getColorTextureView(), nearest);
 			pass.draw(3, 1, 0, 0);
 		}
 		try (RenderPass pass = encoder.createRenderPass(
@@ -635,11 +566,11 @@ public final class HeldItemShader {
 			main.getColorTextureView(),
 			Optional.empty()
 		)) {
-			pass.setPipeline(RenderSystem.getCompiledPipeline(silhouettePipeline));
+			pass.setPipeline(silhouettePipeline);
 			RenderSystem.bindDefaultUniforms(pass);
 			pass.setUniform("DynamicTransforms", transforms);
-			pass.setUniform("InSampler", maskTarget.getColorTextureView(), nearest);
-			pass.setUniform("RowSampler", rowTarget.getColorTextureView(), nearest);
+			pass.bindTexture("InSampler", maskTarget.getColorTextureView(), nearest);
+			pass.bindTexture("RowSampler", rowTarget.getColorTextureView(), nearest);
 			pass.draw(3, 1, 0, 0);
 		}
 	}
@@ -724,6 +655,14 @@ public final class HeldItemShader {
 		return isPlayerFillPipeline(pipeline) || playerFill();
 	}
 
+	private static RenderTarget maskTarget() {
+		return maskTarget;
+	}
+
+	private static RenderTarget espTarget() {
+		return espTarget;
+	}
+
 	private static Identifier atlas(RenderType original, Iterable<BakedQuad> quads) {
 		Identifier atlas = TextureAtlas.LOCATION_ITEMS;
 		if (quads != null) {
@@ -800,6 +739,7 @@ public final class HeldItemShader {
 				.withTexture("Sampler3", AbstractEndPortalRenderer.END_SKY_LOCATION)
 				.withTexture("Sampler4", AbstractEndPortalRenderer.END_PORTAL_LOCATION)
 				.useLightmap()
+				.setOutputTarget(MASK_OUTPUT)
 				.setOutline(RenderSetup.OutlineProperty.NONE)
 				.createRenderSetup()
 		);
@@ -832,6 +772,7 @@ public final class HeldItemShader {
 				.withTexture("Sampler4", AbstractEndPortalRenderer.END_PORTAL_LOCATION)
 				.useLightmap()
 				.affectsCrumbling()
+				.setOutputTarget(ESP_OUTPUT)
 				.setOutline(RenderSetup.OutlineProperty.AFFECTS_OUTLINE)
 				.createRenderSetup()
 		);
@@ -847,6 +788,7 @@ public final class HeldItemShader {
 				.withTexture("Sampler3", AbstractEndPortalRenderer.END_SKY_LOCATION)
 				.withTexture("Sampler4", AbstractEndPortalRenderer.END_PORTAL_LOCATION)
 				.useLightmap()
+				.setOutputTarget(MASK_OUTPUT)
 				.setOutline(RenderSetup.OutlineProperty.NONE)
 				.createRenderSetup()
 		);

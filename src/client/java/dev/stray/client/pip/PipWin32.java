@@ -14,8 +14,7 @@ import com.sun.jna.ptr.PointerByReference;
 import com.sun.jna.win32.StdCallLibrary;
 import com.sun.jna.win32.W32APIOptions;
 import net.minecraft.client.Minecraft;
-import org.lwjgl.sdl.SDLProperties;
-import org.lwjgl.sdl.SDLVideo;
+import org.lwjgl.glfw.GLFWNativeWin32;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -215,9 +214,7 @@ final class PipWin32 {
 			if (client == null || client.getWindow() == null) {
 				return 0L;
 			}
-			long window = client.getWindow().handle();
-			int props = SDLVideo.SDL_GetWindowProperties(window);
-			return SDLProperties.SDL_GetPointerProperty(props, SDLVideo.SDL_PROP_WINDOW_WIN32_HWND_POINTER, 0L);
+			return GLFWNativeWin32.glfwGetWin32Window(client.getWindow().handle());
 		} catch (Throwable ignored) {
 			return 0L;
 		}

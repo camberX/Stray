@@ -1,31 +1,37 @@
 package dev.stray.client.mixin;
 
-import com.mojang.renderpearl.api.buffers.GpuBufferSlice;
-import com.mojang.renderpearl.backend.opengl.GlProgram;
-import com.mojang.renderpearl.backend.opengl.GlRenderPipeline;
-import com.mojang.renderpearl.backend.opengl.Uniform;
+import com.mojang.blaze3d.buffers.GpuBufferSlice;
+import com.mojang.blaze3d.opengl.GlProgram;
+import com.mojang.blaze3d.opengl.GlRenderPipeline;
+import com.mojang.blaze3d.opengl.Uniform;
 import dev.stray.client.mining.FocusMode;
 import dev.stray.client.render.StrayUniforms;
 import dev.stray.client.render.TopDownTerrainCut;
 import dev.stray.client.visual.CustomFog;
 import dev.stray.client.visual.WorldTint;
-import it.unimi.dsi.fastutil.objects.ReferenceList;
+import java.util.HashMap;
+import java.util.Map;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-@Mixin(targets = "com.mojang.renderpearl.backend.opengl.GlRenderPass")
+/**
+ * Pipelines patched with Stray's uniform block (vanilla and Sodium terrain) never get that
+ * block assigned by the code that draws them, and the GL backend would bind a null slice.
+ * Fill any unassigned uniform block with Stray's buffer right before the draw.
+ */
+@Mixin(targets = "com.mojang.blaze3d.opengl.GlRenderPass")
 public abstract class GlRenderPassMixin {
 	@Shadow
 	protected GlRenderPipeline pipeline;
 
 	@Shadow
-	protected ReferenceList<Object> uniforms;
+	protected HashMap<String, GpuBufferSlice> uniforms;
 
 	@Shadow
-	public abstract void setUniform(int index, Object value);
+	public abstract void setUniform(String name, GpuBufferSlice value);
 
 	@Inject(method = {
 		"drawIndexed",
@@ -33,7 +39,8 @@ public abstract class GlRenderPassMixin {
 		"multiDrawIndexed",
 		"multiDraw",
 		"drawIndexedIndirect",
-		"drawIndirect"
+		"drawIndirect",
+		"drawMultipleIndexed"
 	}, at = @At("HEAD"))
 	private void stray$terrainUniforms(CallbackInfo ci) {
 		if (pipeline == null) {
@@ -43,21 +50,19 @@ public abstract class GlRenderPassMixin {
 		if (program == null) {
 			return;
 		}
-		TopDownTerrainCut.bind();
-		FocusMode.bind();
-		WorldTint.bind();
-		CustomFog.bind();
 		GpuBufferSlice slice = null;
-		int count = Math.min(program.uniformCount(), uniforms.size());
-		for (int index = 0; index < count; index++) {
-			if (!(program.getUniform(index) instanceof Uniform.Ubo) || uniforms.get(index) != null) {
+		for (Map.Entry<String, Uniform> entry : program.getUniforms().entrySet()) {
+			if (!(entry.getValue() instanceof Uniform.Ubo) || uniforms.containsKey(entry.getKey())) {
 				continue;
 			}
 			if (slice == null) {
+				TopDownTerrainCut.bind();
+				FocusMode.bind();
+				WorldTint.bind();
+				CustomFog.bind();
 				slice = StrayUniforms.upload();
 			}
-			uniforms.set(index, slice);
-			setUniform(index, slice);
+			setUniform(entry.getKey(), slice);
 		}
 	}
 }

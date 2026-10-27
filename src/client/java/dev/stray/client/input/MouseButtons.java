@@ -1,9 +1,11 @@
 package dev.stray.client.input;
 
 import com.mojang.blaze3d.platform.InputConstants;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.input.MouseButtonEvent;
-import org.lwjgl.sdl.SDLMouse;
+import org.lwjgl.glfw.GLFW;
 
+/** Mouse button helpers. 26.2 still uses GLFW numbering everywhere (left 0, right 1, middle 2). */
 public final class MouseButtons {
 	private MouseButtons() {
 	}
@@ -20,26 +22,15 @@ public final class MouseButtons {
 		return event != null && event.button() == InputConstants.MOUSE_BUTTON_MIDDLE;
 	}
 
-	/**
-	 * Slot-click packets still use GLFW numbering: left 0, right 1.
-	 * 26.3 mouse events use SDL numbering: left 1, right 3.
-	 */
+	/** Slot-click packets use GLFW numbering, which is what 26.2 mouse events already carry. */
 	public static int containerButton(MouseButtonEvent event) {
-		if (left(event)) {
-			return 0;
-		}
-		if (right(event)) {
-			return 1;
-		}
 		return event == null ? 0 : event.button();
 	}
 
 	public static boolean down(int button) {
-		int sdl = button == 0 ? InputConstants.MOUSE_BUTTON_LEFT : button;
-		if (sdl <= 0) {
+		if (button < 0) {
 			return false;
 		}
-		int state = SDLMouse.SDL_GetMouseState(null, null);
-		return (state & (1 << (sdl - 1))) != 0;
+		return GLFW.glfwGetMouseButton(Minecraft.getInstance().getWindow().handle(), button) == GLFW.GLFW_PRESS;
 	}
 }

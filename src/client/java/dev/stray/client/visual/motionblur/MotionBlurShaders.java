@@ -1,6 +1,6 @@
 package dev.stray.client.visual.motionblur;
 
-import com.mojang.renderpearl.api.buffers.GpuBuffer;
+import com.mojang.blaze3d.buffers.GpuBuffer;
 import com.mojang.blaze3d.resource.GraphicsResourceAllocator;
 import dev.stray.Stray;
 import dev.stray.client.config.StrayConfig;

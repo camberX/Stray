@@ -139,7 +139,7 @@ public final class FocusMode {
 		}
 		if (source.contains("ChunkPosition") && source.contains("vertexColor = Color * sample_lightmap(Sampler2, UV2);")) {
 			return source
-				.replace("out vec4 vertexColor;", "out vec4 vertexColor;\nlayout(location = 5) flat out vec4 strayTint;\nlayout(location = 6) out vec4 strayLight;")
+				.replace("out vec4 vertexColor;", "out vec4 vertexColor;\nflat out vec4 strayTint;\nout vec4 strayLight;")
 				.replace(
 					"vertexColor = Color * sample_lightmap(Sampler2, UV2);",
 					"strayLight = sample_lightmap(Sampler2, UV2);\n    strayTint = Color;\n    vertexColor = Color * strayLight;"
@@ -150,7 +150,7 @@ public final class FocusMode {
 		}
 		String withIns = source.replace(
 			"in vec4 vertexColor;",
-			"in vec4 vertexColor;\nlayout(location = 5) flat in vec4 strayTint;\nlayout(location = 6) in vec4 strayLight;"
+			"in vec4 vertexColor;\nflat in vec4 strayTint;\nin vec4 strayLight;"
 		);
 		String withFn = StrayUniforms.insertBlock(withIns).replace("void main() {", FOCUS_FN + "void main() {");
 		return withFn.replace(
@@ -164,7 +164,7 @@ public final class FocusMode {
 			return source;
 		}
 		return source
-			.replace("out vec4 v_Color;", "out vec4 v_Color;\nlayout(location = 5) flat out vec4 strayTint;\nlayout(location = 6) out vec4 strayLight;")
+			.replace("out vec4 v_Color;", "out vec4 v_Color;\nflat out vec4 strayTint;\nout vec4 strayLight;")
 			.replace(
 				"v_Color = _vert_color * texture(u_LightTex, _vert_tex_light_coord);",
 				"strayLight = texture(u_LightTex, _vert_tex_light_coord);\n    strayTint = _vert_color;\n    v_Color = _vert_color * strayLight;"
@@ -178,9 +178,9 @@ public final class FocusMode {
 		String withIns = source.contains("in vec4 v_Color; // The interpolated vertex color")
 			? source.replace(
 				"in vec4 v_Color; // The interpolated vertex color",
-				"in vec4 v_Color; // The interpolated vertex color\nlayout(location = 5) flat in vec4 strayTint;\nlayout(location = 6) in vec4 strayLight;"
+				"in vec4 v_Color; // The interpolated vertex color\nflat in vec4 strayTint;\nin vec4 strayLight;"
 			)
-			: source.replace("in vec4 v_Color;", "in vec4 v_Color;\nlayout(location = 5) flat in vec4 strayTint;\nlayout(location = 6) in vec4 strayLight;");
+			: source.replace("in vec4 v_Color;", "in vec4 v_Color;\nflat in vec4 strayTint;\nin vec4 strayLight;");
 		String withFn = StrayUniforms.insertBlock(withIns).replace("void main() {", FOCUS_FN + "void main() {");
 		return withFn.replace(
 			"color *= v_Color;",

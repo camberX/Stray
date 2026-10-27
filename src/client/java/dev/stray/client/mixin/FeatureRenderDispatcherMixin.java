@@ -13,9 +13,4 @@ public class FeatureRenderDispatcherMixin {
 	private void stray$playerFillMaskDepth(CallbackInfo ci) {
 		HeldItemShader.capturePlayerMaskDepth();
 	}
-
-	@Inject(method = "close", at = @At("HEAD"))
-	private void stray$flushOffscreen(CallbackInfo ci) {
-		HeldItemShader.flushOffscreen();
-	}
 }

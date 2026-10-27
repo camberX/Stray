@@ -35,8 +35,6 @@
 		"EditBoxMixin",
 		"EntityRendererMixin",
 		"FeatureRenderDispatcherMixin",
-		"FrontendRenderPassMixin",
-		"GlCommandEncoderMixin",
 		"EntityRenderStateMixin",
 		"FogRendererMixin",
 		"FontMixin",
@@ -77,8 +75,6 @@
 		"RenderSetupTextureBindingAccessor",
 		"RenderTypeAccessor",
 		"RenderTypeFeatureRendererInvoker",
-		"RenderTypeFeatureRendererMixin",
-		"RenderPipelineBuilderMixin",
 		"PreparedRenderTypeMixin",
 		"RenderTypeMixin",
 		"SubmitNodeCollectionMixin",
@@ -97,7 +93,8 @@
 		"customize.ItemEnchantmentGlintMixin",
 		"customize.PlayerHeadSpecialRendererMixin",
 		"customize.TrimMaterialPropertyMixin",
-		"customize.ItemModelOverrideMixin"
+		"customize.ItemModelOverrideMixin",
+		"RenderPipelineBuilderMixin"
 	],
 	"injectors": {
 		"defaultRequire": 1

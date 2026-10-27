@@ -1,13 +1,12 @@
 #version 330
-#extension GL_ARB_separate_shader_objects : require
 
-#include <minecraft:dynamictransforms.glsl>
+#moj_import <minecraft:dynamictransforms.glsl>
 
 uniform sampler2D InSampler;
 
-layout(location = 0) in vec2 texCoord;
+in vec2 texCoord;
 
-layout(location = 0) out vec4 fragColor;
+out vec4 fragColor;
 
 // First half of the exact separable disc dilation used by held_item_silhouette:
 // per pixel, the horizontal distance to the nearest covered mask texel on the

@@ -1,24 +1,24 @@
 package dev.stray.client.render;
 
-import com.mojang.renderpearl.api.buffers.GpuBuffer;
+import com.mojang.blaze3d.buffers.GpuBuffer;
 import com.mojang.blaze3d.buffers.Std140Builder;
 import com.mojang.blaze3d.buffers.Std140SizeCalculator;
-import com.mojang.renderpearl.api.pipeline.BlendFunction;
-import com.mojang.renderpearl.api.pipeline.ColorTargetState;
-import com.mojang.renderpearl.api.pipeline.DepthStencilState;
-import com.mojang.renderpearl.api.pipeline.RenderPipeline;
+import com.mojang.blaze3d.pipeline.BlendFunction;
+import com.mojang.blaze3d.pipeline.ColorTargetState;
+import com.mojang.blaze3d.pipeline.DepthStencilState;
+import com.mojang.blaze3d.pipeline.RenderPipeline;
 import com.mojang.blaze3d.pipeline.RenderTarget;
 import com.mojang.blaze3d.pipeline.TextureTarget;
-import com.mojang.renderpearl.api.pipeline.CompareOp;
-import com.mojang.renderpearl.api.pipeline.UniformType;
-import com.mojang.renderpearl.api.commands.CommandEncoder;
-import com.mojang.renderpearl.api.commands.RenderPass;
+import com.mojang.blaze3d.platform.CompareOp;
+import com.mojang.blaze3d.shaders.UniformType;
+import com.mojang.blaze3d.systems.CommandEncoder;
+import com.mojang.blaze3d.systems.RenderPass;
 import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.renderpearl.api.textures.FilterMode;
-import com.mojang.renderpearl.api.textures.GpuSampler;
-import com.mojang.renderpearl.api.textures.GpuTextureView;
+import com.mojang.blaze3d.textures.FilterMode;
+import com.mojang.blaze3d.textures.GpuSampler;
+import com.mojang.blaze3d.textures.GpuTextureView;
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
-import com.mojang.renderpearl.api.pipeline.PrimitiveTopology;
+import com.mojang.blaze3d.PrimitiveTopology;
 import dev.stray.Stray;
 import dev.stray.client.render.RenderCompat;
 import dev.stray.client.config.StrayConfig;
@@ -349,9 +349,9 @@ public final class GuiFrostBlur {
 		List<Region> scissors
 	) {
 		try (RenderPass pass = encoder.createRenderPass(() -> "stray control frost", out, Optional.empty())) {
-			pass.setPipeline(RenderSystem.getCompiledPipeline(blurPipeline));
+			pass.setPipeline(blurPipeline);
 			pass.setUniform("BlurConfig", config);
-			pass.setUniform("InSampler", in, sampler);
+			pass.bindTexture("InSampler", in, sampler);
 			if (scissors == null) {
 				pass.draw(3, 1, 0, 0);
 				return;

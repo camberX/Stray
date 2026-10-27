@@ -8,7 +8,6 @@ import net.minecraft.client.multiplayer.MultiPlayerGameMode;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.protocol.game.ServerboundPunchPacket;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.Display;
@@ -132,8 +131,7 @@ public final class Triggerbot {
 		lastHit = tick;
 		extraWait = extraTicks(humanize);
 		gameMode.attack(player, target);
-		player.swing(InteractionHand.MAIN_HAND, held.getAttackAnimation(), false);
-		player.connection.send(ServerboundPunchPacket.INSTANCE);
+		player.swing(InteractionHand.MAIN_HAND);
 	}
 
 	private static boolean delayReady(LocalPlayer player) {

@@ -15,7 +15,7 @@ import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.decoration.ArmorStand;
-import net.minecraft.world.entity.monster.Enderman;
+import net.minecraft.world.entity.monster.EnderMan;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.component.ItemLore;
@@ -38,7 +38,7 @@ public final class SlayerFx {
 
 	private static final Pattern MOB_NAME = Pattern.compile(
 		"^\\[Lv\\d+]\\s+\\S*\\s*(?:Zombie Villager|Zombie|Crypt Ghoul|Graveyard Zombie|Dasher Spider|Weaver Spider|Splitter Spider"
-			+ "|Voracious Spider|Silverfish|Wolf|Howling Spirit|Pack Spirit|Enderman|Voidling Fanatic|Blaze|Mutated Blaze|Bezal"
+			+ "|Voracious Spider|Silverfish|Wolf|Howling Spirit|Pack Spirit|EnderMan|Voidling Fanatic|Blaze|Mutated Blaze|Bezal"
 			+ "|Smoldering Blaze|Flaming Spider) (\\S+)/(\\S+)❤$");
 	private static final Pattern DAMAGE = Pattern.compile("^[✧✯]?[\\d,.]+[kKmM]?[✧✯❤♞☄✷ﬗ⚔]*$");
 	private static final List<Death> DEATHS = new ArrayList<>();
@@ -102,7 +102,7 @@ public final class SlayerFx {
 		if (s.voidgloom && s.voidHideParticles && "The End".equalsIgnoreCase(SkyblockLocation.area)
 			&& (type == ParticleTypes.LARGE_SMOKE || type == ParticleTypes.FLAME || type == ParticleTypes.WITCH)) {
 			Minecraft client = Minecraft.getInstance();
-			if (client.level != null && !client.level.getEntitiesOfClass(Enderman.class, new AABB(x - 3, y - 3, z - 3, x + 3, y + 3, z + 3)).isEmpty()) {
+			if (client.level != null && !client.level.getEntitiesOfClass(EnderMan.class, new AABB(x - 3, y - 3, z - 3, x + 3, y + 3, z + 3)).isEmpty()) {
 				return true;
 			}
 		}

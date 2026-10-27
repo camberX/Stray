@@ -1,6 +1,5 @@
 package dev.stray.client.mixin;
 
-import com.mojang.renderpearl.api.textures.GpuTextureView;
 import dev.stray.client.render.GuiFrostBlur;
 import dev.stray.client.render.MobGlowRenderer;
 import dev.stray.client.render.TopDownCapture;
@@ -9,7 +8,6 @@ import dev.stray.client.visual.motionblur.MotionBlurShaders;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.client.renderer.state.level.CameraRenderState;
-import net.minecraft.client.renderer.state.level.PlayerRenderState;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -31,7 +29,7 @@ public class GameRendererMixin {
 		method = "renderLevel",
 		at = @At(
 			value = "INVOKE",
-			target = "Lnet/minecraft/client/renderer/LevelRenderer;render(Lcom/mojang/blaze3d/resource/GraphicsResourceAllocator;ZLnet/minecraft/client/renderer/state/level/CameraRenderState;Lcom/mojang/renderpearl/api/buffers/GpuBufferSlice;Lorg/joml/Vector4f;ZZ)V",
+			target = "Lnet/minecraft/client/renderer/LevelRenderer;render(Lcom/mojang/blaze3d/resource/GraphicsResourceAllocator;Lnet/minecraft/client/DeltaTracker;ZLnet/minecraft/client/renderer/state/level/CameraRenderState;Lorg/joml/Matrix4fc;Lcom/mojang/blaze3d/buffers/GpuBufferSlice;Lorg/joml/Vector4f;Z)V",
 			shift = At.Shift.AFTER
 		)
 	)
@@ -41,12 +39,12 @@ public class GameRendererMixin {
 	}
 
 	@Inject(method = "renderItemInHand", at = @At("HEAD"))
-	private void stray$beginHeldItemMask(CameraRenderState camera, PlayerRenderState player, GpuTextureView lightmap, CallbackInfo ci) {
+	private void stray$beginHeldItemMask(CallbackInfo ci) {
 		HeldItemShader.beginMask();
 	}
 
 	@Inject(method = "renderItemInHand", at = @At("RETURN"))
-	private void stray$compositeHeldItemSilhouette(CameraRenderState camera, PlayerRenderState player, GpuTextureView lightmap, CallbackInfo ci) {
+	private void stray$compositeHeldItemSilhouette(CallbackInfo ci) {
 		HeldItemShader.compositeSilhouette();
 	}
 

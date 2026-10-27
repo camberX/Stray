@@ -1,9 +1,9 @@
 package dev.stray.client.mixin;
 
-import com.mojang.renderpearl.api.buffers.GpuBufferSlice;
-import com.mojang.renderpearl.api.pipeline.RenderPipeline;
+import com.mojang.blaze3d.buffers.GpuBufferSlice;
+import com.mojang.blaze3d.pipeline.RenderPipeline;
 import dev.stray.client.visual.HeldItemShader;
-import net.minecraft.client.renderer.DynamicGpuData;
+import net.minecraft.client.renderer.DynamicUniforms;
 import net.minecraft.client.renderer.rendertype.RenderType;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
@@ -20,10 +20,10 @@ public class RenderTypeMixin {
 		method = "writeDynamicTransforms",
 		at = @At(
 			value = "INVOKE",
-			target = "Lnet/minecraft/client/renderer/DynamicGpuData;writeTransform(Lorg/joml/Matrix4f;Lorg/joml/Matrix4f;)Lcom/mojang/renderpearl/api/buffers/GpuBufferSlice;"
+			target = "Lnet/minecraft/client/renderer/DynamicUniforms;writeTransform(Lorg/joml/Matrix4f;Lorg/joml/Matrix4f;)Lcom/mojang/blaze3d/buffers/GpuBufferSlice;"
 		)
 	)
-	private GpuBufferSlice stray$heldItemTransform(DynamicGpuData uniforms, Matrix4f modelView, Matrix4f texture) {
+	private GpuBufferSlice stray$heldItemTransform(DynamicUniforms uniforms, Matrix4f modelView, Matrix4f texture) {
 		RenderPipeline pipeline = ((RenderType) (Object) this).pipeline();
 		if (!HeldItemShader.isPipeline(pipeline)) {
 			return uniforms.writeTransform(modelView, texture);

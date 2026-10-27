@@ -1,26 +1,26 @@
 package dev.stray.client.visual;
 
-import com.mojang.renderpearl.api.buffers.GpuBuffer;
-import com.mojang.renderpearl.api.buffers.GpuBufferSlice;
-import com.mojang.renderpearl.api.pipeline.BlendFunction;
-import com.mojang.renderpearl.api.pipeline.ColorTargetState;
-import com.mojang.renderpearl.api.pipeline.DepthStencilState;
-import com.mojang.renderpearl.api.pipeline.RenderPipeline;
+import com.mojang.blaze3d.buffers.GpuBuffer;
+import com.mojang.blaze3d.buffers.GpuBufferSlice;
+import com.mojang.blaze3d.pipeline.BlendFunction;
+import com.mojang.blaze3d.pipeline.ColorTargetState;
+import com.mojang.blaze3d.pipeline.DepthStencilState;
+import com.mojang.blaze3d.pipeline.RenderPipeline;
 import com.mojang.blaze3d.pipeline.RenderTarget;
-import com.mojang.renderpearl.api.pipeline.CompareOp;
-import com.mojang.renderpearl.api.pipeline.BlendFactor;
-import com.mojang.renderpearl.api.pipeline.UniformType;
-import com.mojang.renderpearl.api.commands.RenderPass;
+import com.mojang.blaze3d.platform.CompareOp;
+import com.mojang.blaze3d.platform.BlendFactor;
+import com.mojang.blaze3d.shaders.UniformType;
+import com.mojang.blaze3d.systems.RenderPass;
 import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.renderpearl.api.textures.FilterMode;
-import com.mojang.renderpearl.api.textures.GpuSampler;
-import com.mojang.renderpearl.api.textures.GpuTextureView;
+import com.mojang.blaze3d.textures.FilterMode;
+import com.mojang.blaze3d.textures.GpuSampler;
+import com.mojang.blaze3d.textures.GpuTextureView;
 import com.mojang.blaze3d.vertex.BufferBuilder;
 import com.mojang.blaze3d.vertex.ByteBufferBuilder;
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.MeshData;
 import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.renderpearl.api.pipeline.PrimitiveTopology;
+import com.mojang.blaze3d.PrimitiveTopology;
 import com.mojang.math.Axis;
 import dev.stray.Stray;
 import dev.stray.client.mixin.RenderPipelinesInvoker;
@@ -123,8 +123,8 @@ public final class EndSkyDecor {
 		GpuTextureView holeB = b != a && blend > 0.002f ? view(client, HOLE_TEXTURES[b]) : null;
 
 		PoseStack pose = new PoseStack();
-		pose.rotate(Axis.YP.rotation(time * 0.0009f));
-		pose.rotate(Axis.XP.rotation(TILT));
+		pose.mulPose(Axis.YP.rotation(time * 0.0009f));
+		pose.mulPose(Axis.XP.rotation(TILT));
 		Matrix4fStack modelView = RenderSystem.getModelViewStack();
 		modelView.pushMatrix();
 		modelView.mul(pose.last().pose());
@@ -161,14 +161,14 @@ public final class EndSkyDecor {
 			main.getDepthTextureView(),
 			OptionalDouble.empty()
 		)) {
-			pass.setPipeline(RenderSystem.getCompiledPipeline(pipeline));
+			pass.setPipeline(pipeline);
 			RenderSystem.bindDefaultUniforms(pass);
 			pass.setVertexBuffer(0, quads.slice());
 			pass.setIndexBuffer(indexBuf.getBuffer(7 * 6), indexBuf.type());
 			pass.setUniform("DynamicTransforms", opaque);
 			for (int i = 0; i < 6; i++) {
 				if (faces[i] != null) {
-					pass.setUniform("Sampler0", faces[i], linear);
+					pass.bindTexture("Sampler0", faces[i], linear);
 					pass.drawIndexed(6, 1, i * 6, 0, 0);
 				}
 			}
@@ -176,16 +176,16 @@ public final class EndSkyDecor {
 				if (fading) {
 					pass.setUniform("DynamicTransforms", fadeA);
 				}
-				pass.setUniform("Sampler0", holeA, linear);
+				pass.bindTexture("Sampler0", holeA, linear);
 				pass.drawIndexed(6, 1, 6 * 6, 0, 0);
 			}
 			if (fading) {
-				pass.setPipeline(RenderSystem.getCompiledPipeline(addPipeline));
+				pass.setPipeline(addPipeline);
 				RenderSystem.bindDefaultUniforms(pass);
 				pass.setVertexBuffer(0, quads.slice());
 				pass.setIndexBuffer(indexBuf.getBuffer(7 * 6), indexBuf.type());
 				pass.setUniform("DynamicTransforms", fadeB);
-				pass.setUniform("Sampler0", holeB, linear);
+				pass.bindTexture("Sampler0", holeB, linear);
 				pass.drawIndexed(6, 1, 6 * 6, 0, 0);
 			}
 		} finally {

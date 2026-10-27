@@ -1354,7 +1354,7 @@ public class ProfileViewerScreen extends Screen {
 			case "Zombie" -> new ItemStack(Items.ROTTEN_FLESH);
 			case "Spider" -> new ItemStack(Items.SPIDER_EYE);
 			case "Wolf" -> new ItemStack(Items.BONE);
-			case "Enderman" -> new ItemStack(Items.ENDER_PEARL);
+			case "EnderMan" -> new ItemStack(Items.ENDER_PEARL);
 			case "Blaze" -> new ItemStack(Items.BLAZE_ROD);
 			case "Vampire" -> new ItemStack(Items.REDSTONE);
 			default -> new ItemStack(Items.IRON_SWORD);

@@ -4,8 +4,9 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import dev.stray.client.visual.HeldItemShader;
 import net.minecraft.client.model.Model;
 import net.minecraft.client.renderer.SubmitNodeCollection;
+import net.minecraft.client.renderer.feature.ModelFeatureRenderer;
 import net.minecraft.client.renderer.rendertype.RenderType;
-import net.minecraft.client.renderer.texture.UvMapping;
+import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
@@ -31,9 +32,10 @@ public class SubmitNodeCollectionMixin {
 		RenderType renderType,
 		int lightCoords,
 		int overlayCoords,
-		int tintedColor,
-		UvMapping uvMapping,
+		int seed,
+		TextureAtlasSprite sprite,
 		int outlineColor,
+		ModelFeatureRenderer.CrumblingOverlay crumbling,
 		CallbackInfo ci
 	) {
 		if (this.stray$submittingMask) {
@@ -52,9 +54,10 @@ public class SubmitNodeCollectionMixin {
 				mask,
 				lightCoords,
 				overlayCoords,
-				tintedColor,
-				uvMapping,
-				outlineColor
+				seed,
+				sprite,
+				outlineColor,
+				crumbling
 			);
 		} finally {
 			this.stray$submittingMask = false;

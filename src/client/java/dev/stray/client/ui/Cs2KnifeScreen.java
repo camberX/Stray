@@ -1444,7 +1444,7 @@ public final class Cs2KnifeScreen extends Screen {
 		if (bindListen) {
 			int k = event.key();
 			if (k != com.mojang.blaze3d.platform.InputConstants.KEY_ESCAPE) {
-				StrayConfig.get().cs2InspectKey = dev.stray.client.combat.OdinClicks.keyName(com.mojang.blaze3d.platform.InputConstants.Type.KEYBOARD.getOrCreate(k));
+				StrayConfig.get().cs2InspectKey = dev.stray.client.combat.OdinClicks.keyName(com.mojang.blaze3d.platform.InputConstants.Type.KEYSYM.getOrCreate(k));
 			}
 			bindListen = false;
 			return true;

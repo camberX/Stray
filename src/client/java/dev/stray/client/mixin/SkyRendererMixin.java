@@ -1,12 +1,12 @@
 package dev.stray.client.mixin;
 
-import com.mojang.renderpearl.api.buffers.GpuBufferSlice;
+import com.mojang.blaze3d.buffers.GpuBufferSlice;
 import dev.stray.client.visual.EndSkyDecor;
 import dev.stray.client.visual.WorldTint;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
-import net.minecraft.client.renderer.DynamicGpuData;
+import net.minecraft.client.renderer.DynamicUniforms;
 import net.minecraft.client.renderer.SkyRenderer;
 import net.minecraft.client.renderer.state.level.SkyRenderState;
 import net.minecraft.world.level.dimension.DimensionType;
@@ -33,10 +33,10 @@ public class SkyRendererMixin {
 		method = "renderEndSky",
 		at = @At(
 			value = "INVOKE",
-			target = "Lnet/minecraft/client/renderer/DynamicGpuData;writeTransform(Lorg/joml/Matrix4f;)Lcom/mojang/renderpearl/api/buffers/GpuBufferSlice;"
+			target = "Lnet/minecraft/client/renderer/DynamicUniforms;writeTransform(Lorg/joml/Matrix4f;)Lcom/mojang/blaze3d/buffers/GpuBufferSlice;"
 		)
 	)
-	private GpuBufferSlice stray$tintEndSky(DynamicGpuData uniforms, Matrix4f modelView) {
+	private GpuBufferSlice stray$tintEndSky(DynamicUniforms uniforms, Matrix4f modelView) {
 		Vector4f tint = new Vector4f(WorldTint.endSkyColor(new Vector4f(1f, 1f, 1f, 1f)));
 		return uniforms.writeTransform(modelView, tint);
 	}

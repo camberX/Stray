@@ -6,10 +6,11 @@ import dev.stray.client.cs2.anim.NmClip;
 import dev.stray.client.cs2.anim.Pose;
 import dev.stray.client.cs2.render.KnifeRender;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.entity.state.AvatarRenderState;
+import net.minecraft.client.player.AbstractClientPlayer;
 import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.client.renderer.entity.player.AvatarRenderer;
 import net.minecraft.world.entity.HumanoidArm;
+import net.minecraft.world.entity.player.PlayerModelPart;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
 
@@ -158,7 +159,7 @@ public final class Cs2Viewmodel {
 	 * cannot (nothing loaded), so vanilla draws as usual.
 	 */
 	public static boolean render(
-		AvatarRenderState player,
+		AbstractClientPlayer player,
 		HumanoidArm arm,
 		float swingProgress,
 		float equippedProgress,
@@ -214,7 +215,7 @@ public final class Cs2Viewmodel {
 	}
 
 	/** Puts the Minecraft arm along CS2's forearm with its hand end at CS2's hand bone. */
-	private static void drawArm(AvatarRenderState player, Pose rig, Matrix4f view, boolean left, PoseStack pose, SubmitNodeCollector collector, int light) {
+	private static void drawArm(AbstractClientPlayer player, Pose rig, Matrix4f view, boolean left, PoseStack pose, SubmitNodeCollector collector, int light) {
 		if (rig.handR < 0 || rig.lowerArmR < 0) {
 			return;
 		}
@@ -259,12 +260,13 @@ public final class Cs2Viewmodel {
 		pose.pushPose();
 		pose.last().pose().mul(m);
 		pose.last().normal().mul(new org.joml.Matrix3f(m).normal());
-		AvatarRenderer<?> renderer = Minecraft.getInstance().getEntityRenderDispatcher().getRenderer(player);
-		var skin = player.skin.body().texturePath();
+		AvatarRenderer<AbstractClientPlayer> renderer = (AvatarRenderer<AbstractClientPlayer>) Minecraft.getInstance()
+			.getEntityRenderDispatcher().getPlayerRenderer(player);
+		var skin = player.getSkin().body().texturePath();
 		if (left) {
-			renderer.renderLeftHand(pose, collector, light, skin, player.showLeftSleeve);
+			renderer.renderLeftHand(pose, collector, light, skin, player.isModelPartShown(PlayerModelPart.LEFT_SLEEVE));
 		} else {
-			renderer.renderRightHand(pose, collector, light, skin, player.showRightSleeve);
+			renderer.renderRightHand(pose, collector, light, skin, player.isModelPartShown(PlayerModelPart.RIGHT_SLEEVE));
 		}
 		pose.popPose();
 	}

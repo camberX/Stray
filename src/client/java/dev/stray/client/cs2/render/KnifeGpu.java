@@ -1,13 +1,17 @@
 package dev.stray.client.cs2.render;
 
+import java.util.OptionalDouble;
+import java.util.Optional;
+import com.mojang.blaze3d.textures.GpuTextureView;
+import com.mojang.blaze3d.pipeline.RenderTarget;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
-import com.mojang.renderpearl.api.buffers.GpuBuffer;
-import com.mojang.renderpearl.api.buffers.GpuBufferSlice;
-import com.mojang.renderpearl.api.commands.RenderPass;
-import com.mojang.renderpearl.api.device.GpuDevice;
-import com.mojang.renderpearl.api.pipeline.IndexType;
-import com.mojang.renderpearl.api.vertex.VertexFormat;
+import com.mojang.blaze3d.buffers.GpuBuffer;
+import com.mojang.blaze3d.buffers.GpuBufferSlice;
+import com.mojang.blaze3d.systems.RenderPass;
+import com.mojang.blaze3d.systems.GpuDevice;
+import com.mojang.blaze3d.IndexType;
+import com.mojang.blaze3d.vertex.VertexFormat;
 import dev.stray.Stray;
 import dev.stray.client.cs2.Cs2Knives;
 import dev.stray.client.cs2.s2.S2Model;
@@ -258,13 +262,20 @@ public final class KnifeGpu {
 		return pending != null && !pending.requests.isEmpty();
 	}
 
-	/** Draws every queued knife for this batch inside Minecraft's render pass. */
-	public static void draw(PreparedRenderType batch, RenderPass pass) {
+	/** Draws every queued knife for this batch in its own render pass, the way 26.2 draws each batch. */
+	public static void draw(PreparedRenderType batch) {
 		Pending pending = QUEUE.remove(batch);
 		if (pending == null || pending.requests.isEmpty()) {
 			return;
 		}
-		try {
+		RenderTarget target = batch.outputTarget().getRenderTarget();
+		GpuTextureView color = RenderSystem.outputColorTextureOverride != null ? RenderSystem.outputColorTextureOverride : target.getColorTextureView();
+		GpuTextureView depth = target.useDepth
+			? (RenderSystem.outputDepthTextureOverride != null ? RenderSystem.outputDepthTextureOverride : target.getDepthTextureView())
+			: null;
+		try (RenderPass pass = RenderSystem.getDevice()
+				.createCommandEncoder()
+				.createRenderPass(() -> "Stray CS2 knife", color, Optional.empty(), depth, OptionalDouble.empty())) {
 			bind(batch, pass);
 			for (Request req : pending.requests) {
 				drawMesh(pass, req, false);
@@ -282,14 +293,16 @@ public final class KnifeGpu {
 	}
 
 	private static void bind(PreparedRenderType batch, RenderPass pass) {
-		pass.setPipeline(RenderSystem.getCompiledPipeline(batch.pipeline()));
+		pass.setPipeline(batch.pipeline());
 		if (batch.scissorState().enabled()) {
 			pass.enableScissor(batch.scissorState().x(), batch.scissorState().y(), batch.scissorState().width(), batch.scissorState().height());
+		} else {
+			pass.disableScissor();
 		}
 		RenderSystem.bindDefaultUniforms(pass);
 		pass.setUniform("DynamicTransforms", batch.dynamicTransforms());
 		for (PreparedRenderType.Texture texture : batch.textures()) {
-			pass.setUniform(texture.name(), texture.textureView(), texture.sampler());
+			pass.bindTexture(texture.name(), texture.textureView(), texture.sampler());
 		}
 	}
 

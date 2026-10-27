@@ -52,8 +52,8 @@ public abstract class Cs2ThirdPersonMixin<S extends ArmedEntityRenderState, M ex
 		}
 		pose.pushPose();
 		getParentModel().translateToHand(state, arm, pose);
-		pose.rotate(Axis.XP.rotationDegrees(-90f));
-		pose.rotate(Axis.YP.rotationDegrees(180f));
+		pose.mulPose(Axis.XP.rotationDegrees(-90f));
+		pose.mulPose(Axis.YP.rotationDegrees(180f));
 		boolean left = arm == HumanoidArm.LEFT;
 		pose.translate((left ? -1f : 1f) / 16f, 2f / 16f, -10f / 16f);
 		if (left) {

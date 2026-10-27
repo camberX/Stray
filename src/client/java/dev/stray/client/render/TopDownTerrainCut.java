@@ -35,7 +35,7 @@ public final class TopDownTerrainCut {
 			return source;
 		}
 		return source
-			.replace("out vec2 v_TexCoord;", "out vec2 v_TexCoord;\nlayout(location = 7) out vec3 strayRel;")
+			.replace("out vec2 v_TexCoord;", "out vec2 v_TexCoord;\nout vec3 strayRel;")
 			.replace(
 				"vec3 position = _vert_position + translation;",
 				"vec3 position = _vert_position + translation;\n    strayRel = position;"
@@ -48,7 +48,7 @@ public final class TopDownTerrainCut {
 		}
 		String withIn = source.replace(
 			"in vec2 v_TexCoord;",
-			"in vec2 v_TexCoord;\nlayout(location = 7) in vec3 strayRel;"
+			"in vec2 v_TexCoord;\nin vec3 strayRel;"
 		);
 		return StrayUniforms.insertBlock(withIn).replace(
 			"void main() {",
@@ -62,13 +62,13 @@ public final class TopDownTerrainCut {
 		}
 		if (source.contains("ChunkPosition") && source.contains("vec3 pos =")) {
 			return source
-				.replace("out vec2 texCoord0;", "out vec2 texCoord0;\nlayout(location = 7) out vec3 strayRel;")
+				.replace("out vec2 texCoord0;", "out vec2 texCoord0;\nout vec3 strayRel;")
 				.replace("texCoord0 = UV0;", "texCoord0 = UV0;\n    strayRel = pos;");
 		}
-		if (source.contains("chunkVisibility") && source.contains("in vec2 texCoord0;") && source.contains("void main() {")) {
+		if (source.contains("ChunkVisibility") && source.contains("in vec2 texCoord0;") && source.contains("void main() {")) {
 			String withIn = source.replace(
 				"in vec2 texCoord0;",
-				"in vec2 texCoord0;\nlayout(location = 7) in vec3 strayRel;"
+				"in vec2 texCoord0;\nin vec3 strayRel;"
 			);
 			return StrayUniforms.insertBlock(withIn).replace(
 				"void main() {",

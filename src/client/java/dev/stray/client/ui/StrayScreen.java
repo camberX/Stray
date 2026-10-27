@@ -5052,7 +5052,7 @@ public class StrayScreen extends Screen {
 				bindListen = 0;
 				return true;
 			}
-			captureBind(InputConstants.Type.KEYBOARD.getOrCreate(event.key()));
+			captureBind(InputConstants.Type.KEYSYM.getOrCreate(event.key()));
 			return true;
 		}
 		if (event.isEscape()) {

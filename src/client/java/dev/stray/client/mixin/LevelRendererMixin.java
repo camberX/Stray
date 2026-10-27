@@ -1,6 +1,6 @@
 package dev.stray.client.mixin;
 
-import com.mojang.renderpearl.api.buffers.GpuBufferSlice;
+import com.mojang.blaze3d.buffers.GpuBufferSlice;
 import com.mojang.blaze3d.resource.GraphicsResourceAllocator;
 import com.mojang.blaze3d.vertex.PoseStack;
 import dev.stray.client.config.StrayConfig;

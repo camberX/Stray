@@ -191,7 +191,7 @@ public final class StrayClient implements ClientModInitializer {
 			return false;
 		}
 		InputConstants.Key mapped = OdinClicks.parseKey(keyName);
-		if (!OdinClicks.bound(mapped) || mapped.getType() != InputConstants.Type.KEYBOARD) {
+		if (!OdinClicks.bound(mapped) || mapped.getType() != InputConstants.Type.KEYSYM) {
 			return false;
 		}
 		return event.key() == mapped.getValue();

@@ -16,7 +16,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
-import dev.stray.client.input.MouseButtons;
+import org.lwjgl.glfw.GLFW;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -167,7 +167,7 @@ public final class GreatExplorer {
 		boolean same = chest != null && hit != null && hit.getBlockPos().equals(chest);
 		if (same && isChest(client.level.getBlockState(chest))) {
 			client.gameMode.useItemOn(client.player, InteractionHand.MAIN_HAND, hit);
-			client.player.swing(InteractionHand.MAIN_HAND, net.minecraft.world.item.component.SwingAnimation.DEFAULT, false);
+			client.player.swing(InteractionHand.MAIN_HAND);
 			opened.add(chest.asLong());
 		}
 		// A chest screen keeps attack released until it closes. This triggerbot
@@ -313,8 +313,8 @@ public final class GreatExplorer {
 			return false;
 		}
 		return switch (key.getType()) {
-			case KEYBOARD -> InputConstants.isKeyDown(key.getValue());
-			case MOUSE -> MouseButtons.down(key.getValue());
+			case KEYSYM -> InputConstants.isKeyDown(net.minecraft.client.Minecraft.getInstance().getWindow(), key.getValue());
+			case MOUSE -> GLFW.glfwGetMouseButton(client.getWindow().handle(), key.getValue()) == GLFW.GLFW_PRESS;
 			default -> false;
 		};
 	}

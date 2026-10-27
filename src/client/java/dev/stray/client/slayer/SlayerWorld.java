@@ -23,7 +23,7 @@ import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.decoration.ArmorStand;
 import net.minecraft.world.entity.item.ItemEntity;
-import net.minecraft.world.entity.monster.Enderman;
+import net.minecraft.world.entity.monster.EnderMan;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.SpawnEggItem;
 import net.minecraft.world.level.ClipContext;
@@ -386,7 +386,7 @@ public final class SlayerWorld {
 			boolean beaconAny = s.beaconHighlight || s.beaconWarning || s.beaconLine;
 			java.util.Set<Integer> seenFlying = new java.util.HashSet<>();
 			for (Entity entity : nearby) {
-				if (beaconAny && entity instanceof Enderman man && s.beaconHighlight) {
+				if (beaconAny && entity instanceof EnderMan man && s.beaconHighlight) {
 					BlockState carried = man.getCarriedBlock();
 					if (carried != null && carried.is(Blocks.BEACON) && man.distanceTo(client.player) < 15) {
 						nextGlow.put(man.getId(), 0xFF000000 | s.beaconRgb);

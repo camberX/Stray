@@ -130,7 +130,7 @@ public final class OdinClicks {
 		if (key.getType() == InputConstants.Type.MOUSE) {
 			return MouseButtons.down(key.getValue());
 		}
-		return InputConstants.isKeyDown(key.getValue());
+		return InputConstants.isKeyDown(net.minecraft.client.Minecraft.getInstance().getWindow(), key.getValue());
 	}
 
 	public static boolean bound(InputConstants.Key key) {

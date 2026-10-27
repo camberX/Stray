@@ -54,13 +54,13 @@ public final class AotvSim {
 		if (player.isShiftKeyDown()) {
 			if (etherwarp(client, player)) {
 				cooldown = 4;
-				player.swing(InteractionHand.MAIN_HAND, net.minecraft.world.item.component.SwingAnimation.DEFAULT, false);
+				player.swing(InteractionHand.MAIN_HAND);
 			}
 			return true;
 		}
 		if (transmit(client, player)) {
 			cooldown = 4;
-			player.swing(InteractionHand.MAIN_HAND, net.minecraft.world.item.component.SwingAnimation.DEFAULT, false);
+			player.swing(InteractionHand.MAIN_HAND);
 			return true;
 		}
 		return false;

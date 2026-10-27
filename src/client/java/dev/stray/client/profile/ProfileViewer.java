@@ -1580,7 +1580,7 @@ public final class ProfileViewer {
 		out.add(slayer("Zombie", bosses, soopySlayer, "zombie", SLAYER_ZOMBIE));
 		out.add(slayer("Spider", bosses, soopySlayer, "spider", SLAYER_SPIDER));
 		out.add(slayer("Wolf", bosses, soopySlayer, "wolf", SLAYER_WOLF));
-		out.add(slayer("Enderman", bosses, soopySlayer, "enderman", SLAYER_ENDER));
+		out.add(slayer("EnderMan", bosses, soopySlayer, "enderman", SLAYER_ENDER));
 		out.add(slayer("Blaze", bosses, soopySlayer, "blaze", SLAYER_BLAZE));
 		out.add(slayer("Vampire", bosses, soopySlayer, "vampire", SLAYER_VAMP));
 		return out;

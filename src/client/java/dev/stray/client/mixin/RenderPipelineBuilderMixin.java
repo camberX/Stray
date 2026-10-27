@@ -1,8 +1,8 @@
 package dev.stray.client.mixin;
 
-import com.mojang.renderpearl.api.pipeline.BindGroupLayout;
-import com.mojang.renderpearl.api.pipeline.RenderPipeline;
-import com.mojang.renderpearl.api.pipeline.ShaderType;
+import com.mojang.blaze3d.pipeline.BindGroupLayout;
+import com.mojang.blaze3d.pipeline.RenderPipeline;
+import com.mojang.blaze3d.shaders.ShaderType;
 import dev.stray.client.render.StrayUniforms;
 import net.minecraft.resources.Identifier;
 import org.spongepowered.asm.mixin.Mixin;
@@ -15,7 +15,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
-@Mixin(targets = "com.mojang.renderpearl.api.pipeline.RenderPipeline$Builder")
+@Mixin(targets = "com.mojang.blaze3d.pipeline.RenderPipeline$Builder")
 public abstract class RenderPipelineBuilderMixin {
 	@Shadow
 	private Map<ShaderType, Identifier> shaders;
@@ -52,7 +52,7 @@ public abstract class RenderPipelineBuilderMixin {
 			return false;
 		}
 		for (BindGroupLayout group : bindGroupLayouts.get()) {
-			for (BindGroupLayout.UniformDescription uniform : group.uniforms()) {
+			for (BindGroupLayout.UniformDescription uniform : group.getUniforms()) {
 				if ("StrayBlock".equals(uniform.name())) {
 					return true;
 				}

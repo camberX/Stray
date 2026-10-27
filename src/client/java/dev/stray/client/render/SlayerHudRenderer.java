@@ -364,7 +364,7 @@ public final class SlayerHudRenderer {
 	private static List<Row> sampleKills() {
 		List<Row> rows = new ArrayList<>();
 		rows.add(Row.text("REMAINING KILLS", "760 XP", Theme.ACCENT, Theme.MUTED));
-		rows.add(Row.text("[Lv100] Enderman 9k❤", "38", Theme.TEXT, Theme.ACCENT));
+		rows.add(Row.text("[Lv100] EnderMan 9k❤", "38", Theme.TEXT, Theme.ACCENT));
 		rows.add(Row.text("[Lv130] Zealot 13k❤", "27", Theme.TEXT, Theme.ACCENT));
 		rows.add(Row.text("[Lv100] Voidling Devotee", "2", Theme.TEXT, Theme.ACCENT));
 		return rows;

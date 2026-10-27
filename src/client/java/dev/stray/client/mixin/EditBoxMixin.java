@@ -2,7 +2,7 @@ package dev.stray.client.mixin;
 
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
-import com.mojang.renderpearl.api.pipeline.RenderPipeline;
+import com.mojang.blaze3d.pipeline.RenderPipeline;
 import dev.stray.client.ui.ChatChrome;
 import dev.stray.client.ui.MenuChrome;
 import net.minecraft.client.Minecraft;
@@ -39,7 +39,7 @@ public abstract class EditBoxMixin {
 		method = "extractWidgetRenderState",
 		at = @At(
 			value = "INVOKE",
-			target = "Lnet/minecraft/client/gui/GuiGraphicsExtractor;blitSprite(Lcom/mojang/renderpearl/api/pipeline/RenderPipeline;Lnet/minecraft/resources/Identifier;IIII)V"
+			target = "Lnet/minecraft/client/gui/GuiGraphicsExtractor;blitSprite(Lcom/mojang/blaze3d/pipeline/RenderPipeline;Lnet/minecraft/resources/Identifier;IIII)V"
 		)
 	)
 	private void stray$skipVanillaBorder(

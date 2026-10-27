@@ -1,7 +1,6 @@
 package dev.stray.client.ui;
 
 import dev.stray.client.account.AccountStore;
-import dev.stray.client.input.MouseButtons;
 import dev.stray.client.render.GuiDraw;
 import dev.stray.client.render.TitleBackdrop;
 import net.fabricmc.loader.api.FabricLoader;
@@ -213,7 +212,7 @@ public class StrayTitleScreen extends Screen {
 
 	private void openOptions() {
 		clickSound();
-		minecraft.gui.setScreen(new OptionsScreen(this, minecraft.options));
+		minecraft.gui.setScreen(new OptionsScreen(this, minecraft.options, false));
 	}
 
 	private void openLanguage() {
@@ -238,7 +237,7 @@ public class StrayTitleScreen extends Screen {
 
 	@Override
 	public boolean mouseClicked(MouseButtonEvent event, boolean doubled) {
-		if (!MouseButtons.left(event)) {
+		if (event.button() != 0) {
 			return super.mouseClicked(event, doubled);
 		}
 		for (int i = hits.size() - 1; i >= 0; i--) {

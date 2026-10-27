@@ -1,11 +1,11 @@
 package dev.stray.client.render;
 
 import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.renderpearl.api.buffers.GpuBuffer;
-import com.mojang.renderpearl.api.buffers.GpuBufferSlice;
-import com.mojang.renderpearl.api.pipeline.BindGroupLayout;
-import com.mojang.renderpearl.api.pipeline.UniformType;
-import com.mojang.renderpearl.backend.opengl.GlBuffer;
+import com.mojang.blaze3d.buffers.GpuBuffer;
+import com.mojang.blaze3d.buffers.GpuBufferSlice;
+import com.mojang.blaze3d.pipeline.BindGroupLayout;
+import com.mojang.blaze3d.shaders.UniformType;
+import com.mojang.blaze3d.opengl.GlBuffer;
 import org.lwjgl.opengl.GL15;
 import org.lwjgl.opengl.GL31;
 

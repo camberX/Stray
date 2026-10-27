@@ -63,7 +63,7 @@ public final class MageBeamHits {
 			clickId++;
 		}
 		attackHeld = key;
-		if (key || client.player.isSwinging()) {
+		if (key || client.player.swinging) {
 			windowUntil = Hitsound.gameTick() + WINDOW_TICKS;
 		}
 	}

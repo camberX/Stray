@@ -1,7 +1,7 @@
 package dev.stray.client.mixin.compat;
 
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
-import com.mojang.renderpearl.api.pipeline.RenderPipeline;
+import com.mojang.blaze3d.pipeline.RenderPipeline;
 import net.minecraft.client.renderer.state.gui.GuiElementRenderState;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Pseudo;

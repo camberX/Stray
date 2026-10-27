@@ -287,7 +287,7 @@ public final class LoadoutSwap {
 			return false;
 		}
 		return switch (key.getType()) {
-			case KEYBOARD -> InputConstants.isKeyDown(key.getValue());
+			case KEYSYM -> InputConstants.isKeyDown(net.minecraft.client.Minecraft.getInstance().getWindow(), key.getValue());
 			case MOUSE -> MouseButtons.down(key.getValue());
 			default -> false;
 		};
