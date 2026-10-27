@@ -1,5 +1,6 @@
 package dev.stray.client.combat;
 
+import dev.stray.client.util.Text;
 import dev.stray.client.location.SkyblockLocation;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientPacketListener;
@@ -155,6 +156,6 @@ public final class AttackSpeed {
 	}
 
 	private static String plain(Component component) {
-		return component == null ? "" : component.getString().replaceAll("§.", "").trim();
+		return component == null ? "" : Text.strip(component.getString()).trim();
 	}
 }

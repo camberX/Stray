@@ -1,5 +1,6 @@
 package dev.stray.client.slayer;
 
+import dev.stray.client.util.Text;
 import dev.stray.client.config.SlayerSettings;
 import dev.stray.client.config.StrayConfig;
 import dev.stray.client.farming.PestEsp;
@@ -534,7 +535,7 @@ public final class SlayerWorld {
 				if (price < s.itemsMinPrice) {
 					continue;
 				}
-				String name = (stack.getCount() > 1 ? stack.getCount() + "x " : "") + stack.getHoverName().getString().replaceAll("§.", "")
+				String name = (stack.getCount() > 1 ? stack.getCount() + "x " : "") + Text.strip(stack.getHoverName().getString())
 					+ " §6" + shortCoins(price);
 				nextLabels.add(new Label(item.position().add(0, 0.8, 0), name, 0xFFFFFF, false));
 			}

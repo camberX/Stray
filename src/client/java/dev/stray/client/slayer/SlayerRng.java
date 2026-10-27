@@ -1,5 +1,6 @@
 package dev.stray.client.slayer;
 
+import dev.stray.client.util.Text;
 import dev.stray.client.config.SlayerSettings;
 import dev.stray.client.config.StrayConfig;
 import dev.stray.client.item.SkyblockItems;
@@ -119,7 +120,7 @@ public final class SlayerRng {
 		if (++scanTick % 10 != 0) {
 			return;
 		}
-		String title = screen.getTitle().getString().replaceAll("§.", "").trim();
+		String title = Text.strip(screen.getTitle().getString()).trim();
 		Matcher menu = MENU.matcher(title);
 		if (menu.find()) {
 			if (!menu.group(1).trim().equals(slayerKey()) && !menu.group(1).trim().equals(SlayerApi.slayerName())) {
@@ -132,7 +133,7 @@ public final class SlayerRng {
 				}
 				for (String line : lore(stack)) {
 					if (line.contains("SELECTED")) {
-						setGoal(NeuIds.of(stack), stack.getHoverName().getString().replaceAll("§.", ""));
+						setGoal(NeuIds.of(stack), Text.strip(stack.getHoverName().getString()));
 						return;
 					}
 				}
@@ -191,7 +192,7 @@ public final class SlayerRng {
 			return out;
 		}
 		for (Component line : lore.lines()) {
-			out.add(line.getString().replaceAll("§.", "").trim());
+			out.add(Text.strip(line.getString()).trim());
 		}
 		return out;
 	}

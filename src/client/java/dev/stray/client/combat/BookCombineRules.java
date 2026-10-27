@@ -1,5 +1,6 @@
 package dev.stray.client.combat;
 
+import dev.stray.client.util.Text;
 import java.util.Locale;
 import java.util.Map;
 import java.util.regex.Matcher;
@@ -389,7 +390,7 @@ public final class BookCombineRules {
 		if (raw == null || raw.isBlank()) {
 			return "";
 		}
-		String line = raw.toLowerCase(Locale.ROOT)
+		String line = Text.collapse(Text.strip(raw.toLowerCase(Locale.ROOT)
 			.replace("\u2160", "i").replace("\u2170", "i")
 			.replace("\u2161", "ii").replace("\u2171", "ii")
 			.replace("\u2162", "iii").replace("\u2172", "iii")
@@ -402,11 +403,9 @@ public final class BookCombineRules {
 			.replace("\u2169", "x").replace("\u2179", "x")
 			.replace('\u00A0', ' ')
 			.replace("'", "")
-			.replace("\u2019", "")
-			.replaceAll("§.", "")
+			.replace("\u2019", ""))
 			.replaceAll("(?i)&[0-9a-fk-or]", "")
-			.replaceAll("[^a-z0-9\\s]", " ")
-			.replaceAll("\\s+", " ")
+			.replaceAll("[^a-z0-9\\s]", " "))
 			.trim();
 		return unglueLevel(line);
 	}

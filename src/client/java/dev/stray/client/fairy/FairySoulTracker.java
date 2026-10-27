@@ -1,5 +1,6 @@
 package dev.stray.client.fairy;
 
+import dev.stray.client.util.Text;
 import dev.stray.client.config.StrayConfig;
 import dev.stray.client.location.SkyblockLocation;
 import net.minecraft.client.Minecraft;
@@ -125,7 +126,7 @@ public final class FairySoulTracker {
 		if (message == null) {
 			return;
 		}
-		String text = message.getString().replaceAll("§.", "").toLowerCase(Locale.ROOT);
+		String text = Text.strip(message.getString()).toLowerCase(Locale.ROOT);
 		boolean found = text.contains("you found a fairy soul");
 		boolean already = text.contains("already found that fairy soul");
 		if (!found && !already) {

@@ -1,5 +1,6 @@
 package dev.stray.client.menu;
 
+import dev.stray.client.util.Text;
 import dev.stray.client.config.StrayConfig;
 import dev.stray.client.mixin.AbstractContainerScreenAccessor;
 import net.minecraft.ChatFormatting;
@@ -84,6 +85,6 @@ public final class SackRecipe {
 		if (text == null) {
 			return "";
 		}
-		return text.replaceAll("§.", "").trim();
+		return Text.strip(text).trim();
 	}
 }

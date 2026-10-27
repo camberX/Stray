@@ -1,5 +1,6 @@
 package dev.stray.client.item;
 
+import dev.stray.client.util.Text;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.HoverEvent;
@@ -248,7 +249,7 @@ public final class SackLive {
 		}
 		List<Change> out = new ArrayList<>();
 		for (String raw : text.split("\\R")) {
-			String line = raw.replaceAll("§.", "").replaceAll("\\([^)]*\\)", " ").trim();
+			String line = Text.strip(raw).replaceAll("\\([^)]*\\)", " ").trim();
 			if (line.isEmpty()) {
 				continue;
 			}
@@ -290,9 +291,9 @@ public final class SackLive {
 		if (raw == null) {
 			return "";
 		}
-		String name = raw.replaceAll("§.", "").trim();
+		String name = Text.strip(raw).trim();
 		name = name.replaceAll("(?i)\\s*\\([^)]*\\)\\s*$", "");
-		name = name.replaceAll("\\s+", " ").trim();
+		name = Text.collapse(name).trim();
 		return name;
 	}
 

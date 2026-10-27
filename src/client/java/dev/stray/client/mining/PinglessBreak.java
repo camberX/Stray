@@ -1,5 +1,6 @@
 package dev.stray.client.mining;
 
+import dev.stray.client.util.Text;
 import dev.stray.client.config.StrayConfig;
 import dev.stray.client.item.ItemText;
 import dev.stray.client.location.SkyblockLocation;
@@ -421,7 +422,7 @@ public final class PinglessBreak {
 		if (component == null) {
 			return "";
 		}
-		return component.getString().replaceAll("§.", "").replace('\u00A0', ' ').trim();
+		return Text.strip(component.getString()).replace('\u00A0', ' ').trim();
 	}
 
 	private record Pending(BlockState state, int tick) {

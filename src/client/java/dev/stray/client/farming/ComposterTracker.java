@@ -1,5 +1,6 @@
 package dev.stray.client.farming;
 
+import dev.stray.client.util.Text;
 import dev.stray.client.config.StrayConfig;
 import dev.stray.client.item.ItemAppearance;
 import net.minecraft.client.Minecraft;
@@ -639,13 +640,13 @@ public final class ComposterTracker {
 	}
 
 	private static String stripCodes(String text) {
-		return text == null ? "" : text.replaceAll("§.", "").replaceAll("\u00A7.", "");
+		return text == null ? "" : Text.strip(text).replaceAll("\u00A7.", "");
 	}
 
 	private static String clean(Component component) {
 		return component == null
 			? ""
-			: stripCodes(component.getString()).replace('\u00A0', ' ').replaceAll("\\s+", " ").trim();
+			: Text.collapse(stripCodes(component.getString()).replace('\u00A0', ' ')).trim();
 	}
 
 	public record Snapshot(

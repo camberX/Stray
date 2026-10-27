@@ -1,5 +1,6 @@
 package dev.stray.client.farming;
 
+import dev.stray.client.util.Text;
 import dev.stray.client.config.StrayConfig;
 import dev.stray.client.item.ItemAppearance;
 import dev.stray.client.render.GuiDraw;
@@ -102,6 +103,6 @@ public final class FarmingHud {
 		if (line == null) {
 			return "";
 		}
-		return line.getString().replaceAll("§.", "").toLowerCase(Locale.ROOT);
+		return Text.strip(line.getString()).toLowerCase(Locale.ROOT);
 	}
 }

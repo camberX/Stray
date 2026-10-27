@@ -1,5 +1,6 @@
 package dev.stray.client.slayer;
 
+import dev.stray.client.util.Text;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -154,7 +155,7 @@ public final class SlayerData {
 				for (JsonElement e : areas.getAsJsonArray(key)) {
 					JsonObject m = e.getAsJsonObject();
 					list.add(new Mob(
-						m.get("name").getAsString().replaceAll("§.", ""),
+						Text.strip(m.get("name").getAsString()),
 						m.get("level").getAsInt(),
 						m.get("max_health").getAsLong(),
 						m.get("xp").getAsDouble()

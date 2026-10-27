@@ -1,5 +1,6 @@
 package dev.stray.client.slayer;
 
+import dev.stray.client.util.Text;
 import dev.stray.client.config.SlayerSettings;
 import dev.stray.client.config.StrayConfig;
 import dev.stray.client.item.SkyblockItems;
@@ -222,7 +223,7 @@ public final class SlayerProfit {
 	public static String nameOf(String id) {
 		SkyblockItems.Entry entry = SkyblockItems.get(id);
 		if (entry != null && entry.name() != null && !entry.name().isEmpty()) {
-			return entry.name().replaceAll("§.", "");
+			return Text.strip(entry.name());
 		}
 		String base = id;
 		String suffix = "";

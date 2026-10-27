@@ -1,5 +1,6 @@
 package dev.stray.client.item;
 
+import dev.stray.client.util.Text;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import dev.stray.client.config.StrayConfig;
@@ -549,7 +550,7 @@ public final class LoadoutsMenus {
 		if (value == null || value.isEmpty()) {
 			return "";
 		}
-		return value.replaceAll("§.", "").replace('\u00A0', ' ').trim();
+		return Text.strip(value).replace('\u00A0', ' ').trim();
 	}
 
 	private static List<Piece> copyPieces(List<Piece> pieces) {

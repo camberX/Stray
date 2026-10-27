@@ -1,5 +1,6 @@
 package dev.stray.client.farming;
 
+import dev.stray.client.util.Text;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientPacketListener;
 import net.minecraft.client.multiplayer.PlayerInfo;
@@ -509,10 +510,9 @@ public final class JacobContestTracker {
 		if (text == null) {
 			return "";
 		}
-		return text.replaceAll("§.", "")
+		return Text.collapse(Text.strip(text)
 			.replace('\u00A0', ' ')
-			.replaceAll("[^\\p{Alnum}\\p{Punct}\\s]+", " ")
-			.replaceAll("\\s+", " ")
+			.replaceAll("[^\\p{Alnum}\\p{Punct}\\s]+", " "))
 			.trim();
 	}
 

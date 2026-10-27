@@ -1,5 +1,6 @@
 package dev.stray.client.net;
 
+import dev.stray.client.util.Text;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -592,7 +593,7 @@ public final class StrayLive implements WebSocket.Listener {
 		if (text == null) {
 			return "";
 		}
-		String clean = text.replace('\n', ' ').replace('\r', ' ').replaceAll("§.", "").trim();
+		String clean = Text.strip(text.replace('\n', ' ').replace('\r', ' ')).trim();
 		if (clean.length() > 180) {
 			clean = clean.substring(0, 180);
 		}

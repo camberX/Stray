@@ -1,5 +1,6 @@
 package dev.stray.client.slayer;
 
+import dev.stray.client.util.Text;
 import dev.stray.client.config.SlayerSettings;
 import dev.stray.client.config.StrayConfig;
 import dev.stray.client.item.ItemIds;
@@ -169,7 +170,7 @@ public final class SlayerBosses {
 		if (!s.inferno || !s.daggers || title == null) {
 			return true;
 		}
-		String text = title.getString().replaceAll("§.", "").trim();
+		String text = Text.strip(title.getString()).trim();
 		for (Shield shield : Shield.values()) {
 			if (text.equals(shield.name())) {
 				for (Dagger dagger : Dagger.values()) {
@@ -257,7 +258,7 @@ public final class SlayerBosses {
 	}
 
 	public static void onTabFooter(Component footer) {
-		tabFooter = footer == null ? "" : footer.getString().replaceAll("§.", "");
+		tabFooter = footer == null ? "" : Text.strip(footer.getString());
 	}
 
 	public static long lastAttackMs() {

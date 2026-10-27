@@ -24,6 +24,13 @@ public final class StrayConfig {
 	private static final Path PATH = FabricLoader.getInstance().getConfigDir().resolve("stray.json");
 	private static final Path LEGACY_PATH = FabricLoader.getInstance().getConfigDir().resolve("voidmark.json");
 	private static StrayConfig instance = new StrayConfig();
+	private static final long SAVE_DELAY_MS = 750;
+	private static final java.util.concurrent.atomic.AtomicBoolean SAVE_QUEUED = new java.util.concurrent.atomic.AtomicBoolean();
+	private static final java.util.concurrent.ScheduledExecutorService SAVER = java.util.concurrent.Executors.newSingleThreadScheduledExecutor(runnable -> {
+		Thread thread = new Thread(runnable, "Stray config save");
+		thread.setDaemon(true);
+		return thread;
+	});
 	public boolean markersEnabled = false;
 	public boolean hudEnabled = false;
 	public boolean tracersEnabled = false;
@@ -842,7 +849,7 @@ public final class StrayConfig {
 	public static void load() {
 		Path path = Files.isRegularFile(PATH) ? PATH : LEGACY_PATH;
 		if (!Files.isRegularFile(path)) {
-			instance.save();
+			instance.saveNow();
 			return;
 		}
 
@@ -1701,7 +1708,7 @@ public final class StrayConfig {
 				loaded.syncLegacyVisuals();
 				instance = loaded;
 				if (dropCapeServerUrl || migratedMenuScale || !path.equals(PATH)) {
-					instance.save();
+					instance.saveNow();
 				}
 			}
 		} catch (Exception exception) {
@@ -1710,7 +1717,35 @@ public final class StrayConfig {
 		}
 	}
 
+	/**
+	 * Saves soon instead of right away. Many callers save after each chat line,
+	 * pickup or toggle; serialising the whole config and writing the file every
+	 * time stalled the render thread. Calls within the delay share one write,
+	 * and anything still pending is written when the game closes.
+	 */
 	public void save() {
+		if (SAVE_QUEUED.compareAndSet(false, true)) {
+			SAVER.schedule(() -> {
+				net.minecraft.client.Minecraft client = net.minecraft.client.Minecraft.getInstance();
+				if (client == null) {
+					flushSave();
+				} else {
+					client.execute(StrayConfig::flushSave);
+				}
+			}, SAVE_DELAY_MS, java.util.concurrent.TimeUnit.MILLISECONDS);
+		}
+	}
+
+	/** Writes now if a save is waiting (called on game close and before reading the file back). */
+	public static void flushSave() {
+		if (SAVE_QUEUED.getAndSet(false)) {
+			instance.saveNow();
+		}
+	}
+
+	/** Writes the config file immediately on the calling thread. */
+	public void saveNow() {
+		SAVE_QUEUED.set(false);
 		try {
 			if (playerVisuals != null) {
 				playerVisuals.clamp();

@@ -1,5 +1,6 @@
 package dev.stray.client.item;
 
+import dev.stray.client.util.Text;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
@@ -674,7 +675,7 @@ public final class ItemStorage {
 		if (text == null) {
 			text = title.getString();
 		}
-		return text.replaceAll("§.", "").replace('\u00A0', ' ').replaceAll("\\s+", " ").trim();
+		return Text.collapse(Text.strip(text).replace('\u00A0', ' ')).trim();
 	}
 
 	private static String foldName(String value) {
@@ -685,7 +686,7 @@ public final class ItemStorage {
 		if (text == null) {
 			text = value;
 		}
-		return text.replaceAll("§.", "").replace('\u00A0', ' ').replaceAll("\\s+", " ").trim().toLowerCase(Locale.ROOT);
+		return Text.collapse(Text.strip(text).replace('\u00A0', ' ')).trim().toLowerCase(Locale.ROOT);
 	}
 
 	private static final class ItemIdsRead {

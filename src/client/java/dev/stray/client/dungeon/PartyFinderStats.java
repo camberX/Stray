@@ -1,5 +1,6 @@
 package dev.stray.client.dungeon;
 
+import dev.stray.client.util.Text;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -666,7 +667,7 @@ public final class PartyFinderStats {
 	}
 
 	private static String plain(String text) {
-		return text == null ? "" : text.replaceAll("§.", "").trim();
+		return text == null ? "" : Text.strip(text).trim();
 	}
 
 	private static JsonObject object(JsonObject parent, String key) {

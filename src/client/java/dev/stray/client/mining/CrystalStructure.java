@@ -1,5 +1,6 @@
 package dev.stray.client.mining;
 
+import dev.stray.client.util.Text;
 import java.util.Locale;
 
 public enum CrystalStructure {
@@ -71,13 +72,12 @@ public enum CrystalStructure {
 	}
 
 	private static String normalize(String text) {
-		return text.toLowerCase(Locale.ROOT)
+		return Text.collapse(text.toLowerCase(Locale.ROOT)
 			.replace('û', 'u')
 			.replace('ú', 'u')
 			.replace("'", "")
 			.replace("-", " ")
-			.replaceAll("[^a-z0-9 ]", " ")
-			.replaceAll("\\s+", " ")
+			.replaceAll("[^a-z0-9 ]", " "))
 			.trim();
 	}
 

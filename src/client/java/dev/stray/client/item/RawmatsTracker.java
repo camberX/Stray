@@ -1,5 +1,6 @@
 package dev.stray.client.item;
 
+import dev.stray.client.util.Text;
 import dev.stray.client.config.StrayConfig;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
@@ -113,7 +114,7 @@ public final class RawmatsTracker {
 		if (!tracking() || message == null) {
 			return;
 		}
-		String text = message.getString().replaceAll("§.", "").trim();
+		String text = Text.strip(message.getString()).trim();
 		Matcher matcher = CRAFT.matcher(text);
 		if (!matcher.find()) {
 			return;

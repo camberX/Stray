@@ -1,5 +1,6 @@
 package dev.stray.client.mining;
 
+import dev.stray.client.util.Text;
 import dev.stray.client.config.StrayConfig;
 import dev.stray.client.item.ItemText;
 import dev.stray.client.location.SkyblockLocation;
@@ -604,14 +605,14 @@ public final class MiningTracker {
 		if (value == null) {
 			return "";
 		}
-		String text = value.replace('\u00A0', ' ').replaceAll("§.", "").trim();
+		String text = Text.strip(value.replace('\u00A0', ' ')).trim();
 		text = text.replaceAll("^[\\s•·▪▸►\\-–—★☆✔✅⏣]+", "");
 		text = text.replaceAll("[:\\-–—]+$", "");
-		return text.replaceAll("\\s+", " ").trim();
+		return Text.collapse(text).trim();
 	}
 
 	private static String plain(Component component) {
-		return component == null ? "" : component.getString().replaceAll("§.", "").replace('\u00A0', ' ').trim();
+		return component == null ? "" : Text.strip(component.getString()).replace('\u00A0', ' ').trim();
 	}
 
 	private static String formatTime(float seconds) {

@@ -1,5 +1,6 @@
 package dev.stray.client.slayer;
 
+import dev.stray.client.util.Text;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
@@ -133,7 +134,7 @@ public final class SlayerTags {
 	}
 
 	public static String clean(String raw) {
-		return raw.replaceAll("§.", "").replace(' ', ' ').replaceAll("[\\p{Cf}\\p{Co}]", "").replaceAll("\\s+", " ").trim();
+		return Text.collapse(Text.strip(raw).replace(' ', ' ').replaceAll("[\\p{Cf}\\p{Co}]", "")).trim();
 	}
 
 	private static boolean realMob(Entity entity, Entity self) {

@@ -1,5 +1,6 @@
 package dev.stray.client.slayer;
 
+import dev.stray.client.util.Text;
 import dev.stray.client.item.ItemIds;
 import dev.stray.client.location.SkyblockLocation;
 import net.minecraft.client.Minecraft;
@@ -69,7 +70,7 @@ public final class SlayerKills {
 			if (display == null) {
 				continue;
 			}
-			Matcher m = TAB_WISDOM.matcher(display.getString().replaceAll("§.", ""));
+			Matcher m = TAB_WISDOM.matcher(Text.strip(display.getString()));
 			if (m.find()) {
 				tabWisdom = SlayerApi.parseShort(m.group(1));
 				return;

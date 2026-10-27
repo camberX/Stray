@@ -1,5 +1,6 @@
 package dev.stray.client.item;
 
+import dev.stray.client.util.Text;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -361,7 +362,7 @@ public final class SkyblockPetLore {
 
 	private static int rarityIndex(List<String> lore) {
 		for (int i = lore.size() - 1; i >= 0; i--) {
-			String plain = lore.get(i).replaceAll("§.", "").toUpperCase(Locale.ROOT);
+			String plain = Text.strip(lore.get(i)).toUpperCase(Locale.ROOT);
 			if (plain.contains("COMMON") || plain.contains("UNCOMMON") || plain.contains("RARE")
 				|| plain.contains("EPIC") || plain.contains("LEGENDARY") || plain.contains("MYTHIC")) {
 				return i;

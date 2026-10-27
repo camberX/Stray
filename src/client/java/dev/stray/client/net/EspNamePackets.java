@@ -1,5 +1,6 @@
 package dev.stray.client.net;
 
+import dev.stray.client.util.Text;
 import dev.stray.client.render.MobGlowRenderer;
 import dev.stray.client.render.StarMobEsp;
 import net.minecraft.client.Minecraft;
@@ -75,7 +76,7 @@ public final class EspNamePackets {
 		if (raw == null) {
 			return;
 		}
-		String text = raw.replaceAll("§.", "").trim();
+		String text = Text.strip(raw).trim();
 		if (text.isEmpty()) {
 			return;
 		}

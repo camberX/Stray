@@ -1,5 +1,6 @@
 package dev.stray.client.render;
 
+import dev.stray.client.util.Text;
 import dev.stray.client.config.StrayConfig;
 import dev.stray.client.location.SkyblockLocation;
 import it.unimi.dsi.fastutil.ints.IntList;
@@ -128,7 +129,7 @@ public final class StarMobEsp {
 		if (name.endsWith(HEART) || name.endsWith("§c" + HEART)) {
 			return true;
 		}
-		String plain = name.replaceAll("§.", "");
+		String plain = Text.strip(name);
 		return plain.contains(HEART) || plain.contains("♥");
 	}
 
@@ -136,7 +137,7 @@ public final class StarMobEsp {
 		if (!CHECKED.add(stand.getId())) {
 			return;
 		}
-		String plain = name.replaceAll("§.", "").toUpperCase();
+		String plain = Text.strip(name).toUpperCase();
 		int offset = plain.contains("WITHERMANCER") ? 3 : 1;
 		int id = stand.getId() - offset;
 		Entity mob = stand.level().getEntity(id);

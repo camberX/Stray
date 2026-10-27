@@ -1,5 +1,6 @@
 package dev.stray.client.mining;
 
+import dev.stray.client.util.Text;
 import dev.stray.client.config.StrayConfig;
 import dev.stray.client.item.ItemIds;
 import dev.stray.client.location.SkyblockLocation;
@@ -420,7 +421,7 @@ public final class MetalDetector {
 		if (message == null) {
 			return "";
 		}
-		return message.getString().replaceAll("§.", "").replace('\u00a7', ' ').trim();
+		return Text.strip(message.getString()).replace('\u00a7', ' ').trim();
 	}
 
 	private static void showTitle(Minecraft client, String title, String subtitle) {

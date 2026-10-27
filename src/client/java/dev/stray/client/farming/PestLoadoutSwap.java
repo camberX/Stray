@@ -1,5 +1,6 @@
 package dev.stray.client.farming;
 
+import dev.stray.client.util.Text;
 import dev.stray.client.config.StrayConfig;
 import dev.stray.client.debug.StrayDebug;
 import dev.stray.client.ui.LoadoutSwap;
@@ -441,7 +442,7 @@ public final class PestLoadoutSwap {
 		if (text == null) {
 			return "";
 		}
-		return text.replaceAll("§.", "").replace('\u00A0', ' ').replaceAll("\\s+", " ").trim();
+		return Text.collapse(Text.strip(text).replace('\u00A0', ' ')).trim();
 	}
 
 	private static int slot(int configured) {

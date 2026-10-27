@@ -1,5 +1,6 @@
 package dev.stray.client.media;
 
+import dev.stray.client.util.Text;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -725,14 +726,13 @@ public final class SpotifySmtc {
 		if (value == null) {
 			return "";
 		}
-		return value.toLowerCase(Locale.ROOT)
+		return Text.collapse(value.toLowerCase(Locale.ROOT)
 			.replace("\u2019", "")
 			.replace("\u2018", "")
 			.replace("\u02BC", "")
 			.replace("'", "")
 			.replace("`", "")
-			.replaceAll("[^a-z0-9]+", " ")
-			.replaceAll("\\s+", " ")
+			.replaceAll("[^a-z0-9]+", " "))
 			.trim();
 	}
 }

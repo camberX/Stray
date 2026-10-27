@@ -1,5 +1,6 @@
 package dev.stray.client.item;
 
+import dev.stray.client.util.Text;
 import dev.stray.client.config.StrayConfig;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.network.chat.Component;
@@ -423,7 +424,7 @@ public final class WardrobeMenus {
 		if (value == null || value.isEmpty()) {
 			return "";
 		}
-		return value.replaceAll("§.", "").replace('\u00A0', ' ').trim();
+		return Text.strip(value).replace('\u00A0', ' ').trim();
 	}
 
 	private static boolean empty(ItemStack stack) {

@@ -1,5 +1,6 @@
 package dev.stray.client.skill;
 
+import dev.stray.client.util.Text;
 import dev.stray.client.config.StrayConfig;
 import dev.stray.client.item.ItemAppearance;
 import dev.stray.client.mixin.GuiAccessor;
@@ -373,12 +374,11 @@ public final class SkillProgressTracker {
 		if (text == null || text.isEmpty()) {
 			return "";
 		}
-		return text.replaceAll("§.", "")
+		return Text.collapse(Text.strip(text)
 			.replace('\u00A0', ' ')
 			.replace('\u202F', ' ')
 			.replace('＋', '+')
-			.replaceAll("[^\\p{Alnum}\\p{Punct}\\s]+", " ")
-			.replaceAll("\\s+", " ")
+			.replaceAll("[^\\p{Alnum}\\p{Punct}\\s]+", " "))
 			.trim();
 	}
 

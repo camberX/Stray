@@ -1,5 +1,6 @@
 package dev.stray.client.slayer;
 
+import dev.stray.client.util.Text;
 import dev.stray.client.config.StrayConfig;
 import dev.stray.client.location.SkyblockLocation;
 import net.minecraft.client.Minecraft;
@@ -414,7 +415,7 @@ public final class SlayerApi {
 		if (!SkyblockLocation.inSkyblock || message == null) {
 			return true;
 		}
-		String text = message.getString().replaceAll("§.", "");
+		String text = Text.strip(message.getString());
 		if (QUEST_START.matcher(text).find()) {
 			questStartMs = System.currentTimeMillis();
 			SlayerProfit.onQuestStart();
@@ -636,11 +637,9 @@ public final class SlayerApi {
 		List<String> lines = new ArrayList<>();
 		for (PlayerScoreEntry entry : entries) {
 			Component raw = entry.display() != null ? entry.display() : Component.literal(entry.owner());
-			String text = PlayerTeam.formatNameForTeam(scoreboard.getPlayersTeam(entry.owner()), raw).getString()
-				.replaceAll("§.", "")
+			String text = Text.collapse(Text.strip(PlayerTeam.formatNameForTeam(scoreboard.getPlayersTeam(entry.owner()), raw).getString())
 				.replace(' ', ' ')
-				.replaceAll("[\\p{Cf}\\p{Co}]", "")
-				.replaceAll("\\s+", " ")
+				.replaceAll("[\\p{Cf}\\p{Co}]", ""))
 				.trim();
 			if (!text.isEmpty()) {
 				lines.add(text);

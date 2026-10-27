@@ -1,5 +1,6 @@
 package dev.stray.client.location;
 
+import dev.stray.client.util.Text;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import dev.stray.client.config.StrayConfig;
@@ -473,7 +474,7 @@ public final class SkyblockLocation {
 	}
 
 	private static String plain(Component component) {
-		return component == null ? "" : component.getString().replaceAll("§.", "");
+		return component == null ? "" : Text.strip(component.getString());
 	}
 
 	private record Sidebar(boolean skyblock, boolean end, String endArea, boolean dungeon, int floor, String poi) {

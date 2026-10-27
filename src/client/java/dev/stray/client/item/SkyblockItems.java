@@ -1,5 +1,6 @@
 package dev.stray.client.item;
 
+import dev.stray.client.util.Text;
 import dev.stray.Stray;
 import net.minecraft.resources.Identifier;
 
@@ -83,7 +84,7 @@ public final class SkyblockItems {
 		if (raw == null || raw.isBlank()) {
 			return null;
 		}
-		String name = raw.replaceAll("§.", "").trim();
+		String name = Text.strip(raw).trim();
 		if (name.isEmpty()) {
 			return null;
 		}

@@ -402,8 +402,10 @@ public final class SlayerHudRenderer {
 
 	// ---------------------------------------------------------------- formatting
 
+	private static final java.util.regex.Pattern FRACTION = java.util.regex.Pattern.compile("\\(?([\\d,.]+[kKmM]?)/([\\d,.]+[kKmM]?)\\)?");
+
 	private static float[] fraction(String progress) {
-		java.util.regex.Matcher m = java.util.regex.Pattern.compile("\\(?([\\d,.]+[kKmM]?)/([\\d,.]+[kKmM]?)\\)?").matcher(progress == null ? "" : progress);
+		java.util.regex.Matcher m = FRACTION.matcher(progress == null ? "" : progress);
 		if (!m.find()) {
 			return null;
 		}

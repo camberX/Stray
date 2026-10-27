@@ -1,5 +1,6 @@
 package dev.stray.client.visual;
 
+import dev.stray.client.util.Text;
 import com.google.common.collect.ImmutableMultimap;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
@@ -212,7 +213,7 @@ public final class NickSteal {
 			if (gen != generation) {
 				return;
 			}
-			String rankPlain = prefix.isEmpty() ? "" : prefix.replaceAll("§.", "").trim();
+			String rankPlain = prefix.isEmpty() ? "" : Text.strip(prefix).trim();
 			char rankColor = '7';
 			Matcher color = COLOR.matcher(prefix);
 			if (color.find()) {

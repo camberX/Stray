@@ -1,5 +1,6 @@
 package dev.stray.client.render;
 
+import dev.stray.client.util.Text;
 import dev.stray.client.config.StrayConfig;
 import dev.stray.client.ui.MaterialPalette;
 import dev.stray.client.ui.MenuFont;
@@ -168,7 +169,7 @@ public final class WatermarkRenderer {
 	private static final java.util.Map<String, double[]> STABLE = new java.util.HashMap<>();
 
 	static float stableWidth(Font font, Component text, String key) {
-		String digits = text.getString().replaceAll("[0-9]", "0");
+		String digits = Text.zeroDigits(text.getString());
 		float target = font.width(Component.literal(digits).withStyle(text.getStyle()));
 		long now = System.nanoTime();
 		double[] state = STABLE.get(key);
@@ -307,13 +308,13 @@ public final class WatermarkRenderer {
 		float w = 16 + brandExtra(font);
 		w += GuiDraw.brandWidth(font, "STRAY");
 		if (config.watermarkFps) {
-			w += 9 + Math.max(GuiDraw.menuWidth(font, "000 fps"), GuiDraw.menuWidth(font, (HudStats.fps() + " fps").replaceAll("[0-9]", "0")));
+			w += 9 + Math.max(GuiDraw.menuWidth(font, "000 fps"), GuiDraw.menuWidth(font, Text.zeroDigits((HudStats.fps() + " fps"))));
 		}
 		if (config.watermarkPing) {
-			w += 9 + Math.max(GuiDraw.menuWidth(font, "000 ms"), GuiDraw.menuWidth(font, HudStats.pingLabel().replaceAll("[0-9]", "0")));
+			w += 9 + Math.max(GuiDraw.menuWidth(font, "000 ms"), GuiDraw.menuWidth(font, Text.zeroDigits(HudStats.pingLabel())));
 		}
 		if (config.watermarkTime) {
-			w += 9 + Math.max(GuiDraw.menuWidth(font, "00:00"), GuiDraw.menuWidth(font, HudStats.time().replaceAll("[0-9]", "0")));
+			w += 9 + Math.max(GuiDraw.menuWidth(font, "00:00"), GuiDraw.menuWidth(font, Text.zeroDigits(HudStats.time())));
 		}
 		if (config.watermarkName) {
 			w += 9 + GuiDraw.menuWidth(font, HudStats.playerName());

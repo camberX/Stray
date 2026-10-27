@@ -1,5 +1,6 @@
 package dev.stray.client.mining;
 
+import dev.stray.client.util.Text;
 import dev.stray.client.config.StrayConfig;
 import dev.stray.client.location.SkyblockLocation;
 import net.minecraft.ChatFormatting;
@@ -105,7 +106,7 @@ public final class CrystalHollows {
 		if (overlay || message == null) {
 			return true;
 		}
-		String text = message.getString().replaceAll("§.", "");
+		String text = Text.strip(message.getString());
 		if (SkyblockLocation.takeLocraw(text)) {
 			return false;
 		}

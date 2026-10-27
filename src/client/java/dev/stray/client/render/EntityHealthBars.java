@@ -1,5 +1,6 @@
 package dev.stray.client.render;
 
+import dev.stray.client.util.Text;
 import dev.stray.client.config.EntityKind;
 import dev.stray.client.config.EntityVisuals;
 import dev.stray.client.config.StrayConfig;
@@ -199,7 +200,7 @@ public final class EntityHealthBars {
 		if (raw == null || raw.isEmpty()) {
 			return null;
 		}
-		String plain = raw.replaceAll("§.", "");
+		String plain = Text.strip(raw);
 		if (!hasHeart(plain) && plain.indexOf('/') < 0) {
 			return null;
 		}
@@ -254,7 +255,7 @@ public final class EntityHealthBars {
 	}
 
 	private static LivingEntity bindStand(ArmorStand stand, String name, Player self) {
-		String plain = name.replaceAll("§.", "").toUpperCase();
+		String plain = Text.strip(name).toUpperCase();
 		int offset = plain.contains("WITHERMANCER") ? 3 : 1;
 		Entity byId = stand.level().getEntity(stand.getId() - offset);
 		if (byId instanceof LivingEntity living && skyMob(living, self)) {

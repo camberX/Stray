@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Optional;
 
 final class GardenPlotsWidget {
+	private static final java.util.regex.Pattern PLOT_SIZE = java.util.regex.Pattern.compile("(\\d+)\\s*(?:x|:)?\\s*(\\d+)?");
 	static final int[] PLOT_TO_SLOT = {
 		12, 7, 11, 13, 17,
 		6, 8, 16, 18, 2,
@@ -358,7 +359,7 @@ final class GardenPlotsWidget {
 		if (raw.isEmpty()) {
 			return;
 		}
-		java.util.regex.Matcher match = java.util.regex.Pattern.compile("(\\d+)\\s*(?:x|:)?\\s*(\\d+)?").matcher(raw);
+		java.util.regex.Matcher match = PLOT_SIZE.matcher(raw);
 		if (!match.find()) {
 			return;
 		}

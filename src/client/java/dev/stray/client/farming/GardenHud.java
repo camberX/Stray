@@ -1,5 +1,6 @@
 package dev.stray.client.farming;
 
+import dev.stray.client.util.Text;
 import dev.stray.client.config.StrayConfig;
 import dev.stray.client.item.ItemAppearance;
 import dev.stray.client.item.ItemIds;
@@ -1022,7 +1023,7 @@ public final class GardenHud {
 	}
 
 	private static boolean cropMilestoneTitle(String title) {
-		String key = fold(title).replaceAll("[^a-z ]", " ").replaceAll("\\s+", " ").trim();
+		String key = Text.collapse(fold(title).replaceAll("[^a-z ]", " ")).trim();
 		return key.equals("crop milestones") || key.startsWith("crop milestones ");
 	}
 
@@ -1276,7 +1277,7 @@ public final class GardenHud {
 		if (amount <= 0) {
 			amount = 1;
 		}
-		name = name.replaceAll("\\s+", " ").trim();
+		name = Text.collapse(name).trim();
 		if (name.isEmpty() || name.equalsIgnoreCase("Items Required") || name.length() < 2) {
 			return null;
 		}
@@ -1620,9 +1621,8 @@ public final class GardenHud {
 		if (text == null) {
 			return "";
 		}
-		return text.replaceAll("§.", "")
-			.replace('\u00A0', ' ')
-			.replaceAll("\\s+", " ")
+		return Text.collapse(Text.strip(text)
+			.replace('\u00A0', ' '))
 			.trim();
 	}
 

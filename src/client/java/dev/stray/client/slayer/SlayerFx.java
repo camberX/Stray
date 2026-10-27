@@ -1,5 +1,6 @@
 package dev.stray.client.slayer;
 
+import dev.stray.client.util.Text;
 import dev.stray.client.config.SlayerSettings;
 import dev.stray.client.config.StrayConfig;
 import dev.stray.client.location.SkyblockLocation;
@@ -169,7 +170,7 @@ public final class SlayerFx {
 		if (!s.cleanup || !s.blockNotSpawnable || slot == null || !SkyblockLocation.inSkyblock) {
 			return false;
 		}
-		if (!screen.getTitle().getString().replaceAll("§.", "").trim().equals("Slayer")) {
+		if (!Text.strip(screen.getTitle().getString()).trim().equals("Slayer")) {
 			return false;
 		}
 		ItemStack stack = slot.getItem();
@@ -178,7 +179,7 @@ public final class SlayerFx {
 			return false;
 		}
 		for (Component line : lore.lines()) {
-			String text = line.getString().replaceAll("§.", "").trim();
+			String text = Text.strip(line.getString()).trim();
 			if (text.equals("Only inside The Rift!") || text.equals("Doesn't exist here!")) {
 				return true;
 			}
