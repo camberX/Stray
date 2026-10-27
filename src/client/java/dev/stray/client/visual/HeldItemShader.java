@@ -15,8 +15,6 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.textures.FilterMode;
 import com.mojang.blaze3d.textures.GpuSampler;
 import com.mojang.blaze3d.textures.GpuTexture;
-import com.mojang.blaze3d.opengl.GlStateManager;
-import org.lwjgl.opengl.GL11;
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.QuadInstance;
@@ -69,6 +67,7 @@ public final class HeldItemShader {
 	private static final Identifier ESP_FILL_PIPELINE_ID = Stray.id("pipeline/held_item_esp");
 	private static final Identifier MASK_PIPELINE_ID = Stray.id("pipeline/held_item_mask");
 	private static final Identifier BLADE_PIPELINE_ID = Stray.id("pipeline/cs2_blade");
+	private static final Identifier KNIFE_MASK_PIPELINE_ID = Stray.id("pipeline/cs2_knife_mask");
 	private static final Identifier FILL_SHADER_ID = Stray.id("core/held_item");
 	private static final Identifier SILHOUETTE_SHADER_ID = Stray.id("post/held_item_silhouette");
 	private static final Identifier ROWDIST_SHADER_ID = Stray.id("post/held_item_rowdist");
@@ -79,6 +78,7 @@ public final class HeldItemShader {
 	private static final Function<Identifier, RenderType> MASK_TYPES = Util.memoize(HeldItemShader::createMaskType);
 	private static final Function<Identifier, RenderType> BLADE_TYPES = Util.memoize(HeldItemShader::createBladeType);
 	private static RenderPipeline bladePipeline;
+	private static RenderPipeline knifeMaskPipeline;
 	private static RenderPipeline fillPipeline;
 	private static RenderPipeline espFillPipeline;
 	private static RenderPipeline maskPipeline;
@@ -234,6 +234,54 @@ public final class HeldItemShader {
 		espFillPipeline = itemPipeline(ESP_FILL_PIPELINE_ID, 0.5f, true, "ESP_FILL");
 		maskPipeline = itemPipeline(MASK_PIPELINE_ID, 0.1f, false, "COVERAGE_MASK");
 		bladePipeline = bladePipeline();
+		knifeMaskPipeline = buildKnifeMaskPipeline();
+	}
+
+	/** The held item mask, skinned on the GPU like the CS2 knife it covers. */
+	private static RenderPipeline buildKnifeMaskPipeline() {
+		return RenderPipelinesInvoker.stray$register(RenderPipeline.builder()
+			.withLocation(KNIFE_MASK_PIPELINE_ID)
+			.withVertexShader(FILL_SHADER_ID)
+			.withFragmentShader(FILL_SHADER_ID)
+			.withBindGroupLayout(BindGroupLayouts.GLOBALS)
+			.withBindGroupLayout(BindGroupLayouts.PROJECTION)
+			.withBindGroupLayout(BindGroupLayouts.DYNAMIC_TRANSFORMS)
+			.withBindGroupLayout(BindGroupLayouts.FOG)
+			.withBindGroupLayout(BindGroupLayouts.LIGHTING)
+			.withBindGroupLayout(BindGroupLayouts.SAMPLER0_SAMPLER1_SAMPLER2)
+			.withBindGroupLayout(BindGroupLayout.builder()
+				.withSampler("Sampler3")
+				.withSampler("Sampler4")
+				.build())
+			.withBindGroupLayout(BindGroupLayout.builder()
+				.withUniform("KnifeBones", UniformType.UNIFORM_BUFFER)
+				.build())
+			.withVertexBinding(0, DefaultVertexFormat.ENTITY)
+			.withPrimitiveTopology(PrimitiveTopology.TRIANGLES)
+			.withDepthStencilState(DepthStencilState.DEFAULT)
+			.withShaderDefine("ALPHA_CUTOUT", 0.1f)
+			.withShaderDefine("PORTAL_LAYERS", 15)
+			.withShaderDefine("COVERAGE_MASK")
+			.withShaderDefine("CS2_GPU_SKIN")
+			.withColorTargetState(ColorTargetState.DEFAULT)
+			.withCull(false)
+			.build());
+	}
+
+	public static RenderPipeline knifeMaskPipeline() {
+		ensureRegistered();
+		return knifeMaskPipeline;
+	}
+
+	/**
+	 * When the held item silhouette is being masked this frame, the mask batch (target,
+	 * textures and mask color) a CS2 knife with this albedo is drawn into; otherwise {@code null}.
+	 */
+	public static PreparedRenderType knifeMaskBatch(Identifier albedo) {
+		if (!maskThisFrame || albedo == null) {
+			return null;
+		}
+		return maskRenderType(albedo).prepare();
 	}
 
 	/** CS2 knife blade: the item fill shader, skinned on the GPU from the KnifeBones buffer. */
@@ -402,7 +450,7 @@ public final class HeldItemShader {
 		}
 		CommandEncoder encoder = RenderSystem.getDevice().createCommandEncoder();
 		if (espTarget.getDepthTexture() != null) {
-			encoder.clearColorAndDepthTextures(espTarget.getColorTexture(), RenderCompat.CLEAR_TRANSPARENT, espTarget.getDepthTexture(), 1.0);
+			encoder.clearColorAndDepthTextures(espTarget.getColorTexture(), RenderCompat.CLEAR_TRANSPARENT, espTarget.getDepthTexture(), 0.0);
 		} else {
 			encoder.clearColorTexture(espTarget.getColorTexture(), RenderCompat.CLEAR_TRANSPARENT);
 		}
@@ -491,7 +539,7 @@ public final class HeldItemShader {
 		}
 		CommandEncoder encoder = RenderSystem.getDevice().createCommandEncoder();
 		if (maskTarget.getDepthTexture() != null) {
-			encoder.clearColorAndDepthTextures(maskTarget.getColorTexture(), RenderCompat.CLEAR_TRANSPARENT, maskTarget.getDepthTexture(), 1.0);
+			encoder.clearColorAndDepthTextures(maskTarget.getColorTexture(), RenderCompat.CLEAR_TRANSPARENT, maskTarget.getDepthTexture(), 0.0);
 		} else {
 			encoder.clearColorTexture(maskTarget.getColorTexture(), RenderCompat.CLEAR_TRANSPARENT);
 		}
@@ -802,14 +850,12 @@ public final class HeldItemShader {
 			.withBindGroupLayout(BindGroupLayouts.IN_SAMPLER)
 			.withBindGroupLayout(BindGroupLayouts.DYNAMIC_TRANSFORMS)
 			.withColorTargetState(RenderCompat.opaqueTarget())
-			.withDepthStencilState(new DepthStencilState(CompareOp.ALWAYS_PASS, false))
 			.build();
 		silhouettePipeline = RenderCompat.screenQuad(Stray.id("pipeline/held_item_silhouette"), SILHOUETTE_SHADER_ID)
 			.withBindGroupLayout(BindGroupLayouts.IN_SAMPLER)
 			.withBindGroupLayout(RenderCompat.sampler("RowSampler"))
 			.withBindGroupLayout(BindGroupLayouts.DYNAMIC_TRANSFORMS)
 			.withColorTargetState(new ColorTargetState(BlendFunction.ENTITY_OUTLINE_BLIT))
-			.withDepthStencilState(new DepthStencilState(CompareOp.ALWAYS_PASS, false))
 			.build();
 	}
 
@@ -820,7 +866,6 @@ public final class HeldItemShader {
 		espBlitPipeline = RenderCompat.screenQuad(Stray.id("pipeline/fill_esp_blit"), ESP_BLIT_SHADER_ID)
 			.withBindGroupLayout(BindGroupLayouts.IN_SAMPLER)
 			.withColorTargetState(new ColorTargetState(BlendFunction.TRANSLUCENT))
-			.withDepthStencilState(new DepthStencilState(CompareOp.ALWAYS_PASS, false))
 			.build();
 	}
 }

@@ -48,6 +48,11 @@ public final class TitleBackdrop {
 	private static long renderedBucket = Long.MIN_VALUE;
 	private static int renderedAccent = -1;
 	private static boolean failed;
+	private static boolean pending;
+	private static boolean ready;
+	private static int pendingW;
+	private static int pendingH;
+	private static int pendingAccent;
 
 	private TitleBackdrop() {
 	}
@@ -99,9 +104,17 @@ public final class TitleBackdrop {
 			int accent = Theme.ACCENT;
 			long bucket = System.nanoTime() / FRAME_NS;
 			if (bucket != renderedBucket || accent != renderedAccent) {
-				render(rw, rh, accent);
+				// GUI extraction runs before the frame's GPU work starts; Vulkan
+				// can't record a pass here, so the draw waits for flush().
+				pending = true;
+				pendingW = rw;
+				pendingH = rh;
+				pendingAccent = accent;
 				renderedBucket = bucket;
 				renderedAccent = accent;
+			}
+			if (!ready) {
+				return false;
 			}
 			GpuSampler sampler = RenderSystem.getSamplerCache().getClampToEdge(FilterMode.LINEAR);
 			graphics.pose().pushMatrix();
@@ -112,6 +125,24 @@ public final class TitleBackdrop {
 		} catch (RuntimeException ex) {
 			failed = true;
 			return false;
+		}
+	}
+
+	/** Called during the frame's render phase, before the GUI is drawn. */
+	public static void flush() {
+		if (!pending || failed || target == null || pipeline == null) {
+			pending = false;
+			return;
+		}
+		pending = false;
+		if (target.width != pendingW || target.height != pendingH) {
+			return;
+		}
+		try {
+			render(pendingW, pendingH, pendingAccent);
+			ready = true;
+		} catch (RuntimeException ex) {
+			failed = true;
 		}
 	}
 
@@ -152,6 +183,7 @@ public final class TitleBackdrop {
 			target = null;
 		}
 		target = RenderCompat.colorTarget("stray title marble", width, height);
+		ready = false;
 		targetW = width;
 		targetH = height;
 		renderedBucket = Long.MIN_VALUE;
@@ -170,7 +202,6 @@ public final class TitleBackdrop {
 		pipeline = RenderCompat.screenQuad(Stray.id("pipeline/title_marble"), SHADER)
 			.withBindGroupLayout(RenderCompat.uniform("MarbleConfig"))
 			.withColorTargetState(RenderCompat.opaqueTarget())
-			.withDepthStencilState(new DepthStencilState(CompareOp.ALWAYS_PASS, false))
 			.build();
 	}
 }

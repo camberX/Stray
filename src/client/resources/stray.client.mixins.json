@@ -39,7 +39,6 @@
 		"FogRendererMixin",
 		"FontMixin",
 		"GameRendererAccessor",
-		"GlRenderPassMixin",
 		"GameRendererMixin",
 		"GuiAccessor",
 		"GuiMixin",
@@ -94,7 +93,9 @@
 		"customize.PlayerHeadSpecialRendererMixin",
 		"customize.TrimMaterialPropertyMixin",
 		"customize.ItemModelOverrideMixin",
-		"RenderPipelineBuilderMixin"
+		"RenderPipelineBuilderMixin",
+		"RenderPassMixin",
+		"DynamicUniformsMixin"
 	],
 	"injectors": {
 		"defaultRequire": 1

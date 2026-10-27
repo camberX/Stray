@@ -11,8 +11,6 @@ layout(std140) uniform AccumulationUniforms {
 };
 
 in vec2 texCoord;
-in vec2 oneTexel;
-uniform vec2 InSize;
 out vec4 fragColor;
 
 void main() {

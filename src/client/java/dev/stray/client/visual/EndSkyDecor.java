@@ -213,7 +213,6 @@ public final class EndSkyDecor {
 
 	private static RenderPipeline texturedPipeline(String location, BlendFunction blend) {
 		return RenderCompat.guiBlit(Stray.id(location), Identifier.withDefaultNamespace("core/position_tex_color"), blend)
-			.withDepthStencilState(new DepthStencilState(CompareOp.ALWAYS_PASS, false))
 			.withCull(false)
 			.build();
 	}
