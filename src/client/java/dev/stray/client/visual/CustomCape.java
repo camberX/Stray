@@ -4,6 +4,7 @@ import com.mojang.blaze3d.platform.NativeImage;
 import dev.stray.Stray;
 import dev.stray.client.config.StrayConfig;
 import dev.stray.client.ui.CapeCreatorScreen;
+import dev.stray.client.util.FilePicker;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
@@ -12,14 +13,7 @@ import net.minecraft.core.ClientAsset;
 import net.minecraft.resources.Identifier;
 import net.minecraft.util.Util;
 import net.minecraft.world.entity.player.PlayerSkin;
-import org.lwjgl.PointerBuffer;
-import org.lwjgl.system.MemoryStack;
-import org.lwjgl.util.tinyfd.TinyFileDialogs;
 
-import java.awt.EventQueue;
-import java.awt.FileDialog;
-import java.awt.Frame;
-import java.util.concurrent.atomic.AtomicReference;
 import java.io.InputStream;
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -219,30 +213,15 @@ public final class CustomCape {
 			client.mouseHandler.releaseMouse();
 		} catch (Exception ignored) {
 		}
-		Thread thread = new Thread(() -> {
-			String selected = null;
-			try {
-				try {
-					selected = tinyFdPick();
-				} catch (Throwable exception) {
-					Stray.LOGGER.warn("Native cape picker failed, trying Explorer", exception);
-					try {
-						selected = awtPick();
-					} catch (Throwable explorer) {
-						Stray.LOGGER.warn("Explorer cape picker failed", explorer);
-						Minecraft.getInstance().execute(() -> fail("Can't open explorer"));
-						return;
-					}
-				}
-				final String picked = selected;
-				Minecraft.getInstance().execute(() -> applyPicked(picked, create));
-			} finally {
-				picking = false;
-				Minecraft.getInstance().execute(CustomCape::restoreMouse);
-			}
-		}, "stray-cape-picker");
-		thread.setDaemon(true);
-		thread.start();
+		FilePicker.open("Select cape image", "PNG or JPEG", "png;jpg;jpeg", picked -> {
+			picking = false;
+			restoreMouse();
+			applyPicked(picked == null ? null : picked.toString(), create);
+		}, error -> {
+			picking = false;
+			restoreMouse();
+			fail("Can't open file picker");
+		});
 	}
 
 	private static void applyPicked(String selected, boolean create) {
@@ -296,51 +275,6 @@ public final class CustomCape {
 			} catch (Exception ignored) {
 			}
 		}
-	}
-
-	private static String tinyFdPick() {
-		try (MemoryStack stack = MemoryStack.stackPush()) {
-			PointerBuffer filters = stack.mallocPointer(2);
-			filters.put(stack.UTF8("*.png"));
-			filters.put(stack.UTF8("*.jpg"));
-			filters.flip();
-			return TinyFileDialogs.tinyfd_openFileDialog(
-				"Select cape image",
-				System.getProperty("user.home", ""),
-				filters,
-				"PNG or JPEG",
-				false
-			);
-		}
-	}
-
-	private static String awtPick() throws Exception {
-		AtomicReference<String> selected = new AtomicReference<>();
-		AtomicReference<Exception> failure = new AtomicReference<>();
-		EventQueue.invokeAndWait(() -> {
-			try {
-				FileDialog dialog = new FileDialog((Frame) null, "Select cape image", FileDialog.LOAD);
-				dialog.setAlwaysOnTop(true);
-				dialog.setFile("*.png;*.jpg;*.jpeg");
-				dialog.setFilenameFilter((dir, name) -> {
-					String lower = name.toLowerCase();
-					return lower.endsWith(".png") || lower.endsWith(".jpg") || lower.endsWith(".jpeg");
-				});
-				dialog.setVisible(true);
-				String file = dialog.getFile();
-				String dir = dialog.getDirectory();
-				dialog.dispose();
-				if (file != null && dir != null) {
-					selected.set(Path.of(dir, file).toString());
-				}
-			} catch (Exception exception) {
-				failure.set(exception);
-			}
-		});
-		if (failure.get() != null) {
-			throw failure.get();
-		}
-		return selected.get();
 	}
 
 	public static void clear() {

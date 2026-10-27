@@ -84,20 +84,29 @@ public final class EndSkyDecor {
 		ensurePipeline();
 	}
 
-	public static void render(float time) {
+	/**
+	 * Pipelines, the quad buffer and every texture are created or uploaded here,
+	 * outside any render pass: 26.3 draws the sky inside one shared pass, and
+	 * the GPU can't be written to while it records.
+	 */
+	public static void prepare() {
 		Minecraft client = Minecraft.getInstance();
-		if (client.level == null) {
-			return;
-		}
 		ensurePipeline();
 		if (quads == null) {
 			quads = bakeQuads();
 		}
-		if (pipeline == null || addPipeline == null || quads == null) {
-			return;
+		for (Identifier id : FACE_TEXTURES) {
+			view(client, id);
 		}
-		RenderTarget main = client.gameRenderer.mainRenderTarget();
-		if (main == null || main.getColorTextureView() == null) {
+		for (Identifier id : HOLE_TEXTURES) {
+			view(client, id);
+		}
+	}
+
+	/** Draws into vanilla's sky render pass, right after the vanilla end sky. */
+	public static void render(float time, RenderPass pass) {
+		Minecraft client = Minecraft.getInstance();
+		if (client.level == null || pipeline == null || addPipeline == null || quads == null) {
 			return;
 		}
 
@@ -154,13 +163,7 @@ public final class EndSkyDecor {
 
 		var indexBuf = RenderSystem.getSequentialBuffer(PrimitiveTopology.QUADS);
 		GpuSampler linear = RenderSystem.getSamplerCache().getClampToEdge(FilterMode.LINEAR);
-		try (RenderPass pass = RenderSystem.getDevice().createCommandEncoder().createRenderPass(
-			() -> "stray end sky",
-			main.getColorTextureView(),
-			Optional.empty(),
-			main.getDepthTextureView(),
-			OptionalDouble.empty()
-		)) {
+		try {
 			pass.setPipeline(RenderSystem.getCompiledPipeline(pipeline));
 			RenderSystem.bindDefaultUniforms(pass);
 			pass.setVertexBuffer(0, quads.slice());

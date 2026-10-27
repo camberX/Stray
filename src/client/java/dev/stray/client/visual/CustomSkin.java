@@ -10,9 +10,7 @@ import net.minecraft.resources.Identifier;
 import net.minecraft.util.Util;
 import net.minecraft.world.entity.player.PlayerModelType;
 import net.minecraft.world.entity.player.PlayerSkin;
-import org.lwjgl.PointerBuffer;
-import org.lwjgl.system.MemoryStack;
-import org.lwjgl.util.tinyfd.TinyFileDialogs;
+import dev.stray.client.util.FilePicker;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -86,28 +84,15 @@ public final class CustomSkin {
 			Minecraft.getInstance().mouseHandler.releaseMouse();
 		} catch (Exception ignored) {
 		}
-		Thread thread = new Thread(() -> {
-			String selected = null;
-			try {
-				try (MemoryStack stack = MemoryStack.stackPush()) {
-					PointerBuffer filters = stack.mallocPointer(1);
-					filters.put(stack.UTF8("*.png"));
-					filters.flip();
-					selected = TinyFileDialogs.tinyfd_openFileDialog("Select skin", System.getProperty("user.home", ""), filters, "PNG skin", false);
-				} catch (Throwable e) {
-					Stray.LOGGER.warn("Skin picker failed", e);
-					status = "Can't open file picker";
-				}
-				final String picked = selected;
-				if (picked != null && !picked.isBlank()) {
-					Minecraft.getInstance().execute(() -> load(Path.of(picked), true));
-				}
-			} finally {
-				picking = false;
+		FilePicker.open("Select skin", "PNG skin", "png", picked -> {
+			picking = false;
+			if (picked != null) {
+				load(picked, true);
 			}
-		}, "stray-skin-picker");
-		thread.setDaemon(true);
-		thread.start();
+		}, error -> {
+			picking = false;
+			status = error;
+		});
 	}
 
 	private static void load(Path path, boolean save) {
