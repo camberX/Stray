@@ -458,13 +458,10 @@ public final class GuiDraw {
 			fillSmooth(graphics, x, y, w, h, color);
 			return;
 		}
-		fillSmooth(graphics, x + r, y, w - 2f * r, h, color);
-		fillSmooth(graphics, x, y + r, r, h - 2f * r, color);
-		fillSmooth(graphics, x + w - r, y + r, r, h - 2f * r, color);
-		cornerFine(graphics, x, y, r, 0f, 0f, color);
-		cornerFine(graphics, x + w - r, y, r, RING_HALF, 0f, color);
-		cornerFine(graphics, x + w - r, y + h - r, r, RING_HALF, RING_HALF, color);
-		cornerFine(graphics, x, y + h - r, r, 0f, RING_HALF, color);
+		// One GUI element with the shape computed per pixel. Three strips plus four corner
+		// quads made seven, and every GUI element costs an overlap search against the
+		// ones already in its layer; the HUD redraws these every frame.
+		RoundRect.fill(graphics, x, y, w, h, r, color);
 	}
 
 	private static final Identifier WHITE = Stray.id("textures/gui/white.png");

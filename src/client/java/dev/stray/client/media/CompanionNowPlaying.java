@@ -26,6 +26,7 @@ final class CompanionNowPlaying {
 	private String live;
 	private String kind;
 	private long quietUntil;
+	private int misses;
 	private volatile boolean awaitingAuth;
 	private volatile boolean reachable;
 	private volatile long lastAuthAskMs;
@@ -68,17 +69,22 @@ final class CompanionNowPlaying {
 		for (String endpoint : endpoints()) {
 			Fetch result = fetch(endpoint);
 			if (result.track().present()) {
+				misses = 0;
 				live = endpoint;
 				kind = kindOf(endpoint);
 				return result.track();
 			}
 			if (result.reached()) {
+				misses = 0;
 				live = endpoint;
 				kind = kindOf(endpoint);
 				return NowPlaying.none();
 			}
 		}
-		quietUntil = now + 1500L;
+		// Nothing is listening: back off from 1.5 s up to 15 s instead of probing
+		// every port a few times a second for as long as the game runs.
+		misses = Math.min(misses + 1, 10);
+		quietUntil = now + Math.min(15_000L, 1500L * misses);
 		reachable = false;
 		return NowPlaying.none();
 	}

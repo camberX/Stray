@@ -34,8 +34,17 @@ public final class HudStats {
 		return ping < 0 ? "…" : ping + " ms";
 	}
 
+	private static long timeSecond = Long.MIN_VALUE;
+	private static String timeText = "";
+
+	/** Formatted at most once a second; the HUD asks every frame. */
 	public static String time() {
-		return LocalTime.now().format(TIME);
+		long second = System.currentTimeMillis() / 1000L;
+		if (second != timeSecond) {
+			timeText = LocalTime.now().format(TIME);
+			timeSecond = second;
+		}
+		return timeText;
 	}
 
 	public static String playerName() {
