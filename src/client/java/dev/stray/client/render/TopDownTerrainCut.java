@@ -1,7 +1,5 @@
 package dev.stray.client.render;
 
-import com.mojang.renderpearl.backend.opengl.GlRenderPipeline;
-
 /**
  * Full blocks from 2 above the player's block position, within 6 blocks, are
  * discarded while the top-down picture is taken. The uniform is cleared
@@ -11,13 +9,12 @@ public final class TopDownTerrainCut {
 	private TopDownTerrainCut() {
 	}
 
-	public static void bind(GlRenderPipeline pipeline) {
+	public static void bind() {
 		if (TopDownCapture.capturing()) {
 			StrayUniforms.cut(TopDownCapture.cutThreshold(), 6f, 1f);
 		} else {
 			StrayUniforms.cut(0f, 0f, 0f);
 		}
-		StrayUniforms.apply(pipeline);
 	}
 
 	public static void clear() {

@@ -37,6 +37,7 @@
 		"FeatureRenderDispatcherMixin",
 		"EntityRenderStateMixin",
 		"FogRendererMixin",
+		"FrontendRenderPipelineMixin",
 		"FontMixin",
 		"GameRendererAccessor",
 		"GlRenderPassMixin",

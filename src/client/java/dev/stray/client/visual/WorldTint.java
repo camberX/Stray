@@ -1,7 +1,6 @@
 package dev.stray.client.visual;
 
 import com.mojang.blaze3d.vertex.QuadInstance;
-import com.mojang.renderpearl.backend.opengl.GlRenderPipeline;
 import dev.stray.client.render.StrayUniforms;
 import dev.stray.client.config.StrayConfig;
 import net.fabricmc.loader.api.FabricLoader;
@@ -53,7 +52,7 @@ public final class WorldTint {
 		return StrayConfig.get().worldTintRgb;
 	}
 
-	public static void bind(GlRenderPipeline pipeline) {
+	public static void bind() {
 		int rgb = shaderRgb();
 		StrayUniforms.tint(
 			((rgb >> 16) & 0xFF) / 255f,
@@ -61,7 +60,6 @@ public final class WorldTint {
 			(rgb & 0xFF) / 255f,
 			shaderStrength()
 		);
-		StrayUniforms.apply(pipeline);
 	}
 
 	public static float shaderStrength() {

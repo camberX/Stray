@@ -1,7 +1,6 @@
 package dev.stray.client.mining;
 
 import net.minecraft.world.item.DyeColor;
-import com.mojang.renderpearl.backend.opengl.GlRenderPipeline;
 import com.mojang.blaze3d.vertex.QuadInstance;
 import dev.stray.client.render.StrayUniforms;
 import dev.stray.Stray;
@@ -130,9 +129,8 @@ public final class FocusMode {
 		return GRAY;
 	}
 
-	public static void bind(GlRenderPipeline pipeline) {
+	public static void bind() {
 		StrayUniforms.focus(visual ? 1f : 0f);
-		StrayUniforms.apply(pipeline);
 	}
 
 	public static String patchVanilla(String source) {
