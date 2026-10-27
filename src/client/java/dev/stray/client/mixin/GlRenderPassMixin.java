@@ -56,6 +56,7 @@ public abstract class GlRenderPassMixin {
 			if (slice == null) {
 				slice = StrayUniforms.upload();
 			}
+			uniforms.set(index, slice);
 			setUniform(index, slice);
 		}
 	}
