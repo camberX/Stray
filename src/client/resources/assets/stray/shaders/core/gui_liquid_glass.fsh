@@ -1,18 +1,14 @@
 #version 330
+#extension GL_ARB_separate_shader_objects : require
 
-layout(std140) uniform DynamicTransforms {
-    mat4 ModelViewMat;
-    vec4 ColorModulator;
-    vec3 ModelOffset;
-    mat4 TextureMat;
-};
+#include <minecraft:dynamictransforms.glsl>
 
 uniform sampler2D Sampler0;
 
-in vec2 texCoord0;
-in vec4 vertexColor;
+layout(location = 0) in vec2 texCoord0;
+layout(location = 1) in vec4 vertexColor;
 
-out vec4 fragColor;
+layout(location = 0) out vec4 fragColor;
 
 // Same filter as https://github.com/rdev/liquid-glass-react (standard mode).
 // The displacement image is a linear gradient (R = x, B = y). feDisplacementMap
