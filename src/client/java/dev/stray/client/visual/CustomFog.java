@@ -1,10 +1,7 @@
 package dev.stray.client.visual;
 
 import com.mojang.renderpearl.backend.opengl.GlRenderPipeline;
-import com.mojang.renderpearl.backend.opengl.GlStateManager;
-import dev.stray.Stray;
-import org.lwjgl.opengl.GL11;
-import org.lwjgl.opengl.GL20;
+import dev.stray.client.render.StrayUniforms;
 import dev.stray.client.config.StrayConfig;
 import net.minecraft.client.Camera;
 import net.minecraft.client.renderer.fog.FogData;
@@ -18,7 +15,6 @@ public final class CustomFog {
 
 	private static boolean applied;
 	private static Sample sample = Sample.OFF;
-	private static final java.util.Map<Integer, Integer> FOG_LOCATIONS = new java.util.HashMap<>();
 
 	private CustomFog() {
 	}
@@ -28,25 +24,8 @@ public final class CustomFog {
 	}
 
 	public static void bind(GlRenderPipeline pipeline) {
-		if (pipeline == null || pipeline.program() == null) {
-			return;
-		}
-		int program = pipeline.program().getProgramId();
-		if (program <= 0) {
-			return;
-		}
-		int location = FOG_LOCATIONS.computeIfAbsent(program, CustomFog::fogLocation);
-		if (location < 0) {
-			return;
-		}
-		int previous = GL11.glGetInteger(GL20.GL_CURRENT_PROGRAM);
-		GL20.glUseProgram(program);
-		GL20.glUniform1f(location, applied ? 1f : 0f);
-		GL20.glUseProgram(previous);
-	}
-
-	private static int fogLocation(int program) {
-		return GlStateManager._glGetUniformLocation(program, "u_StrayFog");
+		StrayUniforms.fog(applied ? 1f : 0f);
+		StrayUniforms.apply(pipeline);
 	}
 
 	public static Sample sample() {
@@ -102,23 +81,22 @@ public final class CustomFog {
 	 * makes higher density fill the span instead of only tinting the far edge.
 	 */
 	public static String injectSodiumShader(String src) {
-		if (src == null || src.contains("u_StrayFog")) {
+		if (src == null || src.contains("strayMix")) {
 			return src;
 		}
 		String needle = "return vec4(mix(fragColor.rgb, fogColor.rgb, fogValue * fogColor.a), fragColor.a);";
 		if (!src.contains(needle)) {
-			Stray.LOGGER.warn("Could not inject custom fog into Sodium fog shader");
 			return src;
 		}
 		String curved = """
 			float strayLin = clamp(fogValue, 0.0, 1.0);
 			float strayMix = fogValue * fogColor.a;
-			if (u_StrayFog > 0.5) {
+			if (u_StrayMisc.y > 0.5) {
 				float strayDensity = clamp(fogColor.a, 0.0, 1.0);
 				strayMix = strayDensity <= 0.001 ? 0.0 : pow(strayLin, mix(3.2, 0.22, strayDensity));
 			}
 			return vec4(mix(fragColor.rgb, fogColor.rgb, strayMix), fragColor.a);""";
-		return "uniform float u_StrayFog;\n" + src.replace(needle, curved);
+		return StrayUniforms.insertBlock(src).replace(needle, curved);
 	}
 
 	public static int fogRgb(StrayConfig config) {

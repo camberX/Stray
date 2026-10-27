@@ -2,10 +2,7 @@ package dev.stray.client.visual;
 
 import com.mojang.blaze3d.vertex.QuadInstance;
 import com.mojang.renderpearl.backend.opengl.GlRenderPipeline;
-import com.mojang.renderpearl.backend.opengl.GlStateManager;
-import org.lwjgl.opengl.GL11;
-import org.lwjgl.opengl.GL20;
-import dev.stray.Stray;
+import dev.stray.client.render.StrayUniforms;
 import dev.stray.client.config.StrayConfig;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.Minecraft;
@@ -21,7 +18,6 @@ public final class WorldTint {
 	private static int lastMeshKey = Integer.MIN_VALUE;
 	private static Boolean sodiumLoaded;
 	private static boolean lastLightmapActive;
-	private static final java.util.Map<Integer, Integer> TINT_LOCATIONS = new java.util.HashMap<>();
 
 	private WorldTint() {
 	}
@@ -58,32 +54,14 @@ public final class WorldTint {
 	}
 
 	public static void bind(GlRenderPipeline pipeline) {
-		if (pipeline == null || pipeline.program() == null) {
-			return;
-		}
-		int program = pipeline.program().getProgramId();
-		if (program <= 0) {
-			return;
-		}
-		int location = TINT_LOCATIONS.computeIfAbsent(program, WorldTint::tintLocation);
-		if (location < 0) {
-			return;
-		}
 		int rgb = shaderRgb();
-		int previous = GL11.glGetInteger(GL20.GL_CURRENT_PROGRAM);
-		GL20.glUseProgram(program);
-		GL20.glUniform4f(
-			location,
+		StrayUniforms.tint(
 			((rgb >> 16) & 0xFF) / 255f,
 			((rgb >> 8) & 0xFF) / 255f,
 			(rgb & 0xFF) / 255f,
 			shaderStrength()
 		);
-		GL20.glUseProgram(previous);
-	}
-
-	private static int tintLocation(int program) {
-		return GlStateManager._glGetUniformLocation(program, "u_WorldTint");
+		StrayUniforms.apply(pipeline);
 	}
 
 	public static float shaderStrength() {
@@ -94,20 +72,16 @@ public final class WorldTint {
 	}
 
 	public static String injectTerrainFragmentSource(String src) {
-		if (src == null || src.contains("u_WorldTint")) {
+		if (src == null || src.contains("mix(color.rgb, u_WorldTint.rgb, u_WorldTint.a)")) {
 			return src;
 		}
-		String withUniform = src.contains("uniform sampler2D u_BlockTex; // The block texture")
-			? src.replace("uniform sampler2D u_BlockTex; // The block texture", "uniform sampler2D u_BlockTex; // The block texture\nuniform vec4 u_WorldTint;")
-			: src.replace("uniform sampler2D u_BlockTex;", "uniform sampler2D u_BlockTex;\nuniform vec4 u_WorldTint;");
-		String tinted = withUniform.contains("color *= v_Color;")
-			? withUniform.replace("color *= v_Color;", "color *= v_Color;\n    color.rgb = mix(color.rgb, u_WorldTint.rgb, u_WorldTint.a);")
-			: withUniform;
-		if (!tinted.contains("mix(color.rgb, u_WorldTint.rgb, u_WorldTint.a)")) {
-			Stray.LOGGER.warn("Could not inject world tint into Sodium terrain shader");
+		if (!src.contains("u_BlockTex") || !src.contains("color *= v_Color;")) {
 			return src;
 		}
-		return tinted;
+		return StrayUniforms.insertBlock(src).replace(
+			"color *= v_Color;",
+			"color *= v_Color;\n    color.rgb = mix(color.rgb, u_WorldTint.rgb, u_WorldTint.a);"
+		);
 	}
 
 	public static boolean skyTintActive() {
