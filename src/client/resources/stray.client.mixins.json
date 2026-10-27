@@ -97,7 +97,8 @@
 		"customize.ItemEnchantmentGlintMixin",
 		"customize.PlayerHeadSpecialRendererMixin",
 		"customize.TrimMaterialPropertyMixin",
-		"customize.ItemModelOverrideMixin"
+		"customize.ItemModelOverrideMixin",
+		"DynamicUniformsMixin"
 	],
 	"injectors": {
 		"defaultRequire": 1

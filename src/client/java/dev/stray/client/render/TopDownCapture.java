@@ -184,7 +184,7 @@ public final class TopDownCapture {
 			current.getColorTexture(),
 			new Vector4f(0x87 / 255f, 0xCE / 255f, 0xEB / 255f, 1f),
 			current.getDepthTexture(),
-			1.0
+			0.0
 		);
 		RenderSystem.setProjectionMatrix(projection.getBuffer(proj), ProjectionType.PERSPECTIVE);
 		client.levelRenderer.render(

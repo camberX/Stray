@@ -1,22 +1,16 @@
 package dev.stray.client.render;
 
-import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.renderpearl.api.buffers.GpuBuffer;
 import com.mojang.renderpearl.api.buffers.GpuBufferSlice;
 import com.mojang.renderpearl.api.pipeline.BindGroupLayout;
 import com.mojang.renderpearl.api.pipeline.UniformType;
-import com.mojang.renderpearl.backend.opengl.GlBuffer;
-import org.lwjgl.opengl.GL15;
-import org.lwjgl.opengl.GL31;
-
 import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
+import net.minecraft.client.renderer.DynamicGpuDataStorage;
+import net.minecraft.client.renderer.DynamicGpuDataStorageMapped;
 
 /**
  * Focus, world tint, fog density, and the top-down cut share one std140 block.
- * Renderpearl compiles GLSL to SPIR-V and renames the block, then the draw
- * fails if that slot is still empty. The slice is uploaded here and handed to
- * the render pass by index.
+ * Values go through the same per-frame mapped ring buffer vanilla uses for its
+ * dynamic transforms, so writing works mid-pass on both OpenGL and Vulkan.
  */
 public final class StrayUniforms {
 	private static final String BLOCK = """
@@ -30,12 +24,43 @@ public final class StrayUniforms {
 		#endif
 		""";
 
-	private static final int BUFFER_BYTES = 256;
-	private static final ByteBuffer DATA = ByteBuffer.allocateDirect(BUFFER_BYTES).order(ByteOrder.nativeOrder());
+	private static final int BLOCK_BYTES = 48;
 	private static BindGroupLayout layout;
-	private static GpuBuffer buffer;
+	private static DynamicGpuDataStorageMapped<Block> storage;
+	private static float cutY;
+	private static float cutRadius;
+	private static float cutEnabled;
+	private static float tintRed;
+	private static float tintGreen;
+	private static float tintBlue;
+	private static float tintStrength;
+	private static float focus;
+	private static float fog;
 
 	private StrayUniforms() {
+	}
+
+	private record Block(
+		float cutY, float cutRadius, float cutEnabled,
+		float tintRed, float tintGreen, float tintBlue, float tintStrength,
+		float focus, float fog
+	) implements DynamicGpuDataStorage.DynamicGpuData {
+		@Override
+		public void write(ByteBuffer buffer) {
+			int base = buffer.position();
+			buffer.putFloat(base, cutY);
+			buffer.putFloat(base + 4, cutRadius);
+			buffer.putFloat(base + 8, cutEnabled);
+			buffer.putFloat(base + 12, 0f);
+			buffer.putFloat(base + 16, tintRed);
+			buffer.putFloat(base + 20, tintGreen);
+			buffer.putFloat(base + 24, tintBlue);
+			buffer.putFloat(base + 28, tintStrength);
+			buffer.putFloat(base + 32, focus);
+			buffer.putFloat(base + 36, fog);
+			buffer.putFloat(base + 40, 0f);
+			buffer.putFloat(base + 44, 0f);
+		}
 	}
 
 	public static BindGroupLayout layout() {
@@ -73,43 +98,38 @@ public final class StrayUniforms {
 	}
 
 	public static void cut(float y, float radius, float enabled) {
-		DATA.putFloat(0, y);
-		DATA.putFloat(4, radius);
-		DATA.putFloat(8, enabled);
+		cutY = y;
+		cutRadius = radius;
+		cutEnabled = enabled;
 	}
 
 	public static void tint(float red, float green, float blue, float strength) {
-		DATA.putFloat(16, red);
-		DATA.putFloat(20, green);
-		DATA.putFloat(24, blue);
-		DATA.putFloat(28, strength);
+		tintRed = red;
+		tintGreen = green;
+		tintBlue = blue;
+		tintStrength = strength;
 	}
 
 	public static void focus(float enabled) {
-		DATA.putFloat(32, enabled);
+		focus = enabled;
 	}
 
 	public static void fog(float enabled) {
-		DATA.putFloat(36, enabled);
+		fog = enabled;
 	}
 
+	/** Writes the current values (deduplicated within the frame) and returns their slice. */
 	public static GpuBufferSlice upload() {
-		GpuBuffer current = buffer;
-		if (current == null || current.isClosed()) {
-			current = RenderSystem.getDevice().createBuffer(
-				() -> "stray block",
-				GpuBuffer.USAGE_UNIFORM | GpuBuffer.USAGE_COPY_DST,
-				BUFFER_BYTES
-			);
-			buffer = current;
+		if (storage == null) {
+			storage = new DynamicGpuDataStorageMapped<>("Stray block UBO", BLOCK_BYTES, 128, 64);
 		}
-		if (current instanceof GlBuffer gl) {
-			DATA.position(0);
-			DATA.limit(BUFFER_BYTES);
-			GL15.glBindBuffer(GL31.GL_UNIFORM_BUFFER, gl.handle());
-			GL15.glBufferSubData(GL31.GL_UNIFORM_BUFFER, 0L, DATA);
-			GL15.glBindBuffer(GL31.GL_UNIFORM_BUFFER, 0);
+		return storage.writeData(new Block(cutY, cutRadius, cutEnabled, tintRed, tintGreen, tintBlue, tintStrength, focus, fog));
+	}
+
+	/** Called once per frame together with vanilla's dynamic uniforms. */
+	public static void endFrame() {
+		if (storage != null) {
+			storage.endFrame();
 		}
-		return current.slice(0, BUFFER_BYTES);
 	}
 }

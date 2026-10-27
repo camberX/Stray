@@ -11,6 +11,9 @@ import com.mojang.renderpearl.api.vertex.VertexFormat;
 import dev.stray.Stray;
 import dev.stray.client.cs2.Cs2Knives;
 import dev.stray.client.cs2.s2.S2Model;
+import dev.stray.client.visual.HeldItemShader;
+import com.mojang.renderpearl.api.pipeline.RenderPipeline;
+import net.minecraft.resources.Identifier;
 import net.minecraft.client.renderer.rendertype.PreparedRenderType;
 import net.minecraft.client.renderer.rendertype.RenderType;
 import org.joml.Matrix4f;
@@ -46,6 +49,12 @@ public final class KnifeGpu {
 	/** {@code blade}: the prepared blade shader pass to draw right after this knife (null for none). */
 	private record Request(Mesh mesh, GpuBufferSlice bones, PreparedRenderType blade) {
 	}
+
+	/** First-person knives to add to the held item silhouette mask this frame. */
+	private record MaskRequest(Mesh mesh, GpuBufferSlice bones, PreparedRenderType mask) {
+	}
+
+	private static final List<MaskRequest> MASKS = new ArrayList<>();
 
 	private static final class Pending {
 		final List<Request> requests = new ArrayList<>();
@@ -190,14 +199,14 @@ public final class KnifeGpu {
 	}
 
 	public static void queue(RenderType type, Mesh mesh, boolean blade, Matrix4f pose, Matrix4f toView, Matrix4f[] skin, int light) {
-		queue(type, mesh, blade, pose, toView, skin, light, null);
+		queue(type, mesh, blade, pose, toView, skin, light, null, null);
 	}
 
 	/**
 	 * Records a knife draw for the batch being built (called from the knife's custom geometry, right
 	 * after Minecraft prepared its batch). Bone matrices are written now, before the render pass.
 	 */
-	public static void queue(RenderType type, Mesh mesh, boolean blade, Matrix4f pose, Matrix4f toView, Matrix4f[] skin, int light, RenderType bladeType) {
+	public static void queue(RenderType type, Mesh mesh, boolean blade, Matrix4f pose, Matrix4f toView, Matrix4f[] skin, int light, RenderType bladeType, Identifier albedo) {
 		PreparedRenderType batch = lastPrepared;
 		if (batch == null) {
 			return;
@@ -221,6 +230,37 @@ public final class KnifeGpu {
 		Pending pending = QUEUE.computeIfAbsent(batch, k -> new Pending());
 		pending.queuedNs = now;
 		pending.requests.add(new Request(mesh, bonesSlice, bladeBatch));
+		PreparedRenderType maskBatch = HeldItemShader.knifeMaskBatch(albedo);
+		if (maskBatch != null && mesh != null) {
+			MASKS.add(new MaskRequest(mesh, bonesSlice, maskBatch));
+		}
+	}
+
+	public static void clearMasks() {
+		MASKS.clear();
+	}
+
+	public static boolean hasMasks() {
+		return !MASKS.isEmpty();
+	}
+
+	/** Draws the queued knife masks into the (open) silhouette mask pass. */
+	public static void drawMasks(RenderPass pass, RenderPipeline maskPipeline) {
+		List<MaskRequest> pending = List.copyOf(MASKS);
+		MASKS.clear();
+		try {
+			for (MaskRequest req : pending) {
+				pass.setPipeline(RenderSystem.getCompiledPipeline(maskPipeline));
+				RenderSystem.bindDefaultUniforms(pass);
+				pass.setUniform("DynamicTransforms", req.mask.dynamicTransforms());
+				for (PreparedRenderType.Texture texture : req.mask.textures()) {
+					pass.setUniform(texture.name(), texture.textureView(), texture.sampler());
+				}
+				drawMesh(pass, new Request(req.mesh, req.bones, null), false);
+			}
+		} catch (RuntimeException e) {
+			warn(e);
+		}
 	}
 
 	private static GpuBufferSlice writeBones(Matrix4f pose, Matrix4f toView, Matrix4f[] skin, int light) {

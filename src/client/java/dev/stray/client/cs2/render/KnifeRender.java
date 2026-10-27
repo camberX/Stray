@@ -95,7 +95,7 @@ public final class KnifeRender {
 		RenderType main = type(knife);
 		RenderType blade = StrayConfig.get().cs2BladeShader ? HeldItemShader.bladeTypeFor(knife.bladeId) : null;
 		collector.submitCustomGeometry(pose, main, (p, consumer) -> {
-			KnifeGpu.queue(main, KnifeGpu.mesh(knife), false, p.pose(), view, bones, light, blade);
+			KnifeGpu.queue(main, KnifeGpu.mesh(knife), false, p.pose(), view, bones, light, blade, knife.albedoId);
 			placeholder(consumer, light);
 		});
 	}

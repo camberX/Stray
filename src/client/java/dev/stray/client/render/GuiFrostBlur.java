@@ -528,7 +528,6 @@ public final class GuiFrostBlur {
 			.withBindGroupLayout(net.minecraft.client.renderer.BindGroupLayouts.IN_SAMPLER)
 			.withBindGroupLayout(RenderCompat.uniform("BlurConfig"))
 			.withColorTargetState(RenderCompat.opaqueTarget())
-			.withDepthStencilState(new DepthStencilState(CompareOp.ALWAYS_PASS, false))
 			.build();
 	}
 

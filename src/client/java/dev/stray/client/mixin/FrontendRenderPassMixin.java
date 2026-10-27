@@ -37,8 +37,7 @@ public abstract class FrontendRenderPassMixin {
 		}
 		GpuBufferSlice slice = null;
 		for (BindGroupLayout.UniformDescription uniform : boundPipeline.uniforms()) {
-			UniformType type = uniform.type();
-			if (type != UniformType.UNIFORM_BUFFER && type != UniformType.TEXEL_BUFFER) {
+			if (uniform.type() != UniformType.UNIFORM_BUFFER || !"StrayBlock".equals(uniform.name())) {
 				continue;
 			}
 			if (uniforms.containsKey(uniform.name())) {
