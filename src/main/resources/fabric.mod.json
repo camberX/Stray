@@ -3,7 +3,7 @@
 	"id": "stray",
 	"version": "${version}",
 	"name": "Stray",
-	"description": "Hypixel Skyblock QoL for Minecraft 26.3. Marks Ender Nodes, tints the world and skybox, and ships a NEVERLOSE-style click GUI.",
+	"description": "Hypixel SkyBlock mod for Minecraft 26.3 and 26.2. World and sky tint, fog, mob glow and chest ESP, a movable HUD with watermark and music, slayer, mining and farming tools, capes, and a click GUI on Right Shift.",
 	"authors": [
 		"Stray"
 	],
