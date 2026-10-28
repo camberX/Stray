@@ -7,7 +7,7 @@ on:
       ref:
         description: Commit that still has web/public/mod in it
         required: true
-        default: 6fa350cc
+        default: c9f1025b
 jobs:
   seed:
     runs-on: ubuntu-24.04
