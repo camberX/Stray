@@ -155,6 +155,15 @@ public final class GardenVisitors {
 		need("carpenter", "Melon Slice", "Carrot");
 		need("tyzzo", "Nether Wart");
 		need("taylor", "Deepfries", "Salted Sunflower Seeds", "Enchanted Baked Potato", "Floral Gelatin", "Melon Juice", "Compacted Wild Rose");
+		need("jeff", "Garden Chip");
+		need("pesthunter phillip", "Compost", "Plant Matter", "Dung", "Honey Jar", "Tasty Cheese", "Jelly");
+		need("pesthunter pamela", "Burrowing Spores", "Beady Eyes", "Flowering Bouquet", "Squeaky Toy");
+		need("sam", "Wheat");
+		need("ghost of armorsmith", "Coalroot", "Turtlellini");
+		need("ghost of baking specialist", "Chocoberry");
+		need("ghost of game agent", "PlantBoy Advance");
+		need("ghost of goon", "Zombud");
+		need("ghost of warren", "Magic Jellybean");
 	}
 
 	private GardenVisitors() {

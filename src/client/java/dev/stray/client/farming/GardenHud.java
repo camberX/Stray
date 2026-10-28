@@ -1142,7 +1142,9 @@ public final class GardenHud {
 			for (String name : live.names()) {
 				List<Need> needs = matchShopping(name);
 				if (needs == null || needs.isEmpty()) {
-					fresh.add(shortName(name));
+					if (!addPreview(totals, ids, name)) {
+						fresh.add(visitorLabel(name));
+					}
 					continue;
 				}
 				known.add(shortName(name));
@@ -1161,7 +1163,9 @@ public final class GardenHud {
 			String id = ids.get(name);
 			int have = having.of(name, id);
 			int need = entry.getValue();
-			boolean craftable = have < need && canCraft(id, need, materials);
+			boolean preview = need < 0;
+			long craftAmount = preview ? 1L : need;
+			boolean craftable = have < craftAmount && canCraft(id, craftAmount, materials);
 			items.add(new Need(name, id == null ? "" : id, need, have, craftable));
 		}
 		boolean present = live.present() || !items.isEmpty();
@@ -1170,9 +1174,45 @@ public final class GardenHud {
 		shopping = new ShoppingSnap(present, List.copyOf(items), List.copyOf(names), List.copyOf(fresh));
 	}
 
+	/**
+	 * Items a waiting visitor is known to ask for, before their offer is opened.
+	 * A negative total means the exact stack size is still unknown.
+	 */
+	private static boolean addPreview(Map<String, Integer> totals, Map<String, String> ids, String name) {
+		List<String> crops = GardenVisitors.preview(name);
+		boolean specific = false;
+		for (String crop : crops) {
+			if (crop == null || crop.isBlank()
+				|| GardenVisitors.ANY.equals(crop)
+				|| GardenVisitors.UNKNOWN.equals(crop)) {
+				continue;
+			}
+			specific = true;
+			if (!totals.containsKey(crop)) {
+				totals.put(crop, -1);
+				String id = SkyblockItems.idFromName(crop);
+				if (id != null && !id.isBlank()) {
+					ids.putIfAbsent(crop, id);
+				}
+			}
+		}
+		return specific;
+	}
+
 	private static void addNeeds(Map<String, Integer> totals, Map<String, String> ids, List<Need> needs) {
 		for (Need need : needs) {
-			totals.merge(need.name(), need.required(), Integer::sum);
+			int required = need.required();
+			Integer current = totals.get(need.name());
+			if (required < 0) {
+				if (current == null) {
+					totals.put(need.name(), -1);
+				}
+			} else if (current == null || current < 0) {
+				totals.put(need.name(), required);
+			} else {
+				long sum = (long) current + required;
+				totals.put(need.name(), sum > Integer.MAX_VALUE ? Integer.MAX_VALUE : (int) sum);
+			}
 			if (need.id() != null && !need.id().isBlank()) {
 				ids.putIfAbsent(need.name(), need.id());
 			}
