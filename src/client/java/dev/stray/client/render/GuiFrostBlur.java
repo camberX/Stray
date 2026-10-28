@@ -58,21 +58,26 @@ public final class GuiFrostBlur {
 	/** The lens reads about 21px outside the pane, plus the blur kernel. */
 	private static final float LIQUID_PAD_GUI = 32f;
 	private static final int MAX_REGIONS = 256;
+	/**
+	 * The frost is blurred at half resolution: a 2x2 average first, then the same
+	 * rounds at half the radius. Under a blur this wide the result looks the same and
+	 * costs about an eighth. gui_rounded_blit.fsh scales its lookup by this factor.
+	 */
+	private static final int FROST_DOWNSCALE = 2;
 	private static final Vector2f UV_A = new Vector2f();
 	private static final Vector2f UV_B = new Vector2f();
 
 	private static TextureTarget frost;
 	private static TextureTarget glass;
 	private static TextureTarget swap;
+	private static TextureTarget glassSwap;
 	private static boolean haveFrost;
 	private static boolean haveGlass;
 	private static float lastFrost = -1f;
-	private static float writtenRadius = -1f;
+	private static final java.util.Map<Float, GpuBuffer[]> CONFIGS = new java.util.HashMap<>();
 	private static RenderPipeline blurPipeline;
 	private static RenderPipeline roundedBlitPipeline;
 	private static RenderPipeline liquidBlitPipeline;
-	private static GpuBuffer configH;
-	private static GpuBuffer configV;
 
 	/**
 	 * GUI-space rectangles of every glass blit recorded since the last capture.
@@ -153,8 +158,7 @@ public final class GuiFrostBlur {
 		try {
 			float radius = 2.5f + StrayConfig.clamp(frost01, 0f, 1f) * 29.5f;
 			ensureBlurPipeline();
-			writeConfigs(radius);
-			blur(main.getColorTextureView(), frost, regions, main.width, main.height, Math.round(radius));
+			blur(main.getColorTextureView(), frost, swap, regions, main.width, main.height, radius, FROST_DOWNSCALE);
 			haveFrost = true;
 			lastFrost = frost01;
 		} catch (RuntimeException ignored) {
@@ -249,14 +253,13 @@ public final class GuiFrostBlur {
 			return;
 		}
 		ensure(main.width, main.height);
-		if (glass == null || swap == null || glass.getColorTextureView() == null || swap.getColorTextureView() == null) {
+		if (glass == null || glassSwap == null || glass.getColorTextureView() == null || glassSwap.getColorTextureView() == null) {
 			haveGlass = false;
 			return;
 		}
 		try {
 			ensureBlurPipeline();
-			writeConfigs(LIQUID_BLUR);
-			blur(main.getColorTextureView(), glass, regions, main.width, main.height, Math.round(LIQUID_BLUR));
+			blur(main.getColorTextureView(), glass, glassSwap, regions, main.width, main.height, LIQUID_BLUR, 1);
 			haveGlass = true;
 		} catch (RuntimeException ignored) {
 			haveGlass = false;
@@ -312,17 +315,30 @@ public final class GuiFrostBlur {
 	 * @param regions framebuffer rectangles that will be sampled, or {@code null}
 	 *                to blur the whole screen
 	 */
-	private static void blur(GpuTextureView source, TextureTarget dest, List<Region> regions, int width, int height, int radius) {
+	/**
+	 * @param scale how much smaller {@code dest} and {@code swapTarget} are than the
+	 *     source; regions and radius are given in full-resolution pixels
+	 */
+	private static void blur(
+		GpuTextureView source,
+		TextureTarget dest,
+		TextureTarget swapTarget,
+		List<Region> regions,
+		int width,
+		int height,
+		float radius,
+		int scale
+	) {
 		CommandEncoder encoder = RenderSystem.getDevice().createCommandEncoder();
 		GpuSampler linear = RenderSystem.getSamplerCache().getClampToEdge(FilterMode.LINEAR);
 		List<Region> scissors = null;
 		if (regions != null) {
 			// Each H or V pass only trusts the previous pass one kernel reach into its
 			// own scissor, so padding by the whole chain's reach keeps the glass exact.
-			int pad = radius * ROUNDS + 2;
+			int pad = Math.round(radius) * ROUNDS + 2 * scale;
 			scissors = new ArrayList<>(regions.size());
 			for (Region region : regions) {
-				Region padded = region.padded(pad, width, height);
+				Region padded = region.padded(pad, width, height).scaledDown(scale);
 				if (padded.w > 0 && padded.h > 0) {
 					scissors.add(padded);
 				}
@@ -333,9 +349,15 @@ public final class GuiFrostBlur {
 			}
 		}
 		GpuTextureView in = source;
+		if (scale > 1) {
+			// Radius 0 is a single linear tap: a 2x2 average into the half-size target.
+			pass(encoder, source, dest.getColorTextureView(), configs(0f)[0], linear, scissors);
+			in = dest.getColorTextureView();
+		}
+		GpuBuffer[] config = configs(Math.round(radius / scale));
 		for (int round = 0; round < ROUNDS; round++) {
-			pass(encoder, in, swap.getColorTextureView(), configH, linear, scissors);
-			pass(encoder, swap.getColorTextureView(), dest.getColorTextureView(), configV, linear, scissors);
+			pass(encoder, in, swapTarget.getColorTextureView(), config[0], linear, scissors);
+			pass(encoder, swapTarget.getColorTextureView(), dest.getColorTextureView(), config[1], linear, scissors);
 			in = dest.getColorTextureView();
 		}
 	}
@@ -393,25 +415,26 @@ public final class GuiFrostBlur {
 		return out;
 	}
 
-	private static void writeConfigs(float radius) {
+	/** Horizontal and vertical blur settings for a radius, uploaded once and kept. */
+	private static GpuBuffer[] configs(float radius) {
+		GpuBuffer[] cached = CONFIGS.get(radius);
+		if (cached != null && !cached[0].isClosed() && !cached[1].isClosed()) {
+			return cached;
+		}
 		int size = new Std140SizeCalculator().putVec2().putFloat().get();
-		if (configH == null || configH.isClosed() || configV == null || configV.isClosed()) {
-			int usage = GpuBuffer.USAGE_UNIFORM | GpuBuffer.USAGE_COPY_DST;
-			configH = RenderSystem.getDevice().createBuffer(() -> "stray frost blur h", usage, size);
-			configV = RenderSystem.getDevice().createBuffer(() -> "stray frost blur v", usage, size);
-			writtenRadius = -1f;
-		}
-		if (writtenRadius == radius) {
-			return;
-		}
-		writtenRadius = radius;
+		int usage = GpuBuffer.USAGE_UNIFORM | GpuBuffer.USAGE_COPY_DST;
+		GpuBuffer h = RenderSystem.getDevice().createBuffer(() -> "stray frost blur h", usage, size);
+		GpuBuffer v = RenderSystem.getDevice().createBuffer(() -> "stray frost blur v", usage, size);
 		CommandEncoder encoder = RenderSystem.getDevice().createCommandEncoder();
 		try (MemoryStack stack = MemoryStack.stackPush()) {
-			encoder.writeToBuffer(configH.slice(), Std140Builder.onStack(stack, size).putVec2(1f, 0f).putFloat(radius).get());
+			encoder.writeToBuffer(h.slice(), Std140Builder.onStack(stack, size).putVec2(1f, 0f).putFloat(radius).get());
 		}
 		try (MemoryStack stack = MemoryStack.stackPush()) {
-			encoder.writeToBuffer(configV.slice(), Std140Builder.onStack(stack, size).putVec2(0f, 1f).putFloat(radius).get());
+			encoder.writeToBuffer(v.slice(), Std140Builder.onStack(stack, size).putVec2(0f, 1f).putFloat(radius).get());
 		}
+		GpuBuffer[] made = {h, v};
+		CONFIGS.put(radius, made);
+		return made;
 	}
 
 	/**
@@ -538,7 +561,7 @@ public final class GuiFrostBlur {
 	}
 
 	private static void ensure(int width, int height) {
-		if (frost != null && frost.width == width && frost.height == height) {
+		if (glass != null && glass.width == width && glass.height == height) {
 			return;
 		}
 		if (frost != null) {
@@ -553,15 +576,34 @@ public final class GuiFrostBlur {
 			glass.destroyBuffers();
 			glass = null;
 		}
+		if (glassSwap != null) {
+			glassSwap.destroyBuffers();
+			glassSwap = null;
+		}
 		haveFrost = false;
 		haveGlass = false;
-		frost = RenderCompat.colorTarget("stray control frost", width, height);
+		int smallW = (width + FROST_DOWNSCALE - 1) / FROST_DOWNSCALE;
+		int smallH = (height + FROST_DOWNSCALE - 1) / FROST_DOWNSCALE;
+		frost = RenderCompat.colorTarget("stray control frost", smallW, smallH);
+		swap = RenderCompat.colorTarget("stray control frost swap", smallW, smallH);
 		glass = RenderCompat.colorTarget("stray liquid glass", width, height);
-		swap = RenderCompat.colorTarget("stray control frost swap", width, height);
+		glassSwap = RenderCompat.colorTarget("stray liquid glass swap", width, height);
 	}
 
 	/** Framebuffer rectangle in GL scissor convention (origin bottom-left). */
 	private record Region(int x, int y, int w, int h) {
+		/** The same area in a target {@code scale} times smaller, rounded outwards. */
+		Region scaledDown(int scale) {
+			if (scale <= 1) {
+				return this;
+			}
+			int left = x / scale;
+			int bottom = y / scale;
+			int right = (x + w + scale - 1) / scale;
+			int top = (y + h + scale - 1) / scale;
+			return new Region(left, bottom, right - left, top - bottom);
+		}
+
 		Region padded(int pad, int width, int height) {
 			int left = Math.max(0, x - pad);
 			int bottom = Math.max(0, y - pad);

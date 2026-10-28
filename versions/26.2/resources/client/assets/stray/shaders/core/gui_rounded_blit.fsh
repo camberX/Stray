@@ -26,6 +26,8 @@ void main() {
     if (mask < 0.01) {
         discard;
     }
-    vec4 color = texelFetch(Sampler0, ivec2(gl_FragCoord.xy), 0);
+    // The frost is blurred at half resolution (GuiFrostBlur.FROST_DOWNSCALE).
+    vec2 frostSize = vec2(textureSize(Sampler0, 0)) * 2.0;
+    vec4 color = texture(Sampler0, gl_FragCoord.xy / frostSize);
     fragColor = vec4(color.rgb, color.a * mask * vertexColor.a) * ColorModulator;
 }
