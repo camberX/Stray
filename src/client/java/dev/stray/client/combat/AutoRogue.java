@@ -93,7 +93,7 @@ public final class AutoRogue {
 		}
 		int current = inventory.getSelectedSlot();
 		if (current == slot) {
-			client.gameMode.useItem(client.player, InteractionHand.MAIN_HAND);
+			OdinClicks.useItem(client.player, InteractionHand.MAIN_HAND);
 			nextAt = System.currentTimeMillis() + GAP_MS;
 			return;
 		}
@@ -110,7 +110,7 @@ public final class AutoRogue {
 			clicked = false;
 			return;
 		}
-		client.gameMode.useItem(player, InteractionHand.MAIN_HAND);
+		OdinClicks.useItem(player, InteractionHand.MAIN_HAND);
 		clicked = true;
 		step = Step.RESTORE;
 	}

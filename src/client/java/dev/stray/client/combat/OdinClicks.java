@@ -4,6 +4,10 @@ import com.mojang.blaze3d.platform.InputConstants;
 import dev.stray.client.mixin.KeyMappingAccessor;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.entity.player.Player;
@@ -59,6 +63,40 @@ public final class OdinClicks {
 		}
 		InputConstants.Key key = ((KeyMappingAccessor) client.options.keyAttack).stray$boundKey();
 		KeyMapping.set(key, isPressed(key));
+	}
+
+	/**
+	 * Right-click with the held item the way vanilla's use key does: the same packet, then a
+	 * swing only when vanilla would swing for that result (on 26.2 the swing is its own packet,
+	 * so an extra or missing one is visible to the server).
+	 */
+	public static InteractionResult useItem(LocalPlayer player, InteractionHand hand) {
+		Minecraft client = Minecraft.getInstance();
+		InteractionResult result = client.gameMode.useItem(player, hand);
+		swingLikeVanilla(player, hand, result);
+		return result;
+	}
+
+	/** Right-click on a block, with vanilla's swing rule. */
+	public static InteractionResult useItemOn(LocalPlayer player, InteractionHand hand, BlockHitResult hit) {
+		Minecraft client = Minecraft.getInstance();
+		InteractionResult result = client.gameMode.useItemOn(player, hand, hit);
+		swingLikeVanilla(player, hand, result);
+		return result;
+	}
+
+	private static void swingLikeVanilla(LocalPlayer player, InteractionHand hand, InteractionResult result) {
+		if (!(result instanceof InteractionResult.Success success)) {
+			return;
+		}
+		//? if >=26.3 {
+		if (success.swingSource() == InteractionResult.SwingSource.PREDICTED) {
+			player.swing(hand, player.getItemInHand(hand).getInteractAnimation(), false);
+		}
+		//?} else {
+		/*if (success.swingSource() == InteractionResult.SwingSource.CLIENT) {
+			player.swing(hand);
+		}*///?}
 	}
 
 	public static void guiClick(int id, int index, int button, ContainerInput clickType) {

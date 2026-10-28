@@ -15,6 +15,10 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.5.76", new String[]{
+			"Pingless break keeps vanilla's short pause between blocks again. Skipping it made you start the next block sooner than a normal client can.",
+			"Auto rogue and Great Explorer swing after a right-click only when vanilla would, so the server sees the same packets as a normal click."
+		}),
 		new Entry("1.5.75", new String[]{
 			"Typing works again in Stray's text fields on 26.3 (nick hider, hex colour, search, cape URL and the other menus).",
 			"The watermark fits your name again, and its pills animate when the numbers change width.",

@@ -169,11 +169,7 @@ public final class GreatExplorer {
 		BlockHitResult hit = lookedAtHit(client);
 		boolean same = chest != null && hit != null && hit.getBlockPos().equals(chest);
 		if (same && isChest(client.level.getBlockState(chest))) {
-			client.gameMode.useItemOn(client.player, InteractionHand.MAIN_HAND, hit);
-			//? if >=26.3 {
-			client.player.swing(InteractionHand.MAIN_HAND, net.minecraft.world.item.component.SwingAnimation.DEFAULT, false);
-			//?} else {
-			/*client.player.swing(InteractionHand.MAIN_HAND);*///?}
+			dev.stray.client.combat.OdinClicks.useItemOn(client.player, InteractionHand.MAIN_HAND, hit);
 			opened.add(chest.asLong());
 		}
 		// A chest screen keeps attack released until it closes. This triggerbot

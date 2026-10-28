@@ -25,17 +25,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 @Mixin(MultiPlayerGameMode.class)
 public class MultiPlayerGameModeMixin {
 	@Shadow
-	private int destroyDelay;
-
-	@Shadow
 	private boolean isDestroying;
-
-	@Inject(method = "continueDestroyBlock", at = @At("HEAD"))
-	private void stray$pinglessBreak(BlockPos pos, Direction direction, CallbackInfoReturnable<Boolean> cir) {
-		if (PinglessBreak.active()) {
-			this.destroyDelay = 0;
-		}
-	}
 
 	@Inject(method = "startDestroyBlock", at = @At("RETURN"))
 	private void stray$pinglessInstamine(BlockPos pos, Direction direction, CallbackInfoReturnable<Boolean> cir) {
