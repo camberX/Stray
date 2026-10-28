@@ -274,10 +274,10 @@ async function route(request, env) {
     return serveModJar(request, env);
   }
   if (request.method === "GET" && path === "/api/mod/dev") {
-    return serveR2Json(env, "mod/dev/dev.json", "No dev build published yet");
+    return serveR2Json(env, modPrefix(request) + "dev/dev.json", "No dev build published yet");
   }
   if (request.method === "GET" && path === "/download/dev") {
-    return serveR2Jar(env, "mod/dev/stray-dev.jar", "stray-dev.jar");
+    return serveR2Jar(env, modPrefix(request) + "dev/stray-dev.jar", "stray-dev.jar");
   }
   if (request.method === "PUT" && path === "/api/config") {
     return handleShopConfig(request, env);
@@ -1241,12 +1241,18 @@ var LEGACY_MOD_GITHUB = "camberX/voidmark";
 var DEFAULT_MOD_BRANCH = "main";
 var DEFAULT_MOD_PATH = "web/public/mod";
 var MOD_R2_PREFIX = "mod/";
-async function readR2Meta(env) {
+function modPrefix(request) {
+  // ?mc=26.3 picks that Minecraft version's build; no parameter is the main (26.1.2) line.
+  const mc = new URL(request.url).searchParams.get("mc") || "";
+  return /^[0-9]{1,3}(\.[0-9]{1,3}){1,2}$/.test(mc) ? MOD_R2_PREFIX + mc + "/" : MOD_R2_PREFIX;
+}
+__name(modPrefix, "modPrefix");
+async function readR2Meta(request, env) {
   if (!env.CAPES) {
     return null;
   }
   try {
-    const object = await env.CAPES.get(MOD_R2_PREFIX + "latest.json");
+    const object = await env.CAPES.get(modPrefix(request) + "latest.json");
     if (!object) {
       return null;
     }
@@ -1264,9 +1270,12 @@ __name(readR2Meta, "readR2Meta");
 async function readModMeta(request, env) {
   // Jars are published to R2. Git (jsDelivr / raw) and the bundled assets are only
   // fallbacks for old commits until R2 has been seeded.
-  const r2 = await readR2Meta(env);
+  const r2 = await readR2Meta(request, env);
   if (r2) {
     return r2;
+  }
+  if (modPrefix(request) !== MOD_R2_PREFIX) {
+    return null;
   }
   const github = await readGithubMeta(env);
   const asset = await readAssetMeta(request, env);
@@ -1426,7 +1435,7 @@ async function serveModInfo(request, env) {
     version: String(meta.version),
     minecraft: String(meta.minecraft || "26.1.2"),
     file: String(meta.file || "stray-" + meta.version + ".jar"),
-    url: "/download",
+    url: "/download" + new URL(request.url).search,
     source: meta.source || "assets"
   });
 }
@@ -1442,7 +1451,7 @@ async function fetchModBytes(request, env, meta) {
         continue;
       }
       try {
-        const object = await env.CAPES.get(MOD_R2_PREFIX + names[i]);
+        const object = await env.CAPES.get(modPrefix(request) + names[i]);
         if (object) {
           return { body: object.body, file: names[i] };
         }
