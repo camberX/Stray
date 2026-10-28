@@ -4,8 +4,11 @@ import com.mojang.renderpearl.api.buffers.GpuBufferSlice;
 import com.mojang.renderpearl.api.pipeline.BindGroupLayout;
 import com.mojang.renderpearl.api.pipeline.UniformType;
 import java.nio.ByteBuffer;
+//? if >=26.3 {
 import net.minecraft.client.renderer.DynamicGpuDataStorage;
 import net.minecraft.client.renderer.DynamicGpuDataStorageMapped;
+//?} else {
+/*import net.minecraft.client.renderer.DynamicUniformStorage;*///?}
 
 /**
  * Focus, world tint, fog density, and the top-down cut share one std140 block.
@@ -26,7 +29,10 @@ public final class StrayUniforms {
 
 	private static final int BLOCK_BYTES = 48;
 	private static BindGroupLayout layout;
+	//? if >=26.3 {
 	private static DynamicGpuDataStorageMapped<Block> storage;
+	//?} else {
+	/*private static DynamicUniformStorage<Block> storage;*///?}
 	private static float cutY;
 	private static float cutRadius;
 	private static float cutEnabled;
@@ -44,7 +50,10 @@ public final class StrayUniforms {
 		float cutY, float cutRadius, float cutEnabled,
 		float tintRed, float tintGreen, float tintBlue, float tintStrength,
 		float focus, float fog
+	//? if >=26.3 {
 	) implements DynamicGpuDataStorage.DynamicGpuData {
+	//?} else {
+	/*) implements DynamicUniformStorage.DynamicUniform {*///?}
 		@Override
 		public void write(ByteBuffer buffer) {
 			int base = buffer.position();
@@ -121,9 +130,15 @@ public final class StrayUniforms {
 	/** Writes the current values (deduplicated within the frame) and returns their slice. */
 	public static GpuBufferSlice upload() {
 		if (storage == null) {
+			//? if >=26.3 {
 			storage = new DynamicGpuDataStorageMapped<>("Stray block UBO", BLOCK_BYTES, 128, 64);
+			//?} else {
+			/*storage = new DynamicUniformStorage<>("Stray block UBO", BLOCK_BYTES, 64);*///?}
 		}
+		//? if >=26.3 {
 		return storage.writeData(new Block(cutY, cutRadius, cutEnabled, tintRed, tintGreen, tintBlue, tintStrength, focus, fog));
+		//?} else {
+		/*return storage.writeUniform(new Block(cutY, cutRadius, cutEnabled, tintRed, tintGreen, tintBlue, tintStrength, focus, fog));*///?}
 	}
 
 	/** Called once per frame together with vanilla's dynamic uniforms. */

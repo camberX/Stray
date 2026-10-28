@@ -168,7 +168,10 @@ public final class TitleBackdrop {
 			target.getColorTextureView(),
 			Optional.empty()
 		)) {
+			//? if >=26.3 {
 			pass.setPipeline(RenderSystem.getCompiledPipeline(pipeline));
+			//?} else {
+			/*pass.setPipeline(pipeline);*///?}
 			pass.setUniform("MarbleConfig", config);
 			pass.draw(3, 1, 0, 0);
 		}

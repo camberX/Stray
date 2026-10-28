@@ -7,6 +7,8 @@ import dev.stray.client.config.StrayConfig;
 import dev.stray.client.render.TopDownCapture;
 import dev.stray.client.visual.motionblur.MotionBlurShaders;
 import net.minecraft.client.CameraType;
+//? if <26.3 {
+/*import net.minecraft.client.DeltaTracker;*///?}
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.LevelRenderer;
 import net.minecraft.client.renderer.SubmitNodeCollector;
@@ -43,12 +45,18 @@ public class LevelRendererMixin {
 	@Inject(method = "render", at = @At("HEAD"))
 	private void stray$motionBlurHead(
 		GraphicsResourceAllocator resourceAllocator,
+		//? if <26.3 {
+		/*DeltaTracker deltaTracker,*///?}
 		boolean renderOutline,
 		CameraRenderState cameraState,
+		//? if <26.3 {
+		/*Matrix4fc viewMatrix,*///?}
 		GpuBufferSlice terrainFog,
 		Vector4f fogColor,
 		boolean shouldRenderSky,
+		//? if >=26.3 {
 		boolean consistentDepthRequired,
+		//?}
 		CallbackInfo ci
 	) {
 		if (TopDownCapture.capturing() || cameraState.viewRotationMatrix == null) {
@@ -126,12 +134,18 @@ public class LevelRendererMixin {
 	@Inject(method = "render", at = @At("TAIL"))
 	private void stray$motionBlurTail(
 		GraphicsResourceAllocator resourceAllocator,
+		//? if <26.3 {
+		/*DeltaTracker deltaTracker,*///?}
 		boolean renderOutline,
 		CameraRenderState cameraState,
+		//? if <26.3 {
+		/*Matrix4fc viewMatrix,*///?}
 		GpuBufferSlice terrainFog,
 		Vector4f fogColor,
 		boolean shouldRenderSky,
+		//? if >=26.3 {
 		boolean consistentDepthRequired,
+		//?}
 		CallbackInfo ci
 	) {
 		if (TopDownCapture.capturing()) {

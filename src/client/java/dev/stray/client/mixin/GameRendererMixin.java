@@ -1,6 +1,8 @@
 package dev.stray.client.mixin;
 
+//? if >=26.3 {
 import com.mojang.renderpearl.api.textures.GpuTextureView;
+//?}
 import dev.stray.client.render.GuiFrostBlur;
 import dev.stray.client.render.MobGlowRenderer;
 import dev.stray.client.render.TopDownCapture;
@@ -9,7 +11,9 @@ import dev.stray.client.visual.motionblur.MotionBlurShaders;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.client.renderer.state.level.CameraRenderState;
+//? if >=26.3 {
 import net.minecraft.client.renderer.state.level.PlayerRenderState;
+//?}
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -31,7 +35,10 @@ public class GameRendererMixin {
 		method = "renderLevel",
 		at = @At(
 			value = "INVOKE",
+			//? if >=26.3 {
 			target = "Lnet/minecraft/client/renderer/LevelRenderer;render(Lcom/mojang/blaze3d/resource/GraphicsResourceAllocator;ZLnet/minecraft/client/renderer/state/level/CameraRenderState;Lcom/mojang/renderpearl/api/buffers/GpuBufferSlice;Lorg/joml/Vector4f;ZZ)V",
+			//?} else {
+			/*target = "Lnet/minecraft/client/renderer/LevelRenderer;render(Lcom/mojang/blaze3d/resource/GraphicsResourceAllocator;Lnet/minecraft/client/DeltaTracker;ZLnet/minecraft/client/renderer/state/level/CameraRenderState;Lorg/joml/Matrix4fc;Lcom/mojang/renderpearl/api/buffers/GpuBufferSlice;Lorg/joml/Vector4f;Z)V",*///?}
 			shift = At.Shift.AFTER
 		)
 	)
@@ -41,12 +48,18 @@ public class GameRendererMixin {
 	}
 
 	@Inject(method = "renderItemInHand", at = @At("HEAD"))
+	//? if >=26.3 {
 	private void stray$beginHeldItemMask(CameraRenderState camera, PlayerRenderState player, GpuTextureView lightmap, CallbackInfo ci) {
+	//?} else {
+	/*private void stray$beginHeldItemMask(CallbackInfo ci) {*///?}
 		HeldItemShader.beginMask();
 	}
 
 	@Inject(method = "renderItemInHand", at = @At("RETURN"))
+	//? if >=26.3 {
 	private void stray$compositeHeldItemSilhouette(CameraRenderState camera, PlayerRenderState player, GpuTextureView lightmap, CallbackInfo ci) {
+	//?} else {
+	/*private void stray$compositeHeldItemSilhouette(CallbackInfo ci) {*///?}
 		HeldItemShader.compositeSilhouette();
 	}
 

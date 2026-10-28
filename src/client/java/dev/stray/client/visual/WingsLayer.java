@@ -93,8 +93,12 @@ public final class WingsLayer extends RenderLayer<AvatarRenderState, PlayerModel
 		pose.pushPose();
 		pose.translate(side * 0.05f, 0f, 0f);
 		pose.scale(side, 1f, 1f);
+		//? if >=26.3 {
 		pose.rotate(Axis.YP.rotationDegrees(-open));
 		pose.rotate(Axis.XP.rotationDegrees(5f));
+		//?} else {
+		/*pose.mulPose(Axis.YP.rotationDegrees(-open));
+		pose.mulPose(Axis.XP.rotationDegrees(5f));*///?}
 		float x1 = 0.90f * span;
 		float y0 = -0.72f;
 		float y1 = 0.58f;
@@ -160,8 +164,12 @@ public final class WingsLayer extends RenderLayer<AvatarRenderState, PlayerModel
 		// Mirror the right wing in X so blades always extend in local +X. Open/lift
 		// then sweep both sides toward +z (behind the back) with the same signs.
 		pose.scale(side, 1f, 1f);
+		//? if >=26.3 {
 		pose.rotate(Axis.YP.rotationDegrees(-open));
 		pose.rotate(Axis.ZP.rotationDegrees(-lift));
+		//?} else {
+		/*pose.mulPose(Axis.YP.rotationDegrees(-open));
+		pose.mulPose(Axis.ZP.rotationDegrees(-lift));*///?}
 		if (n > 1) {
 			for (int i = 0; i < n - 1; i++) {
 				float t = (i + 0.5f) / (n - 1);
@@ -198,8 +206,12 @@ public final class WingsLayer extends RenderLayer<AvatarRenderState, PlayerModel
 		if (covert) {
 			pose.translate(0f, 0f, 0.008f);
 		}
+		//? if >=26.3 {
 		pose.rotate(Axis.ZP.rotationDegrees(fan + flutter));
 		pose.rotate(Axis.XP.rotationDegrees(4f + t * 5f));
+		//?} else {
+		/*pose.mulPose(Axis.ZP.rotationDegrees(fan + flutter));
+		pose.mulPose(Axis.XP.rotationDegrees(4f + t * 5f));*///?}
 		float shade = (1f - t * 0.14f) * (covert ? 0.78f : 1f);
 		float alpha = style.alpha * (style == ShopWings.Style.FAIRY ? 0.8f + 0.2f * (1f - t) : 1f);
 		if (covert) {

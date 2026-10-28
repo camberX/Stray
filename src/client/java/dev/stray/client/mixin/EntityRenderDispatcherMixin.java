@@ -12,7 +12,10 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 @Mixin(EntityRenderDispatcher.class)
 public class EntityRenderDispatcherMixin {
 	@Inject(method = "shouldRender", at = @At("HEAD"), cancellable = true)
+	//? if >=26.3 {
 	private <E extends Entity> void stray$slayerHide(E entity, Frustum frustum, double x, double y, double z, float partialTick, CallbackInfoReturnable<Boolean> cir) {
+	//?} else {
+	/*private <E extends Entity> void stray$slayerHide(E entity, Frustum frustum, double x, double y, double z, CallbackInfoReturnable<Boolean> cir) {*///?}
 		if (SlayerFx.hide(entity)) {
 			cir.setReturnValue(false);
 		}

@@ -15,9 +15,11 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.renderpearl.api.textures.FilterMode;
 import com.mojang.renderpearl.api.textures.GpuSampler;
 import com.mojang.renderpearl.api.textures.GpuTexture;
+//? if >=26.3 {
 import com.mojang.renderpearl.backend.opengl.GlStateManager;
 import com.mojang.renderpearl.frontend.FrontendCommandEncoder;
 import org.lwjgl.opengl.GL11;
+//?}
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.QuadInstance;
@@ -41,6 +43,8 @@ import net.minecraft.client.renderer.feature.ItemFeatureRenderer;
 import net.minecraft.client.renderer.StagedVertexBuffer;
 import net.minecraft.client.renderer.rendertype.PreparedRenderType;
 import net.minecraft.client.renderer.rendertype.RenderSetup;
+//? if <26.3 {
+/*import net.minecraft.client.renderer.rendertype.OutputTarget;*///?}
 import net.minecraft.client.renderer.rendertype.RenderType;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.client.renderer.texture.TextureAtlas;
@@ -97,8 +101,12 @@ public final class HeldItemShader {
 	private static int playerFillDepth;
 	private static EntityVisuals fillVisuals;
 	private static final Set<Object> FILL_ITEMS = Collections.newSetFromMap(new IdentityHashMap<>());
+	//? if >=26.3 {
 	private static final List<OffscreenDraw> MASK_DRAWS = new ArrayList<>();
 	private static final List<OffscreenDraw> ESP_DRAWS = new ArrayList<>();
+	//?} else {
+	/*private static final OutputTarget MASK_OUTPUT = new OutputTarget("stray_held_item_mask", HeldItemShader::maskTarget);
+	private static final OutputTarget ESP_OUTPUT = new OutputTarget("stray_fill_esp", HeldItemShader::espTarget);*///?}
 
 	private HeldItemShader() {
 	}
@@ -252,8 +260,12 @@ public final class HeldItemShader {
 			.withBindGroupLayout(BindGroupLayouts.LIGHTING)
 			.withBindGroupLayout(BindGroupLayouts.SAMPLER0_SAMPLER1_SAMPLER2)
 			.withBindGroupLayout(BindGroupLayout.builder()
+				//? if >=26.3 {
 				.withUniform("Sampler3", UniformType.COMBINED_IMAGE_SAMPLER)
 				.withUniform("Sampler4", UniformType.COMBINED_IMAGE_SAMPLER)
+				//?} else {
+				/*.withSampler("Sampler3")
+				.withSampler("Sampler4")*///?}
 				.build())
 			.withBindGroupLayout(BindGroupLayout.builder()
 				.withUniform("KnifeBones", UniformType.UNIFORM_BUFFER)
@@ -262,6 +274,8 @@ public final class HeldItemShader {
 			.withPrimitiveTopology(PrimitiveTopology.TRIANGLES)
 			.withDepthStencilState(DepthStencilState.DEFAULT)
 			.withShaderDefine("ALPHA_CUTOUT", 0.1f)
+			//? if <26.3 {
+			/*.withShaderDefine("PORTAL_LAYERS", 15)*///?}
 			.withShaderDefine("COVERAGE_MASK")
 			.withShaderDefine("CS2_GPU_SKIN")
 			.withColorTargetState(ColorTargetState.DEFAULT)
@@ -275,8 +289,12 @@ public final class HeldItemShader {
 	}
 
 	/**
+	 //? if >=26.3 {
 	 * When the held item silhouette is being masked this frame, the mask batch (textures and
 	 * the mask color) a CS2 knife with this albedo is drawn into; otherwise {@code null}.
+	 //?} else {
+	 /** When the held item silhouette is being masked this frame, the mask batch (target,
+	 * textures and mask color) a CS2 knife with this albedo is drawn into; otherwise {@code null}.*///?}
 	 */
 	public static PreparedRenderType knifeMaskBatch(Identifier albedo) {
 		if (!maskThisFrame || albedo == null) {
@@ -298,8 +316,12 @@ public final class HeldItemShader {
 			.withBindGroupLayout(BindGroupLayouts.LIGHTING)
 			.withBindGroupLayout(BindGroupLayouts.SAMPLER0_SAMPLER1_SAMPLER2)
 			.withBindGroupLayout(BindGroupLayout.builder()
+				//? if >=26.3 {
 				.withUniform("Sampler3", UniformType.COMBINED_IMAGE_SAMPLER)
 				.withUniform("Sampler4", UniformType.COMBINED_IMAGE_SAMPLER)
+				//?} else {
+				/*.withSampler("Sampler3")
+				.withSampler("Sampler4")*///?}
 				.build())
 			.withBindGroupLayout(BindGroupLayout.builder()
 				.withUniform("KnifeBones", UniformType.UNIFORM_BUFFER)
@@ -327,8 +349,12 @@ public final class HeldItemShader {
 			.withBindGroupLayout(BindGroupLayouts.LIGHTING)
 			.withBindGroupLayout(BindGroupLayouts.SAMPLER0_SAMPLER1_SAMPLER2)
 			.withBindGroupLayout(BindGroupLayout.builder()
+				//? if >=26.3 {
 				.withUniform("Sampler3", UniformType.COMBINED_IMAGE_SAMPLER)
 				.withUniform("Sampler4", UniformType.COMBINED_IMAGE_SAMPLER)
+				//?} else {
+				/*.withSampler("Sampler3")
+				.withSampler("Sampler4")*///?}
 				.build())
 			.withVertexBinding(0, DefaultVertexFormat.ENTITY)
 			.withPrimitiveTopology(PrimitiveTopology.QUADS)
@@ -476,15 +502,23 @@ public final class HeldItemShader {
 			main.getColorTextureView(),
 			Optional.empty()
 		)) {
+			//? if >=26.3 {
 			pass.setPipeline(RenderSystem.getCompiledPipeline(espBlitPipeline));
+			//?} else {
+			/*pass.setPipeline(espBlitPipeline);*///?}
 			RenderSystem.bindDefaultUniforms(pass);
+			//? if >=26.3 {
 			pass.setUniform("InSampler", espTarget.getColorTextureView(), nearest);
+			//?} else {
+			/*pass.bindTexture("InSampler", espTarget.getColorTextureView(), nearest);*///?}
 			pass.draw(3, 1, 0, 0);
 		}
 	}
 
 	public static void beginMask() {
+		//? if >=26.3 {
 		dev.stray.client.cs2.render.KnifeGpu.clearMasks();
+		//?}
 		maskThisFrame = false;
 		if (!active() || !StrayConfig.get().heldItemShaderSilhouette) {
 			return;
@@ -516,9 +550,14 @@ public final class HeldItemShader {
 		if (main == null || maskTarget == null || main.getDepthTexture() == null || maskTarget.getDepthTexture() == null) {
 			return;
 		}
+		//? if >=26.3 {
 		playerMaskDepthReady = copyDepth(main.getDepthTexture(), maskTarget.getDepthTexture(), maskTarget.width, maskTarget.height);
+		//?} else {
+		/*copyDepth(main.getDepthTexture(), maskTarget.getDepthTexture(), maskTarget.width, maskTarget.height);
+		playerMaskDepthReady = true;*///?}
 	}
 
+	//? if >=26.3 {
 	/**
 	 * World depth has to be snapshotted after opaque terrain and before solid
 	 * entities, while the main pass is still open. The frontend encoder refuses
@@ -552,6 +591,10 @@ public final class HeldItemShader {
 			}
 		}
 		return true;
+	//?} else {
+	/*/^* 26.2 opens a render pass per draw, so the depth copy can go through the normal encoder. ^/
+	private static void copyDepth(GpuTexture source, GpuTexture destination, int width, int height) {
+		RenderSystem.getDevice().createCommandEncoder().copyTextureToTexture(source, destination, 0, 0, 0, 0, 0, width, height);*///?}
 	}
 
 	private static boolean prepareMaskTarget() {
@@ -581,6 +624,7 @@ public final class HeldItemShader {
 		ensureRegistered();
 		Identifier texture = atlas == null ? TextureAtlas.LOCATION_ITEMS : atlas;
 		return MASK_TYPES.apply(texture);
+	//? if >=26.3 {
 	}
 
 	public static boolean captureOffscreen(PreparedRenderType type, StagedVertexBuffer.ExecuteInfo info) {
@@ -632,6 +676,7 @@ public final class HeldItemShader {
 	}
 
 	private record OffscreenDraw(PreparedRenderType type, StagedVertexBuffer.ExecuteInfo info) {
+	//?}
 	}
 
 	public static void compositeSilhouette() {
@@ -685,10 +730,16 @@ public final class HeldItemShader {
 			rowTarget.getColorTextureView(),
 			Optional.empty()
 		)) {
+			//? if >=26.3 {
 			pass.setPipeline(RenderSystem.getCompiledPipeline(rowDistPipeline));
+			//?} else {
+			/*pass.setPipeline(rowDistPipeline);*///?}
 			RenderSystem.bindDefaultUniforms(pass);
 			pass.setUniform("DynamicTransforms", transforms);
+			//? if >=26.3 {
 			pass.setUniform("InSampler", maskTarget.getColorTextureView(), nearest);
+			//?} else {
+			/*pass.bindTexture("InSampler", maskTarget.getColorTextureView(), nearest);*///?}
 			pass.draw(3, 1, 0, 0);
 		}
 		try (RenderPass pass = encoder.createRenderPass(
@@ -696,11 +747,18 @@ public final class HeldItemShader {
 			main.getColorTextureView(),
 			Optional.empty()
 		)) {
+			//? if >=26.3 {
 			pass.setPipeline(RenderSystem.getCompiledPipeline(silhouettePipeline));
+			//?} else {
+			/*pass.setPipeline(silhouettePipeline);*///?}
 			RenderSystem.bindDefaultUniforms(pass);
 			pass.setUniform("DynamicTransforms", transforms);
+			//? if >=26.3 {
 			pass.setUniform("InSampler", maskTarget.getColorTextureView(), nearest);
 			pass.setUniform("RowSampler", rowTarget.getColorTextureView(), nearest);
+			//?} else {
+			/*pass.bindTexture("InSampler", maskTarget.getColorTextureView(), nearest);
+			pass.bindTexture("RowSampler", rowTarget.getColorTextureView(), nearest);*///?}
 			pass.draw(3, 1, 0, 0);
 		}
 	}
@@ -785,6 +843,15 @@ public final class HeldItemShader {
 		return isPlayerFillPipeline(pipeline) || playerFill();
 	}
 
+	//? if <26.3 {
+	/*private static RenderTarget maskTarget() {
+		return maskTarget;
+	}
+
+	private static RenderTarget espTarget() {
+		return espTarget;
+	}
+*///?}
 	private static Identifier atlas(RenderType original, Iterable<BakedQuad> quads) {
 		Identifier atlas = TextureAtlas.LOCATION_ITEMS;
 		if (quads != null) {
@@ -861,6 +928,8 @@ public final class HeldItemShader {
 				.withTexture("Sampler3", AbstractEndPortalRenderer.END_SKY_LOCATION)
 				.withTexture("Sampler4", AbstractEndPortalRenderer.END_PORTAL_LOCATION)
 				.useLightmap()
+				//? if <26.3 {
+				/*.setOutputTarget(MASK_OUTPUT)*///?}
 				.setOutline(RenderSetup.OutlineProperty.NONE)
 				.createRenderSetup()
 		);
@@ -893,6 +962,8 @@ public final class HeldItemShader {
 				.withTexture("Sampler4", AbstractEndPortalRenderer.END_PORTAL_LOCATION)
 				.useLightmap()
 				.affectsCrumbling()
+				//? if <26.3 {
+				/*.setOutputTarget(ESP_OUTPUT)*///?}
 				.setOutline(RenderSetup.OutlineProperty.AFFECTS_OUTLINE)
 				.createRenderSetup()
 		);
@@ -908,6 +979,8 @@ public final class HeldItemShader {
 				.withTexture("Sampler3", AbstractEndPortalRenderer.END_SKY_LOCATION)
 				.withTexture("Sampler4", AbstractEndPortalRenderer.END_PORTAL_LOCATION)
 				.useLightmap()
+				//? if <26.3 {
+				/*.setOutputTarget(MASK_OUTPUT)*///?}
 				.setOutline(RenderSetup.OutlineProperty.NONE)
 				.createRenderSetup()
 		);

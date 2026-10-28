@@ -63,7 +63,10 @@ public final class MageBeamHits {
 			clickId++;
 		}
 		attackHeld = key;
+		//? if >=26.3 {
 		if (key || client.player.isSwinging()) {
+		//?} else {
+		/*if (key || client.player.swinging) {*///?}
 			windowUntil = Hitsound.gameTick() + WINDOW_TICKS;
 		}
 	}

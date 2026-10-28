@@ -1,5 +1,12 @@
 package dev.stray.client.cs2.render;
 
+//? if <26.3 {
+/*import dev.stray.client.visual.HeldItemShader;
+import net.minecraft.resources.Identifier;
+import java.util.OptionalDouble;
+import java.util.Optional;
+import com.mojang.renderpearl.api.textures.GpuTextureView;
+import com.mojang.blaze3d.pipeline.RenderTarget;*///?}
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.renderpearl.api.buffers.GpuBuffer;
@@ -11,9 +18,11 @@ import com.mojang.renderpearl.api.vertex.VertexFormat;
 import dev.stray.Stray;
 import dev.stray.client.cs2.Cs2Knives;
 import dev.stray.client.cs2.s2.S2Model;
+//? if >=26.3 {
 import dev.stray.client.visual.HeldItemShader;
 import com.mojang.renderpearl.api.pipeline.RenderPipeline;
 import net.minecraft.resources.Identifier;
+//?}
 import net.minecraft.client.renderer.rendertype.PreparedRenderType;
 import net.minecraft.client.renderer.rendertype.RenderType;
 import org.joml.Matrix4f;
@@ -47,14 +56,19 @@ public final class KnifeGpu {
 	private static final long STALE_NS = 1_000_000_000L;
 
 	/** {@code blade}: the prepared blade shader pass to draw right after this knife (null for none). */
+	//? if >=26.3 {
 	private record Request(Mesh mesh, GpuBufferSlice bones, PreparedRenderType blade) {
+	//?} else {
+	/*private record Request(Mesh mesh, GpuBufferSlice bones, PreparedRenderType blade, PreparedRenderType mask) {*///?}
 	}
+	//? if >=26.3 {
 
 	/** First-person knives to add to the held item silhouette mask this frame. */
 	private record MaskRequest(Mesh mesh, GpuBufferSlice bones, PreparedRenderType mask) {
 	}
 
 	private static final List<MaskRequest> MASKS = new ArrayList<>();
+	//?}
 
 	private static final class Pending {
 		final List<Request> requests = new ArrayList<>();
@@ -229,8 +243,12 @@ public final class KnifeGpu {
 		PreparedRenderType bladeBatch = bladeType == null ? null : bladeType.prepare();
 		Pending pending = QUEUE.computeIfAbsent(batch, k -> new Pending());
 		pending.queuedNs = now;
+		//? if >=26.3 {
 		pending.requests.add(new Request(mesh, bonesSlice, bladeBatch));
+		//?} else {
+		/*// First person with the silhouette on: the knife also goes into the held item mask.*///?}
 		PreparedRenderType maskBatch = HeldItemShader.knifeMaskBatch(albedo);
+		//? if >=26.3 {
 		if (maskBatch != null && mesh != null) {
 			MASKS.add(new MaskRequest(mesh, bonesSlice, maskBatch));
 		}
@@ -261,6 +279,8 @@ public final class KnifeGpu {
 		} catch (RuntimeException e) {
 			warn(e);
 		}
+		//?} else {
+		/*pending.requests.add(new Request(mesh, bonesSlice, bladeBatch, maskBatch));*///?}
 	}
 
 	private static GpuBufferSlice writeBones(Matrix4f pose, Matrix4f toView, Matrix4f[] skin, int light) {
@@ -298,13 +318,27 @@ public final class KnifeGpu {
 		return pending != null && !pending.requests.isEmpty();
 	}
 
+	//? if >=26.3 {
 	/** Draws every queued knife for this batch inside Minecraft's render pass. */
 	public static void draw(PreparedRenderType batch, RenderPass pass) {
+	//?} else {
+	/*/^* Draws every queued knife for this batch in its own render pass, the way 26.2 draws each batch. ^/
+	public static void draw(PreparedRenderType batch) {*///?}
 		Pending pending = QUEUE.remove(batch);
 		if (pending == null || pending.requests.isEmpty()) {
 			return;
 		}
+		//? if >=26.3 {
 		try {
+		//?} else {
+		/*RenderTarget target = batch.outputTarget().getRenderTarget();
+		GpuTextureView color = RenderSystem.outputColorTextureOverride != null ? RenderSystem.outputColorTextureOverride : target.getColorTextureView();
+		GpuTextureView depth = target.useDepth
+			? (RenderSystem.outputDepthTextureOverride != null ? RenderSystem.outputDepthTextureOverride : target.getDepthTextureView())
+			: null;
+		try (RenderPass pass = RenderSystem.getDevice()
+				.createCommandEncoder()
+				.createRenderPass(() -> "Stray CS2 knife", color, Optional.empty(), depth, OptionalDouble.empty())) {*///?}
 			bind(batch, pass);
 			for (Request req : pending.requests) {
 				drawMesh(pass, req, false);
@@ -319,17 +353,47 @@ public final class KnifeGpu {
 		} catch (RuntimeException e) {
 			warn(e);
 		}
+		//? if <26.3 {
+		/*drawMasks(pending.requests);
+	}
+
+	/^* Each first-person knife into the held item silhouette mask, in that mask's own pass. ^/
+	private static void drawMasks(List<Request> requests) {
+		for (Request req : requests) {
+			if (req.mask == null) {
+				continue;
+			}
+			RenderTarget target = req.mask.outputTarget().getRenderTarget();
+			try (RenderPass pass = RenderSystem.getDevice()
+					.createCommandEncoder()
+					.createRenderPass(() -> "Stray CS2 knife mask", target.getColorTextureView(), Optional.empty(), target.getDepthTextureView(), OptionalDouble.empty())) {
+				bind(req.mask, pass);
+				pass.setPipeline(HeldItemShader.knifeMaskPipeline());
+				drawMesh(pass, req, false);
+			} catch (RuntimeException e) {
+				warn(e);
+			}
+		}*///?}
 	}
 
 	private static void bind(PreparedRenderType batch, RenderPass pass) {
+		//? if >=26.3 {
 		pass.setPipeline(RenderSystem.getCompiledPipeline(batch.pipeline()));
+		//?} else {
+		/*pass.setPipeline(batch.pipeline());*///?}
 		if (batch.scissorState().enabled()) {
 			pass.enableScissor(batch.scissorState().x(), batch.scissorState().y(), batch.scissorState().width(), batch.scissorState().height());
+		//? if <26.3 {
+		/*} else {
+			pass.disableScissor();*///?}
 		}
 		RenderSystem.bindDefaultUniforms(pass);
 		pass.setUniform("DynamicTransforms", batch.dynamicTransforms());
 		for (PreparedRenderType.Texture texture : batch.textures()) {
+			//? if >=26.3 {
 			pass.setUniform(texture.name(), texture.textureView(), texture.sampler());
+			//?} else {
+			/*pass.bindTexture(texture.name(), texture.textureView(), texture.sampler());*///?}
 		}
 	}
 

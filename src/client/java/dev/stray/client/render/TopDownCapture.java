@@ -137,7 +137,10 @@ public final class TopDownCapture {
 			if (savedFrustum != null) {
 				access.stray$cullFrustum(savedFrustum);
 			}
+			//? if >=26.3 {
 			camera.extractRenderState(state, delta);
+			//?} else {
+			/*camera.extractRenderState(state, partial);*///?}
 			if (savedFog != null) {
 				state.fogData = savedFog;
 				((GameRendererAccessor) renderer).stray$fogRenderer().updateBuffer(savedFog);
@@ -161,7 +164,10 @@ public final class TopDownCapture {
 		float partial,
 		Matrix4f proj
 	) {
+		//? if >=26.3 {
 		camera.extractRenderState(state, delta);
+		//?} else {
+		/*camera.extractRenderState(state, partial);*///?}
 		if (state.projectionMatrix != null) {
 			state.projectionMatrix.set(proj);
 		}
@@ -189,11 +195,17 @@ public final class TopDownCapture {
 		RenderSystem.setProjectionMatrix(projection.getBuffer(proj), ProjectionType.PERSPECTIVE);
 		client.levelRenderer.render(
 			game.stray$resourcePool(),
+			//? if <26.3 {
+			/*delta,*///?}
 			false,
 			state,
+			//? if <26.3 {
+			/*new Matrix4f(state.viewRotationMatrix),*///?}
 			fog.getBuffer(FogRenderer.FogMode.WORLD),
 			overheadFog.color,
+			//? if >=26.3 {
 			false,
+			//?}
 			false
 		);
 	}

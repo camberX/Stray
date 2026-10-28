@@ -29,6 +29,7 @@ public class ShaderManagerMixin {
 		text = WorldTint.injectTerrainFragmentSource(text);
 		return CustomFog.injectSodiumShader(text);
 	}
+	//? if >=26.3 {
 
 	@ModifyArg(
 		method = "loadInclude",
@@ -41,4 +42,5 @@ public class ShaderManagerMixin {
 	private static String stray$patchInclude(String source) {
 		return CustomFog.injectSodiumShader(source);
 	}
+	//?}
 }

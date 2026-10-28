@@ -4,8 +4,13 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import dev.stray.client.visual.HeldItemShader;
 import net.minecraft.client.model.Model;
 import net.minecraft.client.renderer.SubmitNodeCollection;
+//? if <26.3 {
+/*import net.minecraft.client.renderer.feature.ModelFeatureRenderer;*///?}
 import net.minecraft.client.renderer.rendertype.RenderType;
+//? if >=26.3 {
 import net.minecraft.client.renderer.texture.UvMapping;
+//?} else {
+/*import net.minecraft.client.renderer.texture.TextureAtlasSprite;*///?}
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
@@ -31,9 +36,15 @@ public class SubmitNodeCollectionMixin {
 		RenderType renderType,
 		int lightCoords,
 		int overlayCoords,
+		//? if >=26.3 {
 		int tintedColor,
 		UvMapping uvMapping,
+		//?} else {
+		/*int seed,
+		TextureAtlasSprite sprite,*///?}
 		int outlineColor,
+		//? if <26.3 {
+		/*ModelFeatureRenderer.CrumblingOverlay crumbling,*///?}
 		CallbackInfo ci
 	) {
 		if (this.stray$submittingMask) {
@@ -52,9 +63,15 @@ public class SubmitNodeCollectionMixin {
 				mask,
 				lightCoords,
 				overlayCoords,
+				//? if >=26.3 {
 				tintedColor,
 				uvMapping,
 				outlineColor
+				//?} else {
+				/*seed,
+				sprite,
+				outlineColor,
+				crumbling*///?}
 			);
 		} finally {
 			this.stray$submittingMask = false;

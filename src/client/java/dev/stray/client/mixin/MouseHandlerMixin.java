@@ -49,20 +49,46 @@ public class MouseHandlerMixin {
 	/**
 	 * Vanilla warps the cursor to the window center when it releases the mouse.
 	 * When a container opens straight from another one, keep the cursor where it
+	 //? if >=26.3 {
 	 * was instead: swap the warp target and the stored position. The arguments are
 	 * already on the stack at the call, so they are replaced with ModifyArg.
+	 //?} else {
+	 /** was instead: swap the warp target and the stored position.*///?}
 	 */
+	//? if >=26.3 {
 	@ModifyArg(method = "releaseMouse", at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/platform/InputConstants;releaseMouse(Lcom/mojang/blaze3d/platform/Window;DD)V"), index = 1)
+	//?} else {
+	/*@ModifyArg(
+		method = "releaseMouse",
+		at = @At(
+			value = "INVOKE",
+			target = "Lcom/mojang/blaze3d/platform/InputConstants;grabOrReleaseMouse(Lcom/mojang/blaze3d/platform/Window;IDD)V"
+		),
+		index = 2
+	)*///?}
 	private double stray$keepCursorX(double x) {
 		return stray$keep() ? this.stray$beforeX : x;
 	}
 
+	//? if >=26.3 {
 	@ModifyArg(method = "releaseMouse", at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/platform/InputConstants;releaseMouse(Lcom/mojang/blaze3d/platform/Window;DD)V"), index = 2)
+	//?} else {
+	/*@ModifyArg(
+		method = "releaseMouse",
+		at = @At(
+			value = "INVOKE",
+			target = "Lcom/mojang/blaze3d/platform/InputConstants;grabOrReleaseMouse(Lcom/mojang/blaze3d/platform/Window;IDD)V"
+		),
+		index = 3
+	)*///?}
 	private double stray$keepCursorY(double y) {
 		return stray$keep() ? this.stray$beforeY : y;
 	}
 
+	//? if >=26.3 {
 	@Inject(method = "releaseMouse", at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/platform/InputConstants;releaseMouse(Lcom/mojang/blaze3d/platform/Window;DD)V", shift = At.Shift.AFTER))
+	//?} else {
+	/*@Inject(method = "releaseMouse", at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/platform/InputConstants;grabOrReleaseMouse(Lcom/mojang/blaze3d/platform/Window;IDD)V", shift = At.Shift.AFTER))*///?}
 	private void stray$keepCursor(CallbackInfo ci) {
 		if (stray$keep()) {
 			this.xpos = this.stray$beforeX;

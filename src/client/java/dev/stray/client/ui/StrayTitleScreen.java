@@ -1,7 +1,9 @@
 package dev.stray.client.ui;
 
 import dev.stray.client.account.AccountStore;
+//? if >=26.3 {
 import dev.stray.client.input.MouseButtons;
+//?}
 import dev.stray.client.render.GuiDraw;
 import dev.stray.client.render.TitleBackdrop;
 import net.fabricmc.loader.api.FabricLoader;
@@ -213,7 +215,10 @@ public class StrayTitleScreen extends Screen {
 
 	private void openOptions() {
 		clickSound();
+		//? if >=26.3 {
 		minecraft.gui.setScreen(new OptionsScreen(this, minecraft.options));
+		//?} else {
+		/*minecraft.gui.setScreen(new OptionsScreen(this, minecraft.options, false));*///?}
 	}
 
 	private void openLanguage() {
@@ -238,7 +243,10 @@ public class StrayTitleScreen extends Screen {
 
 	@Override
 	public boolean mouseClicked(MouseButtonEvent event, boolean doubled) {
+		//? if >=26.3 {
 		if (!MouseButtons.left(event)) {
+		//?} else {
+		/*if (event.button() != 0) {*///?}
 			return super.mouseClicked(event, doubled);
 		}
 		for (int i = hits.size() - 1; i >= 0; i--) {

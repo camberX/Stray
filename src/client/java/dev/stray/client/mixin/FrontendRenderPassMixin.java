@@ -1,5 +1,6 @@
 package dev.stray.client.mixin;
 
+//? if >=26.3 {
 import com.mojang.renderpearl.api.buffers.GpuBufferSlice;
 import com.mojang.renderpearl.api.pipeline.BindGroupLayout;
 import com.mojang.renderpearl.api.pipeline.UniformType;
@@ -54,3 +55,4 @@ public abstract class FrontendRenderPassMixin {
 		}
 	}
 }
+//?}

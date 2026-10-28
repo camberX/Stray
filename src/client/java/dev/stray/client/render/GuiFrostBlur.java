@@ -349,9 +349,15 @@ public final class GuiFrostBlur {
 		List<Region> scissors
 	) {
 		try (RenderPass pass = encoder.createRenderPass(() -> "stray control frost", out, Optional.empty())) {
+			//? if >=26.3 {
 			pass.setPipeline(RenderSystem.getCompiledPipeline(blurPipeline));
+			//?} else {
+			/*pass.setPipeline(blurPipeline);*///?}
 			pass.setUniform("BlurConfig", config);
+			//? if >=26.3 {
 			pass.setUniform("InSampler", in, sampler);
+			//?} else {
+			/*pass.bindTexture("InSampler", in, sampler);*///?}
 			if (scissors == null) {
 				pass.draw(3, 1, 0, 0);
 				return;

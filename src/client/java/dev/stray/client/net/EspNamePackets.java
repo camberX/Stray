@@ -46,7 +46,10 @@ public final class EspNamePackets {
 			return;
 		}
 		if (packet instanceof ClientboundRemoveEntitiesPacket remove) {
+			//? if >=26.3 {
 			var ids = remove.entityIds();
+			//?} else {
+			/*var ids = remove.getEntityIds();*///?}
 			Minecraft.getInstance().execute(() -> {
 				MobGlowRenderer.onRemoveEntities(ids);
 				StarMobEsp.onRemoveEntities(ids);

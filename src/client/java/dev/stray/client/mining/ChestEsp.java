@@ -13,6 +13,8 @@ import net.minecraft.network.protocol.game.ClientboundBlockUpdatePacket;
 import net.minecraft.network.protocol.game.ClientboundLevelParticlesPacket;
 import net.minecraft.network.protocol.game.ClientboundSectionBlocksUpdatePacket;
 import net.minecraft.world.level.block.Blocks;
+//? if <26.3 {
+/*import net.minecraft.world.level.block.entity.BlockEntityType;*///?}
 import net.minecraft.world.level.block.entity.BlockEntityTypes;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
@@ -106,12 +108,20 @@ public final class ChestEsp {
 		}
 		ChestAimer.onPacket(packet);
 		if (packet instanceof ClientboundLevelParticlesPacket particles) {
+			//? if >=26.3 {
 			if (!isCrit(particles.particle().getType())) {
+			//?} else {
+			/*if (!isCrit(particles.getParticle().getType())) {*///?}
 				return;
 			}
+			//? if >=26.3 {
 			double x = particles.x();
 			double y = particles.y();
 			double z = particles.z();
+			//?} else {
+			/*double x = particles.getX();
+			double y = particles.getY();
+			double z = particles.getZ();*///?}
 			Minecraft.getInstance().execute(() -> INSTANCE.onCrit(x, y, z));
 			return;
 		}

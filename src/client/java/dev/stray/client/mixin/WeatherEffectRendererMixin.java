@@ -12,7 +12,10 @@ import org.spongepowered.asm.mixin.injection.At;
 @Mixin(WeatherEffectRenderer.class)
 public class WeatherEffectRendererMixin {
 	@WrapOperation(
+		//? if >=26.3 {
 		method = "prepare",
+		//?} else {
+		/*method = "render",*///?}
 		at = @At(
 			value = "FIELD",
 			target = "Lnet/minecraft/client/renderer/state/level/WeatherRenderState;intensity:F",

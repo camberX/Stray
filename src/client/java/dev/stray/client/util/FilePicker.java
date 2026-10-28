@@ -1,20 +1,31 @@
 package dev.stray.client.util;
 
 import dev.stray.Stray;
+//? if >=26.3 {
 import java.nio.ByteBuffer;
+//?}
 import java.nio.file.Path;
 import java.util.function.Consumer;
 import net.minecraft.client.Minecraft;
+//? if >=26.3 {
 import org.lwjgl.sdl.SDLDialog;
 import org.lwjgl.sdl.SDLError;
 import org.lwjgl.sdl.SDL_DialogFileCallback;
 import org.lwjgl.sdl.SDL_DialogFileFilter;
 import org.lwjgl.system.MemoryUtil;
+//?} else {
+/*import org.lwjgl.PointerBuffer;
+import org.lwjgl.system.MemoryStack;
+import org.lwjgl.util.tinyfd.TinyFileDialogs;*///?}
 
 /**
+ //? if >=26.3 {
  * Native "open file" dialog through SDL. 26.3 no longer ships tinyfd, but the
  * game window is an SDL window, so SDL's own dialog (xdg portal / zenity on
  * Linux, the system dialog on Windows and macOS) is always there.
+ //?} else {
+ /** Native "open file" dialog through tinyfd, which 26.2 still ships. The dialog
+ * blocks, so it runs on its own thread and hands the result back to the client thread.*///?}
  */
 public final class FilePicker {
 	private FilePicker() {
@@ -29,6 +40,7 @@ public final class FilePicker {
 	 */
 	public static void open(String title, String filterName, String patterns, Consumer<Path> onResult, Consumer<String> onError) {
 		Minecraft client = Minecraft.getInstance();
+		//? if >=26.3 {
 		client.execute(() -> show(client, title, filterName, patterns, onResult, onError));
 	}
 
@@ -49,8 +61,24 @@ public final class FilePicker {
 				long first = MemoryUtil.memGetAddress(filelist);
 				if (first != 0L) {
 					picked = Path.of(MemoryUtil.memUTF8(first));
+		//?} else {
+		/*Thread thread = new Thread(() -> {
+			String selected;
+			try (MemoryStack stack = MemoryStack.stackPush()) {
+				String[] extensions = patterns.split(";");
+				PointerBuffer filters = stack.mallocPointer(extensions.length);
+				for (String extension : extensions) {
+					filters.put(stack.UTF8("*." + extension));*///?}
 				}
+				//? if <26.3 {
+				/*filters.flip();
+				selected = TinyFileDialogs.tinyfd_openFileDialog(title, System.getProperty("user.home", "") + "/", filters, filterName, false);
+			} catch (Throwable e) {
+				Stray.LOGGER.warn("File dialog failed", e);
+				client.execute(() -> onError.accept("Can't open file picker"));
+				return;*///?}
 			}
+			//? if >=26.3 {
 			final Path result = picked;
 			final String failure = error;
 			client.execute(() -> {
@@ -79,5 +107,11 @@ public final class FilePicker {
 			MemoryUtil.memFree(location);
 			onError.accept("Can't open file picker");
 		}
+			//?} else {
+			/*Path picked = selected == null || selected.isBlank() ? null : Path.of(selected);
+			client.execute(() -> onResult.accept(picked));
+		}, "stray-file-picker");
+		thread.setDaemon(true);
+		thread.start();*///?}
 	}
 }

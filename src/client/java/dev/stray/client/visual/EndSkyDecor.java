@@ -84,20 +84,32 @@ public final class EndSkyDecor {
 		ensurePipeline();
 	}
 
+	//? if >=26.3 {
 	/**
 	 * Pipelines, the quad buffer and every texture are created or uploaded here,
 	 * outside any render pass: 26.3 draws the sky inside one shared pass, and
 	 * the GPU can't be written to while it records.
 	 */
 	public static void prepare() {
+	//?} else {
+	/*public static void render(float time) {*///?}
 		Minecraft client = Minecraft.getInstance();
+		//? if <26.3 {
+		/*if (client.level == null) {
+			return;
+		}*///?}
 		ensurePipeline();
 		if (quads == null) {
 			quads = bakeQuads();
 		}
+		//? if >=26.3 {
 		for (Identifier id : FACE_TEXTURES) {
 			view(client, id);
+		//?} else {
+		/*if (pipeline == null || addPipeline == null || quads == null) {
+			return;*///?}
 		}
+		//? if >=26.3 {
 		for (Identifier id : HOLE_TEXTURES) {
 			view(client, id);
 		}
@@ -107,6 +119,9 @@ public final class EndSkyDecor {
 	public static void render(float time, RenderPass pass) {
 		Minecraft client = Minecraft.getInstance();
 		if (client.level == null || pipeline == null || addPipeline == null || quads == null) {
+		//?} else {
+		/*RenderTarget main = client.gameRenderer.mainRenderTarget();
+		if (main == null || main.getColorTextureView() == null) {*///?}
 			return;
 		}
 
@@ -132,8 +147,12 @@ public final class EndSkyDecor {
 		GpuTextureView holeB = b != a && blend > 0.002f ? view(client, HOLE_TEXTURES[b]) : null;
 
 		PoseStack pose = new PoseStack();
+		//? if >=26.3 {
 		pose.rotate(Axis.YP.rotation(time * 0.0009f));
 		pose.rotate(Axis.XP.rotation(TILT));
+		//?} else {
+		/*pose.mulPose(Axis.YP.rotation(time * 0.0009f));
+		pose.mulPose(Axis.XP.rotation(TILT));*///?}
 		Matrix4fStack modelView = RenderSystem.getModelViewStack();
 		modelView.pushMatrix();
 		modelView.mul(pose.last().pose());
@@ -163,15 +182,28 @@ public final class EndSkyDecor {
 
 		var indexBuf = RenderSystem.getSequentialBuffer(PrimitiveTopology.QUADS);
 		GpuSampler linear = RenderSystem.getSamplerCache().getClampToEdge(FilterMode.LINEAR);
+		//? if >=26.3 {
 		try {
 			pass.setPipeline(RenderSystem.getCompiledPipeline(pipeline));
+		//?} else {
+		/*try (RenderPass pass = RenderSystem.getDevice().createCommandEncoder().createRenderPass(
+			() -> "stray end sky",
+			main.getColorTextureView(),
+			Optional.empty(),
+			main.getDepthTextureView(),
+			OptionalDouble.empty()
+		)) {
+			pass.setPipeline(pipeline);*///?}
 			RenderSystem.bindDefaultUniforms(pass);
 			pass.setVertexBuffer(0, quads.slice());
 			pass.setIndexBuffer(indexBuf.getBuffer(7 * 6), indexBuf.type());
 			pass.setUniform("DynamicTransforms", opaque);
 			for (int i = 0; i < 6; i++) {
 				if (faces[i] != null) {
+					//? if >=26.3 {
 					pass.setUniform("Sampler0", faces[i], linear);
+					//?} else {
+					/*pass.bindTexture("Sampler0", faces[i], linear);*///?}
 					pass.drawIndexed(6, 1, i * 6, 0, 0);
 				}
 			}
@@ -179,16 +211,25 @@ public final class EndSkyDecor {
 				if (fading) {
 					pass.setUniform("DynamicTransforms", fadeA);
 				}
+				//? if >=26.3 {
 				pass.setUniform("Sampler0", holeA, linear);
+				//?} else {
+				/*pass.bindTexture("Sampler0", holeA, linear);*///?}
 				pass.drawIndexed(6, 1, 6 * 6, 0, 0);
 			}
 			if (fading) {
+				//? if >=26.3 {
 				pass.setPipeline(RenderSystem.getCompiledPipeline(addPipeline));
+				//?} else {
+				/*pass.setPipeline(addPipeline);*///?}
 				RenderSystem.bindDefaultUniforms(pass);
 				pass.setVertexBuffer(0, quads.slice());
 				pass.setIndexBuffer(indexBuf.getBuffer(7 * 6), indexBuf.type());
 				pass.setUniform("DynamicTransforms", fadeB);
+				//? if >=26.3 {
 				pass.setUniform("Sampler0", holeB, linear);
+				//?} else {
+				/*pass.bindTexture("Sampler0", holeB, linear);*///?}
 				pass.drawIndexed(6, 1, 6 * 6, 0, 0);
 			}
 		} finally {

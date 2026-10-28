@@ -1,5 +1,6 @@
 package dev.stray.client.mixin;
 
+//? if >=26.3 {
 import com.mojang.renderpearl.api.commands.RenderPass;
 import dev.stray.client.visual.HeldItemShader;
 import net.minecraft.client.renderer.StagedVertexBuffer;
@@ -29,3 +30,4 @@ public class RenderTypeFeatureRendererMixin {
 		type.drawFromBuffer(info, pass);
 	}
 }
+//?}

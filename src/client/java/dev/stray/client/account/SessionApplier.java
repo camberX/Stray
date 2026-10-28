@@ -1,7 +1,11 @@
 package dev.stray.client.account;
 
 import com.mojang.authlib.minecraft.UserApiService;
+//? if >=26.3 {
 import com.mojang.authlib.services.MinecraftServicesDiscoveryService;
+//?} else {
+/*import com.mojang.authlib.yggdrasil.YggdrasilAuthenticationService;
+import com.mojang.authlib.yggdrasil.YggdrasilEnvironment;*///?}
 import dev.stray.client.mixin.MinecraftAccessor;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.User;
@@ -31,7 +35,13 @@ public final class SessionApplier {
 			Optional.empty(),
 			Optional.of(UUID.randomUUID().toString())
 		);
+		//? if >=26.3 {
 		MinecraftServicesDiscoveryService auth = MinecraftServicesDiscoveryService.create(Proxy.NO_PROXY);
+		//?} else {
+		/*YggdrasilAuthenticationService auth = new YggdrasilAuthenticationService(
+			Proxy.NO_PROXY,
+			YggdrasilEnvironment.PROD.getEnvironment()
+		);*///?}
 		UserApiService userApi = auth.createUserApiService(accessToken);
 		ProfileKeyPairManager keys;
 		try {

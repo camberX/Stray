@@ -27,9 +27,15 @@ public final class LegacySkullHold {
 		if (!enabled() || pose == null || !skull(stack)) {
 			return;
 		}
+		//? if >=26.3 {
 		pose.rotate(Axis.YP.rotationDegrees(45.0F));
+		//?} else {
+		/*pose.mulPose(Axis.YP.rotationDegrees(45.0F));*///?}
 		pose.scale(0.4F, 0.4F, 0.4F);
+		//? if >=26.3 {
 		pose.rotate(Axis.YP.rotationDegrees(-180.0F));
+		//?} else {
+		/*pose.mulPose(Axis.YP.rotationDegrees(-180.0F));*///?}
 		pose.translate(0.0F, 0.25F, 0.0F);
 		pose.scale(1.125F, 1.125F, 1.125F);
 	}

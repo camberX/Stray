@@ -28,15 +28,24 @@ public final class RenderCompat {
 	}
 
 	public static void setPipeline(RenderPass pass, RenderPipeline pipeline) {
+		//? if >=26.3 {
 		pass.setPipeline(RenderSystem.getCompiledPipeline(pipeline));
+		//?} else {
+		/*pass.setPipeline(pipeline);*///?}
 	}
 
 	public static TextureTarget colorTarget(String name, int width, int height) {
+		//? if >=26.3 {
 		return new TextureTarget(name, width, height, GpuFormat.RGBA8_UNORM, null);
+		//?} else {
+		/*return new TextureTarget(name, width, height, false, GpuFormat.RGBA8_UNORM);*///?}
 	}
 
 	public static TextureTarget colorDepthTarget(String name, int width, int height) {
+		//? if >=26.3 {
 		return new TextureTarget(name, width, height, GpuFormat.RGBA8_UNORM, GpuFormat.D32_FLOAT);
+		//?} else {
+		/*return new TextureTarget(name, width, height, true, GpuFormat.RGBA8_UNORM);*///?}
 	}
 
 	public static ColorTargetState opaqueTarget() {
@@ -44,7 +53,10 @@ public final class RenderCompat {
 	}
 
 	public static BindGroupLayout sampler(String name) {
+		//? if >=26.3 {
 		return BindGroupLayout.builder().withUniform(name, UniformType.COMBINED_IMAGE_SAMPLER).build();
+		//?} else {
+		/*return BindGroupLayout.builder().withSampler(name).build();*///?}
 	}
 
 	public static BindGroupLayout uniform(String name) {

@@ -1,7 +1,9 @@
 package dev.stray.client.mixin;
 
 import com.mojang.renderpearl.api.buffers.GpuBufferSlice;
+//? if >=26.3 {
 import com.mojang.renderpearl.api.commands.RenderPass;
+//?}
 import dev.stray.client.visual.EndSkyDecor;
 import dev.stray.client.visual.WorldTint;
 import net.minecraft.client.Camera;
@@ -26,9 +28,11 @@ public class SkyRendererMixin {
 		if (WorldTint.endSkyboxActive()) {
 			state.skybox = DimensionType.Skybox.END;
 		}
+		//? if >=26.3 {
 		if (WorldTint.endSkyboxActive()) {
 			EndSkyDecor.prepare();
 		}
+		//?}
 		state.skyColor = WorldTint.tintSky(state.skyColor);
 		state.sunriseAndSunsetColor = WorldTint.tintSky(state.sunriseAndSunsetColor);
 	}
@@ -46,7 +50,10 @@ public class SkyRendererMixin {
 	}
 
 	@Inject(method = "renderEndSky", at = @At("RETURN"))
+	//? if >=26.3 {
 	private void stray$endDecor(RenderPass pass, CallbackInfo ci) {
+	//?} else {
+	/*private void stray$endDecor(CallbackInfo ci) {*///?}
 		if (!WorldTint.endSkyboxActive()) {
 			return;
 		}
@@ -55,6 +62,9 @@ public class SkyRendererMixin {
 			return;
 		}
 		float partial = client.getDeltaTracker().getGameTimeDeltaPartialTick(true);
+		//? if >=26.3 {
 		EndSkyDecor.render(client.level.getGameTime() + partial, pass);
+		//?} else {
+		/*EndSkyDecor.render(client.level.getGameTime() + partial);*///?}
 	}
 }

@@ -1,5 +1,6 @@
 package dev.stray.client.mixin;
 
+//? if >=26.3 {
 import com.mojang.renderpearl.api.buffers.GpuBufferSlice;
 import com.mojang.renderpearl.backend.opengl.GlRenderPipeline;
 import com.mojang.renderpearl.backend.opengl.Uniform;
@@ -41,3 +42,4 @@ public class GlCommandEncoderMixin {
 		return slice;
 	}
 }
+//?}
