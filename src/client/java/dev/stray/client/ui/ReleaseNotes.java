@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.5.78", new String[]{
+			"New mod description: The most vibecoded professional mod ever."
+		}),
 		new Entry("1.5.77", new String[]{
 			"Fixed a crash on joining a world with Sodium Extra on 26.3: both mods added shader outputs at the same slot in Sodium's terrain shader."
 		}),
