@@ -1,6 +1,5 @@
 package dev.stray.client.mixin;
 
-import dev.stray.client.combat.Hitsound;
 import dev.stray.client.fairy.FairySoulTracker;
 import dev.stray.client.item.SackLive;
 import dev.stray.client.mining.MetalDetector;
@@ -8,7 +7,6 @@ import dev.stray.client.skill.SkillProgressTracker;
 import dev.stray.client.ui.CommandShortcuts;
 import dev.stray.client.ui.ProfileCommands;
 import net.minecraft.client.multiplayer.ClientPacketListener;
-import net.minecraft.network.protocol.game.ClientboundGameEventPacket;
 import net.minecraft.network.protocol.game.ClientboundSetActionBarTextPacket;
 import net.minecraft.network.protocol.game.ClientboundSystemChatPacket;
 import org.spongepowered.asm.mixin.Mixin;
@@ -42,16 +40,6 @@ public class ClientPacketListenerMixin {
 		if (packet != null) {
 			MetalDetector.onActionBar(packet.text());
 			SkillProgressTracker.onActionBar(packet.text());
-		}
-	}
-
-	@Inject(method = "handleGameEvent", at = @At("HEAD"), cancellable = true)
-	private void stray$skipDelayedArrowPing(ClientboundGameEventPacket packet, CallbackInfo ci) {
-		if (packet.getEvent() != ClientboundGameEventPacket.PLAY_ARROW_HIT_SOUND) {
-			return;
-		}
-		if (Hitsound.suppressVanillaArrowPing()) {
-			ci.cancel();
 		}
 	}
 }

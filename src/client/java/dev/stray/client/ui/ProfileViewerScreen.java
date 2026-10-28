@@ -2022,10 +2022,7 @@ public class ProfileViewerScreen extends Screen {
 
 	@Override
 	public boolean keyPressed(KeyEvent event) {
-		if (queryFocused && event.key() == InputConstants.KEY_BACKSPACE) {
-			if (!query.isEmpty()) {
-				query = query.substring(0, query.length() - 1);
-			}
+		if (queryFocused && TextKeys.key(event, queryField)) {
 			return true;
 		}
 		if (queryFocused && (event.key() == InputConstants.KEY_RETURN || event.key() == InputConstants.KEY_NUMPADENTER)) {
@@ -2043,13 +2040,13 @@ public class ProfileViewerScreen extends Screen {
 	@Override
 	public boolean charTyped(CharacterEvent event) {
 		if (queryFocused && event.isAllowedChatCharacter()) {
-			if (query.length() < 16) {
-				query += event.codepointAsString();
-			}
+			TextKeys.type(event.codepointAsString(), queryField);
 			return true;
 		}
 		return super.charTyped(event);
 	}
+
+	private final TextKeys.Field queryField = new TextKeys.Field("profile-query", () -> query, v -> query = v, 16, raw -> TextKeys.singleLine(raw).trim());
 
 	private record Hit(float x, float y, float w, float h, Runnable click) {
 		boolean contains(double mx, double my) {

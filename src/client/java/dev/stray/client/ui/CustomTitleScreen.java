@@ -220,6 +220,9 @@ public class CustomTitleScreen extends Screen {
 		boolean focused = field == which;
 		boolean hover = GuiDraw.hovered(mouseX, mouseY, x, y, w, FIELD_H);
 		ClickLook.outside(graphics, x, y, w, FIELD_H, 5, focused || hover ? Theme.CARD_HOVER : Theme.CARD, focused ? Theme.ACCENT : Theme.LINE);
+		if (focused) {
+			TextKeys.mark(graphics, "custom-title-" + which, x, y, w, FIELD_H);
+		}
 		float labelW = GuiDraw.smallWidth(font, label) + 6;
 		GuiDraw.small(graphics, font, label, x + 6, y + 5, Theme.MUTED);
 		String placeholder = which == 0 ? "rare drop" : "&cRare drop!";
@@ -358,6 +361,12 @@ public class CustomTitleScreen extends Screen {
 			blinkAt = System.currentTimeMillis();
 			return true;
 		}
+		if (TextKeys.caretKey(event, "custom-title-" + field, current(), () -> {
+			set("");
+			cursor = 0;
+		})) {
+			return true;
+		}
 		String value = current();
 		if (key == InputConstants.KEY_LEFT) {
 			cursor = Math.max(0, cursor - 1);
@@ -388,7 +397,7 @@ public class CustomTitleScreen extends Screen {
 			}
 			return true;
 		}
-		if (key == InputConstants.KEY_V && event.hasControlDown()) {
+		if (event.isPaste()) {
 			String clip = minecraft.keyboardHandler.getClipboard();
 			if (clip != null && !clip.isBlank()) {
 				String insert = clip.replace("\n", "").replace("\r", "");
@@ -413,6 +422,10 @@ public class CustomTitleScreen extends Screen {
 		String insert = event.codepointAsString();
 		if (insert.isEmpty() || insert.charAt(0) < 32) {
 			return true;
+		}
+		if (TextKeys.takeSelection("custom-title-" + field)) {
+			set("");
+			cursor = 0;
 		}
 		String value = current();
 		if (value.length() >= CustomTitle.MAX_TEXT) {

@@ -1,13 +1,10 @@
 package dev.stray.client.net;
 
 import dev.stray.client.combat.AutoExperiments;
-import dev.stray.client.combat.MageBeamHits;
 import dev.stray.client.farming.AutoDna;
 import dev.stray.client.farming.GardenHud;
 import dev.stray.client.menu.DisabledPotions;
 import dev.stray.client.mining.ChestEsp;
-import dev.stray.client.mining.GreatExplorer;
-import dev.stray.client.mining.PinglessBreak;
 import dev.stray.client.node.EnderNodeTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.particles.ParticleOptions;
@@ -50,12 +47,9 @@ public final class ClientPackets {
 			var type = options.getType();
 			Minecraft.getInstance().execute(() -> {
 				EnderNodeTracker.get().onParticle(x, y, z, type);
-				MageBeamHits.onParticle(x, y, z, type);
 			});
 		}
 		ChestEsp.onPacket(packet);
-		GreatExplorer.onPacket(packet);
-		PinglessBreak.onPacket(packet);
 		EspNamePackets.onPacket(packet);
 		AutoExperiments.onPacket(packet);
 		AutoDna.onPacket(packet);

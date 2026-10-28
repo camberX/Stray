@@ -165,21 +165,10 @@ public final class ClickGui {
 		mobSearchFocused = false;
 	}
 
-	static void typeMobSearch(String text) {
-		if (text == null || text.isEmpty() || mobQuery.length() >= 32) {
-			return;
-		}
-		mobQuery += text;
-		if (mobQuery.length() > 32) {
-			mobQuery = mobQuery.substring(0, 32);
-		}
-	}
+	static final TextKeys.Field SEARCH_FIELD = new TextKeys.Field("click-search", () -> searchQuery, v -> searchQuery = v, 32);
+	static final TextKeys.Field MOB_SEARCH_FIELD = new TextKeys.Field("click-mob-search", () -> mobQuery, v -> mobQuery = v, 32);
 
-	static void backspaceMobSearch() {
-		if (!mobQuery.isEmpty()) {
-			mobQuery = mobQuery.substring(0, mobQuery.length() - 1);
-		}
-	}
+
 
 	static boolean mobSearchContains(double x, double y) {
 		return contains(x, y, mobSearchX, mobSearchY, mobSearchW, mobSearchH);
@@ -196,21 +185,7 @@ public final class ClickGui {
 		mobSearchH = h;
 	}
 
-	static void typeSearch(String text) {
-		if (text == null || text.isEmpty() || searchQuery.length() >= 32) {
-			return;
-		}
-		searchQuery += text;
-		if (searchQuery.length() > 32) {
-			searchQuery = searchQuery.substring(0, 32);
-		}
-	}
 
-	static void backspaceSearch() {
-		if (!searchQuery.isEmpty()) {
-			searchQuery = searchQuery.substring(0, searchQuery.length() - 1);
-		}
-	}
 
 	static boolean searchContains(double x, double y) {
 		return contains(x, y, searchX, searchY, searchW, searchH);
@@ -358,8 +333,9 @@ public final class ClickGui {
 		searchW = width;
 		searchH = box();
 		outlined(graphics, x, y, width, box(), searchFocused ? accentFill() : OFF_FILL);
+		TextKeys.mark(graphics, SEARCH_FIELD.key(), x, y, width, box());
 		boolean placeholder = searchQuery.isEmpty() && !searchFocused;
-		String shown = placeholder ? "Search" : searchQuery + (searchFocused ? "|" : "");
+		String shown = placeholder ? "Search" : TextKeys.shown(SEARCH_FIELD.key(), searchQuery, searchFocused);
 		String label = imgui() ? fitFeature(font, shown, width - 8) : fit(font, shown, width - 8);
 		fieldText(graphics, font, label, x + 4, y, box(), placeholder);
 		screen.clickHit(x, y, width, box(), ClickGui::focusSearch);
@@ -521,8 +497,9 @@ public final class ClickGui {
 		mobSearchW = boxW;
 		mobSearchH = box();
 		outlined(graphics, boxX, searchY, boxW, box(), mobSearchFocused ? accentFill() : OFF_FILL);
+		TextKeys.mark(graphics, MOB_SEARCH_FIELD.key(), boxX, searchY, boxW, box());
 		boolean placeholder = mobQuery.isEmpty() && !mobSearchFocused;
-		String shown = placeholder ? "Search" : mobQuery + (mobSearchFocused ? "|" : "");
+		String shown = placeholder ? "Search" : TextKeys.shown(MOB_SEARCH_FIELD.key(), mobQuery, mobSearchFocused);
 		String label = imgui() ? fitFeature(font, shown, boxW - 8) : fit(font, shown, boxW - 8);
 		fieldText(graphics, font, label, boxX + 4, searchY, box(), placeholder);
 		screen.clickHit(boxX, searchY, boxW, box(), ClickGui::focusMobSearch);
@@ -1521,9 +1498,7 @@ public final class ClickGui {
 		java.util.Map.entry("Held item", "A shader on the item in your hand."),
 		java.util.Map.entry("Block outline", "A glowing outline on the block you look at."),
 		java.util.Map.entry("Fairy souls", "Shows fairy souls you have not collected yet."),
-		java.util.Map.entry("Hitsound", "Plays a sound when you hit something."),
 		java.util.Map.entry("Auto clicker", "Clicks for you while you hold the bind."),
-		java.util.Map.entry("Auto rogue", "Uses your Rogue Sword after Mort hands out the dungeon map."),
 		java.util.Map.entry("Party stats", "Shows a stats card when someone joins from the party finder."),
 		java.util.Map.entry("Array list", "Lists the modules you have turned on."),
 		java.util.Map.entry("Watermark", "The Stray watermark in a corner of the screen."),
@@ -1543,7 +1518,6 @@ public final class ClickGui {
 		java.util.Map.entry("CH waypoints", "Waypoints for the Crystal Hollows."),
 		java.util.Map.entry("Route miner", "Follows a saved mining route."),
 		java.util.Map.entry("Powder Mining", "Helps with powder mining chests."),
-		java.util.Map.entry("Pingless break", "Breaks blocks without waiting for the server."),
 		java.util.Map.entry("CH map", "A map of the Crystal Hollows."),
 		java.util.Map.entry("Scatha timer", "Times Scatha and worm spawns."),
 		java.util.Map.entry("Metal detector", "Solves the metal detector in the Mines of Divan."),
@@ -1720,9 +1694,7 @@ public final class ClickGui {
 		mods.add(mod("Block outline", "Visuals", StrayScreen.Feature.BLOCK, null, () -> config.blockOutlineGlow, v -> config.blockOutlineGlow = v, true, false));
 		mods.add(mod("Fairy souls", "Visuals", StrayScreen.Feature.FAIRY, null, () -> config.fairySoulEsp, v -> config.fairySoulEsp = v, true, false));
 
-		mods.add(mod("Hitsound", "Combat", StrayScreen.Feature.HITSOUND, null, () -> config.hitsoundEnabled, v -> config.hitsoundEnabled = v, true, false));
 		mods.add(mod("Auto clicker", "Combat", StrayScreen.Feature.AUTO_CLICKER, null, () -> config.autoClickerEnabled, v -> config.autoClickerEnabled = v, true, false));
-		mods.add(mod("Auto rogue", "Combat", null, null, () -> config.autoRogueEnabled, v -> config.autoRogueEnabled = v, true, false));
 		mods.add(mod("Party stats", "Combat", null, null, () -> config.partyFinderStats, v -> config.partyFinderStats = v, true, false));
 		addSlayer(mods, config);
 		mods.add(mod("Array list", "HUD", null, null, () -> config.arrayList, v -> config.arrayList = v, false, false));
@@ -1744,7 +1716,6 @@ public final class ClickGui {
 		mods.add(mod("CH waypoints", "Mining", StrayScreen.Feature.CRYSTAL, null, () -> config.crystalHollowsWaypoints, v -> config.crystalHollowsWaypoints = v, true, false));
 		mods.add(mod("Route miner", "Mining", StrayScreen.Feature.ROUTE, null, () -> config.routeMiner, v -> config.routeMiner = v, true, false));
 		mods.add(mod("Powder Mining", "Mining", StrayScreen.Feature.CHEST, null, () -> config.powderMiningEnabled, v -> config.powderMiningEnabled = v, true, false));
-		mods.add(mod("Pingless break", "Mining", null, null, () -> config.pinglessBreak, v -> config.pinglessBreak = v, true, false));
 		mods.add(mod("CH map", "Mining", StrayScreen.Feature.CH_MAP, null, () -> config.crystalHollowsMap, v -> config.crystalHollowsMap = v, true, false));
 		mods.add(mod("Scatha timer", "Mining", null, null, () -> config.scathaHudEnabled, v -> config.scathaHudEnabled = v, true, false));
 		mods.add(mod("Metal detector", "Mining", StrayScreen.Feature.METAL, null, () -> config.metalDetectorSolver, v -> config.metalDetectorSolver = v, true, false));

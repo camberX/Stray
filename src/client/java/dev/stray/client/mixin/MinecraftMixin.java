@@ -1,12 +1,10 @@
 package dev.stray.client.mixin;
 
-import dev.stray.client.combat.MageBeamHits;
 import dev.stray.client.movement.AotvSim;
 import dev.stray.client.movement.MovementRings;
 import dev.stray.client.render.BlockMarks;
 import dev.stray.client.render.MobGlowRenderer;
 import dev.stray.client.farming.EmptyVacuum;
-import dev.stray.client.mining.GreatExplorer;
 import dev.stray.client.ui.LoadoutSwap;
 import net.minecraft.client.Minecraft;
 import net.minecraft.world.entity.Entity;
@@ -27,9 +25,7 @@ public class MinecraftMixin {
 		Minecraft client = (Minecraft) (Object) this;
 		LoadoutSwap.preKeybinds(client);
 		EmptyVacuum.preKeybinds(client);
-		GreatExplorer.preKeybinds(client);
 		MovementRings.preKeybinds(client);
-		MageBeamHits.onAttack(client);
 	}
 
 	@Inject(method = "startUseItem", at = @At("HEAD"), cancellable = true)

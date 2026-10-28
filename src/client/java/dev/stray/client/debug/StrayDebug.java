@@ -5,7 +5,6 @@ import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.suggestion.SuggestionProvider;
 import dev.stray.client.item.ItemAppearance;
-import dev.stray.client.mining.GreatExplorer;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommands;
 import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource;
 import net.minecraft.ChatFormatting;
@@ -26,7 +25,7 @@ import java.util.Set;
 
 /** Session debug flags toggled with {@code /stray debug <flag>}. */
 public final class StrayDebug {
-	private static final Set<String> KNOWN = Set.of("composter", "explorer", "pest", "rogue");
+	private static final Set<String> KNOWN = Set.of("composter", "pest");
 	private static final int[] COMPOSTER_SLOTS = {2, 7};
 	private static final Map<String, Boolean> FLAGS = new LinkedHashMap<>();
 	private static String lastComposterDump = "";
@@ -76,23 +75,10 @@ public final class StrayDebug {
 		boolean next = !enabled(flag);
 		FLAGS.put(flag, next);
 		tell("Debug " + flag + " " + (next ? "on" : "off"));
-		if ("rogue".equals(flag)) {
-			tell(next
-				? "Auto rogue sword looks for a golden sword and does not wait for a dungeon start."
-				: "Auto rogue sword looks for an item named rogue after a dungeon starts.");
-		}
 		if ("pest".equals(flag)) {
 			tell(next
 				? "Pest debug shows the next loadout swap and its timer, and prints when the cooldown jumps by more than 10 seconds."
 				: "Pest debug is off.");
-		}
-		if ("explorer".equals(flag)) {
-			if (next) {
-				GreatExplorer.reset();
-			}
-			tell(next
-				? "Chest triggerbot right-clicks any chest, including ones already placed, and it works outside the Crystal Hollows. Left click stays off within half a block of that chest and comes back on stone. Powder Mining and Chest triggerbot both have to be on."
-				: "Chest triggerbot only right-clicks chests that spawn while you mine in the Crystal Hollows.");
 		}
 		if (next && "composter".equals(flag)) {
 			lastComposterDump = "";

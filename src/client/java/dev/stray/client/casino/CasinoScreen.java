@@ -1710,11 +1710,7 @@ public final class CasinoScreen extends Screen {
 	public boolean keyPressed(KeyEvent event) {
 		int key = event.key();
 		if (focus >= 0) {
-			if (key == InputConstants.KEY_BACKSPACE) {
-				String v = fields[focus];
-				if (!v.isEmpty()) {
-					fields[focus] = v.substring(0, v.length() - 1);
-				}
+			if (dev.stray.client.ui.TextKeys.key(event, field(focus))) {
 				return true;
 			}
 			if (key == InputConstants.KEY_RETURN || key == InputConstants.KEY_NUMPADENTER) {
@@ -1799,6 +1795,9 @@ public final class CasinoScreen extends Screen {
 		if (focus < 0) {
 			return super.charTyped(event);
 		}
+		if (dev.stray.client.ui.TextKeys.takeSelection(field(focus).key())) {
+			fields[focus] = "";
+		}
 		String s = event.codepointAsString();
 		String v = fields[focus];
 		if (focus == 2) {
@@ -1811,6 +1810,18 @@ public final class CasinoScreen extends Screen {
 			fields[focus] = v + "000";
 		}
 		return true;
+	}
+
+	/** Field {@code index} for the shared text keys: names take [A-Za-z0-9_], amounts take digits. */
+	private dev.stray.client.ui.TextKeys.Field field(int index) {
+		boolean name = index == 2;
+		return new dev.stray.client.ui.TextKeys.Field(
+			"casino-" + index,
+			() -> fields[index],
+			v -> fields[index] = v,
+			name ? 16 : 12,
+			raw -> dev.stray.client.ui.TextKeys.singleLine(raw).replaceAll(name ? "[^A-Za-z0-9_]" : "[^0-9]", "")
+		);
 	}
 
 	// ================================================================== account

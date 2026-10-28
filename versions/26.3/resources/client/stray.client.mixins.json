@@ -3,7 +3,6 @@
 	"package": "dev.stray.client.mixin",
 	"compatibilityLevel": "JAVA_25",
 	"client": [
-		"AbstractArrowMixin",
 		"EntityRenderDispatcherMixin",
 		"ParticleEngineMixin",
 		"AbstractButtonMixin",

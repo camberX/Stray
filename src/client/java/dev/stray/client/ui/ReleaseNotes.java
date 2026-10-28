@@ -16,8 +16,9 @@ public final class ReleaseNotes {
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
 		new Entry("1.5.76", new String[]{
-			"Pingless break keeps vanilla's short pause between blocks again. Skipping it made you start the next block sooner than a normal client can.",
-			"Auto rogue and Great Explorer swing after a right-click only when vanilla would, so the server sees the same packets as a normal click."
+			"Removed: Pingless break, Auto rogue sword, Hitsound (with the hitmarker and mage beam hits), and Powder Mining's Chest Aim and chest triggerbot. Chest ESP stays.",
+			"Text fields: Ctrl+A selects everything (typing or pasting replaces it), Ctrl+C copies, Ctrl+X cuts, Ctrl+V pastes and Ctrl+Backspace deletes the last word. The shortcuts follow your keyboard layout.",
+			"The Combat tab now holds Party stats and the Auto clicker."
 		}),
 		new Entry("1.5.75", new String[]{
 			"Typing works again in Stray's text fields on 26.3 (nick hider, hex colour, search, cape URL and the other menus).",

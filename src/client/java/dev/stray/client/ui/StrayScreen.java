@@ -3,7 +3,6 @@ package dev.stray.client.ui;
 import com.mojang.blaze3d.platform.InputConstants;
 import dev.stray.client.StrayClient;
 import dev.stray.client.combat.AutoClicker;
-import dev.stray.client.combat.Hitsound;
 import dev.stray.client.combat.OdinClicks;
 import dev.stray.client.config.EntityKind;
 import dev.stray.client.config.EntityVisuals;
@@ -112,8 +111,7 @@ public class StrayScreen extends Screen {
 		PLAYERS("Players", Group.ESP),
 		CATALOG("Mobs", Group.ESP),
 		STARS("Stars", Group.ESP),
-		COMBAT("Hitsound", Group.COMBAT),
-		ASSIST("Assist", Group.COMBAT),
+		COMBAT("Combat", Group.COMBAT),
 		OVERLAY("Widgets", Group.HUD),
 		MEDIA("Media", Group.HUD),
 		BARS("Vanilla", Group.HUD),
@@ -146,7 +144,6 @@ public class StrayScreen extends Screen {
 		FOG("Fog", 5),
 		VIEW("Aspect", 3),
 		MOTION("Motion blur", 3),
-		HITSOUND("Hitsound", 3),
 		HELD_ITEM("Held item", 7),
 		FILL("Shader", 8),
 		AUTO_CLICKER("Auto clicker", 8),
@@ -155,7 +152,7 @@ public class StrayScreen extends Screen {
 		MOB("Mob glow", 3),
 		STAR("Star mobs", 6),
 		BLOCK("Block outline", 1),
-		CHEST("Powder Mining", 7),
+		CHEST("Powder Mining", 4),
 		FAIRY("Fairy souls", 1),
 		MARKS("Block marks", 5),
 		PATHS("Paths", 5),
@@ -282,19 +279,9 @@ public class StrayScreen extends Screen {
 		new SearchEntry("Thunder", Tab.AMBIENCE, "Ambience"),
 		new SearchEntry("Precipitation", Tab.AMBIENCE, "Ambience"),
 		new SearchEntry("Rain gradient", Tab.AMBIENCE, "Ambience"),
-		new SearchEntry("Combat", Tab.COMBAT, "Hitsound"),
-		new SearchEntry("Hitsound", Tab.COMBAT, "Hitsound"),
-		new SearchEntry("Melee hitsound", Tab.COMBAT, "Hitsound"),
-		new SearchEntry("Arrow hitsound", Tab.COMBAT, "Hitsound"),
-		new SearchEntry("Mage beam", Tab.COMBAT, "Hitsound"),
-		new SearchEntry("Mage hitsound", Tab.COMBAT, "Hitsound"),
-		new SearchEntry("Hitmarker", Tab.COMBAT, "Hitsound"),
-		new SearchEntry("Hitmarker scale", Tab.COMBAT, "Hitsound"),
-		new SearchEntry("Hit volume", Tab.COMBAT, "Hitsound"),
-		new SearchEntry("Hit pitch", Tab.COMBAT, "Hitsound"),
-		new SearchEntry("Auto rogue sword", Tab.ASSIST, "Assist"),
-		new SearchEntry("Party stats", Tab.ASSIST, "Assist"),
-		new SearchEntry("Auto clicker", Tab.ASSIST, "Assist"),
+		new SearchEntry("Combat", Tab.COMBAT, "Combat"),
+		new SearchEntry("Party stats", Tab.COMBAT, "Combat"),
+		new SearchEntry("Auto clicker", Tab.COMBAT, "Combat"),
 		new SearchEntry("Command rings", Tab.TOOLS, "Tools"),
 		new SearchEntry("Show rings", Tab.TOOLS, "Tools"),
 		new SearchEntry("Command ring", Tab.TOOLS, "Tools"),
@@ -306,8 +293,8 @@ public class StrayScreen extends Screen {
 		new SearchEntry("AOTV", Tab.TOOLS, "Tools"),
 		new SearchEntry("Etherwarp", Tab.TOOLS, "Tools"),
 		new SearchEntry("Diamond shovel", Tab.TOOLS, "Tools"),
-		new SearchEntry("Autoclicker", Tab.ASSIST, "Assist"),
-		new SearchEntry("Terminator", Tab.ASSIST, "Assist"),
+		new SearchEntry("Autoclicker", Tab.COMBAT, "Combat"),
+		new SearchEntry("Terminator", Tab.COMBAT, "Combat"),
 		new SearchEntry("Auto experiments", Tab.MENUS, "Misc"),
 		new SearchEntry("Superpairs", Tab.MENUS, "Misc"),
 		new SearchEntry("Auto superpairs", Tab.MENUS, "Misc"),
@@ -376,8 +363,6 @@ public class StrayScreen extends Screen {
 		new SearchEntry("Fairy soul ESP", Tab.ESP, "World"),
 		new SearchEntry("Fairy soul tracker", Tab.ESP, "World"),
 		new SearchEntry("Chest tracers", Tab.HOLLOWS, "Hollows"),
-		new SearchEntry("Chest aim speed", Tab.HOLLOWS, "Hollows"),
-		new SearchEntry("Chest triggerbot", Tab.HOLLOWS, "Hollows"),
 		new SearchEntry("Mobs", Tab.CATALOG, "Mobs"),
 		new SearchEntry("Node ESP", Tab.NODES, "Nodes"),
 		new SearchEntry("Nametags", Tab.PLAYERS, "Players"),
@@ -572,7 +557,6 @@ public class StrayScreen extends Screen {
 		new SearchEntry("Scatha timer", Tab.HOLLOWS, "Hollows"),
 		new SearchEntry("Route miner", Tab.HOLLOWS, "Hollows"),
 		new SearchEntry("Powder Mining", Tab.HOLLOWS, "Hollows"),
-		new SearchEntry("Pingless break", Tab.MINING, "Mining"),
 		new SearchEntry("MF Ruby Route", Tab.HOLLOWS, "Hollows"),
 		new SearchEntry("Ruby route", Tab.HOLLOWS, "Hollows"),
 		new SearchEntry("Focus mode", Tab.HOLLOWS, "Hollows"),
@@ -1264,7 +1248,8 @@ public class StrayScreen extends Screen {
 		mobFieldW = innerW(width);
 		boolean hoverSearch = GuiDraw.hovered(mouseX, mouseY, mobFieldX, mobFieldY, mobFieldW, 14);
 		ClickLook.panel(graphics, mobFieldX, mobFieldY, mobFieldW, 14, 5, mobSearchFocused || hoverSearch ? Theme.CARD_HOVER : Theme.PANEL, mobSearchFocused ? Theme.ACCENT : Theme.LINE);
-		String shown = mobQuery.isEmpty() && !mobSearchFocused ? "Search mobs..." : mobQuery + (mobSearchFocused ? "|" : "");
+		markIf(mobSearchFocused, graphics, mobFieldX, mobFieldY, mobFieldW, 14);
+		String shown = mobQuery.isEmpty() && !mobSearchFocused ? "Search mobs..." : mobQuery + caret(mobSearchFocused);
 		GuiDraw.menu(graphics, font, clip(font, shown, (int) mobFieldW - 10), mobFieldX + 5, GuiDraw.middle(mobFieldY, 14), mobQuery.isEmpty() && !mobSearchFocused ? fade() : ink());
 		hits.add(new Hit(mobFieldX, mobFieldY, mobFieldW, 14, () -> {
 			mobSearchFocused = true;
@@ -1439,9 +1424,10 @@ public class StrayScreen extends Screen {
 		nickFieldW = iw;
 		boolean hoverNick = GuiDraw.hovered(mouseX, mouseY, rx, y, iw, 16);
 		ClickLook.panel(graphics, rx, y, iw, 16, 5, nickFocused || hoverNick ? Theme.CARD_HOVER : Theme.CARD, nickFocused ? Theme.ACCENT : Theme.LINE);
+		markIf(nickFocused, graphics, rx, y, iw, 16);
 		NickHider.suppress();
 		String raw = config.nick == null ? "" : config.nick;
-		String shown = raw.isEmpty() && !nickFocused ? "Nick  (&6Name)" : raw + (nickFocused ? "|" : "");
+		String shown = raw.isEmpty() && !nickFocused ? "Nick  (&6Name)" : raw + caret(nickFocused);
 		GuiDraw.menu(graphics, font, clip(font, shown, (int) iw - 12), rx + 5, GuiDraw.middle(y, 16), raw.isEmpty() && !nickFocused ? Theme.MUTED : Theme.TEXT);
 		NickHider.resume();
 		hits.add(new Hit(rx, y, iw, 16, () -> {
@@ -1475,8 +1461,9 @@ public class StrayScreen extends Screen {
 		stealFieldW = iw;
 		boolean hoverSteal = GuiDraw.hovered(mouseX, mouseY, rx, y, iw, ROW);
 		ClickLook.panel(graphics, rx, y, iw, ROW, 5, stealFocused || hoverSteal ? Theme.CARD_HOVER : Theme.CARD, stealFocused ? Theme.ACCENT : Theme.LINE);
+		markIf(stealFocused, graphics, rx, y, iw, ROW);
 		NickHider.suppress();
-		String stealShown = stealDraft.isEmpty() && !stealFocused ? "Username, Enter to steal" : stealDraft + (stealFocused ? "|" : "");
+		String stealShown = stealDraft.isEmpty() && !stealFocused ? "Username, Enter to steal" : stealDraft + caret(stealFocused);
 		GuiDraw.menu(graphics, font, clip(font, stealShown, (int) iw - 12), rx + 5, GuiDraw.middle(y, ROW), stealDraft.isEmpty() && !stealFocused ? Theme.MUTED : Theme.TEXT);
 		NickHider.resume();
 		hits.add(new Hit(rx, y, iw, ROW, () -> {
@@ -1555,8 +1542,9 @@ public class StrayScreen extends Screen {
 		capeFieldW = iw;
 		boolean hoverField = GuiDraw.hovered(mouseX, mouseY, rx, y, iw, ROW);
 		ClickLook.panel(graphics, rx, y, iw, ROW, 4, capeFocused || hoverField ? Theme.CARD_HOVER : Theme.CARD, capeFocused ? Theme.ACCENT : Theme.LINE);
+		markIf(capeFocused, graphics, rx, y, iw, ROW);
 		NickHider.suppress();
-		String shown = capeUrlDraft.isEmpty() && !capeFocused ? "https://...png" : capeUrlDraft + (capeFocused ? "|" : "");
+		String shown = capeUrlDraft.isEmpty() && !capeFocused ? "https://...png" : capeUrlDraft + caret(capeFocused);
 		GuiDraw.menu(graphics, font, clip(font, shown, (int) iw - 10), rx + 5, GuiDraw.middle(y, ROW), capeUrlDraft.isEmpty() && !capeFocused ? Theme.MUTED : Theme.TEXT);
 		NickHider.resume();
 		hits.add(new Hit(rx, y, iw, ROW, () -> {
@@ -1838,8 +1826,9 @@ public class StrayScreen extends Screen {
 		searchFieldX = searchX;
 		searchFieldW = searchW;
 		ControlChrome.search(graphics, searchX, y, searchW, 22);
+		markIf(searchOpen, graphics, searchX, y, searchW, 22);
 		GuiDraw.icon(graphics, font, MenuFont.SEARCH, searchX + 8, GuiDraw.middle(y, 22), ControlChrome.muted());
-		String shown = searchQuery.isEmpty() ? "Search" : searchQuery + (searchOpen ? "|" : "");
+		String shown = searchQuery.isEmpty() ? "Search" : searchQuery + caret(searchOpen);
 		GuiDraw.menu(graphics, font, clip(font, shown, (int) searchW - 28), searchX + 22, GuiDraw.middle(y, 22), searchQuery.isEmpty() ? ControlChrome.muted() : ControlChrome.text());
 		hits.add(new Hit(searchX, y, searchW, 22, () -> {
 			searchOpen = true;
@@ -1884,7 +1873,7 @@ public class StrayScreen extends Screen {
 		return switch (value) {
 			case WORLD, CAMERA -> MenuFont.GLOBE;
 			case AMBIENCE -> MenuFont.CLOUD;
-			case COMBAT, ASSIST -> MenuFont.SWORD;
+			case COMBAT -> MenuFont.SWORD;
 			case ESP, PLAYERS, CATALOG, STARS -> MenuFont.EYE;
 			case OVERLAY, MEDIA -> MenuFont.DISPLAY;
 			case BARS -> MenuFont.BARS;
@@ -1923,7 +1912,8 @@ public class StrayScreen extends Screen {
 
 		if (searchT > 0.08f) {
 			ClickLook.panel(graphics, searchFieldX, y, searchFieldW, 14, 5, Theme.CARD_HOVER, Theme.ACCENT);
-			String shown = searchQuery.isEmpty() ? "Search settings..." : searchQuery + (searchOpen ? "|" : "");
+			markIf(searchOpen, graphics, searchFieldX, y, searchFieldW, 14);
+			String shown = searchQuery.isEmpty() ? "Search settings..." : searchQuery + caret(searchOpen);
 			int color = searchQuery.isEmpty() ? Theme.MUTED : Theme.TEXT;
 			GuiDraw.menu(graphics, font, clip(font, shown, (int) searchFieldW - 10), searchFieldX + 6, labelY, color);
 			hits.add(new Hit(searchFieldX, y, searchFieldW, 14, () -> searchOpen = true));
@@ -2199,7 +2189,8 @@ public class StrayScreen extends Screen {
 		if (fontSearchFocused || searchHover) {
 			GuiDraw.rounded(graphics, x + 1, searchY + 1, w - 2, FONT_SEARCH_H - 1, 4, Theme.CARD_HOVER);
 		}
-		String shown = fontQuery.isEmpty() ? (fontSearchFocused ? "|" : "Search fonts") : fontQuery + (fontSearchFocused ? "|" : "");
+		markIf(fontSearchFocused, graphics, x, searchY, w, FONT_SEARCH_H);
+		String shown = fontQuery.isEmpty() ? (fontSearchFocused ? caret(true) : "Search fonts") : fontQuery + caret(fontSearchFocused);
 		GuiDraw.menu(graphics, font, clip(font, shown, (int) w - 10), x + 5, GuiDraw.middle(searchY, FONT_SEARCH_H), fontQuery.isEmpty() && !fontSearchFocused ? Theme.MUTED : Theme.TEXT);
 		hits.add(new Hit(x, searchY, w, FONT_SEARCH_H, () -> fontSearchFocused = true));
 		List<String> matches = fontMatches();
@@ -2374,23 +2365,7 @@ public class StrayScreen extends Screen {
 				toggle(graphics, font, rx, y, iw, mouseX, mouseY, "Backwards walk", config.legacyBackwardsWalk, v -> config.legacyBackwardsWalk = v);
 			}
 			case COMBAT -> {
-				float y = featureCard(graphics, font, left, top, col, cardHeight(5), "Hitsound");
-				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Enable", config.hitsoundEnabled, v -> {
-					config.hitsoundEnabled = v;
-					if (v) {
-						Hitsound.playPreview();
-					}
-				}, Feature.HITSOUND);
-				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Melee", config.hitsoundMelee, v -> config.hitsoundMelee = v);
-				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Arrows", config.hitsoundArrows, v -> config.hitsoundArrows = v);
-				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Mage beam", config.hitsoundMage, v -> config.hitsoundMage = v);
-				toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Hitmarker", config.hitmarkerEnabled, v -> config.hitmarkerEnabled = v);
-
-				float rogueY = top + cardHeight(5) + 8;
-				y = featureCard(graphics, font, left, rogueY, col, cardHeight(1), "Auto rogue sword");
-				toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Enable", config.autoRogueEnabled, v -> config.autoRogueEnabled = v);
-				float partyY = rogueY + cardHeight(1) + 8;
-				y = featureCard(graphics, font, left, partyY, col, cardHeight(1), "Party stats");
+				float y = featureCard(graphics, font, left, top, col, cardHeight(1), "Party stats");
 				toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Join messages", config.partyFinderStats, v -> config.partyFinderStats = v);
 
 				float clickerH = fitH(top, cardHeight(1 + autoClickerFieldRows()));
@@ -2502,13 +2477,12 @@ public class StrayScreen extends Screen {
 				statRow(graphics, font, rx, y, iw, "Ping", HudStats.pingLabel());
 			}
 			case MINING -> {
-				float 				y = featureCard(graphics, font, left, top, col, cardHeight(10), "Mining");
+				float 				y = featureCard(graphics, font, left, top, col, cardHeight(9), "Mining");
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Mining HUD", config.miningHudEnabled, v -> config.miningHudEnabled = v, Feature.MINING);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Titanium ESP", config.titaniumEsp, v -> config.titaniumEsp = v, Feature.TITANIUM);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "CH waypoints", config.crystalHollowsWaypoints, v -> config.crystalHollowsWaypoints = v, Feature.CRYSTAL);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Route miner", config.routeMiner, v -> config.routeMiner = v, Feature.ROUTE);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Powder Mining", config.powderMiningEnabled, v -> config.powderMiningEnabled = v, Feature.CHEST);
-				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Pingless break", config.pinglessBreak, v -> config.pinglessBreak = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "CH map", config.crystalHollowsMap, v -> config.crystalHollowsMap = v, Feature.CH_MAP);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Metal detector", config.metalDetectorSolver, v -> config.metalDetectorSolver = v, Feature.METAL);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Robot part alert", config.nucleusAlertParts, v -> config.nucleusAlertParts = v);
@@ -2604,28 +2578,8 @@ public class StrayScreen extends Screen {
 				controlCard(graphics, font, left, y, col, mouseX, mouseY, "Ambience", config.ambienceEnabled, v -> config.ambienceEnabled = v, Feature.AMBIENCE);
 			}
 			case COMBAT -> {
-				float y = sectionLabel(graphics, font, left, top, "Feedback");
-				boolean hitsound = config.hitsoundEnabled;
-				float hitH = cardHeight(hitsound ? 7 : 0);
-				float hitInner = featureCard(graphics, font, left, y, col, hitH, "Hitsound", hitsound, v -> {
-					config.hitsoundEnabled = v;
-					if (v) {
-						Hitsound.playPreview();
-					}
-				}, mouseX, mouseY);
-				if (hitsound) {
-					hitInner = toggle(graphics, font, ix, hitInner, iw, mouseX, mouseY, "Melee", config.hitsoundMelee, v -> config.hitsoundMelee = v);
-					hitInner = toggle(graphics, font, ix, hitInner, iw, mouseX, mouseY, "Arrows", config.hitsoundArrows, v -> config.hitsoundArrows = v);
-					hitInner = toggle(graphics, font, ix, hitInner, iw, mouseX, mouseY, "Mage beam", config.hitsoundMage, v -> config.hitsoundMage = v);
-					hitInner = toggle(graphics, font, ix, hitInner, iw, mouseX, mouseY, "Hitmarker", config.hitmarkerEnabled, v -> config.hitmarkerEnabled = v);
-					drawFeatureFields(graphics, font, mouseX, mouseY, ix, hitInner, iw, Feature.HITSOUND);
-				}
-			}
-			case ASSIST -> {
-				float aim = sectionLabel(graphics, font, left, top, "Aim");
-				float y;
-				float rogueY = toggleCard(graphics, font, left, aim, col, mouseX, mouseY, "Auto rogue sword", config.autoRogueEnabled, v -> config.autoRogueEnabled = v);
-				toggleCard(graphics, font, left, rogueY, col, mouseX, mouseY, "Party stats", config.partyFinderStats, v -> config.partyFinderStats = v);
+				float y = sectionLabel(graphics, font, left, top, "Party");
+				toggleCard(graphics, font, left, y, col, mouseX, mouseY, "Party stats", config.partyFinderStats, v -> config.partyFinderStats = v);
 
 				y = sectionLabel(graphics, font, right, top, "Clicks");
 				float clickerH = config.autoClickerEnabled ? fitH(y, cardHeight(autoClickerFieldRows())) : cardHeight(0);
@@ -2807,7 +2761,6 @@ public class StrayScreen extends Screen {
 			case MINING -> {
 				float y = sectionLabel(graphics, font, left, top, "Dwarven mines");
 				y = controlCard(graphics, font, left, y, col, mouseX, mouseY, "Mining HUD", config.miningHudEnabled, v -> config.miningHudEnabled = v, Feature.MINING);
-				y = toggleCard(graphics, font, left, y, col, mouseX, mouseY, "Pingless break", config.pinglessBreak, v -> config.pinglessBreak = v);
 				controlCard(graphics, font, left, y, col, mouseX, mouseY, "Titanium ESP", config.titaniumEsp, v -> config.titaniumEsp = v, Feature.TITANIUM);
 				drawMiningLive(graphics, font, right, top, col, rx, iw);
 			}
@@ -3260,7 +3213,7 @@ public class StrayScreen extends Screen {
 		float row = rowH();
 		boolean focused = pestAlertFocus == focusId;
 		String shown = value == null ? "" : value;
-		String text = (shown.isEmpty() ? label : label + "  " + shown) + (focused ? "|" : "");
+		String text = (shown.isEmpty() ? label : label + "  " + shown) + caret(focused);
 		clickField(graphics, font, x, y, w, mouseX, mouseY, text, focused, shown.isEmpty() && !focused, () -> pestAlertFocus = focusId);
 		if (!pestAlertLive) {
 			pestAlertX = x;
@@ -3278,68 +3231,10 @@ public class StrayScreen extends Screen {
 		return y + row;
 	}
 
-	private void editPestAlert(int key, boolean paste, String typed) {
-		if (pestAlertFocus == 4) {
-			StrayConfig config = StrayConfig.get();
-			String current = config.slayer.coopMembers == null ? "" : config.slayer.coopMembers;
-			if (paste) {
-				String clip = minecraft.keyboardHandler.getClipboard();
-				if (clip != null) {
-					current += clip.replace("\n", "").replace("\r", "");
-				}
-			} else if (typed != null) {
-				current += typed;
-			} else if (key == InputConstants.KEY_BACKSPACE && !current.isEmpty()) {
-				current = current.substring(0, current.length() - 1);
-			}
-			config.slayer.coopMembers = current.length() > 96 ? current.substring(0, 96) : current;
-			return;
-		}
-		if (pestAlertFocus == 3) {
-			editSwapAt(key, paste, typed);
-			return;
-		}
-		if (pestAlertFocus != 1 && pestAlertFocus != 2) {
-			return;
-		}
+	/** Keeps digits and one colon, at most 5 characters, and updates the parsed seconds. */
+	private static void setSwapAt(String value) {
 		StrayConfig config = StrayConfig.get();
-		String current = pestAlertFocus == 1 ? config.pestCooldownAlert : config.pestCooldownAlertSub;
-		if (current == null) {
-			current = "";
-		}
-		if (paste) {
-			String clip = minecraft.keyboardHandler.getClipboard();
-			if (clip != null && !clip.isBlank()) {
-				current += clip.replace("\n", "").replace("\r", "");
-			}
-		} else if (typed != null) {
-			current += typed;
-		} else if (key == InputConstants.KEY_BACKSPACE && !current.isEmpty()) {
-			current = current.substring(0, current.length() - 1);
-		}
-		if (current.length() > 48) {
-			current = current.substring(0, 48);
-		}
-		if (pestAlertFocus == 1) {
-			config.pestCooldownAlert = current;
-		} else {
-			config.pestCooldownAlertSub = current;
-		}
-	}
-
-	private void editSwapAt(int key, boolean paste, String typed) {
-		StrayConfig config = StrayConfig.get();
-		String current = config.pestLoadoutAt == null ? "" : config.pestLoadoutAt;
-		if (paste) {
-			String clip = minecraft.keyboardHandler.getClipboard();
-			if (clip != null && !clip.isBlank()) {
-				current += clip.replace("\n", "").replace("\r", "").trim();
-			}
-		} else if (typed != null) {
-			current += typed;
-		} else if (key == InputConstants.KEY_BACKSPACE && !current.isEmpty()) {
-			current = current.substring(0, current.length() - 1);
-		}
+		String current = value == null ? "" : value;
 		StringBuilder kept = new StringBuilder();
 		boolean colon = false;
 		for (int i = 0; i < current.length() && kept.length() < 5; i++) {
@@ -3515,7 +3410,7 @@ public class StrayScreen extends Screen {
 	private void drawNickFields(GuiGraphicsExtractor graphics, Font font, int mouseX, int mouseY, float x, float y, float w) {
 		StrayConfig config = StrayConfig.get();
 		String raw = config.nick == null ? "" : config.nick;
-		String shown = raw.isEmpty() && !nickFocused ? "Nick" : raw + (nickFocused ? "|" : "");
+		String shown = raw.isEmpty() && !nickFocused ? "Nick" : raw + caret(nickFocused);
 		y = clickField(graphics, font, x, y, w, mouseX, mouseY, shown, nickFocused, raw.isEmpty() && !nickFocused, () -> {
 			nickFocused = true;
 			stealFocused = false;
@@ -3527,7 +3422,7 @@ public class StrayScreen extends Screen {
 		if (!stealFocused) {
 			stealDraft = NickSteal.target();
 		}
-		String stealShown = stealDraft.isEmpty() && !stealFocused ? "Steal name" : stealDraft + (stealFocused ? "|" : "");
+		String stealShown = stealDraft.isEmpty() && !stealFocused ? "Steal name" : stealDraft + caret(stealFocused);
 		y = clickField(graphics, font, x, y, w, mouseX, mouseY, stealShown, stealFocused, stealDraft.isEmpty() && !stealFocused, () -> {
 			stealFocused = true;
 			nickFocused = false;
@@ -3560,7 +3455,7 @@ public class StrayScreen extends Screen {
 				capeUrlDraft = "";
 			}
 		}
-		String shown = capeUrlDraft.isEmpty() && !capeFocused ? "https://...png" : capeUrlDraft + (capeFocused ? "|" : "");
+		String shown = capeUrlDraft.isEmpty() && !capeFocused ? "https://...png" : capeUrlDraft + caret(capeFocused);
 		y = clickField(graphics, font, x, y, w, mouseX, mouseY, shown, capeFocused, capeUrlDraft.isEmpty() && !capeFocused, () -> {
 			capeFocused = true;
 			nickFocused = false;
@@ -3594,6 +3489,7 @@ public class StrayScreen extends Screen {
 		float row = rowH();
 		boolean hover = GuiDraw.hovered(mouseX, mouseY, x, y, w, row);
 		ClickLook.panel(graphics, x, y + 1, w, row - 2, 4, focused || hover ? Theme.CARD_HOVER : Theme.CARD, focused ? Theme.ACCENT : Theme.LINE);
+		markIf(focused, graphics, x, y + 1, w, row - 2);
 		GuiDraw.menu(graphics, font, clip(font, shown, (int) w - 8), x + 4, GuiDraw.middle(y, row), placeholder ? fade() : ink());
 		hits.add(new Hit(x, y, w, row, focus));
 		return y + row;
@@ -3805,11 +3701,6 @@ public class StrayScreen extends Screen {
 				y = slider(graphics, font, ix, y, iw, "Strength", String.format(Locale.ROOT, "%.1f", config.motionBlurStrength), config.motionBlurStrength / 2.0f, v -> config.motionBlurStrength = StrayConfig.clamp(v * 2.0f, 0f, 2f));
 				toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Refresh scale", config.motionBlurRefreshScale, v -> config.motionBlurRefreshScale = v);
 			}
-			case HITSOUND -> {
-				y = slider(graphics, font, ix, y, iw, "Volume", Math.round(config.hitsoundVolume * 100) + "%", config.hitsoundVolume, v -> config.hitsoundVolume = StrayConfig.clamp(v, 0f, 1f));
-				y = slider(graphics, font, ix, y, iw, "Pitch", String.format(Locale.ROOT, "%.2f", config.hitsoundPitch), (config.hitsoundPitch - 0.50f) / 1.00f, v -> config.hitsoundPitch = StrayConfig.clamp(0.50f + v, 0.50f, 1.50f));
-				slider(graphics, font, ix, y, iw, "Marker", Math.round(config.hitmarkerScale * 100) + "%", (config.hitmarkerScale - 0.50f) / 1.50f, v -> config.hitmarkerScale = StrayConfig.clampHudScale(0.50f + v * 1.50f));
-			}
 			case HELD_ITEM -> {
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Silhouette", config.heldItemShaderSilhouette, v -> config.heldItemShaderSilhouette = v);
 				y = cycle(graphics, font, ix, y, iw, mouseX, mouseY, "Style", config.heldItemShaderStyleLabel(), config::cycleHeldItemShaderStyle);
@@ -3884,10 +3775,7 @@ public class StrayScreen extends Screen {
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Chest ESP", config.chestEspEnabled, v -> config.chestEspEnabled = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Tracers", config.chestEspTracers, v -> config.chestEspTracers = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Through walls", config.chestEspThroughWalls, v -> config.chestEspThroughWalls = v);
-				y = slider(graphics, font, ix, y, iw, "Speed", Math.round(config.chestAimSpeed * 100) + "%", (config.chestAimSpeed - 0.25f) / 1.75f, v -> config.chestAimSpeed = StrayConfig.clamp(0.25f + v * 1.75f, 0.25f, 2.00f));
-				y = bindRow(graphics, font, ix, y, iw, mouseX, mouseY, "Chest Aim", 6, OdinClicks.parseKey(config.chestAimKey));
-				y = colorRow(graphics, font, ix, y, iw, mouseX, mouseY, "Color", config.chestEspRgb, PickerTarget.CHEST);
-				toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Chest triggerbot", config.greatExplorerEnabled, v -> config.greatExplorerEnabled = v);
+				colorRow(graphics, font, ix, y, iw, mouseX, mouseY, "Color", config.chestEspRgb, PickerTarget.CHEST);
 			}
 			case FAIRY -> toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Through walls", config.fairySoulThroughWalls, v -> config.fairySoulThroughWalls = v);
 			case MARKS -> {
@@ -4240,7 +4128,6 @@ public class StrayScreen extends Screen {
 			case 3 -> config.openGuiKey = name;
 			case 4 -> config.openLoadoutsKey = name;
 			case 5 -> config.openWardrobeKey = name;
-			case 6 -> config.chestAimKey = name;
 			case 7 -> config.openProfileKey = name;
 			case 8 -> config.blockMarkEditKey = name;
 			case 9 -> config.pathRecordKey = name;
@@ -4552,7 +4439,8 @@ public class StrayScreen extends Screen {
 		hexFieldW = fieldW;
 		boolean hexHover = StrayConfig.get().clickGui && GuiDraw.hovered(ClickGui.pointerX(), ClickGui.pointerY(), svX, fieldY, fieldW, fieldH);
 		ClickLook.panel(graphics, svX, fieldY, fieldW, fieldH, 4, hexFocused || hexHover ? Theme.CARD_HOVER : Theme.CARD, hexFocused ? Theme.ACCENT : Theme.LINE);
-		String hexShown = hexFocused ? "#" + hexDraft + ((System.currentTimeMillis() / 500L) % 2L == 0L ? "|" : "") : hex(current);
+		markIf(hexFocused, graphics, svX, fieldY, fieldW, fieldH);
+		String hexShown = hexFocused ? "#" + hexDraft + (!TextKeys.isSelected(hexField.key()) && (System.currentTimeMillis() / 500L) % 2L == 0L ? "|" : "") : hex(current);
 		GuiDraw.menu(graphics, font, hexShown, svX + 4, GuiDraw.middle(fieldY, fieldH), hexFocused ? Theme.TEXT : Theme.MUTED);
 		hits.add(new Hit(svX, fieldY, fieldW, fieldH, () -> {
 			hexFocused = true;
@@ -4785,6 +4673,7 @@ public class StrayScreen extends Screen {
 
 	@Override
 	public boolean mouseClicked(MouseButtonEvent event, boolean doubled) {
+		TextKeys.clear();
 		if (bindListen != 0) {
 			captureBind(InputConstants.Type.MOUSE.getOrCreate(event.button()));
 			return true;
@@ -4974,59 +4863,20 @@ public class StrayScreen extends Screen {
 				hexFocused = false;
 				return true;
 			}
-			if (event.key() == InputConstants.KEY_BACKSPACE) {
-				if (!hexDraft.isEmpty()) {
-					hexDraft = hexDraft.substring(0, hexDraft.length() - 1);
-				}
-				return true;
-			}
-			if (event.key() == InputConstants.KEY_V && event.hasControlDown()) {
-				String clip = minecraft.keyboardHandler.getClipboard();
-				if (clip != null) {
-					hexDraft = clip.trim().replace("#", "").replaceAll("[^0-9a-fA-F]", "");
-					if (hexDraft.length() > 6) {
-						hexDraft = hexDraft.substring(0, 6);
-					}
-					if (commitHex()) {
-						hexFocused = false;
-					}
-				}
-				return true;
-			}
 		}
-		if (StrayConfig.get().clickGui && ClickGui.mobSearchFocused()) {
-			if (event.isEscape() || event.key() == InputConstants.KEY_RETURN) {
-				ClickGui.blurMobSearch();
-				return true;
-			}
-			if (event.key() == InputConstants.KEY_BACKSPACE) {
-				ClickGui.backspaceMobSearch();
-				return true;
-			}
-			if (event.key() == InputConstants.KEY_V && event.hasControlDown()) {
-				String clip = minecraft.keyboardHandler.getClipboard();
-				if (clip != null && !clip.isBlank()) {
-					ClickGui.typeMobSearch(clip.replace("\n", "").replace("\r", ""));
-				}
-				return true;
-			}
+		if (StrayConfig.get().clickGui && ClickGui.mobSearchFocused() && (event.isEscape() || event.key() == InputConstants.KEY_RETURN)) {
+			ClickGui.blurMobSearch();
+			return true;
+		}
+		if (StrayConfig.get().clickGui && ClickGui.searchFocused() && (event.isEscape() || event.key() == InputConstants.KEY_RETURN)) {
+			ClickGui.blurSearch();
+			return true;
+		}
+		TextKeys.Field field = bindListen != 0 ? null : focusedField();
+		if (field != null && TextKeys.key(event, field)) {
+			return true;
 		}
 		if (StrayConfig.get().clickGui && ClickGui.searchFocused()) {
-			if (event.isEscape() || event.key() == InputConstants.KEY_RETURN) {
-				ClickGui.blurSearch();
-				return true;
-			}
-			if (event.key() == InputConstants.KEY_BACKSPACE) {
-				ClickGui.backspaceSearch();
-				return true;
-			}
-			if (event.key() == InputConstants.KEY_V && event.hasControlDown()) {
-				String clip = minecraft.keyboardHandler.getClipboard();
-				if (clip != null && !clip.isBlank()) {
-					ClickGui.typeSearch(clip.replace("\n", "").replace("\r", ""));
-				}
-				return true;
-			}
 			return true;
 		}
 		if (bindListen != 0) {
@@ -5106,16 +4956,6 @@ public class StrayScreen extends Screen {
 				return true;
 			}
 		}
-		if (capeFocused && event.key() == InputConstants.KEY_BACKSPACE) {
-			if (!capeUrlDraft.isEmpty()) {
-				capeUrlDraft = capeUrlDraft.substring(0, capeUrlDraft.length() - 1);
-			}
-			return true;
-		}
-		if (pestAlertFocus != 0 && event.key() == InputConstants.KEY_BACKSPACE) {
-			editPestAlert(InputConstants.KEY_BACKSPACE, false, null);
-			return true;
-		}
 		if (pestAlertFocus != 0 && event.key() == InputConstants.KEY_RETURN) {
 			if (pestAlertFocus == 3) {
 				StrayConfig.get().commitPestLoadoutAt();
@@ -5123,47 +4963,9 @@ public class StrayScreen extends Screen {
 			pestAlertFocus = 0;
 			return true;
 		}
-		if (pestAlertFocus != 0 && event.key() == InputConstants.KEY_V && event.hasControlDown()) {
-			editPestAlert(0, true, null);
-			return true;
-		}
-		if (nickFocused && event.key() == InputConstants.KEY_BACKSPACE) {
-			String nick = StrayConfig.get().nick;
-			if (nick != null && !nick.isEmpty()) {
-				StrayConfig.get().nick = nick.substring(0, nick.length() - 1);
-			}
-			return true;
-		}
-		if (stealFocused && event.key() == InputConstants.KEY_BACKSPACE) {
-			if (!stealDraft.isEmpty()) {
-				stealDraft = stealDraft.substring(0, stealDraft.length() - 1);
-			}
-			return true;
-		}
 		if (stealFocused && event.key() == InputConstants.KEY_RETURN) {
 			stealFocused = false;
 			commitSteal();
-			return true;
-		}
-		if (stealFocused && event.key() == InputConstants.KEY_V && event.hasControlDown()) {
-			String clip = minecraft.keyboardHandler.getClipboard();
-			if (clip != null && !clip.isBlank()) {
-				stealDraft += clip.replace("\n", "").replace("\r", "").trim();
-			}
-			return true;
-		}
-		if (fontSearchFocused && event.key() == InputConstants.KEY_BACKSPACE) {
-			if (!fontQuery.isEmpty()) {
-				fontQuery = fontQuery.substring(0, fontQuery.length() - 1);
-				fontScroll = 0f;
-			}
-			return true;
-		}
-		if (mobSearchFocused && event.key() == InputConstants.KEY_BACKSPACE) {
-			if (!mobQuery.isEmpty()) {
-				mobQuery = mobQuery.substring(0, mobQuery.length() - 1);
-				mobScroll = 0f;
-			}
 			return true;
 		}
 		if (capeFocused && event.key() == InputConstants.KEY_RETURN) {
@@ -5173,35 +4975,6 @@ public class StrayScreen extends Screen {
 		}
 		if (nickFocused && event.key() == InputConstants.KEY_RETURN) {
 			nickFocused = false;
-			return true;
-		}
-		if (capeFocused && event.key() == InputConstants.KEY_V && event.hasControlDown()) {
-			String clip = minecraft.keyboardHandler.getClipboard();
-			if (clip != null && !clip.isBlank()) {
-				capeUrlDraft += clip.replace("\n", "").replace("\r", "").trim();
-			}
-			return true;
-		}
-		if (nickFocused && event.key() == InputConstants.KEY_V && event.hasControlDown()) {
-			String clip = minecraft.keyboardHandler.getClipboard();
-			if (clip != null && !clip.isBlank()) {
-				StrayConfig config = StrayConfig.get();
-				config.nick = (config.nick == null ? "" : config.nick) + clip.replace("\n", "").replace("\r", "");
-			}
-			return true;
-		}
-		if (fontSearchFocused && event.key() == InputConstants.KEY_V && event.hasControlDown()) {
-			String clip = minecraft.keyboardHandler.getClipboard();
-			if (clip != null && !clip.isBlank()) {
-				fontQuery += clip.replace("\n", "").replace("\r", "");
-				fontScroll = 0f;
-			}
-			return true;
-		}
-		if (searchOpen && event.key() == InputConstants.KEY_BACKSPACE) {
-			if (!searchQuery.isEmpty()) {
-				searchQuery = searchQuery.substring(0, searchQuery.length() - 1);
-			}
 			return true;
 		}
 		if (event.key() == InputConstants.KEY_F && event.hasControlDown()) {
@@ -5227,68 +5000,100 @@ public class StrayScreen extends Screen {
 
 	@Override
 	public boolean charTyped(CharacterEvent event) {
-		if (hexFocused) {
-			String typed = event.codepointAsString();
-			if (typed.matches("[0-9a-fA-F]") && hexDraft.length() < 6) {
-				hexDraft += typed.toUpperCase(Locale.ROOT);
-				if (hexDraft.length() == 6) {
-					commitHex();
-				}
+		TextKeys.Field field = bindListen != 0 ? null : focusedField();
+		if (field != null) {
+			if (event.isAllowedChatCharacter()) {
+				TextKeys.type(event.codepointAsString(), field);
 			}
-			return true;
-		}
-		if (StrayConfig.get().clickGui && ClickGui.mobSearchFocused() && event.isAllowedChatCharacter()) {
-			ClickGui.typeMobSearch(event.codepointAsString());
-			return true;
-		}
-		if (StrayConfig.get().clickGui && ClickGui.searchFocused() && event.isAllowedChatCharacter()) {
-			ClickGui.typeSearch(event.codepointAsString());
-			return true;
-		}
-		if (capeFocused && event.isAllowedChatCharacter()) {
-			capeUrlDraft += event.codepointAsString();
-			return true;
-		}
-		if (pestAlertFocus != 0 && event.isAllowedChatCharacter()) {
-			editPestAlert(0, false, event.codepointAsString());
-			return true;
-		}
-		if (nickFocused && event.isAllowedChatCharacter()) {
-			StrayConfig config = StrayConfig.get();
-			if (config.nick == null) {
-				config.nick = "";
-			}
-			if (config.nick.length() < 48) {
-				config.nick += event.codepointAsString();
-			}
-			return true;
-		}
-		if (stealFocused && event.isAllowedChatCharacter()) {
-			if (stealDraft.length() < 16) {
-				stealDraft += event.codepointAsString();
-			}
-			return true;
-		}
-		if (mobSearchFocused && event.isAllowedChatCharacter()) {
-			if (mobQuery.length() < 32) {
-				mobQuery += event.codepointAsString();
-				mobScroll = 0f;
-			}
-			return true;
-		}
-		if (fontSearchFocused && event.isAllowedChatCharacter()) {
-			if (fontQuery.length() < 48) {
-				fontQuery += event.codepointAsString();
-				fontScroll = 0f;
-			}
-			return true;
-		}
-		if (searchOpen && event.isAllowedChatCharacter()) {
-			searchQuery += event.codepointAsString();
 			return true;
 		}
 		return super.charTyped(event);
 	}
+
+	/** The text caret, hidden while the field's whole text is selected. */
+	private String caret(boolean focused) {
+		if (!focused) {
+			return "";
+		}
+		TextKeys.Field field = focusedField();
+		return field != null && TextKeys.isSelected(field.key()) ? "" : "|";
+	}
+
+	/** Selection tint on a focused field's box. */
+	private void markIf(boolean focused, GuiGraphicsExtractor graphics, float x, float y, float w, float h) {
+		TextKeys.Field field = focused ? focusedField() : null;
+		if (field != null) {
+			TextKeys.mark(graphics, field.key(), x, y, w, h);
+		}
+	}
+
+	/** The text field that has focus, in the order keys used to be routed. */
+	private TextKeys.Field focusedField() {
+		StrayConfig config = StrayConfig.get();
+		if (hexFocused) {
+			return hexField;
+		}
+		if (config.clickGui && ClickGui.mobSearchFocused()) {
+			return ClickGui.MOB_SEARCH_FIELD;
+		}
+		if (config.clickGui && ClickGui.searchFocused()) {
+			return ClickGui.SEARCH_FIELD;
+		}
+		if (capeFocused) {
+			return capeField;
+		}
+		if (pestAlertFocus == 1) {
+			return pestAlertField;
+		}
+		if (pestAlertFocus == 2) {
+			return pestAlertSubField;
+		}
+		if (pestAlertFocus == 3) {
+			return swapAtField;
+		}
+		if (pestAlertFocus == 4) {
+			return coopField;
+		}
+		if (nickFocused) {
+			return nickField;
+		}
+		if (stealFocused) {
+			return stealField;
+		}
+		if (mobSearchFocused) {
+			return mobField;
+		}
+		if (fontSearchFocused) {
+			return fontField;
+		}
+		if (searchOpen) {
+			return searchField;
+		}
+		return null;
+	}
+
+	private final TextKeys.Field hexField = new TextKeys.Field("hex", () -> hexDraft, v -> {
+		hexDraft = v;
+		if (v.length() == 6) {
+			commitHex();
+		}
+	}, 6, raw -> TextKeys.singleLine(raw).replace("#", "").replaceAll("[^0-9a-fA-F]", "").toUpperCase(Locale.ROOT));
+	private final TextKeys.Field capeField = new TextKeys.Field("cape", () -> capeUrlDraft, v -> capeUrlDraft = v, 2048, raw -> TextKeys.singleLine(raw).trim());
+	private final TextKeys.Field pestAlertField = new TextKeys.Field("pest-alert", () -> StrayConfig.get().pestCooldownAlert, v -> StrayConfig.get().pestCooldownAlert = v, 48);
+	private final TextKeys.Field pestAlertSubField = new TextKeys.Field("pest-alert-sub", () -> StrayConfig.get().pestCooldownAlertSub, v -> StrayConfig.get().pestCooldownAlertSub = v, 48);
+	private final TextKeys.Field swapAtField = new TextKeys.Field("swap-at", () -> StrayConfig.get().pestLoadoutAt, StrayScreen::setSwapAt, 5);
+	private final TextKeys.Field coopField = new TextKeys.Field("coop", () -> StrayConfig.get().slayer.coopMembers, v -> StrayConfig.get().slayer.coopMembers = v, 96);
+	private final TextKeys.Field nickField = new TextKeys.Field("nick", () -> StrayConfig.get().nick, v -> StrayConfig.get().nick = v, 48);
+	private final TextKeys.Field stealField = new TextKeys.Field("steal", () -> stealDraft, v -> stealDraft = v, 16, raw -> TextKeys.singleLine(raw).trim());
+	private final TextKeys.Field mobField = new TextKeys.Field("mob-search", () -> mobQuery, v -> {
+		mobQuery = v;
+		mobScroll = 0f;
+	}, 32);
+	private final TextKeys.Field fontField = new TextKeys.Field("font-search", () -> fontQuery, v -> {
+		fontQuery = v;
+		fontScroll = 0f;
+	}, 48);
+	private final TextKeys.Field searchField = new TextKeys.Field("search", () -> searchQuery, v -> searchQuery = v, 64);
 
 	public boolean isCapturingBind() {
 		return bindListen != 0;

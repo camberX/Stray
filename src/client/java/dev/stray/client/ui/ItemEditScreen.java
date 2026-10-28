@@ -161,6 +161,9 @@ public class ItemEditScreen extends Screen {
 			focused || hoverField ? Theme.CARD_HOVER : Theme.CARD,
 			focused ? Theme.ACCENT : Theme.LINE
 		);
+		if (focused) {
+			TextKeys.mark(graphics, "item-edit", fieldX, fieldY, fieldW, FIELD_H);
+		}
 		String shown = query.isEmpty() && !focused ? "minecraft: or sb:" : query;
 		String clipped = clipField(font, shown, cursor, (int) fieldW - 14);
 		int color = query.isEmpty() && !focused ? Theme.MUTED : Theme.TEXT;
@@ -384,6 +387,12 @@ public class ItemEditScreen extends Screen {
 				applySuggestion(suggestions.get(0));
 			return true;
 		}
+		if (TextKeys.caretKey(event, "item-edit", query, () -> {
+			query = "";
+			cursor = 0;
+		})) {
+			return true;
+		}
 		if (event.key() == InputConstants.KEY_LEFT) {
 			cursor = Math.max(0, cursor - 1);
 			blinkAt = System.currentTimeMillis();
@@ -419,7 +428,7 @@ public class ItemEditScreen extends Screen {
 			}
 			return true;
 		}
-		if (event.key() == InputConstants.KEY_V && event.hasControlDown()) {
+		if (event.isPaste()) {
 			String clip = minecraft.keyboardHandler.getClipboard();
 			if (clip != null && !clip.isBlank()) {
 				String insert = clip.replace("\n", "").replace("\r", "").trim();
@@ -427,10 +436,6 @@ public class ItemEditScreen extends Screen {
 				cursor += insert.length();
 				blinkAt = System.currentTimeMillis();
 			}
-			return true;
-		}
-		if (event.key() == InputConstants.KEY_A && event.hasControlDown()) {
-			cursor = query.length();
 			return true;
 		}
 		return super.keyPressed(event);
@@ -444,6 +449,10 @@ public class ItemEditScreen extends Screen {
 		String insert = event.codepointAsString();
 		if (insert.isEmpty() || insert.charAt(0) < 32) {
 			return true;
+		}
+		if (TextKeys.takeSelection("item-edit")) {
+			query = "";
+			cursor = 0;
 		}
 		query = query.substring(0, cursor) + insert + query.substring(cursor);
 		cursor += insert.length();

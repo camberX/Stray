@@ -239,10 +239,6 @@ public final class StrayConfig {
 	public boolean crystalHollowsRubyRoute = false;
 	public boolean routeMiner = false;
 	public boolean powderMiningEnabled = false;
-	/** Chest triggerbot inside Powder Mining. */
-	public boolean greatExplorerEnabled = false;
-	/** Skips the vanilla pause between blocks. Break speed is unchanged. */
-	public boolean pinglessBreak = false;
 	public boolean routeMinerFocus = false;
 	public boolean routeMinerRegen = false;
 	public String routeMinerGem = "ruby";
@@ -284,7 +280,6 @@ public final class StrayConfig {
 	public boolean nucleusAlertTools = false;
 	public boolean fairySoulThroughWalls = true;
 	public int fairySoulRgb = 0xE878FF;
-	public float chestAimSpeed = 1.00f;
 	public String openGuiKey = "key.keyboard.right.shift";
 	public String openLoadoutsKey = "key.keyboard.unknown";
 	public String loadoutSwapKey = "key.keyboard.unknown";
@@ -301,7 +296,6 @@ public final class StrayConfig {
 	public boolean loadoutHideDefault = true;
 	public String openWardrobeKey = "key.keyboard.unknown";
 	public String openProfileKey = "key.keyboard.unknown";
-	public String chestAimKey = "key.keyboard.unknown";
 	public String chatPeekKey = "key.keyboard.unknown";
 	public String strayPingKey = "key.keyboard.unknown";
 	public String[] menuSlotKeys = defaultMenuSlotKeys();
@@ -332,17 +326,7 @@ public final class StrayConfig {
 	public boolean npcChatClean = false;
 	public boolean strayIrcEnabled = true;
 	public boolean strayPingEnabled = true;
-	public boolean hitsoundEnabled = false;
-	public boolean hitsoundMelee = false;
-	public boolean hitsoundArrows = false;
-	public boolean hitsoundMage = false;
-	public boolean hitmarkerEnabled = false;
-	public boolean triggerbotEnabled = false;
-	public boolean autoRogueEnabled = false;
-	public boolean triggerbotPlayers = false;
-	public float triggerbotHumanize = 0.50f;
 	/** Clicks per second. 1 to 20, in steps of 0.5. */
-	public float triggerbotCps = 10f;
 	public boolean autoClickerEnabled = false;
 	public boolean autoClickerWhiteListOnly = false;
 	public boolean autoClickerAllowBreaking = false;
@@ -374,9 +358,6 @@ public final class StrayConfig {
 	public boolean superpairsSkipPets = false;
 	public boolean disabledPotionsHighlight = false;
 	public boolean sackRecipe = true;
-	public float hitmarkerScale = 1.00f;
-	public float hitsoundVolume = 0.80f;
-	public float hitsoundPitch = 1.00f;
 	public boolean legacySkullHold = false;
 	public boolean legacyBackwardsWalk = false;
 	public boolean heldItemShaderEnabled = false;
@@ -1154,7 +1135,6 @@ public final class StrayConfig {
 				if (!json.has("fairySoulRgb") || loaded.fairySoulRgb == 0) {
 					loaded.fairySoulRgb = 0xE878FF;
 				}
-				loaded.chestAimSpeed = clamp(loaded.chestAimSpeed <= 0f ? 1.00f : loaded.chestAimSpeed, 0.25f, 2.00f);
 				loaded.chestEspRgb = loaded.chestEspRgb & 0xFFFFFF;
 				if (loaded.chestEspRgb == 0) {
 					loaded.chestEspRgb = 0xF4C14E;
@@ -1200,30 +1180,6 @@ public final class StrayConfig {
 					loaded.spotifyAccessToken = "";
 				}
 				loaded.uiFont = "Minecraft";
-				if (!json.has("hitsoundEnabled")) {
-					loaded.hitsoundEnabled = false;
-				}
-				if (!json.has("hitsoundMelee")) {
-					loaded.hitsoundMelee = false;
-				}
-				if (!json.has("hitsoundArrows")) {
-					loaded.hitsoundArrows = false;
-				}
-				if (!json.has("hitsoundMage")) {
-					loaded.hitsoundMage = false;
-				}
-				if (!json.has("hitmarkerEnabled")) {
-					loaded.hitmarkerEnabled = false;
-				}
-				if (!json.has("triggerbotEnabled")) {
-					loaded.triggerbotEnabled = false;
-				}
-				if (!json.has("autoRogueEnabled")) {
-					loaded.autoRogueEnabled = false;
-				}
-				if (!json.has("triggerbotPlayers")) {
-					loaded.triggerbotPlayers = false;
-				}
 				if (!json.has("autoClickerEnabled")) {
 					loaded.autoClickerEnabled = false;
 				}
@@ -1293,7 +1249,6 @@ public final class StrayConfig {
 				}
 				loaded.openWardrobeKey = blankKey(loaded.openWardrobeKey, "key.keyboard.unknown");
 				loaded.openProfileKey = blankKey(loaded.openProfileKey, "key.keyboard.unknown");
-				loaded.chestAimKey = blankKey(loaded.chestAimKey, "key.keyboard.unknown");
 				loaded.chatPeekKey = blankKey(loaded.chatPeekKey, "key.keyboard.unknown");
 				loaded.strayPingKey = blankKey(loaded.strayPingKey, "key.keyboard.unknown");
 				loaded.menuSlotKeys = normalizeMenuSlotKeys(loaded.menuSlotKeys);
@@ -1374,14 +1329,8 @@ public final class StrayConfig {
 				if (!json.has("routeMiner")) {
 					loaded.routeMiner = loaded.crystalHollowsRubyRoute;
 				}
-				if (!json.has("greatExplorerEnabled")) {
-					loaded.greatExplorerEnabled = false;
-				}
 				if (!json.has("powderMiningEnabled")) {
-					loaded.powderMiningEnabled = loaded.chestEspEnabled || loaded.greatExplorerEnabled;
-				}
-				if (!json.has("pinglessBreak")) {
-					loaded.pinglessBreak = false;
+					loaded.powderMiningEnabled = loaded.chestEspEnabled;
 				}
 				if (!json.has("routeMinerFocus")) {
 					loaded.routeMinerFocus = false;
@@ -1479,21 +1428,6 @@ public final class StrayConfig {
 				loaded.playerFillStyle = json.has("playerFillStyle")
 					? normalizeHeldItemShaderStyle(loaded.playerFillStyle)
 					: loaded.heldItemShaderStyle;
-				loaded.triggerbotHumanize = json.has("triggerbotHumanize")
-					? clamp(loaded.triggerbotHumanize, 0f, 1f)
-					: 0.50f;
-				loaded.triggerbotCps = json.has("triggerbotCps")
-					? snapTriggerbotCps(loaded.triggerbotCps)
-					: 10f;
-				loaded.hitmarkerScale = json.has("hitmarkerScale")
-					? clampHudScale(loaded.hitmarkerScale)
-					: 1.00f;
-				loaded.hitsoundVolume = json.has("hitsoundVolume")
-					? clamp(loaded.hitsoundVolume, 0f, 1f)
-					: 0.80f;
-				loaded.hitsoundPitch = json.has("hitsoundPitch")
-					? clamp(loaded.hitsoundPitch, 0.50f, 1.50f)
-					: 1.00f;
 				loaded.musicApiPort = loaded.musicApiPort < 0 || loaded.musicApiPort > 65535
 					? 0
 					: loaded.musicApiPort;
@@ -2606,8 +2540,7 @@ public final class StrayConfig {
 			case "WORLD", "ATMOSPHERE", "SKY", "TINT" -> "WORLD";
 			case "CAMERA", "VIEW", "FOG", "MOTION" -> "CAMERA";
 			case "AMBIENCE", "WEATHER", "TIME", "RAIN", "SNOW", "THUNDER", "PRECIPITATION" -> "AMBIENCE";
-			case "COMBAT", "HITSOUND" -> "COMBAT";
-			case "ASSIST", "TRIGGERBOT", "AUTOCLICKER" -> "ASSIST";
+			case "COMBAT", "HITSOUND", "ASSIST", "TRIGGERBOT", "AUTOCLICKER" -> "COMBAT";
 			case "ESP", "VISUALS", "GLOW", "WORLD_ESP", "ITEMS", "HELDITEM", "SHADER" -> "ESP";
 			case "PLAYERS", "NAMETAGS", "FILL", "PLAYER_VISUALS" -> "PLAYERS";
 			case "CATALOG", "MOBS", "MOB_VISUALS" -> "CATALOG";
@@ -2713,12 +2646,6 @@ public final class StrayConfig {
 
 	public static float clamp(float value, float min, float max) {
 		return Math.max(min, Math.min(max, value));
-	}
-
-	/** Triggerbot clicks per second, 1 to 20 in steps of a half. */
-	public static float snapTriggerbotCps(float value) {
-		float clamped = clamp(value, 1f, 20f);
-		return Math.round(clamped * 2f) / 2f;
 	}
 
 	public static final class ClickColumnPos {

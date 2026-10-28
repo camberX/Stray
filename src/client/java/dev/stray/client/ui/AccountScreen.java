@@ -218,6 +218,9 @@ public class AccountScreen extends Screen {
 		} else {
 			ClickLook.outside(graphics, x, y, w, BTN_H, 6, Theme.CARD, outline);
 		}
+		if (tokenFocus) {
+			TextKeys.mark(graphics, "account-token", x, y, w, BTN_H);
+		}
 		String shown = token.isBlank() ? hint : mask(token);
 		int color = token.isBlank() ? Theme.MUTED : (ControlChrome.on() ? ControlChrome.cardText() : Theme.TEXT);
 		GuiDraw.small(graphics, font, shown, x + 8, y + 7, color);
@@ -381,6 +384,12 @@ public class AccountScreen extends Screen {
 	@Override
 	public boolean keyPressed(KeyEvent event) {
 		if (tokenFocus) {
+			if (TextKeys.caretKey(event, "account-token", token, () -> {
+				token = "";
+				tokenCursor = 0;
+			})) {
+				return true;
+			}
 			if (event.key() == InputConstants.KEY_BACKSPACE && tokenCursor > 0) {
 				token = token.substring(0, tokenCursor - 1) + token.substring(tokenCursor);
 				tokenCursor--;
@@ -398,7 +407,7 @@ public class AccountScreen extends Screen {
 				tokenCursor = Math.min(token.length(), tokenCursor + 1);
 				return true;
 			}
-			if (event.key() == InputConstants.KEY_V && event.hasControlDown()) {
+			if (event.isPaste()) {
 				String clip = minecraft.keyboardHandler.getClipboard();
 				if (clip != null && !clip.isBlank()) {
 					String insert = clip.replace("\n", "").replace("\r", "").trim();
@@ -418,6 +427,10 @@ public class AccountScreen extends Screen {
 	@Override
 	public boolean charTyped(CharacterEvent event) {
 		if (tokenFocus && event.isAllowedChatCharacter()) {
+			if (TextKeys.takeSelection("account-token")) {
+				token = "";
+				tokenCursor = 0;
+			}
 			String insert = event.codepointAsString();
 			if (!insert.isEmpty() && token.length() < 4096) {
 				token = token.substring(0, tokenCursor) + insert + token.substring(tokenCursor);

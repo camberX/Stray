@@ -8,9 +8,6 @@ import dev.stray.client.combat.AutoClicker;
 import dev.stray.client.combat.AutoClickerCommands;
 import dev.stray.client.combat.AutoBookCombine;
 import dev.stray.client.combat.AutoExperiments;
-import dev.stray.client.combat.AutoRogue;
-import dev.stray.client.combat.Hitmarker;
-import dev.stray.client.combat.Hitsound;
 import dev.stray.client.combat.OdinClicks;
 import dev.stray.client.debug.StrayDebug;
 import dev.stray.client.dungeon.PartyFinderStats;
@@ -56,9 +53,7 @@ import dev.stray.client.item.SkyblockRecipes;
 import dev.stray.client.media.MediaChat;
 import dev.stray.client.media.MediaSession;
 import dev.stray.client.media.SpotifySmtc;
-import dev.stray.client.mining.ChestAimer;
 import dev.stray.client.mining.ChestEsp;
-import dev.stray.client.mining.GreatExplorer;
 import dev.stray.client.mining.CrystalHollows;
 import dev.stray.client.mining.CrystalHollowsRenderer;
 import dev.stray.client.mining.CrystalHollowsMap;
@@ -76,7 +71,6 @@ import dev.stray.client.movement.PathRecorder;
 import dev.stray.client.movement.PathWalker;
 import dev.stray.client.pip.PipCapture;
 import dev.stray.client.mining.MiningTracker;
-import dev.stray.client.mining.PinglessBreak;
 import dev.stray.client.mining.TitaniumTracker;
 import dev.stray.client.render.PestEspRenderer;
 import dev.stray.client.render.ChestEspRenderer;
@@ -240,8 +234,6 @@ public final class StrayClient implements ClientModInitializer {
 			boolean slayerShow = overlay || dev.stray.client.slayer.SlayerApi.onChat(message);
 			return CrystalHollows.allowChat(message, overlay) && slayerShow;
 		});
-		ChestAimer.init();
-		Hitmarker.init();
 		FarmingHud.init();
 		JacobContestHudRenderer.init();
 		SkillProgressHudRenderer.init();
@@ -375,11 +367,9 @@ public final class StrayClient implements ClientModInitializer {
 			LoadoutSwap.onStart(client);
 			EmptyVacuum.onStart(client);
 			LassoReel.tick(client);
-			AutoRogue.tick(client);
 			FarmKeys.tick(client);
 			EmptyVacuum.afterFarmKeys(client);
 			LoadoutSwap.afterFarmKeys(client);
-			ChestAimer.tick(client);
 			AutoClicker.tick(client);
 			AutoExperiments.tick(client);
 			AutoBookCombine.tick(client);
@@ -424,7 +414,6 @@ public final class StrayClient implements ClientModInitializer {
 			LoadoutsScreen.tickSwap(client);
 			WardrobeScreen.tickSwap(client);
 			NoCursorReset.tick(client);
-			Hitsound.tick(client);
 			PickupLogRenderer.tick(client);
 			JacobContestTracker.tick(client);
 			SkillProgressTracker.tick(client);
@@ -436,7 +425,6 @@ public final class StrayClient implements ClientModInitializer {
 			ConnectionPing.tick(client);
 			RawmatsTracker.tick(client);
 			MiningTracker.tick(client);
-			PinglessBreak.tick(client);
 			TitaniumTracker.get().tick(client);
 			ChestEsp.get().tick(client);
 			PestEsp.tick(client);
@@ -460,12 +448,9 @@ public final class StrayClient implements ClientModInitializer {
 		});
 
 		ClientLevelEvents.AFTER_CLIENT_LEVEL_CHANGE.register((client, level) -> {
-			AutoRogue.onWorldChange();
 			FarmKeys.onWorldChange();
 			MobGlowRenderer.reset();
 			StarMobEsp.reset();
-			ChestAimer.stop();
-			GreatExplorer.reset();
 			ChestEsp.get().clear();
 			PestEsp.reset();
 			PestCooldown.reset();
@@ -485,14 +470,11 @@ public final class StrayClient implements ClientModInitializer {
 		});
 
 		ClientPlayConnectionEvents.JOIN.register((handler, sender, client) -> {
-			AutoRogue.onWorldChange();
 			CrystalHollows.onWorldChange();
 			RouteMiner.reset();
 			MetalDetector.onWorldChange();
 			MobGlowRenderer.reset();
 			StarMobEsp.reset();
-			Hitsound.reset();
-			Hitmarker.reset();
 			AutoClicker.reset();
 			AutoExperiments.reset();
 			AutoDna.reset();
@@ -510,7 +492,6 @@ public final class StrayClient implements ClientModInitializer {
 			ComposterTracker.reset();
 			GardenHud.reset();
 			SkyblockProfileApi.refresh();
-			GreatExplorer.reset();
 			ShopCape.onJoin();
 			CommandRings.onWorldChange();
 			MovementRings.onWorldChange();
@@ -519,8 +500,6 @@ public final class StrayClient implements ClientModInitializer {
 		ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> {
 			FarmKeys.restore();
 			SkyblockLocation.reset();
-			Hitsound.reset();
-			Hitmarker.reset();
 			AutoClicker.reset();
 			AutoExperiments.reset();
 			AutoDna.reset();
@@ -551,8 +530,6 @@ public final class StrayClient implements ClientModInitializer {
 			LassoReel.reset();
 			EmptyVacuum.reset();
 			PestPlotTp.reset();
-			GreatExplorer.reset();
-			ChestAimer.stop();
 			MobGlowRenderer.reset();
 			StarMobEsp.reset();
 			LoadoutsScreen.resetPending();

@@ -106,7 +106,6 @@ public final class ChestEsp {
 		if (!config.powderMiningEnabled || !config.chestEspEnabled) {
 			return;
 		}
-		ChestAimer.onPacket(packet);
 		if (packet instanceof ClientboundLevelParticlesPacket particles) {
 			//? if >=26.3 {
 			if (!isCrit(particles.particle().getType())) {
@@ -163,7 +162,6 @@ public final class ChestEsp {
 			if (isChest(client.level.getBlockState(mark.pos))) {
 				return false;
 			}
-			ChestAimer.onChestGone(mark.pos);
 			return true;
 		});
 		synchronized (crits) {
@@ -176,7 +174,6 @@ public final class ChestEsp {
 
 	public void clear() {
 		for (Mark mark : chests.values()) {
-			ChestAimer.onChestGone(mark.pos);
 		}
 		chests.clear();
 		synchronized (crits) {
@@ -310,7 +307,6 @@ public final class ChestEsp {
 			return;
 		}
 		if (chests.remove(pos.asLong()) != null) {
-			ChestAimer.onChestGone(pos);
 			dirty = true;
 		}
 	}

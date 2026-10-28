@@ -1,7 +1,6 @@
 package dev.stray.client.render;
 
 import dev.stray.Stray;
-import dev.stray.client.combat.Hitmarker;
 import dev.stray.client.farming.FarmingHud;
 import dev.stray.client.hunting.LassoReel;
 import dev.stray.client.mining.CrystalHollowsMap;
@@ -45,8 +44,6 @@ public final class StrayHud {
 	private static void extractHud(GuiGraphicsExtractor graphics, DeltaTracker delta) {
 		HudChrome.element(null);
 		VanillaHud.extract(graphics, delta);
-		HudChrome.element(null);
-		Hitmarker.extract(graphics, delta);
 		HudChrome.element(null);
 		FarmingHud.extract(graphics, delta);
 		HudChrome.element(null);

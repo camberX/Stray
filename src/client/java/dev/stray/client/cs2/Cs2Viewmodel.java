@@ -109,7 +109,7 @@ public final class Cs2Viewmodel {
 		// Each click (yours or the autoclicker's) alternates between the two
 		// swings. Clicks inside MIN_SWING_GAP wait for it instead of being dropped, so spam clicking
 		// and the autoclicker both swing at the top speed.
-		// A restarted Minecraft swing only counts when nothing is swinging (e.g. the triggerbot);
+		// A restarted Minecraft swing only counts when nothing is swinging (e.g. a click from another mod);
 		// otherwise it is the swing of a click already counted.
 		if (clicked || externalClick || swingRestarted && action != Action.SWING) {
 			clickQueued = true;
