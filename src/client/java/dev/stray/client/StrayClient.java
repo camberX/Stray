@@ -21,6 +21,7 @@ import dev.stray.client.farming.PestCooldown;
 import dev.stray.client.farming.PestLoadoutSwap;
 import dev.stray.client.farming.PestEsp;
 import dev.stray.client.farming.GardenPlots;
+import dev.stray.client.farming.greenhouse.GreenhousePaste;
 import dev.stray.client.menu.DisabledPotions;
 import dev.stray.client.menu.NoCursorReset;
 import dev.stray.client.farming.EmptyVacuum;
@@ -263,6 +264,7 @@ public final class StrayClient implements ClientModInitializer {
 		AutoBookCombine.init();
 		AutoDna.init();
 		GardenPlots.init();
+		GreenhousePaste.init();
 		StoragePreview.init();
 		DisabledPotions.init();
 		UpdateNotifier.init();
@@ -295,6 +297,8 @@ public final class StrayClient implements ClientModInitializer {
 				client.execute(() -> client.setScreen(new dev.stray.client.casino.CasinoScreen()));
 				return Command.SINGLE_SUCCESS;
 			}));
+			root.then(ClientCommands.literal("garden").then(GreenhousePaste.command()));
+			root.then(GreenhousePaste.command());
 			root.then(ClientCommands.literal("farmkeys").executes(context -> FarmKeys.toggle()));
 			root.then(ClientCommands.literal("fk").executes(context -> FarmKeys.toggle()));
 			root.then(musicCommand());
