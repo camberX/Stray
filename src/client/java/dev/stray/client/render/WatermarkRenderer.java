@@ -168,23 +168,12 @@ public final class WatermarkRenderer {
 	 */
 	private static final java.util.Map<String, double[]> STABLE = new java.util.HashMap<>();
 
-	private static final java.util.Map<String, Float> MEASURED = new java.util.HashMap<>();
-	private static Font measuredFont;
-
-	/** Width of the text with every digit as 0, cached per string (fps and time change every frame or second). */
+	/**
+	 * Measured every call on purpose. A cache here froze widths taken before the TTF glyphs
+	 * were ready, so pills stayed the wrong size and never eased.
+	 */
 	private static float measuredWidth(Font font, Component text) {
-		if (font != measuredFont || MEASURED.size() > 256) {
-			MEASURED.clear();
-			measuredFont = font;
-		}
-		String digits = Text.zeroDigits(text.getString());
-		String key = digits + '\u0000' + text.getStyle().getFont() + (text.getStyle().isBold() ? "\u0001" : "");
-		Float width = MEASURED.get(key);
-		if (width == null) {
-			width = (float) font.width(Component.literal(digits).withStyle(text.getStyle()));
-			MEASURED.put(key, width);
-		}
-		return width;
+		return font.width(Component.literal(Text.zeroDigits(text.getString())).withStyle(text.getStyle()));
 	}
 
 	static float stableWidth(Font font, Component text, String key) {

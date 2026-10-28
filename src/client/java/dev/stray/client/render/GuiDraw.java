@@ -1137,31 +1137,11 @@ public final class GuiDraw {
 		return font.width(MenuFont.brandSmall(value));
 	}
 
-	private static final java.util.Map<String, String> ELLIPSIZED = new java.util.HashMap<>();
-	private static Font ellipsizedFont;
-
-	/**
-	 * The longest prefix of {@code value} (plus "..") that fits {@code max}. HUD lines are
-	 * re-fitted every frame but rarely change, so results are cached per text, width, style
-	 * and GUI scale; the binary search measures the string up to a dozen times.
-	 */
 	public static String ellipsize(Font font, String value, float max, boolean small) {
 		if (value == null || value.isEmpty()) {
 			return "";
 		}
-		if (font != ellipsizedFont || ELLIPSIZED.size() > 512) {
-			ELLIPSIZED.clear();
-			ellipsizedFont = font;
-		}
-		Minecraft client = Minecraft.getInstance();
-		int mode = (HudChrome.hyprInk() || dev.stray.client.ui.HyprMenu.drawing() ? 1 : 0) | (ClickGui.lightInk() ? 2 : 0) | (small ? 4 : 0);
-		String key = value + '\u0000' + max + '\u0000' + mode + '\u0000' + (client.getWindow() == null ? 0 : client.getWindow().getGuiScale());
-		String cached = ELLIPSIZED.get(key);
-		if (cached == null) {
-			cached = ellipsizeUncached(font, value, max, small);
-			ELLIPSIZED.put(key, cached);
-		}
-		return cached;
+		return ellipsizeUncached(font, value, max, small);
 	}
 
 	private static String ellipsizeUncached(Font font, String value, float max, boolean small) {

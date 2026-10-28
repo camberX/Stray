@@ -261,6 +261,7 @@ public final class StrayClient implements ClientModInitializer {
 		VanillaHud.init();
 		MediaSession.init();
 		AutoExperiments.init();
+		dev.stray.client.input.TextInput.init();
 		AutoBookCombine.init();
 		AutoDna.init();
 		GardenPlots.init();
