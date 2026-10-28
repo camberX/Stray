@@ -475,8 +475,8 @@ public final class AutoUpdate implements PreLaunchEntrypoint {
 	}
 
 	/**
-	 * The jar on {@code dev-builds}. Publishing that branch is the dev release;
-	 * the updater does not wait for a GitHub-hosted Actions runner.
+	 * The latest dev jar for this Minecraft version, which CI uploads to R2 on every
+	 * push and stray.gay serves.
 	 */
 	private static Remote fetchDevRemote() {
 		HttpClient http = HttpClient.newBuilder()
