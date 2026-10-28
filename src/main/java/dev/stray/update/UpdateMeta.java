@@ -10,31 +10,20 @@ import java.net.http.HttpResponse;
 import java.time.Duration;
 
 /**
- * Latest version from stray.gay, GitHub Releases, and repo latest.json.
+ * Latest version for this Minecraft version, from stray.gay (R2).
  */
 public final class UpdateMeta {
 	public static final String SHOP = "https://stray.gay";
-	static final String META = SHOP + "/api/mod";
-	static final String GITHUB_META =
-		"https://raw.githubusercontent.com/camberX/Stray/main/web/public/mod/latest.json";
-	static final String EISENMANN_GITHUB_META =
-		"https://raw.githubusercontent.com/camberX/Eisenmann/main/web/public/mod/latest.json";
-	static final String LEGACY_GITHUB_META =
-		"https://raw.githubusercontent.com/camberX/voidmark/main/web/public/mod/latest.json";
-	private static final String GITHUB_RELEASE =
-		"https://api.github.com/repos/camberX/Stray/releases/latest";
-	private static final String LEGACY_GITHUB_RELEASE =
-		"https://api.github.com/repos/camberX/voidmark/releases/latest";
+	/** Builds are published per Minecraft version; this jar only takes its own. */
+	static final String MC = net.fabricmc.loader.api.FabricLoader.getInstance()
+		.getModContainer("minecraft")
+		.map(container -> container.getMetadata().getVersion().getFriendlyString())
+		.orElse("");
+	static final String META = SHOP + "/api/mod?mc=" + MC;
 	private static final String[] META_URLS = {
-		META,
-		GITHUB_META,
-		EISENMANN_GITHUB_META,
-		LEGACY_GITHUB_META
+		META
 	};
-	private static final String[] RELEASE_URLS = {
-		GITHUB_RELEASE,
-		LEGACY_GITHUB_RELEASE
-	};
+	private static final String[] RELEASE_URLS = {};
 
 	private UpdateMeta() {
 	}

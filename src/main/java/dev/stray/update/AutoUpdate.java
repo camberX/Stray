@@ -31,7 +31,7 @@ import java.util.Optional;
  * launch loads the new jar.
  */
 public final class AutoUpdate implements PreLaunchEntrypoint {
-	private static final String DOWNLOAD = UpdateMeta.SHOP + "/download";
+	private static final String DOWNLOAD = UpdateMeta.SHOP + "/download?mc=" + UpdateMeta.MC;
 	private static final long MAX_BYTES = 96L * 1024L * 1024L;
 	private static volatile boolean fetched;
 
@@ -365,10 +365,7 @@ public final class AutoUpdate implements PreLaunchEntrypoint {
 		JsonObject json = null;
 		String version = null;
 		for (String url : List.of(
-			UpdateMeta.META,
-			UpdateMeta.GITHUB_META,
-			UpdateMeta.EISENMANN_GITHUB_META,
-			UpdateMeta.LEGACY_GITHUB_META
+			UpdateMeta.META
 		)) {
 			JsonObject candidate = UpdateMeta.getJson(http, url, 12);
 			if (candidate == null || !candidate.has("version")) {
@@ -399,16 +396,9 @@ public final class AutoUpdate implements PreLaunchEntrypoint {
 				download = UpdateMeta.SHOP + url;
 			}
 		}
+		// Jars are hosted in R2 behind stray.gay; GitHub only has old releases.
 		List<String> urls = new ArrayList<>();
-		urls.add("https://github.com/camberX/Stray/releases/download/v" + version + "/" + file);
-		urls.add("https://github.com/camberX/Eisenmann/releases/download/v" + version + "/" + file);
-		urls.add("https://github.com/camberX/voidmark/releases/download/v" + version + "/" + file);
 		urls.add(download);
-		urls.add(UpdateMeta.SHOP + "/stray.jar");
-		urls.add("https://raw.githubusercontent.com/camberX/Stray/main/web/public/mod/" + file);
-		urls.add("https://raw.githubusercontent.com/camberX/voidmark/main/web/public/mod/" + file);
-		urls.add("https://raw.githubusercontent.com/camberX/Stray/main/web/public/mod/stray.jar");
-		urls.add("https://raw.githubusercontent.com/camberX/voidmark/main/web/public/mod/stray.jar");
 		return new Remote(version, file, urls, null);
 	}
 
@@ -495,8 +485,7 @@ public final class AutoUpdate implements PreLaunchEntrypoint {
 			.build();
 		JsonObject json = null;
 		for (String url : List.of(
-			"https://raw.githubusercontent.com/camberX/Stray/dev-builds/dev.json",
-			"https://raw.githubusercontent.com/camberX/voidmark/dev-builds/dev.json"
+			UpdateMeta.SHOP + "/api/mod/dev?mc=" + UpdateMeta.MC
 		)) {
 			JsonObject candidate = UpdateMeta.getJson(http, url, 12);
 			if (candidate != null && candidate.has("sha")) {
@@ -518,9 +507,7 @@ public final class AutoUpdate implements PreLaunchEntrypoint {
 			version = installedVersion();
 		}
 		List<String> urls = new ArrayList<>();
-		urls.add("https://raw.githubusercontent.com/camberX/Stray/dev-builds/stray-dev.jar");
-		urls.add("https://github.com/camberX/Stray/raw/dev-builds/stray-dev.jar");
-		urls.add("https://raw.githubusercontent.com/camberX/voidmark/dev-builds/stray-dev.jar");
+		urls.add(UpdateMeta.SHOP + "/download/dev?mc=" + UpdateMeta.MC);
 		return new Remote(version, "stray-dev.jar", urls, sha);
 	}
 

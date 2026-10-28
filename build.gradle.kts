@@ -8,6 +8,7 @@ plugins {
 }
 
 val mc = stonecutter.current.version
+val mcDep = property("mc_dep").toString()
 val strayChannel = (findProperty("strayChannel") ?: "release").toString().trim()
 val straySha = (findProperty("straySha") ?: "").toString().trim()
 
@@ -69,7 +70,7 @@ tasks.processResources {
 		"version" to project.version.toString(),
 		"channel" to strayChannel,
 		"sha" to straySha,
-		"minecraft" to property("mc_dep").toString()
+		"minecraft" to mcDep
 	)
 	inputs.properties(props)
 	filesMatching("fabric.mod.json") { expand(props) }
