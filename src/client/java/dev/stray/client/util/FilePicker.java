@@ -19,13 +19,9 @@ import org.lwjgl.system.MemoryStack;
 import org.lwjgl.util.tinyfd.TinyFileDialogs;*///?}
 
 /**
- //? if >=26.3 {
  * Native "open file" dialog through SDL. 26.3 no longer ships tinyfd, but the
  * game window is an SDL window, so SDL's own dialog (xdg portal / zenity on
  * Linux, the system dialog on Windows and macOS) is always there.
- //?} else {
- /** Native "open file" dialog through tinyfd, which 26.2 still ships. The dialog
- * blocks, so it runs on its own thread and hands the result back to the client thread.*///?}
  */
 public final class FilePicker {
 	private FilePicker() {

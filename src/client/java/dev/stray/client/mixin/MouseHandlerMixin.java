@@ -46,19 +46,21 @@ public class MouseHandlerMixin {
 		this.stray$beforeY = this.ypos;
 	}
 
+	//? if >=26.3 {
 	/**
 	 * Vanilla warps the cursor to the window center when it releases the mouse.
 	 * When a container opens straight from another one, keep the cursor where it
-	 //? if >=26.3 {
 	 * was instead: swap the warp target and the stored position. The arguments are
 	 * already on the stack at the call, so they are replaced with ModifyArg.
-	 //?} else {
-	 /** was instead: swap the warp target and the stored position.*///?}
 	 */
-	//? if >=26.3 {
 	@ModifyArg(method = "releaseMouse", at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/platform/InputConstants;releaseMouse(Lcom/mojang/blaze3d/platform/Window;DD)V"), index = 1)
 	//?} else {
-	/*@ModifyArg(
+	/*/^*
+	 * Vanilla warps the cursor to the window center when it releases the mouse.
+	 * When a container opens straight from another one, keep the cursor where it
+	 * was instead: swap the warp target and the stored position.
+	 ^/
+	@ModifyArg(
 		method = "releaseMouse",
 		at = @At(
 			value = "INVOKE",

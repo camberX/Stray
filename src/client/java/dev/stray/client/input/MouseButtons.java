@@ -9,8 +9,6 @@ import org.lwjgl.sdl.SDLMouse;
 //?} else {
 /*import org.lwjgl.glfw.GLFW;*///?}
 
-//? if <26.3 {
-/*/^* Mouse button helpers. 26.2 still uses GLFW numbering everywhere (left 0, right 1, middle 2). ^/*///?}
 public final class MouseButtons {
 	private MouseButtons() {
 	}
@@ -27,13 +25,10 @@ public final class MouseButtons {
 		return event != null && event.button() == InputConstants.MOUSE_BUTTON_MIDDLE;
 	}
 
-	//? if >=26.3 {
 	/**
 	 * Slot-click packets still use GLFW numbering: left 0, right 1.
 	 * 26.3 mouse events use SDL numbering: left 1, right 3.
 	 */
-	//?} else {
-	/*/^* Slot-click packets use GLFW numbering, which is what 26.2 mouse events already carry. ^/*///?}
 	public static int containerButton(MouseButtonEvent event) {
 		//? if >=26.3 {
 		if (left(event)) {

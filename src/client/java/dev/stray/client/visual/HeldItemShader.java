@@ -289,12 +289,8 @@ public final class HeldItemShader {
 	}
 
 	/**
-	 //? if >=26.3 {
 	 * When the held item silhouette is being masked this frame, the mask batch (textures and
 	 * the mask color) a CS2 knife with this albedo is drawn into; otherwise {@code null}.
-	 //?} else {
-	 /** When the held item silhouette is being masked this frame, the mask batch (target,
-	 * textures and mask color) a CS2 knife with this albedo is drawn into; otherwise {@code null}.*///?}
 	 */
 	public static PreparedRenderType knifeMaskBatch(Identifier albedo) {
 		if (!maskThisFrame || albedo == null) {
