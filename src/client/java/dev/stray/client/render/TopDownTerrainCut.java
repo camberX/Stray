@@ -36,7 +36,7 @@ public final class TopDownTerrainCut {
 		}
 		return source
 			//? if >=26.3 {
-			.replace("out vec2 v_TexCoord;", "out vec2 v_TexCoord;\nlayout(location = 7) out vec3 strayRel;")
+			.replace("out vec2 v_TexCoord;", "out vec2 v_TexCoord;\nlayout(location = 14) out vec3 strayRel;")
 			//?} else {
 			/*.replace("out vec2 v_TexCoord;", "out vec2 v_TexCoord;\nout vec3 strayRel;")*///?}
 			.replace(
@@ -52,7 +52,7 @@ public final class TopDownTerrainCut {
 		String withIn = source.replace(
 			"in vec2 v_TexCoord;",
 			//? if >=26.3 {
-			"in vec2 v_TexCoord;\nlayout(location = 7) in vec3 strayRel;"
+			"in vec2 v_TexCoord;\nlayout(location = 14) in vec3 strayRel;"
 			//?} else {
 			/*"in vec2 v_TexCoord;\nin vec3 strayRel;"*///?}
 		);
@@ -69,7 +69,7 @@ public final class TopDownTerrainCut {
 		if (source.contains("ChunkPosition") && source.contains("vec3 pos =")) {
 			return source
 				//? if >=26.3 {
-				.replace("out vec2 texCoord0;", "out vec2 texCoord0;\nlayout(location = 7) out vec3 strayRel;")
+				.replace("out vec2 texCoord0;", "out vec2 texCoord0;\nlayout(location = 14) out vec3 strayRel;")
 				//?} else {
 				/*.replace("out vec2 texCoord0;", "out vec2 texCoord0;\nout vec3 strayRel;")*///?}
 				.replace("texCoord0 = UV0;", "texCoord0 = UV0;\n    strayRel = pos;");
@@ -81,7 +81,7 @@ public final class TopDownTerrainCut {
 			String withIn = source.replace(
 				"in vec2 texCoord0;",
 				//? if >=26.3 {
-				"in vec2 texCoord0;\nlayout(location = 7) in vec3 strayRel;"
+				"in vec2 texCoord0;\nlayout(location = 14) in vec3 strayRel;"
 				//?} else {
 				/*"in vec2 texCoord0;\nin vec3 strayRel;"*///?}
 			);

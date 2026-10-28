@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.5.77", new String[]{
+			"Fixed a crash on joining a world with Sodium Extra on 26.3: both mods added shader outputs at the same slot in Sodium's terrain shader."
+		}),
 		new Entry("1.5.76", new String[]{
 			"Removed: Pingless break, Auto rogue sword, Hitsound (with the hitmarker and mage beam hits), and Powder Mining's Chest Aim and chest triggerbot. Chest ESP stays.",
 			"Text fields: Ctrl+A selects everything (typing or pasting replaces it), Ctrl+C copies, Ctrl+X cuts, Ctrl+V pastes and Ctrl+Backspace deletes the last word. The shortcuts follow your keyboard layout.",
