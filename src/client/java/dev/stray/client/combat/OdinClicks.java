@@ -51,6 +51,16 @@ public final class OdinClicks {
 		KeyMapping.set(((KeyMappingAccessor) client.options.keyAttack).stray$boundKey(), true);
 	}
 
+	/** Attack goes back to whatever the physical attack button is doing. */
+	public static void releaseAttack() {
+		Minecraft client = Minecraft.getInstance();
+		if (client.options == null) {
+			return;
+		}
+		InputConstants.Key key = ((KeyMappingAccessor) client.options.keyAttack).stray$boundKey();
+		KeyMapping.set(key, isPressed(key));
+	}
+
 	public static void guiClick(int id, int index, int button, ContainerInput clickType) {
 		Minecraft client = Minecraft.getInstance();
 		Player player = client.player;

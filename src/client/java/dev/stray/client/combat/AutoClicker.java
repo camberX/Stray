@@ -24,7 +24,21 @@ public final class AutoClicker {
 		nrc = 0;
 	}
 
+	/** True while the block-breaking hold below is keeping attack pressed. */
+	private static boolean holding;
+
 	public static void tick(Minecraft client) {
+		boolean wasHolding = holding;
+		holding = false;
+		tickClicks(client);
+		if (wasHolding && !holding) {
+			// The hold pressed attack itself, so the real button's release may already have
+			// gone by; give attack back the physical button's state.
+			OdinClicks.releaseAttack();
+		}
+	}
+
+	private static void tickClicks(Minecraft client) {
 		StrayConfig config = StrayConfig.get();
 		if (!config.autoClickerEnabled) {
 			return;
@@ -80,6 +94,7 @@ public final class AutoClicker {
 
 		if (hit != null && !level.getBlockState(hit.getBlockPos()).isAir() && lc && config.autoClickerAllowBreaking) {
 			OdinClicks.holdAttack();
+			holding = true;
 			return;
 		}
 

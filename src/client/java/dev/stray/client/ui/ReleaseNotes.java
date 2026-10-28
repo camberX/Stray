@@ -17,7 +17,8 @@ public final class ReleaseNotes {
 	public static final Entry[] ENTRIES = {
 		new Entry("1.5.75", new String[]{
 			"Typing works again in Stray's text fields on 26.3 (nick hider, hex colour, search, cape URL and the other menus).",
-			"The watermark fits your name again, and its pills animate when the numbers change width."
+			"The watermark fits your name again, and its pills animate when the numbers change width.",
+			"Auto clicker: with block breaking on, letting go of the key stops breaking instead of holding attack until your next click."
 		}),
 		new Entry("1.5.74", new String[]{
 			"Stray now runs on Minecraft 26.2 and 26.3, with one jar per version. 26.1.2 is no longer updated.",
