@@ -273,6 +273,12 @@ async function route(request, env) {
   if (request.method === "GET" && (path === "/download" || path === "/stray.jar" || path === "/eisenmann.jar" || path === "/voidmark.jar")) {
     return serveModJar(request, env);
   }
+  if (request.method === "GET" && path === "/api/mod/dev") {
+    return serveR2Json(env, "mod/dev/dev.json", "No dev build published yet");
+  }
+  if (request.method === "GET" && path === "/download/dev") {
+    return serveR2Jar(env, "mod/dev/stray-dev.jar", "stray-dev.jar");
+  }
   if (request.method === "PUT" && path === "/api/config") {
     return handleShopConfig(request, env);
   }
@@ -1234,7 +1240,34 @@ var DEFAULT_MOD_GITHUB = "camberX/Stray";
 var LEGACY_MOD_GITHUB = "camberX/voidmark";
 var DEFAULT_MOD_BRANCH = "main";
 var DEFAULT_MOD_PATH = "web/public/mod";
+var MOD_R2_PREFIX = "mod/";
+async function readR2Meta(env) {
+  if (!env.CAPES) {
+    return null;
+  }
+  try {
+    const object = await env.CAPES.get(MOD_R2_PREFIX + "latest.json");
+    if (!object) {
+      return null;
+    }
+    const meta = await object.json();
+    if (!meta || !meta.version) {
+      return null;
+    }
+    meta.source = "r2";
+    return meta;
+  } catch {
+    return null;
+  }
+}
+__name(readR2Meta, "readR2Meta");
 async function readModMeta(request, env) {
+  // Jars are published to R2. Git (jsDelivr / raw) and the bundled assets are only
+  // fallbacks for old commits until R2 has been seeded.
+  const r2 = await readR2Meta(env);
+  if (r2) {
+    return r2;
+  }
   const github = await readGithubMeta(env);
   const asset = await readAssetMeta(request, env);
   if (github && github.version && asset && asset.version) {
@@ -1403,6 +1436,20 @@ async function fetchModBytes(request, env, meta) {
   if (meta && meta.file) {
     names.push(String(meta.file));
   }
+  if (env.CAPES) {
+    for (let i = 0; i < names.length; i++) {
+      if (!/^[A-Za-z0-9._-]+\.jar$/.test(names[i])) {
+        continue;
+      }
+      try {
+        const object = await env.CAPES.get(MOD_R2_PREFIX + names[i]);
+        if (object) {
+          return { body: object.body, file: names[i] };
+        }
+      } catch {
+      }
+    }
+  }
   for (let i = 0; i < names.length; i++) {
     const urls = githubModFileUrls(env, meta, names[i]);
     for (let u = 0; u < urls.length; u++) {
@@ -1447,6 +1494,35 @@ async function serveModJar(request, env) {
   return new Response(got.body, { status: 200, headers });
 }
 __name(serveModJar, "serveModJar");
+async function serveR2Json(env, key, missing) {
+  const object = env.CAPES ? await env.CAPES.get(key) : null;
+  if (!object) {
+    return json(404, { error: missing });
+  }
+  const headers = new Headers({ "Content-Type": "application/json", "Cache-Control": "no-store" });
+  const extra = cors();
+  for (const name of Object.keys(extra)) {
+    headers.set(name, extra[name]);
+  }
+  return new Response(object.body, { status: 200, headers });
+}
+__name(serveR2Json, "serveR2Json");
+async function serveR2Jar(env, key, fileName) {
+  const object = env.CAPES ? await env.CAPES.get(key) : null;
+  if (!object) {
+    return json(404, { error: "Mod build is not published yet" });
+  }
+  const headers = new Headers();
+  headers.set("Content-Type", "application/java-archive");
+  headers.set("Content-Disposition", 'attachment; filename="' + fileName + '"');
+  headers.set("Cache-Control", "no-store");
+  const extra = cors();
+  for (const name of Object.keys(extra)) {
+    headers.set(name, extra[name]);
+  }
+  return new Response(object.body, { status: 200, headers });
+}
+__name(serveR2Jar, "serveR2Jar");
 function cors() {
   return {
     "Access-Control-Allow-Origin": "*",
@@ -1990,12 +2066,7 @@ var STORE_HTML = `<!DOCTYPE html>
 			var mc = document.getElementById("mc-ver");
 			var link = document.getElementById("mod-download");
 			var mirrors = [
-				{ url: "/api/mod", repo: "" },
-				{ url: "https://cdn.jsdelivr.net/gh/camberX/Stray@main/web/public/mod/latest.json", repo: "camberX/Stray" },
-				{ url: "https://raw.githubusercontent.com/camberX/Stray/main/web/public/mod/latest.json", repo: "camberX/Stray" },
-				{ url: "https://cdn.jsdelivr.net/gh/camberX/Eisenmann@main/web/public/mod/latest.json", repo: "camberX/Eisenmann" },
-				{ url: "https://raw.githubusercontent.com/camberX/Eisenmann/main/web/public/mod/latest.json", repo: "camberX/Eisenmann" },
-				{ url: "https://raw.githubusercontent.com/camberX/voidmark/main/web/public/mod/latest.json", repo: "camberX/voidmark" }
+				{ url: "/api/mod", repo: "" }
 			];
 			function fileUrl(data) {
 				if (data.url && data.url.charAt(0) === "/") return data.url;

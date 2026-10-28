@@ -12,7 +12,8 @@ run_worker_first = true
 [vars]
 TITLE = "STRAY Capes"
 MOD_GITHUB = "camberX/Stray"
-MOD_GITHUB_BRANCH = "main"
+# Last commit that still had the jars in git; only used until R2 is seeded.
+MOD_GITHUB_BRANCH = "6fa350cce8c61b3240499fc71db9f20977d07274"
 MOD_GITHUB_PATH = "web/public/mod"
 
 [[r2_buckets]]

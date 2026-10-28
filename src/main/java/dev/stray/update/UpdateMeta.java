@@ -10,30 +10,21 @@ import java.net.http.HttpResponse;
 import java.time.Duration;
 
 /**
- * Latest version from stray.gay, GitHub Releases, and repo latest.json.
+ * Latest version from stray.gay (R2), with the old GitHub release as a fallback.
  */
 public final class UpdateMeta {
 	public static final String SHOP = "https://stray.gay";
 	static final String META = SHOP + "/api/mod";
 	static final String GITHUB_META =
 		"https://raw.githubusercontent.com/camberX/Stray/main/web/public/mod/latest.json";
-	static final String EISENMANN_GITHUB_META =
-		"https://raw.githubusercontent.com/camberX/Eisenmann/main/web/public/mod/latest.json";
-	static final String LEGACY_GITHUB_META =
-		"https://raw.githubusercontent.com/camberX/voidmark/main/web/public/mod/latest.json";
 	private static final String GITHUB_RELEASE =
 		"https://api.github.com/repos/camberX/Stray/releases/latest";
-	private static final String LEGACY_GITHUB_RELEASE =
-		"https://api.github.com/repos/camberX/voidmark/releases/latest";
 	private static final String[] META_URLS = {
 		META,
-		GITHUB_META,
-		EISENMANN_GITHUB_META,
-		LEGACY_GITHUB_META
+		GITHUB_META
 	};
 	private static final String[] RELEASE_URLS = {
-		GITHUB_RELEASE,
-		LEGACY_GITHUB_RELEASE
+		GITHUB_RELEASE
 	};
 
 	private UpdateMeta() {
