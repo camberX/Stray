@@ -23,29 +23,9 @@ replay_*.log
 agent-tools/
 libs/
 *.jar
-web/**
-!web/worker.js
-!web/wrangler.toml
-!web/public/
-web/public/**
-!web/public/index.html
-# Built jars and latest.json live in Cloudflare R2 (voidmark-capes/mod/), not in git.
-web/data/whitelist.json
-web/data/names.json
-web/data/namesAt.json
-web/data/tags.json
-web/data/bypass.json
-web/data/capeAt.json
-web/data/notes.json
-web/data/config.json
-web/data/bans.json
-web/data/capes/*.png
-!web/data/capes/.gitkeep
-web/node_modules/
-web/.wrangler/
-web/.dev.vars
-web/data/codes.json
-web/data/tokens.json
+# The website and Worker live in the private camberX/stray-web repo; local builds
+# still copy jars into web/public/mod for testing.
+web/
 
 # CS2 knife data pack (local builds only; published on the cs2-data branch)
 src/client/resources/assets/stray/cs2/
