@@ -15,6 +15,18 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.5.74", new String[]{
+			"Stray now runs on Minecraft 26.2 and 26.3, with one jar per version. 26.1.2 is no longer updated.",
+			"Works on both the OpenGL and Vulkan backends.",
+			"Lighter HUD: rounded boxes, the watermark and the music bar do less work every frame, and the frosted glass is blurred at half resolution.",
+			"The triggerbot is removed."
+		}),
+		new Entry("1.5.73", new String[]{
+			"Jeff, Sam, Pesthunter Phillip, Pesthunter Pamela, and the Spooky Festival ghosts show on the shopping list. Their items appear before you open the offer, as have/?, and switch to have/need once the offer is open."
+		}),
+		new Entry("1.5.72", new String[]{
+			"Greenhouse paste: /st garden greenhouse paste reads a SkyMutations or SkyShards Greenhouse link from your clipboard and draws each crop on the 10×10 greenhouse. Wrong cells get a red box, and the mutation slot stays green. Rotate, mirror, and presets use the same command."
+		}),
 		new Entry("1.5.70", new String[]{
 			"CS2 knife swings play faster and keep up with mining. Spam clicking alternates between the two swings on every click, with a short minimum gap so it never turns into a blur"
 		}),

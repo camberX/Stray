@@ -44,6 +44,8 @@ public final class GardenHudRenderer {
 	private static final float MILESTONE_H = 40f;
 	private static final float PAD = 5f;
 	private static final float LINE = 10f;
+	/** Opened offers plus unopened previews. Eight hid the new visitors behind the first rows. */
+	private static final int SHOWN = 16;
 	private static final float ICON = 8f;
 	private static final NumberFormat INTEGER = NumberFormat.getIntegerInstance(Locale.US);
 	private static final List<Hit> ITEM_HITS = new ArrayList<>();
@@ -566,12 +568,15 @@ public final class GardenHudRenderer {
 		if (items.isEmpty()) {
 			GuiDraw.small(graphics, font, "Open a visitor", PAD + 1, cursor, Theme.MUTED);
 		} else {
-			int shown = Math.min(8, items.size());
+			int shown = Math.min(SHOWN, items.size());
 			for (int i = 0; i < shown; i++) {
 				Need need = items.get(i);
-				boolean ready = need.having() >= need.required();
+				boolean preview = need.required() < 0;
+				boolean ready = !preview && need.having() >= need.required();
 				boolean craftable = !ready && need.craftable();
-				String count = amount(need.having()) + "/" + amount(need.required());
+				String count = preview
+					? amount(need.having()) + "/?"
+					: amount(need.having()) + "/" + amount(need.required());
 				float countW = GuiDraw.smallWidth(font, count);
 				float markW = craftable ? GuiDraw.smallWidth(font, " C") : 0f;
 				String label = GuiDraw.ellipsize(font, need.name(), WIDTH - PAD * 2 - countW - markW - 6, true);
@@ -650,7 +655,7 @@ public final class GardenHudRenderer {
 	}
 
 	private static float shoppingHeightOf(ShoppingSnap snap) {
-		int rows = 1 + Math.max(1, Math.min(8, snap.items().size()));
+		int rows = 1 + Math.max(1, Math.min(SHOWN, snap.items().size()));
 		return PAD * 2 + rows * LINE;
 	}
 
