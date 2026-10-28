@@ -29,11 +29,7 @@ web/**
 !web/public/
 web/public/**
 !web/public/index.html
-!web/public/mod.json
-!web/public/mod/
-web/public/mod/**
-!web/public/mod/latest.json
-!web/public/mod/*.jar
+# Built jars and latest.json live in Cloudflare R2 (voidmark-capes/mod/), not in git.
 web/data/whitelist.json
 web/data/names.json
 web/data/namesAt.json
