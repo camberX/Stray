@@ -36,7 +36,17 @@ vec3 environment(vec3 r, float rough) {
 
 void main() {
     vec4 albedo = texture(Sampler0, texCoord0) * vertexColor;
-    vec3 material = texture(Sampler3, texCoord0).rgb;
+    vec4 materialTex = texture(Sampler3, texCoord0);
+#ifdef BLADE_CUT
+    // The blade shader draws these texels (its mask is max(alpha, metalness), cut at 0.1, read
+    // nearest with wrap like here), so exactly one of the two passes covers each pixel.
+    ivec2 maskSize = textureSize(Sampler3, 0);
+    vec4 maskTexel = texelFetch(Sampler3, clamp(ivec2(floor(fract(texCoord0) * vec2(maskSize))), ivec2(0), maskSize - 1), 0);
+    if (max(maskTexel.a, maskTexel.g) >= 0.1) {
+        discard;
+    }
+#endif
+    vec3 material = materialTex.rgb;
     float rough = clamp(material.r, 0.04, 1.0);
     float metal = material.g;
     float ao = mix(0.55, 1.0, material.b);

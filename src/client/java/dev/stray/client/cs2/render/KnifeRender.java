@@ -27,8 +27,11 @@ import org.joml.Vector3f;
 /** Draws a CS2 knife mesh with its baked finish, skinned by per-bone matrices. */
 public final class KnifeRender {
 	private static final Identifier PIPELINE_ID = Stray.id("pipeline/cs2_knife");
+	private static final Identifier CUT_PIPELINE_ID = Stray.id("pipeline/cs2_knife_cut");
 	private static final Identifier SHADER_ID = Stray.id("core/cs2_knife");
 	private static volatile RenderPipeline pipeline;
+	/** The knife without the texels the blade shader draws (drawing them twice z-fights). */
+	private static volatile RenderPipeline cutPipeline;
 
 	/** Source units (inches) to blocks for the first-person rig. Projection makes this mostly a depth choice. */
 	public static final float VIEW_SCALE = 0.04f;
@@ -37,32 +40,45 @@ public final class KnifeRender {
 	}
 
 	private static final java.util.Map<net.minecraft.resources.Identifier, RenderType> TYPES = new java.util.HashMap<>();
+	private static final java.util.Map<net.minecraft.resources.Identifier, RenderType> CUT_TYPES = new java.util.HashMap<>();
 
 	private static synchronized RenderPipeline pipeline() {
 		if (pipeline == null) {
-			pipeline = RenderPipelinesInvoker.stray$register(
-				RenderPipeline.builder(RenderPipelines.ENTITY_SNIPPET)
-					.withLocation(PIPELINE_ID)
-					.withVertexShader(SHADER_ID)
-					.withFragmentShader(SHADER_ID)
-					.withBindGroupLayout(RenderCompat.sampler("Sampler3"))
-					.withBindGroupLayout(RenderCompat.uniform("KnifeBones"))
-					.withShaderDefine("NO_OVERLAY")
-					.withShaderDefine("CS2_GPU_SKIN")
-					.withPrimitiveTopology(PrimitiveTopology.TRIANGLES)
-					.withColorTargetState(ColorTargetState.DEFAULT)
-					.withCull(false)
-					.build()
-			);
+			pipeline = build(PIPELINE_ID, false);
 		}
 		return pipeline;
 	}
 
-	/** The render type for one knife (its own albedo and material textures). */
-	private static synchronized RenderType type(Cs2Knives.Knife knife) {
-		return TYPES.computeIfAbsent(knife.albedoId, id -> RenderType.create(
-			"stray_cs2_knife",
-			RenderSetup.builder(pipeline())
+	private static synchronized RenderPipeline cutPipeline() {
+		if (cutPipeline == null) {
+			cutPipeline = build(CUT_PIPELINE_ID, true);
+		}
+		return cutPipeline;
+	}
+
+	private static RenderPipeline build(Identifier location, boolean bladeCut) {
+		RenderPipeline.Builder builder = RenderPipeline.builder(RenderPipelines.ENTITY_SNIPPET)
+			.withLocation(location)
+			.withVertexShader(SHADER_ID)
+			.withFragmentShader(SHADER_ID)
+			.withBindGroupLayout(RenderCompat.sampler("Sampler3"))
+			.withBindGroupLayout(RenderCompat.uniform("KnifeBones"))
+			.withShaderDefine("NO_OVERLAY")
+			.withShaderDefine("CS2_GPU_SKIN")
+			.withPrimitiveTopology(PrimitiveTopology.TRIANGLES)
+			.withColorTargetState(ColorTargetState.DEFAULT)
+			.withCull(false);
+		if (bladeCut) {
+			builder.withShaderDefine("BLADE_CUT");
+		}
+		return RenderPipelinesInvoker.stray$register(builder.build());
+	}
+
+	/** The render type for one knife (its own albedo and material textures); {@code bladeCut} with the blade shader on. */
+	private static synchronized RenderType type(Cs2Knives.Knife knife, boolean bladeCut) {
+		return (bladeCut ? CUT_TYPES : TYPES).computeIfAbsent(knife.albedoId, id -> RenderType.create(
+			bladeCut ? "stray_cs2_knife_cut" : "stray_cs2_knife",
+			RenderSetup.builder(bladeCut ? cutPipeline() : pipeline())
 				.withTexture("Sampler0", knife.albedoId, () -> RenderSystem.getSamplerCache().getRepeat(FilterMode.LINEAR))
 				.withTexture("Sampler3", knife.materialId, () -> RenderSystem.getSamplerCache().getRepeat(FilterMode.LINEAR))
 				.useLightmap()
@@ -74,13 +90,14 @@ public final class KnifeRender {
 
 	/** Whether this render type is a CS2 knife (drawn from its GPU mesh). */
 	public static boolean isKnife(RenderType type) {
-		RenderPipeline knife = pipeline;
-		return knife != null && type.pipeline() == knife;
+		RenderPipeline p = type.pipeline();
+		return p != null && (p == pipeline || p == cutPipeline);
 	}
 
 	/** Forgets a released knife's render type. */
 	public static synchronized void forget(Cs2Knives.Knife knife) {
 		TYPES.remove(knife.albedoId);
+		CUT_TYPES.remove(knife.albedoId);
 	}
 
 	/**
@@ -92,8 +109,8 @@ public final class KnifeRender {
 		// the batch is built later in the frame.
 		Matrix4f view = new Matrix4f(toView);
 		Matrix4f[] bones = copy(skin);
-		RenderType main = type(knife);
 		RenderType blade = StrayConfig.get().cs2BladeShader ? HeldItemShader.bladeTypeFor(knife.bladeId) : null;
+		RenderType main = type(knife, blade != null);
 		collector.submitCustomGeometry(pose, main, (p, consumer) -> {
 			KnifeGpu.queue(main, KnifeGpu.mesh(knife), false, p.pose(), view, bones, light, blade, knife.albedoId);
 			placeholder(consumer, light);

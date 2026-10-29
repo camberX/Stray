@@ -708,7 +708,8 @@ public final class Cs2Knives {
 				int g = skin.material[i * 4 + 1] & 0xFF;
 				int b = skin.material[i * 4 + 2] & 0xFF;
 				int a = skin.material[i * 4 + 3] & 0xFF;
-				material.setPixel(x, y, 0xFF000000 | (r << 16) | (g << 8) | b);
+				// Alpha carries the paint mask so the knife shader can leave the blade to the blade shader.
+				material.setPixel(x, y, (a << 24) | (r << 16) | (g << 8) | b);
 				// Blade mask for the held item shader: metal (paintable) parts are opaque.
 				int bladeAlpha = Math.max(a, g);
 				blade.setPixel(x, y, (bladeAlpha << 24) | 0xFFFFFF);

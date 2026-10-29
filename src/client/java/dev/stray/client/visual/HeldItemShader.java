@@ -919,7 +919,8 @@ public final class HeldItemShader {
 		return RenderType.create(
 			"stray_cs2_blade",
 			RenderSetup.builder(bladePipeline)
-				.withTexture("Sampler0", texture)
+				// Nearest with wrap: the knife's BLADE_CUT reads the same texel to leave these pixels out.
+				.withTexture("Sampler0", texture, () -> RenderSystem.getSamplerCache().getRepeat(FilterMode.NEAREST))
 				.withTexture("Sampler1", ItemFeatureRenderer.ENCHANTED_GLINT_ITEM)
 				.withTexture("Sampler3", AbstractEndPortalRenderer.END_SKY_LOCATION)
 				.withTexture("Sampler4", AbstractEndPortalRenderer.END_PORTAL_LOCATION)
