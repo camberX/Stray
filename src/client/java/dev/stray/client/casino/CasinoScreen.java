@@ -96,7 +96,11 @@ public final class CasinoScreen extends Screen {
 	private float time;
 
 	// account
-	private long balance = -1;
+	/** No balance yet (not logged in). Balances can be negative: players may bet into debt. */
+	private static final long UNKNOWN = Long.MIN_VALUE;
+	private long balance = UNKNOWN;
+	/** The lowest balance the server lets bets take you to (sent by /me). */
+	private long minBalance = -5000;
 	private double shownBalance;
 	private long pendingBalance = Long.MIN_VALUE;
 	private float pendingBalanceAt;
@@ -156,7 +160,7 @@ public final class CasinoScreen extends Screen {
 		ui = Math.min(1f, Math.min((height - 12f) / H, (width - 12f) / W));
 		left = Math.round((width / ui - W) / 2f);
 		top = Math.round((height / ui - H) / 2f);
-		if (balance < 0 && !busy) {
+		if (balance == UNKNOWN && !busy) {
 			busy = true;
 			CasinoApi.login().thenAccept(r -> Minecraft.getInstance().execute(() -> {
 				busy = false;
@@ -169,7 +173,7 @@ public final class CasinoScreen extends Screen {
 				long daily = r.body().has("daily") ? r.body().get("daily").getAsLong() : 0;
 				if (daily > 0) {
 					// count up from before the reward, so the pill rolls it in
-					shownBalance = Math.max(0, balance - daily);
+					shownBalance = balance - daily;
 					burstCoins(left + W - 60, top + HEAD_Y + HEAD_H / 2f, 24);
 					setStatus("Daily reward: +" + fmt(daily) + " chips. Come back tomorrow for more.", false);
 				} else {
@@ -199,7 +203,7 @@ public final class CasinoScreen extends Screen {
 			balance = pendingBalance;
 			pendingBalance = Long.MIN_VALUE;
 		}
-		if (balance >= 0) {
+		if (balance != UNKNOWN) {
 			shownBalance += (balance - shownBalance) * Math.min(1f, dt * 6f);
 			if (Math.abs(balance - shownBalance) < 0.5) {
 				shownBalance = balance;
@@ -273,8 +277,8 @@ public final class CasinoScreen extends Screen {
 		// balance (laid out first: the tabs take the room between it and the title)
 		// The pill is sized for the balance the count is heading to, and eases to that width
 		// once, instead of resizing with every number the count passes through.
-		String value = balance < 0 ? "..." : fmt(Math.round(shownBalance));
-		String target = balance < 0 ? "..." : fmt(balance);
+		String value = balance == UNKNOWN ? "..." : fmt(Math.round(shownBalance));
+		String target = balance == UNKNOWN ? "..." : fmt(balance);
 		float targetW = 10 + 12 + 5 + tw(target, T.TITLE) + 4 + tw("chips", T.SMALL) + 11;
 		balancePillW = balancePillW <= 0 ? targetW : balancePillW + (targetW - balancePillW) * Math.min(1f, frameDt * 10f);
 		if (Math.abs(targetW - balancePillW) < 0.05f) {
@@ -287,7 +291,7 @@ public final class CasinoScreen extends Screen {
 		RoundRect.fill(g, bx + 13, y + h / 2f - 3, 6, 6, 3, withA(onPrimary, 0xB0));
 		// right-aligned against "chips", so the number grows leftwards inside the pill
 		float chipsX = bx + bw - 11 - tw("chips", T.SMALL);
-		label(g, value, chipsX - 4 - tw(value, T.TITLE), y, h, TEXT, T.TITLE);
+		label(g, value, chipsX - 4 - tw(value, T.TITLE), y, h, balance != UNKNOWN && shownBalance < 0 ? RED : TEXT, T.TITLE);
 		label(g, "chips", chipsX, y, h, MUTED, T.SMALL);
 
 		// tabs, like the bar's workspaces
@@ -423,7 +427,7 @@ public final class CasinoScreen extends Screen {
 		pw -= 24;
 		label(g, "Bet", px, y + 8, 12, MUTED, T.SMALL);
 		betField(g, mx, my, 0, px, y + 22, pw);
-		boolean canSpin = !spinning && !busy && balance > 0;
+		boolean canSpin = !spinning && !busy && spendable() > 0;
 		button(g, mx, my, px, y + 80, pw, 30, spinning ? "Spinning..." : "Spin", canSpin, true, spinning ? null : "Space", this::spin);
 		RoundRect.fill(g, px, y + 122, pw, 1, 0.5f, withA(TEXT, 0x16));
 		label(g, "Paytable", px, y + 128, 12, MUTED, T.SMALL);
@@ -492,8 +496,8 @@ public final class CasinoScreen extends Screen {
 			setStatus("Enter a bet.", true);
 			return;
 		}
-		if (bet > balance) {
-			setStatus("Not enough chips.", true);
+		if (bet > spendable()) {
+			setStatus(debtMessage(), true);
 			return;
 		}
 		spinning = true;
@@ -728,7 +732,7 @@ public final class CasinoScreen extends Screen {
 					quickButton(g, mx, my, 1, i, qx + i * (qw + 4), cy + (ch - 24) / 2f, qw, 24);
 				}
 				float dx = qx + QUICK.length * (qw + 4) + 6;
-				button(g, mx, my, dx, cy, tx + tw - dx, ch, "Deal", !busy && balance > 0, true, "Space", this::deal);
+				button(g, mx, my, dx, cy, tx + tw - dx, ch, "Deal", !busy && spendable() > 0, true, "Space", this::deal);
 			}
 		} else if ("insurance".equals(phase)) {
 			if (!animating) {
@@ -812,8 +816,8 @@ public final class CasinoScreen extends Screen {
 			setStatus("Enter a bet.", true);
 			return;
 		}
-		if (bet > balance) {
-			setStatus("Not enough chips.", true);
+		if (bet > spendable()) {
+			setStatus(debtMessage(), true);
 			return;
 		}
 		JsonObject body = new JsonObject();
@@ -1198,8 +1202,8 @@ public final class CasinoScreen extends Screen {
 			arr.add(b);
 			total += e.getValue();
 		}
-		if (total > balance) {
-			setStatus("Not enough chips.", true);
+		if (total > spendable()) {
+			setStatus(debtMessage(), true);
 			return;
 		}
 		JsonObject body = new JsonObject();
@@ -1530,7 +1534,7 @@ public final class CasinoScreen extends Screen {
 		centered(g, QUICK[k], x + w / 2f, y, h, hot ? TEXT : MUTED, T.BODY);
 		hit(x, y, w, h, () -> {
 			long v = parse(fields[idx]);
-			long max = Math.max(1, balance);
+			long max = Math.max(1, spendable());
 			v = switch (k) {
 				case 0 -> Math.max(1, v / 2);
 				case 1 -> Math.min(max, Math.max(1, v * 2));
@@ -1743,11 +1747,11 @@ public final class CasinoScreen extends Screen {
 		String phase = bj == null ? "none" : str(bj, "phase");
 		boolean animating = time < lastCardTime() + 0.1f;
 		if (key == InputConstants.KEY_SPACE) {
-			if (tab == 0 && !spinning && balance > 0) {
+			if (tab == 0 && !spinning && spendable() > 0) {
 				spin();
 				return true;
 			}
-			if (tab == 1 && !animating && (bj == null || "done".equals(phase)) && balance > 0) {
+			if (tab == 1 && !animating && (bj == null || "done".equals(phase)) && spendable() > 0) {
 				deal();
 				return true;
 			}
@@ -1829,6 +1833,9 @@ public final class CasinoScreen extends Screen {
 	private void applyAccount(JsonObject body, boolean first) {
 		if (body == null) {
 			return;
+		}
+		if (body.has("minBalance") && body.get("minBalance").isJsonPrimitive()) {
+			minBalance = body.get("minBalance").getAsLong();
 		}
 		if (body.has("balance") && body.get("balance").isJsonPrimitive()) {
 			balance = body.get("balance").getAsLong();
@@ -1978,6 +1985,17 @@ public final class CasinoScreen extends Screen {
 			t += v;
 		}
 		return t;
+	}
+
+	/** Chips that can still be bet: the balance down to {@link #minBalance}. */
+	private long spendable() {
+		return balance == UNKNOWN ? 0 : balance - minBalance;
+	}
+
+	private String debtMessage() {
+		return balance <= minBalance
+			? "You're at the " + fmt(minBalance) + " chip limit."
+			: "That bet goes below " + fmt(minBalance) + " chips.";
 	}
 
 	private static String fmt(long v) {
