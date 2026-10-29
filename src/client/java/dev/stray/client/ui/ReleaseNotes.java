@@ -16,7 +16,8 @@ public final class ReleaseNotes {
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
 		new Entry("1.5.80", new String[]{
-			"Casino: you can keep betting into debt, down to -5,000 chips. A negative balance shows in red. Sending chips still needs chips you have."
+			"Casino: you can keep betting into debt, down to -5,000 chips. A negative balance shows in red. Sending chips still needs chips you have.",
+			"CS2 knife: the blade shader and the normal blade texture no longer fight over which one shows."
 		}),
 		new Entry("1.5.79", new String[]{
 			"Customize no longer crashes on armor: the armor stand preview works on 26.3 again.",
