@@ -15,6 +15,10 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.5.79", new String[]{
+			"Customize no longer crashes on armor: the armor stand preview works on 26.3 again.",
+			"CS2 knife: with the blade shader on, the blade shows only the shader instead of flickering with the normal blade texture."
+		}),
 		new Entry("1.5.78", new String[]{
 			"New mod description: The most vibecoded professional mod ever."
 		}),

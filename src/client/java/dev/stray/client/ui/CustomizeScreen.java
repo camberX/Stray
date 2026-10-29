@@ -123,6 +123,8 @@ public final class CustomizeScreen extends Screen {
 				// Item icons draw one generic trim overlay for every pattern, so
 				// show the armor worn on a stand where patterns and dyes are real.
 				stand = new ArmorStand(EntityTypes.ARMOR_STAND, client.level);
+				// Never added to the level, so it gets no id; 26.3 reads the id while drawing held/worn items.
+				stand.setId(-1_000_001);
 				stand.setSilent(true);
 				stand.setItemSlot(slot, stack.copy());
 			}
