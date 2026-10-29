@@ -82,13 +82,18 @@ public final class KnifeGpu {
 		final int indexCount;
 		final GpuBuffer bladeIndices;
 		final int bladeCount;
+		/** Everything except the blade, drawn instead of {@link #indices} while the blade shader covers the blade. */
+		final GpuBuffer bodyIndices;
+		final int bodyCount;
 
-		Mesh(GpuBuffer vertices, GpuBuffer indices, int indexCount, GpuBuffer bladeIndices, int bladeCount) {
+		Mesh(GpuBuffer vertices, GpuBuffer indices, int indexCount, GpuBuffer bladeIndices, int bladeCount, GpuBuffer bodyIndices, int bodyCount) {
 			this.vertices = vertices;
 			this.indices = indices;
 			this.indexCount = indexCount;
 			this.bladeIndices = bladeIndices;
 			this.bladeCount = bladeCount;
+			this.bodyIndices = bodyIndices;
+			this.bodyCount = bodyCount;
 		}
 
 		void close() {
@@ -96,6 +101,9 @@ public final class KnifeGpu {
 			indices.close();
 			if (bladeIndices != null) {
 				bladeIndices.close();
+			}
+			if (bodyIndices != null) {
+				bodyIndices.close();
 			}
 		}
 	}
@@ -152,6 +160,8 @@ public final class KnifeGpu {
 			bladeTotal += list == null ? 0 : list.length * 3;
 		}
 		ByteBuffer bladeIdx = ByteBuffer.allocateDirect(Math.max(1, bladeTotal) * 4).order(ByteOrder.nativeOrder());
+		ByteBuffer bodyIdx = ByteBuffer.allocateDirect(Math.max(1, indexTotal) * 4).order(ByteOrder.nativeOrder());
+		int bodyTotal = 0;
 		int base = 0;
 		for (int pi = 0; pi < model.parts.size(); pi++) {
 			S2Model.Part part = model.parts.get(pi);
@@ -183,6 +193,20 @@ public final class KnifeGpu {
 				idx.putInt(base + part.indices[t]);
 			}
 			int[] list = pi < bladeTris.length ? bladeTris[pi] : null;
+			java.util.BitSet bladeStarts = new java.util.BitSet(end);
+			if (list != null) {
+				for (int t : list) {
+					bladeStarts.set(t);
+				}
+			}
+			for (int t = 0; t < end; t += 3) {
+				if (!bladeStarts.get(t)) {
+					bodyIdx.putInt(base + part.indices[t]);
+					bodyIdx.putInt(base + part.indices[t + 1]);
+					bodyIdx.putInt(base + part.indices[t + 2]);
+					bodyTotal += 3;
+				}
+			}
 			if (list != null) {
 				for (int t : list) {
 					bladeIdx.putInt(base + part.indices[t]);
@@ -194,11 +218,13 @@ public final class KnifeGpu {
 		}
 		idx.flip();
 		bladeIdx.flip();
+		bodyIdx.flip();
 		GpuDevice device = RenderSystem.getDevice();
 		GpuBuffer vb = device.createBuffer(() -> "Stray CS2 knife vertices", GpuBuffer.USAGE_VERTEX, v);
 		GpuBuffer ib = device.createBuffer(() -> "Stray CS2 knife indices", GpuBuffer.USAGE_INDEX, idx);
 		GpuBuffer bb = bladeTotal == 0 ? null : device.createBuffer(() -> "Stray CS2 blade indices", GpuBuffer.USAGE_INDEX, bladeIdx);
-		return new Mesh(vb, ib, indexTotal, bb, bladeTotal);
+		GpuBuffer body = bladeTotal == 0 || bodyTotal == 0 ? null : device.createBuffer(() -> "Stray CS2 knife body indices", GpuBuffer.USAGE_INDEX, bodyIdx);
+		return new Mesh(vb, ib, indexTotal, bb, bladeTotal, body, bodyTotal);
 	}
 
 	private static byte normalByte(float f) {
@@ -341,14 +367,16 @@ public final class KnifeGpu {
 				.createRenderPass(() -> "Stray CS2 knife", color, Optional.empty(), depth, OptionalDouble.empty())) {*///?}
 			bind(batch, pass);
 			for (Request req : pending.requests) {
-				drawMesh(pass, req, false);
+				// With the blade shader on, the blade is drawn only by the shader: drawing it twice at
+				// the same depth from two vertex shaders z-fights.
+				drawMesh(pass, req, false, req.blade != null);
 			}
 			for (Request req : pending.requests) {
 				if (req.blade == null) {
 					continue;
 				}
 				bind(req.blade, pass);
-				drawMesh(pass, req, true);
+				drawMesh(pass, req, true, false);
 			}
 		} catch (RuntimeException e) {
 			warn(e);
@@ -398,8 +426,14 @@ public final class KnifeGpu {
 	}
 
 	private static void drawMesh(RenderPass pass, Request req, boolean blade) {
-		GpuBuffer indices = blade ? req.mesh.bladeIndices : req.mesh.indices;
-		int count = blade ? req.mesh.bladeCount : req.mesh.indexCount;
+		drawMesh(pass, req, blade, false);
+	}
+
+	/** {@code withoutBlade}: the knife minus its blade (when the blade shader replaces it). */
+	private static void drawMesh(RenderPass pass, Request req, boolean blade, boolean withoutBlade) {
+		boolean body = withoutBlade && !blade && req.mesh.bodyIndices != null;
+		GpuBuffer indices = blade ? req.mesh.bladeIndices : body ? req.mesh.bodyIndices : req.mesh.indices;
+		int count = blade ? req.mesh.bladeCount : body ? req.mesh.bodyCount : req.mesh.indexCount;
 		if (indices == null || count == 0) {
 			return;
 		}
