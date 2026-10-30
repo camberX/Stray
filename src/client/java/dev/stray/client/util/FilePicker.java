@@ -87,6 +87,7 @@ public final class FilePicker {
 					Stray.LOGGER.warn("File dialog failed: {}", failure);
 					onError.accept("Can't open file picker");
 				} else {
+					Stray.LOGGER.info("File dialog: {}", result == null ? "cancelled" : result);
 					onResult.accept(result);
 				}
 			});

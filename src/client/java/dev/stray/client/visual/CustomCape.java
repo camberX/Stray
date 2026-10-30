@@ -220,15 +220,28 @@ public final class CustomCape {
 		}, error -> {
 			picking = false;
 			restoreMouse();
-			fail("Can't open file picker");
+			if (create) {
+				tell("The file picker didn't open (" + error + ").");
+			} else {
+				fail("Can't open file picker");
+			}
 		});
 	}
+
+	/** Files the cape creator accepts; it crops and scales them down, so photos are fine. */
+	private static final long CREATE_MAX_BYTES = 40L * 1024 * 1024;
+	/** Longest side handed to the creator: plenty for a 10x16 cape face. */
+	private static final int CREATE_MAX_SIDE = 2048;
 
 	private static void applyPicked(String selected, boolean create) {
 		if (selected == null || selected.isBlank()) {
 			return;
 		}
-		Path path = Path.of(selected);
+		Path path = pickedPath(selected);
+		if (path == null) {
+			tell("Can't open that file.");
+			return;
+		}
 		if (!create) {
 			loadPath(path, true);
 			return;
@@ -236,21 +249,27 @@ public final class CustomCape {
 		Util.nonCriticalIoPool().execute(() -> {
 			try {
 				if (!Files.isRegularFile(path)) {
-					failOn(generation, "Missing file");
+					tell("Couldn't find " + path.getFileName() + ".");
 					return;
 				}
-				if (Files.size(path) > MAX_BYTES) {
-					failOn(generation, "Too large");
+				if (Files.size(path) > CREATE_MAX_BYTES) {
+					tell("That image is over 40 MB.");
 					return;
 				}
-				byte[] bytes = Files.readAllBytes(path);
+				byte[] raw = Files.readAllBytes(path);
+				byte[] bytes = creatorPng(raw);
+				if (bytes == null) {
+					tell("Couldn't read " + path.getFileName() + ". Use a PNG or JPEG.");
+					return;
+				}
 				NativeImage image = NativeImage.read(bytes);
 				int width = image.getWidth();
 				int height = image.getHeight();
-				boolean vanilla = CapeAtlas.isVanillaLayout(width, height);
+				// A ready-made cape texture (only as the original PNG) is worn as is.
+				boolean vanilla = bytes == raw && CapeAtlas.isVanillaLayout(width, height);
 				image.close();
-				if (width < 16 || height < 16 || width > MAX_SRC || height > MAX_SRC) {
-					failOn(generation, "Bad dimensions");
+				if (width < 16 || height < 16) {
+					tell("That image is too small (at least 16x16).");
 					return;
 				}
 				Minecraft.getInstance().execute(() -> {
@@ -262,7 +281,71 @@ public final class CustomCape {
 					Minecraft.getInstance().gui.setScreen(new CapeCreatorScreen(parent, bytes));
 				});
 			} catch (Exception exception) {
-				failOn(generation, "Can't read file");
+				Stray.LOGGER.warn("Cape creator: could not read {}", path, exception);
+				tell("Couldn't read " + path.getFileName() + ".");
+			}
+		});
+	}
+
+	/** Dialogs on some desktops hand back a file:// URI instead of a path. */
+	private static Path pickedPath(String selected) {
+		try {
+			String text = selected.trim();
+			return text.startsWith("file:") ? Path.of(URI.create(text)) : Path.of(text);
+		} catch (RuntimeException exception) {
+			Stray.LOGGER.warn("Cape creator: bad path from the file dialog: {}", selected, exception);
+			return null;
+		}
+	}
+
+	/**
+	 * PNG bytes the creator can open: small PNGs as they are, anything else (JPEG, big PNGs)
+	 * decoded and scaled so the longest side is at most {@link #CREATE_MAX_SIDE}. Null when the
+	 * file isn't an image Java can read.
+	 */
+	private static byte[] creatorPng(byte[] bytes) throws java.io.IOException {
+		boolean png = bytes.length >= 8 && (bytes[0] & 0xFF) == 0x89 && bytes[1] == 0x50 && bytes[2] == 0x4E && bytes[3] == 0x47;
+		if (png && bytes.length <= MAX_BYTES) {
+			try {
+				NativeImage image = NativeImage.read(bytes);
+				boolean fits = image.getWidth() <= CREATE_MAX_SIDE && image.getHeight() <= CREATE_MAX_SIDE;
+				image.close();
+				if (fits) {
+					return bytes;
+				}
+			} catch (Exception ignored) {
+				// fall through to ImageIO
+			}
+		}
+		java.awt.image.BufferedImage source = javax.imageio.ImageIO.read(new java.io.ByteArrayInputStream(bytes));
+		if (source == null) {
+			return null;
+		}
+		int w = source.getWidth();
+		int h = source.getHeight();
+		double scale = Math.min(1.0, (double) CREATE_MAX_SIDE / Math.max(w, h));
+		int tw = Math.max(1, (int) Math.round(w * scale));
+		int th = Math.max(1, (int) Math.round(h * scale));
+		java.awt.image.BufferedImage out = new java.awt.image.BufferedImage(tw, th, java.awt.image.BufferedImage.TYPE_INT_ARGB);
+		java.awt.Graphics2D g = out.createGraphics();
+		try {
+			g.setRenderingHint(java.awt.RenderingHints.KEY_INTERPOLATION, java.awt.RenderingHints.VALUE_INTERPOLATION_BICUBIC);
+			g.setRenderingHint(java.awt.RenderingHints.KEY_RENDERING, java.awt.RenderingHints.VALUE_RENDER_QUALITY);
+			g.drawImage(source, 0, 0, tw, th, null);
+		} finally {
+			g.dispose();
+		}
+		java.io.ByteArrayOutputStream png2 = new java.io.ByteArrayOutputStream();
+		javax.imageio.ImageIO.write(out, "png", png2);
+		return png2.toByteArray();
+	}
+
+	/** Creator problems go to chat: they must not replace the cape you are wearing with an error. */
+	private static void tell(String message) {
+		Minecraft client = Minecraft.getInstance();
+		client.execute(() -> {
+			if (client.player != null) {
+				client.player.sendSystemMessage(net.minecraft.network.chat.Component.literal("\u00a7bStray \u00a78\u00bb \u00a77Cape creator: " + message));
 			}
 		});
 	}

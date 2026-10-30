@@ -82,6 +82,10 @@ public class CapeCreatorScreen extends Screen {
 			crop = CapeCrop.cover(srcW, srcH);
 			ready = true;
 		} catch (Exception exception) {
+			dev.stray.Stray.LOGGER.warn("Cape creator: could not open the image", exception);
+			if (minecraft.player != null) {
+				minecraft.player.sendSystemMessage(Component.literal("\u00a7bStray \u00a78\u00bb \u00a77Cape creator: couldn't open that image."));
+			}
 			onClose();
 		}
 	}

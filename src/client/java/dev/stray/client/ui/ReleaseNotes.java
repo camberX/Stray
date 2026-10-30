@@ -15,6 +15,10 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.5.81", new String[]{
+			"Cape creator: picking an image opens the creator again for big photos and JPEGs (they used to be refused without a word). Images up to 40 MB are scaled down for cropping.",
+			"Cape creator problems now show in chat instead of doing nothing."
+		}),
 		new Entry("1.5.80", new String[]{
 			"Casino: you can keep betting into debt, down to -5,000 chips. A negative balance shows in red. Sending chips still needs chips you have.",
 			"CS2 knife: the blade shader and the normal blade texture no longer fight over which one shows."
