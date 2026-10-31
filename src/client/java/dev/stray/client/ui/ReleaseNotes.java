@@ -15,6 +15,14 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.5.82", new String[]{
+			"World editor (/stray editor): a Hyprland-style workspace to build, fill, paint and replace blocks from a free camera. Tools: Build, Replace, Select, Magic wand, Paint and Replace all. Hold right mouse to look around, WASD to fly.",
+			"World editor blocks are purely visual and walk-through. They are saved per island, dungeon floor and Kuudra tier, and Replace all also changes chunks that load later.",
+			"World editor builds can be shared: export to a file or a share code, then paste or import them.",
+			"Freecam (/stray freecam, bindable in Keys).",
+			"Command keys: bind any key to a command (Keys tab, or /stray keys).",
+			"No cursor reset leaves Spirit Leap and Teleport to Player menus alone (toggle: Skip leap menus)."
+		}),
 		new Entry("1.5.81", new String[]{
 			"Cape creator: picking an image opens the creator again for big photos and JPEGs (they used to be refused without a word). Images up to 40 MB are scaled down for cropping.",
 			"Cape creator problems now show in chat instead of doing nothing."
