@@ -564,7 +564,7 @@ public final class WorldEditor {
 		if (shown == paint) {
 			return;
 		}
-		apply(strokeOp(), pos, paint.getBlock() == shown.getBlock() || paint.isAir() ? paint : GhostBlocks.copyProperties(shown, paint));
+		apply(strokeOp(), pos, GhostBlocks.reshape(shown, paint));
 	}
 
 	private static void paint() {
@@ -590,7 +590,7 @@ public final class WorldEditor {
 					if (erase) {
 						apply(op, pos, Blocks.AIR.defaultBlockState());
 					} else if (shown != paint) {
-						apply(op, pos, paint.getBlock() == shown.getBlock() ? paint : GhostBlocks.copyProperties(shown, paint));
+						apply(op, pos, GhostBlocks.reshape(shown, paint));
 					}
 				}
 			}
@@ -804,7 +804,7 @@ public final class WorldEditor {
 			if (shown.isAir() || target != null && shown.getBlock() != target || shown == paint) {
 				return;
 			}
-			apply(op, pos, paint.getBlock() == shown.getBlock() ? paint : GhostBlocks.copyProperties(shown, paint));
+			apply(op, pos, GhostBlocks.reshape(shown, paint));
 		});
 		push(op);
 		say("Replaced " + op.size() + (target == null ? " blocks" : " " + name(target.defaultBlockState())));

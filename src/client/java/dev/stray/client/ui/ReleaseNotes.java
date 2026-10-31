@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.5.83", new String[]{
+			"World editor: replacing stairs keeps their direction and shape (upside down, corners). Picking a full block like stone gives the matching stairs (stone stairs). Slabs stay slabs the same way."
+		}),
 		new Entry("1.5.82", new String[]{
 			"World editor (/stray editor): a Hyprland-style workspace to build, fill, paint and replace blocks from a free camera. Tools: Build, Replace, Select, Magic wand, Paint and Replace all. Hold right mouse to look around, WASD to fly.",
 			"World editor blocks are purely visual and walk-through. They are saved per island, dungeon floor and Kuudra tier, and Replace all also changes chunks that load later.",

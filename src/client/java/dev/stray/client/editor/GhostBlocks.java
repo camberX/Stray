@@ -69,7 +69,7 @@ public final class GhostBlocks {
 		synchronized BlockState apply(BlockState original) {
 			BlockState out = forward.get(original);
 			if (out == null) {
-				out = copyProperties(original, to);
+				out = reshape(original, to);
 				forward.put(original, out);
 			}
 			return out;
@@ -815,6 +815,59 @@ public final class GhostBlocks {
 	}
 
 	// ------------------------------------------------------------------ helpers
+
+	/**
+	 * What {@code original} becomes when it is replaced with {@code paint}: the new material,
+	 * but the original's shape and orientation. Stairs stay stairs facing the same way (a full
+	 * block picks its matching stairs, e.g. stone -> stone stairs), slabs stay slabs.
+	 */
+	public static BlockState reshape(BlockState original, BlockState paint) {
+		if (paint == null || paint.isAir() || original == null || original.isAir()) {
+			return paint;
+		}
+		BlockState base = paint;
+		Block from = original.getBlock();
+		Block to = paint.getBlock();
+		if (from instanceof net.minecraft.world.level.block.StairBlock && !(to instanceof net.minecraft.world.level.block.StairBlock)) {
+			Block variant = variant(to, "stairs", net.minecraft.world.level.block.StairBlock.class);
+			if (variant != null) {
+				base = variant.defaultBlockState();
+			}
+		} else if (from instanceof net.minecraft.world.level.block.SlabBlock && !(to instanceof net.minecraft.world.level.block.SlabBlock)) {
+			Block variant = variant(to, "slab", net.minecraft.world.level.block.SlabBlock.class);
+			if (variant != null) {
+				base = variant.defaultBlockState();
+			}
+		}
+		return copyProperties(original, base);
+	}
+
+	/** The stairs / slab made of {@code block}'s material (stone_bricks -> stone_brick_stairs), or null. */
+	private static Block variant(Block block, String suffix, Class<? extends Block> kind) {
+		net.minecraft.resources.Identifier id = BuiltInRegistries.BLOCK.getKey(block);
+		String path = id.getPath();
+		List<String> names = new ArrayList<>();
+		names.add(path + "_" + suffix);
+		if (path.endsWith("_planks")) {
+			names.add(path.substring(0, path.length() - "_planks".length()) + "_" + suffix);
+		}
+		if (path.endsWith("_block")) {
+			names.add(path.substring(0, path.length() - "_block".length()) + "_" + suffix);
+		}
+		if (path.endsWith("s")) {
+			names.add(path.substring(0, path.length() - 1) + "_" + suffix);
+		}
+		if (path.endsWith("_bricks")) {
+			names.add(path.substring(0, path.length() - "_bricks".length()) + "_brick_" + suffix);
+		}
+		for (String name : names) {
+			Block found = BuiltInRegistries.BLOCK.getOptional(id.withPath(name)).orElse(null);
+			if (found != null && kind.isInstance(found)) {
+				return found;
+			}
+		}
+		return null;
+	}
 
 	static BlockState copyProperties(BlockState source, BlockState target) {
 		BlockState out = target;
