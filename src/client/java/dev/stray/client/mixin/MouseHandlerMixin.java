@@ -101,7 +101,7 @@ public class MouseHandlerMixin {
 	@Unique
 	private static boolean stray$keep() {
 		Minecraft client = Minecraft.getInstance();
-		return client.gui.screen() instanceof ContainerScreen && NoCursorReset.shouldHookMouse();
+		return client.gui.screen() instanceof ContainerScreen container && NoCursorReset.shouldHookMouse() && !NoCursorReset.skipped(container);
 	}
 
 	@Inject(method = "turnPlayer", at = @At("HEAD"), cancellable = true)

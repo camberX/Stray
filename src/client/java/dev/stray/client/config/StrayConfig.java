@@ -271,6 +271,9 @@ public final class StrayConfig {
 	public boolean commandShortcutsEnabled = false;
 	public boolean commandShortcutsPassArgs = true;
 	public java.util.List<CommandShortcut> commandShortcuts = new java.util.ArrayList<>();
+	/** Command keys: press the key in game, the command runs. */
+	public boolean commandKeysEnabled = true;
+	public java.util.List<CommandKey> commandKeys = new java.util.ArrayList<>();
 	public boolean pathsEnabled = false;
 	public boolean pathThroughWalls = true;
 	public float pathWidth = 2.4f;
@@ -314,6 +317,8 @@ public final class StrayConfig {
 	public boolean loadoutsMenuEnabled = false;
 	public boolean noCursorReset = true;
 	public int noCursorResetTimeout = 150;
+	/** No cursor reset leaves Spirit Leap and "Teleport to Player" menus alone. */
+	public boolean noCursorResetSkipLeap = true;
 	public boolean loadoutsOpenAnim = false;
 	public boolean wardrobeMenuEnabled = false;
 	public boolean profileViewerEnabled = false;
@@ -1106,6 +1111,12 @@ public final class StrayConfig {
 				}
 				if (!json.has("commandShortcutsPassArgs")) {
 					loaded.commandShortcutsPassArgs = true;
+				}
+				if (loaded.commandKeys == null) {
+					loaded.commandKeys = new java.util.ArrayList<>();
+				}
+				if (!json.has("commandKeysEnabled")) {
+					loaded.commandKeysEnabled = true;
 				}
 				if (loaded.commandShortcuts == null) {
 					loaded.commandShortcuts = new java.util.ArrayList<>();
@@ -2659,6 +2670,12 @@ public final class StrayConfig {
 		public float x = -1f;
 		public float y = -1f;
 		public float scale = 1f;
+	}
+
+	public static final class CommandKey {
+		/** InputConstants key name, e.g. key.keyboard.g or key.mouse.4. */
+		public String key = "";
+		public String command = "";
 	}
 
 	public static final class CommandShortcut {

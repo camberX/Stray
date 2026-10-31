@@ -412,6 +412,8 @@ public class StrayScreen extends Screen {
 		new SearchEntry("Shortcuts", Tab.KEYS, "Keys"),
 		new SearchEntry("Command alias", Tab.KEYS, "Keys"),
 		new SearchEntry("Pass arguments", Tab.KEYS, "Keys"),
+		new SearchEntry("Command keys", Tab.KEYS, "Keys"),
+		new SearchEntry("Command binds", Tab.KEYS, "Keys"),
 		new SearchEntry("Shortcut autocomplete", Tab.KEYS, "Keys"),
 		new SearchEntry("Slot keys", Tab.MENUS, "Menus"),
 		new SearchEntry("Loadout slots", Tab.MENUS, "Menus"),
@@ -2460,7 +2462,7 @@ public class StrayScreen extends Screen {
 				GuiDraw.menu(graphics, font, MenuSlotBinds.hint() + " equips and closes", rx, y + 58, fade());
 
 				float cursorTop = top + bindsH + 8 + cardHeight(6) + 8;
-				y = featureCard(graphics, font, right, cursorTop, col, cardHeight(2), "Cursor");
+				y = featureCard(graphics, font, right, cursorTop, col, cardHeight(3), "Cursor");
 				drawCursorReset(graphics, font, rx, y, iw, mouseX, mouseY);
 			}
 			case STATUS -> {
@@ -2680,7 +2682,7 @@ public class StrayScreen extends Screen {
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Disabled potions", config.disabledPotionsHighlight, v -> config.disabledPotionsHighlight = v);
 				toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Sack recipe", config.sackRecipe, v -> config.sackRecipe = v);
 				float cursorY = sectionLabel(graphics, font, right, top, "Cursor");
-				float cursorH = cardHeight(2);
+				float cursorH = cardHeight(3);
 				y = featureCard(graphics, font, right, cursorY, col, cursorH, "No cursor reset");
 				drawCursorReset(graphics, font, rx, y, iw, mouseX, mouseY);
 				y = sectionLabel(graphics, font, right, cursorY + cursorH + 8, "Experiments");
@@ -2742,6 +2744,26 @@ public class StrayScreen extends Screen {
 						config.commandShortcutsPassArgs,
 						v -> config.commandShortcutsPassArgs = v
 					);
+				}
+				float keysY = shortcutsY + shortcutsH + 8;
+				int keyCount = config.commandKeys == null ? 0 : config.commandKeys.size();
+				y = featureCard(
+					graphics,
+					font,
+					right,
+					keysY,
+					col,
+					cardHeight(config.commandKeysEnabled ? 1 : 0),
+					"Command keys",
+					config.commandKeysEnabled,
+					v -> config.commandKeysEnabled = v,
+					mouseX,
+					mouseY,
+					"Edit",
+					() -> minecraft.gui.setScreen(new CommandKeysScreen(this))
+				);
+				if (config.commandKeysEnabled) {
+					GuiDraw.menu(graphics, font, keyCount == 0 ? "No keys yet: Edit to add one" : keyCount + (keyCount == 1 ? " key" : " keys") + " set", rx, GuiDraw.middle(y, ROW), fade());
 				}
 			}
 			case STATUS -> {
@@ -4029,6 +4051,7 @@ public class StrayScreen extends Screen {
 	private float drawCursorReset(GuiGraphicsExtractor graphics, Font font, float x, float y, float w, int mouseX, int mouseY) {
 		StrayConfig config = StrayConfig.get();
 		y = toggle(graphics, font, x, y, w, mouseX, mouseY, "No cursor reset", config.noCursorReset, v -> config.noCursorReset = v);
+		y = toggle(graphics, font, x, y, w, mouseX, mouseY, "Skip leap menus", config.noCursorResetSkipLeap, v -> config.noCursorResetSkipLeap = v);
 		int timeout = Math.round(StrayConfig.clamp(config.noCursorResetTimeout, 0, 1000) / 10f) * 10;
 		return slider(graphics, font, x, y, w, "Unhook", timeout + " ms", timeout / 1000f, v -> {
 			config.noCursorResetTimeout = Math.round(v * 100f) * 10;

@@ -777,6 +777,11 @@ public final class ClickGui {
 	}
 
 	private static void drawTimeout(StrayScreen screen, GuiGraphicsExtractor graphics, Font font, float x, float y, float w) {
+		drawChoice(screen, graphics, font, x, y, w, "Skip leap menus", StrayConfig.get().noCursorResetSkipLeap, () -> {
+			StrayConfig.get().noCursorResetSkipLeap = !StrayConfig.get().noCursorResetSkipLeap;
+			UnloadState.markDirty();
+		});
+		y += stride();
 		int current = StrayConfig.get().noCursorResetTimeout;
 		int[] choices = {50, 100, 150, 300, 500, 1000};
 		for (int choice : choices) {
@@ -983,7 +988,7 @@ public final class ClickGui {
 			return stackH(1);
 		}
 		if (mod.timeout) {
-			return stackH(6);
+			return stackH(7);
 		}
 		if (mod.feature == null) {
 			return 0f;
@@ -1058,8 +1063,9 @@ public final class ClickGui {
 			}
 		}
 		boolean shortcuts = title || "shortcuts".contains(needle) || "pass arguments".contains(needle);
+		boolean commandKeys = title || "command keys".contains(needle);
 		boolean commands = title || "commands".contains(needle) || "/loadouts".contains(needle) || "/wardrobe".contains(needle) || "/pv".contains(needle);
-		if (!title && binds.isEmpty() && !shortcuts && !commands) {
+		if (!title && binds.isEmpty() && !shortcuts && !commands && !commandKeys) {
 			column.height = 0f;
 			return;
 		}
@@ -1068,7 +1074,8 @@ public final class ClickGui {
 		}
 		StrayConfig config = StrayConfig.get();
 		boolean shortcutOn = config.commandShortcutsEnabled;
-		int extra = shortcuts ? 1 + (shortcutOn ? 2 : 0) : 0;
+		boolean keysOn = config.commandKeysEnabled;
+		int extra = (shortcuts ? 1 + (shortcutOn ? 2 : 0) : 0) + (commandKeys ? 1 + (keysOn ? 1 : 0) : 0);
 		int commandLines = commands ? 5 : 0;
 		float commandsH = commandLines == 0 ? 0f : commandLines * (font.lineHeight + 1) + 6f;
 		float content = stackH(binds.size() + extra) + (commandsH > 0f ? gap() + commandsH : 0f);
@@ -1123,6 +1130,24 @@ public final class ClickGui {
 				if (y + box() > viewTop && y < viewTop + shownH) {
 					drawButton(screen, graphics, font, boxX, y, boxW, "Edit", () ->
 						Minecraft.getInstance().gui.setScreen(new CommandShortcutScreen(screen))
+					);
+				}
+				y += stride();
+			}
+		}
+		if (commandKeys) {
+			if (y + box() > viewTop && y < viewTop + shownH) {
+				drawChoice(screen, graphics, font, boxX, y, boxW, "Command keys", keysOn, () -> {
+					StrayConfig current = StrayConfig.get();
+					current.commandKeysEnabled = !current.commandKeysEnabled;
+					UnloadState.markDirty();
+				});
+			}
+			y += stride();
+			if (keysOn) {
+				if (y + box() > viewTop && y < viewTop + shownH) {
+					drawButton(screen, graphics, font, boxX, y, boxW, "Edit command keys", () ->
+						Minecraft.getInstance().gui.setScreen(new CommandKeysScreen(screen))
 					);
 				}
 				y += stride();

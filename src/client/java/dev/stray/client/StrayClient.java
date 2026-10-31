@@ -312,6 +312,7 @@ public final class StrayClient implements ClientModInitializer {
 			root.then(CommandRingCommands.command());
 			root.then(MovementRingCommands.command());
 			root.then(ClientCommands.literal("shortcuts").executes(context -> CommandShortcuts.open()));
+			root.then(ClientCommands.literal("keys").executes(context -> openCommandKeys()));
 			root.then(ClientCommands.literal("titles").executes(context -> CustomTitle.open()));
 			root.then(customizeCommand());
 			root.then(LiveCommands.irc());
@@ -339,6 +340,7 @@ public final class StrayClient implements ClientModInitializer {
 			vm.then(CommandRingCommands.command());
 			vm.then(MovementRingCommands.command());
 			vm.then(ClientCommands.literal("shortcuts").executes(context -> CommandShortcuts.open()));
+			vm.then(ClientCommands.literal("keys").executes(context -> openCommandKeys()));
 			vm.then(ClientCommands.literal("titles").executes(context -> CustomTitle.open()));
 			vm.then(customizeCommand());
 			vm.then(LiveCommands.irc());
@@ -636,6 +638,7 @@ public final class StrayClient implements ClientModInitializer {
 		wasProfile = profile;
 		wasPing = ping;
 		EmptyVacuum.poll(client, ignoreMenuBinds(client));
+		dev.stray.client.input.CommandKeys.tick(client, ignoreMenuBinds(client));
 		PestPlotTp.poll(client, ignoreMenuBinds(client));
 	}
 
@@ -740,6 +743,12 @@ public final class StrayClient implements ClientModInitializer {
 		return ClientCommands.literal("customize")
 			.executes(context -> dev.stray.client.ui.CustomizeScreen.openForHeld())
 			.then(ClientCommands.literal("reset").executes(context -> dev.stray.client.ui.CustomizeScreen.resetHeld()));
+	}
+
+	private static int openCommandKeys() {
+		Minecraft client = Minecraft.getInstance();
+		client.execute(() -> client.gui.setScreen(new dev.stray.client.ui.CommandKeysScreen(client.gui.screen())));
+		return Command.SINGLE_SUCCESS;
 	}
 
 	private static int openItemEdit() {
