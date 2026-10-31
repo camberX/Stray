@@ -100,7 +100,8 @@
 		"GhostChunkCacheMixin",
 		"GhostSectionMixin",
 		"GhostChunkEmptyMixin",
-		"GhostSectionCopyMixin"
+		"GhostSectionCopyMixin",
+		"ProjectionAccessor"
 	],
 	"injectors": {
 		"defaultRequire": 1

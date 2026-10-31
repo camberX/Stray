@@ -604,42 +604,51 @@ public final class GhostBlocks {
 				Files.deleteIfExists(file);
 				return;
 			}
-			JsonObject root = new JsonObject();
-			root.addProperty("v", 1);
-			Object2IntOpenHashMap<BlockState> ids = new Object2IntOpenHashMap<>();
-			ids.defaultReturnValue(-1);
-			JsonArray states = new JsonArray();
-			StringBuilder placed = new StringBuilder(area.placed.size() * 16);
-			for (Long2ObjectMap.Entry<BlockState> entry : area.placed.long2ObjectEntrySet()) {
-				int id = ids.getInt(entry.getValue());
-				if (id < 0) {
-					id = states.size();
-					ids.put(entry.getValue(), id);
-					states.add(BlockStateParser.serialize(entry.getValue()));
-				}
-				long pos = entry.getLongKey();
-				if (placed.length() > 0) {
-					placed.append(' ');
-				}
-				placed.append(BlockPos.getX(pos)).append(',').append(BlockPos.getY(pos)).append(',').append(BlockPos.getZ(pos)).append(',').append(id);
-			}
-			root.add("states", states);
-			root.addProperty("placed", placed.toString());
-			JsonArray rules = new JsonArray();
-			for (Rule rule : area.rules) {
-				JsonObject row = new JsonObject();
-				row.addProperty("from", BuiltInRegistries.BLOCK.getKey(rule.from).toString());
-				row.addProperty("to", BlockStateParser.serialize(rule.to));
-				rules.add(row);
-			}
-			root.add("rules", rules);
-			Path tmp = DIR.resolve(area.key + ".json.tmp");
-			Files.writeString(tmp, root.toString(), StandardCharsets.UTF_8);
-			Files.move(tmp, file, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
+			writeAtomic(file, toJson(area).toString());
 		} catch (IOException | RuntimeException e) {
 			dirty = true;
 			saveAt = System.currentTimeMillis() + 10_000;
 		}
+	}
+
+	private static void writeAtomic(Path file, String text) throws IOException {
+		Path tmp = file.resolveSibling(file.getFileName() + ".tmp");
+		Files.writeString(tmp, text, StandardCharsets.UTF_8);
+		Files.move(tmp, file, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
+	}
+
+	private static JsonObject toJson(Area of) {
+		JsonObject root = new JsonObject();
+		root.addProperty("v", 1);
+		root.addProperty("area", of.key);
+		Object2IntOpenHashMap<BlockState> ids = new Object2IntOpenHashMap<>();
+		ids.defaultReturnValue(-1);
+		JsonArray states = new JsonArray();
+		StringBuilder placed = new StringBuilder(of.placed.size() * 16);
+		for (Long2ObjectMap.Entry<BlockState> entry : of.placed.long2ObjectEntrySet()) {
+			int id = ids.getInt(entry.getValue());
+			if (id < 0) {
+				id = states.size();
+				ids.put(entry.getValue(), id);
+				states.add(BlockStateParser.serialize(entry.getValue()));
+			}
+			long pos = entry.getLongKey();
+			if (placed.length() > 0) {
+				placed.append(' ');
+			}
+			placed.append(BlockPos.getX(pos)).append(',').append(BlockPos.getY(pos)).append(',').append(BlockPos.getZ(pos)).append(',').append(id);
+		}
+		root.add("states", states);
+		root.addProperty("placed", placed.toString());
+		JsonArray rules = new JsonArray();
+		for (Rule rule : of.rules) {
+			JsonObject row = new JsonObject();
+			row.addProperty("from", BuiltInRegistries.BLOCK.getKey(rule.from).toString());
+			row.addProperty("to", BlockStateParser.serialize(rule.to));
+			rules.add(row);
+		}
+		root.add("rules", rules);
+		return root;
 	}
 
 	private static Area load(String key) {
@@ -649,45 +658,148 @@ public final class GhostBlocks {
 			return out;
 		}
 		try {
-			JsonObject root = JsonParser.parseString(Files.readString(file, StandardCharsets.UTF_8)).getAsJsonObject();
-			List<BlockState> states = new ArrayList<>();
-			if (root.has("states")) {
-				for (JsonElement element : root.getAsJsonArray("states")) {
-					states.add(parseState(element.getAsString()));
-				}
-			}
-			String placed = root.has("placed") ? root.get("placed").getAsString() : "";
-			for (String part : placed.split(" ")) {
-				if (part.isEmpty()) {
-					continue;
-				}
-				String[] bits = part.split(",");
-				if (bits.length != 4) {
-					continue;
-				}
-				int id = Integer.parseInt(bits[3]);
-				if (id < 0 || id >= states.size() || states.get(id) == null) {
-					continue;
-				}
-				out.put(BlockPos.asLong(Integer.parseInt(bits[0]), Integer.parseInt(bits[1]), Integer.parseInt(bits[2])), states.get(id));
-				if (out.placed.size() >= MAX_PLACED) {
-					break;
-				}
-			}
-			if (root.has("rules")) {
-				for (JsonElement element : root.getAsJsonArray("rules")) {
-					JsonObject row = element.getAsJsonObject();
-					BlockState from = parseState(row.get("from").getAsString());
-					BlockState to = parseState(row.get("to").getAsString());
-					if (from != null && to != null && from.getBlock() != to.getBlock() && out.rules.size() < MAX_RULES) {
-						out.rules.add(new Rule(from.getBlock(), to));
-					}
-				}
-			}
+			fill(out, JsonParser.parseString(Files.readString(file, StandardCharsets.UTF_8)).getAsJsonObject());
 		} catch (IOException | RuntimeException e) {
 			// A broken file starts the area empty; the next save replaces it.
 		}
 		return out;
+	}
+
+	private static void fill(Area out, JsonObject root) {
+		List<BlockState> states = new ArrayList<>();
+		if (root.has("states")) {
+			for (JsonElement element : root.getAsJsonArray("states")) {
+				states.add(parseState(element.getAsString()));
+			}
+		}
+		String placed = root.has("placed") ? root.get("placed").getAsString() : "";
+		for (String part : placed.split(" ")) {
+			if (part.isEmpty()) {
+				continue;
+			}
+			String[] bits = part.split(",");
+			if (bits.length != 4) {
+				continue;
+			}
+			int id = Integer.parseInt(bits[3]);
+			if (id < 0 || id >= states.size() || states.get(id) == null) {
+				continue;
+			}
+			out.put(BlockPos.asLong(Integer.parseInt(bits[0]), Integer.parseInt(bits[1]), Integer.parseInt(bits[2])), states.get(id));
+			if (out.placed.size() >= MAX_PLACED) {
+				break;
+			}
+		}
+		if (root.has("rules")) {
+			for (JsonElement element : root.getAsJsonArray("rules")) {
+				JsonObject row = element.getAsJsonObject();
+				BlockState from = parseState(row.get("from").getAsString());
+				BlockState to = parseState(row.get("to").getAsString());
+				if (from != null && to != null && from.getBlock() != to.getBlock() && out.rules.size() < MAX_RULES) {
+					out.rules.add(new Rule(from.getBlock(), to));
+				}
+			}
+		}
+	}
+
+	// ------------------------------------------------------------------ sharing
+
+	private static final String CODE_PREFIX = "stray-build:";
+
+	/** A shared build: where it was made, its placed blocks and its replace rules. */
+	public record Build(String area, Long2ObjectOpenHashMap<BlockState> placed, List<Rule> rules) {
+	}
+
+	public static Path sharedDir() {
+		return DIR.resolve("shared");
+	}
+
+	/** Writes this place's edits to {@code config/stray/editor/shared}. Returns the file, or null. */
+	public static Path exportFile() {
+		if (area == null || area.empty()) {
+			return null;
+		}
+		try {
+			Files.createDirectories(sharedDir());
+			String stamp = java.time.LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss"));
+			Path file = sharedDir().resolve(area.key + "_" + stamp + ".json");
+			writeAtomic(file, toJson(area).toString());
+			return file;
+		} catch (IOException | RuntimeException e) {
+			return null;
+		}
+	}
+
+	/** This place's edits as one line of text to paste to someone (null when too big or empty). */
+	public static String shareCode() {
+		if (area == null || area.empty()) {
+			return null;
+		}
+		try {
+			java.io.ByteArrayOutputStream bytes = new java.io.ByteArrayOutputStream();
+			try (java.util.zip.GZIPOutputStream gzip = new java.util.zip.GZIPOutputStream(bytes)) {
+				gzip.write(toJson(area).toString().getBytes(StandardCharsets.UTF_8));
+			}
+			String code = CODE_PREFIX + java.util.Base64.getEncoder().encodeToString(bytes.toByteArray());
+			return code.length() > 4_000_000 ? null : code;
+		} catch (IOException e) {
+			return null;
+		}
+	}
+
+	/** Reads a share code or a build file's text. Returns null when it isn't one. */
+	public static Build readBuild(String text) {
+		if (text == null) {
+			return null;
+		}
+		String trimmed = text.trim();
+		try {
+			String json = trimmed;
+			if (trimmed.startsWith(CODE_PREFIX)) {
+				byte[] packed = java.util.Base64.getDecoder().decode(trimmed.substring(CODE_PREFIX.length()).trim());
+				try (java.util.zip.GZIPInputStream gzip = new java.util.zip.GZIPInputStream(new java.io.ByteArrayInputStream(packed))) {
+					json = new String(gzip.readAllBytes(), StandardCharsets.UTF_8);
+				}
+			}
+			if (!json.startsWith("{")) {
+				return null;
+			}
+			JsonObject root = JsonParser.parseString(json).getAsJsonObject();
+			if (!root.has("placed") && !root.has("rules")) {
+				return null;
+			}
+			Area read = new Area(root.has("area") ? root.get("area").getAsString() : "");
+			fill(read, root);
+			return new Build(read.key, read.placed, read.rules);
+		} catch (IOException | RuntimeException e) {
+			return null;
+		}
+	}
+
+	public static Build readBuild(Path file) {
+		try {
+			return readBuild(Files.readString(file, StandardCharsets.UTF_8));
+		} catch (IOException | RuntimeException e) {
+			return null;
+		}
+	}
+
+	/** Build files in the shared folder, newest first. */
+	public static List<Path> sharedFiles() {
+		try (var stream = Files.list(sharedDir())) {
+			return stream.filter(path -> path.getFileName().toString().endsWith(".json"))
+				.sorted((a, b) -> {
+					try {
+						return Files.getLastModifiedTime(b).compareTo(Files.getLastModifiedTime(a));
+					} catch (IOException e) {
+						return 0;
+					}
+				})
+				.limit(30)
+				.toList();
+		} catch (IOException | RuntimeException e) {
+			return List.of();
+		}
 	}
 
 	public static BlockState parseState(String text) {

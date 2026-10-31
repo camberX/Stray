@@ -27,6 +27,9 @@ public interface CameraAccessor {
 	@Accessor("depthFar")
 	float stray$depthFar();
 
+	@Accessor("projection")
+	net.minecraft.client.renderer.Projection stray$projection();
+
 	@Accessor("detached")
 	void stray$detached(boolean detached);
 }

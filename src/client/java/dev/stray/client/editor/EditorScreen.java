@@ -77,7 +77,9 @@ public class EditorScreen extends Screen {
 	private float rulesScroll;
 	private boolean panelOpen = true;
 	private boolean confirmClear;
-	private final boolean[] collapsed = new boolean[4];
+	private final boolean[] collapsed = {false, false, false, false, true};
+	private List<java.nio.file.Path> sharedFiles = List.of();
+	private long sharedAt;
 	// Last layout, for input.
 	private float viewX;
 	private float viewY;
@@ -425,6 +427,10 @@ public class EditorScreen extends Screen {
 			});
 			cy += 17;
 		}
+		cy = section(graphics, font, mouseX, mouseY, 4, "Share", x, cy, w);
+		if (!collapsed[4]) {
+			cy = share(graphics, font, mouseX, mouseY, ix, cy, iw);
+		}
 		panelContent = cy + panelScroll - y;
 		if (panelContent > h) {
 			// Scroll bar, Blender-thin.
@@ -435,6 +441,54 @@ public class EditorScreen extends Screen {
 		if (clipped) {
 			GuiDraw.disableScissor(graphics);
 		}
+	}
+
+	private float share(GuiGraphicsExtractor graphics, Font font, int mouseX, int mouseY, float x, float y, float w) {
+		widget(graphics, font, mouseX, mouseY, x, y, w, 13, "Export + copy share code", false, TEXT, WorldEditor::exportBuild);
+		y += 15;
+		float half = (w - 3) / 2f;
+		widget(graphics, font, mouseX, mouseY, x, y, half, 13, "Paste code", false, TEXT, () -> {
+			String clip = minecraft.keyboardHandler.getClipboard();
+			WorldEditor.importBuild(GhostBlocks.readBuild(clip), "clipboard");
+		});
+		widget(graphics, font, mouseX, mouseY, x + half + 3, y, half, 13, "Import file", false, TEXT, () ->
+			dev.stray.client.util.FilePicker.open("Import a Stray build", "Stray build", "json",
+				path -> WorldEditor.importBuild(GhostBlocks.readBuild(path), path.getFileName().toString()),
+				WorldEditor::say)
+		);
+		y += 15;
+		widget(graphics, font, mouseX, mouseY, x, y, w, 13, "Open builds folder", false, TEXT, () -> {
+			try {
+				java.nio.file.Files.createDirectories(GhostBlocks.sharedDir());
+			} catch (java.io.IOException ignored) {
+			}
+			//? if >=26.3 {
+			com.mojang.blaze3d.Blaze3D.openPath(GhostBlocks.sharedDir());
+			//?} else {
+			/*net.minecraft.util.Util.getPlatform().openPath(GhostBlocks.sharedDir());*///?}
+		});
+		y += 16;
+		if (System.currentTimeMillis() - sharedAt > 2000) {
+			sharedAt = System.currentTimeMillis();
+			sharedFiles = GhostBlocks.sharedFiles();
+		}
+		if (sharedFiles.isEmpty()) {
+			y = wrapText(graphics, font, "Exports and builds people send you go in that folder; click one here to add it.", x, y, w, FAINT);
+			return y + 3;
+		}
+		for (int i = 0; i < Math.min(6, sharedFiles.size()); i++) {
+			java.nio.file.Path file = sharedFiles.get(i);
+			String name = file.getFileName().toString().replaceFirst("\\.json$", "");
+			boolean hover = GuiDraw.hovered(mouseX, mouseY, x, y, w, 11);
+			if (hover) {
+				GuiDraw.rounded(graphics, x - 2, y, w + 4, 11, 2, WIDGET_DARK);
+			}
+			GuiDraw.small(graphics, font, clip(font, name, (int) w - 22), x, GuiDraw.middle(y, 11), hover ? TEXT : DIM);
+			GuiDraw.small(graphics, font, "Add", x + w - GuiDraw.smallWidth(font, "Add"), GuiDraw.middle(y, 11), hover ? ACTIVE_HOVER : FAINT);
+			hits.add(new Hit(x, y, w, 11, () -> WorldEditor.importBuild(GhostBlocks.readBuild(file), name)));
+			y += 12;
+		}
+		return y + 3;
 	}
 
 	/** Blender-style collapsible panel header. */

@@ -90,8 +90,8 @@ public final class WorldEditor {
 	/** Magic wand selection: exact positions (instead of the box). */
 	private static LongOpenHashSet mask;
 	private static BlockPos maskMin;
-	/** The selected blocks nearest the camera when selected: the ones outlined (all of them would be too slow). */
-	private static long[] maskShown = new long[0];
+	/** The wand selection's outline: joined outside faces and edges. */
+	private static SelectionMesh maskMesh = new SelectionMesh();
 	private static BlockPos maskMax;
 	private static BlockHitResult hover;
 	private static final Deque<Op> UNDO = new ArrayDeque<>();
@@ -458,6 +458,59 @@ public final class WorldEditor {
 		push(Op.rules(before, new ArrayList<>(GhostBlocks.rules())));
 	}
 
+	// ------------------------------------------------------------------ sharing
+
+	/** Adds a shared build's blocks and rules to this place (one undo step). */
+	public static void importBuild(GhostBlocks.Build build, String from) {
+		if (build == null) {
+			say("That isn't a Stray build");
+			return;
+		}
+		if (!GhostBlocks.ready()) {
+			say("Still finding out where you are...");
+			return;
+		}
+		finishStroke();
+		Op op = new Op();
+		BlockPos.MutableBlockPos cursor = new BlockPos.MutableBlockPos();
+		for (var entry : build.placed().long2ObjectEntrySet()) {
+			apply(op, cursor.set(entry.getLongKey()).immutable(), entry.getValue());
+		}
+		if (!build.rules().isEmpty()) {
+			List<GhostBlocks.Rule> before = new ArrayList<>(GhostBlocks.rules());
+			boolean changed = false;
+			for (GhostBlocks.Rule rule : build.rules()) {
+				GhostBlocks.Rule current = GhostBlocks.ruleFor(rule.from);
+				if (current == null || current.to != rule.to) {
+					changed |= GhostBlocks.addRule(rule.from, rule.to);
+				}
+			}
+			if (changed) {
+				op.rulesBefore = before;
+				op.rulesAfter = new ArrayList<>(GhostBlocks.rules());
+			}
+		}
+		push(op);
+		String origin = build.area() == null || build.area().isEmpty() || build.area().equals(GhostBlocks.areaKey())
+			? "" : " (made in " + EditArea.label(build.area()) + ")";
+		say("Imported " + build.placed().size() + " blocks, " + build.rules().size() + " rules" + (from == null ? "" : " from " + from) + origin);
+	}
+
+	public static void exportBuild() {
+		java.nio.file.Path file = GhostBlocks.exportFile();
+		if (file == null) {
+			say("Nothing to export here yet");
+			return;
+		}
+		String code = GhostBlocks.shareCode();
+		if (code != null) {
+			Minecraft.getInstance().keyboardHandler.setClipboard(code);
+			say("Saved " + file.getFileName() + " · share code copied");
+		} else {
+			say("Saved " + file.getFileName() + " (too big for a share code)");
+		}
+	}
+
 	// ------------------------------------------------------------------ tools
 
 	private static void build() {
@@ -684,6 +737,7 @@ public final class WorldEditor {
 			mask = null;
 			maskMin = null;
 			maskMax = null;
+			maskMesh = new SelectionMesh();
 			return;
 		}
 		int x0 = Integer.MAX_VALUE, y0 = Integer.MAX_VALUE, z0 = Integer.MAX_VALUE;
@@ -701,24 +755,7 @@ public final class WorldEditor {
 		}
 		maskMin = new BlockPos(x0, y0, z0);
 		maskMax = new BlockPos(x1, y1, z1);
-		Vec3 eye = Freecam.position(1.0f);
-		long[] all = mask.toLongArray();
-		if (all.length > 1500) {
-			// Partial sort by distance: keep the nearest 1500.
-			double[] dist = new double[all.length];
-			Integer[] order = new Integer[all.length];
-			for (int i = 0; i < all.length; i++) {
-				dist[i] = Vec3.atCenterOf(BlockPos.of(all[i])).distanceToSqr(eye);
-				order[i] = i;
-			}
-			java.util.Arrays.sort(order, (a, b) -> Double.compare(dist[a], dist[b]));
-			long[] near = new long[1500];
-			for (int i = 0; i < near.length; i++) {
-				near[i] = all[order[i]];
-			}
-			all = near;
-		}
-		maskShown = all;
+		maskMesh = SelectionMesh.build(mask);
 	}
 
 	public static void fillSelection(BlockState state) {
@@ -1081,11 +1118,19 @@ public final class WorldEditor {
 			Vector3fc f = camera.forwardVector();
 			Vector3fc u = camera.upVector();
 			Vector3fc l = camera.leftVector();
-			double t = Math.tan(Math.toRadians(camera.getFov()) / 2.0);
+			// The projection the world is really drawn with (Stray's aspect ratio option changes it).
+			var projection = (dev.stray.client.mixin.ProjectionAccessor) ((dev.stray.client.mixin.CameraAccessor) camera).stray$projection();
 			var window = client.getWindow();
-			double aspect = window.getWidth() / (double) Math.max(1, window.getHeight());
-			double sx = (2.0 * cursorX - 1.0) * t * aspect;
-			double sy = (1.0 - 2.0 * cursorY) * t;
+			double fov = projection.stray$fov() > 0 ? projection.stray$fov() : camera.getFov();
+			double aspect = projection.stray$height() > 0
+				? projection.stray$width() / projection.stray$height()
+				: window.getWidth() / (double) Math.max(1, window.getHeight());
+			double t = Math.tan(Math.toRadians(fov) / 2.0);
+			// Exact cursor position in the window (GUI coordinates are rounded to the GUI scale).
+			double mx = client.mouseHandler.xpos() / Math.max(1, window.getScreenWidth());
+			double my = client.mouseHandler.ypos() / Math.max(1, window.getScreenHeight());
+			double sx = (2.0 * mx - 1.0) * t * aspect;
+			double sy = (1.0 - 2.0 * my) * t;
 			dir = new Vec3(
 				f.x() - l.x() * sx + u.x() * sy,
 				f.y() - l.y() * sx + u.y() * sy,
@@ -1110,12 +1155,21 @@ public final class WorldEditor {
 		}
 		GhostBlocks.visible(() -> updateHover(client, client.getDeltaTracker().getGameTimeDeltaPartialTick(false)));
 		if (mask != null && maskMin != null) {
-			AABB bounds = new AABB(Vec3.atLowerCornerOf(maskMin), Vec3.atLowerCornerOf(maskMax).add(1, 1, 1)).inflate(0.03);
-			GizmoProperties outline = Gizmos.cuboid(bounds, GizmoStyle.stroke(0x80F0A030, 1.4f));
-			outline.setAlwaysOnTop();
-			for (long pos : maskShown) {
-				GizmoProperties cell = Gizmos.cuboid(new AABB(BlockPos.of(pos)).inflate(0.005), GizmoStyle.strokeAndFill(0xC0F0A030, 1.2f, 0x28F0A030));
-				cell.setAlwaysOnTop();
+			int quads = 0;
+			for (SelectionMesh.Quad quad : maskMesh.quads) {
+				if (++quads > 40_000) {
+					break;
+				}
+				GizmoProperties face = Gizmos.rect(quad.a(), quad.b(), quad.c(), quad.d(), GizmoStyle.fill(0x2EF0A030));
+				face.setAlwaysOnTop();
+			}
+			int lines = 0;
+			for (SelectionMesh.Line line : maskMesh.lines) {
+				if (++lines > 40_000) {
+					break;
+				}
+				GizmoProperties edge = Gizmos.line(line.from(), line.to(), 0xFFF0A030, 2.0f);
+				edge.setAlwaysOnTop();
 			}
 		} else if (hasSelection()) {
 			AABB box = new AABB(Vec3.atLowerCornerOf(min(cornerA, cornerB)), Vec3.atLowerCornerOf(max(cornerA, cornerB)).add(1, 1, 1)).inflate(0.02);
