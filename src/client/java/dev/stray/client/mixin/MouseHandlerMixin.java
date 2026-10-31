@@ -117,6 +117,10 @@ public class MouseHandlerMixin {
 		if (client.getWindow() == null || window != client.getWindow().handle()) {
 			return;
 		}
+		if (dev.stray.client.movement.Freecam.scroll(yOffset)) {
+			ci.cancel();
+			return;
+		}
 		if (ChatPeek.mouseScrolled(yOffset)) {
 			ci.cancel();
 		}

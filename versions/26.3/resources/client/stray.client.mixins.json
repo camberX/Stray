@@ -98,7 +98,11 @@
 		"customize.TrimMaterialPropertyMixin",
 		"customize.ItemModelOverrideMixin",
 		"DynamicUniformsMixin",
-		"VulkanCommandEncoderMixin"
+		"VulkanCommandEncoderMixin",
+		"FreecamEntityMixin",
+		"GhostChunkMixin",
+		"GhostLevelMixin",
+		"GhostChunkCacheMixin"
 	],
 	"injectors": {
 		"defaultRequire": 1

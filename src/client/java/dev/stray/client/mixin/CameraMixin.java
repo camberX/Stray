@@ -17,6 +17,12 @@ public abstract class CameraMixin {
 	@Shadow
 	protected abstract void setRotation(float yRot, float xRot);
 
+	@Shadow
+	protected abstract void setPosition(double x, double y, double z);
+
+	@Shadow
+	private boolean detached;
+
 	@Inject(
 		method = "update",
 		at = @At(
@@ -26,6 +32,21 @@ public abstract class CameraMixin {
 		)
 	)
 	private void stray$replayLook(DeltaTracker delta, CallbackInfo ci) {
+		if (dev.stray.client.movement.Freecam.active()) {
+			float partial = delta.getGameTimeDeltaPartialTick(true);
+			this.setPosition(
+				dev.stray.client.movement.Freecam.x(partial),
+				dev.stray.client.movement.Freecam.y(partial),
+				dev.stray.client.movement.Freecam.z(partial)
+			);
+			this.setRotation(dev.stray.client.movement.Freecam.yaw(), dev.stray.client.movement.Freecam.pitch());
+			// Detached: the player model is drawn where it stands, except while the camera is
+			// still inside its head (looking out through the face isn't useful).
+			net.minecraft.client.player.LocalPlayer player = net.minecraft.client.Minecraft.getInstance().player;
+			this.detached = player == null
+				|| dev.stray.client.movement.Freecam.position(partial).distanceToSqr(player.getEyePosition(partial)) > 0.6 * 0.6;
+			return;
+		}
 		if (MovementRings.sampleCameraLook()) {
 			this.setRotation(MovementRings.cameraYaw(), MovementRings.cameraPitch());
 		}

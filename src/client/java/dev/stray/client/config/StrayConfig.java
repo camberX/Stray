@@ -274,6 +274,14 @@ public final class StrayConfig {
 	/** Command keys: press the key in game, the command runs. */
 	public boolean commandKeysEnabled = true;
 	public java.util.List<CommandKey> commandKeys = new java.util.ArrayList<>();
+	/** Freecam: flight speed in blocks per tick, and the toggle key. */
+	public float freecamSpeed = 1.0f;
+	public String freecamKey = "key.keyboard.unknown";
+	/** World editor: toggle key, show/hide the edits, the 9-slot block palette and the brush size. */
+	public String editorKey = "key.keyboard.unknown";
+	public boolean editorShowEdits = true;
+	public java.util.List<String> editorPalette = new java.util.ArrayList<>();
+	public int editorBrush = 2;
 	public boolean pathsEnabled = false;
 	public boolean pathThroughWalls = true;
 	public float pathWidth = 2.4f;
@@ -1118,6 +1126,16 @@ public final class StrayConfig {
 				if (!json.has("commandKeysEnabled")) {
 					loaded.commandKeysEnabled = true;
 				}
+				loaded.freecamSpeed = json.has("freecamSpeed") ? clamp(loaded.freecamSpeed <= 0f ? 1.0f : loaded.freecamSpeed, 0.05f, 8.0f) : 1.0f;
+				loaded.freecamKey = blankKey(loaded.freecamKey, "key.keyboard.unknown");
+				loaded.editorKey = blankKey(loaded.editorKey, "key.keyboard.unknown");
+				if (!json.has("editorShowEdits")) {
+					loaded.editorShowEdits = true;
+				}
+				if (loaded.editorPalette == null) {
+					loaded.editorPalette = new java.util.ArrayList<>();
+				}
+				loaded.editorBrush = json.has("editorBrush") ? Math.max(0, Math.min(8, loaded.editorBrush)) : 2;
 				if (loaded.commandShortcuts == null) {
 					loaded.commandShortcuts = new java.util.ArrayList<>();
 				}

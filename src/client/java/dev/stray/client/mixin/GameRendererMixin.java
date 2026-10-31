@@ -47,6 +47,14 @@ public class GameRendererMixin {
 		HeldItemShader.compositePlayerSilhouette();
 	}
 
+	/** Freecam: no first-person hands floating in front of the flying camera. */
+	@Inject(method = "renderItemInHand", at = @At("HEAD"), cancellable = true)
+	private void stray$freecamNoHand(CallbackInfo ci) {
+		if (dev.stray.client.movement.Freecam.active()) {
+			ci.cancel();
+		}
+	}
+
 	@Inject(method = "renderItemInHand", at = @At("HEAD"))
 	//? if >=26.3 {
 	private void stray$beginHeldItemMask(CameraRenderState camera, PlayerRenderState player, GpuTextureView lightmap, CallbackInfo ci) {

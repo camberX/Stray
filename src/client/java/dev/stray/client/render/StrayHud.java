@@ -42,6 +42,12 @@ public final class StrayHud {
 	}
 
 	private static void extractHud(GuiGraphicsExtractor graphics, DeltaTracker delta) {
+		if (dev.stray.client.editor.WorldEditor.active()) {
+			// The editor workspace replaces the HUD while it is open.
+			HudChrome.element(null);
+			dev.stray.client.editor.EditorHud.extract(graphics, delta);
+			return;
+		}
 		HudChrome.element(null);
 		VanillaHud.extract(graphics, delta);
 		HudChrome.element(null);
@@ -68,6 +74,8 @@ public final class StrayHud {
 		CommandRings.extract(graphics, delta);
 		HudChrome.element(null);
 		MovementRings.extract(graphics, delta);
+		HudChrome.element(null);
+		dev.stray.client.editor.EditorHud.extract(graphics, delta);
 		HudChrome.element(null);
 		WatermarkRenderer.extract(graphics, delta);
 		HudChrome.element(null);

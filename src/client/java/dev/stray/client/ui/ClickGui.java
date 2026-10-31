@@ -54,9 +54,9 @@ public final class ClickGui {
 	private static final int TEXT = 0xFFFFFFFF;
 	private static final int DIM = 0xFFAAAAAA;
 	static final String[] ORDER = {"World", "Visuals", "Mobs", "Combat", "Slayer", "HUD", "Mining", "Farming", "Menus", "Keys", "Theme", "Player"};
-	static final int[] BIND_WHICH = {3, 4, 13, 5, 7, 11, 12, 14};
+	static final int[] BIND_WHICH = {3, 4, 13, 5, 7, 11, 12, 14, 16, 17};
 	static final String[] BIND_LABEL = {
-		"Open menu", "Loadouts", "Swap loadouts", "Wardrobe", "Profile", "Chat peek", "Lobby ping", "Empty bag"
+		"Open menu", "Loadouts", "Swap loadouts", "Wardrobe", "Profile", "Chat peek", "Lobby ping", "Empty bag", "Freecam", "World editor"
 	};
 
 	private static final Map<String, Column> columns = new LinkedHashMap<>();
@@ -1212,6 +1212,8 @@ public final class ClickGui {
 			case 13 -> config.loadoutSwapKey;
 			case 14 -> config.emptyVacuumKey;
 			case 15 -> config.pestPlotKey;
+			case 16 -> config.freecamKey;
+			case 17 -> config.editorKey;
 			default -> "";
 		};
 	}

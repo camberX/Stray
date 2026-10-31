@@ -50,6 +50,9 @@ public final class SkyblockLocation {
 	public static boolean inDungeon;
 	public static boolean inBoss;
 	public static int dungeonFloor;
+	/** Master Mode Catacombs (the sidebar shows "(M7)" instead of "(F7)"). */
+	public static boolean dungeonMaster;
+	private static boolean sawMaster;
 	public static String area = "";
 	public static String poi = "";
 	public static String server = "";
@@ -99,9 +102,11 @@ public final class SkyblockLocation {
 		inDungeon = onHypixel && (sidebar.dungeon || dungeonTab(connection));
 		if (sidebar.floor > 0) {
 			dungeonFloor = sidebar.floor;
+			dungeonMaster = sawMaster;
 		}
 		if (!inDungeon) {
 			dungeonFloor = 0;
+			dungeonMaster = false;
 			inBoss = false;
 		} else if (client.player != null) {
 			inBoss = bossRoom(dungeonFloor, client.player.getX(), client.player.getY(), client.player.getZ());
@@ -129,6 +134,7 @@ public final class SkyblockLocation {
 		inDungeon = false;
 		inBoss = false;
 		dungeonFloor = 0;
+		dungeonMaster = false;
 		area = "";
 		poi = "";
 		server = "";
@@ -398,6 +404,7 @@ public final class SkyblockLocation {
 		if (catacombsLine(title)) {
 			dungeon = true;
 			floor = catacombsFloor(title);
+			sawMaster = title.contains("(M");
 		}
 		for (var score : scoreboard.listPlayerScores(sidebar)) {
 			Component line = PlayerTeam.formatNameForTeam(
@@ -419,6 +426,7 @@ public final class SkyblockLocation {
 				int lineFloor = catacombsFloor(text);
 				if (lineFloor > 0) {
 					floor = lineFloor;
+					sawMaster = text.contains("(M");
 				}
 			}
 			int mark = text.indexOf('⏣');

@@ -23,9 +23,37 @@ public class MinecraftMixin {
 	@Inject(method = "handleKeybinds", at = @At("HEAD"))
 	private void stray$preKeybinds(CallbackInfo ci) {
 		Minecraft client = (Minecraft) (Object) this;
+		dev.stray.client.movement.Freecam.preKeybinds(client);
 		LoadoutSwap.preKeybinds(client);
 		EmptyVacuum.preKeybinds(client);
 		MovementRings.preKeybinds(client);
+	}
+
+	/** World editor: vanilla's tick (movement, clicks, sounds) sees the server's real blocks. */
+	@Inject(method = "tick", at = @At("HEAD"))
+	private void stray$ghostTickStart(CallbackInfo ci) {
+		dev.stray.client.editor.GhostBlocks.beginTick();
+	}
+
+	@Inject(method = "tick", at = @At("RETURN"))
+	private void stray$ghostTickEnd(CallbackInfo ci) {
+		dev.stray.client.editor.GhostBlocks.endTick();
+	}
+
+	@Inject(method = "pick", at = @At("HEAD"))
+	private void stray$ghostPickStart(float partialTicks, CallbackInfo ci) {
+		dev.stray.client.editor.GhostBlocks.beginPick();
+	}
+
+	/** In freecam the (unmoved) player's crosshair target is meaningless: no block outline for it. */
+	@Inject(method = "pick", at = @At("RETURN"))
+	private void stray$ghostPickEnd(float partialTicks, CallbackInfo ci) {
+		dev.stray.client.editor.GhostBlocks.endPick();
+		if (dev.stray.client.movement.Freecam.active()) {
+			Minecraft client = (Minecraft) (Object) this;
+			client.hitResult = null;
+			client.crosshairPickEntity = null;
+		}
 	}
 
 	@Inject(method = "startUseItem", at = @At("HEAD"), cancellable = true)

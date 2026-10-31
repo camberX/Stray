@@ -414,6 +414,10 @@ public class StrayScreen extends Screen {
 		new SearchEntry("Pass arguments", Tab.KEYS, "Keys"),
 		new SearchEntry("Command keys", Tab.KEYS, "Keys"),
 		new SearchEntry("Command binds", Tab.KEYS, "Keys"),
+		new SearchEntry("Freecam", Tab.KEYS, "Keys"),
+		new SearchEntry("World editor", Tab.KEYS, "Keys"),
+		new SearchEntry("Build mode", Tab.KEYS, "Keys"),
+		new SearchEntry("Ghost blocks", Tab.KEYS, "Keys"),
 		new SearchEntry("Shortcut autocomplete", Tab.KEYS, "Keys"),
 		new SearchEntry("Slot keys", Tab.MENUS, "Menus"),
 		new SearchEntry("Loadout slots", Tab.MENUS, "Menus"),
@@ -2701,8 +2705,16 @@ public class StrayScreen extends Screen {
 			}
 			case KEYS -> {
 				float y = sectionLabel(graphics, font, left, top, "Binds");
+				float bindsTop = y;
 				y = featureCard(graphics, font, left, y, col, cardHeight(9), "Keybinds");
 				drawMenuKeybinds(graphics, font, ix, y, iw, mouseX, mouseY);
+				y = featureCard(graphics, font, left, bindsTop + cardHeight(9) + 8, col, cardHeight(3), "Freecam & world editor", null, null, mouseX, mouseY, "Open editor", () -> {
+					minecraft.gui.setScreen(null);
+					dev.stray.client.editor.WorldEditor.enable();
+				});
+				y = bindRow(graphics, font, ix, y, iw, mouseX, mouseY, "Freecam", 16, OdinClicks.parseKey(config.freecamKey));
+				y = bindRow(graphics, font, ix, y, iw, mouseX, mouseY, "World editor", 17, OdinClicks.parseKey(config.editorKey));
+				GuiDraw.menu(graphics, font, "/stray freecam  ·  /stray editor", ix, GuiDraw.middle(y, ROW), fade());
 				float chatY = sectionLabel(graphics, font, right, top, "Chat");
 				float commandsH = cardHeight(5);
 				y = featureCard(graphics, font, right, chatY, col, commandsH, "Commands");
@@ -4160,6 +4172,8 @@ public class StrayScreen extends Screen {
 			case 13 -> config.loadoutSwapKey = name;
 			case 14 -> config.emptyVacuumKey = name;
 			case 15 -> config.pestPlotKey = name;
+			case 16 -> config.freecamKey = name;
+			case 17 -> config.editorKey = name;
 			case 20, 21, 22, 23, 24, 25, 26, 27, 28 -> config.setMenuSlotKey(bindListen - 20, name);
 		}
 		bindListen = 0;

@@ -146,6 +146,8 @@ public final class StrayClient implements ClientModInitializer {
 	private static boolean wasWardrobe;
 	private static boolean wasProfile;
 	private static boolean wasPing;
+	private static boolean wasFreecam;
+	private static boolean wasEditor;
 
 	public static boolean loadoutsKey(KeyEvent event) {
 		return menuKeyMatches(StrayConfig.get().openLoadoutsKey, event);
@@ -178,6 +180,8 @@ public final class StrayClient implements ClientModInitializer {
 		wasWardrobe = menuKeyHeld(config.openWardrobeKey);
 		wasProfile = menuKeyHeld(config.openProfileKey);
 		wasPing = menuKeyHeld(config.strayPingKey);
+		wasFreecam = menuKeyHeld(config.freecamKey);
+		wasEditor = menuKeyHeld(config.editorKey);
 	}
 
 	public static boolean menuKeyMatches(String keyName, KeyEvent event) {
@@ -209,6 +213,7 @@ public final class StrayClient implements ClientModInitializer {
 		MobGlowRenderer.init();
 		BlockOutlineGlow.init();
 		BlockMarks.init();
+		dev.stray.client.editor.WorldEditor.init();
 		StrayLive.init();
 		PathRecorder.init();
 		PathWalker.init();
@@ -313,6 +318,8 @@ public final class StrayClient implements ClientModInitializer {
 			root.then(MovementRingCommands.command());
 			root.then(ClientCommands.literal("shortcuts").executes(context -> CommandShortcuts.open()));
 			root.then(ClientCommands.literal("keys").executes(context -> openCommandKeys()));
+			root.then(ClientCommands.literal("freecam").executes(context -> toggleFreecam()));
+			root.then(ClientCommands.literal("editor").executes(context -> toggleEditor()));
 			root.then(ClientCommands.literal("titles").executes(context -> CustomTitle.open()));
 			root.then(customizeCommand());
 			root.then(LiveCommands.irc());
@@ -341,6 +348,8 @@ public final class StrayClient implements ClientModInitializer {
 			vm.then(MovementRingCommands.command());
 			vm.then(ClientCommands.literal("shortcuts").executes(context -> CommandShortcuts.open()));
 			vm.then(ClientCommands.literal("keys").executes(context -> openCommandKeys()));
+			vm.then(ClientCommands.literal("freecam").executes(context -> toggleFreecam()));
+			vm.then(ClientCommands.literal("editor").executes(context -> toggleEditor()));
 			vm.then(ClientCommands.literal("titles").executes(context -> CustomTitle.open()));
 			vm.then(customizeCommand());
 			vm.then(LiveCommands.irc());
@@ -391,6 +400,9 @@ public final class StrayClient implements ClientModInitializer {
 
 		ClientTickEvents.END_CLIENT_TICK.register(client -> {
 			pollMenuKeys(client);
+			dev.stray.client.movement.Freecam.tick(client);
+			dev.stray.client.editor.GhostBlocks.visible(() -> dev.stray.client.editor.GhostBlocks.tick(client));
+			dev.stray.client.editor.WorldEditor.tick(client);
 			dev.stray.client.item.custom.CustomItems.tick();
 			dev.stray.client.cs2.Cs2Knives.tick(client);
 			if (client.level != customizeLevel) {
@@ -602,7 +614,18 @@ public final class StrayClient implements ClientModInitializer {
 		boolean wardrobe = menuKeyHeld(config.openWardrobeKey);
 		boolean profile = menuKeyHeld(config.openProfileKey);
 		boolean ping = menuKeyHeld(config.strayPingKey);
+		boolean freecam = menuKeyHeld(config.freecamKey);
+		boolean editor = menuKeyHeld(config.editorKey);
 		if (!ignoreMenuBinds(client)) {
+			if (freecam && !wasFreecam && client.gui.screen() == null) {
+				toggleFreecam();
+			}
+			if (editor && !wasEditor && (client.gui.screen() == null || client.gui.screen() instanceof dev.stray.client.editor.EditorScreen)) {
+				if (client.gui.screen() != null) {
+					client.gui.setScreen(null);
+				}
+				toggleEditor();
+			}
 			if (gui && !wasGui) {
 				handleOpenGui(client);
 			}
@@ -637,6 +660,8 @@ public final class StrayClient implements ClientModInitializer {
 		wasWardrobe = wardrobe;
 		wasProfile = profile;
 		wasPing = ping;
+		wasFreecam = freecam;
+		wasEditor = editor;
 		EmptyVacuum.poll(client, ignoreMenuBinds(client));
 		dev.stray.client.input.CommandKeys.tick(client, ignoreMenuBinds(client));
 		PestPlotTp.poll(client, ignoreMenuBinds(client));
@@ -743,6 +768,24 @@ public final class StrayClient implements ClientModInitializer {
 		return ClientCommands.literal("customize")
 			.executes(context -> dev.stray.client.ui.CustomizeScreen.openForHeld())
 			.then(ClientCommands.literal("reset").executes(context -> dev.stray.client.ui.CustomizeScreen.resetHeld()));
+	}
+
+	private static int toggleFreecam() {
+		Minecraft client = Minecraft.getInstance();
+		client.execute(() -> {
+			if (dev.stray.client.editor.WorldEditor.active()) {
+				dev.stray.client.editor.WorldEditor.disable();
+			} else {
+				dev.stray.client.movement.Freecam.toggle();
+			}
+		});
+		return Command.SINGLE_SUCCESS;
+	}
+
+	private static int toggleEditor() {
+		Minecraft client = Minecraft.getInstance();
+		client.execute(dev.stray.client.editor.WorldEditor::toggle);
+		return Command.SINGLE_SUCCESS;
 	}
 
 	private static int openCommandKeys() {
