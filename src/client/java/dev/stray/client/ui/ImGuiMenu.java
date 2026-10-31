@@ -505,6 +505,24 @@ final class ImGuiMenu {
 					Minecraft.getInstance().gui.setScreen(new CommandShortcutScreen(screen))
 				));
 			}
+			if (query.isEmpty() || "command keys".contains(query)) {
+				rows.add(new Row("Command keys", config.commandKeysEnabled, null, null, () -> {
+					StrayConfig current = StrayConfig.get();
+					current.commandKeysEnabled = !current.commandKeysEnabled;
+					UnloadState.markDirty();
+				}));
+				if (config.commandKeysEnabled) {
+					rows.add(new Row("Edit command keys", false, null, null, () ->
+						Minecraft.getInstance().gui.setScreen(new CommandKeysScreen(screen))
+					));
+				}
+			}
+			if (query.isEmpty() || "world editor".contains(query)) {
+				rows.add(new Row("Open world editor", false, null, null, () -> {
+					Minecraft.getInstance().gui.setScreen(null);
+					dev.stray.client.editor.WorldEditor.enable();
+				}));
+			}
 			return rows;
 		}
 		for (ClickGui.Mod mod : ClickGui.modules()) {

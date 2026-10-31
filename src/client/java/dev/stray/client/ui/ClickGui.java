@@ -1063,7 +1063,7 @@ public final class ClickGui {
 			}
 		}
 		boolean shortcuts = title || "shortcuts".contains(needle) || "pass arguments".contains(needle);
-		boolean commandKeys = title || "command keys".contains(needle);
+		boolean commandKeys = title || "command keys".contains(needle) || "world editor".contains(needle);
 		boolean commands = title || "commands".contains(needle) || "/loadouts".contains(needle) || "/wardrobe".contains(needle) || "/pv".contains(needle);
 		if (!title && binds.isEmpty() && !shortcuts && !commands && !commandKeys) {
 			column.height = 0f;
@@ -1075,7 +1075,7 @@ public final class ClickGui {
 		StrayConfig config = StrayConfig.get();
 		boolean shortcutOn = config.commandShortcutsEnabled;
 		boolean keysOn = config.commandKeysEnabled;
-		int extra = (shortcuts ? 1 + (shortcutOn ? 2 : 0) : 0) + (commandKeys ? 1 + (keysOn ? 1 : 0) : 0);
+		int extra = (shortcuts ? 1 + (shortcutOn ? 2 : 0) : 0) + (commandKeys ? 2 + (keysOn ? 1 : 0) : 0);
 		int commandLines = commands ? 5 : 0;
 		float commandsH = commandLines == 0 ? 0f : commandLines * (font.lineHeight + 1) + 6f;
 		float content = stackH(binds.size() + extra) + (commandsH > 0f ? gap() + commandsH : 0f);
@@ -1152,6 +1152,13 @@ public final class ClickGui {
 				}
 				y += stride();
 			}
+			if (y + box() > viewTop && y < viewTop + shownH) {
+				drawButton(screen, graphics, font, boxX, y, boxW, "Open world editor", () -> {
+					Minecraft.getInstance().gui.setScreen(null);
+					dev.stray.client.editor.WorldEditor.enable();
+				});
+			}
+			y += stride();
 		}
 		if (commands && y + commandsH > viewTop && y < viewTop + shownH) {
 			soft(graphics, boxX, y, boxW, commandsH, OFF_FILL);

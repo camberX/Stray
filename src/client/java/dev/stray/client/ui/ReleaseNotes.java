@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.5.84", new String[]{
+			"Command keys and the world editor are now in every menu style (Hyprland and ImGui Keys tab, click GUI Keys column): toggle, Edit command keys, Open world editor."
+		}),
 		new Entry("1.5.83", new String[]{
 			"World editor: replacing stairs keeps their direction and shape (upside down, corners). Picking a full block like stone gives the matching stairs (stone stairs). Slabs stay slabs the same way."
 		}),

@@ -867,6 +867,20 @@ public final class HyprMenu {
 				out.add(new Item("keys:edit", "Edit shortcuts", null, "Open", () ->
 					Minecraft.getInstance().gui.setScreen(new CommandShortcutScreen(screen)), null));
 			}
+			out.add(new Item("keys:commandkeys", "Command keys", config.commandKeysEnabled, null, () -> {
+				StrayConfig current = StrayConfig.get();
+				current.commandKeysEnabled = !current.commandKeysEnabled;
+				UnloadState.markDirty();
+			}, null));
+			if (config.commandKeysEnabled) {
+				int count = config.commandKeys == null ? 0 : config.commandKeys.size();
+				out.add(new Item("keys:commandkeys:edit", "Edit command keys", null, count == 0 ? "Open" : count + (count == 1 ? " key" : " keys"), () ->
+					Minecraft.getInstance().gui.setScreen(new CommandKeysScreen(screen)), null));
+			}
+			out.add(new Item("keys:editor", "Open world editor", null, "Open", () -> {
+				Minecraft.getInstance().gui.setScreen(null);
+				dev.stray.client.editor.WorldEditor.enable();
+			}, null));
 			return out;
 		}
 		for (ClickGui.Mod mod : ClickGui.modules()) {
