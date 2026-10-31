@@ -5,6 +5,7 @@ import dev.stray.client.config.StrayConfig;
 import dev.stray.client.input.MouseButtons;
 import dev.stray.client.movement.Freecam;
 import it.unimi.dsi.fastutil.longs.Long2ObjectLinkedOpenHashMap;
+import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderEvents;
 import net.minecraft.client.Camera;
 import net.minecraft.client.KeyMapping;
@@ -51,7 +52,9 @@ import java.util.Locale;
 public final class WorldEditor {
 	public enum Tool {
 		BUILD("Build", "B", InputConstants.KEY_B),
+		SWAP("Replace", "E", InputConstants.KEY_E),
 		SELECT("Select", "V", InputConstants.KEY_V),
+		WAND("Magic wand", "M", InputConstants.KEY_M),
 		PAINT("Paint", "P", InputConstants.KEY_P),
 		REPLACE("Replace all", "G", InputConstants.KEY_G);
 
@@ -84,6 +87,12 @@ public final class WorldEditor {
 	private static boolean paletteLoaded;
 	private static BlockPos cornerA;
 	private static BlockPos cornerB;
+	/** Magic wand selection: exact positions (instead of the box). */
+	private static LongOpenHashSet mask;
+	private static BlockPos maskMin;
+	/** The selected blocks nearest the camera when selected: the ones outlined (all of them would be too slow). */
+	private static long[] maskShown = new long[0];
+	private static BlockPos maskMax;
 	private static BlockHitResult hover;
 	private static final Deque<Op> UNDO = new ArrayDeque<>();
 	private static final Deque<Op> REDO = new ArrayDeque<>();
@@ -113,6 +122,24 @@ public final class WorldEditor {
 		}
 		registered = true;
 		LevelRenderEvents.BEFORE_GIZMOS.register(context -> emitGizmos());
+		// Chat lines would draw over the workspace; they come back when chat is opened.
+		net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry.replaceElement(
+			net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements.CHAT,
+			original -> (graphics, delta) -> {
+				if (!active || Minecraft.getInstance().gui.screen() instanceof net.minecraft.client.gui.screens.ChatScreen) {
+					original.extractRenderState(graphics, delta);
+				}
+			}
+		);
+		// The cursor aims in the workspace; the crosshair only matters while looking around.
+		net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry.replaceElement(
+			net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements.CROSSHAIR,
+			original -> (graphics, delta) -> {
+				if (!active || looking) {
+					original.extractRenderState(graphics, delta);
+				}
+			}
+		);
 	}
 
 	public static boolean active() {
@@ -210,12 +237,15 @@ public final class WorldEditor {
 			finishStroke();
 			switch (tool) {
 				case BUILD -> build();
+				case SWAP -> swap();
 				case PAINT -> paint();
 				case REPLACE -> replaceAll();
+				case WAND -> wand(ctrl, shift);
 				case SELECT -> {
 					if (hover == null) {
 						return;
 					}
+					mask = null;
 					if (shift && cornerA != null) {
 						cornerB = hover.getBlockPos();
 					} else {
@@ -392,6 +422,8 @@ public final class WorldEditor {
 					updateHover(client, 1.0f);
 					if (tool == Tool.BUILD) {
 						build();
+					} else if (tool == Tool.SWAP) {
+						swap();
 					} else if (tool == Tool.PAINT) {
 						paint();
 					}
@@ -438,6 +470,26 @@ public final class WorldEditor {
 			BlockPos at = hover.getBlockPos().relative(hover.getDirection());
 			apply(strokeOp(), at, orient(palette(), hover));
 		}
+	}
+
+	/** Replace: the hovered block becomes the palette block (Ctrl: shows the real block again). */
+	private static void swap() {
+		if (hover == null) {
+			return;
+		}
+		BlockPos pos = hover.getBlockPos();
+		if (leftCtrl) {
+			if (GhostBlocks.placedAt(pos) != null) {
+				apply(strokeOp(), pos, null);
+			}
+			return;
+		}
+		BlockState shown = GhostBlocks.shown(pos);
+		BlockState paint = palette();
+		if (shown == paint) {
+			return;
+		}
+		apply(strokeOp(), pos, paint.getBlock() == shown.getBlock() || paint.isAir() ? paint : GhostBlocks.copyProperties(shown, paint));
 	}
 
 	private static void paint() {
@@ -513,12 +565,15 @@ public final class WorldEditor {
 	// ------------------------------------------------------------------ selection actions
 
 	public static boolean hasSelection() {
-		return cornerA != null && cornerB != null;
+		return mask != null && !mask.isEmpty() || cornerA != null && cornerB != null;
 	}
 
 	public static long selectionVolume() {
 		if (!hasSelection()) {
 			return 0;
+		}
+		if (mask != null) {
+			return mask.size();
 		}
 		return (long) (Math.abs(cornerA.getX() - cornerB.getX()) + 1)
 			* (Math.abs(cornerA.getY() - cornerB.getY()) + 1)
@@ -528,6 +583,142 @@ public final class WorldEditor {
 	public static void clearSelection() {
 		cornerA = null;
 		cornerB = null;
+		mask = null;
+	}
+
+	// ------------------------------------------------------------------ magic wand
+
+	/** Selects the clicked block's connected blocks of the same type (Ctrl: every one around). Shift adds. */
+	private static void wand(boolean everywhere, boolean add) {
+		if (hover == null) {
+			return;
+		}
+		Block target = GhostBlocks.shown(hover.getBlockPos()).getBlock();
+		if (target == Blocks.AIR) {
+			return;
+		}
+		LongOpenHashSet found = everywhere ? allOfType(target) : connected(hover.getBlockPos(), target);
+		boolean capped = found.size() >= MAX_OP;
+		if (add && mask != null) {
+			mask.addAll(found);
+		} else {
+			mask = found;
+		}
+		cornerA = null;
+		cornerB = null;
+		maskBounds();
+		say((everywhere ? "Selected every " : "Selected ") + found.size() + " " + name(target.defaultBlockState())
+			+ (capped ? " (limit reached)" : "") + (add ? " · " + mask.size() + " in total" : ""));
+	}
+
+	private static LongOpenHashSet connected(BlockPos start, Block target) {
+		LongOpenHashSet seen = new LongOpenHashSet();
+		it.unimi.dsi.fastutil.longs.LongArrayFIFOQueue queue = new it.unimi.dsi.fastutil.longs.LongArrayFIFOQueue();
+		seen.add(start.asLong());
+		queue.enqueue(start.asLong());
+		BlockPos.MutableBlockPos cursor = new BlockPos.MutableBlockPos();
+		Direction[] directions = Direction.values();
+		while (!queue.isEmpty() && seen.size() < MAX_OP) {
+			long pos = queue.dequeueLong();
+			for (Direction direction : directions) {
+				long next = BlockPos.offset(pos, direction);
+				if (seen.contains(next)) {
+					continue;
+				}
+				cursor.set(next);
+				if (GhostBlocks.shown(cursor).getBlock() == target) {
+					seen.add(next);
+					queue.enqueue(next);
+					if (seen.size() >= MAX_OP) {
+						break;
+					}
+				}
+			}
+		}
+		return seen;
+	}
+
+	private static LongOpenHashSet allOfType(Block target) {
+		LongOpenHashSet out = new LongOpenHashSet();
+		BlockPos.MutableBlockPos cursor = new BlockPos.MutableBlockPos();
+		GhostBlocks.forEachLoaded(chunk -> {
+			if (out.size() >= MAX_OP) {
+				return;
+			}
+			var sections = chunk.getSections();
+			int bx = chunk.getPos().x() << 4;
+			int bz = chunk.getPos().z() << 4;
+			for (int i = 0; i < sections.length && out.size() < MAX_OP; i++) {
+				var section = sections[i];
+				if (section == null || !section.maybeHas(state -> GhostBlocks.ruled(state.getBlock()) == target)) {
+					continue;
+				}
+				int by = chunk.getSectionYFromSectionIndex(i) << 4;
+				for (int y = 0; y < 16; y++) {
+					for (int z = 0; z < 16; z++) {
+						for (int x = 0; x < 16; x++) {
+							BlockState real = section.getBlockState(x, y, z);
+							if (GhostBlocks.ruled(real.getBlock()) != target) {
+								continue;
+							}
+							cursor.set(bx + x, by + y, bz + z);
+							if (GhostBlocks.shown(cursor, real).getBlock() == target && out.size() < MAX_OP) {
+								out.add(cursor.asLong());
+							}
+						}
+					}
+				}
+			}
+		});
+		// Placed blocks of that type (wherever the world has something else).
+		GhostBlocks.forEachPlaced((pos, state) -> {
+			if (state.getBlock() == target && out.size() < MAX_OP) {
+				out.add(pos);
+			}
+		});
+		return out;
+	}
+
+	private static void maskBounds() {
+		if (mask == null || mask.isEmpty()) {
+			mask = null;
+			maskMin = null;
+			maskMax = null;
+			return;
+		}
+		int x0 = Integer.MAX_VALUE, y0 = Integer.MAX_VALUE, z0 = Integer.MAX_VALUE;
+		int x1 = Integer.MIN_VALUE, y1 = Integer.MIN_VALUE, z1 = Integer.MIN_VALUE;
+		for (long pos : mask) {
+			int x = BlockPos.getX(pos);
+			int y = BlockPos.getY(pos);
+			int z = BlockPos.getZ(pos);
+			x0 = Math.min(x0, x);
+			y0 = Math.min(y0, y);
+			z0 = Math.min(z0, z);
+			x1 = Math.max(x1, x);
+			y1 = Math.max(y1, y);
+			z1 = Math.max(z1, z);
+		}
+		maskMin = new BlockPos(x0, y0, z0);
+		maskMax = new BlockPos(x1, y1, z1);
+		Vec3 eye = Freecam.position(1.0f);
+		long[] all = mask.toLongArray();
+		if (all.length > 1500) {
+			// Partial sort by distance: keep the nearest 1500.
+			double[] dist = new double[all.length];
+			Integer[] order = new Integer[all.length];
+			for (int i = 0; i < all.length; i++) {
+				dist[i] = Vec3.atCenterOf(BlockPos.of(all[i])).distanceToSqr(eye);
+				order[i] = i;
+			}
+			java.util.Arrays.sort(order, (a, b) -> Double.compare(dist[a], dist[b]));
+			long[] near = new long[1500];
+			for (int i = 0; i < near.length; i++) {
+				near[i] = all[order[i]];
+			}
+			all = near;
+		}
+		maskShown = all;
 	}
 
 	public static void fillSelection(BlockState state) {
@@ -581,7 +772,7 @@ public final class WorldEditor {
 			return false;
 		}
 		if (!hasSelection()) {
-			say("Select an area first: left and right click two corners");
+			say("Select something first: drag with Select, or click with the Magic wand");
 			return false;
 		}
 		if (selectionVolume() > MAX_OP) {
@@ -592,6 +783,12 @@ public final class WorldEditor {
 	}
 
 	private static void forSelection(java.util.function.Consumer<BlockPos> action) {
+		if (mask != null) {
+			for (long pos : mask.toLongArray()) {
+				action.accept(BlockPos.of(pos));
+			}
+			return;
+		}
 		int x0 = Math.min(cornerA.getX(), cornerB.getX());
 		int y0 = Math.min(cornerA.getY(), cornerB.getY());
 		int z0 = Math.min(cornerA.getZ(), cornerB.getZ());
@@ -896,7 +1093,7 @@ public final class WorldEditor {
 			).normalize();
 		}
 		Vec3 to = from.add(dir.scale(REACH));
-		BlockHitResult hit = client.level.clip(new ClipContext(from, to, ClipContext.Block.OUTLINE, ClipContext.Fluid.NONE, CollisionContext.empty()));
+		BlockHitResult hit = new GhostView(client.level).clip(new ClipContext(from, to, ClipContext.Block.OUTLINE, ClipContext.Fluid.NONE, CollisionContext.empty()));
 		hover = hit.getType() == HitResult.Type.BLOCK ? hit.withPosition(hit.getBlockPos().immutable()) : null;
 		if (selectDragging && leftHeld && hover != null) {
 			cornerB = hover.getBlockPos();
@@ -912,7 +1109,15 @@ public final class WorldEditor {
 			return;
 		}
 		GhostBlocks.visible(() -> updateHover(client, client.getDeltaTracker().getGameTimeDeltaPartialTick(false)));
-		if (hasSelection()) {
+		if (mask != null && maskMin != null) {
+			AABB bounds = new AABB(Vec3.atLowerCornerOf(maskMin), Vec3.atLowerCornerOf(maskMax).add(1, 1, 1)).inflate(0.03);
+			GizmoProperties outline = Gizmos.cuboid(bounds, GizmoStyle.stroke(0x80F0A030, 1.4f));
+			outline.setAlwaysOnTop();
+			for (long pos : maskShown) {
+				GizmoProperties cell = Gizmos.cuboid(new AABB(BlockPos.of(pos)).inflate(0.005), GizmoStyle.strokeAndFill(0xC0F0A030, 1.2f, 0x28F0A030));
+				cell.setAlwaysOnTop();
+			}
+		} else if (hasSelection()) {
 			AABB box = new AABB(Vec3.atLowerCornerOf(min(cornerA, cornerB)), Vec3.atLowerCornerOf(max(cornerA, cornerB)).add(1, 1, 1)).inflate(0.02);
 			GizmoProperties sel = Gizmos.cuboid(box, GizmoStyle.strokeAndFill(0xFFF0A030, 2.4f, 0x18F0A030));
 			sel.setAlwaysOnTop();
@@ -942,6 +1147,8 @@ public final class WorldEditor {
 			}
 			case REPLACE -> cube(at, ctrl ? 0xFFFF5A5A : 0xFFE070FF, ctrl ? 0x30FF5A5A : 0x30E070FF);
 			case SELECT -> cube(at, 0xC0FFFFFF, 0x14FFFFFF);
+			case WAND -> cube(at, 0xFFF0A030, 0x30F0A030);
+			case SWAP -> cube(at, ctrl ? 0xFFFF5A5A : 0xFF6FA8FF, ctrl ? 0x30FF5A5A : 0x406FA8FF);
 		}
 	}
 
@@ -992,6 +1199,9 @@ public final class WorldEditor {
 	}
 
 	public static String selectionText() {
+		if (mask != null) {
+			return mask.size() + " blocks";
+		}
 		return hasSelection() ? selectionSize().substring(3) + " (" + selectionVolume() + ")" : "none";
 	}
 

@@ -100,9 +100,10 @@
 		"DynamicUniformsMixin",
 		"VulkanCommandEncoderMixin",
 		"FreecamEntityMixin",
-		"GhostChunkMixin",
-		"GhostLevelMixin",
-		"GhostChunkCacheMixin"
+		"GhostChunkCacheMixin",
+		"GhostSectionMixin",
+		"GhostChunkEmptyMixin",
+		"GhostSectionCopyMixin"
 	],
 	"injectors": {
 		"defaultRequire": 1

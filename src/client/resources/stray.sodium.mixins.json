@@ -5,7 +5,8 @@
 	"plugin": "dev.stray.client.mixin.sodium.StraySodiumMixinPlugin",
 	"client": [
 		"SodiumBlockRendererMixin",
-		"SodiumChunkFogMixin"
+		"SodiumChunkFogMixin",
+		"SodiumGhostSectionMixin"
 	],
 	"injectors": {
 		"defaultRequire": 1
