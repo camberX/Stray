@@ -131,6 +131,28 @@ public final class WorldEditor {
 				}
 			}
 		);
+		// Survival bits (hotbar, hearts, xp, effects, scoreboard...) would poke out between the
+		// workspace windows; hidden while editing.
+		for (var id : List.of(
+			net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements.HOTBAR,
+			net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements.ARMOR_BAR,
+			net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements.HEALTH_BAR,
+			net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements.FOOD_BAR,
+			net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements.AIR_BAR,
+			net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements.MOUNT_HEALTH,
+			net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements.INFO_BAR,
+			net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements.EXPERIENCE_LEVEL,
+			net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements.HELD_ITEM_TOOLTIP,
+			net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements.MOB_EFFECTS,
+			net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements.SCOREBOARD,
+			net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements.OVERLAY_MESSAGE
+		)) {
+			net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry.replaceElement(id, original -> (graphics, delta) -> {
+				if (!active) {
+					original.extractRenderState(graphics, delta);
+				}
+			});
+		}
 		// The cursor aims in the workspace; the crosshair only matters while looking around.
 		net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry.replaceElement(
 			net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements.CROSSHAIR,

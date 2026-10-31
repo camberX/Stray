@@ -5,6 +5,10 @@ import dev.stray.client.config.StrayConfig;
 import dev.stray.client.input.MouseButtons;
 import dev.stray.client.movement.Freecam;
 import dev.stray.client.render.GuiDraw;
+import dev.stray.client.ui.Anim;
+import dev.stray.client.ui.HyprMenu;
+import dev.stray.client.ui.MaterialPalette;
+import dev.stray.client.ui.MenuFont;
 import dev.stray.client.ui.TextKeys;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
@@ -36,28 +40,32 @@ import java.util.Locale;
  * hold right mouse to look around, so the panels don't blink away.
  */
 public class EditorScreen extends Screen {
-	// Blender's default dark theme.
-	private static final int REGION = 0xF0303030;
-	private static final int HEADER = 0xF0262626;
-	private static final int STATUS = 0xF01D1D1D;
-	private static final int BORDER = 0xFF161616;
-	private static final int WIDGET = 0xFF545454;
-	private static final int WIDGET_HOVER = 0xFF656565;
-	private static final int WIDGET_DARK = 0xFF3D3D3D;
-	private static final int FIELD = 0xFF1D1D1D;
-	private static final int ACTIVE = 0xFF4772B3;
-	private static final int ACTIVE_HOVER = 0xFF5680C2;
-	private static final int TEXT = 0xFFE6E6E6;
-	private static final int DIM = 0xFF9A9A9A;
-	private static final int FAINT = 0xFF6A6A6A;
-	private static final int RED = 0xFFE05555;
-	private static final int ORANGE = 0xFFF0A030;
+	// Colors come from Stray's Material palette (the Hyprland look); refreshed every frame.
+	private static int BORDER;
+	private static int WIDGET;
+	private static int WIDGET_HOVER;
+	private static int WIDGET_DARK;
+	private static int FIELD;
+	private static int ACTIVE;
+	private static int ACTIVE_HOVER;
+	private static int ON_ACTIVE;
+	private static int SELECTED;
+	private static int TEXT;
+	private static int DIM;
+	private static int FAINT;
+	private static int TIP;
+	private static final int RED = 0xFFFF8A8A;
+	private static int ORANGE;
+	/** Hyprland gaps: around the screen edge and between windows. */
+	private static final float OUT = 5;
+	private static final float GAP = 4;
+	private static final float RADIUS = 9;
 
-	private static final float TOP_H = 15;
-	private static final float STATUS_H = 11;
-	private static final float SHELF_W = 24;
+	private static final float TOP_H = 17;
+	private static final float STATUS_H = 13;
+	private static final float SHELF_W = 26;
 	private static final float PANEL_W = 122;
-	private static final float BROWSER_H = 76;
+	private static final float BROWSER_H = 78;
 	private static final float CELL = 18;
 	private static final String SEARCH_KEY = "editor-search";
 	private static final String[] CATEGORIES = {"All", "Building", "Nature", "Color", "Light", "Recent"};
@@ -93,6 +101,8 @@ public class EditorScreen extends Screen {
 	private float rulesY;
 	private float rulesW;
 	private float rulesH;
+	private float hitDX;
+	private float hitDY;
 	private float panelX;
 	private float panelY;
 	private float panelH;
@@ -163,58 +173,131 @@ public class EditorScreen extends Screen {
 		WorldEditor.cursor(inView ? mouseX / (double) Math.max(1, width) : Double.NaN, inView ? mouseY / (double) Math.max(1, height) : Double.NaN);
 	}
 
+	private static void refreshColors() {
+		MaterialPalette.refresh();
+		BORDER = MaterialPalette.outlineVariant;
+		WIDGET = MaterialPalette.surfaceHigh;
+		WIDGET_HOVER = MaterialPalette.surfaceHighest;
+		WIDGET_DARK = MaterialPalette.surfaceContainer;
+		FIELD = MaterialPalette.surface;
+		ACTIVE = MaterialPalette.primary;
+		ACTIVE_HOVER = Anim.mix(MaterialPalette.primary, 0xFFFFFFFF, 0.14f);
+		ON_ACTIVE = MaterialPalette.onPrimary;
+		SELECTED = MaterialPalette.secondaryContainer;
+		TEXT = MaterialPalette.onSurface;
+		DIM = MaterialPalette.onSurfaceVariant;
+		FAINT = MaterialPalette.outline;
+		TIP = MaterialPalette.surfaceHighest;
+		ORANGE = MaterialPalette.primary;
+	}
+
+	/** Text in the Hyprland menu's font. {@code y} is the top of a 9px line. */
+	private static void txt(GuiGraphicsExtractor graphics, Font font, String value, float x, float y, int color) {
+		if (value == null || ((color >>> 24) & 0xFF) < 8) {
+			return;
+		}
+		GuiDraw.text(graphics, font, MenuFont.hypr(value), x, Math.round(y), color, false);
+	}
+
+	/** Smaller Hyprland font, for hints, shortcuts and lists. */
+	private static void txtS(GuiGraphicsExtractor graphics, Font font, String value, float x, float y, int color) {
+		if (value == null || ((color >>> 24) & 0xFF) < 8) {
+			return;
+		}
+		GuiDraw.text(graphics, font, MenuFont.hyprSmall(value), x, Math.round(y + 1), color, false);
+	}
+
+	private static int twS(Font font, String value) {
+		return font.width(MenuFont.hyprSmall(value == null ? "" : value));
+	}
+
+	private static int tw(Font font, String value) {
+		return font.width(MenuFont.hypr(value == null ? "" : value));
+	}
+
+	private void hyprWindow(GuiGraphicsExtractor graphics, float x, float y, float w, float h, int mouseX, int mouseY) {
+		HyprMenu.window(graphics, x, y, w, h, interactive && GuiDraw.hovered(mouseX, mouseY, x, y, w, h) ? 1f : 0f, 1f);
+	}
+
+	private void addHit(float x, float y, float w, float h, Runnable click) {
+		hits.add(new Hit(x + hitDX, y + hitDY, w, h, click));
+	}
+
 	private void draw(GuiGraphicsExtractor graphics, int mouseX, int mouseY) {
 		Font font = Minecraft.getInstance().font;
-		float bodyTop = TOP_H;
-		float browserTop = height - STATUS_H - BROWSER_H;
-		viewX = SHELF_W;
+		refreshColors();
+		float headW = width - OUT * 2;
+		float statusY = height - OUT - STATUS_H;
+		float browserY = statusY - GAP - BROWSER_H;
+		float bodyTop = OUT + TOP_H + GAP;
+		float bodyH = browserY - GAP - bodyTop;
+		viewX = OUT + SHELF_W + GAP;
 		viewY = bodyTop;
-		viewW = width - SHELF_W - (panelOpen ? PANEL_W : 0);
-		viewH = browserTop - bodyTop;
+		viewW = (panelOpen ? width - OUT - PANEL_W - GAP : width - OUT) - viewX;
+		viewH = bodyH;
 
-		drawHeader(graphics, font, mouseX, mouseY);
-		drawShelf(graphics, font, mouseX, mouseY, 0, bodyTop, SHELF_W, browserTop - bodyTop);
+		// The viewport is a window too: just its border, with the world inside.
+		boolean overView = interactive && GuiDraw.hovered(mouseX, mouseY, viewX, viewY, viewW, viewH);
+		int frame = overView || WorldEditor.looking() ? MaterialPalette.primary : MaterialPalette.withAlpha(MaterialPalette.primary, 0x40);
+		GuiDraw.hairline(graphics, viewX, viewY, viewW, viewH, RADIUS, frame);
+
+		hyprWindow(graphics, OUT, OUT, headW, TOP_H, mouseX, mouseY);
+		graphics.pose().pushMatrix();
+		graphics.pose().translate(OUT, OUT);
+		hitDX = OUT;
+		hitDY = OUT;
+		try {
+			drawHeader(graphics, font, (int) (mouseX - OUT), (int) (mouseY - OUT), headW);
+		} finally {
+			graphics.pose().popMatrix();
+			hitDX = 0;
+			hitDY = 0;
+		}
+		hyprWindow(graphics, OUT, bodyTop, SHELF_W, bodyH, mouseX, mouseY);
+		drawShelf(graphics, font, mouseX, mouseY, OUT, bodyTop + 3, SHELF_W, bodyH - 6);
 		drawViewportOverlay(graphics, font);
 		if (panelOpen) {
-			drawPanel(graphics, font, mouseX, mouseY, width - PANEL_W, bodyTop, PANEL_W, browserTop - bodyTop);
+			float px = width - OUT - PANEL_W;
+			hyprWindow(graphics, px, bodyTop, PANEL_W, bodyH, mouseX, mouseY);
+			drawPanel(graphics, font, mouseX, mouseY, px, bodyTop + 3, PANEL_W, bodyH - 6);
 		}
-		drawBrowser(graphics, font, mouseX, mouseY, 0, browserTop, width, BROWSER_H);
-		drawStatus(graphics, font, 0, height - STATUS_H, width);
+		hyprWindow(graphics, OUT, browserY, headW, BROWSER_H, mouseX, mouseY);
+		drawBrowser(graphics, font, mouseX, mouseY, OUT + 2, browserY + 2, headW - 4, BROWSER_H - 4);
+		hyprWindow(graphics, OUT, statusY, headW, STATUS_H, mouseX, mouseY);
+		drawStatus(graphics, font, OUT + 3, statusY, headW - 6);
 	}
 
 	// ------------------------------------------------------------------ header
 
-	private void drawHeader(GuiGraphicsExtractor graphics, Font font, int mouseX, int mouseY) {
-		GuiDraw.fill(graphics, 0, 0, width, TOP_H, HEADER);
-		GuiDraw.fill(graphics, 0, TOP_H - 1, width, 1, BORDER);
-		float x = 4;
-		GuiDraw.rounded(graphics, x + 1, 4, 7, 7, 1.5f, ORANGE);
+	private void drawHeader(GuiGraphicsExtractor graphics, Font font, int mouseX, int mouseY, float width) {
+		float x = 6;
+		GuiDraw.roundedFine(graphics, x, 5, 7, 7, 3.5f, ORANGE);
 		x += 12;
-		GuiDraw.small(graphics, font, "Stray Editor", x, 3f, TEXT);
-		x += GuiDraw.smallWidth(font, "Stray Editor") + 10;
+		txt(graphics, font, "Stray Editor", x, GuiDraw.middle(2, TOP_H - 4), TEXT);
+		x += tw(font, "Stray Editor") + 10;
 		x = menuButton(graphics, font, mouseX, mouseY, x, "Undo", WorldEditor.canUndo(), WorldEditor::undo);
 		x = menuButton(graphics, font, mouseX, mouseY, x, "Redo", WorldEditor.canRedo(), WorldEditor::redo);
 		x = menuButton(graphics, font, mouseX, mouseY, x, StrayConfig.get().editorShowEdits ? "Hide edits" : "Show edits", true,
 			() -> GhostBlocks.setShown(!StrayConfig.get().editorShowEdits));
 
 		String area = EditArea.label(GhostBlocks.areaKey());
-		float aw = GuiDraw.smallWidth(font, area) + 14;
+		float aw = tw(font, area) + 14;
 		float ax = Math.max(x + 6, (width - aw) / 2f);
-		GuiDraw.rounded(graphics, ax, 2, aw, TOP_H - 4, 3, FIELD);
-		GuiDraw.small(graphics, font, area, ax + 7, 3f, GhostBlocks.ready() ? TEXT : DIM);
+		GuiDraw.roundedFine(graphics, ax, 2, aw, TOP_H - 4, 3, FIELD);
+		txt(graphics, font, area, ax + 7, GuiDraw.middle(2, TOP_H - 4), GhostBlocks.ready() ? TEXT : DIM);
 
 		float rx = width - 4;
 		String exit = "Exit";
-		float ew = GuiDraw.smallWidth(font, exit) + 10;
+		float ew = tw(font, exit) + 10;
 		rx -= ew;
 		widget(graphics, font, mouseX, mouseY, rx, 2, ew, TOP_H - 4, exit, false, RED, WorldEditor::disable);
 		String speed = String.format(Locale.ROOT, "Fly %.2f", Freecam.speed());
-		float sw = GuiDraw.smallWidth(font, speed) + 30;
+		float sw = tw(font, speed) + 30;
 		rx -= sw + 6;
 		if (rx > ax + aw + 4) {
-			GuiDraw.rounded(graphics, rx, 2, sw, TOP_H - 4, 3, WIDGET_DARK);
+			GuiDraw.roundedFine(graphics, rx, 2, sw, TOP_H - 4, 3, WIDGET_DARK);
 			arrowButton(graphics, font, mouseX, mouseY, rx, 2, 11, TOP_H - 4, "<", () -> speed(-1));
-			GuiDraw.small(graphics, font, speed, rx + 15, 3f, TEXT);
+			txt(graphics, font, speed, rx + 15, GuiDraw.middle(2, TOP_H - 4), TEXT);
 			arrowButton(graphics, font, mouseX, mouseY, rx + sw - 11, 2, 11, TOP_H - 4, ">", () -> speed(1));
 		}
 	}
@@ -226,14 +309,14 @@ public class EditorScreen extends Screen {
 	}
 
 	private float menuButton(GuiGraphicsExtractor graphics, Font font, int mouseX, int mouseY, float x, String label, boolean enabled, Runnable click) {
-		float w = GuiDraw.smallWidth(font, label) + 10;
+		float w = tw(font, label) + 10;
 		boolean hover = enabled && GuiDraw.hovered(mouseX, mouseY, x, 1, w, TOP_H - 2);
 		if (hover) {
-			GuiDraw.rounded(graphics, x, 2, w, TOP_H - 4, 3, WIDGET);
+			GuiDraw.roundedFine(graphics, x, 2, w, TOP_H - 4, 3, WIDGET);
 		}
-		GuiDraw.small(graphics, font, label, x + 5, 3f, enabled ? TEXT : FAINT);
+		txt(graphics, font, label, x + 5, GuiDraw.middle(2, TOP_H - 4), enabled ? TEXT : FAINT);
 		if (enabled) {
-			hits.add(new Hit(x, 1, w, TOP_H - 2, click));
+			addHit(x, 1, w, TOP_H - 2, click);
 		}
 		return x + w + 2;
 	}
@@ -241,34 +324,35 @@ public class EditorScreen extends Screen {
 	private void arrowButton(GuiGraphicsExtractor graphics, Font font, int mouseX, int mouseY, float x, float y, float w, float h, String label, Runnable click) {
 		boolean hover = GuiDraw.hovered(mouseX, mouseY, x, y, w, h);
 		if (hover) {
-			GuiDraw.rounded(graphics, x, y, w, h, 3, WIDGET_HOVER);
+			GuiDraw.roundedFine(graphics, x, y, w, h, 3, WIDGET_HOVER);
 		}
-		GuiDraw.small(graphics, font, label, x + (w - GuiDraw.smallWidth(font, label)) / 2f, GuiDraw.middle(y, h), TEXT);
-		hits.add(new Hit(x, y, w, h, click));
+		txt(graphics, font, label, x + (w - tw(font, label)) / 2f, GuiDraw.middle(y, h), TEXT);
+		addHit(x, y, w, h, click);
 	}
 
 	// ------------------------------------------------------------------ tool shelf
 
 	private void drawShelf(GuiGraphicsExtractor graphics, Font font, int mouseX, int mouseY, float x, float y, float w, float h) {
-		GuiDraw.fill(graphics, x, y, w, h, REGION);
-		GuiDraw.fill(graphics, x + w - 1, y, 1, h, BORDER);
-		float size = w - 6;
-		float by = y + 4;
+		int count = WorldEditor.Tool.values().length;
+		// Fits the window: smaller buttons when the screen is short.
+		float size = Math.max(12, Math.min(w - 8, (h - 6 - 4) / count - 2));
+		float bx = x + (w - size) / 2f;
+		float by = y + 2;
 		String tip = null;
 		float tipY = 0;
 		for (WorldEditor.Tool tool : WorldEditor.Tool.values()) {
 			boolean on = WorldEditor.tool() == tool;
-			boolean hover = GuiDraw.hovered(mouseX, mouseY, x + 3, by, size, size);
-			GuiDraw.rounded(graphics, x + 3, by, size, size, 3, on ? (hover ? ACTIVE_HOVER : ACTIVE) : hover ? WIDGET : WIDGET_DARK);
-			icon(graphics, tool, x + 3 + size / 2f, by + size / 2f, on);
-			hits.add(new Hit(x + 3, by, size, size, () -> WorldEditor.setTool(tool)));
+			boolean hover = GuiDraw.hovered(mouseX, mouseY, bx, by, size, size);
+			GuiDraw.roundedFine(graphics, bx, by, size, size, size * 0.3f, on ? (hover ? ACTIVE_HOVER : ACTIVE) : hover ? WIDGET : WIDGET_DARK);
+			icon(graphics, tool, bx + size / 2f, by + size / 2f, on);
+			addHit(bx, by, size, size, () -> WorldEditor.setTool(tool));
 			if (hover) {
 				tip = tool.label + "  " + tool.keyLabel;
 				tipY = by + 3;
 			}
 			by += size + 2;
 			if (tool == WorldEditor.Tool.WAND) {
-				GuiDraw.fill(graphics, x + 5, by + 1, size - 4, 1, BORDER);
+				GuiDraw.fill(graphics, bx + 2, by + 1, size - 4, 1, BORDER);
 				by += 4;
 			}
 		}
@@ -279,7 +363,7 @@ public class EditorScreen extends Screen {
 
 	/** Small drawn icons, so the shelf reads like Blender's toolbar. */
 	private static void icon(GuiGraphicsExtractor graphics, WorldEditor.Tool tool, float cx, float cy, boolean on) {
-		int ink = on ? 0xFFFFFFFF : 0xFFD0D0D0;
+		int ink = on ? ON_ACTIVE : TEXT;
 		switch (tool) {
 			case BUILD -> {
 				GuiDraw.border(graphics, cx - 5, cy - 3, 8, 8, ink, 1f);
@@ -323,27 +407,27 @@ public class EditorScreen extends Screen {
 
 	private void drawViewportOverlay(GuiGraphicsExtractor graphics, Font font) {
 		WorldEditor.Tool tool = WorldEditor.tool();
-		GuiDraw.small(graphics, font, "Freecam Perspective", viewX + 6, viewY + 5, 0xE0FFFFFF);
+		txtS(graphics, font, "Freecam Perspective", viewX + 6, viewY + 5, 0xE0FFFFFF);
 		String sub = "(" + tool.label + ")";
 		if (!StrayConfig.get().editorShowEdits) {
 			sub += "  edits hidden";
 		} else if (!GhostBlocks.ready()) {
 			sub += "  finding out where you are";
 		}
-		GuiDraw.small(graphics, font, sub, viewX + 6, viewY + 14, 0xB0FFFFFF);
+		txtS(graphics, font, sub, viewX + 6, viewY + 14, 0xB0FFFFFF);
 		var hover = WorldEditor.hover();
 		if (hover != null && !WorldEditor.looking()) {
 			var pos = hover.getBlockPos();
 			String info = WorldEditor.name(GhostBlocks.shown(pos)) + "  " + pos.getX() + " " + pos.getY() + " " + pos.getZ();
-			GuiDraw.small(graphics, font, info, viewX + 6, viewY + viewH - 10, 0xC0FFFFFF);
+			txtS(graphics, font, info, viewX + 6, viewY + viewH - 10, 0xC0FFFFFF);
 		}
 		String message = WorldEditor.status();
 		if (!message.isEmpty()) {
-			float mw = GuiDraw.smallWidth(font, message) + 12;
+			float mw = twS(font, message) + 12;
 			float mx = viewX + (viewW - mw) / 2f;
 			float my = viewY + viewH - 24;
-			GuiDraw.rounded(graphics, mx, my, mw, 12, 3, 0xE0202020);
-			GuiDraw.small(graphics, font, message, mx + 6, my + 1.5f, TEXT);
+			GuiDraw.roundedFine(graphics, mx, my, mw, 12, 3, MaterialPalette.withAlpha(TIP, 0xE6));
+			txtS(graphics, font, message, mx + 6, my + 1.5f, TEXT);
 		}
 		drawAxes(graphics, font, viewX + viewW - 20, viewY + 20, 12);
 	}
@@ -369,9 +453,9 @@ public class EditorScreen extends Screen {
 			if (i < 3) {
 				GuiDraw.stroke(graphics, cx, cy, sx, sy, 1.5f, color);
 				GuiDraw.circle(graphics, sx, sy, 3.5f, color);
-				GuiDraw.small(graphics, font, names[i], sx - GuiDraw.smallWidth(font, names[i]) / 2f + 0.5f, sy - 4.5f, 0xFF000000);
+				txt(graphics, font, names[i], sx - tw(font, names[i]) / 2f + 0.5f, sy - 4.5f, 0xFF000000);
 			} else {
-				GuiDraw.circle(graphics, sx, sy, 3f, (color & 0xFFFFFF) | 0x70000000);
+				GuiDraw.circle(graphics, sx, sy, GuiDraw.middle(2, TOP_H - 4), (color & 0xFFFFFF) | 0x70000000);
 			}
 		}
 	}
@@ -383,8 +467,6 @@ public class EditorScreen extends Screen {
 	// ------------------------------------------------------------------ properties panel
 
 	private void drawPanel(GuiGraphicsExtractor graphics, Font font, int mouseX, int mouseY, float x, float y, float w, float h) {
-		GuiDraw.fill(graphics, x, y, w, h, REGION);
-		GuiDraw.fill(graphics, x, y, 1, h, BORDER);
 		boolean clipped = GuiDraw.scissor(graphics, x, y, w, h);
 		panelX = x;
 		panelY = y;
@@ -436,7 +518,7 @@ public class EditorScreen extends Screen {
 			// Scroll bar, Blender-thin.
 			float barH = Math.max(12, h * h / panelContent);
 			float barY = y + (h - barH) * (panelScroll / Math.max(1, panelContent - h));
-			GuiDraw.rounded(graphics, x + w - 4, barY + 1, 2, barH - 2, 1, 0x80FFFFFF);
+			GuiDraw.roundedFine(graphics, x + w - 4, barY + 1, 2, barH - 2, 1, BORDER);
 		}
 		if (clipped) {
 			GuiDraw.disableScissor(graphics);
@@ -481,11 +563,11 @@ public class EditorScreen extends Screen {
 			String name = file.getFileName().toString().replaceFirst("\\.json$", "");
 			boolean hover = GuiDraw.hovered(mouseX, mouseY, x, y, w, 11);
 			if (hover) {
-				GuiDraw.rounded(graphics, x - 2, y, w + 4, 11, 2, WIDGET_DARK);
+				GuiDraw.roundedFine(graphics, x - 2, y, w + 4, 11, 2, WIDGET_DARK);
 			}
-			GuiDraw.small(graphics, font, clip(font, name, (int) w - 22), x, GuiDraw.middle(y, 11), hover ? TEXT : DIM);
-			GuiDraw.small(graphics, font, "Add", x + w - GuiDraw.smallWidth(font, "Add"), GuiDraw.middle(y, 11), hover ? ACTIVE_HOVER : FAINT);
-			hits.add(new Hit(x, y, w, 11, () -> WorldEditor.importBuild(GhostBlocks.readBuild(file), name)));
+			txt(graphics, font, clip(font, name, (int) w - 22), x, GuiDraw.middle(y, 11), hover ? TEXT : DIM);
+			txt(graphics, font, "Add", x + w - tw(font, "Add"), GuiDraw.middle(y, 11), hover ? ACTIVE_HOVER : FAINT);
+			addHit(x, y, w, 11, () -> WorldEditor.importBuild(GhostBlocks.readBuild(file), name));
 			y += 12;
 		}
 		return y + 3;
@@ -494,7 +576,7 @@ public class EditorScreen extends Screen {
 	/** Blender-style collapsible panel header. */
 	private float section(GuiGraphicsExtractor graphics, Font font, int mouseX, int mouseY, int index, String title, float x, float y, float w) {
 		boolean hover = GuiDraw.hovered(mouseX, mouseY, x + 3, y, w - 6, 12);
-		GuiDraw.rounded(graphics, x + 3, y, w - 6, 12, 3, hover ? 0xFF404040 : 0xFF383838);
+		GuiDraw.roundedFine(graphics, x + 3, y, w - 6, 12, 3, hover ? WIDGET : WIDGET_DARK);
 		// Disclosure triangle.
 		float tx = x + 9;
 		float ty = y + 6;
@@ -507,8 +589,8 @@ public class EditorScreen extends Screen {
 				GuiDraw.fill(graphics, tx - 3 + i, ty - 1 + i, 6 - i * 2, 1, DIM);
 			}
 		}
-		GuiDraw.small(graphics, font, title, x + 15, y + 1.5f, TEXT);
-		hits.add(new Hit(x + 3, y, w - 6, 12, () -> collapsed[index] = !collapsed[index]));
+		txt(graphics, font, title, x + 15, y + 1.5f, TEXT);
+		addHit(x + 3, y, w - 6, 12, () -> collapsed[index] = !collapsed[index]);
 		return y + 15;
 	}
 
@@ -538,14 +620,14 @@ public class EditorScreen extends Screen {
 				y = wrapText(graphics, font, "Selects blocks of the clicked type. Then Fill, Replace or Delete them.", x, y + 1, w, DIM);
 			}
 			case PAINT -> {
-				GuiDraw.small(graphics, font, "Brush", x, y + 1.5f, DIM);
+				txt(graphics, font, "Brush", x, y + 1.5f, DIM);
 				float fw = w - 34;
 				float fx = x + 32;
-				GuiDraw.rounded(graphics, fx, y, fw, 12, 3, FIELD);
+				GuiDraw.roundedFine(graphics, fx, y, fw, 12, 3, FIELD);
 				float t = WorldEditor.brushSize() / (float) WorldEditor.MAX_BRUSH;
-				GuiDraw.rounded(graphics, fx, y, Math.max(6, fw * (0.08f + 0.92f * t)), 12, 3, ACTIVE);
+				GuiDraw.roundedFine(graphics, fx, y, Math.max(6, fw * (0.08f + 0.92f * t)), 12, 3, ACTIVE);
 				String size = String.valueOf(WorldEditor.brushSize() * 2 + 1);
-				GuiDraw.small(graphics, font, size, fx + (fw - GuiDraw.smallWidth(font, size)) / 2f, y + 1.5f, TEXT);
+				txt(graphics, font, size, fx + (fw - tw(font, size)) / 2f, y + 1.5f, TEXT);
 				arrowButton(graphics, font, mouseX, mouseY, fx, y, 10, 12, "<", () -> WorldEditor.brush(-1));
 				arrowButton(graphics, font, mouseX, mouseY, fx + fw - 10, y, 10, 12, ">", () -> WorldEditor.brush(1));
 				y += 16;
@@ -580,9 +662,9 @@ public class EditorScreen extends Screen {
 		rulesY = y;
 		rulesW = w;
 		rulesH = h;
-		GuiDraw.rounded(graphics, x, y, w, h, 3, FIELD);
+		GuiDraw.roundedFine(graphics, x, y, w, h, 3, FIELD);
 		if (rules.isEmpty()) {
-			GuiDraw.small(graphics, font, "None yet: use Replace all", x + 4, GuiDraw.middle(y, h), FAINT);
+			txt(graphics, font, "None yet: use Replace all", x + 4, GuiDraw.middle(y, h), FAINT);
 			return y + h + 4;
 		}
 		float rowH = 18;
@@ -599,14 +681,14 @@ public class EditorScreen extends Screen {
 				GuiDraw.fill(graphics, x, ry, w, rowH, 0x20FFFFFF);
 			}
 			graphics.item(EditorHud.icon(rule.from.defaultBlockState()), (int) x + 1, (int) ry + 1);
-			GuiDraw.small(graphics, font, "→", x + 19, ry + 4.5f, DIM);
+			txt(graphics, font, "→", x + 19, ry + 4.5f, DIM);
 			graphics.item(EditorHud.icon(rule.to), (int) x + 26, (int) ry + 1);
 			String name = clip(font, EditorHud.label(rule.to), (int) (w - 56));
-			GuiDraw.small(graphics, font, name, x + 44, ry + 4.5f, hover ? TEXT : DIM);
+			txtS(graphics, font, name, x + 44, ry + 4.5f, hover ? TEXT : DIM);
 			boolean del = GuiDraw.hovered(mouseX, mouseY, x + w - 12, ry, 12, rowH);
-			GuiDraw.small(graphics, font, "×", x + w - 9, ry + 4.5f, del ? RED : FAINT);
+			txt(graphics, font, "×", x + w - 9, ry + 4.5f, del ? RED : FAINT);
 			Block from = rule.from;
-			hits.add(new Hit(x + w - 12, ry, 12, rowH, () -> WorldEditor.removeRule(from)));
+			addHit(x + w - 12, ry, 12, rowH, () -> WorldEditor.removeRule(from));
 		}
 		if (clipped) {
 			GuiDraw.disableScissor(graphics);
@@ -615,43 +697,43 @@ public class EditorScreen extends Screen {
 	}
 
 	private float keyLine(GuiGraphicsExtractor graphics, Font font, String what, String keys, float x, float y, float w) {
-		GuiDraw.small(graphics, font, what, x, y, DIM);
-		float kw = GuiDraw.smallWidth(font, keys) + 6;
-		GuiDraw.rounded(graphics, x + w - kw, y - 0.5f, kw, 10, 2, WIDGET_DARK);
-		GuiDraw.small(graphics, font, keys, x + w - kw + 3, y, TEXT);
+		txtS(graphics, font, what, x, y, DIM);
+		float kw = twS(font, keys) + 6;
+		GuiDraw.roundedFine(graphics, x + w - kw, y - 0.5f, kw, 10, 2, WIDGET_DARK);
+		txtS(graphics, font, keys, x + w - kw + 3, y, TEXT);
 		return y + 12;
 	}
 
 	private void label(GuiGraphicsExtractor graphics, Font font, String key, String value, float x, float y, float w) {
-		GuiDraw.small(graphics, font, key, x, y, DIM);
-		GuiDraw.small(graphics, font, value, x + w - GuiDraw.smallWidth(font, value), y, TEXT);
+		txtS(graphics, font, key, x, y, DIM);
+		txtS(graphics, font, value, x + w - twS(font, value), y, TEXT);
 	}
 
 	private void checkbox(GuiGraphicsExtractor graphics, Font font, int mouseX, int mouseY, float x, float y, float w, String label, boolean value, java.util.function.Consumer<Boolean> setter) {
 		boolean hover = GuiDraw.hovered(mouseX, mouseY, x, y - 1, w, 11);
-		GuiDraw.rounded(graphics, x, y - 1, 10, 10, 2, value ? (hover ? ACTIVE_HOVER : ACTIVE) : hover ? WIDGET_HOVER : WIDGET);
+		GuiDraw.roundedFine(graphics, x, y - 1, 10, 10, 2, value ? (hover ? ACTIVE_HOVER : ACTIVE) : hover ? WIDGET_HOVER : WIDGET);
 		if (value) {
-			GuiDraw.stroke(graphics, x + 2.5f, y + 4, x + 4.5f, y + 6, 1.4f, 0xFFFFFFFF);
-			GuiDraw.stroke(graphics, x + 4.5f, y + 6, x + 8f, y + 1.5f, 1.4f, 0xFFFFFFFF);
+			GuiDraw.stroke(graphics, x + 2.5f, y + 4, x + 4.5f, y + 6, 1.4f, ON_ACTIVE);
+			GuiDraw.stroke(graphics, x + 4.5f, y + 6, x + 8f, y + 1.5f, 1.4f, ON_ACTIVE);
 		}
-		GuiDraw.small(graphics, font, label, x + 14, y - 0.5f, TEXT);
-		hits.add(new Hit(x, y - 1, w, 11, () -> setter.accept(!value)));
+		txt(graphics, font, label, x + 14, y - 0.5f, TEXT);
+		addHit(x, y - 1, w, 11, () -> setter.accept(!value));
 	}
 
 	private void widget(GuiGraphicsExtractor graphics, Font font, int mouseX, int mouseY, float x, float y, float w, float h, String label, boolean on, int ink, Runnable click) {
 		boolean hover = GuiDraw.hovered(mouseX, mouseY, x, y, w, h);
-		GuiDraw.rounded(graphics, x, y, w, h, 3, on ? (hover ? ACTIVE_HOVER : ACTIVE) : hover ? WIDGET_HOVER : WIDGET);
+		GuiDraw.roundedFine(graphics, x, y, w, h, 3, on ? (hover ? ACTIVE_HOVER : ACTIVE) : hover ? WIDGET_HOVER : WIDGET);
 		String text = clip(font, label, (int) w - 4);
-		GuiDraw.small(graphics, font, text, x + (w - GuiDraw.smallWidth(font, text)) / 2f, GuiDraw.middle(y, h), ink);
-		hits.add(new Hit(x, y, w, h, click));
+		txt(graphics, font, text, x + (w - tw(font, text)) / 2f, GuiDraw.middle(y, h), ink);
+		addHit(x, y, w, h, click);
 	}
 
 	private float wrapText(GuiGraphicsExtractor graphics, Font font, String text, float x, float y, float w, int color) {
 		StringBuilder line = new StringBuilder();
 		for (String word : text.split(" ")) {
 			String next = line.isEmpty() ? word : line + " " + word;
-			if (GuiDraw.smallWidth(font, next) > w && !line.isEmpty()) {
-				GuiDraw.small(graphics, font, line.toString(), x, y, color);
+			if (twS(font, next) > w && !line.isEmpty()) {
+				txtS(graphics, font, line.toString(), x, y, color);
 				y += 9;
 				line = new StringBuilder(word);
 			} else {
@@ -659,7 +741,7 @@ public class EditorScreen extends Screen {
 			}
 		}
 		if (!line.isEmpty()) {
-			GuiDraw.small(graphics, font, line.toString(), x, y, color);
+			txtS(graphics, font, line.toString(), x, y, color);
 			y += 9;
 		}
 		return y;
@@ -669,22 +751,19 @@ public class EditorScreen extends Screen {
 		if (!interactive) {
 			return;
 		}
-		float w = GuiDraw.smallWidth(font, text) + 8;
+		float w = twS(font, text) + 8;
 		float tx = Math.min(x, width - w - 2);
-		GuiDraw.rounded(graphics, tx, y, w, 12, 3, 0xF0181818);
-		GuiDraw.small(graphics, font, text, tx + 4, y + 1.5f, TEXT);
+		GuiDraw.roundedFine(graphics, tx, y, w, 12, 3, TIP);
+		txtS(graphics, font, text, tx + 4, y + 1.5f, TEXT);
 	}
 
 	// ------------------------------------------------------------------ block browser
 
 	private void drawBrowser(GuiGraphicsExtractor graphics, Font font, int mouseX, int mouseY, float x, float y, float w, float h) {
-		GuiDraw.fill(graphics, x, y, w, h, REGION);
-		GuiDraw.fill(graphics, x, y, w, 1, BORDER);
 		float headH = 22;
-		GuiDraw.fill(graphics, x, y + 1, w, headH, HEADER);
 		float px = x + 4;
-		GuiDraw.small(graphics, font, "Palette", px, y + 7.5f, DIM);
-		px += GuiDraw.smallWidth(font, "Palette") + 6;
+		txtS(graphics, font, "Palette", px, y + 7.5f, DIM);
+		px += twS(font, "Palette") + 6;
 		String tip = null;
 		float tipX = 0;
 		for (int i = 0; i < WorldEditor.SLOTS; i++) {
@@ -692,10 +771,10 @@ public class EditorScreen extends Screen {
 			float sy = y + 3;
 			boolean on = i == WorldEditor.slot();
 			boolean hover = GuiDraw.hovered(mouseX, mouseY, sx, sy, CELL, CELL);
-			GuiDraw.rounded(graphics, sx, sy, CELL, CELL, 3, on ? ACTIVE : hover ? WIDGET_HOVER : WIDGET_DARK);
+			GuiDraw.roundedFine(graphics, sx, sy, CELL, CELL, 3, on ? ACTIVE : hover ? WIDGET_HOVER : WIDGET_DARK);
 			graphics.item(EditorHud.icon(WorldEditor.paletteAt(i)), (int) sx + 1, (int) sy + 1);
 			int index = i;
-			hits.add(new Hit(sx, sy, CELL, CELL, () -> WorldEditor.setSlot(index)));
+			addHit(sx, sy, CELL, CELL, () -> WorldEditor.setSlot(index));
 			if (hover) {
 				tip = (i + 1) + "  " + EditorHud.label(WorldEditor.paletteAt(i));
 				tipX = sx;
@@ -706,7 +785,7 @@ public class EditorScreen extends Screen {
 		float searchW = Math.min(120, w - paletteEnd - 8);
 		float searchX = x + w - searchW - 4;
 		if (searchX - paletteEnd > 30) {
-			GuiDraw.small(graphics, font, clip(font, current, (int) (searchX - paletteEnd - 6)), paletteEnd, y + 7.5f, TEXT);
+			txt(graphics, font, clip(font, current, (int) (searchX - paletteEnd - 6)), paletteEnd, y + 7.5f, TEXT);
 		}
 		drawSearch(graphics, font, mouseX, mouseY, searchX, y + 5, searchW, 13);
 
@@ -715,19 +794,20 @@ public class EditorScreen extends Screen {
 		float bodyY = y + headH + 2;
 		float bodyH = h - headH - 3;
 		float cy = bodyY + 1;
+		float catRow = Math.min(10.5f, (bodyH - 2) / CATEGORIES.length);
 		for (int i = 0; i < CATEGORIES.length; i++) {
 			boolean on = i == category;
-			boolean hover = GuiDraw.hovered(mouseX, mouseY, x + 3, cy, catW - 6, 8.5f);
+			boolean hover = GuiDraw.hovered(mouseX, mouseY, x + 3, cy, catW - 6, catRow);
 			if (on || hover) {
-				GuiDraw.rounded(graphics, x + 3, cy, catW - 6, 8.5f, 2, on ? ACTIVE : WIDGET_DARK);
+				GuiDraw.roundedFine(graphics, x + 3, cy, catW - 6, catRow, catRow / 2f, on ? ACTIVE : WIDGET_DARK);
 			}
-			GuiDraw.small(graphics, font, CATEGORIES[i], x + 6, GuiDraw.middle(cy, 8.5f), on ? TEXT : DIM);
+			txtS(graphics, font, CATEGORIES[i], x + 6, GuiDraw.middle(cy, catRow), on ? ON_ACTIVE : DIM);
 			int index = i;
-			hits.add(new Hit(x + 3, cy, catW - 6, 8.5f, () -> {
+			addHit(x + 3, cy, catW - 6, catRow, () -> {
 				category = index;
 				scroll = 0;
-			}));
-			cy += 8.5f;
+			});
+			cy += catRow;
 		}
 		GuiDraw.fill(graphics, x + catW, bodyY, 1, bodyH, BORDER);
 		gridX = x + catW + 3;
@@ -742,7 +822,7 @@ public class EditorScreen extends Screen {
 
 	private void drawSearch(GuiGraphicsExtractor graphics, Font font, int mouseX, int mouseY, float x, float y, float w, float h) {
 		boolean hover = GuiDraw.hovered(mouseX, mouseY, x, y, w, h);
-		GuiDraw.rounded(graphics, x, y, w, h, h / 2f, searchFocused ? 0xFF282828 : hover ? 0xFF262626 : FIELD);
+		GuiDraw.roundedFine(graphics, x, y, w, h, h / 2f, searchFocused ? 0xFF282828 : hover ? 0xFF262626 : FIELD);
 		if (searchFocused) {
 			GuiDraw.border(graphics, x, y, w, h, ACTIVE, 1f);
 			TextKeys.mark(graphics, SEARCH_KEY, x, y, w, h);
@@ -752,8 +832,8 @@ public class EditorScreen extends Screen {
 		GuiDraw.stroke(graphics, x + 8.5f, y + h / 2f + 1, x + 10.5f, y + h / 2f + 3, 1f, DIM);
 		boolean caret = searchFocused && !TextKeys.isSelected(SEARCH_KEY) && (System.currentTimeMillis() / 530) % 2 == 0;
 		String text = search.isEmpty() && !searchFocused ? "Search blocks  Ctrl F" : search + (caret ? "|" : "");
-		GuiDraw.small(graphics, font, clip(font, text, (int) w - 18), x + 14, GuiDraw.middle(y, h), search.isEmpty() && !searchFocused ? FAINT : TEXT);
-		hits.add(new Hit(x, y, w, h, () -> searchFocused = true));
+		txt(graphics, font, clip(font, text, (int) w - 18), x + 14, GuiDraw.middle(y, h), search.isEmpty() && !searchFocused ? FAINT : TEXT);
+		addHit(x, y, w, h, () -> searchFocused = true);
 	}
 
 	private void drawGrid(GuiGraphicsExtractor graphics, Font font, int mouseX, int mouseY) {
@@ -763,7 +843,7 @@ public class EditorScreen extends Screen {
 		float maxScroll = Math.max(0, rows * (CELL + 1) + 2 - gridH);
 		scroll = Mth.clamp(scroll, 0, maxScroll);
 		if (blocks.isEmpty()) {
-			GuiDraw.small(graphics, font, category == 5 ? "Blocks you choose show up here" : "Nothing matches \"" + search + "\"", gridX + 4, gridY + 6, FAINT);
+			txt(graphics, font, category == 5 ? "Blocks you choose show up here" : "Nothing matches \"" + search + "\"", gridX + 4, gridY + 6, FAINT);
 			return;
 		}
 		boolean clipped = GuiDraw.scissor(graphics, gridX, gridY, gridW, gridH);
@@ -785,9 +865,9 @@ public class EditorScreen extends Screen {
 				float by = gridY + 2 + row * (CELL + 1) - scroll;
 				boolean hover = inGrid && GuiDraw.hovered(mouseX, mouseY, bx, by, CELL, CELL);
 				if (state.getBlock() == current) {
-					GuiDraw.rounded(graphics, bx, by, CELL, CELL, 3, ACTIVE);
+					GuiDraw.roundedFine(graphics, bx, by, CELL, CELL, 4, SELECTED);
 				} else if (hover) {
-					GuiDraw.rounded(graphics, bx, by, CELL, CELL, 3, WIDGET);
+					GuiDraw.roundedFine(graphics, bx, by, CELL, CELL, 3, WIDGET);
 				}
 				if (hover) {
 					hovered = state;
@@ -796,7 +876,7 @@ public class EditorScreen extends Screen {
 				}
 				graphics.item(EditorHud.icon(state), (int) bx + 1, (int) by + 1);
 				if (inGrid) {
-					hits.add(new Hit(bx, by, CELL, CELL, () -> choose(state)));
+					addHit(bx, by, CELL, CELL, () -> choose(state));
 				}
 			}
 		}
@@ -894,7 +974,6 @@ public class EditorScreen extends Screen {
 	// ------------------------------------------------------------------ status bar
 
 	private void drawStatus(GuiGraphicsExtractor graphics, Font font, float x, float y, float w) {
-		GuiDraw.fill(graphics, x, y, w, STATUS_H, STATUS);
 		String hint = switch (WorldEditor.tool()) {
 			case BUILD -> "LMB place · Ctrl LMB remove · MMB pick · RMB look · WASD fly · Ctrl Z undo";
 			case SELECT -> "LMB drag select · F fill · R replace · X delete · Alt X restore · C deselect";
@@ -907,17 +986,17 @@ public class EditorScreen extends Screen {
 			hint = "Looking around · WASD fly · Space/Shift up/down · let go of RMB to return";
 		}
 		String right = GhostBlocks.placedCount() + " blocks · " + GhostBlocks.rules().size() + " rules · Esc exits";
-		float rw = GuiDraw.smallWidth(font, right);
-		GuiDraw.small(graphics, font, clip(font, hint, (int) (w - rw - 16)), x + 4, GuiDraw.middle(y, STATUS_H), DIM);
-		GuiDraw.small(graphics, font, right, x + w - rw - 4, GuiDraw.middle(y, STATUS_H), DIM);
+		float rw = twS(font, right);
+		txtS(graphics, font, clip(font, hint, (int) (w - rw - 16)), x + 4, GuiDraw.middle(y, STATUS_H), DIM);
+		txtS(graphics, font, right, x + w - rw - 4, GuiDraw.middle(y, STATUS_H), DIM);
 	}
 
 	private static String clip(Font font, String value, int maxWidth) {
-		if (maxWidth <= 8 || GuiDraw.smallWidth(font, value) <= maxWidth) {
+		if (maxWidth <= 8 || tw(font, value) <= maxWidth) {
 			return value;
 		}
 		String trimmed = value;
-		while (trimmed.length() > 1 && GuiDraw.smallWidth(font, trimmed + "..") > maxWidth) {
+		while (trimmed.length() > 1 && tw(font, trimmed + "..") > maxWidth) {
 			trimmed = trimmed.substring(0, trimmed.length() - 1);
 		}
 		return trimmed + "..";
