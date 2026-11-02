@@ -15,6 +15,12 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.5.85", new String[]{
+			"Stray Legit: a separate build with no automation and no ESP through walls. Left out: auto clicker, auto experiments, book combine, auto DNA, farm keys, the empty vacuum key, pest auto loadout, loadouts and wardrobe menus, command rings, movement rings, path walking, the freecam key and lasso auto-reel. ESP only shows what you can see. Download it from stray.gay; it only updates to Stray Legit builds.",
+			"Windows 98 style for the click GUI and the whole HUD (Menus > Click GUI / HUD > Style), with a dark mode under View. The watermark has its own Windows 98 style too.",
+			"Chat draws under the action bar, so it no longer covers it.",
+			"The updater no longer ships a helper .exe: on Windows the old jar is emptied when Minecraft closes and deleted on the next launch."
+		}),
 		new Entry("1.5.84", new String[]{
 			"Command keys and the world editor are now in every menu style (Hyprland and ImGui Keys tab, click GUI Keys column): toggle, Edit command keys, Open world editor."
 		}),

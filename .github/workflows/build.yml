@@ -9,6 +9,10 @@ on:
         description: Publish this commit as the player release (every Minecraft version)
         type: boolean
         default: false
+      legit_only:
+        description: With release, publish only Stray Legit (the full release stays as it is)
+        type: boolean
+        default: false
 
 jobs:
   build:
@@ -60,6 +64,7 @@ jobs:
         DEV: ${{ github.event_name == 'push' }}
         SHA: ${{ github.sha }}
         RUN: ${{ github.run_id }}
+        LEGIT_ONLY: ${{ github.event_name == 'workflow_dispatch' && inputs.legit_only == true }}
       run: |
         set -euo pipefail
         VERSION=$(grep '^version=' gradle.properties | cut -d= -f2 | tr -d '[:space:]')
@@ -77,10 +82,12 @@ jobs:
             put "mod/$MC/legit/dev/stray-dev.jar" "$JAR" application/java-archive
             put "mod/$MC/legit/dev/dev.json" meta.json application/json
           else
+            if [ "$LEGIT_ONLY" != "true" ]; then
             JAR=$(ls "$dir"build/libs/stray-mc$MC-*.jar | grep -v -- '-sources' | head -1)
             printf '{\n    "version": "%s",\n    "minecraft": "%s",\n    "file": "stray-%s.jar"\n}\n' "$VERSION" "$MC" "$VERSION" > meta.json
             put "mod/$MC/stray-$VERSION.jar" "$JAR" application/java-archive
             put "mod/$MC/latest.json" meta.json application/json
+            fi
             # Stray Legit release: mod/<mc>/legit/
             JAR=$(ls "$dir"build/libs/stray-legit-mc$MC-*.jar | grep -v -- '-sources' | head -1)
             printf '{\n    "version": "%s",\n    "minecraft": "%s",\n    "file": "stray-legit-%s.jar"\n}\n' "$VERSION" "$MC" "$VERSION" > meta.json
