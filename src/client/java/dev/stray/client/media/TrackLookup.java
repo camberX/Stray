@@ -24,7 +24,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * being cached as a miss.
  */
 final class TrackLookup {
-	private static final String BROWSER_UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36";
+	private static final String BROWSER_UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.6778.86 Safari/537.36";
 	private static final String APP_UA = "Stray/1.2 (https://github.com/camberX/Eisenmann)";
 	private static final String YTM_SONGS = "EgWKAQIIAWoKEAkQBRAKEAMQBA==";
 	private static final long RETRY_MS = 45_000L;

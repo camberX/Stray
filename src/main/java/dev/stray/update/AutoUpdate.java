@@ -16,6 +16,9 @@ import java.net.http.HttpResponse;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.Set;
+import java.nio.file.StandardOpenOption;
 import java.nio.file.StandardCopyOption;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -38,6 +41,7 @@ public final class AutoUpdate implements PreLaunchEntrypoint {
 	@Override
 	public void onPreLaunch() {
 		log("PreLaunch updater loaded.");
+		cleanupLeftovers();
 		boolean pending = takeNextLaunchRequest();
 		if (!enabled() && !pending) {
 			log("Auto-update is off in config, so PreLaunch will not download. Client launch still checks if the in-game toggle is on.");
@@ -694,66 +698,82 @@ public final class AutoUpdate implements PreLaunchEntrypoint {
 				log("Moved in-use jar " + old.getFileName() + " to " + dest.getFileName() + ".");
 				dest.toFile().deleteOnExit();
 				rememberPurge(dest);
-				if (!deleteQuiet(dest)) {
-					spawnPurge(dest);
-				}
 				return;
 			}
 		}
-		old.toFile().deleteOnExit();
+		// Windows keeps the running jar locked against delete and rename, but Java opens it with
+		// write sharing. So when the game exits the old jar is emptied in place: Fabric skips a
+		// jar with no fabric.mod.json, and the next launch deletes the empty file.
 		rememberPurge(old);
-		spawnPurge(old);
-		log("Could not remove " + old.getFileName() + ". A background purge will retry about once a second.");
+		emptyOnExit(old);
+		log("Could not remove " + old.getFileName() + " while it is in use. It will be emptied when Minecraft closes and deleted on the next launch.");
 	}
 
-	private static void spawnPurge(Path old) {
-		if (old == null || !windows() || !branded(old)) {
+	/** An empty zip: just the end-of-central-directory record. */
+	private static final byte[] EMPTY_ZIP = {0x50, 0x4B, 0x05, 0x06, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+	private static final Set<Path> EMPTY_ON_EXIT = ConcurrentHashMap.newKeySet();
+	private static volatile boolean exitHook;
+
+	private static void emptyOnExit(Path old) {
+		if (old == null || !branded(old) || !old.getFileName().toString().toLowerCase(Locale.ROOT).endsWith(".jar")) {
 			return;
 		}
-		Path exe = purgeExe();
-		if (exe == null) {
-			return;
+		EMPTY_ON_EXIT.add(old.toAbsolutePath().normalize());
+		if (!exitHook) {
+			exitHook = true;
+			Runtime.getRuntime().addShutdownHook(new Thread(AutoUpdate::emptyPendingJars, "stray-update-cleanup"));
 		}
+	}
+
+	private static void emptyPendingJars() {
+		for (Path old : List.copyOf(EMPTY_ON_EXIT)) {
+			if (deleteQuiet(old)) {
+				EMPTY_ON_EXIT.remove(old);
+				continue;
+			}
+			try {
+				Files.write(old, EMPTY_ZIP, StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING);
+				EMPTY_ON_EXIT.remove(old);
+			} catch (Exception ignored) {
+			}
+		}
+	}
+
+	/** Deletes the leftovers an earlier update could not remove while they were in use. */
+	public static void cleanupLeftovers() {
+		Path running = currentJar();
+		Path keep = running == null ? null : running.toAbsolutePath().normalize();
 		try {
-			new ProcessBuilder(exe.toString(), old.toAbsolutePath().normalize().toString())
-				.redirectOutput(ProcessBuilder.Redirect.DISCARD)
-				.redirectError(ProcessBuilder.Redirect.DISCARD)
-				.start();
-			log("Retrying delete of " + old.getFileName() + " in the background.");
-		} catch (Exception exception) {
-			log("Could not start background delete for " + old.getFileName() + ": " + exception.getMessage());
-		}
-	}
-
-	private static Path purgeExe() {
-		Path dest = FabricLoader.getInstance().getConfigDir().resolve("stray-purge.exe");
-		try (InputStream in = AutoUpdate.class.getResourceAsStream("stray-purge.exe")) {
-			if (in == null) {
-				return Files.isRegularFile(dest) ? dest : null;
-			}
-			byte[] bytes = in.readAllBytes();
-			if (bytes.length < 64) {
-				return null;
-			}
-			boolean same = Files.isRegularFile(dest) && Files.size(dest) == bytes.length;
-			if (!same) {
-				Files.createDirectories(dest.getParent());
-				Path part = dest.resolveSibling("stray-purge.exe.part");
-				Files.write(part, bytes);
-				try {
-					Files.move(part, dest, StandardCopyOption.REPLACE_EXISTING);
-				} catch (Exception moveFailed) {
-					deleteQuiet(part);
+			Path dir = FabricLoader.getInstance().getConfigDir();
+			for (String name : List.of("stray-purge.txt", "voidmark-purge.txt")) {
+				Path file = dir.resolve(name);
+				if (!Files.isRegularFile(file)) {
+					continue;
+				}
+				List<String> left = new ArrayList<>();
+				for (String line : Files.readAllLines(file)) {
+					if (line.isBlank()) {
+						continue;
+					}
+					Path path = Path.of(line.trim()).toAbsolutePath().normalize();
+					if (path.equals(keep) || !branded(path)) {
+						continue;
+					}
+					if (!deleteQuiet(path) && Files.exists(path)) {
+						left.add(path.toString());
+					} else {
+						log("Removed leftover " + path.getFileName() + ".");
+					}
+				}
+				if (left.isEmpty()) {
+					deleteQuiet(file);
+				} else {
+					Files.write(file, left);
 				}
 			}
-		} catch (Exception exception) {
-			log("Could not unpack stray-purge.exe: " + exception.getMessage());
+			deleteQuiet(dir.resolve("stray-purge.exe"));
+		} catch (Exception ignored) {
 		}
-		return Files.isRegularFile(dest) ? dest : null;
-	}
-
-	private static boolean windows() {
-		return System.getProperty("os.name", "").toLowerCase(Locale.ROOT).contains("win");
 	}
 
 	private static List<Path> retireTargets(Path old) {
@@ -911,6 +931,8 @@ public final class AutoUpdate implements PreLaunchEntrypoint {
 			System.err.flush();
 		} catch (Exception ignored) {
 		}
+		// halt() skips shutdown hooks, so empty the locked old jar here.
+		emptyPendingJars();
 		Runtime.getRuntime().halt(0);
 	}
 

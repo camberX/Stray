@@ -53,7 +53,7 @@ public final class SpotifySmtc {
 		.connectTimeout(Duration.ofSeconds(5))
 		.followRedirects(HttpClient.Redirect.NORMAL)
 		.build();
-	private static final String HTTP_UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36";
+	private static final String HTTP_UA = "Stray (+https://stray.gay)";
 
 	private final AtomicReference<Track> track = new AtomicReference<>(Track.NONE);
 	private volatile Process process;
@@ -202,18 +202,7 @@ public final class SpotifySmtc {
 			return;
 		}
 		try {
-			Path script = this.writeScript();
-			ProcessBuilder builder = new ProcessBuilder(
-				powershell(),
-				"-NoLogo",
-				"-STA",
-				"-NoProfile",
-				"-ExecutionPolicy", "Bypass",
-				"-File",
-				script.toAbsolutePath().toString()
-			);
-			builder.environment().put("POWERSHELL_TELEMETRY_OPTOUT", "1");
-			Process started = builder.start();
+			Process started = WindowsMediaHelper.start();
 			this.process = started;
 			try {
 				OutputStream stdin = started.getOutputStream();
@@ -241,21 +230,6 @@ public final class SpotifySmtc {
 		}
 	}
 
-	private Path writeScript() throws Exception {
-		Path script = Path.of(System.getProperty("java.io.tmpdir"), "stray-nowplaying.ps1");
-		InputStream raw = SpotifySmtc.class.getResourceAsStream("/assets/stray/windows_nowplaying.ps1");
-		if (raw == null) {
-			raw = SpotifySmtc.class.getResourceAsStream("/windows_nowplaying.ps1");
-		}
-		if (raw == null) {
-			throw new IllegalStateException("Spotify helper script is missing from the mod jar");
-		}
-		try (InputStream in = raw) {
-			Files.write(script, in.readAllBytes());
-		}
-		return script;
-	}
-
 	private static void drain(InputStream stream) {
 		try (BufferedReader reader = new BufferedReader(new InputStreamReader(stream, StandardCharsets.UTF_8))) {
 			String line;
@@ -266,15 +240,6 @@ public final class SpotifySmtc {
 			}
 		} catch (Exception ignored) {
 		}
-	}
-
-	private static String powershell() {
-		String root = System.getenv("SystemRoot");
-		if (root == null || root.isBlank()) {
-			root = "C:\\Windows";
-		}
-		Path exe = Path.of(root, "System32", "WindowsPowerShell", "v1.0", "powershell.exe");
-		return Files.isRegularFile(exe) ? exe.toString() : "powershell.exe";
 	}
 
 	private static String sanitize(String line) {

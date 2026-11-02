@@ -227,15 +227,16 @@ final class CompanionNowPlaying {
 		addYtm(out, 26538);
 		addYtm(out, 26558);
 		addYtm(out, 26559);
-		out.add("http://127.0.0.1:9863/query");
-		out.add("http://127.0.0.1:10767/api/v1/playback/now-playing");
-		out.add("http://127.0.0.1:31333/api/v1/song");
-		out.add("http://127.0.0.1:1870/api/v1/song");
+		out.add("http://localhost:9863/query");
+		out.add("http://localhost:10767/api/v1/playback/now-playing");
+		out.add("http://localhost:31333/api/v1/song");
+		out.add("http://localhost:1870/api/v1/song");
 		return List.copyOf(out);
 	}
 
 	private static void addYtm(Set<String> out, int port) {
-		for (String host : new String[]{"127.0.0.1", "[::1]", "localhost"}) {
+		// "localhost" resolves to the IPv4 loopback first in Java; [::1] covers apps that only listen on IPv6.
+		for (String host : new String[]{"localhost", "[::1]"}) {
 			out.add("http://" + host + ":" + port + "/api/v1/song");
 			out.add("http://" + host + ":" + port + "/api/v1/song-info");
 		}
