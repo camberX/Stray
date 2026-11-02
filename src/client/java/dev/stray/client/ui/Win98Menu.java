@@ -100,8 +100,8 @@ public final class Win98Menu {
 	}
 
 	private static void drawFrame(StrayScreen screen, GuiGraphicsExtractor graphics, Font font, int mouseX, int mouseY) {
-		float sw = screen.width;
-		float sh = screen.height;
+		float sw = screen.width / viewScale();
+		float sh = screen.height / viewScale();
 		GuiDraw.fill(graphics, 0, 0, sw, sh, 0x38000000);
 		taskH = TASK_H + (taskRows(font, sw) - 1) * (TASK_H - 4);
 		layout(sw, sh);
@@ -265,7 +265,7 @@ public final class Win98Menu {
 	private static void drawAddressList(StrayScreen screen, GuiGraphicsExtractor graphics, Font font, int mouseX, int mouseY) {
 		String[] ids = ClickGui.ORDER;
 		// Shrinks the rows rather than running under the taskbar.
-		float room = screen.height - taskH - 2 - addrY;
+		float room = screen.height / viewScale() - taskH - 2 - addrY;
 		float itemH = Math.max(9, Math.min(ROW + 1, (room - 2) / (ids.length + 1)));
 		float h = 2 + (ids.length + 1) * itemH;
 		GuiDraw.fill(graphics, addrX, addrY, addrW, h, Win98.DARK);
@@ -866,6 +866,19 @@ public final class Win98Menu {
 		startOpen = false;
 		menuOpen = null;
 		addressOpen = false;
+	}
+
+	/**
+	 * How much smaller than the GUI scale the window is drawn: about 75% of it times the menu
+	 * scale setting, snapped so each GUI pixel still covers whole screen pixels and the bitmap
+	 * font stays sharp.
+	 */
+	static float viewScale() {
+		Minecraft client = Minecraft.getInstance();
+		double gui = client.getWindow() == null ? 2.0 : client.getWindow().getGuiScale();
+		float target = 0.75f * StrayConfig.normalizeMenuScale(StrayConfig.get().menuScale);
+		long px = Math.max(1, Math.round(gui * target));
+		return (float) Math.min(1.0, px / gui);
 	}
 
 	static void toggleDark() {

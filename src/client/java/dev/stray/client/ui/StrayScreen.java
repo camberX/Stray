@@ -770,6 +770,19 @@ public class StrayScreen extends Screen {
 				finishClose();
 				return;
 			}
+			if (StrayConfig.get().clickGuiWin98()) {
+				// Drawn smaller than the GUI scale; input goes through the same view transform.
+				float s = Win98Menu.viewScale();
+				viewScale = s;
+				graphics.pose().pushMatrix();
+				graphics.pose().scale(s, s);
+				try {
+					ClickGui.extract(this, graphics, Math.round(localX(mouseX)), Math.round(localY(mouseY)));
+				} finally {
+					graphics.pose().popMatrix();
+				}
+				return;
+			}
 			ClickGui.extract(this, graphics, mouseX, mouseY);
 			return;
 		}
