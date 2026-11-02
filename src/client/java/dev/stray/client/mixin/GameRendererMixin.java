@@ -50,10 +50,8 @@ public class GameRendererMixin {
 	/** Freecam: no first-person hands floating in front of the flying camera. */
 	@Inject(method = "renderItemInHand", at = @At("HEAD"), cancellable = true)
 	private void stray$freecamNoHand(CallbackInfo ci) {
-		if (!dev.stray.Edition.LEGIT) {
-			if (dev.stray.client.movement.Freecam.active()) {
-				ci.cancel();
-			}
+		if (dev.stray.client.movement.Freecam.active()) {
+			ci.cancel();
 		}
 	}
 

@@ -13,11 +13,11 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public abstract class KeyboardInputMixin extends ClientInput {
 	@Inject(method = "tick", at = @At("RETURN"))
 	private void stray$replayMove(CallbackInfo ci) {
+		if (dev.stray.client.movement.Freecam.active()) {
+			dev.stray.client.movement.Freecam.applyInput(this);
+			return;
+		}
 		if (!dev.stray.Edition.LEGIT) {
-			if (dev.stray.client.movement.Freecam.active()) {
-				dev.stray.client.movement.Freecam.applyInput(this);
-				return;
-			}
 			if (MovementRings.playing()) {
 				MovementRings.applyInput(this);
 			} else if (PathWalker.walking()) {

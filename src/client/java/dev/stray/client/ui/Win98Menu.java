@@ -705,7 +705,7 @@ public final class Win98Menu {
 
 	private static void drawStartMenu(StrayScreen screen, GuiGraphicsExtractor graphics, Font font, int mouseX, int mouseY, float sh) {
 		String[] labels = dev.stray.Edition.LEGIT
-			? new String[] {"Stray Settings", "HUD Editor", "Command keys", "-", "Shut Down..."}
+			? new String[] {"Stray Settings", "HUD Editor", "Command keys", "World editor", "-", "Shut Down..."}
 			: new String[] {"Stray Settings", "HUD Editor", "Command keys", "World editor", "Freecam", "-", "Shut Down..."};
 		float w = 120;
 		float h = 6;

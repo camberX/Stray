@@ -522,7 +522,7 @@ final class ImGuiMenu {
 					));
 				}
 			}
-			if (!dev.stray.Edition.LEGIT && (query.isEmpty() || "world editor".contains(query))) {
+			if (query.isEmpty() || "world editor".contains(query)) {
 				rows.add(new Row("Open world editor", false, null, null, () -> {
 					Minecraft.getInstance().gui.setScreen(null);
 					dev.stray.client.EditionGate.openEditor();

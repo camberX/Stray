@@ -55,10 +55,10 @@ public final class ClickGui {
 	private static final int DIM = 0xFFAAAAAA;
 	static final String[] ORDER = {"World", "Visuals", "Mobs", "Combat", "Slayer", "HUD", "Mining", "Farming", "Menus", "Keys", "Theme", "Player"};
 	static final int[] BIND_WHICH = dev.stray.Edition.LEGIT
-		? new int[] {3, 7, 11, 12}
+		? new int[] {3, 7, 11, 12, 17}
 		: new int[] {3, 4, 13, 5, 7, 11, 12, 14, 16, 17};
 	static final String[] BIND_LABEL = dev.stray.Edition.LEGIT
-		? new String[] {"Open menu", "Profile", "Chat peek", "Lobby ping"}
+		? new String[] {"Open menu", "Profile", "Chat peek", "Lobby ping", "World editor"}
 		: new String[] {"Open menu", "Loadouts", "Swap loadouts", "Wardrobe", "Profile", "Chat peek", "Lobby ping", "Empty bag", "Freecam", "World editor"};
 	/** Command list under the key binds. */
 	static final String[] COMMAND_LINES = dev.stray.Edition.LEGIT
@@ -1115,7 +1115,7 @@ public final class ClickGui {
 			}
 		}
 		boolean shortcuts = title || "shortcuts".contains(needle) || "pass arguments".contains(needle);
-		boolean commandKeys = title || "command keys".contains(needle) || (!dev.stray.Edition.LEGIT && "world editor".contains(needle));
+		boolean commandKeys = title || "command keys".contains(needle) || "world editor".contains(needle);
 		boolean commands = title || "commands".contains(needle) || "/loadouts".contains(needle) || "/wardrobe".contains(needle) || "/pv".contains(needle);
 		if (!title && binds.isEmpty() && !shortcuts && !commands && !commandKeys) {
 			column.height = 0f;
@@ -1127,7 +1127,7 @@ public final class ClickGui {
 		StrayConfig config = StrayConfig.get();
 		boolean shortcutOn = config.commandShortcutsEnabled;
 		boolean keysOn = config.commandKeysEnabled;
-		int extra = (shortcuts ? 1 + (shortcutOn ? 2 : 0) : 0) + (commandKeys ? (dev.stray.Edition.LEGIT ? 1 : 2) + (keysOn ? 1 : 0) : 0);
+		int extra = (shortcuts ? 1 + (shortcutOn ? 2 : 0) : 0) + (commandKeys ? 2 + (keysOn ? 1 : 0) : 0);
 		int commandLines = commands ? COMMAND_LINES.length : 0;
 		float commandsH = commandLines == 0 ? 0f : commandLines * (font.lineHeight + 1) + 6f;
 		float content = stackH(binds.size() + extra) + (commandsH > 0f ? gap() + commandsH : 0f);
@@ -1204,15 +1204,13 @@ public final class ClickGui {
 				}
 				y += stride();
 			}
-			if (!dev.stray.Edition.LEGIT) {
-				if (y + box() > viewTop && y < viewTop + shownH) {
-					drawButton(screen, graphics, font, boxX, y, boxW, "Open world editor", () -> {
-						Minecraft.getInstance().gui.setScreen(null);
-						dev.stray.client.EditionGate.openEditor();
-					});
-				}
-				y += stride();
+			if (y + box() > viewTop && y < viewTop + shownH) {
+				drawButton(screen, graphics, font, boxX, y, boxW, "Open world editor", () -> {
+					Minecraft.getInstance().gui.setScreen(null);
+					dev.stray.client.EditionGate.openEditor();
+				});
 			}
+			y += stride();
 		}
 		if (commands && y + commandsH > viewTop && y < viewTop + shownH) {
 			soft(graphics, boxX, y, boxW, commandsH, OFF_FILL);

@@ -32,7 +32,7 @@ public abstract class CameraMixin {
 		)
 	)
 	private void stray$replayLook(DeltaTracker delta, CallbackInfo ci) {
-		if (!dev.stray.Edition.LEGIT) {
+		{
 			if (dev.stray.client.movement.Freecam.active()) {
 				float partial = delta.getGameTimeDeltaPartialTick(true);
 				this.setPosition(
@@ -48,7 +48,7 @@ public abstract class CameraMixin {
 					|| dev.stray.client.movement.Freecam.position(partial).distanceToSqr(player.getEyePosition(partial)) > 0.6 * 0.6;
 				return;
 			}
-			if (MovementRings.sampleCameraLook()) {
+			if (!dev.stray.Edition.LEGIT && MovementRings.sampleCameraLook()) {
 				this.setRotation(MovementRings.cameraYaw(), MovementRings.cameraPitch());
 			}
 		}

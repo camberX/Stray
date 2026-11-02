@@ -14,16 +14,12 @@ public final class EditionGate {
 
 	/** True while the world editor is open. */
 	public static boolean editorActive() {
-		if (!Edition.LEGIT) {
-			return dev.stray.client.editor.WorldEditor.active();
-		}
-		return false;
+		return dev.stray.client.editor.WorldEditor.active();
 	}
 
+	/** The world editor is in both editions: it only changes what you see. */
 	public static void openEditor() {
-		if (!Edition.LEGIT) {
-			dev.stray.client.editor.WorldEditor.enable();
-		}
+		dev.stray.client.editor.WorldEditor.enable();
 	}
 
 	public static void toggleFreecam() {
@@ -34,10 +30,7 @@ public final class EditionGate {
 
 	/** Scroll changes the freecam speed while it is on. */
 	public static boolean freecamScroll(double amount) {
-		if (!Edition.LEGIT) {
-			return dev.stray.client.movement.Freecam.scroll(amount);
-		}
-		return false;
+		return dev.stray.client.movement.Freecam.scroll(amount);
 	}
 
 	/** True while the auto clicker holds left click. */

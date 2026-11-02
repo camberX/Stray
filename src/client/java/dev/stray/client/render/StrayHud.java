@@ -57,7 +57,7 @@ public final class StrayHud {
 		if (dev.stray.client.EditionGate.editorActive()) {
 			// The editor workspace replaces the HUD while it is open; drawn outside the HUD pass so
 			// it keeps the menu font.
-			if (!dev.stray.Edition.LEGIT) { dev.stray.client.editor.EditorHud.extract(graphics, delta); }
+			dev.stray.client.editor.EditorHud.extract(graphics, delta);
 			return;
 		}
 		HudChrome.beginHud();
@@ -96,7 +96,7 @@ public final class StrayHud {
 		HudChrome.element(null);
 		if (!dev.stray.Edition.LEGIT) { MovementRings.extract(graphics, delta); }
 		HudChrome.element(null);
-		if (!dev.stray.Edition.LEGIT) { dev.stray.client.editor.EditorHud.extract(graphics, delta); }
+		dev.stray.client.editor.EditorHud.extract(graphics, delta);
 		HudChrome.element(null);
 		WatermarkRenderer.extract(graphics, delta);
 		HudChrome.element(null);

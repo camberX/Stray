@@ -22,9 +22,9 @@ public class MinecraftMixin {
 	 */
 	@Inject(method = "handleKeybinds", at = @At("HEAD"))
 	private void stray$preKeybinds(CallbackInfo ci) {
+		Minecraft client = (Minecraft) (Object) this;
+		dev.stray.client.movement.Freecam.preKeybinds(client);
 		if (!dev.stray.Edition.LEGIT) {
-			Minecraft client = (Minecraft) (Object) this;
-			dev.stray.client.movement.Freecam.preKeybinds(client);
 			LoadoutSwap.preKeybinds(client);
 			EmptyVacuum.preKeybinds(client);
 			MovementRings.preKeybinds(client);
@@ -34,12 +34,10 @@ public class MinecraftMixin {
 	/** In freecam the (unmoved) player's crosshair target is meaningless: no block outline for it. */
 	@Inject(method = "pick", at = @At("RETURN"))
 	private void stray$ghostPickEnd(float partialTicks, CallbackInfo ci) {
-		if (!dev.stray.Edition.LEGIT) {
-			if (dev.stray.client.movement.Freecam.active()) {
-				Minecraft client = (Minecraft) (Object) this;
-				client.hitResult = null;
-				client.crosshairPickEntity = null;
-			}
+		if (dev.stray.client.movement.Freecam.active()) {
+			Minecraft client = (Minecraft) (Object) this;
+			client.hitResult = null;
+			client.crosshairPickEntity = null;
 		}
 	}
 

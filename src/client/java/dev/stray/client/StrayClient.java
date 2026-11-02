@@ -213,7 +213,7 @@ public final class StrayClient implements ClientModInitializer {
 		MobGlowRenderer.init();
 		BlockOutlineGlow.init();
 		BlockMarks.init();
-		if (!dev.stray.Edition.LEGIT) { dev.stray.client.editor.WorldEditor.init(); }
+		dev.stray.client.editor.WorldEditor.init();
 		StrayLive.init();
 		PathRecorder.init();
 		if (!dev.stray.Edition.LEGIT) { PathWalker.init(); }
@@ -400,9 +400,9 @@ public final class StrayClient implements ClientModInitializer {
 
 		ClientTickEvents.END_CLIENT_TICK.register(client -> {
 			pollMenuKeys(client);
-			if (!dev.stray.Edition.LEGIT) { dev.stray.client.movement.Freecam.tick(client); }
-			if (!dev.stray.Edition.LEGIT) { dev.stray.client.editor.GhostBlocks.visible(() -> dev.stray.client.editor.GhostBlocks.tick(client)); }
-			if (!dev.stray.Edition.LEGIT) { dev.stray.client.editor.WorldEditor.tick(client); }
+			dev.stray.client.movement.Freecam.tick(client);
+			dev.stray.client.editor.GhostBlocks.visible(() -> dev.stray.client.editor.GhostBlocks.tick(client));
+			dev.stray.client.editor.WorldEditor.tick(client);
 			dev.stray.client.item.custom.CustomItems.tick();
 			dev.stray.client.cs2.Cs2Knives.tick(client);
 			if (client.level != customizeLevel) {
@@ -620,7 +620,7 @@ public final class StrayClient implements ClientModInitializer {
 			if (freecam && !wasFreecam && client.gui.screen() == null) {
 				if (!dev.stray.Edition.LEGIT) { toggleFreecam(); }
 			}
-			if (!dev.stray.Edition.LEGIT && editor && !wasEditor && (client.gui.screen() == null || client.gui.screen() instanceof dev.stray.client.editor.EditorScreen)) {
+			if (editor && !wasEditor && (client.gui.screen() == null || client.gui.screen() instanceof dev.stray.client.editor.EditorScreen)) {
 				if (client.gui.screen() != null) {
 					client.gui.setScreen(null);
 				}
@@ -784,10 +784,8 @@ public final class StrayClient implements ClientModInitializer {
 	}
 
 	private static int toggleEditor() {
-		if (!dev.stray.Edition.LEGIT) {
-			Minecraft client = Minecraft.getInstance();
-			client.execute(dev.stray.client.editor.WorldEditor::toggle);
-		}
+		Minecraft client = Minecraft.getInstance();
+		client.execute(dev.stray.client.editor.WorldEditor::toggle);
 		return Command.SINGLE_SUCCESS;
 	}
 

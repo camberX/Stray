@@ -23,22 +23,15 @@ dev/stray/client/ui/WardrobeCommands*.class
 dev/stray/client/ui/WardrobeScreen*.class
 dev/stray/client/ui/MenuSlotBinds*.class
 dev/stray/client/render/LoadoutPreview*.class
-# Movement automation: command rings, recorded movement replay, path walking, aim easing
+# Movement automation: command rings, recorded movement replay, path walking, aim easing.
+# (Freecam's code stays: the world editor flies with it. Only the standalone freecam
+# key and /stray freecam are left out.)
 dev/stray/client/movement/CommandRing*.class
 dev/stray/client/movement/MovementRing*.class
 dev/stray/client/movement/PathWalker*.class
 dev/stray/client/movement/PathFinder*.class
 dev/stray/client/mining/SmoothRotate*.class
-# Freecam and the world editor (which flies with freecam)
-dev/stray/client/movement/Freecam*.class
-dev/stray/client/editor/**
 
 # Mixins that only serve the removed features. "mixin:" lines also drop the entry from
 # stray.client.mixins.json / stray.sodium.mixins.json in legit builds.
-mixin: GhostChunkCacheMixin
-mixin: GhostChunkEmptyMixin
-mixin: GhostSectionCopyMixin
-mixin: GhostSectionMixin
-mixin: SodiumGhostSectionMixin
-mixin: FreecamEntityMixin
 mixin: ClientLevelMixin

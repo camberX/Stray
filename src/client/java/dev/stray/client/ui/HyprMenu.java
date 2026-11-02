@@ -882,12 +882,10 @@ public final class HyprMenu {
 				out.add(new Item("keys:commandkeys:edit", "Edit command keys", null, count == 0 ? "Open" : count + (count == 1 ? " key" : " keys"), () ->
 					Minecraft.getInstance().gui.setScreen(new CommandKeysScreen(screen)), null));
 			}
-			if (!dev.stray.Edition.LEGIT) {
-				out.add(new Item("keys:editor", "Open world editor", null, "Open", () -> {
-					Minecraft.getInstance().gui.setScreen(null);
-					dev.stray.client.EditionGate.openEditor();
-				}, null));
-			}
+			out.add(new Item("keys:editor", "Open world editor", null, "Open", () -> {
+				Minecraft.getInstance().gui.setScreen(null);
+				dev.stray.client.EditionGate.openEditor();
+			}, null));
 			return out;
 		}
 		for (ClickGui.Mod mod : ClickGui.modules()) {
