@@ -40,11 +40,15 @@ public class AvatarRendererMixin {
 		if (state instanceof WingsHolder holder) {
 			holder.stray$setWings(ShopWings.get(entity.getUUID()));
 		}
+		if (state instanceof dev.stray.client.visual.ChestHolder chest) {
+			chest.stray$setChest(dev.stray.client.visual.ShopChest.has(entity.getUUID()));
+		}
 	}
 
 	@Inject(method = "<init>", at = @At("RETURN"))
 	private void stray$addWings(EntityRendererProvider.Context context, boolean slim, CallbackInfo ci) {
 		((LivingEntityRendererInvoker) this).stray$addLayer(new WingsLayer((AvatarRenderer<?>) (Object) this));
+		((LivingEntityRendererInvoker) this).stray$addLayer(new dev.stray.client.visual.ChestLayer((AvatarRenderer<?>) (Object) this, context.getEquipmentAssets()));
 	}
 
 	@Inject(method = "shouldShowName(Lnet/minecraft/world/entity/Avatar;D)Z", at = @At("HEAD"), cancellable = true)
