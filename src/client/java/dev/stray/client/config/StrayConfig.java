@@ -1793,8 +1793,12 @@ public final class StrayConfig {
 		return "hypr".equals(watermarkStyle);
 	}
 
+	public boolean watermarkWin98() {
+		return "win98".equals(watermarkStyle);
+	}
+
 	public void cycleWatermarkStyle() {
-		watermarkStyle = watermarkClient() ? "hypr" : watermarkHypr() ? "panel" : "client";
+		watermarkStyle = watermarkClient() ? "hypr" : watermarkHypr() ? "win98" : watermarkWin98() ? "panel" : "client";
 		UnloadState.markDirty();
 	}
 
@@ -1808,11 +1812,11 @@ public final class StrayConfig {
 	}
 
 	public String watermarkStyleLabel() {
-		return watermarkClient() ? "Client" : watermarkHypr() ? "Hyprland" : "Panel";
+		return watermarkClient() ? "Client" : watermarkHypr() ? "Hyprland" : watermarkWin98() ? "Windows 98" : "Panel";
 	}
 
 	private static String normalizeWatermarkStyle(String style) {
-		if ("client".equals(style) || "hypr".equals(style)) {
+		if ("client".equals(style) || "hypr".equals(style) || "win98".equals(style)) {
 			return style;
 		}
 		return "panel";
@@ -2038,8 +2042,8 @@ public final class StrayConfig {
 	public static final String[] CLICK_GUI_STYLE_LABELS = {"Click", "Hyprland", "Windows 98"};
 	public static final String[] GUI_STYLES = {"click", "hypr"};
 	public static final String[] GUI_STYLE_LABELS = {"Click", "Hyprland"};
-	public static final String[] WATERMARK_STYLES = {"panel", "client", "hypr"};
-	public static final String[] WATERMARK_STYLE_LABELS = {"Panel", "Client", "Hyprland"};
+	public static final String[] WATERMARK_STYLES = {"panel", "client", "hypr", "win98"};
+	public static final String[] WATERMARK_STYLE_LABELS = {"Panel", "Client", "Hyprland", "Windows 98"};
 	public static final String[] HUD_STYLES = {"click", "hypr", "win98"};
 	public static final String[] HUD_STYLE_LABELS = {"Click", "Hyprland", "Windows 98"};
 	public static final String[] CHAT_STYLES = {"stray", "hypr"};

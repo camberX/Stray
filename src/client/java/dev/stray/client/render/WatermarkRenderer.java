@@ -68,7 +68,7 @@ public final class WatermarkRenderer {
 		if (scale != 1.0f) {
 			graphics.pose().scale(scale, scale);
 		}
-		if (HudChrome.win98() && !StrayConfig.get().watermarkClient()) {
+		if (win98Look()) {
 			drawWin98(graphics, font);
 		} else if (StrayConfig.get().watermarkClient()) {
 			drawClient(graphics, font);
@@ -274,6 +274,12 @@ public final class WatermarkRenderer {
 		return w;
 	}
 
+	/** Its own Windows 98 style, or any non-client style while the whole HUD is Windows 98. */
+	private static boolean win98Look() {
+		StrayConfig config = StrayConfig.get();
+		return config.watermarkWin98() || (HudChrome.win98() && !config.watermarkClient());
+	}
+
 	private static void drawWin98(GuiGraphicsExtractor graphics, Font font) {
 		float w = win98Width(font);
 		if (HudChrome.background()) {
@@ -383,11 +389,11 @@ public final class WatermarkRenderer {
 		Minecraft client = Minecraft.getInstance();
 		StrayConfig config = StrayConfig.get();
 		int tick = client.player == null ? -1 : client.player.tickCount;
-		String style = (config.watermarkStyle == null ? "" : config.watermarkStyle) + (HudChrome.win98() ? "/98" : "");
+		String style = (config.watermarkStyle == null ? "" : config.watermarkStyle) + (win98Look() ? "/98" : "");
 		if (tick == widthTick && widthCache > 0f && widthStyle.equals(style)) {
 			return widthCache;
 		}
-		float w = HudChrome.win98() && !config.watermarkClient() ? win98Width(font)
+		float w = win98Look() ? win98Width(font)
 			: config.watermarkClient() ? clientWidth(font, config) : config.watermarkHypr() ? hyprWidth(font) : panelWidth(font, config);
 		widthTick = tick;
 		widthStyle = style;
