@@ -1672,6 +1672,7 @@ public final class StrayConfig {
 				loaded.starVisuals.clamp();
 				loaded.syncLegacyVisuals();
 				instance = loaded;
+				instance.applyEdition();
 				if (dropCapeServerUrl || migratedMenuScale || !path.equals(PATH)) {
 					instance.saveNow();
 				}
@@ -1680,6 +1681,48 @@ public final class StrayConfig {
 			Stray.LOGGER.warn("Could not read stray.json, using defaults", exception);
 			instance = new StrayConfig();
 		}
+		instance.applyEdition();
+	}
+
+	/**
+	 * Stray Legit: ESP never draws through walls, and features the legit build leaves out stay
+	 * off even in a config copied from the full build.
+	 */
+	void applyEdition() {
+		if (!dev.stray.Edition.LEGIT) {
+			return;
+		}
+		throughWalls = false;
+		pestEspThroughWalls = false;
+		crystalHollowsThroughWalls = false;
+		titaniumEspThroughWalls = false;
+		chestEspThroughWalls = false;
+		pathThroughWalls = false;
+		fairySoulThroughWalls = false;
+		playerFillThroughWalls = false;
+		nametagThroughWalls = false;
+		healthBarThroughWalls = false;
+		boxEspThroughWalls = false;
+		starMobThroughWalls = false;
+		mobGlowThroughWalls = false;
+		for (EntityVisuals visuals : new EntityVisuals[] {playerVisuals, mobVisuals, starVisuals}) {
+			if (visuals != null) {
+				visuals.glowThroughWalls = false;
+				visuals.nametagThroughWalls = false;
+				visuals.healthThroughWalls = false;
+				visuals.boxThroughWalls = false;
+				visuals.shaderThroughWalls = false;
+			}
+		}
+		autoClickerEnabled = false;
+		autoExperimentsEnabled = false;
+		autoBookCombineEnabled = false;
+		autoDnaEnabled = false;
+		pestLoadoutSwap = false;
+		loadoutsMenuEnabled = false;
+		wardrobeMenuEnabled = false;
+		commandRingsEnabled = false;
+		movementRingsEnabled = false;
 	}
 
 	/**

@@ -83,6 +83,11 @@ final class ImGuiMenu {
 		float closeY = winY + 3f;
 		cross(graphics, closeX + 3f, closeY + 3f, mouseOver(mouseX, mouseY, closeX, closeY, 16f, 16f));
 		screen.clickHit(closeX, closeY, 16f, 16f, () -> {
+			if (dev.stray.Edition.LEGIT) {
+				// Stray Legit has only the click GUI; the old menu still lists removed features.
+				screen.onClose();
+				return;
+			}
 			StrayConfig.get().clickGui = false;
 			UnloadState.markDirty();
 		});
@@ -517,10 +522,10 @@ final class ImGuiMenu {
 					));
 				}
 			}
-			if (query.isEmpty() || "world editor".contains(query)) {
+			if (!dev.stray.Edition.LEGIT && (query.isEmpty() || "world editor".contains(query))) {
 				rows.add(new Row("Open world editor", false, null, null, () -> {
 					Minecraft.getInstance().gui.setScreen(null);
-					dev.stray.client.editor.WorldEditor.enable();
+					dev.stray.client.EditionGate.openEditor();
 				}));
 			}
 			return rows;

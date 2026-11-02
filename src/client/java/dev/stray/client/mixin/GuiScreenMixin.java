@@ -23,21 +23,23 @@ public class GuiScreenMixin {
 		if (screen instanceof TitleScreen) {
 			return new StrayTitleScreen();
 		}
-		return WardrobeScreen.wrap(LoadoutsScreen.wrap(screen));
+		return dev.stray.client.EditionGate.wrapScreen(screen);
 	}
 
 	@Inject(method = "setScreen", at = @At("RETURN"))
 	private void stray$hideDefaultLoadouts(Screen screen, CallbackInfo ci) {
 		Minecraft client = Minecraft.getInstance();
-		if (client.gui.screen() != null && LoadoutsScreen.hideDefaultChest(client.gui.screen()) && client.mouseHandler != null) {
+		if (client.gui.screen() != null && dev.stray.client.EditionGate.hideDefaultChest(client.gui.screen()) && client.mouseHandler != null) {
 			client.mouseHandler.grabMouse();
 		}
 	}
 
 	@Inject(method = "setScreen", at = @At("HEAD"))
 	private void stray$autoExperimentsOpen(Screen screen, CallbackInfo ci) {
-		AutoExperiments.onOpen(screen);
-		AutoDna.onOpen(screen);
+		if (!dev.stray.Edition.LEGIT) {
+			AutoExperiments.onOpen(screen);
+			AutoDna.onOpen(screen);
+		}
 		DisabledPotions.onOpen(screen);
 	}
 }

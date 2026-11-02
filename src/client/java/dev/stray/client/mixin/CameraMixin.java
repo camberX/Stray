@@ -32,30 +32,34 @@ public abstract class CameraMixin {
 		)
 	)
 	private void stray$replayLook(DeltaTracker delta, CallbackInfo ci) {
-		if (dev.stray.client.movement.Freecam.active()) {
-			float partial = delta.getGameTimeDeltaPartialTick(true);
-			this.setPosition(
-				dev.stray.client.movement.Freecam.x(partial),
-				dev.stray.client.movement.Freecam.y(partial),
-				dev.stray.client.movement.Freecam.z(partial)
-			);
-			this.setRotation(dev.stray.client.movement.Freecam.yaw(), dev.stray.client.movement.Freecam.pitch());
-			// Detached: the player model is drawn where it stands, except while the camera is
-			// still inside its head (looking out through the face isn't useful).
-			net.minecraft.client.player.LocalPlayer player = net.minecraft.client.Minecraft.getInstance().player;
-			this.detached = player == null
-				|| dev.stray.client.movement.Freecam.position(partial).distanceToSqr(player.getEyePosition(partial)) > 0.6 * 0.6;
-			return;
-		}
-		if (MovementRings.sampleCameraLook()) {
-			this.setRotation(MovementRings.cameraYaw(), MovementRings.cameraPitch());
+		if (!dev.stray.Edition.LEGIT) {
+			if (dev.stray.client.movement.Freecam.active()) {
+				float partial = delta.getGameTimeDeltaPartialTick(true);
+				this.setPosition(
+					dev.stray.client.movement.Freecam.x(partial),
+					dev.stray.client.movement.Freecam.y(partial),
+					dev.stray.client.movement.Freecam.z(partial)
+				);
+				this.setRotation(dev.stray.client.movement.Freecam.yaw(), dev.stray.client.movement.Freecam.pitch());
+				// Detached: the player model is drawn where it stands, except while the camera is
+				// still inside its head (looking out through the face isn't useful).
+				net.minecraft.client.player.LocalPlayer player = net.minecraft.client.Minecraft.getInstance().player;
+				this.detached = player == null
+					|| dev.stray.client.movement.Freecam.position(partial).distanceToSqr(player.getEyePosition(partial)) > 0.6 * 0.6;
+				return;
+			}
+			if (MovementRings.sampleCameraLook()) {
+				this.setRotation(MovementRings.cameraYaw(), MovementRings.cameraPitch());
+			}
 		}
 	}
 
 	@Inject(method = "update", at = @At("RETURN"))
 	private void stray$replayLookTail(DeltaTracker delta, CallbackInfo ci) {
-		if (MovementRings.playing()) {
-			this.setRotation(MovementRings.cameraYaw(), MovementRings.cameraPitch());
+		if (!dev.stray.Edition.LEGIT) {
+			if (MovementRings.playing()) {
+				this.setRotation(MovementRings.cameraYaw(), MovementRings.cameraPitch());
+			}
 		}
 	}
 

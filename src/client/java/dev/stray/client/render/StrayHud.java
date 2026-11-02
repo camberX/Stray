@@ -41,7 +41,7 @@ public final class StrayHud {
 			}
 			net.minecraft.client.Minecraft client = net.minecraft.client.Minecraft.getInstance();
 			// The world editor hides chat lines, until chat is opened.
-			if (dev.stray.client.editor.WorldEditor.active() && !(client.gui.screen() instanceof net.minecraft.client.gui.screens.ChatScreen)) {
+			if (dev.stray.client.EditionGate.editorActive() && !(client.gui.screen() instanceof net.minecraft.client.gui.screens.ChatScreen)) {
 				return;
 			}
 			chat.extractRenderState(graphics, delta);
@@ -54,10 +54,10 @@ public final class StrayHud {
 	}
 
 	private static void extract(GuiGraphicsExtractor graphics, DeltaTracker delta) {
-		if (dev.stray.client.editor.WorldEditor.active()) {
+		if (dev.stray.client.EditionGate.editorActive()) {
 			// The editor workspace replaces the HUD while it is open; drawn outside the HUD pass so
 			// it keeps the menu font.
-			dev.stray.client.editor.EditorHud.extract(graphics, delta);
+			if (!dev.stray.Edition.LEGIT) { dev.stray.client.editor.EditorHud.extract(graphics, delta); }
 			return;
 		}
 		HudChrome.beginHud();
@@ -92,11 +92,11 @@ public final class StrayHud {
 		HudChrome.element(null);
 		BlockMarks.extract(graphics, delta);
 		HudChrome.element(null);
-		CommandRings.extract(graphics, delta);
+		if (!dev.stray.Edition.LEGIT) { CommandRings.extract(graphics, delta); }
 		HudChrome.element(null);
-		MovementRings.extract(graphics, delta);
+		if (!dev.stray.Edition.LEGIT) { MovementRings.extract(graphics, delta); }
 		HudChrome.element(null);
-		dev.stray.client.editor.EditorHud.extract(graphics, delta);
+		if (!dev.stray.Edition.LEGIT) { dev.stray.client.editor.EditorHud.extract(graphics, delta); }
 		HudChrome.element(null);
 		WatermarkRenderer.extract(graphics, delta);
 		HudChrome.element(null);

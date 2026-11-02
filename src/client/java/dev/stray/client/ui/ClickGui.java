@@ -54,10 +54,16 @@ public final class ClickGui {
 	private static final int TEXT = 0xFFFFFFFF;
 	private static final int DIM = 0xFFAAAAAA;
 	static final String[] ORDER = {"World", "Visuals", "Mobs", "Combat", "Slayer", "HUD", "Mining", "Farming", "Menus", "Keys", "Theme", "Player"};
-	static final int[] BIND_WHICH = {3, 4, 13, 5, 7, 11, 12, 14, 16, 17};
-	static final String[] BIND_LABEL = {
-		"Open menu", "Loadouts", "Swap loadouts", "Wardrobe", "Profile", "Chat peek", "Lobby ping", "Empty bag", "Freecam", "World editor"
-	};
+	static final int[] BIND_WHICH = dev.stray.Edition.LEGIT
+		? new int[] {3, 7, 11, 12}
+		: new int[] {3, 4, 13, 5, 7, 11, 12, 14, 16, 17};
+	static final String[] BIND_LABEL = dev.stray.Edition.LEGIT
+		? new String[] {"Open menu", "Profile", "Chat peek", "Lobby ping"}
+		: new String[] {"Open menu", "Loadouts", "Swap loadouts", "Wardrobe", "Profile", "Chat peek", "Lobby ping", "Empty bag", "Freecam", "World editor"};
+	/** Command list under the key binds. */
+	static final String[] COMMAND_LINES = dev.stray.Edition.LEGIT
+		? new String[] {"/pv  /profile"}
+		: new String[] {"/loadouts  /ld", "/wardrobe  /wd", "/pv  /profile", "/autoclicker add left", ""};
 
 	private static final Map<String, Column> columns = new LinkedHashMap<>();
 	private static final List<Row> rows = new ArrayList<>();
@@ -1109,7 +1115,7 @@ public final class ClickGui {
 			}
 		}
 		boolean shortcuts = title || "shortcuts".contains(needle) || "pass arguments".contains(needle);
-		boolean commandKeys = title || "command keys".contains(needle) || "world editor".contains(needle);
+		boolean commandKeys = title || "command keys".contains(needle) || (!dev.stray.Edition.LEGIT && "world editor".contains(needle));
 		boolean commands = title || "commands".contains(needle) || "/loadouts".contains(needle) || "/wardrobe".contains(needle) || "/pv".contains(needle);
 		if (!title && binds.isEmpty() && !shortcuts && !commands && !commandKeys) {
 			column.height = 0f;
@@ -1121,8 +1127,8 @@ public final class ClickGui {
 		StrayConfig config = StrayConfig.get();
 		boolean shortcutOn = config.commandShortcutsEnabled;
 		boolean keysOn = config.commandKeysEnabled;
-		int extra = (shortcuts ? 1 + (shortcutOn ? 2 : 0) : 0) + (commandKeys ? 2 + (keysOn ? 1 : 0) : 0);
-		int commandLines = commands ? 5 : 0;
+		int extra = (shortcuts ? 1 + (shortcutOn ? 2 : 0) : 0) + (commandKeys ? (dev.stray.Edition.LEGIT ? 1 : 2) + (keysOn ? 1 : 0) : 0);
+		int commandLines = commands ? COMMAND_LINES.length : 0;
 		float commandsH = commandLines == 0 ? 0f : commandLines * (font.lineHeight + 1) + 6f;
 		float content = stackH(binds.size() + extra) + (commandsH > 0f ? gap() + commandsH : 0f);
 		int x = Math.round(column.x);
@@ -1198,23 +1204,22 @@ public final class ClickGui {
 				}
 				y += stride();
 			}
-			if (y + box() > viewTop && y < viewTop + shownH) {
-				drawButton(screen, graphics, font, boxX, y, boxW, "Open world editor", () -> {
-					Minecraft.getInstance().gui.setScreen(null);
-					dev.stray.client.editor.WorldEditor.enable();
-				});
+			if (!dev.stray.Edition.LEGIT) {
+				if (y + box() > viewTop && y < viewTop + shownH) {
+					drawButton(screen, graphics, font, boxX, y, boxW, "Open world editor", () -> {
+						Minecraft.getInstance().gui.setScreen(null);
+						dev.stray.client.EditionGate.openEditor();
+					});
+				}
+				y += stride();
 			}
-			y += stride();
 		}
 		if (commands && y + commandsH > viewTop && y < viewTop + shownH) {
 			soft(graphics, boxX, y, boxW, commandsH, OFF_FILL);
-			String[] lines = {
-				"/loadouts  /ld",
-				"/wardrobe  /wd",
-				"/pv  /profile",
-				"/autoclicker add left",
-				MenuSlotBinds.hint() + " equips and closes"
-			};
+			String[] lines = COMMAND_LINES.clone();
+			if (!dev.stray.Edition.LEGIT) {
+				lines[lines.length - 1] = dev.stray.client.EditionGate.slotHint() + " equips and closes";
+			}
 			float textY = y + 3f;
 			for (String line : lines) {
 				int ink = imgui() ? ImGuiLook.TEXT_DISABLED : DIM;
@@ -1761,7 +1766,27 @@ public final class ClickGui {
 		}
 	}
 
+	/** Modules Stray Legit leaves out: they automate input or are the loadouts / wardrobe menus. */
+	private static final java.util.Set<String> LEGIT_REMOVED = java.util.Set.of(
+		"Auto clicker", "Experiments", "Book combine", "Loadouts", "Wardrobe", "Auto DNA",
+		"Command rings", "Movement rings"
+	);
+
 	static List<Mod> modules() {
+		List<Mod> all = allModules();
+		if (!dev.stray.Edition.LEGIT) {
+			return all;
+		}
+		List<Mod> kept = new ArrayList<>(all.size());
+		for (Mod mod : all) {
+			if (!LEGIT_REMOVED.contains(mod.name)) {
+				kept.add(mod);
+			}
+		}
+		return kept;
+	}
+
+	private static List<Mod> allModules() {
 		StrayConfig config = StrayConfig.get();
 		List<Mod> mods = new ArrayList<>();
 		mods.add(mod("World tint", "World", StrayScreen.Feature.WORLD, null, () -> config.worldTintEnabled, v -> config.worldTintEnabled = v, true, false));
@@ -1790,7 +1815,7 @@ public final class ClickGui {
 		mods.add(mod(CS2, "Visuals", null, null, () -> config.cs2KnifeEnabled, v -> config.cs2KnifeEnabled = v, true, false));
 		mods.add(mod("Held item", "Visuals", StrayScreen.Feature.HELD_ITEM, null, () -> config.heldItemShaderEnabled, v -> config.heldItemShaderEnabled = v, true, false));
 		mods.add(mod("Block outline", "Visuals", StrayScreen.Feature.BLOCK, null, () -> config.blockOutlineGlow, v -> config.blockOutlineGlow = v, true, false));
-		mods.add(mod("Fairy souls", "Visuals", StrayScreen.Feature.FAIRY, null, () -> config.fairySoulEsp, v -> config.fairySoulEsp = v, true, false));
+		mods.add(mod("Fairy souls", "Visuals", dev.stray.Edition.LEGIT ? null : StrayScreen.Feature.FAIRY, null, () -> config.fairySoulEsp, v -> config.fairySoulEsp = v, true, false));
 
 		mods.add(mod("Auto clicker", "Combat", StrayScreen.Feature.AUTO_CLICKER, null, () -> config.autoClickerEnabled, v -> config.autoClickerEnabled = v, true, false));
 		mods.add(mod("Party stats", "Combat", null, null, () -> config.partyFinderStats, v -> config.partyFinderStats = v, true, false));

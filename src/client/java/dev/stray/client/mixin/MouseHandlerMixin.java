@@ -35,7 +35,7 @@ public class MouseHandlerMixin {
 	@Inject(method = "grabMouse", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/Gui;setScreen(Lnet/minecraft/client/gui/screens/Screen;)V"), cancellable = true)
 	private void stray$keepHiddenLoadouts(CallbackInfo ci) {
 		Minecraft client = Minecraft.getInstance();
-		if (client.gui.screen() != null && LoadoutsScreen.hideDefaultChest(client.gui.screen())) {
+		if (client.gui.screen() != null && dev.stray.client.EditionGate.hideDefaultChest(client.gui.screen())) {
 			ci.cancel();
 		}
 	}
@@ -106,8 +106,10 @@ public class MouseHandlerMixin {
 
 	@Inject(method = "turnPlayer", at = @At("HEAD"), cancellable = true)
 	private void stray$lockLook(double movementTime, CallbackInfo ci) {
-		if (MovementRings.playing()) {
-			ci.cancel();
+		if (!dev.stray.Edition.LEGIT) {
+			if (MovementRings.playing()) {
+				ci.cancel();
+			}
 		}
 	}
 
@@ -117,7 +119,7 @@ public class MouseHandlerMixin {
 		if (client.getWindow() == null || window != client.getWindow().handle()) {
 			return;
 		}
-		if (dev.stray.client.movement.Freecam.scroll(yOffset)) {
+		if (dev.stray.client.EditionGate.freecamScroll(yOffset)) {
 			ci.cancel();
 			return;
 		}

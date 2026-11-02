@@ -704,7 +704,9 @@ public final class Win98Menu {
 	}
 
 	private static void drawStartMenu(StrayScreen screen, GuiGraphicsExtractor graphics, Font font, int mouseX, int mouseY, float sh) {
-		String[] labels = {"Stray Settings", "HUD Editor", "Command keys", "World editor", "Freecam", "-", "Shut Down..."};
+		String[] labels = dev.stray.Edition.LEGIT
+			? new String[] {"Stray Settings", "HUD Editor", "Command keys", "-", "Shut Down..."}
+			: new String[] {"Stray Settings", "HUD Editor", "Command keys", "World editor", "Freecam", "-", "Shut Down..."};
 		float w = 120;
 		float h = 6;
 		for (String label : labels) {
@@ -745,11 +747,11 @@ public final class Win98Menu {
 				case "Command keys" -> () -> client.gui.setScreen(new CommandKeysScreen(screen));
 				case "World editor" -> () -> {
 					client.gui.setScreen(null);
-					dev.stray.client.editor.WorldEditor.enable();
+					dev.stray.client.EditionGate.openEditor();
 				};
 				case "Freecam" -> () -> {
 					client.gui.setScreen(null);
-					dev.stray.client.movement.Freecam.toggle();
+					dev.stray.client.EditionGate.toggleFreecam();
 				};
 				case "Shut Down..." -> screen::onClose;
 				default -> () -> pickCategory("Theme");
@@ -802,6 +804,8 @@ public final class Win98Menu {
 				return;
 			}
 		}
+		// Nothing in this folder has properties: don't keep showing the last folder's item.
+		selected = null;
 	}
 
 	private static ClickGui.Mod find(String name) {

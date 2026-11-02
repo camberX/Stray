@@ -212,6 +212,20 @@ public class StrayScreen extends Screen {
 		}
 
 		int rows() {
+			return dev.stray.Edition.LEGIT ? fullRows() - legitHidden() : fullRows();
+		}
+
+		/** Rows Stray Legit leaves out: Through walls, the vacuum keybind, auto loadout. */
+		private int legitHidden() {
+			return switch (this) {
+				case FILL, MOB, STAR, CHEST, FAIRY, PATHS, NODE_ESP, TITANIUM, CRYSTAL, HEALTH, BOX, NAMETAGS -> 1;
+				case PEST -> 3;
+				case PEST_COOLDOWN -> 1 + (StrayConfig.get().pestLoadoutSwap ? 1 : 0);
+				default -> 0;
+			};
+		}
+
+		private int fullRows() {
 			if (this == WATERMARK && "watermark".equals(dropdownOpen)) {
 				return baseRows + StrayConfig.WATERMARK_STYLES.length;
 			}
@@ -2482,7 +2496,7 @@ public class StrayScreen extends Screen {
 				GuiDraw.menu(graphics, font, "/wardrobe  /wd", rx, y + 16, ink());
 				GuiDraw.menu(graphics, font, "/pv  /profile", rx, y + 30, ink());
 				GuiDraw.menu(graphics, font, "/irc users  /st ping", rx, y + 44, ink());
-				GuiDraw.menu(graphics, font, MenuSlotBinds.hint() + " equips and closes", rx, y + 58, fade());
+				GuiDraw.menu(graphics, font, dev.stray.client.EditionGate.slotHint() + " equips and closes", rx, y + 58, fade());
 
 				float cursorTop = top + bindsH + 8 + cardHeight(6) + 8;
 				y = featureCard(graphics, font, right, cursorTop, col, cardHeight(3), "Cursor");
@@ -2729,7 +2743,7 @@ public class StrayScreen extends Screen {
 				drawMenuKeybinds(graphics, font, ix, y, iw, mouseX, mouseY);
 				y = featureCard(graphics, font, left, bindsTop + cardHeight(9) + 8, col, cardHeight(3), "Freecam & world editor", null, null, mouseX, mouseY, "Open editor", () -> {
 					minecraft.gui.setScreen(null);
-					dev.stray.client.editor.WorldEditor.enable();
+					dev.stray.client.EditionGate.openEditor();
 				});
 				y = bindRow(graphics, font, ix, y, iw, mouseX, mouseY, "Freecam", 16, OdinClicks.parseKey(config.freecamKey));
 				y = bindRow(graphics, font, ix, y, iw, mouseX, mouseY, "World editor", 17, OdinClicks.parseKey(config.editorKey));
@@ -2741,7 +2755,7 @@ public class StrayScreen extends Screen {
 				GuiDraw.menu(graphics, font, "/wardrobe  /wd", rx, y + 16, ink());
 				GuiDraw.menu(graphics, font, "/pv  /profile", rx, y + 30, ink());
 				GuiDraw.menu(graphics, font, "/autoclicker add left", rx, y + 44, ink());
-				GuiDraw.menu(graphics, font, MenuSlotBinds.hint() + " equips and closes", rx, y + 58, fade());
+				GuiDraw.menu(graphics, font, dev.stray.client.EditionGate.slotHint() + " equips and closes", rx, y + 58, fade());
 				float shortcutsY = chatY + commandsH + 8;
 				float shortcutsH = cardHeight(config.commandShortcutsEnabled ? 1 : 0);
 				y = featureCard(
@@ -3311,6 +3325,10 @@ public class StrayScreen extends Screen {
 	}
 
 	private float toggle(GuiGraphicsExtractor graphics, Font font, float x, float y, float w, int mouseX, int mouseY, String label, boolean value, Consumer<Boolean> setter, Feature feature) {
+		if (dev.stray.Edition.LEGIT && "Through walls".equals(label)) {
+			// Stray Legit: ESP only draws what you could see anyway.
+			return y;
+		}
 		float row = rowH();
 		boolean hovered = GuiDraw.hovered(mouseX, mouseY, x, y, w, row);
 		String animKey = rowAnimKey(label, x, y);
@@ -3778,35 +3796,41 @@ public class StrayScreen extends Screen {
 				slider(graphics, font, ix, y, iw, visuals.shaderStyleLabel(), Math.round(visuals.shaderSmoke * 100) + "%", (visuals.shaderSmoke - 0.10f) / 1.40f, v -> visuals.shaderSmoke = StrayConfig.clamp(0.10f + v * 1.40f, 0.10f, 1.50f));
 			}
 			case AUTO_CLICKER -> {
-				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Whitelist only", config.autoClickerWhiteListOnly, v -> config.autoClickerWhiteListOnly = v);
-				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Allow breaking", config.autoClickerAllowBreaking, v -> config.autoClickerAllowBreaking = v);
-				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Block dungeon breaker", config.autoClickerBlockBreaker, v -> config.autoClickerBlockBreaker = v);
-				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Terminator only", config.autoClickerTerminatorOnly, v -> config.autoClickerTerminatorOnly = v);
-				if (config.autoClickerTerminatorOnly) {
-					y = slider(graphics, font, ix, y, iw, "CPS", cpsLabel(config.autoClickerCps), (config.autoClickerCps - 3.0f) / 12.0f, v -> config.autoClickerCps = snapCps(3.0f + v * 12.0f));
-					hint(graphics, font, ix, y, iw, "/autoclicker add left|right");
-				} else {
-					y = clickerHand(graphics, font, ix, y, iw, mouseX, mouseY, "Left", config.autoClickerEnableLeftClick, v -> config.autoClickerEnableLeftClick = v, config.autoClickerLeftCps, v -> config.autoClickerLeftCps = snapCps(3.0f + v * 12.0f), 1, AutoClicker.leftKey());
-					clickerHand(graphics, font, ix, y, iw, mouseX, mouseY, "Right", config.autoClickerEnableRightClick, v -> config.autoClickerEnableRightClick = v, config.autoClickerRightCps, v -> config.autoClickerRightCps = snapCps(3.0f + v * 12.0f), 2, AutoClicker.rightKey());
+				if (!dev.stray.Edition.LEGIT) {
+					y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Whitelist only", config.autoClickerWhiteListOnly, v -> config.autoClickerWhiteListOnly = v);
+					y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Allow breaking", config.autoClickerAllowBreaking, v -> config.autoClickerAllowBreaking = v);
+					y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Block dungeon breaker", config.autoClickerBlockBreaker, v -> config.autoClickerBlockBreaker = v);
+					y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Terminator only", config.autoClickerTerminatorOnly, v -> config.autoClickerTerminatorOnly = v);
+					if (config.autoClickerTerminatorOnly) {
+						y = slider(graphics, font, ix, y, iw, "CPS", cpsLabel(config.autoClickerCps), (config.autoClickerCps - 3.0f) / 12.0f, v -> config.autoClickerCps = snapCps(3.0f + v * 12.0f));
+						hint(graphics, font, ix, y, iw, "/autoclicker add left|right");
+					} else {
+						y = clickerHand(graphics, font, ix, y, iw, mouseX, mouseY, "Left", config.autoClickerEnableLeftClick, v -> config.autoClickerEnableLeftClick = v, config.autoClickerLeftCps, v -> config.autoClickerLeftCps = snapCps(3.0f + v * 12.0f), 1, AutoClicker.leftKey());
+						clickerHand(graphics, font, ix, y, iw, mouseX, mouseY, "Right", config.autoClickerEnableRightClick, v -> config.autoClickerEnableRightClick = v, config.autoClickerRightCps, v -> config.autoClickerRightCps = snapCps(3.0f + v * 12.0f), 2, AutoClicker.rightKey());
+					}
 				}
 			}
 			case AUTO_EXPERIMENTS -> {
-				y = slider(graphics, font, ix, y, iw, "Click delay", config.autoExperimentsClickDelay + "ms", (config.autoExperimentsClickDelay - 100) / 900f, v -> config.autoExperimentsClickDelay = snapInt(100 + v * 900f, 100, 1000, 10));
-				y = slider(graphics, font, ix, y, iw, "Delay variety", config.autoExperimentsDelayVariety + "ms", config.autoExperimentsDelayVariety / 1000f, v -> config.autoExperimentsDelayVariety = snapInt(v * 1000f, 0, 1000, 10));
-				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Auto close", config.autoExperimentsAutoClose, v -> config.autoExperimentsAutoClose = v);
-				y = slider(graphics, font, ix, y, iw, "Serum count", String.valueOf(config.autoExperimentsSerumCount), config.autoExperimentsSerumCount / 3f, v -> config.autoExperimentsSerumCount = snapInt(v * 3f, 0, 3, 1));
-				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Get max XP", config.autoExperimentsGetMaxXp, v -> config.autoExperimentsGetMaxXp = v);
-				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Superpairs", config.autoExperimentsSuperpairs, v -> config.autoExperimentsSuperpairs = v);
-				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Skip books", config.superpairsSkipBooks, v -> config.superpairsSkipBooks = v);
-				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Skip Titanic", config.superpairsSkipTitanic, v -> config.superpairsSkipTitanic = v);
-				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Skip XP dyes", config.superpairsSkipXp, v -> config.superpairsSkipXp = v);
-				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Skip bottles", config.superpairsSkipBottles, v -> config.superpairsSkipBottles = v);
-				toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Skip Guardian pet", config.superpairsSkipPets, v -> config.superpairsSkipPets = v);
+				if (!dev.stray.Edition.LEGIT) {
+					y = slider(graphics, font, ix, y, iw, "Click delay", config.autoExperimentsClickDelay + "ms", (config.autoExperimentsClickDelay - 100) / 900f, v -> config.autoExperimentsClickDelay = snapInt(100 + v * 900f, 100, 1000, 10));
+					y = slider(graphics, font, ix, y, iw, "Delay variety", config.autoExperimentsDelayVariety + "ms", config.autoExperimentsDelayVariety / 1000f, v -> config.autoExperimentsDelayVariety = snapInt(v * 1000f, 0, 1000, 10));
+					y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Auto close", config.autoExperimentsAutoClose, v -> config.autoExperimentsAutoClose = v);
+					y = slider(graphics, font, ix, y, iw, "Serum count", String.valueOf(config.autoExperimentsSerumCount), config.autoExperimentsSerumCount / 3f, v -> config.autoExperimentsSerumCount = snapInt(v * 3f, 0, 3, 1));
+					y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Get max XP", config.autoExperimentsGetMaxXp, v -> config.autoExperimentsGetMaxXp = v);
+					y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Superpairs", config.autoExperimentsSuperpairs, v -> config.autoExperimentsSuperpairs = v);
+					y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Skip books", config.superpairsSkipBooks, v -> config.superpairsSkipBooks = v);
+					y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Skip Titanic", config.superpairsSkipTitanic, v -> config.superpairsSkipTitanic = v);
+					y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Skip XP dyes", config.superpairsSkipXp, v -> config.superpairsSkipXp = v);
+					y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Skip bottles", config.superpairsSkipBottles, v -> config.superpairsSkipBottles = v);
+					toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Skip Guardian pet", config.superpairsSkipPets, v -> config.superpairsSkipPets = v);
+				}
 			}
 			case AUTO_BOOKS -> {
-				y = slider(graphics, font, ix, y, iw, "Click delay", config.autoBookCombineClickDelay + "ms", (config.autoBookCombineClickDelay - 100) / 900f, v -> config.autoBookCombineClickDelay = snapInt(100 + v * 900f, 100, 1000, 10));
-				y = slider(graphics, font, ix, y, iw, "Delay variety", config.autoBookCombineDelayVariety + "ms", config.autoBookCombineDelayVariety / 1000f, v -> config.autoBookCombineDelayVariety = snapInt(v * 1000f, 0, 1000, 10));
-				hint(graphics, font, ix, y, iw, "Enter in the anvil starts and stops");
+				if (!dev.stray.Edition.LEGIT) {
+					y = slider(graphics, font, ix, y, iw, "Click delay", config.autoBookCombineClickDelay + "ms", (config.autoBookCombineClickDelay - 100) / 900f, v -> config.autoBookCombineClickDelay = snapInt(100 + v * 900f, 100, 1000, 10));
+					y = slider(graphics, font, ix, y, iw, "Delay variety", config.autoBookCombineDelayVariety + "ms", config.autoBookCombineDelayVariety / 1000f, v -> config.autoBookCombineDelayVariety = snapInt(v * 1000f, 0, 1000, 10));
+					hint(graphics, font, ix, y, iw, "Enter in the anvil starts and stops");
+				}
 			}
 			case MOB -> {
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Through walls", visuals.glowThroughWalls, v -> visuals.glowThroughWalls = v);
@@ -3843,21 +3867,25 @@ public class StrayScreen extends Screen {
 				colorRow(graphics, font, ix, y, iw, mouseX, mouseY, "Color", config.blockMarksRgb, PickerTarget.MARKS);
 			}
 			case RINGS -> {
-				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Show rings", config.commandRingsRender, v -> config.commandRingsRender = v);
-				y = colorRow(graphics, font, ix, y, iw, mouseX, mouseY, "Color", config.commandRingsRgb, PickerTarget.RINGS);
-				y = clickRow(graphics, font, ix, y, iw, mouseX, mouseY, CommandRings.count() == 0 ? "Clear rings on " + PathRecorder.islandLabel() : "Clear " + CommandRings.count() + " ring" + (CommandRings.count() == 1 ? "" : "s") + " on " + PathRecorder.islandLabel(), CommandRings::clear);
-				GuiDraw.small(graphics, font, "/stray cmd \"warp hub\" 2  ·  saved on this island", ix, y + 2, Theme.MUTED);
+				if (!dev.stray.Edition.LEGIT) {
+					y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Show rings", config.commandRingsRender, v -> config.commandRingsRender = v);
+					y = colorRow(graphics, font, ix, y, iw, mouseX, mouseY, "Color", config.commandRingsRgb, PickerTarget.RINGS);
+					y = clickRow(graphics, font, ix, y, iw, mouseX, mouseY, CommandRings.count() == 0 ? "Clear rings on " + PathRecorder.islandLabel() : "Clear " + CommandRings.count() + " ring" + (CommandRings.count() == 1 ? "" : "s") + " on " + PathRecorder.islandLabel(), CommandRings::clear);
+					GuiDraw.small(graphics, font, "/stray cmd \"warp hub\" 2  ·  saved on this island", ix, y + 2, Theme.MUTED);
+				}
 			}
 			case MOVE -> {
-				y = clickRow(graphics, font, ix, y, iw, mouseX, mouseY, "Place ring at feet", () -> MovementRings.place(2f));
-				y = bindRow(graphics, font, ix, y, iw, mouseX, mouseY, "Record key", 10, OdinClicks.parseKey(config.movementRecordKey));
-				y = slider(graphics, font, ix, y, iw, "Aim speed", Math.round(config.movementAimSpeed * 100) + "%", (config.movementAimSpeed - 0.25f) / 1.75f, v -> config.movementAimSpeed = StrayConfig.clamp(0.25f + v * 1.75f, 0.25f, 2.00f));
-				y = colorRow(graphics, font, ix, y, iw, mouseX, mouseY, "Color", config.movementRingsRgb, PickerTarget.MOVE);
-				y = clickRow(graphics, font, ix, y, iw, mouseX, mouseY, MovementRings.count() == 0 ? "Clear rings on " + PathRecorder.islandLabel() : "Clear " + MovementRings.count() + " ring" + (MovementRings.count() == 1 ? "" : "s") + " on " + PathRecorder.islandLabel(), MovementRings::clear);
-				String hint = MovementRings.recording()
-					? "WIP / DO NOT USE  ·  Recording " + MovementRings.liveFrames() + " ticks"
-					: "WORK IN PROGRESS / DO NOT USE";
-				GuiDraw.small(graphics, font, hint, ix, y + 2, Theme.MUTED);
+				if (!dev.stray.Edition.LEGIT) {
+					y = clickRow(graphics, font, ix, y, iw, mouseX, mouseY, "Place ring at feet", () -> MovementRings.place(2f));
+					y = bindRow(graphics, font, ix, y, iw, mouseX, mouseY, "Record key", 10, OdinClicks.parseKey(config.movementRecordKey));
+					y = slider(graphics, font, ix, y, iw, "Aim speed", Math.round(config.movementAimSpeed * 100) + "%", (config.movementAimSpeed - 0.25f) / 1.75f, v -> config.movementAimSpeed = StrayConfig.clamp(0.25f + v * 1.75f, 0.25f, 2.00f));
+					y = colorRow(graphics, font, ix, y, iw, mouseX, mouseY, "Color", config.movementRingsRgb, PickerTarget.MOVE);
+					y = clickRow(graphics, font, ix, y, iw, mouseX, mouseY, MovementRings.count() == 0 ? "Clear rings on " + PathRecorder.islandLabel() : "Clear " + MovementRings.count() + " ring" + (MovementRings.count() == 1 ? "" : "s") + " on " + PathRecorder.islandLabel(), MovementRings::clear);
+					String hint = MovementRings.recording()
+						? "WIP / DO NOT USE  ·  Recording " + MovementRings.liveFrames() + " ticks"
+						: "WORK IN PROGRESS / DO NOT USE";
+					GuiDraw.small(graphics, font, hint, ix, y + 2, Theme.MUTED);
+				}
 			}
 			case PATHS -> {
 				boolean rec = PathRecorder.recording();
@@ -3933,16 +3961,20 @@ public class StrayScreen extends Screen {
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Nametag", config.pestEspNametag, v -> config.pestEspNametag = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Through walls", config.pestEspThroughWalls, v -> config.pestEspThroughWalls = v);
 				y = colorRow(graphics, font, ix, y, iw, mouseX, mouseY, "Color", config.pestEspRgb, PickerTarget.PEST);
-				y = slider(graphics, font, ix, y, iw, "Bag delay", config.emptyVacuumDelay + " ticks", (config.emptyVacuumDelay - 1) / 9f, v -> config.emptyVacuumDelay = snapInt(1 + v * 9f, 1, 10, 1));
-				y = bindRow(graphics, font, ix, y, iw, mouseX, mouseY, "Empty bag", 14, OdinClicks.parseKey(config.emptyVacuumKey));
+				if (!dev.stray.Edition.LEGIT) {
+					y = slider(graphics, font, ix, y, iw, "Bag delay", config.emptyVacuumDelay + " ticks", (config.emptyVacuumDelay - 1) / 9f, v -> config.emptyVacuumDelay = snapInt(1 + v * 9f, 1, 10, 1));
+					y = bindRow(graphics, font, ix, y, iw, mouseX, mouseY, "Empty bag", 14, OdinClicks.parseKey(config.emptyVacuumKey));
+				}
 				bindRow(graphics, font, ix, y, iw, mouseX, mouseY, "Pest plot", 15, OdinClicks.parseKey(config.pestPlotKey));
 			}
 			case PEST_COOLDOWN -> {
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Swap alert", config.pestCooldownTitle, v -> config.pestCooldownTitle = v);
 				y = alertLine(graphics, font, ix, y, iw, mouseX, mouseY, "Title", config.pestCooldownAlert, 1);
 				y = alertLine(graphics, font, ix, y, iw, mouseX, mouseY, "Subtitle", config.pestCooldownAlertSub, 2);
-				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Auto loadout", config.pestLoadoutSwap, v -> config.pestLoadoutSwap = v);
-				if (config.pestLoadoutSwap) {
+				if (!dev.stray.Edition.LEGIT) {
+					y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Auto loadout", config.pestLoadoutSwap, v -> config.pestLoadoutSwap = v);
+				}
+				if (!dev.stray.Edition.LEGIT && config.pestLoadoutSwap) {
 					String at = config.pestLoadoutAt == null ? "" : config.pestLoadoutAt;
 					y = alertLine(graphics, font, ix, y, iw, mouseX, mouseY, "Swap at", at, 3);
 				}
@@ -3950,11 +3982,13 @@ public class StrayScreen extends Screen {
 			case SLAYER_HUD, SLAYER_PROFIT, SLAYER_RNG, SLAYER_KILLS, SLAYER_ALERTS, SLAYER_ESP, SLAYER_VOID, SLAYER_INFERNO, SLAYER_VAMPIRE, SLAYER_CLEANUP ->
 				drawSlayerFields(graphics, font, mouseX, mouseY, ix, y, iw, feature);
 			case AUTO_DNA -> {
-				y = slider(graphics, font, ix, y, iw, "Click delay", config.autoDnaClickDelay + "ms", (config.autoDnaClickDelay - 100) / 900f, v -> config.autoDnaClickDelay = snapInt(100 + v * 900f, 100, 1000, 10));
-				y = slider(graphics, font, ix, y, iw, "Delay variety", config.autoDnaDelayVariety + "ms", config.autoDnaDelayVariety / 1000f, v -> config.autoDnaDelayVariety = snapInt(v * 1000f, 0, 1000, 10));
-				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Allow end columns", config.autoDnaAllowEnds, v -> config.autoDnaAllowEnds = v);
-				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Block close", config.autoDnaBlockClose, v -> config.autoDnaBlockClose = v);
-				toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Middle click", config.autoDnaMiddleClick, v -> config.autoDnaMiddleClick = v);
+				if (!dev.stray.Edition.LEGIT) {
+					y = slider(graphics, font, ix, y, iw, "Click delay", config.autoDnaClickDelay + "ms", (config.autoDnaClickDelay - 100) / 900f, v -> config.autoDnaClickDelay = snapInt(100 + v * 900f, 100, 1000, 10));
+					y = slider(graphics, font, ix, y, iw, "Delay variety", config.autoDnaDelayVariety + "ms", config.autoDnaDelayVariety / 1000f, v -> config.autoDnaDelayVariety = snapInt(v * 1000f, 0, 1000, 10));
+					y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Allow end columns", config.autoDnaAllowEnds, v -> config.autoDnaAllowEnds = v);
+					y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Block close", config.autoDnaBlockClose, v -> config.autoDnaBlockClose = v);
+					toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Middle click", config.autoDnaMiddleClick, v -> config.autoDnaMiddleClick = v);
+				}
 			}
 			case TITANIUM -> {
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "All areas", config.titaniumEspAll, v -> config.titaniumEspAll = v);
@@ -4009,17 +4043,21 @@ public class StrayScreen extends Screen {
 				slider(graphics, font, ix, y, iw, "Range", visuals.nametagRange + "m", (visuals.nametagRange - 64) / 192f, v -> visuals.nametagRange = StrayConfig.clamp(64 + Math.round(v * 192f), 64, 256));
 			}
 			case LOADOUTS -> {
-				y = cycle(graphics, font, ix, y, iw, mouseX, mouseY, "Swap A", config.loadoutSwapSlotALabel(), config::cycleLoadoutSwapSlotA);
-				y = cycle(graphics, font, ix, y, iw, mouseX, mouseY, "Swap B", config.loadoutSwapSlotBLabel(), config::cycleLoadoutSwapSlotB);
-				if (config.loadoutSwapTri) {
-					y = cycle(graphics, font, ix, y, iw, mouseX, mouseY, "Swap C", config.loadoutSwapSlotCLabel(), config::cycleLoadoutSwapSlotC);
+				if (!dev.stray.Edition.LEGIT) {
+					y = cycle(graphics, font, ix, y, iw, mouseX, mouseY, "Swap A", config.loadoutSwapSlotALabel(), config::cycleLoadoutSwapSlotA);
+					y = cycle(graphics, font, ix, y, iw, mouseX, mouseY, "Swap B", config.loadoutSwapSlotBLabel(), config::cycleLoadoutSwapSlotB);
+					if (config.loadoutSwapTri) {
+						y = cycle(graphics, font, ix, y, iw, mouseX, mouseY, "Swap C", config.loadoutSwapSlotCLabel(), config::cycleLoadoutSwapSlotC);
+					}
+					y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "TriSwap", config.loadoutSwapTri, v -> config.loadoutSwapTri = v);
+					y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Hide default menu", config.loadoutHideDefault, v -> config.loadoutHideDefault = v);
+					drawSlotKeybinds(graphics, font, ix, y, iw, mouseX, mouseY);
 				}
-				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "TriSwap", config.loadoutSwapTri, v -> config.loadoutSwapTri = v);
-				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Hide default menu", config.loadoutHideDefault, v -> config.loadoutHideDefault = v);
-				drawSlotKeybinds(graphics, font, ix, y, iw, mouseX, mouseY);
 			}
 			case WARDROBE -> {
-				drawSlotKeybinds(graphics, font, ix, y, iw, mouseX, mouseY);
+				if (!dev.stray.Edition.LEGIT) {
+					drawSlotKeybinds(graphics, font, ix, y, iw, mouseX, mouseY);
+				}
 			}
 			case NODES -> {
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Only in The End", config.onlyInTheEnd, v -> config.onlyInTheEnd = v);

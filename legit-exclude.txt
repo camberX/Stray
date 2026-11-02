@@ -1,0 +1,44 @@
+# Stray Legit: classes left out of the legit jar (Ant patterns, applied to tasks.jar).
+# Everything that references them is behind `if (!Edition.LEGIT)`, so the legit build
+# compiles without those references; check-legit.py verifies that.
+
+# Automation: auto clicker, experiments, book combine, DNA, lasso reel's click lives in LassoReel
+dev/stray/client/combat/AutoClicker*.class
+dev/stray/client/combat/AutoExperiments*.class
+dev/stray/client/combat/AutoBookCombine*.class
+dev/stray/client/combat/BookCombineRules*.class
+dev/stray/client/farming/AutoDna*.class
+dev/stray/client/farming/DnaAnalyzerSolver*.class
+# Farming macros: key latching, one-key vacuum emptying, timed loadout swaps
+dev/stray/client/farming/FarmKeys*.class
+dev/stray/client/farming/EmptyVacuum*.class
+dev/stray/client/farming/PestLoadoutSwap*.class
+# Loadouts and wardrobe menus
+dev/stray/client/item/LoadoutsMenus*.class
+dev/stray/client/item/WardrobeMenus*.class
+dev/stray/client/ui/LoadoutSwap*.class
+dev/stray/client/ui/LoadoutsCommands*.class
+dev/stray/client/ui/LoadoutsScreen*.class
+dev/stray/client/ui/WardrobeCommands*.class
+dev/stray/client/ui/WardrobeScreen*.class
+dev/stray/client/ui/MenuSlotBinds*.class
+dev/stray/client/render/LoadoutPreview*.class
+# Movement automation: command rings, recorded movement replay, path walking, aim easing
+dev/stray/client/movement/CommandRing*.class
+dev/stray/client/movement/MovementRing*.class
+dev/stray/client/movement/PathWalker*.class
+dev/stray/client/movement/PathFinder*.class
+dev/stray/client/mining/SmoothRotate*.class
+# Freecam and the world editor (which flies with freecam)
+dev/stray/client/movement/Freecam*.class
+dev/stray/client/editor/**
+
+# Mixins that only serve the removed features. "mixin:" lines also drop the entry from
+# stray.client.mixins.json / stray.sodium.mixins.json in legit builds.
+mixin: GhostChunkCacheMixin
+mixin: GhostChunkEmptyMixin
+mixin: GhostSectionCopyMixin
+mixin: GhostSectionMixin
+mixin: SodiumGhostSectionMixin
+mixin: FreecamEntityMixin
+mixin: ClientLevelMixin

@@ -34,6 +34,8 @@ jobs:
         CHANNEL=release
         if [ "${{ github.event_name }}" = "push" ]; then CHANNEL=dev; fi
         ./gradlew build --continue --stacktrace -PstrayChannel=$CHANNEL -PstraySha=${{ github.sha }} 2>&1 | tee build.log
+        # Stray Legit: same sources, no automation / through-walls ESP / loadouts (see legit-exclude.txt).
+        ./gradlew build --continue --stacktrace -PstrayChannel=$CHANNEL -PstraySha=${{ github.sha }} -PstrayEdition=legit 2>&1 | tee -a build.log
     - name: report build errors
       if: failure()
       run: |
@@ -69,10 +71,20 @@ jobs:
             printf '{\n    "version": "%s",\n    "minecraft": "%s",\n    "sha": "%s",\n    "run": "%s",\n    "file": "stray-dev.jar"\n}\n' "$VERSION" "$MC" "$SHA" "$RUN" > meta.json
             put "mod/$MC/dev/stray-dev.jar" "$JAR" application/java-archive
             put "mod/$MC/dev/dev.json" meta.json application/json
+            # Stray Legit dev build: mod/<mc>/legit/dev/
+            JAR=$(ls "$dir"build/libs/stray-legit-dev-mc$MC-*.jar | grep -v -- '-sources' | head -1)
+            printf '{\n    "version": "%s",\n    "minecraft": "%s",\n    "sha": "%s",\n    "run": "%s",\n    "file": "stray-legit-dev.jar"\n}\n' "$VERSION" "$MC" "$SHA" "$RUN" > meta.json
+            put "mod/$MC/legit/dev/stray-dev.jar" "$JAR" application/java-archive
+            put "mod/$MC/legit/dev/dev.json" meta.json application/json
           else
             JAR=$(ls "$dir"build/libs/stray-mc$MC-*.jar | grep -v -- '-sources' | head -1)
             printf '{\n    "version": "%s",\n    "minecraft": "%s",\n    "file": "stray-%s.jar"\n}\n' "$VERSION" "$MC" "$VERSION" > meta.json
             put "mod/$MC/stray-$VERSION.jar" "$JAR" application/java-archive
             put "mod/$MC/latest.json" meta.json application/json
+            # Stray Legit release: mod/<mc>/legit/
+            JAR=$(ls "$dir"build/libs/stray-legit-mc$MC-*.jar | grep -v -- '-sources' | head -1)
+            printf '{\n    "version": "%s",\n    "minecraft": "%s",\n    "file": "stray-legit-%s.jar"\n}\n' "$VERSION" "$MC" "$VERSION" > meta.json
+            put "mod/$MC/legit/stray-legit-$VERSION.jar" "$JAR" application/java-archive
+            put "mod/$MC/legit/latest.json" meta.json application/json
           fi
         done

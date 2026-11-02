@@ -64,7 +64,7 @@ public final class InventoryHudRenderer {
 		if (client.player == null || client.gui.hud.isHidden()) {
 			return;
 		}
-		if ((client.gui.screen() instanceof AbstractContainerScreen<?> || client.gui.screen() instanceof LoadoutsScreen)
+		if ((client.gui.screen() instanceof AbstractContainerScreen<?> || dev.stray.client.EditionGate.loadoutsScreen(client.gui.screen()))
 			&& !HudLayout.editorOpen()) {
 			return;
 		}

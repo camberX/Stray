@@ -35,7 +35,7 @@ public final class MenuChrome {
 			|| screen instanceof ItemEditScreen
 			|| screen instanceof HudEditorScreen
 			|| screen instanceof CapeCreatorScreen
-			|| screen instanceof LoadoutsScreen
+			|| dev.stray.client.EditionGate.loadoutsScreen(screen)
 			|| screen instanceof CommandShortcutScreen
 			|| screen instanceof CustomTitleScreen) {
 			return false;

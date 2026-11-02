@@ -52,14 +52,6 @@ public final class PestLoadoutSwap {
 		"(?i)^\\w+!\\s+while you were offline,\\s*(?:[\\uE018\\uE07F]\\s*)?pests?\\s+spawned\\b"
 	);
 	private static final Pattern KILL = Pattern.compile("(?i)^you received\\b.+\\bfor killing an?\\b");
-	/** Scoreboard pest row keeps the pest icon and ends in {@code xN}. */
-	private static final Pattern BOARD_COUNT = Pattern.compile(
-		"(?i)(?:the garden|plot\\s*-\\s*.+?)\\s*[\\uE018\\uE07F]?\\s*x\\s*(\\d+)\\s*$"
-	);
-	/** Same row with the icon gone means the garden is clear. The {@code ⏣} area line is not this row. */
-	private static final Pattern BOARD_CLEAR = Pattern.compile(
-		"(?i)^[^\\p{L}⏣]*+(?:the garden|plot\\s*-\\s*\\S.*)$"
-	);
 	private static final long CHAT_GRACE_MS = 2_000L;
 
 	private static Phase phase = Phase.FARM;
@@ -313,7 +305,7 @@ public final class PestLoadoutSwap {
 	}
 
 	private static void sense(Minecraft client, boolean scanWorld) {
-		board = scoreboardPests(client);
+		board = PestScoreboard.count(client);
 		near = scanWorld && PestEsp.nearby(client);
 		int alive = PestCooldown.alive();
 		boolean plots = PestCooldown.infested();
@@ -371,77 +363,7 @@ public final class PestLoadoutSwap {
 
 	/** Pest count on the garden scoreboard, or {@code -1} when that row is absent. */
 	public static int scoreboardCount(Minecraft client) {
-		return scoreboardPests(client);
-	}
-
-	private static int scoreboardPests(Minecraft client) {
-		int count = -1;
-		for (String line : sidebar(client)) {
-			Matcher counted = BOARD_COUNT.matcher(line);
-			if (counted.find()) {
-				try {
-					count = Math.max(count, Integer.parseInt(counted.group(1)));
-				} catch (NumberFormatException ignored) {
-					count = Math.max(count, 1);
-				}
-				continue;
-			}
-			if (count <= 0 && BOARD_CLEAR.matcher(line).matches()) {
-				count = 0;
-			}
-		}
-		return count;
-	}
-
-	private static List<String> sidebar(Minecraft client) {
-		if (client.level == null || client.player == null) {
-			return List.of();
-		}
-		Scoreboard scoreboard = client.level.getScoreboard();
-		Objective objective = sidebarObjective(scoreboard, client.player.getScoreboardName());
-		if (objective == null) {
-			return List.of();
-		}
-		List<PlayerScoreEntry> entries = new ArrayList<>();
-		for (PlayerScoreEntry entry : scoreboard.listPlayerScores(objective)) {
-			if (!entry.isHidden()) {
-				entries.add(entry);
-			}
-		}
-		entries.sort(Comparator.comparingInt(PlayerScoreEntry::value).reversed());
-		List<String> lines = new ArrayList<>(entries.size());
-		for (PlayerScoreEntry entry : entries) {
-			Component raw = entry.display() != null ? entry.display() : Component.literal(entry.owner());
-			String text = clean(PlayerTeam.formatNameForTeam(scoreboard.getPlayersTeam(entry.owner()), raw));
-			if (!text.isEmpty()) {
-				lines.add(text);
-			}
-		}
-		return lines;
-	}
-
-	private static Objective sidebarObjective(Scoreboard scoreboard, String playerName) {
-		Objective objective = scoreboard.getDisplayObjective(DisplaySlot.SIDEBAR);
-		PlayerTeam team = scoreboard.getPlayersTeam(playerName);
-		DisplaySlot colored = team == null ? null : team.getColor().map(TeamColor::displaySlot).orElse(null);
-		if (colored != null) {
-			Objective teamObjective = scoreboard.getDisplayObjective(colored);
-			if (teamObjective != null) {
-				return teamObjective;
-			}
-		}
-		return objective;
-	}
-
-	private static String clean(Component component) {
-		if (component == null) {
-			return "";
-		}
-		String text = component.getString();
-		if (text == null) {
-			return "";
-		}
-		return Text.collapse(Text.strip(text).replace('\u00A0', ' ')).trim();
+		return PestScoreboard.count(client);
 	}
 
 	private static int slot(int configured) {

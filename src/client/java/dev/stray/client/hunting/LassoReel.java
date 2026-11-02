@@ -85,7 +85,10 @@ public final class LassoReel {
 			line = "§e§lREEL";
 			if (!pulled) {
 				pulled = true;
-				OdinClicks.rightClick();
+				if (!dev.stray.Edition.LEGIT) {
+					// Reeling for you is automation; Stray Legit only shows when to reel.
+					OdinClicks.rightClick();
+				}
 			}
 			return;
 		}

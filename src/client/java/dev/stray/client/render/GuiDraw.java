@@ -103,7 +103,7 @@ public final class GuiDraw {
 		if (screen == null) {
 			return false;
 		}
-		if (screen instanceof LoadoutsScreen) {
+		if (dev.stray.client.EditionGate.loadoutsScreen(screen)) {
 			return true;
 		}
 		if (screen.isInGameUi() || screen instanceof StrayScreen || screen instanceof ChatScreen || screen instanceof AbstractContainerScreen) {

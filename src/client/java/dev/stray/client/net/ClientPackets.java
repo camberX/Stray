@@ -51,8 +51,8 @@ public final class ClientPackets {
 		}
 		ChestEsp.onPacket(packet);
 		EspNamePackets.onPacket(packet);
-		AutoExperiments.onPacket(packet);
-		AutoDna.onPacket(packet);
+		if (!dev.stray.Edition.LEGIT) { AutoExperiments.onPacket(packet); }
+		if (!dev.stray.Edition.LEGIT) { AutoDna.onPacket(packet); }
 		DisabledPotions.onPacket(packet);
 		GardenHud.onPacket(packet);
 	}

@@ -19,7 +19,7 @@ public abstract class ScreenMixin {
 
 	@Inject(method = "extractRenderStateWithTooltipAndSubtitles", at = @At("HEAD"), cancellable = true)
 	private void stray$hideDefaultLoadouts(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float delta, CallbackInfo ci) {
-		if (LoadoutsScreen.hideDefaultChest((Screen) (Object) this)) {
+		if (dev.stray.client.EditionGate.hideDefaultChest((Screen) (Object) this)) {
 			ci.cancel();
 		}
 	}

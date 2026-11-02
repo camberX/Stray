@@ -23,12 +23,14 @@ public final class PathCommands {
 	}
 
 	public static LiteralArgumentBuilder<FabricClientCommandSource> command() {
-		return ClientCommands.literal("path")
+		LiteralArgumentBuilder<FabricClientCommandSource> root = ClientCommands.literal("path")
 			.executes(context -> {
 				PathRecorder.toggle();
 				return Command.SINGLE_SUCCESS;
-			})
-			.then(ClientCommands.argument("x", DoubleArgumentType.doubleArg())
+			});
+		if (!dev.stray.Edition.LEGIT) {
+			// Walking to a spot is automation; Stray Legit only records and shows paths.
+			root.then(ClientCommands.argument("x", DoubleArgumentType.doubleArg())
 				.then(ClientCommands.argument("y", DoubleArgumentType.doubleArg())
 					.then(ClientCommands.argument("z", DoubleArgumentType.doubleArg())
 						.executes(PathCommands::walk))))
@@ -44,7 +46,9 @@ public final class PathCommands {
 					tell("Not walking.", ChatFormatting.GRAY);
 				}
 				return Command.SINGLE_SUCCESS;
-			}))
+			}));
+		}
+		return root
 			.then(ClientCommands.literal("start").executes(context -> {
 				if (!PathRecorder.recording()) {
 					PathRecorder.start();
@@ -52,7 +56,7 @@ public final class PathCommands {
 				return Command.SINGLE_SUCCESS;
 			}))
 			.then(ClientCommands.literal("stop").executes(context -> {
-				if (PathWalker.walking()) {
+				if (!dev.stray.Edition.LEGIT && PathWalker.walking()) {
 					PathWalker.stop(true);
 				} else {
 					PathRecorder.stop(true);
@@ -106,11 +110,14 @@ public final class PathCommands {
 	}
 
 	private static int walk(CommandContext<FabricClientCommandSource> context) {
-		PathWalker.go(
-			DoubleArgumentType.getDouble(context, "x"),
-			DoubleArgumentType.getDouble(context, "y"),
-			DoubleArgumentType.getDouble(context, "z")
-		);
+		if (!dev.stray.Edition.LEGIT) {
+			PathWalker.go(
+				DoubleArgumentType.getDouble(context, "x"),
+				DoubleArgumentType.getDouble(context, "y"),
+				DoubleArgumentType.getDouble(context, "z")
+			);
+			return Command.SINGLE_SUCCESS;
+		}
 		return Command.SINGLE_SUCCESS;
 	}
 

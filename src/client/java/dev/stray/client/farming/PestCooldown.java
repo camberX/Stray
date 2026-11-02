@@ -128,7 +128,7 @@ public final class PestCooldown {
 			if (snap.present() || cycle || titled || countingUp || frozen) {
 				reset();
 			}
-			PestLoadoutSwap.tick(client);
+			if (!dev.stray.Edition.LEGIT) { PestLoadoutSwap.tick(client); }
 			return;
 		}
 		long now = System.currentTimeMillis();
@@ -146,7 +146,7 @@ public final class PestCooldown {
 			infested = findInfested(lines);
 			Snap read = read(lines);
 			if (read.present()) {
-				int board = PestLoadoutSwap.scoreboardCount(client);
+				int board = PestScoreboard.count(client);
 				boolean spawned = alive > 0 || infested || board > 0 || PestEsp.nearby(client);
 				track(read, now, client, spawned);
 				seenAt = now;
@@ -165,7 +165,7 @@ public final class PestCooldown {
 		if (hud && cycle) {
 			refresh(client, config, now);
 		}
-		PestLoadoutSwap.tick(client);
+		if (!dev.stray.Edition.LEGIT) { PestLoadoutSwap.tick(client); }
 	}
 
 	/** Garden pest spawn chat. Offline spawns are not a timed ready window. */
@@ -261,7 +261,7 @@ public final class PestCooldown {
 		alive = -1;
 		infested = false;
 		clearWait();
-		PestLoadoutSwap.reset();
+		if (!dev.stray.Edition.LEGIT) { PestLoadoutSwap.reset(); }
 	}
 
 	private static void clearWait() {

@@ -34,7 +34,9 @@ import java.util.Optional;
  * launch loads the new jar.
  */
 public final class AutoUpdate implements PreLaunchEntrypoint {
-	private static final String DOWNLOAD = UpdateMeta.SHOP + "/download?mc=" + UpdateMeta.MC;
+	/** Jar file names: stray-1.5.84.jar, or stray-legit-1.5.84.jar for Stray Legit. */
+	private static final String JAR = dev.stray.Edition.LEGIT ? "stray-legit" : "stray";
+	private static final String DOWNLOAD = UpdateMeta.SHOP + "/download?mc=" + UpdateMeta.MC + UpdateMeta.EDITION_QUERY;
 	private static final long MAX_BYTES = 96L * 1024L * 1024L;
 	private static volatile boolean fetched;
 
@@ -387,9 +389,9 @@ public final class AutoUpdate implements PreLaunchEntrypoint {
 		if (json == null || version == null) {
 			return null;
 		}
-		String file = json.has("file") ? json.get("file").getAsString().trim() : "stray-" + version + ".jar";
+		String file = json.has("file") ? json.get("file").getAsString().trim() : JAR + "-" + version + ".jar";
 		if (file.isBlank() || file.contains("/") || file.contains("\\") || !file.endsWith(".jar")) {
-			file = "stray-" + version + ".jar";
+			file = JAR + "-" + version + ".jar";
 		}
 		String download = DOWNLOAD;
 		if (json.has("url")) {
@@ -442,7 +444,7 @@ public final class AutoUpdate implements PreLaunchEntrypoint {
 		Path mods = modsDir();
 		Path current = currentJar();
 		if (current == null) {
-			current = mods.resolve("stray-dev.jar");
+			current = mods.resolve(JAR + "-dev.jar");
 		}
 		String sha = installedSha();
 		try {
@@ -489,7 +491,7 @@ public final class AutoUpdate implements PreLaunchEntrypoint {
 			.build();
 		JsonObject json = null;
 		for (String url : List.of(
-			UpdateMeta.SHOP + "/api/mod/dev?mc=" + UpdateMeta.MC
+			UpdateMeta.SHOP + "/api/mod/dev?mc=" + UpdateMeta.MC + UpdateMeta.EDITION_QUERY
 		)) {
 			JsonObject candidate = UpdateMeta.getJson(http, url, 12);
 			if (candidate != null && candidate.has("sha")) {
@@ -511,8 +513,8 @@ public final class AutoUpdate implements PreLaunchEntrypoint {
 			version = installedVersion();
 		}
 		List<String> urls = new ArrayList<>();
-		urls.add(UpdateMeta.SHOP + "/download/dev?mc=" + UpdateMeta.MC);
-		return new Remote(version, "stray-dev.jar", urls, sha);
+		urls.add(UpdateMeta.SHOP + "/download/dev?mc=" + UpdateMeta.MC + UpdateMeta.EDITION_QUERY);
+		return new Remote(version, JAR + "-dev.jar", urls, sha);
 	}
 
 	/** Local builds (e.g. the cs2-knives branch) are never replaced by the updater. */
@@ -558,10 +560,10 @@ public final class AutoUpdate implements PreLaunchEntrypoint {
 		}
 		Path dest = mods.resolve(remote.file).toAbsolutePath().normalize();
 		if (!mods.equals(dest.getParent()) || dest.equals(current)) {
-			dest = mods.resolve(remote.sha == null ? "stray-" + remote.version + ".jar" : "stray-dev.jar");
+			dest = mods.resolve(remote.sha == null ? JAR + "-" + remote.version + ".jar" : JAR + "-dev.jar");
 		}
 		if (dest.equals(current)) {
-			dest = mods.resolve(remote.sha == null ? "stray-" + remote.version + "-new.jar" : "stray-dev-new.jar");
+			dest = mods.resolve(remote.sha == null ? JAR + "-" + remote.version + "-new.jar" : JAR + "-dev-new.jar");
 		}
 		Path part = dest.resolveSibling(dest.getFileName() + ".part");
 		Files.deleteIfExists(part);
@@ -641,6 +643,11 @@ public final class AutoUpdate implements PreLaunchEntrypoint {
 	private static boolean validJar(Path path, Remote remote) {
 		String version = jarVersion(path);
 		if (version == null || !remote.version.equals(version)) {
+			return false;
+		}
+		// Only the same edition: a legit install must never pull in the full jar.
+		boolean legitJar = "legit".equals(jarCustom(path, "stray:edition"));
+		if (legitJar != dev.stray.Edition.LEGIT) {
 			return false;
 		}
 		if (remote.sha == null) {

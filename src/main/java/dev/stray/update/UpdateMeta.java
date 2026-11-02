@@ -19,7 +19,9 @@ public final class UpdateMeta {
 		.getModContainer("minecraft")
 		.map(container -> container.getMetadata().getVersion().getFriendlyString())
 		.orElse("");
-	static final String META = SHOP + "/api/mod?mc=" + MC;
+	/** Stray Legit has its own builds; it never updates to the full jar or the other way round. */
+	static final String EDITION_QUERY = dev.stray.Edition.LEGIT ? "&edition=legit" : "";
+	static final String META = SHOP + "/api/mod?mc=" + MC + EDITION_QUERY;
 	private static final String[] META_URLS = {
 		META
 	};

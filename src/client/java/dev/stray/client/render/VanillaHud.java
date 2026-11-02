@@ -39,7 +39,7 @@ public final class VanillaHud {
 		if (client.player == null || client.gui.hud.isHidden()) {
 			return true;
 		}
-		return (client.gui.screen() instanceof AbstractContainerScreen<?> || client.gui.screen() instanceof LoadoutsScreen)
+		return (client.gui.screen() instanceof AbstractContainerScreen<?> || dev.stray.client.EditionGate.loadoutsScreen(client.gui.screen()))
 			&& !HudLayout.editorOpen();
 	}
 

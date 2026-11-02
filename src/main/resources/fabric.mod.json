@@ -2,7 +2,7 @@
 	"schemaVersion": 1,
 	"id": "stray",
 	"version": "${version}",
-	"name": "Stray",
+	"name": "${name}",
 	"description": "The most vibecoded professional mod ever",
 	"authors": [
 		"Stray"
@@ -13,7 +13,8 @@
 	"license": "CC0-1.0",
 	"custom": {
 		"stray:channel": "${channel}",
-		"stray:sha": "${sha}"
+		"stray:sha": "${sha}",
+		"stray:edition": "${edition}"
 	},
 	"icon": "assets/stray/icon.png",
 	"environment": "client",

@@ -123,7 +123,7 @@ public final class Cs2Viewmodel {
 		// Holding left click on a block keeps swinging: start the next swing as the current one winds down.
 		// Holding left click on a block, or holding the autoclicker's key, swings back to back at
 		// the same top speed as spam clicking.
-		if (mining() || dev.stray.client.combat.AutoClicker.leftHeld()) {
+		if (mining() || dev.stray.client.EditionGate.autoClickerLeftHeld()) {
 			if (action != Action.SWING || elapsed() >= MIN_SWING_GAP) {
 				nextSwing();
 			}

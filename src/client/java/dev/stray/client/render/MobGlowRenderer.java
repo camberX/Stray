@@ -182,6 +182,10 @@ public final class MobGlowRenderer {
 		}
 		int slayer = dev.stray.client.slayer.SlayerWorld.glow(entity);
 		if (slayer != 0) {
+			// Stray Legit: slayer glow only on what you can see.
+			if (dev.stray.Edition.LEGIT && occluded(client, client.gameRenderer.mainCamera().position(), entity.getEyePosition())) {
+				return 0;
+			}
 			return slayer;
 		}
 		if (!config.anyGlow() || !isEspTarget(entity, client.player)) {
@@ -206,7 +210,7 @@ public final class MobGlowRenderer {
 		if (client.player == null || entity == null || entity == client.player) {
 			return false;
 		}
-		if (dev.stray.client.slayer.SlayerWorld.glow(entity) != 0) {
+		if (!dev.stray.Edition.LEGIT && dev.stray.client.slayer.SlayerWorld.glow(entity) != 0) {
 			return true;
 		}
 		if (!StrayConfig.get().anyGlow() || !isEspTarget(entity, client.player)) {

@@ -174,8 +174,8 @@ public final class StrayClient implements ClientModInitializer {
 		wasGui = menuKeyHeld(config.openGuiKey);
 		wasLoadouts = menuKeyHeld(config.openLoadoutsKey);
 		wasLoadoutSwap = menuKeyHeld(config.loadoutSwapKey);
-		LoadoutSwap.syncEdge();
-		EmptyVacuum.syncEdge();
+		if (!dev.stray.Edition.LEGIT) { LoadoutSwap.syncEdge(); }
+		if (!dev.stray.Edition.LEGIT) { EmptyVacuum.syncEdge(); }
 		PestPlotTp.syncEdge();
 		wasWardrobe = menuKeyHeld(config.openWardrobeKey);
 		wasProfile = menuKeyHeld(config.openProfileKey);
@@ -213,12 +213,12 @@ public final class StrayClient implements ClientModInitializer {
 		MobGlowRenderer.init();
 		BlockOutlineGlow.init();
 		BlockMarks.init();
-		dev.stray.client.editor.WorldEditor.init();
+		if (!dev.stray.Edition.LEGIT) { dev.stray.client.editor.WorldEditor.init(); }
 		StrayLive.init();
 		PathRecorder.init();
-		PathWalker.init();
-		CommandRings.init();
-		MovementRings.init();
+		if (!dev.stray.Edition.LEGIT) { PathWalker.init(); }
+		if (!dev.stray.Edition.LEGIT) { CommandRings.init(); }
+		if (!dev.stray.Edition.LEGIT) { MovementRings.init(); }
 		MiningWorldRenderer.init();
 		ChestEspRenderer.init();
 		PestEspRenderer.init();
@@ -230,7 +230,7 @@ public final class StrayClient implements ClientModInitializer {
 		ClientReceiveMessageEvents.ALLOW_GAME.register((message, overlay) -> {
 			MetalDetector.onMessage(message, overlay);
 			CropFever.onMessage(message, overlay);
-			PestLoadoutSwap.onMessage(message, overlay);
+			if (!dev.stray.Edition.LEGIT) { PestLoadoutSwap.onMessage(message, overlay); }
 			PestCooldown.onMessage(message, overlay);
 			ScathaTimer.onMessage(message, overlay);
 			if (overlay) {
@@ -257,10 +257,10 @@ public final class StrayClient implements ClientModInitializer {
 		EndSkyDecor.init();
 		VanillaHud.init();
 		MediaSession.init();
-		AutoExperiments.init();
+		if (!dev.stray.Edition.LEGIT) { AutoExperiments.init(); }
 		dev.stray.client.input.TextInput.init();
-		AutoBookCombine.init();
-		AutoDna.init();
+		if (!dev.stray.Edition.LEGIT) { AutoBookCombine.init(); }
+		if (!dev.stray.Edition.LEGIT) { AutoDna.init(); }
 		GardenPlots.init();
 		GreenhousePaste.init();
 		StoragePreview.init();
@@ -297,8 +297,8 @@ public final class StrayClient implements ClientModInitializer {
 			}));
 			root.then(ClientCommands.literal("garden").then(GreenhousePaste.command()));
 			root.then(GreenhousePaste.command());
-			root.then(ClientCommands.literal("farmkeys").executes(context -> FarmKeys.toggle()));
-			root.then(ClientCommands.literal("fk").executes(context -> FarmKeys.toggle()));
+			if (!dev.stray.Edition.LEGIT) { root.then(ClientCommands.literal("farmkeys").executes(context -> FarmKeys.toggle())); }
+			if (!dev.stray.Edition.LEGIT) { root.then(ClientCommands.literal("fk").executes(context -> FarmKeys.toggle())); }
 			root.then(musicCommand());
 			root.then(RawmatsCommands.command());
 			root.then(EspCommands.command());
@@ -310,15 +310,15 @@ public final class StrayClient implements ClientModInitializer {
 			}));
 			root.then(FairySoulCommands.command());
 			root.then(FairySoulCommands.shortCommand());
-			root.then(LoadoutsCommands.command());
-			root.then(WardrobeCommands.command());
+			if (!dev.stray.Edition.LEGIT) { root.then(LoadoutsCommands.command()); }
+			if (!dev.stray.Edition.LEGIT) { root.then(WardrobeCommands.command()); }
 			root.then(ProfileCommands.command());
 			root.then(PathCommands.command());
-			root.then(CommandRingCommands.command());
-			root.then(MovementRingCommands.command());
+			if (!dev.stray.Edition.LEGIT) { root.then(CommandRingCommands.command()); }
+			if (!dev.stray.Edition.LEGIT) { root.then(MovementRingCommands.command()); }
 			root.then(ClientCommands.literal("shortcuts").executes(context -> CommandShortcuts.open()));
 			root.then(ClientCommands.literal("keys").executes(context -> openCommandKeys()));
-			root.then(ClientCommands.literal("freecam").executes(context -> toggleFreecam()));
+			if (!dev.stray.Edition.LEGIT) { root.then(ClientCommands.literal("freecam").executes(context -> toggleFreecam())); }
 			root.then(ClientCommands.literal("editor").executes(context -> toggleEditor()));
 			root.then(ClientCommands.literal("titles").executes(context -> CustomTitle.open()));
 			root.then(customizeCommand());
@@ -333,22 +333,22 @@ public final class StrayClient implements ClientModInitializer {
 			dispatcher.register(ClientCommands.literal("eisenmann").redirect(brand));
 			var vm = ClientCommands.literal("vm").executes(context -> openScreen());
 			vm.then(ClientCommands.literal("edit").executes(context -> openItemEdit()));
-			vm.then(ClientCommands.literal("farmkeys").executes(context -> FarmKeys.toggle()));
-			vm.then(ClientCommands.literal("fk").executes(context -> FarmKeys.toggle()));
+			if (!dev.stray.Edition.LEGIT) { vm.then(ClientCommands.literal("farmkeys").executes(context -> FarmKeys.toggle())); }
+			if (!dev.stray.Edition.LEGIT) { vm.then(ClientCommands.literal("fk").executes(context -> FarmKeys.toggle())); }
 			vm.then(musicCommand());
 			vm.then(RawmatsCommands.command());
 			vm.then(EspCommands.command());
 			vm.then(FairySoulCommands.command());
 			vm.then(FairySoulCommands.shortCommand());
-			vm.then(LoadoutsCommands.command());
-			vm.then(WardrobeCommands.command());
+			if (!dev.stray.Edition.LEGIT) { vm.then(LoadoutsCommands.command()); }
+			if (!dev.stray.Edition.LEGIT) { vm.then(WardrobeCommands.command()); }
 			vm.then(ProfileCommands.command());
 			vm.then(PathCommands.command());
-			vm.then(CommandRingCommands.command());
-			vm.then(MovementRingCommands.command());
+			if (!dev.stray.Edition.LEGIT) { vm.then(CommandRingCommands.command()); }
+			if (!dev.stray.Edition.LEGIT) { vm.then(MovementRingCommands.command()); }
 			vm.then(ClientCommands.literal("shortcuts").executes(context -> CommandShortcuts.open()));
 			vm.then(ClientCommands.literal("keys").executes(context -> openCommandKeys()));
-			vm.then(ClientCommands.literal("freecam").executes(context -> toggleFreecam()));
+			if (!dev.stray.Edition.LEGIT) { vm.then(ClientCommands.literal("freecam").executes(context -> toggleFreecam())); }
 			vm.then(ClientCommands.literal("editor").executes(context -> toggleEditor()));
 			vm.then(ClientCommands.literal("titles").executes(context -> CustomTitle.open()));
 			vm.then(customizeCommand());
@@ -358,33 +358,33 @@ public final class StrayClient implements ClientModInitializer {
 			vm.then(stealCommand());
 			vm.then(PartyFinderStats.command());
 			dispatcher.register(vm);
-			dispatcher.register(ClientCommands.literal("loadouts").executes(context -> LoadoutsCommands.open()));
-			dispatcher.register(ClientCommands.literal("loadout").executes(context -> LoadoutsCommands.open()));
-			dispatcher.register(ClientCommands.literal("ld").executes(context -> LoadoutsCommands.open()));
-			dispatcher.register(ClientCommands.literal("wardrobe").executes(context -> WardrobeCommands.open()));
-			dispatcher.register(ClientCommands.literal("wd").executes(context -> WardrobeCommands.open()));
+			if (!dev.stray.Edition.LEGIT) { dispatcher.register(ClientCommands.literal("loadouts").executes(context -> LoadoutsCommands.open())); }
+			if (!dev.stray.Edition.LEGIT) { dispatcher.register(ClientCommands.literal("loadout").executes(context -> LoadoutsCommands.open())); }
+			if (!dev.stray.Edition.LEGIT) { dispatcher.register(ClientCommands.literal("ld").executes(context -> LoadoutsCommands.open())); }
+			if (!dev.stray.Edition.LEGIT) { dispatcher.register(ClientCommands.literal("wardrobe").executes(context -> WardrobeCommands.open())); }
+			if (!dev.stray.Edition.LEGIT) { dispatcher.register(ClientCommands.literal("wd").executes(context -> WardrobeCommands.open())); }
 			dispatcher.register(ProfileCommands.command());
 			dispatcher.register(ClientCommands.literal("profile")
 				.executes(context -> ProfileCommands.open(""))
 				.then(ClientCommands.argument("player", StringArgumentType.greedyString())
 					.executes(context -> ProfileCommands.open(StringArgumentType.getString(context, "player")))));
-			dispatcher.register(AutoClickerCommands.command());
+			if (!dev.stray.Edition.LEGIT) { dispatcher.register(AutoClickerCommands.command()); }
 			dispatcher.register(LiveCommands.irc());
 			dispatcher.register(LiveCommands.ping());
 			CommandShortcuts.register(dispatcher);
 		});
 
 		ClientTickEvents.START_CLIENT_TICK.register(client -> {
-			LoadoutSwap.onStart(client);
-			EmptyVacuum.onStart(client);
+			if (!dev.stray.Edition.LEGIT) { LoadoutSwap.onStart(client); }
+			if (!dev.stray.Edition.LEGIT) { EmptyVacuum.onStart(client); }
 			LassoReel.tick(client);
-			FarmKeys.tick(client);
-			EmptyVacuum.afterFarmKeys(client);
-			LoadoutSwap.afterFarmKeys(client);
-			AutoClicker.tick(client);
-			AutoExperiments.tick(client);
-			AutoBookCombine.tick(client);
-			AutoDna.tick(client);
+			if (!dev.stray.Edition.LEGIT) { FarmKeys.tick(client); }
+			if (!dev.stray.Edition.LEGIT) { EmptyVacuum.afterFarmKeys(client); }
+			if (!dev.stray.Edition.LEGIT) { LoadoutSwap.afterFarmKeys(client); }
+			if (!dev.stray.Edition.LEGIT) { AutoClicker.tick(client); }
+			if (!dev.stray.Edition.LEGIT) { AutoExperiments.tick(client); }
+			if (!dev.stray.Edition.LEGIT) { AutoBookCombine.tick(client); }
+			if (!dev.stray.Edition.LEGIT) { AutoDna.tick(client); }
 			if (itemAppearancesLoaded) {
 				return;
 			}
@@ -400,9 +400,9 @@ public final class StrayClient implements ClientModInitializer {
 
 		ClientTickEvents.END_CLIENT_TICK.register(client -> {
 			pollMenuKeys(client);
-			dev.stray.client.movement.Freecam.tick(client);
-			dev.stray.client.editor.GhostBlocks.visible(() -> dev.stray.client.editor.GhostBlocks.tick(client));
-			dev.stray.client.editor.WorldEditor.tick(client);
+			if (!dev.stray.Edition.LEGIT) { dev.stray.client.movement.Freecam.tick(client); }
+			if (!dev.stray.Edition.LEGIT) { dev.stray.client.editor.GhostBlocks.visible(() -> dev.stray.client.editor.GhostBlocks.tick(client)); }
+			if (!dev.stray.Edition.LEGIT) { dev.stray.client.editor.WorldEditor.tick(client); }
 			dev.stray.client.item.custom.CustomItems.tick();
 			dev.stray.client.cs2.Cs2Knives.tick(client);
 			if (client.level != customizeLevel) {
@@ -425,8 +425,8 @@ public final class StrayClient implements ClientModInitializer {
 			dev.stray.client.slayer.SlayerFx.tick(client);
 			ItemStorage.tick(client);
 			StoragePreview.tick(client);
-			LoadoutsScreen.tickSwap(client);
-			WardrobeScreen.tickSwap(client);
+			if (!dev.stray.Edition.LEGIT) { LoadoutsScreen.tickSwap(client); }
+			if (!dev.stray.Edition.LEGIT) { WardrobeScreen.tickSwap(client); }
 			NoCursorReset.tick(client);
 			PickupLogRenderer.tick(client);
 			JacobContestTracker.tick(client);
@@ -450,9 +450,9 @@ public final class StrayClient implements ClientModInitializer {
 			NucleusAlerts.tick(client);
 			BlockMarks.tick(client);
 			PathRecorder.tick(client);
-			CommandRings.tick(client);
-			MovementRings.tick(client);
-			PathWalker.tick(client);
+			if (!dev.stray.Edition.LEGIT) { CommandRings.tick(client); }
+			if (!dev.stray.Edition.LEGIT) { MovementRings.tick(client); }
+			if (!dev.stray.Edition.LEGIT) { PathWalker.tick(client); }
 			PipCapture.tick(client);
 			AotvSim.tick();
 			ShopCape.tick();
@@ -462,7 +462,7 @@ public final class StrayClient implements ClientModInitializer {
 		});
 
 		ClientLevelEvents.AFTER_CLIENT_LEVEL_CHANGE.register((client, level) -> {
-			FarmKeys.onWorldChange();
+			if (!dev.stray.Edition.LEGIT) { FarmKeys.onWorldChange(); }
 			MobGlowRenderer.reset();
 			StarMobEsp.reset();
 			ChestEsp.get().clear();
@@ -471,15 +471,15 @@ public final class StrayClient implements ClientModInitializer {
 			CropFever.reset();
 			ScathaTimer.reset();
 			LassoReel.reset();
-			EmptyVacuum.reset();
+			if (!dev.stray.Edition.LEGIT) { EmptyVacuum.reset(); }
 			PestPlotTp.reset();
 			CrystalHollows.onWorldChange();
 			RouteMiner.reset();
 			MetalDetector.onWorldChange();
 			BlockMarks.onWorldChange();
-			CommandRings.onWorldChange();
-			MovementRings.onWorldChange();
-			PathWalker.stop(false);
+			if (!dev.stray.Edition.LEGIT) { CommandRings.onWorldChange(); }
+			if (!dev.stray.Edition.LEGIT) { MovementRings.onWorldChange(); }
+			if (!dev.stray.Edition.LEGIT) { PathWalker.stop(false); }
 			NucleusAlerts.reset();
 		});
 
@@ -489,15 +489,15 @@ public final class StrayClient implements ClientModInitializer {
 			MetalDetector.onWorldChange();
 			MobGlowRenderer.reset();
 			StarMobEsp.reset();
-			AutoClicker.reset();
-			AutoExperiments.reset();
-			AutoDna.reset();
+			if (!dev.stray.Edition.LEGIT) { AutoClicker.reset(); }
+			if (!dev.stray.Edition.LEGIT) { AutoExperiments.reset(); }
+			if (!dev.stray.Edition.LEGIT) { AutoDna.reset(); }
 			PestEsp.reset();
 			PestCooldown.reset();
 			CropFever.reset();
 			ScathaTimer.reset();
 			LassoReel.reset();
-			EmptyVacuum.reset();
+			if (!dev.stray.Edition.LEGIT) { EmptyVacuum.reset(); }
 			PestPlotTp.reset();
 			DisabledPotions.reset();
 			PickupLogRenderer.clear();
@@ -507,22 +507,22 @@ public final class StrayClient implements ClientModInitializer {
 			GardenHud.reset();
 			SkyblockProfileApi.refresh();
 			ShopCape.onJoin();
-			CommandRings.onWorldChange();
-			MovementRings.onWorldChange();
+			if (!dev.stray.Edition.LEGIT) { CommandRings.onWorldChange(); }
+			if (!dev.stray.Edition.LEGIT) { MovementRings.onWorldChange(); }
 		});
 
 		ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> {
-			FarmKeys.restore();
+			if (!dev.stray.Edition.LEGIT) { FarmKeys.restore(); }
 			SkyblockLocation.reset();
-			AutoClicker.reset();
-			AutoExperiments.reset();
-			AutoDna.reset();
+			if (!dev.stray.Edition.LEGIT) { AutoClicker.reset(); }
+			if (!dev.stray.Edition.LEGIT) { AutoExperiments.reset(); }
+			if (!dev.stray.Edition.LEGIT) { AutoDna.reset(); }
 			PestEsp.reset();
 			PestCooldown.reset();
 			CropFever.reset();
 			ScathaTimer.reset();
 			LassoReel.reset();
-			EmptyVacuum.reset();
+			if (!dev.stray.Edition.LEGIT) { EmptyVacuum.reset(); }
 			PestPlotTp.reset();
 			DisabledPotions.reset();
 			PickupLogRenderer.clear();
@@ -530,8 +530,8 @@ public final class StrayClient implements ClientModInitializer {
 			SkillProgressTracker.reset();
 			ComposterTracker.reset();
 			GardenHud.reset();
-			CommandRings.onWorldChange();
-			MovementRings.onWorldChange();
+			if (!dev.stray.Edition.LEGIT) { CommandRings.onWorldChange(); }
+			if (!dev.stray.Edition.LEGIT) { MovementRings.onWorldChange(); }
 			EnderNodeTracker.get().clear();
 			ConnectionPing.reset();
 			MiningTracker.reset();
@@ -542,12 +542,12 @@ public final class StrayClient implements ClientModInitializer {
 			CropFever.reset();
 			ScathaTimer.reset();
 			LassoReel.reset();
-			EmptyVacuum.reset();
+			if (!dev.stray.Edition.LEGIT) { EmptyVacuum.reset(); }
 			PestPlotTp.reset();
 			MobGlowRenderer.reset();
 			StarMobEsp.reset();
-			LoadoutsScreen.resetPending();
-			WardrobeScreen.resetPending();
+			if (!dev.stray.Edition.LEGIT) { LoadoutsScreen.resetPending(); }
+			if (!dev.stray.Edition.LEGIT) { WardrobeScreen.resetPending(); }
 			MotionBlurShaders.invalidate();
 			CrystalHollows.reset();
 			CrystalHollowsMap.close();
@@ -556,7 +556,7 @@ public final class StrayClient implements ClientModInitializer {
 		});
 
 		ClientLifecycleEvents.CLIENT_STOPPING.register(client -> {
-			FarmKeys.restore();
+			if (!dev.stray.Edition.LEGIT) { FarmKeys.restore(); }
 			PipCapture.stop();
 			StrayLive.disconnect();
 			if (StrayConfig.get().autoUpdate) {
@@ -618,9 +618,9 @@ public final class StrayClient implements ClientModInitializer {
 		boolean editor = menuKeyHeld(config.editorKey);
 		if (!ignoreMenuBinds(client)) {
 			if (freecam && !wasFreecam && client.gui.screen() == null) {
-				toggleFreecam();
+				if (!dev.stray.Edition.LEGIT) { toggleFreecam(); }
 			}
-			if (editor && !wasEditor && (client.gui.screen() == null || client.gui.screen() instanceof dev.stray.client.editor.EditorScreen)) {
+			if (!dev.stray.Edition.LEGIT && editor && !wasEditor && (client.gui.screen() == null || client.gui.screen() instanceof dev.stray.client.editor.EditorScreen)) {
 				if (client.gui.screen() != null) {
 					client.gui.setScreen(null);
 				}
@@ -629,18 +629,18 @@ public final class StrayClient implements ClientModInitializer {
 			if (gui && !wasGui) {
 				handleOpenGui(client);
 			}
-			if (loadouts && !wasLoadouts) {
+			if (!dev.stray.Edition.LEGIT && loadouts && !wasLoadouts) {
 				if (client.gui.screen() instanceof LoadoutsScreen screen) {
 					screen.onClose();
 				} else {
-					LoadoutsCommands.open();
+					if (!dev.stray.Edition.LEGIT) { LoadoutsCommands.open(); }
 				}
 			}
-			if (wardrobe && !wasWardrobe) {
+			if (!dev.stray.Edition.LEGIT && wardrobe && !wasWardrobe) {
 				if (client.gui.screen() instanceof WardrobeScreen screen) {
 					screen.onClose();
 				} else {
-					WardrobeCommands.open();
+					if (!dev.stray.Edition.LEGIT) { WardrobeCommands.open(); }
 				}
 			}
 			if (profile && !wasProfile && StrayConfig.get().profileViewerEnabled) {
@@ -662,7 +662,7 @@ public final class StrayClient implements ClientModInitializer {
 		wasPing = ping;
 		wasFreecam = freecam;
 		wasEditor = editor;
-		EmptyVacuum.poll(client, ignoreMenuBinds(client));
+		if (!dev.stray.Edition.LEGIT) { EmptyVacuum.poll(client, ignoreMenuBinds(client)); }
 		dev.stray.client.input.CommandKeys.tick(client, ignoreMenuBinds(client));
 		PestPlotTp.poll(client, ignoreMenuBinds(client));
 	}
@@ -688,8 +688,7 @@ public final class StrayClient implements ClientModInitializer {
 			return true;
 		}
 		return !(screen instanceof StrayScreen
-			|| screen instanceof LoadoutsScreen
-			|| screen instanceof WardrobeScreen
+			|| (!dev.stray.Edition.LEGIT && (screen instanceof LoadoutsScreen || screen instanceof WardrobeScreen))
 			|| screen instanceof ProfileViewerScreen
 			|| screen instanceof HudEditorScreen
 			|| screen instanceof ItemEditScreen
@@ -771,20 +770,24 @@ public final class StrayClient implements ClientModInitializer {
 	}
 
 	private static int toggleFreecam() {
-		Minecraft client = Minecraft.getInstance();
-		client.execute(() -> {
-			if (dev.stray.client.editor.WorldEditor.active()) {
-				dev.stray.client.editor.WorldEditor.disable();
-			} else {
-				dev.stray.client.movement.Freecam.toggle();
-			}
-		});
+		if (!dev.stray.Edition.LEGIT) {
+			Minecraft client = Minecraft.getInstance();
+			client.execute(() -> {
+				if (dev.stray.client.editor.WorldEditor.active()) {
+					dev.stray.client.editor.WorldEditor.disable();
+				} else {
+					dev.stray.client.movement.Freecam.toggle();
+				}
+			});
+		}
 		return Command.SINGLE_SUCCESS;
 	}
 
 	private static int toggleEditor() {
-		Minecraft client = Minecraft.getInstance();
-		client.execute(dev.stray.client.editor.WorldEditor::toggle);
+		if (!dev.stray.Edition.LEGIT) {
+			Minecraft client = Minecraft.getInstance();
+			client.execute(dev.stray.client.editor.WorldEditor::toggle);
+		}
 		return Command.SINGLE_SUCCESS;
 	}
 

@@ -29,7 +29,7 @@ public class AbstractContainerScreenMixin {
 
 	@Inject(method = "extractRenderState", at = @At("HEAD"), cancellable = true)
 	private void stray$hideLoadoutSwap(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick, CallbackInfo ci) {
-		if (LoadoutsScreen.hideDefaultChest((AbstractContainerScreen<?>) (Object) this)) {
+		if (dev.stray.client.EditionGate.hideDefaultChest((AbstractContainerScreen<?>) (Object) this)) {
 			ci.cancel();
 		}
 	}
@@ -40,15 +40,17 @@ public class AbstractContainerScreenMixin {
 		cancellable = true
 	)
 	private void stray$blockDnaClose(Slot slot, int slotId, int button, ContainerInput type, CallbackInfo ci) {
-		if (AutoDna.shouldBlock(slotId) || dev.stray.client.slayer.SlayerFx.blockClick((AbstractContainerScreen<?>) (Object) this, slot) || SackRecipe.click((AbstractContainerScreen<?>) (Object) this, slot, button, type)) {
+		if ((!dev.stray.Edition.LEGIT && AutoDna.shouldBlock(slotId)) || dev.stray.client.slayer.SlayerFx.blockClick((AbstractContainerScreen<?>) (Object) this, slot) || SackRecipe.click((AbstractContainerScreen<?>) (Object) this, slot, button, type)) {
 			ci.cancel();
 		}
 	}
 
 	@Inject(method = "keyPressed", at = @At("HEAD"), cancellable = true)
 	private void stray$bookCombineEnter(KeyEvent event, CallbackInfoReturnable<Boolean> cir) {
-		if (AutoBookCombine.keyPressed((AbstractContainerScreen<?>) (Object) this, event)) {
-			cir.setReturnValue(true);
+		if (!dev.stray.Edition.LEGIT) {
+			if (AutoBookCombine.keyPressed((AbstractContainerScreen<?>) (Object) this, event)) {
+				cir.setReturnValue(true);
+			}
 		}
 	}
 
