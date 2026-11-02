@@ -958,6 +958,10 @@ public final class GuiDraw {
 	}
 
 	public static void text(GuiGraphicsExtractor graphics, Font font, String value, float x, float y, int color, boolean shadow) {
+		if (HudChrome.win98Ink() && value != null && value.indexOf('\u00a7') >= 0) {
+			text(graphics, font, Component.literal(value), x, y, color, shadow);
+			return;
+		}
 		graphics.text(font, value, Math.round(x), Math.round(y), hudInk(color), hudShadow(shadow));
 	}
 
@@ -972,7 +976,11 @@ public final class GuiDraw {
 	}
 
 	public static void text(GuiGraphicsExtractor graphics, Font font, Component value, float x, float y, int color, boolean shadow) {
-		graphics.text(font, MenuFont.crisp(value, poseScale(graphics)), Math.round(x), Math.round(y), hudInk(color), hudShadow(shadow));
+		graphics.text(font, MenuFont.crisp(win98Recolor(value), poseScale(graphics)), Math.round(x), Math.round(y), hudInk(color), hudShadow(shadow));
+	}
+
+	private static Component win98Recolor(Component value) {
+		return HudChrome.win98Ink() ? dev.stray.client.ui.Win98.recolor(value) : value;
 	}
 
 	/** How much the current pose scales things, so text and hairlines can match real pixels. */
@@ -990,15 +998,21 @@ public final class GuiDraw {
 		graphics.pose().pushMatrix();
 		graphics.pose().translate(x, y);
 		graphics.pose().scale(scale, scale);
-		graphics.text(font, MenuFont.crisp(value, poseScale(graphics)), 0, 0, hudInk(color), hudShadow(shadow));
+		graphics.text(font, MenuFont.crisp(win98Recolor(value), poseScale(graphics)), 0, 0, hudInk(color), hudShadow(shadow));
 		graphics.pose().popMatrix();
 	}
 
 	private static boolean hudShadow(boolean shadow) {
+		if (HudChrome.win98Ink()) {
+			return false;
+		}
 		return shadow || HudChrome.vanillaInk();
 	}
 
 	private static int hudInk(int color) {
+		if (HudChrome.win98Ink()) {
+			return dev.stray.client.ui.Win98.ink(color);
+		}
 		if (!HudChrome.vanillaInk()) {
 			return color;
 		}
@@ -1015,6 +1029,10 @@ public final class GuiDraw {
 	}
 
 	public static void menu(GuiGraphicsExtractor graphics, Font font, String value, float x, float y, int color) {
+		if (dev.stray.client.ui.Win98Menu.drawing()) {
+			dev.stray.client.ui.Win98.text(graphics, font, value, x, y, color);
+			return;
+		}
 		String shown = clickWords(value);
 		if (HudChrome.hyprInk()) {
 			text(graphics, font, MenuFont.hypr(shown), x, y, 1f, color, false);
@@ -1035,6 +1053,10 @@ public final class GuiDraw {
 	}
 
 	public static void small(GuiGraphicsExtractor graphics, Font font, String value, float x, float y, int color) {
+		if (dev.stray.client.ui.Win98Menu.drawing()) {
+			dev.stray.client.ui.Win98.text(graphics, font, value, x, y, color);
+			return;
+		}
 		String shown = clickWords(value);
 		if (HudChrome.hyprInk()) {
 			text(graphics, font, MenuFont.hyprSmall(shown), x, y, 1f, color, false);
@@ -1097,6 +1119,9 @@ public final class GuiDraw {
 	}
 
 	public static int menuWidth(Font font, String value) {
+		if (dev.stray.client.ui.Win98Menu.drawing()) {
+			return dev.stray.client.ui.Win98.width(font, value);
+		}
 		String shown = clickWords(value);
 		if (HudChrome.hyprInk() || dev.stray.client.ui.HyprMenu.drawing()) {
 			return font.width(MenuFont.hypr(shown));
@@ -1108,6 +1133,9 @@ public final class GuiDraw {
 	}
 
 	public static int smallWidth(Font font, String value) {
+		if (dev.stray.client.ui.Win98Menu.drawing()) {
+			return dev.stray.client.ui.Win98.width(font, value);
+		}
 		String shown = clickWords(value);
 		if (HudChrome.hyprInk() || dev.stray.client.ui.HyprMenu.drawing()) {
 			return font.width(MenuFont.hyprSmall(shown));

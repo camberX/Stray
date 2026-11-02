@@ -24,7 +24,28 @@ public final class StrayHud {
 	private StrayHud() {
 	}
 
+	/** Vanilla's chat renderer, moved so it draws before (under) the action bar. */
+	private static net.fabricmc.fabric.api.client.rendering.v1.hud.HudElement chat;
+
 	public static void init() {
+		// The chat draws after the action bar in vanilla, so long chat covered it. Move it in
+		// front of the action bar instead: same renderer, drawn first.
+		HudElementRegistry.replaceElement(VanillaHudElements.CHAT, original -> {
+			chat = original;
+			return (graphics, delta) -> {
+			};
+		});
+		HudElementRegistry.attachElementBefore(VanillaHudElements.OVERLAY_MESSAGE, Stray.id("chat_under_action_bar"), (graphics, delta) -> {
+			if (chat == null) {
+				return;
+			}
+			net.minecraft.client.Minecraft client = net.minecraft.client.Minecraft.getInstance();
+			// The world editor hides chat lines, until chat is opened.
+			if (dev.stray.client.editor.WorldEditor.active() && !(client.gui.screen() instanceof net.minecraft.client.gui.screens.ChatScreen)) {
+				return;
+			}
+			chat.extractRenderState(graphics, delta);
+		});
 		HudElementRegistry.attachElementAfter(
 			VanillaHudElements.BOSS_BAR,
 			Stray.id("hud"),

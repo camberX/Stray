@@ -48,6 +48,14 @@ public final class ClickLook {
 		if (w < 2f || h < 2f) {
 			return;
 		}
+		if (Win98Menu.drawing()) {
+			if (accentOutline(outline) || fill == Theme.ACCENT) {
+				Win98.pressed(graphics, x, y, w, h);
+			} else {
+				Win98.raised(graphics, x, y, w, h);
+			}
+			return;
+		}
 		if (HyprMenu.drawing()) {
 			material(graphics, x, y, w, h, fill, accentOutline(outline) ? Theme.ACCENT : 0);
 			return;

@@ -117,6 +117,11 @@ public final class ClickGui {
 			HyprMenu.drawPicker(screen, graphics, font);
 			return;
 		}
+		if (StrayConfig.get().clickGuiWin98()) {
+			Win98Menu.draw(screen, graphics, font, mouseX, mouseY);
+			Win98Menu.drawPicker(screen, graphics, font);
+			return;
+		}
 		if (imgui()) {
 			ImGuiMenu.draw(screen, graphics, font, mouseX, mouseY);
 			screen.clickPicker(graphics, font);
@@ -196,6 +201,10 @@ public final class ClickGui {
 			HyprMenu.rightClick(x, y);
 			return;
 		}
+		if (StrayConfig.get().clickGuiWin98()) {
+			Win98Menu.rightClick(x, y);
+			return;
+		}
 		if (imgui()) {
 			ImGuiMenu.closePopups();
 			return;
@@ -244,6 +253,10 @@ public final class ClickGui {
 		if (hypr()) {
 			return;
 		}
+		if (StrayConfig.get().clickGuiWin98()) {
+			Win98Menu.closePopups();
+			return;
+		}
 		if (imgui()) {
 			ImGuiMenu.closePopups();
 			return;
@@ -254,6 +267,9 @@ public final class ClickGui {
 	static boolean drag(double x, double y) {
 		if (hypr()) {
 			return HyprMenu.drag(x, y);
+		}
+		if (StrayConfig.get().clickGuiWin98()) {
+			return Win98Menu.drag(x, y);
 		}
 		if (imgui()) {
 			return ImGuiMenu.drag(x, y);
@@ -276,6 +292,10 @@ public final class ClickGui {
 			HyprMenu.endDrag();
 			return;
 		}
+		if (StrayConfig.get().clickGuiWin98()) {
+			Win98Menu.endDrag();
+			return;
+		}
 		if (imgui()) {
 			ImGuiMenu.endDrag();
 			return;
@@ -290,6 +310,9 @@ public final class ClickGui {
 	static boolean scroll(double x, double y, double wheel) {
 		if (hypr()) {
 			return HyprMenu.scroll(x, y, wheel);
+		}
+		if (StrayConfig.get().clickGuiWin98()) {
+			return Win98Menu.scroll(x, y, wheel);
 		}
 		if (imgui()) {
 			return ImGuiMenu.scroll(x, y, wheel);
@@ -677,6 +700,12 @@ public final class ClickGui {
 		int ix = Math.round(x) + NEST;
 		int iy = Math.round(y);
 		int iw = Math.round(w) - NEST * 2;
+		if (win98()) {
+			Win98.checkbox(graphics, ix + 2f, iy + (box() - 9f) * 0.5f, 9f, on, true);
+			Win98.text(graphics, font, Win98.fit(font, label, iw - 16), ix + 15f, iy + (box() - 8f) * 0.5f, Win98.TEXT);
+			screen.clickHit(ix, iy, iw, box(), pick);
+			return;
+		}
 		if (imgui()) {
 			boolean hover = contains(pointerX, pointerY, ix, iy, iw, box());
 			if (hover) {
@@ -715,6 +744,12 @@ public final class ClickGui {
 		int ix = Math.round(x) + NEST;
 		int iy = Math.round(y);
 		int iw = Math.round(w) - NEST * 2;
+		if (win98()) {
+			float bw = Math.min(iw, Win98.width(font, label) + 20f);
+			Win98.button(graphics, font, ix, iy, bw, box(), label, false, true);
+			screen.clickHit(ix, iy, bw, box(), pick);
+			return;
+		}
 		if (imgui()) {
 			boolean hover = contains(pointerX, pointerY, ix, iy, iw, box());
 			ImGuiLook.button(graphics, ix, iy, iw, box(), hover);
@@ -1038,6 +1073,10 @@ public final class ClickGui {
 	}
 
 	private static void drawSwitch(GuiGraphicsExtractor graphics, float x, float y, float w, float h, boolean on) {
+		if (win98()) {
+			Win98.checkbox(graphics, x + w - 9f, y + (h - 9f) * 0.5f, 9f, on, true);
+			return;
+		}
 		if (hypr()) {
 			HyprMenu.m3Switch(graphics, x, y, w, h, on ? 1f : 0f, false, HyprMenu.alpha());
 			return;
@@ -1237,6 +1276,10 @@ public final class ClickGui {
 		return StrayConfig.get().clickGuiHypr();
 	}
 
+	private static boolean win98() {
+		return Win98Menu.drawing();
+	}
+
 	private static int box() {
 		return imgui() ? 18 : BOX;
 	}
@@ -1262,6 +1305,9 @@ public final class ClickGui {
 	}
 
 	private static void soft(GuiGraphicsExtractor graphics, float x, float y, float w, float h, int fill) {
+		if (win98()) {
+			return;
+		}
 		if (hypr()) {
 			// No pill behind rows: just the Material hover layer.
 			if (contains(pointerX, pointerY, x, y, w, h)) {
@@ -1348,6 +1394,9 @@ public final class ClickGui {
 	}
 
 	private static Component featureText(String label) {
+		if (win98()) {
+			return Component.literal(label == null ? "" : label);
+		}
 		if (hypr()) {
 			return MenuFont.hypr(label);
 		}
@@ -1414,6 +1463,10 @@ public final class ClickGui {
 	private static void departure(GuiGraphicsExtractor graphics, Font font, String label, float x, float y, float w, int h, int color) {
 		Component text = featureText(label);
 		float width = font.width(text);
+		if (win98()) {
+			Win98.text(graphics, font, label, x + (w - width) / 2f, y + (h - 8f) / 2f, Win98.ink(color));
+			return;
+		}
 		if (hypr()) {
 			int ink = HyprMenu.faded(color == TEXT ? MaterialPalette.onSurface : color);
 			if ((ink >>> 24) >= 8) {
@@ -1425,6 +1478,10 @@ public final class ClickGui {
 	}
 
 	private static void departureLeft(GuiGraphicsExtractor graphics, Font font, String label, float x, float y, int h, int color) {
+		if (win98()) {
+			Win98.text(graphics, font, label, x, y + (h - 8f) / 2f, Win98.ink(color));
+			return;
+		}
 		if (hypr()) {
 			int ink = HyprMenu.faded(color == TEXT ? MaterialPalette.onSurface : color == DIM ? MaterialPalette.onSurfaceVariant : color);
 			if ((ink >>> 24) >= 8) {

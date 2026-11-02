@@ -1988,9 +1988,16 @@ public final class StrayConfig {
 		return "hypr".equalsIgnoreCase(hudStyle);
 	}
 
+	public boolean hudStyleWin98() {
+		return "win98".equalsIgnoreCase(hudStyle);
+	}
+
 	public String hudStyleLabel() {
 		if (hudStyleHypr()) {
 			return "Hyprland";
+		}
+		if (hudStyleWin98()) {
+			return "Windows 98";
 		}
 		if (hudStyleVanilla()) {
 			return "Vanilla";
@@ -2005,7 +2012,7 @@ public final class StrayConfig {
 	}
 
 	public void cycleHudStyle() {
-		hudStyle = hudStyleHypr() ? "click" : "hypr";
+		hudStyle = hudStyleHypr() ? "win98" : hudStyleWin98() ? "click" : "hypr";
 	}
 
 	public boolean clickGuiGlass() {
@@ -2022,15 +2029,19 @@ public final class StrayConfig {
 		return "hypr".equalsIgnoreCase(clickGuiStyle);
 	}
 
+	public boolean clickGuiWin98() {
+		return "win98".equalsIgnoreCase(clickGuiStyle);
+	}
+
 	/** Keys and labels for the style dropdowns, in menu order. */
-	public static final String[] CLICK_GUI_STYLES = {"click", "hypr"};
-	public static final String[] CLICK_GUI_STYLE_LABELS = {"Click", "Hyprland"};
+	public static final String[] CLICK_GUI_STYLES = {"click", "hypr", "win98"};
+	public static final String[] CLICK_GUI_STYLE_LABELS = {"Click", "Hyprland", "Windows 98"};
 	public static final String[] GUI_STYLES = {"click", "hypr"};
 	public static final String[] GUI_STYLE_LABELS = {"Click", "Hyprland"};
 	public static final String[] WATERMARK_STYLES = {"panel", "client", "hypr"};
 	public static final String[] WATERMARK_STYLE_LABELS = {"Panel", "Client", "Hyprland"};
-	public static final String[] HUD_STYLES = {"click", "hypr"};
-	public static final String[] HUD_STYLE_LABELS = {"Click", "Hyprland"};
+	public static final String[] HUD_STYLES = {"click", "hypr", "win98"};
+	public static final String[] HUD_STYLE_LABELS = {"Click", "Hyprland", "Windows 98"};
 	public static final String[] CHAT_STYLES = {"stray", "hypr"};
 	public static final String[] CHAT_STYLE_LABELS = {"Stray", "Hyprland"};
 
@@ -2079,6 +2090,9 @@ public final class StrayConfig {
 		if (clickGuiHypr()) {
 			return "Hyprland";
 		}
+		if (clickGuiWin98()) {
+			return "Windows 98";
+		}
 		if (clickGuiImgui()) {
 			return "ImGui";
 		}
@@ -2086,7 +2100,7 @@ public final class StrayConfig {
 	}
 
 	public void cycleClickGuiStyle() {
-		clickGuiStyle = clickGuiHypr() ? "click" : "hypr";
+		clickGuiStyle = clickGuiHypr() ? "win98" : clickGuiWin98() ? "click" : "hypr";
 	}
 
 	public boolean guiStyleGlass() {
@@ -2138,11 +2152,25 @@ public final class StrayConfig {
 	}
 
 	public static String normalizeHudStyle(String style) {
+		if (isWin98(style)) {
+			return "win98";
+		}
 		return style != null && (style.trim().equalsIgnoreCase("hypr") || style.trim().equalsIgnoreCase("hyprland")) ? "hypr" : "click";
 	}
 
 	public static String normalizeClickGuiStyle(String style) {
+		if (isWin98(style)) {
+			return "win98";
+		}
 		return style != null && (style.trim().equalsIgnoreCase("hypr") || style.trim().equalsIgnoreCase("hyprland")) ? "hypr" : "click";
+	}
+
+	private static boolean isWin98(String style) {
+		if (style == null) {
+			return false;
+		}
+		String key = style.trim().toLowerCase(java.util.Locale.ROOT);
+		return key.equals("win98") || key.equals("windows 98") || key.equals("windows98");
 	}
 
 	public static String normalizeGuiStyle(String style) {

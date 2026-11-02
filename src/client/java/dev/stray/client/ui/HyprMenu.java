@@ -821,6 +821,11 @@ public final class HyprMenu {
 	// ----------------------------------------------------------------- items
 
 	private static List<Item> items(StrayScreen screen) {
+		return items(screen, category);
+	}
+
+	/** What a category shows (or the search results), shared with the Windows 98 menu. */
+	static List<Item> items(StrayScreen screen, String category) {
 		String query = ClickGui.filterText().trim().toLowerCase(Locale.ROOT);
 		List<Item> out = new ArrayList<>();
 		if (!query.isEmpty()) {
@@ -956,7 +961,7 @@ public final class HyprMenu {
 		return trimmed + "...";
 	}
 
-	private static String label(String id) {
+	static String label(String id) {
 		return ClickGui.display(id);
 	}
 
@@ -1054,7 +1059,7 @@ public final class HyprMenu {
 		return x >= rx && y >= ry && x < rx + rw && y < ry + rh;
 	}
 
-	private record Item(String key, String label, Boolean on, String chip, Runnable left, ClickGui.Mod mod) {
+	record Item(String key, String label, Boolean on, String chip, Runnable left, ClickGui.Mod mod) {
 	}
 
 	private record RowHit(Item item, float x, float y, float w, float h) {

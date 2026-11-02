@@ -122,15 +122,6 @@ public final class WorldEditor {
 		}
 		registered = true;
 		LevelRenderEvents.BEFORE_GIZMOS.register(context -> emitGizmos());
-		// Chat lines would draw over the workspace; they come back when chat is opened.
-		net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry.replaceElement(
-			net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements.CHAT,
-			original -> (graphics, delta) -> {
-				if (!active || Minecraft.getInstance().gui.screen() instanceof net.minecraft.client.gui.screens.ChatScreen) {
-					original.extractRenderState(graphics, delta);
-				}
-			}
-		);
 		// Survival bits (hotbar, hearts, xp, effects, scoreboard...) would poke out between the
 		// workspace windows; hidden while editing.
 		for (var id : List.of(

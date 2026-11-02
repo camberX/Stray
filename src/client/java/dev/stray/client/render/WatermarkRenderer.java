@@ -68,7 +68,9 @@ public final class WatermarkRenderer {
 		if (scale != 1.0f) {
 			graphics.pose().scale(scale, scale);
 		}
-		if (StrayConfig.get().watermarkClient()) {
+		if (HudChrome.win98() && !StrayConfig.get().watermarkClient()) {
+			drawWin98(graphics, font);
+		} else if (StrayConfig.get().watermarkClient()) {
 			drawClient(graphics, font);
 		} else if (StrayConfig.get().watermarkHypr()) {
 			drawHypr(graphics, font);
@@ -228,6 +230,87 @@ public final class WatermarkRenderer {
 		}
 	}
 
+	// ---- Windows 98: a little taskbar, Start button and a tray with the stats
+
+	private static List<String> win98Parts() {
+		StrayConfig config = StrayConfig.get();
+		List<String> parts = new ArrayList<>();
+		if (config.watermarkFps) {
+			parts.add(HudStats.fps() + " fps");
+		}
+		if (config.watermarkPing) {
+			parts.add(HudStats.pingLabel());
+		}
+		if (config.watermarkName) {
+			parts.add(HudStats.playerName());
+		}
+		if (config.watermarkTime) {
+			parts.add(HudStats.time());
+		}
+		return parts;
+	}
+
+	private static float win98StartW(Font font) {
+		return dev.stray.client.ui.Win98.boldWidth(font, "Stray") + 21f;
+	}
+
+	private static float win98TrayW(Font font, List<String> parts) {
+		float w = 6f;
+		for (int i = 0; i < parts.size(); i++) {
+			w += dev.stray.client.ui.Win98.width(font, Text.zeroDigits(parts.get(i)));
+			if (i + 1 < parts.size()) {
+				w += 9f;
+			}
+		}
+		return parts.isEmpty() ? 0f : w + 2f;
+	}
+
+	private static float win98Width(Font font) {
+		List<String> parts = win98Parts();
+		float w = 3f + win98StartW(font) + 3f;
+		if (!parts.isEmpty()) {
+			w += win98TrayW(font, parts) + 3f;
+		}
+		return w;
+	}
+
+	private static void drawWin98(GuiGraphicsExtractor graphics, Font font) {
+		float w = win98Width(font);
+		if (HudChrome.background()) {
+			dev.stray.client.ui.Win98.raised(graphics, 0, 0, w, HEIGHT);
+		}
+		float by = 2f;
+		float bh = HEIGHT - 4f;
+		float startW = win98StartW(font);
+		dev.stray.client.ui.Win98.raised(graphics, 3f, by, startW, bh);
+		float lx = 7f;
+		float ly = by + (bh - 9f) / 2f;
+		GuiDraw.fill(graphics, lx, ly, 4, 4, 0xFFE0402A);
+		GuiDraw.fill(graphics, lx + 5, ly, 4, 4, 0xFF34A853);
+		GuiDraw.fill(graphics, lx + 5, ly + 5, 4, 4, 0xFFF9BB2D);
+		GuiDraw.fill(graphics, lx, ly + 5, 4, 4, 0xFF2D7CF6);
+		dev.stray.client.ui.Win98.bold(graphics, font, "Stray", 20f, by + (bh - 8f) / 2f, dev.stray.client.ui.Win98.TEXT);
+		List<String> parts = win98Parts();
+		if (parts.isEmpty()) {
+			return;
+		}
+		float tx = 3f + startW + 3f;
+		float tw = win98TrayW(font, parts);
+		dev.stray.client.ui.Win98.shallow(graphics, tx, by, tw, bh, dev.stray.client.ui.Win98.FACE);
+		float cx = tx + 4f;
+		for (int i = 0; i < parts.size(); i++) {
+			String part = parts.get(i);
+			dev.stray.client.ui.Win98.text(graphics, font, part, cx, by + (bh - 8f) / 2f, dev.stray.client.ui.Win98.TEXT);
+			cx += dev.stray.client.ui.Win98.width(font, Text.zeroDigits(part));
+			if (i + 1 < parts.size()) {
+				cx += 4f;
+				GuiDraw.fill(graphics, cx, by + 3, 1, bh - 6, dev.stray.client.ui.Win98.SHADOW);
+				GuiDraw.fill(graphics, cx + 1, by + 3, 1, bh - 6, dev.stray.client.ui.Win98.WHITE);
+				cx += 5f;
+			}
+		}
+	}
+
 	private static float hyprWidth(Font font) {
 		float w = HY_PAD * 2f;
 		List<Pill> pills = hyprPills();
@@ -300,11 +383,12 @@ public final class WatermarkRenderer {
 		Minecraft client = Minecraft.getInstance();
 		StrayConfig config = StrayConfig.get();
 		int tick = client.player == null ? -1 : client.player.tickCount;
-		String style = config.watermarkStyle == null ? "" : config.watermarkStyle;
+		String style = (config.watermarkStyle == null ? "" : config.watermarkStyle) + (HudChrome.win98() ? "/98" : "");
 		if (tick == widthTick && widthCache > 0f && widthStyle.equals(style)) {
 			return widthCache;
 		}
-		float w = config.watermarkClient() ? clientWidth(font, config) : config.watermarkHypr() ? hyprWidth(font) : panelWidth(font, config);
+		float w = HudChrome.win98() && !config.watermarkClient() ? win98Width(font)
+			: config.watermarkClient() ? clientWidth(font, config) : config.watermarkHypr() ? hyprWidth(font) : panelWidth(font, config);
 		widthTick = tick;
 		widthStyle = style;
 		widthCache = w;

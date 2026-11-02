@@ -890,6 +890,9 @@ public class StrayScreen extends Screen {
 	}
 
 	private int ink() {
+		if (Win98Menu.drawing()) {
+			return Win98.TEXT;
+		}
 		if (HyprMenu.drawing()) {
 			return HyprMenu.faded(MaterialPalette.onSurface);
 		}
@@ -900,6 +903,9 @@ public class StrayScreen extends Screen {
 	}
 
 	private int fade() {
+		if (Win98Menu.drawing()) {
+			return 0xFF404040;
+		}
 		if (HyprMenu.drawing()) {
 			return HyprMenu.faded(MaterialPalette.onSurfaceVariant);
 		}
@@ -3345,6 +3351,10 @@ public class StrayScreen extends Screen {
 	}
 
 	private void clickToggle(GuiGraphicsExtractor graphics, float x, float y, float w, float h, float t) {
+		if (Win98Menu.drawing()) {
+			Win98.checkbox(graphics, x + w - 9, y + (h - 9) / 2f, 9, t > 0.5f, true);
+			return;
+		}
 		if (HyprMenu.drawing()) {
 			HyprMenu.m3Switch(graphics, x, y, w, h, t, false, HyprMenu.alpha());
 			return;
@@ -4227,6 +4237,9 @@ public class StrayScreen extends Screen {
 			dropdownT.put(key, t);
 		}
 		boolean hovered = GuiDraw.hovered(mouseX, mouseY, x, y, w, row);
+		if (Win98Menu.drawing()) {
+			return win98Dropdown(graphics, font, x, y, w, mouseX, mouseY, key, label, options, selected, pick, row, open, t);
+		}
 		if (hovered || t > 0.01f) {
 			GuiDraw.rounded(graphics, x - 3, y, w + 6, row, 6, hovered ? 0x10FFFFFF : 0x08FFFFFF);
 		}
@@ -4276,6 +4289,51 @@ public class StrayScreen extends Screen {
 			}
 		}
 		return bottom + shownH;
+	}
+
+	/** Windows 98 combo box: label, then a sunken field with the arrow button; the list drops below. */
+	private float win98Dropdown(GuiGraphicsExtractor graphics, Font font, float x, float y, float w, int mouseX, int mouseY, String key, String label, String[] options, int selected, java.util.function.IntConsumer pick, float row, boolean open, float t) {
+		Win98.text(graphics, font, label, x + 1, y + (row - 8) / 2f, Win98.TEXT);
+		float fw = Math.min(w * 0.55f, Math.max(60f, w - Win98.width(font, label) - 8f));
+		float fx = x + w - fw;
+		float fh = Math.min(row, 14f);
+		float fy = y + (row - fh) / 2f;
+		String value = selected >= 0 && selected < options.length ? options[selected] : "";
+		Win98.combo(graphics, font, fx, fy, fw, fh, value, open);
+		hits.add(new Hit(fx, y, fw, row, () -> dropdownOpen = key.equals(dropdownOpen) ? null : key));
+		float bottom = y + row;
+		if (t <= 0.01f) {
+			dropdownH.remove(key);
+			return bottom;
+		}
+		float itemH = 11f;
+		float listH = options.length * itemH + 2f;
+		float shownH = listH * t;
+		dropdownH.put(key, shownH);
+		GuiDraw.fill(graphics, fx, fy + fh, fw, shownH, Win98.DARK);
+		GuiDraw.fill(graphics, fx + 1, fy + fh, fw - 2, shownH - 1, Win98.WHITE);
+		for (int i = 0; i < options.length; i++) {
+			float iy = fy + fh + 1f + i * itemH;
+			if (iy + itemH > fy + fh + shownH + 0.5f) {
+				break;
+			}
+			boolean hot = GuiDraw.hovered(mouseX, mouseY, fx, iy, fw, itemH);
+			boolean on = i == selected;
+			if (hot || (on && !hot && mouseY < 0)) {
+				GuiDraw.fill(graphics, fx + 1, iy, fw - 2, itemH, Win98.NAVY);
+			}
+			Win98.text(graphics, font, options[i], fx + 4, iy + 2, hot ? Win98.WHITE : Win98.TEXT);
+			int index = i;
+			if (open) {
+				hits.add(new Hit(fx, iy, fw, itemH, () -> {
+					pick.accept(index);
+					dropdownOpen = null;
+					Theme.refresh();
+					UnloadState.markDirty();
+				}));
+			}
+		}
+		return bottom + Math.max(0f, shownH - (row - fh) / 2f);
 	}
 
 	/** A small V that turns into a ^ as the dropdown opens. */
@@ -4337,7 +4395,9 @@ public class StrayScreen extends Screen {
 		float barW = Math.max(24, w - GuiDraw.menuWidth(font, label) - valueWidth - 16);
 		float barY = y + row * 0.45f;
 		float t = Mth.clamp(progress, 0f, 1f);
-		if (controlCenter()) {
+		if (Win98Menu.drawing()) {
+			Win98.trackbar(graphics, barX, y + (row - 10) / 2f, barW, 10, t);
+		} else if (controlCenter()) {
 			ControlChrome.slider(graphics, barX, barY - 1, barW, 5, t);
 		} else {
 			GuiDraw.pill(graphics, barX, barY, barW, 3, Theme.TRACK);
@@ -4366,8 +4426,13 @@ public class StrayScreen extends Screen {
 		float py = y + (row - ph) / 2f;
 		boolean hover = GuiDraw.hovered(mouseX, mouseY, px - 1, y, pw + 2, row);
 		int swatch = Theme.withAlpha(rgb, Math.round(readOpacity(target) * 255f));
-		GuiDraw.rounded(graphics, px - 1, py - 1, pw + 2, ph + 2, 3, hover ? Theme.ACCENT : Theme.LINE);
-		GuiDraw.rounded(graphics, px, py, pw, ph, 2, swatch);
+		if (Win98Menu.drawing()) {
+			Win98.sunken(graphics, px - 2, py - 2, pw + 4, ph + 4, Win98.WHITE);
+			GuiDraw.fill(graphics, px, py, pw, ph, swatch);
+		} else {
+			GuiDraw.rounded(graphics, px - 1, py - 1, pw + 2, ph + 2, 3, hover ? Theme.ACCENT : Theme.LINE);
+			GuiDraw.rounded(graphics, px, py, pw, ph, 2, swatch);
+		}
 		boolean fromPage = contentHitMode;
 		hits.add(new Hit(px - 2, y, pw + 4, row, () -> {
 			if (before != null) {
@@ -4412,7 +4477,9 @@ public class StrayScreen extends Screen {
 		float y = pickerY;
 		float w = PICKER_W;
 		float h = pickerHeight();
-		if (HyprMenu.drawing()) {
+		if (Win98Menu.drawing()) {
+			Win98.raised(graphics, x, y, w, h);
+		} else if (HyprMenu.drawing()) {
 			HyprMenu.window(graphics, x, y, w, h, 1f, pickerT);
 		} else {
 			GuiDraw.sheet(graphics, x, y, w, h, 8, Anim.fade(Theme.SHEET, pickerT), Anim.fade(Theme.ACCENT, pickerT));
@@ -5219,7 +5286,7 @@ public class StrayScreen extends Screen {
 	 * Returns the y below it, open list included.
 	 */
 	float clickDropdown(GuiGraphicsExtractor graphics, Font font, float x, float y, float w, String key, String label, String[] options, int selected, java.util.function.IntConsumer pick) {
-		boolean light = !HyprMenu.drawing();
+		boolean light = !HyprMenu.drawing() && !Win98Menu.drawing();
 		if (light) {
 			ClickGui.useLightInk(true);
 		}
