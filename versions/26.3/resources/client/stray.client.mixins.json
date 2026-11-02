@@ -3,6 +3,7 @@
 	"package": "dev.stray.client.mixin",
 	"compatibilityLevel": "JAVA_25",
 	"client": [
+		"OitGuardMixin",
 		"EntityRenderDispatcherMixin",
 		"ParticleEngineMixin",
 		"AbstractButtonMixin",
