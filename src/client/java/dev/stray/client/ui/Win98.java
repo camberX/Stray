@@ -14,19 +14,81 @@ import net.minecraft.network.chat.Style;
  * the GUI like the rest of the game.
  */
 public final class Win98 {
-	public static final int FACE = 0xFFC0C0C0;
-	public static final int LIGHT = 0xFFDFDFDF;
-	public static final int WHITE = 0xFFFFFFFF;
-	public static final int SHADOW = 0xFF808080;
-	public static final int DARK = 0xFF000000;
-	public static final int NAVY = 0xFF000080;
-	public static final int NAVY_LIGHT = 0xFF1084D0;
-	public static final int GRAY_TITLE = 0xFF808080;
-	public static final int GRAY_TITLE_LIGHT = 0xFFB5B5B5;
-	public static final int TEXT = 0xFF000000;
-	public static final int DISABLED = 0xFF808080;
+	// The scheme colors are swapped by sync() between the classic gray scheme and a dark one.
+	public static int FACE = 0xFFC0C0C0;
+	public static int LIGHT = 0xFFDFDFDF;
+	/** The bevel highlight (3D Highlight), not a background. */
+	public static int WHITE = 0xFFFFFFFF;
+	public static int SHADOW = 0xFF808080;
+	public static int DARK = 0xFF000000;
+	public static int NAVY = 0xFF000080;
+	public static int NAVY_LIGHT = 0xFF1084D0;
+	public static int GRAY_TITLE = 0xFF808080;
+	public static int GRAY_TITLE_LIGHT = 0xFFB5B5B5;
+	public static int TEXT = 0xFF000000;
+	public static int DISABLED = 0xFF808080;
+	/** Background of text fields, list boxes and drop-down lists. */
+	public static int WINDOW = 0xFFFFFFFF;
+	/** Text on the navy selection and title bars. */
+	public static int HILITE_TEXT = 0xFFFFFFFF;
+	/** Secondary text, like descriptions. */
+	public static int MUTED = 0xFF404040;
+	/** Scroll bar trough. */
+	public static int TROUGH = 0xFFE3E3E3;
+	/** Accent for values and fills drawn on the window face. */
+	public static int ACCENT = 0xFF000080;
 	public static final int TEAL = 0xFF008080;
 	public static final int TOOLTIP = 0xFFFFFFE1;
+	private static boolean dark;
+
+	/** Applies the scheme picked in the config (classic or dark). Cheap when nothing changed. */
+	public static void sync() {
+		boolean want = dev.stray.client.config.StrayConfig.get().win98Dark;
+		if (want == dark) {
+			return;
+		}
+		dark = want;
+		if (want) {
+			// A dark scheme in the spirit of Win98's own color schemes: same bevels, darker paint.
+			FACE = 0xFF3A3A3A;
+			LIGHT = 0xFF555555;
+			WHITE = 0xFF737373;
+			SHADOW = 0xFF202020;
+			DARK = 0xFF000000;
+			NAVY = 0xFF000080;
+			NAVY_LIGHT = 0xFF1084D0;
+			GRAY_TITLE = 0xFF2A2A2A;
+			GRAY_TITLE_LIGHT = 0xFF555555;
+			TEXT = 0xFFE4E4E4;
+			DISABLED = 0xFF7A7A7A;
+			WINDOW = 0xFF1C1C1C;
+			HILITE_TEXT = 0xFFFFFFFF;
+			MUTED = 0xFFA8A8A8;
+			TROUGH = 0xFF2A2A2A;
+			ACCENT = 0xFF7FA8FF;
+		} else {
+			FACE = 0xFFC0C0C0;
+			LIGHT = 0xFFDFDFDF;
+			WHITE = 0xFFFFFFFF;
+			SHADOW = 0xFF808080;
+			DARK = 0xFF000000;
+			NAVY = 0xFF000080;
+			NAVY_LIGHT = 0xFF1084D0;
+			GRAY_TITLE = 0xFF808080;
+			GRAY_TITLE_LIGHT = 0xFFB5B5B5;
+			TEXT = 0xFF000000;
+			DISABLED = 0xFF808080;
+			WINDOW = 0xFFFFFFFF;
+			HILITE_TEXT = 0xFFFFFFFF;
+			MUTED = 0xFF404040;
+			TROUGH = 0xFFE3E3E3;
+			ACCENT = 0xFF000080;
+		}
+	}
+
+	public static boolean dark() {
+		return dark;
+	}
 
 	public static final float TITLE_H = 13;
 
@@ -130,9 +192,9 @@ public final class Win98 {
 		// App icon: a tiny Stray mark.
 		GuiDraw.fill(graphics, x + 2, y + 2, 9, 9, 0xFF008080);
 		GuiDraw.fill(graphics, x + 3, y + 3, 7, 7, 0xFF00C0C0);
-		bold(graphics, font, "S", x + 4, y + 3, WHITE);
+		bold(graphics, font, "S", x + 4, y + 3, HILITE_TEXT);
 		String shown = fit(font, title, (int) (w - 14 - 3 * 15));
-		bold(graphics, font, shown, x + 14, y + 3, active ? WHITE : FACE);
+		bold(graphics, font, shown, x + 14, y + 3, active ? HILITE_TEXT : (dark ? 0xFF8A8A8A : FACE));
 	}
 
 	/** Caption button (11 tall) with a glyph: "_", "□", "x". */
@@ -146,21 +208,21 @@ public final class Win98 {
 		float cx = x + w / 2f + o;
 		float cy = y + h / 2f + o;
 		switch (glyph) {
-			case '_' -> GuiDraw.fill(graphics, cx - 3, cy + 1, 6, 2, DARK);
+			case '_' -> GuiDraw.fill(graphics, cx - 3, cy + 1, 6, 2, TEXT);
 			case 'o' -> {
-				GuiDraw.fill(graphics, cx - 4, cy - 4, 8, 7, DARK);
+				GuiDraw.fill(graphics, cx - 4, cy - 4, 8, 7, TEXT);
 				GuiDraw.fill(graphics, cx - 3, cy - 2, 6, 4, FACE);
 			}
 			case 'r' -> {
-				GuiDraw.fill(graphics, cx - 2, cy - 4, 6, 5, DARK);
+				GuiDraw.fill(graphics, cx - 2, cy - 4, 6, 5, TEXT);
 				GuiDraw.fill(graphics, cx - 1, cy - 2, 4, 2, FACE);
-				GuiDraw.fill(graphics, cx - 4, cy - 1, 6, 5, DARK);
+				GuiDraw.fill(graphics, cx - 4, cy - 1, 6, 5, TEXT);
 				GuiDraw.fill(graphics, cx - 3, cy + 1, 4, 2, FACE);
 			}
 			default -> {
 				for (int i = 0; i < 6; i++) {
-					GuiDraw.fill(graphics, cx - 3 + i, cy - 3 + i, 2, 1, DARK);
-					GuiDraw.fill(graphics, cx + 2 - i, cy - 3 + i, 2, 1, DARK);
+					GuiDraw.fill(graphics, cx - 3 + i, cy - 3 + i, 2, 1, TEXT);
+					GuiDraw.fill(graphics, cx + 2 - i, cy - 3 + i, 2, 1, TEXT);
 				}
 			}
 		}
@@ -184,11 +246,11 @@ public final class Win98 {
 
 	/** Checkbox: sunken white square with a black tick. */
 	public static void checkbox(GuiGraphicsExtractor graphics, float x, float y, float size, boolean checked, boolean enabled) {
-		sunken(graphics, x, y, size, size, enabled ? WHITE : FACE);
+		sunken(graphics, x, y, size, size, enabled ? WINDOW : FACE);
 		if (!checked) {
 			return;
 		}
-		int ink = enabled ? DARK : SHADOW;
+		int ink = enabled ? TEXT : SHADOW;
 		// The classic 7x7 tick, scaled to the box (13px box -> 1px steps).
 		float s = (size - 3) / 7f * 0.85f;
 		float ox = x + (size - 7 * s) / 2f;
@@ -204,16 +266,16 @@ public final class Win98 {
 		float r = size / 2f;
 		GuiDraw.circle(graphics, x + r, y + r, r, SHADOW);
 		GuiDraw.circle(graphics, x + r + 0.5f, y + r + 0.5f, r - 0.5f, WHITE);
-		GuiDraw.circle(graphics, x + r, y + r, r - 1, WHITE);
+		GuiDraw.circle(graphics, x + r, y + r, r - 1, WINDOW);
 		if (on) {
-			GuiDraw.circle(graphics, x + r, y + r, Math.max(1.2f, r * 0.4f), DARK);
+			GuiDraw.circle(graphics, x + r, y + r, Math.max(1.2f, r * 0.4f), TEXT);
 		}
 	}
 
 	/** Trackbar: a sunken groove and a raised pointer. {@code t} 0..1. */
 	public static void trackbar(GuiGraphicsExtractor graphics, float x, float y, float w, float h, float t) {
 		float gy = y + h / 2f - 2;
-		sunken(graphics, x, gy, w, 4, WHITE);
+		sunken(graphics, x, gy, w, 4, WINDOW);
 		float thumbW = 6;
 		float tx = x + (w - thumbW) * Math.max(0, Math.min(1, t));
 		raised(graphics, tx, y, thumbW, h);
@@ -221,7 +283,7 @@ public final class Win98 {
 
 	/** Combo box: sunken white field, value, raised arrow button. */
 	public static void combo(GuiGraphicsExtractor graphics, Font font, float x, float y, float w, float h, String value, boolean open) {
-		sunken(graphics, x, y, w, h, WHITE);
+		sunken(graphics, x, y, w, h, WINDOW);
 		text(graphics, font, fit(font, value, (int) (w - h - 6)), x + 4, y + (h - 8) / 2f, TEXT);
 		float bw = h - 4;
 		if (open) {
@@ -229,7 +291,7 @@ public final class Win98 {
 		} else {
 			raised(graphics, x + w - bw - 2, y + 2, bw, h - 4);
 		}
-		arrowDown(graphics, x + w - bw / 2f - 2 + (open ? 1 : 0), y + h / 2f + (open ? 1 : 0), DARK);
+		arrowDown(graphics, x + w - bw / 2f - 2 + (open ? 1 : 0), y + h / 2f + (open ? 1 : 0), TEXT);
 	}
 
 	public static void arrowDown(GuiGraphicsExtractor graphics, float cx, float cy, int color) {
@@ -248,11 +310,11 @@ public final class Win98 {
 
 	/** Vertical scroll bar: arrow buttons, a dithered track and a raised thumb. */
 	public static void scrollbar(GuiGraphicsExtractor graphics, float x, float y, float w, float h, float content, float view, float scroll) {
-		GuiDraw.fill(graphics, x, y, w, h, 0xFFE3E3E3);
+		GuiDraw.fill(graphics, x, y, w, h, TROUGH);
 		raised(graphics, x, y, w, w);
-		arrowUp(graphics, x + w / 2f, y + w / 2f, DARK);
+		arrowUp(graphics, x + w / 2f, y + w / 2f, TEXT);
 		raised(graphics, x, y + h - w, w, w);
-		arrowDown(graphics, x + w / 2f, y + h - w / 2f - 1, DARK);
+		arrowDown(graphics, x + w / 2f, y + h - w / 2f - 1, TEXT);
 		float track = h - w * 2;
 		if (content <= view || track <= 8) {
 			return;
@@ -329,6 +391,14 @@ public final class Win98 {
 		int max = Math.max(r, Math.max(g, b));
 		int min = Math.min(r, Math.min(g, b));
 		boolean gray = max - min < 40;
+		if (dark) {
+			// On the dark scheme: light text stays light, dark colors get lifted.
+			if (gray) {
+				return (a << 24) | (max >= 150 ? 0xE4E4E4 : 0xA8A8A8);
+			}
+			float lift = max > 0 ? Math.max(1f, 190f / max) : 1f;
+			return (a << 24) | (Math.min(255, Math.round(r * lift)) << 16) | (Math.min(255, Math.round(g * lift)) << 8) | Math.min(255, Math.round(b * lift));
+		}
 		if (gray) {
 			if (max >= 150) {
 				return (a << 24);

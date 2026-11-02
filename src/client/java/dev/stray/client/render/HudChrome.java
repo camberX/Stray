@@ -21,6 +21,7 @@ public final class HudChrome {
 
 	public static void beginHud() {
 		hudPass = true;
+		dev.stray.client.ui.Win98.sync();
 		element = null;
 	}
 
@@ -244,9 +245,9 @@ public final class HudChrome {
 			|| color == Theme.HUD_LINE || color == Theme.HUD_WINDOW || color == Theme.TRACK || color == Theme.CARD || ((color >>> 24) < 0xC0);
 		if (neutral) {
 			if (h >= 4 && w >= 4) {
-				dev.stray.client.ui.Win98.shallow(graphics, x, y, w, h, dev.stray.client.ui.Win98.WHITE);
+				dev.stray.client.ui.Win98.shallow(graphics, x, y, w, h, dev.stray.client.ui.Win98.WINDOW);
 			} else {
-				GuiDraw.fill(graphics, x, y, w, h, dev.stray.client.ui.Win98.WHITE);
+				GuiDraw.fill(graphics, x, y, w, h, dev.stray.client.ui.Win98.WINDOW);
 			}
 			return;
 		}

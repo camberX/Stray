@@ -657,7 +657,10 @@ public final class ClickGui {
 			});
 			y += stride();
 		}
-
+		if (config.clickGuiWin98()) {
+			drawChoice(screen, graphics, font, x, y, w, "Dark mode", config.win98Dark, Win98Menu::toggleDark);
+			y += stride();
+		}
 	}
 
 	private static void drawGuiStyle(StrayScreen screen, GuiGraphicsExtractor graphics, Font font, float x, float y, float w) {
@@ -675,6 +678,10 @@ public final class ClickGui {
 		y += stride();
 		y = drawDropdown(screen, graphics, font, x, y, w, "hud", "Style", StrayConfig.HUD_STYLE_LABELS, config.hudStyleIndex(),
 			i -> StrayConfig.get().setHudStyle(StrayConfig.HUD_STYLES[i]));
+		if (config.hudStyleWin98()) {
+			drawChoice(screen, graphics, font, x, y, w, "Windows 98 dark mode", config.win98Dark, Win98Menu::toggleDark);
+			y += stride();
+		}
 		drawChoice(screen, graphics, font, x, y, w, "Accent Outlines", config.accentOutlines, () -> {
 			StrayConfig current = StrayConfig.get();
 			current.accentOutlines = !current.accentOutlines;
@@ -1013,10 +1020,10 @@ public final class ClickGui {
 		}
 		if (mod.menuStyle) {
 			if ("HUD".equals(mod.name)) {
-				return stackH(3) + gap() + screen.clickDropdownHeight("hud");
+				return stackH(StrayConfig.get().hudStyleWin98() ? 4 : 3) + gap() + screen.clickDropdownHeight("hud");
 			}
 			if ("Click GUI".equals(mod.name)) {
-				return StrayConfig.get().clickGuiHypr()
+				return StrayConfig.get().clickGuiHypr() || StrayConfig.get().clickGuiWin98()
 					? screen.clickDropdownHeight("click") + gap() + stackH(1)
 					: screen.clickDropdownHeight("click");
 			}

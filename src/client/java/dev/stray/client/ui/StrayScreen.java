@@ -904,7 +904,7 @@ public class StrayScreen extends Screen {
 
 	private int fade() {
 		if (Win98Menu.drawing()) {
-			return 0xFF404040;
+			return Win98.MUTED;
 		}
 		if (HyprMenu.drawing()) {
 			return HyprMenu.faded(MaterialPalette.onSurfaceVariant);
@@ -4311,7 +4311,7 @@ public class StrayScreen extends Screen {
 		float shownH = listH * t;
 		dropdownH.put(key, shownH);
 		GuiDraw.fill(graphics, fx, fy + fh, fw, shownH, Win98.DARK);
-		GuiDraw.fill(graphics, fx + 1, fy + fh, fw - 2, shownH - 1, Win98.WHITE);
+		GuiDraw.fill(graphics, fx + 1, fy + fh, fw - 2, shownH - 1, Win98.WINDOW);
 		for (int i = 0; i < options.length; i++) {
 			float iy = fy + fh + 1f + i * itemH;
 			if (iy + itemH > fy + fh + shownH + 0.5f) {
@@ -4322,7 +4322,7 @@ public class StrayScreen extends Screen {
 			if (hot || (on && !hot && mouseY < 0)) {
 				GuiDraw.fill(graphics, fx + 1, iy, fw - 2, itemH, Win98.NAVY);
 			}
-			Win98.text(graphics, font, options[i], fx + 4, iy + 2, hot ? Win98.WHITE : Win98.TEXT);
+			Win98.text(graphics, font, options[i], fx + 4, iy + 2, hot ? Win98.HILITE_TEXT : Win98.TEXT);
 			int index = i;
 			if (open) {
 				hits.add(new Hit(fx, iy, fw, itemH, () -> {
@@ -4427,7 +4427,7 @@ public class StrayScreen extends Screen {
 		boolean hover = GuiDraw.hovered(mouseX, mouseY, px - 1, y, pw + 2, row);
 		int swatch = Theme.withAlpha(rgb, Math.round(readOpacity(target) * 255f));
 		if (Win98Menu.drawing()) {
-			Win98.sunken(graphics, px - 2, py - 2, pw + 4, ph + 4, Win98.WHITE);
+			Win98.sunken(graphics, px - 2, py - 2, pw + 4, ph + 4, Win98.WINDOW);
 			GuiDraw.fill(graphics, px, py, pw, ph, swatch);
 		} else {
 			GuiDraw.rounded(graphics, px - 1, py - 1, pw + 2, ph + 2, 3, hover ? Theme.ACCENT : Theme.LINE);

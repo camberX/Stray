@@ -532,6 +532,8 @@ public final class StrayConfig {
 	public boolean hudStarfield = false;
 	public String hudStyle = "stray";
 	public boolean accentOutlines = false;
+	/** Dark color scheme for the Windows 98 click GUI and HUD. */
+	public boolean win98Dark = false;
 	public String guiDesign = "control";
 	public int controlPaneRgb = 0x181818;
 	public int controlPillRgb = 0x808080;

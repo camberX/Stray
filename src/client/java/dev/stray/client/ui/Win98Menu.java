@@ -1,5 +1,6 @@
 package dev.stray.client.ui;
 
+import dev.stray.client.config.UnloadState;
 import dev.stray.client.config.StrayConfig;
 import dev.stray.client.render.GuiDraw;
 import net.minecraft.client.Minecraft;
@@ -46,6 +47,8 @@ public final class Win98Menu {
 	private static float grabY;
 	private static boolean startOpen;
 	private static String menuOpen;
+	/** Marks a checked menu item; stripped before drawing. */
+	private static final String CHECKED = "\u0001";
 	private static boolean addressOpen;
 	private static float addrX;
 	private static float addrY;
@@ -76,6 +79,7 @@ public final class Win98Menu {
 	}
 
 	static void draw(StrayScreen screen, GuiGraphicsExtractor graphics, Font font, int mouseX, int mouseY) {
+		Win98.sync();
 		drawing = true;
 		try {
 			drawFrame(screen, graphics, font, mouseX, mouseY);
@@ -174,8 +178,8 @@ public final class Win98Menu {
 			} else if (hot(mouseX, mouseY, mx, my, ew, MENU_H)) {
 				Win98.shallow(graphics, mx, my, ew, MENU_H, Win98.FACE);
 			}
-			Win98.text(graphics, font, entry, mx + 5, my + 2, open ? Win98.WHITE : Win98.TEXT);
-			GuiDraw.fill(graphics, mx + 5, my + 10, Win98.width(font, entry.substring(0, 1)) - 1, 1, open ? Win98.WHITE : Win98.TEXT);
+			Win98.text(graphics, font, entry, mx + 5, my + 2, open ? Win98.HILITE_TEXT : Win98.TEXT);
+			GuiDraw.fill(graphics, mx + 5, my + 10, Win98.width(font, entry.substring(0, 1)) - 1, 1, open ? Win98.HILITE_TEXT : Win98.TEXT);
 			screen.clickHit(mx, my, ew, MENU_H, () -> menuOpen = entry.equals(menuOpen) ? null : entry);
 			mx += ew;
 		}
@@ -189,7 +193,7 @@ public final class Win98Menu {
 		float fx = x + 8 + Win98.width(font, "Address") + 4;
 		float fw = x + w - 6 - fx;
 		boolean focused = ClickGui.searchFocused();
-		Win98.sunken(graphics, fx, ay, fw, BAR_H, Win98.WHITE);
+		Win98.sunken(graphics, fx, ay, fw, BAR_H, Win98.WINDOW);
 		String query = ClickGui.filterText();
 		boolean empty = query.isEmpty() && !focused;
 		float iconX = fx + 4;
@@ -208,7 +212,7 @@ public final class Win98Menu {
 		} else {
 			Win98.raised(graphics, abx, ay + 2, arrowW, BAR_H - 4);
 		}
-		Win98.arrowDown(graphics, abx + arrowW / 2f + (addressOpen ? 1 : 0), ay + BAR_H / 2f + (addressOpen ? 1 : 0), Win98.DARK);
+		Win98.arrowDown(graphics, abx + arrowW / 2f + (addressOpen ? 1 : 0), ay + BAR_H / 2f + (addressOpen ? 1 : 0), Win98.TEXT);
 		screen.clickHit(abx, ay, arrowW + 2, BAR_H, () -> addressOpen = !addressOpen);
 		addrX = fx;
 		addrY = ay + BAR_H;
@@ -265,7 +269,7 @@ public final class Win98Menu {
 		float itemH = Math.max(9, Math.min(ROW + 1, (room - 2) / (ids.length + 1)));
 		float h = 2 + (ids.length + 1) * itemH;
 		GuiDraw.fill(graphics, addrX, addrY, addrW, h, Win98.DARK);
-		GuiDraw.fill(graphics, addrX + 1, addrY, addrW - 2, h - 1, Win98.WHITE);
+		GuiDraw.fill(graphics, addrX + 1, addrY, addrW - 2, h - 1, Win98.WINDOW);
 		screen.clickHit(addrX, addrY, addrW, h, () -> {
 		});
 		float iy = addrY + 1;
@@ -279,7 +283,7 @@ public final class Win98Menu {
 				GuiDraw.fill(graphics, addrX + 1, iy, addrW - 2, itemH, Win98.NAVY);
 			}
 			folder(graphics, addrX + 12, iy + 2);
-			Win98.text(graphics, font, HyprMenu.label(id), addrX + 25, iy + 2, hot ? Win98.WHITE : Win98.TEXT);
+			Win98.text(graphics, font, HyprMenu.label(id), addrX + 25, iy + 2, hot ? Win98.HILITE_TEXT : Win98.TEXT);
 			screen.clickHit(addrX + 1, iy, addrW - 2, itemH, () -> {
 				addressOpen = false;
 				pickCategory(id);
@@ -334,10 +338,8 @@ public final class Win98Menu {
 				actions.add(() -> maximized = !maximized);
 				labels.add("-");
 				actions.add(null);
-				for (String id : ClickGui.ORDER) {
-					labels.add((id.equals(category) ? "\u2022 " : "   ") + HyprMenu.label(id));
-					actions.add(() -> pickCategory(id));
-				}
+				labels.add((StrayConfig.get().win98Dark ? CHECKED : "") + "Dark mode");
+				actions.add(Win98Menu::toggleDark);
 			}
 			default -> {
 				labels.add("About Stray");
@@ -369,7 +371,16 @@ public final class Win98Menu {
 			if (hot) {
 				GuiDraw.fill(graphics, x + 2, iy, w - 4, ROW + 1, Win98.NAVY);
 			}
-			Win98.text(graphics, font, label, x + 14, iy + 2, hot ? Win98.WHITE : Win98.TEXT);
+			int ink = hot ? Win98.HILITE_TEXT : Win98.TEXT;
+			if (label.startsWith(CHECKED)) {
+				label = label.substring(CHECKED.length());
+				// The menu check mark in the left column, like a checked menu item.
+				int[][] tick = {{0, 2}, {1, 3}, {2, 4}, {3, 3}, {4, 2}, {5, 1}, {6, 0}};
+				for (int[] p : tick) {
+					GuiDraw.fill(graphics, x + 4 + p[0], iy + 3 + p[1], 1, 3, ink);
+				}
+			}
+			Win98.text(graphics, font, label, x + 14, iy + 2, ink);
 			Runnable action = actions.get(i);
 			screen.clickHit(x + 2, iy, w - 4, ROW + 1, () -> {
 				menuOpen = null;
@@ -384,7 +395,7 @@ public final class Win98Menu {
 	private static void drawList(StrayScreen screen, GuiGraphicsExtractor graphics, Font font, int mouseX, int mouseY, List<HyprMenu.Item> items, float x, float y, float w, float h) {
 		boolean mobs = "Mobs".equals(category) && !searching();
 		if (mobs) {
-			Win98.sunken(graphics, x, y, w, BAR_H, Win98.WHITE);
+			Win98.sunken(graphics, x, y, w, BAR_H, Win98.WINDOW);
 			boolean focused = ClickGui.mobSearchFocused();
 			String q = ClickGui.mobQuery();
 			String shown = q.isEmpty() && !focused ? "Find mobs..." : q + (focused && (System.currentTimeMillis() / 500L) % 2L == 0L ? "|" : "");
@@ -396,7 +407,7 @@ public final class Win98Menu {
 		} else {
 			ClickGui.mobSearchBox(0, 0, 0, 0);
 		}
-		Win98.sunken(graphics, x, y, w, h, Win98.WHITE);
+		Win98.sunken(graphics, x, y, w, h, Win98.WINDOW);
 		listX = x;
 		listY = y;
 		listW = w;
@@ -438,7 +449,7 @@ public final class Win98Menu {
 					GuiDraw.fill(graphics, textX - 2 + d, ry + ROW - 1, 1, 1, 0xFFFFFF80);
 				}
 			}
-			Win98.text(graphics, font, label, textX, ry + 2, chosen ? Win98.WHITE : Win98.TEXT);
+			Win98.text(graphics, font, label, textX, ry + 2, chosen ? Win98.HILITE_TEXT : Win98.TEXT);
 			if (chipW > 0) {
 				Win98.text(graphics, font, chip, innerX + innerW - chipW + 3, ry + 2, Win98.SHADOW);
 			}
@@ -531,7 +542,7 @@ public final class Win98Menu {
 				if (y + 10 > bottom) {
 					return;
 				}
-				Win98.text(graphics, font, line.toString(), x, y, 0xFF404040);
+				Win98.text(graphics, font, line.toString(), x, y, Win98.MUTED);
 				y += 10;
 				line.setLength(0);
 				line.append(word);
@@ -541,7 +552,7 @@ public final class Win98Menu {
 			}
 		}
 		if (!line.isEmpty() && y + 10 <= bottom) {
-			Win98.text(graphics, font, line.toString(), x, y, 0xFF404040);
+			Win98.text(graphics, font, line.toString(), x, y, Win98.MUTED);
 		}
 	}
 
@@ -710,7 +721,7 @@ public final class Win98Menu {
 		graphics.pose().pushMatrix();
 		graphics.pose().translate(x + 7, y + h - 6);
 		graphics.pose().rotate((float) (-Math.PI / 2));
-		Win98.bold(graphics, font, "Stray", 0, 0, Win98.WHITE);
+		Win98.bold(graphics, font, "Stray", 0, 0, Win98.HILITE_TEXT);
 		Win98.text(graphics, font, "98", Win98.boldWidth(font, "Stray") + 2, 0, Win98.FACE);
 		graphics.pose().popMatrix();
 		float iy = y + 3;
@@ -728,7 +739,7 @@ public final class Win98Menu {
 			if (hot) {
 				GuiDraw.fill(graphics, ix, iy, iw, 17, Win98.NAVY);
 			}
-			Win98.text(graphics, font, label, ix + 6, iy + 5, hot ? Win98.WHITE : Win98.TEXT);
+			Win98.text(graphics, font, label, ix + 6, iy + 5, hot ? Win98.HILITE_TEXT : Win98.TEXT);
 			Runnable action = switch (label) {
 				case "HUD Editor" -> () -> client.gui.setScreen(new HudEditorScreen());
 				case "Command keys" -> () -> client.gui.setScreen(new CommandKeysScreen(screen));
@@ -857,6 +868,13 @@ public final class Win98Menu {
 		addressOpen = false;
 	}
 
+	static void toggleDark() {
+		StrayConfig config = StrayConfig.get();
+		config.win98Dark = !config.win98Dark;
+		UnloadState.markDirty();
+		Win98.sync();
+	}
+
 	private static boolean hot(double mx, double my, float x, float y, float w, float h) {
 		return mx >= x && mx < x + w && my >= y && my < y + h;
 	}
@@ -864,15 +882,15 @@ public final class Win98Menu {
 	/** The settings widgets read {@link Theme}; give them Windows colors while they draw. */
 	private static int[] swapTheme() {
 		int[] old = {Theme.ACCENT, Theme.ACCENT_DIM, Theme.CARD, Theme.CARD_HOVER, Theme.LINE, Theme.TRACK, Theme.PANEL, Theme.TEXT, Theme.MUTED, Theme.OFF, Theme.WINDOW, Theme.WINDOW_SOLID, Theme.HEADER, Theme.SHEET};
-		Theme.ACCENT = Win98.NAVY;
+		Theme.ACCENT = Win98.ACCENT;
 		Theme.ACCENT_DIM = Win98.SHADOW;
 		Theme.CARD = Win98.FACE;
 		Theme.CARD_HOVER = Win98.LIGHT;
 		Theme.LINE = Win98.SHADOW;
-		Theme.TRACK = Win98.WHITE;
+		Theme.TRACK = Win98.WINDOW;
 		Theme.PANEL = Win98.FACE;
 		Theme.TEXT = Win98.TEXT;
-		Theme.MUTED = 0xFF404040;
+		Theme.MUTED = Win98.MUTED;
 		Theme.OFF = Win98.SHADOW;
 		Theme.WINDOW = Win98.FACE;
 		Theme.WINDOW_SOLID = Win98.FACE;
