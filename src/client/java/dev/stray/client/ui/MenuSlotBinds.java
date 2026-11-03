@@ -22,6 +22,20 @@ public final class MenuSlotBinds {
 		return -1;
 	}
 
+	/** Short label of the key bound to slot {@code index}, or null when unbound. */
+	public static String keyName(int index) {
+		String[] keys = StrayConfig.normalizeMenuSlotKeys(StrayConfig.get().menuSlotKeys);
+		if (index < 0 || index >= keys.length) {
+			return null;
+		}
+		InputConstants.Key key = OdinClicks.parseKey(keys[index]);
+		if (!OdinClicks.bound(key)) {
+			return null;
+		}
+		String name = key.getDisplayName().getString();
+		return name.length() > 4 ? name.substring(0, 4) : name;
+	}
+
 	public static String hint() {
 		String[] keys = StrayConfig.normalizeMenuSlotKeys(StrayConfig.get().menuSlotKeys);
 		String[] defaults = StrayConfig.defaultMenuSlotKeys();

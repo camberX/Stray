@@ -7,9 +7,7 @@ import dev.stray.client.item.LoadoutsMenus;
 import dev.stray.client.mixin.AbstractContainerScreenInvoker;
 import dev.stray.client.render.GuiDraw;
 import dev.stray.client.render.LoadoutPreview;
-import dev.stray.client.render.NametagRenderer;
 import dev.stray.client.render.PlayerPreview;
-import dev.stray.client.render.Starfield;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
@@ -33,11 +31,8 @@ import java.util.List;
  * open; every click is sent through that screen's own {@code slotClicked}.
  */
 public class LoadoutsScreen extends Screen {
-	private static final float MENU_W = 440;
-	private static final float MENU_H = 248;
-	private static final float WELL = 20;
-	private static final float SLOTS_W = 128;
-	private static final float SLOTS_H = 148;
+	private static final float MENU_W = 480;
+	private static final float MENU_H = 300;
 	private static LoadoutsMenus.Snapshot cache = LoadoutsMenus.Snapshot.empty();
 	private static final List<QueuedClick> QUEUE = new ArrayList<>();
 	private static final long SUPPRESS_NS = 3_000_000_000L;
@@ -68,6 +63,9 @@ public class LoadoutsScreen extends Screen {
 	private float appear;
 	private ItemStack tooltip = ItemStack.EMPTY;
 	private LoadoutsMenus.Snapshot snapshot = LoadoutsMenus.Snapshot.empty();
+	private float yaw = -22f;
+	private boolean rotating;
+	private float dockTop;
 	private int selectedSlot = -1;
 	private int pendingSelectSlot = -1;
 
@@ -372,8 +370,7 @@ public class LoadoutsScreen extends Screen {
 		Font font = minecraft.font;
 		layout();
 
-		int dim = Anim.fade(0x28000000, appear);
-		GuiDraw.fill(graphics, 0, 0, width, height, dim);
+		GuiDraw.fill(graphics, 0, 0, width, height, Anim.fade(0x30000000, appear));
 
 		float scale = (0.94f + 0.06f * appear) * StrayConfig.normalizeMenuScale(StrayConfig.get().menuScale);
 		float lift = (1f - appear) * 10f;
@@ -391,22 +388,11 @@ public class LoadoutsScreen extends Screen {
 		graphics.pose().scale(scale, scale);
 		graphics.pose().translate(-cx, -cy);
 
-		boolean clip = GuiDraw.scissor(graphics, windowX, windowY, windowW, windowH);
-		if (ControlChrome.on()) {
-			ControlChrome.glass(graphics, windowX, windowY, windowW, windowH, ControlChrome.WINDOW_R, Theme.WINDOW);
-		} else {
-			ClickLook.outside(graphics, windowX, windowY, windowW, windowH, 0, ClickLook.PANEL, Theme.LINE);
-		}
-		Starfield.draw(graphics, windowX, windowY, windowW, windowH, Theme.WINDOW_RADIUS, appear);
-		if (clip) {
-			GuiDraw.disableScissor(graphics);
-		}
-
+		StageUi.window(graphics, windowX, windowY, windowW, windowH, appear);
+		hits.add(new Hit(windowX, windowY, windowW, windowH, -1, false, false));
+		drawDock(graphics, font, localMx, localMy);
 		drawHeader(graphics, font, localMx, localMy);
-		drawPreview(graphics, font, localMx, localMy);
-		drawLoadouts(graphics, font, localMx, localMy);
-		drawContents(graphics, font, localMx, localMy);
-		drawVanillaButton(graphics, font, localMx, localMy);
+		drawStage(graphics, font, localMx, localMy);
 
 		graphics.pose().popMatrix();
 
@@ -416,74 +402,46 @@ public class LoadoutsScreen extends Screen {
 	}
 
 	private void drawHeader(GuiGraphicsExtractor graphics, Font font, int mouseX, int mouseY) {
-		GuiDraw.title(graphics, font, "LOADOUTS", windowX + 12, windowY + 8, Theme.TEXT);
-		String page = snapshot.page().isBlank() ? snapshot.title() : snapshot.page();
+		float x = windowX + 16;
+		float y = windowY + 12;
+		StageUi.label(graphics, font, "LOADOUTS", x, y, StageUi.MUTED);
+		String page = WardrobeScreen.pageLabel(snapshot.page(), snapshot.title());
 		if (!page.isBlank()) {
-			GuiDraw.small(
-				graphics,
-				font,
-				page,
-				windowX + 12 + GuiDraw.titleWidth(font, "LOADOUTS") + 6,
-				windowY + 10,
-				Theme.ACCENT
-			);
+			StageUi.label(graphics, font, page, x + StageUi.labelWidth(font, "LOADOUTS") + 6, y, StageUi.FAINT);
 		}
-		hits.add(new Hit(windowX, windowY, windowW - 72, 22, -1, false, false));
-
-		float btnY = windowY + 7;
-		if (snapshot.prev() != null) {
-			chip(graphics, font, windowX + windowW - 70, btnY, 20, mouseX, mouseY, "‹", snapshot.prev());
+		float bx = windowX + windowW - 26;
+		boolean hover = GuiDraw.hovered(mouseX, mouseY, bx, windowY + 8, 16, 16);
+		if (hover) {
+			GuiDraw.circle(graphics, bx + 8, windowY + 16, 8, StageUi.CHIP_HOVER);
 		}
-		if (snapshot.next() != null) {
-			chip(graphics, font, windowX + windowW - 48, btnY, 20, mouseX, mouseY, "›", snapshot.next());
-		}
-		chip(graphics, font, windowX + windowW - 26, btnY, 16, mouseX, mouseY, "×", snapshot.close());
+		GuiDraw.menu(graphics, font, "×", bx + (16 - GuiDraw.menuWidth(font, "×")) * 0.5f, GuiDraw.middle(windowY + 8, 16), hover ? StageUi.TEXT : StageUi.MUTED);
+		hits.add(new Hit(bx, windowY + 8, 16, 16, snapshot.close() == null ? -2 : snapshot.close().slot(), false, snapshot.close() == null));
 	}
 
-	private void chip(
-		GuiGraphicsExtractor graphics,
-		Font font,
-		float x,
-		float y,
-		float w,
-		int mouseX,
-		int mouseY,
-		String label,
-		LoadoutsMenus.Piece piece
-	) {
-		boolean hover = GuiDraw.hovered(mouseX, mouseY, x, y, w, 16);
-		ClickLook.outside(graphics, x, y, w, 16, 5, hover ? Theme.CARD_HOVER : Theme.CARD, hover ? Theme.ACCENT : Theme.LINE);
-		GuiDraw.menu(
-			graphics,
-			font,
-			label,
-			x + (w - GuiDraw.menuWidth(font, label)) * 0.5f,
-			GuiDraw.middle(y, 16),
-			Theme.TEXT
-		);
-		int slot = piece == null ? -2 : piece.slot();
-		hits.add(new Hit(x, y, w, 16, slot, false, piece == null));
-		if (hover && piece != null && !piece.stack().isEmpty()) {
-			tooltip = piece.stack();
+	private int shownIndex() {
+		List<LoadoutsMenus.Piece> loadouts = snapshot.loadouts();
+		for (int i = 0; i < loadouts.size(); i++) {
+			if (loadoutSelected(loadouts.get(i))) {
+				return i;
+			}
 		}
+		return -1;
 	}
 
-	private void drawPreview(GuiGraphicsExtractor graphics, Font font, int mouseX, int mouseY) {
-		float left = windowX + 10;
-		float top = windowY + 28;
-		float stageW = windowX + windowW - SLOTS_W - 20 - left;
-		float stageH = 148;
-		ClickLook.outside(graphics, left, top, stageW, stageH, 8, Theme.PANEL, Theme.LINE);
+	private void drawStage(GuiGraphicsExtractor graphics, Font font, int mouseX, int mouseY) {
+		float top = windowY + 24;
+		float bottom = dockTop - 8;
+		float modelX = windowX + 14;
+		float modelW = 150;
 		PlayerPreview.View view = new PlayerPreview.View(viewScale, viewCx, viewCy, viewLift);
-		boolean hasPet = !snapshot.pet().isEmpty();
-		float playerW = hasPet ? stageW * 0.58f : stageW;
-		PlayerPreview.Drawn player = LoadoutPreview.player(
+		StageUi.floor(graphics, modelX + modelW * 0.5f, bottom - 14, 54);
+		LoadoutPreview.player(
 			graphics,
-			left + 4,
-			top + 2,
-			playerW - 8,
-			stageH - 18,
-			0f,
+			modelX,
+			top - 4,
+			modelW,
+			bottom - top + 6,
+			yaw,
 			0f,
 			view,
 			snapshot.helmet(),
@@ -491,123 +449,167 @@ public class LoadoutsScreen extends Screen {
 			snapshot.legs(),
 			snapshot.boots()
 		);
-		if (player != null) {
-			NametagRenderer.drawVanilla(graphics, font, player.nameX(), player.nameY(), Component.literal(playerName()));
-		}
-		if (hasPet) {
-			drawFloatingPet(graphics, font, left + playerW, top, stageW - playerW, stageH);
-		} else {
-			GuiDraw.small(graphics, font, "No pet in this loadout", left + 10, top + stageH - 16, Theme.OFF);
-		}
-		hits.add(new Hit(left, top, stageW, stageH, -1, false, false));
-	}
-
-	private void drawFloatingPet(GuiGraphicsExtractor graphics, Font font, float x, float y, float w, float h) {
+		hits.add(new Hit(modelX, top, modelW, bottom - top, -1, true, false));
 		ItemStack pet = snapshot.pet();
-		if (pet == null || pet.isEmpty()) {
+		if (pet != null && !pet.isEmpty()) {
+			float size = 26f;
+			float bob = (float) Math.sin(System.currentTimeMillis() / 420.0) * 2.5f;
+			float px = modelX + modelW - 30;
+			float py = top + 34 + bob;
+			drawItem(graphics, pet, px, py, size / 16f);
+			hits.add(new Hit(px, py, size, size, -1, false, false));
+			if (GuiDraw.hovered(mouseX, mouseY, px, py, size, size)) {
+				tooltip = pet;
+			}
+		}
+
+		float x = modelX + modelW + 18;
+		float maxW = windowX + windowW - 20 - x;
+		float y = top + 4;
+		int index = shownIndex();
+		LoadoutsMenus.Piece current = index >= 0 ? snapshot.loadouts().get(index) : null;
+		if (current == null && !snapshot.hasItems()) {
+			StageUi.label(graphics, font, "No loadouts", x, y, StageUi.MUTED);
 			return;
 		}
-		float size = Math.min(52f, Math.min(w - 12f, h - 36f));
-		float bob = (float) Math.sin(System.currentTimeMillis() / 420.0) * 3f;
-		float ix = x + (w - size) * 0.5f;
-		float iy = y + (h - size) * 0.48f + bob;
-		drawItem(graphics, pet, ix, iy, size / 16f);
-		Component name = snapshot.petName();
-		if (name != null && !name.getString().isBlank()) {
-			NametagRenderer.drawVanilla(graphics, font, x + w * 0.5f, iy - 14, name);
+		String status = index >= 0 ? "EQUIPPED · LOADOUT " + (index + 1) : "LOADOUT";
+		if (index >= 0) {
+			StageUi.dot(graphics, x + 2, y + 3.5f);
+			StageUi.label(graphics, font, status, x + 9, y, StageUi.MUTED);
+		} else {
+			StageUi.label(graphics, font, status, x, y, StageUi.MUTED);
 		}
+		y += 13;
+		StageUi.title(graphics, font, loadoutName(current, index), x, y, maxW);
+		y += 17;
+		Component petName = snapshot.petName();
+		if (petName != null && !petName.getString().isBlank()) {
+			GuiDraw.text(graphics, font, petName, x, y, 0.8f, StageUi.TEXT, false);
+		} else {
+			StageUi.label(graphics, font, "No pet", x, y, StageUi.FAINT);
+		}
+		y += 12;
+
+		float well = 18f;
+		float gap = 4f;
+		float cx = x;
+		LoadoutsMenus.Kind lastGroup = null;
+		for (LoadoutsMenus.Piece piece : labeledContents()) {
+			LoadoutsMenus.Kind group = groupOf(piece.kind());
+			if (lastGroup != null && group != lastGroup) {
+				cx = x;
+				y += well + gap + 2;
+			}
+			lastGroup = group;
+			if (cx + well > x + maxW) {
+				cx = x;
+				y += well + gap;
+			}
+			if (y + well > bottom - 26) {
+				break;
+			}
+			boolean hover = GuiDraw.hovered(mouseX, mouseY, cx, y, well, well);
+			StageUi.well(graphics, cx, y, well, hover);
+			drawItem(graphics, piece.stack(), cx + 1, y + 1, 1f);
+			hits.add(new Hit(cx, y, well, well, piece.slot(), false, false));
+			if (hover) {
+				tooltip = piece.stack();
+			}
+			cx += well + gap;
+		}
+
+		float by = Math.min(bottom - 18, y + well + 8);
+		float bx = x;
+		if (current != null) {
+			String key = MenuSlotBinds.keyName(index);
+			boolean hover = GuiDraw.hovered(mouseX, mouseY, bx, by, StageUi.pillWidth(font, "Equip", key), 16);
+			float w = StageUi.pill(graphics, font, bx, by, "Equip", key, true, hover);
+			hits.add(new Hit(bx, by, w, 16, -1, false, false, false, index));
+			bx += w + 6;
+		}
+		boolean vHover = GuiDraw.hovered(mouseX, mouseY, bx, by, StageUi.pillWidth(font, "Vanilla", null), 16);
+		float vw = StageUi.pill(graphics, font, bx, by, "Vanilla", null, false, vHover);
+		hits.add(new Hit(bx, by, vw, 16, -1, false, false, true));
 	}
 
-	private void drawLoadouts(GuiGraphicsExtractor graphics, Font font, int mouseX, int mouseY) {
-		float x = windowX + windowW - SLOTS_W - 10;
-		float y = windowY + 28;
-		ClickLook.outside(graphics, x, y, SLOTS_W, SLOTS_H, 8, Theme.CARD, Theme.LINE);
-		GuiDraw.small(graphics, font, "SLOTS", x + 8, y + 6, Theme.ACCENT);
-		boolean clip = GuiDraw.scissor(graphics, x + 1, y + 1, SLOTS_W - 2, SLOTS_H - 2);
+	private static LoadoutsMenus.Kind groupOf(LoadoutsMenus.Kind kind) {
+		return switch (kind) {
+			case HELMET, CHEST, LEGS, BOOTS -> LoadoutsMenus.Kind.HELMET;
+			case NECKLACE, CLOAK, BELT, GLOVES -> LoadoutsMenus.Kind.NECKLACE;
+			default -> LoadoutsMenus.Kind.OTHER;
+		};
+	}
+
+	private static Component loadoutName(LoadoutsMenus.Piece piece, int index) {
+		if (piece != null && piece.name() != null && !piece.name().isBlank()) {
+			String n = piece.name().replaceFirst("(?i)^\\s*loadout\\s*\\d+\\s*[:\\-–]\\s*", "").trim();
+			return Component.literal(n.isBlank() ? piece.name() : n);
+		}
+		if (piece != null && !piece.stack().isEmpty()) {
+			return Component.literal(piece.stack().getHoverName().getString());
+		}
+		return Component.literal(index >= 0 ? "Loadout " + (index + 1) : "Loadout");
+	}
+
+	private void drawDock(GuiGraphicsExtractor graphics, Font font, int mouseX, int mouseY) {
 		List<LoadoutsMenus.Piece> loadouts = snapshot.loadouts();
-		int cols = 3;
-		int rows = 4;
-		float pad = 8f;
-		float head = 18f;
+		int n = Math.max(1, Math.min(9, loadouts.size()));
+		float tile = 26f;
 		float gap = 3f;
-		float innerW = SLOTS_W - pad * 2f;
-		float innerH = SLOTS_H - head - pad;
-		float cell = Math.min((innerW - gap * (cols - 1)) / cols, (innerH - gap * (rows - 1)) / rows);
-		cell = Math.max(16f, Math.min(24f, cell));
-		float gridW = cols * cell + (cols - 1) * gap;
-		float gridH = rows * cell + (rows - 1) * gap;
-		float gridX = x + pad + Math.max(0f, (innerW - gridW) * 0.5f);
-		float gridY = y + head + Math.max(0f, (innerH - gridH) * 0.5f);
-		int shown = Math.min(cols * rows, Math.max(loadouts.size(), 1));
-		for (int i = 0; i < shown; i++) {
-			int col = i % cols;
-			int row = i / cols;
-			float sx = gridX + col * (cell + gap);
-			float sy = gridY + row * (cell + gap);
-			if (sx + cell > x + SLOTS_W - 2f || sy + cell > y + SLOTS_H - 2f) {
-				continue;
-			}
+		float arrow = 12f;
+		float pad = 4f;
+		float w = pad * 2 + n * tile + (n - 1) * gap + arrow * 2 + gap * 2;
+		float h = tile + pad * 2;
+		float x = windowX + (windowW - w) * 0.5f;
+		float y = windowY + windowH - 12 - h;
+		dockTop = y;
+		StageUi.dock(graphics, x, y, w, h);
+		hits.add(new Hit(x, y, w, h, -1, false, false));
+		arrow(graphics, font, x + pad, y + pad, arrow, tile, "‹", snapshot.prev(), mouseX, mouseY);
+		arrow(graphics, font, x + w - pad - arrow, y + pad, arrow, tile, "›", snapshot.next(), mouseX, mouseY);
+		float tx = x + pad + arrow + gap;
+		for (int i = 0; i < n; i++) {
 			LoadoutsMenus.Piece piece = i < loadouts.size() ? loadouts.get(i) : null;
+			float sx = tx + i * (tile + gap);
+			float sy = y + pad;
+			boolean hover = GuiDraw.hovered(mouseX, mouseY, sx, sy, tile, tile);
 			boolean selected = loadoutSelected(piece);
-			boolean hover = GuiDraw.hovered(mouseX, mouseY, sx, sy, cell, cell);
-			GuiDraw.well(
-				graphics,
-				sx,
-				sy,
-				cell,
-				hover ? Theme.CARD_HOVER : Theme.TRACK,
-				selected ? Theme.ACCENT : Theme.LINE
-			);
-			float icon = Math.min(16f, cell - 8f);
+			StageUi.tile(graphics, sx, sy, tile, selected, hover);
+			GuiDraw.small(graphics, font, String.valueOf(i + 1), sx + 3, sy + 2, StageUi.FAINT);
 			if (piece != null && !piece.stack().isEmpty()) {
-				drawItem(graphics, piece.stack(), sx + (cell - icon) * 0.5f, sy + (cell - icon) * 0.5f, icon / 16f);
+				drawItem(graphics, piece.stack(), sx + 5, sy + 6, 1f);
 			}
-			String mark = String.valueOf(i + 1);
-			GuiDraw.small(graphics, font, mark, sx + 2, sy + 1, selected ? Theme.TEXT : Theme.MUTED);
-			hits.add(new Hit(sx, sy, cell, cell, piece == null ? -1 : piece.slot(), false, false));
+			if (selected) {
+				StageUi.dot(graphics, sx + tile * 0.5f, y + h + 3.5f);
+			}
+			hits.add(new Hit(sx, sy, tile, tile, piece == null ? -1 : piece.slot(), false, false));
 			if (hover && piece != null && !piece.stack().isEmpty()) {
 				tooltip = piece.stack();
 			}
 		}
-		if (clip) {
-			GuiDraw.disableScissor(graphics);
-		}
 	}
 
-	private void drawContents(GuiGraphicsExtractor graphics, Font font, int mouseX, int mouseY) {
-		float x = windowX + 10;
-		float y = windowY + 182;
-		float w = windowW - 20;
-		float h = windowH - 190;
-		ClickLook.outside(graphics, x, y, w, h, 8, Theme.CARD, Theme.LINE);
-		float cx = x + 8;
-		float cy = y + 8;
-		for (LoadoutsMenus.Piece piece : labeledContents()) {
-			if (piece == null || piece.stack().isEmpty() || LoadoutsMenus.isFiller(piece.stack())) {
-				continue;
-			}
-			if (cx + WELL + 4 > x + w - 8) {
-				break;
-			}
-			boolean hover = GuiDraw.hovered(mouseX, mouseY, cx, cy, WELL, WELL);
-			GuiDraw.well(
-				graphics,
-				cx,
-				cy,
-				WELL,
-				hover ? Theme.CARD_HOVER : Theme.TRACK,
-				Theme.LINE
-			);
-			if (!piece.stack().isEmpty()) {
-				drawItem(graphics, piece.stack(), cx + 2, cy + 2, 1f);
-			}
-			hits.add(new Hit(cx, cy, WELL, WELL, piece.slot(), false, false));
-			if (hover && !piece.stack().isEmpty()) {
-				tooltip = piece.stack();
-			}
-			cx += WELL + 4;
+	private void arrow(
+		GuiGraphicsExtractor graphics,
+		Font font,
+		float x,
+		float y,
+		float w,
+		float h,
+		String glyph,
+		LoadoutsMenus.Piece piece,
+		int mouseX,
+		int mouseY
+	) {
+		boolean live = piece != null;
+		boolean hover = live && GuiDraw.hovered(mouseX, mouseY, x, y, w, h);
+		if (hover) {
+			GuiDraw.roundedFine(graphics, x, y, w, h, 6f, 0x10FFFFFF);
 		}
-		GuiDraw.small(graphics, font, MenuSlotBinds.hint() + " equip · Right-click to edit", x + 8, y + h - 14, Theme.MUTED);
+		GuiDraw.menu(graphics, font, glyph, x + (w - GuiDraw.menuWidth(font, glyph)) * 0.5f, GuiDraw.middle(y, h), live ? (hover ? StageUi.TEXT : StageUi.MUTED) : 0x40FFFFFF);
+		if (live) {
+			hits.add(new Hit(x, y, w, h, piece.slot(), false, false));
+		}
 	}
 
 	private List<LoadoutsMenus.Piece> labeledContents() {
@@ -636,18 +638,6 @@ public class LoadoutsScreen extends Screen {
 			}
 		}
 		return out;
-	}
-
-	private void drawVanillaButton(GuiGraphicsExtractor graphics, Font font, int mouseX, int mouseY) {
-		String label = "Vanilla";
-		float w = GuiDraw.menuWidth(font, label) + 12f;
-		float h = 16f;
-		float x = windowX + windowW - 10f - w;
-		float y = windowY + windowH - 8f - h;
-		boolean hover = GuiDraw.hovered(mouseX, mouseY, x, y, w, h);
-		ClickLook.outside(graphics, x, y, w, h, 5, hover ? Theme.CARD_HOVER : Theme.CARD, hover ? Theme.ACCENT : Theme.LINE);
-		GuiDraw.menu(graphics, font, label, x + (w - GuiDraw.menuWidth(font, label)) * 0.5f, GuiDraw.middle(y, h), Theme.TEXT);
-		hits.add(new Hit(x, y, w, h, -1, false, false, true));
 	}
 
 	private void showVanillaMenu() {
@@ -710,11 +700,6 @@ public class LoadoutsScreen extends Screen {
 
 	private float localY(double my) {
 		return (float) ((my - viewCy - viewLift) / viewScale + viewCy);
-	}
-
-	private String playerName() {
-		LocalPlayer player = minecraft.player;
-		return player == null ? "You" : player.getGameProfile().name();
 	}
 
 	private void clickSlot(int slot, int button) {
@@ -893,6 +878,16 @@ public class LoadoutsScreen extends Screen {
 				}
 				return true;
 			}
+			if (hit.equip >= 0) {
+				if (MouseButtons.left(event)) {
+					equipLoadout(hit.equip);
+				}
+				return true;
+			}
+			if (hit.rotate) {
+				rotating = MouseButtons.left(event);
+				return true;
+			}
 			if (hit.slot >= 0 && (MouseButtons.left(event) || MouseButtons.right(event))) {
 				if (MouseButtons.left(event)) {
 					markSelected(hit.slot);
@@ -907,11 +902,15 @@ public class LoadoutsScreen extends Screen {
 
 	@Override
 	public boolean mouseDragged(MouseButtonEvent event, double dx, double dy) {
+		if (rotating) {
+			yaw -= (float) dx / viewScale * 1.4f;
+		}
 		return true;
 	}
 
 	@Override
 	public boolean mouseReleased(MouseButtonEvent event) {
+		rotating = false;
 		return true;
 	}
 
@@ -1071,12 +1070,17 @@ public class LoadoutsScreen extends Screen {
 		final boolean rotate;
 		final boolean close;
 		final boolean vanillaMenu;
+		final int equip;
 
 		Hit(float x, float y, float w, float h, int slot, boolean rotate, boolean close) {
-			this(x, y, w, h, slot, rotate, close, false);
+			this(x, y, w, h, slot, rotate, close, false, -1);
 		}
 
 		Hit(float x, float y, float w, float h, int slot, boolean rotate, boolean close, boolean vanillaMenu) {
+			this(x, y, w, h, slot, rotate, close, vanillaMenu, -1);
+		}
+
+		Hit(float x, float y, float w, float h, int slot, boolean rotate, boolean close, boolean vanillaMenu, int equip) {
 			this.x = x;
 			this.y = y;
 			this.w = w;
@@ -1085,6 +1089,7 @@ public class LoadoutsScreen extends Screen {
 			this.rotate = rotate;
 			this.close = close;
 			this.vanillaMenu = vanillaMenu;
+			this.equip = equip;
 		}
 
 		boolean contains(double mx, double my) {

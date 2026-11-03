@@ -7,7 +7,6 @@ import dev.stray.client.item.WardrobeMenus;
 import dev.stray.client.mixin.AbstractContainerScreenInvoker;
 import dev.stray.client.render.GuiDraw;
 import dev.stray.client.render.PlayerPreview;
-import dev.stray.client.render.Starfield;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
@@ -31,9 +30,8 @@ import java.util.List;
  * One 3D armor model per slot — clicks go through the real chest's {@code slotClicked}.
  */
 public class WardrobeScreen extends Screen {
-	private static final float MENU_W = 640;
-	private static final float MENU_H = 236;
-	private static final float ARMOR_ICON = 12f;
+	private static final float MENU_W = 480;
+	private static final float MENU_H = 300;
 	private static WardrobeMenus.Snapshot cache = WardrobeMenus.Snapshot.empty();
 	private static final List<QueuedClick> QUEUE = new ArrayList<>();
 	private static final long SUPPRESS_NS = 3_000_000_000L;
@@ -62,6 +60,12 @@ public class WardrobeScreen extends Screen {
 	private float appear;
 	private ItemStack tooltip = ItemStack.EMPTY;
 	private WardrobeMenus.Snapshot snapshot = WardrobeMenus.Snapshot.empty();
+	private float yaw = -22f;
+	private boolean rotating;
+	private int hoverIndex = -1;
+	private int focusIndex = -1;
+	private int shownIndex;
+	private float dockTop;
 
 	public WardrobeScreen(AbstractContainerScreen<?> vanilla) {
 		super(vanilla.getTitle());
@@ -239,8 +243,7 @@ public class WardrobeScreen extends Screen {
 		Font font = minecraft.font;
 		layout();
 
-		int dim = Anim.fade(0x28000000, appear);
-		GuiDraw.fill(graphics, 0, 0, width, height, dim);
+		GuiDraw.fill(graphics, 0, 0, width, height, Anim.fade(0x30000000, appear));
 
 		float scale = (0.94f + 0.06f * appear) * StrayConfig.normalizeMenuScale(StrayConfig.get().menuScale);
 		float lift = (1f - appear) * 10f;
@@ -258,19 +261,12 @@ public class WardrobeScreen extends Screen {
 		graphics.pose().scale(scale, scale);
 		graphics.pose().translate(-cx, -cy);
 
-		boolean clip = GuiDraw.scissor(graphics, windowX, windowY, windowW, windowH);
-		if (ControlChrome.on()) {
-			ControlChrome.glass(graphics, windowX, windowY, windowW, windowH, ControlChrome.WINDOW_R, Theme.WINDOW);
-		} else {
-			ClickLook.outside(graphics, windowX, windowY, windowW, windowH, 0, ClickLook.PANEL, Theme.LINE);
-		}
-		Starfield.draw(graphics, windowX, windowY, windowW, windowH, Theme.WINDOW_RADIUS, appear);
-		if (clip) {
-			GuiDraw.disableScissor(graphics);
-		}
-
+		StageUi.window(graphics, windowX, windowY, windowW, windowH, appear);
+		hits.add(new Hit(windowX, windowY, windowW, windowH, -1, false, false));
+		hoverIndex = -1;
+		drawDock(graphics, font, localMx, localMy);
 		drawHeader(graphics, font, localMx, localMy);
-		drawSlots(graphics, font, localMx, localMy);
+		drawStage(graphics, font, localMx, localMy);
 
 		graphics.pose().popMatrix();
 
@@ -280,181 +276,228 @@ public class WardrobeScreen extends Screen {
 	}
 
 	private void drawHeader(GuiGraphicsExtractor graphics, Font font, int mouseX, int mouseY) {
-		GuiDraw.title(graphics, font, "WARDROBE", windowX + 12, windowY + 8, Theme.TEXT);
-		String page = snapshot.page().isBlank() ? snapshot.title() : snapshot.page();
+		float x = windowX + 16;
+		float y = windowY + 12;
+		StageUi.label(graphics, font, "WARDROBE", x, y, StageUi.MUTED);
+		String page = pageLabel(snapshot.page(), snapshot.title());
 		if (!page.isBlank()) {
-			GuiDraw.small(
-				graphics,
-				font,
-				page,
-				windowX + 12 + GuiDraw.titleWidth(font, "WARDROBE") + 6,
-				windowY + 10,
-				Theme.ACCENT
-			);
+			StageUi.label(graphics, font, page, x + StageUi.labelWidth(font, "WARDROBE") + 6, y, StageUi.FAINT);
 		}
-		hits.add(new Hit(windowX, windowY, windowW - 72, 22, -1, false, false));
-
-		float btnY = windowY + 7;
-		if (snapshot.prev() != null) {
-			chip(graphics, font, windowX + windowW - 70, btnY, 20, mouseX, mouseY, "‹", snapshot.prev());
+		float bx = windowX + windowW - 26;
+		boolean hover = GuiDraw.hovered(mouseX, mouseY, bx, windowY + 8, 16, 16);
+		if (hover) {
+			GuiDraw.circle(graphics, bx + 8, windowY + 16, 8, StageUi.CHIP_HOVER);
 		}
-		if (snapshot.next() != null) {
-			chip(graphics, font, windowX + windowW - 48, btnY, 20, mouseX, mouseY, "›", snapshot.next());
-		}
-		chip(graphics, font, windowX + windowW - 26, btnY, 16, mouseX, mouseY, "×", snapshot.close());
+		GuiDraw.menu(graphics, font, "×", bx + (16 - GuiDraw.menuWidth(font, "×")) * 0.5f, GuiDraw.middle(windowY + 8, 16), hover ? StageUi.TEXT : StageUi.MUTED);
+		hits.add(new Hit(bx, windowY + 8, 16, 16, snapshot.close() == null ? -2 : snapshot.close().slot(), false, snapshot.close() == null));
 	}
 
-	private void chip(
+	static String pageLabel(String page, String title) {
+		String src = page == null || page.isBlank() ? (title == null ? "" : title) : page;
+		java.util.regex.Matcher m = java.util.regex.Pattern.compile("(\\d+)\\s*/\\s*(\\d+)").matcher(src);
+		return m.find() ? m.group(1) + " / " + m.group(2) : "";
+	}
+
+	private WardrobeMenus.ArmorSet focusSet() {
+		List<WardrobeMenus.ArmorSet> sets = snapshot.sets();
+		if (sets.isEmpty()) {
+			return null;
+		}
+		int i = hoverIndex >= 0 ? hoverIndex : focusIndex;
+		if (i < 0 || i >= sets.size() || sets.get(i) == null || sets.get(i).locked()) {
+			i = -1;
+			for (int k = 0; k < sets.size(); k++) {
+				if (sets.get(k) != null && sets.get(k).selected()) {
+					i = k;
+					break;
+				}
+			}
+			if (i < 0) {
+				i = 0;
+			}
+		}
+		shownIndex = i;
+		return sets.get(i);
+	}
+
+	private void drawStage(GuiGraphicsExtractor graphics, Font font, int mouseX, int mouseY) {
+		float top = windowY + 24;
+		float bottom = dockTop - 8;
+		float modelX = windowX + 18;
+		float modelW = 170;
+		WardrobeMenus.ArmorSet set = focusSet();
+		PlayerPreview.View view = new PlayerPreview.View(viewScale, viewCx, viewCy, viewLift);
+		StageUi.floor(graphics, modelX + modelW * 0.5f, bottom - 14, 58);
+		PlayerPreview.Gear gear = set == null || set.locked()
+			? PlayerPreview.Gear.none()
+			: new PlayerPreview.Gear(set.helmet(), set.chest(), set.legs(), set.boots());
+		PlayerPreview.drawEquipped(graphics, modelX, top - 4, modelW, bottom - top + 6, yaw, 0f, view, gear, 78f);
+		hits.add(new Hit(modelX, top, modelW, bottom - top, -1, true, false));
+
+		float x = modelX + modelW + 18;
+		float maxW = windowX + windowW - 20 - x;
+		float y = top + 4;
+		if (set == null) {
+			StageUi.label(graphics, font, "No armor sets", x, y, StageUi.MUTED);
+			return;
+		}
+		int number = shownIndex + 1;
+		String status = (set.selected() ? "EQUIPPED · " : "") + "SET " + number;
+		if (set.selected()) {
+			StageUi.dot(graphics, x + 2, y + 3.5f);
+			StageUi.label(graphics, font, status, x + 9, y, StageUi.MUTED);
+		} else {
+			StageUi.label(graphics, font, status, x, y, StageUi.MUTED);
+		}
+		y += 13;
+		StageUi.title(graphics, font, setName(set, number), x, y, maxW);
+		y += 17;
+		ItemStack[] pieces = {set.helmet(), set.chest(), set.legs(), set.boots()};
+		int count = 0;
+		for (ItemStack p : pieces) {
+			if (p != null && !p.isEmpty()) {
+				count++;
+			}
+		}
+		StageUi.label(graphics, font, set.locked() ? "Locked" : count == 0 ? "Empty slot" : count + (count == 1 ? " piece" : " pieces"), x, y, StageUi.FAINT);
+		y += 11;
+		for (ItemStack stack : pieces) {
+			if (stack == null || stack.isEmpty()) {
+				continue;
+			}
+			float h = 14f;
+			Component name = stack.getHoverName();
+			boolean hover = GuiDraw.hovered(mouseX, mouseY, x, y, maxW, h);
+			StageUi.chip(graphics, x, y, maxW, h, hover);
+			drawItem(graphics, stack, x + 4, y + 1.5f, 0.6875f);
+			float ts = 0.8f;
+			String full = name.getString();
+			String plain = full;
+			while (plain.length() > 3 && font.width(plain) * ts > maxW - 28) {
+				plain = plain.substring(0, plain.length() - 2);
+			}
+			Component shown = plain.equals(full) ? name : Component.literal(plain.trim() + "…").withStyle(name.getStyle());
+			GuiDraw.text(graphics, font, shown, x + 20, y + (h - 8f * ts) * 0.5f, ts, StageUi.TEXT, false);
+			hits.add(new Hit(x, y, maxW, h, -1, false, false));
+			if (hover) {
+				tooltip = stack;
+			}
+			y += h + 2;
+		}
+
+		float by = Math.min(bottom - 18, y + 5);
+		float bx = x;
+		boolean canEquip = !set.locked() && set.slot() >= 0 && set.hasArmor();
+		if (canEquip) {
+			String key = MenuSlotBinds.keyName(shownIndex);
+			boolean hover = GuiDraw.hovered(mouseX, mouseY, bx, by, StageUi.pillWidth(font, set.selected() ? "Unequip" : "Equip", key), 16);
+			float w = StageUi.pill(graphics, font, bx, by, set.selected() ? "Unequip" : "Equip", key, true, hover);
+			hits.add(new Hit(bx, by, w, 16, set.slot(), false, false));
+			bx += w + 6;
+		}
+		boolean vHover = GuiDraw.hovered(mouseX, mouseY, bx, by, StageUi.pillWidth(font, "Vanilla", null), 16);
+		float vw = StageUi.pill(graphics, font, bx, by, "Vanilla", null, false, vHover);
+		hits.add(new Hit(bx, by, vw, 16, -1, false, false, true));
+	}
+
+	private static Component setName(WardrobeMenus.ArmorSet set, int number) {
+		if (set.name() != null && !set.name().isBlank()
+			&& !set.name().matches("(?i)^\\s*(slot|set)\\s*\\d+\\b.*")) {
+			return Component.literal(set.name());
+		}
+		if (set.locked()) {
+			return Component.literal("Locked slot");
+		}
+		ItemStack chest = set.chest() != null && !set.chest().isEmpty() ? set.chest() : set.helmet();
+		if (chest != null && !chest.isEmpty()) {
+			String n = chest.getHoverName().getString()
+				.replaceAll("(?i)\\s*(helmet|chestplate|tunic|leggings|pants|boots|shoes|hat|hood|crown|mask)\\b.*$", "")
+				.replaceAll("[✪➊➋➌➍➎]+", "").trim();
+			if (!n.isBlank()) {
+				return Component.literal(n);
+			}
+		}
+		return Component.literal(set.hasArmor() ? "Set " + number : "Empty");
+	}
+
+	private void drawDock(GuiGraphicsExtractor graphics, Font font, int mouseX, int mouseY) {
+		List<WardrobeMenus.ArmorSet> sets = snapshot.sets();
+		int n = Math.max(1, Math.min(9, sets.size()));
+		float tile = 26f;
+		float gap = 3f;
+		float arrow = 12f;
+		float pad = 4f;
+		float w = pad * 2 + n * tile + (n - 1) * gap + arrow * 2 + gap * 2;
+		float h = tile + pad * 2;
+		float x = windowX + (windowW - w) * 0.5f;
+		float y = windowY + windowH - 12 - h;
+		dockTop = y;
+		StageUi.dock(graphics, x, y, w, h);
+		hits.add(new Hit(x, y, w, h, -1, false, false));
+		arrow(graphics, font, x + pad, y + pad, arrow, tile, "‹", snapshot.prev(), mouseX, mouseY);
+		arrow(graphics, font, x + w - pad - arrow, y + pad, arrow, tile, "›", snapshot.next(), mouseX, mouseY);
+		float tx = x + pad + arrow + gap;
+		for (int i = 0; i < n; i++) {
+			WardrobeMenus.ArmorSet set = i < sets.size() ? sets.get(i) : null;
+			float sx = tx + i * (tile + gap);
+			float sy = y + pad;
+			boolean hover = GuiDraw.hovered(mouseX, mouseY, sx, sy, tile, tile);
+			boolean locked = set == null || set.locked();
+			if (hover && !locked) {
+				hoverIndex = i;
+			}
+			boolean shown = i == (hoverIndex >= 0 ? hoverIndex : focusIndexOr(sets));
+			StageUi.tile(graphics, sx, sy, tile, shown && !locked, hover);
+			GuiDraw.small(graphics, font, String.valueOf(i + 1), sx + 3, sy + 2, StageUi.FAINT);
+			if (locked) {
+				GuiDraw.small(graphics, font, "—", sx + (tile - GuiDraw.smallWidth(font, "—")) * 0.5f, sy + tile * 0.5f - 3, StageUi.FAINT);
+			} else {
+				ItemStack[] pieces = {set.helmet(), set.chest(), set.legs(), set.boots()};
+				float icon = 9f;
+				float gx = sx + (tile - icon * 2 - 1) * 0.5f;
+				float gy = sy + (tile - icon * 2 - 1) * 0.5f + 1.5f;
+				for (int k = 0; k < 4; k++) {
+					ItemStack p = pieces[k];
+					if (p != null && !p.isEmpty()) {
+						drawItem(graphics, p, gx + (k % 2) * (icon + 1), gy + (k / 2) * (icon + 1), icon / 16f);
+					}
+				}
+			}
+			if (set != null && set.selected() && !set.locked()) {
+				StageUi.dot(graphics, sx + tile * 0.5f, y + h + 3.5f);
+			}
+			hits.add(new Hit(sx, sy, tile, tile, -1, false, false, false, locked ? -1 : i));
+		}
+	}
+
+	private int focusIndexOr(List<WardrobeMenus.ArmorSet> sets) {
+		if (focusIndex >= 0 && focusIndex < sets.size()) {
+			return focusIndex;
+		}
+		return shownIndex;
+	}
+
+	private void arrow(
 		GuiGraphicsExtractor graphics,
 		Font font,
 		float x,
 		float y,
 		float w,
-		int mouseX,
-		int mouseY,
-		String label,
-		WardrobeMenus.Piece piece
-	) {
-		boolean hover = GuiDraw.hovered(mouseX, mouseY, x, y, w, 16);
-		ClickLook.outside(graphics, x, y, w, 16, 5, hover ? Theme.CARD_HOVER : Theme.CARD, hover ? Theme.ACCENT : Theme.LINE);
-		GuiDraw.menu(
-			graphics,
-			font,
-			label,
-			x + (w - GuiDraw.menuWidth(font, label)) * 0.5f,
-			GuiDraw.middle(y, 16),
-			Theme.TEXT
-		);
-		int slot = piece == null ? -2 : piece.slot();
-		hits.add(new Hit(x, y, w, 16, slot, false, piece == null));
-		if (hover && piece != null && !piece.stack().isEmpty()) {
-			tooltip = piece.stack();
-		}
-	}
-
-	private void drawSlots(GuiGraphicsExtractor graphics, Font font, int mouseX, int mouseY) {
-		float x = windowX + 10;
-		float y = windowY + 28;
-		float w = windowW - 20;
-		float h = windowH - 48;
-		hits.add(new Hit(x, y, w, h, -1, false, false));
-		List<WardrobeMenus.ArmorSet> sets = snapshot.sets();
-		int shown = Math.min(9, Math.max(sets.size(), 1));
-		int cols = shown;
-		float gap = 6f;
-		float footer = 18f;
-		float cellW = (w - gap * (cols - 1)) / cols;
-		float cellH = h - footer;
-		PlayerPreview.View view = new PlayerPreview.View(viewScale, viewCx, viewCy, viewLift);
-		for (int i = 0; i < shown; i++) {
-			float sx = x + i * (cellW + gap);
-			float sy = y;
-			WardrobeMenus.ArmorSet set = i < sets.size() ? sets.get(i) : null;
-			boolean selected = set != null && set.selected() && !set.locked();
-			boolean locked = set != null && set.locked();
-			boolean armor = set != null && set.hasArmor();
-			boolean hover = GuiDraw.hovered(mouseX, mouseY, sx, sy, cellW, cellH);
-			int fill = hover ? Theme.CARD_HOVER : Theme.CARD;
-			int line = selected ? Theme.ACCENT : Theme.LINE;
-			ClickLook.outside(graphics, sx, sy, cellW, cellH, 8, fill, line);
-			String mark = String.valueOf(i + 1);
-			GuiDraw.small(graphics, font, mark, sx + 5, sy + 4, selected ? Theme.ACCENT : Theme.MUTED);
-			float iconRow = armor ? ARMOR_ICON + 6f : 0f;
-			if (locked) {
-				String label = "Locked";
-				GuiDraw.small(
-					graphics,
-					font,
-					label,
-					sx + (cellW - GuiDraw.smallWidth(font, label)) * 0.5f,
-					sy + cellH * 0.5f - 4,
-					Theme.OFF
-				);
-			} else {
-				ItemStack helmet = set == null ? ItemStack.EMPTY : set.helmet();
-				ItemStack chest = set == null ? ItemStack.EMPTY : set.chest();
-				ItemStack legs = set == null ? ItemStack.EMPTY : set.legs();
-				ItemStack boots = set == null ? ItemStack.EMPTY : set.boots();
-				PlayerPreview.drawMini(
-					graphics,
-					sx + 2,
-					sy + 10,
-					cellW - 4,
-					cellH - 14 - iconRow,
-					0f,
-					0f,
-					view,
-					new PlayerPreview.Gear(helmet, chest, legs, boots)
-				);
-				if (armor) {
-					drawArmorIcons(graphics, set, sx, sy + cellH - iconRow - 2f, cellW, mouseX, mouseY);
-				}
-			}
-			hits.add(new Hit(sx, sy, cellW, cellH, set == null ? -1 : set.slot(), false, false));
-			if (hover && set != null && tooltip.isEmpty()) {
-				tooltip = hoverStack(set);
-			}
-		}
-		GuiDraw.small(graphics, font, MenuSlotBinds.hint() + " equip and close · Click a set to equip", x, y + h - 10, Theme.MUTED);
-		drawVanillaButton(graphics, font, mouseX, mouseY);
-	}
-
-	private void drawArmorIcons(
-		GuiGraphicsExtractor graphics,
-		WardrobeMenus.ArmorSet set,
-		float x,
-		float y,
-		float w,
+		float h,
+		String glyph,
+		WardrobeMenus.Piece piece,
 		int mouseX,
 		int mouseY
 	) {
-		ItemStack[] pieces = {set.helmet(), set.chest(), set.legs(), set.boots()};
-		float gap = 2f;
-		float rowW = pieces.length * ARMOR_ICON + (pieces.length - 1) * gap;
-		float ix = x + (w - rowW) * 0.5f;
-		for (ItemStack stack : pieces) {
-			boolean hover = GuiDraw.hovered(mouseX, mouseY, ix, y, ARMOR_ICON, ARMOR_ICON);
-			GuiDraw.well(graphics, ix, y, ARMOR_ICON, hover ? Theme.CARD_HOVER : Theme.TRACK, Theme.LINE);
-			if (stack != null && !stack.isEmpty()) {
-				float scale = Math.max(0.45f, (ARMOR_ICON - 2f) / 16f);
-				drawItem(graphics, stack, ix + (ARMOR_ICON - 16f * scale) * 0.5f, y + (ARMOR_ICON - 16f * scale) * 0.5f, scale);
-				if (hover) {
-					tooltip = stack;
-				}
-			}
-			ix += ARMOR_ICON + gap;
+		boolean live = piece != null;
+		boolean hover = live && GuiDraw.hovered(mouseX, mouseY, x, y, w, h);
+		if (hover) {
+			GuiDraw.roundedFine(graphics, x, y, w, h, 6f, 0x10FFFFFF);
 		}
-	}
-
-	private static ItemStack hoverStack(WardrobeMenus.ArmorSet set) {
-		if (set == null) {
-			return ItemStack.EMPTY;
+		GuiDraw.menu(graphics, font, glyph, x + (w - GuiDraw.menuWidth(font, glyph)) * 0.5f, GuiDraw.middle(y, h), live ? (hover ? StageUi.TEXT : StageUi.MUTED) : 0x40FFFFFF);
+		if (live) {
+			hits.add(new Hit(x, y, w, h, piece.slot(), false, false));
 		}
-		if (!set.icon().isEmpty()) {
-			return set.icon();
-		}
-		if (!set.helmet().isEmpty()) {
-			return set.helmet();
-		}
-		if (!set.chest().isEmpty()) {
-			return set.chest();
-		}
-		if (!set.legs().isEmpty()) {
-			return set.legs();
-		}
-		return set.boots();
-	}
-
-	private void drawVanillaButton(GuiGraphicsExtractor graphics, Font font, int mouseX, int mouseY) {
-		String label = "Vanilla";
-		float w = GuiDraw.menuWidth(font, label) + 12f;
-		float h = 16f;
-		float x = windowX + windowW - 10f - w;
-		float y = windowY + windowH - 8f - h;
-		boolean hover = GuiDraw.hovered(mouseX, mouseY, x, y, w, h);
-		ClickLook.outside(graphics, x, y, w, h, 5, hover ? Theme.CARD_HOVER : Theme.CARD, hover ? Theme.ACCENT : Theme.LINE);
-		GuiDraw.menu(graphics, font, label, x + (w - GuiDraw.menuWidth(font, label)) * 0.5f, GuiDraw.middle(y, h), Theme.TEXT);
-		hits.add(new Hit(x, y, w, h, -1, false, false, true));
 	}
 
 	private void showVanillaMenu() {
@@ -637,6 +680,16 @@ public class WardrobeScreen extends Screen {
 				}
 				return true;
 			}
+			if (hit.dock >= 0) {
+				if (MouseButtons.left(event)) {
+					focusIndex = hit.dock;
+				}
+				return true;
+			}
+			if (hit.rotate) {
+				rotating = MouseButtons.left(event);
+				return true;
+			}
 			if (hit.slot >= 0 && (MouseButtons.left(event) || MouseButtons.right(event))) {
 				clickSlot(hit.slot, MouseButtons.containerButton(event));
 				return true;
@@ -648,11 +701,15 @@ public class WardrobeScreen extends Screen {
 
 	@Override
 	public boolean mouseDragged(MouseButtonEvent event, double dx, double dy) {
+		if (rotating) {
+			yaw -= (float) dx / viewScale * 1.4f;
+		}
 		return true;
 	}
 
 	@Override
 	public boolean mouseReleased(MouseButtonEvent event) {
+		rotating = false;
 		return true;
 	}
 
@@ -747,12 +804,17 @@ public class WardrobeScreen extends Screen {
 		final boolean rotate;
 		final boolean close;
 		final boolean vanillaMenu;
+		final int dock;
 
 		Hit(float x, float y, float w, float h, int slot, boolean rotate, boolean close) {
-			this(x, y, w, h, slot, rotate, close, false);
+			this(x, y, w, h, slot, rotate, close, false, -1);
 		}
 
 		Hit(float x, float y, float w, float h, int slot, boolean rotate, boolean close, boolean vanillaMenu) {
+			this(x, y, w, h, slot, rotate, close, vanillaMenu, -1);
+		}
+
+		Hit(float x, float y, float w, float h, int slot, boolean rotate, boolean close, boolean vanillaMenu, int dock) {
 			this.x = x;
 			this.y = y;
 			this.w = w;
@@ -761,6 +823,7 @@ public class WardrobeScreen extends Screen {
 			this.rotate = rotate;
 			this.close = close;
 			this.vanillaMenu = vanillaMenu;
+			this.dock = dock;
 		}
 
 		boolean contains(double mx, double my) {
