@@ -202,7 +202,8 @@ public final class LeapMenu {
 		}
 		String name = plain.substring("You have teleported to ".length(), plain.length() - 1);
 		StrayConfig config = StrayConfig.get();
-		if (config.leapAnnounce && config.leapMenuEnabled) {
+		// Like the original, only with someone to tell: in a party of more than one.
+		if (config.leapAnnounce && config.leapMenuEnabled && !DungeonParty.others().isEmpty()) {
 			String message = (config.leapMessage == null ? "" : config.leapMessage).replace("{name}", name);
 			Minecraft client = Minecraft.getInstance();
 			if (!message.isBlank() && client.player != null) {
