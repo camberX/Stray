@@ -58,6 +58,10 @@ public final class HudChrome {
 		return StrayConfig.get().hudStyleHypr();
 	}
 
+	public static boolean shadow() {
+		return StrayConfig.get().hudStyleShadow();
+	}
+
 	public static boolean win98() {
 		return StrayConfig.get().hudStyleWin98();
 	}
@@ -121,6 +125,10 @@ public final class HudChrome {
 			GuiDraw.roundedFine(graphics, x, y, w, h, r, Theme.HUD_WINDOW);
 			int ring = StrayConfig.get().accentOutlines && !neutralOutline ? MaterialPalette.primary : MaterialPalette.withAlpha(MaterialPalette.primary, 0x40);
 			GuiDraw.hairline(graphics, x, y, w, h, r, ring);
+			return;
+		}
+		if (shadow()) {
+			dev.stray.client.ui.ShadowLook.panel(graphics, x, y, w, h, Math.min(Math.max(4f, radius), 8f), Theme.HUD_WINDOW);
 			return;
 		}
 		if (click()) {

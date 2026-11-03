@@ -132,6 +132,19 @@ public final class ClickLook {
 			hypr(graphics, x, y, w, h, stroke);
 			return;
 		}
+		if (StrayConfig.get().guiStyleShadow()) {
+			float shortSide = Math.min(w, h);
+			float longSide = Math.max(w, h);
+			boolean slot = shortSide <= 20f && longSide <= shortSide * 1.25f;
+			boolean widget = !slot && h <= 22f && w > h * 2f;
+			boolean hover = (stroke & 0xFFFFFF) != 0 && (stroke & 0xFFFFFF) != (OUTLINE & 0xFFFFFF);
+			if (slot || widget) {
+				ShadowLook.card(graphics, x, y, w, h, slot ? 3f : 5f, hover, false);
+			} else {
+				ShadowLook.panel(graphics, x, y, w, h, 10f, Theme.WINDOW);
+			}
+			return;
+		}
 		if (StrayConfig.get().guiStyleImgui()) {
 			float shortSide = Math.min(w, h);
 			float longSide = Math.max(w, h);

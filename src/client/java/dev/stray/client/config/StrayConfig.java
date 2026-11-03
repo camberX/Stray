@@ -2049,6 +2049,22 @@ public final class StrayConfig {
 		return "hypr".equalsIgnoreCase(hudStyle);
 	}
 
+	public boolean hudStyleShadow() {
+		return "shadow".equalsIgnoreCase(hudStyle);
+	}
+
+	public boolean clickGuiShadow() {
+		return "shadow".equalsIgnoreCase(clickGuiStyle);
+	}
+
+	public boolean guiStyleShadow() {
+		return "shadow".equalsIgnoreCase(guiStyle);
+	}
+
+	public boolean chatStyleShadow() {
+		return "shadow".equalsIgnoreCase(chatStyle);
+	}
+
 	public boolean hudStyleWin98() {
 		return "win98".equalsIgnoreCase(hudStyle);
 	}
@@ -2059,6 +2075,9 @@ public final class StrayConfig {
 		}
 		if (hudStyleWin98()) {
 			return "Windows 98";
+		}
+		if (hudStyleShadow()) {
+			return "Shadow";
 		}
 		if (hudStyleVanilla()) {
 			return "Vanilla";
@@ -2095,27 +2114,27 @@ public final class StrayConfig {
 	}
 
 	/** Keys and labels for the style dropdowns, in menu order. */
-	public static final String[] CLICK_GUI_STYLES = {"click", "hypr", "win98"};
-	public static final String[] CLICK_GUI_STYLE_LABELS = {"Click", "Hyprland", "Windows 98"};
-	public static final String[] GUI_STYLES = {"click", "hypr"};
-	public static final String[] GUI_STYLE_LABELS = {"Click", "Hyprland"};
+	public static final String[] CLICK_GUI_STYLES = {"click", "hypr", "win98", "shadow"};
+	public static final String[] CLICK_GUI_STYLE_LABELS = {"Click", "Hyprland", "Windows 98", "Shadow"};
+	public static final String[] GUI_STYLES = {"click", "hypr", "shadow"};
+	public static final String[] GUI_STYLE_LABELS = {"Click", "Hyprland", "Shadow"};
 	public static final String[] WATERMARK_STYLES = {"panel", "client", "hypr", "win98"};
 	public static final String[] WATERMARK_STYLE_LABELS = {"Panel", "Client", "Hyprland", "Windows 98"};
-	public static final String[] HUD_STYLES = {"click", "hypr", "win98"};
-	public static final String[] HUD_STYLE_LABELS = {"Click", "Hyprland", "Windows 98"};
-	public static final String[] CHAT_STYLES = {"stray", "hypr"};
-	public static final String[] CHAT_STYLE_LABELS = {"Stray", "Hyprland"};
+	public static final String[] HUD_STYLES = {"click", "hypr", "win98", "shadow"};
+	public static final String[] HUD_STYLE_LABELS = {"Click", "Hyprland", "Windows 98", "Shadow"};
+	public static final String[] CHAT_STYLES = {"stray", "hypr", "shadow"};
+	public static final String[] CHAT_STYLE_LABELS = {"Stray", "Hyprland", "Shadow"};
 
 	public boolean chatStyleHypr() {
 		return "hypr".equalsIgnoreCase(chatStyle);
 	}
 
 	public int chatStyleIndex() {
-		return chatStyleHypr() ? 1 : 0;
+		return chatStyleHypr() ? 1 : chatStyleShadow() ? 2 : 0;
 	}
 
 	public void setChatStyle(String style) {
-		chatStyle = "hypr".equalsIgnoreCase(style) ? "hypr" : "stray";
+		chatStyle = "hypr".equalsIgnoreCase(style) ? "hypr" : "shadow".equalsIgnoreCase(style) ? "shadow" : "stray";
 	}
 
 	public int clickGuiStyleIndex() {
@@ -2154,6 +2173,9 @@ public final class StrayConfig {
 		if (clickGuiWin98()) {
 			return "Windows 98";
 		}
+		if (clickGuiShadow()) {
+			return "Shadow";
+		}
 		if (clickGuiImgui()) {
 			return "ImGui";
 		}
@@ -2181,6 +2203,9 @@ public final class StrayConfig {
 	public String guiStyleLabel() {
 		if (guiStyleHypr()) {
 			return "Hyprland";
+		}
+		if (guiStyleShadow()) {
+			return "Shadow";
 		}
 		if (guiStyleImgui()) {
 			return "ImGui";
@@ -2216,12 +2241,18 @@ public final class StrayConfig {
 		if (isWin98(style)) {
 			return "win98";
 		}
+		if (style != null && style.trim().equalsIgnoreCase("shadow")) {
+			return "shadow";
+		}
 		return style != null && (style.trim().equalsIgnoreCase("hypr") || style.trim().equalsIgnoreCase("hyprland")) ? "hypr" : "click";
 	}
 
 	public static String normalizeClickGuiStyle(String style) {
 		if (isWin98(style)) {
 			return "win98";
+		}
+		if (style != null && style.trim().equalsIgnoreCase("shadow")) {
+			return "shadow";
 		}
 		return style != null && (style.trim().equalsIgnoreCase("hypr") || style.trim().equalsIgnoreCase("hyprland")) ? "hypr" : "click";
 	}
@@ -2235,6 +2266,9 @@ public final class StrayConfig {
 	}
 
 	public static String normalizeGuiStyle(String style) {
+		if (style != null && style.trim().equalsIgnoreCase("shadow")) {
+			return "shadow";
+		}
 		return style != null && (style.trim().equalsIgnoreCase("hypr") || style.trim().equalsIgnoreCase("hyprland")) ? "hypr" : "click";
 	}
 

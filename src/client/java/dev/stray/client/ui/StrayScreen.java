@@ -924,6 +924,9 @@ public class StrayScreen extends Screen {
 		if (HyprMenu.drawing()) {
 			return HyprMenu.faded(MaterialPalette.onSurface);
 		}
+		if (ShadowMenu.drawing()) {
+			return ShadowMenu.faded(ShadowLook.TEXT);
+		}
 		if (ClickGui.lightInk()) {
 			return 0xFFF4F6FA;
 		}
@@ -936,6 +939,9 @@ public class StrayScreen extends Screen {
 		}
 		if (HyprMenu.drawing()) {
 			return HyprMenu.faded(MaterialPalette.onSurfaceVariant);
+		}
+		if (ShadowMenu.drawing()) {
+			return ShadowMenu.faded(ShadowLook.MUTED);
 		}
 		if (ClickGui.lightInk()) {
 			return 0xFF9AA6B8;
@@ -3391,6 +3397,10 @@ public class StrayScreen extends Screen {
 			HyprMenu.m3Switch(graphics, x, y, w, h, t, false, HyprMenu.alpha());
 			return;
 		}
+		if (ShadowMenu.drawing()) {
+			ShadowMenu.toggle(graphics, x, y, w, h, t, ShadowMenu.alpha());
+			return;
+		}
 		float stroke = 0.5f;
 		GuiDraw.roundedFine(graphics, x, y, w, h, h * 0.5f, 0xFF000000);
 		int fill = t > 0.5f ? Theme.ACCENT : 0x88000000;
@@ -4537,6 +4547,8 @@ public class StrayScreen extends Screen {
 			Win98.raised(graphics, x, y, w, h);
 		} else if (HyprMenu.drawing()) {
 			HyprMenu.window(graphics, x, y, w, h, 1f, pickerT);
+		} else if (ShadowMenu.drawing()) {
+			ShadowLook.panel(graphics, x, y, w, h, 10f, Anim.fade(0xF2050709, pickerT));
 		} else {
 			GuiDraw.sheet(graphics, x, y, w, h, 8, Anim.fade(Theme.SHEET, pickerT), Anim.fade(Theme.ACCENT, pickerT));
 		}
@@ -5342,7 +5354,7 @@ public class StrayScreen extends Screen {
 	 * Returns the y below it, open list included.
 	 */
 	float clickDropdown(GuiGraphicsExtractor graphics, Font font, float x, float y, float w, String key, String label, String[] options, int selected, java.util.function.IntConsumer pick) {
-		boolean light = !HyprMenu.drawing() && !Win98Menu.drawing();
+		boolean light = !HyprMenu.drawing() && !Win98Menu.drawing() && !ShadowMenu.drawing();
 		if (light) {
 			ClickGui.useLightInk(true);
 		}

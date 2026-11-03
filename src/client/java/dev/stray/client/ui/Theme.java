@@ -98,6 +98,7 @@ public final class Theme {
 			if (StrayConfig.get().hudStyleHypr()) {
 				hyprHud(hudA);
 			}
+			shadow(hudOpacity, opacity);
 			applyAccentOutlines(accent);
 			return;
 		}
@@ -122,7 +123,37 @@ public final class Theme {
 		HEADER = 0xFF000000 | mix(0xC4CED8, pane, 0.10f);
 		NAV_PILL = withAlpha(mix(pane, accent, 0.55f), Math.round(230 * opacity));
 		SIDEBAR = withAlpha(mix(0x101820, pane, 0.45f), Math.round(185 * opacity));
+		shadow(hudOpacity, opacity);
 		applyAccentOutlines(accent);
+	}
+
+	/** Shadow style: see-through black, faint white lines, white and gray text. */
+	private static void shadow(float hudOpacity, float opacity) {
+		StrayConfig config = StrayConfig.get();
+		if (config.hudStyleShadow()) {
+			HUD_WINDOW = ShadowLook.fill(hudOpacity);
+			HUD_LINE = ShadowLook.LINE;
+			HUD_LINE_NEUTRAL = HUD_LINE;
+			HUD_TRACK = 0x14FFFFFF;
+			HUD_CARD = ShadowLook.CARD;
+			HUD_CARD_HOVER = ShadowLook.CARD_HOVER;
+			HUD_PANEL = 0x10000000;
+		}
+		if (config.clickGuiShadow() || config.guiStyleShadow()) {
+			WINDOW = ShadowLook.fill(opacity);
+			SHEET = ShadowLook.fill(Math.max(opacity, 0.92f));
+			CARD = ShadowLook.CARD;
+			CARD_HOVER = ShadowLook.CARD_HOVER;
+			LINE = ShadowLook.LINE;
+			TRACK = 0x14FFFFFF;
+			PANEL = 0x10000000;
+			OFF = 0xFF3A424C;
+			TEXT = ShadowLook.TEXT;
+			MUTED = ShadowLook.MUTED;
+			HEADER = ShadowLook.TEXT;
+			NAV_PILL = ShadowLook.SELECTED;
+			SIDEBAR = 0x0AFFFFFF;
+		}
 	}
 
 	/** HUD colors for the Hyprland style: Material surfaces tinted by the accent. */

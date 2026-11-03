@@ -123,6 +123,11 @@ public final class ClickGui {
 			HyprMenu.drawPicker(screen, graphics, font);
 			return;
 		}
+		if (shadow()) {
+			ShadowMenu.draw(screen, graphics, font, mouseX, mouseY);
+			ShadowMenu.drawPicker(screen, graphics, font);
+			return;
+		}
 		if (StrayConfig.get().clickGuiWin98()) {
 			Win98Menu.draw(screen, graphics, font, mouseX, mouseY);
 			Win98Menu.drawPicker(screen, graphics, font);
@@ -160,6 +165,11 @@ public final class ClickGui {
 	}
 
 	static void blurSearch() {
+		searchFocused = false;
+	}
+
+	static void clearSearch() {
+		searchQuery = "";
 		searchFocused = false;
 	}
 
@@ -205,6 +215,10 @@ public final class ClickGui {
 	static void rightClick(double x, double y) {
 		if (hypr()) {
 			HyprMenu.rightClick(x, y);
+			return;
+		}
+		if (shadow()) {
+			ShadowMenu.rightClick(x, y);
 			return;
 		}
 		if (StrayConfig.get().clickGuiWin98()) {
@@ -256,7 +270,7 @@ public final class ClickGui {
 	}
 
 	static void collapse() {
-		if (hypr()) {
+		if (hypr() || shadow()) {
 			return;
 		}
 		if (StrayConfig.get().clickGuiWin98()) {
@@ -273,6 +287,9 @@ public final class ClickGui {
 	static boolean drag(double x, double y) {
 		if (hypr()) {
 			return HyprMenu.drag(x, y);
+		}
+		if (shadow()) {
+			return false;
 		}
 		if (StrayConfig.get().clickGuiWin98()) {
 			return Win98Menu.drag(x, y);
@@ -298,6 +315,9 @@ public final class ClickGui {
 			HyprMenu.endDrag();
 			return;
 		}
+		if (shadow()) {
+			return;
+		}
 		if (StrayConfig.get().clickGuiWin98()) {
 			Win98Menu.endDrag();
 			return;
@@ -316,6 +336,9 @@ public final class ClickGui {
 	static boolean scroll(double x, double y, double wheel) {
 		if (hypr()) {
 			return HyprMenu.scroll(x, y, wheel);
+		}
+		if (shadow()) {
+			return ShadowMenu.scroll(x, y, wheel);
 		}
 		if (StrayConfig.get().clickGuiWin98()) {
 			return Win98Menu.scroll(x, y, wheel);
@@ -1345,6 +1368,10 @@ public final class ClickGui {
 		return StrayConfig.get().clickGuiHypr();
 	}
 
+	private static boolean shadow() {
+		return StrayConfig.get().clickGuiShadow();
+	}
+
 	private static boolean win98() {
 		return Win98Menu.drawing();
 	}
@@ -1391,6 +1418,11 @@ public final class ClickGui {
 		}
 		if (glass()) {
 			card(graphics, x, y, w, h, denser(fill), CARD_SHINE);
+			return;
+		}
+		if (shadow()) {
+			boolean on = fill == accentFill();
+			ShadowLook.card(graphics, x, y, w, h, 4f, contains(pointerX, pointerY, x, y, w, h), on);
 			return;
 		}
 		flat(graphics, x, y, w, h, fill);

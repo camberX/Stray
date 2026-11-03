@@ -47,7 +47,13 @@ public final class ChatChrome {
 
 	public static boolean enabled() {
 		StrayConfig config = StrayConfig.get();
-		return config.themedChatEnabled || config.hudStyleClick() || config.hudStyleGlass();
+		return config.themedChatEnabled || config.hudStyleClick() || config.hudStyleGlass() || config.hudStyleShadow();
+	}
+
+	/** Shadow chat: picked for themed chat, or following a Shadow HUD when themed chat is off. */
+	private static boolean shadow() {
+		StrayConfig config = StrayConfig.get();
+		return config.themedChatEnabled ? config.chatStyleShadow() : config.hudStyleShadow();
 	}
 
 	private static boolean click() {
@@ -124,6 +130,10 @@ public final class ChatChrome {
 			HyprMenu.window(graphics, x, y, w, h, focused ? 1f : 0f, 1f, 0x70);
 			return;
 		}
+		if (shadow()) {
+			ShadowLook.panel(graphics, x, y, w, h, 6f, ShadowLook.fill(focused ? 0.85f : 0.62f));
+			return;
+		}
 		if (click()) {
 			HudChrome.box(graphics, x, y, w, h, 0x99000000);
 			return;
@@ -174,6 +184,10 @@ public final class ChatChrome {
 			GuiDraw.hairline(graphics, x, y, w, INPUT_H, r, MaterialPalette.primary);
 			return;
 		}
+		if (shadow()) {
+			ShadowLook.panel(graphics, x, y, w, INPUT_H, INPUT_H * 0.5f, ShadowLook.fill(0.85f));
+			return;
+		}
 		if (click()) {
 			HudChrome.box(graphics, x, y, w, INPUT_H, 0x99000000);
 			return;
@@ -196,7 +210,7 @@ public final class ChatChrome {
 		if (client == null || !(client.gui.screen() instanceof ChatScreen)) {
 			return;
 		}
-		if (click() || glass() || hypr()) {
+		if (click() || glass() || hypr() || shadow()) {
 			return;
 		}
 		if (box.isBordered()) {
