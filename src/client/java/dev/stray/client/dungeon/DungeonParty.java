@@ -103,6 +103,11 @@ public final class DungeonParty {
 		return null;
 	}
 
+	/** A made-up teammate for the leap menu's test mode. */
+	public static Member testMember(String name, DungeonClass clazz, PlayerSkin skin) {
+		return new Member(name, clazz, 50, skin, false);
+	}
+
 	public static Member lastDoorOpener() {
 		return lastDoorOpener;
 	}

@@ -35,6 +35,8 @@ public final class LeapMenu {
 	}
 
 	private static final Pattern HEAD_NAME = Pattern.compile("(?:\\[.+?] )?(\\w+)");
+	private static volatile boolean testMode;
+	private static final List<DungeonParty.Member> TEST_TEAM = new ArrayList<>();
 	private static final Entry[] PLAYERS = new Entry[4];
 	private static boolean clicked;
 
@@ -45,7 +47,27 @@ public final class LeapMenu {
 		return PLAYERS;
 	}
 
+	public static boolean testMode() {
+		return testMode;
+	}
+
+	/**
+	 * Test mode: any chest or container you open is shown as the leap menu with four
+	 * made-up teammates on fixed slots, so the click and close can be compared with a
+	 * click by hand anywhere, without a dungeon. Clicking a panel sends the same click
+	 * a real leap would, on that slot.
+	 */
+	public static void setTestMode(boolean on) {
+		testMode = on;
+		TEST_TEAM.clear();
+	}
+
 	public static boolean isLeapMenu(Screen screen) {
+		if (testMode && screen instanceof AbstractContainerScreen<?>
+			&& !(screen instanceof net.minecraft.client.gui.screens.inventory.InventoryScreen)
+			&& !(screen instanceof net.minecraft.client.gui.screens.inventory.CreativeModeInventoryScreen)) {
+			return true;
+		}
 		if (!(screen instanceof AbstractContainerScreen<?>) || !StrayConfig.get().leapMenuEnabled || !SkyblockLocation.inDungeon) {
 			return false;
 		}
@@ -64,6 +86,10 @@ public final class LeapMenu {
 			return;
 		}
 		AbstractContainerMenu menu = client.player.containerMenu;
+		if (testMode) {
+			fillTest(client, menu);
+			return;
+		}
 		Map<String, Integer> loadedHeads = new HashMap<>();
 		for (int i = 0; i < menu.slots.size() - 36; i++) {
 			ItemStack stack = menu.slots.get(i).getItem();
@@ -82,6 +108,28 @@ public final class LeapMenu {
 			Integer slotIndex = loadedHeads.get(player.name);
 			if (slotIndex != null) {
 				PLAYERS[i] = new Entry(slotIndex, player);
+			}
+		}
+	}
+
+	private static void fillTest(Minecraft client, AbstractContainerMenu menu) {
+		if (TEST_TEAM.isEmpty()) {
+			String[] names = {"TestMage", "TestArcher", "TestHealer", "TestTank"};
+			DungeonParty.DungeonClass[] classes = {
+				DungeonParty.DungeonClass.MAGE, DungeonParty.DungeonClass.ARCHER, DungeonParty.DungeonClass.HEALER, DungeonParty.DungeonClass.TANK
+			};
+			for (int i = 0; i < 4; i++) {
+				TEST_TEAM.add(DungeonParty.testMember(names[i], classes[i], client.player.getSkin()));
+			}
+		}
+		for (DungeonParty.Member member : TEST_TEAM) {
+			member.entity = client.player;
+		}
+		int size = menu.slots.size() - 36;
+		int[] slots = size >= 27 ? new int[] {11, 12, 14, 15} : new int[] {0, 1, 2, 3};
+		for (int i = 0; i < 4; i++) {
+			if (slots[i] < size) {
+				PLAYERS[i] = new Entry(slots[i], TEST_TEAM.get(i));
 			}
 		}
 	}
@@ -185,6 +233,7 @@ public final class LeapMenu {
 			client.player.sendSystemMessage(Component.literal("§3LeapMenu >> §c" + entry.player().name + " is dead!"));
 			return;
 		}
+		dev.stray.client.net.PacketDebug.note("§b[leap] §7panel " + (index + 1) + " → slot " + entry.slotIndex());
 		client.player.playSound(SoundEvents.UI_BUTTON_CLICK.value(), 0.25f, 1f);
 		int containerId = client.player.containerMenu.containerId;
 		client.gameMode.handleContainerInput(containerId, entry.slotIndex(), 0, ContainerInput.PICKUP, client.player);

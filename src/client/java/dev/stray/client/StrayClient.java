@@ -294,6 +294,22 @@ public final class StrayClient implements ClientModInitializer {
 				return Command.SINGLE_SUCCESS;
 			}));
 			root.then(StrayDebug.command());
+			root.then(ClientCommands.literal("packets").executes(context -> {
+				boolean on = !dev.stray.client.net.PacketDebug.enabled();
+				dev.stray.client.net.PacketDebug.set(on);
+				context.getSource().sendFeedback(Component.literal("§bStray §7packet printing " + (on ? "§aon" : "§coff")
+					+ "§7: every packet you send (except movement and keep-alive) is shown in chat."));
+				return Command.SINGLE_SUCCESS;
+			}));
+			root.then(ClientCommands.literal("leaptest").executes(context -> {
+				boolean on = !dev.stray.client.dungeon.LeapMenu.testMode();
+				dev.stray.client.dungeon.LeapMenu.setTestMode(on);
+				dev.stray.client.net.PacketDebug.set(on);
+				context.getSource().sendFeedback(Component.literal(on
+					? "§bStray §7leap test §aon§7: any chest or ender chest you open shows as the leap menu (panels = slots 11, 12, 14, 15, or 0-3 in small menus). Sent packets print in chat. Run again to stop."
+					: "§bStray §7leap test §coff§7, packet printing off."));
+				return Command.SINGLE_SUCCESS;
+			}));
 			root.then(ClientCommands.literal("edit").executes(context -> openItemEdit()));
 			root.then(ClientCommands.literal("casino").executes(context -> {
 				Minecraft client = Minecraft.getInstance();

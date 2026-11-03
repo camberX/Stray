@@ -21,4 +21,12 @@ public class ConnectionMixin {
 	private void stray$onPacket(ChannelHandlerContext ctx, Packet<?> packet, CallbackInfo ci) {
 		ClientPackets.onReceived(packet);
 	}
+
+	@Inject(
+		method = "send(Lnet/minecraft/network/protocol/Packet;Lio/netty/channel/ChannelFutureListener;Z)V",
+		at = @At("HEAD")
+	)
+	private void stray$printSent(Packet<?> packet, io.netty.channel.ChannelFutureListener listener, boolean flush, CallbackInfo ci) {
+		dev.stray.client.net.PacketDebug.onSend(packet);
+	}
 }
