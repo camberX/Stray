@@ -240,7 +240,7 @@ public final class ClickGui {
 				}
 				return;
 			}
-			if (row.mod.feature != null || row.mod.timeout || row.mod.menuStyle || "Array list".equals(row.mod.name) || "Themed GUIs".equals(row.mod.name) || "Themed chat".equals(row.mod.name) || CUSTOMIZE.equals(row.mod.name) || CS2.equals(row.mod.name)) {
+			if (row.mod.feature != null || row.mod.timeout || row.mod.menuStyle || "Array list".equals(row.mod.name) || "Themed GUIs".equals(row.mod.name) || "Themed chat".equals(row.mod.name) || CUSTOMIZE.equals(row.mod.name) || CS2.equals(row.mod.name) || LEAP.equals(row.mod.name)) {
 				if (row.mod.name.equals(expandedName)) {
 					expandedName = null;
 				} else {
@@ -590,6 +590,8 @@ public final class ClickGui {
 			drawCustomize(screen, graphics, font, boxX, y, boxW);
 		} else if (CS2.equals(mod.name)) {
 			drawCs2(screen, graphics, font, boxX, y, boxW);
+		} else if (LEAP.equals(mod.name)) {
+			drawLeap(screen, graphics, font, boxX, y, boxW);
 		} else if (mod.menuStyle) {
 			if ("HUD".equals(mod.name)) {
 				drawHud(screen, graphics, font, boxX, y, boxW);
@@ -804,12 +806,66 @@ public final class ClickGui {
 
 	static final String CUSTOMIZE = "Customize item";
 	static final String CS2 = "CS2 knife";
+	static final String LEAP = "Leap menu";
 
 	/** CS2 knives (local build): pick the knife, finish, seed and wear. */
 	private static void drawCs2(StrayScreen screen, GuiGraphicsExtractor graphics, Font font, float x, float y, float w) {
 		drawButton(screen, graphics, font, x, y, w, "Choose knife & skin", () -> {
 			Minecraft client = Minecraft.getInstance();
 			client.gui.setScreen(new Cs2KnifeScreen(client.gui.screen()));
+		});
+	}
+
+	/** Leap menu: the look and the original menu's options. */
+	private static void drawLeap(StrayScreen screen, GuiGraphicsExtractor graphics, Font font, float x, float y, float w) {
+		StrayConfig c = StrayConfig.get();
+		drawChoice(screen, graphics, font, x, y, w, "Teammate POV", c.leapPov, () -> {
+			c.leapPov = !c.leapPov;
+			UnloadState.markDirty();
+		});
+		y += stride();
+		String sort = dev.stray.client.dungeon.LeapMenu.SORTING[Math.floorMod(c.leapSorting, dev.stray.client.dungeon.LeapMenu.SORTING.length)];
+		drawButton(screen, graphics, font, x, y, w, "Order: " + sort, () -> {
+			c.leapSorting = Math.floorMod(c.leapSorting + 1, dev.stray.client.dungeon.LeapMenu.SORTING.length);
+			UnloadState.markDirty();
+		});
+		y += stride();
+		drawChoice(screen, graphics, font, x, y, w, "Left click only", c.leapLeftClickOnly, () -> {
+			c.leapLeftClickOnly = !c.leapLeftClickOnly;
+			UnloadState.markDirty();
+		});
+		y += stride();
+		drawChoice(screen, graphics, font, x, y, w, "Keys 1-4 leap", c.leapKeybinds, () -> {
+			c.leapKeybinds = !c.leapKeybinds;
+			UnloadState.markDirty();
+		});
+		y += stride();
+		drawChoice(screen, graphics, font, x, y, w, "Announce leap", c.leapAnnounce, () -> {
+			c.leapAnnounce = !c.leapAnnounce;
+			UnloadState.markDirty();
+		});
+		y += stride();
+		drawChoice(screen, graphics, font, x, y, w, "Tint dead players", c.leapTintDead, () -> {
+			c.leapTintDead = !c.leapTintDead;
+			UnloadState.markDirty();
+		});
+		y += stride();
+		drawChoice(screen, graphics, font, x, y, w, "Show last door opener", c.leapShowDoorOpener, () -> {
+			c.leapShowDoorOpener = !c.leapShowDoorOpener;
+			UnloadState.markDirty();
+		});
+		y += stride();
+		int[] sizes = {75, 100, 125};
+		int at = 0;
+		for (int i = 0; i < sizes.length; i++) {
+			if (sizes[i] == c.leapScale) {
+				at = i;
+			}
+		}
+		int nextSize = sizes[(at + 1) % sizes.length];
+		drawButton(screen, graphics, font, x, y, w, "Card size: " + c.leapScale + "%", () -> {
+			c.leapScale = nextSize;
+			UnloadState.markDirty();
 		});
 	}
 
@@ -1023,6 +1079,9 @@ public final class ClickGui {
 		}
 		if (CS2.equals(mod.name)) {
 			return stackH(1);
+		}
+		if (LEAP.equals(mod.name)) {
+			return stackH(8);
 		}
 		if (mod.menuStyle) {
 			if ("HUD".equals(mod.name)) {
@@ -1601,6 +1660,7 @@ public final class ClickGui {
 		java.util.Map.entry("Fairy souls", "Shows fairy souls you have not collected yet."),
 		java.util.Map.entry("Auto clicker", "Clicks for you while you hold the bind."),
 		java.util.Map.entry("Party stats", "Shows a stats card when someone joins from the party finder."),
+		java.util.Map.entry("Leap menu", "Spirit Leap as four big panels, optionally showing what each teammate sees. Leap logic from NoammAddons."),
 		java.util.Map.entry("Array list", "Lists the modules you have turned on."),
 		java.util.Map.entry("Watermark", "The Stray watermark in a corner of the screen."),
 		java.util.Map.entry("Music", "What is playing right now, with controls."),
@@ -1696,6 +1756,7 @@ public final class ClickGui {
 			|| "Themed chat".equals(mod.name)
 			|| CUSTOMIZE.equals(mod.name)
 			|| CS2.equals(mod.name)
+			|| LEAP.equals(mod.name)
 			|| "Custom title".equals(mod.name);
 	}
 
@@ -1744,6 +1805,10 @@ public final class ClickGui {
 		}
 		if (CS2.equals(mod.name)) {
 			drawCs2(screen, graphics, font, x, y, w);
+			return;
+		}
+		if (LEAP.equals(mod.name)) {
+			drawLeap(screen, graphics, font, x, y, w);
 			return;
 		}
 		if (mod.menuStyle) {
@@ -1817,6 +1882,7 @@ public final class ClickGui {
 
 		mods.add(mod("Auto clicker", "Combat", StrayScreen.Feature.AUTO_CLICKER, null, () -> config.autoClickerEnabled, v -> config.autoClickerEnabled = v, true, false));
 		mods.add(mod("Party stats", "Combat", null, null, () -> config.partyFinderStats, v -> config.partyFinderStats = v, true, false));
+		mods.add(mod(LEAP, "Combat", null, null, () -> config.leapMenuEnabled, v -> config.leapMenuEnabled = v, true, false));
 		addSlayer(mods, config);
 		mods.add(mod("Array list", "HUD", null, null, () -> config.arrayList, v -> config.arrayList = v, false, false));
 		mods.add(mod("Watermark", "HUD", StrayScreen.Feature.WATERMARK, null, () -> config.watermarkEnabled, v -> config.watermarkEnabled = v, true, false));

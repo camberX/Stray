@@ -59,7 +59,7 @@ public class LevelRendererMixin {
 		//?}
 		CallbackInfo ci
 	) {
-		if (TopDownCapture.capturing() || cameraState.viewRotationMatrix == null) {
+		if (TopDownCapture.offscreen() || cameraState.viewRotationMatrix == null) {
 			return;
 		}
 		Matrix4fc modelViewMatrix = cameraState.viewRotationMatrix;
@@ -118,7 +118,7 @@ public class LevelRendererMixin {
 
 	@Inject(method = "submitEntities", at = @At("HEAD"))
 	private void stray$motionBlurBeforeEntities(PoseStack poseStack, LevelRenderState levelRenderState, SubmitNodeCollector output, CallbackInfo ci) {
-		if (TopDownCapture.capturing()) {
+		if (TopDownCapture.offscreen()) {
 			return;
 		}
 		if (!MotionBlurShaders.active() || !StrayConfig.get().motionBlurUsesVelocity()) {
@@ -148,7 +148,7 @@ public class LevelRendererMixin {
 		//?}
 		CallbackInfo ci
 	) {
-		if (TopDownCapture.capturing()) {
+		if (TopDownCapture.offscreen()) {
 			return;
 		}
 		StrayConfig.MotionBlurAlgorithm algorithm = StrayConfig.get().motionBlurAlgorithm();

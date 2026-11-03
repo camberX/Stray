@@ -31,6 +31,13 @@ public class AbstractContainerScreenMixin {
 	private void stray$hideLoadoutSwap(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick, CallbackInfo ci) {
 		if (dev.stray.client.EditionGate.hideDefaultChest((AbstractContainerScreen<?>) (Object) this)) {
 			ci.cancel();
+			return;
+		}
+		AbstractContainerScreen<?> screen = (AbstractContainerScreen<?>) (Object) this;
+		if (dev.stray.client.dungeon.LeapMenu.isLeapMenu(screen)) {
+			dev.stray.client.dungeon.LeapMenu.updateLeapMenu();
+			dev.stray.client.dungeon.LeapMenuView.render(graphics, screen.width, screen.height);
+			ci.cancel();
 		}
 	}
 
@@ -47,6 +54,11 @@ public class AbstractContainerScreenMixin {
 
 	@Inject(method = "keyPressed", at = @At("HEAD"), cancellable = true)
 	private void stray$bookCombineEnter(KeyEvent event, CallbackInfoReturnable<Boolean> cir) {
+		if (dev.stray.client.dungeon.LeapMenu.isLeapMenu((AbstractContainerScreen<?>) (Object) this)
+			&& dev.stray.client.dungeon.LeapMenu.keyPressed(event.key())) {
+			cir.setReturnValue(true);
+			return;
+		}
 		if (!dev.stray.Edition.LEGIT) {
 			if (AutoBookCombine.keyPressed((AbstractContainerScreen<?>) (Object) this, event)) {
 				cir.setReturnValue(true);
@@ -56,6 +68,11 @@ public class AbstractContainerScreenMixin {
 
 	@Inject(method = "mouseClicked", at = @At("HEAD"), cancellable = true)
 	private void stray$sackRecipeClick(MouseButtonEvent event, boolean doubled, CallbackInfoReturnable<Boolean> cir) {
+		if (dev.stray.client.dungeon.LeapMenu.isLeapMenu((AbstractContainerScreen<?>) (Object) this)
+			&& dev.stray.client.dungeon.LeapMenu.mouseClicked(event.button())) {
+			cir.setReturnValue(true);
+			return;
+		}
 		if (!MouseButtons.middle(event)) {
 			return;
 		}

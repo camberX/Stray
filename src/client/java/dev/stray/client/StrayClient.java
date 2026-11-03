@@ -228,6 +228,11 @@ public final class StrayClient implements ClientModInitializer {
 		FairySoulTracker.init();
 		CrystalHollowsRenderer.init();
 		ClientReceiveMessageEvents.ALLOW_GAME.register((message, overlay) -> {
+			if (!overlay) {
+				String plain = message.getString();
+				dev.stray.client.dungeon.DungeonParty.onChat(plain);
+				dev.stray.client.dungeon.LeapMenu.onChat(plain);
+			}
 			MetalDetector.onMessage(message, overlay);
 			CropFever.onMessage(message, overlay);
 			if (!dev.stray.Edition.LEGIT) { PestLoadoutSwap.onMessage(message, overlay); }
@@ -399,6 +404,10 @@ public final class StrayClient implements ClientModInitializer {
 		});
 
 		ClientTickEvents.END_CLIENT_TICK.register(client -> {
+			dev.stray.client.dungeon.DungeonParty.tick(client);
+			if (!dev.stray.client.dungeon.LeapMenu.active()) {
+				dev.stray.client.dungeon.LeapMenu.onContainerClosed();
+			}
 			pollMenuKeys(client);
 			dev.stray.client.movement.Freecam.tick(client);
 			dev.stray.client.editor.GhostBlocks.visible(() -> dev.stray.client.editor.GhostBlocks.tick(client));

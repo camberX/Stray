@@ -76,6 +76,7 @@ public class GameRendererMixin {
 		MotionBlurShaders.applyDeferredTemporalBlur();
 		MotionBlurShaders.clearFrameAllocator();
 		TopDownCapture.render(Minecraft.getInstance().getDeltaTracker());
+		dev.stray.client.render.PovCapture.render(Minecraft.getInstance().getDeltaTracker());
 	}
 
 	@Inject(

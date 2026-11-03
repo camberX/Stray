@@ -11,7 +11,7 @@ import org.spongepowered.asm.mixin.injection.ModifyVariable;
 public class ProjectionMixin {
 	@ModifyVariable(method = "setupPerspective", at = @At("HEAD"), argsOnly = true, ordinal = 3)
 	private float stray$aspectWidth(float width) {
-		if (TopDownCapture.capturing()) {
+		if (TopDownCapture.offscreen()) {
 			return width;
 		}
 		return AspectFov.apply(width);

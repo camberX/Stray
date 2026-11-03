@@ -43,6 +43,11 @@ public final class TopDownCapture {
 		return capturing;
 	}
 
+	/** Any extra world pass (top-down or a leap-menu POV) is being drawn. */
+	public static boolean offscreen() {
+		return capturing || PovCapture.capturing();
+	}
+
 	/** Camera-relative Y where blocks above the player start. */
 	public static float cutThreshold() {
 		return cutThreshold;

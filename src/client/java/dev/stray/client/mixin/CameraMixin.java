@@ -72,7 +72,7 @@ public abstract class CameraMixin {
 		index = 1
 	)
 	private float stray$aspectCull(float aspect) {
-		if (TopDownCapture.capturing()) {
+		if (TopDownCapture.offscreen()) {
 			return aspect;
 		}
 		return AspectFov.apply(aspect);

@@ -25,7 +25,7 @@ public final class BlockOutlineGlow {
 
 	public static void init() {
 		LevelRenderEvents.AFTER_BLOCK_OUTLINE_EXTRACTION.register((context, hit) -> {
-			if (TopDownCapture.capturing()) {
+			if (TopDownCapture.offscreen()) {
 				return;
 			}
 			if (active(context.levelState().blockOutlineRenderState)) {
@@ -35,9 +35,9 @@ public final class BlockOutlineGlow {
 				cheapBlur = false;
 			}
 		});
-		LevelRenderEvents.BEFORE_BLOCK_OUTLINE.register((context, outline) -> !TopDownCapture.capturing() && !active(outline));
+		LevelRenderEvents.BEFORE_BLOCK_OUTLINE.register((context, outline) -> !TopDownCapture.offscreen() && !active(outline));
 		LevelRenderEvents.COLLECT_SUBMITS.register(context -> {
-			if (TopDownCapture.capturing()) {
+			if (TopDownCapture.offscreen()) {
 				return;
 			}
 			BlockOutlineRenderState outline = context.levelState().blockOutlineRenderState;

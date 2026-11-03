@@ -319,6 +319,18 @@ public final class StrayConfig {
 	public String guiStyle = "click";
 	public boolean arrayList = true;
 	public boolean partyFinderStats = true;
+	/** Custom Spirit Leap menu (NoammAddons' leap logic, Stray's look). */
+	public boolean leapMenuEnabled = false;
+	/** Each panel shows what that teammate sees. */
+	public boolean leapPov = false;
+	public int leapSorting = 0;
+	public boolean leapLeftClickOnly = false;
+	public boolean leapKeybinds = false;
+	public boolean leapAnnounce = true;
+	public String leapMessage = "Leaping to {name}";
+	public boolean leapTintDead = true;
+	public boolean leapShowDoorOpener = false;
+	public int leapScale = 100;
 	public boolean arrayListAccent = false;
 	public java.util.List<String> arrayListHidden = new java.util.ArrayList<>();
 	public java.util.List<ClickColumnPos> clickColumns = new java.util.ArrayList<>();
