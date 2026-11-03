@@ -382,6 +382,44 @@ public final class ProfileViewer {
 	public record Collection(String id, String name, String type, long amount, boolean maxed) {
 	}
 
+	/** Gear and storage beyond the inventory: equipment, wardrobe and the other bags. */
+	public record Extras(
+		Bag equipment,
+		Bag wardrobe,
+		int wardrobeSlot,
+		Bag equipmentWardrobe,
+		Bag accessories,
+		Bag vault,
+		Bag quiver,
+		Bag potions,
+		Bag fishing,
+		List<Bag> other
+	) {
+		public static Extras empty() {
+			return new Extras(
+				Bag.empty("Equipment", 1, 4),
+				Bag.empty("Wardrobe", 9, 36),
+				-1,
+				Bag.empty("Equipment Wardrobe", 9, 36),
+				Bag.empty("Accessories", 9, 45),
+				Bag.empty("Vault", 9, 36),
+				Bag.empty("Quiver", 9, 36),
+				Bag.empty("Potions", 9, 36),
+				Bag.empty("Fishing", 9, 36),
+				List.of()
+			);
+		}
+
+		/** True when nothing beyond an empty layout was found. */
+		public boolean vacant() {
+			if (!equipment.vacant() || !wardrobe.vacant() || !equipmentWardrobe.vacant() || !accessories.vacant()
+				|| !vault.vacant() || !quiver.vacant() || !potions.vacant() || !fishing.vacant()) {
+				return false;
+			}
+			return other == null || other.isEmpty();
+		}
+	}
+
 	public record Profile(
 		String id,
 		String cuteName,
@@ -410,7 +448,8 @@ public final class ProfileViewer {
 		Bag armor,
 		List<Bag> ender,
 		List<Bag> backpacks,
-		List<Collection> collections
+		List<Collection> collections,
+		Extras extras
 	) {
 		public static Profile empty(String cuteName) {
 			return new Profile(
@@ -441,7 +480,8 @@ public final class ProfileViewer {
 				Bag.empty("Armor", 1, 4),
 				List.of(),
 				List.of(),
-				List.of()
+				List.of(),
+				Extras.empty()
 			);
 		}
 
@@ -474,11 +514,12 @@ public final class ProfileViewer {
 				armor,
 				ender,
 				backpacks,
-				collections
+				collections,
+				extras
 			);
 		}
 
-		private Profile withStorage(Bag inventory, Bag armor, List<Bag> ender, List<Bag> backpacks) {
+		private Profile withStorage(Bag inventory, Bag armor, List<Bag> ender, List<Bag> backpacks, Extras extras) {
 			return new Profile(
 				id,
 				cuteName,
@@ -507,7 +548,8 @@ public final class ProfileViewer {
 				armor == null ? this.armor : armor,
 				ender == null ? this.ender : ender,
 				backpacks == null ? this.backpacks : backpacks,
-				collections
+				collections,
+				extras == null || extras.vacant() ? this.extras : extras
 			);
 		}
 	}
@@ -1046,10 +1088,11 @@ public final class ProfileViewer {
 		Bag armor = parseBag("Armor", first(inventory, member, "inv_armor"), 1, 4);
 		List<Bag> ender = parseEnder(inventory, member);
 		List<Bag> backpacks = parseBackpacks(inventory, member);
-		if (inv.vacant() && armor.vacant() && ender.isEmpty() && backpacks.isEmpty()) {
+		Extras extras = parseExtras(inventory, member);
+		if (inv.vacant() && armor.vacant() && ender.isEmpty() && backpacks.isEmpty() && extras.vacant()) {
 			return profile;
 		}
-		return profile.withStorage(inv, armor, ender, backpacks);
+		return profile.withStorage(inv, armor, ender, backpacks, extras);
 	}
 
 	private static void ready(int gen, Resolved resolved, List<Profile> profiles, JsonObject soopyPlayer) {
@@ -1389,25 +1432,14 @@ public final class ProfileViewer {
 		JsonObject inventory = object(member, "inventory");
 		Bag inv = parseBag("Inventory", first(inventory, member, "inv_contents"), 9, 36);
 		Bag armor = parseBag("Armor", first(inventory, member, "inv_armor"), 1, 4);
-		Bag equipment = parseBag("Equipment", first(inventory, member, "equipment_contents"), 1, 4);
-		Bag wardrobe = parseBag("Wardrobe", first(inventory, member, "wardrobe_contents"), 9, 36);
-		Bag accessories = parseBag("Accessories", bagOf(inventory, member, "talisman_bag"), 9, 45);
-		if (accessories.vacant()) {
-			accessories = parseBag("Accessories", bagOf(inventory, member, "accessory_bag"), 9, 45);
-		}
-		if (accessories.vacant()) {
-			accessories = parseBag("Accessories", first(inventory, member, "talisman_bag"), 9, 45);
-		}
-		if (accessories.vacant()) {
-			accessories = parseBag("Accessories", first(inventory, member, "accessory_bag"), 9, 45);
-		}
-		Bag vault = parseBag("Vault", first(inventory, member, "personal_vault_contents"), 9, 36);
-		if (vault.vacant()) {
-			vault = parseBag("Vault", first(inventory, member, "personal_vault"), 9, 36);
-		}
-		Bag quiver = parseBag("Quiver", bagOf(inventory, member, "quiver"), 9, 36);
-		Bag potions = parseBag("Potions", bagOf(inventory, member, "potion_bag"), 9, 36);
-		Bag fishing = parseBag("Fishing", bagOf(inventory, member, "fishing_bag"), 9, 36);
+		Extras extras = parseExtras(inventory, member);
+		Bag equipment = extras.equipment();
+		Bag wardrobe = extras.wardrobe();
+		Bag accessories = extras.accessories();
+		Bag vault = extras.vault();
+		Bag quiver = extras.quiver();
+		Bag potions = extras.potions();
+		Bag fishing = extras.fishing();
 		List<Bag> ender = parseEnder(inventory, member);
 		List<Bag> backpacks = parseBackpacks(inventory, member);
 		List<Collection> collections = parseCollections(member);
@@ -1428,7 +1460,11 @@ public final class ProfileViewer {
 			}
 		}
 		double items = bagWorth(inv) + bagWorth(armor) + bagWorth(equipment) + bagWorth(wardrobe)
-			+ bagWorth(accessories) + bagWorth(vault) + bagWorth(quiver) + bagWorth(potions) + bagWorth(fishing);
+			+ bagWorth(accessories) + bagWorth(vault) + bagWorth(quiver) + bagWorth(potions) + bagWorth(fishing)
+			+ bagWorth(extras.equipmentWardrobe());
+		for (Bag bag : extras.other()) {
+			items += bagWorth(bag);
+		}
 		for (Bag bag : ender) {
 			items += bagWorth(bag);
 		}
@@ -1477,8 +1513,97 @@ public final class ProfileViewer {
 			armor,
 			List.copyOf(ender),
 			List.copyOf(backpacks),
-			List.copyOf(collections)
+			List.copyOf(collections),
+			extras
 		);
+	}
+
+	private static final java.util.Set<String> KNOWN_BAGS = java.util.Set.of(
+		"inv_contents", "inv_armor", "equipment_contents", "wardrobe_contents", "talisman_bag", "accessory_bag",
+		"personal_vault_contents", "personal_vault", "quiver", "potion_bag", "fishing_bag", "ender_chest_contents",
+		"enderchest_contents", "ender_chest", "enderchest", "backpack_contents", "backpacks", "backpack_icons",
+		"bag_contents", "sacks_counts", "wardrobe_equipped_slot", "equipment_wardrobe_contents", "equipment_wardrobe",
+		"sacks_bag", "candy_inventory_contents", "carnival_mask_inventory_contents"
+	);
+
+	private static Extras parseExtras(JsonObject inventory, JsonObject member) {
+		Bag equipment = parseBag("Equipment", first(inventory, member, "equipment_contents"), 1, 4);
+		Bag wardrobe = parseBag("Wardrobe", first(inventory, member, "wardrobe_contents"), 9, 36);
+		int wardrobeSlot = -1;
+		JsonElement equipped = first(inventory, member, "wardrobe_equipped_slot");
+		if (equipped != null && equipped.isJsonPrimitive()) {
+			try {
+				wardrobeSlot = equipped.getAsInt();
+			} catch (RuntimeException ignored) {
+				wardrobeSlot = -1;
+			}
+		}
+		Bag equipmentWardrobe = parseBag("Equipment Wardrobe", first(inventory, member, "equipment_wardrobe_contents"), 9, 36);
+		if (equipmentWardrobe.vacant()) {
+			equipmentWardrobe = parseBag("Equipment Wardrobe", first(inventory, member, "equipment_wardrobe"), 9, 36);
+		}
+		Bag accessories = parseBag("Accessories", bagOf(inventory, member, "talisman_bag"), 9, 45);
+		if (accessories.vacant()) {
+			accessories = parseBag("Accessories", bagOf(inventory, member, "accessory_bag"), 9, 45);
+		}
+		if (accessories.vacant()) {
+			accessories = parseBag("Accessories", first(inventory, member, "talisman_bag"), 9, 45);
+		}
+		if (accessories.vacant()) {
+			accessories = parseBag("Accessories", first(inventory, member, "accessory_bag"), 9, 45);
+		}
+		Bag vault = parseBag("Vault", first(inventory, member, "personal_vault_contents"), 9, 36);
+		if (vault.vacant()) {
+			vault = parseBag("Vault", first(inventory, member, "personal_vault"), 9, 36);
+		}
+		Bag quiver = parseBag("Quiver", bagOf(inventory, member, "quiver"), 9, 36);
+		Bag potions = parseBag("Potions", bagOf(inventory, member, "potion_bag"), 9, 36);
+		Bag fishing = parseBag("Fishing", bagOf(inventory, member, "fishing_bag"), 9, 36);
+		List<Bag> other = new ArrayList<>();
+		otherBags(inventory, other);
+		otherBags(object(inventory, "bag_contents"), other);
+		return new Extras(equipment, wardrobe, wardrobeSlot, equipmentWardrobe, accessories, vault, quiver, potions, fishing, List.copyOf(other));
+	}
+
+	/** Any other item bag Hypixel adds to the inventory object, shown under its own name. */
+	private static void otherBags(JsonObject container, List<Bag> out) {
+		if (container == null) {
+			return;
+		}
+		for (String key : container.keySet()) {
+			String k = key.toLowerCase(Locale.ROOT);
+			if (KNOWN_BAGS.contains(k) || k.endsWith("_data") && KNOWN_BAGS.contains(k.substring(0, k.length() - 5))) {
+				continue;
+			}
+			JsonElement element = container.get(key);
+			if (element == null || !element.isJsonObject() || !element.getAsJsonObject().has("data")) {
+				continue;
+			}
+			Bag bag;
+			try {
+				bag = parseBag(prettyBagName(key), element, 9, 9);
+			} catch (RuntimeException e) {
+				continue;
+			}
+			if (!bag.vacant()) {
+				out.add(bag);
+			}
+		}
+	}
+
+	private static String prettyBagName(String key) {
+		String k = key.replaceAll("(?i)_(contents|data|bag)$", "").replace('_', ' ').trim();
+		StringBuilder b = new StringBuilder();
+		for (String part : k.split("\\s+")) {
+			if (part.isEmpty()) {
+				continue;
+			}
+			if (b.length() > 0) {
+				b.append(' ');
+			}
+			b.append(Character.toUpperCase(part.charAt(0))).append(part.substring(1).toLowerCase(Locale.ROOT));
+		}
+		return b.length() == 0 ? key : b.toString();
 	}
 
 	private static Dungeon parseDungeons(JsonObject member, JsonObject soopy) {

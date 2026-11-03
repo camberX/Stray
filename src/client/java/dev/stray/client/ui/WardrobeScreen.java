@@ -327,7 +327,7 @@ public class WardrobeScreen extends Screen {
 		float modelW = 170;
 		WardrobeMenus.ArmorSet set = focusSet();
 		PlayerPreview.View view = new PlayerPreview.View(viewScale, viewCx, viewCy, viewLift);
-		StageUi.floor(graphics, modelX + modelW * 0.5f, bottom - 14, 58);
+		StageUi.floor(graphics, modelX + modelW * 0.5f, PlayerPreview.equippedFeet(top - 4, bottom - top + 6, 78f), 58);
 		PlayerPreview.Gear gear = set == null || set.locked()
 			? PlayerPreview.Gear.none()
 			: new PlayerPreview.Gear(set.helmet(), set.chest(), set.legs(), set.boots());

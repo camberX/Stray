@@ -218,6 +218,26 @@ public final class PlayerPreview {
 		return paint(graphics, state, x, y, w, h, yaw, pitch, view, Math.max(0.35f, view.scale), minBody, 48f, NAME_PAD, HINT_PAD, 44f);
 	}
 
+	/**
+	 * Where the feet of a standing player drawn by {@link #drawEquipped} land, so a
+	 * floor shadow can be painted under them before the model.
+	 */
+	public static float equippedFeet(float y, float h, float maxSize) {
+		float body = 1.8f;
+		float namePad = 16f;
+		float hintPad = 10f;
+		float size = Math.min(maxSize, Math.max(16f, h * 0.34f));
+		float visH = size * body;
+		float boxH = visH + 12f;
+		if (boxH > h - namePad - hintPad) {
+			boxH = Math.max(20f, h - namePad - hintPad);
+			size = (boxH - 12f) / body;
+			visH = size * body;
+		}
+		float boxY = y + namePad + Math.max(0f, (h - namePad - hintPad - boxH) * 0.45f);
+		return boxY + boxH * 0.5f + visH * 0.5f;
+	}
+
 	private static Drawn paint(
 		GuiGraphicsExtractor graphics,
 		EntityRenderState state,

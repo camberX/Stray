@@ -434,7 +434,7 @@ public class LoadoutsScreen extends Screen {
 		float modelX = windowX + 14;
 		float modelW = 150;
 		PlayerPreview.View view = new PlayerPreview.View(viewScale, viewCx, viewCy, viewLift);
-		StageUi.floor(graphics, modelX + modelW * 0.5f, bottom - 14, 54);
+		StageUi.floor(graphics, modelX + modelW * 0.5f, PlayerPreview.equippedFeet(top - 4, bottom - top + 6, 62f), 54);
 		LoadoutPreview.player(
 			graphics,
 			modelX,

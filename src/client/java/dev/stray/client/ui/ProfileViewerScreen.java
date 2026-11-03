@@ -16,7 +16,6 @@ import dev.stray.client.profile.ProfileViewer;
 import dev.stray.client.render.GuiDraw;
 import dev.stray.client.render.NametagRenderer;
 import dev.stray.client.render.PlayerPreview;
-import dev.stray.client.render.Starfield;
 import dev.stray.client.visual.NickHider;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
@@ -44,6 +43,8 @@ import java.util.Map;
  * from the public Hypixel profile host.
  */
 public class ProfileViewerScreen extends Screen {
+	private static final int ACC = 0xFF8EC5FF;
+	private static final int LINE = 0x14FFFFFF;
 	private static final float MENU_W = 760;
 	private static final float MENU_H = 430;
 	private static final float RAIL = 96;
@@ -66,6 +67,7 @@ public class ProfileViewerScreen extends Screen {
 
 	private enum Tab {
 		HOME("Home", MenuFont.PERSON),
+		GEAR("Gear", MenuFont.HANGER),
 		ITEMS("Items", MenuFont.BAG),
 		DUNGEONS("Dungeons", MenuFont.SWORD),
 		MINING("Mining", MenuFont.DIAMOND),
@@ -79,10 +81,6 @@ public class ProfileViewerScreen extends Screen {
 			this.label = label;
 			this.icon = icon;
 		}
-	}
-
-	private enum ItemPane {
-		INV, ENDER, BAG
 	}
 
 	private final List<Hit> hits = new ArrayList<>();
@@ -104,9 +102,14 @@ public class ProfileViewerScreen extends Screen {
 	private float listScroll;
 	private String tooltip = "";
 	private ItemStack hoverStack = ItemStack.EMPTY;
-	private ItemPane itemPane = ItemPane.INV;
 	private int itemPage;
 	private int selectedPet = -1;
+	private float yaw = -22f;
+	private boolean rotating;
+	private int wardrobePage;
+	private int equipPage;
+	private int previewSet = -1;
+	private String paneName = "Inventory";
 	private float slot = 28;
 
 	public ProfileViewerScreen(String name) {
@@ -169,7 +172,7 @@ public class ProfileViewerScreen extends Screen {
 		Font font = minecraft.font;
 		layout();
 
-		int dim = Anim.fade(0x28000000, appear);
+		int dim = Anim.fade(0x30000000, appear);
 		GuiDraw.fill(graphics, 0, 0, width, height, dim);
 
 		float scale = (0.94f + 0.06f * appear) * StrayConfig.normalizeMenuScale(StrayConfig.get().menuScale);
@@ -188,16 +191,8 @@ public class ProfileViewerScreen extends Screen {
 		graphics.pose().scale(scale, scale);
 		graphics.pose().translate(-cx, -cy);
 
-		boolean clip = GuiDraw.scissor(graphics, windowX, windowY, windowW, windowH);
-		if (ControlChrome.on()) {
-			ControlChrome.glass(graphics, windowX, windowY, windowW, windowH, ControlChrome.WINDOW_R, Theme.WINDOW);
-		} else {
-			ClickLook.outside(graphics, windowX, windowY, windowW, windowH, 0, ClickLook.PANEL, Theme.LINE);
-		}
-		Starfield.draw(graphics, windowX, windowY, windowW, windowH, Theme.WINDOW_RADIUS, appear);
-		if (clip) {
-			GuiDraw.disableScissor(graphics);
-		}
+		StageUi.window(graphics, windowX, windowY, windowW, windowH, appear);
+		hits.add(new Hit(windowX, windowY, windowW, windowH, () -> { }));
 
 		drawHeader(graphics, font, localMx, localMy);
 		drawRail(graphics, font, localMx, localMy);
@@ -213,40 +208,35 @@ public class ProfileViewerScreen extends Screen {
 	}
 
 	private void drawHeader(GuiGraphicsExtractor graphics, Font font, int mouseX, int mouseY) {
-		float titleX = windowX + 12;
+		float titleX = windowX + 16;
 		ProfileViewer.Snapshot snap = ProfileViewer.snapshot();
 		ProfileViewer.Profile profile = snap.current();
+		StageUi.label(graphics, font, "PROFILE", titleX, windowY + 12, StageUi.MUTED);
+		String name = snap.name().isBlank() ? "Skyblock" : snap.name();
+		float nameX = titleX + StageUi.labelWidth(font, "PROFILE") + 8;
 		if (ironman(profile)) {
-			paintItem(graphics, font, new ItemStack(Items.IRON_INGOT), titleX, windowY + 6, 16, false);
-			titleX += 20;
+			paintItem(graphics, font, new ItemStack(Items.IRON_INGOT), nameX, windowY + 8, 12, false);
+			nameX += 14;
 		}
-		GuiDraw.title(graphics, font, "PROFILE", titleX, windowY + 9, Theme.TEXT);
-		String sub = snap.name().isBlank() ? "Skyblock" : snap.name();
-		if (!profile.cuteName().isBlank()) {
-			sub = sub + " · " + profile.cuteName();
-		}
-		GuiDraw.small(
-			graphics,
-			font,
-			sub,
-			titleX + GuiDraw.titleWidth(font, "PROFILE") + 8,
-			windowY + 11,
-			Theme.ACCENT
-		);
+		GuiDraw.menu(graphics, font, name, nameX, windowY + 11, StageUi.TEXT);
 
 		float closeW = 18;
-		float refreshW = 22;
-		float fieldW = 120;
-		float x = windowX + windowW - 10 - closeW;
-		chip(graphics, font, x, windowY + 8, closeW, mouseX, mouseY, "×", this::onClose);
-		x -= refreshW + 4;
-		chip(graphics, font, x, windowY + 8, refreshW, mouseX, mouseY, "↻", this::load);
-		x -= fieldW + 4;
-		boolean hover = GuiDraw.hovered(mouseX, mouseY, x, windowY + 8, fieldW, 18);
-		ClickLook.outside(graphics, x, windowY + 8, fieldW, 18, 5, queryFocused || hover ? Theme.CARD_HOVER : Theme.CARD, queryFocused ? Theme.ACCENT : Theme.LINE);
-		String shown = query.isBlank() ? "name" : query;
-		GuiDraw.small(graphics, font, clip(font, shown, fieldW - 10), x + 6, GuiDraw.middle(windowY + 8, 18), query.isBlank() ? Theme.OFF : Theme.TEXT);
-		hits.add(new Hit(x, windowY + 8, fieldW, 18, () -> queryFocused = true));
+		float refreshW = GuiDraw.menuWidth(font, "Reload") + 14;
+		float fieldW = 128;
+		float x = windowX + windowW - 12 - closeW;
+		chip(graphics, font, x, windowY + 7, closeW, mouseX, mouseY, "×", this::onClose);
+		x -= refreshW + 2;
+		chip(graphics, font, x, windowY + 7, refreshW, mouseX, mouseY, "Reload", this::load);
+		x -= fieldW + 6;
+		boolean hover = GuiDraw.hovered(mouseX, mouseY, x, windowY + 7, fieldW, 18);
+		GuiDraw.roundedFine(graphics, x, windowY + 7, fieldW, 18, 9f, queryFocused || hover ? StageUi.CHIP_HOVER : StageUi.CHIP);
+		if (queryFocused) {
+			GuiDraw.hairline(graphics, x, windowY + 7, fieldW, 18, 9f, 0x40FFFFFF);
+		}
+		GuiDraw.icon(graphics, font, MenuFont.SEARCH, x + 7, GuiDraw.middle(windowY + 7, 18) - 1, StageUi.FAINT);
+		String shown = query.isBlank() ? "Search player" : query + (queryFocused && (System.currentTimeMillis() / 500) % 2 == 0 ? "_" : "");
+		GuiDraw.small(graphics, font, clip(font, shown, fieldW - 30), x + 20, GuiDraw.middle(windowY + 7, 18), query.isBlank() ? StageUi.FAINT : StageUi.TEXT);
+		hits.add(new Hit(x, windowY + 7, fieldW, 18, () -> queryFocused = true));
 
 		float chipY = windowY + 32;
 		float chipX = windowX + RAIL + 10;
@@ -255,21 +245,30 @@ public class ProfileViewerScreen extends Screen {
 			ProfileViewer.Profile next = profiles.get(i);
 			String label = next.cuteName().isBlank() ? "#" + (i + 1) : next.cuteName();
 			boolean mode = ironman(next);
-			float w = GuiDraw.smallWidth(font, label) + 14 + (mode ? 14 : 0);
+			float w = GuiDraw.smallWidth(font, label) + 16 + (mode ? 12 : 0);
 			boolean on = i == snap.selected();
 			boolean over = GuiDraw.hovered(mouseX, mouseY, chipX, chipY, w, 16);
-			ClickLook.outside(graphics, chipX, chipY, w, 16, 5, on || over ? Theme.CARD_HOVER : Theme.CARD, on ? Theme.ACCENT : Theme.LINE);
-			float textX = chipX + 6;
-			if (mode) {
-				paintItem(graphics, font, new ItemStack(Items.IRON_INGOT), chipX + 3, chipY + 1, 14, false);
-				textX += 14;
+			if (on) {
+				GuiDraw.roundedFine(graphics, chipX, chipY, w, 16, 8f, StageUi.TILE_SEL);
+				GuiDraw.hairline(graphics, chipX, chipY, w, 16, 8f, 0x26FFFFFF);
+			} else if (over) {
+				GuiDraw.roundedFine(graphics, chipX, chipY, w, 16, 8f, StageUi.CHIP);
 			}
-			GuiDraw.small(graphics, font, label, textX, GuiDraw.middle(chipY, 16), on ? Theme.ACCENT : Theme.TEXT);
+			float textX = chipX + 8;
+			if (mode) {
+				paintItem(graphics, font, new ItemStack(Items.IRON_INGOT), chipX + 5, chipY + 2.5f, 11, false);
+				textX += 12;
+			}
+			GuiDraw.small(graphics, font, label, textX, GuiDraw.middle(chipY, 16), on ? StageUi.TEXT : StageUi.MUTED);
+			if (on && next.selected()) {
+				StageUi.dot(graphics, chipX + w - 5, chipY + 4);
+			}
 			int index = i;
 			hits.add(new Hit(chipX, chipY, w, 16, () -> {
 				ProfileViewer.select(index);
 				listScroll = 0f;
 				itemPage = 0;
+				wardrobePage = 0;
 				selectedPet = -1;
 			}));
 			chipX += w + 4;
@@ -280,25 +279,27 @@ public class ProfileViewerScreen extends Screen {
 	}
 
 	private void drawRail(GuiGraphicsExtractor graphics, Font font, int mouseX, int mouseY) {
-		float x = windowX + 8;
+		float x = windowX + 10;
 		float y = windowY + 54;
-		float w = RAIL - 10;
+		float w = RAIL - 12;
 		for (Tab value : Tab.values()) {
 			boolean on = tab == value;
-			boolean hover = GuiDraw.hovered(mouseX, mouseY, x, y, w, 26);
-			int fill = on || hover ? Theme.CARD_HOVER : Theme.CARD;
-			int line = on ? Theme.ACCENT : Theme.LINE;
-			ClickLook.outside(graphics, x, y, w, 26, 7, fill, line);
-			int color = on ? Theme.ACCENT : Theme.TEXT;
-			GuiDraw.icon(graphics, font, value.icon, x + 8, GuiDraw.middle(y, 26) - 1, color);
-			GuiDraw.menu(graphics, font, value.label, x + 24, GuiDraw.middle(y, 26), color);
+			boolean hover = GuiDraw.hovered(mouseX, mouseY, x, y, w, 22);
+			if (on) {
+				GuiDraw.roundedFine(graphics, x, y, w, 22, 11f, StageUi.TILE_SEL);
+			} else if (hover) {
+				GuiDraw.roundedFine(graphics, x, y, w, 22, 11f, 0x0CFFFFFF);
+			}
+			int color = on ? StageUi.TEXT : hover ? 0xFFC9D0D8 : StageUi.MUTED;
+			GuiDraw.icon(graphics, font, value.icon, x + 9, GuiDraw.middle(y, 22) - 1, on ? ACC : color);
+			GuiDraw.menu(graphics, font, value.label, x + 25, GuiDraw.middle(y, 22), color);
 			Tab next = value;
-			hits.add(new Hit(x, y, w, 26, () -> {
+			hits.add(new Hit(x, y, w, 22, () -> {
 				tab = next;
 				listScroll = 0f;
 				queryFocused = false;
 			}));
-			y += 30;
+			y += 25;
 		}
 	}
 
@@ -307,21 +308,22 @@ public class ProfileViewerScreen extends Screen {
 		float y = windowY + 52;
 		float w = windowW - RAIL - 18;
 		float h = windowH - 62;
-		ClickLook.outside(graphics, x, y, w, h, 8, Theme.PANEL, Theme.LINE);
+		GuiDraw.rounded(graphics, x - 4, y - 2, 1, h, 0.5f, 0x0DFFFFFF);
 		ProfileViewer.Status status = ProfileViewer.status();
 		if (status == ProfileViewer.Status.LOADING) {
-			GuiDraw.menu(graphics, font, "Loading " + (query.isBlank() ? "profile" : query) + "...", x + 12, y + 14, Theme.MUTED);
+			GuiDraw.menu(graphics, font, "Loading " + (query.isBlank() ? "profile" : query) + "...", x + 12, y + 14, StageUi.MUTED);
 			return;
 		}
 		if (status == ProfileViewer.Status.ERROR) {
 			GuiDraw.menu(graphics, font, ProfileViewer.error().isBlank() ? "Could not load profile" : ProfileViewer.error(), x + 12, y + 14, Theme.DANGER);
-			GuiDraw.small(graphics, font, "Type a name and press Enter, or click ↻", x + 12, y + 30, Theme.MUTED);
+			GuiDraw.small(graphics, font, "Type a name and press Enter, or click ↻", x + 12, y + 30, StageUi.MUTED);
 			return;
 		}
 		ProfileViewer.Snapshot snap = ProfileViewer.snapshot();
 		ProfileViewer.Profile profile = snap.current();
 		switch (tab) {
 			case HOME -> drawHome(graphics, font, mouseX, mouseY, x, y, w, h, snap, profile);
+			case GEAR -> drawGear(graphics, font, mouseX, mouseY, x, y, w, h, snap, profile);
 			case ITEMS -> drawItems(graphics, font, mouseX, mouseY, x, y, w, h, profile);
 			case DUNGEONS -> drawDungeons(graphics, font, mouseX, mouseY, x, y, w, h, profile);
 			case MINING -> drawMining(graphics, font, mouseX, mouseY, x, y, w, h, profile);
@@ -429,10 +431,8 @@ public class ProfileViewerScreen extends Screen {
 		ProfileViewer.Profile profile
 	) {
 		float stageH = Math.min(h - 2, w * 1.55f);
-		ClickLook.outside(graphics, x, y, w, stageH, 8, Theme.CARD, Theme.LINE);
-		if (ironman(profile)) {
-			paintItem(graphics, font, new ItemStack(Items.IRON_INGOT), x + 8, y + 8, 16, false);
-		}
+		StageUi.floor(graphics, x + w * 0.5f, PlayerPreview.equippedFeet(y + 2, stageH - 12, 74f), Math.min(64f, w * 0.3f));
+		hits.add(new Hit(x, y, w, stageH, () -> rotating = true));
 		Component tag = nametag(snap, profile);
 		PlayerPreview.Drawn drawn = PlayerPreview.drawEquipped(
 			graphics,
@@ -440,7 +440,7 @@ public class ProfileViewerScreen extends Screen {
 			y + 2,
 			w - 4,
 			stageH - 12,
-			0f,
+			yaw,
 			0f,
 			new PlayerPreview.View(viewScale, viewCx, viewCy, viewLift),
 			gearOf(profile.armor()),
@@ -451,7 +451,7 @@ public class ProfileViewerScreen extends Screen {
 			NametagRenderer.drawVanilla(graphics, font, drawn.nameX(), drawn.nameY(), tag);
 		} else {
 			String name = snap.name().isBlank() ? "?" : snap.name();
-			GuiDraw.title(graphics, font, name.substring(0, 1).toUpperCase(Locale.ROOT), x + (w - 12) * 0.5f - 4, y + stageH * 0.38f, Theme.ACCENT);
+			GuiDraw.title(graphics, font, name.substring(0, 1).toUpperCase(Locale.ROOT), x + (w - 12) * 0.5f - 4, y + stageH * 0.38f, ACC);
 			NametagRenderer.drawVanilla(graphics, font, x + w * 0.5f, y + stageH * 0.38f + 22, tag);
 		}
 	}
@@ -581,13 +581,13 @@ public class ProfileViewerScreen extends Screen {
 					+ "\nS+  " + clock(floor.bestSPlus());
 			}
 			paintItem(graphics, font, floorIcon(floor.name(), master), x, fy, 16, false);
-			GuiDraw.small(graphics, font, floor.name(), x + 20, GuiDraw.middle(fy, 16), Theme.MUTED);
-			GuiDraw.menu(graphics, font, compact(floor.completions()), x + 50, GuiDraw.middle(fy, 16), Theme.TEXT);
+			GuiDraw.small(graphics, font, floor.name(), x + 20, GuiDraw.middle(fy, 16), StageUi.MUTED);
+			GuiDraw.menu(graphics, font, compact(floor.completions()), x + 50, GuiDraw.middle(fy, 16), StageUi.TEXT);
 			String plus = clock(floor.bestSPlus());
 			if ("—".equals(plus)) {
 				plus = clock(floor.bestS());
 			}
-			GuiDraw.small(graphics, font, plus, x + w - GuiDraw.smallWidth(font, plus), GuiDraw.middle(fy, 16), Theme.MUTED);
+			GuiDraw.small(graphics, font, plus, x + w - GuiDraw.smallWidth(font, plus), GuiDraw.middle(fy, 16), StageUi.MUTED);
 		}
 	}
 
@@ -654,7 +654,7 @@ public class ProfileViewerScreen extends Screen {
 				paintItem(graphics, font, icon, nx + 1, ny + 1, Math.max(8f, size - 2f), false);
 				if (on && level > 1) {
 					String text = String.valueOf(level);
-					GuiDraw.small(graphics, font, text, nx + size - GuiDraw.smallWidth(font, text) - 1, ny + size - 11, Theme.TEXT);
+					GuiDraw.small(graphics, font, text, nx + size - GuiDraw.smallWidth(font, text) - 1, ny + size - 11, StageUi.TEXT);
 				}
 				if (hover) {
 					hoverStack = perkTooltip(id, level, on);
@@ -676,7 +676,7 @@ public class ProfileViewerScreen extends Screen {
 	) {
 		List<ProfileViewer.Collection> collections = profile.collections();
 		if (collections == null || collections.isEmpty()) {
-			GuiDraw.menu(graphics, font, "No collections on this profile.", x + 12, y + 14, Theme.MUTED);
+			GuiDraw.menu(graphics, font, "No collections on this profile.", x + 12, y + 14, StageUi.MUTED);
 			return;
 		}
 		float pad = 10;
@@ -730,11 +730,11 @@ public class ProfileViewerScreen extends Screen {
 				ProfileViewer.Collection collection = group.get(i);
 				boolean hover = GuiDraw.hovered(mouseX, mouseY, cx, cy, cardW, cardH)
 					&& GuiDraw.hovered(mouseX, mouseY, left, top, gridW, gridH);
-				ClickLook.outside(graphics, cx, cy, cardW, cardH, 8, hover ? Theme.CARD_HOVER : Theme.CARD, hover ? Theme.ACCENT : Theme.LINE);
+				card(graphics, cx, cy, cardW, cardH, 8, hover ? Theme.CARD_HOVER : Theme.CARD, hover ? ACC : LINE);
 				ItemStack icon = collectionIcon(collection.id());
 				paintItem(graphics, font, icon, cx + 8, cy + 16, 20, false);
-				int nameColor = collection.maxed() ? gold : Theme.MUTED;
-				int valueColor = collection.maxed() ? gold : Theme.TEXT;
+				int nameColor = collection.maxed() ? gold : StageUi.MUTED;
+				int valueColor = collection.maxed() ? gold : StageUi.TEXT;
 				GuiDraw.small(graphics, font, clip(font, collection.name(), cardW - 40), cx + 32, cy + 10, nameColor);
 				GuiDraw.menu(graphics, font, compact(collection.amount()), cx + 32, cy + 24, valueColor);
 				if (hover) {
@@ -766,7 +766,7 @@ public class ProfileViewerScreen extends Screen {
 	) {
 		List<ProfileViewer.Pet> pets = profile.pets();
 		if (pets.isEmpty()) {
-			GuiDraw.menu(graphics, font, "No pets on this profile.", x + 12, y + 14, Theme.MUTED);
+			GuiDraw.menu(graphics, font, "No pets on this profile.", x + 12, y + 14, StageUi.MUTED);
 			return;
 		}
 		for (ProfileViewer.Pet pet : pets) {
@@ -778,14 +778,14 @@ public class ProfileViewerScreen extends Screen {
 		float px = x + pad;
 		float py = y + pad;
 		float ph = h - pad * 2;
-		ClickLook.outside(graphics, px, py, previewW, ph, 8, Theme.CARD, Theme.LINE);
+		card(graphics, px, py, previewW, ph, 8, Theme.CARD, LINE);
 		if (shown != null) {
 			ItemStack icon = petStack(shown);
 			paintItem(graphics, font, icon, px + (previewW - 64) * 0.5f, py + 22, 64, false);
-			GuiDraw.menu(graphics, font, clip(font, shown.name(), previewW - 16), px + 10, py + 98, Theme.TEXT);
+			GuiDraw.menu(graphics, font, clip(font, shown.name(), previewW - 16), px + 10, py + 98, StageUi.TEXT);
 			GuiDraw.small(graphics, font, shown.tier() + "  " + shown.level(), px + 10, py + 114, tierColor(shown.tier()));
 			if (shown.active()) {
-				GuiDraw.small(graphics, font, "Active", px + 10, py + 130, Theme.ACCENT);
+				GuiDraw.small(graphics, font, "Active", px + 10, py + 130, ACC);
 			}
 			hoverStack = GuiDraw.hovered(mouseX, mouseY, px, py, previewW, ph) ? icon : hoverStack;
 		}
@@ -809,7 +809,7 @@ public class ProfileViewerScreen extends Screen {
 			float cy = gy + row * cell;
 			boolean on = shown == pet;
 			boolean hover = GuiDraw.hovered(mouseX, mouseY, cx, cy, cell - 3, cell - 3);
-			ClickLook.outside(
+			card(
 				graphics,
 				cx,
 				cy,
@@ -817,16 +817,141 @@ public class ProfileViewerScreen extends Screen {
 				cell - 3,
 				6,
 				on || hover ? Theme.CARD_HOVER : Theme.CARD,
-				on ? Theme.ACCENT : Theme.LINE
+				on ? ACC : LINE
 			);
 			paintItem(graphics, font, petStack(pet), cx + 5, cy + 4, cell - 16, false);
-			GuiDraw.small(graphics, font, String.valueOf(pet.level()), cx + 5, cy + cell - 14, Theme.MUTED);
+			GuiDraw.small(graphics, font, String.valueOf(pet.level()), cx + 5, cy + cell - 14, StageUi.MUTED);
 			if (hover) {
 				hoverStack = petStack(pet);
 			}
 			int index = i;
 			hits.add(new Hit(cx, cy, cell - 3, cell - 3, () -> selectedPet = index));
 		}
+	}
+
+	private void drawGear(
+		GuiGraphicsExtractor graphics,
+		Font font,
+		int mouseX,
+		int mouseY,
+		float x,
+		float y,
+		float w,
+		float h,
+		ProfileViewer.Snapshot snap,
+		ProfileViewer.Profile profile
+	) {
+		ProfileViewer.Extras extras = profile.extras();
+		if (profile.armor().vacant() && extras.vacant()) {
+			GuiDraw.menu(graphics, font, ProfileViewer.itemsLoading() ? "Loading gear..." : "Gear is hidden or empty.", x + 12, y + 14, StageUi.MUTED);
+			return;
+		}
+		float modelW = Mth.clamp(w * 0.30f, 120f, 190f);
+		float rx = x + modelW + 14;
+		float rw = x + w - 8 - rx;
+		int hovered = -1;
+
+		// Right side first so a hovered wardrobe set can be previewed on the model.
+		float cy = y + 4;
+		float gap = 2f;
+		slot = Mth.clamp((rw - 8 * gap) / 9f, 16f, 26f);
+		float step = slot + gap;
+		StageUi.label(graphics, font, "WEARING", rx, cy, StageUi.MUTED);
+		float eqX = rx + 4 * step + 14;
+		StageUi.label(graphics, font, "EQUIPMENT", eqX, cy, StageUi.MUTED);
+		cy += 11;
+		int[] order = {3, 2, 1, 0};
+		for (int i = 0; i < 4; i++) {
+			drawSlot(graphics, font, mouseX, mouseY, rx + i * step, cy, profile.armor().at(i < profile.armor().size() ? order[i] : i));
+			drawSlot(graphics, font, mouseX, mouseY, eqX + i * step, cy, extras.equipment().at(i));
+		}
+		cy += slot + 10;
+
+		boolean hasEquipWardrobe = !extras.equipmentWardrobe().vacant();
+		boolean showEquip = hasEquipWardrobe && equipPage < 0;
+		float tabX = rx;
+		tabX = paneChip(graphics, font, mouseX, mouseY, tabX, cy - 2, "Wardrobe", !showEquip, () -> equipPage = 0);
+		if (hasEquipWardrobe) {
+			tabX = paneChip(graphics, font, mouseX, mouseY, tabX, cy - 2, "Equipment Wardrobe", showEquip, () -> equipPage = -1);
+		}
+		ProfileViewer.Bag bag = showEquip ? extras.equipmentWardrobe() : extras.wardrobe();
+		int pages = Math.max(1, (int) Math.ceil(bag.size() / 36.0));
+		wardrobePage = Mth.clamp(wardrobePage, 0, pages - 1);
+		if (pages > 1) {
+			float px = x + w - 8;
+			for (int i = pages - 1; i >= 0; i--) {
+				String label = String.valueOf(i + 1);
+				float pw = GuiDraw.smallWidth(font, label) + 12;
+				px -= pw;
+				boolean on = i == wardrobePage;
+				boolean over = GuiDraw.hovered(mouseX, mouseY, px, cy - 2, pw, 16);
+				if (on || over) {
+					GuiDraw.roundedFine(graphics, px, cy - 2, pw, 16, 8f, on ? StageUi.TILE_SEL : StageUi.CHIP);
+				}
+				GuiDraw.small(graphics, font, label, px + 6, GuiDraw.middle(cy - 2, 16), on ? StageUi.TEXT : StageUi.MUTED);
+				int page = i;
+				hits.add(new Hit(px, cy - 2, pw, 16, () -> wardrobePage = page));
+				px -= 3;
+			}
+		}
+		cy += 30;
+		int equippedCol = -1;
+		if (!showEquip && extras.wardrobeSlot() > 0) {
+			int set = extras.wardrobeSlot() - 1;
+			if (set / 9 == wardrobePage) {
+				equippedCol = set % 9;
+			}
+		}
+		for (int col = 0; col < 9; col++) {
+			float sx = rx + col * step;
+			float colH = 4 * step - gap;
+			boolean over = GuiDraw.hovered(mouseX, mouseY, sx - 1, cy - 1, slot + 2, colH + 2);
+			if (col == equippedCol) {
+				GuiDraw.roundedFine(graphics, sx - 2, cy - 2, slot + 4, colH + 4, 6f, StageUi.TILE_SEL);
+				StageUi.dot(graphics, sx + slot * 0.5f, cy + colH + 6);
+			} else if (over) {
+				GuiDraw.roundedFine(graphics, sx - 2, cy - 2, slot + 4, colH + 4, 6f, 0x0CFFFFFF);
+			}
+			if (over && !showEquip) {
+				hovered = col;
+			}
+			for (int row = 0; row < 4; row++) {
+				int index = wardrobePage * 36 + row * 9 + col;
+				ProfileViewer.SlotItem item = bag.at(index);
+				if (col == equippedCol && item.empty()) {
+					item = profile.armor().at(3 - row);
+				}
+				drawSlot(graphics, font, mouseX, mouseY, sx, cy + row * step, item);
+			}
+			GuiDraw.small(graphics, font, String.valueOf(wardrobePage * 9 + col + 1), sx + (slot - GuiDraw.smallWidth(font, String.valueOf(wardrobePage * 9 + col + 1))) * 0.5f, cy - 11, col == equippedCol ? StageUi.TEXT : StageUi.FAINT);
+		}
+
+		// Model: the hovered wardrobe set, otherwise what they wear now.
+		PlayerPreview.Gear gear = gearOf(profile.armor());
+		String caption = "Wearing now";
+		if (hovered >= 0 && hovered != equippedCol) {
+			int base = wardrobePage * 36 + hovered;
+			ProfileViewer.Bag w4 = extras.wardrobe();
+			gear = new PlayerPreview.Gear(stackOf(w4.at(base)), stackOf(w4.at(base + 9)), stackOf(w4.at(base + 18)), stackOf(w4.at(base + 27)));
+			caption = "Wardrobe slot " + (wardrobePage * 9 + hovered + 1);
+		}
+		float stageH = h - 18;
+		StageUi.floor(graphics, x + modelW * 0.5f, PlayerPreview.equippedFeet(y + 2, stageH - 10, 70f), Math.min(56f, modelW * 0.34f));
+		hits.add(new Hit(x, y, modelW, stageH, () -> rotating = true));
+		PlayerPreview.drawEquipped(
+			graphics,
+			x + 2,
+			y + 2,
+			modelW - 4,
+			stageH - 10,
+			yaw,
+			0f,
+			new PlayerPreview.View(viewScale, viewCx, viewCy, viewLift),
+			gear,
+			70f,
+			skinOf(snap)
+		);
+		GuiDraw.small(graphics, font, caption, x + (modelW - GuiDraw.smallWidth(font, caption)) * 0.5f, y + h - 12, StageUi.FAINT);
 	}
 
 	private void drawItems(
@@ -840,40 +965,39 @@ public class ProfileViewerScreen extends Screen {
 		float h,
 		ProfileViewer.Profile profile
 	) {
-		if (profile.inventory().vacant() && profile.ender().isEmpty() && profile.backpacks().isEmpty()) {
+		if (profile.inventory().vacant() && profile.ender().isEmpty() && profile.backpacks().isEmpty() && profile.extras().vacant()) {
 			if (ProfileViewer.itemsLoading()) {
-				GuiDraw.menu(graphics, font, "Loading inventory...", x + 12, y + 14, Theme.MUTED);
+				GuiDraw.menu(graphics, font, "Loading inventory...", x + 12, y + 14, StageUi.MUTED);
 			} else {
-				GuiDraw.menu(graphics, font, "Inventory is hidden or empty.", x + 12, y + 14, Theme.MUTED);
+				GuiDraw.menu(graphics, font, "Inventory is hidden or empty.", x + 12, y + 14, StageUi.MUTED);
 			}
 			return;
 		}
-		if (itemPane == ItemPane.ENDER && profile.ender().isEmpty()) {
-			itemPane = ItemPane.INV;
+		List<Pane> panes = panes(profile);
+		Pane pane = panes.get(0);
+		for (Pane candidate : panes) {
+			if (candidate.name().equals(paneName)) {
+				pane = candidate;
+			}
 		}
-		if (itemPane == ItemPane.BAG && profile.backpacks().isEmpty()) {
-			itemPane = ItemPane.INV;
-		}
-		float chipY = y + 12;
-		float chipX = x + 12;
-		chipX = paneChip(graphics, font, mouseX, mouseY, chipX, chipY, "Inventory", itemPane == ItemPane.INV, () -> {
-			itemPane = ItemPane.INV;
-			itemPage = 0;
-		});
-		if (!profile.ender().isEmpty()) {
-			chipX = paneChip(graphics, font, mouseX, mouseY, chipX, chipY, "Ender Chest", itemPane == ItemPane.ENDER, () -> {
-				itemPane = ItemPane.ENDER;
+		paneName = pane.name();
+		float chipY = y + 4;
+		float chipX = x + 8;
+		for (Pane candidate : panes) {
+			String label = candidate.name();
+			float cw = GuiDraw.smallWidth(font, label) + 14 + 5;
+			if (chipX + cw > x + w - 4) {
+				chipX = x + 8;
+				chipY += 20;
+			}
+			chipX = paneChip(graphics, font, mouseX, mouseY, chipX, chipY, label, candidate.name().equals(paneName), () -> {
+				paneName = candidate.name();
 				itemPage = 0;
 			});
 		}
-		if (!profile.backpacks().isEmpty()) {
-			paneChip(graphics, font, mouseX, mouseY, chipX, chipY, "Backpacks", itemPane == ItemPane.BAG, () -> {
-				itemPane = ItemPane.BAG;
-				itemPage = 0;
-			});
-		}
+		y = chipY - 8;
 
-		List<ProfileViewer.Bag> pages = itemPages(profile);
+		List<ProfileViewer.Bag> pages = pane.pages();
 		float pageY = y + 32;
 		boolean paged = pages.size() > 1;
 		if (paged) {
@@ -883,8 +1007,8 @@ public class ProfileViewerScreen extends Screen {
 				float pw = GuiDraw.smallWidth(font, label) + 12;
 				boolean on = i == itemPage;
 				boolean over = GuiDraw.hovered(mouseX, mouseY, px, pageY, pw, 16);
-				ClickLook.outside(graphics, px, pageY, pw, 16, 5, on || over ? Theme.CARD_HOVER : Theme.CARD, on ? Theme.ACCENT : Theme.LINE);
-				GuiDraw.small(graphics, font, label, px + 6, GuiDraw.middle(pageY, 16), on ? Theme.ACCENT : Theme.TEXT);
+				card(graphics, px, pageY, pw, 16, 5, on || over ? Theme.CARD_HOVER : Theme.CARD, on ? ACC : LINE);
+				GuiDraw.small(graphics, font, label, px + 6, GuiDraw.middle(pageY, 16), on ? ACC : StageUi.TEXT);
 				int page = i;
 				hits.add(new Hit(px, pageY, pw, 16, () -> itemPage = page));
 				px += pw + 4;
@@ -892,7 +1016,7 @@ public class ProfileViewerScreen extends Screen {
 		}
 
 		ProfileViewer.Bag bag = pages.isEmpty() ? ProfileViewer.Bag.empty("Empty", 9, 0) : pages.get(Math.max(0, Math.min(itemPage, pages.size() - 1)));
-		boolean playerInv = itemPane == ItemPane.INV;
+		boolean playerInv = "Inventory".equals(paneName);
 		boolean armor = playerInv && !profile.armor().vacant();
 		int cols = playerInv ? 9 : Math.max(1, bag.columns());
 		int rows = playerInv && bag.size() >= 36 ? 4 : Math.max(1, bag.rows());
@@ -920,16 +1044,32 @@ public class ProfileViewerScreen extends Screen {
 		} else if (!bag.vacant() || bag.size() > 0) {
 			drawGrid(graphics, font, mouseX, mouseY, gridX, gridY, cols, rows, bag, 0);
 		} else {
-			GuiDraw.small(graphics, font, "Nothing in this bag.", gridX, gridY + 6, Theme.MUTED);
+			GuiDraw.small(graphics, font, "Nothing in this bag.", gridX, gridY + 6, StageUi.MUTED);
 		}
 	}
 
-	private List<ProfileViewer.Bag> itemPages(ProfileViewer.Profile profile) {
-		return switch (itemPane) {
-			case INV -> List.of(profile.inventory());
-			case ENDER -> profile.ender();
-			case BAG -> profile.backpacks();
-		};
+	private record Pane(String name, List<ProfileViewer.Bag> pages) {
+	}
+
+	private static List<Pane> panes(ProfileViewer.Profile profile) {
+		List<Pane> out = new ArrayList<>();
+		out.add(new Pane("Inventory", List.of(profile.inventory())));
+		if (!profile.ender().isEmpty()) {
+			out.add(new Pane("Ender Chest", profile.ender()));
+		}
+		if (!profile.backpacks().isEmpty()) {
+			out.add(new Pane("Backpacks", profile.backpacks()));
+		}
+		ProfileViewer.Extras extras = profile.extras();
+		for (ProfileViewer.Bag bag : List.of(extras.accessories(), extras.vault(), extras.quiver(), extras.potions(), extras.fishing())) {
+			if (!bag.vacant()) {
+				out.add(new Pane(bag.name(), List.of(bag)));
+			}
+		}
+		for (ProfileViewer.Bag bag : extras.other()) {
+			out.add(new Pane(bag.name(), List.of(bag)));
+		}
+		return out;
 	}
 
 	private float paneChip(
@@ -945,8 +1085,8 @@ public class ProfileViewerScreen extends Screen {
 	) {
 		float w = GuiDraw.smallWidth(font, label) + 14;
 		boolean over = GuiDraw.hovered(mouseX, mouseY, x, y, w, 16);
-		ClickLook.outside(graphics, x, y, w, 16, 5, on || over ? Theme.CARD_HOVER : Theme.CARD, on ? Theme.ACCENT : Theme.LINE);
-		GuiDraw.small(graphics, font, label, x + 7, GuiDraw.middle(y, 16), on ? Theme.ACCENT : Theme.TEXT);
+		card(graphics, x, y, w, 16, 5, on || over ? Theme.CARD_HOVER : Theme.CARD, on ? ACC : LINE);
+		GuiDraw.small(graphics, font, label, x + 7, GuiDraw.middle(y, 16), on ? ACC : StageUi.TEXT);
 		hits.add(new Hit(x, y, w, 16, click));
 		return x + w + 5;
 	}
@@ -997,7 +1137,7 @@ public class ProfileViewerScreen extends Screen {
 		ProfileViewer.SlotItem item
 	) {
 		boolean hover = GuiDraw.hovered(mouseX, mouseY, x, y, slot, slot);
-		ClickLook.outside(graphics, x, y, slot, slot, 6, hover ? Theme.CARD_HOVER : Theme.CARD, hover ? Theme.ACCENT : Theme.LINE);
+		card(graphics, x, y, slot, slot, 6, hover ? Theme.CARD_HOVER : Theme.CARD, hover ? ACC : LINE);
 		if (item == null || item.empty()) {
 			return;
 		}
@@ -1097,10 +1237,10 @@ public class ProfileViewerScreen extends Screen {
 
 	private void sectionTitle(GuiGraphicsExtractor graphics, Font font, float x, float y, float w, ItemStack icon, String title) {
 		paintItem(graphics, font, icon, x, y - 1, 16, false);
-		GuiDraw.small(graphics, font, title, x + 20, y + 3, Theme.ACCENT);
+		GuiDraw.small(graphics, font, title, x + 20, y + 3, ACC);
 		float lineX = x + 24 + GuiDraw.smallWidth(font, title);
 		if (lineX + 12 < x + w) {
-			GuiDraw.rounded(graphics, lineX, y + 6, x + w - lineX, 1, 0.5f, Theme.LINE);
+			GuiDraw.rounded(graphics, lineX, y + 6, x + w - lineX, 1, 0.5f, LINE);
 		}
 	}
 
@@ -1123,8 +1263,8 @@ public class ProfileViewerScreen extends Screen {
 			tooltip = tip == null || tip.isBlank() ? label + "  " + value : tip;
 		}
 		paintItem(graphics, font, icon, x, y, 18, false);
-		GuiDraw.small(graphics, font, label, x + 22, GuiDraw.middle(y, 18), Theme.MUTED);
-		GuiDraw.menu(graphics, font, value, x + w - GuiDraw.menuWidth(font, value), GuiDraw.middle(y, 18), Theme.TEXT);
+		GuiDraw.small(graphics, font, label, x + 22, GuiDraw.middle(y, 18), StageUi.MUTED);
+		GuiDraw.menu(graphics, font, value, x + w - GuiDraw.menuWidth(font, value), GuiDraw.middle(y, 18), StageUi.TEXT);
 	}
 
 	private void skillBar(
@@ -1143,13 +1283,13 @@ public class ProfileViewerScreen extends Screen {
 				+ "\n" + prettyNumber((long) skill.xp()) + " xp";
 		}
 		paintItem(graphics, font, skillIcon(skill.name()), x, y, 18, false);
-		GuiDraw.small(graphics, font, skill.name(), x + 22, y, Theme.MUTED);
+		GuiDraw.small(graphics, font, skill.name(), x + 22, y, StageUi.MUTED);
 		String value = skill.level() > skill.cap() ? String.valueOf(skill.level()) : skill.level() + " / " + skill.cap();
-		GuiDraw.menu(graphics, font, value, x + w - GuiDraw.menuWidth(font, value), y, Theme.TEXT);
-		GuiDraw.rounded(graphics, x + 22, y + 14, w - 22, 5, 2, Theme.TRACK);
+		GuiDraw.menu(graphics, font, value, x + w - GuiDraw.menuWidth(font, value), y, StageUi.TEXT);
+		GuiDraw.rounded(graphics, x + 22, y + 14, w - 22, 5, 2, 0x14FFFFFF);
 		float fill = Math.max(0f, Math.min(1f, skill.progress()));
 		if (fill > 0.01f) {
-			GuiDraw.rounded(graphics, x + 22, y + 14, Math.max(4f, (w - 22) * fill), 5, 2, Theme.ACCENT);
+			GuiDraw.rounded(graphics, x + 22, y + 14, Math.max(4f, (w - 22) * fill), 5, 2, ACC);
 		}
 	}
 
@@ -1177,9 +1317,9 @@ public class ProfileViewerScreen extends Screen {
 				return cy;
 			}
 			boolean hover = GuiDraw.hovered(mouseX, mouseY, cx, cy, cw, CHIP_H);
-			ClickLook.outside(graphics, cx, cy, cw, CHIP_H, 6, hover ? Theme.CARD_HOVER : Theme.CARD, hover ? Theme.ACCENT : Theme.LINE);
+			card(graphics, cx, cy, cw, CHIP_H, 6, hover ? Theme.CARD_HOVER : Theme.CARD, hover ? ACC : LINE);
 			paintItem(graphics, font, skillIcon(skill.name()), cx + 3, cy + 3, 16, false);
-			GuiDraw.small(graphics, font, level, cx + 22, GuiDraw.middle(cy, CHIP_H), Theme.TEXT);
+			GuiDraw.small(graphics, font, level, cx + 22, GuiDraw.middle(cy, CHIP_H), StageUi.TEXT);
 			if (hover) {
 				tooltip = skill.name() + "  " + skill.level() + " / " + skill.cap();
 			}
@@ -1212,9 +1352,9 @@ public class ProfileViewerScreen extends Screen {
 				return cy;
 			}
 			boolean hover = GuiDraw.hovered(mouseX, mouseY, cx, cy, cw, CHIP_H);
-			ClickLook.outside(graphics, cx, cy, cw, CHIP_H, 6, hover ? Theme.CARD_HOVER : Theme.CARD, hover ? Theme.ACCENT : Theme.LINE);
+			card(graphics, cx, cy, cw, CHIP_H, 6, hover ? Theme.CARD_HOVER : Theme.CARD, hover ? ACC : LINE);
 			paintItem(graphics, font, slayerIcon(slayer.name()), cx + 3, cy + 3, 16, false);
-			GuiDraw.small(graphics, font, level, cx + 22, GuiDraw.middle(cy, CHIP_H), Theme.TEXT);
+			GuiDraw.small(graphics, font, level, cx + 22, GuiDraw.middle(cy, CHIP_H), StageUi.TEXT);
 			if (hover) {
 				tooltip = slayer.name() + "  " + slayer.level() + "  " + compact(slayer.xp()) + " xp";
 			}
@@ -1247,9 +1387,9 @@ public class ProfileViewerScreen extends Screen {
 				return cy;
 			}
 			boolean hover = GuiDraw.hovered(mouseX, mouseY, cx, cy, cw, CHIP_H);
-			ClickLook.outside(graphics, cx, cy, cw, CHIP_H, 6, hover ? Theme.CARD_HOVER : Theme.CARD, hover ? Theme.ACCENT : Theme.LINE);
+			card(graphics, cx, cy, cw, CHIP_H, 6, hover ? Theme.CARD_HOVER : Theme.CARD, hover ? ACC : LINE);
 			paintItem(graphics, font, classIcon(skill.name()), cx + 3, cy + 3, 16, false);
-			GuiDraw.small(graphics, font, level, cx + 22, GuiDraw.middle(cy, CHIP_H), Theme.TEXT);
+			GuiDraw.small(graphics, font, level, cx + 22, GuiDraw.middle(cy, CHIP_H), StageUi.TEXT);
 			if (hover) {
 				tooltip = skill.name() + "  " + skill.level();
 			}
@@ -1280,9 +1420,21 @@ public class ProfileViewerScreen extends Screen {
 
 	private void chip(GuiGraphicsExtractor graphics, Font font, float x, float y, float w, int mouseX, int mouseY, String label, Runnable click) {
 		boolean hover = GuiDraw.hovered(mouseX, mouseY, x, y, w, 18);
-		ClickLook.outside(graphics, x, y, w, 18, 5, hover ? Theme.CARD_HOVER : Theme.CARD, hover ? Theme.ACCENT : Theme.LINE);
-		GuiDraw.menu(graphics, font, label, x + (w - GuiDraw.menuWidth(font, label)) * 0.5f, GuiDraw.middle(y, 18), Theme.TEXT);
+		if (hover) {
+			GuiDraw.roundedFine(graphics, x, y, w, 18, 9f, StageUi.CHIP_HOVER);
+		}
+		GuiDraw.menu(graphics, font, label, x + (w - GuiDraw.menuWidth(font, label)) * 0.5f, GuiDraw.middle(y, 18), hover ? StageUi.TEXT : StageUi.MUTED);
 		hits.add(new Hit(x, y, w, 18, click));
+	}
+
+	/** Borderless soft card; selected ones get a faint white edge. */
+	private static void card(GuiGraphicsExtractor graphics, float x, float y, float w, float h, float r, int fill, int line) {
+		int f = fill == Theme.CARD_HOVER ? StageUi.CHIP_HOVER : fill == Theme.PANEL ? 0x08FFFFFF : StageUi.CHIP;
+		float radius = Math.min(Math.max(r, 5f), Math.min(w, h) * 0.5f);
+		GuiDraw.roundedFine(graphics, x, y, w, h, radius, f);
+		if (line == ACC) {
+			GuiDraw.hairline(graphics, x, y, w, h, radius, 0x33FFFFFF);
+		}
 	}
 
 	private void layout() {
@@ -1875,7 +2027,7 @@ public class ProfileViewerScreen extends Screen {
 			case "epic" -> 0xFFAA00AA;
 			case "legendary" -> 0xFFFFAA00;
 			case "mythic" -> 0xFFFF55FF;
-			default -> Theme.TEXT;
+			default -> StageUi.TEXT;
 		};
 	}
 
@@ -2009,6 +2161,21 @@ public class ProfileViewerScreen extends Screen {
 			}
 		}
 		return true;
+	}
+
+	@Override
+	public boolean mouseDragged(MouseButtonEvent event, double dx, double dy) {
+		if (rotating) {
+			yaw -= (float) dx / viewScale * 1.4f;
+			return true;
+		}
+		return super.mouseDragged(event, dx, dy);
+	}
+
+	@Override
+	public boolean mouseReleased(MouseButtonEvent event) {
+		rotating = false;
+		return super.mouseReleased(event);
 	}
 
 	@Override
