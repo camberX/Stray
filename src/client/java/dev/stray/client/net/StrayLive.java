@@ -289,9 +289,9 @@ public final class StrayLive implements WebSocket.Listener {
 		return LIVE_ROOM.matcher(slug).matches() ? slug : "world";
 	}
 
+	/** Always: besides IRC and pings, the socket brings live cosmetic changes (capes, skins...). */
 	private static boolean wanted() {
-		StrayConfig config = StrayConfig.get();
-		return config.strayIrcEnabled || config.strayPingEnabled;
+		return true;
 	}
 
 	private static boolean open() {
@@ -431,6 +431,16 @@ public final class StrayLive implements WebSocket.Listener {
 				case "ping" -> client.execute(() -> onPing(json));
 				case "ping_clear" -> client.execute(() -> onPingClear(json));
 				case "error" -> client.execute(() -> onErrorMessage(json));
+				case "cosmetic" -> {
+					// Someone changed their cape / wings / chest / skin: re-read just them.
+					if (json.has("uuid")) {
+						try {
+							java.util.UUID changed = java.util.UUID.fromString(json.get("uuid").getAsString());
+							client.execute(() -> dev.stray.client.visual.ShopCape.reload(changed));
+						} catch (IllegalArgumentException ignored) {
+						}
+					}
+				}
 				default -> {
 				}
 			}

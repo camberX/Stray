@@ -42,6 +42,7 @@ public class AvatarRendererMixin {
 		}
 		if (state instanceof dev.stray.client.visual.ChestHolder chest) {
 			chest.stray$setChest(dev.stray.client.visual.ShopChest.has(entity.getUUID()));
+			chest.stray$setChestLook(dev.stray.client.visual.ShopChest.get(entity.getUUID()));
 		}
 	}
 

@@ -13,6 +13,19 @@ public abstract class AvatarRenderStateMixin implements WingsHolder, ChestHolder
 	private boolean stray$chest;
 
 	@Unique
+	private dev.stray.client.visual.ShopChest.Chest stray$chestLook;
+
+	@Override
+	public dev.stray.client.visual.ShopChest.Chest stray$chestLook() {
+		return this.stray$chestLook;
+	}
+
+	@Override
+	public void stray$setChestLook(dev.stray.client.visual.ShopChest.Chest look) {
+		this.stray$chestLook = look;
+	}
+
+	@Unique
 	private ShopWings.Wings stray$wings;
 
 	@Override

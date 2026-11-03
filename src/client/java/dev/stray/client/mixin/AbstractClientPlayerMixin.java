@@ -20,7 +20,7 @@ public class AbstractClientPlayerMixin {
 		if (NickSteal.active() && self) {
 			cir.setReturnValue(NickSteal.skin(cir.getReturnValue()));
 		} else {
-			cir.setReturnValue(ShopCape.patch(player.getUUID(), cir.getReturnValue()));
+			cir.setReturnValue(ShopCape.patch(player.getUUID(), dev.stray.client.visual.ShopSkin.patch(player.getUUID(), cir.getReturnValue())));
 		}
 		if (self && dev.stray.client.visual.CustomSkin.active()) {
 			cir.setReturnValue(dev.stray.client.visual.CustomSkin.patch(cir.getReturnValue()));

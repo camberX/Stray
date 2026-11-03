@@ -144,7 +144,7 @@ public final class CustomSkin {
 	}
 
 	/** Old 64x32 skins: copy the right arm and leg over to the left, like Minecraft does. */
-	private static NativeImage legacy(NativeImage old) {
+	static NativeImage legacy(NativeImage old) {
 		int s = old.getWidth() / 64;
 		NativeImage out = new NativeImage(old.getWidth(), old.getWidth(), true);
 		out.copyFrom(old);

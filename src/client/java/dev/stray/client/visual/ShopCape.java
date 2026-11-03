@@ -326,7 +326,13 @@ public final class ShopCape {
 			boolean listed = status.body().contains("\"allowed\":true") || status.body().contains("\"allowed\": true");
 			slot.tag = tag;
 			ShopWings.set(uuid, jsonField(status.body(), "wings"), jsonField(status.body(), "wingsRgb"));
-			ShopChest.set(uuid, status.body().contains("\"chest\":true") || status.body().contains("\"chest\": true"));
+			ShopChest.set(
+				uuid,
+				status.body().contains("\"chest\":true") || status.body().contains("\"chest\": true"),
+				jsonNumber(status.body(), "chestSize", 1f),
+				jsonNumber(status.body(), "chestY", 0f)
+			);
+			ShopSkin.set(uuid, jsonField(status.body(), "skin"), status.body().contains("\"skinSlim\":true"));
 			if (uuid.equals(selfUuid())) {
 				boolean listedCopy = listed;
 				Minecraft.getInstance().execute(() -> setAllowed(listedCopy));
@@ -460,6 +466,34 @@ public final class ShopCape {
 		}
 		int end = body.indexOf('"', start + 1);
 		return end < 0 ? "" : body.substring(start + 1, end);
+	}
+
+	/** A number field from the flat status JSON. */
+	private static float jsonNumber(String body, String field, float fallback) {
+		if (body == null) {
+			return fallback;
+		}
+		java.util.regex.Matcher m = java.util.regex.Pattern.compile("\"" + field + "\"\\s*:\\s*(-?[0-9.]+)").matcher(body);
+		if (!m.find()) {
+			return fallback;
+		}
+		try {
+			return Float.parseFloat(m.group(1));
+		} catch (NumberFormatException e) {
+			return fallback;
+		}
+	}
+
+	/** Re-reads one player's cosmetics now (the live socket says they changed). */
+	public static void reload(UUID uuid) {
+		if (uuid == null) {
+			return;
+		}
+		Minecraft client = Minecraft.getInstance();
+		boolean near = client.level != null && client.level.getPlayerByUUID(uuid) != null;
+		if (near || SLOTS.containsKey(uuid)) {
+			ensure(uuid, true);
+		}
 	}
 
 	private static String publishError(String body, int status) {

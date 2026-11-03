@@ -51,27 +51,31 @@ public final class ChestLayer extends RenderLayer<AvatarRenderState, PlayerModel
 		if (!(state instanceof ChestHolder holder) || !holder.stray$chest() || state.isInvisible || state.isSpectator || state.skin == null) {
 			return;
 		}
+		ShopChest.Chest look = holder.stray$chestLook();
+		float size = look == null ? 1f : look.size();
+		float lift = look == null ? 0f : look.y();
 		float swing = state.walkAnimationSpeed;
 		float bounce = Mth.sin(state.walkAnimationPos * 1.3324f) * swing * 7f;
 		pose.pushPose();
 		getParentModel().body.translateAndRotate(pose);
 		pose.scale(1f / 16f, 1f / 16f, 1f / 16f);
 		ItemStack chest = state.chestEquipment;
-		boolean armored = drawArmor(pose, collector, light, chest, bounce);
+		pose.translate(0f, lift, 0f);
+		boolean armored = drawArmor(pose, collector, light, chest, bounce, size);
 		if (!armored) {
 			Identifier skin = state.skin.body().texturePath();
 			RenderType type = RenderTypes.entityTranslucent(skin);
-			drawPair(pose, collector, type, light, -1, 64f, 64f, BODY_U, BODY_V, 0f, bounce);
+			drawPair(pose, collector, type, light, -1, 64f, 64f, BODY_U, BODY_V, 0f, bounce, size);
 			if (state.showJacket) {
 				// Jacket (outer) layer: same area 16 rows lower, a quarter pixel bigger.
-				drawPair(pose, collector, type, light, -1, 64f, 64f, BODY_U, BODY_V + 16f, 0.25f, bounce);
+				drawPair(pose, collector, type, light, -1, 64f, 64f, BODY_U, BODY_V + 16f, 0.25f, bounce, size);
 			}
 		}
 		pose.popPose();
 	}
 
 	/** Draws the chestplate's own texture (and dye) over the boxes; false when no armor is worn. */
-	private boolean drawArmor(PoseStack pose, SubmitNodeCollector collector, int light, ItemStack chest, float bounce) {
+	private boolean drawArmor(PoseStack pose, SubmitNodeCollector collector, int light, ItemStack chest, float bounce, float size) {
 		if (chest == null || chest.isEmpty()) {
 			return false;
 		}
@@ -92,7 +96,7 @@ public final class ChestLayer extends RenderLayer<AvatarRenderState, PlayerModel
 				color = 0xFF000000 | dyed;
 			}
 			RenderType type = RenderTypes.armorCutoutNoCull(layer.getTextureLocation(EquipmentClientInfo.LayerType.HUMANOID));
-			drawPair(pose, collector, type, light, color, 64f, 32f, BODY_U, BODY_V, 1f, bounce);
+			drawPair(pose, collector, type, light, color, 64f, 32f, BODY_U, BODY_V, 1f, bounce, size);
 			drew = true;
 		}
 		return drew;
@@ -109,12 +113,16 @@ public final class ChestLayer extends RenderLayer<AvatarRenderState, PlayerModel
 		float u,
 		float v,
 		float grow,
-		float bounce
+		float bounce,
+		float size
 	) {
+		// Size makes it stick out further and hang a little lower, not wider.
+		float depth = DEPTH * size;
+		float height = HEIGHT * (0.8f + 0.2f * size);
 		for (int side = 0; side < 2; side++) {
 			float x0 = side == 0 ? -4f : 0f;
 			float x1 = x0 + 4f;
-			float tilt = TILT + (side == 0 ? bounce : -bounce * 0.8f);
+			float tilt = TILT + (size - 1f) * 10f + (side == 0 ? bounce : -bounce * 0.8f) * size;
 			pose.pushPose();
 			// Pivot on the inner edge so each side turns slightly outward.
 			pose.translate(0f, TOP, -2f);
@@ -127,12 +135,12 @@ public final class ChestLayer extends RenderLayer<AvatarRenderState, PlayerModel
 			float bu0 = u + (x0 + 4f);
 			float bu1 = u + (x1 + 4f);
 			float bv0 = v + TOP;
-			float bv1 = v + TOP + HEIGHT;
+			float bv1 = v + TOP + Math.min(HEIGHT, height);
 			float gx0 = x0 - grow;
 			float gx1 = x1 + grow;
 			float gy0 = -grow;
-			float gy1 = HEIGHT + grow;
-			float gz0 = -DEPTH - grow;
+			float gy1 = height + grow;
+			float gz0 = -depth - grow;
 			float gz1 = 0.5f;
 			collector.submitCustomGeometry(pose, type, (p, consumer) -> box(p, consumer, gx0, gy0, gz0, gx1, gy1, gz1, bu0, bv0, bu1, bv1, texW, texH, color, light));
 			pose.popPose();

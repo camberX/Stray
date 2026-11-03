@@ -191,6 +191,7 @@ public class StrayScreen extends Screen {
 		SCALE("Menu scale", 2),
 		NICK("Nick hider", 2),
 		CAPE("Cape", 5),
+		COSMETICS("Cosmetics", 2),
 		SKIN("Client skin", 4),
 		SLAYER_HUD("Slayer HUD", 5),
 		SLAYER_PROFIT("Profit tracker", 5),
@@ -4088,6 +4089,10 @@ public class StrayScreen extends Screen {
 				config.menuScale = values[index];
 			});
 			case NICK -> drawNickFields(graphics, font, mouseX, mouseY, ix, y, iw);
+			case COSMETICS -> {
+				y = clickRow(graphics, font, ix, y, iw, mouseX, mouseY, "Open cosmetics", () -> minecraft.gui.setScreen(new CosmeticsScreen(minecraft.gui.screen())));
+				hint(graphics, font, ix, y, iw, "Skin, cape, wings, chest · live for Stray users");
+			}
 			case CAPE -> drawCapeFields(graphics, font, mouseX, mouseY, ix, y, iw);
 			case SKIN -> {
 				y = hint(graphics, font, ix, y, iw, dev.stray.client.visual.CustomSkin.status());

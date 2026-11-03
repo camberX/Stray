@@ -42,6 +42,24 @@ public final class CasinoApi {
 		}
 	}
 
+	/**
+	 * A login token for other stray.gay calls (cosmetics), logging in first if needed.
+	 * Blocks: call it off the render thread. Null when the login fails.
+	 */
+	public static String authToken() {
+		synchronized (CasinoApi.class) {
+			if (token == null && !loginNow().ok()) {
+				return null;
+			}
+			return token;
+		}
+	}
+
+	/** The server rejected the token: the next {@link #authToken()} logs in again. */
+	public static void dropToken() {
+		token = null;
+	}
+
 	public static CompletableFuture<Result> login() {
 		return CompletableFuture.supplyAsync(CasinoApi::loginNow, POOL);
 	}

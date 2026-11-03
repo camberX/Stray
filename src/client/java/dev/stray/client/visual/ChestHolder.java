@@ -5,4 +5,8 @@ public interface ChestHolder {
 	boolean stray$chest();
 
 	void stray$setChest(boolean chest);
+
+	ShopChest.Chest stray$chestLook();
+
+	void stray$setChestLook(ShopChest.Chest look);
 }
