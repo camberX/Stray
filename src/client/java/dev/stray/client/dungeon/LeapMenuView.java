@@ -69,7 +69,7 @@ public final class LeapMenuView {
 		float gap = 3f;
 		float halfW = width * 0.5f;
 		float halfH = height * 0.5f;
-		boolean pov = StrayConfig.get().leapPov;
+		boolean pov = PovCapture.wanted();
 		for (int i = 0; i < 4; i++) {
 			float target = hovered != null && hovered == i && players[i] != null ? 1f : 0f;
 			HOVER[i] += (target - HOVER[i]) * (1f - (float) Math.exp(-16f * dt));

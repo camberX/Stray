@@ -59,8 +59,10 @@ public final class PovCapture {
 		return TARGETS[index].getColorTextureView();
 	}
 
+	/** Only in the boss room (or the leap test), where the POV is worth the extra drawing. */
 	public static boolean wanted() {
-		return StrayConfig.get().leapPov && LeapMenu.active();
+		return StrayConfig.get().leapPov && LeapMenu.active()
+			&& (dev.stray.client.location.SkyblockLocation.inBoss || LeapMenu.testMode());
 	}
 
 	public static void render(DeltaTracker delta) {
