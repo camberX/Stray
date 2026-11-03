@@ -118,13 +118,16 @@ public final class LeapMenuView {
 		if (dead && config.leapTintDead) {
 			GuiDraw.fill(graphics, x, y, w, h, 0x38FF2020);
 		}
-		// Edge: class colour, brighter while hovered.
-		float edge = 1f + hover;
-		int edgeColor = alpha(classColor, 0.35f + 0.55f * hover);
+		// Edge: a thin class-coloured line, brighter and a pixel wider while hovered.
+		// The sides stop where the top and bottom start, so the corners are not
+		// drawn twice (which made them brighter than the rest of the line).
+		float px = GuiDraw.pixel();
+		float edge = px * (hover > 0.5f ? 2f : 1f);
+		int edgeColor = alpha(classColor, 0.45f + 0.5f * hover);
 		GuiDraw.fill(graphics, x, y, w, edge, edgeColor);
 		GuiDraw.fill(graphics, x, y + h - edge, w, edge, edgeColor);
-		GuiDraw.fill(graphics, x, y, edge, h, edgeColor);
-		GuiDraw.fill(graphics, x + w - edge, y, edge, h, edgeColor);
+		GuiDraw.fill(graphics, x, y + edge, edge, h - edge * 2f, edgeColor);
+		GuiDraw.fill(graphics, x + w - edge, y + edge, edge, h - edge * 2f, edgeColor);
 
 		// Card at the inner corner of each quarter, so the four sit around the centre.
 		float scale = Mth.clamp(config.leapScale / 100f, 0.5f, 1.5f) * (1f + 0.04f * hover);

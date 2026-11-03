@@ -21,8 +21,8 @@ import java.util.regex.Pattern;
  */
 public final class DungeonParty {
 	public enum DungeonClass {
-		ARCHER("Archer", 0xFFFFAA00),
-		BERSERK("Berserk", 0xFFAA0000),
+		ARCHER("Archer", 0xFFAA0000),
+		BERSERK("Berserk", 0xFFFFAA00),
 		HEALER("Healer", 0xFFFF55FF),
 		MAGE("Mage", 0xFF55FFFF),
 		TANK("Tank", 0xFF00AA00),
