@@ -107,6 +107,7 @@ public class ProfileViewerScreen extends Screen {
 	private float yaw = -22f;
 	private boolean rotating;
 	private boolean closing;
+	private boolean dungeonMaster;
 	private float tabAnim = 1f;
 	private float railY = Float.NaN;
 	private int wardrobePage;
@@ -222,7 +223,11 @@ public class ProfileViewerScreen extends Screen {
 		if (hoverStack != null && !hoverStack.isEmpty()) {
 			graphics.setTooltipForNextFrame(font, hoverStack, mouseX, mouseY);
 		} else if (!tooltip.isBlank()) {
-			graphics.setTooltipForNextFrame(font, Component.literal(tooltip), mouseX, mouseY);
+			List<Component> lines = new ArrayList<>();
+			for (String line : tooltip.split("\n")) {
+				lines.add(Component.literal(line));
+			}
+			graphics.setComponentTooltipForNextFrame(font, lines, mouseX, mouseY);
 		}
 	}
 
@@ -548,42 +553,104 @@ public class ProfileViewerScreen extends Screen {
 		float h,
 		ProfileViewer.Profile profile
 	) {
-		float left = x + 12;
-		float top = y + 8;
-		float col = (w - 36) / 3f;
 		ProfileViewer.Dungeon dungeon = profile.dungeons();
-		skillBar(graphics, font, mouseX, mouseY, left, top, w - 24, new ProfileViewer.Skill(
-			"Catacombs",
-			dungeon.cata(),
-			50,
-			0,
-			dungeon.progress()
-		));
-		float statsY = top + 34;
-		infoRow(graphics, font, mouseX, mouseY, left, statsY, col, new ItemStack(Items.CHEST), "Secrets",
-			compact(dungeon.secrets()), prettyNumber(dungeon.secrets()) + " secrets");
-		String avg = dungeon.runs() <= 0 ? "—" : trim(dungeon.secrets() / (double) dungeon.runs());
-		infoRow(graphics, font, mouseX, mouseY, left + col + 6, statsY, col, new ItemStack(Items.ENDER_EYE), "Secret avg",
-			avg, dungeon.runs() <= 0 ? "No runs yet." : avg + " secrets per run");
-		infoRow(graphics, font, mouseX, mouseY, left + (col + 6) * 2, statsY, col, new ItemStack(Items.IRON_SWORD), "Runs",
-			compact(dungeon.runs()), prettyNumber(dungeon.runs()) + " floor completions");
-		float y0 = statsY + 24;
-		sectionTitle(graphics, font, left, y0, w - 24, new ItemStack(Items.IRON_CHESTPLATE), "Classes");
-		y0 += 16;
-		float classW = (w - 32) * 0.5f;
-		List<ProfileViewer.Skill> classes = dungeon.classes();
-		for (int i = 0; i < classes.size(); i++) {
-			float cx = left + (i % 2) * (classW + 8);
-			float cy = y0 + (i / 2) * 28f;
-			skillBar(graphics, font, mouseX, mouseY, cx, cy, classW, classes.get(i));
+		float left = x + 10;
+		float right = x + w - 8;
+		float innerW = right - left;
+		float top = y + 4;
+
+		// Hero: Catacombs level with its progress to the next level.
+		paintItem(graphics, font, sky("GOLD_BONZO_HEAD"), left, top + 1, 22, false);
+		StageUi.label(graphics, font, "CATACOMBS", left + 28, top, StageUi.MUTED);
+		String level = String.valueOf(dungeon.cata());
+		GuiDraw.text(graphics, font, level, left + 28, top + 10, 1.6f, StageUi.TEXT, false);
+		float lw = font.width(level) * 1.6f;
+		String pct = dungeon.cata() >= 50 ? "max" : Math.round(dungeon.progress() * 100f) + "% to " + (dungeon.cata() + 1);
+		GuiDraw.small(graphics, font, pct, left + 28 + lw + 6, top + 15, StageUi.FAINT);
+		float barX = left + 28;
+		float barW = Math.max(60f, innerW * 0.42f - 28f);
+		GuiDraw.roundedFine(graphics, barX, top + 27, barW, 3, 1.5f, 0x14FFFFFF);
+		float fill = dungeon.cata() >= 50 ? 1f : Mth.clamp(dungeon.progress(), 0f, 1f);
+		if (fill > 0.01f) {
+			GuiDraw.roundedFine(graphics, barX, top + 27, Math.max(3f, barW * fill), 3, 1.5f, 0xFFE0B04A);
 		}
-		y0 += 28 * ((classes.size() + 1) / 2) + 6;
-		float floorW = (w - 36) * 0.5f;
-		sectionTitle(graphics, font, left, y0, floorW, sky("GOLD_BONZO_HEAD"), "Catacombs");
-		sectionTitle(graphics, font, left + floorW + 12, y0, floorW, sky("DIAMOND_BONZO_HEAD"), "Master");
-		y0 += 16;
-		drawFloors(graphics, font, mouseX, mouseY, left, y0, floorW, y + h - 6, dungeon.normal(), false);
-		drawFloors(graphics, font, mouseX, mouseY, left + floorW + 12, y0, floorW, y + h - 6, dungeon.master(), true);
+
+		// Stat tiles to the right of the hero.
+		String avg = dungeon.runs() <= 0 ? "—" : trim(dungeon.secrets() / (double) dungeon.runs());
+		double classSum = 0;
+		for (ProfileViewer.Skill c : dungeon.classes()) {
+			classSum += c.level();
+		}
+		String classAvg = dungeon.classes().isEmpty() ? "—" : trim(classSum / dungeon.classes().size());
+		String[][] tiles = {
+			{"SECRETS", compact(dungeon.secrets()), prettyNumber(dungeon.secrets()) + " secrets found"},
+			{"PER RUN", avg, dungeon.runs() <= 0 ? "No runs yet." : avg + " secrets per completed run"},
+			{"RUNS", compact(dungeon.runs()), prettyNumber(dungeon.runs()) + " floor completions"},
+			{"CLASS AVG", classAvg, "Average of the five class levels"}
+		};
+		float tilesX = left + innerW * 0.44f;
+		float tileGap = 4f;
+		float tileW = (right - tilesX - tileGap * 3) / 4f;
+		for (int i = 0; i < tiles.length; i++) {
+			float tx = tilesX + i * (tileW + tileGap);
+			boolean hover = GuiDraw.hovered(mouseX, mouseY, tx, top, tileW, 32);
+			GuiDraw.roundedFine(graphics, tx, top, tileW, 32, 8f, hover ? StageUi.CHIP_HOVER : StageUi.CHIP);
+			StageUi.label(graphics, font, tiles[i][0], tx + 7, top + 6, StageUi.FAINT);
+			GuiDraw.menu(graphics, font, tiles[i][1], tx + 7, top + 18, StageUi.TEXT);
+			if (hover) {
+				tooltip = tiles[i][2];
+			}
+		}
+
+		// Classes: one compact card each, the selected class marked.
+		float cy = top + 42;
+		List<ProfileViewer.Skill> classes = dungeon.classes();
+		int n = Math.max(1, classes.size());
+		float gap = 4f;
+		float cardW = (innerW - gap * (n - 1)) / n;
+		for (int i = 0; i < classes.size(); i++) {
+			ProfileViewer.Skill c = classes.get(i);
+			float cx = left + i * (cardW + gap);
+			boolean selected = c.name().equalsIgnoreCase(dungeon.selectedClass());
+			boolean hover = GuiDraw.hovered(mouseX, mouseY, cx, cy, cardW, 30);
+			GuiDraw.roundedFine(graphics, cx, cy, cardW, 30, 8f, selected ? StageUi.TILE_SEL : hover ? StageUi.CHIP_HOVER : StageUi.CHIP);
+			if (selected) {
+				GuiDraw.hairline(graphics, cx, cy, cardW, 30, 8f, 0x26FFFFFF);
+				StageUi.dot(graphics, cx + cardW - 7, cy + 7);
+			}
+			paintItem(graphics, font, classIcon(c.name()), cx + 5, cy + 5, 14, false);
+			GuiDraw.small(graphics, font, clip(font, c.name(), cardW - 46), cx + 22, cy + 6, StageUi.MUTED);
+			GuiDraw.menu(graphics, font, String.valueOf(c.level()), cx + cardW - 12 - GuiDraw.menuWidth(font, String.valueOf(c.level())), cy + 5, StageUi.TEXT);
+			float bw = cardW - 10;
+			GuiDraw.roundedFine(graphics, cx + 5, cy + 23, bw, 2.5f, 1.25f, 0x14FFFFFF);
+			float cf = c.level() >= 50 ? 1f : Mth.clamp(c.progress(), 0f, 1f);
+			if (cf > 0.01f) {
+				GuiDraw.roundedFine(graphics, cx + 5, cy + 23, Math.max(2.5f, bw * cf), 2.5f, 1.25f, selected ? 0xFF3DDC84 : ACC);
+			}
+			if (hover) {
+				tooltip = c.name() + "  " + c.level() + "\n" + prettyNumber((long) c.xp()) + " xp"
+					+ (c.level() >= 50 ? "" : "\n" + Math.round(c.progress() * 100f) + "% to " + (c.level() + 1))
+					+ (selected ? "\nSelected class" : "");
+			}
+		}
+
+		// Floors: one mode at a time, as a table with run bars.
+		float fy = cy + 40;
+		float chipX = left;
+		chipX = paneChip(graphics, font, mouseX, mouseY, chipX, fy, "Catacombs", !dungeonMaster, () -> {
+			if (dungeonMaster) {
+				tabAnim = 0.35f;
+			}
+			dungeonMaster = false;
+		});
+		paneChip(graphics, font, mouseX, mouseY, chipX, fy, "Master Mode", dungeonMaster, () -> {
+			if (!dungeonMaster) {
+				tabAnim = 0.35f;
+			}
+			dungeonMaster = true;
+		});
+		fy += 22;
+		drawFloors(graphics, font, mouseX, mouseY, left, fy, innerW, y + h - 4, dungeonMaster ? dungeon.master() : dungeon.normal(), dungeonMaster);
 	}
 
 	private void drawFloors(
@@ -598,28 +665,53 @@ public class ProfileViewerScreen extends Screen {
 		List<ProfileViewer.Floor> floors,
 		boolean master
 	) {
-		float row = 20;
+		if (floors.isEmpty()) {
+			GuiDraw.small(graphics, font, master ? "No Master Mode runs yet." : "No Catacombs runs yet.", x, y + 4, StageUi.MUTED);
+			return;
+		}
+		float colRuns = x + w * 0.30f;
+		float colS = x + w * 0.62f;
+		float colSPlus = x + w * 0.82f;
+		StageUi.label(graphics, font, "FLOOR", x + 4, y, StageUi.FAINT);
+		StageUi.label(graphics, font, "RUNS", colRuns, y, StageUi.FAINT);
+		StageUi.label(graphics, font, "BEST S", colS, y, StageUi.FAINT);
+		StageUi.label(graphics, font, "BEST S+", colSPlus, y, StageUi.FAINT);
+		y += 11;
+		int most = 1;
+		for (ProfileViewer.Floor floor : floors) {
+			most = Math.max(most, floor.completions());
+		}
+		float avail = maxY - y;
+		float row = Mth.clamp(avail / Math.max(1, floors.size()), 13f, 18f);
 		for (int i = 0; i < floors.size(); i++) {
 			float fy = y + i * row;
-			if (fy + row > maxY) {
+			if (fy + row > maxY + 1) {
 				break;
 			}
 			ProfileViewer.Floor floor = floors.get(i);
 			boolean hover = GuiDraw.hovered(mouseX, mouseY, x, fy, w, row - 1);
+			if (hover || i % 2 == 0) {
+				GuiDraw.roundedFine(graphics, x, fy, w, row - 1, 5f, hover ? StageUi.CHIP_HOVER : 0x07FFFFFF);
+			}
 			if (hover) {
-				GuiDraw.rounded(graphics, x - 2, fy - 1, w + 4, row - 1, 4, 0x10FFFFFF);
 				tooltip = floor.name() + "  " + prettyNumber(floor.completions()) + " runs"
-					+ "\nS  " + clock(floor.bestS())
-					+ "\nS+  " + clock(floor.bestSPlus());
+					+ "\nBest S  " + clock(floor.bestS())
+					+ "\nBest S+  " + clock(floor.bestSPlus());
 			}
-			paintItem(graphics, font, floorIcon(floor.name(), master), x, fy, 16, false);
-			GuiDraw.small(graphics, font, floor.name(), x + 20, GuiDraw.middle(fy, 16), StageUi.MUTED);
-			GuiDraw.menu(graphics, font, compact(floor.completions()), x + 50, GuiDraw.middle(fy, 16), StageUi.TEXT);
-			String plus = clock(floor.bestSPlus());
-			if ("—".equals(plus)) {
-				plus = clock(floor.bestS());
+			float icon = Math.min(14f, row - 3f);
+			paintItem(graphics, font, floorIcon(floor.name(), master), x + 3, fy + (row - 1 - icon) * 0.5f, icon, false);
+			GuiDraw.menu(graphics, font, "E".equals(floor.name()) ? "Entrance" : floor.name(), x + 6 + icon, GuiDraw.middle(fy, row - 1), StageUi.TEXT);
+			String runs = prettyNumber(floor.completions());
+			GuiDraw.menu(graphics, font, runs, colRuns, GuiDraw.middle(fy, row - 1), StageUi.TEXT);
+			float barX = colRuns + GuiDraw.menuWidth(font, runs) + 6;
+			float barMax = colS - 10 - barX;
+			if (barMax > 8 && floor.completions() > 0) {
+				GuiDraw.roundedFine(graphics, barX, fy + row * 0.5f - 1.5f, Math.max(2f, barMax * floor.completions() / (float) most), 2.5f, 1.25f, master ? 0xFFE05A5A : 0xFFE0B04A);
 			}
-			GuiDraw.small(graphics, font, plus, x + w - GuiDraw.smallWidth(font, plus), GuiDraw.middle(fy, 16), StageUi.MUTED);
+			String s = clock(floor.bestS());
+			String sp = clock(floor.bestSPlus());
+			GuiDraw.small(graphics, font, s, colS, GuiDraw.middle(fy, row - 1), "—".equals(s) ? StageUi.FAINT : StageUi.MUTED);
+			GuiDraw.small(graphics, font, sp, colSPlus, GuiDraw.middle(fy, row - 1), "—".equals(sp) ? StageUi.FAINT : 0xFFE7B0FF);
 		}
 	}
 

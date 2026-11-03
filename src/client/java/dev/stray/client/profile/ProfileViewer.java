@@ -624,6 +624,10 @@ public final class ProfileViewer {
 			);
 		}
 
+		private Snapshot withTagged(String tagged) {
+			return new Snapshot(name, uuid, profiles, selected, error, tagged == null ? "" : tagged, skinValue, skinSignature);
+		}
+
 		private Snapshot withSkin(String skinValue, String skinSignature) {
 			return new Snapshot(
 				name,
@@ -847,6 +851,60 @@ public final class ProfileViewer {
 
 	private static void loadSkinAndNetworth(int gen, Resolved identity, String compact, JsonObject dump) {
 		Util.nonCriticalIoPool().execute(() -> applySkin(gen, identity));
+		Util.nonCriticalIoPool().execute(() -> applyRank(gen, identity, compact));
+	}
+
+	/**
+	 * The skyblock-pv response has no rank, so the coloured [RANK] name comes from Soopy's
+	 * player endpoint afterwards (or from the tab list when they share the lobby).
+	 */
+	private static void applyRank(int gen, Resolved identity, String compact) {
+		JsonObject player = null;
+		try {
+			player = getJsonAsync(SOOPY_PLAYER + compact).join();
+		} catch (RuntimeException ignored) {
+			player = null;
+		}
+		if (stale(gen)) {
+			return;
+		}
+		Snapshot current = snapshot;
+		if (current == null || current.uuid() == null || !current.uuid().equals(identity.uuid())) {
+			return;
+		}
+		String tagged = taggedName(identity.name(), player, current.current());
+		if (!hasRank(tagged)) {
+			String tab = tabName(identity.uuid());
+			if (!tab.isBlank()) {
+				int level = current.current() == null ? 0 : current.current().skyblockLevel();
+				tagged = level <= 0 ? tab : "§8[" + levelColor(level) + level + "§8] " + tab;
+			}
+		}
+		if (hasRank(tagged)) {
+			snapshot = current.withTagged(tagged);
+		}
+	}
+
+	private static boolean hasRank(String tagged) {
+		if (tagged == null) {
+			return false;
+		}
+		String body = tagged.replaceFirst("^§8\\[§.\\d+§8\\]\\s*", "");
+		return body.indexOf('§') >= 0;
+	}
+
+	private static String tabName(UUID uuid) {
+		Minecraft client = Minecraft.getInstance();
+		if (client.getConnection() == null || uuid == null) {
+			return "";
+		}
+		var info = client.getConnection().getPlayerInfo(uuid);
+		if (info == null || info.getTabListDisplayName() == null) {
+			return "";
+		}
+		String legacy = dev.stray.client.visual.NickSteal.toLegacy(info.getTabListDisplayName());
+		java.util.regex.Matcher m = java.util.regex.Pattern.compile("((?:§.)*\\[[A-Z+§0-9a-f]+\\](?:§.)*\\s*)?((?:§.)*" + java.util.regex.Pattern.quote(info.getProfile().name()) + ")").matcher(legacy);
+		return m.find() ? (m.group(1) == null ? "" : m.group(1)) + m.group(2) : "";
 	}
 
 	private static boolean paintHypixel(int gen, Resolved identity, String compact, JsonObject root, JsonObject soopyPlayer) {
