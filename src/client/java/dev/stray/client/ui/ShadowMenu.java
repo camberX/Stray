@@ -134,8 +134,8 @@ public final class ShadowMenu {
 		float w = 6f + ids.length * (ICON + 2f) + activeExtra + 6f + (ICON + 2f) * 3f + searchExtra + 4f;
 		float x = (screen.width - w) * 0.5f;
 		float r = BAR_H * 0.5f;
-		ShadowLook.shadow(graphics, x, y, w, BAR_H, r, 10, Math.round(0x50 * t));
-		GuiDraw.roundedFine(graphics, x, y, w, BAR_H, r, Anim.fade(0xE6050709, t));
+		ShadowLook.shadow(graphics, x, y, w, BAR_H, r, 10, Math.round(0x60 * t));
+		GuiDraw.roundedFine(graphics, x, y, w, BAR_H, r, Anim.fade(ShadowLook.FILL, t));
 		GuiDraw.hairline(graphics, x, y, w, BAR_H, r, Anim.fade(0x1CFFFFFF, t));
 
 		float cx = x + 6f;
@@ -238,8 +238,8 @@ public final class ShadowMenu {
 			return;
 		}
 		float r = 16f;
-		ShadowLook.shadow(graphics, sheetX, sheetY, sheetW, h, r, 14, Math.round(0x58 * t));
-		GuiDraw.roundedFine(graphics, sheetX, sheetY, sheetW, h, r, Anim.fade(0xE6050709, t));
+		ShadowLook.shadow(graphics, sheetX, sheetY, sheetW, h, r, 14, Math.round(0x60 * t));
+		GuiDraw.roundedFine(graphics, sheetX, sheetY, sheetW, h, r, Anim.fade(ShadowLook.FILL, t));
 		GuiDraw.hairline(graphics, sheetX, sheetY, sheetW, h, r, Anim.fade(0x1CFFFFFF, t));
 		boolean sheetClip = GuiDraw.scissor(graphics, sheetX, sheetY, sheetW, h);
 		try {
@@ -372,14 +372,11 @@ public final class ShadowMenu {
 			GuiDraw.text(graphics, font, item.chip(), cx, y + (CHIP_H - 8f * 0.8f) * 0.5f, 0.8f, Anim.fade(ShadowLook.MUTED, t), false);
 		}
 		chipHits.add(new ChipHit(item, x, y, w, CHIP_H));
-		// Click: a module opens below; anything else (mobs, keys) runs its action.
-		// The dot toggles straight away (hit added last, so it wins).
-		Runnable click = item.mod() != null ? () -> select(item.mod().name()) : item.left();
+		// Left click toggles (or runs the action); a module without a toggle opens instead.
+		// Right click opens the settings (see rightClick).
+		Runnable click = item.left() != null ? item.left() : item.mod() != null ? () -> select(item.mod().name()) : null;
 		if (click != null) {
 			screen.clickHit(x, y, w, CHIP_H, click);
-		}
-		if (item.on() != null && item.left() != null && item.mod() != null) {
-			screen.clickHit(x, y, 17f, CHIP_H, item.left());
 		}
 	}
 
@@ -419,7 +416,7 @@ public final class ShadowMenu {
 		int mark = screen.clickHitMark();
 		try {
 			float top = y - setScroll + lift;
-			bigText(graphics, font, fit(font, ClickGui.display(mod.name()), (w - 40f) / 1.35f), x, top + 2f, 1.35f, Anim.fade(WHITE, st));
+			bigText(graphics, font, fitTitle(font, ClickGui.display(mod.name()), w - 40f), x, top + 2f, 1f, Anim.fade(WHITE, st));
 			label(graphics, font, ClickGui.display(mod.column()).toUpperCase(java.util.Locale.ROOT), x, top + 18f, Anim.fade(ShadowLook.FAINT, st));
 			if (!mod.hold()) {
 				float k = approachIn(knob, "set:" + mod.name(), mod.on().getAsBoolean() ? 1f : 0f, 16f);
@@ -552,12 +549,6 @@ public final class ShadowMenu {
 				return;
 			}
 		}
-		for (HyprMenu.Item item : items) {
-			if (item.mod() != null) {
-				select(item.mod().name());
-				return;
-			}
-		}
 		selected = null;
 	}
 
@@ -577,13 +568,21 @@ public final class ShadowMenu {
 		return false;
 	}
 
-	/** Right click on a chip toggles it without opening it. */
+	/** Right click on a module opens its settings; nothing when it has none. */
 	static void rightClick(double x, double y) {
 		for (ChipHit hit : chipHits) {
-			if (contains(x, y, hit.x, hit.y, hit.w, hit.h) && hit.item.left() != null) {
-				hit.item.left().run();
-				return;
+			if (!contains(x, y, hit.x, hit.y, hit.w, hit.h)) {
+				continue;
 			}
+			ClickGui.Mod mod = hit.item.mod();
+			if (mod != null && ClickGui.moduleHasSettings(mod)) {
+				if (mod.name().equals(selected)) {
+					selected = null;
+				} else {
+					select(mod.name());
+				}
+			}
+			return;
 		}
 	}
 
@@ -627,14 +626,15 @@ public final class ShadowMenu {
 		if (((color >>> 24) & 0xFF) < 8) {
 			return;
 		}
-		GuiDraw.text(graphics, font, Component.literal(value), x, Math.round(GuiDraw.middle(y, h)), color, false);
+		GuiDraw.text(graphics, font, MenuFont.shadow(value), x, Math.round(GuiDraw.middle(y, h)), color, false);
 	}
 
 	private static void bigText(GuiGraphicsExtractor graphics, Font font, String value, float x, float y, float scale, int color) {
 		if (((color >>> 24) & 0xFF) < 8) {
 			return;
 		}
-		GuiDraw.text(graphics, font, value, x, y, scale, color, false);
+		// The title font is drawn at its own size; scale only shrinks names that do not fit.
+		GuiDraw.text(graphics, font, MenuFont.shadowTitle(value), x, y, Math.min(1f, scale), color, false);
 	}
 
 	private static void label(GuiGraphicsExtractor graphics, Font font, String value, float x, float y, int color) {
@@ -652,7 +652,7 @@ public final class ShadowMenu {
 	}
 
 	private static float textWidth(Font font, String value) {
-		return font.width(value);
+		return font.width(MenuFont.shadow(value));
 	}
 
 	private static String fit(Font font, String value, float max) {
@@ -664,6 +664,17 @@ public final class ShadowMenu {
 		}
 		String trimmed = value;
 		while (trimmed.length() > 1 && textWidth(font, trimmed + "...") > max) {
+			trimmed = trimmed.substring(0, trimmed.length() - 1);
+		}
+		return trimmed + "...";
+	}
+
+	private static String fitTitle(Font font, String value, float max) {
+		String trimmed = value == null ? "" : value;
+		if (font.width(MenuFont.shadowTitle(trimmed)) <= max) {
+			return trimmed;
+		}
+		while (trimmed.length() > 1 && font.width(MenuFont.shadowTitle(trimmed + "...")) > max) {
 			trimmed = trimmed.substring(0, trimmed.length() - 1);
 		}
 		return trimmed + "...";

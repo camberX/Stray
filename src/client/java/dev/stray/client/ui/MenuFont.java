@@ -36,12 +36,12 @@ public final class MenuFont {
 	 * smoothing, so a glyph is only crisp when its texels match screen pixels:
 	 * pick the copy for the current GUI scale.
 	 */
-	private static final Style[][] HYPR_SCALED = new Style[4][6];
+	private static final Style[][] HYPR_SCALED = new Style[7][6];
 	/** Every scaled copy (and the base icon font) mapped to its family, for {@link #crisp}. */
 	private static final java.util.Map<FontDescription, Integer> FAMILY = new java.util.HashMap<>();
 
 	static {
-		String[] names = {"hypr", "hypr_small", "hypr_title", "nl_icon"};
+		String[] names = {"hypr", "hypr_small", "hypr_title", "nl_icon", "shadow", "shadow_small", "shadow_title"};
 		for (int f = 0; f < names.length; f++) {
 			for (int s = 0; s < 6; s++) {
 				FontDescription desc = new FontDescription.Resource(Stray.id(names[f] + "_" + (s + 1)));
@@ -53,6 +53,9 @@ public final class MenuFont {
 		FAMILY.put(new FontDescription.Resource(Stray.id("hypr")), 0);
 		FAMILY.put(new FontDescription.Resource(Stray.id("hypr_small")), 1);
 		FAMILY.put(new FontDescription.Resource(Stray.id("hypr_title")), 2);
+		FAMILY.put(new FontDescription.Resource(Stray.id("shadow")), 4);
+		FAMILY.put(new FontDescription.Resource(Stray.id("shadow_small")), 5);
+		FAMILY.put(new FontDescription.Resource(Stray.id("shadow_title")), 6);
 	}
 
 	/**
@@ -100,6 +103,19 @@ public final class MenuFont {
 
 	public static Component hyprTitle(String value) {
 		return Component.literal(value == null ? "" : value).withStyle(hyprStyle(2));
+	}
+
+	/** Inter, for the Shadow style. */
+	public static Component shadow(String value) {
+		return Component.literal(value == null ? "" : value).withStyle(hyprStyle(4));
+	}
+
+	public static Component shadowSmall(String value) {
+		return Component.literal(value == null ? "" : value).withStyle(hyprStyle(5));
+	}
+
+	public static Component shadowTitle(String value) {
+		return Component.literal(value == null ? "" : value).withStyle(hyprStyle(6));
 	}
 	public static final String MINECRAFT_FAMILY = "Minecraft";
 	private static final Style UI_BODY = Style.EMPTY.withFont(new FontDescription.Resource(UI_ID));

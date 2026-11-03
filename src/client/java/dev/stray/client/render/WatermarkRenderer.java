@@ -74,6 +74,8 @@ public final class WatermarkRenderer {
 			drawClient(graphics, font);
 		} else if (StrayConfig.get().watermarkHypr()) {
 			drawHypr(graphics, font);
+		} else if (StrayConfig.get().watermarkShadow()) {
+			drawShadow(graphics, font);
 		} else {
 			drawPanel(graphics, font);
 		}
@@ -227,6 +229,64 @@ public final class WatermarkRenderer {
 			float textY = Math.round(GuiDraw.middle(HY_PAD, HY_PILL));
 			GuiDraw.text(graphics, font, hyText(pill.text()), x + 17f, textY, ink, false);
 			x += pw + HY_GAP;
+		}
+	}
+
+	// ---- Shadow: a see-through black pill, "Stray" in a white pill, the stats in Inter
+
+	private static final float SH_PAD = 3f;
+	private static final float SH_PILL = HEIGHT - SH_PAD * 2f;
+	private static final float SH_GAP = 9f;
+
+	private static List<String> shadowParts() {
+		StrayConfig config = StrayConfig.get();
+		List<String> parts = new ArrayList<>();
+		if (config.watermarkFps) {
+			parts.add(HudStats.fps() + " fps");
+		}
+		if (config.watermarkPing) {
+			parts.add(HudStats.pingLabel());
+		}
+		if (config.watermarkTime) {
+			parts.add(HudStats.time());
+		}
+		if (config.watermarkName) {
+			parts.add(HudStats.playerName());
+		}
+		return parts;
+	}
+
+	private static float shadowBrandW(Font font) {
+		return 7f + font.width(MenuFont.shadowTitle("Stray")) + 7f;
+	}
+
+	private static float shadowWidth(Font font) {
+		float w = SH_PAD + shadowBrandW(font);
+		List<String> parts = shadowParts();
+		for (String part : parts) {
+			w += SH_GAP + stableWidth(font, MenuFont.shadow(part), "shadow:" + parts.indexOf(part));
+		}
+		return w + (parts.isEmpty() ? SH_PAD : 8f);
+	}
+
+	private static void drawShadow(GuiGraphicsExtractor graphics, Font font) {
+		float w = shadowWidth(font);
+		float r = HEIGHT * 0.5f;
+		if (HudChrome.background()) {
+			dev.stray.client.ui.ShadowLook.panel(graphics, 0, 0, w, HEIGHT, r, dev.stray.client.ui.ShadowLook.FILL);
+		}
+		float bw = shadowBrandW(font);
+		GuiDraw.roundedFine(graphics, SH_PAD, SH_PAD, bw, SH_PILL, SH_PILL * 0.5f, 0xFFEEF1F5);
+		GuiDraw.text(graphics, font, MenuFont.shadowTitle("Stray"), SH_PAD + 7f, Math.round(GuiDraw.middle(SH_PAD, SH_PILL)) - 0.5f, 0xFF0B0E13, false);
+		float x = SH_PAD + bw;
+		List<String> parts = shadowParts();
+		for (int i = 0; i < parts.size(); i++) {
+			if (i > 0) {
+				GuiDraw.circle(graphics, x + SH_GAP * 0.5f, HEIGHT * 0.5f, 1f, 0x40FFFFFF);
+			}
+			x += SH_GAP;
+			GuiDraw.text(graphics, font, MenuFont.shadow(parts.get(i)), x, Math.round(GuiDraw.middle(0, HEIGHT)), i == 0 ? 0xFFEEF1F5 : 0xFF9AA4AF, false);
+			x += stableWidth(font, MenuFont.shadow(parts.get(i)), "shadow:" + i);
 		}
 	}
 
@@ -394,7 +454,8 @@ public final class WatermarkRenderer {
 			return widthCache;
 		}
 		float w = win98Look() ? win98Width(font)
-			: config.watermarkClient() ? clientWidth(font, config) : config.watermarkHypr() ? hyprWidth(font) : panelWidth(font, config);
+			: config.watermarkClient() ? clientWidth(font, config) : config.watermarkHypr() ? hyprWidth(font)
+			: config.watermarkShadow() ? shadowWidth(font) : panelWidth(font, config);
 		widthTick = tick;
 		widthStyle = style;
 		widthCache = w;

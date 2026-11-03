@@ -131,7 +131,7 @@ public final class Theme {
 	private static void shadow(float hudOpacity, float opacity) {
 		StrayConfig config = StrayConfig.get();
 		if (config.hudStyleShadow()) {
-			HUD_WINDOW = ShadowLook.fill(hudOpacity);
+			HUD_WINDOW = ShadowLook.FILL;
 			HUD_LINE = ShadowLook.LINE;
 			HUD_LINE_NEUTRAL = HUD_LINE;
 			HUD_TRACK = 0x14FFFFFF;
@@ -140,7 +140,7 @@ public final class Theme {
 			HUD_PANEL = 0x10000000;
 		}
 		if (config.clickGuiShadow() || config.guiStyleShadow()) {
-			WINDOW = ShadowLook.fill(opacity);
+			WINDOW = ShadowLook.FILL;
 			SHEET = ShadowLook.fill(Math.max(opacity, 0.92f));
 			CARD = ShadowLook.CARD;
 			CARD_HOVER = ShadowLook.CARD_HOVER;

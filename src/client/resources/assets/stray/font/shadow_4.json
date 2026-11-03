@@ -1,0 +1,29 @@
+{
+	"providers": [
+		{
+			"type": "ttf",
+			"file": "stray:inter_regular.ttf",
+			"shift": [
+				0,
+				-0.25
+			],
+			"size": 6.0,
+			"oversample": 4.0
+		},
+		{
+			"type": "reference",
+			"id": "minecraft:include/space"
+		},
+		{
+			"type": "reference",
+			"id": "minecraft:include/default",
+			"filter": {
+				"uniform": false
+			}
+		},
+		{
+			"type": "reference",
+			"id": "minecraft:include/unifont"
+		}
+	]
+}

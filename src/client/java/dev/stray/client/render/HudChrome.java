@@ -80,6 +80,11 @@ public final class HudChrome {
 		return hudPass && vanilla();
 	}
 
+	/** HUD text in the Shadow style: Inter, no shadow. */
+	public static boolean shadowInk() {
+		return hudPass && shadow();
+	}
+
 	public static boolean clickInk() {
 		return hudPass && click();
 	}

@@ -40,6 +40,9 @@ public final class ShadowLook {
 		return config.themedChatEnabled && config.chatStyleShadow();
 	}
 
+	/** The one see-through black every Shadow surface uses (HUD, chat, GUIs, menu). */
+	public static final int FILL = 0xC8050709;
+
 	/** Panel fill at the given opacity (0..1): black, mostly see-through. */
 	public static int fill(float opacity) {
 		return Theme.withAlpha(BLACK, Math.round(StrayConfig.clamp(opacity, 0f, 1f) * 0.86f * 255f));
@@ -51,21 +54,53 @@ public final class ShadowLook {
 			return;
 		}
 		float r = Math.min(Math.max(2f, radius), Math.min(w, h) * 0.5f);
-		shadow(graphics, x, y, w, h, r, Math.min(w, h) < 40f ? 6 : 12, 0x50);
+		shadow(graphics, x, y, w, h, r, Math.min(w, h) < 40f ? 8 : 12, 0x60);
 		GuiDraw.roundedFine(graphics, x, y, w, h, r, fill);
 		GuiDraw.hairline(graphics, x, y, w, h, r, LINE);
 	}
 
-	/** Only the soft shadow, for panels that draw their own fill. */
-	public static void shadow(GuiGraphicsExtractor graphics, float x, float y, float w, float h, float r, int steps, int strength) {
-		for (int i = steps; i >= 1; i--) {
-			float t = 1f - (i - 0.5f) / steps;
-			int a = Math.round(strength * t * t);
-			if (a <= 0) {
-				continue;
-			}
-			GuiDraw.roundedOutline(graphics, x - i, y - i + 1.5f, w + i * 2f, h + i * 2f, r + i, a << 24, 1f);
+	private static final net.minecraft.resources.Identifier SOFT = dev.stray.Stray.id("textures/gui/shadow_soft.png");
+	private static final int TEX = 64;
+	private static final float MARGIN = 24f;
+
+	/**
+	 * A soft drop shadow: a pre-blurred rounded square drawn as nine pieces, so it is one
+	 * smooth gradient at any size. {@code extent} is how far it reaches past the edge,
+	 * {@code strength} its darkest alpha (under the panel).
+	 */
+	public static void shadow(GuiGraphicsExtractor graphics, float x, float y, float w, float h, float r, int extent, int strength) {
+		if (strength <= 0 || w <= 0f || h <= 0f) {
+			return;
 		}
+		float e = extent;
+		float k = e / MARGIN;
+		float X = x - e;
+		float Y = y - e + 1.5f;
+		float W = w + e * 2f;
+		float H = h + e * 2f;
+		float cs = Math.min(32f * k, Math.min(W, H) * 0.5f);
+		int color = Math.min(255, strength) << 24;
+		float mw = W - cs * 2f;
+		float mh = H - cs * 2f;
+		piece(graphics, X, Y, cs, cs, 0, 0, 32, 32, color);
+		piece(graphics, X + W - cs, Y, cs, cs, 32, 0, 32, 32, color);
+		piece(graphics, X, Y + H - cs, cs, cs, 0, 32, 32, 32, color);
+		piece(graphics, X + W - cs, Y + H - cs, cs, cs, 32, 32, 32, 32, color);
+		if (mw > 0f) {
+			piece(graphics, X + cs, Y, mw, cs, 31, 0, 1, 32, color);
+			piece(graphics, X + cs, Y + H - cs, mw, cs, 31, 32, 1, 32, color);
+		}
+		if (mh > 0f) {
+			piece(graphics, X, Y + cs, cs, mh, 0, 31, 32, 1, color);
+			piece(graphics, X + W - cs, Y + cs, cs, mh, 32, 31, 32, 1, color);
+		}
+		if (mw > 0f && mh > 0f) {
+			piece(graphics, X + cs, Y + cs, mw, mh, 31, 31, 1, 1, color);
+		}
+	}
+
+	private static void piece(GuiGraphicsExtractor graphics, float x, float y, float w, float h, int u, int v, int rw, int rh, int color) {
+		GuiDraw.blit(graphics, SOFT, x, y, w, h, u, v, rw, rh, TEX, TEX, color);
 	}
 
 	/** A row, button or slot inside a panel: no shadow, faint white fill. */

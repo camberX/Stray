@@ -1038,6 +1038,12 @@ public final class GuiDraw {
 			text(graphics, font, MenuFont.hypr(shown), x, y, 1f, color, false);
 			return;
 		}
+		if (HudChrome.shadowInk() || dev.stray.client.ui.ShadowMenu.drawing()) {
+			if ((color >>> 24) >= 8) {
+				text(graphics, font, MenuFont.shadow(shown), x, y, 1f, color, false);
+			}
+			return;
+		}
 		if (dev.stray.client.ui.HyprMenu.drawing()) {
 			if ((color >>> 24) >= 8) {
 				text(graphics, font, MenuFont.hypr(shown), x, y, 1f, color, false);
@@ -1060,6 +1066,12 @@ public final class GuiDraw {
 		String shown = clickWords(value);
 		if (HudChrome.hyprInk()) {
 			text(graphics, font, MenuFont.hyprSmall(shown), x, y, 1f, color, false);
+			return;
+		}
+		if (HudChrome.shadowInk() || dev.stray.client.ui.ShadowMenu.drawing()) {
+			if ((color >>> 24) >= 8) {
+				text(graphics, font, MenuFont.shadowSmall(shown), x, y, 1f, color, false);
+			}
 			return;
 		}
 		if (dev.stray.client.ui.HyprMenu.drawing()) {
@@ -1094,6 +1106,17 @@ public final class GuiDraw {
 			text(graphics, font, value.copy().withStyle(MenuFont.hyprStyle(0)), x, y, 1f, color, false);
 			return;
 		}
+		if (HudChrome.shadow()) {
+			// Every part, not just the root: scoreboard lines carry their own font on each part.
+			net.minecraft.network.chat.FontDescription inter = MenuFont.hyprStyle(4).getFont();
+			net.minecraft.network.chat.MutableComponent out = Component.empty();
+			value.visit((style, part) -> {
+				out.append(Component.literal(part).withStyle(style.withFont(inter)));
+				return java.util.Optional.empty();
+			}, net.minecraft.network.chat.Style.EMPTY);
+			text(graphics, font, out, x, y, 1f, color, false);
+			return;
+		}
 		float scale = MenuFont.bodyScale();
 		text(graphics, font, MenuFont.applyBody(value), x, MenuFont.hudY(y, scale), scale, color, HudChrome.clickInk());
 	}
@@ -1126,6 +1149,9 @@ public final class GuiDraw {
 		if (HudChrome.hyprInk() || dev.stray.client.ui.HyprMenu.drawing()) {
 			return font.width(MenuFont.hypr(shown));
 		}
+		if (HudChrome.shadowInk() || dev.stray.client.ui.ShadowMenu.drawing()) {
+			return font.width(MenuFont.shadow(shown));
+		}
 		if (ClickGui.lightInk()) {
 			return font.width(ClickGui.styled(shown));
 		}
@@ -1139,6 +1165,9 @@ public final class GuiDraw {
 		String shown = clickWords(value);
 		if (HudChrome.hyprInk() || dev.stray.client.ui.HyprMenu.drawing()) {
 			return font.width(MenuFont.hyprSmall(shown));
+		}
+		if (HudChrome.shadowInk() || dev.stray.client.ui.ShadowMenu.drawing()) {
+			return font.width(MenuFont.shadowSmall(shown));
 		}
 		if (ClickGui.lightInk()) {
 			return font.width(ClickGui.styled(shown));

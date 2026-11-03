@@ -131,7 +131,7 @@ public final class ChatChrome {
 			return;
 		}
 		if (shadow()) {
-			ShadowLook.panel(graphics, x, y, w, h, 6f, ShadowLook.fill(focused ? 0.85f : 0.62f));
+			ShadowLook.panel(graphics, x, y, w, h, 6f, ShadowLook.FILL);
 			return;
 		}
 		if (click()) {
@@ -185,7 +185,7 @@ public final class ChatChrome {
 			return;
 		}
 		if (shadow()) {
-			ShadowLook.panel(graphics, x, y, w, INPUT_H, INPUT_H * 0.5f, ShadowLook.fill(0.85f));
+			ShadowLook.panel(graphics, x, y, w, INPUT_H, INPUT_H * 0.5f, ShadowLook.FILL);
 			return;
 		}
 		if (click()) {
