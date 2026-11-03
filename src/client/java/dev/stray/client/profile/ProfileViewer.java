@@ -393,7 +393,10 @@ public final class ProfileViewer {
 		Bag quiver,
 		Bag potions,
 		Bag fishing,
-		List<Bag> other
+		List<Bag> other,
+		int equipmentSlot,
+		int magicalPower,
+		String selectedPower
 	) {
 		public static Extras empty() {
 			return new Extras(
@@ -406,7 +409,10 @@ public final class ProfileViewer {
 				Bag.empty("Quiver", 9, 36),
 				Bag.empty("Potions", 9, 36),
 				Bag.empty("Fishing", 9, 36),
-				List.of()
+				List.of(),
+				-1,
+				0,
+				""
 			);
 		}
 
@@ -1562,7 +1568,170 @@ public final class ProfileViewer {
 		List<Bag> other = new ArrayList<>();
 		otherBags(inventory, other);
 		otherBags(object(inventory, "bag_contents"), other);
-		return new Extras(equipment, wardrobe, wardrobeSlot, equipmentWardrobe, accessories, vault, quiver, potions, fishing, List.copyOf(other));
+		// Hypixel moved the wardrobe into member.loadout: armor and equipment sets keyed by id,
+		// each piece its own NBT blob, with the worn set in equipped_set.
+		JsonObject loadout = object(member, "loadout");
+		int equipmentSlot = -1;
+		if (loadout != null) {
+			JsonObject armorSets = object(loadout, "armor");
+			if (armorSets != null) {
+				Bag sets = setBag("Wardrobe", armorSets, new String[] {"HELMET", "CHESTPLATE", "LEGGINGS", "BOOTS"});
+				if (!sets.vacant()) {
+					wardrobe = sets;
+				}
+				int on = intOf(armorSets, "equipped_set");
+				if (on > 0) {
+					wardrobeSlot = on;
+				}
+			}
+			JsonObject equipSets = object(loadout, "equipment");
+			if (equipSets != null) {
+				Bag sets = setBag("Equipment Wardrobe", equipSets, new String[] {"EQUIPMENT_SLOT_1", "EQUIPMENT_SLOT_2", "EQUIPMENT_SLOT_3", "EQUIPMENT_SLOT_4"});
+				if (!sets.vacant()) {
+					equipmentWardrobe = sets;
+				}
+				equipmentSlot = intOf(equipSets, "equipped_set");
+			}
+		}
+		JsonObject storage = object(member, "accessory_bag_storage");
+		int magicalPower = storage == null ? 0 : intOf(storage, "highest_magical_power");
+		String power = storage == null ? "" : string(storage, "selected_power");
+		if (magicalPower <= 0) {
+			magicalPower = estimateMagicalPower(accessories);
+		}
+		return new Extras(equipment, wardrobe, wardrobeSlot, equipmentWardrobe, accessories, vault, quiver, potions, fishing,
+			List.copyOf(other), equipmentSlot, magicalPower, power == null ? "" : power);
+	}
+
+	private static int intOf(JsonObject object, String key) {
+		if (object == null || !object.has(key)) {
+			return -1;
+		}
+		try {
+			return object.get(key).getAsInt();
+		} catch (RuntimeException e) {
+			return -1;
+		}
+	}
+
+	/**
+	 * Lays numbered sets out like the in-game wardrobe: 9 sets per page, one column
+	 * per set, one row per piece ({@code page * 36 + row * 9 + column}).
+	 */
+	private static Bag setBag(String name, JsonObject sets, String[] pieces) {
+		int max = 0;
+		Map<Integer, JsonObject> byId = new HashMap<>();
+		for (String key : sets.keySet()) {
+			JsonElement element = sets.get(key);
+			if (element == null || !element.isJsonObject()) {
+				continue;
+			}
+			JsonObject set = element.getAsJsonObject();
+			int id = intOf(set, "id");
+			if (id <= 0) {
+				try {
+					id = Integer.parseInt(key.replaceAll("\\D", ""));
+				} catch (NumberFormatException e) {
+					continue;
+				}
+			}
+			if (id <= 0) {
+				continue;
+			}
+			byId.put(id, set);
+			max = Math.max(max, id);
+		}
+		int pages = Math.max(1, (max + 8) / 9);
+		List<SlotItem> slots = new ArrayList<>();
+		for (int i = 0; i < pages * 36; i++) {
+			slots.add(SlotItem.empty(i));
+		}
+		for (Map.Entry<Integer, JsonObject> entry : byId.entrySet()) {
+			int s = entry.getKey() - 1;
+			int page = s / 9;
+			int col = s % 9;
+			for (int row = 0; row < pieces.length; row++) {
+				JsonElement piece = entry.getValue().get(pieces[row]);
+				if (piece == null || piece.isJsonNull()) {
+					continue;
+				}
+				Bag one = parseBag(name, piece, 1, 1);
+				for (SlotItem item : one.slots()) {
+					if (item != null && !item.empty()) {
+						int index = page * 36 + row * 9 + col;
+						slots.set(index, new SlotItem(index, item.id(), item.name(), item.count(), item.lore(), item.valueId()));
+						break;
+					}
+				}
+			}
+		}
+		return new Bag(name, 9, List.copyOf(slots));
+	}
+
+	/** Fallback when the API has no stored total: unique accessories by rarity, Hegemony counted twice. */
+	private static int estimateMagicalPower(Bag accessories) {
+		if (accessories == null || accessories.vacant()) {
+			return 0;
+		}
+		Map<String, Integer> best = new HashMap<>();
+		for (SlotItem item : accessories.slots()) {
+			if (item == null || item.empty()) {
+				continue;
+			}
+			int mp = rarityPower(item.lore());
+			if (mp <= 0) {
+				continue;
+			}
+			String id = item.id() == null ? item.name() : item.id();
+			if (id != null && id.toUpperCase(Locale.ROOT).contains("HEGEMONY")) {
+				mp *= 2;
+			}
+			String family = id == null ? "" : id.toUpperCase(Locale.ROOT).replaceAll("_(RING|ARTIFACT|RELIC|TALISMAN)$", "");
+			best.merge(family, mp, Math::max);
+		}
+		int total = 0;
+		for (int v : best.values()) {
+			total += v;
+		}
+		return total;
+	}
+
+	private static int rarityPower(List<String> lore) {
+		if (lore == null || lore.isEmpty()) {
+			return 0;
+		}
+		for (int i = lore.size() - 1; i >= 0; i--) {
+			String line = lore.get(i) == null ? "" : lore.get(i).replaceAll("\u00a7.", "").toUpperCase(Locale.ROOT);
+			if (line.isBlank()) {
+				continue;
+			}
+			if (line.contains("VERY SPECIAL")) {
+				return 5;
+			}
+			if (line.contains("SPECIAL")) {
+				return 3;
+			}
+			if (line.contains("MYTHIC")) {
+				return 22;
+			}
+			if (line.contains("LEGENDARY")) {
+				return 16;
+			}
+			if (line.contains("EPIC")) {
+				return 12;
+			}
+			if (line.contains("UNCOMMON")) {
+				return 5;
+			}
+			if (line.contains("RARE")) {
+				return 8;
+			}
+			if (line.contains("COMMON")) {
+				return 3;
+			}
+			return 0;
+		}
+		return 0;
 	}
 
 	/** Any other item bag Hypixel adds to the inventory object, shown under its own name. */

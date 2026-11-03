@@ -106,6 +106,9 @@ public class ProfileViewerScreen extends Screen {
 	private int selectedPet = -1;
 	private float yaw = -22f;
 	private boolean rotating;
+	private boolean closing;
+	private float tabAnim = 1f;
+	private float railY = Float.NaN;
 	private int wardrobePage;
 	private int equipPage;
 	private int previewSet = -1;
@@ -133,7 +136,10 @@ public class ProfileViewerScreen extends Screen {
 		super.init();
 		Theme.refresh();
 		placed = false;
-		appear = StrayConfig.get().loadoutsOpenAnim ? 0.08f : 1f;
+		appear = 0f;
+		closing = false;
+		tabAnim = 1f;
+		railY = Float.NaN;
 		if (query.isBlank()) {
 			if (ProfileViewer.status() == ProfileViewer.Status.IDLE) {
 				load();
@@ -175,8 +181,9 @@ public class ProfileViewerScreen extends Screen {
 		int dim = Anim.fade(0x30000000, appear);
 		GuiDraw.fill(graphics, 0, 0, width, height, dim);
 
-		float scale = (0.94f + 0.06f * appear) * StrayConfig.normalizeMenuScale(StrayConfig.get().menuScale);
-		float lift = (1f - appear) * 10f;
+		float ease = ease(appear);
+		float scale = (0.92f + 0.08f * ease) * StrayConfig.normalizeMenuScale(StrayConfig.get().menuScale);
+		float lift = (1f - ease) * 12f;
 		float cx = windowX + windowW * 0.5f;
 		float cy = windowY + windowH * 0.5f;
 		viewScale = Math.max(0.35f, scale);
@@ -196,7 +203,19 @@ public class ProfileViewerScreen extends Screen {
 
 		drawHeader(graphics, font, localMx, localMy);
 		drawRail(graphics, font, localMx, localMy);
-		drawBody(graphics, font, localMx, localMy);
+		float t = ease(tabAnim);
+		float slide = (1f - t) * 8f;
+		graphics.pose().pushMatrix();
+		graphics.pose().translate(0f, slide);
+		drawBody(graphics, font, localMx, Math.round(localMy - slide));
+		graphics.pose().popMatrix();
+		if (t < 0.999f) {
+			// Fades the new tab in by covering it with the window colour.
+			GuiDraw.fill(graphics, windowX + RAIL + 2, windowY + 46, windowW - RAIL - 6, windowH - 50, StageUi.fade(0xFF06080B, (1f - t) * 0.92f));
+		}
+		if (ease < 0.999f) {
+			GuiDraw.roundedFine(graphics, windowX, windowY, windowW, windowH, StageUi.R, StageUi.fade(0xFF06080B, (1f - ease) * 0.95f));
+		}
 
 		graphics.pose().popMatrix();
 
@@ -266,6 +285,7 @@ public class ProfileViewerScreen extends Screen {
 			int index = i;
 			hits.add(new Hit(chipX, chipY, w, 16, () -> {
 				ProfileViewer.select(index);
+				tabAnim = 0f;
 				listScroll = 0f;
 				itemPage = 0;
 				wardrobePage = 0;
@@ -282,11 +302,20 @@ public class ProfileViewerScreen extends Screen {
 		float x = windowX + 10;
 		float y = windowY + 54;
 		float w = RAIL - 12;
+		float target = y + tab.ordinal() * 25f;
+		if (Float.isNaN(railY)) {
+			railY = target;
+		}
+		railY += (target - railY) * (1f - (float) Math.exp(-18f * dt));
+		if (Math.abs(target - railY) < 0.2f) {
+			railY = target;
+		}
+		GuiDraw.roundedFine(graphics, x, railY, w, 22, 11f, StageUi.TILE_SEL);
 		for (Tab value : Tab.values()) {
 			boolean on = tab == value;
 			boolean hover = GuiDraw.hovered(mouseX, mouseY, x, y, w, 22);
 			if (on) {
-				GuiDraw.roundedFine(graphics, x, y, w, 22, 11f, StageUi.TILE_SEL);
+				// the sliding pill above marks it
 			} else if (hover) {
 				GuiDraw.roundedFine(graphics, x, y, w, 22, 11f, 0x0CFFFFFF);
 			}
@@ -295,6 +324,9 @@ public class ProfileViewerScreen extends Screen {
 			GuiDraw.menu(graphics, font, value.label, x + 25, GuiDraw.middle(y, 22), color);
 			Tab next = value;
 			hits.add(new Hit(x, y, w, 22, () -> {
+				if (tab != next) {
+					tabAnim = 0f;
+				}
 				tab = next;
 				listScroll = 0f;
 				queryFocused = false;
@@ -896,8 +928,9 @@ public class ProfileViewerScreen extends Screen {
 		}
 		cy += 30;
 		int equippedCol = -1;
-		if (!showEquip && extras.wardrobeSlot() > 0) {
-			int set = extras.wardrobeSlot() - 1;
+		int worn = showEquip ? extras.equipmentSlot() : extras.wardrobeSlot();
+		if (worn > 0) {
+			int set = worn - 1;
 			if (set / 9 == wardrobePage) {
 				equippedCol = set % 9;
 			}
@@ -919,7 +952,7 @@ public class ProfileViewerScreen extends Screen {
 				int index = wardrobePage * 36 + row * 9 + col;
 				ProfileViewer.SlotItem item = bag.at(index);
 				if (col == equippedCol && item.empty()) {
-					item = profile.armor().at(3 - row);
+					item = showEquip ? extras.equipment().at(row) : profile.armor().at(3 - row);
 				}
 				drawSlot(graphics, font, mouseX, mouseY, sx, cy + row * step, item);
 			}
@@ -991,28 +1024,57 @@ public class ProfileViewerScreen extends Screen {
 				chipY += 20;
 			}
 			chipX = paneChip(graphics, font, mouseX, mouseY, chipX, chipY, label, candidate.name().equals(paneName), () -> {
+				if (!paneName.equals(candidate.name())) {
+					tabAnim = 0.35f;
+				}
 				paneName = candidate.name();
 				itemPage = 0;
+				listScroll = 0f;
 			});
 		}
-		y = chipY - 8;
+		float bottom = y + h - 6;
+		float rowY = chipY + 22;
 
 		List<ProfileViewer.Bag> pages = pane.pages();
-		float pageY = y + 32;
 		boolean paged = pages.size() > 1;
+		boolean accessories = "Accessories".equals(paneName);
+		float rowH = 0f;
 		if (paged) {
-			float px = x + 12;
+			float px = x + 8;
 			for (int i = 0; i < pages.size(); i++) {
-				String label = pages.get(i).name().isBlank() ? String.valueOf(i + 1) : shortPage(pages.get(i).name(), i);
+				String label = pages.get(i).name().isBlank() || accessories ? String.valueOf(i + 1) : shortPage(pages.get(i).name(), i);
 				float pw = GuiDraw.smallWidth(font, label) + 12;
+				if (px + pw > x + w - 120 && px > x + 8) {
+					px = x + 8;
+					rowY += 19;
+				}
 				boolean on = i == itemPage;
-				boolean over = GuiDraw.hovered(mouseX, mouseY, px, pageY, pw, 16);
-				card(graphics, px, pageY, pw, 16, 5, on || over ? Theme.CARD_HOVER : Theme.CARD, on ? ACC : LINE);
-				GuiDraw.small(graphics, font, label, px + 6, GuiDraw.middle(pageY, 16), on ? ACC : StageUi.TEXT);
+				boolean over = GuiDraw.hovered(mouseX, mouseY, px, rowY, pw, 16);
+				if (on || over) {
+					GuiDraw.roundedFine(graphics, px, rowY, pw, 16, 8f, on ? StageUi.TILE_SEL : StageUi.CHIP);
+				}
+				GuiDraw.small(graphics, font, label, px + 6, GuiDraw.middle(rowY, 16), on ? StageUi.TEXT : StageUi.MUTED);
 				int page = i;
-				hits.add(new Hit(px, pageY, pw, 16, () -> itemPage = page));
-				px += pw + 4;
+				hits.add(new Hit(px, rowY, pw, 16, () -> {
+					itemPage = page;
+					listScroll = 0f;
+				}));
+				px += pw + 3;
 			}
+			rowH = 20f;
+		}
+		if (accessories) {
+			ProfileViewer.Extras extras = profile.extras();
+			String mp = prettyNumber(Math.max(0, extras.magicalPower()));
+			float vx = x + w - 10 - GuiDraw.menuWidth(font, mp);
+			GuiDraw.menu(graphics, font, mp, vx, GuiDraw.middle(rowY, 16), 0xFFE7B0FF);
+			StageUi.label(graphics, font, "MAGICAL POWER", vx - 6 - StageUi.labelWidth(font, "MAGICAL POWER"), GuiDraw.middle(rowY, 16) + 1, StageUi.MUTED);
+			hits.add(new Hit(vx - 90, rowY, x + w - vx + 90, 16, () -> { }));
+			if (GuiDraw.hovered(mouseX, mouseY, vx - 90, rowY, x + w - vx + 90, 16)) {
+				String power = extras.selectedPower() == null || extras.selectedPower().isBlank() ? "none" : prettyPower(extras.selectedPower());
+				tooltip = "Magical power " + mp + "\nSelected power: " + power;
+			}
+			rowH = 20f;
 		}
 
 		ProfileViewer.Bag bag = pages.isEmpty() ? ProfileViewer.Bag.empty("Empty", 9, 0) : pages.get(Math.max(0, Math.min(itemPage, pages.size() - 1)));
@@ -1020,35 +1082,80 @@ public class ProfileViewerScreen extends Screen {
 		boolean armor = playerInv && !profile.armor().vacant();
 		int cols = playerInv ? 9 : Math.max(1, bag.columns());
 		int rows = playerInv && bag.size() >= 36 ? 4 : Math.max(1, bag.rows());
-		float top = paged ? y + 52 : y + 36;
-		float availW = w - 24;
-		float availH = y + h - top - 12;
-		float armorGap = armor ? 12f : 0f;
-		float hotbarGap = playerInv && bag.size() >= 36 ? 10f : 0f;
-		float byWidth = (availW - armorGap) / (cols + (armor ? 1 : 0));
-		float byHeight = (availH - hotbarGap) / rows;
-		slot = Mth.clamp(Math.min(byWidth, byHeight), 24f, 44f);
+		float top = rowY + rowH + (rowH > 0 ? 2f : 0f);
+		float availW = w - 16;
+		float availH = bottom - top;
+		float armorGap = armor ? 10f : 0f;
+		float hotbarGap = playerInv && bag.size() >= 36 ? 8f : 0f;
+		float gap = SLOT_GAP;
+		float byWidth = (availW - armorGap - (cols - 1) * gap) / (cols + (armor ? 1 : 0));
+		float byHeight = (availH - hotbarGap - (rows - 1) * gap) / rows;
+		slot = Mth.clamp(Math.min(byWidth, byHeight), 14f, 40f);
 
-		float step = slot + SLOT_GAP;
-		float gridW = (armor ? slot + armorGap : 0f) + cols * slot + (cols - 1) * SLOT_GAP;
-		float gridH = rows * slot + (rows - 1) * SLOT_GAP + hotbarGap;
+		float step = slot + gap;
+		float gridW = (armor ? slot + armorGap : 0f) + cols * slot + (cols - 1) * gap;
+		float gridH = rows * slot + (rows - 1) * gap + hotbarGap;
 		float gridX = x + (w - gridW) * 0.5f;
-		float gridY = top + Math.max(0f, (availH - gridH) * 0.35f);
+		boolean overflow = gridH > availH + 0.5f;
+		float scroll = 0f;
+		if (overflow) {
+			listScroll = Mth.clamp(listScroll, 0f, gridH - availH);
+			scroll = listScroll;
+		}
+		float gridY = overflow ? top - scroll : top + Math.max(0f, (availH - gridH) * 0.35f);
+		boolean clip = GuiDraw.scissor(graphics, x, top - 1, w, availH + 2);
 		if (playerInv && armor) {
-			drawArmor(graphics, font, mouseX, mouseY, gridX, gridY + (gridH - 4 * step + SLOT_GAP) * 0.5f, profile.armor());
+			drawArmor(graphics, font, mouseX, mouseY, gridX, gridY + (gridH - 4 * step + gap) * 0.5f, profile.armor());
 			gridX += slot + armorGap;
 		}
 		if (playerInv && bag.size() >= 36) {
 			drawGrid(graphics, font, mouseX, mouseY, gridX, gridY, 9, 3, bag, 9);
-			drawGrid(graphics, font, mouseX, mouseY, gridX, gridY + 3 * step + hotbarGap - SLOT_GAP, 9, 1, bag, 0);
+			drawGrid(graphics, font, mouseX, mouseY, gridX, gridY + 3 * step + hotbarGap - gap, 9, 1, bag, 0);
 		} else if (!bag.vacant() || bag.size() > 0) {
 			drawGrid(graphics, font, mouseX, mouseY, gridX, gridY, cols, rows, bag, 0);
 		} else {
 			GuiDraw.small(graphics, font, "Nothing in this bag.", gridX, gridY + 6, StageUi.MUTED);
 		}
+		if (clip) {
+			GuiDraw.disableScissor(graphics);
+		}
+		if (overflow && !GuiDraw.hovered(mouseX, mouseY, x, top, w, availH)) {
+			hoverStack = ItemStack.EMPTY;
+		}
+	}
+
+	private static String prettyPower(String id) {
+		String[] parts = id.toLowerCase(Locale.ROOT).split("_");
+		StringBuilder b = new StringBuilder();
+		for (String part : parts) {
+			if (part.isEmpty()) {
+				continue;
+			}
+			if (b.length() > 0) {
+				b.append(' ');
+			}
+			b.append(Character.toUpperCase(part.charAt(0))).append(part.substring(1));
+		}
+		return b.toString();
 	}
 
 	private record Pane(String name, List<ProfileViewer.Bag> pages) {
+	}
+
+	/** Big bags as pages of {@code size} slots, the way the game pages them. */
+	private static List<ProfileViewer.Bag> split(ProfileViewer.Bag bag, int size) {
+		if (bag.size() <= size) {
+			return List.of(bag);
+		}
+		List<ProfileViewer.Bag> out = new ArrayList<>();
+		for (int start = 0; start < bag.size(); start += size) {
+			List<ProfileViewer.SlotItem> part = new ArrayList<>(bag.slots().subList(start, Math.min(bag.size(), start + size)));
+			ProfileViewer.Bag page = new ProfileViewer.Bag(bag.name(), bag.columns(), List.copyOf(part));
+			if (!page.vacant() || out.isEmpty()) {
+				out.add(page);
+			}
+		}
+		return out;
 	}
 
 	private static List<Pane> panes(ProfileViewer.Profile profile) {
@@ -1063,7 +1170,7 @@ public class ProfileViewerScreen extends Screen {
 		ProfileViewer.Extras extras = profile.extras();
 		for (ProfileViewer.Bag bag : List.of(extras.accessories(), extras.vault(), extras.quiver(), extras.potions(), extras.fishing())) {
 			if (!bag.vacant()) {
-				out.add(new Pane(bag.name(), List.of(bag)));
+				out.add(new Pane(bag.name(), split(bag, 45)));
 			}
 		}
 		for (ProfileViewer.Bag bag : extras.other()) {
@@ -1453,15 +1560,30 @@ public class ProfileViewerScreen extends Screen {
 		long now = System.nanoTime();
 		dt = Mth.clamp((now - lastNs) / 1_000_000_000f, 0.008f, 0.05f);
 		lastNs = now;
-		if (StrayConfig.get().loadoutsOpenAnim) {
-			if (Math.abs(1f - appear) < 0.003f) {
-				appear = 1f;
-			} else {
-				appear += (1f - appear) * (1f - (float) Math.exp(-14f * dt));
+		if (closing) {
+			appear = Math.max(0f, appear - dt / 0.14f);
+			if (appear <= 0f) {
+				closing = false;
+				super.onClose();
 			}
 		} else {
-			appear = 1f;
+			appear = Math.min(1f, appear + dt / 0.22f);
 		}
+		tabAnim = Math.min(1f, tabAnim + dt / 0.2f);
+	}
+
+	private static float ease(float t) {
+		float u = 1f - Mth.clamp(t, 0f, 1f);
+		return 1f - u * u * u;
+	}
+
+	@Override
+	public void onClose() {
+		if (closing) {
+			return;
+		}
+		closing = true;
+		queryFocused = false;
 	}
 
 	private void load() {
