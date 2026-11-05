@@ -93,6 +93,9 @@ public final class GuiFrostBlur {
 	}
 
 	public static void captureAfterWorld() {
+		if (!StrayShaders.ready()) {
+			return;
+		}
 		Minecraft client = Minecraft.getInstance();
 		List<Region> regions = takeRegions(client, BLITS, blitOverflow, REGION_PAD_GUI);
 		blitOverflow = false;
@@ -130,6 +133,9 @@ public final class GuiFrostBlur {
 	}
 
 	public static void capture(float frost01) {
+		if (!StrayShaders.ready()) {
+			return;
+		}
 		capture(frost01, null);
 	}
 
@@ -172,6 +178,9 @@ public final class GuiFrostBlur {
 
 	/** Like {@link #blitWindow(GuiGraphicsExtractor, float, float, float, float, float)} but faded, so it can animate out. */
 	public static void blitWindow(GuiGraphicsExtractor graphics, float x, float y, float w, float h, float radius, float alpha) {
+		if (!StrayShaders.ready()) {
+			return;
+		}
 		if (alpha <= 0.004f) {
 			return;
 		}
@@ -213,6 +222,9 @@ public final class GuiFrostBlur {
 	 * @param shine specular strength, 0 to 1. 1 matches the control-menu lens.
 	 */
 	public static void blitLiquid(GuiGraphicsExtractor graphics, float x, float y, float w, float h, float radius, float shine) {
+		if (!StrayShaders.ready()) {
+			return;
+		}
 		note(LIQUID, graphics, x, y, w, h, true);
 		if (!haveGlass || glass == null || w <= 0f || h <= 0f) {
 			return;

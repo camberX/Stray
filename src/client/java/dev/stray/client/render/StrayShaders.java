@@ -1,0 +1,48 @@
+package dev.stray.client.render;
+
+import dev.stray.Stray;
+import net.minecraft.client.Minecraft;
+
+/**
+ * Whether Stray's own shaders can be loaded yet. Mods like Remove Reloading Screen draw
+ * menus before the first resource load has finished, while only vanilla's files are
+ * there; a Stray pipeline compiled then cannot find its shader and the game crashes. Until
+ * the files are present, the drawing code uses its plain fallbacks instead.
+ */
+public final class StrayShaders {
+	private static final String[] PROBES = {
+		"shaders/core/gui_round_rect.vsh",
+		"shaders/post/title_marble.fsh"
+	};
+	private static volatile boolean ready;
+	private static long nextCheckNs;
+
+	private StrayShaders() {
+	}
+
+	public static boolean ready() {
+		if (ready) {
+			return true;
+		}
+		long now = System.nanoTime();
+		if (now < nextCheckNs) {
+			return false;
+		}
+		nextCheckNs = now + 200_000_000L;
+		Minecraft client = Minecraft.getInstance();
+		if (client == null || client.getResourceManager() == null) {
+			return false;
+		}
+		try {
+			for (String path : PROBES) {
+				if (client.getResourceManager().getResource(Stray.id(path)).isEmpty()) {
+					return false;
+				}
+			}
+		} catch (RuntimeException e) {
+			return false;
+		}
+		ready = true;
+		return true;
+	}
+}

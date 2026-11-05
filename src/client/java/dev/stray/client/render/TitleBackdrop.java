@@ -86,7 +86,7 @@ public final class TitleBackdrop {
 	}
 
 	private static boolean paint(GuiGraphicsExtractor graphics, int width, int height) {
-		if (failed) {
+		if (failed || !StrayShaders.ready()) {
 			return false;
 		}
 		Minecraft client = Minecraft.getInstance();

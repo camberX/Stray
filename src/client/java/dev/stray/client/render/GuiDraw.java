@@ -305,6 +305,9 @@ public final class GuiDraw {
 		int texW,
 		int texH
 	) {
+		if (!StrayShaders.ready()) {
+			return false;
+		}
 		if (size <= 0f || id == null || !(graphics instanceof dev.stray.client.mixin.GuiGraphicsExtractorInvoker invoker)) {
 			return false;
 		}
@@ -475,6 +478,9 @@ public final class GuiDraw {
 	 * 2 bottom-right, 3 bottom-left. ring draws a 1 screen-pixel outline instead.
 	 */
 	private static boolean sdfCorner(GuiGraphicsExtractor graphics, float x, float y, float radius, int corner, int color, boolean ring) {
+		if (!StrayShaders.ready()) {
+			return false;
+		}
 		if (!(graphics instanceof dev.stray.client.mixin.GuiGraphicsExtractorInvoker invoker)) {
 			return false;
 		}
@@ -519,6 +525,9 @@ public final class GuiDraw {
 	 * a 256px cover shrunk into a HUD stays smooth. Returns false if unavailable.
 	 */
 	public static boolean coverBlit(GuiGraphicsExtractor graphics, Identifier id, float x, float y, float size, float radius) {
+		if (!StrayShaders.ready()) {
+			return false;
+		}
 		if (size <= 0f || id == null || !(graphics instanceof dev.stray.client.mixin.GuiGraphicsExtractorInvoker invoker)) {
 			return false;
 		}

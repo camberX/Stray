@@ -75,6 +75,11 @@ public final class RoundRect {
 				return;
 			}
 		}
+		if (!StrayShaders.ready()) {
+			// Resources still loading: a plain rectangle, no custom shader.
+			GuiDraw.fill(g, x, y, w, h, tl);
+			return;
+		}
 		ensurePipeline();
 		g.guiRenderState.addGuiElement(new State(pipeline, pose, x, y, x + w, y + h, u, v, tl, tr, br, bl, scissor, bounds));
 	}
