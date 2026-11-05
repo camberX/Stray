@@ -162,6 +162,23 @@ public final class RoundRect {
 		}
 	}
 
+	/**
+	 * Whether the pipeline compiles now. During a resource reload the new files can be
+	 * visible before the shader cache has them; a failed compile is not cached, so this
+	 * can be asked again later.
+	 */
+	static boolean compiles() {
+		//? if >=26.3 {
+		try {
+			ensurePipeline();
+			return com.mojang.blaze3d.systems.RenderSystem.getCompiledPipelineNullable(pipeline) != null;
+		} catch (RuntimeException e) {
+			return false;
+		}
+		//?} else {
+		/*return true;*///?}
+	}
+
 	private static synchronized void ensurePipeline() {
 		if (pipeline != null) {
 			return;

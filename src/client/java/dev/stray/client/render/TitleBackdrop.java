@@ -47,7 +47,8 @@ public final class TitleBackdrop {
 	private static int targetH;
 	private static long renderedBucket = Long.MIN_VALUE;
 	private static int renderedAccent = -1;
-	private static boolean failed;
+	/** A failed draw waits this long before trying again (shaders may still be loading). */
+	private static long failedUntil;
 	private static boolean pending;
 	private static boolean ready;
 	private static int pendingW;
@@ -86,7 +87,7 @@ public final class TitleBackdrop {
 	}
 
 	private static boolean paint(GuiGraphicsExtractor graphics, int width, int height) {
-		if (failed || !StrayShaders.ready()) {
+		if (System.nanoTime() < failedUntil || !StrayShaders.ready()) {
 			return false;
 		}
 		Minecraft client = Minecraft.getInstance();
@@ -123,14 +124,14 @@ public final class TitleBackdrop {
 			graphics.pose().popMatrix();
 			return true;
 		} catch (RuntimeException ex) {
-			failed = true;
+			failedUntil = System.nanoTime() + 3_000_000_000L;
 			return false;
 		}
 	}
 
 	/** Called during the frame's render phase, before the GUI is drawn. */
 	public static void flush() {
-		if (!pending || failed || target == null || pipeline == null) {
+		if (!pending || System.nanoTime() < failedUntil || target == null || pipeline == null) {
 			pending = false;
 			return;
 		}
@@ -142,7 +143,7 @@ public final class TitleBackdrop {
 			render(pendingW, pendingH, pendingAccent);
 			ready = true;
 		} catch (RuntimeException ex) {
-			failed = true;
+			failedUntil = System.nanoTime() + 3_000_000_000L;
 		}
 	}
 

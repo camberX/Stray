@@ -28,7 +28,7 @@ public final class StrayShaders {
 		if (now < nextCheckNs) {
 			return false;
 		}
-		nextCheckNs = now + 200_000_000L;
+		nextCheckNs = now + 500_000_000L;
 		Minecraft client = Minecraft.getInstance();
 		if (client == null || client.getResourceManager() == null) {
 			return false;
@@ -40,6 +40,11 @@ public final class StrayShaders {
 				}
 			}
 		} catch (RuntimeException e) {
+			return false;
+		}
+		// The files can show up before the reload has rebuilt the shader cache (most of all with
+		// Remove Reloading Screen), so also check the shader really compiles now.
+		if (!com.mojang.blaze3d.systems.RenderSystem.isOnRenderThread() || !RoundRect.compiles()) {
 			return false;
 		}
 		ready = true;
