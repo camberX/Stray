@@ -107,6 +107,8 @@ public final class StrayHud {
 		PipHudRenderer.extract(graphics, delta);
 		HudChrome.element(null);
 		TopDownHudRenderer.extract(graphics, delta);
+		// Dungeon map (dev.stray.client.dungeon.map).
+		dev.stray.client.dungeon.map.DungeonMapRenderer.extract(graphics, delta);
 		HudChrome.element(null);
 		RawmatsHudRenderer.extract(graphics, delta);
 		HudChrome.element(null);

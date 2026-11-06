@@ -254,7 +254,7 @@ public final class ClickGui {
 				}
 				return;
 			}
-			if (row.mod.feature != null || row.mod.timeout || row.mod.menuStyle || "Array list".equals(row.mod.name) || "Themed GUIs".equals(row.mod.name) || "Themed chat".equals(row.mod.name) || CUSTOMIZE.equals(row.mod.name) || CS2.equals(row.mod.name) || LEAP.equals(row.mod.name) || ALIGN.equals(row.mod.name)) {
+			if (row.mod.feature != null || row.mod.timeout || row.mod.menuStyle || "Array list".equals(row.mod.name) || "Themed GUIs".equals(row.mod.name) || "Themed chat".equals(row.mod.name) || CUSTOMIZE.equals(row.mod.name) || CS2.equals(row.mod.name) || LEAP.equals(row.mod.name) || ALIGN.equals(row.mod.name) || MAP.equals(row.mod.name)) {
 				if (row.mod.name.equals(expandedName)) {
 					expandedName = null;
 				} else {
@@ -617,6 +617,8 @@ public final class ClickGui {
 			drawLeap(screen, graphics, font, boxX, y, boxW);
 		} else if (ALIGN.equals(mod.name)) {
 			drawAlign(screen, graphics, font, boxX, y, boxW);
+		} else if (MAP.equals(mod.name)) {
+			drawMap(screen, graphics, font, boxX, y, boxW);
 		} else if (mod.menuStyle) {
 			if ("HUD".equals(mod.name)) {
 				drawHud(screen, graphics, font, boxX, y, boxW);
@@ -891,6 +893,7 @@ public final class ClickGui {
 	static final String CS2 = "CS2 knife";
 	static final String LEAP = "Leap menu";
 	static final String ALIGN = "Align triggerbot";
+	static final String MAP = "Dungeon map";
 
 	/** CS2 knives (local build): pick the knife, finish, seed and wear. */
 	private static void drawCs2(StrayScreen screen, GuiGraphicsExtractor graphics, Font font, float x, float y, float w) {
@@ -912,6 +915,50 @@ public final class ClickGui {
 			c.alignTriggerbotRandom = !c.alignTriggerbotRandom;
 			UnloadState.markDirty();
 		});
+	}
+
+	private static final String[] MAP_INFO = {"Checkmarks", "Secrets", "Room names", "Names + secrets", "Secrets + puzzles"};
+	private static final String[] MAP_NAMES = {"Off", "Holding leap", "Always"};
+
+	/** Dungeon map: what rooms show, heads and names. Position and size live in the HUD editor. */
+	private static void drawMap(StrayScreen screen, GuiGraphicsExtractor graphics, Font font, float x, float y, float w) {
+		StrayConfig c = StrayConfig.get();
+		drawButton(screen, graphics, font, x, y, w, "Rooms: " + MAP_INFO[Math.floorMod(c.dungeonMapRoomInfo, MAP_INFO.length)], () -> {
+			c.dungeonMapRoomInfo = Math.floorMod(c.dungeonMapRoomInfo + 1, MAP_INFO.length);
+			UnloadState.markDirty();
+		});
+		y += stride();
+		drawChoice(screen, graphics, font, x, y, w, "Player heads", c.dungeonMapHeads, () -> {
+			c.dungeonMapHeads = !c.dungeonMapHeads;
+			UnloadState.markDirty();
+		});
+		y += stride();
+		drawButton(screen, graphics, font, x, y, w, "Names: " + MAP_NAMES[Math.floorMod(c.dungeonMapPlayerNames, MAP_NAMES.length)], () -> {
+			c.dungeonMapPlayerNames = Math.floorMod(c.dungeonMapPlayerNames + 1, MAP_NAMES.length);
+			UnloadState.markDirty();
+		});
+		y += stride();
+		drawChoice(screen, graphics, font, x, y, w, "Class colours", c.dungeonMapClassBorders, () -> {
+			c.dungeonMapClassBorders = !c.dungeonMapClassBorders;
+			UnloadState.markDirty();
+		});
+		y += stride();
+		drawChoice(screen, graphics, font, x, y, w, "Guess unopened 1x1s", c.dungeonMapPredict, () -> {
+			c.dungeonMapPredict = !c.dungeonMapPredict;
+			UnloadState.markDirty();
+		});
+		y += stride();
+		drawChoice(screen, graphics, font, x, y, w, "Hide in boss", c.dungeonMapHideInBoss, () -> {
+			c.dungeonMapHideInBoss = !c.dungeonMapHideInBoss;
+			UnloadState.markDirty();
+		});
+		if (!dev.stray.Edition.LEGIT) {
+			y += stride();
+			drawChoice(screen, graphics, font, x, y, w, "Show unopened rooms", c.dungeonMapCheater, () -> {
+				c.dungeonMapCheater = !c.dungeonMapCheater;
+				UnloadState.markDirty();
+			});
+		}
 	}
 
 	/** Leap menu: the look and the original menu's options. */
@@ -1183,6 +1230,9 @@ public final class ClickGui {
 		}
 		if (ALIGN.equals(mod.name)) {
 			return stackH(2);
+		}
+		if (MAP.equals(mod.name)) {
+			return stackH(dev.stray.Edition.LEGIT ? 6 : 7);
 		}
 		if (mod.menuStyle) {
 			if ("HUD".equals(mod.name)) {
@@ -1772,6 +1822,7 @@ public final class ClickGui {
 		java.util.Map.entry("Party stats", "Shows a stats card when someone joins from the party finder."),
 		java.util.Map.entry("Align triggerbot", "F7 arrow align: while you look at an arrow that is not right yet, it right clicks it with your delay until it is. Clicks go through the normal use key."),
 		java.util.Map.entry("Own nametag", "Shows your own name above your head in third person (F5)."),
+		java.util.Map.entry("Dungeon map", "NoammAddons' dungeon map in the Shadow look: rooms, doors, checkmarks or names, and where your teammates are. Move and scale it in the HUD editor."),
 		java.util.Map.entry("Leap menu", "Spirit Leap as four big panels, optionally showing what each teammate sees. Leap logic from NoammAddons."),
 		java.util.Map.entry("Array list", "Lists the modules you have turned on."),
 		java.util.Map.entry("Watermark", "The Stray watermark in a corner of the screen."),
@@ -1870,6 +1921,7 @@ public final class ClickGui {
 			|| CS2.equals(mod.name)
 			|| LEAP.equals(mod.name)
 			|| ALIGN.equals(mod.name)
+			|| MAP.equals(mod.name)
 			|| "Custom title".equals(mod.name);
 	}
 
@@ -1926,6 +1978,10 @@ public final class ClickGui {
 		}
 		if (ALIGN.equals(mod.name)) {
 			drawAlign(screen, graphics, font, x, y, w);
+			return;
+		}
+		if (MAP.equals(mod.name)) {
+			drawMap(screen, graphics, font, x, y, w);
 			return;
 		}
 		if (mod.menuStyle) {
@@ -2002,6 +2058,7 @@ public final class ClickGui {
 		mods.add(mod("Party stats", "Combat", null, null, () -> config.partyFinderStats, v -> config.partyFinderStats = v, true, false));
 		mods.add(mod(LEAP, "Combat", null, null, () -> config.leapMenuEnabled, v -> config.leapMenuEnabled = v, true, false));
 		mods.add(mod(ALIGN, "Combat", null, null, () -> config.alignTriggerbot, v -> config.alignTriggerbot = v, true, false));
+		mods.add(mod(MAP, "Combat", null, null, () -> config.dungeonMapEnabled, v -> config.dungeonMapEnabled = v, true, false));
 		addSlayer(mods, config);
 		mods.add(mod("Array list", "HUD", null, null, () -> config.arrayList, v -> config.arrayList = v, false, false));
 		mods.add(mod("Watermark", "HUD", StrayScreen.Feature.WATERMARK, null, () -> config.watermarkEnabled, v -> config.watermarkEnabled = v, true, false));

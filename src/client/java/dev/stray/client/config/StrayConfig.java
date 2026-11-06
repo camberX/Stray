@@ -335,6 +335,18 @@ public final class StrayConfig {
 	public boolean alignTriggerbot = false;
 	public int alignTriggerbotDelay = 150;
 	public boolean alignTriggerbotRandom = true;
+	/** Dungeon map (NoammAddons' map, in the Shadow look). */
+	public boolean dungeonMapEnabled = false;
+	/** 0 checkmarks, 1 secrets, 2 room names, 3 names + secrets, 4 secrets + puzzle names. */
+	public int dungeonMapRoomInfo = 0;
+	/** 0 off, 1 while holding a leap, 2 always. */
+	public int dungeonMapPlayerNames = 1;
+	public boolean dungeonMapHeads = true;
+	public boolean dungeonMapClassBorders = true;
+	public boolean dungeonMapPredict = true;
+	public boolean dungeonMapHideInBoss = false;
+	/** Full edition only: shows rooms you have not opened yet, from the loaded world. */
+	public boolean dungeonMapCheater = false;
 	public boolean arrayListAccent = false;
 	public java.util.List<String> arrayListHidden = new java.util.ArrayList<>();
 	public java.util.List<ClickColumnPos> clickColumns = new java.util.ArrayList<>();
@@ -452,6 +464,7 @@ public final class StrayConfig {
 	public HudSlot slotGardenFever = new HudSlot();
 	public HudSlot slotScatha = new HudSlot();
 	public HudSlot slotTopDown = new HudSlot();
+	public HudSlot slotDungeonMap = new HudSlot();
 	public HudSlot slotSlayer = new HudSlot();
 	public HudSlot slotSlayerProfit = new HudSlot();
 	public HudSlot slotSlayerRng = new HudSlot();
@@ -1650,6 +1663,9 @@ public final class StrayConfig {
 				}
 				loaded.topDownHeight = clamp(loaded.topDownHeight, 4f, 40f);
 				loaded.slotTopDown = hudSlot(loaded.slotTopDown);
+				loaded.slotDungeonMap = hudSlot(loaded.slotDungeonMap);
+				loaded.dungeonMapRoomInfo = Math.floorMod(loaded.dungeonMapRoomInfo, 5);
+				loaded.dungeonMapPlayerNames = Math.floorMod(loaded.dungeonMapPlayerNames, 3);
 				loaded.slotSlayer = hudSlot(loaded.slotSlayer);
 				loaded.slotSlayerProfit = hudSlot(loaded.slotSlayerProfit);
 				loaded.slotSlayerRng = hudSlot(loaded.slotSlayerRng);
@@ -2788,6 +2804,7 @@ public final class StrayConfig {
 		slotGardenFever = new HudSlot();
 		slotScatha = new HudSlot();
 		slotTopDown = new HudSlot();
+		slotDungeonMap = new HudSlot();
 		slotSlayer = new HudSlot();
 		slotSlayerProfit = new HudSlot();
 		slotSlayerRng = new HudSlot();

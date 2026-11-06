@@ -241,6 +241,8 @@ public final class StrayClient implements ClientModInitializer {
 			ScathaTimer.onMessage(message, overlay);
 			if (overlay) {
 				SkillProgressTracker.onActionBar(message);
+				// Dungeon map: secrets found in the current room.
+				dev.stray.client.dungeon.map.DungeonMap.onActionBar(message.getString());
 			}
 			boolean slayerShow = overlay || dev.stray.client.slayer.SlayerApi.onChat(message);
 			return CrystalHollows.allowChat(message, overlay) && slayerShow;
@@ -446,6 +448,8 @@ public final class StrayClient implements ClientModInitializer {
 
 		ClientTickEvents.END_CLIENT_TICK.register(client -> {
 			dev.stray.client.dungeon.DungeonParty.tick(client);
+			// Dungeon map (read only).
+			dev.stray.client.dungeon.map.DungeonMap.tick(client);
 			if (!dev.stray.Edition.LEGIT) { dev.stray.client.dungeon.AlignTriggerbot.tick(client); }
 			if (!dev.stray.client.dungeon.LeapMenu.active()) {
 				dev.stray.client.dungeon.LeapMenu.onContainerClosed();
