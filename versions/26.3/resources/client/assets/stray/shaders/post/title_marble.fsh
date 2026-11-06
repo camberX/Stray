@@ -19,17 +19,35 @@ vec2 orb(float k, float ph, float rad) {
     return rad * vec2(cos(a), sin(a));
 }
 
+// Integer hash (pcg2d). The old float hash, fract(p * 123.34...), rounded
+// differently depending on how the driver ordered the math, so neighbouring
+// noise cells disagreed on their shared corners and the domain warp blew that
+// up into straight cracks across the marble. Integer math is exact everywhere.
+float hashCell(ivec2 cell) {
+    uvec2 v = uvec2(cell) * 1664525u + 1013904223u;
+    v.x += v.y * 1664525u;
+    v.y += v.x * 1664525u;
+    v ^= v >> 16u;
+    v.x += v.y * 1664525u;
+    v.y += v.x * 1664525u;
+    v ^= v >> 16u;
+    return float((v.x ^ v.y) >> 8u) * (1.0 / 16777216.0);
+}
+
 float hash(vec2 p) {
-    p = fract(p * vec2(123.34, 456.21));
-    p += dot(p, p + 45.32);
-    return fract(p.x * p.y);
+    return hashCell(ivec2(floor(p)));
 }
 
 float noise(vec2 p) {
-    vec2 i = floor(p);
-    vec2 f = fract(p);
+    vec2 fl = floor(p);
+    ivec2 i = ivec2(fl);
+    vec2 f = p - fl;
     f = f * f * (3.0 - 2.0 * f);
-    return mix(mix(hash(i), hash(i + vec2(1.0, 0.0)), f.x), mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), f.x), f.y);
+    return mix(
+        mix(hashCell(i), hashCell(i + ivec2(1, 0)), f.x),
+        mix(hashCell(i + ivec2(0, 1)), hashCell(i + ivec2(1, 1)), f.x),
+        f.y
+    );
 }
 
 float fbm(vec2 p) {
