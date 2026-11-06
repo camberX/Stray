@@ -5317,6 +5317,11 @@ public class StrayScreen extends Screen {
 		hits.add(new Hit(x, y, w, h, click));
 	}
 
+	/** Clicked and dragged across: gets the pointer's x each time. */
+	void clickDragHit(float x, float y, float w, float h, DoubleConsumer drag) {
+		hits.add(new Hit(x, y, w, h, drag, true));
+	}
+
 	void clickListenBind(int which) {
 		bindListen = which;
 	}

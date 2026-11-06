@@ -770,6 +770,64 @@ public final class ClickGui {
 		screen.clickHit(ix, iy, iw, box(), pick);
 	}
 
+	/**
+	 * Number row: label left, value right, a thin bar along the bottom showing where the
+	 * value sits. Click or drag across the row to set it (snapped to {@code step}).
+	 */
+	private static void drawSlider(
+		StrayScreen screen,
+		GuiGraphicsExtractor graphics,
+		Font font,
+		float x,
+		float y,
+		float w,
+		String label,
+		int value,
+		int min,
+		int max,
+		int step,
+		String unit,
+		java.util.function.IntConsumer set
+	) {
+		int ix = Math.round(x) + NEST;
+		int iy = Math.round(y);
+		int iw = Math.round(w) - NEST * 2;
+		float t = Math.max(0f, Math.min(1f, (value - min) / (float) (max - min)));
+		String shownValue = value + unit;
+		float pad = 4f;
+		if (win98()) {
+			Win98.button(graphics, font, ix, iy, iw, box(), "", false, true);
+			Win98.text(graphics, font, Win98.fit(font, label + ": " + shownValue, iw - 8), ix + 4f, iy + (box() - 8f) * 0.5f - 1f, Win98.TEXT);
+			GuiDraw.fill(graphics, ix + 3f, iy + box() - 4f, (iw - 6f) * t, 2f, 0xFF000080);
+		} else if (imgui()) {
+			boolean hover = contains(pointerX, pointerY, ix, iy, iw, box());
+			ImGuiLook.button(graphics, ix, iy, iw, box(), hover);
+			GuiDraw.fill(graphics, ix, iy, iw * t, box(), Theme.withAlpha(ImGuiLook.SLIDER_GRAB, 0x66));
+			departureLeft(graphics, font, label, ix + pad, iy, box(), ImGuiLook.TEXT);
+			float vx = ix + iw - pad - font.width(featureText(shownValue));
+			departureLeft(graphics, font, shownValue, vx, iy, box(), ImGuiLook.TEXT);
+		} else {
+			outlined(graphics, ix, iy, iw, box(), OFF_FILL);
+			float bar = Math.max(1.5f, GuiDraw.pixel() * 2f);
+			GuiDraw.fill(graphics, ix + 2f, iy + box() - bar - 1.5f, iw - 4f, bar, Theme.withAlpha(0xFFFFFFFF, 0x22));
+			GuiDraw.fill(graphics, ix + 2f, iy + box() - bar - 1.5f, (iw - 4f) * t, bar, Theme.ACCENT);
+			float vx = ix + iw - 2f - font.width(featureText(shownValue));
+			departureLeft(graphics, font, shownValue, vx, iy, box(), DIM);
+			int room = Math.max(4, Math.round(vx - 4f - (ix + 2f)));
+			departureLeft(graphics, font, fitFeature(font, label, room), ix + 2f, iy, box(), TEXT);
+		}
+		float left = ix + 2f;
+		float span = Math.max(1f, iw - 4f);
+		screen.clickDragHit(ix, iy, iw, box(), mx -> {
+			float k = Math.max(0f, Math.min(1f, (float) ((mx - left) / span)));
+			int raw = Math.round(min + k * (max - min));
+			int snapped = Math.max(min, Math.min(max, Math.round(raw / (float) step) * step));
+			if (snapped != value) {
+				set.accept(snapped);
+			}
+		});
+	}
+
 	/** Action row. Left label and a chevron, so it does not read as an enabled module. */
 	private static void drawButton(
 		StrayScreen screen,
@@ -845,16 +903,8 @@ public final class ClickGui {
 	/** Align triggerbot: time between clicks and a little random spread. */
 	private static void drawAlign(StrayScreen screen, GuiGraphicsExtractor graphics, Font font, float x, float y, float w) {
 		StrayConfig c = StrayConfig.get();
-		int[] delays = {80, 100, 120, 150, 200, 250, 300, 400};
-		int at = 0;
-		for (int i = 0; i < delays.length; i++) {
-			if (delays[i] <= c.alignTriggerbotDelay) {
-				at = i;
-			}
-		}
-		int next = delays[(at + 1) % delays.length];
-		drawButton(screen, graphics, font, x, y, w, "Delay: " + c.alignTriggerbotDelay + " ms", () -> {
-			c.alignTriggerbotDelay = next;
+		drawSlider(screen, graphics, font, x, y, w, "Delay", c.alignTriggerbotDelay, 10, 400, 5, " ms", v -> {
+			c.alignTriggerbotDelay = v;
 			UnloadState.markDirty();
 		});
 		y += stride();

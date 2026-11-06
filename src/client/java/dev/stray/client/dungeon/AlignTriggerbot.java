@@ -109,22 +109,30 @@ public final class AlignTriggerbot {
 			return;
 		}
 		long now = System.currentTimeMillis();
-		if (now - lastClickMs < nextGapMs) {
+		long elapsed = now - lastClickMs;
+		if (elapsed < nextGapMs) {
 			return;
 		}
+		// This runs once per tick (50 ms). With a shorter delay, the clicks that fell due
+		// since the last one go in together; the game uses each queued click in order,
+		// the same as fast manual clicking. Never more than the frame still needs.
+		int due = elapsed < 200L ? (int) Math.max(1L, elapsed / Math.max(1L, nextGapMs)) : 1;
+		due = Math.min(due, REMAINING[index]);
 		lastClickMs = now;
 		nextGapMs = gap();
-		OdinClicks.rightClick();
+		for (int i = 0; i < due; i++) {
+			OdinClicks.rightClick();
+		}
 	}
 
 	/** The delay between clicks, with a little random spread when that is on. */
 	private static long gap() {
 		StrayConfig config = StrayConfig.get();
-		long delay = Math.max(50, config.alignTriggerbotDelay);
+		long delay = Math.max(10, config.alignTriggerbotDelay);
 		if (!config.alignTriggerbotRandom) {
 			return delay;
 		}
-		long spread = Math.max(10, delay / 4);
+		long spread = Math.max(2, delay / 4);
 		return delay + ThreadLocalRandom.current().nextLong(-spread / 2, spread + 1);
 	}
 
