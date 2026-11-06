@@ -254,7 +254,7 @@ public final class ClickGui {
 				}
 				return;
 			}
-			if (row.mod.feature != null || row.mod.timeout || row.mod.menuStyle || "Array list".equals(row.mod.name) || "Themed GUIs".equals(row.mod.name) || "Themed chat".equals(row.mod.name) || CUSTOMIZE.equals(row.mod.name) || CS2.equals(row.mod.name) || LEAP.equals(row.mod.name) || ALIGN.equals(row.mod.name) || TITLES.equals(row.mod.name) || MAP.equals(row.mod.name)) {
+			if (row.mod.feature != null || row.mod.timeout || row.mod.menuStyle || "Array list".equals(row.mod.name) || "Themed GUIs".equals(row.mod.name) || "Themed chat".equals(row.mod.name) || CUSTOMIZE.equals(row.mod.name) || CS2.equals(row.mod.name) || LEAP.equals(row.mod.name) || ALIGN.equals(row.mod.name) || TITLES.equals(row.mod.name) || MAP.equals(row.mod.name) || LEVER.equals(row.mod.name)) {
 				if (row.mod.name.equals(expandedName)) {
 					expandedName = null;
 				} else {
@@ -617,6 +617,8 @@ public final class ClickGui {
 			drawLeap(screen, graphics, font, boxX, y, boxW);
 		} else if (ALIGN.equals(mod.name)) {
 			drawAlign(screen, graphics, font, boxX, y, boxW);
+		} else if (LEVER.equals(mod.name)) {
+			drawLever(screen, graphics, font, boxX, y, boxW);
 		} else if (TITLES.equals(mod.name)) {
 			drawTitles(screen, graphics, font, boxX, y, boxW);
 		} else if (MAP.equals(mod.name)) {
@@ -897,6 +899,7 @@ public final class ClickGui {
 	static final String ALIGN = "Align triggerbot";
 	static final String TERMINALS = "Terminal GUI";
 	static final String TITLES = "F7 titles";
+	static final String LEVER = "Lever triggerbot";
 	static final String MAP = "Dungeon map";
 
 	/** CS2 knives (local build): pick the knife, finish, seed and wear. */
@@ -917,6 +920,20 @@ public final class ClickGui {
 		y += stride();
 		drawChoice(screen, graphics, font, x, y, w, "Random spread", c.alignTriggerbotRandom, () -> {
 			c.alignTriggerbotRandom = !c.alignTriggerbotRandom;
+			UnloadState.markDirty();
+		});
+	}
+
+	/** Lever triggerbot: reaction delay and where it works. */
+	private static void drawLever(StrayScreen screen, GuiGraphicsExtractor graphics, Font font, float x, float y, float w) {
+		StrayConfig c = StrayConfig.get();
+		drawSlider(screen, graphics, font, x, y, w, "Delay", c.leverTriggerbotDelay, 0, 300, 5, " ms", v -> {
+			c.leverTriggerbotDelay = v;
+			UnloadState.markDirty();
+		});
+		y += stride();
+		drawChoice(screen, graphics, font, x, y, w, "Dungeons only", c.leverTriggerbotDungeonsOnly, () -> {
+			c.leverTriggerbotDungeonsOnly = !c.leverTriggerbotDungeonsOnly;
 			UnloadState.markDirty();
 		});
 	}
@@ -1267,6 +1284,9 @@ public final class ClickGui {
 			return stackH(8);
 		}
 		if (ALIGN.equals(mod.name)) {
+			return stackH(2);
+		}
+		if (LEVER.equals(mod.name)) {
 			return stackH(2);
 		}
 		if (TITLES.equals(mod.name)) {
@@ -1861,6 +1881,7 @@ public final class ClickGui {
 		java.util.Map.entry("Fairy souls", "Shows fairy souls you have not collected yet."),
 		java.util.Map.entry("Auto clicker", "Clicks for you while you hold the bind."),
 		java.util.Map.entry("Party stats", "Shows a stats card when someone joins from the party finder."),
+		java.util.Map.entry("Lever triggerbot", "Right clicks a lever once when your crosshair lands on it (after the delay). Look away and back to flip it again."),
 		java.util.Map.entry("Terminal GUI", "F7 terminals in a clean Shadow window: only the slots left to click light up, and a click anywhere on one goes to that slot. Try it with /stray debug dev terminal."),
 		java.util.Map.entry("F7 titles", "Short titles in the F7 boss: crystals, wither phases, Storm's lightning timer and who did which terminal. Also shown over the leap menu."),
 		java.util.Map.entry("Align triggerbot", "F7 arrow align: while you look at an arrow that is not right yet, it right clicks it with your delay until it is. Clicks go through the normal use key."),
@@ -1965,6 +1986,7 @@ public final class ClickGui {
 			|| LEAP.equals(mod.name)
 			|| ALIGN.equals(mod.name)
 			|| TITLES.equals(mod.name)
+			|| LEVER.equals(mod.name)
 			|| MAP.equals(mod.name)
 			|| "Custom title".equals(mod.name);
 	}
@@ -2024,6 +2046,10 @@ public final class ClickGui {
 			drawAlign(screen, graphics, font, x, y, w);
 			return;
 		}
+		if (LEVER.equals(mod.name)) {
+			drawLever(screen, graphics, font, x, y, w);
+			return;
+		}
 		if (TITLES.equals(mod.name)) {
 			drawTitles(screen, graphics, font, x, y, w);
 			return;
@@ -2053,7 +2079,7 @@ public final class ClickGui {
 	/** Modules Stray Legit leaves out: they automate input or are the loadouts / wardrobe menus. */
 	private static final java.util.Set<String> LEGIT_REMOVED = java.util.Set.of(
 		"Auto clicker", "Experiments", "Book combine", "Loadouts", "Wardrobe", "Auto DNA",
-		"Command rings", "Movement rings", "Align triggerbot", "Terminal GUI"
+		"Command rings", "Movement rings", "Align triggerbot", "Terminal GUI", "Lever triggerbot"
 	);
 
 	static List<Mod> modules() {
@@ -2107,6 +2133,7 @@ public final class ClickGui {
 		mods.add(mod(LEAP, "Combat", null, null, () -> config.leapMenuEnabled, v -> config.leapMenuEnabled = v, true, false));
 		mods.add(mod(ALIGN, "Combat", null, null, () -> config.alignTriggerbot, v -> config.alignTriggerbot = v, true, false));
 		mods.add(mod(TERMINALS, "Combat", StrayScreen.Feature.TERMINALS, null, () -> config.terminalGuiEnabled, v -> config.terminalGuiEnabled = v, true, false));
+		mods.add(mod(LEVER, "Combat", null, null, () -> config.leverTriggerbot, v -> config.leverTriggerbot = v, true, false));
 		mods.add(mod(TITLES, "Combat", null, null, () -> config.f7TitlesEnabled, v -> config.f7TitlesEnabled = v, true, false));
 		mods.add(mod(MAP, "Combat", null, null, () -> config.dungeonMapEnabled, v -> config.dungeonMapEnabled = v, true, false));
 		addSlayer(mods, config);

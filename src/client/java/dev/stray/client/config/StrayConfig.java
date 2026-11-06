@@ -334,6 +334,9 @@ public final class StrayConfig {
 	/** F7 arrow align: right clicks the arrow you look at until it points the right way. */
 	public boolean alignTriggerbot = false;
 	public int alignTriggerbotDelay = 150;
+	public boolean leverTriggerbot = false;
+	public int leverTriggerbotDelay = 80;
+	public boolean leverTriggerbotDungeonsOnly = true;
 	public boolean terminalGuiEnabled = false;
 	public int terminalScale = 100;
 	public int terminalFirstClickDelay = 7;
