@@ -43,7 +43,7 @@ public final class MediaChat {
 	}
 
 	public static boolean songChanged(NowPlaying track) {
-		if (!StrayConfig.get().musicChatAnnounce) {
+		if (!StrayConfig.get().musicHudEnabled || !StrayConfig.get().musicChatAnnounce) {
 			return false;
 		}
 		if (track == null || !track.present()) {

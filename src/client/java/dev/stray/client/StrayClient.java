@@ -227,6 +227,7 @@ public final class StrayClient implements ClientModInitializer {
 		FairySoulRenderer.init();
 		FairySoulTracker.init();
 		CrystalHollowsRenderer.init();
+		if (!dev.stray.Edition.LEGIT) { dev.stray.client.dungeon.AlignTriggerbot.init(); }
 		ClientReceiveMessageEvents.ALLOW_GAME.register((message, overlay) -> {
 			if (!overlay) {
 				String plain = message.getString();
@@ -421,6 +422,7 @@ public final class StrayClient implements ClientModInitializer {
 
 		ClientTickEvents.END_CLIENT_TICK.register(client -> {
 			dev.stray.client.dungeon.DungeonParty.tick(client);
+			if (!dev.stray.Edition.LEGIT) { dev.stray.client.dungeon.AlignTriggerbot.tick(client); }
 			if (!dev.stray.client.dungeon.LeapMenu.active()) {
 				dev.stray.client.dungeon.LeapMenu.onContainerClosed();
 			}

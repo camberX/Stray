@@ -40,6 +40,9 @@ public final class NodeWorldRenderer {
 		}
 
 		StrayConfig config = StrayConfig.get();
+		if (!config.boxFill) {
+			return;
+		}
 		int fill = config.boxFill ? config.fillColor() : 0;
 		int stroke = config.boxOutline || config.tracersEnabled ? config.lineColor() : 0;
 		GizmoStyle style = config.boxOutline && config.boxFill

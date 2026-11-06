@@ -169,7 +169,7 @@ public final class MiningTracker {
 				progress = cooldownTotal <= 0L ? 0f : 1f - Math.min(1f, (cooldownUntil - now) / (float) cooldownTotal);
 				label = formatTime(remain);
 			}
-			boolean alert = StrayConfig.get().miningAbilityAlert && now < alertUntil && !alertName.isEmpty();
+			boolean alert = StrayConfig.get().miningHudEnabled && StrayConfig.get().miningAbilityAlert && now < alertUntil && !alertName.isEmpty();
 			float alertT = alert ? Math.min(1f, (alertUntil - now) / (float) ALERT_MS) : 0f;
 			boolean mining = inMiningIsland() || !commissions.isEmpty() || !ready || alert;
 			snap = new Snapshot(

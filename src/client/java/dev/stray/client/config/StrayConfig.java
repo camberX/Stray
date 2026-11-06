@@ -331,6 +331,10 @@ public final class StrayConfig {
 	public boolean leapTintDead = true;
 	public boolean leapShowDoorOpener = false;
 	public int leapScale = 100;
+	/** F7 arrow align: right clicks the arrow you look at until it points the right way. */
+	public boolean alignTriggerbot = false;
+	public int alignTriggerbotDelay = 150;
+	public boolean alignTriggerbotRandom = true;
 	public boolean arrayListAccent = false;
 	public java.util.List<String> arrayListHidden = new java.util.ArrayList<>();
 	public java.util.List<ClickColumnPos> clickColumns = new java.util.ArrayList<>();

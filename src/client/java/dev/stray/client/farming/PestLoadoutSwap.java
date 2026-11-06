@@ -126,7 +126,7 @@ public final class PestLoadoutSwap {
 
 	public static void tick(Minecraft client) {
 		StrayConfig config = StrayConfig.get();
-		if (!config.pestLoadoutSwap || client == null || client.player == null) {
+		if (!config.pestCooldownHudEnabled || !config.pestLoadoutSwap || client == null || client.player == null) {
 			if (phase != Phase.FARM || hold || wave > 0) {
 				reset();
 			}

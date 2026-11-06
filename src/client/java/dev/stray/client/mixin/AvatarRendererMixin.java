@@ -56,6 +56,10 @@ public class AvatarRendererMixin {
 	private void stray$hideNametag(Avatar entity, double dist, CallbackInfoReturnable<Boolean> cir) {
 		if (NametagRenderer.hidingVanilla(entity)) {
 			cir.setReturnValue(false);
+			return;
+		}
+		if (NametagRenderer.showOwnVanilla(entity)) {
+			cir.setReturnValue(true);
 		}
 	}
 

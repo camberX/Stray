@@ -145,7 +145,7 @@ public final class MediaSession {
 		if (NowPlaying.titlesClose(lastAnnounced, next.title()) || NowPlaying.titlesClose(pendingAnnounce, next.title())) {
 			return;
 		}
-		if (!StrayConfig.get().musicChatAnnounce) {
+		if (!StrayConfig.get().musicHudEnabled || !StrayConfig.get().musicChatAnnounce) {
 			lastAnnounced = next.title();
 			pendingAnnounce = "";
 			return;

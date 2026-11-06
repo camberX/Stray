@@ -23,7 +23,7 @@ public final class NickHider {
 			return false;
 		}
 		StrayConfig config = StrayConfig.get();
-		if (!config.nickEnabled && !NickSteal.active()) {
+		if (!config.nickEnabled) {
 			return false;
 		}
 		return !realName().isEmpty();

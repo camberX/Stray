@@ -17,7 +17,7 @@ public class AbstractClientPlayerMixin {
 		AbstractClientPlayer player = (AbstractClientPlayer) (Object) this;
 		Minecraft client = Minecraft.getInstance();
 		boolean self = client.player != null && player.getUUID().equals(client.player.getUUID());
-		if (NickSteal.active() && self) {
+		if (self && dev.stray.client.config.StrayConfig.get().nickEnabled && NickSteal.active()) {
 			cir.setReturnValue(NickSteal.skin(cir.getReturnValue()));
 		} else {
 			cir.setReturnValue(ShopCape.patch(player.getUUID(), dev.stray.client.visual.ShopSkin.patch(player.getUUID(), cir.getReturnValue())));

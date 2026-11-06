@@ -117,7 +117,7 @@ public final class MetalDetector {
 
 	public static void tick(Minecraft client) {
 		StrayConfig config = StrayConfig.get();
-		if (!config.metalDetectorSolver && !config.metalDetectorToolTitle) {
+		if (!config.metalDetectorSolver) {
 			if (inDivan) {
 				reset();
 			}
@@ -158,7 +158,7 @@ public final class MetalDetector {
 			return;
 		}
 		StrayConfig config = StrayConfig.get();
-		if (!config.metalDetectorSolver && !config.metalDetectorToolTitle) {
+		if (!config.metalDetectorSolver) {
 			return;
 		}
 		String text = plain(message);

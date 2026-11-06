@@ -80,6 +80,17 @@ public final class NametagRenderer {
 		return visuals.nametagsEnabled && EntityKind.overlay(entity);
 	}
 
+	/** Own nametag: your own vanilla name above your head, only while the camera is in third person. */
+	public static boolean showOwnVanilla(Entity entity) {
+		Minecraft client = Minecraft.getInstance();
+		return StrayConfig.get().nametagSelf
+			&& client.player != null
+			&& entity == client.player
+			&& !client.options.getCameraType().isFirstPerson()
+			&& !client.gui.hud.isHidden()
+			&& !entity.isInvisibleTo(client.player);
+	}
+
 	public static boolean hidingVanillaState(EntityRenderState state) {
 		if (state.entityType == null) {
 			return false;
@@ -116,7 +127,7 @@ public final class NametagRenderer {
 			Component title = titleFor(player.getUUID());
 			boolean titled = !title.getString().isBlank();
 			boolean branded = isDev(player.getUUID()) && !titled;
-			if (self && !own) {
+			if (self && (!own || client.options.getCameraType().isFirstPerson())) {
 				continue;
 			}
 			if (!enabled && !branded && !titled) {

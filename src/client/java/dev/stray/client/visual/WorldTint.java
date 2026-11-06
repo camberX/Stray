@@ -87,7 +87,8 @@ public final class WorldTint {
 	}
 
 	public static boolean endSkyboxActive() {
-		return StrayConfig.get().endSkybox;
+		StrayConfig config = StrayConfig.get();
+		return config.skyTintEnabled && config.endSkybox;
 	}
 
 	public static Vector4fc endSkyColor(Vector4fc original) {

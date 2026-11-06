@@ -47,13 +47,13 @@ public final class ChatChrome {
 
 	public static boolean enabled() {
 		StrayConfig config = StrayConfig.get();
-		return config.themedChatEnabled || config.hudStyleClick() || config.hudStyleGlass() || config.hudStyleShadow();
+		return config.themedChatEnabled;
 	}
 
 	/** Shadow chat: picked for themed chat, or following a Shadow HUD when themed chat is off. */
 	private static boolean shadow() {
 		StrayConfig config = StrayConfig.get();
-		return config.themedChatEnabled ? config.chatStyleShadow() : config.hudStyleShadow();
+		return config.themedChatEnabled && config.chatStyleShadow();
 	}
 
 	private static boolean click() {
