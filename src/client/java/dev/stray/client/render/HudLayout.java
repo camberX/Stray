@@ -57,7 +57,8 @@ public final class HudLayout {
 		SLAYER_RNG("Slayer RNG meter"),
 		SLAYER_KILLS("Slayer kills"),
 		SLAYER_DAGGER("Blaze daggers"),
-		SLAYER_PILLAR("Fire pillar");
+		SLAYER_PILLAR("Fire pillar"),
+		DUNGEON_MAP("Dungeon map");
 
 		public final String label;
 
@@ -642,6 +643,7 @@ public final class HudLayout {
 			case PEST_COOLDOWN -> config.pestCooldownHudEnabled;
 			case CROP_FEVER -> config.cropFeverHudEnabled;
 			case TOP_DOWN -> config.topDownView;
+			case DUNGEON_MAP -> config.dungeonMapEnabled;
 			case HOTBAR, HEALTH, HUNGER, ARMOR, AIR, EXPERIENCE, MOUNT -> false;
 			case SCOREBOARD -> config.hudScoreboard;
 			case BOSS -> config.hudBossBar;
@@ -720,6 +722,7 @@ public final class HudLayout {
 			case CROP_FEVER -> config.slotGardenFever;
 			case SCATHA -> config.slotScatha;
 			case TOP_DOWN -> config.slotTopDown;
+			case DUNGEON_MAP -> config.slotDungeonMap;
 			case SLAYER -> config.slotSlayer;
 			case SLAYER_PROFIT -> config.slotSlayerProfit;
 			case SLAYER_RNG -> config.slotSlayerRng;
@@ -775,7 +778,7 @@ public final class HudLayout {
 			case HEALTH, ARMOR -> guiW * 0.5f - 91;
 			case HUNGER, AIR, MOUNT -> guiW * 0.5f + 91 - w;
 			case EXPERIENCE, HELD_ITEM -> (guiW - w) * 0.5f;
-			case SCOREBOARD, EFFECTS -> guiW - w - MARGIN;
+			case SCOREBOARD, EFFECTS, DUNGEON_MAP -> guiW - w - MARGIN;
 			case BOSS -> (guiW - w) * 0.5f;
 			case SLAYER, SLAYER_PROFIT, SLAYER_RNG, SLAYER_KILLS -> guiW - w - MARGIN;
 			case SLAYER_DAGGER, SLAYER_PILLAR -> (guiW - w) * 0.5f;
@@ -794,6 +797,7 @@ public final class HudLayout {
 			case ARMOR, AIR -> status - 3 - h;
 			case HELD_ITEM -> status - 6 - h;
 			case SCOREBOARD, EFFECTS -> MARGIN;
+			case DUNGEON_MAP -> guiH * 0.5f - h * 0.5f;
 			case BOSS -> MARGIN;
 			case SLAYER, SLAYER_PROFIT, SLAYER_RNG, SLAYER_KILLS -> slayerDefaultY(id, font, guiH);
 			case SLAYER_DAGGER -> guiH * 0.5f + 18f;
@@ -860,6 +864,7 @@ public final class HudLayout {
 			case PEST_COOLDOWN -> GardenHudRenderer.pestCooldownWidth(font) * scale;
 			case CROP_FEVER -> GardenHudRenderer.cropFeverWidth(font) * scale;
 			case TOP_DOWN -> TopDownHudRenderer.drawWidth() * scale;
+			case DUNGEON_MAP -> dev.stray.client.dungeon.map.DungeonMapRenderer.drawWidth() * scale;
 			case HOTBAR -> HotbarHudRenderer.drawWidth() * scale;
 			case HEALTH, HUNGER, ARMOR, AIR, MOUNT -> StatusHudRenderer.BAR_W * scale;
 			case EXPERIENCE -> StatusHudRenderer.xpWidth() * scale;
@@ -895,6 +900,7 @@ public final class HudLayout {
 			case PEST_COOLDOWN -> GardenHudRenderer.pestCooldownHeight() * scale;
 			case CROP_FEVER -> GardenHudRenderer.cropFeverHeight() * scale;
 			case TOP_DOWN -> TopDownHudRenderer.drawHeight() * scale;
+			case DUNGEON_MAP -> dev.stray.client.dungeon.map.DungeonMapRenderer.drawHeight() * scale;
 			case HOTBAR -> HotbarHudRenderer.HEIGHT * scale;
 			case HEALTH, HUNGER, ARMOR, AIR, MOUNT -> StatusHudRenderer.BAR_H * scale;
 			case EXPERIENCE -> StatusHudRenderer.XP_BOX_H * scale;
