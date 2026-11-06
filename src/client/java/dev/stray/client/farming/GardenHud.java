@@ -1377,10 +1377,29 @@ public final class GardenHud {
 			return null;
 		}
 		CropKind crop = cropNamed(name);
-		if (crop == null) {
-			return null;
+		if (crop != null) {
+			return new CropMark(crop.label, boosted);
 		}
-		return new CropMark(crop.label, boosted);
+		String extra = contestOnlyCrop(name);
+		return extra == null ? null : new CropMark(extra, boosted);
+	}
+
+	/**
+	 * Contest crops with no milestone table in {@link CropKind}. Without these the
+	 * Next Contest HUD dropped them and showed only two of the three crops.
+	 */
+	private static String contestOnlyCrop(String name) {
+		String key = fold(name);
+		if (key.contains("sunflower")) {
+			return "Sunflower";
+		}
+		if (key.contains("moonflower")) {
+			return "Moonflower";
+		}
+		if (key.contains("wild rose") || key.contains("wildrose")) {
+			return "Wild Rose";
+		}
+		return null;
 	}
 
 	private static CropKind cropOf(ItemStack stack) {
