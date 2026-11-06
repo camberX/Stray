@@ -49,6 +49,8 @@ public final class TerminalSession {
 	private static final Map<Integer, ItemStack> ITEMS = new HashMap<>();
 	private static final ItemStack[] SEEN = new ItemStack[54];
 	private static final List<Term.Click> CLICKED = new ArrayList<>();
+	/** True while our own click is going out, so {@link #onClickSent} skips it. */
+	private static boolean sending;
 
 	// Simulator (offline) state.
 	private static TerminalSim sim;
@@ -274,7 +276,12 @@ public final class TerminalSession {
 			// The game's own slot click: middle click (2, CLONE) or right click (1, PICKUP).
 			int button = click.btn() == 0 ? 2 : click.btn();
 			ContainerInput input = click.btn() == 0 ? ContainerInput.CLONE : ContainerInput.PICKUP;
-			client.gameMode.handleContainerInput(windowId, click.slot(), button, input, client.player);
+			sending = true;
+			try {
+				client.gameMode.handleContainerInput(windowId, click.slot(), button, input, client.player);
+			} finally {
+				sending = false;
+			}
 			if (term != Term.MELODY) {
 				lastClickMs = System.currentTimeMillis();
 			}
@@ -290,6 +297,35 @@ public final class TerminalSession {
 	static void simTick() {
 		if (sim != null) {
 			sim.tick();
+		}
+	}
+
+	/**
+	 * A container click leaving the client that we did not make, e.g. from NoammAddons'
+	 * auto terminals: take it off our solution the same way as our own clicks, so the
+	 * window follows along (Rubix especially, which does not resolve from slot updates).
+	 * Network thread: hand it to the main thread.
+	 */
+	public static void onClickSent(int containerId, int slot, int button, ContainerInput input) {
+		if (sending) {
+			return;
+		}
+		Minecraft client = Minecraft.getInstance();
+		client.execute(() -> foreignClick(containerId, slot, button, input));
+	}
+
+	private static void foreignClick(int containerId, int slot, int button, ContainerInput input) {
+		if (term == null || sim != null || !loaded || containerId != windowId || slot < 0) {
+			return;
+		}
+		// Same mapping as ours: middle click (CLONE) = 0, right click = 1.
+		Term.Click click = new Term.Click(slot, input == ContainerInput.PICKUP && button == 1 ? 1 : 0);
+		term.predict(click);
+		CLICKED.add(click);
+		term.onSlotClick(slot);
+		TerminalGui.pulse(slot);
+		if (term != Term.MELODY) {
+			lastClickMs = System.currentTimeMillis();
 		}
 	}
 

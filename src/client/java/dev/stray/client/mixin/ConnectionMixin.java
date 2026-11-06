@@ -28,5 +28,9 @@ public class ConnectionMixin {
 	)
 	private void stray$printSent(Packet<?> packet, io.netty.channel.ChannelFutureListener listener, boolean flush, CallbackInfo ci) {
 		dev.stray.client.net.PacketDebug.onSend(packet);
+		if (!dev.stray.Edition.LEGIT && packet instanceof net.minecraft.network.protocol.game.ServerboundContainerClickPacket click) {
+			// Only looks: lets the terminal GUI follow clicks other mods send (NoammAddons' auto terminals).
+			dev.stray.client.dungeon.terminal.TerminalSession.onClickSent(click.containerId(), click.slotNum(), click.buttonNum(), click.containerInput());
+		}
 	}
 }

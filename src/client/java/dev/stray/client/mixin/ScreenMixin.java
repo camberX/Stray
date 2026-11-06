@@ -21,6 +21,14 @@ public abstract class ScreenMixin {
 	private void stray$hideDefaultLoadouts(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float delta, CallbackInfo ci) {
 		if (dev.stray.client.EditionGate.hideDefaultChest((Screen) (Object) this)) {
 			ci.cancel();
+			return;
+		}
+		// A terminal we draw ourselves: skip the whole vanilla chest (background, themed
+		// chest, slots, title), not just its contents, so nothing shows behind our window.
+		Screen self = (Screen) (Object) this;
+		if (!dev.stray.Edition.LEGIT && dev.stray.client.dungeon.terminal.TerminalSession.handles(self)) {
+			dev.stray.client.dungeon.terminal.TerminalSession.render(graphics, self.width, self.height, mouseX, mouseY);
+			ci.cancel();
 		}
 	}
 
