@@ -228,6 +228,7 @@ public final class StrayClient implements ClientModInitializer {
 		FairySoulTracker.init();
 		CrystalHollowsRenderer.init();
 		if (!dev.stray.Edition.LEGIT) { dev.stray.client.dungeon.AlignTriggerbot.init(); }
+		dev.stray.client.dungeon.map.NoammData.start();
 		ClientReceiveMessageEvents.ALLOW_GAME.register((message, overlay) -> {
 			if (!overlay) {
 				String plain = message.getString();
@@ -881,7 +882,7 @@ public final class StrayClient implements ClientModInitializer {
 			}
 			String rooms = dev.stray.client.dungeon.map.RoomDatabase.size() > 0
 				? dev.stray.client.dungeon.map.RoomDatabase.size() + " rooms from " + dev.stray.client.dungeon.map.RoomDatabase.source()
-				: "§cno room data§7 (room names need rooms-modern.json in config/stray or NoammAddons installed)";
+				: "§cno room data yet§7 (download: " + dev.stray.client.dungeon.map.NoammData.status() + ")";
 			context.getSource().sendFeedback(Component.literal("§bStray §7map preview " + (on ? "§aon§7: a sample dungeon on the HUD. " + rooms : "§coff§7.")));
 			return Command.SINGLE_SUCCESS;
 		}));

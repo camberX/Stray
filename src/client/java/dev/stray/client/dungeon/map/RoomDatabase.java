@@ -67,6 +67,11 @@ public final class RoomDatabase {
 		Path config = FabricLoader.getInstance().getConfigDir();
 		List<Path> candidates = new ArrayList<>();
 		candidates.add(config.resolve("stray").resolve(FILE));
+		// Our own copy of NoammAddons' data pack (NoammData downloads it at start).
+		try (java.util.stream.Stream<Path> files = Files.walk(NoammData.folder(), 4)) {
+			files.filter(f -> f.getFileName().toString().equalsIgnoreCase(FILE)).forEach(candidates::add);
+		} catch (Exception ignored) {
+		}
 		// NoammAddons keeps it in config/NoammAddons/data/ (unzipped from its download);
 		// look through that folder in case it sits one level deeper, any case.
 		try (java.util.stream.Stream<Path> dirs = Files.list(config)) {
