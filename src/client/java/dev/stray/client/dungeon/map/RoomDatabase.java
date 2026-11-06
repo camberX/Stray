@@ -29,6 +29,8 @@ public final class RoomDatabase {
 	private static Map<Integer, RoomData> byCore;
 	private static Map<String, RoomData> byName;
 	private static String source = "none";
+	/** When to look again if nothing was found (NoammAddons downloads its copy after start). */
+	private static long retryAt;
 
 	private RoomDatabase() {
 	}
@@ -55,18 +57,27 @@ public final class RoomDatabase {
 	}
 
 	private static synchronized void ensure() {
-		if (byCore != null) {
+		if (byCore != null && (!byName.isEmpty() || System.currentTimeMillis() < retryAt)) {
 			return;
 		}
+		retryAt = System.currentTimeMillis() + 15_000L;
 		byCore = new HashMap<>();
 		byName = new HashMap<>();
+		source = "none";
 		Path config = FabricLoader.getInstance().getConfigDir();
-		Path[] candidates = {
-			config.resolve("stray").resolve(FILE),
-			config.resolve("NoammAddons").resolve("data").resolve(FILE),
-			config.resolve("noammaddons").resolve("data").resolve(FILE),
-			config.resolve("Noammaddons").resolve("data").resolve(FILE)
-		};
+		List<Path> candidates = new ArrayList<>();
+		candidates.add(config.resolve("stray").resolve(FILE));
+		// NoammAddons keeps it in config/NoammAddons/data/ (unzipped from its download);
+		// look through that folder in case it sits one level deeper, any case.
+		try (java.util.stream.Stream<Path> dirs = Files.list(config)) {
+			dirs.filter(dir -> dir.getFileName().toString().equalsIgnoreCase("NoammAddons")).forEach(dir -> {
+				try (java.util.stream.Stream<Path> files = Files.walk(dir, 4)) {
+					files.filter(f -> f.getFileName().toString().equalsIgnoreCase(FILE)).forEach(candidates::add);
+				} catch (Exception ignored) {
+				}
+			});
+		} catch (Exception ignored) {
+		}
 		for (Path path : candidates) {
 			if (Files.isRegularFile(path)) {
 				try (Reader reader = Files.newBufferedReader(path, StandardCharsets.UTF_8)) {

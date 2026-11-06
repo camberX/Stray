@@ -40,6 +40,8 @@ public final class DungeonMapRenderer {
 	private static final Identifier CHECK_WHITE = Stray.id("textures/gui/dungeonmap/white_check.png");
 	private static final Identifier CHECK_UNKNOWN = Stray.id("textures/gui/dungeonmap/question.png");
 	private static final Identifier CHECK_FAIL = Stray.id("textures/gui/dungeonmap/cross.png");
+	/** The game's own map marker for a player (white arrow), 8x8. */
+	private static final Identifier MAP_ARROW = Identifier.withDefaultNamespace("textures/map/decorations/player.png");
 
 	private static final int GREEN = 0xFF7DE08E;
 	private static final int RED = 0xFFFF6E6E;
@@ -90,8 +92,16 @@ public final class DungeonMapRenderer {
 			ShadowLook.panel(graphics, x, y, drawWidth(), drawHeight(), 8f, ShadowLook.FILL);
 		}
 		boolean example = example();
+		// Map size: the rooms grow inside the panel (around its middle), the panel stays.
+		float zoom = Mth.clamp(StrayConfig.get().dungeonMapZoom / 100f, 1f, 2f);
+		boolean clip = zoom > 1.001f && GuiDraw.scissor(graphics, x + 1f, y + 1f, drawWidth() - 2f, drawHeight() - 2f);
 		graphics.pose().pushMatrix();
 		graphics.pose().translate(x + PAD, y + PAD);
+		if (zoom > 1.001f) {
+			graphics.pose().translate(MAP / 2f, MAP / 2f);
+			graphics.pose().scale(zoom, zoom);
+			graphics.pose().translate(-MAP / 2f, -MAP / 2f);
+		}
 		float sx = MapCalibration.drawStartX();
 		float sz = MapCalibration.drawStartZ();
 		graphics.pose().pushMatrix();
@@ -124,6 +134,9 @@ public final class DungeonMapRenderer {
 			}
 		}
 		graphics.pose().popMatrix();
+		if (clip) {
+			GuiDraw.disableScissor(graphics);
+		}
 	}
 
 	// ------------------------------------------------------------------ rooms
@@ -142,6 +155,7 @@ public final class DungeonMapRenderer {
 
 	private static void rooms(GuiGraphicsExtractor graphics, Tile[] tiles, int connector, boolean preview, MapPreview.Built built, long now) {
 		boolean cheater = DungeonMap.cheater();
+		java.util.List<Integer> unknownCells = new java.util.ArrayList<>();
 		int size = MapCalibration.mapRoomSize;
 		for (int y = 0; y <= 10; y++) {
 			for (int x = 0; x <= 10; x++) {
@@ -162,7 +176,9 @@ public final class DungeonMapRenderer {
 					color = MapColors.mix(color, 0xFF000000, MapColors.UNDISCOVERED_TINT);
 				}
 				float fade = fade(tile, now);
-				color = MapColors.alpha(color, 0.92f * fade);
+				// Opaque: the pieces of a big room overlap a little where they join, and
+				// see-through pieces showed those overlaps as darker seams.
+				color = MapColors.alpha(color, fade);
 				float xo = (x >> 1) * (size + connector);
 				float yo = (y >> 1) * (size + connector);
 				boolean xEven = (x & 1) == 0;
@@ -180,11 +196,91 @@ public final class DungeonMapRenderer {
 				} else {
 					connector(graphics, xo, yo, size, connector, tile instanceof DoorTile, !xEven, color);
 				}
-				if (tile instanceof RoomTile room && room.data.isUnknown() && predicted == null) {
-					roomCheckmark(graphics, room, xo, yo, now);
+				if (tile instanceof RoomTile room && room.data.isUnknown() && predicted == null && xEven && yEven && !room.isSeparator) {
+					unknownCells.add(index);
 				}
 			}
 		}
+		unknownCheckmarks(graphics, tiles, unknownCells, size, connector, now);
+	}
+
+	/**
+	 * Rooms only the map item knows (no room data): one mark per room, at the middle of
+	 * all its cells (a 2x2 gets it in the centre, a 1x3 on the middle cell, an L on its
+	 * corner cell), instead of one per cell.
+	 */
+	private static void unknownCheckmarks(GuiGraphicsExtractor graphics, Tile[] tiles, java.util.List<Integer> cells, int size, int connector, long now) {
+		java.util.Set<Integer> left = new java.util.HashSet<>(cells);
+		for (int start : cells) {
+			if (!left.remove(start)) {
+				continue;
+			}
+			java.util.List<Integer> group = new java.util.ArrayList<>();
+			java.util.ArrayDeque<Integer> queue = new java.util.ArrayDeque<>();
+			queue.add(start);
+			while (!queue.isEmpty()) {
+				int at = queue.poll();
+				group.add(at);
+				int x = at % 11;
+				int y = at / 11;
+				int[][] steps = {{2, 0}, {-2, 0}, {0, 2}, {0, -2}};
+				for (int[] step : steps) {
+					int nx = x + step[0];
+					int ny = y + step[1];
+					int next = ny * 11 + nx;
+					if (nx < 0 || nx > 10 || ny < 0 || ny > 10 || !left.contains(next)) {
+						continue;
+					}
+					// Same room only if the piece between them is a join, not a door.
+					Tile between = tiles[(y + step[1] / 2) * 11 + x + step[0] / 2];
+					if (between instanceof RoomTile join && join.isSeparator) {
+						left.remove(next);
+						queue.add(next);
+					}
+				}
+			}
+			float sumX = 0f;
+			float sumY = 0f;
+			RoomTile mark = null;
+			for (int cell : group) {
+				sumX += cell % 11;
+				sumY += cell / 11;
+				RoomTile tile = (RoomTile) tiles[cell];
+				if (mark == null || rank(tile.state()) > rank(mark.state())) {
+					mark = tile;
+				}
+			}
+			float gx = sumX / group.size();
+			float gy = sumY / group.size();
+			// An L's middle is outside it: use the cell closest to the middle.
+			if (group.size() == 3 && gx != Math.round(gx) && gy != Math.round(gy)) {
+				int best = group.get(0);
+				float bestD = Float.MAX_VALUE;
+				for (int cell : group) {
+					float d = (cell % 11 - gx) * (cell % 11 - gx) + (cell / 11 - gy) * (cell / 11 - gy);
+					if (d < bestD) {
+						bestD = d;
+						best = cell;
+					}
+				}
+				gx = best % 11;
+				gy = best / 11;
+			}
+			float cell = size + connector;
+			float appear = pop(tiles[group.get(0)], mark.state(), now);
+			checkmark(graphics, mark.state(), gx / 2f * cell + size / 2f, gy / 2f * cell + size / 2f, 10f * (0.7f + 0.3f * appear), appear);
+		}
+	}
+
+	/** Which cell's state a room shows: the most finished one. */
+	private static int rank(RoomState state) {
+		return switch (state) {
+			case GREEN -> 5;
+			case CLEARED -> 4;
+			case FAILED -> 3;
+			case UNOPENED -> 1;
+			default -> 2;
+		};
 	}
 
 	private static List<RoomType> predicted(Tile tile, int index, boolean preview, MapPreview.Built built) {
@@ -207,7 +303,7 @@ public final class DungeonMapRenderer {
 		for (int i = 0; i < colors.length; i++) {
 			RoomType type = types.get(i);
 			int c = MapColors.room(type == RoomType.CHAMPION || type == RoomType.TRAP ? type : RoomType.PUZZLE);
-			colors[i] = MapColors.alpha(colors.length > 1 ? MapColors.darker(c) : c, 0.92f * fade);
+			colors[i] = MapColors.alpha(colors.length > 1 ? MapColors.darker(c) : c, fade);
 		}
 		if (colors.length == 1) {
 			GuiDraw.roundedFine(graphics, x, y, size, size, ROOM_RADIUS, colors[0]);
@@ -361,7 +457,13 @@ public final class DungeonMapRenderer {
 		}
 		float x = cx - size / 2f;
 		float y = cy - size / 2f;
-		ShadowLook.shadow(graphics, x + size * 0.15f, y + size * 0.15f, size * 0.7f, size * 0.7f, size * 0.35f, 4, Math.round(0x50 * alpha));
+		// Shadow in the mark's own shape: the same texture in black, a little down-right,
+		// drawn a few times with small offsets so its edge is soft.
+		float d = Math.max(0.6f, size * 0.07f);
+		float[][] passes = {{d, d, 0.34f}, {d * 1.6f, d * 1.6f, 0.18f}, {d * 0.5f, d * 1.2f, 0.16f}, {d * 1.2f, d * 0.5f, 0.16f}};
+		for (float[] pass : passes) {
+			GuiDraw.blit(graphics, texture, x + pass[0], y + pass[1], size, size, 0f, 0f, 100, 100, 100, 100, MapColors.alpha(0xFF000000, pass[2] * alpha));
+		}
 		int tint = state == RoomState.UNOPENED ? 0xFFB8C0CA : 0xFFFFFFFF;
 		GuiDraw.blit(graphics, texture, x, y, size, size, 0f, 0f, 100, 100, 100, 100, MapColors.alpha(tint, alpha));
 	}
@@ -394,6 +496,14 @@ public final class DungeonMapRenderer {
 		float turn = (float) Math.toRadians(Mth.wrapDegrees(yaw) + 180f);
 		graphics.pose().pushMatrix();
 		graphics.pose().translate(x, z);
+		if (player.self && config.dungeonMapSelfArrow) {
+			// The game's own map arrow, turned the way you look.
+			graphics.pose().rotate(turn);
+			GuiDraw.blit(graphics, MAP_ARROW, -3.5f + 0.6f, -3.5f + 0.6f, 7f, 7f, 0f, 0f, 8, 8, 8, 8, 0x66000000);
+			GuiDraw.blit(graphics, MAP_ARROW, -3.5f, -3.5f, 7f, 7f, 0f, 0f, 8, 8, 8, 8, 0xFFFFFFFF);
+			graphics.pose().popMatrix();
+			return;
+		}
 		ShadowLook.shadow(graphics, -5f, -5f, 10f, 10f, 5f, 4, 0x70);
 		graphics.pose().rotate(turn);
 		if (config.dungeonMapHeads && player.skin != null) {

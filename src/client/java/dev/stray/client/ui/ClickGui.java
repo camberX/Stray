@@ -956,8 +956,18 @@ public final class ClickGui {
 			UnloadState.markDirty();
 		});
 		y += stride();
+		drawSlider(screen, graphics, font, x, y, w, "Map size", c.dungeonMapZoom, 100, 200, 5, "%", v -> {
+			c.dungeonMapZoom = v;
+			UnloadState.markDirty();
+		});
+		y += stride();
 		drawChoice(screen, graphics, font, x, y, w, "Player heads", c.dungeonMapHeads, () -> {
 			c.dungeonMapHeads = !c.dungeonMapHeads;
+			UnloadState.markDirty();
+		});
+		y += stride();
+		drawChoice(screen, graphics, font, x, y, w, "Arrow for yourself", c.dungeonMapSelfArrow, () -> {
+			c.dungeonMapSelfArrow = !c.dungeonMapSelfArrow;
 			UnloadState.markDirty();
 		});
 		y += stride();
@@ -1263,7 +1273,7 @@ public final class ClickGui {
 			return stackH(4);
 		}
 		if (MAP.equals(mod.name)) {
-			return stackH(dev.stray.Edition.LEGIT ? 6 : 7);
+			return stackH(dev.stray.Edition.LEGIT ? 8 : 9);
 		}
 		if (mod.menuStyle) {
 			if ("HUD".equals(mod.name)) {
