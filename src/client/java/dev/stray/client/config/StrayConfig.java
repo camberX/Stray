@@ -245,6 +245,9 @@ public final class StrayConfig {
 	public boolean crystalHollowsScan = true;
 	public boolean crystalHollowsMap = false;
 	public boolean scathaHudEnabled = true;
+	public boolean foragingHideTreeBlocks = true;
+	public boolean foragingCompactSweep = true;
+	public boolean foragingCompactTreeGift = true;
 	public boolean crystalHollowsMapLabels = true;
 	public boolean metalDetectorSolver = false;
 	public boolean metalDetectorToolTitle = false;

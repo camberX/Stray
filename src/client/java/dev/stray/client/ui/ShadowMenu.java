@@ -37,6 +37,7 @@ public final class ShadowMenu {
 		Map.entry("HUD", ""),
 		Map.entry("Mining", ""),
 		Map.entry("Farming", ""),
+		Map.entry("Foraging", "\uEA63"),
 		Map.entry("Menus", ""),
 		Map.entry("Keys", ""),
 		Map.entry("Theme", ""),

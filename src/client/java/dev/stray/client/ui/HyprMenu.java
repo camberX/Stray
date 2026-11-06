@@ -47,6 +47,7 @@ public final class HyprMenu {
 		Map.entry("HUD", "\uE871"),
 		Map.entry("Mining", "\uEAD5"),
 		Map.entry("Farming", "\uEA79"),
+		Map.entry("Foraging", "\uEA63"),
 		Map.entry("Menus", "\uE5C3"),
 		Map.entry("Keys", "\uE312"),
 		Map.entry("Theme", "\uE40A"),

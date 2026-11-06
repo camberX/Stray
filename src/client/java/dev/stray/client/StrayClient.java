@@ -247,7 +247,8 @@ public final class StrayClient implements ClientModInitializer {
 				dev.stray.client.dungeon.map.DungeonMap.onActionBar(message.getString());
 			}
 			boolean slayerShow = overlay || dev.stray.client.slayer.SlayerApi.onChat(message);
-			return CrystalHollows.allowChat(message, overlay) && slayerShow;
+			boolean foragingShow = dev.stray.client.foraging.ForagingTweaks.allowChat(message, overlay);
+			return CrystalHollows.allowChat(message, overlay) && slayerShow && foragingShow;
 		});
 		FarmingHud.init();
 		JacobContestHudRenderer.init();

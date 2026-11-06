@@ -53,7 +53,7 @@ public final class ClickGui {
 	private static final int ACCENT_ALPHA = 115;
 	private static final int TEXT = 0xFFFFFFFF;
 	private static final int DIM = 0xFFAAAAAA;
-	static final String[] ORDER = {"World", "Visuals", "Mobs", "Combat", "Slayer", "HUD", "Mining", "Farming", "Menus", "Keys", "Theme", "Player"};
+	static final String[] ORDER = {"World", "Visuals", "Mobs", "Combat", "Slayer", "HUD", "Mining", "Farming", "Foraging", "Menus", "Keys", "Theme", "Player"};
 	static final int[] BIND_WHICH = dev.stray.Edition.LEGIT
 		? new int[] {3, 7, 11, 12, 17}
 		: new int[] {3, 4, 13, 5, 7, 11, 12, 14, 16, 17};
@@ -1928,6 +1928,9 @@ public final class ClickGui {
 		java.util.Map.entry("Pest cooldown", "When the next pest can spawn."),
 		java.util.Map.entry("Lasso", "Shows the lasso's pull bar and reels in for you."),
 		java.util.Map.entry("Auto DNA", "Solves the DNA puzzle."),
+		java.util.Map.entry("Hide tree blocks", "Hides the floating blocks when you break a tree on Galatea."),
+		java.util.Map.entry("Compact sweep", "Folds the Sweep Details messages into one line. Hover for the breakdown."),
+		java.util.Map.entry("Compact tree gift", "Folds the Tree Gift message into one line plus its bonus drops."),
 		java.util.Map.entry("Click GUI", "Settings for this menu."),
 		java.util.Map.entry("Experiments", "Solves the experimentation table."),
 		java.util.Map.entry("Book combine", "Combines enchanted books for you."),
@@ -2178,6 +2181,9 @@ public final class ClickGui {
 		mods.add(mod("Pest ESP", "Farming", StrayScreen.Feature.PEST, null, () -> config.pestEspEnabled, v -> config.pestEspEnabled = v, true, false));
 		mods.add(mod("Pest cooldown", "Farming", StrayScreen.Feature.PEST_COOLDOWN, null, () -> config.pestCooldownHudEnabled, v -> config.pestCooldownHudEnabled = v, true, false));
 		mods.add(mod("Lasso", "Farming", null, null, () -> config.lassoDisplay, v -> config.lassoDisplay = v, true, false));
+		mods.add(mod("Hide tree blocks", "Foraging", null, null, () -> config.foragingHideTreeBlocks, v -> config.foragingHideTreeBlocks = v, true, false));
+		mods.add(mod("Compact sweep", "Foraging", null, null, () -> config.foragingCompactSweep, v -> config.foragingCompactSweep = v, true, false));
+		mods.add(mod("Compact tree gift", "Foraging", null, null, () -> config.foragingCompactTreeGift, v -> config.foragingCompactTreeGift = v, true, false));
 		mods.add(mod("Auto DNA", "Farming", StrayScreen.Feature.AUTO_DNA, null, () -> config.autoDnaEnabled, v -> config.autoDnaEnabled = v, true, false));
 
 		// Settings only: the click GUI is always the menu now.
