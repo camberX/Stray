@@ -161,12 +161,6 @@ final class TerminalGui {
 		// Header: name left, progress right.
 		float ty = py + pad * 0.75f;
 		text(graphics, font, term.name, px + pad, ty, s, Anim.fade(blocked ? ShadowLook.MUTED : ShadowLook.TEXT, open));
-		String count = progressText(term, loaded);
-		if (!count.isEmpty()) {
-			Component c = MenuFont.shadow(count);
-			text(graphics, font, count, px + panelW - pad - font.width(c) * s, ty, s, Anim.fade(ShadowLook.MUTED, open));
-		}
-
 		hovered = -1;
 		lastGx = gx;
 		lastGy = gy;
@@ -185,17 +179,6 @@ final class TerminalGui {
 			text(graphics, font, done, gx + (gridW - font.width(c) * s) * 0.5f, gy + (gridH - 9f * s) * 0.5f, s, Anim.fade(0xFF000000 | color("solution"), doneFade));
 		}
 		graphics.pose().popMatrix();
-	}
-
-	private static String progressText(Term term, boolean loaded) {
-		if (!loaded) {
-			return "…";
-		}
-		int max = term.max();
-		if (max <= 0) {
-			return "";
-		}
-		return term == Term.MELODY ? "Row " + Math.min(max, term.done() + 1) + "/" + max : term.done() + "/" + max;
 	}
 
 	private static void grid(
@@ -280,7 +263,7 @@ final class TerminalGui {
 		if (click == null || index == null) {
 			return null;
 		}
-		if (term == Term.NUMBERS && index < 3) {
+		if (term == Term.NUMBERS && index < 3 && StrayConfig.get().terminalShowNumbers) {
 			Integer count = ((Term.Numbers) term).counts.get(click.slot());
 			return count == null ? null : String.valueOf(count);
 		}

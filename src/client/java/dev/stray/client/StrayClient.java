@@ -884,6 +884,11 @@ public final class StrayClient implements ClientModInitializer {
 				? dev.stray.client.dungeon.map.RoomDatabase.size() + " rooms from " + dev.stray.client.dungeon.map.RoomDatabase.source()
 				: "§cno room data yet§7 (download: " + dev.stray.client.dungeon.map.NoammData.status() + ")";
 			context.getSource().sendFeedback(Component.literal("§bStray §7map preview " + (on ? "§aon§7: a sample dungeon on the HUD. " + rooms : "§coff§7.")));
+			if (dev.stray.client.location.SkyblockLocation.inDungeon) {
+				context.getSource().sendFeedback(Component.literal("§bStray §7scan: §f" + dev.stray.client.dungeon.map.DungeonScanner.scannedRooms()
+					+ "§7 room cells, " + (dev.stray.client.dungeon.map.DungeonScanner.finished() ? "all loaded" : "still waiting for chunks")
+					+ ", show unopened rooms " + (dev.stray.client.dungeon.map.DungeonMap.cheater() ? "§aon" : "§coff")));
+			}
 			return Command.SINGLE_SUCCESS;
 		}));
 		if (!dev.stray.Edition.LEGIT) {

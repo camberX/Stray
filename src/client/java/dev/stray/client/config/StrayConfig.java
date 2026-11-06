@@ -339,6 +339,7 @@ public final class StrayConfig {
 	public int terminalFirstClickDelay = 7;
 	public boolean terminalClickSound = true;
 	public boolean terminalGlow = true;
+	public boolean terminalShowNumbers = false;
 	public int terminalSolutionRgb = 0x6EE7B7;
 	public int terminalFirstRgb = 0x6EE7B7;
 	public int terminalSecondRgb = 0xFCD34D;

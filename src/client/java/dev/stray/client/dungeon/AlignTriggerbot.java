@@ -97,11 +97,24 @@ public final class AlignTriggerbot {
 		if (testMode && solution == null) {
 			gridKnown = false;
 		}
+	}
+
+	/**
+	 * Clicks, right before the game handles keys in a tick: the crosshair target was just
+	 * picked for this tick, so the click lands on exactly the frame we checked (doing it
+	 * at the end of the previous tick let a moving crosshair carry the click onto the
+	 * wall behind). Only an item frame with an arrow on the device is ever clicked.
+	 */
+	public static void beforeKeybinds(Minecraft client) {
+		if (!active(client) || testMode && !gridKnown) {
+			return;
+		}
 		if (client.gui.screen() != null || client.player.isSpectator()) {
 			return;
 		}
 		HitResult hit = client.hitResult;
-		if (!(hit instanceof EntityHitResult entityHit) || !(entityHit.getEntity() instanceof ItemFrame frame)) {
+		if (!(hit instanceof EntityHitResult entityHit) || !(entityHit.getEntity() instanceof ItemFrame frame)
+			|| !frame.getItem().is(Items.ARROW)) {
 			return;
 		}
 		int index = index(frame);

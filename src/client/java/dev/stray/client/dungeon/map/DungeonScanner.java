@@ -88,7 +88,31 @@ public final class DungeonScanner {
 		}
 	}
 
+	private static int lastDataSize;
+
+	/** Cells the scan has filled in so far (for /stray debug dev map). */
+	public static int scannedRooms() {
+		int count = 0;
+		for (Tile tile : GRID) {
+			if (tile instanceof RoomTile) {
+				count++;
+			}
+		}
+		return count;
+	}
+
+	public static boolean finished() {
+		return hasScanned;
+	}
+
 	private static void scan(ClientLevel level) {
+		// Room data can arrive after the first full scan (downloaded or found later): then
+		// go over the rooms again so the ones scanned without it get their names.
+		int dataSize = RoomDatabase.size();
+		if (dataSize != lastDataSize) {
+			lastDataSize = dataSize;
+			hasScanned = false;
+		}
 		boolean allLoaded = true;
 		if (!hasScanned) {
 			for (int x = 0; x <= 10; x++) {

@@ -180,7 +180,7 @@ public class StrayScreen extends Screen {
 		SHOPPING("Shopping list", 1),
 		PEST("Pest ESP", 6),
 		PEST_COOLDOWN("Pest cooldown", 3),
-		TERMINALS("Terminal GUI", 13),
+		TERMINALS("Terminal GUI", 14),
 		AUTO_DNA("Auto DNA", 5),
 		NAMETAGS("Nametags", 6),
 		HEALTH("Health bar", 7),
@@ -4004,6 +4004,7 @@ public class StrayScreen extends Screen {
 				y = slider(graphics, font, ix, y, iw, "First click delay", config.terminalFirstClickDelay + " ticks", config.terminalFirstClickDelay / 8f, v -> config.terminalFirstClickDelay = snapInt(v * 8f, 0, 8, 1));
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Glow", config.terminalGlow, v -> config.terminalGlow = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Click sound", config.terminalClickSound, v -> config.terminalClickSound = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Numbers: show numbers", config.terminalShowNumbers, v -> config.terminalShowNumbers = v);
 				y = terminalColor(graphics, font, ix, y, iw, mouseX, mouseY, "Solution", "solution");
 				y = terminalColor(graphics, font, ix, y, iw, mouseX, mouseY, "Numbers: 1st", "first");
 				y = terminalColor(graphics, font, ix, y, iw, mouseX, mouseY, "Numbers: 2nd", "second");

@@ -22,6 +22,9 @@ public class MinecraftMixin {
 	 */
 	@Inject(method = "handleKeybinds", at = @At("HEAD"))
 	private void stray$preKeybinds(CallbackInfo ci) {
+		if (!dev.stray.Edition.LEGIT) {
+			dev.stray.client.dungeon.AlignTriggerbot.beforeKeybinds((Minecraft) (Object) this);
+		}
 		Minecraft client = (Minecraft) (Object) this;
 		dev.stray.client.movement.Freecam.preKeybinds(client);
 		if (!dev.stray.Edition.LEGIT) {
