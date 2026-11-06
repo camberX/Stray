@@ -872,6 +872,19 @@ public final class StrayClient implements ClientModInitializer {
 			context.getSource().sendFeedback(Component.literal("§bStray §7showing each F7 title once."));
 			return Command.SINGLE_SUCCESS;
 		}));
+		node.then(ClientCommands.literal("map").executes(context -> {
+			boolean on = !dev.stray.client.dungeon.map.DungeonMap.previewActive();
+			dev.stray.client.dungeon.map.DungeonMap.setPreview(on);
+			if (on && !StrayConfig.get().dungeonMapEnabled) {
+				StrayConfig.get().dungeonMapEnabled = true;
+				StrayConfig.get().save();
+			}
+			String rooms = dev.stray.client.dungeon.map.RoomDatabase.size() > 0
+				? dev.stray.client.dungeon.map.RoomDatabase.size() + " rooms from " + dev.stray.client.dungeon.map.RoomDatabase.source()
+				: "§cno room data§7 (room names need rooms-modern.json in config/stray or NoammAddons installed)";
+			context.getSource().sendFeedback(Component.literal("§bStray §7map preview " + (on ? "§aon§7: a sample dungeon on the HUD. " + rooms : "§coff§7.")));
+			return Command.SINGLE_SUCCESS;
+		}));
 		if (!dev.stray.Edition.LEGIT) {
 			com.mojang.brigadier.builder.RequiredArgumentBuilder<FabricClientCommandSource, String> name = ClientCommands.argument("name", StringArgumentType.word())
 				.suggests((context, builder) -> {
