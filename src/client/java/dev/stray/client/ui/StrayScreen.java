@@ -180,6 +180,7 @@ public class StrayScreen extends Screen {
 		SHOPPING("Shopping list", 1),
 		PEST("Pest ESP", 6),
 		PEST_COOLDOWN("Pest cooldown", 3),
+		TERMINALS("Terminal GUI", 13),
 		AUTO_DNA("Auto DNA", 5),
 		NAMETAGS("Nametags", 6),
 		HEALTH("Health bar", 7),
@@ -257,11 +258,14 @@ public class StrayScreen extends Screen {
 	}
 
 	private enum PickerTarget {
-		WORLD, SKY, FOG, NODE, THEME, PANE, CONTROL, PILL, MOB, STAR, BLOCK, TITANIUM, CHEST, PEST, HELD_ITEM, HELD_ITEM_OUTLINE, FILL, FILL_OUTLINE, MARKS, PATHS, RINGS, MOVE, HEALTH_FULL, HEALTH_EMPTY, BOX, SLAYER
+		WORLD, SKY, FOG, NODE, THEME, PANE, CONTROL, PILL, MOB, STAR, BLOCK, TITANIUM, CHEST, PEST, HELD_ITEM, HELD_ITEM_OUTLINE, FILL, FILL_OUTLINE, MARKS, PATHS, RINGS, MOVE, HEALTH_FULL, HEALTH_EMPTY, BOX, SLAYER, TERMINAL
 	}
 
 	/** Which slayer colour the SLAYER picker edits (see SlayerSettings.color). */
 	private static String slayerColorKey = "mini";
+
+	/** Which terminal colour the TERMINAL picker edits (see StrayConfig.terminalColor). */
+	private static String terminalColorKey = "solution";
 
 	private record SearchEntry(String label, Tab tab, String hint) {
 	}
@@ -3995,6 +3999,21 @@ public class StrayScreen extends Screen {
 			}
 			case SLAYER_HUD, SLAYER_PROFIT, SLAYER_RNG, SLAYER_KILLS, SLAYER_ALERTS, SLAYER_ESP, SLAYER_VOID, SLAYER_INFERNO, SLAYER_VAMPIRE, SLAYER_CLEANUP ->
 				drawSlayerFields(graphics, font, mouseX, mouseY, ix, y, iw, feature);
+			case TERMINALS -> {
+				y = slider(graphics, font, ix, y, iw, "Scale", config.terminalScale + "%", (config.terminalScale - 50) / 150f, v -> config.terminalScale = snapInt(50 + v * 150f, 50, 200, 5));
+				y = slider(graphics, font, ix, y, iw, "First click delay", config.terminalFirstClickDelay + " ticks", config.terminalFirstClickDelay / 8f, v -> config.terminalFirstClickDelay = snapInt(v * 8f, 0, 8, 1));
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Glow", config.terminalGlow, v -> config.terminalGlow = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Click sound", config.terminalClickSound, v -> config.terminalClickSound = v);
+				y = terminalColor(graphics, font, ix, y, iw, mouseX, mouseY, "Solution", "solution");
+				y = terminalColor(graphics, font, ix, y, iw, mouseX, mouseY, "Numbers: 1st", "first");
+				y = terminalColor(graphics, font, ix, y, iw, mouseX, mouseY, "Numbers: 2nd", "second");
+				y = terminalColor(graphics, font, ix, y, iw, mouseX, mouseY, "Numbers: 3rd", "third");
+				y = terminalColor(graphics, font, ix, y, iw, mouseX, mouseY, "Rubix: +", "plus");
+				y = terminalColor(graphics, font, ix, y, iw, mouseX, mouseY, "Rubix: -", "minus");
+				y = terminalColor(graphics, font, ix, y, iw, mouseX, mouseY, "Melody: column", "column");
+				y = terminalColor(graphics, font, ix, y, iw, mouseX, mouseY, "Melody: marker", "marker");
+				terminalColor(graphics, font, ix, y, iw, mouseX, mouseY, "Melody: button", "button");
+			}
 			case AUTO_DNA -> {
 				if (!dev.stray.Edition.LEGIT) {
 					y = slider(graphics, font, ix, y, iw, "Click delay", config.autoDnaClickDelay + "ms", (config.autoDnaClickDelay - 100) / 900f, v -> config.autoDnaClickDelay = snapInt(100 + v * 900f, 100, 1000, 10));
@@ -4477,6 +4496,10 @@ public class StrayScreen extends Screen {
 		return y + row;
 	}
 
+	private float terminalColor(GuiGraphicsExtractor graphics, Font font, float x, float y, float w, int mouseX, int mouseY, String label, String key) {
+		return colorRow(graphics, font, x, y, w, mouseX, mouseY, label, StrayConfig.get().terminalColor(key), PickerTarget.TERMINAL, () -> terminalColorKey = key);
+	}
+
 	private float slayerColor(GuiGraphicsExtractor graphics, Font font, float x, float y, float w, int mouseX, int mouseY, String label, String key) {
 		return colorRow(graphics, font, x, y, w, mouseX, mouseY, label, StrayConfig.get().slayer.color(key), PickerTarget.SLAYER, () -> slayerColorKey = key);
 	}
@@ -4710,6 +4733,7 @@ public class StrayScreen extends Screen {
 			case HEALTH_EMPTY -> config.visuals(pickerKind).healthEmptyRgb = packed == 0 ? 0xEB1717 : packed;
 			case BOX -> config.visuals(pickerKind).boxRgb = packed == 0 ? 0x2FB5FF : packed;
 			case SLAYER -> config.slayer.setColor(slayerColorKey, packed == 0 ? 0xFFFFFF : packed);
+			case TERMINAL -> config.setTerminalColor(terminalColorKey, packed == 0 ? 0xFFFFFF : packed);
 			case THEME -> Theme.applyCustom(packed);
 			case PANE -> Theme.applyPane(packed);
 			case CONTROL -> {
@@ -4729,7 +4753,7 @@ public class StrayScreen extends Screen {
 			case PANE -> 0.20f;
 			case MOB, STAR, BLOCK -> 0.15f;
 			case NODE, HELD_ITEM, FILL, CHEST, TITANIUM, PEST, BOX -> 0.08f;
-			case THEME, HELD_ITEM_OUTLINE, FILL_OUTLINE, MARKS, PATHS, RINGS, MOVE, HEALTH_FULL, HEALTH_EMPTY, SLAYER -> 1f;
+			case THEME, HELD_ITEM_OUTLINE, FILL_OUTLINE, MARKS, PATHS, RINGS, MOVE, HEALTH_FULL, HEALTH_EMPTY, SLAYER, TERMINAL -> 1f;
 			default -> 0f;
 		};
 	}
@@ -4762,7 +4786,7 @@ public class StrayScreen extends Screen {
 			case WORLD -> config.worldTintStrength;
 			case SKY -> config.skyTintStrength;
 			case FOG -> config.fogDensity;
-			case THEME, HELD_ITEM_OUTLINE, FILL_OUTLINE, MARKS, PATHS, RINGS, MOVE, HEALTH_FULL, HEALTH_EMPTY, SLAYER -> 1f;
+			case THEME, HELD_ITEM_OUTLINE, FILL_OUTLINE, MARKS, PATHS, RINGS, MOVE, HEALTH_FULL, HEALTH_EMPTY, SLAYER, TERMINAL -> 1f;
 		};
 	}
 
@@ -4786,7 +4810,7 @@ public class StrayScreen extends Screen {
 			case WORLD -> config.worldTintStrength = clamped;
 			case SKY -> config.skyTintStrength = clamped;
 			case FOG -> config.fogDensity = clamped;
-			case THEME, HELD_ITEM_OUTLINE, FILL_OUTLINE, MARKS, PATHS, RINGS, MOVE, HEALTH_FULL, HEALTH_EMPTY, SLAYER -> {
+			case THEME, HELD_ITEM_OUTLINE, FILL_OUTLINE, MARKS, PATHS, RINGS, MOVE, HEALTH_FULL, HEALTH_EMPTY, SLAYER, TERMINAL -> {
 				return;
 			}
 		}

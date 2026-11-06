@@ -334,6 +334,55 @@ public final class StrayConfig {
 	/** F7 arrow align: right clicks the arrow you look at until it points the right way. */
 	public boolean alignTriggerbot = false;
 	public int alignTriggerbotDelay = 150;
+	public boolean terminalGuiEnabled = false;
+	public int terminalScale = 100;
+	public int terminalFirstClickDelay = 7;
+	public boolean terminalClickSound = true;
+	public boolean terminalGlow = true;
+	public int terminalSolutionRgb = 0x6EE7B7;
+	public int terminalFirstRgb = 0x6EE7B7;
+	public int terminalSecondRgb = 0xFCD34D;
+	public int terminalThirdRgb = 0xFB7185;
+	public int terminalRubixPlusRgb = 0x60A5FA;
+	public int terminalRubixMinusRgb = 0xFB7185;
+	public int terminalMelodyColumnRgb = 0xE879F9;
+	public int terminalMelodyMarkerRgb = 0xFB923C;
+	public int terminalMelodyButtonRgb = 0x6EE7B7;
+
+	/** Terminal GUI colours by name (RGB), for the settings picker and the GUI. */
+	public int terminalColor(String key) {
+		return switch (key) {
+			case "first" -> terminalFirstRgb;
+			case "second" -> terminalSecondRgb;
+			case "third" -> terminalThirdRgb;
+			case "plus" -> terminalRubixPlusRgb;
+			case "minus" -> terminalRubixMinusRgb;
+			case "column" -> terminalMelodyColumnRgb;
+			case "marker" -> terminalMelodyMarkerRgb;
+			case "button" -> terminalMelodyButtonRgb;
+			default -> terminalSolutionRgb;
+		} & 0xFFFFFF;
+	}
+
+	public void setTerminalColor(String key, int rgb) {
+		rgb &= 0xFFFFFF;
+		switch (key) {
+			case "first" -> terminalFirstRgb = rgb;
+			case "second" -> terminalSecondRgb = rgb;
+			case "third" -> terminalThirdRgb = rgb;
+			case "plus" -> terminalRubixPlusRgb = rgb;
+			case "minus" -> terminalRubixMinusRgb = rgb;
+			case "column" -> terminalMelodyColumnRgb = rgb;
+			case "marker" -> terminalMelodyMarkerRgb = rgb;
+			case "button" -> terminalMelodyButtonRgb = rgb;
+			default -> terminalSolutionRgb = rgb;
+		}
+	}
+	public boolean f7TitlesEnabled = false;
+	public boolean f7CrystalTitles = true;
+	public boolean f7WitherTitles = true;
+	public boolean f7LightningTimer = true;
+	public boolean f7TerminalTitles = true;
 	public boolean alignTriggerbotRandom = true;
 	public boolean arrayListAccent = false;
 	public java.util.List<String> arrayListHidden = new java.util.ArrayList<>();

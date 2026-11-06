@@ -254,7 +254,7 @@ public final class ClickGui {
 				}
 				return;
 			}
-			if (row.mod.feature != null || row.mod.timeout || row.mod.menuStyle || "Array list".equals(row.mod.name) || "Themed GUIs".equals(row.mod.name) || "Themed chat".equals(row.mod.name) || CUSTOMIZE.equals(row.mod.name) || CS2.equals(row.mod.name) || LEAP.equals(row.mod.name) || ALIGN.equals(row.mod.name)) {
+			if (row.mod.feature != null || row.mod.timeout || row.mod.menuStyle || "Array list".equals(row.mod.name) || "Themed GUIs".equals(row.mod.name) || "Themed chat".equals(row.mod.name) || CUSTOMIZE.equals(row.mod.name) || CS2.equals(row.mod.name) || LEAP.equals(row.mod.name) || ALIGN.equals(row.mod.name) || TITLES.equals(row.mod.name)) {
 				if (row.mod.name.equals(expandedName)) {
 					expandedName = null;
 				} else {
@@ -617,6 +617,8 @@ public final class ClickGui {
 			drawLeap(screen, graphics, font, boxX, y, boxW);
 		} else if (ALIGN.equals(mod.name)) {
 			drawAlign(screen, graphics, font, boxX, y, boxW);
+		} else if (TITLES.equals(mod.name)) {
+			drawTitles(screen, graphics, font, boxX, y, boxW);
 		} else if (mod.menuStyle) {
 			if ("HUD".equals(mod.name)) {
 				drawHud(screen, graphics, font, boxX, y, boxW);
@@ -891,6 +893,8 @@ public final class ClickGui {
 	static final String CS2 = "CS2 knife";
 	static final String LEAP = "Leap menu";
 	static final String ALIGN = "Align triggerbot";
+	static final String TERMINALS = "Terminal GUI";
+	static final String TITLES = "F7 titles";
 
 	/** CS2 knives (local build): pick the knife, finish, seed and wear. */
 	private static void drawCs2(StrayScreen screen, GuiGraphicsExtractor graphics, Font font, float x, float y, float w) {
@@ -910,6 +914,30 @@ public final class ClickGui {
 		y += stride();
 		drawChoice(screen, graphics, font, x, y, w, "Random spread", c.alignTriggerbotRandom, () -> {
 			c.alignTriggerbotRandom = !c.alignTriggerbotRandom;
+			UnloadState.markDirty();
+		});
+	}
+
+	/** F7 titles: which ones. */
+	private static void drawTitles(StrayScreen screen, GuiGraphicsExtractor graphics, Font font, float x, float y, float w) {
+		StrayConfig c = StrayConfig.get();
+		drawChoice(screen, graphics, font, x, y, w, "Crystals", c.f7CrystalTitles, () -> {
+			c.f7CrystalTitles = !c.f7CrystalTitles;
+			UnloadState.markDirty();
+		});
+		y += stride();
+		drawChoice(screen, graphics, font, x, y, w, "Wither phases", c.f7WitherTitles, () -> {
+			c.f7WitherTitles = !c.f7WitherTitles;
+			UnloadState.markDirty();
+		});
+		y += stride();
+		drawChoice(screen, graphics, font, x, y, w, "Lightning timer", c.f7LightningTimer, () -> {
+			c.f7LightningTimer = !c.f7LightningTimer;
+			UnloadState.markDirty();
+		});
+		y += stride();
+		drawChoice(screen, graphics, font, x, y, w, "Terminal progress", c.f7TerminalTitles, () -> {
+			c.f7TerminalTitles = !c.f7TerminalTitles;
 			UnloadState.markDirty();
 		});
 	}
@@ -1183,6 +1211,9 @@ public final class ClickGui {
 		}
 		if (ALIGN.equals(mod.name)) {
 			return stackH(2);
+		}
+		if (TITLES.equals(mod.name)) {
+			return stackH(4);
 		}
 		if (mod.menuStyle) {
 			if ("HUD".equals(mod.name)) {
@@ -1770,6 +1801,8 @@ public final class ClickGui {
 		java.util.Map.entry("Fairy souls", "Shows fairy souls you have not collected yet."),
 		java.util.Map.entry("Auto clicker", "Clicks for you while you hold the bind."),
 		java.util.Map.entry("Party stats", "Shows a stats card when someone joins from the party finder."),
+		java.util.Map.entry("Terminal GUI", "F7 terminals in a clean Shadow window: only the slots left to click light up, and a click anywhere on one goes to that slot. Try it with /stray debug dev terminal."),
+		java.util.Map.entry("F7 titles", "Short titles in the F7 boss: crystals, wither phases, Storm's lightning timer and who did which terminal. Also shown over the leap menu."),
 		java.util.Map.entry("Align triggerbot", "F7 arrow align: while you look at an arrow that is not right yet, it right clicks it with your delay until it is. Clicks go through the normal use key."),
 		java.util.Map.entry("Own nametag", "Shows your own name above your head in third person (F5)."),
 		java.util.Map.entry("Leap menu", "Spirit Leap as four big panels, optionally showing what each teammate sees. Leap logic from NoammAddons."),
@@ -1870,6 +1903,7 @@ public final class ClickGui {
 			|| CS2.equals(mod.name)
 			|| LEAP.equals(mod.name)
 			|| ALIGN.equals(mod.name)
+			|| TITLES.equals(mod.name)
 			|| "Custom title".equals(mod.name);
 	}
 
@@ -1928,6 +1962,10 @@ public final class ClickGui {
 			drawAlign(screen, graphics, font, x, y, w);
 			return;
 		}
+		if (TITLES.equals(mod.name)) {
+			drawTitles(screen, graphics, font, x, y, w);
+			return;
+		}
 		if (mod.menuStyle) {
 			if ("HUD".equals(mod.name)) {
 				drawHud(screen, graphics, font, x, y, w);
@@ -1949,7 +1987,7 @@ public final class ClickGui {
 	/** Modules Stray Legit leaves out: they automate input or are the loadouts / wardrobe menus. */
 	private static final java.util.Set<String> LEGIT_REMOVED = java.util.Set.of(
 		"Auto clicker", "Experiments", "Book combine", "Loadouts", "Wardrobe", "Auto DNA",
-		"Command rings", "Movement rings", "Align triggerbot"
+		"Command rings", "Movement rings", "Align triggerbot", "Terminal GUI"
 	);
 
 	static List<Mod> modules() {
@@ -2002,6 +2040,8 @@ public final class ClickGui {
 		mods.add(mod("Party stats", "Combat", null, null, () -> config.partyFinderStats, v -> config.partyFinderStats = v, true, false));
 		mods.add(mod(LEAP, "Combat", null, null, () -> config.leapMenuEnabled, v -> config.leapMenuEnabled = v, true, false));
 		mods.add(mod(ALIGN, "Combat", null, null, () -> config.alignTriggerbot, v -> config.alignTriggerbot = v, true, false));
+		mods.add(mod(TERMINALS, "Combat", StrayScreen.Feature.TERMINALS, null, () -> config.terminalGuiEnabled, v -> config.terminalGuiEnabled = v, true, false));
+		mods.add(mod(TITLES, "Combat", null, null, () -> config.f7TitlesEnabled, v -> config.f7TitlesEnabled = v, true, false));
 		addSlayer(mods, config);
 		mods.add(mod("Array list", "HUD", null, null, () -> config.arrayList, v -> config.arrayList = v, false, false));
 		mods.add(mod("Watermark", "HUD", StrayScreen.Feature.WATERMARK, null, () -> config.watermarkEnabled, v -> config.watermarkEnabled = v, true, false));

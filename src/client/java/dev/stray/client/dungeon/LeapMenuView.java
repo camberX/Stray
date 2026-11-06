@@ -63,6 +63,7 @@ public final class LeapMenuView {
 		if (!any) {
 			String text = "No players found";
 			GuiDraw.text(graphics, font, text, (width - font.width(text) * 2f) * 0.5f, height * 0.5f - 8, 2f, 0xFFFF5555, false);
+			F7Titles.renderOverMenu(graphics, width, height);
 			return;
 		}
 		Integer hovered = hoveredIndex();
@@ -79,6 +80,8 @@ public final class LeapMenuView {
 			float h = halfH - gap * 0.5f;
 			panel(graphics, font, i, players[i], x, y, w, h, HOVER[i], pov);
 		}
+		// Titles (ours and the game's) would sit under the menu; draw them on top.
+		F7Titles.renderOverMenu(graphics, width, height);
 	}
 
 	private static void panel(

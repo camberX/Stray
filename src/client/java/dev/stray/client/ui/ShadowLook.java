@@ -72,14 +72,25 @@ public final class ShadowLook {
 		if (strength <= 0 || w <= 0f || h <= 0f) {
 			return;
 		}
+		soft(graphics, x, y + 1.5f, w, h, extent, Math.min(255, strength) << 24);
+	}
+
+	/** The same soft falloff in a colour (with its alpha), centred on the box: a glow. */
+	public static void glow(GuiGraphicsExtractor graphics, float x, float y, float w, float h, int extent, int argb) {
+		if ((argb >>> 24) == 0 || w <= 0f || h <= 0f) {
+			return;
+		}
+		soft(graphics, x, y, w, h, extent, argb);
+	}
+
+	private static void soft(GuiGraphicsExtractor graphics, float x, float y, float w, float h, int extent, int color) {
 		float e = extent;
 		float k = e / MARGIN;
 		float X = x - e;
-		float Y = y - e + 1.5f;
+		float Y = y - e;
 		float W = w + e * 2f;
 		float H = h + e * 2f;
 		float cs = Math.min(32f * k, Math.min(W, H) * 0.5f);
-		int color = Math.min(255, strength) << 24;
 		float mw = W - cs * 2f;
 		float mh = H - cs * 2f;
 		piece(graphics, X, Y, cs, cs, 0, 0, 32, 32, color);

@@ -18,7 +18,14 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public class GuiMixin {
 	@Inject(method = "setTitle", at = @At("HEAD"), cancellable = true)
 	private void stray$slayerTitle(Component title, CallbackInfo ci) {
-		if (!dev.stray.client.slayer.SlayerBosses.onTitle(title)) {
+		if (!dev.stray.client.slayer.SlayerBosses.onTitle(title) || !dev.stray.client.dungeon.F7Titles.onTitle(title)) {
+			ci.cancel();
+		}
+	}
+
+	@Inject(method = "setSubtitle", at = @At("HEAD"), cancellable = true)
+	private void stray$f7Subtitle(Component subtitle, CallbackInfo ci) {
+		if (!dev.stray.client.dungeon.F7Titles.onSubtitle(subtitle)) {
 			ci.cancel();
 		}
 	}

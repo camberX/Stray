@@ -233,6 +233,7 @@ public final class StrayClient implements ClientModInitializer {
 				String plain = message.getString();
 				dev.stray.client.dungeon.DungeonParty.onChat(plain);
 				dev.stray.client.dungeon.LeapMenu.onChat(plain);
+				dev.stray.client.dungeon.F7Titles.onChat(plain);
 			}
 			MetalDetector.onMessage(message, overlay);
 			CropFever.onMessage(message, overlay);
@@ -335,6 +336,7 @@ public final class StrayClient implements ClientModInitializer {
 						return Command.SINGLE_SUCCESS;
 					})));
 			}
+			root.then(ClientCommands.literal("debug").then(debugDev()));
 			root.then(ClientCommands.literal("edit").executes(context -> openItemEdit()));
 			root.then(ClientCommands.literal("casino").executes(context -> {
 				Minecraft client = Minecraft.getInstance();
@@ -447,6 +449,8 @@ public final class StrayClient implements ClientModInitializer {
 		ClientTickEvents.END_CLIENT_TICK.register(client -> {
 			dev.stray.client.dungeon.DungeonParty.tick(client);
 			if (!dev.stray.Edition.LEGIT) { dev.stray.client.dungeon.AlignTriggerbot.tick(client); }
+			if (!dev.stray.Edition.LEGIT) { dev.stray.client.dungeon.terminal.TerminalSession.tick(client); }
+			dev.stray.client.dungeon.F7Titles.tick(client);
 			if (!dev.stray.client.dungeon.LeapMenu.active()) {
 				dev.stray.client.dungeon.LeapMenu.onContainerClosed();
 			}
@@ -844,6 +848,47 @@ public final class StrayClient implements ClientModInitializer {
 		Minecraft client = Minecraft.getInstance();
 		client.execute(() -> client.gui.setScreen(new dev.stray.client.ui.CommandKeysScreen(client.gui.screen())));
 		return Command.SINGLE_SUCCESS;
+	}
+
+	/** /stray debug dev: test the F7 extras (terminals, titles, dungeon map) outside a real dungeon. */
+	private static LiteralArgumentBuilder<FabricClientCommandSource> debugDev() {
+		LiteralArgumentBuilder<FabricClientCommandSource> node = ClientCommands.literal("dev").executes(context -> {
+			boolean on = !dev.stray.client.dungeon.DevMode.on();
+			dev.stray.client.dungeon.DevMode.set(on);
+			context.getSource().sendFeedback(Component.literal("§bStray §7dev mode " + (on ? "§aon§7: F7 titles" + (dev.stray.Edition.LEGIT ? "" : " and terminal GUIs") + " work outside dungeons (e.g. your own server)." : "§coff§7.")
+				+ " §8/stray debug dev " + (dev.stray.Edition.LEGIT ? "titles" : "terminal <name>, titles") + ", map"));
+			return Command.SINGLE_SUCCESS;
+		});
+		node.then(ClientCommands.literal("titles").executes(context -> {
+			if (!StrayConfig.get().f7TitlesEnabled) {
+				StrayConfig.get().f7TitlesEnabled = true;
+				StrayConfig.get().save();
+			}
+			dev.stray.client.dungeon.F7Titles.preview();
+			context.getSource().sendFeedback(Component.literal("§bStray §7showing each F7 title once."));
+			return Command.SINGLE_SUCCESS;
+		}));
+		if (!dev.stray.Edition.LEGIT) {
+			com.mojang.brigadier.builder.RequiredArgumentBuilder<FabricClientCommandSource, String> name = ClientCommands.argument("name", StringArgumentType.word())
+				.suggests((context, builder) -> {
+					for (String option : dev.stray.client.dungeon.terminal.TerminalSession.simNames()) {
+						builder.suggest(option);
+					}
+					return builder.buildFuture();
+				})
+				.executes(context -> {
+					String which = StringArgumentType.getString(context, "name");
+					if (!dev.stray.client.dungeon.terminal.TerminalSession.openSim(which)) {
+						context.getSource().sendFeedback(Component.literal("§bStray §cUnknown terminal. §7Try: " + String.join(", ", dev.stray.client.dungeon.terminal.TerminalSession.simNames())));
+						return 0;
+					}
+					return Command.SINGLE_SUCCESS;
+				});
+			node.then(ClientCommands.literal("terminal")
+				.executes(context -> dev.stray.client.dungeon.terminal.TerminalSession.openSim("random") ? Command.SINGLE_SUCCESS : 0)
+				.then(name));
+		}
+		return node;
 	}
 
 	private static void enableAlign() {

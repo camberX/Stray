@@ -38,6 +38,25 @@ public class AbstractContainerScreenMixin {
 			dev.stray.client.dungeon.LeapMenu.updateLeapMenu();
 			dev.stray.client.dungeon.LeapMenuView.render(graphics, screen.width, screen.height);
 			ci.cancel();
+			return;
+		}
+		if (!dev.stray.Edition.LEGIT && dev.stray.client.dungeon.terminal.TerminalSession.handles(screen)) {
+			dev.stray.client.dungeon.terminal.TerminalSession.render(graphics, screen.width, screen.height, mouseX, mouseY);
+			ci.cancel();
+		}
+	}
+
+	@Inject(method = "mouseReleased", at = @At("HEAD"), cancellable = true)
+	private void stray$terminalRelease(MouseButtonEvent event, CallbackInfoReturnable<Boolean> cir) {
+		if (!dev.stray.Edition.LEGIT && dev.stray.client.dungeon.terminal.TerminalSession.handles((AbstractContainerScreen<?>) (Object) this)) {
+			cir.setReturnValue(true);
+		}
+	}
+
+	@Inject(method = "mouseDragged", at = @At("HEAD"), cancellable = true)
+	private void stray$terminalDrag(MouseButtonEvent event, double dx, double dy, CallbackInfoReturnable<Boolean> cir) {
+		if (!dev.stray.Edition.LEGIT && dev.stray.client.dungeon.terminal.TerminalSession.handles((AbstractContainerScreen<?>) (Object) this)) {
+			cir.setReturnValue(true);
 		}
 	}
 
@@ -54,6 +73,11 @@ public class AbstractContainerScreenMixin {
 
 	@Inject(method = "keyPressed", at = @At("HEAD"), cancellable = true)
 	private void stray$bookCombineEnter(KeyEvent event, CallbackInfoReturnable<Boolean> cir) {
+		if (!dev.stray.Edition.LEGIT && dev.stray.client.dungeon.terminal.TerminalSession.handles((AbstractContainerScreen<?>) (Object) this)
+			&& dev.stray.client.dungeon.terminal.TerminalSession.keyPressed(event)) {
+			cir.setReturnValue(true);
+			return;
+		}
 		if (dev.stray.client.dungeon.LeapMenu.isLeapMenu((AbstractContainerScreen<?>) (Object) this)
 			&& dev.stray.client.dungeon.LeapMenu.keyPressed(event.key())) {
 			cir.setReturnValue(true);
@@ -68,6 +92,11 @@ public class AbstractContainerScreenMixin {
 
 	@Inject(method = "mouseClicked", at = @At("HEAD"), cancellable = true)
 	private void stray$sackRecipeClick(MouseButtonEvent event, boolean doubled, CallbackInfoReturnable<Boolean> cir) {
+		if (!dev.stray.Edition.LEGIT && dev.stray.client.dungeon.terminal.TerminalSession.handles((AbstractContainerScreen<?>) (Object) this)) {
+			dev.stray.client.dungeon.terminal.TerminalSession.mouseClicked(event.x(), event.y());
+			cir.setReturnValue(true);
+			return;
+		}
 		if (dev.stray.client.dungeon.LeapMenu.isLeapMenu((AbstractContainerScreen<?>) (Object) this)
 			&& dev.stray.client.dungeon.LeapMenu.mouseClicked(event.button())) {
 			cir.setReturnValue(true);

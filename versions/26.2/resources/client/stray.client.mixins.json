@@ -41,6 +41,7 @@
 		"GameRendererMixin",
 		"GuiAccessor",
 		"GuiMixin",
+		"HudTitleInvoker",
 		"GuiScreenMixin",
 		"GuiGraphicsExtractorInvoker",
 		"GuiGraphicsExtractorMixin",

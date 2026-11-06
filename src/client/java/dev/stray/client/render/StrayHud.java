@@ -72,6 +72,8 @@ public final class StrayHud {
 		HudChrome.element(null);
 		VanillaHud.extract(graphics, delta);
 		HudChrome.element(null);
+		dev.stray.client.dungeon.F7Titles.render(graphics, graphics.guiWidth(), graphics.guiHeight());
+		HudChrome.element(null);
 		FarmingHud.extract(graphics, delta);
 		HudChrome.element(null);
 		NametagRenderer.extract(graphics, delta);

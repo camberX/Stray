@@ -105,7 +105,12 @@ public final class AlignTriggerbot {
 			return;
 		}
 		int index = index(frame);
-		if (index < 0 || REMAINING[index] <= 0) {
+		if (index < 0) {
+			return;
+		}
+		// Sneaking leaves the last click to you (stops one short of the right way).
+		int want = REMAINING[index] - (client.player.isShiftKeyDown() ? 1 : 0);
+		if (want <= 0) {
 			return;
 		}
 		long now = System.currentTimeMillis();
@@ -117,7 +122,7 @@ public final class AlignTriggerbot {
 		// since the last one go in together; the game uses each queued click in order,
 		// the same as fast manual clicking. Never more than the frame still needs.
 		int due = elapsed < 200L ? (int) Math.max(1L, elapsed / Math.max(1L, nextGapMs)) : 1;
-		due = Math.min(due, REMAINING[index]);
+		due = Math.min(due, want);
 		lastClickMs = now;
 		nextGapMs = gap();
 		for (int i = 0; i < due; i++) {
