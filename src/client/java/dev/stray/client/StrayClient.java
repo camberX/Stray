@@ -311,6 +311,24 @@ public final class StrayClient implements ClientModInitializer {
 					: "§bStray §7leap test §coff§7, packet printing off."));
 				return Command.SINGLE_SUCCESS;
 			}));
+			if (!dev.stray.Edition.LEGIT) { root.then(ClientCommands.literal("aligntest").executes(context -> {
+				Minecraft client = Minecraft.getInstance();
+				if (dev.stray.client.dungeon.AlignTriggerbot.testMode()) {
+					dev.stray.client.dungeon.AlignTriggerbot.stopTest();
+					context.getSource().sendFeedback(Component.literal("§bStray §7align test §coff§7. The triggerbot only works on the real F7 device again."));
+					return Command.SINGLE_SUCCESS;
+				}
+				if (!dev.stray.client.dungeon.AlignTriggerbot.buildTest(client)) {
+					context.getSource().sendFeedback(Component.literal("§bStray §cAlign test only works in singleplayer (with cheats on)."));
+					return 0;
+				}
+				if (!StrayConfig.get().alignTriggerbot) {
+					StrayConfig.get().alignTriggerbot = true;
+					StrayConfig.get().save();
+				}
+				context.getSource().sendFeedback(Component.literal("§bStray §7align test §aon§7: built an arrow device in front of you and turned Align triggerbot on. Look at an arrow to solve it. Run again to stop."));
+				return Command.SINGLE_SUCCESS;
+			})); }
 			root.then(ClientCommands.literal("edit").executes(context -> openItemEdit()));
 			root.then(ClientCommands.literal("casino").executes(context -> {
 				Minecraft client = Minecraft.getInstance();

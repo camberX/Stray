@@ -28,11 +28,11 @@ import java.util.concurrent.ThreadLocalRandom;
  * arrows on the wall, and count the clicks each frame still needs.
  */
 public final class AlignTriggerbot {
-	private static final BlockPos CORNER = new BlockPos(-2, 120, 75);
-	private static final AABB GRID = new AABB(
-		CORNER.getX(), CORNER.getY(), CORNER.getZ(),
-		CORNER.getX() + 1, CORNER.getY() + 5, CORNER.getZ() + 5
-	);
+	private static final BlockPos DEVICE = new BlockPos(-2, 120, 75);
+	/** The device's bottom corner: the real one, or a test copy built with /stray aligntest. */
+	private static BlockPos CORNER = DEVICE;
+	private static AABB GRID = grid(DEVICE);
+	private static boolean testMode;
 	/** After a click the frame's own rotation lags behind; trust our count this long. */
 	private static final long TRUST_MS = 1000L;
 
@@ -62,13 +62,14 @@ public final class AlignTriggerbot {
 		return config.alignTriggerbot
 			&& client.player != null
 			&& client.level != null
-			&& SkyblockLocation.inDungeon
-			&& SkyblockLocation.inBoss
-			&& SkyblockLocation.dungeonFloor == 7
+			&& (testMode || SkyblockLocation.inDungeon && SkyblockLocation.inBoss && SkyblockLocation.dungeonFloor == 7)
 			&& client.player.distanceToSqr(Vec3.atLowerCornerOf(CORNER)) <= 200.0;
 	}
 
 	public static void tick(Minecraft client) {
+		if (testMode && client.getSingleplayerServer() == null) {
+			stopTest();
+		}
 		if (!active(client)) {
 			if (solution != null || ROTATIONS[0] != -1) {
 				reset();
@@ -179,6 +180,65 @@ public final class AlignTriggerbot {
 			return 0;
 		}
 		return (8 - current + target) % 8;
+	}
+
+	private static AABB grid(BlockPos corner) {
+		return new AABB(corner.getX(), corner.getY(), corner.getZ(), corner.getX() + 1, corner.getY() + 5, corner.getZ() + 5);
+	}
+
+	public static boolean testMode() {
+		return testMode;
+	}
+
+	/** Leaves test mode and points the triggerbot back at the real device. */
+	public static void stopTest() {
+		testMode = false;
+		CORNER = DEVICE;
+		GRID = grid(DEVICE);
+		reset();
+	}
+
+	/**
+	 * Singleplayer test: builds a copy of the device in front of you (a random layout,
+	 * arrows turned randomly) with ordinary commands, and points the triggerbot at it
+	 * with the dungeon checks skipped. Needs cheats on in the world.
+	 */
+	public static boolean buildTest(Minecraft client) {
+		if (client.player == null || client.getSingleplayerServer() == null) {
+			return false;
+		}
+		BlockPos feet = client.player.blockPosition();
+		// Same shape as the real device: frames on a wall at x, facing +x, the player on a step 1.5 blocks east, looking west.
+		BlockPos corner = new BlockPos(feet.getX() - 2, feet.getY(), feet.getZ() - 2);
+		int x = corner.getX();
+		int y = corner.getY();
+		int z = corner.getZ();
+		java.util.List<String> commands = new java.util.ArrayList<>();
+		commands.add(String.format("kill @e[type=item_frame,x=%d,y=%d,z=%d,dx=1,dy=5,dz=5]", x, y, z));
+		commands.add(String.format("fill %d %d %d %d %d %d stone", x - 1, y - 1, z - 1, x - 1, y + 5, z + 5));
+		commands.add(String.format("fill %d %d %d %d %d %d air", x, y - 1, z - 1, x + 5, y + 5, z + 5));
+		commands.add(String.format("fill %d %d %d %d %d %d stone", x + 1, y, z - 1, x + 5, y, z + 5));
+		ThreadLocalRandom random = ThreadLocalRandom.current();
+		int[] layout = SOLUTIONS[random.nextInt(SOLUTIONS.length)];
+		for (int i = 0; i < 25; i++) {
+			if (layout[i] == -1) {
+				continue;
+			}
+			commands.add(String.format(
+				"summon item_frame %d %d %d {Facing:5b,Invulnerable:1b,Item:{id:\"minecraft:arrow\",count:1},ItemRotation:%db}",
+				x, y + i % 5, z + i / 5, random.nextInt(8)
+			));
+		}
+		// On a step level with the middle row, so most frames are within survival reach (3 blocks).
+		commands.add(String.format(java.util.Locale.ROOT, "tp @s %.1f %d %.1f 90 0", x + 1.5, y + 1, z + 2.5));
+		for (String command : commands) {
+			client.player.connection.sendCommand(command);
+		}
+		testMode = true;
+		CORNER = corner;
+		GRID = grid(corner);
+		reset();
+		return true;
 	}
 
 	private static void reset() {
