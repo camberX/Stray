@@ -84,8 +84,15 @@ void main() {
     vec2 L = normalize(vec2(-0.6, 0.8));
     float lit = dot(normalize(g + 1e-5), L) * 0.5 + 0.5;
     float edge = smoothstep(0.9, 3.6, slope) * pow(lit, 2.2);
-    float iso = 1.0 - abs(fract(h0 * 7.0) * 2.0 - 1.0);
-    iso = pow(iso, 14.0) * smoothstep(0.4, 2.0, slope);
+    // Contour lines, anti-aliased: never thinner than a pixel, and they fade
+    // out where they pack tighter than a few pixels instead of breaking up.
+    float isoX = h0 * 7.0;
+    float isoW = fwidth(isoX);
+    float isoD = abs(fract(isoX) - 0.5);
+    float iso = 1.0 - smoothstep(max(0.024 - isoW, 0.0), 0.024 + isoW, isoD);
+    iso *= 0.024 / max(0.024, isoW);
+    iso *= 1.0 - smoothstep(0.12, 0.3, isoW);
+    iso *= smoothstep(0.4, 2.0, slope);
 
     float xdir = abs(sin(2.0 * ang + 1.2));
     float mask = smoothstep(0.95, 0.08, r);
@@ -115,22 +122,28 @@ void main() {
     cl += 0.03;
     float score = m0 * 0.5 + smoothstep(0.8, 4.0, slope) * 0.55 + (h0 - 0.5) * 0.3;
     float th = 1.09 - 0.30 * clamp(cl, 0.0, 1.2);
-    float blob = smoothstep(th, th + 0.025, score);
+    float blob = smoothstep(th, th + max(0.025, 1.5 * fwidth(score)), score);
     vec3 mag = mix(accent * 0.72, mix(accent, vec3(1.0), 0.22), smoothstep(th, th + 0.2, score));
     col = mix(col, mag, blob);
     col += accent * pow(blob, 2.0) * 0.08;
 
-    float vf = 1.0 - abs(fract(h0 * 11.0 + m0 * 2.0) * 2.0 - 1.0);
-    float vein = pow(vf, 22.0) * smoothstep(0.35, 1.6, slope);
+    // Veins, anti-aliased the same way as the contour lines.
+    float vX = h0 * 11.0 + m0 * 2.0;
+    float vW = fwidth(vX);
+    float vD = abs(fract(vX) - 0.5);
+    float vein = 1.0 - smoothstep(max(0.016 - vW, 0.0), 0.016 + vW, vD);
+    vein *= 0.016 / max(0.016, vW);
+    vein *= 1.0 - smoothstep(0.12, 0.3, vW);
+    vein *= smoothstep(0.35, 1.6, slope);
     float vzone = smoothstep(0.58, 0.72, fbm(c * 2.4 + vec2(7.0, 3.0) + orb(1.0, 2.0, 0.18)));
     vein *= vzone;
     vec3 vcol = mix(accent, vec3(1.0), 0.16);
     col = mix(col, vcol, clamp(vein * 1.6, 0.0, 1.0) * 0.9);
 
-    float fleck = smoothstep(0.84, 0.855, m1 * 0.6 + m2 * 0.4 + smoothstep(0.6, 2.5, slope) * 0.12 + 0.1 * cl);
+    float fleckV = m1 * 0.6 + m2 * 0.4 + smoothstep(0.6, 2.5, slope) * 0.12 + 0.1 * cl;
+    float fleck = smoothstep(0.84, 0.84 + max(0.015, 1.5 * fwidth(fleckV)), fleckV);
     col = mix(col, mix(accent, vec3(1.0), 0.32), fleck * (1.0 - blob) * 0.9);
 
-    col *= 0.96 + 0.04 * sin(gl_FragCoord.y * 1.7);
     col *= smoothstep(1.55, 0.25, r);
     col += (hash(gl_FragCoord.xy + floor(mod(Time, Loop) * 30.0)) - 0.5) * 0.012;
 
