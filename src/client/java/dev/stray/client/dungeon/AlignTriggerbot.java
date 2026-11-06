@@ -6,6 +6,7 @@ import dev.stray.client.location.SkyblockLocation;
 import net.fabricmc.fabric.api.event.player.UseEntityCallback;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.decoration.ItemFrame;
 import net.minecraft.world.item.Items;
@@ -28,10 +29,21 @@ import java.util.concurrent.ThreadLocalRandom;
  * arrows on the wall, and count the clicks each frame still needs.
  */
 public final class AlignTriggerbot {
+	/** The real device: frames on x = -2, facing east, bottom corner at y 120, z 75. */
 	private static final BlockPos DEVICE = new BlockPos(-2, 120, 75);
-	/** The device's bottom corner: the real one, or a test copy built with /stray aligntest. */
-	private static BlockPos CORNER = DEVICE;
-	private static AABB GRID = grid(DEVICE);
+	private static final AABB DEVICE_BOX = new AABB(-2, 120, 75, -1, 125, 80);
+
+	/**
+	 * Where the wall is. "u" runs along the wall (to your left as you face it), "v" is the
+	 * height. On the real device that is the fixed spot above; in test mode it is found
+	 * from the arrow frames around you, so a copy can stand anywhere and face any way.
+	 */
+	private static Direction facing = Direction.EAST;
+	private static int plane = DEVICE.getX();
+	private static int cornerU = DEVICE.getZ();
+	private static int cornerV = DEVICE.getY();
+	private static boolean gridKnown = true;
+	private static long nextSearchMs;
 	private static boolean testMode;
 	/** After a click the frame's own rotation lags behind; trust our count this long. */
 	private static final long TRUST_MS = 1000L;
@@ -62,12 +74,13 @@ public final class AlignTriggerbot {
 		return config.alignTriggerbot
 			&& client.player != null
 			&& client.level != null
-			&& (testMode || SkyblockLocation.inDungeon && SkyblockLocation.inBoss && SkyblockLocation.dungeonFloor == 7)
-			&& client.player.distanceToSqr(Vec3.atLowerCornerOf(CORNER)) <= 200.0;
+			&& (testMode
+				|| SkyblockLocation.inDungeon && SkyblockLocation.inBoss && SkyblockLocation.dungeonFloor == 7
+					&& client.player.distanceToSqr(Vec3.atLowerCornerOf(DEVICE)) <= 200.0);
 	}
 
 	public static void tick(Minecraft client) {
-		if (testMode && client.getSingleplayerServer() == null) {
+		if (testMode && client.level == null) {
 			stopTest();
 		}
 		if (!active(client)) {
@@ -76,8 +89,14 @@ public final class AlignTriggerbot {
 			}
 			return;
 		}
+		if (testMode && !find(client)) {
+			return;
+		}
 		read(client);
 		solve();
+		if (testMode && solution == null) {
+			gridKnown = false;
+		}
 		if (client.gui.screen() != null || client.player.isSpectator()) {
 			return;
 		}
@@ -111,7 +130,7 @@ public final class AlignTriggerbot {
 
 	private static void read(Minecraft client) {
 		long now = System.currentTimeMillis();
-		List<ItemFrame> frames = client.level.getEntitiesOfClass(ItemFrame.class, GRID, f -> f.getItem().is(Items.ARROW));
+		List<ItemFrame> frames = client.level.getEntitiesOfClass(ItemFrame.class, testMode ? client.player.getBoundingBox().inflate(SEARCH) : DEVICE_BOX, f -> f.getItem().is(Items.ARROW));
 		for (ItemFrame frame : frames) {
 			int index = index(frame);
 			if (index >= 0 && now - CLICKED_AT[index] > TRUST_MS) {
@@ -123,26 +142,15 @@ public final class AlignTriggerbot {
 	private static void solve() {
 		solution = null;
 		java.util.Arrays.fill(REMAINING, 0);
-		for (int[] candidate : SOLUTIONS) {
-			boolean match = true;
-			for (int i = 0; i < 25; i++) {
-				int current = ROTATIONS[i];
-				int target = candidate[i];
-				if ((target == -1 || current == -1) && target != current) {
-					match = false;
-					break;
-				}
-			}
-			if (!match) {
-				continue;
-			}
-			solution = candidate;
-			for (int i = 0; i < 25; i++) {
-				if (ROTATIONS[i] != -1) {
-					REMAINING[i] = clicks(ROTATIONS[i], candidate[i]);
-				}
-			}
+		int[] candidate = matching(ROTATIONS);
+		if (candidate == null) {
 			return;
+		}
+		solution = candidate;
+		for (int i = 0; i < 25; i++) {
+			if (ROTATIONS[i] != -1) {
+				REMAINING[i] = clicks(ROTATIONS[i], candidate[i]);
+			}
 		}
 	}
 
@@ -163,16 +171,105 @@ public final class AlignTriggerbot {
 
 	/** Frame position to 0..24: up the wall first, then along it. -1 when not on the wall. */
 	private static int index(ItemFrame frame) {
-		BlockPos pos = frame.blockPosition();
-		if (pos.getX() != CORNER.getX()) {
+		if (!gridKnown || frame.getDirection() != facing) {
 			return -1;
 		}
-		int dy = pos.getY() - CORNER.getY();
-		int dz = pos.getZ() - CORNER.getZ();
+		BlockPos pos = frame.blockPosition();
+		if (planeOf(pos, facing) != plane) {
+			return -1;
+		}
+		int dy = pos.getY() - cornerV;
+		int dz = alongOf(pos, facing) - cornerU;
 		if (dy < 0 || dy > 4 || dz < 0 || dz > 4) {
 			return -1;
 		}
 		return dy + dz * 5;
+	}
+
+	/** Position across the wall (which slice of the world the frames hang in). */
+	private static int planeOf(BlockPos pos, Direction face) {
+		return face.getAxis() == Direction.Axis.X ? pos.getX() : pos.getZ();
+	}
+
+	/** Position along the wall, growing to the left of someone facing it (south on the real device). */
+	private static int alongOf(BlockPos pos, Direction face) {
+		Direction along = face.getClockWise();
+		return along.getStepX() * pos.getX() + along.getStepZ() * pos.getZ();
+	}
+
+	private static final double SEARCH = 10.0;
+
+	/**
+	 * Test mode: finds the arrow wall near you. Takes the frames that hang the same way on
+	 * the same wall and tries every way a 5x5 grid can sit over them until one of the
+	 * known layouts fits (layouts can leave whole rows empty, so the bounds alone are not
+	 * enough). Looked for again at most every half second while nothing fits.
+	 */
+	private static boolean find(Minecraft client) {
+		if (gridKnown) {
+			return true;
+		}
+		long now = System.currentTimeMillis();
+		if (now < nextSearchMs) {
+			return false;
+		}
+		nextSearchMs = now + 500L;
+		List<ItemFrame> frames = client.level.getEntitiesOfClass(ItemFrame.class, client.player.getBoundingBox().inflate(SEARCH), f -> f.getItem().is(Items.ARROW) && f.getDirection().getAxis().isHorizontal());
+		if (frames.isEmpty()) {
+			return false;
+		}
+		// The wall with the most arrows on it.
+		java.util.Map<String, java.util.List<ItemFrame>> walls = new java.util.HashMap<>();
+		for (ItemFrame frame : frames) {
+			walls.computeIfAbsent(frame.getDirection() + ":" + planeOf(frame.blockPosition(), frame.getDirection()), k -> new java.util.ArrayList<>()).add(frame);
+		}
+		java.util.List<ItemFrame> wall = java.util.Collections.max(walls.values(), java.util.Comparator.comparingInt(java.util.List::size));
+		Direction face = wall.get(0).getDirection();
+		int minU = Integer.MAX_VALUE, maxU = Integer.MIN_VALUE, minV = Integer.MAX_VALUE, maxV = Integer.MIN_VALUE;
+		for (ItemFrame frame : wall) {
+			int u = alongOf(frame.blockPosition(), face);
+			int v = frame.blockPosition().getY();
+			minU = Math.min(minU, u);
+			maxU = Math.max(maxU, u);
+			minV = Math.min(minV, v);
+			maxV = Math.max(maxV, v);
+		}
+		if (maxU - minU > 4 || maxV - minV > 4) {
+			return false;
+		}
+		int[] rotations = new int[25];
+		for (int u0 = maxU - 4; u0 <= minU; u0++) {
+			for (int v0 = maxV - 4; v0 <= minV; v0++) {
+				java.util.Arrays.fill(rotations, -1);
+				for (ItemFrame frame : wall) {
+					rotations[(frame.blockPosition().getY() - v0) + (alongOf(frame.blockPosition(), face) - u0) * 5] = frame.getRotation();
+				}
+				if (matching(rotations) != null) {
+					facing = face;
+					plane = planeOf(wall.get(0).blockPosition(), face);
+					cornerU = u0;
+					cornerV = v0;
+					gridKnown = true;
+					reset();
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+
+	/** The known layout whose arrows sit exactly where these do, or null. */
+	private static int[] matching(int[] rotations) {
+		for (int[] candidate : SOLUTIONS) {
+			boolean match = true;
+			for (int i = 0; i < 25 && match; i++) {
+				match = (candidate[i] == -1) == (rotations[i] == -1);
+			}
+			if (match) {
+				return candidate;
+			}
+		}
+		return null;
 	}
 
 	private static int clicks(int current, int target) {
@@ -182,37 +279,40 @@ public final class AlignTriggerbot {
 		return (8 - current + target) % 8;
 	}
 
-	private static AABB grid(BlockPos corner) {
-		return new AABB(corner.getX(), corner.getY(), corner.getZ(), corner.getX() + 1, corner.getY() + 5, corner.getZ() + 5);
-	}
-
 	public static boolean testMode() {
 		return testMode;
+	}
+
+	/** Test mode: skips the dungeon checks and solves whatever arrow wall is near you. */
+	public static void startTest() {
+		testMode = true;
+		gridKnown = false;
+		nextSearchMs = 0L;
+		reset();
 	}
 
 	/** Leaves test mode and points the triggerbot back at the real device. */
 	public static void stopTest() {
 		testMode = false;
-		CORNER = DEVICE;
-		GRID = grid(DEVICE);
+		facing = Direction.EAST;
+		plane = DEVICE.getX();
+		cornerU = DEVICE.getZ();
+		cornerV = DEVICE.getY();
+		gridKnown = true;
 		reset();
 	}
 
 	/**
-	 * Singleplayer test: builds a copy of the device in front of you (a random layout,
-	 * arrows turned randomly) with ordinary commands, and points the triggerbot at it
-	 * with the dungeon checks skipped. Needs cheats on in the world.
+	 * Builds a copy of the device in front of you (a random layout, arrows turned
+	 * randomly) with ordinary commands, so it needs cheats in singleplayer or op on a
+	 * server. Then starts test mode, which finds the copy by itself.
 	 */
-	public static boolean buildTest(Minecraft client) {
-		if (client.player == null || client.getSingleplayerServer() == null) {
-			return false;
-		}
+	public static void buildTest(Minecraft client) {
 		BlockPos feet = client.player.blockPosition();
-		// Same shape as the real device: frames on a wall at x, facing +x, the player on a step 1.5 blocks east, looking west.
-		BlockPos corner = new BlockPos(feet.getX() - 2, feet.getY(), feet.getZ() - 2);
-		int x = corner.getX();
-		int y = corner.getY();
-		int z = corner.getZ();
+		// Same shape as the real device: frames on a wall at x, facing +x, you on a step 1.5 blocks east looking west.
+		int x = feet.getX() - 2;
+		int y = feet.getY();
+		int z = feet.getZ() - 2;
 		java.util.List<String> commands = new java.util.ArrayList<>();
 		commands.add(String.format("kill @e[type=item_frame,x=%d,y=%d,z=%d,dx=1,dy=5,dz=5]", x, y, z));
 		commands.add(String.format("fill %d %d %d %d %d %d stone", x - 1, y - 1, z - 1, x - 1, y + 5, z + 5));
@@ -229,16 +329,11 @@ public final class AlignTriggerbot {
 				x, y + i % 5, z + i / 5, random.nextInt(8)
 			));
 		}
-		// On a step level with the middle row, so most frames are within survival reach (3 blocks).
 		commands.add(String.format(java.util.Locale.ROOT, "tp @s %.1f %d %.1f 90 0", x + 1.5, y + 1, z + 2.5));
 		for (String command : commands) {
 			client.player.connection.sendCommand(command);
 		}
-		testMode = true;
-		CORNER = corner;
-		GRID = grid(corner);
-		reset();
-		return true;
+		startTest();
 	}
 
 	private static void reset() {

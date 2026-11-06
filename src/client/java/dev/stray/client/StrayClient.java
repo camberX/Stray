@@ -311,24 +311,30 @@ public final class StrayClient implements ClientModInitializer {
 					: "§bStray §7leap test §coff§7, packet printing off."));
 				return Command.SINGLE_SUCCESS;
 			}));
-			if (!dev.stray.Edition.LEGIT) { root.then(ClientCommands.literal("aligntest").executes(context -> {
-				Minecraft client = Minecraft.getInstance();
-				if (dev.stray.client.dungeon.AlignTriggerbot.testMode()) {
-					dev.stray.client.dungeon.AlignTriggerbot.stopTest();
-					context.getSource().sendFeedback(Component.literal("§bStray §7align test §coff§7. The triggerbot only works on the real F7 device again."));
-					return Command.SINGLE_SUCCESS;
-				}
-				if (!dev.stray.client.dungeon.AlignTriggerbot.buildTest(client)) {
-					context.getSource().sendFeedback(Component.literal("§bStray §cAlign test only works in singleplayer (with cheats on)."));
-					return 0;
-				}
-				if (!StrayConfig.get().alignTriggerbot) {
-					StrayConfig.get().alignTriggerbot = true;
-					StrayConfig.get().save();
-				}
-				context.getSource().sendFeedback(Component.literal("§bStray §7align test §aon§7: built an arrow device in front of you and turned Align triggerbot on. Look at an arrow to solve it. Run again to stop."));
-				return Command.SINGLE_SUCCESS;
-			})); }
+			if (!dev.stray.Edition.LEGIT) {
+				root.then(ClientCommands.literal("aligntest")
+					.executes(context -> {
+						if (dev.stray.client.dungeon.AlignTriggerbot.testMode()) {
+							dev.stray.client.dungeon.AlignTriggerbot.stopTest();
+							context.getSource().sendFeedback(Component.literal("§bStray §7align test §coff§7. The triggerbot only works on the real F7 device again."));
+							return Command.SINGLE_SUCCESS;
+						}
+						dev.stray.client.dungeon.AlignTriggerbot.startTest();
+						enableAlign();
+						context.getSource().sendFeedback(Component.literal("§bStray §7align test §aon§7: no dungeon checks, solves any arrow device within 10 blocks. §8/stray aligntest build§7 builds one (needs cheats or op). Run again to stop."));
+						return Command.SINGLE_SUCCESS;
+					})
+					.then(ClientCommands.literal("build").executes(context -> {
+						Minecraft client = Minecraft.getInstance();
+						if (client.player == null) {
+							return 0;
+						}
+						dev.stray.client.dungeon.AlignTriggerbot.buildTest(client);
+						enableAlign();
+						context.getSource().sendFeedback(Component.literal("§bStray §7align test §aon§7: building an arrow device in front of you (needs cheats or op). Look at an arrow to solve it. §8/stray aligntest§7 to stop."));
+						return Command.SINGLE_SUCCESS;
+					})));
+			}
 			root.then(ClientCommands.literal("edit").executes(context -> openItemEdit()));
 			root.then(ClientCommands.literal("casino").executes(context -> {
 				Minecraft client = Minecraft.getInstance();
@@ -838,6 +844,13 @@ public final class StrayClient implements ClientModInitializer {
 		Minecraft client = Minecraft.getInstance();
 		client.execute(() -> client.gui.setScreen(new dev.stray.client.ui.CommandKeysScreen(client.gui.screen())));
 		return Command.SINGLE_SUCCESS;
+	}
+
+	private static void enableAlign() {
+		if (!StrayConfig.get().alignTriggerbot) {
+			StrayConfig.get().alignTriggerbot = true;
+			StrayConfig.get().save();
+		}
 	}
 
 	private static int openItemEdit() {
