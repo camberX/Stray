@@ -184,11 +184,19 @@ public final class TerminalSession {
 				continue;
 			}
 			SEEN[i] = stack.copy();
-			if (black(stack) || term == Term.RUBIX) {
+			// Always keep our copy current (a pane turning black matters too: Melody's
+			// marked column moves by turning the old one black).
+			ITEMS.put(i, stack.copy());
+			boolean untouched = CLICKED.isEmpty() && lastClickMs == 0L;
+			if (term == Term.RUBIX && !untouched) {
+				// Rubix follows our own clicks after the first one (like Noamm) and re-reads on a stall.
 				continue;
 			}
-			ITEMS.put(i, stack.copy());
-			term.solve(ITEMS, title, i, stack);
+			if (black(stack) && term != Term.MELODY && !untouched) {
+				continue;
+			}
+			// Nothing clicked yet: the window may still be filling in, so solve it whole.
+			term.solve(ITEMS, title, untouched && term != Term.MELODY ? 0 : i, untouched && term != Term.MELODY ? ItemStack.EMPTY : stack);
 			if (term != Term.MELODY) {
 				for (Term.Click click : CLICKED) {
 					term.predict(click);

@@ -18,7 +18,7 @@ import java.util.Map;
  * The look of the custom terminal: a Shadow-style window (see-through black, soft
  * outward shadow, Inter) with the terminal's grid, where only the slots still to
  * click light up. Slots fade and shrink away as they are solved, a click leaves a
- * short ring, the Melody marker glides between columns and a thin bar tracks progress.
+ * short ring and the Melody marker glides between columns.
  * Drawing only: what to click comes from {@link Term}, clicks from {@link TerminalSession}.
  */
 final class TerminalGui {
@@ -132,7 +132,7 @@ final class TerminalGui {
 		float gap = 3f * s;
 		float pad = 9f * s;
 		float header = 15f * s;
-		float footer = 7f * s;
+		float footer = 0f;
 		int cols = term.gridW;
 		int rows = term.gridH;
 		float gridW = cols * cell + (cols - 1) * gap;
@@ -177,18 +177,6 @@ final class TerminalGui {
 			melody(graphics, font, (Term.Melody) term, gx, gy, cell, gap, s, dt, mouseX, mouseY, loaded);
 		} else {
 			grid(graphics, font, term, gx, gy, cell, gap, s, dt, mouseX, mouseY, loaded);
-		}
-
-		// Progress bar along the bottom.
-		int max = term.max();
-		float target = max > 0 ? Mth.clamp(term.done() / (float) max, 0f, 1f) : 0f;
-		progress = Anim.exp(progress, target, 10f, dt);
-		float barY = py + panelH - pad * 0.55f - 2f * s;
-		float barW = panelW - pad * 2f;
-		float barH = Math.max(1.5f, 2f * s);
-		GuiDraw.roundedFine(graphics, px + pad, barY, barW, barH, barH * 0.5f, Anim.fade(0x18FFFFFF, open));
-		if (progress > 0.002f) {
-			GuiDraw.roundedFine(graphics, px + pad, barY, Math.max(barH, barW * progress), barH, barH * 0.5f, Anim.fade(0xD0000000 | color("solution"), open));
 		}
 
 		if (doneFade > 0.01f && done != null) {
@@ -378,6 +366,6 @@ final class TerminalGui {
 		if (((color >>> 24) & 0xFF) < 6) {
 			return;
 		}
-		GuiDraw.text(graphics, font, MenuFont.shadow(value), x, y, scale, color, false);
+		GuiDraw.text(graphics, font, MenuFont.shadow(value), x, y, scale, color, true);
 	}
 }
