@@ -396,6 +396,10 @@ public final class StrayConfig {
 	public boolean dungeonMapHideInBoss = false;
 	/** Full edition only: shows rooms you have not opened yet, from the loaded world. */
 	public boolean dungeonMapCheater = false;
+	/** Your own marker as the vanilla map arrow instead of your head. */
+	public boolean dungeonMapSelfArrow = false;
+	/** Size of the rooms inside the panel, percent; the panel itself stays the same. */
+	public int dungeonMapZoom = 100;
 	public boolean arrayListAccent = false;
 	public java.util.List<String> arrayListHidden = new java.util.ArrayList<>();
 	public java.util.List<ClickColumnPos> clickColumns = new java.util.ArrayList<>();
@@ -1715,6 +1719,7 @@ public final class StrayConfig {
 				loaded.slotDungeonMap = hudSlot(loaded.slotDungeonMap);
 				loaded.dungeonMapRoomInfo = Math.floorMod(loaded.dungeonMapRoomInfo, 5);
 				loaded.dungeonMapPlayerNames = Math.floorMod(loaded.dungeonMapPlayerNames, 3);
+				loaded.dungeonMapZoom = Math.max(100, Math.min(200, loaded.dungeonMapZoom));
 				loaded.slotSlayer = hudSlot(loaded.slotSlayer);
 				loaded.slotSlayerProfit = hudSlot(loaded.slotSlayerProfit);
 				loaded.slotSlayerRng = hudSlot(loaded.slotSlayerRng);

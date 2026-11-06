@@ -100,7 +100,8 @@ public final class DungeonScanner {
 						continue;
 					}
 					Tile inGrid = GRID[x + z * 11];
-					boolean unknownRoom = inGrid instanceof RoomTile room && room.data.isUnknown();
+					// Unknown rooms are looked at again only when there is room data that could name them.
+				boolean unknownRoom = inGrid instanceof RoomTile room && room.data.isUnknown() && RoomDatabase.size() > 0;
 					if (!(inGrid instanceof UnknownTile) && !unknownRoom) {
 						continue;
 					}
@@ -138,7 +139,12 @@ public final class DungeonScanner {
 		if (rowEven && columnEven) {
 			RoomData data = RoomDatabase.byCore(core(level, x, z));
 			if (data == null) {
-				return null;
+				// No room data (or a room it does not know): still a room, just without a
+				// name, so the layout is complete. Like the map item's rooms, it is not
+				// grouped by name (every unknown room would merge into one).
+				RoomTile unknown = new RoomTile(x, z, RoomData.unknown(RoomType.NORMAL));
+				unknown.setState(RoomState.UNDISCOVERED);
+				return unknown;
 			}
 			RoomTile tile = new RoomTile(x, z, data);
 			tile.addToUnique(row, column);
@@ -159,6 +165,10 @@ public final class DungeonScanner {
 			if (GRID[column - 1 + (row - 1) * 11] instanceof RoomTile room) {
 				RoomTile tile = new RoomTile(x, z, room.data);
 				tile.isSeparator = true;
+				if (room.data.isUnknown()) {
+					tile.setState(room.state());
+					return tile;
+				}
 				tile.addToUnique(row, column);
 				return tile;
 			}
@@ -189,6 +199,10 @@ public final class DungeonScanner {
 		}
 		RoomTile tile = new RoomTile(x, z, room.data);
 		tile.isSeparator = true;
+		if (room.data.isUnknown()) {
+			tile.setState(room.state());
+			return tile;
+		}
 		tile.addToUnique(row, column);
 		return tile;
 	}
