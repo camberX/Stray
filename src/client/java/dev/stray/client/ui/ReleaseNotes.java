@@ -15,6 +15,10 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.5.92", new String[]{
+			"Keep break progress really keeps it now: while you break the same block with the same SkyBlock tool, Hypixel re-sending that tool no longer makes the game cancel and restart the break. Your inventory is no longer held back. /stray debug break says in chat when a break was kept or restarted.",
+			"Mob highlight: Trans Thorn is removed. Thorn gets the plain white box (red during the damage flash)."
+		}),
 		new Entry("1.5.91", new String[]{
 			"New M4 category with BirdAddon's M4 (Thorn) features: Spirit Bear timer, splits and personal bests, mob highlight, bear spawn / bow / class waypoints (/m4wp), boss timer, stun timer and helper, overkill, mob counter, decoy and cave spots, Tac timer, rabbit hutches and countdown, trajectories, custom titles, hide messages, extra stats (/bearstats), muted sounds and a render optimizer. Every HUD text moves on its own in the HUD editor. BirdAddon's waypoints and PBs are picked up the first time.",
 			"Keep break progress (Mining, not in Stray Legit): block breaking no longer restarts when Hypixel re-sends your held tool. Updates to the held item wait until you stop breaking.",
