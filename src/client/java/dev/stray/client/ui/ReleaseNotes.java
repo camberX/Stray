@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.5.90", new String[]{
+			"Mask timers (Dungeons): Bonzo Mask, Spirit Mask and Phoenix Pet cooldowns from NoammAddons, in the Zyryon style. Every mask is always listed, with a green arrow while you wear it (or have Phoenix out) and Ready when it is off cooldown. Bonzo's cooldown comes from your helmet's lore. Optional: dungeons only, invulnerability timer, proc and ready titles, party message on proc. Move it in the HUD editor."
+		}),
 		new Entry("1.5.89", new String[]{
 			"Fixed a crash on joining a world with Sodium 0.9.3-beta.3: Sodium changed its terrain shader and Stray's edit to it no longer lined up. If Sodium changes it again, the affected Stray effects switch off instead of crashing.",
 			"Custom dyes stay on animated-dye armor: Hypixel re-sends those items every few ticks, sometimes without the item's UUID, and they used to fall back to Hypixel's colour.",
