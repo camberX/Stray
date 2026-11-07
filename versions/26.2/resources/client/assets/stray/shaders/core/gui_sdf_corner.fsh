@@ -28,8 +28,12 @@ void main() {
         // Measured in whole pixel steps (the larger of the x and y change), a 1px ring lights one
         // pixel per row or column on the curve, like the straight sides, instead of a two-pixel
         // smear where it runs diagonally.
-        float px = max(max(abs(dFdx(d)), abs(dFdy(d))), 1e-5);
-        mask = clamp((1.0 - d) / px + 0.5, 0.0, 1.0) - clamp((1.0 - px - d) / px + 0.5, 0.0, 1.0);
+        vec2 g = abs(vec2(dFdx(d), dFdy(d)));
+        float px = max(max(g.x, g.y), 1e-5);
+        // A touch thinner where it runs diagonally, which still reads heavier than the sides.
+        float diag = min(g.x, g.y) / px;
+        float w = px * (1.0 - 0.3 * diag);
+        mask = clamp((1.0 - d) / px + 0.5, 0.0, 1.0) - clamp((1.0 - w - d) / px + 0.5, 0.0, 1.0);
     } else {
         mask = clamp((1.0 - d) / fw + 0.5, 0.0, 1.0);
     }

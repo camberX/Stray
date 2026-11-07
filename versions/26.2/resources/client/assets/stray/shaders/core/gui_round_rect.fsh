@@ -28,8 +28,10 @@ void main() {
     float mask;
     if (ring) {
         // Whole pixel steps, so a 1px outline lights one pixel per row or column on the curve too.
-        float px = max(max(abs(dFdx(d)), abs(dFdy(d))), 1e-5);
-        mask = clamp(0.5 - d / px, 0.0, 1.0) - clamp(0.5 - (d + px) / px, 0.0, 1.0);
+        vec2 g = abs(vec2(dFdx(d), dFdy(d)));
+        float px = max(max(g.x, g.y), 1e-5);
+        float w = px * (1.0 - 0.3 * min(g.x, g.y) / px);
+        mask = clamp(0.5 - d / px, 0.0, 1.0) - clamp(0.5 - (d + w) / px, 0.0, 1.0);
     } else {
         mask = clamp(0.5 - d / fw, 0.0, 1.0);
     }
