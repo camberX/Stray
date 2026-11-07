@@ -391,6 +391,11 @@ public final class StrayConfig {
 	public boolean f7WitherTitles = true;
 	public boolean f7LightningTimer = true;
 	public boolean f7TerminalTitles = true;
+	/** F7 phase 3: glow on the terminals of the current section that are not done yet. */
+	public boolean terminalHighlight = false;
+	public boolean terminalHighlightNumbers = true;
+	public int terminalHighlightRgb = 0xB57CFF;
+	public float terminalHighlightOpacity = 0.6f;
 	public boolean alignTriggerbotRandom = true;
 	/** Dungeon map (NoammAddons' map, in the Shadow look). */
 	public boolean dungeonMapEnabled = false;

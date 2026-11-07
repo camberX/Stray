@@ -8,11 +8,22 @@ import net.minecraft.world.entity.LivingEntity;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(LivingEntity.class)
 public class LivingEntityMixin {
 	@Shadow
 	public float yBodyRot;
+
+	/** Customized armor keeps its custom look when Hypixel re-sends it for animated dyes. */
+	@Inject(method = "setItemSlot", at = @At("HEAD"), require = 0)
+	private void stray$keepCustomized(net.minecraft.world.entity.EquipmentSlot slot, net.minecraft.world.item.ItemStack stack, CallbackInfo ci) {
+		LivingEntity self = (LivingEntity) (Object) this;
+		if (self == net.minecraft.client.Minecraft.getInstance().player) {
+			dev.stray.client.item.custom.CustomItems.inherit(self.getItemBySlot(slot), stack);
+		}
+	}
 
 	@WrapOperation(method = "tick", at = @At(value = "INVOKE", target = "Lnet/minecraft/util/Mth;abs(F)F"))
 	private float stray$rotateBackwardsWalking(float value, Operation<Float> original) {

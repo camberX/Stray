@@ -210,6 +210,7 @@ public final class StrayClient implements ClientModInitializer {
 		NodeWorldRenderer.init();
 		MobGlowRenderer.init();
 		BlockOutlineGlow.init();
+		dev.stray.client.dungeon.TerminalHighlight.init();
 		BlockMarks.init();
 		dev.stray.client.editor.WorldEditor.init();
 		StrayLive.init();
@@ -232,6 +233,7 @@ public final class StrayClient implements ClientModInitializer {
 				dev.stray.client.dungeon.DungeonParty.onChat(plain);
 				dev.stray.client.dungeon.LeapMenu.onChat(plain);
 				dev.stray.client.dungeon.F7Titles.onChat(plain);
+				dev.stray.client.dungeon.TerminalHighlight.onChat(plain);
 			}
 			MetalDetector.onMessage(message, overlay);
 			CropFever.onMessage(message, overlay);
@@ -452,6 +454,7 @@ public final class StrayClient implements ClientModInitializer {
 			if (!dev.stray.Edition.LEGIT) { dev.stray.client.dungeon.AlignTriggerbot.tick(client); }
 			if (!dev.stray.Edition.LEGIT) { dev.stray.client.dungeon.terminal.TerminalSession.tick(client); }
 			dev.stray.client.dungeon.F7Titles.tick(client);
+			dev.stray.client.dungeon.TerminalHighlight.tick(client);
 			if (!dev.stray.client.dungeon.LeapMenu.active()) {
 				dev.stray.client.dungeon.LeapMenu.onContainerClosed();
 			}
@@ -853,7 +856,7 @@ public final class StrayClient implements ClientModInitializer {
 			boolean on = !dev.stray.client.dungeon.DevMode.on();
 			dev.stray.client.dungeon.DevMode.set(on);
 			context.getSource().sendFeedback(Component.literal("§bStray §7dev mode " + (on ? "§aon§7: F7 titles" + (dev.stray.Edition.LEGIT ? "" : " and terminal GUIs") + " work outside dungeons (e.g. your own server)." : "§coff§7.")
-				+ " §8/stray debug dev " + (dev.stray.Edition.LEGIT ? "titles" : "terminal <name>, titles") + ", map"));
+				+ " §8/stray debug dev " + (dev.stray.Edition.LEGIT ? "titles" : "terminal <name>, titles") + ", map, highlight, section <1-4>"));
 			return Command.SINGLE_SUCCESS;
 		});
 		node.then(ClientCommands.literal("titles").executes(context -> {
@@ -883,6 +886,41 @@ public final class StrayClient implements ClientModInitializer {
 			}
 			return Command.SINGLE_SUCCESS;
 		}));
+		node.then(ClientCommands.literal("highlight")
+			.executes(context -> {
+				if (!StrayConfig.get().terminalHighlight) {
+					StrayConfig.get().terminalHighlight = true;
+					StrayConfig.get().save();
+				}
+				boolean on = dev.stray.client.dungeon.TerminalHighlight.togglePreview(Minecraft.getInstance());
+				context.getSource().sendFeedback(Component.literal("§bStray §7terminal highlight preview " + (on
+					? "§aon§7: four terminals in front of you. §8/stray debug dev highlight <1-4>§7 marks one done."
+					: "§coff§7.")));
+				return Command.SINGLE_SUCCESS;
+			})
+			.then(ClientCommands.argument("number", com.mojang.brigadier.arguments.IntegerArgumentType.integer(1, 4)).executes(context -> {
+				int n = com.mojang.brigadier.arguments.IntegerArgumentType.getInteger(context, "number");
+				if (!dev.stray.client.dungeon.TerminalHighlight.togglePreviewDone(n)) {
+					context.getSource().sendFeedback(Component.literal("§bStray §cNo preview. §7Run §f/stray debug dev highlight§7 first."));
+					return 0;
+				}
+				context.getSource().sendFeedback(Component.literal("§bStray §7toggled terminal §f" + n + "§7."));
+				return Command.SINGLE_SUCCESS;
+			})));
+		node.then(ClientCommands.literal("section")
+			.executes(context -> {
+				context.getSource().sendFeedback(Component.literal("§bStray §7P3 section: §f" + sectionName(dev.stray.client.dungeon.TerminalHighlight.section())));
+				return Command.SINGLE_SUCCESS;
+			})
+			.then(ClientCommands.argument("number", com.mojang.brigadier.arguments.IntegerArgumentType.integer(0, 5)).executes(context -> {
+				int n = com.mojang.brigadier.arguments.IntegerArgumentType.getInteger(context, "number");
+				if (!dev.stray.client.dungeon.DevMode.on()) {
+					dev.stray.client.dungeon.DevMode.set(true);
+				}
+				dev.stray.client.dungeon.TerminalHighlight.setSection(n);
+				context.getSource().sendFeedback(Component.literal("§bStray §7P3 section set to §f" + sectionName(n) + "§7 (dev mode on)."));
+				return Command.SINGLE_SUCCESS;
+			})));
 		if (!dev.stray.Edition.LEGIT) {
 			com.mojang.brigadier.builder.RequiredArgumentBuilder<FabricClientCommandSource, String> name = ClientCommands.argument("name", StringArgumentType.word())
 				.suggests((context, builder) -> {
@@ -904,6 +942,10 @@ public final class StrayClient implements ClientModInitializer {
 				.then(name));
 		}
 		return node;
+	}
+
+	private static String sectionName(int section) {
+		return section <= 0 ? "unknown (Goldor's first line sets it)" : section >= 5 ? "done" : String.valueOf(section);
 	}
 
 	private static void enableAlign() {

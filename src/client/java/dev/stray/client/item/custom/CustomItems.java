@@ -152,7 +152,7 @@ public final class CustomItems {
 		}
 	}
 
-	private record Info(String key, String vanillaDye, String vanillaSkin) {
+	private record Info(String key, String vanillaDye, String vanillaSkin, boolean inherited) {
 	}
 
 	private record Skull(int ticks, String[] textures) {
@@ -183,7 +183,7 @@ public final class CustomItems {
 			return cached.key == null ? null : cached;
 		}
 		Info made = readInfo(stack);
-		INFO.put(stack, made == null ? new Info(null, null, null) : made);
+		INFO.put(stack, made == null ? new Info(null, null, null, false) : made);
 		return made;
 	}
 
@@ -208,7 +208,42 @@ public final class CustomItems {
 		} else {
 			return null;
 		}
-		return new Info(key, dye == null ? null : dye.toUpperCase(Locale.ROOT), skin == null ? null : skin.toUpperCase(Locale.ROOT));
+		return new Info(key, dye == null ? null : dye.toUpperCase(Locale.ROOT), skin == null ? null : skin.toUpperCase(Locale.ROOT), false);
+	}
+
+	/**
+	 * Hypixel animates dyes by re-sending the worn piece, and those re-sent stacks come without
+	 * the item's SkyBlock data, so they no longer match the customized item and show Hypixel's
+	 * color. When the local player's armor slot gets the same item without its own key, the new
+	 * stack keeps the old one's key.
+	 */
+	public static void inherit(ItemStack previous, ItemStack next) {
+		if (previous == null || next == null || previous.isEmpty() || next.isEmpty() || previous.getItem() != next.getItem()) {
+			return;
+		}
+		Info old = info(previous);
+		if (old == null) {
+			return;
+		}
+		Info now = info(next);
+		if (now != null && (now.key.equals(old.key) || !sharedKey(now.key))) {
+			return;
+		}
+		INFO.put(next, new Info(old.key, old.vanillaDye, old.vanillaSkin, true));
+		anyInherited = true;
+	}
+
+	private static volatile boolean anyInherited;
+
+	/** A copy of a stack that inherited a key keeps it (render states copy worn armor every frame). */
+	public static void copied(ItemStack source, ItemStack copy) {
+		if (!anyInherited || copy == null || copy == source || copy.isEmpty()) {
+			return;
+		}
+		Info cached = INFO.get(source);
+		if (cached != null && cached.inherited) {
+			INFO.put(copy, cached);
+		}
 	}
 
 	// ------------------------------------------------------------- storage

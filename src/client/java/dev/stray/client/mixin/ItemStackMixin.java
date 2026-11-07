@@ -16,6 +16,11 @@ import java.util.List;
 
 @Mixin(ItemStack.class)
 public class ItemStackMixin {
+	@Inject(method = "copy", at = @At("RETURN"), require = 0)
+	private void stray$copyCustomKey(CallbackInfoReturnable<ItemStack> cir) {
+		dev.stray.client.item.custom.CustomItems.copied((ItemStack) (Object) this, cir.getReturnValue());
+	}
+
 	@Inject(method = "getCustomName", at = @At("HEAD"), cancellable = true)
 	private void stray$customName(CallbackInfoReturnable<Component> cir) {
 		ItemStack shown = ItemAppearance.named((ItemStack) (Object) this);

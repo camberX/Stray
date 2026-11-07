@@ -425,6 +425,7 @@ public final class ClickGui {
 		java.util.Map.entry("Party stats", "Shows a stats card when someone joins from the party finder."),
 		java.util.Map.entry("Lever triggerbot", "Right clicks a lever once when your crosshair lands on it (after the delay). Look away and back to flip it again."),
 		java.util.Map.entry("Terminal GUI", "F7 terminals in a clean Shadow window: only the slots left to click light up, and a click anywhere on one goes to that slot. Try it with /stray debug dev terminal."),
+		java.util.Map.entry("Terminal highlight", "F7 phase 3: a glow on the command block of every terminal in your section that is not done yet, with its number above it."),
 		java.util.Map.entry("F7 titles", "Short titles in the F7 boss: crystals, wither phases, Storm's lightning timer and who did which terminal. Also shown over the leap menu."),
 		java.util.Map.entry("Align triggerbot", "F7 arrow align: while you look at an arrow that is not right yet, it right clicks it with your delay until it is. Clicks go through the normal use key."),
 		java.util.Map.entry("Own nametag", "Shows your own name above your head in third person (F5)."),
@@ -609,6 +610,7 @@ public final class ClickGui {
 		mods.add(mod(TERMINALS, "Dungeons", StrayScreen.Feature.TERMINALS, null, () -> config.terminalGuiEnabled, v -> config.terminalGuiEnabled = v, true, false));
 		mods.add(mod(MAP, "Dungeons", StrayScreen.Feature.DUNGEON_MAP, null, () -> config.dungeonMapEnabled, v -> config.dungeonMapEnabled = v, true, false));
 		mods.add(mod(TITLES, "Dungeons", StrayScreen.Feature.F7_TITLES, null, () -> config.f7TitlesEnabled, v -> config.f7TitlesEnabled = v, true, false));
+		mods.add(mod("Terminal highlight", "Dungeons", StrayScreen.Feature.TERM_HIGHLIGHT, null, () -> config.terminalHighlight, v -> config.terminalHighlight = v, true, false));
 		mods.add(mod(ALIGN, "Dungeons", StrayScreen.Feature.ALIGN_BOT, null, () -> config.alignTriggerbot, v -> config.alignTriggerbot = v, true, false));
 		mods.add(mod(LEVER, "Dungeons", StrayScreen.Feature.LEVER_BOT, null, () -> config.leverTriggerbot, v -> config.leverTriggerbot = v, true, false));
 		mods.add(mod("Star mobs", "Dungeons", StrayScreen.Feature.STAR, EntityKind.STAR, () -> config.starVisuals.glowEnabled, v -> {

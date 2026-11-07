@@ -93,6 +93,8 @@ public final class StrayHud {
 		HudChrome.element(null);
 		BlockMarks.extract(graphics, delta);
 		HudChrome.element(null);
+		dev.stray.client.dungeon.TerminalHighlight.extract(graphics, delta);
+		HudChrome.element(null);
 		if (!dev.stray.Edition.LEGIT) { CommandRings.extract(graphics, delta); }
 		HudChrome.element(null);
 		HudChrome.element(null);

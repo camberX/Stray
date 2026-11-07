@@ -183,6 +183,7 @@ public class StrayScreen extends Screen {
 		ALIGN_BOT("Align triggerbot", 2),
 		LEVER_BOT("Lever triggerbot", 2),
 		F7_TITLES("F7 titles", 4),
+		TERM_HIGHLIGHT("Terminal highlight", 2),
 		DUNGEON_MAP("Dungeon map", dev.stray.Edition.LEGIT ? 8 : 9),
 		AUTO_DNA("Auto DNA", 5),
 		NAMETAGS("Nametags", 6),
@@ -258,7 +259,7 @@ public class StrayScreen extends Screen {
 	}
 
 	private enum PickerTarget {
-		WORLD, SKY, FOG, NODE, THEME, PANE, CONTROL, PILL, MOB, STAR, BLOCK, TITANIUM, CHEST, PEST, HELD_ITEM, HELD_ITEM_OUTLINE, FILL, FILL_OUTLINE, MARKS, PATHS, RINGS, HEALTH_FULL, HEALTH_EMPTY, BOX, SLAYER, TERMINAL
+		WORLD, SKY, FOG, NODE, THEME, PANE, CONTROL, PILL, MOB, STAR, BLOCK, TITANIUM, CHEST, PEST, HELD_ITEM, HELD_ITEM_OUTLINE, FILL, FILL_OUTLINE, MARKS, PATHS, RINGS, HEALTH_FULL, HEALTH_EMPTY, BOX, SLAYER, TERMINAL, TERM_HIGHLIGHT
 	}
 
 	/** Which slayer colour the SLAYER picker edits (see SlayerSettings.color). */
@@ -3935,6 +3936,10 @@ public class StrayScreen extends Screen {
 				y = slider(graphics, font, ix, y, iw, "Delay", config.leverTriggerbotDelay + "ms", config.leverTriggerbotDelay / 300f, v -> config.leverTriggerbotDelay = snapInt(v * 300f, 0, 300, 5));
 				toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Dungeons only", config.leverTriggerbotDungeonsOnly, v -> config.leverTriggerbotDungeonsOnly = v);
 			}
+			case TERM_HIGHLIGHT -> {
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Numbers", config.terminalHighlightNumbers, v -> config.terminalHighlightNumbers = v);
+				colorRow(graphics, font, ix, y, iw, mouseX, mouseY, "Color", config.terminalHighlightRgb, PickerTarget.TERM_HIGHLIGHT);
+			}
 			case F7_TITLES -> {
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Crystals", config.f7CrystalTitles, v -> config.f7CrystalTitles = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Wither phases", config.f7WitherTitles, v -> config.f7WitherTitles = v);
@@ -4628,6 +4633,7 @@ public class StrayScreen extends Screen {
 			case FILL -> config.visuals(pickerKind).shaderRgb = packed == 0 ? 0x4FD6EA : packed;
 			case FILL_OUTLINE -> config.visuals(pickerKind).shaderOutlineRgb = packed == 0 ? 0x7FEFFF : packed;
 			case MARKS -> config.blockMarksRgb = packed == 0 ? 0x2FB5FF : packed;
+			case TERM_HIGHLIGHT -> config.terminalHighlightRgb = packed == 0 ? 0xB57CFF : packed;
 			case PATHS -> config.pathRgb = packed == 0 ? 0x2FB5FF : packed;
 			case RINGS -> config.commandRingsRgb = packed == 0 ? 0x2FB5FF : packed;
 			case HEALTH_FULL -> config.visuals(pickerKind).healthFullRgb = packed == 0 ? 0x17EB17 : packed;
@@ -4652,7 +4658,7 @@ public class StrayScreen extends Screen {
 		return switch (target) {
 			case CONTROL, PILL -> 0.12f;
 			case PANE -> 0.20f;
-			case MOB, STAR, BLOCK -> 0.15f;
+			case MOB, STAR, BLOCK, TERM_HIGHLIGHT -> 0.15f;
 			case NODE, HELD_ITEM, FILL, CHEST, TITANIUM, PEST, BOX -> 0.08f;
 			case THEME, HELD_ITEM_OUTLINE, FILL_OUTLINE, MARKS, PATHS, RINGS, HEALTH_FULL, HEALTH_EMPTY, SLAYER, TERMINAL -> 1f;
 			default -> 0f;
@@ -4662,7 +4668,7 @@ public class StrayScreen extends Screen {
 	private static float opacityMax(PickerTarget target) {
 		return switch (target) {
 			case CONTROL, PILL -> 0.78f;
-			case MOB, STAR, BLOCK -> 0.90f;
+			case MOB, STAR, BLOCK, TERM_HIGHLIGHT -> 0.90f;
 			case NODE, HELD_ITEM, FILL, CHEST, TITANIUM, PEST, BOX -> 0.85f;
 			default -> 1f;
 		};
@@ -4677,6 +4683,7 @@ public class StrayScreen extends Screen {
 			case MOB -> config.visuals(pickerKind).glowOpacity;
 			case STAR -> config.starVisuals.glowOpacity;
 			case BLOCK -> config.blockOutlineOpacity;
+			case TERM_HIGHLIGHT -> config.terminalHighlightOpacity;
 			case NODE -> config.fillOpacity;
 			case CHEST -> config.chestEspOpacity;
 			case TITANIUM -> config.titaniumEspOpacity;
@@ -4701,6 +4708,7 @@ public class StrayScreen extends Screen {
 			case MOB -> config.visuals(pickerKind).glowOpacity = clamped;
 			case STAR -> config.starVisuals.glowOpacity = clamped;
 			case BLOCK -> config.blockOutlineOpacity = clamped;
+			case TERM_HIGHLIGHT -> config.terminalHighlightOpacity = clamped;
 			case NODE -> config.fillOpacity = clamped;
 			case CHEST -> config.chestEspOpacity = clamped;
 			case TITANIUM -> config.titaniumEspOpacity = clamped;
