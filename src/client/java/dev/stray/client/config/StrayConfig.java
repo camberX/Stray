@@ -525,6 +525,9 @@ public final class StrayConfig {
 	public HudSlot slotScatha = new HudSlot();
 	public HudSlot slotTopDown = new HudSlot();
 	public HudSlot slotDungeonMap = new HudSlot();
+	public HudSlot slotF7Title = new HudSlot();
+	public HudSlot slotF7Lightning = new HudSlot();
+	public HudSlot slotF7Terminal = new HudSlot();
 	public HudSlot slotSlayer = new HudSlot();
 	public HudSlot slotSlayerProfit = new HudSlot();
 	public HudSlot slotSlayerRng = new HudSlot();
@@ -1724,6 +1727,9 @@ public final class StrayConfig {
 				loaded.topDownHeight = clamp(loaded.topDownHeight, 4f, 40f);
 				loaded.slotTopDown = hudSlot(loaded.slotTopDown);
 				loaded.slotDungeonMap = hudSlot(loaded.slotDungeonMap);
+				loaded.slotF7Title = hudSlot(loaded.slotF7Title);
+				loaded.slotF7Lightning = hudSlot(loaded.slotF7Lightning);
+				loaded.slotF7Terminal = hudSlot(loaded.slotF7Terminal);
 				loaded.dungeonMapRoomInfo = Math.floorMod(loaded.dungeonMapRoomInfo, 5);
 				loaded.dungeonMapPlayerNames = Math.floorMod(loaded.dungeonMapPlayerNames, 3);
 				loaded.dungeonMapZoom = Math.max(100, Math.min(200, loaded.dungeonMapZoom));
@@ -2866,6 +2872,9 @@ public final class StrayConfig {
 		slotScatha = new HudSlot();
 		slotTopDown = new HudSlot();
 		slotDungeonMap = new HudSlot();
+		slotF7Title = new HudSlot();
+		slotF7Lightning = new HudSlot();
+		slotF7Terminal = new HudSlot();
 		slotSlayer = new HudSlot();
 		slotSlayerProfit = new HudSlot();
 		slotSlayerRng = new HudSlot();

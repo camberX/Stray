@@ -58,7 +58,10 @@ public final class HudLayout {
 		SLAYER_KILLS("Slayer kills"),
 		SLAYER_DAGGER("Blaze daggers"),
 		SLAYER_PILLAR("Fire pillar"),
-		DUNGEON_MAP("Dungeon map");
+		DUNGEON_MAP("Dungeon map"),
+		F7_TITLE("F7 titles"),
+		F7_LIGHTNING("Lightning timer"),
+		F7_TERMINAL("Terminal progress");
 
 		public final String label;
 
@@ -644,6 +647,9 @@ public final class HudLayout {
 			case CROP_FEVER -> config.cropFeverHudEnabled;
 			case TOP_DOWN -> config.topDownView;
 			case DUNGEON_MAP -> config.dungeonMapEnabled;
+			case F7_TITLE -> config.f7TitlesEnabled && (config.f7CrystalTitles || config.f7WitherTitles || config.f7LightningTimer);
+			case F7_LIGHTNING -> config.f7TitlesEnabled && config.f7LightningTimer;
+			case F7_TERMINAL -> config.f7TitlesEnabled && config.f7TerminalTitles;
 			case HOTBAR, HEALTH, HUNGER, ARMOR, AIR, EXPERIENCE, MOUNT -> false;
 			case SCOREBOARD -> config.hudScoreboard;
 			case BOSS -> config.hudBossBar;
@@ -723,6 +729,9 @@ public final class HudLayout {
 			case SCATHA -> config.slotScatha;
 			case TOP_DOWN -> config.slotTopDown;
 			case DUNGEON_MAP -> config.slotDungeonMap;
+			case F7_TITLE -> config.slotF7Title;
+			case F7_LIGHTNING -> config.slotF7Lightning;
+			case F7_TERMINAL -> config.slotF7Terminal;
 			case SLAYER -> config.slotSlayer;
 			case SLAYER_PROFIT -> config.slotSlayerProfit;
 			case SLAYER_RNG -> config.slotSlayerRng;
@@ -779,7 +788,7 @@ public final class HudLayout {
 			case HUNGER, AIR, MOUNT -> guiW * 0.5f + 91 - w;
 			case EXPERIENCE, HELD_ITEM -> (guiW - w) * 0.5f;
 			case SCOREBOARD, EFFECTS, DUNGEON_MAP -> guiW - w - MARGIN;
-			case BOSS -> (guiW - w) * 0.5f;
+			case BOSS, F7_TITLE, F7_LIGHTNING, F7_TERMINAL -> (guiW - w) * 0.5f;
 			case SLAYER, SLAYER_PROFIT, SLAYER_RNG, SLAYER_KILLS -> guiW - w - MARGIN;
 			case SLAYER_DAGGER, SLAYER_PILLAR -> (guiW - w) * 0.5f;
 			default -> MARGIN;
@@ -798,6 +807,9 @@ public final class HudLayout {
 			case HELD_ITEM -> status - 6 - h;
 			case SCOREBOARD, EFFECTS -> MARGIN;
 			case DUNGEON_MAP -> guiH * 0.5f - h * 0.5f;
+			case F7_TITLE -> guiH * 0.5f - Math.round(guiH * 0.056f) - 2f;
+			case F7_LIGHTNING -> guiH * 0.5f - guiH / 13f - 2f;
+			case F7_TERMINAL -> guiH * 0.5f + 30f;
 			case BOSS -> MARGIN;
 			case SLAYER, SLAYER_PROFIT, SLAYER_RNG, SLAYER_KILLS -> slayerDefaultY(id, font, guiH);
 			case SLAYER_DAGGER -> guiH * 0.5f + 18f;
@@ -865,6 +877,7 @@ public final class HudLayout {
 			case CROP_FEVER -> GardenHudRenderer.cropFeverWidth(font) * scale;
 			case TOP_DOWN -> TopDownHudRenderer.drawWidth() * scale;
 			case DUNGEON_MAP -> dev.stray.client.dungeon.map.DungeonMapRenderer.drawWidth() * scale;
+			case F7_TITLE, F7_LIGHTNING, F7_TERMINAL -> dev.stray.client.dungeon.F7Titles.boxWidth(id) * scale;
 			case HOTBAR -> HotbarHudRenderer.drawWidth() * scale;
 			case HEALTH, HUNGER, ARMOR, AIR, MOUNT -> StatusHudRenderer.BAR_W * scale;
 			case EXPERIENCE -> StatusHudRenderer.xpWidth() * scale;
@@ -901,6 +914,7 @@ public final class HudLayout {
 			case CROP_FEVER -> GardenHudRenderer.cropFeverHeight() * scale;
 			case TOP_DOWN -> TopDownHudRenderer.drawHeight() * scale;
 			case DUNGEON_MAP -> dev.stray.client.dungeon.map.DungeonMapRenderer.drawHeight() * scale;
+			case F7_TITLE, F7_LIGHTNING, F7_TERMINAL -> dev.stray.client.dungeon.F7Titles.boxHeight(id) * scale;
 			case HOTBAR -> HotbarHudRenderer.HEIGHT * scale;
 			case HEALTH, HUNGER, ARMOR, AIR, MOUNT -> StatusHudRenderer.BAR_H * scale;
 			case EXPERIENCE -> StatusHudRenderer.XP_BOX_H * scale;

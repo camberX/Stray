@@ -5,6 +5,7 @@ import dev.stray.client.location.SkyblockLocation;
 import dev.stray.client.mixin.BossHealthOverlayAccessor;
 import dev.stray.client.mixin.HudTitleInvoker;
 import dev.stray.client.render.GuiDraw;
+import dev.stray.client.render.HudLayout;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
@@ -240,31 +241,66 @@ public final class F7Titles {
 
 	// ------------------------------------------------------------------ drawing
 
-	/** Our F7 titles; drawn on the HUD and on top of the leap menu. */
+	private static final float TITLE_W = 220f;
+	private static final float TITLE_H = 9f * 2.5f + 4f + 9f * 1.5f;
+	private static final float LIGHTNING_W = 72f;
+	private static final float LIGHTNING_H = 9f * 3f;
+	private static final float TERMINAL_W = 170f;
+	private static final float TERMINAL_H = 10f;
+
+	public static float boxWidth(HudLayout.Id id) {
+		return switch (id) {
+			case F7_LIGHTNING -> LIGHTNING_W;
+			case F7_TERMINAL -> TERMINAL_W;
+			default -> TITLE_W;
+		};
+	}
+
+	public static float boxHeight(HudLayout.Id id) {
+		return switch (id) {
+			case F7_LIGHTNING -> LIGHTNING_H;
+			case F7_TERMINAL -> TERMINAL_H;
+			default -> TITLE_H;
+		};
+	}
+
+	/**
+	 * Our F7 titles, each in its own HUD element (movable in the HUD editor); drawn on the
+	 * HUD and again on top of the leap menu. In the HUD editor each shows an example.
+	 */
 	public static void render(GuiGraphicsExtractor graphics, int width, int height) {
-		if (!StrayConfig.get().f7TitlesEnabled) {
+		StrayConfig config = StrayConfig.get();
+		if (!config.f7TitlesEnabled) {
 			return;
 		}
 		Minecraft client = Minecraft.getInstance();
 		Font font = client.font;
 		long now = System.currentTimeMillis();
-		if (lightningEnd != 0L) {
-			double left = (lightningEnd - now) / 1000.0;
-			if (left <= 0) {
-				lightningEnd = 0L;
-				show("§aStorm's Lightning Ended!");
-			} else {
-				centered(graphics, font, Component.literal(String.format(Locale.ROOT, "§c§l%.1f", left)), width * 0.5f, height * 0.5f - height / 13f, 3f, 1f);
-			}
+		boolean editor = HudLayout.editorOpen();
+		if (lightningEnd != 0L && lightningEnd <= now) {
+			lightningEnd = 0L;
+			show("§aStorm's Lightning Ended!");
 		}
-		if (titleUntil > now) {
-			float alpha = fade(titleUntil - now, TITLE_MS);
-			float y = height * 0.5f - Math.round(height * 0.056f);
-			centered(graphics, font, title, width * 0.5f, y, 2.5f, alpha);
-			centered(graphics, font, subtitle, width * 0.5f, y + Math.round(height / 15.42f), 1.5f, alpha);
+		if (config.f7LightningTimer && (lightningEnd != 0L || editor)) {
+			double left = editor && lightningEnd == 0L ? 3.2 : (lightningEnd - now) / 1000.0;
+			Component text = Component.literal(String.format(Locale.ROOT, "§c§l%.1f", left));
+			HudLayout.apply(graphics, font, HudLayout.Id.F7_LIGHTNING, () -> centered(graphics, font, text, LIGHTNING_W * 0.5f, 0f, 3f, 1f));
 		}
-		if (terminalUntil > now) {
-			centered(graphics, font, terminalLine, width * 0.5f, height * 0.5f + 14f, 1f, fade(terminalUntil - now, TERMINAL_MS));
+		if (titleUntil > now || editor && (config.f7CrystalTitles || config.f7WitherTitles || config.f7LightningTimer)) {
+			boolean live = titleUntil > now;
+			float alpha = live ? fade(titleUntil - now, TITLE_MS) : 1f;
+			Component top = live ? title : Component.empty();
+			Component bottom = live ? subtitle : Component.literal("§bStorm Crushed!");
+			HudLayout.apply(graphics, font, HudLayout.Id.F7_TITLE, () -> {
+				centered(graphics, font, top, TITLE_W * 0.5f, 0f, 2.5f, alpha);
+				centered(graphics, font, bottom, TITLE_W * 0.5f, 9f * 2.5f + 4f, 1.5f, alpha);
+			});
+		}
+		if (config.f7TerminalTitles && (terminalUntil > now || editor)) {
+			boolean live = terminalUntil > now;
+			float alpha = live ? fade(terminalUntil - now, TERMINAL_MS) : 1f;
+			Component line = live ? terminalLine : terminalText(client.getUser().getName(), "terminal", 5, 7);
+			HudLayout.apply(graphics, font, HudLayout.Id.F7_TERMINAL, () -> centered(graphics, font, line, TERMINAL_W * 0.5f, 0.5f, 1f, alpha));
 		}
 	}
 

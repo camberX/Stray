@@ -388,8 +388,8 @@ public final class DungeonMapRenderer {
 			int color = switch (main.state()) {
 				case GREEN -> GREEN;
 				case FAILED -> RED;
-				case CLEARED -> ShadowLook.TEXT;
-				default -> ShadowLook.MUTED;
+				case CLEARED -> 0xFFFFFFFF;
+				default -> 0xFFD6DBE2;
 			};
 			int style = config.dungeonMapRoomInfo;
 			if (style == 4) {
@@ -423,7 +423,7 @@ public final class DungeonMapRenderer {
 		float lineH = 9f;
 		float scale = 0.8f;
 		if (widest > 0f) {
-			scale = Mth.clamp(Math.min((room.maxWidth - 2f) / widest, room.maxHeight / (lines * lineH)), 0.39f, 0.8f);
+			scale = Mth.clamp(Math.min((room.maxWidth - 2f) / widest, room.maxHeight / (lines * lineH)), 0.45f, 0.8f);
 		}
 		float total = lines * lineH * scale;
 		float y = cy - total / 2f;
@@ -591,7 +591,7 @@ public final class DungeonMapRenderer {
 			return;
 		}
 		float w = width(font, value) * scale;
-		GuiDraw.text(graphics, font, inter(value), cx - w / 2f, y, scale, color, false);
+		GuiDraw.text(graphics, font, inter(value), cx - w / 2f, y, scale, color, true);
 	}
 
 	private static int lighten(int color) {

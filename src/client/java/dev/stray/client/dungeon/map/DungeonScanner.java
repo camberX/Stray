@@ -119,7 +119,7 @@ public final class DungeonScanner {
 				for (int z = 0; z <= 10; z++) {
 					int wx = START_X + x * (ROOM_SIZE >> 1);
 					int wz = START_Z + z * (ROOM_SIZE >> 1);
-					if (!level.hasChunk(wx >> 4, wz >> 4)) {
+					if (!loaded(level, wx >> 4, wz >> 4)) {
 						allLoaded = false;
 						continue;
 					}
@@ -241,6 +241,15 @@ public final class DungeonScanner {
 	}
 
 	/** Hash of the block names from y 140 down to 12 at the room's middle. */
+	/**
+	 * Whether the client really has this chunk. ClientLevel.hasChunk always says yes (a
+	 * missing chunk reads as an empty one), which made the scan finish at once and never
+	 * pick up rooms as their chunks arrived. Same check as NoammAddons.
+	 */
+	public static boolean loaded(net.minecraft.world.level.Level level, int chunkX, int chunkZ) {
+		return level.getChunkSource().getChunk(chunkX, chunkZ, net.minecraft.world.level.chunk.status.ChunkStatus.FULL, false) != null;
+	}
+
 	public static int core(ClientLevel level, int x, int z) {
 		BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos(x, 0, z);
 		int hash = 1;

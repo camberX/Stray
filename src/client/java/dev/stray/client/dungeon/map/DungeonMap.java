@@ -187,7 +187,7 @@ public final class DungeonMap {
 					if (mapTile instanceof DoorTile m && m.type == DoorType.WITHER) {
 						door.opened = false;
 					} else if (!door.opened) {
-						if (client.level.hasChunk(door.x >> 4, door.z >> 4)) {
+						if (DungeonScanner.loaded(client.level, door.x >> 4, door.z >> 4)) {
 							BlockState state = client.level.getBlockState(new net.minecraft.core.BlockPos(door.x, 69, door.z));
 							if (state.isAir() || state.is(Blocks.BARRIER)) {
 								door.opened = true;
