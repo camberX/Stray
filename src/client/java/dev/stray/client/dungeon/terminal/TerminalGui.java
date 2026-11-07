@@ -165,7 +165,8 @@ final class TerminalGui {
 		float cell = 18f * s;
 		float gap = 3f * s;
 		float pad = 9f * s;
-		float header = 15f * s;
+		boolean titled = !StrayConfig.get().terminalHideTitle;
+		float header = titled ? 15f * s : 0f;
 		float footer = 0f;
 		int cols;
 		int rows;
@@ -179,7 +180,7 @@ final class TerminalGui {
 		}
 		float gridW = cols * cell + (cols - 1) * gap;
 		float gridH = rows * cell + (rows - 1) * gap;
-		float panelW = Math.max(gridW + pad * 2f, 128f * s);
+		float panelW = titled ? Math.max(gridW + pad * 2f, 128f * s) : gridW + pad * 2f;
 		float panelH = header + gridH + pad * 2f + footer;
 		float px = (width - panelW) * 0.5f;
 		float py = (height - panelH) * 0.5f;
@@ -205,8 +206,10 @@ final class TerminalGui {
 		GuiDraw.hairline(graphics, px, py, panelW, panelH, radius, Anim.fade(ShadowLook.LINE, open));
 
 		// Header: name left, progress right.
-		float ty = py + pad * 0.75f;
-		text(graphics, font, term.name, px + pad, ty, s, Anim.fade(blocked ? ShadowLook.MUTED : ShadowLook.TEXT, open));
+		if (titled) {
+			float ty = py + pad * 0.75f;
+			text(graphics, font, term.name, px + pad, ty, s, Anim.fade(blocked ? ShadowLook.MUTED : ShadowLook.TEXT, open));
+		}
 		hovered = -1;
 		lastGx = gx;
 		lastGy = gy;

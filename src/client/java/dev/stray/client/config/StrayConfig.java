@@ -345,6 +345,8 @@ public final class StrayConfig {
 	public boolean terminalClickSound = true;
 	public boolean terminalGlow = true;
 	public boolean terminalShowNumbers = false;
+	/** Leaves out the terminal name at the top; the window shrinks to the grid. */
+	public boolean terminalHideTitle = false;
 	public int terminalSolutionRgb = 0x6EE7B7;
 	public int terminalFirstRgb = 0x6EE7B7;
 	public int terminalSecondRgb = 0xFCD34D;
