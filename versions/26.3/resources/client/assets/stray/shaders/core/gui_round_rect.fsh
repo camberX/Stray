@@ -26,7 +26,7 @@ void main() {
         // Whole pixel steps, so a 1px outline lights one pixel per row or column on the curve too.
         vec2 g = abs(vec2(dFdx(d), dFdy(d)));
         float px = max(max(g.x, g.y), 1e-5);
-        float w = px * (1.0 - 0.45 * min(g.x, g.y) / px);
+        float w = px * (1.0 - 0.6 * min(g.x, g.y) / px);
         mask = clamp(0.5 - d / px, 0.0, 1.0) - clamp(0.5 - (d + w) / px, 0.0, 1.0);
     } else {
         mask = clamp(0.5 - d / fw, 0.0, 1.0);
