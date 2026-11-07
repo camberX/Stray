@@ -72,10 +72,10 @@ public final class TerminalHighlight {
 		}
 	}
 
+	private static volatile boolean glowThisFrame;
 	private static int section = UNKNOWN;
 	private static boolean tasksDone;
 	private static boolean gate;
-	private static boolean wasBoss;
 	private static ClientLevel lastLevel;
 	private static List<Target> targets = List.of();
 
@@ -83,7 +83,7 @@ public final class TerminalHighlight {
 	}
 
 	/** One Hypixel terminal/device label (two stacked stands), drawn as one Shadow tag. */
-	private record StandTag(List<ArmorStand> stands, Component[] lines, int[] colors) {
+	private record StandTag(List<ArmorStand> stands, Component[] lines, int color) {
 	}
 
 	private static final java.util.Set<String> PRIMARY = java.util.Set.of("Inactive Terminal", "Terminal Active", "Inactive", "Active");
@@ -109,13 +109,17 @@ public final class TerminalHighlight {
 
 	public static void init() {
 		LevelRenderEvents.END_EXTRACTION.register(context -> {
-			if (!dev.stray.Edition.LEGIT && !targets.isEmpty() && !TopDownCapture.offscreen()) {
+			// The glow runs the full-screen outline post pass, by far the most expensive part of
+			// this feature, so it only runs while a highlighted terminal is in front of the camera.
+			glowThisFrame = !dev.stray.Edition.LEGIT && !targets.isEmpty() && !TopDownCapture.offscreen() && anyInView(context.camera());
+			if (glowThisFrame) {
 				context.levelState().shouldShowEntityOutlines = true;
 			}
 		});
 		LevelRenderEvents.COLLECT_SUBMITS.register(context -> {
 			// The glow pass draws through walls, so the legit build leaves it out.
-			if (dev.stray.Edition.LEGIT || targets.isEmpty() || TopDownCapture.offscreen() || context.poseStack() == null) {
+			// Anything drawn into the outline buffer brings the post pass with it.
+			if (!glowThisFrame || targets.isEmpty() || TopDownCapture.offscreen() || context.poseStack() == null) {
 				return;
 			}
 			Vec3 camera = context.levelState().cameraRenderState.pos;
@@ -148,6 +152,25 @@ public final class TerminalHighlight {
 				Gizmos.cuboid(new AABB(target.block).inflate(0.002), GizmoStyle.fill(fill)).setAlwaysOnTop();
 			}
 		});
+	}
+
+	/** Whether any highlighted block is roughly on screen (a wide cone around the view direction). */
+	private static boolean anyInView(Camera camera) {
+		if (camera == null || !camera.isInitialized()) {
+			return true;
+		}
+		Vec3 eye = camera.position();
+		Vector3fc forward = camera.forwardVector();
+		for (Target target : targets) {
+			double dx = target.block.getX() + 0.5 - eye.x;
+			double dy = target.block.getY() + 0.5 - eye.y;
+			double dz = target.block.getZ() + 0.5 - eye.z;
+			double len = Math.sqrt(dx * dx + dy * dy + dz * dz);
+			if (len < 3.0 || (dx * forward.x() + dy * forward.y() + dz * forward.z()) / len > 0.2) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	private static boolean active() {
@@ -249,14 +272,15 @@ public final class TerminalHighlight {
 	}
 
 	public static void tick(Minecraft client) {
-		boolean boss = SkyblockLocation.inBoss;
-		if (client.level != lastLevel || boss != wasBoss) {
+		// Only a new world resets: the scoreboard's boss flag can flicker mid-fight.
+		if (client.level != lastLevel) {
 			reset();
 			preview = null;
 			lastLevel = client.level;
 		}
-		wasBoss = boss;
-		tickTags(client);
+		List<ArmorStand> stands = namedStands(client);
+		int current = currentSection(client);
+		tickTags(stands, current);
 		if (preview != null) {
 			List<Target> shown = new ArrayList<>();
 			if (StrayConfig.get().terminalHighlight) {
@@ -269,19 +293,13 @@ public final class TerminalHighlight {
 			targets = shown;
 			return;
 		}
-		if (!active() || client.level == null || client.player == null || section == DONE) {
+		if (!active() || client.level == null || client.player == null || current == DONE) {
 			targets = List.of();
 			return;
 		}
-		List<ArmorStand> stands = new ArrayList<>();
-		for (Entity entity : client.level.entitiesForRendering()) {
-			if (entity instanceof ArmorStand stand && entity.hasCustomName()) {
-				stands.add(stand);
-			}
-		}
 		List<Target> found = new ArrayList<>();
 		for (int s = 0; s < SPOTS.length; s++) {
-			if (section != UNKNOWN && section != s + 1) {
+			if (current != UNKNOWN && current != s + 1) {
 				continue;
 			}
 			for (int i = 0; i < SPOTS[s].length; i++) {
@@ -291,7 +309,7 @@ public final class TerminalHighlight {
 				boolean inactive = name != null && name.contains("Inactive Terminal");
 				// With the section known a terminal whose stand is not loaded yet still shows;
 				// without it only terminals the server marks inactive do.
-				boolean show = inactive || section != UNKNOWN && name == null;
+				boolean show = inactive || current != UNKNOWN && name == null;
 				if (!show) {
 					continue;
 				}
@@ -304,18 +322,60 @@ public final class TerminalHighlight {
 		targets = found;
 	}
 
-	/** Whether this armor stand's own name is hidden because a Shadow tag replaces it. */
+	/** Named armor stands, gathered once per tick for both the glow and the labels. */
+	private static List<ArmorStand> namedStands(Minecraft client) {
+		if (client.level == null || !StrayConfig.get().terminalHighlight || !active()) {
+			return List.of();
+		}
+		List<ArmorStand> stands = new ArrayList<>();
+		for (Entity entity : client.level.entitiesForRendering()) {
+			if (entity instanceof ArmorStand stand && entity.hasCustomName()) {
+				stands.add(stand);
+			}
+		}
+		return stands;
+	}
+
+	/**
+	 * The section to show: the one tracked from chat, else the one you stand in (as NoammAddons
+	 * does), else unknown.
+	 */
+	private static int currentSection(Minecraft client) {
+		if (section != UNKNOWN || client.player == null) {
+			return section;
+		}
+		return sectionAt(client.player.getX(), client.player.getY(), client.player.getZ());
+	}
+
+	/** Per-stand answer for {@link #hidesStand}, kept until the stand's name object changes. */
+	private record NameCheck(Component name, boolean hide) {
+	}
+
+	private static final it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap<NameCheck> NAME_CHECKS = new it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap<>();
+
+	/** Whether this armor stand's own name is hidden because a Shadow tag replaces it. Called every frame per entity. */
 	public static boolean hidesStand(Entity stand) {
 		if (hiddenStands.contains(stand.getId())) {
 			return true;
 		}
 		// Also by name, so a stand Hypixel just (re)spawned is hidden before the next tick groups it.
-		if (!StrayConfig.get().terminalHighlightTags || !active() || !stand.hasCustomName()) {
+		if (!labelsOn || !stand.hasCustomName()) {
 			return false;
 		}
-		String name = net.minecraft.util.StringUtil.stripColor(stand.getCustomName().getString()).trim();
-		return PRIMARY.contains(name) || PARTNERS.contains(name);
+		Component name = stand.getCustomName();
+		NameCheck check = NAME_CHECKS.get(stand.getId());
+		if (check == null || check.name != name) {
+			String text = net.minecraft.util.StringUtil.stripColor(name.getString()).trim();
+			check = new NameCheck(name, PRIMARY.contains(text) || PARTNERS.contains(text));
+			if (NAME_CHECKS.size() > 2048) {
+				NAME_CHECKS.clear();
+			}
+			NAME_CHECKS.put(stand.getId(), check);
+		}
+		return check.hide;
 	}
+
+	private static volatile boolean labelsOn;
 
 	/** The P3 section (1-4) a spot is in, or 0 outside all of them. */
 	private static int sectionAt(double x, double y, double z) {
@@ -328,63 +388,78 @@ public final class TerminalHighlight {
 		return 0;
 	}
 
-	private static void tickTags(Minecraft client) {
+	private static void tickTags(List<ArmorStand> named, int current) {
 		StrayConfig config = StrayConfig.get();
-		if (!config.terminalHighlightTags || !active() || client.level == null) {
+		labelsOn = config.terminalHighlight && config.terminalHighlightTags && active();
+		if (!labelsOn || named.isEmpty()) {
 			standTags = List.of();
 			hiddenStands = it.unimi.dsi.fastutil.ints.IntSets.EMPTY_SET;
 			return;
 		}
-		List<ArmorStand> named = new ArrayList<>();
-		for (Entity entity : client.level.entitiesForRendering()) {
-			if (entity instanceof ArmorStand stand && stand.hasCustomName()) {
-				named.add(stand);
-			}
+		// Names once per stand, not once per pair.
+		int n = named.size();
+		String[] names = new String[n];
+		for (int i = 0; i < n; i++) {
+			names[i] = plain(named.get(i));
 		}
 		it.unimi.dsi.fastutil.ints.IntSet hidden = new it.unimi.dsi.fastutil.ints.IntOpenHashSet();
 		List<StandTag> tags = new ArrayList<>();
-		for (ArmorStand stand : named) {
-			String name = plain(stand);
+		int rgb = 0xFF000000 | (config.terminalHighlightRgb & 0xFFFFFF);
+		for (int a = 0; a < n; a++) {
+			ArmorStand stand = named.get(a);
+			String name = names[a];
 			if (!PRIMARY.contains(name) || hidden.contains(stand.getId())) {
 				continue;
 			}
 			// Hypixel's second line ("CLICK HERE" or the device line) is a stand right above or below.
-			List<ArmorStand> group = new ArrayList<>();
+			List<ArmorStand> group = new ArrayList<>(2);
+			List<String> groupNames = new ArrayList<>(2);
 			group.add(stand);
-			for (ArmorStand other : named) {
-				if (other == stand || hidden.contains(other.getId())) {
+			groupNames.add(name);
+			for (int b = 0; b < n; b++) {
+				ArmorStand other = named.get(b);
+				if (b == a) {
 					continue;
 				}
 				double dx = other.getX() - stand.getX();
 				double dz = other.getZ() - stand.getZ();
-				double dy = other.getY() - stand.getY();
-				if (dx * dx + dz * dz < 0.09 && Math.abs(dy) <= 1.2 && !PRIMARY.contains(plain(other))) {
-					group.add(other);
+				if (dx * dx + dz * dz >= 0.09 || Math.abs(other.getY() - stand.getY()) > 1.2
+					|| PRIMARY.contains(names[b]) || hidden.contains(other.getId())) {
+					continue;
+				}
+				group.add(other);
+				groupNames.add(names[b]);
+			}
+			for (int i = 0; i < group.size(); i++) {
+				hidden.add(group.get(i).getId());
+				if (i > 0) {
+					PARTNERS.add(groupNames.get(i));
 				}
 			}
-			for (ArmorStand member : group) {
-				hidden.add(member.getId());
-				if (member != stand) {
-					PARTNERS.add(plain(member));
-				}
-			}
-			if (DONE_NAMES.contains(name)) {
+			if (DONE_NAMES.contains(name) || current == DONE) {
 				continue;
 			}
 			// Only the current section: labels elsewhere stay hidden.
 			int at = sectionAt(stand.getX(), stand.getY(), stand.getZ());
-			if (section >= 1 && section <= 4 && at != 0 && at != section || section == DONE) {
+			if (current >= 1 && current <= 4 && at != 0 && at != current) {
 				continue;
 			}
-			group.sort((a, b) -> Double.compare(b.getY(), a.getY()));
-			Component[] lines = new Component[group.size()];
-			int[] colors = new int[group.size()];
-			for (int i = 0; i < lines.length; i++) {
-				String text = plain(group.get(i));
-				lines[i] = MenuFont.shadow(text);
-				colors[i] = colorOf(group.get(i).getCustomName());
+			// Top line first.
+			Integer[] order = new Integer[group.size()];
+			for (int i = 0; i < order.length; i++) {
+				order[i] = i;
 			}
-			tags.add(new StandTag(List.copyOf(group), lines, colors));
+			java.util.Arrays.sort(order, (x, y) -> Double.compare(group.get(y).getY(), group.get(x).getY()));
+			Component[] lines = new Component[order.length];
+			ArmorStand[] sorted = new ArmorStand[order.length];
+			for (int i = 0; i < order.length; i++) {
+				String text = groupNames.get(order[i]);
+				Component line = MenuFont.shadow(text);
+				// "CLICK HERE" in bold, like Hypixel's.
+				lines[i] = text.equalsIgnoreCase("CLICK HERE") ? line.copy().withStyle(net.minecraft.ChatFormatting.BOLD) : line;
+				sorted[i] = group.get(order[i]);
+			}
+			tags.add(new StandTag(List.of(sorted), lines, rgb));
 		}
 		standTags = tags;
 		hiddenStands = hidden;
@@ -397,19 +472,6 @@ public final class TerminalHighlight {
 	private static String plain(ArmorStand stand) {
 		Component name = stand.getCustomName();
 		return name == null ? "" : net.minecraft.util.StringUtil.stripColor(name.getString()).trim();
-	}
-
-	private static int colorOf(Component name) {
-		if (name == null) {
-			return ShadowLook.TEXT;
-		}
-		java.util.Optional<Integer> color = name.visit((style, text) -> {
-			if (!text.isBlank() && style.getColor() != null) {
-				return java.util.Optional.of(0xFF000000 | style.getColor().getValue());
-			}
-			return java.util.Optional.empty();
-		}, net.minecraft.network.chat.Style.EMPTY);
-		return color.orElse(ShadowLook.TEXT);
 	}
 
 	/** The Shadow tags that replace Hypixel's terminal and device labels, with more range. */
@@ -455,10 +517,10 @@ public final class TerminalHighlight {
 			}
 			float left = -w * 0.5f;
 			float topY = -h * 0.5f;
-			ShadowLook.panel(graphics, left, topY, w, h, 5f, ShadowLook.FILL);
+			ShadowLook.panel(graphics, left, topY, w, h, 5f, dev.stray.client.ui.Theme.HUD_WINDOW);
 			for (int i = 0; i < tag.lines.length; i++) {
 				Component line = tag.lines[i];
-				GuiDraw.text(graphics, font, line, -font.width(line) * 0.5f, GuiDraw.middle(topY + 3f + i * lineH, lineH), tag.colors[i], false);
+				GuiDraw.text(graphics, font, line, -font.width(line) * 0.5f, GuiDraw.middle(topY + 3f + i * lineH, lineH), tag.color, false);
 			}
 			graphics.pose().popMatrix();
 		}
@@ -569,7 +631,7 @@ public final class TerminalHighlight {
 			}
 			float left = -w * 0.5f;
 			float top = -TAG * 0.5f;
-			ShadowLook.panel(graphics, left, top, w, TAG, 5f, ShadowLook.FILL);
+			ShadowLook.panel(graphics, left, top, w, TAG, 5f, dev.stray.client.ui.Theme.HUD_WINDOW);
 			GuiDraw.text(graphics, font, label, -font.width(label) * 0.5f, GuiDraw.middle(top, TAG), accent, false);
 			graphics.pose().popMatrix();
 		}
