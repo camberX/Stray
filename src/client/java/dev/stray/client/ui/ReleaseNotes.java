@@ -15,6 +15,11 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.5.89", new String[]{
+			"Fixed a crash on joining a world with Sodium 0.9.3-beta.3: Sodium changed its terrain shader and Stray's edit to it no longer lined up. If Sodium changes it again, the affected Stray effects switch off instead of crashing.",
+			"Custom dyes stay on animated-dye armor: Hypixel re-sends those items every few ticks, sometimes without the item's UUID, and they used to fall back to Hypixel's colour.",
+			"The dye mark (✿) in the item name takes your custom dye's colour, using the dye's own fixed colour (no more cycling). Hex dyes use that colour and gradients their first colour. When the item has no mark, one is added in front of the name like Hypixel's."
+		}),
 		new Entry("1.5.88", new String[]{
 			"Shadow is now the only style: the other click GUI, HUD, GUI, chat and watermark styles are gone. One Opacity slider and one Blur toggle (Client > Accent) apply to every Shadow panel, the HUD included. Categories are regrouped, with a new Foraging category (hide tree blocks, compact sweep, compact tree gift).",
 			"Everything is off by default on a fresh install.",
