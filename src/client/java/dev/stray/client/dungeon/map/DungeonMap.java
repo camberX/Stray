@@ -100,7 +100,16 @@ public final class DungeonMap {
 
 	private static void syncPlayers(Minecraft client) {
 		String self = client.getUser() == null ? "" : client.getUser().getName();
-		for (DungeonParty.Member member : DungeonParty.all()) {
+		java.util.List<DungeonParty.Member> team = DungeonParty.all();
+		if (!team.isEmpty()) {
+			// Drop players who left the party so their head doesn't linger on the map.
+			java.util.Set<String> names = new java.util.HashSet<>();
+			for (DungeonParty.Member member : team) {
+				names.add(member.name);
+			}
+			PLAYERS.keySet().retainAll(names);
+		}
+		for (DungeonParty.Member member : team) {
 			MapPlayer player = PLAYERS.computeIfAbsent(member.name, MapPlayer::new);
 			player.clazz = member.clazz;
 			player.skin = member.skin;

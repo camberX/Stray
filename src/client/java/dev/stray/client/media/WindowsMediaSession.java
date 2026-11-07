@@ -74,7 +74,18 @@ final class WindowsMediaSession {
 
 	private void loop() throws Exception {
 		// MTA; S_FALSE / RPC_E_CHANGED_MODE just mean this thread was set up already.
-		this.combase.getFunction("RoInitialize").invokeInt(new Object[] {1});
+		int init = this.combase.getFunction("RoInitialize").invokeInt(new Object[] {1});
+		try {
+			this.loopInitialized();
+		} finally {
+			// Every successful RoInitialize (S_OK or S_FALSE) needs its matching RoUninitialize.
+			if (init == 0 || init == 1) {
+				this.combase.getFunction("RoUninitialize").invokeVoid(new Object[0]);
+			}
+		}
+	}
+
+	private void loopInitialized() throws Exception {
 		Pointer manager = this.requestManager();
 		int misses = 0;
 		try {

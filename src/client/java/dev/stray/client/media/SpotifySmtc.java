@@ -364,8 +364,19 @@ public final class SpotifySmtc {
 			Files.deleteIfExists(file);
 			return "";
 		}
+		// One cover on disk at a time: drop the previous track's file instead of piling them up until exit.
+		Path previous = this.lastCover;
+		this.lastCover = file;
+		if (previous != null && !previous.equals(file)) {
+			try {
+				Files.deleteIfExists(previous);
+			} catch (Exception ignored) {
+			}
+		}
 		return file.toAbsolutePath().toString();
 	}
+
+	private volatile Path lastCover;
 
 	private String deezerCover(String title, String artist, String album) throws Exception {
 		JsonObject search = json("https://api.deezer.com/search?limit=15&q=" + URLEncoder.encode("track:\"" + title + "\" artist:\"" + artist + "\"", StandardCharsets.UTF_8));
