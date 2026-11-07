@@ -480,7 +480,7 @@ public final class MusicHudRenderer {
 		float r = BAR_H * 0.5f;
 		if (HudChrome.background()) {
 			GuiFrostBlur.blitWindow(graphics, 0, 0, w, BAR_H, r);
-			GuiDraw.roundedFine(graphics, 0, 0, w, BAR_H, r, dev.stray.client.ui.Theme.withAlpha(dev.stray.client.ui.ShadowLook.FILL, 0xD8));
+			GuiDraw.roundedFine(graphics, 0, 0, w, BAR_H, r, dev.stray.client.ui.ShadowLook.FILL);
 		}
 		float pr = BAR_PILL * 0.5f;
 

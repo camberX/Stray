@@ -61,6 +61,7 @@ public final class ArrayListHud {
 		for (Row row : rows) {
 			float x = right - row.width;
 			if (background) {
+				GuiFrostBlur.blitWindow(graphics, x, y, row.width, ROW_H, ShadowLook.SLOT_R);
 				GuiDraw.roundedFine(graphics, x, y, row.width, ROW_H, ShadowLook.SLOT_R, Theme.HUD_WINDOW);
 			}
 			GuiDraw.text(graphics, font, MenuFont.shadow(row.label), x + PAD, GuiDraw.middle(y, ROW_H), ShadowLook.TEXT, false);

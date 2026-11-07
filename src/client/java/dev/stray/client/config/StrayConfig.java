@@ -317,6 +317,8 @@ public final class StrayConfig {
 	public String guiStyle = "shadow";
 	/** How opaque every Shadow panel is (menus, screens, HUD, chat), 0.2 to 1. */
 	public float shadowOpacity = 0.78f;
+	/** Frosted blur behind every Shadow panel (menus, screens, HUD, chat). */
+	public boolean shadowBlur = false;
 	public boolean arrayList = false;
 	public boolean partyFinderStats = false;
 	/** Custom Spirit Leap menu (NoammAddons' leap logic, Stray's look). */

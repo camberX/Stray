@@ -189,7 +189,7 @@ public class StrayScreen extends Screen {
 		HEALTH("Health bar", 7),
 		BOX("2D box", 5),
 		NODES("Nodes", 5),
-		ACCENT("Accent", 3),
+		ACCENT("Accent", 4),
 		PANE("Pane", 2),
 		WINDOW("Window", 3),
 		SCALE("Menu scale", 2),
@@ -4062,10 +4062,11 @@ public class StrayScreen extends Screen {
 				y = colorRow(graphics, font, ix, y, iw, mouseX, mouseY, "Color", config.themeAccentRgb, PickerTarget.THEME);
 				// One opacity for every Shadow panel: menus, screens, HUD and chat.
 				float opacity = StrayConfig.clamp(config.shadowOpacity, 0.20f, 1f);
-				slider(graphics, font, ix, y, iw, "Opacity", Math.round(opacity * 100) + "%", (opacity - 0.20f) / 0.80f, v -> {
+				y = slider(graphics, font, ix, y, iw, "Opacity", Math.round(opacity * 100) + "%", (opacity - 0.20f) / 0.80f, v -> {
 					config.shadowOpacity = StrayConfig.clamp(0.20f + v * 0.80f, 0.20f, 1f);
 					Theme.refresh();
 				});
+				toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Blur", config.shadowBlur, v -> config.shadowBlur = v);
 			}
 			case PANE -> {
 				y = cycle(graphics, font, ix, y, iw, mouseX, mouseY, "Preset", panePresetLabel(), this::cyclePanePreset);

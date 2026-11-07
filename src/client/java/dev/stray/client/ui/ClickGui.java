@@ -492,7 +492,7 @@ public final class ClickGui {
 		java.util.Map.entry("Command rings", "Rings on the ground that run a command when you walk in."),
 		java.util.Map.entry("Paths", "Record and show walking paths."),
 		java.util.Map.entry("Movement rings", "Movement guide rings (unfinished)."),
-		java.util.Map.entry("Accent", "The accent colour, and how opaque every Shadow panel is."),
+		java.util.Map.entry("Accent", "The accent colour, and the opacity and blur of every Shadow panel."),
 		java.util.Map.entry(HUD_LOOK, "Accent outlines and the HUD editor."),
 		java.util.Map.entry("Auto update", "Updates Stray by itself."),
 		java.util.Map.entry("Auto close", "Closes the game after updating."),

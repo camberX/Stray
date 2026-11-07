@@ -48,14 +48,12 @@ public final class ShadowLook {
 	}
 
 	/** A window or HUD panel: shadow outside the edge, translucent black inside, hairline edge. */
+	/** A panel: frosted behind when the Blur setting is on (menus, screens, HUD and chat alike). */
 	public static void panel(GuiGraphicsExtractor graphics, float x, float y, float w, float h, float radius, int fill) {
-		panel(graphics, x, y, w, h, radius, fill, false);
+		panel(graphics, x, y, w, h, radius, fill, true);
 	}
 
-	/**
-	 * A menu window: like {@link #panel} with the world frosted behind it. Menus and screens use
-	 * this; HUD elements stay unfrosted so the world around them reads as it is.
-	 */
+	/** A menu window; the same as {@link #panel}. */
 	public static void window(GuiGraphicsExtractor graphics, float x, float y, float w, float h, float radius, int fill) {
 		panel(graphics, x, y, w, h, radius, fill, true);
 	}

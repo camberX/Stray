@@ -178,7 +178,8 @@ public final class GuiFrostBlur {
 
 	/** Like {@link #blitWindow(GuiGraphicsExtractor, float, float, float, float, float)} but faded, so it can animate out. */
 	public static void blitWindow(GuiGraphicsExtractor graphics, float x, float y, float w, float h, float radius, float alpha) {
-		if (!StrayShaders.ready()) {
+		// The one blur toggle: off means no blurred panels anywhere, and nothing is captured.
+		if (!StrayConfig.get().shadowBlur || !StrayShaders.ready()) {
 			return;
 		}
 		if (alpha <= 0.004f) {

@@ -200,6 +200,7 @@ final class TerminalGui {
 
 		float radius = dev.stray.client.ui.ShadowLook.WINDOW_R * s;
 		ShadowLook.shadow(graphics, px, py, panelW, panelH, radius, 14, Math.round(0x70 * open));
+		dev.stray.client.render.GuiFrostBlur.blitWindow(graphics, px, py, panelW, panelH, radius, open);
 		GuiDraw.roundedFine(graphics, px, py, panelW, panelH, radius, Anim.fade(ShadowLook.FILL, open));
 		GuiDraw.hairline(graphics, px, py, panelW, panelH, radius, Anim.fade(ShadowLook.LINE, open));
 
