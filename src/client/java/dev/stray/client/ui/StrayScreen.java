@@ -185,7 +185,7 @@ public class StrayScreen extends Screen {
 		F7_TITLES("F7 titles", 4),
 		TERM_HIGHLIGHT("Terminal highlight", 4),
 		M4_BEAR("Spirit Bear", 6),
-		M4_HIGHLIGHT("Mob highlight", 16),
+		M4_HIGHLIGHT("Mob highlight", 15),
 		M4_WAYPOINTS("M4 waypoints", dev.stray.Edition.LEGIT ? 9 : 10),
 		M4_STUN("Stun", 5),
 		M4_OVERKILL("Overkill", 3),
@@ -3973,7 +3973,6 @@ public class StrayScreen extends Screen {
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Hide name tags", m4.highlightHideNametags, v -> m4.highlightHideNametags = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Hide highlighted mobs", m4.highlightHideMobs, v -> m4.highlightHideMobs = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Thorn", m4.highlightThorn, v -> m4.highlightThorn = v);
-				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Trans Thorn", m4.highlightTransThorn, v -> m4.highlightTransThorn = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Thorn damage flash", m4.highlightThornFlash, v -> m4.highlightThornFlash = v);
 				y = slider(graphics, font, ix, y, iw, "Flash ticks", m4.highlightFlashTicks + "", (m4.highlightFlashTicks - 1) / 79.0f, v -> m4.highlightFlashTicks = snapInt(1 + v * 79f, 1, 80, 1));
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Spirit Bear", m4.highlightBear, v -> m4.highlightBear = v);

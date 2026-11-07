@@ -365,10 +365,6 @@ public final class M4Features {
 			if (c.highlightHideNametags && entity instanceof ArmorStand && entity.getName().getString().contains("❤")) {
 				return true;
 			}
-			// Trans Thorn draws its own box instead of the ghast.
-			if (c.highlightThorn && c.highlightTransThorn && entity == M4.thorn) {
-				return true;
-			}
 			if (c.highlightHideMobs) {
 				return entity instanceof Bat && c.highlightBats
 					|| entity instanceof Chicken && c.highlightChickens

@@ -30,7 +30,6 @@ public final class M4Config {
 	public boolean highlightHideNametags = true;
 	public boolean highlightHideMobs = false;
 	public boolean highlightThorn = true;
-	public boolean highlightTransThorn = true;
 	public boolean highlightThornFlash = true;
 	public int highlightFlashTicks = 10;
 	public boolean highlightBear = true;

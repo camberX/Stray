@@ -27,7 +27,6 @@ import java.util.List;
  */
 public final class M4World {
 	private static final float LINE_WIDTH = 2f;
-	private static final int[] TRANS = {0xFF5BCEFA, 0xFFF5A9B8, 0xFFFFFFFF, 0xFFF5A9B8, 0xFF5BCEFA};
 	private static final Vec3[] BOW_SPOTS = {
 		new Vec3(5.0, 69.0, 4.0), new Vec3(9.0, 69.0, 14.0), new Vec3(16.0, 70.0, 7.0), new Vec3(-2.0, 69.0, 0.0),
 		new Vec3(23.0, 69.0, 15.0), new Vec3(3.0, 69.0, 21.0), new Vec3(25.0, 69.0, 3.0), new Vec3(24.0, 69.0, 25.0),
@@ -125,8 +124,6 @@ public final class M4World {
 			AABB thorn = renderBox(M4.thorn);
 			if (c.highlightThornFlash && M4Features.damaged >= 0) {
 				box(thorn, M4.THORN_DAMAGED_COLOR, style, true);
-			} else if (c.highlightTransThorn) {
-				transBox(thorn, style);
 			} else {
 				box(thorn, M4.THORN_COLOR, style, true);
 			}
@@ -140,44 +137,6 @@ public final class M4World {
 		int color = M4.mobColor(type);
 		for (Entity entity : M4.animalsOf(type)) {
 			box(renderBox(entity), color, style, true);
-		}
-	}
-
-	/** Thorn in the trans flag: five stripes, filled, or the outline cut where the stripes change. */
-	private static void transBox(AABB bb, int style) {
-		double height = bb.maxY - bb.minY;
-		double stripe = height / 5.0;
-		if (style != 0) {
-			for (int i = 0; i < 5; i++) {
-				box(new AABB(bb.minX, bb.minY + stripe * i, bb.minZ, bb.maxX, bb.minY + stripe * (i + 1), bb.maxZ), TRANS[i], style, true);
-			}
-			return;
-		}
-		Vec3[] p = {
-			new Vec3(bb.minX, bb.minY, bb.minZ), new Vec3(bb.minX, bb.minY, bb.maxZ), new Vec3(bb.minX, bb.maxY, bb.minZ), new Vec3(bb.minX, bb.maxY, bb.maxZ),
-			new Vec3(bb.maxX, bb.minY, bb.minZ), new Vec3(bb.maxX, bb.minY, bb.maxZ), new Vec3(bb.maxX, bb.maxY, bb.minZ), new Vec3(bb.maxX, bb.maxY, bb.maxZ)
-		};
-		int[][] edges = {{0, 1}, {1, 3}, {3, 2}, {2, 0}, {4, 5}, {5, 7}, {7, 6}, {6, 4}, {0, 4}, {1, 5}, {2, 6}, {3, 7}};
-		for (int[] edge : edges) {
-			Vec3 a = p[edge[0]];
-			Vec3 b = p[edge[1]];
-			List<Double> cuts = new ArrayList<>(List.of(0.0, 1.0));
-			double dy = b.y - a.y;
-			if (dy != 0.0) {
-				for (int i = 1; i < 5; i++) {
-					double t = (bb.minY + stripe * i - a.y) / dy;
-					if (t >= 0.0 && t <= 1.0) {
-						cuts.add(t);
-					}
-				}
-			}
-			cuts.sort(Double::compare);
-			for (int i = 0; i < cuts.size() - 1; i++) {
-				Vec3 from = a.lerp(b, cuts.get(i));
-				Vec3 to = a.lerp(b, cuts.get(i + 1));
-				int index = (int) (((from.y + to.y) / 2.0 - bb.minY) / height * 5.0);
-				line(from, to, TRANS[Math.max(0, Math.min(4, index))], true, 1f);
-			}
 		}
 	}
 
