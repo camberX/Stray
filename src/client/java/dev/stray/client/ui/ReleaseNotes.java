@@ -15,9 +15,21 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.5.88", new String[]{
+			"Shadow is now the only style: the other click GUI, HUD, GUI, chat and watermark styles are gone. One Opacity slider and one Blur toggle (Client > Accent) apply to every Shadow panel, the HUD included. Categories are regrouped, with a new Foraging category (hide tree blocks, compact sweep, compact tree gift).",
+			"Everything is off by default on a fresh install.",
+			"Dungeon map: NoammAddons' map in the Shadow look, with player heads, room names and secrets, scanned as rooms load.",
+			"F7: short boss titles (crystals, wither phases, Storm's lightning timer, who did which terminal), and Terminal highlight: a coloured glow on every terminal in your section that is not done yet, with its number and optional Shadow labels that replace Hypixel's terminal and device nametags (only your section, size slider). The legit build shows none of it through walls.",
+			"Terminal GUI (not in Stray Legit): Shadow solver windows for every terminal, colour options, glow, and a Hide title option. Align and lever triggerbots (not in Stray Legit).",
+			"Array list is a Shadow HUD element you can place in the HUD editor. The dock to top option, movement rings and the duplicate Cape button are removed.",
+			"Smoother text: Google Sans Flex Medium everywhere, anti-aliased at any GUI scale; bigger text in the profile viewer.",
+			"Rounded corners are as thin as the straight edges, drop shadows follow each panel's corners, and the title screen no longer flashes black or the old background on start.",
+			"Item customization: custom dyes no longer get replaced by Hypixel's animated dyes on worn armor.",
+			"Storage preview is saved per Minecraft account (UUID) instead of per SkyBlock profile, so it shows right away without waiting for the tab list. Pages saved by older builds are carried over.",
+			"Music HUD on Windows reads the media session directly, without PowerShell."
+		}),
 		new Entry("1.5.87", new String[]{
-			"Fixed a crash on start with Remove Reloading Screen (and similar mods): menus drawn before loading finished no longer need Stray's shaders yet.",
-			"Storage preview is saved per Minecraft account (UUID) instead of per SkyBlock profile, so it shows right away without waiting for the tab list. Pages saved by older builds are carried over."
+			"Fixed a crash on start with Remove Reloading Screen (and similar mods): menus drawn before loading finished no longer need Stray's shaders yet."
 		}),
 		new Entry("1.5.86", new String[]{
 			"Shadow style, after the profile viewer: see-through black with a soft shadow and the Google Sans Flex font. Pick it per surface: click GUI (an island bar with the categories and the modules as chips; left click toggles, right click opens settings), HUD and scoreboard, themed GUIs, themed chat and the watermark.",
