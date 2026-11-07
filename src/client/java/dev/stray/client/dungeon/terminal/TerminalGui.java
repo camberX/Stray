@@ -16,7 +16,7 @@ import java.util.Map;
 
 /**
  * The look of the custom terminal: a Shadow-style window (see-through black, soft
- * outward shadow, Inter) with the terminal's grid, where only the slots still to
+ * outward shadow, Google Sans Flex) with the terminal's grid, where only the slots still to
  * click light up. Slots fade and shrink away as they are solved, a click leaves a
  * short ring and the Melody marker glides between columns.
  * Drawing only: what to click comes from {@link Term}, clicks from {@link TerminalSession}.

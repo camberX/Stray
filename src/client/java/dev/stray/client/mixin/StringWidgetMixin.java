@@ -14,8 +14,8 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(StringWidget.class)
 public abstract class StringWidgetMixin {
 	/**
-	 * Titles in Inter. The layout placed the widget for the narrower-or-wider vanilla text, so the
-	 * Inter text is drawn centred in that same space instead of from its left edge, which pushed
+	 * Titles in Google Sans Flex. The layout placed the widget for the narrower-or-wider vanilla text, so the
+	 * Google Sans Flex text is drawn centred in that same space instead of from its left edge, which pushed
 	 * centred titles off to the left.
 	 */
 	@Inject(method = "visitLines", at = @At("HEAD"), cancellable = true)

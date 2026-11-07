@@ -16,7 +16,7 @@ import java.util.List;
 
 /**
  * Enabled modules, longest name on top, right-aligned in its HUD box. Shadow look: one rounded
- * row per module in the HUD fill, Inter text and a small dot in the module's color.
+ * row per module in the HUD fill, Google Sans Flex text and a small dot in the module's color.
  */
 public final class ArrayListHud {
 	private static final float ROW_H = 13f;

@@ -81,7 +81,7 @@ public final class MenuFont {
 		return value.copy().withStyle(style -> style.withFont(font));
 	}
 
-	/** True for one plain, uncoloured run of one of Stray's TTF fonts (Inter, the icons). */
+	/** True for one plain, uncoloured run of one of Stray's TTF fonts (Google Sans Flex, the icons). */
 	public static boolean ttfPlain(Component value) {
 		return value != null && value.getSiblings().isEmpty() && value.getStyle().getColor() == null
 			&& FAMILY.containsKey(value.getStyle().getFont());
@@ -97,7 +97,7 @@ public final class MenuFont {
 		return HYPR_SCALED[family][scale - 1];
 	}
 
-	/** Inter, for the Shadow style. */
+	/** Google Sans Flex, for the Shadow style. */
 	public static Component shadow(String value) {
 		return Component.literal(value == null ? "" : value).withStyle(hyprStyle(4));
 	}

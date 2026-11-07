@@ -12,7 +12,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 /**
- * Vanilla samples every glyph with nearest filtering, which suits the pixel font but makes Inter
+ * Vanilla samples every glyph with nearest filtering, which suits the pixel font but makes Google Sans Flex
  * jagged (letters losing strokes) whenever it is drawn at a scale that isn't a whole multiple:
  * menu scale, HUD scale, opening animations. Stray's own fonts sample smoothly instead.
  */

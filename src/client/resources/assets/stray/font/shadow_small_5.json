@@ -2,12 +2,12 @@
 	"providers": [
 		{
 			"type": "ttf",
-			"file": "stray:inter_regular.ttf",
+			"file": "stray:googlesansflex_medium.ttf",
 			"shift": [
 				0,
 				0.25
 			],
-			"size": 5.0,
+			"size": 5.5,
 			"oversample": 5.0
 		},
 		{

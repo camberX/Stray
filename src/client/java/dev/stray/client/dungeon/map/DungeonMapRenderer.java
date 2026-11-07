@@ -26,7 +26,7 @@ import java.util.Map;
 
 /**
  * The dungeon map HUD in the Shadow look: the see-through black panel with its soft
- * outward shadow, rooms as soft rounded tiles in muted map colours, Inter for names,
+ * outward shadow, rooms as soft rounded tiles in muted map colours, Google Sans Flex for names,
  * heads that glide, and rooms and checkmarks that fade in as they appear. Layout and
  * rules follow NoammAddons' MapRenderer (CC0).
  */

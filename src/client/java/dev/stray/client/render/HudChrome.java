@@ -36,7 +36,7 @@ public final class HudChrome {
 		return element == null || HudLayout.background(element);
 	}
 
-	/** HUD text drawn in the Shadow style (Inter, no shadow): true while the HUD draws. */
+	/** HUD text drawn in the Shadow style (Google Sans Flex, no shadow): true while the HUD draws. */
 	public static boolean shadowInk() {
 		return hudPass;
 	}

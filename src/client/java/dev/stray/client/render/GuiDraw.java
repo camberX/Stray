@@ -970,7 +970,7 @@ public final class GuiDraw {
 
 	/**
 	 * Vanilla's shadow sits a whole GUI pixel down and right, which is two to four screen pixels
-	 * and reads as a smeared double next to thin Inter. Stray's own fonts get a soft one-pixel
+	 * and reads as a smeared double next to thin Google Sans Flex. Stray's own fonts get a soft one-pixel
 	 * shadow instead; anything else keeps the vanilla one.
 	 */
 	private static void component(GuiGraphicsExtractor graphics, Font font, Component value, int x, int y, int color, boolean shadow) {
@@ -1007,7 +1007,7 @@ public final class GuiDraw {
 		graphics.pose().popMatrix();
 	}
 
-	// Stray draws all its own text in one font: Inter (MenuFont.shadow*), body, small and title.
+	// Stray draws all its own text in one font: Google Sans Flex (MenuFont.shadow*), body, small and title.
 
 	public static void menu(GuiGraphicsExtractor graphics, Font font, String value, float x, float y, int color) {
 		if ((color >>> 24) >= 8) {
@@ -1039,7 +1039,7 @@ public final class GuiDraw {
 		text(graphics, font, inter(value), x, y, 1f, color, false);
 	}
 
-	/** HUD text in Inter, on every part: scoreboard lines carry their own font on each part. */
+	/** HUD text in Google Sans Flex, on every part: scoreboard lines carry their own font on each part. */
 	private static Component inter(Component value) {
 		net.minecraft.network.chat.FontDescription inter = MenuFont.hyprStyle(4).getFont();
 		net.minecraft.network.chat.MutableComponent out = Component.empty();

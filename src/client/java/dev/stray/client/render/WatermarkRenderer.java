@@ -90,7 +90,7 @@ public final class WatermarkRenderer {
 		return (float) state[0];
 	}
 
-	// ---- Shadow: a see-through black pill, "Stray" in a white pill, the stats in Inter
+	// ---- Shadow: a see-through black pill, "Stray" in a white pill, the stats in Google Sans Flex
 
 	private static final float SH_PAD = 3f;
 	private static final float SH_PILL = HEIGHT - SH_PAD * 2f;
