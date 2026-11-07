@@ -148,7 +148,7 @@ public final class ShadowMenu {
 		// scoreboard) stop showing through.
 		dev.stray.client.render.GuiFrostBlur.blitWindow(graphics, x, y, w, BAR_H, r, t);
 		GuiDraw.roundedFine(graphics, x, y, w, BAR_H, r, Anim.fade(ShadowLook.FILL, t));
-		GuiDraw.hairline(graphics, x, y, w, BAR_H, r, Anim.fade(0x1CFFFFFF, t));
+		GuiDraw.hairline(graphics, x, y, w, BAR_H, r, Anim.fade(ShadowLook.edge(), t));
 
 		float cx = x + 6f;
 		float iy = y + (BAR_H - ICON) * 0.5f;
@@ -255,7 +255,7 @@ public final class ShadowMenu {
 		ShadowLook.shadow(graphics, sheetX, sheetY, sheetW, h, r, 14, Math.round(0x60 * t));
 		dev.stray.client.render.GuiFrostBlur.blitWindow(graphics, sheetX, sheetY, sheetW, h, r, t);
 		GuiDraw.roundedFine(graphics, sheetX, sheetY, sheetW, h, r, Anim.fade(ShadowLook.FILL, t));
-		GuiDraw.hairline(graphics, sheetX, sheetY, sheetW, h, r, Anim.fade(0x1CFFFFFF, t));
+		GuiDraw.hairline(graphics, sheetX, sheetY, sheetW, h, r, Anim.fade(ShadowLook.edge(), t));
 		boolean sheetClip = GuiDraw.scissor(graphics, sheetX, sheetY, sheetW, h);
 		try {
 			float x = sheetX + PAD;

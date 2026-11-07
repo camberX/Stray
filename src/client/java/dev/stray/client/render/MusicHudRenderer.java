@@ -7,7 +7,6 @@ import dev.stray.client.media.MediaSession;
 import dev.stray.client.media.NowPlaying;
 import dev.stray.client.media.SpotifySmtc;
 import dev.stray.client.ui.Anim;
-import dev.stray.client.ui.MaterialPalette;
 import dev.stray.client.ui.MenuFont;
 import dev.stray.client.ui.HudEditorScreen;
 import dev.stray.client.ui.Theme;
@@ -497,47 +496,46 @@ public final class MusicHudRenderer {
 		boolean chat,
 		boolean editor
 	) {
-		MaterialPalette.refresh();
 		float w = barWidth(font, track);
 		float r = BAR_H * 0.5f;
 		if (!attachedToWatermark() && HudChrome.background()) {
 			GuiFrostBlur.blitWindow(graphics, 0, 0, w, BAR_H, r);
-			GuiDraw.roundedFine(graphics, 0, 0, w, BAR_H, r, MaterialPalette.withAlpha(MaterialPalette.surface, 0xD8));
+			GuiDraw.roundedFine(graphics, 0, 0, w, BAR_H, r, dev.stray.client.ui.Theme.withAlpha(dev.stray.client.ui.ShadowLook.FILL, 0xD8));
 		}
 		float pr = BAR_PILL * 0.5f;
 
 		// note pill
-		GuiDraw.roundedFine(graphics, BAR_PAD, BAR_PAD, BAR_PILL, BAR_PILL, pr, MaterialPalette.primary);
+		GuiDraw.roundedFine(graphics, BAR_PAD, BAR_PAD, BAR_PILL, BAR_PILL, pr, dev.stray.client.ui.Theme.ACCENT);
 		float iconY = Math.round(BAR_PAD + (BAR_PILL - font.lineHeight) * 0.5f);
-		GuiDraw.text(graphics, font, Component.literal(track.playing() ? NOTE : PAUSE).withStyle(MenuFont.ICON), BAR_PAD + 1.5f, iconY, MaterialPalette.onPrimary, false);
+		GuiDraw.text(graphics, font, Component.literal(track.playing() ? NOTE : PAUSE).withStyle(MenuFont.ICON), BAR_PAD + 1.5f, iconY, 0xFF0B0E14, false);
 
 		// track pill: cover, text, progress
 		float px = BAR_PAD + BAR_PILL + 3f;
 		float pw = w - px - BAR_PAD;
-		GuiDraw.roundedFine(graphics, px, BAR_PAD, pw, BAR_PILL, pr, MaterialPalette.surfaceLow);
+		GuiDraw.roundedFine(graphics, px, BAR_PAD, pw, BAR_PILL, pr, dev.stray.client.ui.ShadowLook.FILL);
 		float cover = BAR_PILL - 2f;
 		float cx = px + 2f;
 		CoverArt.bind(track);
 		if (live && CoverArt.ready()) {
 			int tex = CoverArt.size();
 			if (!GuiDraw.coverBlit(graphics, CoverArt.id(), cx, BAR_PAD + 1f, cover, cover * 0.5f)) {
-				GuiDraw.roundedBlit(graphics, CoverArt.id(), cx, BAR_PAD + 1f, cover, cover, cover * 0.5f, tex, MaterialPalette.surfaceLow);
+				GuiDraw.roundedBlit(graphics, CoverArt.id(), cx, BAR_PAD + 1f, cover, cover, cover * 0.5f, tex, dev.stray.client.ui.ShadowLook.FILL);
 			}
 		} else {
-			GuiDraw.roundedFine(graphics, cx, BAR_PAD + 1f, cover, cover, cover * 0.5f, MaterialPalette.surfaceHighest);
+			GuiDraw.roundedFine(graphics, cx, BAR_PAD + 1f, cover, cover, cover * 0.5f, dev.stray.client.ui.ShadowLook.CARD_HOVER);
 		}
 		float tx = cx + cover + 5f;
 		float textMax = pw - (tx - px) - 7f - BAR_CONTROLS * reveal;
 		String line = GuiDraw.ellipsize(font, barLine(track, live), textMax, false);
 		// Text sits a little high so the progress line under it has room.
 		float textY = Math.round(GuiDraw.middle(BAR_PAD, BAR_PILL) - (live ? 1.5f : 0f));
-		GuiDraw.text(graphics, font, barText(line), tx, textY, live ? MaterialPalette.onSurface : MaterialPalette.onSurfaceVariant, false);
+		GuiDraw.text(graphics, font, barText(line), tx, textY, live ? dev.stray.client.ui.ShadowLook.TEXT : dev.stray.client.ui.ShadowLook.MUTED, false);
 		if (live) {
 			float progress = progressOf(track);
 			float lineW = pw - (tx - px) - 8f;
 			float lineY = BAR_PAD + BAR_PILL - 2.5f;
-			GuiDraw.roundedFine(graphics, tx, lineY, lineW, 1f, 0.5f, MaterialPalette.outlineVariant);
-			GuiDraw.roundedFine(graphics, tx, lineY, Math.max(1f, lineW * progress), 1f, 0.5f, MaterialPalette.primary);
+			GuiDraw.roundedFine(graphics, tx, lineY, lineW, 1f, 0.5f, dev.stray.client.ui.ShadowLook.LINE);
+			GuiDraw.roundedFine(graphics, tx, lineY, Math.max(1f, lineW * progress), 1f, 0.5f, dev.stray.client.ui.Theme.ACCENT);
 		}
 		if (live) {
 			drawControls(graphics, font, ox, oy, scale, w - 2f, BAR_PAD + (BAR_PILL - 10f) * 0.5f, chat, editor, track, false);

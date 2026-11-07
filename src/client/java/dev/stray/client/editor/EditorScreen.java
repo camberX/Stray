@@ -6,8 +6,6 @@ import dev.stray.client.input.MouseButtons;
 import dev.stray.client.movement.Freecam;
 import dev.stray.client.render.GuiDraw;
 import dev.stray.client.ui.Anim;
-import dev.stray.client.ui.HyprLook;
-import dev.stray.client.ui.MaterialPalette;
 import dev.stray.client.ui.MenuFont;
 import dev.stray.client.ui.TextKeys;
 import net.minecraft.client.Camera;
@@ -174,21 +172,20 @@ public class EditorScreen extends Screen {
 	}
 
 	private static void refreshColors() {
-		MaterialPalette.refresh();
-		BORDER = MaterialPalette.outlineVariant;
-		WIDGET = MaterialPalette.surfaceHigh;
-		WIDGET_HOVER = MaterialPalette.surfaceHighest;
-		WIDGET_DARK = MaterialPalette.surfaceContainer;
-		FIELD = MaterialPalette.surface;
-		ACTIVE = MaterialPalette.primary;
-		ACTIVE_HOVER = Anim.mix(MaterialPalette.primary, 0xFFFFFFFF, 0.14f);
-		ON_ACTIVE = MaterialPalette.onPrimary;
-		SELECTED = MaterialPalette.secondaryContainer;
-		TEXT = MaterialPalette.onSurface;
-		DIM = MaterialPalette.onSurfaceVariant;
-		FAINT = MaterialPalette.outline;
-		TIP = MaterialPalette.surfaceHighest;
-		ORANGE = MaterialPalette.primary;
+		BORDER = dev.stray.client.ui.ShadowLook.LINE;
+		WIDGET = dev.stray.client.ui.ShadowLook.CARD;
+		WIDGET_HOVER = dev.stray.client.ui.ShadowLook.CARD_HOVER;
+		WIDGET_DARK = dev.stray.client.ui.ShadowLook.CARD;
+		FIELD = dev.stray.client.ui.ShadowLook.FILL;
+		ACTIVE = dev.stray.client.ui.Theme.ACCENT;
+		ACTIVE_HOVER = Anim.mix(dev.stray.client.ui.Theme.ACCENT, 0xFFFFFFFF, 0.14f);
+		ON_ACTIVE = 0xFF0B0E14;
+		SELECTED = dev.stray.client.ui.ShadowLook.SELECTED;
+		TEXT = dev.stray.client.ui.ShadowLook.TEXT;
+		DIM = dev.stray.client.ui.ShadowLook.MUTED;
+		FAINT = 0x40FFFFFF;
+		TIP = dev.stray.client.ui.ShadowLook.CARD_HOVER;
+		ORANGE = dev.stray.client.ui.Theme.ACCENT;
 	}
 
 	/** Text in the Hyprland menu's font. {@code y} is the top of a 9px line. */
@@ -196,7 +193,7 @@ public class EditorScreen extends Screen {
 		if (value == null || ((color >>> 24) & 0xFF) < 8) {
 			return;
 		}
-		GuiDraw.text(graphics, font, MenuFont.hypr(value), x, Math.round(y), color, false);
+		GuiDraw.text(graphics, font, MenuFont.shadow(value), x, Math.round(y), color, false);
 	}
 
 	/** Smaller Hyprland font, for hints, shortcuts and lists. */
@@ -204,19 +201,19 @@ public class EditorScreen extends Screen {
 		if (value == null || ((color >>> 24) & 0xFF) < 8) {
 			return;
 		}
-		GuiDraw.text(graphics, font, MenuFont.hyprSmall(value), x, Math.round(y + 1), color, false);
+		GuiDraw.text(graphics, font, MenuFont.shadowSmall(value), x, Math.round(y + 1), color, false);
 	}
 
 	private static int twS(Font font, String value) {
-		return font.width(MenuFont.hyprSmall(value == null ? "" : value));
+		return font.width(MenuFont.shadowSmall(value == null ? "" : value));
 	}
 
 	private static int tw(Font font, String value) {
-		return font.width(MenuFont.hypr(value == null ? "" : value));
+		return font.width(MenuFont.shadow(value == null ? "" : value));
 	}
 
 	private void hyprWindow(GuiGraphicsExtractor graphics, float x, float y, float w, float h, int mouseX, int mouseY) {
-		HyprLook.window(graphics, x, y, w, h, interactive && GuiDraw.hovered(mouseX, mouseY, x, y, w, h) ? 1f : 0f, 1f);
+		dev.stray.client.ui.ShadowLook.window(graphics, x, y, w, h, dev.stray.client.ui.ShadowLook.WINDOW_R, dev.stray.client.ui.ShadowLook.FILL);
 	}
 
 	private void addHit(float x, float y, float w, float h, Runnable click) {
@@ -238,7 +235,7 @@ public class EditorScreen extends Screen {
 
 		// The viewport is a window too: just its border, with the world inside.
 		boolean overView = interactive && GuiDraw.hovered(mouseX, mouseY, viewX, viewY, viewW, viewH);
-		int frame = overView || WorldEditor.looking() ? MaterialPalette.primary : MaterialPalette.withAlpha(MaterialPalette.primary, 0x40);
+		int frame = overView || WorldEditor.looking() ? dev.stray.client.ui.Theme.ACCENT : dev.stray.client.ui.Theme.withAlpha(dev.stray.client.ui.Theme.ACCENT, 0x40);
 		GuiDraw.hairline(graphics, viewX, viewY, viewW, viewH, RADIUS, frame);
 
 		hyprWindow(graphics, OUT, OUT, headW, TOP_H, mouseX, mouseY);
@@ -426,7 +423,7 @@ public class EditorScreen extends Screen {
 			float mw = twS(font, message) + 12;
 			float mx = viewX + (viewW - mw) / 2f;
 			float my = viewY + viewH - 24;
-			GuiDraw.roundedFine(graphics, mx, my, mw, 12, 3, MaterialPalette.withAlpha(TIP, 0xE6));
+			GuiDraw.roundedFine(graphics, mx, my, mw, 12, 3, dev.stray.client.ui.Theme.withAlpha(TIP, 0xE6));
 			txtS(graphics, font, message, mx + 6, my + 1.5f, TEXT);
 		}
 		drawAxes(graphics, font, viewX + viewW - 20, viewY + 20, 12);

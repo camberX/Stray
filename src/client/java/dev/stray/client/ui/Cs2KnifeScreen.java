@@ -167,64 +167,48 @@ public final class Cs2KnifeScreen extends Screen {
 
 	// ---------------------------------------------------------------- style
 
-	private static boolean hypr() {
-		return StrayConfig.get().guiStyleHypr();
-	}
-
 	private static int ink() {
-		return hypr() ? MaterialPalette.onSurface : Theme.TEXT;
+		return Theme.TEXT;
 	}
 
 	private static int dim() {
-		return hypr() ? MaterialPalette.onSurfaceVariant : Theme.MUTED;
+		return Theme.MUTED;
 	}
 
 	private static int accent() {
-		return hypr() ? MaterialPalette.primary : Theme.ACCENT;
+		return Theme.ACCENT;
 	}
 
 	private static int onAccent() {
-		return hypr() ? MaterialPalette.onPrimary : 0xFF0B0E14;
+		return 0xFF0B0E14;
 	}
 
 	private static int card() {
-		return hypr() ? MaterialPalette.withAlpha(MaterialPalette.surfaceHigh, 0xC8) : Theme.CARD;
+		return Theme.CARD;
 	}
 
 	private static int cardHover() {
-		return hypr() ? MaterialPalette.withAlpha(MaterialPalette.surfaceHighest, 0xD8) : Theme.CARD_HOVER;
+		return Theme.CARD_HOVER;
 	}
 
 	private static int line() {
-		return hypr() ? MaterialPalette.outlineVariant : Theme.LINE;
+		return Theme.LINE;
 	}
 
 	private static int track() {
-		return hypr() ? MaterialPalette.surfaceHighest : Theme.TRACK;
+		return Theme.TRACK;
 	}
 
 	private void text(GuiGraphicsExtractor g, String s, float x, float y, int color) {
-		if (hypr()) {
-			GuiDraw.text(g, font, MenuFont.hypr(s), x, y, 1f, color, false);
-		} else {
-			GuiDraw.menu(g, font, s, x, y, color);
-		}
+		GuiDraw.menu(g, font, s, x, y, color);
 	}
 
 	private void small(GuiGraphicsExtractor g, String s, float x, float y, int color) {
-		if (hypr()) {
-			GuiDraw.text(g, font, MenuFont.hyprSmall(s), x, y, 1f, color, false);
-		} else {
-			GuiDraw.small(g, font, s, x, y, color);
-		}
+		GuiDraw.small(g, font, s, x, y, color);
 	}
 
 	private void title(GuiGraphicsExtractor g, String s, float x, float y, int color) {
-		if (hypr()) {
-			GuiDraw.text(g, font, MenuFont.hyprTitle(s), x, y, 1f, color, false);
-		} else {
-			GuiDraw.title(g, font, s, x, y, color);
-		}
+		GuiDraw.title(g, font, s, x, y, color);
 	}
 
 	/** Text top that centers a line in a box (all menu fonts are tuned to a 9px line box). */
@@ -233,11 +217,11 @@ public final class Cs2KnifeScreen extends Screen {
 	}
 
 	private int textW(String s) {
-		return hypr() ? font.width(MenuFont.hypr(s)) : GuiDraw.menuWidth(font, s);
+		return GuiDraw.menuWidth(font, s);
 	}
 
 	private int smallW(String s) {
-		return hypr() ? font.width(MenuFont.hyprSmall(s)) : GuiDraw.smallWidth(font, s);
+		return GuiDraw.smallWidth(font, s);
 	}
 
 	private String fit(String s, float max, boolean small) {
@@ -420,7 +404,6 @@ public final class Cs2KnifeScreen extends Screen {
 	@Override
 	public void extractRenderState(GuiGraphicsExtractor g, int mouseX, int mouseY, float delta) {
 		Theme.refresh();
-		MaterialPalette.refresh();
 		long now = System.currentTimeMillis();
 		dt = lastFrame == 0 ? 0f : Math.min(0.1f, (now - lastFrame) / 1000f);
 		lastFrame = now;
@@ -434,11 +417,7 @@ public final class Cs2KnifeScreen extends Screen {
 		g.pose().scale(s, s);
 		g.pose().translate(-cx, -cy);
 
-		if (hypr()) {
-			HyprLook.window(g, left, top, W, H, 1f, open);
-		} else {
-			GuiDraw.panel(g, left, top, W, H, 10, Theme.WINDOW, Theme.LINE);
-		}
+		GuiDraw.panel(g, left, top, W, H, 10, Theme.WINDOW, Theme.LINE);
 		knifeScrollT = ease(knifeScrollT, knifeScroll, 16f);
 		finishScrollT = ease(finishScrollT, finishScroll, 16f);
 		tabT = ease(tabT, tab, 14f);
@@ -728,12 +707,8 @@ public final class Cs2KnifeScreen extends Screen {
 
 	private void drawSwitch(GuiGraphicsExtractor g, float sx, float y, float k, boolean hot, float alpha) {
 		float sw = 26;
-		if (hypr()) {
-			HyprLook.m3Switch(g, sx, y, sw, 13, k, hot, alpha);
-		} else {
-			GuiDraw.rounded(g, sx, y, sw, 13, 6.5f, Anim.fade(Anim.mix(track(), accent(), k), alpha));
-			GuiDraw.circle(g, sx + 6.5f + k * (sw - 13), y + 6.5f, 4.5f, Anim.fade(Anim.mix(dim(), 0xFFFFFFFF, k), alpha));
-		}
+		GuiDraw.rounded(g, sx, y, sw, 13, 6.5f, Anim.fade(Anim.mix(track(), accent(), k), alpha));
+		GuiDraw.circle(g, sx + 6.5f + k * (sw - 13), y + 6.5f, 4.5f, Anim.fade(Anim.mix(dim(), 0xFFFFFFFF, k), alpha));
 	}
 
 	private static float hue(int rgb) {
@@ -962,12 +937,8 @@ public final class Cs2KnifeScreen extends Screen {
 		text(g, label, x, mid(y + 2, 13), Anim.mix(dim(), ink(), Math.max(k, hoverAmount("s:" + label, hot))));
 		float sw = 26;
 		float sx = x + SIDE_W - sw;
-		if (hypr()) {
-			HyprLook.m3Switch(g, sx, y + 2, sw, 13, k, hot, 1f);
-		} else {
-			GuiDraw.rounded(g, sx, y + 2, sw, 13, 6.5f, Anim.mix(track(), accent(), k));
-			GuiDraw.circle(g, sx + 6.5f + k * (sw - 13), y + 8.5f, 4.5f, Anim.mix(dim(), 0xFFFFFFFF, k));
-		}
+		GuiDraw.rounded(g, sx, y + 2, sw, 13, 6.5f, Anim.mix(track(), accent(), k));
+		GuiDraw.circle(g, sx + 6.5f + k * (sw - 13), y + 8.5f, 4.5f, Anim.mix(dim(), 0xFFFFFFFF, k));
 	}
 
 	private void drawDice(GuiGraphicsExtractor g, float x, float y, int color) {

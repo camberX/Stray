@@ -29,17 +29,18 @@ public final class ShadowLook {
 	private ShadowLook() {
 	}
 
-	public static boolean gui() {
-		return StrayConfig.get().guiStyleShadow();
+	/** The one see-through black every Shadow surface uses (HUD, chat, GUIs, menu); its alpha is the opacity setting. */
+	public static int FILL = 0xC8050709;
+
+	/** Panel edge: the faint white line, or the accent when accent outlines are on. */
+	public static int edge() {
+		return StrayConfig.get().accentOutlines ? Theme.withAlpha(Theme.ACCENT, 0x90) : LINE;
 	}
 
-	public static boolean chat() {
-		StrayConfig config = StrayConfig.get();
-		return config.themedChatEnabled && config.chatStyleShadow();
+	/** Picks up the opacity setting; {@link Theme#refresh} calls it. */
+	static void refresh() {
+		FILL = Theme.withAlpha(BLACK, Math.round(StrayConfig.clamp(StrayConfig.get().shadowOpacity, 0.2f, 1f) * 255f));
 	}
-
-	/** The one see-through black every Shadow surface uses (HUD, chat, GUIs, menu). */
-	public static final int FILL = 0xC8050709;
 
 	/** Panel fill at the given opacity (0..1): black, mostly see-through. */
 	public static int fill(float opacity) {
@@ -69,7 +70,7 @@ public final class ShadowLook {
 			dev.stray.client.render.GuiFrostBlur.blitWindow(graphics, x, y, w, h, r);
 		}
 		GuiDraw.roundedFine(graphics, x, y, w, h, r, fill);
-		GuiDraw.hairline(graphics, x, y, w, h, r, LINE);
+		GuiDraw.hairline(graphics, x, y, w, h, r, edge());
 	}
 
 	/** Texels per GUI unit in the generated shadow textures. */

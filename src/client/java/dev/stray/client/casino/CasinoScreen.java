@@ -7,7 +7,6 @@ import com.mojang.blaze3d.platform.InputConstants;
 import dev.stray.client.render.GuiDraw;
 import dev.stray.client.render.GuiFrostBlur;
 import dev.stray.client.render.RoundRect;
-import dev.stray.client.ui.MaterialPalette;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
@@ -29,7 +28,7 @@ import java.util.Map;
  * server; this screen sends the bet or move and animates the answer.
  */
 public final class CasinoScreen extends Screen {
-	// ---- palette: the click GUI's Material roles (MaterialPalette), refreshed every frame
+	// ---- palette: the Shadow colors
 	// so the casino follows the Stray accent like the Hyprland menu does.
 	private int primary;
 	private int primary2;
@@ -238,19 +237,18 @@ public final class CasinoScreen extends Screen {
 	}
 
 	private void palette() {
-		MaterialPalette.refresh();
-		primary = MaterialPalette.primary;
+		primary = dev.stray.client.ui.Theme.ACCENT;
 		primary2 = hueShift(primary, 0.11f);
-		onPrimary = MaterialPalette.onPrimary;
-		surface = MaterialPalette.surface;
-		surfaceLow = MaterialPalette.surfaceLow;
-		container = MaterialPalette.surfaceContainer;
-		containerHigh = MaterialPalette.surfaceHigh;
-		containerHighest = MaterialPalette.surfaceHighest;
-		line = MaterialPalette.outlineVariant;
-		TEXT = MaterialPalette.onSurface;
-		MUTED = MaterialPalette.onSurfaceVariant;
-		FAINT = MaterialPalette.outline;
+		onPrimary = 0xFF0B0E14;
+		surface = dev.stray.client.ui.ShadowLook.FILL;
+		surfaceLow = dev.stray.client.ui.ShadowLook.FILL;
+		container = dev.stray.client.ui.ShadowLook.CARD;
+		containerHigh = dev.stray.client.ui.ShadowLook.CARD;
+		containerHighest = dev.stray.client.ui.ShadowLook.CARD_HOVER;
+		line = dev.stray.client.ui.ShadowLook.LINE;
+		TEXT = dev.stray.client.ui.ShadowLook.TEXT;
+		MUTED = dev.stray.client.ui.ShadowLook.MUTED;
+		FAINT = 0x40FFFFFF;
 	}
 
 	private static final net.minecraft.resources.Identifier LOGO = dev.stray.Stray.id("textures/gui/catbet.png");
@@ -1878,9 +1876,9 @@ public final class CasinoScreen extends Screen {
 
 	private static Component comp(String s, T t) {
 		return switch (t) {
-			case SMALL -> dev.stray.client.ui.MenuFont.hyprSmall(s);
-			case BODY -> dev.stray.client.ui.MenuFont.hypr(s);
-			case TITLE -> dev.stray.client.ui.MenuFont.hyprTitle(s);
+			case SMALL -> dev.stray.client.ui.MenuFont.shadowSmall(s);
+			case BODY -> dev.stray.client.ui.MenuFont.shadow(s);
+			case TITLE -> dev.stray.client.ui.MenuFont.shadowTitle(s);
 		};
 	}
 

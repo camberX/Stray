@@ -2428,7 +2428,7 @@ public class StrayScreen extends Screen {
 				toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Paths", config.pathsEnabled, v -> config.pathsEnabled = v, Feature.PATHS);
 			}
 			case MENUS -> {
-				float menusH = cardHeight(15) + dropExtra("gui.a", "chat.a");
+				float menusH = cardHeight(13);
 				float y = featureCard(graphics, font, left, top, col, menusH, "Menus");
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Array list", config.arrayList, v -> config.arrayList = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Loadouts menu", config.loadoutsMenuEnabled, v -> config.loadoutsMenuEnabled = v, Feature.LOADOUTS);
@@ -2437,9 +2437,7 @@ public class StrayScreen extends Screen {
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Storage preview", config.storagePreviewEnabled, v -> config.storagePreviewEnabled = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Preview needs Shift", config.storagePreviewHoldShift, v -> config.storagePreviewHoldShift = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Themed GUIs", config.themedGuisEnabled, v -> config.themedGuisEnabled = v);
-				y = dropdown(graphics, font, ix, y, iw, mouseX, mouseY, "gui.a", "GUI style", StrayConfig.GUI_STYLE_LABELS, config.guiStyleIndex(), i -> config.setGuiStyle(StrayConfig.GUI_STYLES[i]));
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Themed chat", config.themedChatEnabled, v -> config.themedChatEnabled = v);
-				y = dropdown(graphics, font, ix, y, iw, mouseX, mouseY, "chat.a", "Chat style", StrayConfig.CHAT_STYLE_LABELS, config.chatStyleIndex(), i -> config.setChatStyle(StrayConfig.CHAT_STYLES[i]));
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Compact stash chat", config.stashChatCompact, v -> config.stashChatCompact = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Cleaner NPC chat", config.npcChatClean, v -> config.npcChatClean = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Open animation", config.loadoutsOpenAnim, v -> config.loadoutsOpenAnim = v);
@@ -2677,14 +2675,12 @@ public class StrayScreen extends Screen {
 				y = controlCard(graphics, font, left, y, col, mouseX, mouseY, "Wardrobe menu", config.wardrobeMenuEnabled, v -> config.wardrobeMenuEnabled = v, Feature.WARDROBE);
 				y = toggleCard(graphics, font, left, y, col, mouseX, mouseY, "Global IRC", config.strayIrcEnabled, v -> config.strayIrcEnabled = v);
 				y = toggleCard(graphics, font, left, y, col, mouseX, mouseY, "Lobby pings", config.strayPingEnabled, v -> config.strayPingEnabled = v);
-				y = featureCard(graphics, font, left, y, col, cardHeight(12) + dropExtra("gui.b", "chat.b"), "Menus");
+				y = featureCard(graphics, font, left, y, col, cardHeight(10), "Menus");
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Profile viewer", config.profileViewerEnabled, v -> config.profileViewerEnabled = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Storage preview", config.storagePreviewEnabled, v -> config.storagePreviewEnabled = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Preview needs Shift", config.storagePreviewHoldShift, v -> config.storagePreviewHoldShift = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Themed GUIs", config.themedGuisEnabled, v -> config.themedGuisEnabled = v);
-				y = dropdown(graphics, font, ix, y, iw, mouseX, mouseY, "gui.b", "GUI style", StrayConfig.GUI_STYLE_LABELS, config.guiStyleIndex(), i -> config.setGuiStyle(StrayConfig.GUI_STYLES[i]));
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Themed chat", config.themedChatEnabled, v -> config.themedChatEnabled = v);
-				y = dropdown(graphics, font, ix, y, iw, mouseX, mouseY, "chat.b", "Chat style", StrayConfig.CHAT_STYLE_LABELS, config.chatStyleIndex(), i -> config.setChatStyle(StrayConfig.CHAT_STYLES[i]));
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Compact stash chat", config.stashChatCompact, v -> config.stashChatCompact = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Cleaner NPC chat", config.npcChatClean, v -> config.npcChatClean = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Open animation", config.loadoutsOpenAnim, v -> config.loadoutsOpenAnim = v);
@@ -2956,13 +2952,12 @@ public class StrayScreen extends Screen {
 			config.save();
 		});
 
-		float accentH = cardTop() + cardHead() + 14 + swatchBlockH(Theme.PRESETS.length, iw) + rowH() * 5 + cardPad() + dropExtra("gui.c");
+		float accentH = cardTop() + cardHead() + 14 + swatchBlockH(Theme.PRESETS.length, iw) + rowH() * 4 + cardPad();
 		float lookY = sectionLabel(graphics, font, right, top, "Look");
 		y = featureCard(graphics, font, right, lookY, col, accentH, "Accent");
 		GuiDraw.small(graphics, font, "Preset", rx, y + 1, ControlChrome.muted());
 		y = swatchRow(graphics, mouseX, mouseY, rx + 2, y + 12, iw - 2, Theme.PRESETS, true);
 		y = colorRow(graphics, font, rx, y, iw, mouseX, mouseY, "Custom", config.themeAccentRgb, PickerTarget.THEME);
-		y = dropdown(graphics, font, rx, y, iw, mouseX, mouseY, "gui.c", "GUI style", StrayConfig.GUI_STYLE_LABELS, config.guiStyleIndex(), i -> config.setGuiStyle(StrayConfig.GUI_STYLES[i]));
 		y = slider(graphics, font, rx, y, iw, "HUD", Math.round(config.hudOpacity * 100) + "%", (config.hudOpacity - 0.20f) / 0.80f, v -> {
 			config.hudOpacity = StrayConfig.clamp(0.20f + v * 0.80f, 0.20f, 1f);
 			Theme.refresh();
@@ -3352,18 +3347,7 @@ public class StrayScreen extends Screen {
 	}
 
 	private void clickToggle(GuiGraphicsExtractor graphics, float x, float y, float w, float h, float t) {
-		if (ShadowMenu.drawing()) {
-			ShadowMenu.toggle(graphics, x, y, w, h, t, ShadowMenu.alpha());
-			return;
-		}
-		float stroke = 0.5f;
-		GuiDraw.roundedFine(graphics, x, y, w, h, h * 0.5f, 0xFF000000);
-		int fill = t > 0.5f ? Theme.ACCENT : 0x88000000;
-		float innerH = h - stroke * 2f;
-		GuiDraw.roundedFine(graphics, x + stroke, y + stroke, w - stroke * 2f, innerH, innerH * 0.5f, fill);
-		float knobR = innerH * 0.34f;
-		float knobX = x + stroke + knobR + 1f + t * (w - stroke * 2f - knobR * 2f - 2f);
-		GuiDraw.circle(graphics, knobX, y + h * 0.5f, knobR, 0xFFFFFFFF);
+		ShadowMenu.toggle(graphics, x, y, w, h, t, ShadowMenu.drawing() ? ShadowMenu.alpha() : 1f);
 	}
 
 	private void openFeature(Feature feature) {
@@ -4093,8 +4077,10 @@ public class StrayScreen extends Screen {
 			case ACCENT -> {
 				y = cycle(graphics, font, ix, y, iw, mouseX, mouseY, "Preset", accentPresetLabel(), this::cycleAccentPreset);
 				y = colorRow(graphics, font, ix, y, iw, mouseX, mouseY, "Color", config.themeAccentRgb, PickerTarget.THEME);
-				slider(graphics, font, ix, y, iw, "HUD", Math.round(config.hudOpacity * 100) + "%", (config.hudOpacity - 0.20f) / 0.80f, v -> {
-					config.hudOpacity = StrayConfig.clamp(0.20f + v * 0.80f, 0.20f, 1f);
+				// One opacity for every Shadow panel: menus, screens, HUD and chat.
+				float opacity = StrayConfig.clamp(config.shadowOpacity, 0.20f, 1f);
+				slider(graphics, font, ix, y, iw, "Opacity", Math.round(opacity * 100) + "%", (opacity - 0.20f) / 0.80f, v -> {
+					config.shadowOpacity = StrayConfig.clamp(0.20f + v * 0.80f, 0.20f, 1f);
 					Theme.refresh();
 				});
 			}

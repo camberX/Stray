@@ -2,7 +2,6 @@ package dev.stray.client.render;
 
 import dev.stray.client.util.Text;
 import dev.stray.client.config.StrayConfig;
-import dev.stray.client.ui.MaterialPalette;
 import dev.stray.client.ui.MenuFont;
 import dev.stray.client.ui.Theme;
 import net.fabricmc.loader.api.FabricLoader;

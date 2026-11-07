@@ -24,17 +24,18 @@ public final class StrayShaders {
 		if (ready) {
 			return true;
 		}
+		Minecraft client = Minecraft.getInstance();
+		// While the loading overlay is up the shader cache still reads the old (vanilla-only)
+		// resources; compiling then only logs "Couldn't preload shader" errors. Not throttled, so
+		// the first frame after the overlay already checks.
+		if (client == null || client.getResourceManager() == null || client.gui.overlay() != null) {
+			return false;
+		}
 		long now = System.nanoTime();
 		if (now < nextCheckNs) {
 			return false;
 		}
 		nextCheckNs = now + 500_000_000L;
-		Minecraft client = Minecraft.getInstance();
-		// While the loading overlay is up the shader cache still reads the old (vanilla-only)
-		// resources; compiling then only logs "Couldn't preload shader" errors.
-		if (client == null || client.getResourceManager() == null || client.gui.overlay() != null) {
-			return false;
-		}
 		try {
 			for (String path : PROBES) {
 				if (client.getResourceManager().getResource(Stray.id(path)).isEmpty()) {

@@ -30,10 +30,7 @@ import java.util.Optional;
  * The teal stone stays put. Veins, splashes, and flecks use the accent color.
  */
 public final class TitleBackdrop {
-	private static final Identifier FALLBACK = Stray.id("textures/gui/title_marble.png");
 	private static final Identifier SHADER = Stray.id("post/title_marble");
-	private static final int FALLBACK_W = 1920;
-	private static final int FALLBACK_H = 1080;
 	private static final int MAX_W = 2560;
 	private static final int MAX_H = 1440;
 	private static final float LOOP = 30f;
@@ -64,24 +61,8 @@ public final class TitleBackdrop {
 		}
 		Theme.refresh();
 		if (!paint(graphics, width, height)) {
-			float scale = Math.max(width / (float) FALLBACK_W, height / (float) FALLBACK_H) * 1.18f;
-			float dw = FALLBACK_W * scale;
-			float dh = FALLBACK_H * scale;
-			GuiDraw.blit(
-				graphics,
-				FALLBACK,
-				(width - dw) * 0.5f,
-				(height - dh) * 0.5f,
-				dw,
-				dh,
-				0f,
-				0f,
-				FALLBACK_W,
-				FALLBACK_H,
-				FALLBACK_W,
-				FALLBACK_H,
-				Theme.ACCENT
-			);
+			// Plain dark until the marble shader is ready, so no other background flashes first.
+			GuiDraw.fill(graphics, 0, 0, width, height, 0xFF050709);
 		}
 		GuiDraw.fill(graphics, 0, 0, width, height, Theme.withAlpha(0x000000, 56));
 	}

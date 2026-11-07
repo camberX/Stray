@@ -428,7 +428,7 @@ public final class CustomizeScreen extends Screen {
 		}
 	}
 
-	private void drawList(GuiGraphicsExtractor graphics, int mouseX, int mouseY, boolean hypr) {
+	private void drawList(GuiGraphicsExtractor graphics, int mouseX, int mouseY) {
 		if (listKind == ListKind.NONE || listH < ITEM_H) {
 			return;
 		}
@@ -437,15 +437,15 @@ public final class CustomizeScreen extends Screen {
 		int rows = (listItems.size() + cols - 1) / cols;
 		float content = rows * (ITEM_H + 2f);
 		listScroll = Math.max(0f, Math.min(listScroll, Math.max(0f, content - listH)));
-		int track = hypr ? MaterialPalette.withAlpha(MaterialPalette.surfaceHigh, 0x90) : Theme.CARD;
+		int track = Theme.CARD;
 		GuiDraw.rounded(graphics, listX - 3, listY - 3, listW + 6, listH + 6, 6f, track);
 		if (listItems.isEmpty()) {
-			label(graphics, "No matches", listX + 4, listY + 3, hypr ? MaterialPalette.onSurfaceVariant : Theme.MUTED, hypr);
+			label(graphics, "No matches", listX + 4, listY + 3, Theme.MUTED);
 			return;
 		}
 		boolean clip = GuiDraw.scissor(graphics, listX - 2, listY - 2, listW + 4, listH + 4);
-		int ink = hypr ? MaterialPalette.onSurface : Theme.TEXT;
-		int accent = hypr ? MaterialPalette.primary : Theme.ACCENT;
+		int ink = Theme.TEXT;
+		int accent = Theme.ACCENT;
 		for (int i = 0; i < listItems.size(); i++) {
 			int col = i % cols;
 			int row = i / cols;
@@ -460,8 +460,8 @@ public final class CustomizeScreen extends Screen {
 				&& mouseY >= listY && mouseY < listY + listH;
 			if (on || hot) {
 				GuiDraw.rounded(graphics, cx, cy, cellW, ITEM_H, 4f, on
-					? (hypr ? MaterialPalette.secondaryContainer : Theme.withAlpha(Theme.ACCENT, 90))
-					: (hypr ? MaterialPalette.withAlpha(MaterialPalette.onSurface, 0x18) : Theme.CARD_HOVER));
+					? (Theme.withAlpha(Theme.ACCENT, 90))
+					: (Theme.CARD_HOVER));
 			}
 			float tx = cx + 4;
 			switch (listKind) {
@@ -483,7 +483,7 @@ public final class CustomizeScreen extends Screen {
 				}
 			}
 			String name = listKind == ListKind.MODEL ? shortId(id) : CustomItems.displayName(id);
-			label(graphics, fit(name, (int) (cx + cellW - tx - 2)), (int) tx, (int) (cy + 3), on ? accent : ink, hypr);
+			label(graphics, fit(name, (int) (cx + cellW - tx - 2)), (int) tx, (int) (cy + 3), on ? accent : ink);
 		}
 		if (clip) {
 			GuiDraw.disableScissor(graphics);
@@ -554,22 +554,17 @@ public final class CustomizeScreen extends Screen {
 	@Override
 	public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float delta) {
 		Theme.refresh();
-		boolean hypr = StrayConfig.get().guiStyleHypr();
-		if (hypr) {
-			HyprLook.window(graphics, left, top, W, H, 1f, 1f);
-		} else {
-			ClickLook.panel(graphics, left, top, W, H, 8f, Theme.WINDOW, Theme.LINE);
-		}
-		int ink = hypr ? MaterialPalette.onSurface : Theme.TEXT;
-		int muted = hypr ? MaterialPalette.onSurfaceVariant : Theme.MUTED;
-		label(graphics, "Customize", left + 12, top + 9, hypr ? MaterialPalette.primary : Theme.ACCENT, hypr);
+		ClickLook.panel(graphics, left, top, W, H, 8f, Theme.WINDOW, Theme.LINE);
+		int ink = Theme.TEXT;
+		int muted = Theme.MUTED;
+		label(graphics, "Customize", left + 12, top + 9, Theme.ACCENT);
 
 		// preview: armor on a stand (shows trims and dyes), anything else as a big icon
 		int px = left + 12;
 		int py = top + 26;
 		int pw = SIDE - 24;
 		int ph = 128;
-		GuiDraw.rounded(graphics, px, py, pw, ph, 8f, hypr ? MaterialPalette.withAlpha(MaterialPalette.surfaceHigh, 0xC0) : Theme.CARD);
+		GuiDraw.rounded(graphics, px, py, pw, ph, 8f, Theme.CARD);
 		if (stand != null) {
 			InventoryScreen.extractEntityInInventoryFollowsMouse(graphics, px, py + 4, px + pw, py + ph - 4, 46, 0.0625f, mouseX, mouseY, stand);
 		} else {
@@ -579,20 +574,20 @@ public final class CustomizeScreen extends Screen {
 			graphics.item(stack, 0, 0);
 			graphics.pose().popMatrix();
 		}
-		graphics.text(font, Component.literal(fit(stack.getStyledHoverName().getString(), pw)).withStyle(stack.getStyledHoverName().getStyle()), px, py + ph + 6, ink, !hypr);
+		graphics.text(font, Component.literal(fit(stack.getStyledHoverName().getString(), pw)).withStyle(stack.getStyledHoverName().getStyle()), px, py + ph + 6, ink, true);
 		if (shared) {
-			label(graphics, "Applies to every", px, py + ph + 20, muted, hypr);
-			label(graphics, "item with this id", px, py + ph + 30, muted, hypr);
+			label(graphics, "Applies to every", px, py + ph + 20, muted);
+			label(graphics, "item with this id", px, py + ph + 30, muted);
 		}
 
 		int x = left + SIDE;
 		int y = top + 31;
-		label(graphics, "Name", x, y, muted, hypr);
+		label(graphics, "Name", x, y, muted);
 		y += ROW;
-		label(graphics, "Model", x, y, muted, hypr);
+		label(graphics, "Model", x, y, muted);
 		y += ROW;
 		if (dyeable) {
-			label(graphics, "Color", x, y, muted, hypr);
+			label(graphics, "Color", x, y, muted);
 			Integer swatch = CustomItems.color(stack, data);
 			if (swatch != null) {
 				GuiDraw.rounded(graphics, x + 32, y - 1, 10, 10, 3f, 0xFF000000 | swatch);
@@ -600,24 +595,20 @@ public final class CustomizeScreen extends Screen {
 			y += ROW;
 		}
 		if (trimmable) {
-			label(graphics, "Trim", x, y, muted, hypr);
+			label(graphics, "Trim", x, y, muted);
 			y += ROW;
 		}
 		if (head) {
-			label(graphics, "Skin", x, y, muted, hypr);
+			label(graphics, "Skin", x, y, muted);
 			y += ROW;
 		}
-		label(graphics, "Glint", x, y, muted, hypr);
-		drawList(graphics, mouseX, mouseY, hypr);
+		label(graphics, "Glint", x, y, muted);
+		drawList(graphics, mouseX, mouseY);
 		super.extractRenderState(graphics, mouseX, mouseY, delta);
 	}
 
-	private void label(GuiGraphicsExtractor graphics, String text, int x, int y, int color, boolean hypr) {
-		if (text.isEmpty()) {
-			return;
-		}
-		Component line = hypr ? MenuFont.hypr(text) : Component.literal(text);
-		graphics.text(font, line, x, y, color, !hypr);
+	private void label(GuiGraphicsExtractor graphics, String text, int x, int y, int color) {
+		GuiDraw.menu(graphics, font, text, x, y, color);
 	}
 
 	@Override

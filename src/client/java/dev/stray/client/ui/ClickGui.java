@@ -182,19 +182,9 @@ public final class ClickGui {
 		return count;
 	}
 
-	private static void drawGuiStyle(StrayScreen screen, GuiGraphicsExtractor graphics, Font font, float x, float y, float w) {
-		drawDropdown(screen, graphics, font, x, y, w, "gui", "Style", StrayConfig.GUI_STYLE_LABELS, StrayConfig.get().guiStyleIndex(),
-			i -> StrayConfig.get().setGuiStyle(StrayConfig.GUI_STYLES[i]));
-	}
 
 	private static void drawHud(StrayScreen screen, GuiGraphicsExtractor graphics, Font font, float x, float y, float w) {
 		StrayConfig config = StrayConfig.get();
-		drawChoice(screen, graphics, font, x, y, w, "HUD Stars", config.hudStarfield, () -> {
-			StrayConfig current = StrayConfig.get();
-			current.hudStarfield = !current.hudStarfield;
-			UnloadState.markDirty();
-		});
-		y += stride();
 		drawChoice(screen, graphics, font, x, y, w, "Accent Outlines", config.accentOutlines, () -> {
 			StrayConfig current = StrayConfig.get();
 			current.accentOutlines = !current.accentOutlines;
@@ -222,7 +212,7 @@ public final class ClickGui {
 
 	static final String CUSTOMIZE = "Customize item";
 	static final String CS2 = "CS2 knife";
-	static final String HUD_LOOK = "HUD look";
+	static final String HUD_LOOK = "Look";
 	static final String LEAP = "Leap menu";
 	static final String ALIGN = "Align triggerbot";
 	static final String TERMINALS = "Terminal GUI";
@@ -244,10 +234,6 @@ public final class ClickGui {
 		drawButton(screen, graphics, font, x, y + stride(), w, "Reset held item", CustomizeScreen::resetHeld);
 	}
 
-	private static void drawChatStyle(StrayScreen screen, GuiGraphicsExtractor graphics, Font font, float x, float y, float w) {
-		drawDropdown(screen, graphics, font, x, y, w, "chat", "Style", StrayConfig.CHAT_STYLE_LABELS, StrayConfig.get().chatStyleIndex(),
-			i -> StrayConfig.get().setChatStyle(StrayConfig.CHAT_STYLES[i]));
-	}
 
 	private static final int[] TIMEOUTS = {50, 100, 150, 300, 500, 1000};
 
@@ -283,12 +269,6 @@ public final class ClickGui {
 		if ("Array list".equals(mod.name)) {
 			return stackH(arrayListRows());
 		}
-		if ("Themed GUIs".equals(mod.name)) {
-			return screen.clickDropdownHeight("gui");
-		}
-		if ("Themed chat".equals(mod.name)) {
-			return screen.clickDropdownHeight("chat");
-		}
 		if (CUSTOMIZE.equals(mod.name)) {
 			return stackH(2);
 		}
@@ -297,7 +277,7 @@ public final class ClickGui {
 		}
 		if (mod.menuStyle) {
 			if (HUD_LOOK.equals(mod.name)) {
-				return stackH(3);
+				return stackH(2);
 			}
 			return stackH(1);
 		}
@@ -520,8 +500,8 @@ public final class ClickGui {
 		java.util.Map.entry("Command rings", "Rings on the ground that run a command when you walk in."),
 		java.util.Map.entry("Paths", "Record and show walking paths."),
 		java.util.Map.entry("Movement rings", "Movement guide rings (unfinished)."),
-		java.util.Map.entry("Accent", "The accent colour of the menus."),
-		java.util.Map.entry(HUD_LOOK, "HUD stars, accent outlines and the HUD editor."),
+		java.util.Map.entry("Accent", "The accent colour, and how opaque every Shadow panel is."),
+		java.util.Map.entry(HUD_LOOK, "Accent outlines and the HUD editor."),
 		java.util.Map.entry("Auto update", "Updates Stray by itself."),
 		java.util.Map.entry("Auto close", "Closes the game after updating."),
 		java.util.Map.entry("Update notify", "Tells you when an update is out."),
@@ -551,8 +531,6 @@ public final class ClickGui {
 			|| mod.timeout
 			|| mod.menuStyle
 			|| "Array list".equals(mod.name)
-			|| "Themed GUIs".equals(mod.name)
-			|| "Themed chat".equals(mod.name)
 			|| CUSTOMIZE.equals(mod.name)
 			|| CS2.equals(mod.name)
 			|| "Custom title".equals(mod.name);
@@ -589,14 +567,6 @@ public final class ClickGui {
 		}
 		if ("Array list".equals(mod.name)) {
 			drawArrayList(screen, graphics, font, x, y, w);
-			return;
-		}
-		if ("Themed GUIs".equals(mod.name)) {
-			drawGuiStyle(screen, graphics, font, x, y, w);
-			return;
-		}
-		if ("Themed chat".equals(mod.name)) {
-			drawChatStyle(screen, graphics, font, x, y, w);
 			return;
 		}
 		if (CUSTOMIZE.equals(mod.name)) {

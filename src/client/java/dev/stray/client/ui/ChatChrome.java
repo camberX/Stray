@@ -53,13 +53,7 @@ public final class ChatChrome {
 	/** Shadow chat: picked for themed chat, or following a Shadow HUD when themed chat is off. */
 	private static boolean shadow() {
 		StrayConfig config = StrayConfig.get();
-		return config.themedChatEnabled && config.chatStyleShadow();
-	}
-
-	/** Hyprland chat: a Material window for messages and a pill-shaped input. */
-	private static boolean hypr() {
-		StrayConfig config = StrayConfig.get();
-		return config.themedChatEnabled && config.chatStyleHypr();
+		return config.themedChatEnabled;
 	}
 
 	public static boolean skipFill() {
@@ -117,20 +111,7 @@ public final class ChatChrome {
 		float h = rows * lineH * scale + PAD * 2f;
 		float x = 4f * scale - PAD;
 		float y = graphics.guiHeight() - 40f - rows * lineH * scale - PAD + bumpY;
-		if (hypr()) {
-			// Mostly blur, a light tint: chat text stays readable without a slab.
-			HyprLook.window(graphics, x, y, w, h, focused ? 1f : 0f, 1f, 0x70);
-			return;
-		}
-		if (shadow()) {
-			ShadowLook.panel(graphics, x, y, w, h, ShadowLook.HUD_R, ShadowLook.FILL);
-			return;
-		}
-		float radius = paneRadius(w, h);
-		int fill = chatFill(focused, 1f);
-		GuiFrostBlur.blitWindow(graphics, x, y, w, h, radius);
-		GuiDraw.roundedFine(graphics, x, y, w, h, radius, fill);
-		GuiDraw.roundedOutline(graphics, x, y, w, h, radius, Theme.ACCENT, 1f);
+		ShadowLook.panel(graphics, x, y, w, h, ShadowLook.HUD_R, ShadowLook.FILL);
 	}
 
 	public static void beginFills() {
@@ -160,22 +141,7 @@ public final class ChatChrome {
 		float x = 2f;
 		float y = screen.height - INPUT_MARGIN - INPUT_H;
 		float w = screen.width - 4f;
-		if (hypr()) {
-			MaterialPalette.refresh();
-			float r = INPUT_H * 0.5f;
-			GuiFrostBlur.blitWindow(graphics, x, y, w, INPUT_H, r);
-			GuiDraw.roundedFine(graphics, x, y, w, INPUT_H, r, MaterialPalette.withAlpha(MaterialPalette.surfaceContainer, 0x90));
-			GuiDraw.hairline(graphics, x, y, w, INPUT_H, r, MaterialPalette.primary);
-			return;
-		}
-		if (shadow()) {
-			ShadowLook.panel(graphics, x, y, w, INPUT_H, INPUT_H * 0.5f, ShadowLook.FILL);
-			return;
-		}
-		float radius = 8f;
-		GuiFrostBlur.blitWindow(graphics, x, y, w, INPUT_H, radius);
-		GuiDraw.roundedFine(graphics, x, y, w, INPUT_H, radius, ControlChrome.windowFill());
-		GuiDraw.roundedOutline(graphics, x, y, w, INPUT_H, radius, Theme.ACCENT, 1f);
+		ShadowLook.panel(graphics, x, y, w, INPUT_H, INPUT_H * 0.5f, ShadowLook.FILL);
 	}
 
 	public static void field(GuiGraphicsExtractor graphics, EditBox box) {
@@ -186,7 +152,7 @@ public final class ChatChrome {
 		if (client == null || !(client.gui.screen() instanceof ChatScreen)) {
 			return;
 		}
-		if (hypr() || shadow()) {
+		if (shadow()) {
 			return;
 		}
 		if (box.isBordered()) {
@@ -244,24 +210,6 @@ public final class ChatChrome {
 	private static int messageBump(int lineH) {
 		float t = Mth.clamp((System.currentTimeMillis() - lastMessageMs) / SLIDE_MS, 0f, 1f);
 		return Math.round((1f - easeOutExpo(t)) * lineH * 0.8f);
-	}
-
-	private static float paneRadius(float w, float h) {
-		float max = Math.min(w, h) * 0.5f;
-		if (max < 1.5f) {
-			return Math.max(0f, max - 0.25f);
-		}
-		return Math.min(8f, max - 0.5f);
-	}
-
-	private static int chatFill(boolean focused, float fade) {
-		float opacity = ControlChrome.paneOpacity();
-		float t = Mth.clamp(fade, 0f, 1f);
-		float alpha = focused ? opacity * 0.48f : opacity * 0.28f * t;
-		float lo = focused ? 0.16f : 0.08f * t;
-		float hi = focused ? 0.42f : 0.30f;
-		alpha = Mth.clamp(alpha, lo, hi);
-		return Theme.withAlpha(ControlChrome.paneRgb(), Math.round(alpha * 255f));
 	}
 
 	private static float easeOutExpo(float x) {

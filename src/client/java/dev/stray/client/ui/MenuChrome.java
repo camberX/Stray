@@ -56,76 +56,27 @@ public final class MenuChrome {
 			TitleBackdrop.draw(graphics, width, height);
 			return;
 		}
+		// Shadow: the world frosted and dimmed behind in-game menus.
 		Theme.refresh();
-		if (hypr()) {
-			// Blurred, dimmed world behind in-game menus, like the click GUI.
-			MaterialPalette.refresh();
-			GuiFrostBlur.blitWindow(graphics, 0, 0, width, height, 0f);
-			GuiDraw.fill(graphics, 0, 0, width, height, MaterialPalette.withAlpha(MaterialPalette.surface, 0x70));
-			return;
-		}
-		int top;
-		int bot;
-		if (ControlChrome.on()) {
-			int pane = ControlChrome.paneRgb();
-			top = 0xFF000000 | Theme.mix(0x101218, pane, 0.28f);
-			bot = 0xFF000000 | Theme.mix(0x05070D, pane, 0.16f);
-		} else {
-			top = 0xFF05070D;
-			bot = 0xFF000000 | Theme.mix(0x0B0E14, Theme.ACCENT & 0xFFFFFF, 0.06f);
-		}
-		GuiDraw.fillGradient(graphics, 0, 0, width, height, top, bot);
-		try {
-			Starfield.drawSky(graphics, width, height);
-		} catch (Throwable ignored) {
-		}
-	}
-
-	private static boolean hypr() {
-		return StrayConfig.get().guiStyleHypr();
-	}
-
-	/**
-	 * Hyprland widget: blurred world, a light Material tint and a 1px ring
-	 * that turns primary on hover or focus.
-	 */
-	private static void hyprPill(GuiGraphicsExtractor graphics, float x, float y, float w, float h, float alpha, boolean lit) {
-		MaterialPalette.refresh();
-		float r = Math.min(h * 0.5f, 9f);
-		GuiFrostBlur.blitWindow(graphics, x, y, w, h, r, alpha);
-		GuiDraw.roundedFine(graphics, x, y, w, h, r, fade(MaterialPalette.withAlpha(lit ? MaterialPalette.surfaceHigh : MaterialPalette.surfaceLow, 0xA8), alpha));
-		int ring = lit || StrayConfig.get().accentOutlines ? MaterialPalette.primary : MaterialPalette.withAlpha(MaterialPalette.primary, 0x40);
-		GuiDraw.hairline(graphics, x, y, w, h, r, fade(ring, alpha));
+		GuiFrostBlur.blitWindow(graphics, 0, 0, width, height, 0f);
+		GuiDraw.fill(graphics, 0, 0, width, height, 0x60050709);
 	}
 
 	public static Component bodyLabel(Component message, boolean active) {
 		Theme.refresh();
-		if (hypr()) {
-			MaterialPalette.refresh();
-			int color = (active ? MaterialPalette.onSurface : MaterialPalette.onSurfaceVariant) & 0xFFFFFF;
-			return message.copy().withStyle(MenuFont.hyprStyle(0).withColor(color));
-		}
 		int color = (active ? Theme.TEXT : Theme.MUTED) & 0xFFFFFF;
-		return message.copy().withStyle(MenuFont.bodyStyle().withColor(color));
+		return message.copy().withStyle(MenuFont.hyprStyle(4).withColor(color));
 	}
 
 	public static Component titleLabel(Component message) {
 		Theme.refresh();
-		if (hypr()) {
-			MaterialPalette.refresh();
-			return message.copy().withStyle(MenuFont.hyprStyle(2).withColor(MaterialPalette.onSurface & 0xFFFFFF));
-		}
-		return message.copy().withStyle(MenuFont.bodyStyle().withColor(Theme.HEADER & 0xFFFFFF));
+		return message.copy().withStyle(MenuFont.hyprStyle(4).withColor(Theme.HEADER & 0xFFFFFF));
 	}
 
 	public static void button(GuiGraphicsExtractor graphics, AbstractWidget widget) {
 		Theme.refresh();
 		float alpha = widget.getAlpha();
 		boolean hover = widget.active && widget.isHoveredOrFocused();
-		if (hypr()) {
-			hyprPill(graphics, widget.getX(), widget.getY(), widget.getWidth(), widget.getHeight(), alpha, hover);
-			return;
-		}
 		int fill = Theme.withAlpha(ClickLook.FILL, Math.round(136 * alpha));
 		int outline = hover || StrayConfig.get().accentOutlines ? Theme.ACCENT : ClickLook.OUTLINE;
 		ClickLook.solid(graphics, widget.getX(), widget.getY(), widget.getWidth(), widget.getHeight(), fill, outline);
@@ -134,10 +85,6 @@ public final class MenuChrome {
 	public static void field(GuiGraphicsExtractor graphics, AbstractWidget widget) {
 		float alpha = widget.getAlpha();
 		boolean focus = widget.isFocused();
-		if (hypr()) {
-			hyprPill(graphics, widget.getX(), widget.getY(), widget.getWidth(), widget.getHeight(), alpha, focus);
-			return;
-		}
 		int fill = Theme.withAlpha(ClickLook.FILL, Math.round(136 * alpha));
 		int outline = focus || StrayConfig.get().accentOutlines ? Theme.ACCENT : ClickLook.OUTLINE;
 		ClickLook.solid(graphics, widget.getX(), widget.getY(), widget.getWidth(), widget.getHeight(), fill, outline);
@@ -150,17 +97,6 @@ public final class MenuChrome {
 		int w = widget.getWidth();
 		int h = widget.getHeight();
 		boolean hover = widget.active && widget.isHoveredOrFocused();
-		if (hypr()) {
-			hyprPill(graphics, x, y, w, h, alpha, hover);
-			float t = (float) Math.max(0d, Math.min(1d, value));
-			float trackX = x + h * 0.5f;
-			float trackW = Math.max(8, w - h);
-			float trackY = y + h * 0.5f - 1f;
-			GuiDraw.roundedFine(graphics, trackX, trackY, trackW, 2f, 1f, fade(MaterialPalette.outlineVariant, alpha));
-			GuiDraw.roundedFine(graphics, trackX, trackY, Math.max(2f, trackW * t), 2f, 1f, fade(MaterialPalette.primary, alpha));
-			GuiDraw.circle(graphics, trackX + trackW * t, y + h * 0.5f, hover ? 4f : 3.4f, fade(MaterialPalette.primary, alpha));
-			return;
-		}
 		ClickLook.solid(
 			graphics,
 			x,

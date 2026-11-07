@@ -146,7 +146,8 @@ public final class StrayConfig {
 	/** HUD elements drawn without their background panel. */
 	public java.util.List<String> hudNoBackground = new java.util.ArrayList<>();
 	/** "stray" or "hypr": look of themed chat. */
-	public String chatStyle = "stray";
+	/** Always {@code shadow}; kept so old configs load. */
+	public String chatStyle = "shadow";
 	/** "left", "center" or "right": where the docked HUD row lines up. */
 	public String hudDockAlign = "left";
 	/** Share of the width the module window takes; the settings window gets the rest. */
@@ -316,8 +317,10 @@ public final class StrayConfig {
 	public boolean clickGui = true;
 	/** Click GUI chrome: always {@code shadow} now; kept so old configs load. */
 	public String clickGuiStyle = "shadow";
-	/** Inventory, chests, and the other custom screens. {@code click} is the flat boxes. */
-	public String guiStyle = "click";
+	/** Always {@code shadow}; kept so old configs load. */
+	public String guiStyle = "shadow";
+	/** How opaque every Shadow panel is (menus, screens, HUD, chat), 0.2 to 1. */
+	public float shadowOpacity = 0.78f;
 	public boolean arrayList = false;
 	public boolean partyFinderStats = false;
 	/** Custom Spirit Leap menu (NoammAddons' leap logic, Stray's look). */
@@ -1363,9 +1366,8 @@ public final class StrayConfig {
 				// The Stray menu is gone: the click GUI is the menu.
 				loaded.clickGui = true;
 				loaded.clickGuiStyle = normalizeClickGuiStyle(loaded.clickGuiStyle);
-				loaded.guiStyle = json.has("guiStyle")
-					? normalizeGuiStyle(loaded.guiStyle)
-					: "click";
+				loaded.guiStyle = "shadow";
+				loaded.chatStyle = "shadow";
 				if (!json.has("arrayListAccent")) {
 					loaded.arrayListAccent = false;
 				}
@@ -1698,6 +1700,7 @@ public final class StrayConfig {
 				if (!json.has("gardenShoppingHudEnabled")) {
 					loaded.gardenShoppingHudEnabled = false;
 				}
+				loaded.shadowOpacity = json.has("shadowOpacity") ? clamp(loaded.shadowOpacity, 0.20f, 1f) : 0.78f;
 				loaded.themePaneOpacity = loaded.themePaneOpacity <= 0f
 					? 0.90f
 					: clamp(loaded.themePaneOpacity, 0.20f, 1f);
@@ -2038,38 +2041,6 @@ public final class StrayConfig {
 		healthBarStyle = healthBarCsgo() ? "stray" : "csgo";
 	}
 
-	public boolean guiStyleShadow() {
-		return "shadow".equalsIgnoreCase(guiStyle);
-	}
-
-	public boolean chatStyleShadow() {
-		return "shadow".equalsIgnoreCase(chatStyle);
-	}
-
-	public static final String[] GUI_STYLES = {"click", "hypr", "shadow"};
-	public static final String[] GUI_STYLE_LABELS = {"Click", "Hyprland", "Shadow"};
-	public static final String[] CHAT_STYLES = {"stray", "hypr", "shadow"};
-	public static final String[] CHAT_STYLE_LABELS = {"Stray", "Hyprland", "Shadow"};
-
-	public boolean chatStyleHypr() {
-		return "hypr".equalsIgnoreCase(chatStyle);
-	}
-
-	public int chatStyleIndex() {
-		return chatStyleHypr() ? 1 : chatStyleShadow() ? 2 : 0;
-	}
-
-	public void setChatStyle(String style) {
-		chatStyle = "hypr".equalsIgnoreCase(style) ? "hypr" : "shadow".equalsIgnoreCase(style) ? "shadow" : "stray";
-	}
-
-	public int guiStyleIndex() {
-		return indexOf(GUI_STYLES, normalizeGuiStyle(guiStyle));
-	}
-
-	public void setGuiStyle(String style) {
-		guiStyle = normalizeGuiStyle(style);
-	}
 
 	private static int indexOf(String[] keys, String key) {
 		for (int i = 0; i < keys.length; i++) {
@@ -2078,24 +2049,6 @@ public final class StrayConfig {
 			}
 		}
 		return 0;
-	}
-
-	public boolean guiStyleHypr() {
-		return "hypr".equalsIgnoreCase(guiStyle);
-	}
-
-	public String guiStyleLabel() {
-		if (guiStyleHypr()) {
-			return "Hyprland";
-		}
-		if (guiStyleShadow()) {
-			return "Shadow";
-		}
-		return "Click";
-	}
-
-	public void cycleGuiStyle() {
-		guiStyle = guiStyleHypr() ? "click" : "hypr";
 	}
 
 	public boolean arrayListShows(String name) {
@@ -2122,13 +2075,6 @@ public final class StrayConfig {
 	/** Shadow is the only click GUI style left. */
 	public static String normalizeClickGuiStyle(String style) {
 		return "shadow";
-	}
-
-	public static String normalizeGuiStyle(String style) {
-		if (style != null && style.trim().equalsIgnoreCase("shadow")) {
-			return "shadow";
-		}
-		return style != null && (style.trim().equalsIgnoreCase("hypr") || style.trim().equalsIgnoreCase("hyprland")) ? "hypr" : "click";
 	}
 
 	public static String normalizeHealthBarSide(String side) {

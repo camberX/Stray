@@ -76,23 +76,8 @@ public final class ContainerChrome {
 		Theme.refresh();
 		float x = hovered.x;
 		float y = hovered.y;
-		if (StrayConfig.get().guiStyleShadow()) {
-			GuiDraw.roundedFine(graphics, x, y, SLOT, SLOT, 3f, 0x1EFFFFFF);
-			GuiDraw.hairline(graphics, x, y, SLOT, SLOT, 3f, 0x55FFFFFF);
-			return;
-		}
-		if (StrayConfig.get().guiStyleHypr()) {
-			MaterialPalette.refresh();
-			// Material state layer plus a primary ring, rounded like the slot
-			GuiDraw.roundedFine(graphics, x, y, SLOT, SLOT, 3f, MaterialPalette.withAlpha(MaterialPalette.onSurface, 0x1C));
-			GuiDraw.hairline(graphics, x, y, SLOT, SLOT, 3f, MaterialPalette.primary);
-			return;
-		}
-		int color = Theme.ACCENT;
-		GuiDraw.fillSmooth(graphics, x, y, SLOT, ClickLook.STROKE, color);
-		GuiDraw.fillSmooth(graphics, x, y + SLOT - ClickLook.STROKE, SLOT, ClickLook.STROKE, color);
-		GuiDraw.fillSmooth(graphics, x, y, ClickLook.STROKE, SLOT, color);
-		GuiDraw.fillSmooth(graphics, x + SLOT - ClickLook.STROKE, y, ClickLook.STROKE, SLOT, color);
+		GuiDraw.roundedFine(graphics, x, y, SLOT, SLOT, 3f, 0x1EFFFFFF);
+		GuiDraw.hairline(graphics, x, y, SLOT, SLOT, 3f, 0x55FFFFFF);
 	}
 
 	public static int labelColor(int color) {
@@ -104,14 +89,7 @@ public final class ContainerChrome {
 			return color;
 		}
 		Theme.refresh();
-		if (StrayConfig.get().guiStyleHypr()) {
-			MaterialPalette.refresh();
-			return MaterialPalette.onSurface;
-		}
-		if (StrayConfig.get().guiStyleShadow()) {
-			return ShadowLook.MUTED;
-		}
-		return ClickLook.TEXT;
+		return ShadowLook.MUTED;
 	}
 
 	private static void player(

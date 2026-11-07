@@ -35,10 +35,13 @@ public final class ControlChrome {
 		return Theme.withAlpha(paneRgb(), Math.round(paneOpacity() * hud * 255f));
 	}
 
+	/** Shadow surfaces now: a card for rows and buttons, a frosted window for anything bigger. */
 	public static void glass(GuiGraphicsExtractor graphics, float x, float y, float w, float h, float radius, int fill) {
-		float r = Math.min(Math.max(6f, radius), Math.min(w, h) * 0.5f);
-		GuiDraw.roundedFine(graphics, x, y, w, h, r, fill);
-		rim(graphics, x, y, w, h, r);
+		if (h <= 40f) {
+			ShadowLook.card(graphics, x, y, w, h, ShadowLook.CONTROL_R, fill == Theme.CARD_HOVER, false);
+		} else {
+			ShadowLook.window(graphics, x, y, w, h, ShadowLook.WINDOW_R, ShadowLook.FILL);
+		}
 	}
 
 	public static int paneRgb() {
@@ -75,19 +78,19 @@ public final class ControlChrome {
 	}
 
 	public static int text() {
-		return darkText() ? TEXT : LIGHT_TEXT;
+		return ShadowLook.TEXT;
 	}
 
 	public static int muted() {
-		return darkText() ? MUTED : LIGHT_MUTED;
+		return ShadowLook.MUTED;
 	}
 
 	public static int cardText() {
-		return pillDarkText() ? TEXT : LIGHT_TEXT;
+		return ShadowLook.TEXT;
 	}
 
 	public static int cardMuted() {
-		return pillDarkText() ? MUTED : LIGHT_MUTED;
+		return ShadowLook.MUTED;
 	}
 
 	public static int windowFill() {
@@ -256,12 +259,9 @@ public final class ControlChrome {
 		return body.texturePath();
 	}
 
+	/** The Shadow switch, the same one the click GUI uses. */
 	public static void toggle(GuiGraphicsExtractor graphics, float x, float y, float w, float h, float t) {
-		int fill = t > 0.5f ? accent() : TRACK;
-		GuiDraw.pill(graphics, x, y, w, h, fill);
-		float knobR = h * 0.42f;
-		float knobX = x + knobR + 1.6f + t * (w - knobR * 2f - 3.2f);
-		GuiDraw.circle(graphics, knobX, y + h * 0.5f, knobR, KNOB);
+		ShadowMenu.toggle(graphics, x, y, w, h, t, 1f);
 	}
 
 	public static void slider(GuiGraphicsExtractor graphics, float x, float y, float w, float h, float t) {

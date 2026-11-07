@@ -126,6 +126,7 @@ public final class Theme {
 
 	/** Shadow style: see-through black, faint white lines, white and gray text. */
 	private static void shadow(float hudOpacity, float opacity) {
+		ShadowLook.refresh();
 		HUD_WINDOW = ShadowLook.FILL;
 		HUD_LINE = ShadowLook.LINE;
 		HUD_LINE_NEUTRAL = HUD_LINE;

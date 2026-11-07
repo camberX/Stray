@@ -20,7 +20,6 @@ public final class ClickLook {
 	public static final int PANEL = 0x99000000;
 	public static final int TEXT = 0xFFFFFFFF;
 	public static final int DIM = 0xFFAAAAAA;
-	private static final int ACCENT_ALPHA = 115;
 
 	private ClickLook() {
 	}
@@ -48,21 +47,7 @@ public final class ClickLook {
 		if (w < 2f || h < 2f) {
 			return;
 		}
-		if (shadow()) {
-			shadowBox(graphics, x, y, w, h, accentOutline(outline));
-			return;
-		}
-		int paint = accentOutline(outline) ? Theme.withAlpha(Theme.ACCENT, ACCENT_ALPHA) : fill;
-		frame(graphics, x, y, w, h);
-		GuiDraw.fillSmooth(graphics, x + STROKE, y + STROKE, w - STROKE * 2f, h - STROKE * 2f, paint);
-		if ((accent & 0xFF000000) != 0) {
-			float bar = 2f;
-			if (accentRight) {
-				GuiDraw.fillSmooth(graphics, x + w - STROKE - bar, y + STROKE, bar, h - STROKE * 2f, accent);
-			} else {
-				GuiDraw.fillSmooth(graphics, x + STROKE, y + STROKE, bar, h - STROKE * 2f, accent);
-			}
-		}
+		shadowBox(graphics, x, y, w, h, accentOutline(outline));
 	}
 
 	/**
@@ -95,42 +80,13 @@ public final class ClickLook {
 		}
 	}
 
-	/** Themed GUIs in the Hyprland look: blurred Material window, rounded slots and pill buttons. */
-	private static void hypr(GuiGraphicsExtractor graphics, float x, float y, float w, float h, int stroke) {
-		MaterialPalette.refresh();
-		float shortSide = Math.min(w, h);
-		float longSide = Math.max(w, h);
-		boolean slot = shortSide <= 20f && longSide <= shortSide * 1.25f;
-		boolean widget = !slot && h <= 22f && w > h * 2f;
-		boolean hover = (stroke & 0xFFFFFF) != 0 && (stroke & 0xFFFFFF) != (OUTLINE & 0xFFFFFF);
-		if (slot) {
-			GuiDraw.roundedFine(graphics, x, y, w, h, 3f, hover ? MaterialPalette.surfaceHighest : MaterialPalette.surfaceHigh);
-			return;
-		}
-		if (widget) {
-			material(graphics, x, y, w, h, hover ? MaterialPalette.surfaceHighest : MaterialPalette.surfaceHigh, hover ? MaterialPalette.primary : 0);
-			return;
-		}
-		// The same window as the Hyprland click GUI: blur, surface, thin ring.
-		HyprLook.window(graphics, x, y, w, h, StrayConfig.get().accentOutlines ? 1f : 0f, 1f);
-	}
-
 	/** Flat fill with a real stroke. Does not turn an accent outline into a fill. */
 	public static void solid(GuiGraphicsExtractor graphics, float x, float y, float w, float h, int fill, int stroke) {
 		if (w < 2f || h < 2f) {
 			return;
 		}
-		if (container() && StrayConfig.get().guiStyleHypr()) {
-			hypr(graphics, x, y, w, h, stroke);
-			return;
-		}
-		if (shadow()) {
-			boolean hover = (stroke & 0xFFFFFF) != 0 && (stroke & 0xFFFFFF) != (OUTLINE & 0xFFFFFF);
-			shadowBox(graphics, x, y, w, h, hover);
-			return;
-		}
-		GuiDraw.fillSmooth(graphics, x, y, w, h, fill);
-		stroke(graphics, x, y, w, h, stroke);
+		boolean hover = (stroke & 0xFFFFFF) != 0 && (stroke & 0xFFFFFF) != (OUTLINE & 0xFFFFFF);
+		shadowBox(graphics, x, y, w, h, hover);
 	}
 
 	public static void frame(GuiGraphicsExtractor graphics, float x, float y, float w, float h) {
@@ -144,23 +100,12 @@ public final class ClickLook {
 		GuiDraw.fillSmooth(graphics, x + w - STROKE, y, STROKE, h, color);
 	}
 
-	/** A vanilla container screen: those follow the Themed GUIs style. */
-	private static boolean container() {
-		net.minecraft.client.Minecraft client = net.minecraft.client.Minecraft.getInstance();
-		return client != null && client.gui.screen() instanceof net.minecraft.client.gui.screens.inventory.AbstractContainerScreen<?>;
-	}
-
-	/** Stray's own screens are always Shadow; vanilla containers only when Themed GUIs picks it. */
-	private static boolean shadow() {
-		return !container() || StrayConfig.get().guiStyleShadow();
-	}
-
 	/** Slots and small controls become cards, anything bigger a frosted window. */
 	private static void shadowBox(GuiGraphicsExtractor graphics, float x, float y, float w, float h, boolean hover) {
 		float shortSide = Math.min(w, h);
 		float longSide = Math.max(w, h);
 		boolean slot = shortSide <= 20f && longSide <= shortSide * 1.25f;
-		boolean widget = !slot && h <= 22f && w < 160f;
+		boolean widget = !slot && h <= 24f;
 		if (slot || widget) {
 			ShadowLook.card(graphics, x, y, w, h, slot ? ShadowLook.SLOT_R : ShadowLook.CONTROL_R, hover, false);
 		} else {
