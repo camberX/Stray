@@ -23,9 +23,11 @@ void main() {
     vec2 p = ring ? vec2(texCoord0.x - 4.0, texCoord0.y) : texCoord0;
     float d = length(abs(p));
     float fw = max(length(vec2(dFdx(d), dFdy(d))), 1e-5);
-    float mask = clamp((1.0 - d) / fw + 0.5, 0.0, 1.0);
+    // Tighter than a full pixel of blend, to match the crisp straight sides (see gui_round_rect).
+    float aa = fw / 1.6;
+    float mask = clamp((1.0 - d) / aa + 0.5, 0.0, 1.0);
     if (ring) {
-        mask -= clamp((1.0 - fw - d) / fw + 0.5, 0.0, 1.0);
+        mask -= clamp((1.0 - fw - d) / aa + 0.5, 0.0, 1.0);
     }
     if (mask < 0.004) {
         discard;
