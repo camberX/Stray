@@ -48,7 +48,7 @@ public class ItemStackMixin {
 	/** Item customization: the custom name wins over the item's own (SkyOcean port). */
 	@Inject(method = {"getStyledHoverName", "getHoverName"}, at = @At("RETURN"), cancellable = true, require = 0)
 	private void stray$customizedName(CallbackInfoReturnable<Component> cir) {
-		Component custom = dev.stray.client.item.custom.CustomItems.customName((ItemStack) (Object) this);
+		Component custom = dev.stray.client.item.custom.CustomItems.displayName((ItemStack) (Object) this, cir.getReturnValue());
 		if (custom != null) {
 			cir.setReturnValue(custom);
 		}

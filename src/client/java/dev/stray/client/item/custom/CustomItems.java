@@ -427,6 +427,58 @@ public final class CustomItems {
 		return data == null || data.name == null || data.name.isEmpty() ? null : name(data.name);
 	}
 
+	/** Hypixel's dye mark after a dyed item's name. */
+	private static final char DYE_MARK = '\u273F';
+
+	/**
+	 * The name to show instead of {@code original}, or null to keep it: the custom name if one is
+	 * set, and with a custom dye the ✿ mark recoloured to that dye (added when missing). Animated
+	 * dyes and gradients cycle the mark along with the armor.
+	 */
+	public static Component displayName(ItemStack stack, Component original) {
+		Data data = get(stack);
+		if (data == null) {
+			return null;
+		}
+		Component custom = data.name == null || data.name.isEmpty() ? null : name(data.name);
+		Integer rgb = data.color == null ? null : color(stack, data);
+		if (rgb == null) {
+			return custom;
+		}
+		Component base = custom != null ? custom : original;
+		if (base == null) {
+			return null;
+		}
+		return withDyeMark(base, rgb);
+	}
+
+	private static Component withDyeMark(Component base, int rgb) {
+		TextColor mark = TextColor.fromRgb(rgb & 0xFFFFFF);
+		MutableComponent out = Component.empty();
+		boolean[] found = {false};
+		base.visit((style, text) -> {
+			int start = 0;
+			for (int i = 0; i < text.length(); i++) {
+				if (text.charAt(i) == DYE_MARK) {
+					if (i > start) {
+						out.append(Component.literal(text.substring(start, i)).setStyle(style));
+					}
+					out.append(Component.literal(String.valueOf(DYE_MARK)).setStyle(style.withColor(mark)));
+					found[0] = true;
+					start = i + 1;
+				}
+			}
+			if (start < text.length()) {
+				out.append(Component.literal(text.substring(start)).setStyle(style));
+			}
+			return java.util.Optional.empty();
+		}, Style.EMPTY);
+		if (!found[0]) {
+			out.append(Component.literal(" " + DYE_MARK).setStyle(Style.EMPTY.withItalic(false).withBold(false).withColor(mark)));
+		}
+		return out;
+	}
+
 	/**
 	 * Builds the custom name from & codes: &0-&f colors, &l &o &n &m &k
 	 * formats, &r reset and &#RRGGBB hex. Not italic unless &o asks for it,
