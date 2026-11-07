@@ -427,12 +427,12 @@ public final class CustomItems {
 		return data == null || data.name == null || data.name.isEmpty() ? null : name(data.name);
 	}
 
-	/** Hypixel's dye mark after a dyed item's name. */
+	/** Hypixel's dye mark in front of a dyed item's name. */
 	private static final char DYE_MARK = '\u273F';
 
 	/**
 	 * The name to show instead of {@code original}, or null to keep it: the custom name if one is
-	 * set, and with a custom dye the ✿ mark recoloured to that dye (added when missing). Animated
+	 * set, and with a custom dye the ✿ mark recoloured to that dye (added in front when missing). Animated
 	 * dyes and gradients cycle the mark along with the armor.
 	 */
 	public static Component displayName(ItemStack stack, Component original) {
@@ -474,7 +474,10 @@ public final class CustomItems {
 			return java.util.Optional.empty();
 		}, Style.EMPTY);
 		if (!found[0]) {
-			out.append(Component.literal(" " + DYE_MARK).setStyle(Style.EMPTY.withItalic(false).withBold(false).withColor(mark)));
+			// Hypixel puts the mark in front of the name.
+			return Component.empty()
+				.append(Component.literal(DYE_MARK + " ").setStyle(Style.EMPTY.withItalic(false).withBold(false).withColor(mark)))
+				.append(out);
 		}
 		return out;
 	}
