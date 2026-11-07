@@ -19,11 +19,15 @@ void main() {
     vec2 p = ring ? vec2(texCoord0.x - 4.0, texCoord0.y) : texCoord0;
     float d = length(abs(p));
     float fw = max(length(vec2(dFdx(d), dFdy(d))), 1e-5);
-    // Tighter than a full pixel of blend, to match the crisp straight sides (see gui_round_rect).
-    float aa = fw / 1.6;
-    float mask = clamp((1.0 - d) / aa + 0.5, 0.0, 1.0);
+    float mask;
     if (ring) {
-        mask -= clamp((1.0 - fw - d) / aa + 0.5, 0.0, 1.0);
+        // Measured in whole pixel steps (the larger of the x and y change), a 1px ring lights one
+        // pixel per row or column on the curve, like the straight sides, instead of a two-pixel
+        // smear where it runs diagonally.
+        float px = max(max(abs(dFdx(d)), abs(dFdy(d))), 1e-5);
+        mask = clamp((1.0 - d) / px + 0.5, 0.0, 1.0) - clamp((1.0 - px - d) / px + 0.5, 0.0, 1.0);
+    } else {
+        mask = clamp((1.0 - d) / fw + 0.5, 0.0, 1.0);
     }
     if (mask < 0.004) {
         discard;

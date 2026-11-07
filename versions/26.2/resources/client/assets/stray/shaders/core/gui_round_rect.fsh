@@ -25,12 +25,13 @@ void main() {
     vec2 q = abs(p) - (hs - vec2(r));
     float d = length(max(q, 0.0)) + min(max(q.x, q.y), 0.0) - r;
     float fw = max(length(vec2(dFdx(d), dFdy(d))), 1e-5);
-    // A tighter edge than one full pixel of blend: straight sides land on whole pixels and
-    // read crisp, so curves blended over a full pixel looked thicker next to them.
-    float aa = fw / 1.6;
-    float mask = clamp(0.5 - d / aa, 0.0, 1.0);
+    float mask;
     if (ring) {
-        mask -= clamp(0.5 - (d + fw) / aa, 0.0, 1.0);
+        // Whole pixel steps, so a 1px outline lights one pixel per row or column on the curve too.
+        float px = max(max(abs(dFdx(d)), abs(dFdy(d))), 1e-5);
+        mask = clamp(0.5 - d / px, 0.0, 1.0) - clamp(0.5 - (d + px) / px, 0.0, 1.0);
+    } else {
+        mask = clamp(0.5 - d / fw, 0.0, 1.0);
     }
     if (mask < 0.004) {
         discard;
