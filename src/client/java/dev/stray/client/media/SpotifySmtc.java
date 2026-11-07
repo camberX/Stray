@@ -7,10 +7,6 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import dev.stray.Stray;
 
-import java.io.BufferedReader;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
 import java.net.URI;
 import java.net.URLEncoder;
 import java.net.http.HttpClient;
@@ -30,7 +26,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * Windows SMTC Spotify helper, same clock and process model as ForageKit.
+ * Windows SMTC Spotify reader (see {@link WindowsMediaSession}), same clock model as ForageKit.
  */
 public final class SpotifySmtc {
 	private static final SpotifySmtc INSTANCE = new SpotifySmtc();
@@ -56,7 +52,8 @@ public final class SpotifySmtc {
 	private static final String HTTP_UA = "Stray (+https://stray.gay)";
 
 	private final AtomicReference<Track> track = new AtomicReference<>(Track.NONE);
-	private volatile Process process;
+	/** True while the reader loop should keep going. */
+	private volatile boolean reading;
 	private volatile boolean started;
 	private volatile boolean available = true;
 	private long nextStartAt;
@@ -139,10 +136,6 @@ public final class SpotifySmtc {
 			return;
 		}
 		if (this.started) {
-			if (this.process != null && !this.process.isAlive()) {
-				this.started = false;
-				this.nextStartAt = System.currentTimeMillis() + 2500L;
-			}
 			return;
 		}
 		if (System.currentTimeMillis() < this.nextStartAt) {
@@ -159,11 +152,7 @@ public final class SpotifySmtc {
 		this.cachedPlaying = null;
 		this.lastSmtcPos = -1L;
 		this.lastArtQuery = "";
-		Process running = this.process;
-		this.process = null;
-		if (running != null && running.isAlive()) {
-			running.destroy();
-		}
+		this.reading = false;
 		this.track.set(Track.NONE);
 	}
 
@@ -201,44 +190,16 @@ public final class SpotifySmtc {
 			this.started = false;
 			return;
 		}
+		this.reading = true;
 		try {
-			Process started = WindowsMediaHelper.start();
-			this.process = started;
-			try {
-				OutputStream stdin = started.getOutputStream();
-				if (stdin != null) {
-					stdin.close();
-				}
-			} catch (Exception ignored) {
-			}
-			Thread errors = new Thread(() -> drain(started.getErrorStream()), "stray-spotify-err");
-			errors.setDaemon(true);
-			errors.start();
-			try (BufferedReader reader = new BufferedReader(new InputStreamReader(started.getInputStream(), StandardCharsets.UTF_8))) {
-				String line;
-				while ((line = reader.readLine()) != null) {
-					this.consume(sanitize(line));
-				}
-			}
-		} catch (Exception exception) {
-			Stray.LOGGER.debug("Spotify helper stopped", exception);
+			// Reads the Windows media session in this thread (JNA, no helper process).
+			WindowsMediaSession.run(line -> this.consume(sanitize(line)), () -> this.reading);
+		} catch (Throwable exception) {
+			Stray.LOGGER.debug("Spotify media session reader stopped", exception);
 			this.track.set(Track.NONE);
 			this.nextStartAt = System.currentTimeMillis() + 2500L;
 		} finally {
-			this.process = null;
 			this.started = false;
-		}
-	}
-
-	private static void drain(InputStream stream) {
-		try (BufferedReader reader = new BufferedReader(new InputStreamReader(stream, StandardCharsets.UTF_8))) {
-			String line;
-			while ((line = reader.readLine()) != null) {
-				if (!line.isBlank()) {
-					Stray.LOGGER.debug("Spotify helper: {}", line.trim());
-				}
-			}
-		} catch (Exception ignored) {
 		}
 	}
 
