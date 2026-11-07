@@ -16,7 +16,8 @@ public final class ReleaseNotes {
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
 		new Entry("1.5.87", new String[]{
-			"Fixed a crash on start with Remove Reloading Screen (and similar mods): menus drawn before loading finished no longer need Stray's shaders yet."
+			"Fixed a crash on start with Remove Reloading Screen (and similar mods): menus drawn before loading finished no longer need Stray's shaders yet.",
+			"Storage preview is saved per Minecraft account (UUID) instead of per SkyBlock profile, so it shows right away without waiting for the tab list. Pages saved by older builds are carried over."
 		}),
 		new Entry("1.5.86", new String[]{
 			"Shadow style, after the profile viewer: see-through black with a soft shadow and the Google Sans Flex font. Pick it per surface: click GUI (an island bar with the categories and the modules as chips; left click toggles, right click opens settings), HUD and scoreboard, themed GUIs, themed chat and the watermark.",

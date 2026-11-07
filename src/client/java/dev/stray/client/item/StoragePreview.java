@@ -16,7 +16,6 @@ import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.multiplayer.ClientPacketListener;
-import net.minecraft.client.multiplayer.PlayerInfo;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtIo;
@@ -41,6 +40,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Stream;
 
 /**
  * Skyblocker-style storage preview: after you open an Ender Chest page or
@@ -55,7 +55,6 @@ public final class StoragePreview {
 		"backpack.*?slot\\s*#?\\s*(\\d+)|backpack\\s*(?:page\\s*)?#?\\s*(\\d+)",
 		Pattern.CASE_INSENSITIVE
 	);
-	private static final Pattern PROFILE = Pattern.compile("^Profile:\\s*(.+)$", Pattern.CASE_INSENSITIVE);
 	private static final Codec<List<ItemStack>> ITEMS = ItemStack.OPTIONAL_CODEC.listOf();
 	private static final int PAGES = 27;
 	private static final int SLOT = 18;
@@ -74,7 +73,6 @@ public final class StoragePreview {
 
 	private static final Page[] pages = new Page[PAGES];
 	private static String loadedKey = "";
-	private static String lastProfile = "";
 	private static Path saveDir;
 	private static boolean dirty;
 	private static final boolean[] dirtyPages = new boolean[PAGES];
@@ -122,7 +120,7 @@ public final class StoragePreview {
 		if (!SkyblockLocation.inSkyblock) {
 			return;
 		}
-		String key = profileKey(client);
+		String key = accountKey(client);
 		if (key.isEmpty()) {
 			return;
 		}
@@ -436,49 +434,17 @@ public final class StoragePreview {
 		return CONTROL.matcher(FORMATTING.matcher(raw).replaceAll("")).replaceAll("").trim();
 	}
 
-	private static String profileKey(Minecraft client) {
+	/**
+	 * Pages are saved per Minecraft account (UUID), not per SkyBlock
+	 * profile: the profile name came from the tab list, which loads late or
+	 * not at all, so pages kept landing in an "unknown" folder or splitting
+	 * across profiles.
+	 */
+	private static String accountKey(Minecraft client) {
 		if (client.getUser() == null || client.getUser().getProfileId() == null) {
 			return "";
 		}
-		String uuid = client.getUser().getProfileId().toString().replace("-", "");
-		String profile = profileName(client);
-		if (profile.isEmpty()) {
-			profile = lastProfile;
-		} else {
-			lastProfile = profile;
-		}
-		if (profile.isEmpty()) {
-			profile = "unknown";
-		}
-		return uuid + "/" + sanitize(profile);
-	}
-
-	private static String profileName(Minecraft client) {
-		ClientPacketListener connection = client.getConnection();
-		if (connection == null) {
-			return "";
-		}
-		for (PlayerInfo info : connection.getListedOnlinePlayers()) {
-			Component display = info.getTabListDisplayName();
-			if (display == null) {
-				continue;
-			}
-			Matcher matcher = PROFILE.matcher(strip(display.getString()));
-			if (matcher.matches()) {
-				return matcher.group(1).trim();
-			}
-		}
-		return "";
-	}
-
-	private static String sanitize(String raw) {
-		StringBuilder out = new StringBuilder(raw.length());
-		for (int i = 0; i < raw.length(); i++) {
-			char c = raw.charAt(i);
-			out.append(Character.isLetterOrDigit(c) || c == '-' || c == '_' ? c : '_');
-		}
-		String key = out.toString().toLowerCase(Locale.ROOT);
-		return key.isBlank() ? "unknown" : key;
+		return client.getUser().getProfileId().toString().replace("-", "").toLowerCase(Locale.ROOT);
 	}
 
 	private static void load() {
@@ -493,10 +459,19 @@ public final class StoragePreview {
 		if (ops == null) {
 			return;
 		}
+		List<Path> legacy = legacyDirs(saveDir);
+		boolean migrated = false;
 		for (int i = 0; i < PAGES; i++) {
 			Path file = saveDir.resolve(i + ".nbt");
+			boolean fromLegacy = false;
 			if (!Files.isRegularFile(file)) {
-				continue;
+				// Older builds saved under <uuid>/<profile>/; take the most
+				// recently written copy of this page from any of them.
+				file = newestLegacy(legacy, i);
+				if (file == null) {
+					continue;
+				}
+				fromLegacy = true;
 			}
 			try {
 				CompoundTag tag = NbtIo.read(file);
@@ -512,11 +487,46 @@ public final class StoragePreview {
 					continue;
 				}
 				pages[i] = new Page(tag.getStringOr("name", ""), List.copyOf(stacks));
+				if (fromLegacy) {
+					dirtyPages[i] = true;
+					migrated = true;
+				}
 			} catch (Exception exception) {
 				Stray.LOGGER.warn("Could not read storage preview {}", file.getFileName(), exception);
 			}
 		}
-		dirty = false;
+		dirty = migrated;
+		if (migrated) {
+			flush();
+		}
+	}
+
+	private static List<Path> legacyDirs(Path dir) {
+		try (Stream<Path> children = Files.list(dir)) {
+			return children.filter(Files::isDirectory).toList();
+		} catch (IOException exception) {
+			return List.of();
+		}
+	}
+
+	private static Path newestLegacy(List<Path> dirs, int index) {
+		Path best = null;
+		long bestTime = Long.MIN_VALUE;
+		for (Path dir : dirs) {
+			Path file = dir.resolve(index + ".nbt");
+			if (!Files.isRegularFile(file)) {
+				continue;
+			}
+			try {
+				long time = Files.getLastModifiedTime(file).toMillis();
+				if (time > bestTime) {
+					bestTime = time;
+					best = file;
+				}
+			} catch (IOException ignored) {
+			}
+		}
+		return best;
 	}
 
 	private static void flush() {
