@@ -461,7 +461,7 @@ public final class ClickGui {
 		java.util.Map.entry("Boss bar", "Stray's restyled boss bar."),
 		java.util.Map.entry("Effects", "Your active potion effects."),
 		java.util.Map.entry("Item name", "The name of the item you switch to."),
-		java.util.Map.entry("Keep break progress", "Stops block breaking from restarting when Hypixel re-sends your held tool. Holds back updates to the held item while you break a block and applies them afterwards. Not in Stray Legit."),
+		java.util.Map.entry("Keep break progress", "Stops block breaking from restarting when Hypixel re-sends your held tool: the same SkyBlock item counts as unchanged. /stray debug break shows when it acts. Not in Stray Legit."),
 		java.util.Map.entry("Mining HUD", "Mining stats and ability cooldown."),
 		java.util.Map.entry("Titanium ESP", "Highlights titanium ore near you."),
 		java.util.Map.entry("CH waypoints", "Waypoints for the Crystal Hollows."),

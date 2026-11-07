@@ -17,6 +17,30 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(MultiPlayerGameMode.class)
 public class MultiPlayerGameModeMixin {
+	@org.spongepowered.asm.mixin.Shadow
+	private net.minecraft.core.BlockPos destroyBlockPos;
+
+	@org.spongepowered.asm.mixin.Shadow
+	private net.minecraft.world.item.ItemStack destroyingItem;
+
+	/** Keep break progress: a re-sent copy of the same SkyBlock tool does not restart the break. */
+	@Inject(method = "sameDestroyTarget", at = @At("RETURN"), cancellable = true)
+	private void stray$keepBreak(net.minecraft.core.BlockPos pos, CallbackInfoReturnable<Boolean> cir) {
+		if (!dev.stray.Edition.LEGIT) {
+			net.minecraft.client.Minecraft client = net.minecraft.client.Minecraft.getInstance();
+			if (!cir.getReturnValueZ() && client.player != null
+				&& dev.stray.client.mining.KeepBreakProgress.keep(pos, destroyBlockPos, destroyingItem, client.player.getMainHandItem())) {
+				cir.setReturnValue(true);
+			}
+		}
+	}
+
+	@Inject(method = "startDestroyBlock", at = @At("HEAD"))
+	private void stray$keepBreakStart(net.minecraft.core.BlockPos pos, net.minecraft.core.Direction face, CallbackInfoReturnable<Boolean> cir) {
+		if (!dev.stray.Edition.LEGIT) {
+			dev.stray.client.mining.KeepBreakProgress.onStart();
+		}
+	}
 	@Inject(method = "attack", at = @At("HEAD"))
 	private void stray$slayerAttack(Player player, Entity target, CallbackInfo ci) {
 		dev.stray.client.slayer.SlayerBosses.onAttack(target);
