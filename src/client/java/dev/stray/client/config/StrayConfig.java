@@ -394,6 +394,8 @@ public final class StrayConfig {
 	/** F7 phase 3: glow on the terminals of the current section that are not done yet. */
 	public boolean terminalHighlight = false;
 	public boolean terminalHighlightNumbers = true;
+	/** Replaces Hypixel's "Inactive Terminal"/"Inactive" stand labels with one Shadow tag each. */
+	public boolean terminalHighlightTags = false;
 	public int terminalHighlightRgb = 0xB57CFF;
 	public float terminalHighlightOpacity = 0.6f;
 	public boolean alignTriggerbotRandom = true;

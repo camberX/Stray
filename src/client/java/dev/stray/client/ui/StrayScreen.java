@@ -183,7 +183,7 @@ public class StrayScreen extends Screen {
 		ALIGN_BOT("Align triggerbot", 2),
 		LEVER_BOT("Lever triggerbot", 2),
 		F7_TITLES("F7 titles", 4),
-		TERM_HIGHLIGHT("Terminal highlight", 2),
+		TERM_HIGHLIGHT("Terminal highlight", 3),
 		DUNGEON_MAP("Dungeon map", dev.stray.Edition.LEGIT ? 8 : 9),
 		AUTO_DNA("Auto DNA", 5),
 		NAMETAGS("Nametags", 6),
@@ -3938,6 +3938,7 @@ public class StrayScreen extends Screen {
 			}
 			case TERM_HIGHLIGHT -> {
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Numbers", config.terminalHighlightNumbers, v -> config.terminalHighlightNumbers = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Shadow labels", config.terminalHighlightTags, v -> config.terminalHighlightTags = v);
 				colorRow(graphics, font, ix, y, iw, mouseX, mouseY, "Color", config.terminalHighlightRgb, PickerTarget.TERM_HIGHLIGHT);
 			}
 			case F7_TITLES -> {

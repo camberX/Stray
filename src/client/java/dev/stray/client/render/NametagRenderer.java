@@ -72,6 +72,9 @@ public final class NametagRenderer {
 			}
 			return hasBadge(entity.getUUID()) && (!self || config.nametagSelf);
 		}
+		if (entity instanceof ArmorStand && dev.stray.client.dungeon.TerminalHighlight.hidesStand(entity.getId())) {
+			return true;
+		}
 		if (!(entity instanceof LivingEntity) || entity instanceof ArmorStand) {
 			return false;
 		}

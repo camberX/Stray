@@ -82,6 +82,15 @@ public final class TerminalHighlight {
 	private record Target(BlockPos block, int number) {
 	}
 
+	/** One Hypixel terminal/device label (two stacked stands), drawn as one Shadow tag. */
+	private record StandTag(ArmorStand top, Component[] lines, int[] colors) {
+	}
+
+	private static final java.util.Set<String> PRIMARY = java.util.Set.of("Inactive Terminal", "Terminal Active", "Inactive", "Active");
+	private static final java.util.Set<String> DONE_NAMES = java.util.Set.of("Terminal Active", "Active");
+	private static List<StandTag> standTags = List.of();
+	private static it.unimi.dsi.fastutil.ints.IntSet hiddenStands = it.unimi.dsi.fastutil.ints.IntSets.EMPTY_SET;
+
 	/** /stray debug dev highlight: four stand-in terminals in front of the player. */
 	private static BlockPos[] preview;
 	private static boolean[] previewDone;
@@ -238,6 +247,7 @@ public final class TerminalHighlight {
 			lastLevel = client.level;
 		}
 		wasBoss = boss;
+		tickTags(client);
 		if (preview != null) {
 			List<Target> shown = new ArrayList<>();
 			if (StrayConfig.get().terminalHighlight) {
@@ -283,6 +293,127 @@ public final class TerminalHighlight {
 			}
 		}
 		targets = found;
+	}
+
+	/** Whether this armor stand's own name is hidden because a Shadow tag replaces it. */
+	public static boolean hidesStand(int id) {
+		return hiddenStands.contains(id);
+	}
+
+	private static void tickTags(Minecraft client) {
+		StrayConfig config = StrayConfig.get();
+		if (!config.terminalHighlightTags || !active() || client.level == null) {
+			standTags = List.of();
+			hiddenStands = it.unimi.dsi.fastutil.ints.IntSets.EMPTY_SET;
+			return;
+		}
+		List<ArmorStand> named = new ArrayList<>();
+		for (Entity entity : client.level.entitiesForRendering()) {
+			if (entity instanceof ArmorStand stand && stand.hasCustomName()) {
+				named.add(stand);
+			}
+		}
+		it.unimi.dsi.fastutil.ints.IntSet hidden = new it.unimi.dsi.fastutil.ints.IntOpenHashSet();
+		List<StandTag> tags = new ArrayList<>();
+		for (ArmorStand stand : named) {
+			String name = plain(stand);
+			if (!PRIMARY.contains(name) || hidden.contains(stand.getId())) {
+				continue;
+			}
+			// Hypixel's second line ("CLICK HERE" or the device line) is a stand right above or below.
+			List<ArmorStand> group = new ArrayList<>();
+			group.add(stand);
+			for (ArmorStand other : named) {
+				if (other == stand || hidden.contains(other.getId())) {
+					continue;
+				}
+				double dx = other.getX() - stand.getX();
+				double dz = other.getZ() - stand.getZ();
+				double dy = other.getY() - stand.getY();
+				if (dx * dx + dz * dz < 0.09 && Math.abs(dy) <= 1.2 && !PRIMARY.contains(plain(other))) {
+					group.add(other);
+				}
+			}
+			for (ArmorStand member : group) {
+				hidden.add(member.getId());
+			}
+			if (DONE_NAMES.contains(name)) {
+				continue;
+			}
+			group.sort((a, b) -> Double.compare(b.getY(), a.getY()));
+			Component[] lines = new Component[group.size()];
+			int[] colors = new int[group.size()];
+			for (int i = 0; i < lines.length; i++) {
+				String text = plain(group.get(i));
+				lines[i] = MenuFont.shadow(text);
+				colors[i] = colorOf(group.get(i).getCustomName());
+			}
+			tags.add(new StandTag(group.get(0), lines, colors));
+		}
+		standTags = tags;
+		hiddenStands = hidden;
+	}
+
+	private static String plain(ArmorStand stand) {
+		Component name = stand.getCustomName();
+		return name == null ? "" : net.minecraft.util.StringUtil.stripColor(name.getString()).trim();
+	}
+
+	private static int colorOf(Component name) {
+		if (name == null) {
+			return ShadowLook.TEXT;
+		}
+		java.util.Optional<Integer> color = name.visit((style, text) -> {
+			if (!text.isBlank() && style.getColor() != null) {
+				return java.util.Optional.of(0xFF000000 | style.getColor().getValue());
+			}
+			return java.util.Optional.empty();
+		}, net.minecraft.network.chat.Style.EMPTY);
+		return color.orElse(ShadowLook.TEXT);
+	}
+
+	/** The Shadow tags that replace Hypixel's terminal and device labels, with more range. */
+	private static void extractStandTags(GuiGraphicsExtractor graphics, Minecraft client, Vec3 camPos, Vector3fc forward, float partial) {
+		Font font = client.font;
+		for (StandTag tag : standTags) {
+			ArmorStand top = tag.top;
+			if (top.isRemoved()) {
+				continue;
+			}
+			Vec3 head = top.getPosition(partial).add(0, top.getBbHeight() + 0.5, 0);
+			Vec3 rel = head.subtract(camPos);
+			if (rel.x * forward.x() + rel.y * forward.y() + rel.z * forward.z() <= 0.12) {
+				continue;
+			}
+			Vec3 ndc = client.gameRenderer.projectPointToScreen(head);
+			if (ndc.x < -1.2 || ndc.x > 1.2 || ndc.y < -1.2 || ndc.y > 1.2) {
+				continue;
+			}
+			float x = (float) ((ndc.x * 0.5 + 0.5) * graphics.guiWidth());
+			float y = (float) ((-ndc.y * 0.5 + 0.5) * graphics.guiHeight());
+			// Never smaller than 0.8 so far labels stay readable (vanilla's shrink with distance).
+			float scale = Math.max(0.8f, NametagRenderer.distanceScale(head.distanceTo(camPos)));
+			float lineH = 10f;
+			float w = 0f;
+			for (Component line : tag.lines) {
+				w = Math.max(w, font.width(line));
+			}
+			w += 14f;
+			float h = tag.lines.length * lineH + 6f;
+			graphics.pose().pushMatrix();
+			graphics.pose().translate(x, y);
+			if (scale != 1f) {
+				graphics.pose().scale(scale, scale);
+			}
+			float left = -w * 0.5f;
+			float topY = -h;
+			ShadowLook.panel(graphics, left, topY, w, h, 5f, ShadowLook.FILL);
+			for (int i = 0; i < tag.lines.length; i++) {
+				Component line = tag.lines[i];
+				GuiDraw.text(graphics, font, line, -font.width(line) * 0.5f, GuiDraw.middle(topY + 3f + i * lineH, lineH), tag.colors[i], false);
+			}
+			graphics.pose().popMatrix();
+		}
 	}
 
 	private static String standName(List<ArmorStand> stands, Vec3 at) {
@@ -343,7 +474,8 @@ public final class TerminalHighlight {
 
 	/** Number tags over the highlighted terminals, drawn with the HUD. */
 	public static void extract(GuiGraphicsExtractor graphics, DeltaTracker delta) {
-		if (targets.isEmpty() || !StrayConfig.get().terminalHighlightNumbers) {
+		boolean numbers = !targets.isEmpty() && StrayConfig.get().terminalHighlightNumbers;
+		if (!numbers && standTags.isEmpty()) {
 			return;
 		}
 		Minecraft client = Minecraft.getInstance();
@@ -356,6 +488,12 @@ public final class TerminalHighlight {
 		}
 		Vec3 camPos = camera.position();
 		Vector3fc forward = camera.forwardVector();
+		if (!standTags.isEmpty()) {
+			extractStandTags(graphics, client, camPos, forward, delta.getGameTimeDeltaPartialTick(true));
+		}
+		if (!numbers) {
+			return;
+		}
 		Font font = client.font;
 		int accent = 0xFF000000 | (StrayConfig.get().terminalHighlightRgb & 0xFFFFFF);
 		for (Target target : targets) {
