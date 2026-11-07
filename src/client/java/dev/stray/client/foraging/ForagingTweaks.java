@@ -91,12 +91,21 @@ public final class ForagingTweaks {
 
 	// ---------------------------------------------------------------- tree blocks
 
-	/** True for the floating blocks a Galatea tree spawns while it is being cut. */
+	/**
+	 * SkyHanni's {@code FORAGING_CUSTOM_TREES} islands. The tab list names Galatea "Moonglade Marsh",
+	 * so matching "galatea" alone never turned this on.
+	 */
+	private static boolean customTreeIsland() {
+		String area = SkyblockLocation.area.toLowerCase(Locale.ROOT);
+		return area.contains("moonglade marsh") || area.contains("torrhus canyon") || area.contains("galatea");
+	}
+
+	/** True for the floating blocks a Galatea or Torrhus Canyon tree spawns while it is being cut. */
 	public static boolean hideEntity(Entity entity) {
 		if (!(entity instanceof Display.BlockDisplay display) || !StrayConfig.get().foragingHideTreeBlocks) {
 			return false;
 		}
-		if (!SkyblockLocation.inSkyblock || !SkyblockLocation.area.toLowerCase(Locale.ROOT).contains("galatea")) {
+		if (!SkyblockLocation.inSkyblock || !customTreeIsland()) {
 			return false;
 		}
 		if (!TREE_BLOCKS.contains(display.getBlockState().getBlock())) {

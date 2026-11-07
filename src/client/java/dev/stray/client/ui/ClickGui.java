@@ -472,7 +472,7 @@ public final class ClickGui {
 		java.util.Map.entry("Pest cooldown", "When the next pest can spawn."),
 		java.util.Map.entry("Lasso", "Shows the lasso's pull bar and reels in for you."),
 		java.util.Map.entry("Auto DNA", "Solves the DNA puzzle."),
-		java.util.Map.entry("Hide tree blocks", "Hides the floating blocks when you break a tree on Galatea."),
+		java.util.Map.entry("Hide tree blocks", "Hides the floating blocks when you break a tree on Galatea or in Torrhus Canyon."),
 		java.util.Map.entry("Compact sweep", "Folds the Sweep Details messages into one line. Hover for the breakdown."),
 		java.util.Map.entry("Compact tree gift", "Folds the Tree Gift message into one line plus its bonus drops."),
 		java.util.Map.entry("Experiments", "Solves the experimentation table."),
