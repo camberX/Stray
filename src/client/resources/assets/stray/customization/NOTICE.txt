@@ -2,6 +2,9 @@ Item customization in Stray is ported from SkyOcean
 (https://github.com/meowdding/SkyOcean), whose source code is MIT licensed.
 dyes.json and skulls.json come from meowdding-repo
 (https://github.com/meowdding/meowdding-repo), MIT licensed.
+dye_marks.json (the colour of each dye's name, used for the ✿ mark) is taken from
+NotEnoughUpdates-REPO (https://github.com/NotEnoughUpdates/NotEnoughUpdates-REPO),
+MIT licensed, Copyright (c) 2020 Moulberry.
 
 MIT License
 

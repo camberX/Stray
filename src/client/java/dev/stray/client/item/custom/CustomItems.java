@@ -432,8 +432,7 @@ public final class CustomItems {
 
 	/**
 	 * The name to show instead of {@code original}, or null to keep it: the custom name if one is
-	 * set, and with a custom dye the ✿ mark recoloured to that dye (added in front when missing). Animated
-	 * dyes and gradients cycle the mark along with the armor.
+	 * set, and with a custom dye the ✿ mark in that dye's colour (added in front when missing).
 	 */
 	public static Component displayName(ItemStack stack, Component original) {
 		Data data = get(stack);
@@ -441,19 +440,67 @@ public final class CustomItems {
 			return null;
 		}
 		Component custom = data.name == null || data.name.isEmpty() ? null : name(data.name);
-		Integer rgb = data.color == null ? null : color(stack, data);
-		if (rgb == null) {
+		TextColor mark = markColor(data.color);
+		if (mark == null) {
 			return custom;
 		}
 		Component base = custom != null ? custom : original;
 		if (base == null) {
 			return null;
 		}
-		return withDyeMark(base, rgb);
+		return withDyeMark(base, mark);
 	}
 
-	private static Component withDyeMark(Component base, int rgb) {
-		TextColor mark = TextColor.fromRgb(rgb & 0xFFFFFF);
+	/** Each SkyBlock dye's ✿ colour (its name colour), id -> formatting code. */
+	private static final Map<String, ChatFormatting> DYE_MARKS = new HashMap<>();
+	private static boolean marksLoaded;
+
+	/**
+	 * The ✿ colour for a custom dye: SkyBlock dyes use their own fixed colour (also animated
+	 * ones, which do not cycle it); a hex colour or gradient uses that colour (a gradient's
+	 * first). Vanilla dyes and unknown ids get none, so the name stays as it is.
+	 */
+	private static TextColor markColor(ColorSpec spec) {
+		if (spec == null || spec.type == null) {
+			return null;
+		}
+		switch (spec.type) {
+			case "static" -> {
+				return TextColor.fromRgb(spec.rgb & 0xFFFFFF);
+			}
+			case "gradient" -> {
+				return spec.colors == null || spec.colors.isEmpty() ? null : TextColor.fromRgb(spec.colors.get(0) & 0xFFFFFF);
+			}
+			case "dye", "animated" -> {
+				loadMarks();
+				ChatFormatting format = spec.id == null ? null : DYE_MARKS.get(spec.id.toUpperCase(Locale.ROOT));
+				return format == null ? null : TextColor.fromLegacyFormat(format);
+			}
+			default -> {
+				return null;
+			}
+		}
+	}
+
+	private static synchronized void loadMarks() {
+		if (marksLoaded) {
+			return;
+		}
+		marksLoaded = true;
+		JsonObject marks = readJson("/assets/stray/customization/dye_marks.json");
+		if (marks == null) {
+			return;
+		}
+		for (Map.Entry<String, JsonElement> entry : marks.entrySet()) {
+			String code = entry.getValue().getAsString();
+			ChatFormatting format = code.isEmpty() ? null : ChatFormatting.getByCode(code.charAt(0));
+			if (format != null && TextColor.fromLegacyFormat(format) != null) {
+				DYE_MARKS.put(entry.getKey().toUpperCase(Locale.ROOT), format);
+			}
+		}
+	}
+
+	private static Component withDyeMark(Component base, TextColor mark) {
 		MutableComponent out = Component.empty();
 		boolean[] found = {false};
 		base.visit((style, text) -> {
