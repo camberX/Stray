@@ -212,10 +212,10 @@ public final class CustomItems {
 	}
 
 	/**
-	 * Hypixel animates dyes by re-sending the worn piece, and those re-sent stacks come without
-	 * the item's SkyBlock data, so they no longer match the customized item and show Hypixel's
-	 * color. When the local player's armor slot gets the same item without its own key, the new
-	 * stack keeps the old one's key.
+	 * Hypixel animates dyes by re-sending the item, and some re-sent copies come without the
+	 * item's UUID, so they no longer match the customized item and show Hypixel's color. When a
+	 * slot of the local player gets the same item without a UUID, the new stack keeps the old
+	 * one's key.
 	 */
 	public static void inherit(ItemStack previous, ItemStack next) {
 		if (previous == null || next == null || previous.isEmpty() || next.isEmpty() || previous.getItem() != next.getItem()) {
@@ -226,7 +226,8 @@ public final class CustomItems {
 			return;
 		}
 		Info now = info(next);
-		if (now != null && (now.key.equals(old.key) || !sharedKey(now.key))) {
+		// Only when the new copy has no UUID of its own (a different item with a UUID keeps its own look).
+		if (now != null && (now.key.equals(old.key) || now.key.startsWith("u:"))) {
 			return;
 		}
 		INFO.put(next, new Info(old.key, old.vanillaDye, old.vanillaSkin, true));
