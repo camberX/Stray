@@ -34,7 +34,7 @@ final class TerminalGui {
 			return;
 		}
 		int alpha = Math.round(Mth.clamp(strength, 0f, 1f) * 0x88);
-		dev.stray.client.ui.ShadowLook.glow(graphics, x, y, w, h, Math.max(4, Math.round(9f * s)), (alpha << 24) | (rgb & 0xFFFFFF));
+		dev.stray.client.ui.ShadowLook.glow(graphics, x, y, w, h, Math.min(w, h) * 0.25f, Math.max(4, Math.round(9f * s)), (alpha << 24) | (rgb & 0xFFFFFF));
 	}
 
 	private static final float[] PRESENT = new float[54];
