@@ -391,6 +391,8 @@ public final class StrayConfig {
 	public boolean f7TitlesEnabled = false;
 	/** Bonzo / Spirit Mask and Phoenix Pet cooldowns (NoammAddons, Zyryon look). */
 	public boolean maskTimers = false;
+	/** M4 (Thorn) features from BirdAddon. */
+	public dev.stray.client.dungeon.m4.M4Config m4 = new dev.stray.client.dungeon.m4.M4Config();
 	public boolean maskTimersDungeonsOnly = false;
 	public boolean maskTimersInvuln = false;
 	public boolean maskTimersProcTitle = false;
@@ -549,6 +551,14 @@ public final class StrayConfig {
 	public HudSlot slotF7Terminal = new HudSlot();
 	public HudSlot slotArrayList = new HudSlot();
 	public HudSlot slotMaskTimers = new HudSlot();
+	public HudSlot slotM4Timer = new HudSlot();
+	public HudSlot slotM4Bear = new HudSlot();
+	public HudSlot slotM4Splits = new HudSlot();
+	public HudSlot slotM4Stun = new HudSlot();
+	public HudSlot slotM4Tac = new HudSlot();
+	public HudSlot slotM4Rabbits = new HudSlot();
+	public HudSlot slotM4Overkill = new HudSlot();
+	public HudSlot slotM4Mobs = new HudSlot();
 	public HudSlot slotSlayer = new HudSlot();
 	public HudSlot slotSlayerProfit = new HudSlot();
 	public HudSlot slotSlayerRng = new HudSlot();
@@ -1692,6 +1702,17 @@ public final class StrayConfig {
 				loaded.slotF7Terminal = hudSlot(loaded.slotF7Terminal);
 				loaded.slotArrayList = hudSlot(loaded.slotArrayList);
 				loaded.slotMaskTimers = hudSlot(loaded.slotMaskTimers);
+				loaded.slotM4Timer = hudSlot(loaded.slotM4Timer);
+				loaded.slotM4Bear = hudSlot(loaded.slotM4Bear);
+				loaded.slotM4Splits = hudSlot(loaded.slotM4Splits);
+				loaded.slotM4Stun = hudSlot(loaded.slotM4Stun);
+				loaded.slotM4Tac = hudSlot(loaded.slotM4Tac);
+				loaded.slotM4Rabbits = hudSlot(loaded.slotM4Rabbits);
+				loaded.slotM4Overkill = hudSlot(loaded.slotM4Overkill);
+				loaded.slotM4Mobs = hudSlot(loaded.slotM4Mobs);
+				if (loaded.m4 == null) {
+					loaded.m4 = new dev.stray.client.dungeon.m4.M4Config();
+				}
 				// Hand-edited values outside what the sliders allow would stall the clicks.
 				loaded.terminalFirstClickDelay = Math.max(0, Math.min(8, loaded.terminalFirstClickDelay));
 				loaded.terminalScale = Math.max(50, Math.min(200, loaded.terminalScale));
@@ -2602,6 +2623,14 @@ public final class StrayConfig {
 		slotF7Terminal = new HudSlot();
 		slotArrayList = new HudSlot();
 		slotMaskTimers = new HudSlot();
+		slotM4Timer = new HudSlot();
+		slotM4Bear = new HudSlot();
+		slotM4Splits = new HudSlot();
+		slotM4Stun = new HudSlot();
+		slotM4Tac = new HudSlot();
+		slotM4Rabbits = new HudSlot();
+		slotM4Overkill = new HudSlot();
+		slotM4Mobs = new HudSlot();
 		slotSlayer = new HudSlot();
 		slotSlayerProfit = new HudSlot();
 		slotSlayerRng = new HudSlot();

@@ -31,6 +31,7 @@ public final class ShadowMenu {
 	/** Material Icons codepoints for the category tabs. */
 	private static final Map<String, String> GLYPHS = Map.ofEntries(
 		Map.entry("Dungeons", "\uEAB1"),
+		Map.entry("M4", "\uE799"),
 		Map.entry("Slayer", "\uEBE9"),
 		Map.entry("Mining", "\uEAD5"),
 		Map.entry("Farming", "\uEA79"),

@@ -28,6 +28,15 @@ public class ConnectionMixin {
 	)
 	private void stray$printSent(Packet<?> packet, io.netty.channel.ChannelFutureListener listener, boolean flush, CallbackInfo ci) {
 		dev.stray.client.net.PacketDebug.onSend(packet);
+		if (packet instanceof net.minecraft.network.protocol.game.ServerboundUseItemPacket) {
+			// M4 Tac timer (BirdAddon): looks only.
+			net.minecraft.client.Minecraft client = net.minecraft.client.Minecraft.getInstance();
+			if (client.isSameThread()) {
+				dev.stray.client.dungeon.m4.M4Features.onUseItem();
+			} else {
+				client.execute(dev.stray.client.dungeon.m4.M4Features::onUseItem);
+			}
+		}
 		if (!dev.stray.Edition.LEGIT && packet instanceof net.minecraft.network.protocol.game.ServerboundContainerClickPacket click) {
 			// Only looks: lets the terminal GUI follow clicks other mods send (NoammAddons' auto terminals).
 			dev.stray.client.dungeon.terminal.TerminalSession.onClickSent(click.containerId(), click.slotNum(), click.buttonNum(), click.containerInput());

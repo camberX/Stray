@@ -184,6 +184,21 @@ public class StrayScreen extends Screen {
 		LEVER_BOT("Lever triggerbot", 2),
 		F7_TITLES("F7 titles", 4),
 		TERM_HIGHLIGHT("Terminal highlight", 4),
+		M4_BEAR("Spirit Bear", 6),
+		M4_HIGHLIGHT("Mob highlight", 16),
+		M4_WAYPOINTS("M4 waypoints", dev.stray.Edition.LEGIT ? 9 : 10),
+		M4_STUN("Stun", 5),
+		M4_OVERKILL("Overkill", 3),
+		M4_TITLES("M4 titles", 9),
+		M4_MOBS("Mob counter", 11),
+		M4_DECOY("Decoy", dev.stray.Edition.LEGIT ? 5 : 6),
+		M4_TAC("Tac", 5),
+		M4_HIDE("Hide messages", 9),
+		M4_STATS("Extra stats", 3),
+		M4_SOUNDS("M4 sounds", 3),
+		M4_OPTIMIZER("Render optimizer", 7),
+		M4_TRAJ("Trajectories", 4),
+		M4_RABBITS("Rabbits", 10),
 		MASK_TIMERS("Mask timers", 5),
 		DUNGEON_MAP("Dungeon map", dev.stray.Edition.LEGIT ? 8 : 9),
 		AUTO_DNA("Auto DNA", 5),
@@ -3942,6 +3957,162 @@ public class StrayScreen extends Screen {
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Shadow labels", config.terminalHighlightTags, v -> config.terminalHighlightTags = v);
 				y = slider(graphics, font, ix, y, iw, "Tag size", config.terminalLabelScale + "%", (config.terminalLabelScale - 50) / 150f, v -> config.terminalLabelScale = snapInt(50 + v * 150f, 50, 200, 5));
 				colorRow(graphics, font, ix, y, iw, mouseX, mouseY, "Color", config.terminalHighlightRgb, PickerTarget.TERM_HIGHLIGHT);
+			}
+			case M4_BEAR -> {
+				dev.stray.client.dungeon.m4.M4Config m4 = config.m4;
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Splits", m4.bearSplits, v -> m4.bearSplits = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Experimental timer", m4.bearExperimental, v -> m4.bearExperimental = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Show prediction", m4.bearExperimentalRender, v -> m4.bearExperimentalRender = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Smooth line", m4.bearSmoothLine, v -> m4.bearSmoothLine = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Timer in ticks", m4.bearShowTicks, v -> m4.bearShowTicks = v);
+				y = slider(graphics, font, ix, y, iw, "Decimals", m4.bearDecimals + "", (m4.bearDecimals - 1) / 1.0f, v -> m4.bearDecimals = snapInt(1 + v * 1f, 1, 2, 1));
+			}
+			case M4_HIGHLIGHT -> {
+				dev.stray.client.dungeon.m4.M4Config m4 = config.m4;
+				y = cycle(graphics, font, ix, y, iw, mouseX, mouseY, "Style", dev.stray.client.dungeon.m4.M4Config.STYLES[Math.floorMod(m4.highlightStyle, dev.stray.client.dungeon.m4.M4Config.STYLES.length)], () -> m4.highlightStyle = Math.floorMod(m4.highlightStyle + 1, dev.stray.client.dungeon.m4.M4Config.STYLES.length));
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Hide name tags", m4.highlightHideNametags, v -> m4.highlightHideNametags = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Hide highlighted mobs", m4.highlightHideMobs, v -> m4.highlightHideMobs = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Thorn", m4.highlightThorn, v -> m4.highlightThorn = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Trans Thorn", m4.highlightTransThorn, v -> m4.highlightTransThorn = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Thorn damage flash", m4.highlightThornFlash, v -> m4.highlightThornFlash = v);
+				y = slider(graphics, font, ix, y, iw, "Flash ticks", m4.highlightFlashTicks + "", (m4.highlightFlashTicks - 1) / 79.0f, v -> m4.highlightFlashTicks = snapInt(1 + v * 79f, 1, 80, 1));
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Spirit Bear", m4.highlightBear, v -> m4.highlightBear = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Bear only on mage", m4.highlightBearOnlyMage, v -> m4.highlightBearOnlyMage = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "No bear interpolation", m4.highlightBearNoInterpolation, v -> m4.highlightBearNoInterpolation = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Wolves", m4.highlightWolves, v -> m4.highlightWolves = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Bats", m4.highlightBats, v -> m4.highlightBats = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Sheep", m4.highlightSheep, v -> m4.highlightSheep = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Cows", m4.highlightCows, v -> m4.highlightCows = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Chickens", m4.highlightChickens, v -> m4.highlightChickens = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Rabbits", m4.highlightRabbits, v -> m4.highlightRabbits = v);
+			}
+			case M4_WAYPOINTS -> {
+				dev.stray.client.dungeon.m4.M4Config m4 = config.m4;
+				y = cycle(graphics, font, ix, y, iw, mouseX, mouseY, "Style", dev.stray.client.dungeon.m4.M4Config.STYLES[Math.floorMod(m4.waypointStyle, dev.stray.client.dungeon.m4.M4Config.STYLES.length)], () -> m4.waypointStyle = Math.floorMod(m4.waypointStyle + 1, dev.stray.client.dungeon.m4.M4Config.STYLES.length));
+				if (!dev.stray.Edition.LEGIT) {
+					y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Depth", m4.waypointDepth, v -> m4.waypointDepth = v);
+				}
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Show on cgm4", m4.waypointsOnCgm4, v -> m4.waypointsOnCgm4 = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Show on M4Miku", m4.waypointsOnM4Miku, v -> m4.waypointsOnM4Miku = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Bear spawn", m4.bearSpawnWaypoint, v -> m4.bearSpawnWaypoint = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Bear spawn only on mage", m4.bearSpawnOnlyMage, v -> m4.bearSpawnOnlyMage = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Only while spawning", m4.bearSpawnOnlyWhenSpawning, v -> m4.bearSpawnOnlyWhenSpawning = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Bear spawn colours", m4.bearSpawnColors, v -> m4.bearSpawnColors = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Bow pickup", m4.bowPickupWaypoint, v -> m4.bowPickupWaypoint = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Bow only on tank", m4.bowPickupOnlyTank, v -> m4.bowPickupOnlyTank = v);
+			}
+			case M4_STUN -> {
+				dev.stray.client.dungeon.m4.M4Config m4 = config.m4;
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "HUD", m4.stunHud, v -> m4.stunHud = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Only on healer", m4.stunOnlyHealer, v -> m4.stunOnlyHealer = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Stun helper", m4.stunHelper, v -> m4.stunHelper = v);
+				y = slider(graphics, font, ix, y, iw, "Decimals", m4.stunDecimals + "", (m4.stunDecimals - 1) / 1.0f, v -> m4.stunDecimals = snapInt(1 + v * 1f, 1, 2, 1));
+				y = slider(graphics, font, ix, y, iw, "Second stun offset", m4.stunSecondOffset + "", (m4.stunSecondOffset - 0) / 10.0f, v -> m4.stunSecondOffset = snapInt(0 + v * 10f, 0, 10, 1));
+			}
+			case M4_OVERKILL -> {
+				dev.stray.client.dungeon.m4.M4Config m4 = config.m4;
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Hide zero", m4.overkillHideZero, v -> m4.overkillHideZero = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Prefixes", m4.overkillPrefixes, v -> m4.overkillPrefixes = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Compact", m4.overkillCompact, v -> m4.overkillCompact = v);
+			}
+			case M4_TITLES -> {
+				dev.stray.client.dungeon.m4.M4Config m4 = config.m4;
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Hide Hypixel titles", m4.titlesHideDefault, v -> m4.titlesHideDefault = v);
+				y = slider(graphics, font, ix, y, iw, "Duration", m4.titleDurationTicks + " ticks", (m4.titleDurationTicks - 1) / 199.0f, v -> m4.titleDurationTicks = snapInt(1 + v * 199f, 1, 200, 1));
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Bow missed", m4.titleMiss, v -> m4.titleMiss = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Bow picked up", m4.titlePickup, v -> m4.titlePickup = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Bow picked up (tank)", m4.titleTankPickup, v -> m4.titleTankPickup = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Shoot the bow", m4.titleDisintegrate, v -> m4.titleDisintegrate = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Stop killing", m4.titleBearTimer, v -> m4.titleBearTimer = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Bear spawned", m4.titleBearSpawned, v -> m4.titleBearSpawned = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Resume killing", m4.titleBearKilled, v -> m4.titleBearKilled = v);
+			}
+			case M4_MOBS -> {
+				dev.stray.client.dungeon.m4.M4Config m4 = config.m4;
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Total", m4.mobTotal, v -> m4.mobTotal = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Cows", m4.mobCows, v -> m4.mobCows = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Sheep", m4.mobSheep, v -> m4.mobSheep = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Chickens", m4.mobChickens, v -> m4.mobChickens = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Bats", m4.mobBats, v -> m4.mobBats = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Wolves", m4.mobWolves, v -> m4.mobWolves = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Rabbits", m4.mobRabbits, v -> m4.mobRabbits = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Under Thorn", m4.mobUnderThorn, v -> m4.mobUnderThorn = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Rabbits in mid", m4.mobRabbitsInMid, v -> m4.mobRabbitsInMid = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Prefixes", m4.mobPrefixes, v -> m4.mobPrefixes = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Compact", m4.mobCompact, v -> m4.mobCompact = v);
+			}
+			case M4_DECOY -> {
+				dev.stray.client.dungeon.m4.M4Config m4 = config.m4;
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Best decoy spot", m4.decoyBestSpot, v -> m4.decoyBestSpot = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Hide after bear 1", m4.decoyHideAfterB1, v -> m4.decoyHideAfterB1 = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Cave spot", m4.decoyCave, v -> m4.decoyCave = v);
+				y = cycle(graphics, font, ix, y, iw, mouseX, mouseY, "Style", dev.stray.client.dungeon.m4.M4Config.STYLES[Math.floorMod(m4.decoyStyle, dev.stray.client.dungeon.m4.M4Config.STYLES.length)], () -> m4.decoyStyle = Math.floorMod(m4.decoyStyle + 1, dev.stray.client.dungeon.m4.M4Config.STYLES.length));
+				if (!dev.stray.Edition.LEGIT) {
+					y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Depth", m4.decoyDepth, v -> m4.decoyDepth = v);
+				}
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Only on berserk", m4.decoyOnlyBers, v -> m4.decoyOnlyBers = v);
+			}
+			case M4_TAC -> {
+				dev.stray.client.dungeon.m4.M4Config m4 = config.m4;
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Timer HUD", m4.tacTimer, v -> m4.tacTimer = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Timer outside M4", m4.tacOutsideM4, v -> m4.tacOutsideM4 = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Print tac time", m4.tacPrint, v -> m4.tacPrint = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Print only on tank", m4.tacPrintOnlyTank, v -> m4.tacPrintOnlyTank = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Print to party chat", m4.tacPrintParty, v -> m4.tacPrintParty = v);
+			}
+			case M4_HIDE -> {
+				dev.stray.client.dungeon.m4.M4Config m4 = config.m4;
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Crowd", m4.hideCrowd, v -> m4.hideCrowd = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Thorn", m4.hideThorn, v -> m4.hideThorn = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Sheep explosion", m4.hideSheepExplosion, v -> m4.hideSheepExplosion = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Chicken mines", m4.hideChickenMines, v -> m4.hideChickenMines = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Chicken lightning", m4.hideChickenLightning, v -> m4.hideChickenLightning = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Bear spawn", m4.hideBearSpawn, v -> m4.hideBearSpawn = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Bow drop", m4.hideBowDrop, v -> m4.hideBowDrop = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Bow pickup", m4.hideBowPickup, v -> m4.hideBowPickup = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Bow shot", m4.hideBowShot, v -> m4.hideBowShot = v);
+			}
+			case M4_STATS -> {
+				dev.stray.client.dungeon.m4.M4Config m4 = config.m4;
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Stats menu", m4.extraStatsMenu, v -> m4.extraStatsMenu = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Run time", m4.extraStatsRunTime, v -> m4.extraStatsRunTime = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Last bear breakdown", m4.extraStatsLastBear, v -> m4.extraStatsLastBear = v);
+			}
+			case M4_SOUNDS -> {
+				dev.stray.client.dungeon.m4.M4Config m4 = config.m4;
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Animals", m4.muteAnimals, v -> m4.muteAnimals = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Thorn", m4.muteThorn, v -> m4.muteThorn = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Misc sounds", m4.muteMisc, v -> m4.muteMisc = v);
+			}
+			case M4_OPTIMIZER -> {
+				dev.stray.client.dungeon.m4.M4Config m4 = config.m4;
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Hide particles", m4.hideParticles, v -> m4.hideParticles = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Keep healer circle", m4.keepHealerCircle, v -> m4.keepHealerCircle = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Keep mage beam", m4.keepMageBeam, v -> m4.keepMageBeam = v);
+				y = cycle(graphics, font, ix, y, iw, mouseX, mouseY, "NPCs", new String[] {"All", "Relevant only", "None"}[Math.floorMod(m4.npcVisibility, new String[] {"All", "Relevant only", "None"}.length)], () -> m4.npcVisibility = Math.floorMod(m4.npcVisibility + 1, new String[] {"All", "Relevant only", "None"}.length));
+				y = cycle(graphics, font, ix, y, iw, mouseX, mouseY, "NPC highlight", new String[] {"None", "Relevant only", "All"}[Math.floorMod(m4.npcHighlight, new String[] {"None", "Relevant only", "All"}.length)], () -> m4.npcHighlight = Math.floorMod(m4.npcHighlight + 1, new String[] {"None", "Relevant only", "All"}.length));
+				y = cycle(graphics, font, ix, y, iw, mouseX, mouseY, "NPC style", dev.stray.client.dungeon.m4.M4Config.STYLES[Math.floorMod(m4.npcStyle, dev.stray.client.dungeon.m4.M4Config.STYLES.length)], () -> m4.npcStyle = Math.floorMod(m4.npcStyle + 1, dev.stray.client.dungeon.m4.M4Config.STYLES.length));
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Hide invisible armor stands", m4.hideInvisArmorStands, v -> m4.hideInvisArmorStands = v);
+			}
+			case M4_TRAJ -> {
+				dev.stray.client.dungeon.m4.M4Config m4 = config.m4;
+				y = cycle(graphics, font, ix, y, iw, mouseX, mouseY, "Style", dev.stray.client.dungeon.m4.M4Config.STYLES[Math.floorMod(m4.trajectoryStyle, dev.stray.client.dungeon.m4.M4Config.STYLES.length)], () -> m4.trajectoryStyle = Math.floorMod(m4.trajectoryStyle + 1, dev.stray.client.dungeon.m4.M4Config.STYLES.length));
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Cows", m4.trajectoryCows, v -> m4.trajectoryCows = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Sheep", m4.trajectorySheep, v -> m4.trajectorySheep = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Chickens", m4.trajectoryChickens, v -> m4.trajectoryChickens = v);
+			}
+			case M4_RABBITS -> {
+				dev.stray.client.dungeon.m4.M4Config m4 = config.m4;
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Rabbits in hutch", m4.rabbitsInHutch, v -> m4.rabbitsInHutch = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Hide empty hutch", m4.rabbitsHideEmptyHutch, v -> m4.rabbitsHideEmptyHutch = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Countdown HUD", m4.rabbitCountdown, v -> m4.rabbitCountdown = v);
+				y = slider(graphics, font, ix, y, iw, "Decimals", m4.rabbitDecimals + "", (m4.rabbitDecimals - 1) / 1.0f, v -> m4.rabbitDecimals = snapInt(1 + v * 1f, 1, 2, 1));
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Show from boss start", m4.rabbitFromStart, v -> m4.rabbitFromStart = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Show after bear 1", m4.rabbitAfterB1, v -> m4.rabbitAfterB1 = v);
+				y = slider(graphics, font, ix, y, iw, "Seconds before", m4.rabbitSecondsBefore + "s", (m4.rabbitSecondsBefore - 2) / 5.0f, v -> m4.rabbitSecondsBefore = snapInt(2 + v * 5f, 2, 7, 1));
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Hide zero", m4.rabbitHideZero, v -> m4.rabbitHideZero = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Ground mobs", m4.rabbitGroundMobs, v -> m4.rabbitGroundMobs = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Bats", m4.rabbitBats, v -> m4.rabbitBats = v);
 			}
 			case MASK_TIMERS -> {
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Dungeons only", config.maskTimersDungeonsOnly, v -> config.maskTimersDungeonsOnly = v);

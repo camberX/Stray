@@ -14,7 +14,7 @@ public class ParticleEngineMixin {
 	@Inject(method = "createParticle", at = @At("HEAD"), cancellable = true)
 	private void stray$slayerParticles(ParticleOptions options, double x, double y, double z, double dx, double dy, double dz,
 		CallbackInfoReturnable<Particle> cir) {
-		if (SlayerFx.hideParticle(options, x, y, z)) {
+		if (SlayerFx.hideParticle(options, x, y, z) || dev.stray.client.dungeon.m4.M4Features.hideParticle(options)) {
 			cir.setReturnValue(null);
 		}
 	}

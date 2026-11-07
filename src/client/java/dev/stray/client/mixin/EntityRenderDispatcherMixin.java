@@ -16,7 +16,8 @@ public class EntityRenderDispatcherMixin {
 	private <E extends Entity> void stray$slayerHide(E entity, Frustum frustum, double x, double y, double z, float partialTick, CallbackInfoReturnable<Boolean> cir) {
 	//?} else {
 	/*private <E extends Entity> void stray$slayerHide(E entity, Frustum frustum, double x, double y, double z, CallbackInfoReturnable<Boolean> cir) {*///?}
-		if (SlayerFx.hide(entity) || dev.stray.client.render.PovCapture.hidden(entity) || dev.stray.client.foraging.ForagingTweaks.hideEntity(entity)) {
+		if (SlayerFx.hide(entity) || dev.stray.client.render.PovCapture.hidden(entity) || dev.stray.client.foraging.ForagingTweaks.hideEntity(entity)
+			|| dev.stray.client.dungeon.m4.M4Features.hideEntity(entity)) {
 			cir.setReturnValue(false);
 		}
 	}

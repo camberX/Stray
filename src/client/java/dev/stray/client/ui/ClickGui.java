@@ -30,7 +30,7 @@ import java.util.function.Consumer;
  */
 public final class ClickGui {
 	private static final float CARD_R = 4f;
-	static final String[] ORDER = {"Dungeons", "Slayer", "Mining", "Farming", "Foraging", "World", "Entities", "Mobs", "HUD", "Chat", "Menus", "Player", "Keys", "Client"};
+	static final String[] ORDER = {"Dungeons", "M4", "Slayer", "Mining", "Farming", "Foraging", "World", "Entities", "Mobs", "HUD", "Chat", "Menus", "Player", "Keys", "Client"};
 	static final int[] BIND_WHICH = dev.stray.Edition.LEGIT
 		? new int[] {3, 7, 11, 12, 17}
 		: new int[] {3, 4, 13, 5, 7, 11, 12, 14, 16, 17};
@@ -427,6 +427,22 @@ public final class ClickGui {
 		java.util.Map.entry("Terminal GUI", "F7 terminals in a clean Shadow window: only the slots left to click light up, and a click anywhere on one goes to that slot. Try it with /stray debug dev terminal."),
 		java.util.Map.entry("Terminal highlight", "F7 phase 3: a glow on the command block of every terminal in your section that is not done yet, with its number above it."),
 		java.util.Map.entry("Mask timers", "Bonzo Mask, Spirit Mask and Phoenix Pet cooldowns, always listed with Ready when off cooldown. From NoammAddons (Zyryon style)."),
+		java.util.Map.entry("Spirit Bear", "Spirit Bear kills, spawn timer and splits, with personal bests per bear. From BirdAddon."),
+		java.util.Map.entry("Mob highlight", "Boxes around the M4 animals, Thorn and the Spirit Bear. Can hide name tags and the mobs themselves. From BirdAddon."),
+		java.util.Map.entry("M4 waypoints", "Bear spawn, next bow spot and your own class waypoints (/m4wp). Also on the cgm4 and M4Miku practice islands. From BirdAddon."),
+		java.util.Map.entry("Boss timer", "How long the Thorn fight has gone on. From BirdAddon."),
+		java.util.Map.entry("Stun", "How long Thorn is stunned, and when to stun (healer). From BirdAddon."),
+		java.util.Map.entry("Overkill", "Mobs killed while a bear is spawning or alive. From BirdAddon."),
+		java.util.Map.entry("M4 titles", "Own titles for bow and bear moments, and hides Hypixel's titles in the fight. From BirdAddon."),
+		java.util.Map.entry("Mob counter", "How many of each M4 animal are alive, under Thorn and in the middle. From BirdAddon."),
+		java.util.Map.entry("Decoy", "The best free spot to place a decoy, and the cave spot (berserk). From BirdAddon."),
+		java.util.Map.entry("Tac", "Tactical Insertion timer, and the bear timer when you tac (tank). From BirdAddon."),
+		java.util.Map.entry("Hide messages", "Hides crowd, Thorn, mine, lightning, explosion, bear and bow messages in the fight. From BirdAddon."),
+		java.util.Map.entry("Extra stats", "Per-bear stats and the last bear breakdown after Thorn dies (/bearstats). From BirdAddon."),
+		java.util.Map.entry("M4 sounds", "Mutes animal, Thorn and other noisy sounds in the fight. From BirdAddon."),
+		java.util.Map.entry("Render optimizer", "Hides particles, NPCs and invisible armor stands in the fight for more FPS. From BirdAddon."),
+		java.util.Map.entry("Trajectories", "Where flung cows and sheep will land, and the ground under chickens. From BirdAddon."),
+		java.util.Map.entry("Rabbits", "Rabbits per hutch, and a countdown to the M4 rabbits. From BirdAddon."),
 		java.util.Map.entry("F7 titles", "Short titles in the F7 boss: crystals, wither phases, Storm's lightning timer and who did which terminal. Also shown over the leap menu."),
 		java.util.Map.entry("Align triggerbot", "F7 arrow align: while you look at an arrow that is not right yet, it right clicks it with your delay until it is. Clicks go through the normal use key."),
 		java.util.Map.entry("Own nametag", "Shows your own name above your head in third person (F5)."),
@@ -621,6 +637,23 @@ public final class ClickGui {
 			config.starMobEsp = v;
 		}, true, false));
 		mods.add(mod("Party stats", "Dungeons", null, null, () -> config.partyFinderStats, v -> config.partyFinderStats = v, true, false));
+
+		mods.add(mod("Spirit Bear", "M4", StrayScreen.Feature.M4_BEAR, null, () -> config.m4.spiritBear, v -> config.m4.spiritBear = v, true, false));
+		mods.add(mod("Mob highlight", "M4", StrayScreen.Feature.M4_HIGHLIGHT, null, () -> config.m4.highlight, v -> config.m4.highlight = v, true, false));
+		mods.add(mod("M4 waypoints", "M4", StrayScreen.Feature.M4_WAYPOINTS, null, () -> config.m4.waypoints, v -> config.m4.waypoints = v, true, false));
+		mods.add(mod("Boss timer", "M4", null, null, () -> config.m4.timer, v -> config.m4.timer = v, true, false));
+		mods.add(mod("Stun", "M4", StrayScreen.Feature.M4_STUN, null, () -> config.m4.stun, v -> config.m4.stun = v, true, false));
+		mods.add(mod("Overkill", "M4", StrayScreen.Feature.M4_OVERKILL, null, () -> config.m4.overkill, v -> config.m4.overkill = v, true, false));
+		mods.add(mod("M4 titles", "M4", StrayScreen.Feature.M4_TITLES, null, () -> config.m4.titles, v -> config.m4.titles = v, true, false));
+		mods.add(mod("Mob counter", "M4", StrayScreen.Feature.M4_MOBS, null, () -> config.m4.mobCounter, v -> config.m4.mobCounter = v, true, false));
+		mods.add(mod("Decoy", "M4", StrayScreen.Feature.M4_DECOY, null, () -> config.m4.decoy, v -> config.m4.decoy = v, true, false));
+		mods.add(mod("Tac", "M4", StrayScreen.Feature.M4_TAC, null, () -> config.m4.tac, v -> config.m4.tac = v, true, false));
+		mods.add(mod("Hide messages", "M4", StrayScreen.Feature.M4_HIDE, null, () -> config.m4.hideMessages, v -> config.m4.hideMessages = v, true, false));
+		mods.add(mod("Extra stats", "M4", StrayScreen.Feature.M4_STATS, null, () -> config.m4.extraStats, v -> config.m4.extraStats = v, true, false));
+		mods.add(mod("M4 sounds", "M4", StrayScreen.Feature.M4_SOUNDS, null, () -> config.m4.sounds, v -> config.m4.sounds = v, true, false));
+		mods.add(mod("Render optimizer", "M4", StrayScreen.Feature.M4_OPTIMIZER, null, () -> config.m4.renderOptimizer, v -> config.m4.renderOptimizer = v, true, false));
+		mods.add(mod("Trajectories", "M4", StrayScreen.Feature.M4_TRAJ, null, () -> config.m4.trajectories, v -> config.m4.trajectories = v, true, false));
+		mods.add(mod("Rabbits", "M4", StrayScreen.Feature.M4_RABBITS, null, () -> config.m4.rabbits, v -> config.m4.rabbits = v, true, false));
 
 		addSlayer(mods, config);
 

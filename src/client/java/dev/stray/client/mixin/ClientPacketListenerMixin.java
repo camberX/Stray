@@ -35,6 +35,29 @@ public class ClientPacketListenerMixin {
 		}
 	}
 
+	/** M4 Titles (BirdAddon): Hypixel's titles in the Thorn fight, hidden at the packet like BirdAddon does. */
+	@Inject(method = "setTitleText", at = @At("HEAD"), cancellable = true)
+	private void stray$m4Title(net.minecraft.network.protocol.game.ClientboundSetTitleTextPacket packet, CallbackInfo ci) {
+		if (net.minecraft.client.Minecraft.getInstance().isSameThread() && !dev.stray.client.dungeon.m4.M4Titles.allowServer()) {
+			ci.cancel();
+		}
+	}
+
+	@Inject(method = "setSubtitleText", at = @At("HEAD"), cancellable = true)
+	private void stray$m4Subtitle(net.minecraft.network.protocol.game.ClientboundSetSubtitleTextPacket packet, CallbackInfo ci) {
+		if (packet != null && net.minecraft.client.Minecraft.getInstance().isSameThread()
+			&& !dev.stray.client.dungeon.m4.M4.onSubtitle(dev.stray.client.util.Text.strip(packet.text().getString()))) {
+			ci.cancel();
+		}
+	}
+
+	@Inject(method = "setTitlesAnimation", at = @At("HEAD"), cancellable = true)
+	private void stray$m4TitleTimes(net.minecraft.network.protocol.game.ClientboundSetTitlesAnimationPacket packet, CallbackInfo ci) {
+		if (net.minecraft.client.Minecraft.getInstance().isSameThread() && !dev.stray.client.dungeon.m4.M4Titles.allowServer()) {
+			ci.cancel();
+		}
+	}
+
 	/** Keep break progress: hold back held-item updates while a block is being broken. */
 	@Inject(method = "handleContainerSetSlot", at = @At("HEAD"), cancellable = true)
 	private void stray$keepBreakSlot(net.minecraft.network.protocol.game.ClientboundContainerSetSlotPacket packet, CallbackInfo ci) {

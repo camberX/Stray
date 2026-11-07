@@ -97,6 +97,8 @@ public final class StrayHud {
 		HudChrome.element(null);
 		dev.stray.client.dungeon.MaskTimers.extract(graphics);
 		HudChrome.element(null);
+		dev.stray.client.dungeon.m4.M4Hud.extract(graphics);
+		HudChrome.element(null);
 		if (!dev.stray.Edition.LEGIT) { CommandRings.extract(graphics, delta); }
 		HudChrome.element(null);
 		HudChrome.element(null);

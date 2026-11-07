@@ -225,6 +225,7 @@ public final class StrayClient implements ClientModInitializer {
 		FairySoulRenderer.init();
 		FairySoulTracker.init();
 		CrystalHollowsRenderer.init();
+		dev.stray.client.dungeon.m4.M4World.init();
 		if (!dev.stray.Edition.LEGIT) { dev.stray.client.dungeon.AlignTriggerbot.init(); }
 		dev.stray.client.dungeon.map.NoammData.start();
 		ClientReceiveMessageEvents.ALLOW_GAME.register((message, overlay) -> {
@@ -247,8 +248,10 @@ public final class StrayClient implements ClientModInitializer {
 				dev.stray.client.dungeon.map.DungeonMap.onActionBar(message.getString());
 			}
 			boolean slayerShow = overlay || dev.stray.client.slayer.SlayerApi.onChat(message);
+			// M4 (BirdAddon): bear / bow / boss events from chat, and Hide Messages.
+			boolean m4Show = overlay || dev.stray.client.dungeon.m4.M4.onChat(dev.stray.client.util.Text.strip(message.getString()));
 			boolean foragingShow = dev.stray.client.foraging.ForagingTweaks.allowChat(message, overlay);
-			return CrystalHollows.allowChat(message, overlay) && slayerShow && foragingShow;
+			return CrystalHollows.allowChat(message, overlay) && slayerShow && foragingShow && m4Show;
 		});
 		FarmingHud.init();
 		JacobContestHudRenderer.init();
@@ -408,6 +411,51 @@ public final class StrayClient implements ClientModInitializer {
 			vm.then(stealCommand());
 			vm.then(PartyFinderStats.command());
 			dispatcher.register(vm);
+			// M4 (BirdAddon): /m4wp add <class> <start> <end> | remove | export | import | load, and /bearstats.
+			dispatcher.register(ClientCommands.literal("m4wp")
+				.executes(context -> {
+					dev.stray.client.dungeon.m4.M4Stats.message(dev.stray.client.dungeon.m4.M4Waypoints.USAGE);
+					return Command.SINGLE_SUCCESS;
+				})
+				.then(ClientCommands.literal("add")
+					.executes(context -> {
+						dev.stray.client.dungeon.m4.M4Stats.message(dev.stray.client.dungeon.m4.M4Waypoints.USAGE);
+						return Command.SINGLE_SUCCESS;
+					})
+					.then(ClientCommands.argument("class", StringArgumentType.word())
+						.then(ClientCommands.argument("start", StringArgumentType.word())
+							.then(ClientCommands.argument("end", StringArgumentType.word()).executes(context -> {
+								dev.stray.client.dungeon.m4.M4Waypoints.add(
+									StringArgumentType.getString(context, "class"),
+									StringArgumentType.getString(context, "start"),
+									StringArgumentType.getString(context, "end"));
+								return Command.SINGLE_SUCCESS;
+							})))))
+				.then(ClientCommands.literal("remove").executes(context -> {
+					dev.stray.client.dungeon.m4.M4Waypoints.remove();
+					return Command.SINGLE_SUCCESS;
+				}))
+				.then(ClientCommands.literal("export").executes(context -> {
+					dev.stray.client.dungeon.m4.M4Waypoints.export();
+					return Command.SINGLE_SUCCESS;
+				}))
+				.then(ClientCommands.literal("import").executes(context -> {
+					dev.stray.client.dungeon.m4.M4Waypoints.importFromClipboard();
+					return Command.SINGLE_SUCCESS;
+				}))
+				.then(ClientCommands.literal("load").executes(context -> {
+					boolean ok = dev.stray.client.dungeon.m4.M4Waypoints.load(true);
+					dev.stray.client.dungeon.m4.M4Stats.message(ok ? "Loaded BirdAddon's waypoints (config/odin/addons/m4waypoints.json)" : "No BirdAddon waypoint file found");
+					return Command.SINGLE_SUCCESS;
+				})));
+			dispatcher.register(ClientCommands.literal("bearstats")
+				.then(ClientCommands.argument("run", StringArgumentType.word())
+					.then(ClientCommands.argument("bear", com.mojang.brigadier.arguments.IntegerArgumentType.integer(1, 9)).executes(context -> {
+						dev.stray.client.dungeon.m4.M4Stats.showBear(
+							StringArgumentType.getString(context, "run"),
+							com.mojang.brigadier.arguments.IntegerArgumentType.getInteger(context, "bear"));
+						return Command.SINGLE_SUCCESS;
+					}))));
 			if (!dev.stray.Edition.LEGIT) { dispatcher.register(ClientCommands.literal("loadouts").executes(context -> LoadoutsCommands.open())); }
 			if (!dev.stray.Edition.LEGIT) { dispatcher.register(ClientCommands.literal("loadout").executes(context -> LoadoutsCommands.open())); }
 			if (!dev.stray.Edition.LEGIT) { dispatcher.register(ClientCommands.literal("ld").executes(context -> LoadoutsCommands.open())); }
@@ -457,6 +505,7 @@ public final class StrayClient implements ClientModInitializer {
 			dev.stray.client.dungeon.F7Titles.tick(client);
 			dev.stray.client.dungeon.TerminalHighlight.tick(client);
 			dev.stray.client.dungeon.MaskTimers.tick(client);
+			dev.stray.client.dungeon.m4.M4Features.clientTick();
 			if (!dev.stray.Edition.LEGIT) { dev.stray.client.mining.KeepBreakProgress.tick(client); }
 			if (!dev.stray.client.dungeon.LeapMenu.active()) {
 				dev.stray.client.dungeon.LeapMenu.onContainerClosed();
@@ -532,6 +581,7 @@ public final class StrayClient implements ClientModInitializer {
 			CropFever.reset();
 			ScathaTimer.reset();
 			dev.stray.client.dungeon.MaskTimers.reset();
+			dev.stray.client.dungeon.m4.M4.onWorldLoad();
 			LassoReel.reset();
 			if (!dev.stray.Edition.LEGIT) { EmptyVacuum.reset(); }
 			PestPlotTp.reset();
