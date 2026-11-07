@@ -40,6 +40,8 @@
 		"EntityRenderStateMixin",
 		"FogRendererMixin",
 		"FontMixin",
+		"FontTextureMixin",
+		"GlyphRenderStateMixin",
 		"GameRendererAccessor",
 		"GlRenderPassMixin",
 		"GameRendererMixin",

@@ -11,6 +11,8 @@ import net.minecraft.resources.Identifier;
 import java.util.Optional;
 
 public final class MenuFont {
+	/** Glyph atlases of Stray's TTF fonts, sampled smoothly (see GlyphRenderStateMixin). */
+	public static final java.util.Set<Object> SMOOTH_ATLASES = java.util.Collections.synchronizedSet(java.util.Collections.newSetFromMap(new java.util.WeakHashMap<>()));
 	public static final Identifier BODY_ID = Stray.id("nl");
 	public static final Identifier SMALL_ID = Stray.id("nl_small");
 	public static final Identifier TITLE_ID = Stray.id("nl_title");
@@ -67,7 +69,9 @@ public final class MenuFont {
 		}
 		net.minecraft.client.Minecraft client = net.minecraft.client.Minecraft.getInstance();
 		double gui = client == null || client.getWindow() == null ? 2.0 : client.getWindow().getGuiScale();
-		int step = (int) Math.round(gui * poseScale);
+		// Never a smaller copy than needed: shrinking a sharper glyph (now smoothly sampled) beats
+		// blowing up a blurrier one.
+		int step = (int) Math.ceil(gui * poseScale - 0.05);
 		step = Math.max(1, Math.min(6, step));
 		Style target = HYPR_SCALED[family][step - 1];
 		if (target.getFont().equals(value.getStyle().getFont())) {

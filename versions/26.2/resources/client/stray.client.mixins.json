@@ -37,6 +37,8 @@
 		"EntityRenderStateMixin",
 		"FogRendererMixin",
 		"FontMixin",
+		"FontTextureMixin",
+		"GlyphRenderStateMixin",
 		"GameRendererAccessor",
 		"GameRendererMixin",
 		"GuiAccessor",
