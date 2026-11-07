@@ -165,8 +165,15 @@ public final class FocusMode {
 		);
 	}
 
+	/**
+	 * The fragment patch reads {@code strayTint} and {@code strayLight}, so the
+	 * vertex shader always declares and sets them (to neutral white) when it is
+	 * Sodium's terrain shader; the real values are used when Sodium's lightmap
+	 * line is found. A mismatch fails to link the pipeline and crashes the game.
+	 */
 	public static String patchSodiumVertex(String source) {
-		if (source == null || source.contains("strayTint") || !source.contains("v_Color = _vert_color * texture(u_LightTex, _vert_tex_light_coord);")) {
+		if (source == null || source.contains("strayTint") || !source.contains("_vert_color")
+			|| !source.contains("out vec4 v_Color;") || !source.contains("void main() {")) {
 			return source;
 		}
 		return source
@@ -174,6 +181,7 @@ public final class FocusMode {
 			.replace("out vec4 v_Color;", "out vec4 v_Color;\nlayout(location = 12) flat out vec4 strayTint;\nlayout(location = 13) out vec4 strayLight;")
 			//?} else {
 			/*.replace("out vec4 v_Color;", "out vec4 v_Color;\nflat out vec4 strayTint;\nout vec4 strayLight;")*///?}
+			.replace("void main() {", "void main() {\n    strayTint = vec4(1.0);\n    strayLight = vec4(1.0);")
 			.replace(
 				"v_Color = _vert_color * texture(u_LightTex, _vert_tex_light_coord);",
 				"strayLight = texture(u_LightTex, _vert_tex_light_coord);\n    strayTint = _vert_color;\n    v_Color = _vert_color * strayLight;"
