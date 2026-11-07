@@ -40,6 +40,46 @@ jobs:
         ./gradlew build --continue --stacktrace -PstrayChannel=$CHANNEL -PstraySha=${{ github.sha }} 2>&1 | tee build.log
         # Stray Legit: same sources, no automation / through-walls ESP / loadouts (see legit-exclude.txt).
         ./gradlew build --continue --stacktrace -PstrayChannel=$CHANNEL -PstraySha=${{ github.sha }} -PstrayEdition=legit 2>&1 | tee -a build.log
+    - name: collect jars
+      if: success()
+      run: |
+        # One folder per Minecraft version and edition, uploaded below as run artifacts.
+        mkdir -p artifacts
+        for dir in versions/*/; do
+          MC=$(basename "$dir")
+          mkdir -p "artifacts/stray-$MC" "artifacts/stray-legit-$MC"
+          find "${dir}build/libs" -maxdepth 1 -name 'stray-*.jar' ! -name '*-sources.jar' ! -name 'stray-legit-*' -exec cp {} "artifacts/stray-$MC/" \;
+          find "${dir}build/libs" -maxdepth 1 -name 'stray-legit-*.jar' ! -name '*-sources.jar' -exec cp {} "artifacts/stray-legit-$MC/" \;
+        done
+        ls -R artifacts
+    - name: upload Stray 26.3
+      if: success()
+      uses: actions/upload-artifact@v4
+      with:
+        name: stray-26.3
+        path: artifacts/stray-26.3/*.jar
+        if-no-files-found: error
+    - name: upload Stray 26.2
+      if: success()
+      uses: actions/upload-artifact@v4
+      with:
+        name: stray-26.2
+        path: artifacts/stray-26.2/*.jar
+        if-no-files-found: error
+    - name: upload Stray Legit 26.3
+      if: success()
+      uses: actions/upload-artifact@v4
+      with:
+        name: stray-legit-26.3
+        path: artifacts/stray-legit-26.3/*.jar
+        if-no-files-found: error
+    - name: upload Stray Legit 26.2
+      if: success()
+      uses: actions/upload-artifact@v4
+      with:
+        name: stray-legit-26.2
+        path: artifacts/stray-legit-26.2/*.jar
+        if-no-files-found: error
     - name: report build errors
       if: failure()
       run: |
