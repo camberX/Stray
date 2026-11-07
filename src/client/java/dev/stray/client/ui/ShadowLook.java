@@ -99,7 +99,7 @@ public final class ShadowLook {
 		if (strength <= 0 || w <= 0f || h <= 0f) {
 			return;
 		}
-		soft(graphics, x, y, w, h, r, extent, Math.min(255, strength) << 24);
+		soft(graphics, x, y, w, h, r, extent, Math.min(255, strength) << 24, true);
 	}
 
 	/** The same soft falloff in a colour (with its alpha), centred on the box: a glow. */
@@ -107,13 +107,13 @@ public final class ShadowLook {
 		if ((argb >>> 24) == 0 || w <= 0f || h <= 0f) {
 			return;
 		}
-		soft(graphics, x, y, w, h, r, extent, argb);
+		soft(graphics, x, y, w, h, r, extent, argb, false);
 	}
 
-	private static void soft(GuiGraphicsExtractor graphics, float x, float y, float w, float h, float radius, int extent, int color) {
+	private static void soft(GuiGraphicsExtractor graphics, float x, float y, float w, float h, float radius, int extent, int color, boolean hollow) {
 		float r = Math.max(0f, Math.min(radius, Math.min(w, h) * 0.5f));
 		float e = Math.max(1f, extent);
-		Soft tex = texture(e, r);
+		Soft tex = texture(e, r, hollow);
 		if (tex == null) {
 			return;
 		}
@@ -147,12 +147,12 @@ public final class ShadowLook {
 	}
 
 	/** The shadow texture for this reach and radius (made once, then reused). */
-	private static Soft texture(float e, float r) {
+	private static Soft texture(float e, float r, boolean hollow) {
 		// Whole units: animated sizes (opening sheets, glows) would otherwise make a new
 		// texture for every in-between radius.
 		int eq = Math.round(e) * 2;
 		int rq = Math.round(r) * 2;
-		long key = ((long) eq << 32) | rq;
+		long key = ((long) eq << 32) | ((long) rq << 1) | (hollow ? 1L : 0L);
 		Soft cached = SOFTS.get(key);
 		if (cached != null) {
 			return cached;
@@ -177,13 +177,15 @@ public final class ShadowLook {
 				float t = clamp01((d + reach * 0.35f) / (reach * 1.35f));
 				float a = 1f - t * t * (3f - 2f * t);
 				a *= a;
-				// Nothing under the panel itself: its own fill (and the opacity setting) decides
-				// how much shows through, not a dark shadow layer behind it.
-				a *= clamp01(d * RES + 0.5f);
+				// Shadows leave the inside empty: the panel's own fill (and the opacity setting) decides
+				// how much shows through. Glows stay filled, so a lit button has no dark rim.
+				if (hollow) {
+					a *= clamp01(d * RES + 0.5f);
+				}
 				image.setPixel(px, py, (Math.round(a * 255f) << 24) | 0xFFFFFF);
 			}
 		}
-		net.minecraft.resources.Identifier id = dev.stray.Stray.id("dynamic/shadow_" + eq + "_" + rq);
+		net.minecraft.resources.Identifier id = dev.stray.Stray.id("dynamic/shadow_" + eq + "_" + rq + (hollow ? "_h" : ""));
 		net.minecraft.client.Minecraft.getInstance().getTextureManager().register(id, new net.minecraft.client.renderer.texture.DynamicTexture(() -> "stray-shadow", image));
 		Soft made = new Soft(id, n, size);
 		SOFTS.put(key, made);

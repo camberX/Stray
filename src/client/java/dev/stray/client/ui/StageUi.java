@@ -11,31 +11,31 @@ import net.minecraft.network.chat.Component;
  * white primary pill and a dock of slot tiles.
  */
 final class StageUi {
-	static final int TEXT = 0xFFEEF1F5;
-	static final int MUTED = 0xFF7D8794;
-	static final int FAINT = 0xFF4E5763;
+	static final int TEXT = ShadowLook.TEXT;
+	static final int MUTED = ShadowLook.MUTED;
+	static final int FAINT = ShadowLook.FAINT;
 	static final int DOT = 0xFF3DDC84;
-	static final int FILL = 0xE6050709;
-	static final int EDGE = 0x1CFFFFFF;
 	static final int CHIP = 0x10FFFFFF;
 	static final int CHIP_HOVER = 0x22FFFFFF;
 	static final int TILE_SEL = 0x1EFFFFFF;
-	static final float R = 14f;
-	private static final int SHADOW_STEPS = 14;
+	static final float R = ShadowLook.WINDOW_R;
 
 	private StageUi() {
 	}
 
-	/** The window: shadow rings outside the edge only, so the inside stays see-through. */
+	/** The window: the same Shadow window as everywhere else (shadow, blur, opacity, edge). */
 	static void window(GuiGraphicsExtractor graphics, float x, float y, float w, float h, float appear) {
-		for (int i = SHADOW_STEPS; i >= 1; i--) {
-			float t = 1f - (i - 0.5f) / SHADOW_STEPS;
-			int a = Math.round(0x58 * t * t * appear);
-			float dy = 2f;
-			GuiDraw.roundedOutline(graphics, x - i, y - i + dy, w + i * 2f, h + i * 2f, R + i, a << 24, 1f);
+		panel(graphics, x, y, w, h, R, appear);
+	}
+
+	private static void panel(GuiGraphicsExtractor graphics, float x, float y, float w, float h, float r, float appear) {
+		if (appear <= 0.01f) {
+			return;
 		}
-		GuiDraw.roundedFine(graphics, x, y, w, h, R, fade(FILL, appear));
-		GuiDraw.hairline(graphics, x, y, w, h, R, fade(EDGE, appear));
+		ShadowLook.shadow(graphics, x, y, w, h, r, 12, Math.round(0x60 * appear));
+		dev.stray.client.render.GuiFrostBlur.blitWindow(graphics, x, y, w, h, r, appear);
+		GuiDraw.roundedFine(graphics, x, y, w, h, r, fade(ShadowLook.FILL, appear));
+		GuiDraw.hairline(graphics, x, y, w, h, r, fade(ShadowLook.edge(), appear));
 	}
 
 	/** A soft oval glow with a darker contact shadow under the model's feet. */
@@ -118,12 +118,7 @@ final class StageUi {
 
 	/** The floating dock bar behind the slot tiles. */
 	static void dock(GuiGraphicsExtractor graphics, float x, float y, float w, float h) {
-		for (int i = 8; i >= 1; i--) {
-			float t = 1f - (i - 0.5f) / 8f;
-			GuiDraw.roundedOutline(graphics, x - i, y - i + 3f, w + i * 2f, h + i * 2f, 12f + i, Math.round(0x30 * t * t) << 24, 1f);
-		}
-		GuiDraw.roundedFine(graphics, x, y, w, h, 12f, 0xB30E1117);
-		GuiDraw.hairline(graphics, x, y, w, h, 12f, 0x12FFFFFF);
+		panel(graphics, x, y, w, h, ShadowLook.WINDOW_R, 1f);
 	}
 
 	static void tile(GuiGraphicsExtractor graphics, float x, float y, float size, boolean selected, boolean hover) {
