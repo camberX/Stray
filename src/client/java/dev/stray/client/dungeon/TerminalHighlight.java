@@ -42,7 +42,8 @@ import java.util.regex.Pattern;
  * tracking follows Odin's Terminals Status (BSD-3): Goldor's first line starts section 1, a
  * section ends once all its tasks are done and its gate is down (section 4 has no gate), and
  * the Core opening ends phase 3. A terminal counts as done once its armor stand no longer
- * reads "Inactive Terminal". Visual only: nothing is clicked or sent.
+ * reads "Inactive Terminal". Visual only: nothing is clicked or sent. The full build glows
+ * and fills through walls; the legit build shows nothing through walls.
  */
 public final class TerminalHighlight {
 	private static final Identifier WHITE = Identifier.fromNamespaceAndPath("minecraft", "textures/block/white_concrete.png");
@@ -90,12 +91,13 @@ public final class TerminalHighlight {
 
 	public static void init() {
 		LevelRenderEvents.END_EXTRACTION.register(context -> {
-			if (!targets.isEmpty() && !TopDownCapture.offscreen()) {
+			if (!dev.stray.Edition.LEGIT && !targets.isEmpty() && !TopDownCapture.offscreen()) {
 				context.levelState().shouldShowEntityOutlines = true;
 			}
 		});
 		LevelRenderEvents.COLLECT_SUBMITS.register(context -> {
-			if (targets.isEmpty() || TopDownCapture.offscreen() || context.poseStack() == null) {
+			// The glow pass draws through walls, so the legit build leaves it out.
+			if (dev.stray.Edition.LEGIT || targets.isEmpty() || TopDownCapture.offscreen() || context.poseStack() == null) {
 				return;
 			}
 			Vec3 camera = context.levelState().cameraRenderState.pos;
@@ -116,8 +118,16 @@ public final class TerminalHighlight {
 				return;
 			}
 			int fill = fillColor();
+			if (dev.stray.Edition.LEGIT) {
+				// Legit: fill and a soft edge, both hidden behind walls.
+				GizmoStyle style = GizmoStyle.strokeAndFill(glowColor() | 0xFF000000, 2.0f, fill);
+				for (Target target : targets) {
+					Gizmos.cuboid(new AABB(target.block).inflate(0.002), style);
+				}
+				return;
+			}
 			for (Target target : targets) {
-				Gizmos.cuboid(new AABB(target.block).inflate(0.002), GizmoStyle.fill(fill));
+				Gizmos.cuboid(new AABB(target.block).inflate(0.002), GizmoStyle.fill(fill)).setAlwaysOnTop();
 			}
 		});
 	}
@@ -354,6 +364,9 @@ public final class TerminalHighlight {
 			if (rel.x * forward.x() + rel.y * forward.y() + rel.z * forward.z() <= 0.12) {
 				continue;
 			}
+			if (dev.stray.Edition.LEGIT && hidden(client, camPos, target.block)) {
+				continue;
+			}
 			Vec3 ndc = client.gameRenderer.projectPointToScreen(head);
 			if (ndc.x < -1.2 || ndc.x > 1.2 || ndc.y < -1.2 || ndc.y > 1.2) {
 				continue;
@@ -374,6 +387,14 @@ public final class TerminalHighlight {
 			GuiDraw.text(graphics, font, label, -font.width(label) * 0.5f, GuiDraw.middle(top, TAG), accent, false);
 			graphics.pose().popMatrix();
 		}
+	}
+
+	/** Legit: the tag hides when a block sits between the camera and the terminal. */
+	private static boolean hidden(Minecraft client, Vec3 camPos, BlockPos block) {
+		Vec3 target = Vec3.atCenterOf(block);
+		net.minecraft.world.phys.BlockHitResult hit = client.level.clip(new net.minecraft.world.level.ClipContext(
+			camPos, target, net.minecraft.world.level.ClipContext.Block.VISUAL, net.minecraft.world.level.ClipContext.Fluid.NONE, client.player));
+		return hit.getType() == net.minecraft.world.phys.HitResult.Type.BLOCK && !hit.getBlockPos().equals(block);
 	}
 
 	private static void box(VertexConsumer consumer, PoseStack.Pose pose, int color, float x0, float y0, float z0, float x1, float y1, float z1) {
