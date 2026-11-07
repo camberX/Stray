@@ -56,11 +56,6 @@ public final class WatermarkRenderer {
 		graphics.pose().popMatrix();
 	}
 
-	// ---- Hyprland (illogical-impulse bar) style: pills on a blurred bar
-
-	private record Pill(String icon, String text, boolean brand) {
-	}
-
 	/**
 	 * Width for a live stat (fps, ping, time) that doesn't jump around: every digit is measured
 	 * as a 0, so 87 and 91 fps take the same room, and when the digit count does change
@@ -120,7 +115,7 @@ public final class WatermarkRenderer {
 	}
 
 	private static float shadowBrandW(Font font) {
-		return 7f + font.width(MenuFont.shadowTitle("Stray")) + 7f;
+		return 7f + font.width(MenuFont.shadow("Stray")) + 7f;
 	}
 
 	private static float shadowWidth(Font font) {
@@ -140,7 +135,8 @@ public final class WatermarkRenderer {
 		}
 		float bw = shadowBrandW(font);
 		GuiDraw.roundedFine(graphics, SH_PAD, SH_PAD, bw, SH_PILL, SH_PILL * 0.5f, 0xFFEEF1F5);
-		GuiDraw.text(graphics, font, MenuFont.shadowTitle("Stray"), SH_PAD + 7f, Math.round(GuiDraw.middle(SH_PAD, SH_PILL)) - 0.5f, 0xFF0B0E13, false);
+		// Same font, size and baseline as the stats beside it, so it sits centred in its pill.
+		GuiDraw.text(graphics, font, MenuFont.shadow("Stray"), SH_PAD + 7f, Math.round(GuiDraw.middle(0, HEIGHT)), 0xFF0B0E13, false);
 		float x = SH_PAD + bw;
 		List<String> parts = shadowParts();
 		for (int i = 0; i < parts.size(); i++) {
@@ -153,15 +149,6 @@ public final class WatermarkRenderer {
 		}
 	}
 
-	// ---- Windows 98: a little taskbar, Start button and a tray with the stats
-
-	private static int shadow(int color) {
-		int alpha = color >>> 24;
-		int red = Math.round(((color >> 16) & 0xFF) * 0.25f);
-		int green = Math.round(((color >> 8) & 0xFF) * 0.25f);
-		int blue = Math.round((color & 0xFF) * 0.25f);
-		return (alpha << 24) | (red << 16) | (green << 8) | blue;
-	}
 
 	private static int widthTick = Integer.MIN_VALUE;
 	private static float widthCache;

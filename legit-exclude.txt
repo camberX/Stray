@@ -32,7 +32,6 @@ dev/stray/client/render/LoadoutPreview*.class
 # (Freecam's code stays: the world editor flies with it. Only the standalone freecam
 # key and /stray freecam are left out.)
 dev/stray/client/movement/CommandRing*.class
-dev/stray/client/movement/MovementRing*.class
 dev/stray/client/movement/PathWalker*.class
 dev/stray/client/movement/PathFinder*.class
 dev/stray/client/mining/SmoothRotate*.class

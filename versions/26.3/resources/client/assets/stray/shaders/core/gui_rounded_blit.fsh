@@ -17,7 +17,7 @@ void main() {
     vec2 b = size * 0.5 - vec2(1.0);
     vec2 q = abs(p) - b;
     float d = length(max(q, 0.0)) + min(max(q.x, q.y), 0.0) - 1.0;
-    float fw = fwidth(d);
+    float fw = length(vec2(dFdx(d), dFdy(d)));
     float mask = 1.0 - smoothstep(-fw, fw, d);
     if (mask < 0.01) {
         discard;

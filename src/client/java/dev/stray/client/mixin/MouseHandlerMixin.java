@@ -1,7 +1,6 @@
 package dev.stray.client.mixin;
 
 import dev.stray.client.menu.NoCursorReset;
-import dev.stray.client.movement.MovementRings;
 import dev.stray.client.ui.ChatPeek;
 import dev.stray.client.ui.LoadoutsScreen;
 import net.minecraft.client.Minecraft;
@@ -102,15 +101,6 @@ public class MouseHandlerMixin {
 	private static boolean stray$keep() {
 		Minecraft client = Minecraft.getInstance();
 		return client.gui.screen() instanceof ContainerScreen container && NoCursorReset.shouldHookMouse() && !NoCursorReset.skipped(container);
-	}
-
-	@Inject(method = "turnPlayer", at = @At("HEAD"), cancellable = true)
-	private void stray$lockLook(double movementTime, CallbackInfo ci) {
-		if (!dev.stray.Edition.LEGIT) {
-			if (MovementRings.playing()) {
-				ci.cancel();
-			}
-		}
 	}
 
 	@Inject(method = "onScroll", at = @At("HEAD"), cancellable = true)

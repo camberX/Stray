@@ -101,7 +101,7 @@ public final class ShadowLook {
 		if (strength <= 0 || w <= 0f || h <= 0f) {
 			return;
 		}
-		soft(graphics, x, y + 1.5f, w, h, r, extent, Math.min(255, strength) << 24);
+		soft(graphics, x, y, w, h, r, extent, Math.min(255, strength) << 24);
 	}
 
 	/** The same soft falloff in a colour (with its alpha), centred on the box: a glow. */
@@ -179,6 +179,9 @@ public final class ShadowLook {
 				float t = clamp01((d + reach * 0.35f) / (reach * 1.35f));
 				float a = 1f - t * t * (3f - 2f * t);
 				a *= a;
+				// Nothing under the panel itself: its own fill (and the opacity setting) decides
+				// how much shows through, not a dark shadow layer behind it.
+				a *= clamp01(d * RES + 0.5f);
 				image.setPixel(px, py, (Math.round(a * 255f) << 24) | 0xFFFFFF);
 			}
 		}

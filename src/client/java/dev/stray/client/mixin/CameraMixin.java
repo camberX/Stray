@@ -1,6 +1,5 @@
 package dev.stray.client.mixin;
 
-import dev.stray.client.movement.MovementRings;
 import dev.stray.client.render.AspectFov;
 import dev.stray.client.render.TopDownCapture;
 import net.minecraft.client.Camera;
@@ -47,18 +46,6 @@ public abstract class CameraMixin {
 				this.detached = player == null
 					|| dev.stray.client.movement.Freecam.position(partial).distanceToSqr(player.getEyePosition(partial)) > 0.6 * 0.6;
 				return;
-			}
-			if (!dev.stray.Edition.LEGIT && MovementRings.sampleCameraLook()) {
-				this.setRotation(MovementRings.cameraYaw(), MovementRings.cameraPitch());
-			}
-		}
-	}
-
-	@Inject(method = "update", at = @At("RETURN"))
-	private void stray$replayLookTail(DeltaTracker delta, CallbackInfo ci) {
-		if (!dev.stray.Edition.LEGIT) {
-			if (MovementRings.playing()) {
-				this.setRotation(MovementRings.cameraYaw(), MovementRings.cameraPitch());
 			}
 		}
 	}

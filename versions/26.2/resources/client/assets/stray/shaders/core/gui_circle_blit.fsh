@@ -21,7 +21,7 @@ void main() {
     vec2 span = vertexColor.ba;
     vec2 local = (texCoord0 - origin) / max(span, vec2(0.00001));
     float d = length(local - vec2(0.5)) - 0.5;
-    float fw = fwidth(d);
+    float fw = length(vec2(dFdx(d), dFdy(d)));
     float mask = 1.0 - smoothstep(-fw, fw, d);
     if (mask < 0.01) {
         discard;

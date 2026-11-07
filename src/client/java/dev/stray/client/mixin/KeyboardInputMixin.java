@@ -1,6 +1,5 @@
 package dev.stray.client.mixin;
 
-import dev.stray.client.movement.MovementRings;
 import dev.stray.client.movement.PathWalker;
 import net.minecraft.client.player.ClientInput;
 import net.minecraft.client.player.KeyboardInput;
@@ -18,9 +17,7 @@ public abstract class KeyboardInputMixin extends ClientInput {
 			return;
 		}
 		if (!dev.stray.Edition.LEGIT) {
-			if (MovementRings.playing()) {
-				MovementRings.applyInput(this);
-			} else if (PathWalker.walking()) {
+			if (PathWalker.walking()) {
 				PathWalker.applyInput(this);
 			}
 		}

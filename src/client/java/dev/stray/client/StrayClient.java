@@ -64,8 +64,6 @@ import dev.stray.client.mining.ScathaTimer;
 import dev.stray.client.movement.AotvSim;
 import dev.stray.client.movement.CommandRingCommands;
 import dev.stray.client.movement.CommandRings;
-import dev.stray.client.movement.MovementRingCommands;
-import dev.stray.client.movement.MovementRings;
 import dev.stray.client.movement.PathCommands;
 import dev.stray.client.movement.PathRecorder;
 import dev.stray.client.movement.PathWalker;
@@ -218,7 +216,6 @@ public final class StrayClient implements ClientModInitializer {
 		PathRecorder.init();
 		if (!dev.stray.Edition.LEGIT) { PathWalker.init(); }
 		if (!dev.stray.Edition.LEGIT) { CommandRings.init(); }
-		if (!dev.stray.Edition.LEGIT) { MovementRings.init(); }
 		MiningWorldRenderer.init();
 		ChestEspRenderer.init();
 		PestEspRenderer.init();
@@ -367,7 +364,6 @@ public final class StrayClient implements ClientModInitializer {
 			root.then(ProfileCommands.command());
 			root.then(PathCommands.command());
 			if (!dev.stray.Edition.LEGIT) { root.then(CommandRingCommands.command()); }
-			if (!dev.stray.Edition.LEGIT) { root.then(MovementRingCommands.command()); }
 			root.then(ClientCommands.literal("shortcuts").executes(context -> CommandShortcuts.open()));
 			root.then(ClientCommands.literal("keys").executes(context -> openCommandKeys()));
 			if (!dev.stray.Edition.LEGIT) { root.then(ClientCommands.literal("freecam").executes(context -> toggleFreecam())); }
@@ -397,7 +393,6 @@ public final class StrayClient implements ClientModInitializer {
 			vm.then(ProfileCommands.command());
 			vm.then(PathCommands.command());
 			if (!dev.stray.Edition.LEGIT) { vm.then(CommandRingCommands.command()); }
-			if (!dev.stray.Edition.LEGIT) { vm.then(MovementRingCommands.command()); }
 			vm.then(ClientCommands.literal("shortcuts").executes(context -> CommandShortcuts.open()));
 			vm.then(ClientCommands.literal("keys").executes(context -> openCommandKeys()));
 			if (!dev.stray.Edition.LEGIT) { vm.then(ClientCommands.literal("freecam").executes(context -> toggleFreecam())); }
@@ -512,7 +507,6 @@ public final class StrayClient implements ClientModInitializer {
 			BlockMarks.tick(client);
 			PathRecorder.tick(client);
 			if (!dev.stray.Edition.LEGIT) { CommandRings.tick(client); }
-			if (!dev.stray.Edition.LEGIT) { MovementRings.tick(client); }
 			if (!dev.stray.Edition.LEGIT) { PathWalker.tick(client); }
 			PipCapture.tick(client);
 			AotvSim.tick();
@@ -539,7 +533,6 @@ public final class StrayClient implements ClientModInitializer {
 			MetalDetector.onWorldChange();
 			BlockMarks.onWorldChange();
 			if (!dev.stray.Edition.LEGIT) { CommandRings.onWorldChange(); }
-			if (!dev.stray.Edition.LEGIT) { MovementRings.onWorldChange(); }
 			if (!dev.stray.Edition.LEGIT) { PathWalker.stop(false); }
 			NucleusAlerts.reset();
 		});
@@ -569,7 +562,6 @@ public final class StrayClient implements ClientModInitializer {
 			SkyblockProfileApi.refresh();
 			ShopCape.onJoin();
 			if (!dev.stray.Edition.LEGIT) { CommandRings.onWorldChange(); }
-			if (!dev.stray.Edition.LEGIT) { MovementRings.onWorldChange(); }
 		});
 
 		ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> {
@@ -592,7 +584,6 @@ public final class StrayClient implements ClientModInitializer {
 			ComposterTracker.reset();
 			GardenHud.reset();
 			if (!dev.stray.Edition.LEGIT) { CommandRings.onWorldChange(); }
-			if (!dev.stray.Edition.LEGIT) { MovementRings.onWorldChange(); }
 			EnderNodeTracker.get().clear();
 			ConnectionPing.reset();
 			MiningTracker.reset();

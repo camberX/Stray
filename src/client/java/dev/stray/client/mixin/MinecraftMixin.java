@@ -1,7 +1,6 @@
 package dev.stray.client.mixin;
 
 import dev.stray.client.movement.AotvSim;
-import dev.stray.client.movement.MovementRings;
 import dev.stray.client.render.BlockMarks;
 import dev.stray.client.render.MobGlowRenderer;
 import dev.stray.client.farming.EmptyVacuum;
@@ -31,7 +30,6 @@ public class MinecraftMixin {
 		if (!dev.stray.Edition.LEGIT) {
 			LoadoutSwap.preKeybinds(client);
 			EmptyVacuum.preKeybinds(client);
-			MovementRings.preKeybinds(client);
 		}
 	}
 

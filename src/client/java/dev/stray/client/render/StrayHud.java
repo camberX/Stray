@@ -7,7 +7,6 @@ import dev.stray.client.mining.CrystalHollowsMap;
 import dev.stray.client.mining.CrystalHollowsRenderer;
 import dev.stray.client.mining.MetalDetector;
 import dev.stray.client.movement.CommandRings;
-import dev.stray.client.movement.MovementRings;
 import dev.stray.client.net.LobbyPings;
 import dev.stray.client.update.UpdateToast;
 import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry;
@@ -96,7 +95,6 @@ public final class StrayHud {
 		HudChrome.element(null);
 		if (!dev.stray.Edition.LEGIT) { CommandRings.extract(graphics, delta); }
 		HudChrome.element(null);
-		if (!dev.stray.Edition.LEGIT) { MovementRings.extract(graphics, delta); }
 		HudChrome.element(null);
 		dev.stray.client.editor.EditorHud.extract(graphics, delta);
 		HudChrome.element(null);

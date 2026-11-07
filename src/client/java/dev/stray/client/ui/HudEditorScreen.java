@@ -18,9 +18,7 @@ import java.util.List;
 public class HudEditorScreen extends Screen {
 	private static final float BAR_W = 268;
 	private static final float INSPECT_W = 248;
-	private static final float INSPECT_H = 52;
-	private float dockX;
-	private float dockY;
+	private static final float INSPECT_H = 38;
 	private static final float DOCK_H = 12;
 	private static final float SLIDER_W = 110;
 
@@ -158,35 +156,13 @@ public class HudEditorScreen extends Screen {
 		String pct = Math.round(scale * 100) + "%";
 		GuiDraw.small(graphics, font, pct, inspectX + INSPECT_W - GuiDraw.smallWidth(font, pct) - 8, inspectY + 6, Theme.TEXT);
 
-		// Dock to top: lines this element up with the others along the top edge.
-		boolean docked = HudLayout.docked(selected);
-		dockX = inspectX + 8;
-		dockY = inspectY + 21;
-		GuiDraw.small(graphics, font, "Dock to top", dockX, dockY + 2, Theme.MUTED);
-		float sw = 18;
-		float sh = 10;
-		float sx = inspectX + INSPECT_W - 8 - sw;
-		float sy = dockY + 1;
-		GuiDraw.pill(graphics, sx, sy, sw, sh, docked ? Theme.ACCENT : Theme.TRACK);
-		GuiDraw.circle(graphics, docked ? sx + sw - 5 : sx + 5, sy + sh * 0.5f, 3.2f, docked ? Theme.WINDOW_SOLID : Theme.OFF);
-		if (docked) {
-			String align = "Align " + HudLayout.dockAlignLabel();
-			alignW = GuiDraw.smallWidth(font, align) + 10;
-			alignX = sx - 8 - alignW;
-			boolean alignHover = GuiDraw.hovered(mouseX, mouseY, alignX, dockY, alignW, DOCK_H);
-			ClickLook.outside(graphics, alignX, dockY, alignW, DOCK_H, 3, alignHover ? Theme.CARD_HOVER : Theme.CARD, alignHover ? Theme.ACCENT : Theme.LINE);
-			GuiDraw.small(graphics, font, align, alignX + 5, dockY + 2, Theme.TEXT);
-		} else {
-			alignW = 0;
-		}
-
 		// Background: draws the element's panel, or just its contents.
 		boolean background = HudLayout.background(selected);
-		bgY = inspectY + 35;
-		GuiDraw.small(graphics, font, "Background", dockX, bgY + 2, Theme.MUTED);
-		float by = bgY + 1;
-		GuiDraw.pill(graphics, sx, by, sw, sh, background ? Theme.ACCENT : Theme.TRACK);
-		GuiDraw.circle(graphics, background ? sx + sw - 5 : sx + 5, by + sh * 0.5f, 3.2f, background ? Theme.WINDOW_SOLID : Theme.OFF);
+		bgY = inspectY + 21;
+		GuiDraw.small(graphics, font, "Background", inspectX + 8, bgY + 2, Theme.MUTED);
+		float sw = 18;
+		float sh = 10;
+		ShadowMenu.toggle(graphics, inspectX + INSPECT_W - 8 - sw, bgY + 1, sw, sh, background ? 1f : 0f, 1f);
 	}
 
 	private float bgY;
@@ -195,16 +171,8 @@ public class HudEditorScreen extends Screen {
 		return selected != null && GuiDraw.hovered(mouseX, mouseY, inspectX, bgY - 2, INSPECT_W, DOCK_H + 4);
 	}
 
-	private float alignX;
-	private float alignW;
 
-	private boolean onAlign(double mouseX, double mouseY) {
-		return selected != null && alignW > 0 && GuiDraw.hovered(mouseX, mouseY, alignX, dockY, alignW, DOCK_H);
-	}
 
-	private boolean onDock(double mouseX, double mouseY) {
-		return selected != null && GuiDraw.hovered(mouseX, mouseY, inspectX, dockY - 2, INSPECT_W, DOCK_H + 4);
-	}
 
 	private boolean onDone(double mouseX, double mouseY, int guiW) {
 		float x = (guiW - BAR_W) * 0.5f;
@@ -260,17 +228,9 @@ public class HudEditorScreen extends Screen {
 			done();
 			return true;
 		}
-		if (onAlign(event.x(), event.y())) {
-			HudLayout.cycleDockAlign();
-			return true;
-		}
 		if (onBackground(event.x(), event.y())) {
 			HudLayout.setBackground(selected, !HudLayout.background(selected));
 			StrayConfig.get().save();
-			return true;
-		}
-		if (onDock(event.x(), event.y())) {
-			HudLayout.setDocked(selected, !HudLayout.docked(selected));
 			return true;
 		}
 		if (onSlider(event.x(), event.y())) {

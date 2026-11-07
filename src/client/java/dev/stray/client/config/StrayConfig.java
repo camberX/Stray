@@ -265,10 +265,6 @@ public final class StrayConfig {
 	public boolean commandRingsEnabled = false;
 	public boolean commandRingsRender = true;
 	public int commandRingsRgb = 0x2FB5FF;
-	public boolean movementRingsEnabled = false;
-	public int movementRingsRgb = 0xFF8A4A;
-	public String movementRecordKey = "key.keyboard.unknown";
-	public float movementAimSpeed = 1.00f;
 	public boolean aotvSimEnabled = false;
 	public boolean commandShortcutsEnabled = false;
 	public boolean commandShortcutsPassArgs = true;
@@ -1191,14 +1187,6 @@ public final class StrayConfig {
 				if (!json.has("commandRingsRgb") || (loaded.commandRingsRgb & 0xFFFFFF) == 0) {
 					loaded.commandRingsRgb = 0x2FB5FF;
 				}
-				if (!json.has("movementRingsEnabled")) {
-					loaded.movementRingsEnabled = false;
-				}
-				if (!json.has("movementRingsRgb") || (loaded.movementRingsRgb & 0xFFFFFF) == 0) {
-					loaded.movementRingsRgb = 0xFF8A4A;
-				}
-				loaded.movementRecordKey = blankKey(loaded.movementRecordKey, "key.keyboard.unknown");
-				loaded.movementAimSpeed = json.has("movementAimSpeed") ? clamp(loaded.movementAimSpeed <= 0f ? 1.00f : loaded.movementAimSpeed, 0.25f, 2.00f) : 1.00f;
 				if (!json.has("commandShortcutsEnabled")) {
 					loaded.commandShortcutsEnabled = false;
 				}
@@ -1777,7 +1765,6 @@ public final class StrayConfig {
 		loadoutsMenuEnabled = false;
 		wardrobeMenuEnabled = false;
 		commandRingsEnabled = false;
-		movementRingsEnabled = false;
 	}
 
 	/**

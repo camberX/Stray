@@ -24,10 +24,6 @@ public final class MenuFont {
 	public static final Style TITLE = Style.EMPTY.withFont(new FontDescription.Resource(TITLE_ID));
 	public static final Style ICON = Style.EMPTY.withFont(new FontDescription.Resource(ICON_ID));
 	public static final Style VANILLA = Style.EMPTY.withFont(FontDescription.DEFAULT);
-	/** Google Sans Flex, the illogical-impulse UI font, for the Hyprland look. */
-	public static final Style HYPR = Style.EMPTY.withFont(new FontDescription.Resource(Stray.id("hypr")));
-	public static final Style HYPR_SMALL = Style.EMPTY.withFont(new FontDescription.Resource(Stray.id("hypr_small")));
-	public static final Style HYPR_TITLE = Style.EMPTY.withFont(new FontDescription.Resource(Stray.id("hypr_title")));
 
 	/**
 	 * The same font rasterized at 1x to 6x. Minecraft samples glyphs without
@@ -81,6 +77,12 @@ public final class MenuFont {
 		return value.copy().withStyle(style -> style.withFont(font));
 	}
 
+	/** True for one plain, uncoloured run of one of Stray's TTF fonts (Inter, the icons). */
+	public static boolean ttfPlain(Component value) {
+		return value != null && value.getSiblings().isEmpty() && value.getStyle().getColor() == null
+			&& FAMILY.containsKey(value.getStyle().getFont());
+	}
+
 	public static Style hyprStyle(int family) {
 		net.minecraft.client.Minecraft client = net.minecraft.client.Minecraft.getInstance();
 		int scale = 2;
@@ -89,18 +91,6 @@ public final class MenuFont {
 		}
 		scale = Math.max(1, Math.min(6, scale));
 		return HYPR_SCALED[family][scale - 1];
-	}
-
-	public static Component hypr(String value) {
-		return Component.literal(value == null ? "" : value).withStyle(hyprStyle(0));
-	}
-
-	public static Component hyprSmall(String value) {
-		return Component.literal(value == null ? "" : value).withStyle(hyprStyle(1));
-	}
-
-	public static Component hyprTitle(String value) {
-		return Component.literal(value == null ? "" : value).withStyle(hyprStyle(2));
 	}
 
 	/** Inter, for the Shadow style. */

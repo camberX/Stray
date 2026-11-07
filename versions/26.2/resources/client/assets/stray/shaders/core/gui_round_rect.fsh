@@ -24,7 +24,7 @@ void main() {
     vec2 hs = extent / k;
     vec2 q = abs(p) - (hs - vec2(r));
     float d = length(max(q, 0.0)) + min(max(q.x, q.y), 0.0) - r;
-    float fw = max(fwidth(d), 1e-5);
+    float fw = max(length(vec2(dFdx(d), dFdy(d))), 1e-5);
     float mask = clamp(0.5 - d / fw, 0.0, 1.0);
     if (ring) {
         mask -= clamp(0.5 - (d + fw) / fw, 0.0, 1.0);

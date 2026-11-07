@@ -29,7 +29,6 @@
 		"ClientClockManagerMixin",
 		"ClientInputAccessor",
 		"ClientLevelAccessor",
-		"ClientLevelMixin",
 		"ClientPacketListenerMixin",
 		"ConnectionMixin",
 		"EditBoxMixin",

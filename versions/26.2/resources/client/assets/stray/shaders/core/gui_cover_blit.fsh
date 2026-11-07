@@ -22,7 +22,7 @@ void main() {
     vec2 p = texCoord0 - vec2(0.5);
     vec2 q = abs(p) - vec2(0.5 - radius);
     float d = length(max(q, 0.0)) + min(max(q.x, q.y), 0.0) - radius;
-    float fw = max(fwidth(d), 1e-5);
+    float fw = max(length(vec2(dFdx(d), dFdy(d))), 1e-5);
     float mask = clamp(-d / fw + 0.5, 0.0, 1.0);
     if (mask < 0.004) {
         discard;

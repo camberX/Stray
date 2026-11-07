@@ -182,7 +182,6 @@ public final class ClickGui {
 		return count;
 	}
 
-
 	private static void drawHud(StrayScreen screen, GuiGraphicsExtractor graphics, Font font, float x, float y, float w) {
 		StrayConfig config = StrayConfig.get();
 		drawChoice(screen, graphics, font, x, y, w, "Accent Outlines", config.accentOutlines, () -> {
@@ -203,11 +202,6 @@ public final class ClickGui {
 	/** Action row: label and a chevron, as in the feature panels. */
 	private static void drawButton(StrayScreen screen, GuiGraphicsExtractor graphics, Font font, float x, float y, float w, String label, Runnable pick) {
 		screen.clickAction(graphics, font, x, y, w, label, pick);
-	}
-
-	/** Style picker: the feature panels' dropdown. Returns the y where the next row starts. */
-	private static float drawDropdown(StrayScreen screen, GuiGraphicsExtractor graphics, Font font, float x, float y, float w, String key, String label, String[] options, int selected, java.util.function.IntConsumer pick) {
-		return screen.clickDropdown(graphics, font, x, y, w, key, label, options, selected, pick);
 	}
 
 	static final String CUSTOMIZE = "Customize item";
@@ -233,7 +227,6 @@ public final class ClickGui {
 		drawButton(screen, graphics, font, x, y, w, "Edit held item", CustomizeScreen::openForHeld);
 		drawButton(screen, graphics, font, x, y + stride(), w, "Reset held item", CustomizeScreen::resetHeld);
 	}
-
 
 	private static final int[] TIMEOUTS = {50, 100, 150, 300, 500, 1000};
 
@@ -349,7 +342,6 @@ public final class ClickGui {
 			GuiDraw.roundedFine(graphics, x, y, w, h, r, fill);
 		}
 	}
-
 
 	private static String fit(Font font, String label, int max) {
 		if (font.width(label) <= max) {
@@ -507,7 +499,6 @@ public final class ClickGui {
 		java.util.Map.entry("Update notify", "Tells you when an update is out."),
 		java.util.Map.entry("Customize item", "Rename and restyle your items, client side."),
 		java.util.Map.entry("Nick hider", "Shows a different name for you, client side."),
-		java.util.Map.entry("Cape", "A custom cape."),
 		java.util.Map.entry("Skin", "A skin only you see, from a PNG on your computer."),
 		java.util.Map.entry("Slayer HUD", "Your slayer quest, boss health, timer and phase."),
 		java.util.Map.entry("Slayer profit", "What your slayer drops are worth, per boss and per hour."),
@@ -676,7 +667,6 @@ public final class ClickGui {
 		mods.add(mod("Block marks", "World", StrayScreen.Feature.MARKS, null, () -> config.blockMarksEnabled, v -> config.blockMarksEnabled = v, true, false));
 		mods.add(mod("Paths", "World", StrayScreen.Feature.PATHS, null, () -> config.pathsEnabled, v -> config.pathsEnabled = v, true, false));
 		mods.add(mod("Command rings", "World", StrayScreen.Feature.RINGS, null, () -> config.commandRingsEnabled, v -> config.commandRingsEnabled = v, true, false));
-		mods.add(mod("Movement rings", "World", StrayScreen.Feature.MOVE, null, () -> config.movementRingsEnabled, v -> config.movementRingsEnabled = v, true, false));
 
 		mods.add(mod("Player glow", "Entities", StrayScreen.Feature.MOB, EntityKind.PLAYER, () -> config.playerVisuals.glowEnabled, v -> config.playerVisuals.glowEnabled = v, true, false));
 		mods.add(mod("Own nametag", "Entities", null, null, () -> config.nametagSelf, v -> config.nametagSelf = v, true, false));
@@ -724,7 +714,6 @@ public final class ClickGui {
 		mods.add(new Mod(CUSTOMIZE, "Player", null, null, () -> true, v -> { }, false, false, false, true));
 		mods.add(hold("Cosmetics", "Player", StrayScreen.Feature.COSMETICS));
 		mods.add(mod("Nick hider", "Player", StrayScreen.Feature.NICK, null, () -> config.nickEnabled, v -> config.nickEnabled = v, true, false));
-		mods.add(hold("Cape", "Player", StrayScreen.Feature.CAPE, ClickGui::capeOn));
 		mods.add(mod("Skin", "Player", StrayScreen.Feature.SKIN, null, () -> config.skinEnabled, v -> config.skinEnabled = v, true, false));
 		mods.add(mod("Auto clicker", "Player", StrayScreen.Feature.AUTO_CLICKER, null, () -> config.autoClickerEnabled, v -> config.autoClickerEnabled = v, true, false));
 
@@ -787,11 +776,6 @@ public final class ClickGui {
 	private static Mod hold(String name, String column, StrayScreen.Feature feature, BooleanSupplier on) {
 		return new Mod(name, column, feature, null, on, v -> {
 		}, false, false, false, true);
-	}
-
-	private static boolean capeOn() {
-		StrayConfig config = StrayConfig.get();
-		return (config.capeUrl != null && !config.capeUrl.isBlank()) || (config.capePath != null && !config.capePath.isBlank());
 	}
 
 	record Mod(

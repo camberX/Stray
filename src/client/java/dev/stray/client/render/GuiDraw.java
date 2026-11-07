@@ -965,7 +965,27 @@ public final class GuiDraw {
 	}
 
 	public static void text(GuiGraphicsExtractor graphics, Font font, Component value, float x, float y, int color, boolean shadow) {
-		graphics.text(font, MenuFont.crisp(value, poseScale(graphics)), Math.round(x), Math.round(y), color, shadow);
+		component(graphics, font, MenuFont.crisp(value, poseScale(graphics)), Math.round(x), Math.round(y), color, shadow);
+	}
+
+	/**
+	 * Vanilla's shadow sits a whole GUI pixel down and right, which is two to four screen pixels
+	 * and reads as a smeared double next to thin Inter. Stray's own fonts get a soft one-pixel
+	 * shadow instead; anything else keeps the vanilla one.
+	 */
+	private static void component(GuiGraphicsExtractor graphics, Font font, Component value, int x, int y, int color, boolean shadow) {
+		if (shadow && MenuFont.ttfPlain(value)) {
+			Minecraft client = Minecraft.getInstance();
+			double gui = client.getWindow() == null ? 2.0 : client.getWindow().getGuiScale();
+			float px = (float) (1.0 / (gui * poseScale(graphics)));
+			int alpha = Math.round(((color >>> 24) & 0xFF) * 0.6f);
+			graphics.pose().pushMatrix();
+			graphics.pose().translate(px, px);
+			graphics.text(font, value, x, y, alpha << 24, false);
+			graphics.pose().popMatrix();
+			shadow = false;
+		}
+		graphics.text(font, value, x, y, color, shadow);
 	}
 
 	/** How much the current pose scales things, so text and hairlines can match real pixels. */
@@ -983,7 +1003,7 @@ public final class GuiDraw {
 		graphics.pose().pushMatrix();
 		graphics.pose().translate(x, y);
 		graphics.pose().scale(scale, scale);
-		graphics.text(font, MenuFont.crisp(value, poseScale(graphics)), 0, 0, color, shadow);
+		component(graphics, font, MenuFont.crisp(value, poseScale(graphics)), 0, 0, color, shadow);
 		graphics.pose().popMatrix();
 	}
 
