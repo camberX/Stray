@@ -20,6 +20,20 @@ public final class StrayShaders {
 	private StrayShaders() {
 	}
 
+	/**
+	 * Still reloading: a loading overlay that has not started fading out. Once it fades the
+	 * resources are in, so the title screen under it can already use the shaders.
+	 */
+	private static boolean reloading(Object overlay) {
+		if (overlay == null) {
+			return false;
+		}
+		if (overlay instanceof dev.stray.client.mixin.LoadingOverlayAccessor loading) {
+			return loading.stray$fadeOutStart() < 0L;
+		}
+		return true;
+	}
+
 	public static boolean ready() {
 		if (ready) {
 			return true;
@@ -28,14 +42,14 @@ public final class StrayShaders {
 		// While the loading overlay is up the shader cache still reads the old (vanilla-only)
 		// resources; compiling then only logs "Couldn't preload shader" errors. Not throttled, so
 		// the first frame after the overlay already checks.
-		if (client == null || client.getResourceManager() == null || client.gui.overlay() != null) {
+		if (client == null || client.getResourceManager() == null || reloading(client.gui.overlay())) {
 			return false;
 		}
 		long now = System.nanoTime();
 		if (now < nextCheckNs) {
 			return false;
 		}
-		nextCheckNs = now + 500_000_000L;
+		nextCheckNs = now + 100_000_000L;
 		try {
 			for (String path : PROBES) {
 				if (client.getResourceManager().getResource(Stray.id(path)).isEmpty()) {
