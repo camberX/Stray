@@ -32,7 +32,7 @@ void main() {
         float px = max(max(g.x, g.y), 1e-5);
         // A touch thinner where it runs diagonally, which still reads heavier than the sides.
         float diag = min(g.x, g.y) / px;
-        float w = px * (1.0 - 0.3 * diag);
+        float w = px * (1.0 - 0.45 * diag);
         mask = clamp((1.0 - d) / px + 0.5, 0.0, 1.0) - clamp((1.0 - w - d) / px + 0.5, 0.0, 1.0);
     } else {
         mask = clamp((1.0 - d) / fw + 0.5, 0.0, 1.0);
