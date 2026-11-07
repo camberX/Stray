@@ -234,6 +234,7 @@ public final class StrayClient implements ClientModInitializer {
 				dev.stray.client.dungeon.LeapMenu.onChat(plain);
 				dev.stray.client.dungeon.F7Titles.onChat(plain);
 				dev.stray.client.dungeon.TerminalHighlight.onChat(plain);
+				dev.stray.client.dungeon.MaskTimers.onChat(plain);
 			}
 			MetalDetector.onMessage(message, overlay);
 			CropFever.onMessage(message, overlay);
@@ -455,6 +456,7 @@ public final class StrayClient implements ClientModInitializer {
 			if (!dev.stray.Edition.LEGIT) { dev.stray.client.dungeon.terminal.TerminalSession.tick(client); }
 			dev.stray.client.dungeon.F7Titles.tick(client);
 			dev.stray.client.dungeon.TerminalHighlight.tick(client);
+			dev.stray.client.dungeon.MaskTimers.tick(client);
 			if (!dev.stray.client.dungeon.LeapMenu.active()) {
 				dev.stray.client.dungeon.LeapMenu.onContainerClosed();
 			}
@@ -528,6 +530,7 @@ public final class StrayClient implements ClientModInitializer {
 			PestCooldown.reset();
 			CropFever.reset();
 			ScathaTimer.reset();
+			dev.stray.client.dungeon.MaskTimers.reset();
 			LassoReel.reset();
 			if (!dev.stray.Edition.LEGIT) { EmptyVacuum.reset(); }
 			PestPlotTp.reset();

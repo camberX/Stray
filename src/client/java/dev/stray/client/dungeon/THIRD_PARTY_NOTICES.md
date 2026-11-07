@@ -5,3 +5,6 @@ by Noamm9 (its `DungeonListener` and `LeapMenu`), which is dedicated to the publ
 [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/). The leap logic (reading the heads,
 sorting, the slot click and the close afterwards) is kept as in the original; the menu's look and
 the teammate POV are Stray's own.
+
+`MaskTimers` is ported from NoammAddons' `MaskTimers` (same author and licence), as it was before
+commit `45679592` hid masks off cooldown in every style. Only the Zyryon style is kept.

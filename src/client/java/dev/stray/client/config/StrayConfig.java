@@ -387,6 +387,13 @@ public final class StrayConfig {
 		}
 	}
 	public boolean f7TitlesEnabled = false;
+	/** Bonzo / Spirit Mask and Phoenix Pet cooldowns (NoammAddons, Zyryon look). */
+	public boolean maskTimers = false;
+	public boolean maskTimersDungeonsOnly = false;
+	public boolean maskTimersInvuln = false;
+	public boolean maskTimersProcTitle = false;
+	public boolean maskTimersReadyTitle = false;
+	public boolean maskTimersPartyMessage = false;
 	public boolean f7CrystalTitles = true;
 	public boolean f7WitherTitles = true;
 	public boolean f7LightningTimer = true;
@@ -539,6 +546,7 @@ public final class StrayConfig {
 	public HudSlot slotF7Lightning = new HudSlot();
 	public HudSlot slotF7Terminal = new HudSlot();
 	public HudSlot slotArrayList = new HudSlot();
+	public HudSlot slotMaskTimers = new HudSlot();
 	public HudSlot slotSlayer = new HudSlot();
 	public HudSlot slotSlayerProfit = new HudSlot();
 	public HudSlot slotSlayerRng = new HudSlot();
@@ -1681,6 +1689,7 @@ public final class StrayConfig {
 				loaded.slotF7Lightning = hudSlot(loaded.slotF7Lightning);
 				loaded.slotF7Terminal = hudSlot(loaded.slotF7Terminal);
 				loaded.slotArrayList = hudSlot(loaded.slotArrayList);
+				loaded.slotMaskTimers = hudSlot(loaded.slotMaskTimers);
 				// Hand-edited values outside what the sliders allow would stall the clicks.
 				loaded.terminalFirstClickDelay = Math.max(0, Math.min(8, loaded.terminalFirstClickDelay));
 				loaded.terminalScale = Math.max(50, Math.min(200, loaded.terminalScale));
@@ -2590,6 +2599,7 @@ public final class StrayConfig {
 		slotF7Lightning = new HudSlot();
 		slotF7Terminal = new HudSlot();
 		slotArrayList = new HudSlot();
+		slotMaskTimers = new HudSlot();
 		slotSlayer = new HudSlot();
 		slotSlayerProfit = new HudSlot();
 		slotSlayerRng = new HudSlot();
