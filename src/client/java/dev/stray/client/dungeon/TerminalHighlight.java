@@ -83,12 +83,21 @@ public final class TerminalHighlight {
 	}
 
 	/** One Hypixel terminal/device label (two stacked stands), drawn as one Shadow tag. */
-	private record StandTag(ArmorStand top, Component[] lines, int[] colors) {
+	private record StandTag(List<ArmorStand> stands, Component[] lines, int[] colors) {
 	}
 
 	private static final java.util.Set<String> PRIMARY = java.util.Set.of("Inactive Terminal", "Terminal Active", "Inactive", "Active");
 	private static final java.util.Set<String> DONE_NAMES = java.util.Set.of("Terminal Active", "Active");
 	private static List<StandTag> standTags = List.of();
+	/** Second-line names seen next to a terminal or device ("CLICK HERE", ...), hidden by name too. */
+	private static final java.util.Set<String> PARTNERS = java.util.concurrent.ConcurrentHashMap.newKeySet();
+	/** P3 sections as boxes (min x, y, z, max x, y, z), from NoammAddons' LocationUtils. */
+	private static final double[][] SECTION_BOXES = {
+		{90, 105, 32, 111, 158, 123},
+		{16, 105, 122, 111, 158, 143},
+		{-3, 106, 48, 19, 158, 142},
+		{-3, 106, 30, 91, 158, 50}
+	};
 	private static it.unimi.dsi.fastutil.ints.IntSet hiddenStands = it.unimi.dsi.fastutil.ints.IntSets.EMPTY_SET;
 
 	/** /stray debug dev highlight: four stand-in terminals in front of the player. */
@@ -296,8 +305,27 @@ public final class TerminalHighlight {
 	}
 
 	/** Whether this armor stand's own name is hidden because a Shadow tag replaces it. */
-	public static boolean hidesStand(int id) {
-		return hiddenStands.contains(id);
+	public static boolean hidesStand(Entity stand) {
+		if (hiddenStands.contains(stand.getId())) {
+			return true;
+		}
+		// Also by name, so a stand Hypixel just (re)spawned is hidden before the next tick groups it.
+		if (!StrayConfig.get().terminalHighlightTags || !active() || !stand.hasCustomName()) {
+			return false;
+		}
+		String name = net.minecraft.util.StringUtil.stripColor(stand.getCustomName().getString()).trim();
+		return PRIMARY.contains(name) || PARTNERS.contains(name);
+	}
+
+	/** The P3 section (1-4) a spot is in, or 0 outside all of them. */
+	private static int sectionAt(double x, double y, double z) {
+		for (int i = 0; i < SECTION_BOXES.length; i++) {
+			double[] b = SECTION_BOXES[i];
+			if (x >= b[0] && x <= b[3] + 1 && y >= b[1] && y <= b[4] + 1 && z >= b[2] && z <= b[5] + 1) {
+				return i + 1;
+			}
+		}
+		return 0;
 	}
 
 	private static void tickTags(Minecraft client) {
@@ -336,8 +364,16 @@ public final class TerminalHighlight {
 			}
 			for (ArmorStand member : group) {
 				hidden.add(member.getId());
+				if (member != stand) {
+					PARTNERS.add(plain(member));
+				}
 			}
 			if (DONE_NAMES.contains(name)) {
+				continue;
+			}
+			// Only the current section: labels elsewhere stay hidden.
+			int at = sectionAt(stand.getX(), stand.getY(), stand.getZ());
+			if (section >= 1 && section <= 4 && at != 0 && at != section || section == DONE) {
 				continue;
 			}
 			group.sort((a, b) -> Double.compare(b.getY(), a.getY()));
@@ -348,10 +384,14 @@ public final class TerminalHighlight {
 				lines[i] = MenuFont.shadow(text);
 				colors[i] = colorOf(group.get(i).getCustomName());
 			}
-			tags.add(new StandTag(group.get(0), lines, colors));
+			tags.add(new StandTag(List.copyOf(group), lines, colors));
 		}
 		standTags = tags;
 		hiddenStands = hidden;
+	}
+
+	private static float labelScale() {
+		return Math.max(50, Math.min(200, StrayConfig.get().terminalLabelScale)) / 100f;
 	}
 
 	private static String plain(ArmorStand stand) {
@@ -376,11 +416,19 @@ public final class TerminalHighlight {
 	private static void extractStandTags(GuiGraphicsExtractor graphics, Minecraft client, Vec3 camPos, Vector3fc forward, float partial) {
 		Font font = client.font;
 		for (StandTag tag : standTags) {
-			ArmorStand top = tag.top;
+			ArmorStand top = tag.stands.get(0);
 			if (top.isRemoved()) {
 				continue;
 			}
-			Vec3 head = top.getPosition(partial).add(0, top.getBbHeight() + 0.5, 0);
+			// Centred where Hypixel's lines sat: the middle of the stands' name positions.
+			double nameY = 0;
+			for (ArmorStand stand : tag.stands) {
+				Vec3 attach = stand.getAttachments().getNullable(net.minecraft.world.entity.EntityAttachment.NAME_TAG, 0, stand.getYRot(partial));
+				nameY += stand.getPosition(partial).y + (attach == null ? stand.getBbHeight() : attach.y) + 0.5;
+			}
+			nameY /= tag.stands.size();
+			Vec3 pos = top.getPosition(partial);
+			Vec3 head = new Vec3(pos.x, nameY, pos.z);
 			Vec3 rel = head.subtract(camPos);
 			if (rel.x * forward.x() + rel.y * forward.y() + rel.z * forward.z() <= 0.12) {
 				continue;
@@ -392,7 +440,7 @@ public final class TerminalHighlight {
 			float x = (float) ((ndc.x * 0.5 + 0.5) * graphics.guiWidth());
 			float y = (float) ((-ndc.y * 0.5 + 0.5) * graphics.guiHeight());
 			// Never smaller than 0.8 so far labels stay readable (vanilla's shrink with distance).
-			float scale = Math.max(0.8f, NametagRenderer.distanceScale(head.distanceTo(camPos)));
+			float scale = Math.max(0.8f, NametagRenderer.distanceScale(head.distanceTo(camPos))) * labelScale();
 			float lineH = 10f;
 			float w = 0f;
 			for (Component line : tag.lines) {
@@ -406,7 +454,7 @@ public final class TerminalHighlight {
 				graphics.pose().scale(scale, scale);
 			}
 			float left = -w * 0.5f;
-			float topY = -h;
+			float topY = -h * 0.5f;
 			ShadowLook.panel(graphics, left, topY, w, h, 5f, ShadowLook.FILL);
 			for (int i = 0; i < tag.lines.length; i++) {
 				Component line = tag.lines[i];
@@ -511,7 +559,7 @@ public final class TerminalHighlight {
 			}
 			float x = (float) ((ndc.x * 0.5 + 0.5) * graphics.guiWidth());
 			float y = (float) ((-ndc.y * 0.5 + 0.5) * graphics.guiHeight());
-			float scale = NametagRenderer.distanceScale(head.distanceTo(camPos));
+			float scale = NametagRenderer.distanceScale(head.distanceTo(camPos)) * labelScale();
 			Component label = MenuFont.shadow(String.valueOf(target.number));
 			float w = Math.max(TAG, font.width(label) + 10f);
 			graphics.pose().pushMatrix();
