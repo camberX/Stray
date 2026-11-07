@@ -360,7 +360,8 @@ public final class ShadowMenu {
 		if (item.on() != null) {
 			float k = approachIn(knob, item.key(), lit ? 1f : 0f, 16f);
 			float dx = x + 9f;
-			float dy = y + CHIP_H * 0.5f;
+			// Centred on the label's letters (the label snaps to whole pixels), not the chip box.
+			float dy = Math.round(GuiDraw.middle(y, CHIP_H)) + 4.5f;
 			if (k > 0.05f) {
 				GuiDraw.circle(graphics, dx, dy, 3.6f, Anim.fade(0x30FFFFFF, k * t));
 			}
@@ -430,7 +431,13 @@ public final class ShadowMenu {
 				contentAlpha = st;
 				int[] saved = swapTheme();
 				try {
-					ClickGui.drawModuleSettings(screen, graphics, font, mx, my, mod, x - 3f, by, w + 6f);
+					// Feature panels draw their labels 1px in from x; Click GUI rows inset by NEST:
+					// both land on the title's left edge and the divider's right edge.
+					if (mod.feature() != null) {
+						ClickGui.drawModuleSettings(screen, graphics, font, mx, my, mod, x - 1f, by, w + 1f);
+					} else {
+						ClickGui.drawModuleSettings(screen, graphics, font, mx, my, mod, x - 3f, by, w + 6f);
+					}
 				} finally {
 					restoreTheme(saved);
 					contentAlpha = 1f;
