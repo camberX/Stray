@@ -445,6 +445,7 @@ public final class ClickGui {
 		java.util.Map.entry("Boss bar", "Stray's restyled boss bar."),
 		java.util.Map.entry("Effects", "Your active potion effects."),
 		java.util.Map.entry("Item name", "The name of the item you switch to."),
+		java.util.Map.entry("Keep break progress", "Stops block breaking from restarting when Hypixel re-sends your held tool. Holds back updates to the held item while you break a block and applies them afterwards. Not in Stray Legit."),
 		java.util.Map.entry("Mining HUD", "Mining stats and ability cooldown."),
 		java.util.Map.entry("Titanium ESP", "Highlights titanium ore near you."),
 		java.util.Map.entry("CH waypoints", "Waypoints for the Crystal Hollows."),
@@ -624,6 +625,9 @@ public final class ClickGui {
 		addSlayer(mods, config);
 
 		mods.add(mod("Mining HUD", "Mining", StrayScreen.Feature.MINING, null, () -> config.miningHudEnabled, v -> config.miningHudEnabled = v, true, false));
+		if (!dev.stray.Edition.LEGIT) {
+			mods.add(mod("Keep break progress", "Mining", null, null, () -> config.keepBreakProgress, v -> config.keepBreakProgress = v, true, false));
+		}
 		mods.add(mod("Titanium ESP", "Mining", StrayScreen.Feature.TITANIUM, null, () -> config.titaniumEsp, v -> config.titaniumEsp = v, true, false));
 		mods.add(mod("CH waypoints", "Mining", StrayScreen.Feature.CRYSTAL, null, () -> config.crystalHollowsWaypoints, v -> config.crystalHollowsWaypoints = v, true, false));
 		mods.add(mod("Route miner", "Mining", StrayScreen.Feature.ROUTE, null, () -> config.routeMiner, v -> config.routeMiner = v, true, false));

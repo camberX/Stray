@@ -35,6 +35,8 @@ dev/stray/client/movement/CommandRing*.class
 dev/stray/client/movement/PathWalker*.class
 dev/stray/client/movement/PathFinder*.class
 dev/stray/client/mining/SmoothRotate*.class
+# Keep break progress: holds back held-item updates while breaking
+dev/stray/client/mining/KeepBreakProgress*.class
 
 # Mixins that only serve the removed features. "mixin:" lines also drop the entry from
 # stray.client.mixins.json / stray.sodium.mixins.json in legit builds.

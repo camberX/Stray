@@ -245,6 +245,8 @@ public final class StrayConfig {
 	public boolean crystalHollowsMap = false;
 	public boolean scathaHudEnabled = false;
 	public boolean foragingHideTreeBlocks = false;
+	/** Holds back same-item updates of the held tool while breaking, so progress does not reset. */
+	public boolean keepBreakProgress = false;
 	public boolean foragingCompactSweep = false;
 	public boolean foragingCompactTreeGift = false;
 	public boolean crystalHollowsMapLabels = true;
