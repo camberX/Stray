@@ -15,7 +15,6 @@ public final class MenuFont {
 	public static final Identifier SMALL_ID = Stray.id("nl_small");
 	public static final Identifier TITLE_ID = Stray.id("nl_title");
 	public static final Identifier ICON_ID = Stray.id("nl_icon");
-	public static final Identifier PROGGY_ID = Stray.id("proggy");
 	public static final Identifier UI_ID = Stray.id("ui");
 	public static final Identifier UI_SMALL_ID = Stray.id("ui_small");
 	public static final Identifier UI_TITLE_ID = Stray.id("ui_title");
@@ -24,7 +23,6 @@ public final class MenuFont {
 	public static final Style SMALL = Style.EMPTY.withFont(new FontDescription.Resource(SMALL_ID));
 	public static final Style TITLE = Style.EMPTY.withFont(new FontDescription.Resource(TITLE_ID));
 	public static final Style ICON = Style.EMPTY.withFont(new FontDescription.Resource(ICON_ID));
-	public static final Style PROGGY = Style.EMPTY.withFont(new FontDescription.Resource(PROGGY_ID));
 	public static final Style VANILLA = Style.EMPTY.withFont(FontDescription.DEFAULT);
 	/** Google Sans Flex, the illogical-impulse UI font, for the Hyprland look. */
 	public static final Style HYPR = Style.EMPTY.withFont(new FontDescription.Resource(Stray.id("hypr")));

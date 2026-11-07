@@ -426,11 +426,7 @@ public final class MusicHudRenderer {
 		HudChrome.rounded(graphics, x, y, size, size, Math.min(5, size * 0.2f), Theme.HUD_CARD);
 		if (CoverArt.ready()) {
 			int tex = CoverArt.size();
-			if (HudChrome.click()) {
-				if (!GuiDraw.coverBlit(graphics, CoverArt.id(), x, y, size, 0f)) {
-					GuiDraw.blit(graphics, CoverArt.id(), x, y, size, size, 0f, 0f, tex, tex, tex, tex);
-				}
-			} else if (!GuiDraw.coverBlit(graphics, CoverArt.id(), x, y, size, Math.min(5, size * 0.2f))) {
+			if (!GuiDraw.coverBlit(graphics, CoverArt.id(), x, y, size, Math.min(5, size * 0.2f))) {
 				GuiDraw.roundedBlit(graphics, CoverArt.id(), x, y, size, size, Math.min(5, size * 0.2f), tex, Theme.HUD_CARD);
 			}
 			return size;
@@ -454,10 +450,8 @@ public final class MusicHudRenderer {
 	 */
 	public static boolean attachedToWatermark() {
 		StrayConfig config = StrayConfig.get();
-		if (!config.musicHudEnabled || !config.watermarkEnabled || !config.watermarkHypr() || layout() != Layout.BAR) {
-			return false;
-		}
-		return drawHeight() > 0f;
+		// Only the Hyprland watermark had the pill bar to attach to, and it is gone.
+		return false;
 	}
 
 	/** Where the attached bar starts, in watermark units: right after its last pill. */

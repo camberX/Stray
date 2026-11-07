@@ -435,7 +435,7 @@ public final class Cs2KnifeScreen extends Screen {
 		g.pose().translate(-cx, -cy);
 
 		if (hypr()) {
-			HyprMenu.window(g, left, top, W, H, 1f, open);
+			HyprLook.window(g, left, top, W, H, 1f, open);
 		} else {
 			GuiDraw.panel(g, left, top, W, H, 10, Theme.WINDOW, Theme.LINE);
 		}
@@ -729,7 +729,7 @@ public final class Cs2KnifeScreen extends Screen {
 	private void drawSwitch(GuiGraphicsExtractor g, float sx, float y, float k, boolean hot, float alpha) {
 		float sw = 26;
 		if (hypr()) {
-			HyprMenu.m3Switch(g, sx, y, sw, 13, k, hot, alpha);
+			HyprLook.m3Switch(g, sx, y, sw, 13, k, hot, alpha);
 		} else {
 			GuiDraw.rounded(g, sx, y, sw, 13, 6.5f, Anim.fade(Anim.mix(track(), accent(), k), alpha));
 			GuiDraw.circle(g, sx + 6.5f + k * (sw - 13), y + 6.5f, 4.5f, Anim.fade(Anim.mix(dim(), 0xFFFFFFFF, k), alpha));
@@ -963,7 +963,7 @@ public final class Cs2KnifeScreen extends Screen {
 		float sw = 26;
 		float sx = x + SIDE_W - sw;
 		if (hypr()) {
-			HyprMenu.m3Switch(g, sx, y + 2, sw, 13, k, hot, 1f);
+			HyprLook.m3Switch(g, sx, y + 2, sw, 13, k, hot, 1f);
 		} else {
 			GuiDraw.rounded(g, sx, y + 2, sw, 13, 6.5f, Anim.mix(track(), accent(), k));
 			GuiDraw.circle(g, sx + 6.5f + k * (sw - 13), y + 8.5f, 4.5f, Anim.mix(dim(), 0xFFFFFFFF, k));

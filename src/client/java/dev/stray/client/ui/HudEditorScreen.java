@@ -68,6 +68,10 @@ public class HudEditorScreen extends Screen {
 		List<HudLayout.Box> boxes = shown(font, guiW, guiH);
 
 		GuiDraw.fill(graphics, 0, 0, guiW, guiH, 0x22000000);
+		if (dragging == null && !scaling) {
+			// Stays put while something is being moved, so the bar does not jump under the cursor.
+			barY = freeBarY(boxes, guiW, guiH);
+		}
 		drawBar(graphics, font, mouseX, mouseY, guiW);
 
 		if (snap != null) {
@@ -122,7 +126,7 @@ public class HudEditorScreen extends Screen {
 	private void drawBar(GuiGraphicsExtractor graphics, Font font, int mouseX, int mouseY, int guiW) {
 		float h = 20;
 		float x = (guiW - BAR_W) * 0.5f;
-		float y = 6;
+		float y = barY;
 		ClickLook.outside(graphics, x, y, BAR_W, h, 6, Theme.WINDOW, Theme.LINE);
 		GuiDraw.small(graphics, font, "HUD EDITOR", x + 8, y + 5, Theme.ACCENT);
 		boolean free = minecraft.hasShiftDown();
@@ -205,7 +209,28 @@ public class HudEditorScreen extends Screen {
 	private boolean onDone(double mouseX, double mouseY, int guiW) {
 		float x = (guiW - BAR_W) * 0.5f;
 		float dx = x + BAR_W - 40 - 6;
-		return GuiDraw.hovered(mouseX, mouseY, dx, 9, 40, 14);
+		return GuiDraw.hovered(mouseX, mouseY, dx, barY + 3, 40, 14);
+	}
+
+	/** Where the editor bar sits: the top centre, unless a HUD element is there. */
+	private float barY = 6;
+
+	private float freeBarY(List<HudLayout.Box> boxes, int guiW, int guiH) {
+		float x = (guiW - BAR_W) * 0.5f;
+		float[] spots = {6, guiH * 0.5f - 60, guiH * 0.25f, guiH - 80};
+		for (float y : spots) {
+			boolean clear = true;
+			for (HudLayout.Box box : boxes) {
+				if (box.x() < x + BAR_W + 4 && box.x() + box.w() > x - 4 && box.y() < y + 24 && box.y() + box.h() > y - 4) {
+					clear = false;
+					break;
+				}
+			}
+			if (clear) {
+				return y;
+			}
+		}
+		return 6;
 	}
 
 	private boolean onInspector(double mouseX, double mouseY) {

@@ -88,7 +88,7 @@ public final class ContainerChrome {
 			GuiDraw.hairline(graphics, x, y, SLOT, SLOT, 3f, MaterialPalette.primary);
 			return;
 		}
-		int color = StrayConfig.get().guiStyleImgui() ? ImGuiLook.HEADER_HOVERED : Theme.ACCENT;
+		int color = Theme.ACCENT;
 		GuiDraw.fillSmooth(graphics, x, y, SLOT, ClickLook.STROKE, color);
 		GuiDraw.fillSmooth(graphics, x, y + SLOT - ClickLook.STROKE, SLOT, ClickLook.STROKE, color);
 		GuiDraw.fillSmooth(graphics, x, y, ClickLook.STROKE, SLOT, color);

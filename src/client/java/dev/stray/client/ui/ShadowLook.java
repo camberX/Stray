@@ -20,19 +20,17 @@ public final class ShadowLook {
 	public static final int SELECTED_LINE = 0x30FFFFFF;
 	private static final int BLACK = 0x050709;
 
-	private ShadowLook() {
-	}
+	/** Corner radii, so every Shadow surface rounds the same way: menus and screens, HUD panels, controls, slots. */
+	public static final float WINDOW_R = 12f;
+	public static final float HUD_R = 8f;
+	public static final float CONTROL_R = 6f;
+	public static final float SLOT_R = 3f;
 
-	public static boolean clickGui() {
-		return StrayConfig.get().clickGuiShadow();
+	private ShadowLook() {
 	}
 
 	public static boolean gui() {
 		return StrayConfig.get().guiStyleShadow();
-	}
-
-	public static boolean hud() {
-		return StrayConfig.get().hudStyleShadow();
 	}
 
 	public static boolean chat() {
@@ -50,11 +48,26 @@ public final class ShadowLook {
 
 	/** A window or HUD panel: shadow outside the edge, translucent black inside, hairline edge. */
 	public static void panel(GuiGraphicsExtractor graphics, float x, float y, float w, float h, float radius, int fill) {
+		panel(graphics, x, y, w, h, radius, fill, false);
+	}
+
+	/**
+	 * A menu window: like {@link #panel} with the world frosted behind it. Menus and screens use
+	 * this; HUD elements stay unfrosted so the world around them reads as it is.
+	 */
+	public static void window(GuiGraphicsExtractor graphics, float x, float y, float w, float h, float radius, int fill) {
+		panel(graphics, x, y, w, h, radius, fill, true);
+	}
+
+	private static void panel(GuiGraphicsExtractor graphics, float x, float y, float w, float h, float radius, int fill, boolean frost) {
 		if (w < 2f || h < 2f) {
 			return;
 		}
 		float r = Math.min(Math.max(2f, radius), Math.min(w, h) * 0.5f);
 		shadow(graphics, x, y, w, h, r, Math.min(w, h) < 40f ? 8 : 12, 0x60);
+		if (frost) {
+			dev.stray.client.render.GuiFrostBlur.blitWindow(graphics, x, y, w, h, r);
+		}
 		GuiDraw.roundedFine(graphics, x, y, w, h, r, fill);
 		GuiDraw.hairline(graphics, x, y, w, h, r, LINE);
 	}

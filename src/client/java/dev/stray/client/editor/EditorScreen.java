@@ -6,7 +6,7 @@ import dev.stray.client.input.MouseButtons;
 import dev.stray.client.movement.Freecam;
 import dev.stray.client.render.GuiDraw;
 import dev.stray.client.ui.Anim;
-import dev.stray.client.ui.HyprMenu;
+import dev.stray.client.ui.HyprLook;
 import dev.stray.client.ui.MaterialPalette;
 import dev.stray.client.ui.MenuFont;
 import dev.stray.client.ui.TextKeys;
@@ -216,7 +216,7 @@ public class EditorScreen extends Screen {
 	}
 
 	private void hyprWindow(GuiGraphicsExtractor graphics, float x, float y, float w, float h, int mouseX, int mouseY) {
-		HyprMenu.window(graphics, x, y, w, h, interactive && GuiDraw.hovered(mouseX, mouseY, x, y, w, h) ? 1f : 0f, 1f);
+		HyprLook.window(graphics, x, y, w, h, interactive && GuiDraw.hovered(mouseX, mouseY, x, y, w, h) ? 1f : 0f, 1f);
 	}
 
 	private void addHit(float x, float y, float w, float h, Runnable click) {

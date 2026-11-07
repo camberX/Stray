@@ -48,16 +48,8 @@ public final class ClickLook {
 		if (w < 2f || h < 2f) {
 			return;
 		}
-		if (Win98Menu.drawing()) {
-			if (accentOutline(outline) || fill == Theme.ACCENT) {
-				Win98.pressed(graphics, x, y, w, h);
-			} else {
-				Win98.raised(graphics, x, y, w, h);
-			}
-			return;
-		}
-		if (HyprMenu.drawing()) {
-			material(graphics, x, y, w, h, fill, accentOutline(outline) ? Theme.ACCENT : 0);
+		if (shadow()) {
+			shadowBox(graphics, x, y, w, h, accentOutline(outline));
 			return;
 		}
 		int paint = accentOutline(outline) ? Theme.withAlpha(Theme.ACCENT, ACCENT_ALPHA) : fill;
@@ -120,7 +112,7 @@ public final class ClickLook {
 			return;
 		}
 		// The same window as the Hyprland click GUI: blur, surface, thin ring.
-		HyprMenu.window(graphics, x, y, w, h, StrayConfig.get().accentOutlines ? 1f : 0f, 1f);
+		HyprLook.window(graphics, x, y, w, h, StrayConfig.get().accentOutlines ? 1f : 0f, 1f);
 	}
 
 	/** Flat fill with a real stroke. Does not turn an accent outline into a fill. */
@@ -128,54 +120,13 @@ public final class ClickLook {
 		if (w < 2f || h < 2f) {
 			return;
 		}
-		if (StrayConfig.get().guiStyleHypr()) {
+		if (container() && StrayConfig.get().guiStyleHypr()) {
 			hypr(graphics, x, y, w, h, stroke);
 			return;
 		}
-		if (StrayConfig.get().guiStyleShadow()) {
-			float shortSide = Math.min(w, h);
-			float longSide = Math.max(w, h);
-			boolean slot = shortSide <= 20f && longSide <= shortSide * 1.25f;
-			boolean widget = !slot && h <= 22f && w > h * 2f;
+		if (shadow()) {
 			boolean hover = (stroke & 0xFFFFFF) != 0 && (stroke & 0xFFFFFF) != (OUTLINE & 0xFFFFFF);
-			if (slot || widget) {
-				ShadowLook.card(graphics, x, y, w, h, slot ? 3f : 5f, hover, false);
-			} else {
-				ShadowLook.panel(graphics, x, y, w, h, 10f, Theme.WINDOW);
-			}
-			return;
-		}
-		if (StrayConfig.get().guiStyleImgui()) {
-			float shortSide = Math.min(w, h);
-			float longSide = Math.max(w, h);
-			boolean slot = shortSide <= 20f && longSide <= shortSide * 1.25f;
-			boolean widget = !slot && h <= 22f && w > h * 2f;
-			boolean hover = (stroke & 0xFFFFFF) != 0 && (stroke & 0xFFFFFF) != (OUTLINE & 0xFFFFFF);
-			if (slot) {
-				ImGuiLook.frame(graphics, x, y, w, h, hover);
-			} else if (widget) {
-				ImGuiLook.button(graphics, x, y, w, h, hover);
-			} else {
-				ImGuiLook.window(graphics, x, y, w, h);
-			}
-			return;
-		}
-		if (StrayConfig.get().guiStyleGlass()) {
-			float shortSide = Math.min(w, h);
-			float longSide = Math.max(w, h);
-			boolean slot = shortSide <= 48f && longSide <= shortSide * 1.2f;
-			if (slot) {
-				GuiDraw.fillSmooth(graphics, x, y, w, h, fill);
-				stroke(graphics, x, y, w, h, (stroke & 0xFFFFFF) == 0 ? OUTLINE : stroke);
-				return;
-			}
-			float shine = shortSide <= 22f ? 0.33f : 1f;
-			float radius = Math.min(8f, shortSide * 0.5f);
-			int tint = shortSide <= 22f ? fill : 0x6A000000;
-			ControlChrome.glassPane(graphics, x, y, w, h, radius, shine, tint);
-			if ((stroke & 0xFFFFFF) != 0 && (stroke & 0xFFFFFF) != (OUTLINE & 0xFFFFFF)) {
-				GuiDraw.roundedOutline(graphics, x, y, w, h, radius, stroke, 1f);
-			}
+			shadowBox(graphics, x, y, w, h, hover);
 			return;
 		}
 		GuiDraw.fillSmooth(graphics, x, y, w, h, fill);
@@ -191,6 +142,30 @@ public final class ClickLook {
 		GuiDraw.fillSmooth(graphics, x, y + h - STROKE, w, STROKE, color);
 		GuiDraw.fillSmooth(graphics, x, y, STROKE_COVER, h, color);
 		GuiDraw.fillSmooth(graphics, x + w - STROKE, y, STROKE, h, color);
+	}
+
+	/** A vanilla container screen: those follow the Themed GUIs style. */
+	private static boolean container() {
+		net.minecraft.client.Minecraft client = net.minecraft.client.Minecraft.getInstance();
+		return client != null && client.gui.screen() instanceof net.minecraft.client.gui.screens.inventory.AbstractContainerScreen<?>;
+	}
+
+	/** Stray's own screens are always Shadow; vanilla containers only when Themed GUIs picks it. */
+	private static boolean shadow() {
+		return !container() || StrayConfig.get().guiStyleShadow();
+	}
+
+	/** Slots and small controls become cards, anything bigger a frosted window. */
+	private static void shadowBox(GuiGraphicsExtractor graphics, float x, float y, float w, float h, boolean hover) {
+		float shortSide = Math.min(w, h);
+		float longSide = Math.max(w, h);
+		boolean slot = shortSide <= 20f && longSide <= shortSide * 1.25f;
+		boolean widget = !slot && h <= 22f && w < 160f;
+		if (slot || widget) {
+			ShadowLook.card(graphics, x, y, w, h, slot ? ShadowLook.SLOT_R : ShadowLook.CONTROL_R, hover, false);
+		} else {
+			ShadowLook.window(graphics, x, y, w, h, ShadowLook.WINDOW_R, Theme.WINDOW);
+		}
 	}
 
 	private static boolean accentOutline(int outline) {

@@ -61,7 +61,8 @@ public final class HudLayout {
 		DUNGEON_MAP("Dungeon map"),
 		F7_TITLE("F7 titles"),
 		F7_LIGHTNING("Lightning timer"),
-		F7_TERMINAL("Terminal progress");
+		F7_TERMINAL("Terminal progress"),
+		ARRAY_LIST("Array list");
 
 		public final String label;
 
@@ -412,6 +413,17 @@ public final class HudLayout {
 					x = MARGIN;
 					y = gardenDefaultY(id, config);
 				}
+				case ARRAY_LIST -> {
+					// Top right, under the scoreboard when that sits in the top right too.
+					x = guiW - w - MARGIN;
+					y = MARGIN;
+					if (enabled(Id.SCOREBOARD)) {
+						Box board = box(Id.SCOREBOARD, font, guiW, guiH);
+						if (board.x() + board.w() > guiW * 0.5f && board.y() < guiH * 0.5f) {
+							y = board.y() + board.h() + 4f;
+						}
+					}
+				}
 				default -> {
 					x = defaultX(id, font, guiW, w);
 					y = defaultY(id, font, guiH, h);
@@ -650,6 +662,7 @@ public final class HudLayout {
 			case F7_TITLE -> config.f7TitlesEnabled && (config.f7CrystalTitles || config.f7WitherTitles || config.f7LightningTimer);
 			case F7_LIGHTNING -> config.f7TitlesEnabled && config.f7LightningTimer;
 			case F7_TERMINAL -> config.f7TitlesEnabled && config.f7TerminalTitles;
+			case ARRAY_LIST -> config.arrayList;
 			case HOTBAR, HEALTH, HUNGER, ARMOR, AIR, EXPERIENCE, MOUNT -> false;
 			case SCOREBOARD -> config.hudScoreboard;
 			case BOSS -> config.hudBossBar;
@@ -732,6 +745,7 @@ public final class HudLayout {
 			case F7_TITLE -> config.slotF7Title;
 			case F7_LIGHTNING -> config.slotF7Lightning;
 			case F7_TERMINAL -> config.slotF7Terminal;
+			case ARRAY_LIST -> config.slotArrayList;
 			case SLAYER -> config.slotSlayer;
 			case SLAYER_PROFIT -> config.slotSlayerProfit;
 			case SLAYER_RNG -> config.slotSlayerRng;
@@ -878,6 +892,7 @@ public final class HudLayout {
 			case TOP_DOWN -> TopDownHudRenderer.drawWidth() * scale;
 			case DUNGEON_MAP -> dev.stray.client.dungeon.map.DungeonMapRenderer.drawWidth() * scale;
 			case F7_TITLE, F7_LIGHTNING, F7_TERMINAL -> dev.stray.client.dungeon.F7Titles.boxWidth(id) * scale;
+			case ARRAY_LIST -> ArrayListHud.width(font) * scale;
 			case HOTBAR -> HotbarHudRenderer.drawWidth() * scale;
 			case HEALTH, HUNGER, ARMOR, AIR, MOUNT -> StatusHudRenderer.BAR_W * scale;
 			case EXPERIENCE -> StatusHudRenderer.xpWidth() * scale;
@@ -915,6 +930,7 @@ public final class HudLayout {
 			case TOP_DOWN -> TopDownHudRenderer.drawHeight() * scale;
 			case DUNGEON_MAP -> dev.stray.client.dungeon.map.DungeonMapRenderer.drawHeight() * scale;
 			case F7_TITLE, F7_LIGHTNING, F7_TERMINAL -> dev.stray.client.dungeon.F7Titles.boxHeight(id) * scale;
+			case ARRAY_LIST -> ArrayListHud.height(font) * scale;
 			case HOTBAR -> HotbarHudRenderer.HEIGHT * scale;
 			case HEALTH, HUNGER, ARMOR, AIR, MOUNT -> StatusHudRenderer.BAR_H * scale;
 			case EXPERIENCE -> StatusHudRenderer.XP_BOX_H * scale;

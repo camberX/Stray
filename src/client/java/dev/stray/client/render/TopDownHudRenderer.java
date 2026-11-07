@@ -45,7 +45,7 @@ public final class TopDownHudRenderer {
 		float top = y + PAD;
 		GpuTextureView texture = TopDownCapture.colorView();
 		if (texture == null) {
-			HudChrome.rounded(graphics, left, top, view, view, 4, Theme.withAlpha(Theme.HUD_CARD, 180));
+			HudChrome.rounded(graphics, left, top, view, view, 4, Theme.HUD_CARD);
 			return;
 		}
 		GpuSampler sampler = RenderSystem.getSamplerCache().getClampToEdge(FilterMode.LINEAR);

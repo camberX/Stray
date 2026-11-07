@@ -56,14 +56,6 @@ public final class ChatChrome {
 		return config.themedChatEnabled && config.chatStyleShadow();
 	}
 
-	private static boolean click() {
-		return StrayConfig.get().hudStyleClick();
-	}
-
-	private static boolean glass() {
-		return StrayConfig.get().hudStyleGlass();
-	}
-
 	/** Hyprland chat: a Material window for messages and a pill-shaped input. */
 	private static boolean hypr() {
 		StrayConfig config = StrayConfig.get();
@@ -127,19 +119,11 @@ public final class ChatChrome {
 		float y = graphics.guiHeight() - 40f - rows * lineH * scale - PAD + bumpY;
 		if (hypr()) {
 			// Mostly blur, a light tint: chat text stays readable without a slab.
-			HyprMenu.window(graphics, x, y, w, h, focused ? 1f : 0f, 1f, 0x70);
+			HyprLook.window(graphics, x, y, w, h, focused ? 1f : 0f, 1f, 0x70);
 			return;
 		}
 		if (shadow()) {
-			ShadowLook.panel(graphics, x, y, w, h, 6f, ShadowLook.FILL);
-			return;
-		}
-		if (click()) {
-			HudChrome.box(graphics, x, y, w, h, 0x99000000);
-			return;
-		}
-		if (glass()) {
-			ControlChrome.glassPane(graphics, x, y, w, h, paneRadius(w, h), 1f, 0x6A000000);
+			ShadowLook.panel(graphics, x, y, w, h, ShadowLook.HUD_R, ShadowLook.FILL);
 			return;
 		}
 		float radius = paneRadius(w, h);
@@ -188,14 +172,6 @@ public final class ChatChrome {
 			ShadowLook.panel(graphics, x, y, w, INPUT_H, INPUT_H * 0.5f, ShadowLook.FILL);
 			return;
 		}
-		if (click()) {
-			HudChrome.box(graphics, x, y, w, INPUT_H, 0x99000000);
-			return;
-		}
-		if (glass()) {
-			ControlChrome.glassPane(graphics, x, y, w, INPUT_H, 8f, 1f, 0x6A000000);
-			return;
-		}
 		float radius = 8f;
 		GuiFrostBlur.blitWindow(graphics, x, y, w, INPUT_H, radius);
 		GuiDraw.roundedFine(graphics, x, y, w, INPUT_H, radius, ControlChrome.windowFill());
@@ -210,7 +186,7 @@ public final class ChatChrome {
 		if (client == null || !(client.gui.screen() instanceof ChatScreen)) {
 			return;
 		}
-		if (click() || glass() || hypr() || shadow()) {
+		if (hypr() || shadow()) {
 			return;
 		}
 		if (box.isBordered()) {

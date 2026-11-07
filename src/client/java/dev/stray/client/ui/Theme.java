@@ -29,7 +29,7 @@ public final class Theme {
 	public static int OFF = 0xFF3D4A58;
 	public static int DANGER = 0xFFE8B86D;
 	public static int WARN = 0xFFF5C16C;
-	public static float WINDOW_RADIUS = 10f;
+	public static float WINDOW_RADIUS = ShadowLook.WINDOW_R;
 	public static float PILL_RADIUS = 8f;
 
 	public static final Swatch[] PRESETS = {
@@ -95,9 +95,6 @@ public final class Theme {
 			HEADER = TEXT;
 			NAV_PILL = ControlChrome.selectedFill();
 			SIDEBAR = ControlChrome.railFill();
-			if (StrayConfig.get().hudStyleHypr()) {
-				hyprHud(hudA);
-			}
 			shadow(hudOpacity, opacity);
 			applyAccentOutlines(accent);
 			return;
@@ -129,43 +126,26 @@ public final class Theme {
 
 	/** Shadow style: see-through black, faint white lines, white and gray text. */
 	private static void shadow(float hudOpacity, float opacity) {
-		StrayConfig config = StrayConfig.get();
-		if (config.hudStyleShadow()) {
-			HUD_WINDOW = ShadowLook.FILL;
-			HUD_LINE = ShadowLook.LINE;
-			HUD_LINE_NEUTRAL = HUD_LINE;
-			HUD_TRACK = 0x14FFFFFF;
-			HUD_CARD = ShadowLook.CARD;
-			HUD_CARD_HOVER = ShadowLook.CARD_HOVER;
-			HUD_PANEL = 0x10000000;
-		}
-		if (config.clickGuiShadow() || config.guiStyleShadow()) {
-			WINDOW = ShadowLook.FILL;
-			SHEET = ShadowLook.fill(Math.max(opacity, 0.92f));
-			CARD = ShadowLook.CARD;
-			CARD_HOVER = ShadowLook.CARD_HOVER;
-			LINE = ShadowLook.LINE;
-			TRACK = 0x14FFFFFF;
-			PANEL = 0x10000000;
-			OFF = 0xFF3A424C;
-			TEXT = ShadowLook.TEXT;
-			MUTED = ShadowLook.MUTED;
-			HEADER = ShadowLook.TEXT;
-			NAV_PILL = ShadowLook.SELECTED;
-			SIDEBAR = 0x0AFFFFFF;
-		}
-	}
-
-	/** HUD colors for the Hyprland style: Material surfaces tinted by the accent. */
-	private static void hyprHud(int hudA) {
-		MaterialPalette.refresh();
-		HUD_WINDOW = withAlpha(MaterialPalette.surface, Math.min(hudA, 0xD8));
-		HUD_LINE = withAlpha(MaterialPalette.primary, 0x40);
+		HUD_WINDOW = ShadowLook.FILL;
+		HUD_LINE = ShadowLook.LINE;
 		HUD_LINE_NEUTRAL = HUD_LINE;
-		HUD_TRACK = MaterialPalette.surfaceHighest;
-		HUD_CARD = MaterialPalette.surfaceHigh;
-		HUD_CARD_HOVER = MaterialPalette.surfaceHighest;
-		HUD_PANEL = MaterialPalette.surfaceContainer;
+		HUD_TRACK = 0x14FFFFFF;
+		HUD_CARD = ShadowLook.CARD;
+		HUD_CARD_HOVER = ShadowLook.CARD_HOVER;
+		HUD_PANEL = 0x10000000;
+		WINDOW = ShadowLook.FILL;
+		SHEET = ShadowLook.fill(Math.max(opacity, 0.92f));
+		CARD = ShadowLook.CARD;
+		CARD_HOVER = ShadowLook.CARD_HOVER;
+		LINE = ShadowLook.LINE;
+		TRACK = 0x14FFFFFF;
+		PANEL = 0x10000000;
+		OFF = 0xFF3A424C;
+		TEXT = ShadowLook.TEXT;
+		MUTED = ShadowLook.MUTED;
+		HEADER = ShadowLook.TEXT;
+		NAV_PILL = ShadowLook.SELECTED;
+		SIDEBAR = 0x0AFFFFFF;
 	}
 
 	private static void applyAccentOutlines(int accent) {

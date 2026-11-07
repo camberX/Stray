@@ -28,20 +28,22 @@ public final class ShadowMenu {
 	private static final int WHITE = 0xFFEEF1F5;
 	private static final int INK_ON_WHITE = 0xFF0B0E13;
 
+	/** Material Icons codepoints for the category tabs. */
 	private static final Map<String, String> GLYPHS = Map.ofEntries(
-		Map.entry("World", ""),
-		Map.entry("Visuals", ""),
-		Map.entry("Mobs", ""),
-		Map.entry("Combat", ""),
-		Map.entry("Slayer", ""),
-		Map.entry("HUD", ""),
-		Map.entry("Mining", ""),
-		Map.entry("Farming", ""),
+		Map.entry("Dungeons", "\uEAB1"),
+		Map.entry("Slayer", "\uEBE9"),
+		Map.entry("Mining", "\uEAD5"),
+		Map.entry("Farming", "\uEA79"),
 		Map.entry("Foraging", "\uEA63"),
-		Map.entry("Menus", ""),
-		Map.entry("Keys", ""),
-		Map.entry("Theme", ""),
-		Map.entry("Player", "")
+		Map.entry("World", "\uE80B"),
+		Map.entry("Entities", "\uE8F4"),
+		Map.entry("Mobs", "\uE91D"),
+		Map.entry("HUD", "\uE871"),
+		Map.entry("Chat", "\uE0B7"),
+		Map.entry("Menus", "\uE5C3"),
+		Map.entry("Player", "\uE7FD"),
+		Map.entry("Keys", "\uE312"),
+		Map.entry("Client", "\uE8B8")
 	);
 	private static final String SEARCH = "";
 	private static final String CLOSE = "";
@@ -132,10 +134,19 @@ public final class ShadowMenu {
 		String active = searching ? null : category;
 		float activeExtra = active == null ? 0f : textWidth(font, ClickGui.display(active)) + 10f;
 		float searchExtra = searchOpen * 90f;
-		float w = 6f + ids.length * (ICON + 2f) + activeExtra + 6f + (ICON + 2f) * 3f + searchExtra + 4f;
+		// On narrow screens (big GUI scale) the search field and then the tab label give way
+		// first, so the bar never runs off the screen.
+		float base = 6f + ids.length * (ICON + 2f) + 6f + (ICON + 2f) * 3f + 4f;
+		float room = Math.max(0f, screen.width - 16f - base);
+		searchExtra = Math.min(searchExtra, room);
+		activeExtra = Math.min(activeExtra, room - searchExtra);
+		float w = base + activeExtra + searchExtra;
 		float x = (screen.width - w) * 0.5f;
 		float r = BAR_H * 0.5f;
 		ShadowLook.shadow(graphics, x, y, w, BAR_H, r, 10, Math.round(0x60 * t));
+		// Frosted: the world blurs behind the menu, and HUD elements under it (watermark,
+		// scoreboard) stop showing through.
+		dev.stray.client.render.GuiFrostBlur.blitWindow(graphics, x, y, w, BAR_H, r, t);
 		GuiDraw.roundedFine(graphics, x, y, w, BAR_H, r, Anim.fade(ShadowLook.FILL, t));
 		GuiDraw.hairline(graphics, x, y, w, BAR_H, r, Anim.fade(0x1CFFFFFF, t));
 
@@ -205,7 +216,7 @@ public final class ShadowMenu {
 	private static void sheet(StrayScreen screen, GuiGraphicsExtractor graphics, Font font, int mx, int my, float maxH, float t) {
 		// Last frame's chips must not take right clicks while the sheet is closed or closing.
 		chipHits.clear();
-		List<HyprMenu.Item> items = HyprMenu.items(screen, category);
+		List<MenuItems.Item> items = MenuItems.items(screen, category);
 		keepSelection(items);
 		boolean searching = !ClickGui.filterText().isBlank();
 		boolean mobs = "Mobs".equals(category) && !searching;
@@ -215,7 +226,7 @@ public final class ShadowMenu {
 		List<float[]> spots = new ArrayList<>();
 		float lx = 0f;
 		float ly = 0f;
-		for (HyprMenu.Item item : items) {
+		for (MenuItems.Item item : items) {
 			float cw = chipWidth(font, item);
 			if (lx > 0f && lx + cw > innerW) {
 				lx = 0f;
@@ -240,8 +251,9 @@ public final class ShadowMenu {
 		if (h < 8f) {
 			return;
 		}
-		float r = 16f;
+		float r = ShadowLook.WINDOW_R;
 		ShadowLook.shadow(graphics, sheetX, sheetY, sheetW, h, r, 14, Math.round(0x60 * t));
+		dev.stray.client.render.GuiFrostBlur.blitWindow(graphics, sheetX, sheetY, sheetW, h, r, t);
 		GuiDraw.roundedFine(graphics, sheetX, sheetY, sheetW, h, r, Anim.fade(ShadowLook.FILL, t));
 		GuiDraw.hairline(graphics, sheetX, sheetY, sheetW, h, r, Anim.fade(0x1CFFFFFF, t));
 		boolean sheetClip = GuiDraw.scissor(graphics, sheetX, sheetY, sheetW, h);
@@ -279,7 +291,7 @@ public final class ShadowMenu {
 		screen.clickHit(x, y, w, CHIP_H, ClickGui::focusMobSearch);
 	}
 
-	private static float chipWidth(Font font, HyprMenu.Item item) {
+	private static float chipWidth(Font font, MenuItems.Item item) {
 		float w = 8f + textWidth(font, item.label()) + 8f;
 		if (item.on() != null) {
 			w += 9f;
@@ -296,7 +308,7 @@ public final class ShadowMenu {
 		Font font,
 		int mx,
 		int my,
-		List<HyprMenu.Item> items,
+		List<MenuItems.Item> items,
 		List<float[]> spots,
 		float x,
 		float y,
@@ -314,7 +326,7 @@ public final class ShadowMenu {
 		int mark = screen.clickHitMark();
 		float ct = ease(catT);
 		for (int i = 0; i < items.size(); i++) {
-			HyprMenu.Item item = items.get(i);
+			MenuItems.Item item = items.get(i);
 			float[] s = spots.get(i);
 			float delay = Math.min(i, 16) * 0.025f;
 			float k = ease(Mth.clamp((catT - delay) / (1f - delay), 0f, 1f)) * t;
@@ -337,7 +349,7 @@ public final class ShadowMenu {
 		Font font,
 		int mx,
 		int my,
-		HyprMenu.Item item,
+		MenuItems.Item item,
 		float x,
 		float y,
 		float w,
@@ -433,13 +445,8 @@ public final class ShadowMenu {
 				contentAlpha = st;
 				int[] saved = swapTheme();
 				try {
-					// Feature panels draw their labels 1px in from x; Click GUI rows inset by NEST:
-					// both land on the title's left edge and the divider's right edge.
-					if (mod.feature() != null) {
-						ClickGui.drawModuleSettings(screen, graphics, font, mx, my, mod, x - 1f, by, w + 1f);
-					} else {
-						ClickGui.drawModuleSettings(screen, graphics, font, mx, my, mod, x - 3f, by, w + 6f);
-					}
+					// Every settings row draws its label 1px in from x: it lands on the title's left edge.
+					ClickGui.drawModuleSettings(screen, graphics, font, mx, my, mod, x - 1f, by, w + 1f);
 				} finally {
 					restoreTheme(saved);
 					contentAlpha = 1f;
@@ -553,8 +560,8 @@ public final class ShadowMenu {
 		setScroll = 0f;
 	}
 
-	private static void keepSelection(List<HyprMenu.Item> items) {
-		for (HyprMenu.Item item : items) {
+	private static void keepSelection(List<MenuItems.Item> items) {
+		for (MenuItems.Item item : items) {
 			if (item.mod() != null && item.mod().name().equals(selected)) {
 				return;
 			}
@@ -725,6 +732,6 @@ public final class ShadowMenu {
 		return x >= rx && y >= ry && x < rx + rw && y < ry + rh;
 	}
 
-	private record ChipHit(HyprMenu.Item item, float x, float y, float w, float h) {
+	private record ChipHit(MenuItems.Item item, float x, float y, float w, float h) {
 	}
 }

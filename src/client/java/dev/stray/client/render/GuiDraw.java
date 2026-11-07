@@ -25,7 +25,6 @@ import java.util.Locale;
 public final class GuiDraw {
 	private static final Identifier CIRCLE = Stray.id("textures/gui/circle.png");
 	private static final Identifier CIRCLE_HOLE = Stray.id("textures/gui/circle_hole.png");
-	private static final Identifier CIRCLE_AA = Stray.id("textures/gui/circle_aa.png");
 	private static final Identifier CIRCLE_RING = Stray.id("textures/gui/circle_ring.png");
 	private static final Identifier STROKE = Stray.id("textures/gui/stroke.png");
 	private static final int CIRCLE_TEX = 64;
@@ -639,21 +638,6 @@ public final class GuiDraw {
 		graphics.pose().popMatrix();
 	}
 
-	private static void cornerFine(GuiGraphicsExtractor graphics, float x, float y, float radius, float u, float v, int color) {
-		if (radius <= 0) {
-			return;
-		}
-		int corner = u == 0f ? (v == 0f ? 0 : 3) : (v == 0f ? 1 : 2);
-		if (sdfCorner(graphics, x, y, radius, corner, color, false)) {
-			return;
-		}
-		graphics.pose().pushMatrix();
-		graphics.pose().translate(x, y);
-		graphics.pose().scale(radius, radius);
-		graphics.blit(RenderPipelines.GUI_TEXTURED, CIRCLE_AA, 0, 0, u, v, 1, 1, RING_HALF, RING_HALF, RING_TEX, RING_TEX, color);
-		graphics.pose().popMatrix();
-	}
-
 	public static void roundedSides(
 		GuiGraphicsExtractor graphics,
 		float x,
@@ -967,11 +951,7 @@ public final class GuiDraw {
 	}
 
 	public static void text(GuiGraphicsExtractor graphics, Font font, String value, float x, float y, int color, boolean shadow) {
-		if (HudChrome.win98Ink() && value != null && value.indexOf('\u00a7') >= 0) {
-			text(graphics, font, Component.literal(value), x, y, color, shadow);
-			return;
-		}
-		graphics.text(font, value, Math.round(x), Math.round(y), hudInk(color), hudShadow(shadow));
+		graphics.text(font, value, Math.round(x), Math.round(y), color, shadow);
 	}
 
 	public static void text(GuiGraphicsExtractor graphics, Font font, String value, float x, float y, float scale, int color, boolean shadow) {
@@ -980,16 +960,12 @@ public final class GuiDraw {
 		if (scale != 1.0f) {
 			graphics.pose().scale(scale, scale);
 		}
-		graphics.text(font, value, 0, 0, hudInk(color), hudShadow(shadow));
+		graphics.text(font, value, 0, 0, color, shadow);
 		graphics.pose().popMatrix();
 	}
 
 	public static void text(GuiGraphicsExtractor graphics, Font font, Component value, float x, float y, int color, boolean shadow) {
-		graphics.text(font, MenuFont.crisp(win98Recolor(value), poseScale(graphics)), Math.round(x), Math.round(y), hudInk(color), hudShadow(shadow));
-	}
-
-	private static Component win98Recolor(Component value) {
-		return HudChrome.win98Ink() ? dev.stray.client.ui.Win98.recolor(value) : value;
+		graphics.text(font, MenuFont.crisp(value, poseScale(graphics)), Math.round(x), Math.round(y), color, shadow);
 	}
 
 	/** How much the current pose scales things, so text and hairlines can match real pixels. */
@@ -1007,127 +983,51 @@ public final class GuiDraw {
 		graphics.pose().pushMatrix();
 		graphics.pose().translate(x, y);
 		graphics.pose().scale(scale, scale);
-		graphics.text(font, MenuFont.crisp(win98Recolor(value), poseScale(graphics)), 0, 0, hudInk(color), hudShadow(shadow));
+		graphics.text(font, MenuFont.crisp(value, poseScale(graphics)), 0, 0, color, shadow);
 		graphics.pose().popMatrix();
 	}
 
-	private static boolean hudShadow(boolean shadow) {
-		if (HudChrome.win98Ink()) {
-			return false;
-		}
-		return shadow || HudChrome.vanillaInk();
-	}
-
-	private static int hudInk(int color) {
-		if (HudChrome.win98Ink()) {
-			return dev.stray.client.ui.Win98.ink(color);
-		}
-		if (!HudChrome.vanillaInk()) {
-			return color;
-		}
-		if (color == Theme.ACCENT) {
-			return 0xFFFFAA00;
-		}
-		if (color == Theme.TEXT || color == Theme.HEADER) {
-			return 0xFFFFFFFF;
-		}
-		if (color == Theme.MUTED || color == Theme.OFF) {
-			return 0xFFAAAAAA;
-		}
-		return color;
-	}
+	// Stray draws all its own text in one font: Inter (MenuFont.shadow*), body, small and title.
 
 	public static void menu(GuiGraphicsExtractor graphics, Font font, String value, float x, float y, int color) {
-		if (dev.stray.client.ui.Win98Menu.drawing()) {
-			dev.stray.client.ui.Win98.text(graphics, font, value, x, y, color);
-			return;
+		if ((color >>> 24) >= 8) {
+			text(graphics, font, MenuFont.shadow(value), x, y, 1f, color, false);
 		}
-		String shown = clickWords(value);
-		if (HudChrome.hyprInk()) {
-			text(graphics, font, MenuFont.hypr(shown), x, y, 1f, color, false);
-			return;
-		}
-		if (HudChrome.shadowInk() || dev.stray.client.ui.ShadowMenu.drawing()) {
-			if ((color >>> 24) >= 8) {
-				text(graphics, font, MenuFont.shadow(shown), x, y, 1f, color, false);
-			}
-			return;
-		}
-		if (dev.stray.client.ui.HyprMenu.drawing()) {
-			if ((color >>> 24) >= 8) {
-				text(graphics, font, MenuFont.hypr(shown), x, y, 1f, color, false);
-			}
-			return;
-		}
-		if (ClickGui.lightInk()) {
-			text(graphics, font, ClickGui.styled(shown), x, y, 1f, color, true);
-			return;
-		}
-		float scale = MenuFont.bodyScale();
-		text(graphics, font, MenuFont.body(shown), x, MenuFont.menuY(y, scale), scale, color, HudChrome.clickInk());
 	}
 
 	public static void small(GuiGraphicsExtractor graphics, Font font, String value, float x, float y, int color) {
-		if (dev.stray.client.ui.Win98Menu.drawing()) {
-			dev.stray.client.ui.Win98.text(graphics, font, value, x, y, color);
-			return;
+		if ((color >>> 24) >= 8) {
+			text(graphics, font, MenuFont.shadowSmall(value), x, y, 1f, color, false);
 		}
-		String shown = clickWords(value);
-		if (HudChrome.hyprInk()) {
-			text(graphics, font, MenuFont.hyprSmall(shown), x, y, 1f, color, false);
-			return;
-		}
-		if (HudChrome.shadowInk() || dev.stray.client.ui.ShadowMenu.drawing()) {
-			if ((color >>> 24) >= 8) {
-				text(graphics, font, MenuFont.shadowSmall(shown), x, y, 1f, color, false);
-			}
-			return;
-		}
-		if (dev.stray.client.ui.HyprMenu.drawing()) {
-			if ((color >>> 24) >= 8) {
-				text(graphics, font, MenuFont.hyprSmall(shown), x, y, 1f, color, false);
-			}
-			return;
-		}
-		if (ClickGui.lightInk()) {
-			text(graphics, font, ClickGui.styled(shown), x, y, 1f, color, true);
-			return;
-		}
-		float scale = MenuFont.smallScale();
-		text(graphics, font, MenuFont.small(shown), x, MenuFont.menuY(y, scale), scale, color, HudChrome.clickInk());
 	}
 
 	public static void title(GuiGraphicsExtractor graphics, Font font, String value, float x, float y, int color) {
-		float scale = MenuFont.titleScale();
-		text(graphics, font, MenuFont.title(value), x, MenuFont.menuY(y, scale), scale, color, HudChrome.clickInk());
+		if ((color >>> 24) >= 8) {
+			text(graphics, font, MenuFont.shadowTitle(value), x, y, 1f, color, false);
+		}
 	}
 
 	public static void brand(GuiGraphicsExtractor graphics, Font font, String value, float x, float y, int color) {
-		text(graphics, font, MenuFont.brand(value), x, y - 1.0f, color, HudChrome.clickInk());
+		title(graphics, font, value, x, y, color);
 	}
 
 	public static void brandSmall(GuiGraphicsExtractor graphics, Font font, String value, float x, float y, int color) {
-		text(graphics, font, MenuFont.brandSmall(value), x, y - 1.0f, color, HudChrome.clickInk());
+		menu(graphics, font, value, x, y, color);
 	}
 
 	public static void hud(GuiGraphicsExtractor graphics, Font font, Component value, float x, float y, int color) {
-		if (HudChrome.hypr()) {
-			text(graphics, font, value.copy().withStyle(MenuFont.hyprStyle(0)), x, y, 1f, color, false);
-			return;
-		}
-		if (HudChrome.shadow()) {
-			// Every part, not just the root: scoreboard lines carry their own font on each part.
-			net.minecraft.network.chat.FontDescription inter = MenuFont.hyprStyle(4).getFont();
-			net.minecraft.network.chat.MutableComponent out = Component.empty();
-			value.visit((style, part) -> {
-				out.append(Component.literal(part).withStyle(style.withFont(inter)));
-				return java.util.Optional.empty();
-			}, net.minecraft.network.chat.Style.EMPTY);
-			text(graphics, font, out, x, y, 1f, color, false);
-			return;
-		}
-		float scale = MenuFont.bodyScale();
-		text(graphics, font, MenuFont.applyBody(value), x, MenuFont.hudY(y, scale), scale, color, HudChrome.clickInk());
+		text(graphics, font, inter(value), x, y, 1f, color, false);
+	}
+
+	/** HUD text in Inter, on every part: scoreboard lines carry their own font on each part. */
+	private static Component inter(Component value) {
+		net.minecraft.network.chat.FontDescription inter = MenuFont.hyprStyle(4).getFont();
+		net.minecraft.network.chat.MutableComponent out = Component.empty();
+		value.visit((style, part) -> {
+			out.append(Component.literal(part).withStyle(style.withFont(inter)));
+			return java.util.Optional.empty();
+		}, net.minecraft.network.chat.Style.EMPTY);
+		return out;
 	}
 
 	public static void icon(GuiGraphicsExtractor graphics, Font font, String glyph, float x, float y, int color) {
@@ -1151,56 +1051,24 @@ public final class GuiDraw {
 	}
 
 	public static int menuWidth(Font font, String value) {
-		if (dev.stray.client.ui.Win98Menu.drawing()) {
-			return dev.stray.client.ui.Win98.width(font, value);
-		}
-		String shown = clickWords(value);
-		if (HudChrome.hyprInk() || dev.stray.client.ui.HyprMenu.drawing()) {
-			return font.width(MenuFont.hypr(shown));
-		}
-		if (HudChrome.shadowInk() || dev.stray.client.ui.ShadowMenu.drawing()) {
-			return font.width(MenuFont.shadow(shown));
-		}
-		if (ClickGui.lightInk()) {
-			return font.width(ClickGui.styled(shown));
-		}
-		return scaledWidth(font.width(MenuFont.body(shown)), MenuFont.bodyScale());
+		return font.width(MenuFont.shadow(value));
 	}
 
 	public static int smallWidth(Font font, String value) {
-		if (dev.stray.client.ui.Win98Menu.drawing()) {
-			return dev.stray.client.ui.Win98.width(font, value);
-		}
-		String shown = clickWords(value);
-		if (HudChrome.hyprInk() || dev.stray.client.ui.HyprMenu.drawing()) {
-			return font.width(MenuFont.hyprSmall(shown));
-		}
-		if (HudChrome.shadowInk() || dev.stray.client.ui.ShadowMenu.drawing()) {
-			return font.width(MenuFont.shadowSmall(shown));
-		}
-		if (ClickGui.lightInk()) {
-			return font.width(ClickGui.styled(shown));
-		}
-		return scaledWidth(font.width(MenuFont.small(shown)), MenuFont.smallScale());
+		return font.width(MenuFont.shadowSmall(value));
 	}
 
-	private static String clickWords(String value) {
-		if (value == null || !ClickGui.lightInk()) {
-			return value;
-		}
-		return ClickGui.display(value);
-	}
 
 	public static int titleWidth(Font font, String value) {
-		return scaledWidth(font.width(MenuFont.title(value)), MenuFont.titleScale());
+		return font.width(MenuFont.shadowTitle(value));
 	}
 
 	public static int brandWidth(Font font, String value) {
-		return font.width(MenuFont.brand(value));
+		return titleWidth(font, value);
 	}
 
 	public static int brandSmallWidth(Font font, String value) {
-		return font.width(MenuFont.brandSmall(value));
+		return menuWidth(font, value);
 	}
 
 	public static String ellipsize(Font font, String value, float max, boolean small) {
@@ -1232,11 +1100,9 @@ public final class GuiDraw {
 		return best;
 	}
 
+	/** Width of {@link #hud} text: measured in the same font it draws in. */
 	public static int hudWidth(Font font, Component value) {
-		if (HudChrome.hypr()) {
-			return font.width(value.copy().withStyle(MenuFont.hyprStyle(0)));
-		}
-		return scaledWidth(font.width(MenuFont.applyBody(value)), MenuFont.bodyScale());
+		return font.width(inter(value));
 	}
 
 	private static int scaledWidth(int width, float scale) {

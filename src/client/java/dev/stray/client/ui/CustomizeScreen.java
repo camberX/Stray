@@ -556,7 +556,7 @@ public final class CustomizeScreen extends Screen {
 		Theme.refresh();
 		boolean hypr = StrayConfig.get().guiStyleHypr();
 		if (hypr) {
-			HyprMenu.window(graphics, left, top, W, H, 1f, 1f);
+			HyprLook.window(graphics, left, top, W, H, 1f, 1f);
 		} else {
 			ClickLook.panel(graphics, left, top, W, H, 8f, Theme.WINDOW, Theme.LINE);
 		}

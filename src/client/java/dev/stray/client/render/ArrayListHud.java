@@ -2,6 +2,8 @@ package dev.stray.client.render;
 
 import dev.stray.client.config.StrayConfig;
 import dev.stray.client.ui.ClickGui;
+import dev.stray.client.ui.MenuFont;
+import dev.stray.client.ui.ShadowLook;
 import dev.stray.client.ui.Theme;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
@@ -13,15 +15,15 @@ import java.util.Comparator;
 import java.util.List;
 
 /**
- * Right-aligned boxes. Each background is only as wide as that name.
- * Longest name is on top.
+ * Enabled modules, longest name on top, right-aligned in its HUD box. Shadow look: one rounded
+ * row per module in the HUD fill, Inter text and a small dot in the module's color.
  */
 public final class ArrayListHud {
-	private static final float STROKE = 0.5f;
-	private static final float PAD = 1f;
-	private static final float SWATCH = 2f;
-	private static final int PANEL = 0x77000000;
-	private static final int OUTLINE = 0xFF000000;
+	private static final float ROW_H = 13f;
+	private static final float GAP = 1f;
+	private static final float PAD = 6f;
+	private static final float DOT = 3f;
+	private static final String[] EXAMPLE = {"Leap Menu", "Dungeon Map", "Nametags"};
 
 	private ArrayListHud() {
 	}
@@ -34,98 +36,73 @@ public final class ArrayListHud {
 		if (!StrayConfig.get().arrayList) {
 			return;
 		}
-		draw(graphics, client.font, graphics.guiWidth());
+		HudLayout.apply(graphics, client.font, HudLayout.Id.ARRAY_LIST, () -> draw(graphics, client.font));
 	}
 
-	public static void draw(GuiGraphicsExtractor graphics, Font font, int guiWidth) {
+	/** Width of the widest row, so the layout box hugs the list. */
+	public static float width(Font font) {
+		float w = 0f;
+		for (Row row : rows(font)) {
+			w = Math.max(w, row.width);
+		}
+		return Math.max(w, 40f);
+	}
+
+	public static float height(Font font) {
+		int n = rows(font).size();
+		return n == 0 ? ROW_H : n * ROW_H + (n - 1) * GAP;
+	}
+
+	private static void draw(GuiGraphicsExtractor graphics, Font font) {
+		List<Row> rows = rows(font);
+		float right = width(font);
+		float y = 0f;
+		boolean background = HudChrome.background();
+		for (Row row : rows) {
+			float x = right - row.width;
+			if (background) {
+				GuiDraw.roundedFine(graphics, x, y, row.width, ROW_H, ShadowLook.SLOT_R, Theme.HUD_WINDOW);
+			}
+			GuiDraw.text(graphics, font, MenuFont.shadow(row.label), x + PAD, GuiDraw.middle(y, ROW_H), ShadowLook.TEXT, false);
+			GuiDraw.circle(graphics, right - PAD * 0.5f - DOT * 0.5f - 1f, y + ROW_H * 0.5f, DOT * 0.5f, row.color);
+			y += ROW_H + GAP;
+		}
+	}
+
+	private static List<Row> cached = List.of();
+	private static long cachedAt;
+	private static boolean haveCache;
+
+	/** Rows, rebuilt at most every 100ms: building them walks every module. */
+	private static List<Row> rows(Font font) {
+		long now = System.nanoTime();
+		if (haveCache && now - cachedAt < 100_000_000L) {
+			return cached;
+		}
+		cachedAt = now;
+		haveCache = true;
+		cached = buildRows(font);
+		return cached;
+	}
+
+	private static List<Row> buildRows(Font font) {
 		StrayConfig config = StrayConfig.get();
 		List<Row> rows = new ArrayList<>();
 		for (String name : ClickGui.enabledLabels()) {
-			String label = ClickGui.display(name);
-			int color = config.arrayListAccent ? Theme.ACCENT : ClickGui.colorOf(name);
-			rows.add(new Row(label, color, widthOf(font, label)));
+			rows.add(row(font, ClickGui.display(name), config.arrayListAccent ? Theme.ACCENT : ClickGui.colorOf(name)));
+		}
+		if (rows.isEmpty() && HudLayout.editorOpen()) {
+			// Something to place in the HUD editor even with nothing turned on.
+			for (String name : EXAMPLE) {
+				rows.add(row(font, name, ClickGui.colorOf(name)));
+			}
 		}
 		rows.sort(Comparator.comparingDouble(Row::width).reversed());
-		if (HudChrome.win98()) {
-			drawWin98(graphics, font, rows, guiWidth);
-			return;
-		}
-		float textH = Math.max(1, font.lineHeight);
-		float rowH = textH + STROKE * 2f;
-		float y = 0f;
-		for (int i = 0; i < rows.size(); i++) {
-			float above = i == 0 ? 0f : rows.get(i - 1).width();
-			float below = i + 1 >= rows.size() ? 0f : rows.get(i + 1).width();
-			drawRow(graphics, font, rows.get(i), guiWidth, y, rowH, above, below);
-			y += rowH - STROKE;
-		}
+		return rows;
 	}
 
-	/** Half-pixel outline, padding, the name, its shadow, and the swatch. */
-	private static float widthOf(Font font, String label) {
-		return font.width(ClickGui.styled(label)) + 1f + PAD + SWATCH + STROKE * 2f;
-	}
-
-	private static void drawRow(GuiGraphicsExtractor graphics, Font font, Row row, int right, float y, float h, float above, float below) {
-		float w = row.width;
-		float x = right - w;
-		float step = below <= 0f ? w : Math.max(0f, w - below);
-		if (above <= 0f) {
-			GuiDraw.fillSmooth(graphics, x, y, w, STROKE, OUTLINE);
-		} else if (above < w) {
-			GuiDraw.fillSmooth(graphics, x, y, w - above, STROKE, OUTLINE);
-		}
-		if (step > 0f) {
-			GuiDraw.fillSmooth(graphics, x, y + h - STROKE, step, STROKE, OUTLINE);
-		}
-		GuiDraw.fillSmooth(graphics, x, y, STROKE, h, OUTLINE);
-		GuiDraw.fillSmooth(graphics, x + w - STROKE, y, STROKE, h, OUTLINE);
-		float fillTop = y + STROKE;
-		float fillH = h - STROKE * 2f;
-		if (below <= 0f) {
-			GuiDraw.fillSmooth(graphics, x + STROKE, fillTop, w - STROKE * 2f, fillH, PANEL);
-			GuiDraw.fillSmooth(graphics, x + w - STROKE - SWATCH, fillTop, SWATCH, fillH, row.color);
-		} else {
-			if (step > STROKE) {
-				GuiDraw.fillSmooth(graphics, x + STROKE, fillTop, step - STROKE, fillH, PANEL);
-			}
-			float meetX = x + Math.max(step, STROKE);
-			float meetW = x + w - STROKE - meetX;
-			float meetH = y + h - fillTop;
-			GuiDraw.fillSmooth(graphics, meetX, fillTop, meetW, meetH, PANEL);
-			GuiDraw.fillSmooth(graphics, x + w - STROKE - SWATCH, fillTop, SWATCH, meetH, row.color);
-		}
-		graphics.text(
-			font,
-			ClickGui.styled(row.label),
-			Math.round(x + STROKE + PAD),
-			Math.round(y + STROKE),
-			row.color,
-			true
-		);
-	}
-
-	/** Windows 98: one raised menu, like a Start menu cascade, with a colored icon per module. */
-	private static void drawWin98(GuiGraphicsExtractor graphics, Font font, List<Row> rows, int guiWidth) {
-		if (rows.isEmpty()) {
-			return;
-		}
-		float rowH = 11f;
-		float textW = 0f;
-		for (Row row : rows) {
-			textW = Math.max(textW, dev.stray.client.ui.Win98.width(font, row.label));
-		}
-		float w = textW + 22f;
-		float h = rows.size() * rowH + 6f;
-		float x = guiWidth - w;
-		dev.stray.client.ui.Win98.raised(graphics, x, 0, w, h);
-		float y = 3f;
-		for (Row row : rows) {
-			GuiDraw.fill(graphics, x + 5f, y + 2f, 7f, 7f, 0xFF000000);
-			GuiDraw.fill(graphics, x + 6f, y + 3f, 5f, 5f, 0xFF000000 | row.color);
-			dev.stray.client.ui.Win98.text(graphics, font, row.label, x + 16f, y + 2f, dev.stray.client.ui.Win98.TEXT);
-			y += rowH;
-		}
+	private static Row row(Font font, String label, int color) {
+		return new Row(label, 0xFF000000 | color, PAD + font.width(MenuFont.shadow(label)) + PAD + DOT + 2f);
 	}
 
 	private record Row(String label, int color, float width) {

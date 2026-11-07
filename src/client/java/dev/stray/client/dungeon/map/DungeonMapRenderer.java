@@ -95,7 +95,7 @@ public final class DungeonMapRenderer {
 	public static void draw(GuiGraphicsExtractor graphics, Font font, float x, float y) {
 		long now = System.currentTimeMillis();
 		if (HudChrome.background()) {
-			ShadowLook.panel(graphics, x, y, drawWidth(), drawHeight(), 8f, ShadowLook.FILL);
+			ShadowLook.panel(graphics, x, y, drawWidth(), drawHeight(), ShadowLook.HUD_R, ShadowLook.FILL);
 		}
 		boolean example = example();
 		// Map size: the rooms grow inside the panel (around its middle), the panel stays.

@@ -76,15 +76,15 @@ public final class StrayConfig {
 	public String themePreset = "cyan";
 	public boolean uiAnimations = false;
 	public boolean autoUpdate = false;
-	public boolean updateNotify = true;
-	public boolean updateAutoClose = true;
+	public boolean updateNotify = false;
+	public boolean updateAutoClose = false;
 	public String updateNotifiedVersion = "";
 	public boolean watermarkEnabled = false;
 	public boolean watermarkFps = false;
 	public boolean watermarkPing = false;
 	public boolean watermarkTime = false;
 	public boolean watermarkName = false;
-	public String watermarkStyle = "panel";
+	public String watermarkStyle = "shadow";
 	/** HUD element ids (HudLayout.Id names) lined up along the top edge. */
 	public java.util.List<String> hudDocked = new java.util.ArrayList<>();
 	/** CS2 knives (local build only): read from the player's own CS2 install. */
@@ -149,8 +149,6 @@ public final class StrayConfig {
 	public String chatStyle = "stray";
 	/** "left", "center" or "right": where the docked HUD row lines up. */
 	public String hudDockAlign = "left";
-	/** Hyprland click GUI as one floating window instead of fullscreen tiles. */
-	public boolean hyprFloating = false;
 	/** Share of the width the module window takes; the settings window gets the rest. */
 	public float hyprSplit = 0.55f;
 	public float hyprFloatX = -1f;
@@ -191,12 +189,12 @@ public final class StrayConfig {
 	public int gardenPlotsX = 0;
 	public int gardenPlotsY = 0;
 	public boolean pestEspEnabled = false;
-	public boolean pestEspThroughWalls = true;
+	public boolean pestEspThroughWalls = false;
 	public boolean pestEspNametag = true;
 	public int pestEspRgb = 0xB62F00;
 	public float pestEspOpacity = 0.38f;
 	public boolean pestCooldownHudEnabled = false;
-	public boolean cropFeverHudEnabled = true;
+	public boolean cropFeverHudEnabled = false;
 	public boolean pestCooldownTitle = true;
 	public boolean pestLoadoutSwap = false;
 	public int pestLoadoutLead = 3;
@@ -210,7 +208,7 @@ public final class StrayConfig {
 	public String customTitleTrigger = "";
 	public String customTitleText = "";
 	public java.util.List<CustomTitleRule> customTitles = new java.util.ArrayList<>();
-	public boolean lassoDisplay = true;
+	public boolean lassoDisplay = false;
 	public boolean jacobContestHudEnabled = false;
 	public boolean skillProgressHudEnabled = false;
 	public boolean gardenContestHudEnabled = false;
@@ -244,10 +242,10 @@ public final class StrayConfig {
 	public String routeMinerGem = "ruby";
 	public boolean crystalHollowsScan = true;
 	public boolean crystalHollowsMap = false;
-	public boolean scathaHudEnabled = true;
-	public boolean foragingHideTreeBlocks = true;
-	public boolean foragingCompactSweep = true;
-	public boolean foragingCompactTreeGift = true;
+	public boolean scathaHudEnabled = false;
+	public boolean foragingHideTreeBlocks = false;
+	public boolean foragingCompactSweep = false;
+	public boolean foragingCompactTreeGift = false;
 	public boolean crystalHollowsMapLabels = true;
 	public boolean metalDetectorSolver = false;
 	public boolean metalDetectorToolTitle = false;
@@ -270,12 +268,12 @@ public final class StrayConfig {
 	public int movementRingsRgb = 0xFF8A4A;
 	public String movementRecordKey = "key.keyboard.unknown";
 	public float movementAimSpeed = 1.00f;
-	public boolean aotvSimEnabled = true;
+	public boolean aotvSimEnabled = false;
 	public boolean commandShortcutsEnabled = false;
 	public boolean commandShortcutsPassArgs = true;
 	public java.util.List<CommandShortcut> commandShortcuts = new java.util.ArrayList<>();
 	/** Command keys: press the key in game, the command runs. */
-	public boolean commandKeysEnabled = true;
+	public boolean commandKeysEnabled = false;
 	public java.util.List<CommandKey> commandKeys = new java.util.ArrayList<>();
 	/** Freecam: flight speed in blocks per tick, and the toggle key. */
 	public float freecamSpeed = 1.0f;
@@ -286,13 +284,13 @@ public final class StrayConfig {
 	public java.util.List<String> editorPalette = new java.util.ArrayList<>();
 	public int editorBrush = 2;
 	public boolean pathsEnabled = false;
-	public boolean pathThroughWalls = true;
+	public boolean pathThroughWalls = false;
 	public float pathWidth = 2.4f;
 	public int pathRgb = 0x2FB5FF;
 	public String pathRecordKey = "key.keyboard.unknown";
 	public boolean nucleusAlertParts = false;
 	public boolean nucleusAlertTools = false;
-	public boolean fairySoulThroughWalls = true;
+	public boolean fairySoulThroughWalls = false;
 	public int fairySoulRgb = 0xE878FF;
 	public String openGuiKey = "key.keyboard.right.shift";
 	public String openLoadoutsKey = "key.keyboard.unknown";
@@ -316,12 +314,12 @@ public final class StrayConfig {
 	public int chestEspRgb = 0xF4C14E;
 	public float chestEspOpacity = 0.34f;
 	public boolean clickGui = true;
-	/** Click GUI chrome. {@code glass} is the liquid lens, {@code click} is the flat boxes. */
-	public String clickGuiStyle = "glass";
+	/** Click GUI chrome: always {@code shadow} now; kept so old configs load. */
+	public String clickGuiStyle = "shadow";
 	/** Inventory, chests, and the other custom screens. {@code click} is the flat boxes. */
 	public String guiStyle = "click";
-	public boolean arrayList = true;
-	public boolean partyFinderStats = true;
+	public boolean arrayList = false;
+	public boolean partyFinderStats = false;
 	/** Custom Spirit Leap menu (NoammAddons' leap logic, Stray's look). */
 	public boolean leapMenuEnabled = false;
 	/** Each panel shows what that teammate sees. */
@@ -329,7 +327,7 @@ public final class StrayConfig {
 	public int leapSorting = 0;
 	public boolean leapLeftClickOnly = false;
 	public boolean leapKeybinds = false;
-	public boolean leapAnnounce = true;
+	public boolean leapAnnounce = false;
 	public String leapMessage = "Leaping to {name}";
 	public boolean leapTintDead = true;
 	public boolean leapShowDoorOpener = false;
@@ -411,7 +409,7 @@ public final class StrayConfig {
 	public java.util.List<String> arrayListHidden = new java.util.ArrayList<>();
 	public java.util.List<ClickColumnPos> clickColumns = new java.util.ArrayList<>();
 	public boolean loadoutsMenuEnabled = false;
-	public boolean noCursorReset = true;
+	public boolean noCursorReset = false;
 	public int noCursorResetTimeout = 150;
 	/** No cursor reset leaves Spirit Leap and "Teleport to Player" menus alone. */
 	public boolean noCursorResetSkipLeap = true;
@@ -420,13 +418,13 @@ public final class StrayConfig {
 	public boolean profileViewerEnabled = false;
 	public boolean storagePreviewEnabled = false;
 	public boolean storagePreviewHoldShift = false;
-	public boolean themedGuisEnabled = true;
+	public boolean themedGuisEnabled = false;
 	public boolean styledContainers = true;
 	public boolean themedChatEnabled = false;
 	public boolean stashChatCompact = false;
 	public boolean npcChatClean = false;
-	public boolean strayIrcEnabled = true;
-	public boolean strayPingEnabled = true;
+	public boolean strayIrcEnabled = false;
+	public boolean strayPingEnabled = false;
 	/** Clicks per second. 1 to 20, in steps of 0.5. */
 	public boolean autoClickerEnabled = false;
 	public boolean autoClickerWhiteListOnly = false;
@@ -458,7 +456,7 @@ public final class StrayConfig {
 	public boolean superpairsSkipBottles = false;
 	public boolean superpairsSkipPets = false;
 	public boolean disabledPotionsHighlight = false;
-	public boolean sackRecipe = true;
+	public boolean sackRecipe = false;
 	public boolean legacySkullHold = false;
 	public boolean legacyBackwardsWalk = false;
 	public boolean heldItemShaderEnabled = false;
@@ -528,6 +526,7 @@ public final class StrayConfig {
 	public HudSlot slotF7Title = new HudSlot();
 	public HudSlot slotF7Lightning = new HudSlot();
 	public HudSlot slotF7Terminal = new HudSlot();
+	public HudSlot slotArrayList = new HudSlot();
 	public HudSlot slotSlayer = new HudSlot();
 	public HudSlot slotSlayerProfit = new HudSlot();
 	public HudSlot slotSlayerRng = new HudSlot();
@@ -622,10 +621,8 @@ public final class StrayConfig {
 	public boolean menuScaleV2;
 	public boolean menuStarfield = false;
 	public boolean hudStarfield = false;
-	public String hudStyle = "stray";
+	public String hudStyle = "shadow";
 	public boolean accentOutlines = false;
-	/** Dark color scheme for the Windows 98 click GUI and HUD. */
-	public boolean win98Dark = false;
 	public String guiDesign = "control";
 	public int controlPaneRgb = 0x181818;
 	public int controlPillRgb = 0x808080;
@@ -1117,12 +1114,6 @@ public final class StrayConfig {
 					loaded.mobGlowThroughWalls = false;
 					loaded.featureTogglesOffV1 = true;
 				}
-				if (!json.has("updateNotify")) {
-					loaded.updateNotify = true;
-				}
-				if (!json.has("updateAutoClose")) {
-					loaded.updateAutoClose = true;
-				}
 				if (loaded.mobGlowName == null) {
 					loaded.mobGlowName = "";
 				}
@@ -1205,9 +1196,6 @@ public final class StrayConfig {
 				}
 				loaded.movementRecordKey = blankKey(loaded.movementRecordKey, "key.keyboard.unknown");
 				loaded.movementAimSpeed = json.has("movementAimSpeed") ? clamp(loaded.movementAimSpeed <= 0f ? 1.00f : loaded.movementAimSpeed, 0.25f, 2.00f) : 1.00f;
-				if (!json.has("aotvSimEnabled")) {
-					loaded.aotvSimEnabled = true;
-				}
 				if (!json.has("commandShortcutsEnabled")) {
 					loaded.commandShortcutsEnabled = false;
 				}
@@ -1216,9 +1204,6 @@ public final class StrayConfig {
 				}
 				if (loaded.commandKeys == null) {
 					loaded.commandKeys = new java.util.ArrayList<>();
-				}
-				if (!json.has("commandKeysEnabled")) {
-					loaded.commandKeysEnabled = true;
 				}
 				loaded.freecamSpeed = json.has("freecamSpeed") ? clamp(loaded.freecamSpeed <= 0f ? 1.0f : loaded.freecamSpeed, 0.05f, 8.0f) : 1.0f;
 				loaded.freecamKey = blankKey(loaded.freecamKey, "key.keyboard.unknown");
@@ -1237,9 +1222,6 @@ public final class StrayConfig {
 				if (!json.has("pathsEnabled")) {
 					loaded.pathsEnabled = false;
 				}
-				if (!json.has("pathThroughWalls")) {
-					loaded.pathThroughWalls = true;
-				}
 				loaded.pathWidth = json.has("pathWidth") ? clamp(loaded.pathWidth, 1f, 6f) : 2.4f;
 				if (!json.has("pathRgb") || (loaded.pathRgb & 0xFFFFFF) == 0) {
 					loaded.pathRgb = 0x2FB5FF;
@@ -1250,9 +1232,6 @@ public final class StrayConfig {
 				}
 				if (!json.has("nucleusAlertTools")) {
 					loaded.nucleusAlertTools = false;
-				}
-				if (!json.has("fairySoulThroughWalls")) {
-					loaded.fairySoulThroughWalls = true;
 				}
 				loaded.fairySoulRgb = loaded.fairySoulRgb & 0xFFFFFF;
 				if (!json.has("fairySoulRgb") || loaded.fairySoulRgb == 0) {
@@ -1327,9 +1306,6 @@ public final class StrayConfig {
 				if (!json.has("disabledPotionsHighlight")) {
 					loaded.disabledPotionsHighlight = false;
 				}
-				if (!json.has("sackRecipe")) {
-					loaded.sackRecipe = true;
-				}
 				loaded.autoClickerCps = json.has("autoClickerCps")
 					? clamp(loaded.autoClickerCps, 3.0f, 15.0f)
 					: 5.0f;
@@ -1384,26 +1360,12 @@ public final class StrayConfig {
 				if (!json.has("storagePreviewHoldShift")) {
 					loaded.storagePreviewHoldShift = false;
 				}
-				if (!json.has("themedGuisEnabled") || !json.has("styledContainers")) {
-					loaded.themedGuisEnabled = true;
-				}
-				if (!json.has("noCursorReset")) {
-					loaded.noCursorReset = true;
-				}
 				// The Stray menu is gone: the click GUI is the menu.
 				loaded.clickGui = true;
-				loaded.clickGuiStyle = json.has("clickGuiStyle")
-					? normalizeClickGuiStyle(loaded.clickGuiStyle)
-					: "click";
+				loaded.clickGuiStyle = normalizeClickGuiStyle(loaded.clickGuiStyle);
 				loaded.guiStyle = json.has("guiStyle")
 					? normalizeGuiStyle(loaded.guiStyle)
 					: "click";
-				if (!json.has("arrayList")) {
-					loaded.arrayList = true;
-				}
-				if (!json.has("partyFinderStats")) {
-					loaded.partyFinderStats = true;
-				}
 				if (!json.has("arrayListAccent")) {
 					loaded.arrayListAccent = false;
 				}
@@ -1438,12 +1400,6 @@ public final class StrayConfig {
 				}
 				if (!json.has("npcChatClean")) {
 					loaded.npcChatClean = false;
-				}
-				if (!json.has("strayIrcEnabled")) {
-					loaded.strayIrcEnabled = true;
-				}
-				if (!json.has("strayPingEnabled")) {
-					loaded.strayPingEnabled = true;
 				}
 				loaded.strayPingKey = blankKey(loaded.strayPingKey, "key.keyboard.unknown");
 				if (!json.has("crystalHollowsScan")) {
@@ -1622,12 +1578,6 @@ public final class StrayConfig {
 				if (!json.has("pestCooldownHudEnabled")) {
 					loaded.pestCooldownHudEnabled = false;
 				}
-				if (!json.has("cropFeverHudEnabled")) {
-					loaded.cropFeverHudEnabled = true;
-				}
-				if (!json.has("scathaHudEnabled")) {
-					loaded.scathaHudEnabled = true;
-				}
 				if (!json.has("pestCooldownTitle")) {
 					loaded.pestCooldownTitle = true;
 				}
@@ -1650,9 +1600,6 @@ public final class StrayConfig {
 						loaded.pestLoadoutAtSeconds = clamp(parsed, 0, 600);
 						loaded.pestLoadoutAt = formatPestClock(loaded.pestLoadoutAtSeconds);
 					}
-				}
-				if (!json.has("lassoDisplay")) {
-					loaded.lassoDisplay = true;
 				}
 				if (loaded.customTitleTrigger == null) {
 					loaded.customTitleTrigger = "";
@@ -1730,6 +1677,7 @@ public final class StrayConfig {
 				loaded.slotF7Title = hudSlot(loaded.slotF7Title);
 				loaded.slotF7Lightning = hudSlot(loaded.slotF7Lightning);
 				loaded.slotF7Terminal = hudSlot(loaded.slotF7Terminal);
+				loaded.slotArrayList = hudSlot(loaded.slotArrayList);
 				// Hand-edited values outside what the sliders allow would stall the clicks.
 				loaded.terminalFirstClickDelay = Math.max(0, Math.min(8, loaded.terminalFirstClickDelay));
 				loaded.terminalScale = Math.max(50, Math.min(200, loaded.terminalScale));
@@ -1934,45 +1882,8 @@ public final class StrayConfig {
 		return Math.min(count, 999_999L);
 	}
 
-	public boolean watermarkClient() {
-		return "client".equals(watermarkStyle);
-	}
-
-	public boolean watermarkHypr() {
-		return "hypr".equals(watermarkStyle);
-	}
-
-	public boolean watermarkWin98() {
-		return "win98".equals(watermarkStyle);
-	}
-
-	public boolean watermarkShadow() {
-		return "shadow".equals(watermarkStyle);
-	}
-
-	public void cycleWatermarkStyle() {
-		watermarkStyle = watermarkClient() ? "hypr" : watermarkHypr() ? "win98" : watermarkWin98() ? "panel" : "client";
-		UnloadState.markDirty();
-	}
-
-	public int watermarkStyleIndex() {
-		return indexOf(WATERMARK_STYLES, normalizeWatermarkStyle(watermarkStyle));
-	}
-
-	public void setWatermarkStyle(String style) {
-		watermarkStyle = normalizeWatermarkStyle(style);
-		UnloadState.markDirty();
-	}
-
-	public String watermarkStyleLabel() {
-		return watermarkClient() ? "Client" : watermarkHypr() ? "Hyprland" : watermarkWin98() ? "Windows 98" : watermarkShadow() ? "Shadow" : "Panel";
-	}
-
 	private static String normalizeWatermarkStyle(String style) {
-		if ("client".equals(style) || "hypr".equals(style) || "win98".equals(style) || "shadow".equals(style)) {
-			return style;
-		}
-		return "panel";
+		return "shadow";
 	}
 
 	public static final String[] MUSIC_LAYOUTS = {"card", "compact", "poster", "dock", "bar"};
@@ -2127,32 +2038,6 @@ public final class StrayConfig {
 		healthBarStyle = healthBarCsgo() ? "stray" : "csgo";
 	}
 
-	public boolean hudStyleVanilla() {
-		// Removed style: only Click and Hyprland remain.
-		return false;
-	}
-
-	public boolean hudStyleClick() {
-		return "click".equalsIgnoreCase(hudStyle);
-	}
-
-	public boolean hudStyleGlass() {
-		// Removed style: only Click and Hyprland remain.
-		return false;
-	}
-
-	public boolean hudStyleHypr() {
-		return "hypr".equalsIgnoreCase(hudStyle);
-	}
-
-	public boolean hudStyleShadow() {
-		return "shadow".equalsIgnoreCase(hudStyle);
-	}
-
-	public boolean clickGuiShadow() {
-		return "shadow".equalsIgnoreCase(clickGuiStyle);
-	}
-
 	public boolean guiStyleShadow() {
 		return "shadow".equalsIgnoreCase(guiStyle);
 	}
@@ -2161,63 +2046,8 @@ public final class StrayConfig {
 		return "shadow".equalsIgnoreCase(chatStyle);
 	}
 
-	public boolean hudStyleWin98() {
-		return "win98".equalsIgnoreCase(hudStyle);
-	}
-
-	public String hudStyleLabel() {
-		if (hudStyleHypr()) {
-			return "Hyprland";
-		}
-		if (hudStyleWin98()) {
-			return "Windows 98";
-		}
-		if (hudStyleShadow()) {
-			return "Shadow";
-		}
-		if (hudStyleVanilla()) {
-			return "Vanilla";
-		}
-		if (hudStyleClick()) {
-			return "Click";
-		}
-		if (hudStyleGlass()) {
-			return "Glass";
-		}
-		return "Stray";
-	}
-
-	public void cycleHudStyle() {
-		hudStyle = hudStyleHypr() ? "win98" : hudStyleWin98() ? "click" : "hypr";
-	}
-
-	public boolean clickGuiGlass() {
-		// Removed style: only Click and Hyprland remain.
-		return false;
-	}
-
-	public boolean clickGuiImgui() {
-		// Removed style: only Click and Hyprland remain.
-		return false;
-	}
-
-	public boolean clickGuiHypr() {
-		return "hypr".equalsIgnoreCase(clickGuiStyle);
-	}
-
-	public boolean clickGuiWin98() {
-		return "win98".equalsIgnoreCase(clickGuiStyle);
-	}
-
-	/** Keys and labels for the style dropdowns, in menu order. */
-	public static final String[] CLICK_GUI_STYLES = {"click", "hypr", "win98", "shadow"};
-	public static final String[] CLICK_GUI_STYLE_LABELS = {"Click", "Hyprland", "Windows 98", "Shadow"};
 	public static final String[] GUI_STYLES = {"click", "hypr", "shadow"};
 	public static final String[] GUI_STYLE_LABELS = {"Click", "Hyprland", "Shadow"};
-	public static final String[] WATERMARK_STYLES = {"panel", "client", "hypr", "win98", "shadow"};
-	public static final String[] WATERMARK_STYLE_LABELS = {"Panel", "Client", "Hyprland", "Windows 98", "Shadow"};
-	public static final String[] HUD_STYLES = {"click", "hypr", "win98", "shadow"};
-	public static final String[] HUD_STYLE_LABELS = {"Click", "Hyprland", "Windows 98", "Shadow"};
 	public static final String[] CHAT_STYLES = {"stray", "hypr", "shadow"};
 	public static final String[] CHAT_STYLE_LABELS = {"Stray", "Hyprland", "Shadow"};
 
@@ -2233,20 +2063,8 @@ public final class StrayConfig {
 		chatStyle = "hypr".equalsIgnoreCase(style) ? "hypr" : "shadow".equalsIgnoreCase(style) ? "shadow" : "stray";
 	}
 
-	public int clickGuiStyleIndex() {
-		return indexOf(CLICK_GUI_STYLES, normalizeClickGuiStyle(clickGuiStyle));
-	}
-
 	public int guiStyleIndex() {
 		return indexOf(GUI_STYLES, normalizeGuiStyle(guiStyle));
-	}
-
-	public int hudStyleIndex() {
-		return indexOf(HUD_STYLES, normalizeHudStyle(hudStyle));
-	}
-
-	public void setClickGuiStyle(String style) {
-		clickGuiStyle = normalizeClickGuiStyle(style);
 	}
 
 	public void setGuiStyle(String style) {
@@ -2262,36 +2080,6 @@ public final class StrayConfig {
 		return 0;
 	}
 
-	public String clickGuiStyleLabel() {
-		if (clickGuiHypr()) {
-			return "Hyprland";
-		}
-		if (clickGuiWin98()) {
-			return "Windows 98";
-		}
-		if (clickGuiShadow()) {
-			return "Shadow";
-		}
-		if (clickGuiImgui()) {
-			return "ImGui";
-		}
-		return clickGuiGlass() ? "Glass" : "Click";
-	}
-
-	public void cycleClickGuiStyle() {
-		clickGuiStyle = clickGuiHypr() ? "win98" : clickGuiWin98() ? "click" : "hypr";
-	}
-
-	public boolean guiStyleGlass() {
-		// Removed style: only Click and Hyprland remain.
-		return false;
-	}
-
-	public boolean guiStyleImgui() {
-		// Removed style: only Click and Hyprland remain.
-		return false;
-	}
-
 	public boolean guiStyleHypr() {
 		return "hypr".equalsIgnoreCase(guiStyle);
 	}
@@ -2303,18 +2091,11 @@ public final class StrayConfig {
 		if (guiStyleShadow()) {
 			return "Shadow";
 		}
-		if (guiStyleImgui()) {
-			return "ImGui";
-		}
-		return guiStyleGlass() ? "Glass" : "Click";
+		return "Click";
 	}
 
 	public void cycleGuiStyle() {
 		guiStyle = guiStyleHypr() ? "click" : "hypr";
-	}
-
-	public void setHudStyle(String style) {
-		hudStyle = normalizeHudStyle(style);
 	}
 
 	public boolean arrayListShows(String name) {
@@ -2333,32 +2114,14 @@ public final class StrayConfig {
 		}
 	}
 
+	/** Shadow is the only HUD style left. */
 	public static String normalizeHudStyle(String style) {
-		if (isWin98(style)) {
-			return "win98";
-		}
-		if (style != null && style.trim().equalsIgnoreCase("shadow")) {
-			return "shadow";
-		}
-		return style != null && (style.trim().equalsIgnoreCase("hypr") || style.trim().equalsIgnoreCase("hyprland")) ? "hypr" : "click";
+		return "shadow";
 	}
 
+	/** Shadow is the only click GUI style left. */
 	public static String normalizeClickGuiStyle(String style) {
-		if (isWin98(style)) {
-			return "win98";
-		}
-		if (style != null && style.trim().equalsIgnoreCase("shadow")) {
-			return "shadow";
-		}
-		return style != null && (style.trim().equalsIgnoreCase("hypr") || style.trim().equalsIgnoreCase("hyprland")) ? "hypr" : "click";
-	}
-
-	private static boolean isWin98(String style) {
-		if (style == null) {
-			return false;
-		}
-		String key = style.trim().toLowerCase(java.util.Locale.ROOT);
-		return key.equals("win98") || key.equals("windows 98") || key.equals("windows98");
+		return "shadow";
 	}
 
 	public static String normalizeGuiStyle(String style) {
@@ -2880,6 +2643,7 @@ public final class StrayConfig {
 		slotF7Title = new HudSlot();
 		slotF7Lightning = new HudSlot();
 		slotF7Terminal = new HudSlot();
+		slotArrayList = new HudSlot();
 		slotSlayer = new HudSlot();
 		slotSlayerProfit = new HudSlot();
 		slotSlayerRng = new HudSlot();

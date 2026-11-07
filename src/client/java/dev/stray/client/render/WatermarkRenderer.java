@@ -17,21 +17,6 @@ import java.util.List;
 
 public final class WatermarkRenderer {
 	public static final float HEIGHT = 18;
-	private static final float S_SCALE = 2.55f;
-	private static final float TRAY_SCALE = 1.6f;
-	private static final float VERSION_SCALE = 0.62f;
-	private static final float BETA_SCALE = 0.72f;
-	private static final String BETA = "Beta";
-	private static final int GOLD = 0xFFFFD56A;
-	/** Vanilla bitmap cells are 8px. S ink ends on the baseline; y fills the last row. */
-	private static final float CAP_BOTTOM = 7f;
-	private static final float DESCENDER_BOTTOM = 8f;
-	/** Bitmap advance includes one empty pixel past the S ink. */
-	private static final float SIDE_GAP = 1f;
-	private static final float PART_GAP = 3f;
-	private static final String DEV_TAG = "DEV";
-	private static final float DEV_GAP = 3f;
-	private static final int WHITE = 0xFFFFFFFF;
 
 	private WatermarkRenderer() {
 	}
@@ -40,7 +25,7 @@ public final class WatermarkRenderer {
 	}
 
 	public static float height() {
-		return StrayConfig.get().watermarkClient() ? clientHeight() : HEIGHT;
+		return HEIGHT;
 	}
 
 	public static float occupiedHeight() {
@@ -68,101 +53,13 @@ public final class WatermarkRenderer {
 		if (scale != 1.0f) {
 			graphics.pose().scale(scale, scale);
 		}
-		if (win98Look()) {
-			drawWin98(graphics, font);
-		} else if (StrayConfig.get().watermarkClient()) {
-			drawClient(graphics, font);
-		} else if (StrayConfig.get().watermarkHypr()) {
-			drawHypr(graphics, font);
-		} else if (StrayConfig.get().watermarkShadow()) {
-			drawShadow(graphics, font);
-		} else {
-			drawPanel(graphics, font);
-		}
+		drawShadow(graphics, font);
 		graphics.pose().popMatrix();
-	}
-
-	private static void drawPanel(GuiGraphicsExtractor graphics, Font font) {
-		List<String> parts = new ArrayList<>();
-		parts.add("STRAY");
-		StrayConfig config = StrayConfig.get();
-		if (config.watermarkFps) {
-			parts.add(HudStats.fps() + " fps");
-		}
-		if (config.watermarkPing) {
-			parts.add(HudStats.pingLabel());
-		}
-		if (config.watermarkTime) {
-			parts.add(HudStats.time());
-		}
-		if (config.watermarkName) {
-			parts.add(HudStats.playerName());
-		}
-
-		float pad = 7;
-		float gap = 8;
-		float w = width(font);
-
-		HudChrome.panel(graphics, 0, 0, w, HEIGHT, 5, Theme.WINDOW, Theme.LINE, Theme.ACCENT);
-
-		float cx = pad + 2;
-		float textY = GuiDraw.middle(0, HEIGHT);
-		for (int i = 0; i < parts.size(); i++) {
-			int color = i == 0 ? Theme.ACCENT : Theme.TEXT;
-			if (i == 0) {
-				GuiDraw.brand(graphics, font, parts.get(i), cx, textY, color);
-			} else {
-				GuiDraw.menu(graphics, font, parts.get(i), cx, textY, color);
-			}
-			cx += partWidth(font, parts.get(i), i == 0);
-			if (i == 0) {
-				cx += DEV_GAP;
-				GuiDraw.brandSmall(graphics, font, DEV_TAG, cx, textY, Theme.WARN);
-				cx += GuiDraw.brandSmallWidth(font, DEV_TAG);
-			}
-			if (i + 1 < parts.size()) {
-				cx += gap / 2f;
-				GuiDraw.fill(graphics, cx, 4, 1, HEIGHT - 8, Theme.HUD_LINE);
-				cx += gap / 2f + 1;
-			}
-		}
 	}
 
 	// ---- Hyprland (illogical-impulse bar) style: pills on a blurred bar
 
-	private static final float HY_PAD = 3f;
-	private static final float HY_PILL = HEIGHT - HY_PAD * 2f;
-	private static final float HY_GAP = 3f;
-	private static final String HY_TUNE = "\uE429";
-	private static final String HY_FPS = "\uE9E1";
-	private static final String HY_PING = "\uE63E";
-	private static final String HY_TIME = "\uE8B5";
-	private static final String HY_NAME = "\uE7FD";
-
 	private record Pill(String icon, String text, boolean brand) {
-	}
-
-	private static List<Pill> hyprPills() {
-		StrayConfig config = StrayConfig.get();
-		List<Pill> pills = new ArrayList<>();
-		pills.add(new Pill(HY_TUNE, "Stray", true));
-		if (config.watermarkFps) {
-			pills.add(new Pill(HY_FPS, HudStats.fps() + " fps", false));
-		}
-		if (config.watermarkPing) {
-			pills.add(new Pill(HY_PING, HudStats.pingLabel(), false));
-		}
-		if (config.watermarkTime) {
-			pills.add(new Pill(HY_TIME, HudStats.time(), false));
-		}
-		if (config.watermarkName) {
-			pills.add(new Pill(HY_NAME, HudStats.playerName(), false));
-		}
-		return pills;
-	}
-
-	private static float pillWidth(Font font, Pill pill) {
-		return 5f + 9f + 3f + stableWidth(font, hyText(pill.text()), "hypr:" + pill.icon()) + 6f;
 	}
 
 	/**
@@ -197,39 +94,6 @@ public final class WatermarkRenderer {
 			state[1] = now;
 		}
 		return (float) state[0];
-	}
-
-	private static Component hyText(String value) {
-		return MenuFont.hypr(value);
-	}
-
-	private static void drawHypr(GuiGraphicsExtractor graphics, Font font) {
-		MaterialPalette.refresh();
-		List<Pill> pills = hyprPills();
-		float w = width(font);
-		float radius = HEIGHT * 0.5f;
-		// A Bar-layout music HUD continues this bar: one background for both.
-		float bg = MusicHudRenderer.attachedToWatermark()
-			? MusicHudRenderer.attachOffset(w) + MusicHudRenderer.attachedWidth()
-			: w;
-		if (HudChrome.background()) {
-			GuiFrostBlur.blitWindow(graphics, 0, 0, bg, HEIGHT, radius);
-			GuiDraw.roundedFine(graphics, 0, 0, bg, HEIGHT, radius, MaterialPalette.withAlpha(MaterialPalette.surface, 0xD8));
-		}
-		float x = HY_PAD;
-		float pillR = HY_PILL * 0.5f;
-		for (Pill pill : pills) {
-			float pw = pillWidth(font, pill);
-			int fill = pill.brand() ? MaterialPalette.primary : MaterialPalette.surfaceLow;
-			int ink = pill.brand() ? MaterialPalette.onPrimary : MaterialPalette.onSurface;
-			int iconInk = pill.brand() ? MaterialPalette.onPrimary : MaterialPalette.primary;
-			GuiDraw.roundedFine(graphics, x, HY_PAD, pw, HY_PILL, pillR, fill);
-			float iconY = Math.round(HY_PAD + (HY_PILL - font.lineHeight) * 0.5f);
-			GuiDraw.text(graphics, font, Component.literal(pill.icon()).withStyle(MenuFont.ICON), x + 5f, iconY, iconInk, false);
-			float textY = Math.round(GuiDraw.middle(HY_PAD, HY_PILL));
-			GuiDraw.text(graphics, font, hyText(pill.text()), x + 17f, textY, ink, false);
-			x += pw + HY_GAP;
-		}
 	}
 
 	// ---- Shadow: a see-through black pill, "Stray" in a white pill, the stats in Inter
@@ -292,129 +156,6 @@ public final class WatermarkRenderer {
 
 	// ---- Windows 98: a little taskbar, Start button and a tray with the stats
 
-	private static List<String> win98Parts() {
-		StrayConfig config = StrayConfig.get();
-		List<String> parts = new ArrayList<>();
-		if (config.watermarkFps) {
-			parts.add(HudStats.fps() + " fps");
-		}
-		if (config.watermarkPing) {
-			parts.add(HudStats.pingLabel());
-		}
-		if (config.watermarkName) {
-			parts.add(HudStats.playerName());
-		}
-		if (config.watermarkTime) {
-			parts.add(HudStats.time());
-		}
-		return parts;
-	}
-
-	private static float win98StartW(Font font) {
-		return dev.stray.client.ui.Win98.boldWidth(font, "Stray") + 21f;
-	}
-
-	private static float win98TrayW(Font font, List<String> parts) {
-		float w = 6f;
-		for (int i = 0; i < parts.size(); i++) {
-			w += dev.stray.client.ui.Win98.width(font, Text.zeroDigits(parts.get(i)));
-			if (i + 1 < parts.size()) {
-				w += 9f;
-			}
-		}
-		return parts.isEmpty() ? 0f : w + 2f;
-	}
-
-	private static float win98Width(Font font) {
-		List<String> parts = win98Parts();
-		float w = 3f + win98StartW(font) + 3f;
-		if (!parts.isEmpty()) {
-			w += win98TrayW(font, parts) + 3f;
-		}
-		return w;
-	}
-
-	/** Its own Windows 98 style, or any non-client style while the whole HUD is Windows 98. */
-	private static boolean win98Look() {
-		StrayConfig config = StrayConfig.get();
-		return config.watermarkWin98() || (HudChrome.win98() && !config.watermarkClient());
-	}
-
-	private static void drawWin98(GuiGraphicsExtractor graphics, Font font) {
-		float w = win98Width(font);
-		if (HudChrome.background()) {
-			dev.stray.client.ui.Win98.raised(graphics, 0, 0, w, HEIGHT);
-		}
-		float by = 2f;
-		float bh = HEIGHT - 4f;
-		float startW = win98StartW(font);
-		dev.stray.client.ui.Win98.raised(graphics, 3f, by, startW, bh);
-		float lx = 7f;
-		float ly = by + (bh - 9f) / 2f;
-		GuiDraw.fill(graphics, lx, ly, 4, 4, 0xFFE0402A);
-		GuiDraw.fill(graphics, lx + 5, ly, 4, 4, 0xFF34A853);
-		GuiDraw.fill(graphics, lx + 5, ly + 5, 4, 4, 0xFFF9BB2D);
-		GuiDraw.fill(graphics, lx, ly + 5, 4, 4, 0xFF2D7CF6);
-		dev.stray.client.ui.Win98.bold(graphics, font, "Stray", 20f, by + (bh - 8f) / 2f, dev.stray.client.ui.Win98.TEXT);
-		List<String> parts = win98Parts();
-		if (parts.isEmpty()) {
-			return;
-		}
-		float tx = 3f + startW + 3f;
-		float tw = win98TrayW(font, parts);
-		dev.stray.client.ui.Win98.shallow(graphics, tx, by, tw, bh, dev.stray.client.ui.Win98.FACE);
-		float cx = tx + 4f;
-		for (int i = 0; i < parts.size(); i++) {
-			String part = parts.get(i);
-			dev.stray.client.ui.Win98.text(graphics, font, part, cx, by + (bh - 8f) / 2f, dev.stray.client.ui.Win98.TEXT);
-			cx += dev.stray.client.ui.Win98.width(font, Text.zeroDigits(part));
-			if (i + 1 < parts.size()) {
-				cx += 4f;
-				GuiDraw.fill(graphics, cx, by + 3, 1, bh - 6, dev.stray.client.ui.Win98.SHADOW);
-				GuiDraw.fill(graphics, cx + 1, by + 3, 1, bh - 6, dev.stray.client.ui.Win98.WHITE);
-				cx += 5f;
-			}
-		}
-	}
-
-	private static float hyprWidth(Font font) {
-		float w = HY_PAD * 2f;
-		List<Pill> pills = hyprPills();
-		for (int i = 0; i < pills.size(); i++) {
-			w += pillWidth(font, pills.get(i));
-			if (i + 1 < pills.size()) {
-				w += HY_GAP;
-			}
-		}
-		return w;
-	}
-
-	private static void drawClient(GuiGraphicsExtractor graphics, Font font) {
-		Component mark = MenuFont.title("S");
-		Component rest = MenuFont.title("tray");
-		String version = versionLabel();
-		float textX = besideS(font, mark);
-		float trayY = trayTop();
-		drawScaled(graphics, font, mark, 0, 0, S_SCALE, Theme.ACCENT);
-		if (!version.isEmpty()) {
-			Component minor = MenuFont.brand(version);
-			drawScaled(graphics, font, minor, textX, 0, VERSION_SCALE, WHITE);
-			float extraX = textX + font.width(minor) * VERSION_SCALE + PART_GAP;
-			String extra = clientExtras(StrayConfig.get());
-			if (!extra.isEmpty()) {
-				drawScaled(graphics, font, MenuFont.brand(extra), extraX, 0, VERSION_SCALE, WHITE);
-			}
-		}
-		drawScaled(graphics, font, rest, textX, trayY, TRAY_SCALE, Theme.ACCENT);
-		drawScaled(graphics, font, MenuFont.title(channelLabel()), 0f, betaTop(), BETA_SCALE, GOLD);
-	}
-
-	/** One screen pixel of shadow, so the big S and the smaller tray share a bottom edge. */
-	private static void drawScaled(GuiGraphicsExtractor graphics, Font font, Component text, float x, float y, float scale, int color) {
-		GuiDraw.text(graphics, font, text, x + 1f, y + 1f, scale, shadow(color), false);
-		GuiDraw.text(graphics, font, text, x, y, scale, color, false);
-	}
-
 	private static int shadow(int color) {
 		int alpha = color >>> 24;
 		int red = Math.round(((color >> 16) & 0xFF) * 0.25f);
@@ -423,143 +164,20 @@ public final class WatermarkRenderer {
 		return (alpha << 24) | (red << 16) | (green << 8) | blue;
 	}
 
-	private static float besideS(Font font, Component mark) {
-		return Math.max(0f, font.width(mark) * S_SCALE - S_SCALE + SIDE_GAP);
-	}
-
-	/** Puts the bottom of the y in tray on the bottom of S. */
-	private static float trayTop() {
-		return CAP_BOTTOM * S_SCALE - DESCENDER_BOTTOM * TRAY_SCALE;
-	}
-
-	/** Sits just under the S shadow. Capitals share the bitmap baseline. */
-	private static float betaTop() {
-		return CAP_BOTTOM * S_SCALE + 2f;
-	}
-
-	private static float clientHeight() {
-		return betaTop() + CAP_BOTTOM * BETA_SCALE + 1f;
-	}
-
 	private static int widthTick = Integer.MIN_VALUE;
-	private static String widthStyle = "";
 	private static float widthCache;
 
 	public static float width(Font font) {
 		Minecraft client = Minecraft.getInstance();
 		StrayConfig config = StrayConfig.get();
 		int tick = client.player == null ? -1 : client.player.tickCount;
-		String style = (config.watermarkStyle == null ? "" : config.watermarkStyle) + (win98Look() ? "/98" : "");
-		if (tick == widthTick && widthCache > 0f && widthStyle.equals(style)) {
+		if (tick == widthTick && widthCache > 0f) {
 			return widthCache;
 		}
-		float w = win98Look() ? win98Width(font)
-			: config.watermarkClient() ? clientWidth(font, config) : config.watermarkHypr() ? hyprWidth(font)
-			: config.watermarkShadow() ? shadowWidth(font) : panelWidth(font, config);
+		float w = shadowWidth(font);
 		widthTick = tick;
-		widthStyle = style;
 		widthCache = w;
 		return w;
 	}
 
-	private static float panelWidth(Font font, StrayConfig config) {
-		float w = 16 + brandExtra(font);
-		w += GuiDraw.brandWidth(font, "STRAY");
-		if (config.watermarkFps) {
-			w += 9 + Math.max(GuiDraw.menuWidth(font, "000 fps"), GuiDraw.menuWidth(font, Text.zeroDigits((HudStats.fps() + " fps"))));
-		}
-		if (config.watermarkPing) {
-			w += 9 + Math.max(GuiDraw.menuWidth(font, "000 ms"), GuiDraw.menuWidth(font, Text.zeroDigits(HudStats.pingLabel())));
-		}
-		if (config.watermarkTime) {
-			w += 9 + Math.max(GuiDraw.menuWidth(font, "00:00"), GuiDraw.menuWidth(font, Text.zeroDigits(HudStats.time())));
-		}
-		if (config.watermarkName) {
-			w += 9 + GuiDraw.menuWidth(font, HudStats.playerName());
-		}
-		return w;
-	}
-
-	private static float clientWidth(Font font, StrayConfig config) {
-		float markW = besideS(font, MenuFont.title("S"));
-		float top = 0f;
-		String version = versionLabel();
-		if (!version.isEmpty()) {
-			top += font.width(MenuFont.brand(version)) * VERSION_SCALE;
-		}
-		String extra = clientExtras(config);
-		if (!extra.isEmpty()) {
-			if (top > 0f) {
-				top += PART_GAP;
-			}
-			top += stableWidth(font, MenuFont.brand(extra), "client:extra") * VERSION_SCALE;
-		}
-		float trayW = font.width(MenuFont.title("tray")) * TRAY_SCALE;
-		float right = Math.max(top, trayW);
-		float betaW = font.width(MenuFont.title(channelLabel())) * BETA_SCALE;
-		return Math.max(markW + right, betaW) + 1f;
-	}
-
-	private static String clientExtras(StrayConfig config) {
-		StringBuilder extra = new StringBuilder();
-		if (config.watermarkFps) {
-			extra.append(HudStats.fps()).append(" fps");
-		}
-		if (config.watermarkPing) {
-			if (extra.length() > 0) {
-				extra.append(' ');
-			}
-			extra.append(HudStats.pingLabel());
-		}
-		if (config.watermarkTime) {
-			if (extra.length() > 0) {
-				extra.append(' ');
-			}
-			extra.append(HudStats.time());
-		}
-		if (config.watermarkName) {
-			if (extra.length() > 0) {
-				extra.append(' ');
-			}
-			extra.append(HudStats.playerName());
-		}
-		return extra.toString();
-	}
-
-	/** Release jars keep Beta. Dev builds from main say Dev. */
-	private static String channelLabel() {
-		return devBuild() ? "Dev" : BETA;
-	}
-
-	private static boolean devBuild() {
-		return FabricLoader.getInstance()
-			.getModContainer("stray")
-			.map(container -> {
-				var value = container.getMetadata().getCustomValue("stray:channel");
-				if (value == null) {
-					return false;
-				}
-				try {
-					return "dev".equalsIgnoreCase(value.getAsString().trim());
-				} catch (Exception ignored) {
-					return false;
-				}
-			})
-			.orElse(false);
-	}
-
-	private static String versionLabel() {
-		return FabricLoader.getInstance()
-			.getModContainer("stray")
-			.map(container -> container.getMetadata().getVersion().getFriendlyString())
-			.orElse("");
-	}
-
-	private static float brandExtra(Font font) {
-		return DEV_GAP + GuiDraw.brandSmallWidth(font, DEV_TAG);
-	}
-
-	private static int partWidth(Font font, String part, boolean logo) {
-		return logo ? GuiDraw.brandWidth(font, part) : GuiDraw.menuWidth(font, part);
-	}
 }
