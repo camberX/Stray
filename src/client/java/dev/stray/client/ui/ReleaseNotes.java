@@ -15,6 +15,11 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.5.91", new String[]{
+			"New M4 category with BirdAddon's M4 (Thorn) features: Spirit Bear timer, splits and personal bests, mob highlight, bear spawn / bow / class waypoints (/m4wp), boss timer, stun timer and helper, overkill, mob counter, decoy and cave spots, Tac timer, rabbit hutches and countdown, trajectories, custom titles, hide messages, extra stats (/bearstats), muted sounds and a render optimizer. Every HUD text moves on its own in the HUD editor. BirdAddon's waypoints and PBs are picked up the first time.",
+			"Keep break progress (Mining, not in Stray Legit): block breaking no longer restarts when Hypixel re-sends your held tool. Updates to the held item wait until you stop breaking.",
+			"Hide tree blocks works again: it now recognises Galatea (Moonglade Marsh in the tab list) and also works in Torrhus Canyon."
+		}),
 		new Entry("1.5.90", new String[]{
 			"Mask timers (Dungeons): Bonzo Mask, Spirit Mask and Phoenix Pet cooldowns from NoammAddons, in the Zyryon style. Every mask is always listed, with a green arrow while you wear it (or have Phoenix out) and Ready when it is off cooldown. Bonzo's cooldown comes from your helmet's lore. Optional: dungeons only, invulnerability timer, proc and ready titles, party message on proc. Move it in the HUD editor."
 		}),
