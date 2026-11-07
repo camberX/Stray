@@ -284,11 +284,19 @@ public final class TerminalSession {
 			// The game's own slot click: middle click (2, CLONE) or right click (1, PICKUP).
 			int button = click.btn() == 0 ? 2 : click.btn();
 			ContainerInput input = click.btn() == 0 ? ContainerInput.CLONE : ContainerInput.PICKUP;
+			// A right click (Rubix step back) would also pick the pane up onto our own cursor
+			// in the client's copy of the window; the server answers for the real one. Put
+			// our copy back as it was, so a second click or a resync never sees that cursor pane.
+			ItemStack before = click.btn() != 0 && click.slot() < menu.slots.size() ? menu.slots.get(click.slot()).getItem().copy() : null;
 			sending = true;
 			try {
 				client.gameMode.handleContainerInput(windowId, click.slot(), button, input, client.player);
 			} finally {
 				sending = false;
+			}
+			if (before != null) {
+				menu.slots.get(click.slot()).set(before);
+				menu.setCarried(ItemStack.EMPTY);
 			}
 			if (term != Term.MELODY) {
 				lastClickMs = System.currentTimeMillis();

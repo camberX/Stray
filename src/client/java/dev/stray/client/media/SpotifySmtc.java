@@ -54,6 +54,8 @@ public final class SpotifySmtc {
 	private final AtomicReference<Track> track = new AtomicReference<>(Track.NONE);
 	/** True while the reader loop should keep going. */
 	private volatile boolean reading;
+	/** Bumped on every start and stop; a reader only runs (and reports) while its number is current. */
+	private volatile int generation;
 	private volatile boolean started;
 	private volatile boolean available = true;
 	private long nextStartAt;
@@ -153,6 +155,7 @@ public final class SpotifySmtc {
 		this.lastSmtcPos = -1L;
 		this.lastArtQuery = "";
 		this.reading = false;
+		this.generation++;
 		this.track.set(Track.NONE);
 	}
 
@@ -190,16 +193,30 @@ public final class SpotifySmtc {
 			this.started = false;
 			return;
 		}
+		// A start queued behind an older reader that was turned off and on again: the HUD
+		// may be off by now, so only run if this start is still the latest wish.
+		if (!this.started) {
+			return;
+		}
+		int mine = ++this.generation;
 		this.reading = true;
 		try {
 			// Reads the Windows media session in this thread (JNA, no helper process).
-			WindowsMediaSession.run(line -> this.consume(sanitize(line)), () -> this.reading);
+			WindowsMediaSession.run(line -> {
+				if (mine == this.generation) {
+					this.consume(sanitize(line));
+				}
+			}, () -> this.reading && mine == this.generation);
 		} catch (Throwable exception) {
 			Stray.LOGGER.debug("Spotify media session reader stopped", exception);
-			this.track.set(Track.NONE);
-			this.nextStartAt = System.currentTimeMillis() + 2500L;
+			if (mine == this.generation) {
+				this.track.set(Track.NONE);
+				this.nextStartAt = System.currentTimeMillis() + 2500L;
+			}
 		} finally {
-			this.started = false;
+			if (mine == this.generation) {
+				this.started = false;
+			}
 		}
 	}
 

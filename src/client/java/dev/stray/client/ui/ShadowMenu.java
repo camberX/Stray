@@ -203,6 +203,8 @@ public final class ShadowMenu {
 	// ----------------------------------------------------------------- sheet
 
 	private static void sheet(StrayScreen screen, GuiGraphicsExtractor graphics, Font font, int mx, int my, float maxH, float t) {
+		// Last frame's chips must not take right clicks while the sheet is closed or closing.
+		chipHits.clear();
 		List<HyprMenu.Item> items = HyprMenu.items(screen, category);
 		keepSelection(items);
 		boolean searching = !ClickGui.filterText().isBlank();

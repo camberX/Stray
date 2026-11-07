@@ -130,7 +130,7 @@ public abstract class Term {
 		final Map<Integer, Integer> counts = new java.util.HashMap<>();
 
 		Numbers() {
-			super("Numbers", "^Click in order!$", 36, 5, 2);
+			super("Numbers", "^Click in order!$", 36, 7, 2);
 		}
 
 		@Override
@@ -383,7 +383,9 @@ public abstract class Term {
 
 	/** Click the row's button while the moving pane is in the marked column. */
 	static final class Melody extends Term {
-		static final int[] CLAY = {16, 25, 34};
+		static final int[] CLAY = {16, 25, 34, 43};
+		/** Button rows: 3 (Noamm's layout) or 4 when the window has a fourth button (slot 43). */
+		int rows = 3;
 		int buttonRow = -1;
 		int current = -1;
 		int correct = -1;
@@ -399,6 +401,8 @@ public abstract class Term {
 
 		@Override
 		protected boolean update(Map<Integer, ItemStack> items, String title, int slot, ItemStack item) {
+			ItemStack fourth = items.get(43);
+			rows = fourth != null && fourth.is(Items.DYED_TERRACOTTA.pick(DyeColor.LIME)) || fourth != null && fourth.is(Items.DYED_TERRACOTTA.pick(DyeColor.RED)) ? 4 : 3;
 			if (!pane(item, DyeColor.LIME)) {
 				return true;
 			}
@@ -417,15 +421,15 @@ public abstract class Term {
 			return true;
 		}
 
-		/** Melody has no solution list: the "slot" is the button row (0..2). */
+		/** Melody has no solution list: the "slot" is the button row (0..rows-1). */
 		@Override
 		Click clickFor(int row) {
-			return row >= 0 && row < CLAY.length ? new Click(CLAY[row], 0) : null;
+			return row >= 0 && row < rows ? new Click(CLAY[row], 0) : null;
 		}
 
 		@Override
 		public int max() {
-			return gridH;
+			return rows;
 		}
 
 		@Override
@@ -436,6 +440,7 @@ public abstract class Term {
 		@Override
 		void reset() {
 			super.reset();
+			rows = 3;
 			buttonRow = -1;
 			current = -1;
 			correct = -1;

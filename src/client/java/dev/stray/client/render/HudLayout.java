@@ -436,8 +436,8 @@ public final class HudLayout {
 			draw.run();
 		} finally {
 			HudChrome.element(null);
+			graphics.pose().popMatrix();
 		}
-		graphics.pose().popMatrix();
 	}
 
 	public static void set(Id id, float x, float y) {

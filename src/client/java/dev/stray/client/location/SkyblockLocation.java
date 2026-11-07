@@ -52,6 +52,8 @@ public final class SkyblockLocation {
 	public static int dungeonFloor;
 	/** Master Mode Catacombs (the sidebar shows "(M7)" instead of "(F7)"). */
 	public static boolean dungeonMaster;
+	/** The sidebar showed which floor this is (Entrance reads as floor 0, same as "not yet known"). */
+	public static boolean dungeonFloorKnown;
 	private static boolean sawMaster;
 	public static String area = "";
 	public static String poi = "";
@@ -104,7 +106,11 @@ public final class SkyblockLocation {
 			dungeonFloor = sidebar.floor;
 			dungeonMaster = sawMaster;
 		}
+		if (sidebar.dungeon) {
+			dungeonFloorKnown = true;
+		}
 		if (!inDungeon) {
+			dungeonFloorKnown = false;
 			dungeonFloor = 0;
 			dungeonMaster = false;
 			inBoss = false;
@@ -134,6 +140,7 @@ public final class SkyblockLocation {
 		inDungeon = false;
 		inBoss = false;
 		dungeonFloor = 0;
+		dungeonFloorKnown = false;
 		dungeonMaster = false;
 		area = "";
 		poi = "";

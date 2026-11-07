@@ -30,7 +30,9 @@ public final class StrayShaders {
 		}
 		nextCheckNs = now + 500_000_000L;
 		Minecraft client = Minecraft.getInstance();
-		if (client == null || client.getResourceManager() == null) {
+		// While the loading overlay is up the shader cache still reads the old (vanilla-only)
+		// resources; compiling then only logs "Couldn't preload shader" errors.
+		if (client == null || client.getResourceManager() == null || client.gui.overlay() != null) {
 			return false;
 		}
 		try {

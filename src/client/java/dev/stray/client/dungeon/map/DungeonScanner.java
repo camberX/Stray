@@ -134,6 +134,11 @@ public final class DungeonScanner {
 						continue;
 					}
 					Tile tile = scanTile(level, wx, wz, z, x, roof);
+					// A room the data still can't name stays the tile it already is (like Noamm,
+					// which leaves it alone); replacing it every scan restarted its fade-in.
+					if (unknownRoom && tile instanceof RoomTile fresh && fresh.data.isUnknown()) {
+						continue;
+					}
 					if (tile != null) {
 						setTile(z * 11 + x, tile);
 					}
@@ -147,6 +152,10 @@ public final class DungeonScanner {
 	}
 
 	public static void setTile(int index, Tile tile) {
+		if (GRID[index] instanceof UnknownTile && tile instanceof UnknownTile) {
+			// Nothing changes; skipping keeps the room tree cache (rebuilt on every set).
+			return;
+		}
 		if (GRID[index] instanceof DoorTile door) {
 			DOORS.remove(door);
 		}

@@ -1730,6 +1730,11 @@ public final class StrayConfig {
 				loaded.slotF7Title = hudSlot(loaded.slotF7Title);
 				loaded.slotF7Lightning = hudSlot(loaded.slotF7Lightning);
 				loaded.slotF7Terminal = hudSlot(loaded.slotF7Terminal);
+				// Hand-edited values outside what the sliders allow would stall the clicks.
+				loaded.terminalFirstClickDelay = Math.max(0, Math.min(8, loaded.terminalFirstClickDelay));
+				loaded.terminalScale = Math.max(50, Math.min(200, loaded.terminalScale));
+				loaded.leverTriggerbotDelay = Math.max(0, Math.min(300, loaded.leverTriggerbotDelay));
+				loaded.alignTriggerbotDelay = Math.max(10, Math.min(400, loaded.alignTriggerbotDelay));
 				loaded.dungeonMapRoomInfo = Math.floorMod(loaded.dungeonMapRoomInfo, 5);
 				loaded.dungeonMapPlayerNames = Math.floorMod(loaded.dungeonMapPlayerNames, 3);
 				loaded.dungeonMapZoom = Math.max(100, Math.min(200, loaded.dungeonMapZoom));

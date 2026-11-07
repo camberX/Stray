@@ -54,6 +54,12 @@ public final class DungeonMapRenderer {
 	private DungeonMapRenderer() {
 	}
 
+	/** New run: forget the fade-in times (they hold the last run's tiles). */
+	public static void reset() {
+		SEEN.clear();
+		MARKS.clear();
+	}
+
 	public static float drawWidth() {
 		return MAP + PAD * 2f;
 	}

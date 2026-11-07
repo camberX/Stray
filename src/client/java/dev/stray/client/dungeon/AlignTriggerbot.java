@@ -84,9 +84,8 @@ public final class AlignTriggerbot {
 			stopTest();
 		}
 		if (!active(client)) {
-			if (solution != null || ROTATIONS[0] != -1) {
-				reset();
-			}
+			// Forget everything when out of range, so a later visit starts clean.
+			reset();
 			return;
 		}
 		if (testMode && !find(client)) {

@@ -57,6 +57,32 @@ final class TerminalGui {
 	private static float lastCell;
 	private static float lastGap;
 	private static Term lastTerm;
+	private static float lastGrow = 1f;
+	private static float lastCx;
+	private static float lastCy;
+	// Grid bounds in chest columns/rows: the terminal's usual grid, grown to include any
+	// slot the solution uses (like Noamm, which places slots relative to the solution).
+	private static int col0 = -1;
+	private static int row0 = -1;
+	private static int col1 = -1;
+	private static int row1 = -1;
+
+	private static void bounds(Term term) {
+		if (col0 < 0) {
+			col0 = term.startCol();
+			row0 = term.startRow();
+			col1 = term.startCol() + term.gridW - 1;
+			row1 = term.startRow() + term.gridH - 1;
+		}
+		for (Term.Click click : term.solution) {
+			int c = click.slot() % 9;
+			int r = click.slot() / 9;
+			col0 = Math.min(col0, c);
+			col1 = Math.max(col1, c);
+			row0 = Math.min(row0, r);
+			row1 = Math.max(row1, r);
+		}
+	}
 
 	/** The slot (Melody: button row) at this point, or -1. */
 	static int slotAt(double mx, double my) {
@@ -64,6 +90,9 @@ final class TerminalGui {
 		if (term == null || lastCell <= 0f) {
 			return -1;
 		}
+		// The window is drawn slightly scaled while it opens: undo that first.
+		mx = lastCx + (mx - lastCx) / lastGrow;
+		my = lastCy + (my - lastCy) / lastGrow;
 		float step = lastCell + lastGap;
 		int col = (int) Math.floor((mx - lastGx) / step);
 		int row = (int) Math.floor((my - lastGy) / step);
@@ -71,18 +100,23 @@ final class TerminalGui {
 			return -1;
 		}
 		if (term == Term.MELODY) {
-			return col == 5 && row >= 0 && row < 3 ? row : -1;
+			return col == 5 && row >= 0 && row < ((Term.Melody) term).rows ? row : -1;
 		}
-		if (col < 0 || col >= term.gridW || row < 0 || row >= term.gridH) {
+		if (col < 0 || col > col1 - col0 || row < 0 || row > row1 - row0) {
 			return -1;
 		}
-		return (term.startRow() + row) * 9 + term.startCol() + col;
+		return (row0 + row) * 9 + col0 + col;
 	}
 
 	private TerminalGui() {
 	}
 
 	static void reset() {
+		col0 = -1;
+		row0 = -1;
+		col1 = -1;
+		row1 = -1;
+		lastGrow = 1f;
 		java.util.Arrays.fill(PRESENT, 0f);
 		java.util.Arrays.fill(PULSE, 0f);
 		java.util.Arrays.fill(HOVER, 0f);
@@ -133,8 +167,16 @@ final class TerminalGui {
 		float pad = 9f * s;
 		float header = 15f * s;
 		float footer = 0f;
-		int cols = term.gridW;
-		int rows = term.gridH;
+		int cols;
+		int rows;
+		if (term == Term.MELODY) {
+			cols = term.gridW;
+			rows = ((Term.Melody) term).rows;
+		} else {
+			bounds(term);
+			cols = col1 - col0 + 1;
+			rows = row1 - row0 + 1;
+		}
 		float gridW = cols * cell + (cols - 1) * gap;
 		float gridH = rows * cell + (rows - 1) * gap;
 		float panelW = Math.max(gridW + pad * 2f, 128f * s);
@@ -149,6 +191,9 @@ final class TerminalGui {
 
 		graphics.pose().pushMatrix();
 		float grow = 0.94f + 0.06f * open;
+		lastGrow = grow;
+		lastCx = px + panelW * 0.5f;
+		lastCy = py + panelH * 0.5f;
 		graphics.pose().translate(px + panelW * 0.5f, py + panelH * 0.5f);
 		graphics.pose().scale(grow, grow);
 		graphics.pose().translate(-(px + panelW * 0.5f), -(py + panelH * 0.5f));
@@ -200,9 +245,9 @@ final class TerminalGui {
 			order.putIfAbsent(term.solution.get(i).slot(), i);
 		}
 		float r = 4.5f * s;
-		for (int row = 0; row < term.gridH; row++) {
-			for (int col = 0; col < term.gridW; col++) {
-				int slot = (term.startRow() + row) * 9 + term.startCol() + col;
+		for (int row = 0; row <= row1 - row0; row++) {
+			for (int col = 0; col <= col1 - col0; col++) {
+				int slot = (row0 + row) * 9 + col0 + col;
 				float x = gx + col * (cell + gap);
 				float y = gy + row * (cell + gap);
 				boolean over = mouseX >= x && mouseX < x + cell && mouseY >= y && mouseY < y + cell;
@@ -298,9 +343,10 @@ final class TerminalGui {
 	) {
 		float r = 4.5f * s;
 		float step = cell + gap;
-		float lanesH = 3 * cell + 2 * gap;
-		// Lanes (5 columns x 3 rows) and the button column on the right.
-		for (int row = 0; row < 3; row++) {
+		int rows = term.rows;
+		float lanesH = rows * cell + (rows - 1) * gap;
+		// Lanes (5 columns x 3 or 4 rows) and the button column on the right.
+		for (int row = 0; row < rows; row++) {
 			for (int col = 0; col < 5; col++) {
 				GuiDraw.roundedFine(graphics, gx + col * step, gy + row * step, cell, cell, r, Anim.fade(row == term.buttonRow ? ShadowLook.CARD_HOVER : ShadowLook.CARD, open));
 			}
@@ -312,7 +358,7 @@ final class TerminalGui {
 			GuiDraw.roundedFine(graphics, gx + melodyColumn * step - 1.5f * s, gy - 1.5f * s, cell + 3f * s, lanesH + 3f * s, r + 1f, Anim.fade(0x40000000 | column, open));
 			GuiDraw.hairline(graphics, gx + melodyColumn * step - 1.5f * s, gy - 1.5f * s, cell + 3f * s, lanesH + 3f * s, r + 1f, Anim.fade(0x70000000 | column, open));
 		}
-		if (loaded && term.current >= 0 && term.buttonRow >= 0 && term.buttonRow < 3) {
+		if (loaded && term.current >= 0 && term.buttonRow >= 0 && term.buttonRow < rows) {
 			melodyX = melodyX < 0f ? term.current : Anim.exp(melodyX, term.current, 26f, dt);
 			boolean onTime = term.current == term.correct;
 			int rgb = onTime ? color("button") : color("marker");
@@ -321,7 +367,7 @@ final class TerminalGui {
 			GuiDraw.roundedFine(graphics, gx + melodyX * step, gy + term.buttonRow * step, cell, cell, r, Anim.fade(color, open));
 		}
 		float bx = gx + 5 * step;
-		for (int row = 0; row < 3; row++) {
+		for (int row = 0; row < rows; row++) {
 			float y = gy + row * step;
 			boolean over = mouseX >= bx && mouseX < bx + cell && mouseY >= y && mouseY < y + cell;
 			if (over) {

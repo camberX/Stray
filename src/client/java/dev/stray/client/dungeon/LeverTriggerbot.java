@@ -44,6 +44,12 @@ public final class LeverTriggerbot {
 			clicked = null;
 			return;
 		}
+		// Sneaking with something in hand uses the item instead of the lever (vanilla),
+		// e.g. an etherwarp: never click then.
+		if (client.player.isSecondaryUseActive()
+			&& (!client.player.getMainHandItem().isEmpty() || !client.player.getOffhandItem().isEmpty())) {
+			return;
+		}
 		BlockPos pos = blockHit.getBlockPos();
 		long now = System.currentTimeMillis();
 		if (!pos.equals(hovered)) {

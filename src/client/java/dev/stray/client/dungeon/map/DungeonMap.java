@@ -93,6 +93,7 @@ public final class DungeonMap {
 		MapCalibration.reset();
 		HotbarMapScanner.calibrate();
 		SpecialColumn.reset();
+		DungeonMapRenderer.reset();
 		PLAYERS.clear();
 		maxPuzzleCount = 0;
 	}

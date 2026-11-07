@@ -61,7 +61,17 @@ public final class ShadowLook {
 
 	/** Texels per GUI unit in the generated shadow textures. */
 	private static final int RES = 4;
-	private static final java.util.Map<Long, Soft> SOFTS = new java.util.HashMap<>();
+	/** Made shadow textures, most recently used last; the oldest are freed past 48. */
+	private static final java.util.LinkedHashMap<Long, Soft> SOFTS = new java.util.LinkedHashMap<>(64, 0.75f, true) {
+		@Override
+		protected boolean removeEldestEntry(java.util.Map.Entry<Long, Soft> eldest) {
+			if (size() <= 48) {
+				return false;
+			}
+			net.minecraft.client.Minecraft.getInstance().getTextureManager().release(eldest.getValue().id());
+			return true;
+		}
+	};
 
 	/** One generated shadow texture: a blurred rounded rectangle for one (reach, corner radius) pair. */
 	private record Soft(net.minecraft.resources.Identifier id, int corner, int size) {
@@ -126,8 +136,10 @@ public final class ShadowLook {
 
 	/** The shadow texture for this reach and radius (made once, then reused). */
 	private static Soft texture(float e, float r) {
-		int eq = Math.round(e * 2f);
-		int rq = Math.round(r * 2f);
+		// Whole units: animated sizes (opening sheets, glows) would otherwise make a new
+		// texture for every in-between radius.
+		int eq = Math.round(e) * 2;
+		int rq = Math.round(r) * 2;
 		long key = ((long) eq << 32) | rq;
 		Soft cached = SOFTS.get(key);
 		if (cached != null) {
@@ -146,7 +158,9 @@ public final class ShadowLook {
 			for (int px = 0; px < size; px++) {
 				float qx = Math.abs((px + 0.5f) / RES - half) - (inner - radius);
 				float qy = Math.abs((py + 0.5f) / RES - half) - (inner - radius);
-				float outside = (float) Math.hypot(Math.max(qx, 0f), Math.max(qy, 0f));
+				float ox = Math.max(qx, 0f);
+				float oy = Math.max(qy, 0f);
+				float outside = (float) Math.sqrt(ox * ox + oy * oy);
 				float d = outside + Math.min(Math.max(qx, qy), 0f) - radius;
 				float t = clamp01((d + reach * 0.35f) / (reach * 1.35f));
 				float a = 1f - t * t * (3f - 2f * t);

@@ -57,6 +57,12 @@ public final class RoomDatabase {
 	}
 
 	private static synchronized void ensure() {
+		if (NoammData.fresh) {
+			// A newer copy was just downloaded: read it again.
+			NoammData.fresh = false;
+			byCore = null;
+			retryAt = 0L;
+		}
 		if (byCore != null && (!byName.isEmpty() || System.currentTimeMillis() < retryAt)) {
 			return;
 		}

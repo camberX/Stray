@@ -42,6 +42,11 @@ public final class MapCalibration {
 		if (calibrated) {
 			return true;
 		}
+		// Floor 0 is both Entrance and "sidebar not read yet": wait until it is known, or
+		// the whole run would be locked to Entrance's layout.
+		if (!dev.stray.client.location.SkyblockLocation.dungeonFloorKnown) {
+			return false;
+		}
 		int[] found = entranceCorner(data);
 		int start = found[0];
 		int size = found[1];

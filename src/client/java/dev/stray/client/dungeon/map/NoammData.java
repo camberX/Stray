@@ -30,6 +30,10 @@ public final class NoammData {
 	private static final String VERSION_URL = "https://api.noamm.org/na/data/version";
 	private static final Logger LOGGER = LoggerFactory.getLogger("Stray-NoammData");
 	private static volatile String status = "not started";
+	/** Set after a successful download, so RoomDatabase reads the new file. */
+	static volatile boolean fresh;
+	/** Waits between attempts after a failure (offline at start, server down): 1, 5, then 15 min. */
+	private static final long[] RETRY_MS = {60_000L, 300_000L, 900_000L};
 
 	private NoammData() {
 	}
@@ -49,6 +53,20 @@ public final class NoammData {
 	}
 
 	private static void run() {
+		for (int attempt = 0; ; attempt++) {
+			if (attempt() || attempt >= RETRY_MS.length) {
+				return;
+			}
+			try {
+				Thread.sleep(RETRY_MS[attempt]);
+			} catch (InterruptedException e) {
+				return;
+			}
+		}
+	}
+
+	/** One check (and download if needed). Returns false when it should be tried again later. */
+	private static boolean attempt() {
 		HttpClient http = HttpClient.newBuilder()
 			.connectTimeout(Duration.ofSeconds(10))
 			.followRedirects(HttpClient.Redirect.NORMAL)
@@ -57,11 +75,16 @@ public final class NoammData {
 		Path versionFile = dir.resolve("version.txt");
 		try {
 			status = "checking";
-			String remote = http.send(request(VERSION_URL), HttpResponse.BodyHandlers.ofString()).body().trim();
+			HttpResponse<String> version = http.send(request(VERSION_URL), HttpResponse.BodyHandlers.ofString());
+			String remote = version.body() == null ? "" : version.body().trim();
+			// An error page or proxy reply is not a version: never store it as one.
+			if (version.statusCode() != 200 || remote.isEmpty() || remote.length() > 128 || remote.contains(" ") || remote.contains("<")) {
+				throw new IOException("bad version reply (HTTP " + version.statusCode() + ")");
+			}
 			String local = Files.isRegularFile(versionFile) ? Files.readString(versionFile, StandardCharsets.UTF_8).trim() : null;
 			if (!remote.isEmpty() && remote.equals(local)) {
 				status = "up to date (" + remote + ")";
-				return;
+				return true;
 			}
 			status = "downloading";
 			Path zip = Files.createTempFile("stray-noamm-data-", ".zip");
@@ -81,6 +104,7 @@ public final class NoammData {
 				Files.move(fresh, dir);
 				Files.writeString(versionFile, remote, StandardCharsets.UTF_8);
 				status = "downloaded (" + remote + ")";
+				NoammData.fresh = true;
 				LOGGER.info("NoammAddons data updated to {}", remote);
 			} finally {
 				Files.deleteIfExists(zip);
@@ -88,7 +112,9 @@ public final class NoammData {
 		} catch (Exception e) {
 			status = "failed: " + e.getClass().getSimpleName() + (e.getMessage() == null ? "" : " " + e.getMessage());
 			LOGGER.warn("Could not update NoammAddons data: {}", e.toString());
+			return false;
 		}
+		return true;
 	}
 
 	private static HttpRequest request(String url) {

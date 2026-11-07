@@ -92,6 +92,8 @@ final class WindowsMediaSession {
 						if (line != null) {
 							this.out.accept(line);
 						}
+					} catch (Exception skipped) {
+						// One failed read (Spotify busy, track changing): skip this sample, keep going.
 					} finally {
 						release(session);
 					}
