@@ -254,7 +254,7 @@ public final class ClickGui {
 				}
 				return;
 			}
-			if (row.mod.feature != null || row.mod.timeout || row.mod.menuStyle || "Array list".equals(row.mod.name) || "Themed GUIs".equals(row.mod.name) || "Themed chat".equals(row.mod.name) || CUSTOMIZE.equals(row.mod.name) || CS2.equals(row.mod.name) || LEAP.equals(row.mod.name) || ALIGN.equals(row.mod.name) || TITLES.equals(row.mod.name) || MAP.equals(row.mod.name) || LEVER.equals(row.mod.name)) {
+			if (row.mod.feature != null || row.mod.timeout || row.mod.menuStyle || "Array list".equals(row.mod.name) || "Themed GUIs".equals(row.mod.name) || "Themed chat".equals(row.mod.name) || CUSTOMIZE.equals(row.mod.name) || CS2.equals(row.mod.name)) {
 				if (row.mod.name.equals(expandedName)) {
 					expandedName = null;
 				} else {
@@ -613,16 +613,6 @@ public final class ClickGui {
 			drawCustomize(screen, graphics, font, boxX, y, boxW);
 		} else if (CS2.equals(mod.name)) {
 			drawCs2(screen, graphics, font, boxX, y, boxW);
-		} else if (LEAP.equals(mod.name)) {
-			drawLeap(screen, graphics, font, boxX, y, boxW);
-		} else if (ALIGN.equals(mod.name)) {
-			drawAlign(screen, graphics, font, boxX, y, boxW);
-		} else if (LEVER.equals(mod.name)) {
-			drawLever(screen, graphics, font, boxX, y, boxW);
-		} else if (TITLES.equals(mod.name)) {
-			drawTitles(screen, graphics, font, boxX, y, boxW);
-		} else if (MAP.equals(mod.name)) {
-			drawMap(screen, graphics, font, boxX, y, boxW);
 		} else if (mod.menuStyle) {
 			if ("HUD".equals(mod.name)) {
 				drawHud(screen, graphics, font, boxX, y, boxW);
@@ -910,164 +900,6 @@ public final class ClickGui {
 		});
 	}
 
-	/** Align triggerbot: time between clicks and a little random spread. */
-	private static void drawAlign(StrayScreen screen, GuiGraphicsExtractor graphics, Font font, float x, float y, float w) {
-		StrayConfig c = StrayConfig.get();
-		drawSlider(screen, graphics, font, x, y, w, "Delay", c.alignTriggerbotDelay, 10, 400, 5, " ms", v -> {
-			c.alignTriggerbotDelay = v;
-			UnloadState.markDirty();
-		});
-		y += stride();
-		drawChoice(screen, graphics, font, x, y, w, "Random spread", c.alignTriggerbotRandom, () -> {
-			c.alignTriggerbotRandom = !c.alignTriggerbotRandom;
-			UnloadState.markDirty();
-		});
-	}
-
-	/** Lever triggerbot: reaction delay and where it works. */
-	private static void drawLever(StrayScreen screen, GuiGraphicsExtractor graphics, Font font, float x, float y, float w) {
-		StrayConfig c = StrayConfig.get();
-		drawSlider(screen, graphics, font, x, y, w, "Delay", c.leverTriggerbotDelay, 0, 300, 5, " ms", v -> {
-			c.leverTriggerbotDelay = v;
-			UnloadState.markDirty();
-		});
-		y += stride();
-		drawChoice(screen, graphics, font, x, y, w, "Dungeons only", c.leverTriggerbotDungeonsOnly, () -> {
-			c.leverTriggerbotDungeonsOnly = !c.leverTriggerbotDungeonsOnly;
-			UnloadState.markDirty();
-		});
-	}
-
-	/** F7 titles: which ones. */
-	private static void drawTitles(StrayScreen screen, GuiGraphicsExtractor graphics, Font font, float x, float y, float w) {
-		StrayConfig c = StrayConfig.get();
-		drawChoice(screen, graphics, font, x, y, w, "Crystals", c.f7CrystalTitles, () -> {
-			c.f7CrystalTitles = !c.f7CrystalTitles;
-			UnloadState.markDirty();
-		});
-		y += stride();
-		drawChoice(screen, graphics, font, x, y, w, "Wither phases", c.f7WitherTitles, () -> {
-			c.f7WitherTitles = !c.f7WitherTitles;
-			UnloadState.markDirty();
-		});
-		y += stride();
-		drawChoice(screen, graphics, font, x, y, w, "Lightning timer", c.f7LightningTimer, () -> {
-			c.f7LightningTimer = !c.f7LightningTimer;
-			UnloadState.markDirty();
-		});
-		y += stride();
-		drawChoice(screen, graphics, font, x, y, w, "Terminal progress", c.f7TerminalTitles, () -> {
-			c.f7TerminalTitles = !c.f7TerminalTitles;
-			UnloadState.markDirty();
-		});
-	}
-
-	private static final String[] MAP_INFO = {"Checkmarks", "Secrets", "Room names", "Names + secrets", "Secrets + puzzles"};
-	private static final String[] MAP_NAMES = {"Off", "Holding leap", "Always"};
-
-	/** Dungeon map: what rooms show, heads and names. Position and size live in the HUD editor. */
-	private static void drawMap(StrayScreen screen, GuiGraphicsExtractor graphics, Font font, float x, float y, float w) {
-		StrayConfig c = StrayConfig.get();
-		drawButton(screen, graphics, font, x, y, w, "Rooms: " + MAP_INFO[Math.floorMod(c.dungeonMapRoomInfo, MAP_INFO.length)], () -> {
-			c.dungeonMapRoomInfo = Math.floorMod(c.dungeonMapRoomInfo + 1, MAP_INFO.length);
-			UnloadState.markDirty();
-		});
-		y += stride();
-		drawSlider(screen, graphics, font, x, y, w, "Map size", c.dungeonMapZoom, 100, 200, 5, "%", v -> {
-			c.dungeonMapZoom = v;
-			UnloadState.markDirty();
-		});
-		y += stride();
-		drawChoice(screen, graphics, font, x, y, w, "Player heads", c.dungeonMapHeads, () -> {
-			c.dungeonMapHeads = !c.dungeonMapHeads;
-			UnloadState.markDirty();
-		});
-		y += stride();
-		drawChoice(screen, graphics, font, x, y, w, "Arrow for yourself", c.dungeonMapSelfArrow, () -> {
-			c.dungeonMapSelfArrow = !c.dungeonMapSelfArrow;
-			UnloadState.markDirty();
-		});
-		y += stride();
-		drawButton(screen, graphics, font, x, y, w, "Names: " + MAP_NAMES[Math.floorMod(c.dungeonMapPlayerNames, MAP_NAMES.length)], () -> {
-			c.dungeonMapPlayerNames = Math.floorMod(c.dungeonMapPlayerNames + 1, MAP_NAMES.length);
-			UnloadState.markDirty();
-		});
-		y += stride();
-		drawChoice(screen, graphics, font, x, y, w, "Class colours", c.dungeonMapClassBorders, () -> {
-			c.dungeonMapClassBorders = !c.dungeonMapClassBorders;
-			UnloadState.markDirty();
-		});
-		y += stride();
-		drawChoice(screen, graphics, font, x, y, w, "Guess unopened 1x1s", c.dungeonMapPredict, () -> {
-			c.dungeonMapPredict = !c.dungeonMapPredict;
-			UnloadState.markDirty();
-		});
-		y += stride();
-		drawChoice(screen, graphics, font, x, y, w, "Hide in boss", c.dungeonMapHideInBoss, () -> {
-			c.dungeonMapHideInBoss = !c.dungeonMapHideInBoss;
-			UnloadState.markDirty();
-		});
-		if (!dev.stray.Edition.LEGIT) {
-			y += stride();
-			drawChoice(screen, graphics, font, x, y, w, "Show unopened rooms", c.dungeonMapCheater, () -> {
-				c.dungeonMapCheater = !c.dungeonMapCheater;
-				UnloadState.markDirty();
-			});
-		}
-	}
-
-	/** Leap menu: the look and the original menu's options. */
-	private static void drawLeap(StrayScreen screen, GuiGraphicsExtractor graphics, Font font, float x, float y, float w) {
-		StrayConfig c = StrayConfig.get();
-		drawChoice(screen, graphics, font, x, y, w, "Teammate POV", c.leapPov, () -> {
-			c.leapPov = !c.leapPov;
-			UnloadState.markDirty();
-		});
-		y += stride();
-		String sort = dev.stray.client.dungeon.LeapMenu.SORTING[Math.floorMod(c.leapSorting, dev.stray.client.dungeon.LeapMenu.SORTING.length)];
-		drawButton(screen, graphics, font, x, y, w, "Order: " + sort, () -> {
-			c.leapSorting = Math.floorMod(c.leapSorting + 1, dev.stray.client.dungeon.LeapMenu.SORTING.length);
-			UnloadState.markDirty();
-		});
-		y += stride();
-		drawChoice(screen, graphics, font, x, y, w, "Left click only", c.leapLeftClickOnly, () -> {
-			c.leapLeftClickOnly = !c.leapLeftClickOnly;
-			UnloadState.markDirty();
-		});
-		y += stride();
-		drawChoice(screen, graphics, font, x, y, w, "Keys 1-4 leap", c.leapKeybinds, () -> {
-			c.leapKeybinds = !c.leapKeybinds;
-			UnloadState.markDirty();
-		});
-		y += stride();
-		drawChoice(screen, graphics, font, x, y, w, "Announce leap", c.leapAnnounce, () -> {
-			c.leapAnnounce = !c.leapAnnounce;
-			UnloadState.markDirty();
-		});
-		y += stride();
-		drawChoice(screen, graphics, font, x, y, w, "Tint dead players", c.leapTintDead, () -> {
-			c.leapTintDead = !c.leapTintDead;
-			UnloadState.markDirty();
-		});
-		y += stride();
-		drawChoice(screen, graphics, font, x, y, w, "Show last door opener", c.leapShowDoorOpener, () -> {
-			c.leapShowDoorOpener = !c.leapShowDoorOpener;
-			UnloadState.markDirty();
-		});
-		y += stride();
-		int[] sizes = {75, 100, 125};
-		int at = 0;
-		for (int i = 0; i < sizes.length; i++) {
-			if (sizes[i] == c.leapScale) {
-				at = i;
-			}
-		}
-		int nextSize = sizes[(at + 1) % sizes.length];
-		drawButton(screen, graphics, font, x, y, w, "Card size: " + c.leapScale + "%", () -> {
-			c.leapScale = nextSize;
-			UnloadState.markDirty();
-		});
-	}
 
 	/** Item customization: open the editor for the held item, or reset it. */
 	private static void drawCustomize(StrayScreen screen, GuiGraphicsExtractor graphics, Font font, float x, float y, float w) {
@@ -1279,21 +1111,6 @@ public final class ClickGui {
 		}
 		if (CS2.equals(mod.name)) {
 			return stackH(1);
-		}
-		if (LEAP.equals(mod.name)) {
-			return stackH(8);
-		}
-		if (ALIGN.equals(mod.name)) {
-			return stackH(2);
-		}
-		if (LEVER.equals(mod.name)) {
-			return stackH(2);
-		}
-		if (TITLES.equals(mod.name)) {
-			return stackH(4);
-		}
-		if (MAP.equals(mod.name)) {
-			return stackH(dev.stray.Edition.LEGIT ? 8 : 9);
 		}
 		if (mod.menuStyle) {
 			if ("HUD".equals(mod.name)) {
@@ -1986,11 +1803,6 @@ public final class ClickGui {
 			|| "Themed chat".equals(mod.name)
 			|| CUSTOMIZE.equals(mod.name)
 			|| CS2.equals(mod.name)
-			|| LEAP.equals(mod.name)
-			|| ALIGN.equals(mod.name)
-			|| TITLES.equals(mod.name)
-			|| LEVER.equals(mod.name)
-			|| MAP.equals(mod.name)
 			|| "Custom title".equals(mod.name);
 	}
 
@@ -2039,26 +1851,6 @@ public final class ClickGui {
 		}
 		if (CS2.equals(mod.name)) {
 			drawCs2(screen, graphics, font, x, y, w);
-			return;
-		}
-		if (LEAP.equals(mod.name)) {
-			drawLeap(screen, graphics, font, x, y, w);
-			return;
-		}
-		if (ALIGN.equals(mod.name)) {
-			drawAlign(screen, graphics, font, x, y, w);
-			return;
-		}
-		if (LEVER.equals(mod.name)) {
-			drawLever(screen, graphics, font, x, y, w);
-			return;
-		}
-		if (TITLES.equals(mod.name)) {
-			drawTitles(screen, graphics, font, x, y, w);
-			return;
-		}
-		if (MAP.equals(mod.name)) {
-			drawMap(screen, graphics, font, x, y, w);
 			return;
 		}
 		if (mod.menuStyle) {
@@ -2133,12 +1925,12 @@ public final class ClickGui {
 
 		mods.add(mod("Auto clicker", "Combat", StrayScreen.Feature.AUTO_CLICKER, null, () -> config.autoClickerEnabled, v -> config.autoClickerEnabled = v, true, false));
 		mods.add(mod("Party stats", "Combat", null, null, () -> config.partyFinderStats, v -> config.partyFinderStats = v, true, false));
-		mods.add(mod(LEAP, "Combat", null, null, () -> config.leapMenuEnabled, v -> config.leapMenuEnabled = v, true, false));
-		mods.add(mod(ALIGN, "Combat", null, null, () -> config.alignTriggerbot, v -> config.alignTriggerbot = v, true, false));
+		mods.add(mod(LEAP, "Combat", StrayScreen.Feature.LEAP_MENU, null, () -> config.leapMenuEnabled, v -> config.leapMenuEnabled = v, true, false));
+		mods.add(mod(ALIGN, "Combat", StrayScreen.Feature.ALIGN_BOT, null, () -> config.alignTriggerbot, v -> config.alignTriggerbot = v, true, false));
 		mods.add(mod(TERMINALS, "Combat", StrayScreen.Feature.TERMINALS, null, () -> config.terminalGuiEnabled, v -> config.terminalGuiEnabled = v, true, false));
-		mods.add(mod(LEVER, "Combat", null, null, () -> config.leverTriggerbot, v -> config.leverTriggerbot = v, true, false));
-		mods.add(mod(TITLES, "Combat", null, null, () -> config.f7TitlesEnabled, v -> config.f7TitlesEnabled = v, true, false));
-		mods.add(mod(MAP, "Combat", null, null, () -> config.dungeonMapEnabled, v -> config.dungeonMapEnabled = v, true, false));
+		mods.add(mod(LEVER, "Combat", StrayScreen.Feature.LEVER_BOT, null, () -> config.leverTriggerbot, v -> config.leverTriggerbot = v, true, false));
+		mods.add(mod(TITLES, "Combat", StrayScreen.Feature.F7_TITLES, null, () -> config.f7TitlesEnabled, v -> config.f7TitlesEnabled = v, true, false));
+		mods.add(mod(MAP, "Combat", StrayScreen.Feature.DUNGEON_MAP, null, () -> config.dungeonMapEnabled, v -> config.dungeonMapEnabled = v, true, false));
 		addSlayer(mods, config);
 		mods.add(mod("Array list", "HUD", null, null, () -> config.arrayList, v -> config.arrayList = v, false, false));
 		mods.add(mod("Watermark", "HUD", StrayScreen.Feature.WATERMARK, null, () -> config.watermarkEnabled, v -> config.watermarkEnabled = v, true, false));

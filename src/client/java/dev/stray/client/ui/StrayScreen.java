@@ -181,6 +181,11 @@ public class StrayScreen extends Screen {
 		PEST("Pest ESP", 6),
 		PEST_COOLDOWN("Pest cooldown", 3),
 		TERMINALS("Terminal GUI", 14),
+		LEAP_MENU("Leap menu", 8),
+		ALIGN_BOT("Align triggerbot", 2),
+		LEVER_BOT("Lever triggerbot", 2),
+		F7_TITLES("F7 titles", 4),
+		DUNGEON_MAP("Dungeon map", dev.stray.Edition.LEGIT ? 8 : 9),
 		AUTO_DNA("Auto DNA", 5),
 		NAMETAGS("Nametags", 6),
 		HEALTH("Health bar", 7),
@@ -3999,6 +4004,46 @@ public class StrayScreen extends Screen {
 			}
 			case SLAYER_HUD, SLAYER_PROFIT, SLAYER_RNG, SLAYER_KILLS, SLAYER_ALERTS, SLAYER_ESP, SLAYER_VOID, SLAYER_INFERNO, SLAYER_VAMPIRE, SLAYER_CLEANUP ->
 				drawSlayerFields(graphics, font, mouseX, mouseY, ix, y, iw, feature);
+			case LEAP_MENU -> {
+				String[] sorting = dev.stray.client.dungeon.LeapMenu.SORTING;
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Teammate POV", config.leapPov, v -> config.leapPov = v);
+				y = cycle(graphics, font, ix, y, iw, mouseX, mouseY, "Order", sorting[Math.floorMod(config.leapSorting, sorting.length)], () -> config.leapSorting = Math.floorMod(config.leapSorting + 1, sorting.length));
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Left click only", config.leapLeftClickOnly, v -> config.leapLeftClickOnly = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Keys 1-4 leap", config.leapKeybinds, v -> config.leapKeybinds = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Announce leap", config.leapAnnounce, v -> config.leapAnnounce = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Tint dead players", config.leapTintDead, v -> config.leapTintDead = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Show last door opener", config.leapShowDoorOpener, v -> config.leapShowDoorOpener = v);
+				slider(graphics, font, ix, y, iw, "Card size", config.leapScale + "%", (config.leapScale - 50) / 100f, v -> config.leapScale = snapInt(50 + v * 100f, 50, 150, 5));
+			}
+			case ALIGN_BOT -> {
+				y = slider(graphics, font, ix, y, iw, "Delay", config.alignTriggerbotDelay + "ms", (config.alignTriggerbotDelay - 10) / 390f, v -> config.alignTriggerbotDelay = snapInt(10 + v * 390f, 10, 400, 5));
+				toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Random spread", config.alignTriggerbotRandom, v -> config.alignTriggerbotRandom = v);
+			}
+			case LEVER_BOT -> {
+				y = slider(graphics, font, ix, y, iw, "Delay", config.leverTriggerbotDelay + "ms", config.leverTriggerbotDelay / 300f, v -> config.leverTriggerbotDelay = snapInt(v * 300f, 0, 300, 5));
+				toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Dungeons only", config.leverTriggerbotDungeonsOnly, v -> config.leverTriggerbotDungeonsOnly = v);
+			}
+			case F7_TITLES -> {
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Crystals", config.f7CrystalTitles, v -> config.f7CrystalTitles = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Wither phases", config.f7WitherTitles, v -> config.f7WitherTitles = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Lightning timer", config.f7LightningTimer, v -> config.f7LightningTimer = v);
+				toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Terminal progress", config.f7TerminalTitles, v -> config.f7TerminalTitles = v);
+			}
+			case DUNGEON_MAP -> {
+				String[] info = {"Checkmarks", "Secrets", "Room names", "Names + secrets", "Secrets + puzzles"};
+				String[] names = {"Off", "Holding leap", "Always"};
+				y = cycle(graphics, font, ix, y, iw, mouseX, mouseY, "Rooms", info[Math.floorMod(config.dungeonMapRoomInfo, info.length)], () -> config.dungeonMapRoomInfo = Math.floorMod(config.dungeonMapRoomInfo + 1, info.length));
+				y = slider(graphics, font, ix, y, iw, "Map size", config.dungeonMapZoom + "%", (config.dungeonMapZoom - 100) / 100f, v -> config.dungeonMapZoom = snapInt(100 + v * 100f, 100, 200, 5));
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Player heads", config.dungeonMapHeads, v -> config.dungeonMapHeads = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Arrow for yourself", config.dungeonMapSelfArrow, v -> config.dungeonMapSelfArrow = v);
+				y = cycle(graphics, font, ix, y, iw, mouseX, mouseY, "Names", names[Math.floorMod(config.dungeonMapPlayerNames, names.length)], () -> config.dungeonMapPlayerNames = Math.floorMod(config.dungeonMapPlayerNames + 1, names.length));
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Class colours", config.dungeonMapClassBorders, v -> config.dungeonMapClassBorders = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Guess unopened 1x1s", config.dungeonMapPredict, v -> config.dungeonMapPredict = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Hide in boss", config.dungeonMapHideInBoss, v -> config.dungeonMapHideInBoss = v);
+				if (!dev.stray.Edition.LEGIT) {
+					toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Show unopened rooms", config.dungeonMapCheater, v -> config.dungeonMapCheater = v);
+				}
+			}
 			case TERMINALS -> {
 				y = slider(graphics, font, ix, y, iw, "Scale", config.terminalScale + "%", (config.terminalScale - 50) / 150f, v -> config.terminalScale = snapInt(50 + v * 150f, 50, 200, 5));
 				y = slider(graphics, font, ix, y, iw, "First click delay", config.terminalFirstClickDelay + " ticks", config.terminalFirstClickDelay / 8f, v -> config.terminalFirstClickDelay = snapInt(v * 8f, 0, 8, 1));
