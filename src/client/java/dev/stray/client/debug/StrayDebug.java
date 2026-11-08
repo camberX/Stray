@@ -25,7 +25,7 @@ import java.util.Set;
 
 /** Session debug flags toggled with {@code /stray debug <flag>}. */
 public final class StrayDebug {
-	private static final Set<String> KNOWN = Set.of("composter", "pest", "break");
+	private static final Set<String> KNOWN = dev.stray.Edition.LEGIT ? Set.of("composter", "pest", "break") : Set.of("composter", "pest", "break", "autohotbar");
 	private static final int[] COMPOSTER_SLOTS = {2, 7};
 	private static final Map<String, Boolean> FLAGS = new LinkedHashMap<>();
 	private static String lastComposterDump = "";
@@ -79,6 +79,11 @@ public final class StrayDebug {
 			tell(next
 				? "Pest debug shows the next loadout swap and its timer, and prints when the cooldown jumps by more than 10 seconds."
 				: "Pest debug is off.");
+		}
+		if ("autohotbar".equals(flag)) {
+			tell(next
+				? "Auto hotbar debug says in chat when a message matches a trigger (and what it does), or almost matches one."
+				: "Auto hotbar debug is off.");
 		}
 		if ("break".equals(flag)) {
 			tell(next

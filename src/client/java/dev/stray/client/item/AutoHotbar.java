@@ -201,12 +201,13 @@ public final class AutoHotbar {
 	}
 
 	public static void onChat(String plain) {
-		if (!StrayConfig.get().autoHotbar || plain == null) {
+		if (plain == null) {
 			return;
 		}
+		boolean debug = dev.stray.client.debug.StrayDebug.enabled("autohotbar");
 		Minecraft client = Minecraft.getInstance();
 		LocalPlayer player = client.player;
-		if (player == null) {
+		if (player == null || !StrayConfig.get().autoHotbar && !debug) {
 			return;
 		}
 		String trigger = null;
@@ -216,25 +217,80 @@ public final class AutoHotbar {
 				break;
 			}
 		}
-		if (trigger == null || setup.disabled.contains(trigger) || firedThisWorld.contains(trigger)) {
+		if (trigger == null) {
+			if (debug) {
+				near(plain);
+			}
+			return;
+		}
+		if (!StrayConfig.get().autoHotbar) {
+			note("\"" + trigger + "\" matched, but Auto hotbar is off.");
+			return;
+		}
+		if (setup.disabled.contains(trigger)) {
+			note("\"" + trigger + "\" matched, but that trigger is switched off.");
+			return;
+		}
+		if (firedThisWorld.contains(trigger)) {
+			note("\"" + trigger + "\" matched, but it already ran in this world (once per world, like NoammAddons).");
 			return;
 		}
 		List<Rule> rules = setup.rules.get(trigger);
 		if (rules == null || rules.isEmpty()) {
+			note("\"" + trigger + "\" matched, but it has no items mapped.");
 			return;
 		}
 		firedThisWorld.add(trigger);
 		queue.clear();
+		int missing = 0;
+		int inPlace = 0;
 		for (Rule rule : rules) {
 			int at = findSlot(player.inventoryMenu, rule.id);
-			if (at >= 0 && at != rule.hotbarSlot + 36) {
+			if (at < 0) {
+				missing++;
+			} else if (at == rule.hotbarSlot + 36) {
+				inPlace++;
+			} else {
 				queue.add(rule);
 			}
 		}
+		note("\"" + trigger + "\" matched: " + queue.size() + " to swap, " + inPlace + " already in place, " + missing + " not in your inventory.");
 		if (!queue.isEmpty()) {
 			nextSwapAt = System.currentTimeMillis() + StrayConfig.get().autoHotbarStopDelay;
 			stillTicks = 0;
 			doneAt = 0L;
+		}
+	}
+
+	/** Debug: a message that is almost a trigger (same text ignoring case and spaces, or one inside the other). */
+	private static void near(String plain) {
+		String got = squash(plain);
+		if (got.isEmpty()) {
+			return;
+		}
+		for (Map.Entry<String, String> entry : setup.triggers.entrySet()) {
+			String want = squash(entry.getValue());
+			if (want.isEmpty()) {
+				continue;
+			}
+			if (got.equals(want) || got.contains(want) || want.contains(got) && got.length() >= 8) {
+				note("\"" + entry.getKey() + "\" did not match exactly.\n§7  got:     §f" + plain + "\n§7  trigger: §f" + entry.getValue());
+				return;
+			}
+		}
+	}
+
+	private static String squash(String text) {
+		return text.replaceAll("\\s+", "").toLowerCase(java.util.Locale.ROOT);
+	}
+
+	private static void note(String text) {
+		if (!dev.stray.client.debug.StrayDebug.enabled("autohotbar")) {
+			return;
+		}
+		Minecraft client = Minecraft.getInstance();
+		if (client.gui != null) {
+			client.gui.hud.getChat().addClientSystemMessage(Component.literal("§bStray §7[autohotbar] §f" + text));
 		}
 	}
 
