@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.5.95", new String[]{
+			"Greenhouse growth (Farming): a Garden HUD pill with the time until the next Greenhouse growth stage, and a ping when it is ready. Open the Crop Diagnostics menu in the Greenhouse once to start it. Move it in the HUD editor."
+		}),
 		new Entry("1.5.94", new String[]{
 			"Auto hotbar (Player, not in Stray Legit), from NoammAddons: a chat message you pick moves the items you mapped into their hotbar slots. It only swaps while your inventory is open and tells you to open it; turn on Open inventory automatically to have it open and close the inventory for you. Set it up with /stray autohotbar: add a trigger, then click an item and the hotbar slot it goes to."
 		}),
