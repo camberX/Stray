@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.5.96", new String[]{
+			"Auto hotbar sees its trigger messages the way NoammAddons did: straight from the server, including action bar messages and messages another mod hides."
+		}),
 		new Entry("1.5.95", new String[]{
 			"Greenhouse growth (Farming): a Garden HUD pill with the time until the next Greenhouse growth stage, and a ping when it is ready. Open the Crop Diagnostics menu in the Greenhouse once to start it. Move it in the HUD editor."
 		}),
