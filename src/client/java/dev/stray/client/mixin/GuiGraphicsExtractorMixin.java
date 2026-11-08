@@ -34,6 +34,17 @@ public class GuiGraphicsExtractorMixin {
 		return NickHider.rewrite(text);
 	}
 
+	/** Every Component draw ends here; catches names split across components and titles. */
+	@ModifyVariable(
+		method = "text(Lnet/minecraft/client/gui/Font;Lnet/minecraft/util/FormattedCharSequence;IIIZ)V",
+		at = @At("HEAD"),
+		argsOnly = true,
+		ordinal = 0
+	)
+	private net.minecraft.util.FormattedCharSequence stray$nickSequence(net.minecraft.util.FormattedCharSequence text) {
+		return NickHider.rewrite(text);
+	}
+
 	@ModifyVariable(
 		method = "text(Lnet/minecraft/client/gui/Font;Lnet/minecraft/network/chat/Component;IIIZ)V",
 		at = @At("HEAD"),

@@ -8,6 +8,7 @@ import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.network.chat.Style;
 import net.minecraft.network.chat.contents.PlainTextContents;
 import net.minecraft.network.chat.contents.TranslatableContents;
+import net.minecraft.util.FormattedCharSequence;
 
 public final class NickHider {
 	private static final ThreadLocal<Integer> DEPTH = ThreadLocal.withInitial(() -> 0);
@@ -93,6 +94,145 @@ public final class NickHider {
 		} finally {
 			resume();
 		}
+	}
+
+	/** Reused per thread: the characters and styles of the sequence being checked. */
+	private static final class Buf {
+		int[] cps = new int[128];
+		Style[] styles = new Style[128];
+		int len;
+
+		void add(int cp, Style style) {
+			if (len == cps.length) {
+				cps = java.util.Arrays.copyOf(cps, len * 2);
+				styles = java.util.Arrays.copyOf(styles, len * 2);
+			}
+			cps[len] = cp;
+			styles[len] = style;
+			len++;
+		}
+	}
+
+	private static final ThreadLocal<Buf> BUF = ThreadLocal.withInitial(Buf::new);
+	private static String nickRunsFor = null;
+	private static int[] nickCps = new int[0];
+	private static Style[] nickStyles = new Style[0];
+
+	/**
+	 * The last stop before text is drawn: titles, the scoreboard and anything else that reaches
+	 * the screen as a char sequence. Works on the whole line, so a name split across several
+	 * components (Hypixel's scoreboard team prefix and suffix) is still found.
+	 */
+	public static FormattedCharSequence rewrite(FormattedCharSequence sequence) {
+		if (sequence == null || !active()) {
+			return sequence;
+		}
+		String name = realName();
+		int n = name.length();
+		if (n == 0) {
+			return sequence;
+		}
+		Buf buf = BUF.get();
+		buf.len = 0;
+		sequence.accept((index, style, cp) -> {
+			buf.add(cp, style);
+			return true;
+		});
+		int first = find(buf, name, 0);
+		if (first < 0) {
+			return sequence;
+		}
+		refreshNickRuns();
+		int size = buf.len;
+		int[] outCps = new int[size + 16];
+		Style[] outStyles = new Style[size + 16];
+		int out = 0;
+		int i = 0;
+		int at = first;
+		while (i < size) {
+			if (i == at) {
+				Style base = buf.styles[i];
+				for (int k = 0; k < nickCps.length; k++) {
+					if (out == outCps.length) {
+						outCps = java.util.Arrays.copyOf(outCps, out * 2);
+						outStyles = java.util.Arrays.copyOf(outStyles, out * 2);
+					}
+					outCps[out] = nickCps[k];
+					outStyles[out] = nickStyles[k].applyTo(base);
+					out++;
+				}
+				i += n;
+				at = find(buf, name, i);
+				continue;
+			}
+			if (out == outCps.length) {
+				outCps = java.util.Arrays.copyOf(outCps, out * 2);
+				outStyles = java.util.Arrays.copyOf(outStyles, out * 2);
+			}
+			outCps[out] = buf.cps[i];
+			outStyles[out] = buf.styles[i];
+			out++;
+			i++;
+		}
+		int count = out;
+		int[] cps = outCps;
+		Style[] styles = outStyles;
+		return sink -> {
+			for (int k = 0; k < count; k++) {
+				if (!sink.accept(k, styles[k], cps[k])) {
+					return false;
+				}
+			}
+			return true;
+		};
+	}
+
+	/** Start of the next whole-word match of {@code name} in the buffer from {@code from}, or -1. */
+	private static int find(Buf buf, String name, int from) {
+		int n = name.length();
+		for (int start = from; start + n <= buf.len; start++) {
+			boolean match = true;
+			for (int k = 0; k < n; k++) {
+				if (buf.cps[start + k] != name.charAt(k)) {
+					match = false;
+					break;
+				}
+			}
+			if (!match) {
+				continue;
+			}
+			boolean left = start == 0 || !nameCodePoint(buf.cps[start - 1]);
+			boolean right = start + n >= buf.len || !nameCodePoint(buf.cps[start + n]);
+			if (left && right) {
+				return start;
+			}
+		}
+		return -1;
+	}
+
+	private static boolean nameCodePoint(int cp) {
+		return Character.isLetterOrDigit(cp) || cp == '_';
+	}
+
+	/** The nick as characters with their own styles (only what the nick sets itself). */
+	private static synchronized void refreshNickRuns() {
+		Component nick = formattedNick();
+		String key = cachedRaw;
+		if (key.equals(nickRunsFor)) {
+			return;
+		}
+		Buf runs = new Buf();
+		nick.visit((style, text) -> {
+			text.codePoints().forEach(cp -> runs.add(cp, style));
+			return java.util.Optional.empty();
+		}, Style.EMPTY);
+		if (runs.len == 0) {
+			String plain = realName();
+			plain.codePoints().forEach(cp -> runs.add(cp, Style.EMPTY));
+		}
+		nickCps = java.util.Arrays.copyOf(runs.cps, runs.len);
+		nickStyles = java.util.Arrays.copyOf(runs.styles, runs.len);
+		nickRunsFor = key;
 	}
 
 	public static Component parseLegacy(String raw) {

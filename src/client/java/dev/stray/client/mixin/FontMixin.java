@@ -27,6 +27,11 @@ public class FontMixin {
 		return text;
 	}
 
+	@ModifyVariable(method = "width(Lnet/minecraft/util/FormattedCharSequence;)I", at = @At("HEAD"), argsOnly = true, ordinal = 0)
+	private net.minecraft.util.FormattedCharSequence stray$nickWidthSequence(net.minecraft.util.FormattedCharSequence text) {
+		return NickHider.rewrite(text);
+	}
+
 	@ModifyVariable(
 		method = "prepareText(Ljava/lang/String;FFIZI)Lnet/minecraft/client/gui/Font$PreparedText;",
 		at = @At("HEAD"),
