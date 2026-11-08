@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.5.93", new String[]{
+			"Themed GUIs: the black glass panes Hypixel fills menus with can no longer be clicked (they were already hidden)."
+		}),
 		new Entry("1.5.92", new String[]{
 			"Keep break progress really keeps it now: while you break the same block with the same SkyBlock tool, Hypixel re-sending that tool no longer makes the game cancel and restart the break. Your inventory is no longer held back. /stray debug break says in chat when a break was kept or restarted.",
 			"Mob highlight: Trans Thorn is removed. Thorn gets the plain white box (red during the damage flash)."
