@@ -71,6 +71,18 @@ public class AbstractContainerScreenMixin {
 		}
 	}
 
+	/** Themed GUIs hide Hypixel's black filler panes; they can't be clicked either (any button, number keys, drop). */
+	@Inject(
+		method = "slotClicked(Lnet/minecraft/world/inventory/Slot;IILnet/minecraft/world/inventory/ContainerInput;)V",
+		at = @At("HEAD"),
+		cancellable = true
+	)
+	private void stray$noFillerClick(Slot slot, int slotId, int button, ContainerInput type, CallbackInfo ci) {
+		if (ContainerChrome.applies((AbstractContainerScreen<?>) (Object) this) && ChestFillers.hide(slot)) {
+			ci.cancel();
+		}
+	}
+
 	@Inject(method = "keyPressed", at = @At("HEAD"), cancellable = true)
 	private void stray$bookCombineEnter(KeyEvent event, CallbackInfoReturnable<Boolean> cir) {
 		if (!dev.stray.Edition.LEGIT && dev.stray.client.dungeon.terminal.TerminalSession.handles((AbstractContainerScreen<?>) (Object) this)
