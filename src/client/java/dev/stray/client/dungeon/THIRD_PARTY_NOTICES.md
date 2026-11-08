@@ -35,3 +35,6 @@ by BarefootBird, an Odin addon, under the BSD 3-Clause licence. Its licence text
     BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
     LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
     SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+`item/AutoHotbar` and `ui/AutoHotbarScreen` are ported from NoammAddons' `AutoHotbar` and
+`AutoHotbarScreen` (same author and CC0 licence), from before they were removed upstream in April 2026.

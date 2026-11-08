@@ -391,6 +391,13 @@ public final class StrayConfig {
 	public boolean f7TitlesEnabled = false;
 	/** Bonzo / Spirit Mask and Phoenix Pet cooldowns (NoammAddons, Zyryon look). */
 	public boolean maskTimers = false;
+	/** Auto hotbar (NoammAddons): chat triggers move mapped items into hotbar slots. Not in Stray Legit. */
+	public boolean autoHotbar = false;
+	public int autoHotbarDelay = 100;
+	public int autoHotbarJitter = 50;
+	public int autoHotbarStopDelay = 200;
+	public boolean autoHotbarHud = true;
+	public boolean autoHotbarAutoInventory = false;
 	/** M4 (Thorn) features from BirdAddon. */
 	public dev.stray.client.dungeon.m4.M4Config m4 = new dev.stray.client.dungeon.m4.M4Config();
 	public boolean maskTimersDungeonsOnly = false;
@@ -551,6 +558,7 @@ public final class StrayConfig {
 	public HudSlot slotF7Terminal = new HudSlot();
 	public HudSlot slotArrayList = new HudSlot();
 	public HudSlot slotMaskTimers = new HudSlot();
+	public HudSlot slotAutoHotbar = new HudSlot();
 	public HudSlot slotM4Timer = new HudSlot();
 	public HudSlot slotM4Bear = new HudSlot();
 	public HudSlot slotM4Splits = new HudSlot();
@@ -1702,6 +1710,7 @@ public final class StrayConfig {
 				loaded.slotF7Terminal = hudSlot(loaded.slotF7Terminal);
 				loaded.slotArrayList = hudSlot(loaded.slotArrayList);
 				loaded.slotMaskTimers = hudSlot(loaded.slotMaskTimers);
+				loaded.slotAutoHotbar = hudSlot(loaded.slotAutoHotbar);
 				loaded.slotM4Timer = hudSlot(loaded.slotM4Timer);
 				loaded.slotM4Bear = hudSlot(loaded.slotM4Bear);
 				loaded.slotM4Splits = hudSlot(loaded.slotM4Splits);
@@ -2623,6 +2632,7 @@ public final class StrayConfig {
 		slotF7Terminal = new HudSlot();
 		slotArrayList = new HudSlot();
 		slotMaskTimers = new HudSlot();
+		slotAutoHotbar = new HudSlot();
 		slotM4Timer = new HudSlot();
 		slotM4Bear = new HudSlot();
 		slotM4Splits = new HudSlot();

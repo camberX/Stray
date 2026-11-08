@@ -184,6 +184,7 @@ public class StrayScreen extends Screen {
 		LEVER_BOT("Lever triggerbot", 2),
 		F7_TITLES("F7 titles", 4),
 		TERM_HIGHLIGHT("Terminal highlight", 4),
+		AUTO_HOTBAR("Auto hotbar", 6),
 		M4_BEAR("Spirit Bear", 6),
 		M4_HIGHLIGHT("Mob highlight", 15),
 		M4_WAYPOINTS("M4 waypoints", dev.stray.Edition.LEGIT ? 9 : 10),
@@ -4112,6 +4113,16 @@ public class StrayScreen extends Screen {
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Hide zero", m4.rabbitHideZero, v -> m4.rabbitHideZero = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Ground mobs", m4.rabbitGroundMobs, v -> m4.rabbitGroundMobs = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Bats", m4.rabbitBats, v -> m4.rabbitBats = v);
+			}
+			case AUTO_HOTBAR -> {
+				if (!dev.stray.Edition.LEGIT) {
+					y = clickAction(graphics, font, ix, y, iw, "Edit triggers", () -> minecraft.gui.setScreen(new AutoHotbarScreen(minecraft.gui.screen())));
+					y = slider(graphics, font, ix, y, iw, "Base delay", config.autoHotbarDelay + "ms", config.autoHotbarDelay / 500f, v -> config.autoHotbarDelay = snapInt(v * 500f, 0, 500, 5));
+					y = slider(graphics, font, ix, y, iw, "Random delay", config.autoHotbarJitter + "ms", config.autoHotbarJitter / 100f, v -> config.autoHotbarJitter = snapInt(v * 100f, 0, 100, 1));
+					y = slider(graphics, font, ix, y, iw, "Stop delay", config.autoHotbarStopDelay + "ms", config.autoHotbarStopDelay / 500f, v -> config.autoHotbarStopDelay = snapInt(v * 500f, 0, 500, 5));
+					y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Open inventory automatically", config.autoHotbarAutoInventory, v -> config.autoHotbarAutoInventory = v);
+					toggle(graphics, font, ix, y, iw, mouseX, mouseY, "HUD info", config.autoHotbarHud, v -> config.autoHotbarHud = v);
+				}
 			}
 			case MASK_TIMERS -> {
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Dungeons only", config.maskTimersDungeonsOnly, v -> config.maskTimersDungeonsOnly = v);

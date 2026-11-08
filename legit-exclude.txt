@@ -35,6 +35,9 @@ dev/stray/client/movement/CommandRing*.class
 dev/stray/client/movement/PathWalker*.class
 dev/stray/client/movement/PathFinder*.class
 dev/stray/client/mining/SmoothRotate*.class
+# Auto hotbar: chat-triggered hotbar swaps (NoammAddons)
+dev/stray/client/item/AutoHotbar*.class
+dev/stray/client/ui/AutoHotbarScreen*.class
 # Keep break progress: holds back held-item updates while breaking
 dev/stray/client/mining/KeepBreakProgress*.class
 

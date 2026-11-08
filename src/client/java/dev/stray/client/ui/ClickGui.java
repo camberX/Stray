@@ -443,6 +443,7 @@ public final class ClickGui {
 		java.util.Map.entry("Render optimizer", "Hides particles, NPCs and invisible armor stands in the fight for more FPS. From BirdAddon."),
 		java.util.Map.entry("Trajectories", "Where flung cows and sheep will land, and the ground under chickens. From BirdAddon."),
 		java.util.Map.entry("Rabbits", "Rabbits per hutch, and a countdown to the M4 rabbits. From BirdAddon."),
+		java.util.Map.entry("Auto hotbar", "A chat message you pick moves your mapped items into their hotbar slots. Swaps only while your inventory is open; it can open and close it for you. From NoammAddons. Not in Stray Legit."),
 		java.util.Map.entry("F7 titles", "Short titles in the F7 boss: crystals, wither phases, Storm's lightning timer and who did which terminal. Also shown over the leap menu."),
 		java.util.Map.entry("Align triggerbot", "F7 arrow align: while you look at an arrow that is not right yet, it right clicks it with your delay until it is. Clicks go through the normal use key."),
 		java.util.Map.entry("Own nametag", "Shows your own name above your head in third person (F5)."),
@@ -752,6 +753,9 @@ public final class ClickGui {
 		mods.add(mod("Disabled potions", "Menus", null, null, () -> config.disabledPotionsHighlight, v -> config.disabledPotionsHighlight = v, true, false));
 		mods.add(mod("Sack recipe", "Menus", null, null, () -> config.sackRecipe, v -> config.sackRecipe = v, true, false));
 
+		if (!dev.stray.Edition.LEGIT) {
+			mods.add(mod("Auto hotbar", "Player", StrayScreen.Feature.AUTO_HOTBAR, null, () -> config.autoHotbar, v -> config.autoHotbar = v, true, false));
+		}
 		mods.add(new Mod(CUSTOMIZE, "Player", null, null, () -> true, v -> { }, false, false, false, true));
 		mods.add(hold("Cosmetics", "Player", StrayScreen.Feature.COSMETICS));
 		mods.add(mod("Nick hider", "Player", StrayScreen.Feature.NICK, null, () -> config.nickEnabled, v -> config.nickEnabled = v, true, false));

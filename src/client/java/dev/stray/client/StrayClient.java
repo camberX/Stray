@@ -226,6 +226,7 @@ public final class StrayClient implements ClientModInitializer {
 		FairySoulTracker.init();
 		CrystalHollowsRenderer.init();
 		dev.stray.client.dungeon.m4.M4World.init();
+		if (!dev.stray.Edition.LEGIT) { dev.stray.client.item.AutoHotbar.init(); }
 		if (!dev.stray.Edition.LEGIT) { dev.stray.client.dungeon.AlignTriggerbot.init(); }
 		dev.stray.client.dungeon.map.NoammData.start();
 		ClientReceiveMessageEvents.ALLOW_GAME.register((message, overlay) -> {
@@ -235,6 +236,7 @@ public final class StrayClient implements ClientModInitializer {
 				dev.stray.client.dungeon.LeapMenu.onChat(plain);
 				dev.stray.client.dungeon.F7Titles.onChat(plain);
 				dev.stray.client.dungeon.TerminalHighlight.onChat(plain);
+				if (!dev.stray.Edition.LEGIT) { dev.stray.client.item.AutoHotbar.onChat(dev.stray.client.util.Text.strip(plain)); }
 				dev.stray.client.dungeon.MaskTimers.onChat(plain);
 			}
 			MetalDetector.onMessage(message, overlay);
@@ -371,6 +373,13 @@ public final class StrayClient implements ClientModInitializer {
 			root.then(PathCommands.command());
 			if (!dev.stray.Edition.LEGIT) { root.then(CommandRingCommands.command()); }
 			root.then(ClientCommands.literal("shortcuts").executes(context -> CommandShortcuts.open()));
+			if (!dev.stray.Edition.LEGIT) {
+				root.then(ClientCommands.literal("autohotbar").executes(context -> {
+					Minecraft mc = Minecraft.getInstance();
+					mc.execute(() -> mc.gui.setScreen(new dev.stray.client.ui.AutoHotbarScreen(mc.gui.screen())));
+					return Command.SINGLE_SUCCESS;
+				}));
+			}
 			root.then(ClientCommands.literal("keys").executes(context -> openCommandKeys()));
 			if (!dev.stray.Edition.LEGIT) { root.then(ClientCommands.literal("freecam").executes(context -> toggleFreecam())); }
 			root.then(ClientCommands.literal("editor").executes(context -> toggleEditor()));
@@ -506,6 +515,7 @@ public final class StrayClient implements ClientModInitializer {
 			dev.stray.client.dungeon.TerminalHighlight.tick(client);
 			dev.stray.client.dungeon.MaskTimers.tick(client);
 			dev.stray.client.dungeon.m4.M4Features.clientTick();
+			if (!dev.stray.Edition.LEGIT) { dev.stray.client.item.AutoHotbar.tick(client); }
 			if (!dev.stray.client.dungeon.LeapMenu.active()) {
 				dev.stray.client.dungeon.LeapMenu.onContainerClosed();
 			}
@@ -581,6 +591,7 @@ public final class StrayClient implements ClientModInitializer {
 			ScathaTimer.reset();
 			dev.stray.client.dungeon.MaskTimers.reset();
 			dev.stray.client.dungeon.m4.M4.onWorldLoad();
+			if (!dev.stray.Edition.LEGIT) { dev.stray.client.item.AutoHotbar.onWorldChange(); }
 			LassoReel.reset();
 			if (!dev.stray.Edition.LEGIT) { EmptyVacuum.reset(); }
 			PestPlotTp.reset();
