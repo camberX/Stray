@@ -443,7 +443,7 @@ public final class ClickGui {
 		java.util.Map.entry("Render optimizer", "Hides particles, NPCs and invisible armor stands in the fight for more FPS. From BirdAddon."),
 		java.util.Map.entry("Trajectories", "Where flung cows and sheep will land, and the ground under chickens. From BirdAddon."),
 		java.util.Map.entry("Rabbits", "Rabbits per hutch, and a countdown to the M4 rabbits. From BirdAddon."),
-		java.util.Map.entry("Auto hotbar", "A chat message you pick moves your mapped items into their hotbar slots. Swaps only while your inventory is open; it can open and close it for you. From NoammAddons. Not in Stray Legit."),
+		java.util.Map.entry("Auto hotbar", "A chat message you pick moves your mapped items into their hotbar slots. Swaps while your inventory is open (it can open and close it for you), or with Swap without inventory like NoammAddons did. Not in Stray Legit."),
 		java.util.Map.entry("Greenhouse growth", "Time until the next Greenhouse growth stage. Open the Crop Diagnostics menu in the Greenhouse once to read it."),
 		java.util.Map.entry("F7 titles", "Short titles in the F7 boss: crystals, wither phases, Storm's lightning timer and who did which terminal. Also shown over the leap menu."),
 		java.util.Map.entry("Align triggerbot", "F7 arrow align: while you look at an arrow that is not right yet, it right clicks it with your delay until it is. Clicks go through the normal use key."),

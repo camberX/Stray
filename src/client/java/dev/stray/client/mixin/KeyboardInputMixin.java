@@ -20,6 +20,7 @@ public abstract class KeyboardInputMixin extends ClientInput {
 			if (PathWalker.walking()) {
 				PathWalker.applyInput(this);
 			}
+			dev.stray.client.item.AutoHotbar.lockInput(this);
 		}
 	}
 }

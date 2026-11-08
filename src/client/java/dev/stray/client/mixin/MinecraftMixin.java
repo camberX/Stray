@@ -30,6 +30,7 @@ public class MinecraftMixin {
 		if (!dev.stray.Edition.LEGIT) {
 			LoadoutSwap.preKeybinds(client);
 			EmptyVacuum.preKeybinds(client);
+			dev.stray.client.item.AutoHotbar.preKeybinds(client);
 		}
 	}
 

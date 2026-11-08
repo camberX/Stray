@@ -404,6 +404,8 @@ public final class StrayConfig {
 	public int autoHotbarStopDelay = 200;
 	public boolean autoHotbarHud = true;
 	public boolean autoHotbarAutoInventory = false;
+	/** Swap with no screen open, like NoammAddons did (movement locked while swapping). */
+	public boolean autoHotbarNoInventory = false;
 	/** M4 (Thorn) features from BirdAddon. */
 	public dev.stray.client.dungeon.m4.M4Config m4 = new dev.stray.client.dungeon.m4.M4Config();
 	public boolean maskTimersDungeonsOnly = false;

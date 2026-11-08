@@ -35,8 +35,9 @@ import java.util.concurrent.ThreadLocalRandom;
 /**
  * Auto hotbar, after NoammAddons' AutoHotbar (CC0; removed upstream in April 2026). A chat
  * message you pick (the trigger) moves the items you mapped into their hotbar slots, one
- * swap at a time with a delay. Unlike the original it only swaps while your inventory is
- * open: otherwise it asks you to open it, or opens and closes it for you if that option is on.
+ * swap at a time with a delay. By default it only swaps while your inventory is open: it asks
+ * you to open it, or opens and closes it for you if that option is on. "Swap without
+ * inventory" works like the original instead: no screen open, input locked while swapping.
  *
  * <p>The setup (triggers and item → slot rules) is kept in {@code config/stray/autohotbar.json},
  * in NoammAddons' format, and NoammAddons' {@code autoHotbar.json} is picked up the first time.
@@ -67,7 +68,7 @@ public final class AutoHotbar {
 		public Set<String> disabled = new LinkedHashSet<>();
 	}
 
-	public enum State { IDLE, OPEN_INVENTORY, STOP_MOVING, SWAPPING }
+	public enum State { IDLE, OPEN_INVENTORY, CLOSE_SCREEN, STOP_MOVING, SWAPPING }
 
 	private static Setup setup;
 	private static final ArrayDeque<Rule> queue = new ArrayDeque<>();
@@ -77,6 +78,10 @@ public final class AutoHotbar {
 	private static boolean openedByUs;
 	private static long doneAt;
 	private static State state = State.IDLE;
+	/** "Swap without inventory": a swap has started, so input is locked (NoammAddons' isSwapping). */
+	private static boolean swapping;
+	/** Input stays locked a moment after the last swap, as in NoammAddons. */
+	private static long lockUntil;
 
 	private AutoHotbar() {
 	}
@@ -294,7 +299,42 @@ public final class AutoHotbar {
 		}
 	}
 
+	/**
+	 * "Swap without inventory": while swapping (and 250 ms after) movement, jump, sneak and
+	 * sprint are zeroed and attack / use clicks are dropped, like NoammAddons. Held keys are left
+	 * alone, so they work again as soon as it is done.
+	 */
+	public static boolean locked() {
+		StrayConfig config = StrayConfig.get();
+		return config.autoHotbar && config.autoHotbarNoInventory && (swapping || System.currentTimeMillis() < lockUntil);
+	}
+
+	public static void lockInput(net.minecraft.client.player.ClientInput input) {
+		if (!locked()) {
+			return;
+		}
+		input.keyPresses = net.minecraft.world.entity.player.Input.EMPTY;
+		((dev.stray.client.mixin.ClientInputAccessor) input).stray$setMoveVector(net.minecraft.world.phys.Vec2.ZERO);
+	}
+
+	public static void preKeybinds(Minecraft client) {
+		if (!locked()) {
+			return;
+		}
+		while (client.options.keyAttack.consumeClick()) {
+			// dropped
+		}
+		while (client.options.keyUse.consumeClick()) {
+			// dropped
+		}
+		if (client.player != null) {
+			client.player.setSprinting(false);
+		}
+	}
+
 	public static void onWorldChange() {
+		swapping = false;
+		lockUntil = 0L;
 		queue.clear();
 		firedThisWorld.clear();
 		stillTicks = 0;
@@ -314,6 +354,10 @@ public final class AutoHotbar {
 		}
 		if (queue.isEmpty()) {
 			state = State.IDLE;
+			if (swapping) {
+				swapping = false;
+				lockUntil = now + 250L;
+			}
 			// Close the inventory we opened, a moment after the last swap.
 			if (openedByUs) {
 				if (doneAt == 0L) {
@@ -339,7 +383,15 @@ public final class AutoHotbar {
 			state = State.STOP_MOVING;
 			return;
 		}
-		if (!(client.gui.screen() instanceof InventoryScreen)) {
+		if (config.autoHotbarNoInventory) {
+			// NoammAddons' way: swap with no screen open; any screen makes it wait.
+			if (client.gui.screen() != null) {
+				stillTicks = 0;
+				nextSwapAt = now + config.autoHotbarStopDelay;
+				state = State.CLOSE_SCREEN;
+				return;
+			}
+		} else if (!(client.gui.screen() instanceof InventoryScreen)) {
 			if (client.gui.screen() == null && config.autoHotbarAutoInventory) {
 				client.gui.setScreen(new InventoryScreen(player));
 				openedByUs = true;
@@ -361,6 +413,7 @@ public final class AutoHotbar {
 			return;
 		}
 		Rule rule = queue.removeFirst();
+		swapping = config.autoHotbarNoInventory;
 		AbstractContainerMenu menu = player.containerMenu;
 		int from = findSlot(menu, rule.id);
 		if (from >= 0 && from != rule.hotbarSlot + 36 && client.gameMode != null) {
@@ -417,6 +470,7 @@ public final class AutoHotbar {
 		}
 		return switch (state) {
 			case OPEN_INVENTORY -> "§eOpen your inventory §7(" + queue.size() + " to swap)";
+			case CLOSE_SCREEN -> "§eClose the menu §7(" + queue.size() + " to swap)";
 			case STOP_MOVING -> "§cStop moving!";
 			case SWAPPING -> "§bSwapping §f" + queue.size() + " left";
 			default -> "";
