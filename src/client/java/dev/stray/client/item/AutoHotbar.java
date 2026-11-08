@@ -380,16 +380,20 @@ public final class AutoHotbar {
 			}
 			return;
 		}
-		if (player.getDeltaMovement().horizontalDistanceSqr() > 0.001) {
-			stillTicks = 0;
-			nextSwapAt = Math.max(nextSwapAt, now + 250L);
-			state = State.STOP_MOVING;
-			return;
-		}
-		stillTicks++;
-		if (stillTicks < STILL_TICKS) {
-			state = State.STOP_MOVING;
-			return;
+		// Only "Swap without inventory" waits for you to stand still (as NoammAddons did); swaps
+		// in the open inventory go ahead while you move.
+		if (config.autoHotbarNoInventory) {
+			if (player.getDeltaMovement().horizontalDistanceSqr() > 0.001) {
+				stillTicks = 0;
+				nextSwapAt = Math.max(nextSwapAt, now + 250L);
+				state = State.STOP_MOVING;
+				return;
+			}
+			stillTicks++;
+			if (stillTicks < STILL_TICKS) {
+				state = State.STOP_MOVING;
+				return;
+			}
 		}
 		if (config.autoHotbarNoInventory) {
 			// NoammAddons' way: swap with no screen open; any screen makes it wait.
