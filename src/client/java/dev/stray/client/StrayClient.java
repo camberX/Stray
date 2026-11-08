@@ -515,6 +515,7 @@ public final class StrayClient implements ClientModInitializer {
 			dev.stray.client.dungeon.TerminalHighlight.tick(client);
 			dev.stray.client.dungeon.MaskTimers.tick(client);
 			dev.stray.client.dungeon.m4.M4Features.clientTick();
+			dev.stray.client.farming.GreenhouseGrowth.tick(client);
 			if (!dev.stray.Edition.LEGIT) { dev.stray.client.item.AutoHotbar.tick(client); }
 			if (!dev.stray.client.dungeon.LeapMenu.active()) {
 				dev.stray.client.dungeon.LeapMenu.onContainerClosed();

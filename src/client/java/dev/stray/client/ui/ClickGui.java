@@ -444,6 +444,7 @@ public final class ClickGui {
 		java.util.Map.entry("Trajectories", "Where flung cows and sheep will land, and the ground under chickens. From BirdAddon."),
 		java.util.Map.entry("Rabbits", "Rabbits per hutch, and a countdown to the M4 rabbits. From BirdAddon."),
 		java.util.Map.entry("Auto hotbar", "A chat message you pick moves your mapped items into their hotbar slots. Swaps only while your inventory is open; it can open and close it for you. From NoammAddons. Not in Stray Legit."),
+		java.util.Map.entry("Greenhouse growth", "Time until the next Greenhouse growth stage. Open the Crop Diagnostics menu in the Greenhouse once to read it."),
 		java.util.Map.entry("F7 titles", "Short titles in the F7 boss: crystals, wither phases, Storm's lightning timer and who did which terminal. Also shown over the leap menu."),
 		java.util.Map.entry("Align triggerbot", "F7 arrow align: while you look at an arrow that is not right yet, it right clicks it with your delay until it is. Clicks go through the normal use key."),
 		java.util.Map.entry("Own nametag", "Shows your own name above your head in third person (F5)."),
@@ -684,6 +685,7 @@ public final class ClickGui {
 		mods.add(mod("Visitors", "Farming", null, null, () -> config.gardenVisitorHudEnabled, v -> config.gardenVisitorHudEnabled = v, true, false));
 		mods.add(mod("Hoe level", "Farming", null, null, () -> config.gardenHoeHudEnabled, v -> config.gardenHoeHudEnabled = v, true, false));
 		mods.add(mod("Crop milestone", "Farming", null, null, () -> config.gardenMilestoneHudEnabled, v -> config.gardenMilestoneHudEnabled = v, true, false));
+		mods.add(mod("Greenhouse growth", "Farming", StrayScreen.Feature.GREENHOUSE_GROWTH, null, () -> config.greenhouseGrowthHud, v -> config.greenhouseGrowthHud = v, true, false));
 		mods.add(mod("Crop fever", "Farming", null, null, () -> config.cropFeverHudEnabled, v -> config.cropFeverHudEnabled = v, true, false));
 		mods.add(mod("Pest ESP", "Farming", StrayScreen.Feature.PEST, null, () -> config.pestEspEnabled, v -> config.pestEspEnabled = v, true, false));
 		mods.add(mod("Pest cooldown", "Farming", StrayScreen.Feature.PEST_COOLDOWN, null, () -> config.pestCooldownHudEnabled, v -> config.pestCooldownHudEnabled = v, true, false));

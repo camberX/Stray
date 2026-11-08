@@ -196,6 +196,12 @@ public final class StrayConfig {
 	public float pestEspOpacity = 0.38f;
 	public boolean pestCooldownHudEnabled = false;
 	public boolean cropFeverHudEnabled = false;
+	/** Greenhouse growth stage timer, read from the Crop Diagnostics menu. */
+	public boolean greenhouseGrowthHud = false;
+	public boolean greenhouseGrowthOnlyReady = false;
+	public boolean greenhouseGrowthAlert = true;
+	public long greenhouseNextStageAt = 0L;
+	public boolean greenhouseStageNotified = true;
 	public boolean pestCooldownTitle = true;
 	public boolean pestLoadoutSwap = false;
 	public int pestLoadoutLead = 3;
@@ -558,6 +564,7 @@ public final class StrayConfig {
 	public HudSlot slotF7Terminal = new HudSlot();
 	public HudSlot slotArrayList = new HudSlot();
 	public HudSlot slotMaskTimers = new HudSlot();
+	public HudSlot slotGreenhouseGrowth = new HudSlot();
 	public HudSlot slotAutoHotbar = new HudSlot();
 	public HudSlot slotM4Timer = new HudSlot();
 	public HudSlot slotM4Bear = new HudSlot();
@@ -1710,6 +1717,7 @@ public final class StrayConfig {
 				loaded.slotF7Terminal = hudSlot(loaded.slotF7Terminal);
 				loaded.slotArrayList = hudSlot(loaded.slotArrayList);
 				loaded.slotMaskTimers = hudSlot(loaded.slotMaskTimers);
+				loaded.slotGreenhouseGrowth = hudSlot(loaded.slotGreenhouseGrowth);
 				loaded.slotAutoHotbar = hudSlot(loaded.slotAutoHotbar);
 				loaded.slotM4Timer = hudSlot(loaded.slotM4Timer);
 				loaded.slotM4Bear = hudSlot(loaded.slotM4Bear);
@@ -2632,6 +2640,7 @@ public final class StrayConfig {
 		slotF7Terminal = new HudSlot();
 		slotArrayList = new HudSlot();
 		slotMaskTimers = new HudSlot();
+		slotGreenhouseGrowth = new HudSlot();
 		slotAutoHotbar = new HudSlot();
 		slotM4Timer = new HudSlot();
 		slotM4Bear = new HudSlot();

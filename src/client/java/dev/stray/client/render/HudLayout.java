@@ -40,6 +40,7 @@ public final class HudLayout {
 		SHOPPING("Shopping list"),
 		PEST_COOLDOWN("Pest cooldown"),
 		CROP_FEVER("Crop fever"),
+		GREENHOUSE_GROWTH("Greenhouse growth"),
 		TOP_DOWN("Top down"),
 		HOTBAR("Hotbar"),
 		HEALTH("Health"),
@@ -300,7 +301,7 @@ public final class HudLayout {
 					x = Math.max(MARGIN, guiW - w - MARGIN);
 					y = Math.max(MARGIN, guiH * 0.5f - h * 0.5f);
 				}
-				case NEXT_CONTEST, VISITOR, HOE, MILESTONE, SHOPPING, PEST_COOLDOWN, CROP_FEVER -> {
+				case NEXT_CONTEST, VISITOR, HOE, MILESTONE, SHOPPING, PEST_COOLDOWN, CROP_FEVER, GREENHOUSE_GROWTH -> {
 					x = MARGIN;
 					y = gardenDefaultY(id, config);
 				}
@@ -543,6 +544,7 @@ public final class HudLayout {
 			case SHOPPING -> config.gardenShoppingHudEnabled;
 			case PEST_COOLDOWN -> config.pestCooldownHudEnabled;
 			case CROP_FEVER -> config.cropFeverHudEnabled;
+			case GREENHOUSE_GROWTH -> config.greenhouseGrowthHud;
 			case TOP_DOWN -> config.topDownView;
 			case DUNGEON_MAP -> config.dungeonMapEnabled;
 			case F7_TITLE -> config.f7TitlesEnabled && (config.f7CrystalTitles || config.f7WitherTitles || config.f7LightningTimer);
@@ -628,6 +630,7 @@ public final class HudLayout {
 			case SHOPPING -> config.slotGardenShopping;
 			case PEST_COOLDOWN -> config.slotGardenPest;
 			case CROP_FEVER -> config.slotGardenFever;
+			case GREENHOUSE_GROWTH -> config.slotGreenhouseGrowth;
 			case SCATHA -> config.slotScatha;
 			case TOP_DOWN -> config.slotTopDown;
 			case DUNGEON_MAP -> config.slotDungeonMap;
@@ -673,7 +676,7 @@ public final class HudLayout {
 		if (config.skillProgressHudEnabled) {
 			below += SkillProgressHudRenderer.drawHeight() * scale(Id.SKILL) + 4;
 		}
-		Id[] order = {Id.NEXT_CONTEST, Id.VISITOR, Id.HOE, Id.MILESTONE, Id.SHOPPING, Id.PEST_COOLDOWN, Id.CROP_FEVER};
+		Id[] order = {Id.NEXT_CONTEST, Id.VISITOR, Id.HOE, Id.MILESTONE, Id.SHOPPING, Id.PEST_COOLDOWN, Id.CROP_FEVER, Id.GREENHOUSE_GROWTH};
 		boolean[] on = {
 			config.gardenContestHudEnabled,
 			config.gardenVisitorHudEnabled,
@@ -681,7 +684,8 @@ public final class HudLayout {
 			config.gardenMilestoneHudEnabled,
 			config.gardenShoppingHudEnabled,
 			config.pestCooldownHudEnabled,
-			config.cropFeverHudEnabled
+			config.cropFeverHudEnabled,
+			config.greenhouseGrowthHud
 		};
 		for (int i = 0; i < order.length; i++) {
 			if (order[i] == id) {
@@ -792,6 +796,7 @@ public final class HudLayout {
 			case SHOPPING -> GardenHudRenderer.shoppingWidth() * scale;
 			case PEST_COOLDOWN -> GardenHudRenderer.pestCooldownWidth(font) * scale;
 			case CROP_FEVER -> GardenHudRenderer.cropFeverWidth(font) * scale;
+			case GREENHOUSE_GROWTH -> GardenHudRenderer.greenhouseWidth(font) * scale;
 			case TOP_DOWN -> TopDownHudRenderer.drawWidth() * scale;
 			case DUNGEON_MAP -> dev.stray.client.dungeon.map.DungeonMapRenderer.drawWidth() * scale;
 			case F7_TITLE, F7_LIGHTNING, F7_TERMINAL -> dev.stray.client.dungeon.F7Titles.boxWidth(id) * scale;
@@ -833,6 +838,7 @@ public final class HudLayout {
 			case SHOPPING -> GardenHudRenderer.shoppingHeight() * scale;
 			case PEST_COOLDOWN -> GardenHudRenderer.pestCooldownHeight() * scale;
 			case CROP_FEVER -> GardenHudRenderer.cropFeverHeight() * scale;
+			case GREENHOUSE_GROWTH -> GardenHudRenderer.greenhouseHeight() * scale;
 			case TOP_DOWN -> TopDownHudRenderer.drawHeight() * scale;
 			case DUNGEON_MAP -> dev.stray.client.dungeon.map.DungeonMapRenderer.drawHeight() * scale;
 			case F7_TITLE, F7_LIGHTNING, F7_TERMINAL -> dev.stray.client.dungeon.F7Titles.boxHeight(id) * scale;

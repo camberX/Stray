@@ -149,6 +149,14 @@ public final class GardenHudRenderer {
 		return PAD * 2f + LINE;
 	}
 
+	public static float greenhouseWidth(Font font) {
+		return timeWidth(font, dev.stray.client.farming.GreenhouseGrowth.label());
+	}
+
+	public static float greenhouseHeight() {
+		return PAD * 2f + LINE;
+	}
+
 	public static float pestCooldownHeight() {
 		return PAD * 2f + LINE;
 	}
@@ -220,6 +228,11 @@ public final class GardenHudRenderer {
 				HudChrome.element(HudLayout.Id.PEST_COOLDOWN);
 				drawPestCooldown(graphics, client.font, box.x(), box.y(), HudLayout.scale(HudLayout.Id.PEST_COOLDOWN), snap);
 			}
+		}
+		if (config.greenhouseGrowthHud && (dev.stray.client.farming.GreenhouseGrowth.shown() || HudLayout.editorOpen())) {
+			HudLayout.Box box = HudLayout.box(HudLayout.Id.GREENHOUSE_GROWTH, client.font, graphics.guiWidth(), graphics.guiHeight());
+			HudChrome.element(HudLayout.Id.GREENHOUSE_GROWTH);
+			drawGreenhouse(graphics, client.font, box.x(), box.y(), HudLayout.scale(HudLayout.Id.GREENHOUSE_GROWTH));
 		}
 		if (config.cropFeverHudEnabled && (CropFever.active() || HudLayout.editorOpen())) {
 			HudLayout.Box box = HudLayout.box(HudLayout.Id.CROP_FEVER, client.font, graphics.guiWidth(), graphics.guiHeight());
@@ -298,6 +311,14 @@ public final class GardenHudRenderer {
 		int color = live && CropFever.secondsLeft() <= 10 ? 0xFFFF5A4A : Theme.ACCENT;
 		float width = timeWidth(font, text);
 		begin(graphics, x, y, scale, width, cropFeverHeight());
+		GuiDraw.small(graphics, font, text, PAD + 1, PAD, color);
+		graphics.pose().popMatrix();
+	}
+
+	private static void drawGreenhouse(GuiGraphicsExtractor graphics, Font font, float x, float y, float scale) {
+		String text = dev.stray.client.farming.GreenhouseGrowth.label();
+		int color = dev.stray.client.farming.GreenhouseGrowth.ready() ? 0xFF4ADE80 : Theme.TEXT;
+		begin(graphics, x, y, scale, timeWidth(font, text), greenhouseHeight());
 		GuiDraw.small(graphics, font, text, PAD + 1, PAD, color);
 		graphics.pose().popMatrix();
 	}

@@ -185,6 +185,7 @@ public class StrayScreen extends Screen {
 		F7_TITLES("F7 titles", 4),
 		TERM_HIGHLIGHT("Terminal highlight", 4),
 		AUTO_HOTBAR("Auto hotbar", 6),
+		GREENHOUSE_GROWTH("Greenhouse growth", 2),
 		M4_BEAR("Spirit Bear", 6),
 		M4_HIGHLIGHT("Mob highlight", 15),
 		M4_WAYPOINTS("M4 waypoints", dev.stray.Edition.LEGIT ? 9 : 10),
@@ -4113,6 +4114,10 @@ public class StrayScreen extends Screen {
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Hide zero", m4.rabbitHideZero, v -> m4.rabbitHideZero = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Ground mobs", m4.rabbitGroundMobs, v -> m4.rabbitGroundMobs = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Bats", m4.rabbitBats, v -> m4.rabbitBats = v);
+			}
+			case GREENHOUSE_GROWTH -> {
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Only when ready", config.greenhouseGrowthOnlyReady, v -> config.greenhouseGrowthOnlyReady = v);
+				toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Ready alert", config.greenhouseGrowthAlert, v -> config.greenhouseGrowthAlert = v);
 			}
 			case AUTO_HOTBAR -> {
 				if (!dev.stray.Edition.LEGIT) {
