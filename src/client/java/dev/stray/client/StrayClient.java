@@ -238,7 +238,6 @@ public final class StrayClient implements ClientModInitializer {
 				dev.stray.client.dungeon.LeapMenu.onChat(plain);
 				dev.stray.client.dungeon.F7Titles.onChat(plain);
 				dev.stray.client.dungeon.TerminalHighlight.onChat(plain);
-				if (!dev.stray.Edition.LEGIT) { dev.stray.client.item.AutoHotbar.onChat(dev.stray.client.util.Text.strip(plain)); }
 				dev.stray.client.dungeon.MaskTimers.onChat(plain);
 			}
 			MetalDetector.onMessage(message, overlay);

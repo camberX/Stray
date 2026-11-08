@@ -94,6 +94,12 @@ public final class ClientPackets {
 			});
 		}
 		m4(packet);
+		if (!dev.stray.Edition.LEGIT && packet instanceof net.minecraft.network.protocol.game.ClientboundSystemChatPacket chat) {
+			// Auto hotbar, as NoammAddons did it: every system chat packet (action bar too), read here
+			// before any mod can hide it, with § and & codes removed.
+			String text = dev.stray.client.item.AutoHotbar.removeFormatting(chat.content().getString());
+			Minecraft.getInstance().execute(() -> dev.stray.client.item.AutoHotbar.onChat(text));
+		}
 		ChestEsp.onPacket(packet);
 		EspNamePackets.onPacket(packet);
 		if (!dev.stray.Edition.LEGIT) { AutoExperiments.onPacket(packet); }

@@ -158,6 +158,48 @@ public final class AutoHotbar {
 
 	// ---------------------------------------------------------------- input
 
+	/**
+	 * NoammAddons' {@code removeFormatting}: drops {@code §} and {@code &} colour / style codes,
+	 * including hex {@code §x######}, and keeps everything else as is.
+	 */
+	public static String removeFormatting(String text) {
+		if (text == null || text.isEmpty()) {
+			return "";
+		}
+		int len = text.length();
+		StringBuilder out = new StringBuilder(len);
+		int i = 0;
+		while (i < len) {
+			char c = text.charAt(i);
+			boolean skipped = false;
+			if ((c == '§' || c == '&') && i + 1 < len) {
+				char next = text.charAt(i + 1);
+				if ((next == 'x' || next == 'X') && i + 7 < len) {
+					boolean hex = true;
+					for (int k = 2; k <= 7; k++) {
+						if (Character.digit(text.charAt(i + k), 16) < 0) {
+							hex = false;
+							break;
+						}
+					}
+					if (hex) {
+						i += 8;
+						skipped = true;
+					}
+				}
+				if (!skipped && (Character.digit(next, 16) >= 0 || next >= 'k' && next <= 'o' || next >= 'K' && next <= 'O' || next == 'r' || next == 'R')) {
+					i += 2;
+					skipped = true;
+				}
+			}
+			if (!skipped) {
+				out.append(c);
+				i++;
+			}
+		}
+		return out.toString();
+	}
+
 	public static void onChat(String plain) {
 		if (!StrayConfig.get().autoHotbar || plain == null) {
 			return;
