@@ -197,7 +197,9 @@ public final class StrayClient implements ClientModInitializer {
 	public void onInitializeClient() {
 		StrayConfig.load();
 		net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents.CLIENT_STOPPING.register(client -> StrayConfig.flushSave());
-		AccountStore.load();
+		if (!dev.stray.Edition.LEGIT) {
+			AccountStore.load();
+		}
 		String newer = AutoUpdate.clientLaunchCheck(StrayConfig.get().autoUpdate, StrayConfig.get().updateNotify);
 		UpdateNotifier.announce(newer);
 		Theme.refresh();

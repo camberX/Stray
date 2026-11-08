@@ -53,7 +53,9 @@ public class StrayTitleScreen extends Screen {
 		Theme.refresh();
 		appear = 1f;
 		status = "";
-		AccountStore.rememberLauncher(minecraft);
+		if (!dev.stray.Edition.LEGIT) {
+			AccountStore.rememberLauncher(minecraft);
+		}
 	}
 
 	@Override
@@ -86,13 +88,15 @@ public class StrayTitleScreen extends Screen {
 
 		float colW = BUTTON_W;
 		float colX = (width - colW) * 0.5f;
-		float stackH = 16 + BUTTON_GAP + BUTTON_H * 3 + BUTTON_GAP * 2 + 6 + BUTTON_H;
+		// Stray Legit has no account manager, so one row less.
+		int rows = dev.stray.Edition.LEGIT ? 2 : 3;
+		float stackH = 16 + BUTTON_GAP + BUTTON_H * rows + BUTTON_GAP * (rows - 1) + 6 + BUTTON_H;
 		float colY = Mth.clamp((height - stackH) * 0.42f, 48, height - stackH - 40);
 
 		// One Shadow window holds the title row and the buttons, like the click GUI's sheet.
 		float pad = 8f;
 		float winY = colY - 18 - pad;
-		float winH = 18 + (BUTTON_H + BUTTON_GAP) * 3 + 4 + BUTTON_H + pad * 2;
+		float winH = 18 + (BUTTON_H + BUTTON_GAP) * rows + 4 + BUTTON_H + pad * 2;
 		if (fade > 0.02f) {
 			ShadowLook.window(graphics, colX - pad, winY, colW + pad * 2, winH, ShadowLook.WINDOW_R, Anim.fade(ShadowLook.FILL, fade));
 		}
@@ -103,14 +107,16 @@ public class StrayTitleScreen extends Screen {
 		float y = colY;
 		y = button(graphics, font, mouseX, mouseY, colX, y, colW, "Singleplayer", true, fade, this::openSingleplayer);
 		y = button(graphics, font, mouseX, mouseY, colX, y, colW, "Multiplayer", multiplayerOpen(), fade, this::openMultiplayer);
-		y = button(graphics, font, mouseX, mouseY, colX, y, colW, "Accounts", true, fade, this::openAccounts);
+		if (!dev.stray.Edition.LEGIT) {
+			y = button(graphics, font, mouseX, mouseY, colX, y, colW, "Accounts", true, fade, this::openAccounts);
+		}
 		y += 4;
 		float half = (colW - SPLIT_GAP) * 0.5f;
 		button(graphics, font, mouseX, mouseY, colX, y, half, "Options", true, fade, this::openOptions);
 		button(graphics, font, mouseX, mouseY, colX + half + SPLIT_GAP, y, half, "Quit", true, fade, this::quit);
 
 		String user = minecraft.getUser() == null ? "" : minecraft.getUser().getName();
-		if (!user.isBlank()) {
+		if (!dev.stray.Edition.LEGIT && !user.isBlank()) {
 			float userW = GuiDraw.smallWidth(font, user);
 			float userX = width - 12 - userW;
 			boolean userHover = GuiDraw.hovered(mouseX, mouseY, userX - 2, 8, userW + 4, 12);
@@ -214,6 +220,9 @@ public class StrayTitleScreen extends Screen {
 	}
 
 	private void openAccounts() {
+		if (dev.stray.Edition.LEGIT) {
+			return;
+		}
 		clickSound();
 		minecraft.gui.setScreen(new AccountScreen(this));
 	}
