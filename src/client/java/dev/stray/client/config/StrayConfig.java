@@ -404,6 +404,8 @@ public final class StrayConfig {
 	public int autoHotbarStopDelay = 200;
 	public boolean autoHotbarHud = true;
 	public boolean autoHotbarAutoInventory = false;
+	/** Close the inventory after the swaps when you opened it yourself. */
+	public boolean autoHotbarAutoClose = false;
 	/** Swap with no screen open, like NoammAddons did (movement locked while swapping). */
 	public boolean autoHotbarNoInventory = false;
 	/** M4 (Thorn) features from BirdAddon. */

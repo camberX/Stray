@@ -184,7 +184,7 @@ public class StrayScreen extends Screen {
 		LEVER_BOT("Lever triggerbot", 2),
 		F7_TITLES("F7 titles", 4),
 		TERM_HIGHLIGHT("Terminal highlight", 4),
-		AUTO_HOTBAR("Auto hotbar", 7),
+		AUTO_HOTBAR("Auto hotbar", 8),
 		GREENHOUSE_GROWTH("Greenhouse growth", 2),
 		M4_BEAR("Spirit Bear", 6),
 		M4_HIGHLIGHT("Mob highlight", 15),
@@ -4127,6 +4127,7 @@ public class StrayScreen extends Screen {
 					y = slider(graphics, font, ix, y, iw, "Stop delay", config.autoHotbarStopDelay + "ms", config.autoHotbarStopDelay / 500f, v -> config.autoHotbarStopDelay = snapInt(v * 500f, 0, 500, 5));
 					y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Swap without inventory", config.autoHotbarNoInventory, v -> config.autoHotbarNoInventory = v);
 					y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Open inventory automatically", config.autoHotbarAutoInventory, v -> config.autoHotbarAutoInventory = v);
+					y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Close inventory when done", config.autoHotbarAutoClose, v -> config.autoHotbarAutoClose = v);
 					toggle(graphics, font, ix, y, iw, mouseX, mouseY, "HUD info", config.autoHotbarHud, v -> config.autoHotbarHud = v);
 				}
 			}

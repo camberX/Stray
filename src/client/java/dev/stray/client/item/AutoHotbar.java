@@ -76,6 +76,8 @@ public final class AutoHotbar {
 	private static long nextSwapAt;
 	private static int stillTicks;
 	private static boolean openedByUs;
+	/** A swap happened in the inventory screen, so "Close inventory when done" may close it. */
+	private static boolean swappedInInventory;
 	private static long doneAt;
 	private static State state = State.IDLE;
 	/** "Swap without inventory": a swap has started, so input is locked (NoammAddons' isSwapping). */
@@ -334,6 +336,7 @@ public final class AutoHotbar {
 
 	public static void onWorldChange() {
 		swapping = false;
+		swappedInInventory = false;
 		lockUntil = 0L;
 		queue.clear();
 		firedThisWorld.clear();
@@ -358,17 +361,22 @@ public final class AutoHotbar {
 				swapping = false;
 				lockUntil = now + 250L;
 			}
-			// Close the inventory we opened, a moment after the last swap.
-			if (openedByUs) {
+			// Close the inventory a moment after the last swap: the one we opened, or (with
+			// "Close inventory when done") the one you opened, if something was swapped in it.
+			boolean close = openedByUs || config.autoHotbarAutoClose && swappedInInventory;
+			if (close) {
 				if (doneAt == 0L) {
 					doneAt = now;
 				} else if (now - doneAt >= CLOSE_AFTER_MS) {
 					openedByUs = false;
+					swappedInInventory = false;
 					doneAt = 0L;
 					if (client.gui.screen() instanceof InventoryScreen) {
 						player.closeContainer();
 					}
 				}
+			} else {
+				swappedInInventory = false;
 			}
 			return;
 		}
@@ -414,6 +422,7 @@ public final class AutoHotbar {
 		}
 		Rule rule = queue.removeFirst();
 		swapping = config.autoHotbarNoInventory;
+		swappedInInventory = !config.autoHotbarNoInventory;
 		AbstractContainerMenu menu = player.containerMenu;
 		int from = findSlot(menu, rule.id);
 		if (from >= 0 && from != rule.hotbarSlot + 36 && client.gameMode != null) {
