@@ -15,6 +15,11 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.5.97", new String[]{
+			"Auto hotbar: new Swap without inventory mode that works like NoammAddons did (no screen open, movement and clicks held while it swaps, keys you still hold work again right after).",
+			"Auto hotbar: Close inventory when done closes the inventory you opened yourself after the swaps. With the inventory open it no longer waits for you to stop moving.",
+			"Auto hotbar: /stray debug autohotbar says in chat why a trigger did or did not run, and shows the text when a message almost matches."
+		}),
 		new Entry("1.5.96", new String[]{
 			"Auto hotbar sees its trigger messages the way NoammAddons did: straight from the server, including action bar messages and messages another mod hides."
 		}),
