@@ -1,70 +1,274 @@
 {
- "DYE_AQUAMARINE": "b",
- "DYE_ARCHFIEND": "4",
- "DYE_AURORA": "c",
- "DYE_BEACH": "b",
- "DYE_BINGO_BLUE": "1",
- "DYE_BLACK_ICE": "8",
- "DYE_BLACK_OPAL": "8",
- "DYE_BONE": "f",
- "DYE_BRICK_RED": "c",
- "DYE_BYZANTIUM": "5",
- "DYE_CARMINE": "4",
- "DYE_CELADON": "a",
- "DYE_CELESTE": "b",
- "DYE_CHARCOAL": "8",
- "DYE_CHOCOLATE": "6",
- "DYE_COPPER": "8",
- "DYE_CYCLAMEN": "c",
- "DYE_DARK_PURPLE": "5",
- "DYE_DUNG": "8",
- "DYE_DUSK": "5",
- "DYE_EMERALD": "2",
- "DYE_FLAME": "6",
- "DYE_FOREST": "2",
- "DYE_FOSSIL": "8",
- "DYE_FROG": "a",
- "DYE_FROSTBITTEN": "3",
- "DYE_HELLEBORE": "c",
- "DYE_HOLLY": "2",
- "DYE_ICEBERG": "3",
- "DYE_JADE": "2",
- "DYE_JERRY": "a",
- "DYE_KINGFISHER": "c",
- "DYE_LAVA": "c",
- "DYE_LIVID": "7",
- "DYE_LUCKY": "a",
- "DYE_MANGO": "6",
- "DYE_MARINE": "9",
- "DYE_MATCHA": "2",
- "DYE_MIDNIGHT": "5",
- "DYE_MOCHA": "8",
- "DYE_MYTHOLOGICAL": "2",
- "DYE_NADESHIKO": "d",
- "DYE_NECRON": "6",
- "DYE_NYANZA": "a",
- "DYE_OASIS": "b",
- "DYE_OCEAN": "b",
- "DYE_PASTEL_SKY": "d",
- "DYE_PEARLESCENT": "2",
- "DYE_PELT": "7",
- "DYE_PERIWINKLE": "3",
- "DYE_PORTAL": "5",
- "DYE_PURE_BLACK": "8",
- "DYE_PURE_BLUE": "1",
- "DYE_PURE_WHITE": "f",
- "DYE_PURE_YELLOW": "e",
- "DYE_RED_TULIP": "c",
- "DYE_ROSE": "c",
- "DYE_SANGRIA": "4",
- "DYE_SECRET": "7",
- "DYE_SLUDGE": "a",
- "DYE_SNOWFLAKE": "f",
- "DYE_SPIRIT": "3",
- "DYE_SPOOKY": "5",
- "DYE_SUNFLOWER": "c",
- "DYE_SUNSET": "d",
- "DYE_TREASURE": "6",
- "DYE_WARDEN": "9",
- "DYE_WILD_STRAWBERRY": "d"
+ "DYE_AQUAMARINE": {
+  "color": "b",
+  "name": "Aquamarine"
+ },
+ "DYE_ARCHFIEND": {
+  "color": "4",
+  "name": "Archfiend"
+ },
+ "DYE_AURORA": {
+  "color": "c",
+  "name": "Aurora"
+ },
+ "DYE_BEACH": {
+  "color": "b",
+  "name": "Beach"
+ },
+ "DYE_BINGO_BLUE": {
+  "color": "1",
+  "name": "Bingo Blue"
+ },
+ "DYE_BLACK_ICE": {
+  "color": "8",
+  "name": "Black Ice"
+ },
+ "DYE_BLACK_OPAL": {
+  "color": "8",
+  "name": "Black Opal"
+ },
+ "DYE_BONE": {
+  "color": "f",
+  "name": "Bone"
+ },
+ "DYE_BRICK_RED": {
+  "color": "c",
+  "name": "Brick Red"
+ },
+ "DYE_BYZANTIUM": {
+  "color": "5",
+  "name": "Byzantium"
+ },
+ "DYE_CARMINE": {
+  "color": "4",
+  "name": "Carmine"
+ },
+ "DYE_CELADON": {
+  "color": "a",
+  "name": "Celadon"
+ },
+ "DYE_CELESTE": {
+  "color": "b",
+  "name": "Celeste"
+ },
+ "DYE_CHARCOAL": {
+  "color": "8",
+  "name": "Charcoal"
+ },
+ "DYE_CHOCOLATE": {
+  "color": "6",
+  "name": "Chocolate"
+ },
+ "DYE_COPPER": {
+  "color": "8",
+  "name": "Copper"
+ },
+ "DYE_CYCLAMEN": {
+  "color": "c",
+  "name": "Cyclamen"
+ },
+ "DYE_DARK_PURPLE": {
+  "color": "5",
+  "name": "Dark Purple"
+ },
+ "DYE_DUNG": {
+  "color": "8",
+  "name": "Dung"
+ },
+ "DYE_DUSK": {
+  "color": "5",
+  "name": "Dusk"
+ },
+ "DYE_EMERALD": {
+  "color": "2",
+  "name": "Emerald"
+ },
+ "DYE_FLAME": {
+  "color": "6",
+  "name": "Flame"
+ },
+ "DYE_FOREST": {
+  "color": "2",
+  "name": "Forest"
+ },
+ "DYE_FOSSIL": {
+  "color": "8",
+  "name": "Fossil"
+ },
+ "DYE_FROG": {
+  "color": "a",
+  "name": "Frog"
+ },
+ "DYE_FROSTBITTEN": {
+  "color": "3",
+  "name": "Frostbitten"
+ },
+ "DYE_HELLEBORE": {
+  "color": "c",
+  "name": "Hellebore"
+ },
+ "DYE_HOLLY": {
+  "color": "2",
+  "name": "Holly"
+ },
+ "DYE_ICEBERG": {
+  "color": "3",
+  "name": "Iceberg"
+ },
+ "DYE_JADE": {
+  "color": "2",
+  "name": "Jade"
+ },
+ "DYE_JERRY": {
+  "color": "a",
+  "name": "Jerry"
+ },
+ "DYE_KINGFISHER": {
+  "color": "c",
+  "name": "Kingfisher"
+ },
+ "DYE_LAVA": {
+  "color": "c",
+  "name": "Lava"
+ },
+ "DYE_LIVID": {
+  "color": "7",
+  "name": "Livid"
+ },
+ "DYE_LUCKY": {
+  "color": "a",
+  "name": "Lucky"
+ },
+ "DYE_MANGO": {
+  "color": "6",
+  "name": "Mango"
+ },
+ "DYE_MARINE": {
+  "color": "9",
+  "name": "Marine"
+ },
+ "DYE_MATCHA": {
+  "color": "2",
+  "name": "Matcha"
+ },
+ "DYE_MIDNIGHT": {
+  "color": "5",
+  "name": "Midnight"
+ },
+ "DYE_MOCHA": {
+  "color": "8",
+  "name": "Mocha"
+ },
+ "DYE_MYTHOLOGICAL": {
+  "color": "2",
+  "name": "Mythological"
+ },
+ "DYE_NADESHIKO": {
+  "color": "d",
+  "name": "Nadeshiko"
+ },
+ "DYE_NECRON": {
+  "color": "6",
+  "name": "Necron"
+ },
+ "DYE_NYANZA": {
+  "color": "a",
+  "name": "Nyanza"
+ },
+ "DYE_OASIS": {
+  "color": "b",
+  "name": "Oasis"
+ },
+ "DYE_OCEAN": {
+  "color": "b",
+  "name": "Ocean"
+ },
+ "DYE_PASTEL_SKY": {
+  "color": "d",
+  "name": "Pastel Sky"
+ },
+ "DYE_PEARLESCENT": {
+  "color": "2",
+  "name": "Pearlescent"
+ },
+ "DYE_PELT": {
+  "color": "7",
+  "name": "Pelt"
+ },
+ "DYE_PERIWINKLE": {
+  "color": "3",
+  "name": "Periwinkle"
+ },
+ "DYE_PORTAL": {
+  "color": "5",
+  "name": "Portal"
+ },
+ "DYE_PURE_BLACK": {
+  "color": "8",
+  "name": "Pure Black"
+ },
+ "DYE_PURE_BLUE": {
+  "color": "1",
+  "name": "Pure Blue"
+ },
+ "DYE_PURE_WHITE": {
+  "color": "f",
+  "name": "Pure White"
+ },
+ "DYE_PURE_YELLOW": {
+  "color": "e",
+  "name": "Pure Yellow"
+ },
+ "DYE_RED_TULIP": {
+  "color": "c",
+  "name": "Red Tulip"
+ },
+ "DYE_ROSE": {
+  "color": "c",
+  "name": "Rose"
+ },
+ "DYE_SANGRIA": {
+  "color": "4",
+  "name": "Sangria"
+ },
+ "DYE_SECRET": {
+  "color": "7",
+  "name": "Secret"
+ },
+ "DYE_SLUDGE": {
+  "color": "a",
+  "name": "Sludge"
+ },
+ "DYE_SNOWFLAKE": {
+  "color": "f",
+  "name": "Snowflake"
+ },
+ "DYE_SPIRIT": {
+  "color": "3",
+  "name": "Spirit"
+ },
+ "DYE_SPOOKY": {
+  "color": "5",
+  "name": "Spooky"
+ },
+ "DYE_SUNFLOWER": {
+  "color": "c",
+  "name": "Sunflower"
+ },
+ "DYE_SUNSET": {
+  "color": "d",
+  "name": "Sunset"
+ },
+ "DYE_TREASURE": {
+  "color": "6",
+  "name": "Treasure"
+ },
+ "DYE_WARDEN": {
+  "color": "9",
+  "name": "Warden"
+ },
+ "DYE_WILD_STRAWBERRY": {
+  "color": "d",
+  "name": "Wild Strawberry"
+ }
 }

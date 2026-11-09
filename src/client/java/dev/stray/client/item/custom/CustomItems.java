@@ -451,8 +451,11 @@ public final class CustomItems {
 		return withDyeMark(base, mark);
 	}
 
-	/** Each SkyBlock dye's ✿ colour (its name colour), id -> formatting code. */
-	private static final Map<String, ChatFormatting> DYE_MARKS = new HashMap<>();
+	/** Each SkyBlock dye's ✿ colour (its name colour) and name, by id. */
+	private record DyeMark(ChatFormatting format, String name) {
+	}
+
+	private static final Map<String, DyeMark> DYE_MARKS = new HashMap<>();
 	private static boolean marksLoaded;
 
 	/**
@@ -473,8 +476,8 @@ public final class CustomItems {
 			}
 			case "dye", "animated" -> {
 				loadMarks();
-				ChatFormatting format = spec.id == null ? null : DYE_MARKS.get(spec.id.toUpperCase(Locale.ROOT));
-				return format == null ? null : TextColor.fromLegacyFormat(format);
+				DyeMark mark = dyeMark(spec);
+				return mark == null ? null : TextColor.fromLegacyFormat(mark.format);
 			}
 			default -> {
 				return null;
@@ -492,12 +495,72 @@ public final class CustomItems {
 			return;
 		}
 		for (Map.Entry<String, JsonElement> entry : marks.entrySet()) {
-			String code = entry.getValue().getAsString();
+			if (!entry.getValue().isJsonObject()) {
+				continue;
+			}
+			JsonObject mark = entry.getValue().getAsJsonObject();
+			String code = mark.has("color") ? mark.get("color").getAsString() : "";
 			ChatFormatting format = code.isEmpty() ? null : ChatFormatting.getByCode(code.charAt(0));
+			String name = mark.has("name") ? mark.get("name").getAsString() : null;
 			if (format != null && TextColor.fromLegacyFormat(format) != null) {
-				DYE_MARKS.put(entry.getKey().toUpperCase(Locale.ROOT), format);
+				DYE_MARKS.put(entry.getKey().toUpperCase(Locale.ROOT), new DyeMark(format, name));
 			}
 		}
+	}
+
+	private static DyeMark dyeMark(ColorSpec spec) {
+		if (spec == null || spec.id == null || !("dye".equals(spec.type) || "animated".equals(spec.type))) {
+			return null;
+		}
+		loadMarks();
+		return DYE_MARKS.get(spec.id.toUpperCase(Locale.ROOT));
+	}
+
+	private static final java.util.regex.Pattern DYED_LINE = java.util.regex.Pattern.compile("^\\u273F .+ Dyed$");
+	private static final java.util.regex.Pattern RARITY_LINE = java.util.regex.Pattern.compile(
+		"^(?:. )?(?:COMMON|UNCOMMON|RARE|EPIC|LEGENDARY|MYTHIC|DIVINE|SPECIAL|VERY SPECIAL|ULTIMATE|ADMIN)\\b.*");
+
+	/**
+	 * Tooltip lines with the "✿ <Dye> Dyed" line matching the custom dye: recoloured and renamed,
+	 * or added right above the rarity line when the item has none. A hex colour or gradient only
+	 * recolours an existing line. Null when nothing changes.
+	 */
+	public static List<Component> withDyeLore(ItemStack stack, List<Component> lines) {
+		if (lines == null || lines.isEmpty()) {
+			return null;
+		}
+		Data data = get(stack);
+		if (data == null || data.color == null) {
+			return null;
+		}
+		TextColor color = markColor(data.color);
+		if (color == null) {
+			return null;
+		}
+		DyeMark mark = dyeMark(data.color);
+		Style style = Style.EMPTY.withColor(color).withItalic(false);
+		List<Component> out = new ArrayList<>(lines);
+		for (int i = 0; i < out.size(); i++) {
+			String plain = net.minecraft.util.StringUtil.stripColor(out.get(i).getString()).trim();
+			if (DYED_LINE.matcher(plain).matches()) {
+				String text = mark != null && mark.name != null ? DYE_MARK + " " + mark.name + " Dyed" : plain;
+				out.set(i, Component.literal(text).setStyle(style));
+				return out;
+			}
+		}
+		if (mark == null || mark.name == null) {
+			return null;
+		}
+		Component line = Component.literal(DYE_MARK + " " + mark.name + " Dyed").setStyle(style);
+		for (int i = out.size() - 1; i > 0; i--) {
+			String plain = net.minecraft.util.StringUtil.stripColor(out.get(i).getString()).trim();
+			if (RARITY_LINE.matcher(plain).matches()) {
+				out.add(i, line);
+				return out;
+			}
+		}
+		out.add(line);
+		return out;
 	}
 
 	private static Component withDyeMark(Component base, TextColor mark) {

@@ -78,5 +78,9 @@ public class ItemStackMixin {
 		if (extra != null) {
 			cir.setReturnValue(extra);
 		}
+		List<Component> dyed = dev.stray.client.item.custom.CustomItems.withDyeLore((ItemStack) (Object) this, cir.getReturnValue());
+		if (dyed != null) {
+			cir.setReturnValue(dyed);
+		}
 	}
 }
