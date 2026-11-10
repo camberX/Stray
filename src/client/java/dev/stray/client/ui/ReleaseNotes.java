@@ -15,6 +15,11 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.5.98", new String[]{
+			"Smooth hotbar (HUD): when you change slot, the hotbar selection box glides to the new slot instead of snapping, faster the further it has to go. Only the selection moves; the hotbar, hearts and XP bar stay vanilla. Speed setting.",
+			"Customize: with a custom SkyBlock dye, the \"✿ <Dye> Dyed\" lore line follows it (renamed and coloured like the ✿ in the name, or added when the item has none).",
+			"/stray just opens the menu; the version message is only shown by /stray version."
+		}),
 		new Entry("1.5.97", new String[]{
 			"Auto hotbar: new Swap without inventory mode that works like NoammAddons did (no screen open, movement and clicks held while it swaps, keys you still hold work again right after).",
 			"Auto hotbar: Close inventory when done closes the inventory you opened yourself after the swaps. With the inventory open it no longer waits for you to stop moving.",
