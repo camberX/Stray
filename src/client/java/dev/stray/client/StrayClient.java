@@ -285,10 +285,7 @@ public final class StrayClient implements ClientModInitializer {
 		UpdateNotifier.init();
 
 		ClientCommandRegistrationCallback.EVENT.register((dispatcher, registryAccess) -> {
-			var root = ClientCommands.literal("stray").executes(context -> {
-				reportVersion(context.getSource());
-				return openScreen();
-			});
+			var root = ClientCommands.literal("stray").executes(context -> openScreen());
 			root.then(ClientCommands.literal("version").executes(context -> {
 				reportVersion(context.getSource());
 				return Command.SINGLE_SUCCESS;
