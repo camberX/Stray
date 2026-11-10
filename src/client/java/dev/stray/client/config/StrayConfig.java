@@ -532,6 +532,10 @@ public final class StrayConfig {
 	public boolean inventoryHudMinimal = false;
 	public boolean inventoryHudBlur = true;
 	public boolean hudHotbar = false;
+	/** The hotbar selection box glides to the new slot instead of snapping. */
+	public boolean smoothHotbar = false;
+	/** How fast it glides (higher is quicker). */
+	public int smoothHotbarSpeed = 18;
 	public boolean hudHealth = false;
 	public boolean hudHunger = false;
 	public boolean hudArmor = false;

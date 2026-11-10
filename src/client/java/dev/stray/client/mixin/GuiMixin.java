@@ -16,6 +16,47 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(Hud.class)
 public class GuiMixin {
+	@org.spongepowered.asm.mixin.Shadow
+	@org.spongepowered.asm.mixin.Final
+	private static net.minecraft.resources.Identifier HOTBAR_SELECTION_SPRITE;
+
+	/** Smooth hotbar: the selection box is drawn shifted towards the slot it is gliding from. */
+	@com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation(
+		method = "extractItemHotbar",
+		at = @At(
+			value = "INVOKE",
+			target = "Lnet/minecraft/client/gui/GuiGraphicsExtractor;blitSprite(Lcom/mojang/renderpearl/api/pipeline/RenderPipeline;Lnet/minecraft/resources/Identifier;IIII)V"
+		)
+	)
+	private void stray$smoothHotbar(
+		GuiGraphicsExtractor graphics,
+		com.mojang.renderpearl.api.pipeline.RenderPipeline pipeline,
+		net.minecraft.resources.Identifier sprite,
+		int x,
+		int y,
+		int width,
+		int height,
+		com.llamalad7.mixinextras.injector.wrapoperation.Operation<Void> original
+	) {
+		net.minecraft.client.Minecraft client = net.minecraft.client.Minecraft.getInstance();
+		if (sprite != HOTBAR_SELECTION_SPRITE || client.player == null) {
+			original.call(graphics, pipeline, sprite, x, y, width, height);
+			return;
+		}
+		float offset = dev.stray.client.render.SmoothHotbar.offset(client.player.getInventory().getSelectedSlot());
+		if (offset == 0f) {
+			original.call(graphics, pipeline, sprite, x, y, width, height);
+			return;
+		}
+		graphics.pose().pushMatrix();
+		graphics.pose().translate(offset, 0f);
+		try {
+			original.call(graphics, pipeline, sprite, x, y, width, height);
+		} finally {
+			graphics.pose().popMatrix();
+		}
+	}
+
 	@Inject(method = "setTitle", at = @At("HEAD"), cancellable = true)
 	private void stray$slayerTitle(Component title, CallbackInfo ci) {
 		if (!dev.stray.client.slayer.SlayerBosses.onTitle(title) || !dev.stray.client.dungeon.F7Titles.onTitle(title)) {
