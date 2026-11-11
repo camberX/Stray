@@ -44,6 +44,7 @@
 		"GameRendererMixin",
 		"GuiAccessor",
 		"GuiMixin",
+		"SubmitTextNamesMixin",
 		"ChatLineNamesMixin",
 		"HudLobbyIdMixin",
 		"HudTitleInvoker",
