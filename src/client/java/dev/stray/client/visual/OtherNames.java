@@ -239,7 +239,13 @@ public final class OtherNames {
 		int i = 0;
 		int n = text.length();
 		while (i < n) {
-			if (!nameChar(text.charAt(i)) || i > 0 && nameChar(text.charAt(i - 1)) && !afterFormatCode(text, i)) {
+			char c = text.charAt(i);
+			// "§b": skip the colour code, so its letter is not read as the start of a name.
+			if (c == '\u00A7' && i + 1 < n) {
+				i += 2;
+				continue;
+			}
+			if (!nameChar(c) || i > 0 && nameChar(text.charAt(i - 1)) && !afterFormatCode(text, i)) {
 				i++;
 				continue;
 			}
