@@ -27,6 +27,11 @@ import java.util.concurrent.ThreadLocalRandom;
  * the game sends exactly what a real click sends. Solving follows NoammAddons'
  * ArrowAlign (CC0): read each frame's rotation, find the layout that matches the
  * arrows on the wall, and count the clicks each frame still needs.
+ *
+ * <p>Before phase 3 starts, the first frame you click is left one click short of right,
+ * so the device is not finished early; every other frame is solved fully. Goldor's first
+ * line ("Who dares trespass into my domain?") lifts that, and the last frame is then
+ * finished like the rest.
  */
 public final class AlignTriggerbot {
 	/** The real device: frames on x = -2, facing east, bottom corner at y 120, z 75. */
@@ -55,6 +60,13 @@ public final class AlignTriggerbot {
 	private static long lastClickMs;
 	private static long nextGapMs;
 
+	/** The frame left one click short until Goldor speaks; -1 until the first click. */
+	private static int heldIndex = -1;
+	/** Goldor's first line has been seen this run: nothing is held back any more. */
+	private static boolean goldorStarted;
+	private static net.minecraft.client.multiplayer.ClientLevel runLevel;
+	private static final String GOLDOR = "[BOSS] Goldor: Who dares trespass into my domain?";
+
 	private AlignTriggerbot() {
 	}
 
@@ -79,9 +91,23 @@ public final class AlignTriggerbot {
 					&& client.player.distanceToSqr(Vec3.atLowerCornerOf(DEVICE)) <= 200.0);
 	}
 
+	/** Goldor's first line: stop holding a frame back, so it gets finished too. */
+	public static void onChat(String plain) {
+		if (GOLDOR.equals(plain)) {
+			goldorStarted = true;
+			heldIndex = -1;
+		}
+	}
+
 	public static void tick(Minecraft client) {
 		if (testMode && client.level == null) {
 			stopTest();
+		}
+		// A new run (new world) holds a frame back again until Goldor speaks.
+		if (client.level != runLevel) {
+			runLevel = client.level;
+			goldorStarted = false;
+			heldIndex = -1;
 		}
 		if (!active(client)) {
 			// Forget everything when out of range, so a later visit starts clean.
@@ -120,8 +146,12 @@ public final class AlignTriggerbot {
 		if (index < 0) {
 			return;
 		}
-		// Sneaking leaves the last click to you (stops one short of the right way).
-		int want = REMAINING[index] - (client.player.isShiftKeyDown() ? 1 : 0);
+		// Before phase 3 the first frame you aim at that needs clicks is held one short of
+		// the right way; picked before its first click, so even a one-click frame stays.
+		if (heldIndex < 0 && !goldorStarted && REMAINING[index] > 0) {
+			heldIndex = index;
+		}
+		int want = REMAINING[index] - (index == heldIndex && !goldorStarted ? 1 : 0);
 		if (want <= 0) {
 			return;
 		}
@@ -186,6 +216,10 @@ public final class AlignTriggerbot {
 		int index = index(frame);
 		if (index < 0 || ROTATIONS[index] == -1) {
 			return;
+		}
+		// A manual first click on a frame that still needs more than this one holds it too.
+		if (heldIndex < 0 && !goldorStarted && REMAINING[index] > 1) {
+			heldIndex = index;
 		}
 		CLICKED_AT[index] = System.currentTimeMillis();
 		ROTATIONS[index] = (ROTATIONS[index] + 1) % 8;
