@@ -26,13 +26,21 @@ public final class LobbyIdHider {
 		return StrayConfig.get().hideLobbyId && (SkyblockLocation.inSkyblock || dev.stray.client.dungeon.DevMode.on());
 	}
 
-	/** The line without the lobby id, or the line itself when it is not the date line. */
+	/**
+	 * The line without the lobby id, or the line itself when it is not the date line. Hypixel's
+	 * lines carry raw § colour codes inside the text (team prefix + owner + suffix), so the date
+	 * is matched on the visible characters and the cut is made at the matching visible position.
+	 */
 	public static Component strip(Component line) {
 		if (line == null || !active()) {
 			return line;
 		}
-		String plain = line.getString();
-		Matcher m = DATE_LINE.matcher(plain);
+		StringBuilder visible = new StringBuilder();
+		line.visit((style, text) -> {
+			appendVisible(visible, text);
+			return Optional.empty();
+		}, Style.EMPTY);
+		Matcher m = DATE_LINE.matcher(visible);
 		if (!m.find()) {
 			return line;
 		}
@@ -40,15 +48,35 @@ public final class LobbyIdHider {
 		MutableComponent out = Component.empty();
 		int[] seen = {0};
 		line.visit((style, text) -> {
-			int start = seen[0];
-			seen[0] += text.length();
-			if (start >= keep) {
+			if (seen[0] >= keep) {
 				return Optional.of(Boolean.TRUE);
 			}
-			String part = start + text.length() > keep ? text.substring(0, keep - start) : text;
-			out.append(Component.literal(part).setStyle(style));
+			StringBuilder part = new StringBuilder();
+			for (int i = 0; i < text.length() && seen[0] < keep; i++) {
+				char c = text.charAt(i);
+				if (c == '\u00A7' && i + 1 < text.length()) {
+					part.append(c).append(text.charAt(++i));
+					continue;
+				}
+				part.append(c);
+				seen[0]++;
+			}
+			if (!part.isEmpty()) {
+				out.append(Component.literal(part.toString()).setStyle(style));
+			}
 			return Optional.empty();
 		}, Style.EMPTY);
 		return out;
+	}
+
+	private static void appendVisible(StringBuilder out, String text) {
+		for (int i = 0; i < text.length(); i++) {
+			char c = text.charAt(i);
+			if (c == '\u00A7' && i + 1 < text.length()) {
+				i++;
+				continue;
+			}
+			out.append(c);
+		}
 	}
 }

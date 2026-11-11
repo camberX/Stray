@@ -511,6 +511,7 @@ public final class StrayClient implements ClientModInitializer {
 			if (!dev.stray.Edition.LEGIT) { dev.stray.client.dungeon.terminal.TerminalSession.tick(client); }
 			dev.stray.client.dungeon.F7Titles.tick(client);
 			dev.stray.client.dungeon.TerminalHighlight.tick(client);
+			dev.stray.client.visual.OtherNames.tick(client);
 			dev.stray.client.dungeon.MaskTimers.tick(client);
 			dev.stray.client.dungeon.m4.M4Features.clientTick();
 			dev.stray.client.farming.GreenhouseGrowth.tick(client);
@@ -949,6 +950,15 @@ public final class StrayClient implements ClientModInitializer {
 			}
 			return Command.SINGLE_SUCCESS;
 		}));
+		node.then(ClientCommands.literal("othername")
+			.then(ClientCommands.argument("name", com.mojang.brigadier.arguments.StringArgumentType.word()).executes(context -> {
+				String name = com.mojang.brigadier.arguments.StringArgumentType.getString(context, "name");
+				String fake = dev.stray.client.visual.OtherNames.addForTest(name);
+				// The real name would be replaced on screen anyway, so only the fake one is shown.
+				context.getSource().sendFeedback(Component.literal("\u00A7bStray \u00A77" + (fake == null ? "Not a valid name (or yours)." : "Added, it shows as \u00A7f" + fake)
+					+ (StrayConfig.get().hideOtherNames ? "" : " \u00A78(turn on Hide other names)")));
+				return Command.SINGLE_SUCCESS;
+			})));
 		node.then(ClientCommands.literal("highlight")
 			.executes(context -> {
 				if (!StrayConfig.get().terminalHighlight) {

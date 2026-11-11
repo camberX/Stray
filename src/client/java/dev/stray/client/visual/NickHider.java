@@ -59,7 +59,7 @@ public final class NickHider {
 		return cachedFormatted;
 	}
 
-	public static String rewrite(String text) {
+	private static String rewriteSelf(String text) {
 		if (!active() || text == null || text.isEmpty()) {
 			return text;
 		}
@@ -70,7 +70,7 @@ public final class NickHider {
 		return replaceName(text, name, plainNick());
 	}
 
-	public static Component rewrite(Component component) {
+	private static Component rewriteSelf(Component component) {
 		if (!active() || component == null) {
 			return component;
 		}
@@ -94,6 +94,31 @@ public final class NickHider {
 		} finally {
 			resume();
 		}
+	}
+
+	/** Your own name (nick hider), then everyone else's (Hide other names). */
+	public static String rewrite(String text) {
+		String out = rewriteSelf(text);
+		return DEPTH.get() > 0 ? out : OtherNames.rewrite(out);
+	}
+
+	/**
+	 * Only your own name: for chat as it comes in, which Stray's trackers (party finder stats,
+	 * dungeon party, leap menu) still read with everyone else's real names. Other names are
+	 * swapped later, when the line is drawn.
+	 */
+	public static Component rewriteOwnName(Component component) {
+		return rewriteSelf(component);
+	}
+
+	public static Component rewrite(Component component) {
+		Component out = rewriteSelf(component);
+		return DEPTH.get() > 0 ? out : OtherNames.rewrite(out);
+	}
+
+	public static FormattedCharSequence rewrite(FormattedCharSequence sequence) {
+		FormattedCharSequence out = rewriteSelf(sequence);
+		return DEPTH.get() > 0 ? out : OtherNames.rewrite(out);
 	}
 
 	/** Reused per thread: the characters and styles of the sequence being checked. */
@@ -123,7 +148,7 @@ public final class NickHider {
 	 * the screen as a char sequence. Works on the whole line, so a name split across several
 	 * components (Hypixel's scoreboard team prefix and suffix) is still found.
 	 */
-	public static FormattedCharSequence rewrite(FormattedCharSequence sequence) {
+	private static FormattedCharSequence rewriteSelf(FormattedCharSequence sequence) {
 		if (sequence == null || !active()) {
 			return sequence;
 		}

@@ -544,6 +544,8 @@ public final class StrayConfig {
 	public boolean hudScoreboard = false;
 	/** Hides the lobby id after the date on the SkyBlock scoreboard (vanilla and Stray's). */
 	public boolean hideLobbyId = false;
+	/** Shows every other player under a made-up name (client side). */
+	public boolean hideOtherNames = false;
 	public boolean hudBossBar = false;
 	public boolean hudEffects = false;
 	public boolean hudHeldItem = false;

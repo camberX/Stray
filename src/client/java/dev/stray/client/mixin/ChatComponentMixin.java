@@ -41,7 +41,7 @@ public class ChatComponentMixin {
 		GuiMessageTag tag,
 		Operation<Void> original
 	) {
-		Component rewritten = NickHider.rewrite(message);
+		Component rewritten = NickHider.rewriteOwnName(message);
 		CustomTitle.onChat(rewritten);
 		PartyFinderStats.onChat(rewritten);
 		MiningTracker.onChat(rewritten);

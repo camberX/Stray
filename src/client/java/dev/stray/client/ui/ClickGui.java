@@ -522,6 +522,7 @@ public final class ClickGui {
 		java.util.Map.entry("Update notify", "Tells you when an update is out."),
 		java.util.Map.entry("Customize item", "Rename and restyle your items, client side."),
 		java.util.Map.entry("Nick hider", "Shows a different name for you, client side."),
+		java.util.Map.entry("Hide other names", "Shows every other player under a made-up name, everywhere: chat, tab, nametags, scoreboard, titles, the leap menu. Client side."),
 		java.util.Map.entry("Skin", "A skin only you see, from a PNG on your computer."),
 		java.util.Map.entry("Slayer HUD", "Your slayer quest, boss health, timer and phase."),
 		java.util.Map.entry("Slayer profit", "What your slayer drops are worth, per boss and per hour."),
@@ -765,6 +766,7 @@ public final class ClickGui {
 		mods.add(new Mod(CUSTOMIZE, "Player", null, null, () -> true, v -> { }, false, false, false, true));
 		mods.add(hold("Cosmetics", "Player", StrayScreen.Feature.COSMETICS));
 		mods.add(mod("Nick hider", "Player", StrayScreen.Feature.NICK, null, () -> config.nickEnabled, v -> config.nickEnabled = v, true, false));
+		mods.add(mod("Hide other names", "Player", null, null, () -> config.hideOtherNames, v -> config.hideOtherNames = v, true, false));
 		mods.add(mod("Skin", "Player", StrayScreen.Feature.SKIN, null, () -> config.skinEnabled, v -> config.skinEnabled = v, true, false));
 		mods.add(mod("Auto clicker", "Player", StrayScreen.Feature.AUTO_CLICKER, null, () -> config.autoClickerEnabled, v -> config.autoClickerEnabled = v, true, false));
 
