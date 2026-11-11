@@ -184,6 +184,7 @@ public class StrayScreen extends Screen {
 		LEVER_BOT("Lever triggerbot", 2),
 		F7_TITLES("F7 titles", 4),
 		TERM_HIGHLIGHT("Terminal highlight", 4),
+		SCOREBOARD("Scoreboard", 1),
 		AUTO_HOTBAR("Auto hotbar", 8),
 		SMOOTH_HOTBAR("Smooth hotbar", 1),
 		GREENHOUSE_GROWTH("Greenhouse growth", 2),
@@ -3954,6 +3955,9 @@ public class StrayScreen extends Screen {
 			case LEVER_BOT -> {
 				y = slider(graphics, font, ix, y, iw, "Delay", config.leverTriggerbotDelay + "ms", config.leverTriggerbotDelay / 300f, v -> config.leverTriggerbotDelay = snapInt(v * 300f, 0, 300, 5));
 				toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Dungeons only", config.leverTriggerbotDungeonsOnly, v -> config.leverTriggerbotDungeonsOnly = v);
+			}
+			case SCOREBOARD -> {
+				toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Hide lobby ID", config.hideLobbyId, v -> config.hideLobbyId = v);
 			}
 			case TERM_HIGHLIGHT -> {
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Numbers", config.terminalHighlightNumbers, v -> config.terminalHighlightNumbers = v);

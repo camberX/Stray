@@ -542,6 +542,8 @@ public final class StrayConfig {
 	public boolean hudAir = false;
 	public boolean hudExperience = false;
 	public boolean hudScoreboard = false;
+	/** Hides the lobby id after the date on the SkyBlock scoreboard (vanilla and Stray's). */
+	public boolean hideLobbyId = false;
 	public boolean hudBossBar = false;
 	public boolean hudEffects = false;
 	public boolean hudHeldItem = false;

@@ -461,6 +461,7 @@ public final class ClickGui {
 		java.util.Map.entry("Inventory", "Your inventory on the HUD."),
 		java.util.Map.entry("Custom title", "Changes the game window's title."),
 		java.util.Map.entry("Scoreboard", "Stray's restyled sidebar."),
+		java.util.Map.entry("Hide lobby ID", "Hides the lobby id after the date on the SkyBlock scoreboard, with or without Stray's scoreboard."),
 		java.util.Map.entry("Boss bar", "Stray's restyled boss bar."),
 		java.util.Map.entry("Effects", "Your active potion effects."),
 		java.util.Map.entry("Item name", "The name of the item you switch to."),
@@ -735,7 +736,8 @@ public final class ClickGui {
 		mods.add(mod("Skill progress", "HUD", StrayScreen.Feature.SKILL, null, () -> config.skillProgressHudEnabled, v -> config.skillProgressHudEnabled = v, true, false));
 		mods.add(mod("Inventory", "HUD", StrayScreen.Feature.INVENTORY, null, () -> config.inventoryHudEnabled, v -> config.inventoryHudEnabled = v, true, false));
 		mods.add(mod("Custom title", "HUD", null, null, () -> config.customTitleEnabled, v -> config.customTitleEnabled = v, false, false));
-		mods.add(mod("Scoreboard", "HUD", null, null, () -> config.hudScoreboard, v -> config.hudScoreboard = v, true, false));
+		mods.add(mod("Scoreboard", "HUD", StrayScreen.Feature.SCOREBOARD, null, () -> config.hudScoreboard, v -> config.hudScoreboard = v, true, false));
+		mods.add(mod("Hide lobby ID", "HUD", null, null, () -> config.hideLobbyId, v -> config.hideLobbyId = v, true, false));
 		mods.add(mod("Boss bar", "HUD", null, null, () -> config.hudBossBar, v -> config.hudBossBar = v, true, false));
 		mods.add(mod("Effects", "HUD", null, null, () -> config.hudEffects, v -> config.hudEffects = v, true, false));
 		mods.add(mod("Item name", "HUD", null, null, () -> config.hudHeldItem, v -> config.hudHeldItem = v, true, false));

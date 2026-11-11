@@ -126,7 +126,8 @@ public final class ScoreboardHudRenderer {
 		List<Line> out = new ArrayList<>(entries.size());
 		for (PlayerScoreEntry entry : entries) {
 			Component raw = entry.display() != null ? entry.display() : Component.literal(entry.owner());
-			Component name = MenuFont.applyBody(PlayerTeam.formatNameForTeam(scoreboard.getPlayersTeam(entry.owner()), raw));
+			Component name = MenuFont.applyBody(dev.stray.client.visual.LobbyIdHider.strip(
+				PlayerTeam.formatNameForTeam(scoreboard.getPlayersTeam(entry.owner()), raw)));
 			Component score = MenuFont.applyBody(entry.formatValue(objective.numberFormatOrDefault(StyledFormat.SIDEBAR_DEFAULT)));
 			int scoreWidth = score.getString().isBlank() ? 0 : GuiDraw.hudWidth(font, score);
 			float width = GuiDraw.hudWidth(font, name) + 8 + scoreWidth;
