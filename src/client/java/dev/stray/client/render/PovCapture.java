@@ -35,6 +35,10 @@ import org.joml.Vector4f;
 public final class PovCapture {
 	private static final MainTarget[] TARGETS = new MainTarget[4];
 	private static final boolean[] READY = new boolean[4];
+	/** The frame is the last one from before the teammate went out of the server's range. */
+	private static final boolean[] STALE = new boolean[4];
+	/** Whose view each frame is, so a frame is never shown on another teammate's panel. */
+	private static final String[] OWNER = new String[4];
 	private static ProjectionMatrixBuffer projection;
 	private static boolean capturing;
 	private static Entity subject;
@@ -50,6 +54,11 @@ public final class PovCapture {
 	/** The teammate whose eyes the camera is in; their own model is not drawn. */
 	public static boolean hidden(Entity entity) {
 		return capturing && entity != null && entity == subject;
+	}
+
+	/** True when {@link #view} is a kept frame: the teammate is out of range right now. */
+	public static boolean stale(int index) {
+		return index >= 0 && index < STALE.length && STALE[index];
 	}
 
 	public static GpuTextureView view(int index) {
@@ -72,6 +81,8 @@ public final class PovCapture {
 		if (!wanted()) {
 			for (int i = 0; i < READY.length; i++) {
 				READY[i] = false;
+				STALE[i] = false;
+				OWNER[i] = null;
 			}
 			return;
 		}
@@ -87,9 +98,15 @@ public final class PovCapture {
 		}
 		for (int i = 0; i < 4; i++) {
 			LeapMenu.Entry entry = entries[i];
-			if (entry == null || entry.player().entity == null) {
+			String name = entry == null ? null : entry.player().name;
+			if (name == null || !name.equals(OWNER[i])) {
+				// Another teammate (or nobody) on this panel now: the old frame isn't theirs.
 				READY[i] = false;
+				STALE[i] = false;
+				OWNER[i] = name;
 			}
+			// Out of range: keep the last frame, marked stale, until they're back.
+			STALE[i] = READY[i] && (entry.player().entity == null || entry.player().entity.isRemoved());
 		}
 		if (index < 0) {
 			return;

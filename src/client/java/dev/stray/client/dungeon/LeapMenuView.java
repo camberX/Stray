@@ -59,7 +59,10 @@ public final class LeapMenuView {
 		for (LeapMenu.Entry entry : players) {
 			any |= entry != null;
 		}
-		GuiDraw.fill(graphics, 0, 0, width, height, 0xB0050709);
+		int bg = Math.round(Mth.clamp(StrayConfig.get().leapBgOpacity, 0, 100) * 2.55f);
+		if (bg > 0) {
+			GuiDraw.fill(graphics, 0, 0, width, height, bg << 24 | 0x050709);
+		}
 		if (!any) {
 			String text = "No players found";
 			GuiDraw.text(graphics, font, text, (width - font.width(text) * 2f) * 0.5f, height * 0.5f - 8, 2f, 0xFFFF5555, false);
@@ -97,7 +100,9 @@ public final class LeapMenuView {
 		boolean pov
 	) {
 		if (entry == null) {
-			GuiDraw.fill(graphics, x, y, w, h, 0x60000000);
+			if (pov) {
+				GuiDraw.fill(graphics, x, y, w, h, 0x60000000);
+			}
 			return;
 		}
 		DungeonParty.Member player = entry.player();
@@ -111,32 +116,45 @@ public final class LeapMenuView {
 			graphics.pose().scale(w, h);
 			graphics.blit(view, sampler, 0, 0, 1, 1, 0f, 1f, 1f, 0f);
 			graphics.pose().popMatrix();
-			// Keeps the card readable over the picture; lifts away while hovered.
-			GuiDraw.fill(graphics, x, y, w, h, alpha(0x000000, 0.30f - 0.22f * hover));
-		} else {
+			if (PovCapture.stale(index)) {
+				// Last frame before they went out of range: greyed, with a label.
+				GuiDraw.fill(graphics, x, y, w, h, 0x9A1A1C20);
+				String label = "Out of range";
+				float ls = 1.1f;
+				GuiDraw.text(graphics, font, label, x + (w - font.width(label) * ls) * 0.5f, y + 10f, ls, 0xFFB0B4BA, false);
+			} else {
+				// Keeps the card readable over the picture; lifts away while hovered.
+				GuiDraw.fill(graphics, x, y, w, h, alpha(0x000000, 0.30f - 0.22f * hover));
+			}
+		} else if (pov) {
 			GuiDraw.fillGradient(graphics, x, y, w, h, alpha(classColor, 0.10f + 0.10f * hover), 0x40000000);
 		}
 		boolean dead = player.dead;
 		boolean opener = config.leapShowDoorOpener && DungeonParty.lastDoorOpener() == player;
-		if (dead && config.leapTintDead) {
+		if (dead && config.leapTintDead && pov) {
 			GuiDraw.fill(graphics, x, y, w, h, 0x38FF2020);
 		}
 		// Edge: a thin class-coloured line, brighter and a pixel wider while hovered.
 		// The sides stop where the top and bottom start, so the corners are not
 		// drawn twice (which made them brighter than the rest of the line).
-		float px = GuiDraw.pixel();
-		float edge = px * (hover > 0.5f ? 2f : 1f);
-		int edgeColor = alpha(classColor, 0.45f + 0.5f * hover);
-		GuiDraw.fill(graphics, x, y, w, edge, edgeColor);
-		GuiDraw.fill(graphics, x, y + h - edge, w, edge, edgeColor);
-		GuiDraw.fill(graphics, x, y + edge, edge, h - edge * 2f, edgeColor);
-		GuiDraw.fill(graphics, x + w - edge, y + edge, edge, h - edge * 2f, edgeColor);
+		// Outside the boss (no POV) there is no frame at all: just the cards.
+		if (pov) {
+			float px = GuiDraw.pixel();
+			float edge = px * (hover > 0.5f ? 2f : 1f);
+			int edgeColor = alpha(classColor, 0.45f + 0.5f * hover);
+			GuiDraw.fill(graphics, x, y, w, edge, edgeColor);
+			GuiDraw.fill(graphics, x, y + h - edge, w, edge, edgeColor);
+			GuiDraw.fill(graphics, x, y + edge, edge, h - edge * 2f, edgeColor);
+			GuiDraw.fill(graphics, x + w - edge, y + edge, edge, h - edge * 2f, edgeColor);
+		}
 
 		// Card at the inner corner of each quarter, so the four sit around the centre.
-		float scale = Mth.clamp(config.leapScale / 100f, 0.5f, 1.5f) * (1f + 0.04f * hover);
+		float margin = 18f;
+		// Up to 300%, but never bigger than its quarter of the screen.
+		float fit = Math.min((w - margin - 4f) / (170f * 1.04f), (h - margin - 4f) / (52f * 1.04f));
+		float scale = Math.min(Mth.clamp(config.leapScale / 100f, 0.5f, 3f), fit) * (1f + 0.04f * hover);
 		float cardW = 170f * scale;
 		float cardH = 52f * scale;
-		float margin = 18f;
 		float cx = index % 2 == 0 ? x + w - cardW - margin : x + margin;
 		float cy = index / 2 == 0 ? y + h - cardH - margin : y + margin;
 		GuiDraw.roundedFine(graphics, cx, cy, cardW, cardH, 12f * scale, alpha(0x0A0D12, 0.78f + 0.12f * hover));

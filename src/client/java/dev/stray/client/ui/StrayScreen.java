@@ -179,7 +179,7 @@ public class StrayScreen extends Screen {
 		PEST("Pest ESP", 6),
 		PEST_COOLDOWN("Pest cooldown", 3),
 		TERMINALS("Terminal GUI", 15),
-		LEAP_MENU("Leap menu", 8),
+		LEAP_MENU("Leap menu", 9),
 		ALIGN_BOT("Align triggerbot", 2),
 		LEVER_BOT("Lever triggerbot", 2),
 		F7_TITLES("F7 titles", 4),
@@ -4094,7 +4094,8 @@ public class StrayScreen extends Screen {
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Announce leap", config.leapAnnounce, v -> config.leapAnnounce = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Tint dead players", config.leapTintDead, v -> config.leapTintDead = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Show last door opener", config.leapShowDoorOpener, v -> config.leapShowDoorOpener = v);
-				slider(graphics, font, ix, y, iw, "Card size", config.leapScale + "%", (config.leapScale - 50) / 100f, v -> config.leapScale = snapInt(50 + v * 100f, 50, 150, 5));
+				y = slider(graphics, font, ix, y, iw, "Card size", config.leapScale + "%", (config.leapScale - 50) / 250f, v -> config.leapScale = snapInt(50 + v * 250f, 50, 300, 5));
+				slider(graphics, font, ix, y, iw, "Background opacity", config.leapBgOpacity + "%", config.leapBgOpacity / 100f, v -> config.leapBgOpacity = snapInt(v * 100f, 0, 100, 1));
 			}
 			case ALIGN_BOT -> {
 				y = slider(graphics, font, ix, y, iw, "Delay", config.alignTriggerbotDelay + "ms", (config.alignTriggerbotDelay - 10) / 390f, v -> config.alignTriggerbotDelay = snapInt(10 + v * 390f, 10, 400, 5));

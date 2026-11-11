@@ -341,6 +341,8 @@ public final class StrayConfig {
 	public boolean leapTintDead = true;
 	public boolean leapShowDoorOpener = false;
 	public int leapScale = 100;
+	/** Leap menu backdrop darkness, 0-100 (69 is the old fixed look). */
+	public int leapBgOpacity = 69;
 	/** F7 arrow align: right clicks the arrow you look at until it points the right way. */
 	public boolean alignTriggerbot = false;
 	public int alignTriggerbotDelay = 150;
