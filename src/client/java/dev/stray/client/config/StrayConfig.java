@@ -546,6 +546,26 @@ public final class StrayConfig {
 	public boolean hideLobbyId = false;
 	/** Shows every other player under a made-up name (client side). */
 	public boolean hideOtherNames = false;
+	/** Auto Leap (full edition): leaps on F7 events. Fast Leap: left click the leap to leap. */
+	public boolean autoLeap = false;
+	public boolean fastLeap = false;
+	/** 0 = by class, 1 = by player name. */
+	public int leapMode = 0;
+	public boolean leapSwapBack = false;
+	public boolean autoLeapP3 = false;
+	public boolean fastLeapP3 = false;
+	/** P3: wait for the section's gate (or the Core) too, not just its tasks. */
+	public boolean autoLeapOnlyGate = false;
+	/** Door opener leaps stop once the Blood door is open. */
+	public boolean autoLeapDoorAfterBlood = false;
+	public boolean fastLeapDoorAfterBlood = false;
+	/** I4 leap goes to whoever last posted Melody progress in party chat. */
+	public boolean autoLeapMelody = false;
+	public boolean fastLeapMelody = false;
+	public java.util.Map<String, LeapTargetConfig> autoLeapTargets = new java.util.LinkedHashMap<>();
+	public java.util.Map<String, LeapTargetConfig> fastLeapTargets = new java.util.LinkedHashMap<>();
+	public java.util.Map<String, LeapPreset> leapPresets = new java.util.LinkedHashMap<>();
+	public String leapPresetName = "";
 	public boolean hudBossBar = false;
 	public boolean hudEffects = false;
 	public boolean hudHeldItem = false;

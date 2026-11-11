@@ -38,3 +38,6 @@ by BarefootBird, an Odin addon, under the BSD 3-Clause licence. Its licence text
 
 `item/AutoHotbar` and `ui/AutoHotbarScreen` are ported from NoammAddons' `AutoHotbar` and
 `AutoHotbarScreen` (same author and CC0 licence), from before they were removed upstream in April 2026.
+
+`dungeon/autoleap/` (AutoLeap, LeapRunner, F7Phase) and `mixin/LeapSilentMixin` are ported from quoi's
+`module/impl/floor7/autoleap` (https://github.com/jcnlk/quoi, GPL-3.0) by jcnlk, used with his permission.

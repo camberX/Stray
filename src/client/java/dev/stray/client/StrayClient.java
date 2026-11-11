@@ -230,6 +230,7 @@ public final class StrayClient implements ClientModInitializer {
 		dev.stray.client.dungeon.m4.M4World.init();
 		if (!dev.stray.Edition.LEGIT) { dev.stray.client.item.AutoHotbar.init(); }
 		if (!dev.stray.Edition.LEGIT) { dev.stray.client.dungeon.AlignTriggerbot.init(); }
+		if (!dev.stray.Edition.LEGIT) { dev.stray.client.dungeon.autoleap.AutoLeap.init(); }
 		dev.stray.client.dungeon.map.NoammData.start();
 		ClientReceiveMessageEvents.ALLOW_GAME.register((message, overlay) -> {
 			if (!overlay) {
@@ -240,6 +241,9 @@ public final class StrayClient implements ClientModInitializer {
 				dev.stray.client.dungeon.TerminalHighlight.onChat(plain);
 				if (!dev.stray.Edition.LEGIT) {
 					dev.stray.client.dungeon.AlignTriggerbot.onChat(plain);
+					dev.stray.client.dungeon.autoleap.F7Phase.onChat(plain);
+					dev.stray.client.dungeon.autoleap.LeapRunner.onChat(plain);
+					dev.stray.client.dungeon.autoleap.AutoLeap.onChat(plain);
 				}
 				dev.stray.client.dungeon.MaskTimers.onChat(plain);
 			}
@@ -511,6 +515,11 @@ public final class StrayClient implements ClientModInitializer {
 			// Dungeon map (read only).
 			dev.stray.client.dungeon.map.DungeonMap.tick(client);
 			if (!dev.stray.Edition.LEGIT) { dev.stray.client.dungeon.AlignTriggerbot.tick(client); }
+			if (!dev.stray.Edition.LEGIT) {
+				dev.stray.client.dungeon.autoleap.F7Phase.tick(client);
+				dev.stray.client.dungeon.autoleap.LeapRunner.tick(client);
+				dev.stray.client.dungeon.autoleap.AutoLeap.tick(client);
+			}
 			if (!dev.stray.Edition.LEGIT) { dev.stray.client.dungeon.terminal.TerminalSession.tick(client); }
 			dev.stray.client.dungeon.F7Titles.tick(client);
 			dev.stray.client.dungeon.TerminalHighlight.tick(client);

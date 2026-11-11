@@ -185,6 +185,8 @@ public class StrayScreen extends Screen {
 		F7_TITLES("F7 titles", 4),
 		TERM_HIGHLIGHT("Terminal highlight", 4),
 		SCOREBOARD("Scoreboard", 1),
+		AUTO_LEAP("Auto leap", 1),
+		FAST_LEAP("Fast leap", 1),
 		AUTO_HOTBAR("Auto hotbar", 8),
 		SMOOTH_HOTBAR("Smooth hotbar", 1),
 		GREENHOUSE_GROWTH("Greenhouse growth", 2),
@@ -263,6 +265,9 @@ public class StrayScreen extends Screen {
 			}
 			if (this == PATHS) {
 				return baseRows + Math.min(PathRecorder.here().size(), 10);
+			}
+			if (this == AUTO_LEAP || this == FAST_LEAP) {
+				return leapRows(this == AUTO_LEAP);
 			}
 			if (this == NICK) {
 				return NickSteal.status() == NickSteal.Status.OFF ? 2 : 3;
@@ -3515,6 +3520,149 @@ public class StrayScreen extends Screen {
 		clickButton(graphics, font, x, y, w, mouseX, mouseY, ShopCape.refreshLabel(), ShopCape::refreshAll);
 	}
 
+	// ------------------------------------------------------------------ auto / fast leap
+
+	/** Which leap name field is being typed in ("auto:p1"), or the preset field ("preset"). */
+	private String leapFocus;
+
+	/** Rows of the Auto Leap / Fast Leap panel; sub-options only show when their parent is on. */
+	static int leapRows(boolean auto) {
+		if (!dev.stray.Edition.LEGIT) {
+			StrayConfig config = StrayConfig.get();
+			int rows = 2;
+			for (dev.stray.client.dungeon.autoleap.AutoLeap.Target target : dev.stray.client.dungeon.autoleap.AutoLeap.targets()) {
+				if (auto ? !target.auto() : !target.fast()) {
+					continue;
+				}
+				if (dev.stray.client.dungeon.autoleap.AutoLeap.isSection(target.id())) {
+					continue;
+				}
+				rows++;
+				if ("door".equals(target.id()) && dev.stray.client.dungeon.autoleap.AutoLeap.config("door", auto).on) {
+					rows++;
+				}
+				if ("i4".equals(target.id())) {
+					rows++;
+				}
+			}
+			boolean p3 = auto ? config.autoLeapP3 : config.fastLeapP3;
+			rows += 1 + (p3 ? 4 + (auto ? 1 : 0) : 0);
+			return rows + 3;
+		}
+		return 1;
+	}
+
+	private void drawLeapPanel(GuiGraphicsExtractor graphics, Font font, float ix, float y, float iw, int mouseX, int mouseY, boolean auto) {
+		if (!dev.stray.Edition.LEGIT) {
+			StrayConfig config = StrayConfig.get();
+			y = cycle(graphics, font, ix, y, iw, mouseX, mouseY, "Leap to", config.leapMode == 1 ? "Player name" : "Class", () -> {
+				config.leapMode = config.leapMode == 1 ? 0 : 1;
+				leapFocus = null;
+			});
+			y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Swap back", config.leapSwapBack, v -> config.leapSwapBack = v);
+			for (dev.stray.client.dungeon.autoleap.AutoLeap.Target target : dev.stray.client.dungeon.autoleap.AutoLeap.targets()) {
+				if (auto ? !target.auto() : !target.fast()) {
+					continue;
+				}
+				if (dev.stray.client.dungeon.autoleap.AutoLeap.isSection(target.id())) {
+					continue;
+				}
+				if ("door".equals(target.id())) {
+					dev.stray.client.config.LeapTargetConfig door = dev.stray.client.dungeon.autoleap.AutoLeap.config("door", auto);
+					y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Door opener", door.on, v -> door.on = v);
+					if (door.on) {
+						y = toggle(graphics, font, ix + 8, y, iw - 8, mouseX, mouseY, "Stop after Blood opens",
+							auto ? config.autoLeapDoorAfterBlood : config.fastLeapDoorAfterBlood,
+							v -> {
+								if (auto) {
+									config.autoLeapDoorAfterBlood = v;
+								} else {
+									config.fastLeapDoorAfterBlood = v;
+								}
+							});
+					}
+					continue;
+				}
+				y = leapTargetRow(graphics, font, ix, y, iw, mouseX, mouseY, target.label(), target.id(), auto);
+				if ("i4".equals(target.id())) {
+					y = toggle(graphics, font, ix + 8, y, iw - 8, mouseX, mouseY, "Leap Melody player",
+						auto ? config.autoLeapMelody : config.fastLeapMelody,
+						v -> {
+							if (auto) {
+								config.autoLeapMelody = v;
+							} else {
+								config.fastLeapMelody = v;
+							}
+						});
+				}
+			}
+			boolean p3 = auto ? config.autoLeapP3 : config.fastLeapP3;
+			y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, auto ? "P3 sections" : "P3 section", p3, v -> {
+				if (auto) {
+					config.autoLeapP3 = v;
+				} else {
+					config.fastLeapP3 = v;
+				}
+			});
+			if (p3) {
+				if (auto) {
+					y = toggle(graphics, font, ix + 8, y, iw - 8, mouseX, mouseY, "Wait for the gate", config.autoLeapOnlyGate, v -> config.autoLeapOnlyGate = v);
+				}
+				for (int s = 1; s <= 4; s++) {
+					y = leapTargetRow(graphics, font, ix + 8, y, iw - 8, mouseX, mouseY, "Section " + s, "s" + s, auto);
+				}
+			}
+			y = leapField(graphics, font, ix, y, iw, mouseX, mouseY, "Preset", "preset",
+				() -> config.leapPresetName == null ? "" : config.leapPresetName, v -> config.leapPresetName = v, "name");
+			y = clickButton(graphics, font, ix, y, iw, mouseX, mouseY, "Save preset",
+				() -> dev.stray.client.dungeon.autoleap.AutoLeap.savePreset(config.leapPresetName));
+			clickButton(graphics, font, ix, y, iw, mouseX, mouseY, "Load preset",
+				() -> dev.stray.client.dungeon.autoleap.AutoLeap.loadPreset(config.leapPresetName));
+		}
+	}
+
+	/** One target: a class to cycle through, or a player name to type, by the leap mode. */
+	private float leapTargetRow(GuiGraphicsExtractor graphics, Font font, float x, float y, float w, int mouseX, int mouseY, String label, String id, boolean auto) {
+		if (!dev.stray.Edition.LEGIT) {
+			StrayConfig config = StrayConfig.get();
+			dev.stray.client.config.LeapTargetConfig target = dev.stray.client.dungeon.autoleap.AutoLeap.config(id, auto);
+			if (config.leapMode == 1) {
+				return leapField(graphics, font, x, y, w, mouseX, mouseY, label, (auto ? "auto:" : "fast:") + id,
+					() -> target.name == null ? "" : target.name, v -> target.name = v, "off");
+			}
+			dev.stray.client.dungeon.DungeonParty.DungeonClass clazz = dev.stray.client.dungeon.autoleap.AutoLeap.classAt(target.clazz);
+			return cycle(graphics, font, x, y, w, mouseX, mouseY, label, clazz == null ? "Off" : clazz.label, () -> {
+				int next = target.clazz + 1;
+				target.clazz = next >= dev.stray.client.dungeon.autoleap.AutoLeap.CLASSES.length ? -1 : next;
+			});
+		}
+		return y;
+	}
+
+	/** Label on the left, a small text field on the right. */
+	private float leapField(GuiGraphicsExtractor graphics, Font font, float x, float y, float w, int mouseX, int mouseY,
+		String label, String key, java.util.function.Supplier<String> get, java.util.function.Consumer<String> set, String placeholder) {
+		float row = rowH();
+		boolean focused = key.equals(leapFocus);
+		float labelY = GuiDraw.middle(y, row);
+		GuiDraw.menu(graphics, font, label, x + 1, labelY, ink());
+		float fw = Math.min(110f, w * 0.55f);
+		float fx = x + w - fw;
+		boolean hover = GuiDraw.hovered(mouseX, mouseY, fx, y, fw, row);
+		ClickLook.panel(graphics, fx, y + 1, fw, row - 2, 4, focused || hover ? Theme.CARD_HOVER : Theme.CARD, focused ? Theme.ACCENT : Theme.LINE);
+		String value = get.get();
+		boolean empty = value.isEmpty() && !focused;
+		String shown = empty ? placeholder : value + caret(focused);
+		GuiDraw.menu(graphics, font, clip(font, shown, (int) fw - 8), fx + 4, labelY, empty ? fade() : ink());
+		hits.add(new Hit(fx, y, fw, row, () -> {
+			leapFocus = key;
+			leapFieldRef = new TextKeys.Field("leap-" + key, get, set, 16);
+		}));
+		return y + row;
+	}
+
+	private TextKeys.Field leapFieldRef;
+
 	private float clickField(
 		GuiGraphicsExtractor graphics,
 		Font font,
@@ -3956,6 +4104,8 @@ public class StrayScreen extends Screen {
 				y = slider(graphics, font, ix, y, iw, "Delay", config.leverTriggerbotDelay + "ms", config.leverTriggerbotDelay / 300f, v -> config.leverTriggerbotDelay = snapInt(v * 300f, 0, 300, 5));
 				toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Dungeons only", config.leverTriggerbotDungeonsOnly, v -> config.leverTriggerbotDungeonsOnly = v);
 			}
+			case AUTO_LEAP -> drawLeapPanel(graphics, font, ix, y, iw, mouseX, mouseY, true);
+			case FAST_LEAP -> drawLeapPanel(graphics, font, ix, y, iw, mouseX, mouseY, false);
 			case SCOREBOARD -> {
 				toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Hide lobby ID", config.hideLobbyId, v -> config.hideLobbyId = v);
 			}
@@ -5015,6 +5165,9 @@ public class StrayScreen extends Screen {
 		if (nickFocused && !onNick) {
 			nickFocused = false;
 		}
+		// A click on the leap field itself focuses it again through its hit.
+		leapFocus = null;
+		leapFieldRef = null;
 		if (hexFocused && !(pickerTarget != null && GuiDraw.hovered(lx, ly, hexFieldX, hexFieldY, hexFieldW, 13f))) {
 			hexFocused = false;
 		}
@@ -5197,6 +5350,11 @@ public class StrayScreen extends Screen {
 			return true;
 		}
 		if (event.isEscape()) {
+			if (leapFocus != null) {
+				leapFocus = null;
+				leapFieldRef = null;
+				return true;
+			}
 			if (capeFocused) {
 				capeFocused = false;
 				commitCapeUrl();
@@ -5335,6 +5493,9 @@ public class StrayScreen extends Screen {
 	/** The text field that has focus, in the order keys used to be routed. */
 	private TextKeys.Field focusedField() {
 		StrayConfig config = StrayConfig.get();
+		if (leapFocus != null && leapFieldRef != null) {
+			return leapFieldRef;
+		}
 		if (hexFocused) {
 			return hexField;
 		}

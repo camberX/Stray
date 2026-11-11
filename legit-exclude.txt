@@ -44,6 +44,10 @@ dev/stray/client/mining/KeepBreakProgress*.class
 # Mixins that only serve the removed features. "mixin:" lines also drop the entry from
 # stray.client.mixins.json / stray.sodium.mixins.json in legit builds.
 mixin: ClientLevelMixin
+mixin: LeapSilentMixin
 # Account manager (Microsoft login, Prism import, session switching)
 dev/stray/client/account/**
 dev/stray/client/ui/AccountScreen*.class
+# Auto Leap / Fast Leap (quoi port)
+dev/stray/client/dungeon/autoleap/**
+dev/stray/client/mixin/LeapSilentMixin*.class
