@@ -27,6 +27,18 @@ public class FontMixin {
 		return text;
 	}
 
+	/**
+	 * Wrapped text: text-display entities (floating labels and nametags servers place in the
+	 * world), tooltips and other multi-line text are split here before drawing.
+	 */
+	@ModifyVariable(method = "split(Lnet/minecraft/network/chat/FormattedText;I)Ljava/util/List;", at = @At("HEAD"), argsOnly = true, ordinal = 0, require = 0)
+	private FormattedText stray$nickSplit(FormattedText text) {
+		if (text instanceof Component component) {
+			return NickHider.rewrite(component);
+		}
+		return text;
+	}
+
 	@ModifyVariable(method = "width(Lnet/minecraft/util/FormattedCharSequence;)I", at = @At("HEAD"), argsOnly = true, ordinal = 0)
 	private net.minecraft.util.FormattedCharSequence stray$nickWidthSequence(net.minecraft.util.FormattedCharSequence text) {
 		return NickHider.rewrite(text);

@@ -951,6 +951,10 @@ public final class StrayClient implements ClientModInitializer {
 			return Command.SINGLE_SUCCESS;
 		}));
 		node.then(ClientCommands.literal("othername")
+			.then(ClientCommands.literal("check").executes(context -> {
+				context.getSource().sendFeedback(Component.literal("\u00A7bStray \u00A77" + dev.stray.client.visual.OtherNames.describeNearest(Minecraft.getInstance())));
+				return Command.SINGLE_SUCCESS;
+			}))
 			.then(ClientCommands.argument("name", com.mojang.brigadier.arguments.StringArgumentType.word()).executes(context -> {
 				String name = com.mojang.brigadier.arguments.StringArgumentType.getString(context, "name");
 				String fake = dev.stray.client.visual.OtherNames.addForTest(name);

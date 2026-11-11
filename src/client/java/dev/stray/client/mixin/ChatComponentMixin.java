@@ -41,6 +41,7 @@ public class ChatComponentMixin {
 		GuiMessageTag tag,
 		Operation<Void> original
 	) {
+		dev.stray.client.visual.OtherNames.onChat(message);
 		Component rewritten = NickHider.rewriteOwnName(message);
 		CustomTitle.onChat(rewritten);
 		PartyFinderStats.onChat(rewritten);
