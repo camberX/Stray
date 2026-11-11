@@ -1030,6 +1030,43 @@ public final class StrayClient implements ClientModInitializer {
 				.executes(context -> dev.stray.client.dungeon.terminal.TerminalSession.openSim("random") ? Command.SINGLE_SUCCESS : 0)
 				.then(name));
 		}
+		if (!dev.stray.Edition.LEGIT) {
+			// Leap tests on any server (a test server with an alt): no dungeon or party needed.
+			node.then(ClientCommands.literal("leap")
+				.then(ClientCommands.argument("player", StringArgumentType.word())
+					.suggests((context, builder) -> {
+						Minecraft mc = Minecraft.getInstance();
+						if (mc.getConnection() != null) {
+							for (net.minecraft.client.multiplayer.PlayerInfo info : mc.getConnection().getOnlinePlayers()) {
+								builder.suggest(info.getProfile().name());
+							}
+						}
+						return builder.buildFuture();
+					})
+					.executes(context -> {
+						dev.stray.client.dungeon.autoleap.LeapRunner.debugLeap(StringArgumentType.getString(context, "player"));
+						return Command.SINGLE_SUCCESS;
+					})));
+			for (String mode : new String[] {"autoleap", "fastleap"}) {
+				boolean auto = mode.equals("autoleap");
+				node.then(ClientCommands.literal(mode)
+					.then(ClientCommands.argument("target", StringArgumentType.word())
+						.suggests((context, builder) -> {
+							for (String id : dev.stray.client.dungeon.autoleap.AutoLeap.targetIds()) {
+								builder.suggest(id);
+							}
+							return builder.buildFuture();
+						})
+						.executes(context -> {
+							String why = dev.stray.client.dungeon.autoleap.AutoLeap.debugLeap(StringArgumentType.getString(context, "target"), auto);
+							if (why != null) {
+								context.getSource().sendFeedback(Component.literal("§bStray §7» §c" + why));
+								return 0;
+							}
+							return Command.SINGLE_SUCCESS;
+						})));
+			}
+		}
 		return node;
 	}
 

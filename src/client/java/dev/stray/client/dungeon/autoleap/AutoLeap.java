@@ -207,6 +207,40 @@ public final class AutoLeap {
 		return true;
 	}
 
+	/**
+	 * Debug: leap the way this target is set up, ignoring its boss condition and whether Auto
+	 * or Fast Leap is on. Returns why it could not, or null.
+	 */
+	public static String debugLeap(String id, boolean auto) {
+		if (target(id) == null) {
+			return "unknown target";
+		}
+		StrayConfig config = StrayConfig.get();
+		LeapTargetConfig target = config(id, auto);
+		LeapRunner.setLoose();
+		if (config.leapMode == 1) {
+			if (target.name == null || target.name.isBlank()) {
+				return "no player name set for it (" + (auto ? "Auto" : "Fast") + " Leap settings)";
+			}
+			LeapRunner.leapToName(target.name.trim());
+			return null;
+		}
+		DungeonParty.DungeonClass clazz = classAt(target.clazz);
+		if (clazz == null) {
+			return "no class set for it (" + (auto ? "Auto" : "Fast") + " Leap settings)";
+		}
+		LeapRunner.leapToClass(clazz);
+		return null;
+	}
+
+	public static List<String> targetIds() {
+		List<String> ids = new java.util.ArrayList<>();
+		for (Target target : targets()) {
+			ids.add(target.id());
+		}
+		return ids;
+	}
+
 	public static final DungeonParty.DungeonClass[] CLASSES = {
 		DungeonParty.DungeonClass.ARCHER, DungeonParty.DungeonClass.BERSERK, DungeonParty.DungeonClass.HEALER,
 		DungeonParty.DungeonClass.MAGE, DungeonParty.DungeonClass.TANK

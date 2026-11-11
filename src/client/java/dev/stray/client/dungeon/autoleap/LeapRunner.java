@@ -49,6 +49,11 @@ public final class LeapRunner {
 	private static String queuedLabel;
 	private static int cooldownTicks;
 	private static ClientLevel lastLevel;
+	/**
+	 * Debug leaps ({@code /stray debug dev leap}): no dungeon or party needed, the name is used
+	 * as typed, and any hotbar item named "Spirit Leap" counts. Until you change worlds.
+	 */
+	private static boolean loose;
 
 	private LeapRunner() {
 	}
@@ -63,7 +68,21 @@ public final class LeapRunner {
 			return;
 		}
 		DungeonParty.Member member = find(name, null);
+		if (member == null && loose) {
+			request(name, name);
+			return;
+		}
 		request(member, name);
+	}
+
+	/** Debug: leap to this player by name on any server, e.g. a test server with your alt. */
+	public static void debugLeap(String name) {
+		loose = true;
+		leapToName(name);
+	}
+
+	public static void setLoose() {
+		loose = true;
 	}
 
 	/** Leap to the first living teammate of a class. */
@@ -76,7 +95,7 @@ public final class LeapRunner {
 	}
 
 	private static boolean inDungeon() {
-		return SkyblockLocation.inDungeon || DevMode.on();
+		return loose || SkyblockLocation.inDungeon || DevMode.on();
 	}
 
 	private static DungeonParty.Member find(String name, DungeonParty.DungeonClass clazz) {
@@ -93,18 +112,25 @@ public final class LeapRunner {
 
 	private static void request(DungeonParty.Member member, String label) {
 		if (member == null) {
-			message("§cFailed to leap! §f" + label + " §cnot found");
+			message("§cFailed to leap! §f" + label + " §cnot found"
+				+ (loose ? "" : " §7(outside a dungeon: §f/stray debug dev leap <name>§7)"));
 			return;
 		}
+		request(member.name, label);
+	}
+
+	private static void request(String name, String label) {
 		Minecraft client = Minecraft.getInstance();
 		if (busy() || client.gui.screen() != null || client.player == null
 			|| client.player.containerMenu != client.player.inventoryMenu) {
-			queued = member.name;
+			queued = name;
 			queuedLabel = label;
-			message("§eQueued leap to §f" + member.name);
+			if (busy() || !(client.gui.screen() instanceof net.minecraft.client.gui.screens.ChatScreen)) {
+				message("§eQueued leap to §f" + name);
+			}
 			return;
 		}
-		start(member.name, label);
+		start(name, label);
 	}
 
 	private static void start(String name, String label) {
@@ -142,7 +168,7 @@ public final class LeapRunner {
 	public static boolean isLeap(ItemStack stack) {
 		String id = ItemIds.skyblockId(stack);
 		if (id == null) {
-			return false;
+			return loose && !stack.isEmpty() && stack.getHoverName().getString().contains("Spirit Leap");
 		}
 		for (String leap : LEAP_IDS) {
 			if (leap.equals(id)) {
@@ -158,6 +184,7 @@ public final class LeapRunner {
 			lastLevel = client.level;
 			cancel(false);
 			queued = null;
+			loose = false;
 			cooldownTicks = 0;
 		}
 		if (cooldownTicks > 0) {
@@ -272,7 +299,7 @@ public final class LeapRunner {
 			return false;
 		}
 		String title = packet.getTitle().getString();
-		if (!title.contains("Spirit Leap")) {
+		if (!title.contains("Spirit Leap") && !(loose && title.contains("Leap"))) {
 			return false;
 		}
 		Minecraft client = Minecraft.getInstance();
