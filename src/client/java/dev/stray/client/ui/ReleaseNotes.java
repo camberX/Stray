@@ -15,6 +15,14 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.5.99", new String[]{
+			"Auto leap and Fast leap (Dungeons, not in Stray Legit), ported from quoi by jcnlk with permission: on F7/M7 boss moments (crushes, Storm, P3 sections, I4, Necron, relic, door opener) Auto leap uses your Spirit Leap on the teammate you set, by class or name; Fast leap does it on left click while you hold the leap. The leap menu stays hidden, every step happens at the start of a tick with normal clicks, and you can save and load presets. Test it anywhere with /stray debug dev leap <player>.",
+			"Leap menu: Teammate POV keeps the last picture, greyed with \"Out of range\", when a teammate leaves the server's range. Outside the boss there are no panel frames, just the cards. Card size goes up to 300%, and there is a Background opacity slider.",
+			"Hide other names (Player): replaces every other player's name with a made-up one in tab, nametags, chat, titles, the scoreboard, the leap menu and other mods' world text (like NoammAddons' teammate ESP).",
+			"Hide lobby ID (HUD): hides the lobby ID next to the date on the SkyBlock scoreboard, with or without the custom scoreboard.",
+			"Align triggerbot (not in Stray Legit): the first item frame you click stops one turn short and the rest are solved; after Goldor's first line it finishes that last turn. No sneaking needed.",
+			"Capes from the cape creator can be up to 4x sharper (the picture sets how sharp). Make your cape again in the creator to get it."
+		}),
 		new Entry("1.5.98", new String[]{
 			"Smooth hotbar (HUD): when you change slot, the hotbar selection box glides to the new slot instead of snapping, faster the further it has to go. Only the selection moves; the hotbar, hearts and XP bar stay vanilla. Speed setting.",
 			"Customize: with a custom SkyBlock dye, the \"✿ <Dye> Dyed\" lore line follows it (renamed and coloured like the ✿ in the name, or added when the item has none).",
