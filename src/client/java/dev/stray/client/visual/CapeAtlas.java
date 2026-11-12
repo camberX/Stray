@@ -18,7 +18,8 @@ final class CapeAtlas {
 	static final int FACE_V = 1;
 	static final int FACE_W = 10;
 	static final int FACE_H = 16;
-	private static final int MAX_SCALE = 16;
+	/** 64x: a 640x1024 face (4096x2048 atlas). */
+	static final int MAX_SCALE = 64;
 
 	private CapeAtlas() {
 	}
@@ -51,12 +52,37 @@ final class CapeAtlas {
 		}
 	}
 
+	/**
+	 * Like {@link #toAtlas(NativeImage, CapeCrop)} but keeps {@code src} open and never goes
+	 * above {@code maxScale}, so the caller can bake again smaller.
+	 */
+	static NativeImage bakeKeep(NativeImage src, CapeCrop crop, int maxScale) {
+		return bake(src, crop, maxScale);
+	}
+
+	/** The scale the source's detail asks for (the cropped part when cropped). */
+	static int wantedScale(NativeImage src, CapeCrop crop) {
+		float w = src.getWidth();
+		float h = src.getHeight();
+		if (crop != null) {
+			w *= crop.w;
+			h *= crop.h;
+		}
+		return pickScale(Math.round(w), Math.round(h), MAX_SCALE);
+	}
+
 	static int atlasScale(int width) {
 		return Math.max(1, width / LAYOUT_W);
 	}
 
 	private static NativeImage bake(NativeImage src, CapeCrop crop) {
-		int scale = pickScale(src.getWidth(), src.getHeight());
+		return bake(src, crop, MAX_SCALE);
+	}
+
+	private static NativeImage bake(NativeImage src, CapeCrop crop, int maxScale) {
+		float sw = src.getWidth() * (crop == null ? 1f : crop.w);
+		float sh = src.getHeight() * (crop == null ? 1f : crop.h);
+		int scale = pickScale(Math.round(sw), Math.round(sh), maxScale);
 		NativeImage atlas = new NativeImage(LAYOUT_W * scale, LAYOUT_H * scale, false);
 		try {
 			atlas.fillRect(0, 0, atlas.getWidth(), atlas.getHeight(), 0xFF000000);
@@ -80,9 +106,11 @@ final class CapeAtlas {
 		}
 	}
 
-	private static int pickScale(int srcW, int srcH) {
-		int needed = Math.max(4, Math.min(MAX_SCALE, Math.max(srcW / FACE_W, srcH / FACE_H)));
-		return Math.min(MAX_SCALE, Math.max(4, needed));
+	private static int pickScale(int srcW, int srcH, int maxScale) {
+		int cap = Math.max(4, Math.min(MAX_SCALE, maxScale));
+		// Round up so the face never has fewer pixels than the picture it shows.
+		int needed = Math.max((srcW + FACE_W - 1) / FACE_W, (srcH + FACE_H - 1) / FACE_H);
+		return Math.min(cap, Math.max(4, needed));
 	}
 
 	private static void paintFace(NativeImage src, NativeImage atlas, int dx, int dy, int dw, int dh, int pad) {

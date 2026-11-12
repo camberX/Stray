@@ -30,6 +30,8 @@ public final class CustomCape {
 
 	private static final Identifier TEXTURE_ID = Stray.id("cape");
 	private static final int MAX_BYTES = 2 * 1024 * 1024;
+	/** Room under the 2 MB the site and other players accept. */
+	private static final int PUBLISH_MAX_BYTES = MAX_BYTES - 64 * 1024;
 	private static final int MAX_SRC = 4096;
 	private static final HttpClient HTTP = HttpClient.newBuilder()
 		.followRedirects(HttpClient.Redirect.NORMAL)
@@ -180,19 +182,34 @@ public final class CustomCape {
 			int originalW = image.getWidth();
 			int originalH = image.getHeight();
 			crop.clamp(originalW, originalH);
-			NativeImage atlas;
+			NativeImage atlas = null;
+			byte[] png = null;
 			try {
-				atlas = CapeAtlas.toAtlas(image, crop);
+				// As sharp as the picture allows, then smaller only if the PNG would be
+				// over the upload limit.
+				int scale = CapeAtlas.wantedScale(image, crop);
+				while (true) {
+					atlas = CapeAtlas.bakeKeep(image, crop, scale);
+					png = encodePng(atlas);
+					if (png.length <= PUBLISH_MAX_BYTES || scale <= 4) {
+						break;
+					}
+					atlas.close();
+					atlas = null;
+					scale = Math.max(4, Math.min(scale - 4, (int) (scale * 0.8f)));
+				}
 			} catch (Exception exception) {
-				failOn(gen, "Can't convert cape");
+				if (atlas != null) {
+					atlas.close();
+				}
+				failOn(gen, png == null ? "Can't convert cape" : "Can't save cape");
 				return;
+			} finally {
+				image.close();
 			}
-			byte[] png;
-			try {
-				png = encodePng(atlas);
-			} catch (Exception exception) {
+			if (png.length > MAX_BYTES) {
 				atlas.close();
-				failOn(gen, "Can't save cape");
+				failOn(gen, "Cape too big to share");
 				return;
 			}
 			install(gen, atlas, png, originalW, originalH, false, true, true);
