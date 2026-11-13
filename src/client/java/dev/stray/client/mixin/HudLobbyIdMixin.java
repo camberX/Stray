@@ -17,7 +17,7 @@ public class HudLobbyIdMixin {
 		target = "Lnet/minecraft/world/scores/PlayerTeam;formatNameForTeam(Lnet/minecraft/world/scores/Team;Lnet/minecraft/network/chat/Component;)Lnet/minecraft/network/chat/MutableComponent;"))
 	private net.minecraft.network.chat.MutableComponent stray$hideLobbyId(Team team, Component name, Operation<net.minecraft.network.chat.MutableComponent> original) {
 		net.minecraft.network.chat.MutableComponent line = original.call(team, name);
-		Component stripped = LobbyIdHider.strip(line);
+		Component stripped = dev.stray.client.visual.OtherNames.rewriteScoreboard(LobbyIdHider.strip(line));
 		return stripped == line ? line : stripped.copy();
 	}
 }

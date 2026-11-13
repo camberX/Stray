@@ -286,6 +286,13 @@ public final class StrayConfig {
 	/** World editor: toggle key, show/hide the edits, the 9-slot block palette and the brush size. */
 	public String editorKey = "key.keyboard.unknown";
 	public boolean editorShowEdits = true;
+	/**
+	 * Off Hypixel only: edit this server as if it were a dungeon floor ("dungeon_f7"), so the
+	 * edits show there on Hypixel. Empty = the server's own edits.
+	 */
+	public String editorAreaAs = "";
+	/** /st customize: the dyes and head skins of the armor you wear are shown to other Stray users. */
+	public boolean customizeShare = false;
 	public java.util.List<String> editorPalette = new java.util.ArrayList<>();
 	public int editorBrush = 2;
 	public boolean pathsEnabled = false;

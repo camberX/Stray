@@ -387,7 +387,18 @@ public final class StrayClient implements ClientModInitializer {
 			}
 			root.then(ClientCommands.literal("keys").executes(context -> openCommandKeys()));
 			if (!dev.stray.Edition.LEGIT) { root.then(ClientCommands.literal("freecam").executes(context -> toggleFreecam())); }
-			root.then(ClientCommands.literal("editor").executes(context -> toggleEditor()));
+			root.then(ClientCommands.literal("editor").executes(context -> toggleEditor())
+				.then(ClientCommands.literal("as").then(ClientCommands.argument("floor", StringArgumentType.word())
+					.suggests((context, builder) -> {
+						for (String option : new String[] {"f7", "m7", "off"}) {
+							builder.suggest(option);
+						}
+						return builder.buildFuture();
+					})
+					.executes(context -> {
+						context.getSource().sendFeedback(Component.literal("§bStray §7" + dev.stray.client.editor.EditArea.setAs(StringArgumentType.getString(context, "floor"))));
+						return Command.SINGLE_SUCCESS;
+					}))));
 			root.then(ClientCommands.literal("titles").executes(context -> CustomTitle.open()));
 			root.then(customizeCommand());
 			root.then(LiveCommands.irc());
@@ -476,10 +487,7 @@ public final class StrayClient implements ClientModInitializer {
 			if (!dev.stray.Edition.LEGIT) { dispatcher.register(ClientCommands.literal("wardrobe").executes(context -> WardrobeCommands.open())); }
 			if (!dev.stray.Edition.LEGIT) { dispatcher.register(ClientCommands.literal("wd").executes(context -> WardrobeCommands.open())); }
 			dispatcher.register(ProfileCommands.command());
-			dispatcher.register(ClientCommands.literal("profile")
-				.executes(context -> ProfileCommands.open(""))
-				.then(ClientCommands.argument("player", StringArgumentType.greedyString())
-					.executes(context -> ProfileCommands.open(StringArgumentType.getString(context, "player")))));
+			dispatcher.register(ProfileCommands.command("profile"));
 			if (!dev.stray.Edition.LEGIT) { dispatcher.register(AutoClickerCommands.command()); }
 			dispatcher.register(LiveCommands.irc());
 			dispatcher.register(LiveCommands.ping());
@@ -536,6 +544,7 @@ public final class StrayClient implements ClientModInitializer {
 			dev.stray.client.editor.GhostBlocks.visible(() -> dev.stray.client.editor.GhostBlocks.tick(client));
 			dev.stray.client.editor.WorldEditor.tick(client);
 			dev.stray.client.item.custom.CustomItems.tick();
+			dev.stray.client.item.custom.SharedCustomize.tick(client);
 			dev.stray.client.cs2.Cs2Knives.tick(client);
 			if (client.level != customizeLevel) {
 				customizeLevel = client.level;
@@ -963,6 +972,11 @@ public final class StrayClient implements ClientModInitializer {
 			return Command.SINGLE_SUCCESS;
 		}));
 		node.then(ClientCommands.literal("othername")
+			.then(ClientCommands.literal("why").then(ClientCommands.argument("word", com.mojang.brigadier.arguments.StringArgumentType.word()).executes(context -> {
+				String word = com.mojang.brigadier.arguments.StringArgumentType.getString(context, "word");
+				context.getSource().sendFeedback(Component.literal("\u00A7bStray \u00A77" + dev.stray.client.visual.OtherNames.why(word)));
+				return Command.SINGLE_SUCCESS;
+			})))
 			.then(ClientCommands.literal("check").executes(context -> {
 				context.getSource().sendFeedback(Component.literal("\u00A7bStray \u00A77" + dev.stray.client.visual.OtherNames.describeNearest(Minecraft.getInstance())));
 				return Command.SINGLE_SUCCESS;

@@ -252,13 +252,36 @@ public final class CustomItems {
 	public static Data get(ItemStack stack) {
 		load();
 		String key = keyOf(stack);
+		if (key != null && key.startsWith("s:")) {
+			return SharedCustomize.data(key);
+		}
 		return key == null ? null : ITEMS.get(key);
+	}
+
+	/**
+	 * Another Stray user's worn piece with a shared look: the stack (and the copies made of it
+	 * for drawing) reads its dye and head skin from {@link SharedCustomize} under this key.
+	 */
+	public static void tagShared(ItemStack stack, String key) {
+		if (stack == null || stack.isEmpty()) {
+			return;
+		}
+		Info base = readInfo(stack);
+		INFO.put(stack, new Info(key, base == null ? null : base.vanillaDye, base == null ? null : base.vanillaSkin, true));
+		anyInherited = true;
+	}
+
+	/** Forget what a stack was tagged as, so it is read again from the item. */
+	public static void untag(ItemStack stack) {
+		if (stack != null) {
+			INFO.remove(stack);
+		}
 	}
 
 	public static Data getOrCreate(ItemStack stack) {
 		load();
 		String key = keyOf(stack);
-		if (key == null) {
+		if (key == null || key.startsWith("s:")) {
 			return null;
 		}
 		return ITEMS.computeIfAbsent(key, k -> new Data());

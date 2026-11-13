@@ -1,5 +1,6 @@
 package dev.stray.client.editor;
 
+import dev.stray.client.config.StrayConfig;
 import dev.stray.client.location.SkyblockLocation;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ServerData;
@@ -46,12 +47,36 @@ public final class EditArea {
 			}
 			return "hypixel_" + dimension(client);
 		}
+		String as = StrayConfig.get().editorAreaAs;
+		if (as != null && as.startsWith("dungeon_")) {
+			// "/stray editor as f7": a copy of the boss map on your own server, same coordinates.
+			return as;
+		}
 		if (client.getSingleplayerServer() != null) {
 			return "world_" + slug(client.getSingleplayerServer().getWorldData().getLevelName()) + "_" + dimension(client);
 		}
 		ServerData server = client.getCurrentServer();
 		String host = server == null ? "server" : server.ip;
 		return "server_" + slug(host) + "_" + dimension(client);
+	}
+
+	/** "f7", "m7" (or "off"): the floor to edit as while off Hypixel. Returns the message. */
+	public static String setAs(String floor) {
+		String value = floor == null ? "" : floor.trim().toLowerCase(Locale.ROOT);
+		StrayConfig config = StrayConfig.get();
+		if (value.equals("off") || value.isEmpty()) {
+			config.editorAreaAs = "";
+			config.save();
+			return "Editing this server's own edits again.";
+		}
+		if (!value.matches("[fm][1-7]")) {
+			return "Use a floor like f7 or m7, or off.";
+		}
+		config.editorAreaAs = "dungeon_" + value;
+		config.save();
+		return "Off Hypixel, your edits now go to Catacombs " + value.toUpperCase(Locale.ROOT)
+			+ ": edit the copy of the map here, and they show in that floor on Hypixel (same coordinates). "
+			+ "Turn it off with /stray editor as off.";
 	}
 
 	/** What the key is called in the menu. */
@@ -61,7 +86,7 @@ public final class EditArea {
 		}
 		if (key.startsWith("dungeon_")) {
 			String floor = key.substring("dungeon_".length()).toUpperCase(Locale.ROOT);
-			return "Catacombs " + floor;
+			return "Catacombs " + floor + (SkyblockLocation.onHypixel ? "" : " (editing on this server)");
 		}
 		if (key.startsWith("kuudra_t")) {
 			return "Kuudra T" + key.substring("kuudra_t".length());

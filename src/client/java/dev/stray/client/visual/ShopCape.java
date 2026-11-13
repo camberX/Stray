@@ -333,6 +333,9 @@ public final class ShopCape {
 				jsonNumber(status.body(), "chestY", 0f)
 			);
 			ShopSkin.set(uuid, jsonField(status.body(), "skin"), status.body().contains("\"skinSlim\":true"));
+			if (!uuid.equals(selfUuid())) {
+				dev.stray.client.item.custom.SharedCustomize.set(uuid, jsonField(status.body(), "customize"));
+			}
 			if (uuid.equals(selfUuid())) {
 				boolean listedCopy = listed;
 				Minecraft.getInstance().execute(() -> setAllowed(listedCopy));

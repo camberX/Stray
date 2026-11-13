@@ -40,6 +40,16 @@ public final class OtherNames {
 
 	/** Real name -> shown name. Swapped as a whole each refresh, read on the render thread. */
 	private static volatile Map<String, String> names = Map.of();
+	/**
+	 * Cut-off names ("UltraCharge0" for UltraCharge03, as the scoreboard trims them): every
+	 * start of a known name missing at most {@link #MAX_CUT} letters, at least {@link #MIN_CUT}
+	 * long (shorter starts are too often ordinary words). A start shared by two names maps to "" (left alone).
+	 */
+	private static volatile Map<String, String> prefixes = Map.of();
+	private static final int MAX_CUT = 4;
+	private static final int MIN_CUT = 10;
+	/** Where each name was learned, for /stray debug dev othername why. */
+	private static final Map<String, String> source = new java.util.concurrent.ConcurrentHashMap<>();
 	private static final Map<String, String> assigned = new HashMap<>();
 	private static final Set<String> used = new HashSet<>();
 	private static long nextRefresh;
@@ -56,6 +66,7 @@ public final class OtherNames {
 		if (!StrayConfig.get().hideOtherNames) {
 			if (!names.isEmpty()) {
 				names = Map.of();
+				prefixes = Map.of();
 			}
 			return;
 		}
@@ -69,18 +80,145 @@ public final class OtherNames {
 		Map<String, String> next = new HashMap<>(names);
 		if (client.getConnection() != null) {
 			for (PlayerInfo info : client.getConnection().getOnlinePlayers()) {
-				add(next, info.getProfile().name(), self);
+				if (realAccount(info.getProfile().id())) {
+					add(next, info.getProfile().name(), self, "tab");
+				}
 			}
 		}
 		if (client.level != null) {
 			for (Player player : client.level.players()) {
-				add(next, player.getGameProfile().name(), self);
+				if (realAccount(player.getUUID())) {
+					add(next, player.getGameProfile().name(), self, "nearby player");
+				}
 			}
 		}
 		if (next.size() > 4096) {
 			next.clear();
+			source.clear();
 		}
+		publish(next);
+	}
+
+	/**
+	 * Real accounts have version 4 UUIDs. Hypixel's NPCs, dungeon mobs that are players, and
+	 * its tab list columns use other versions, and their "names" are things like room and
+	 * dragon names. Off Hypixel (offline test servers) every player counts.
+	 */
+	private static boolean realAccount(java.util.UUID id) {
+		return id != null && (id.version() == 4 || !dev.stray.client.location.SkyblockLocation.onHypixel);
+	}
+
+	private static void publish(Map<String, String> next) {
+		if (next.equals(names)) {
+			return;
+		}
+		Map<String, String> starts = new HashMap<>();
+		for (Map.Entry<String, String> entry : next.entrySet()) {
+			String name = entry.getKey();
+			for (int len = Math.max(MIN_CUT, name.length() - MAX_CUT); len < name.length(); len++) {
+				String start = name.substring(0, len);
+				String had = starts.putIfAbsent(start, entry.getValue());
+				if (had != null && !had.equals(entry.getValue())) {
+					starts.put(start, "");
+				}
+			}
+		}
+		// A start that is someone's whole name is that person, not a cut-off.
+		starts.keySet().removeAll(next.keySet());
+		starts.values().removeIf(String::isEmpty);
+		prefixes = Map.copyOf(starts);
 		names = Map.copyOf(next);
+	}
+
+	/** Set while a scoreboard line is rewritten: only there can a name be cut off. */
+	private static final ThreadLocal<Boolean> CUT = ThreadLocal.withInitial(() -> false);
+
+	/** The fake name for a whole word: an exact name, or (scoreboard) a cut-off one. */
+	private static String lookup(String word) {
+		String fake = names.get(word);
+		return fake != null || !CUT.get() ? fake : prefixes.get(word);
+	}
+
+	/** A scoreboard line: also swaps names the scoreboard cut short ("UltraCharge0"). */
+	public static Component rewriteScoreboard(Component line) {
+		if (line == null || !active()) {
+			return line;
+		}
+		CUT.set(true);
+		try {
+			return wholeLine(line);
+		} finally {
+			CUT.set(false);
+		}
+	}
+
+	/**
+	 * Like {@link #rewrite(Component)} but over the whole line, so a name split between the
+	 * team prefix and suffix (as Hypixel's scoreboard does) still matches. A swapped name takes
+	 * the style of its first letter.
+	 */
+	private static Component wholeLine(Component line) {
+		// Visible letters with their style; colour codes ride along before the letter after them.
+		StringBuilder visible = new StringBuilder();
+		java.util.ArrayList<Style> styles = new java.util.ArrayList<>();
+		java.util.ArrayList<String> codes = new java.util.ArrayList<>();
+		StringBuilder pending = new StringBuilder();
+		line.visit((style, piece) -> {
+			for (int k = 0; k < piece.length(); k++) {
+				char c = piece.charAt(k);
+				if (c == '\u00A7' && k + 1 < piece.length()) {
+					pending.append(c).append(piece.charAt(++k));
+					continue;
+				}
+				visible.append(c);
+				styles.add(style);
+				codes.add(pending.toString());
+				pending.setLength(0);
+			}
+			return Optional.empty();
+		}, Style.EMPTY);
+		String text = visible.toString();
+		if (rewrite(text) == text) {
+			return line;
+		}
+		MutableComponent out = Component.empty();
+		StringBuilder run = new StringBuilder();
+		Style[] runStyle = {null};
+		java.util.function.BiConsumer<String, Style> emit = (piece, style) -> {
+			if (runStyle[0] != null && !style.equals(runStyle[0])) {
+				out.append(Component.literal(run.toString()).setStyle(runStyle[0]));
+				run.setLength(0);
+			}
+			runStyle[0] = style;
+			run.append(piece);
+		};
+		int n = text.length();
+		int i = 0;
+		while (i < n) {
+			char c = text.charAt(i);
+			if (nameChar(c) && (i == 0 || !nameChar(text.charAt(i - 1)))) {
+				int j = i;
+				while (j < n && nameChar(text.charAt(j)) && j - i <= 16) {
+					j++;
+				}
+				String fake = j - i >= 3 && j - i <= 16 && (j >= n || !nameChar(text.charAt(j))) ? lookup(text.substring(i, j)) : null;
+				if (fake != null) {
+					// The colour codes inside the name are dropped; the one before it is kept.
+					emit.accept(codes.get(i) + fake, styles.get(i));
+					i = j;
+					continue;
+				}
+			}
+			emit.accept(codes.get(i) + c, styles.get(i));
+			i++;
+		}
+		if (pending.length() > 0) {
+			emit.accept(pending.toString(), runStyle[0] == null ? Style.EMPTY : runStyle[0]);
+		}
+		if (run.length() > 0) {
+			out.append(Component.literal(run.toString()).setStyle(runStyle[0]));
+		}
+		return out;
 	}
 
 	private static final String RANKS = "(?:\\[[^\\]]{1,24}\\] )*";
@@ -139,10 +277,10 @@ public final class OtherNames {
 		Map<String, String> next = new HashMap<>(names);
 		int before = next.size();
 		for (String name : found) {
-			add(next, name, self);
+			add(next, name, self, "chat: " + (plain.length() > 60 ? plain.substring(0, 60) + "..." : plain));
 		}
 		if (next.size() != before) {
-			names = Map.copyOf(next);
+			publish(next);
 		}
 	}
 
@@ -186,16 +324,33 @@ public final class OtherNames {
 	/** /stray debug dev othername <name>: treat a name as another player's, for testing. */
 	public static String addForTest(String name) {
 		Map<String, String> next = new HashMap<>(names);
-		add(next, name, NickHider.realName());
-		names = Map.copyOf(next);
+		add(next, name, NickHider.realName(), "test command");
+		publish(next);
 		return next.get(name);
 	}
 
-	private static void add(Map<String, String> map, String name, String self) {
+	/** /stray debug dev othername why <word>: whether a word is swapped, and why. */
+	public static String why(String word) {
+		String exact = names.get(word);
+		if (exact != null) {
+			return spaced(word) + " is a name, from " + source.getOrDefault(word, "?");
+		}
+		if (prefixes.containsKey(word)) {
+			for (String name : names.keySet()) {
+				if (name.startsWith(word)) {
+					return spaced(word) + " is cut off from " + spaced(name) + ", from " + source.getOrDefault(name, "?");
+				}
+			}
+		}
+		return spaced(word) + " is not swapped (" + names.size() + " names)";
+	}
+
+	private static void add(Map<String, String> map, String name, String self, String from) {
 		if (name == null || name.equalsIgnoreCase(self) || map.containsKey(name) || !MC_NAME.matcher(name).matches()) {
 			return;
 		}
 		map.put(name, fakeFor(name));
+		source.putIfAbsent(name, from);
 	}
 
 	/** A stable made-up name: picked from the real name's hash, bumped on a clash. */
@@ -233,7 +388,6 @@ public final class OtherNames {
 		if (text == null || text.length() < 3 || !active()) {
 			return text;
 		}
-		Map<String, String> map = names;
 		StringBuilder out = null;
 		int last = 0;
 		int i = 0;
@@ -253,7 +407,7 @@ public final class OtherNames {
 			while (j < n && nameChar(text.charAt(j)) && j - i <= 16) {
 				j++;
 			}
-			String fake = j - i >= 3 && j - i <= 16 ? map.get(text.substring(i, j)) : null;
+			String fake = j - i >= 3 && j - i <= 16 ? lookup(text.substring(i, j)) : null;
 			if (fake != null && (j >= n || !nameChar(text.charAt(j)))) {
 				if (out == null) {
 					out = new StringBuilder(n + 16);
@@ -322,7 +476,6 @@ public final class OtherNames {
 			return sequence;
 		}
 		// Rebuild with the same styles: walk the original and replaced strings together.
-		Map<String, String> map = names;
 		java.util.ArrayList<int[]> outCps = new java.util.ArrayList<>();
 		java.util.ArrayList<Style> outStyles = new java.util.ArrayList<>();
 		int n = plain.length();
@@ -334,7 +487,7 @@ public final class OtherNames {
 				while (j < n && nameChar(plain.charAt(j)) && j - i <= 16) {
 					j++;
 				}
-				String fake = j - i >= 3 && j - i <= 16 && (j >= n || !nameChar(plain.charAt(j))) ? map.get(plain.substring(i, j)) : null;
+				String fake = j - i >= 3 && j - i <= 16 && (j >= n || !nameChar(plain.charAt(j))) ? lookup(plain.substring(i, j)) : null;
 				if (fake != null) {
 					Style style = styles.get(i);
 					for (int k = 0; k < fake.length(); k++) {

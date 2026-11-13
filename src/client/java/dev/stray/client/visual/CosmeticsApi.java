@@ -199,6 +199,17 @@ public final class CosmeticsApi {
 		}
 	}
 
+	/**
+	 * /api/customize: PUT your shared customize JSON, or DELETE it (json null). Blocking; call
+	 * off the render thread. Returns the HTTP status, or -1 when it could not log in or send.
+	 */
+	public static int sendCustomize(String json) {
+		HttpResponse<String> response = json == null
+			? authed("DELETE", "/api/customize", null, null)
+			: authed("PUT", "/api/customize", json.getBytes(java.nio.charset.StandardCharsets.UTF_8), "application/json");
+		return response == null ? -1 : response.statusCode();
+	}
+
 	private static HttpResponse<String> authed(String method, String path, byte[] body, String type) {
 		for (int attempt = 0; attempt < 2; attempt++) {
 			String token = CasinoApi.authToken();

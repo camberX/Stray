@@ -22,6 +22,9 @@ public class LivingEntityMixin {
 		LivingEntity self = (LivingEntity) (Object) this;
 		if (self == net.minecraft.client.Minecraft.getInstance().player) {
 			dev.stray.client.item.custom.CustomItems.inherit(self.getItemBySlot(slot), stack);
+		} else if (self instanceof net.minecraft.world.entity.player.Player player && self.level().isClientSide()) {
+			// Another Stray user's shared /st customize look on what they wear.
+			dev.stray.client.item.custom.SharedCustomize.tag(player, slot, stack);
 		}
 	}
 

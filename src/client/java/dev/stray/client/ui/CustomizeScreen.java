@@ -263,6 +263,17 @@ public final class CustomizeScreen extends Screen {
 		}).bounds(left + 12, bottom, 96, 18).build());
 		addRenderableWidget(Button.builder(Component.literal("Done"), button -> onClose())
 			.bounds(left + W - 12 - 96, bottom, 96, 18).build());
+		// Dyes and head skins of the armor you wear, for every Stray user to see.
+		int shareW = Math.max(60, W - 24 - 96 * 2 - 12);
+		addRenderableWidget(Button.builder(Component.literal(shareLabel()), button -> {
+			dev.stray.client.config.StrayConfig config = dev.stray.client.config.StrayConfig.get();
+			config.customizeShare = !config.customizeShare;
+			config.save();
+			button.setMessage(Component.literal(shareLabel()));
+		}).bounds(left + W / 2 - shareW / 2, bottom, shareW, 18)
+			.tooltip(net.minecraft.client.gui.components.Tooltip.create(Component.literal(
+				"Other Stray users see the dyes and head skins of the armor you wear.")))
+			.build());
 
 		if (listKind == ListKind.NONE) {
 			if (dyeable && (colorMode == 3 || colorMode == 4)) {
@@ -605,6 +616,10 @@ public final class CustomizeScreen extends Screen {
 		label(graphics, "Glint", x, y, muted);
 		drawList(graphics, mouseX, mouseY);
 		super.extractRenderState(graphics, mouseX, mouseY, delta);
+	}
+
+	private static String shareLabel() {
+		return "Share: " + (dev.stray.client.config.StrayConfig.get().customizeShare ? "On" : "Off");
 	}
 
 	private void label(GuiGraphicsExtractor graphics, String text, int x, int y, int color) {
