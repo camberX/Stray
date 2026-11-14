@@ -49,6 +49,7 @@
 		"GuiAccessor",
 		"GuiMixin",
 		"LeapSilentMixin",
+		"FastLeapClickMixin",
 		"SubmitTextNamesMixin",
 		"ChatLineNamesMixin",
 		"HudLobbyIdMixin",

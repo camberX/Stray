@@ -395,15 +395,34 @@ public final class AutoLeap {
 	 * the target for where you stand. The click itself is dropped (it would do nothing with
 	 * the leap anyway).
 	 */
+	/** A left click Fast Leap took from the mouse, waiting for the next tick start. */
+	private static boolean fastClick;
+
+	/**
+	 * Mouse button pressed (before the game sees it): with Fast Leap on and a Spirit Leap in
+	 * hand in a dungeon, a left click is Fast Leap's and the game never gets it, like quoi.
+	 */
+	public static boolean takeLeftClick(int button) {
+		Minecraft client = Minecraft.getInstance();
+		if (button != 0 || !StrayConfig.get().fastLeap || client.player == null || client.gui.screen() != null || !inDungeon()
+			|| !LeapRunner.isLeap(client.player.getMainHandItem())) {
+			return false;
+		}
+		fastClick = true;
+		return true;
+	}
+
 	public static void beforeKeybinds(Minecraft client) {
 		StrayConfig config = StrayConfig.get();
+		boolean clicked = fastClick;
+		fastClick = false;
 		if (!config.fastLeap || client.player == null || client.gui.screen() != null || !inDungeon()) {
 			return;
 		}
 		if (!LeapRunner.isLeap(client.player.getMainHandItem())) {
 			return;
 		}
-		boolean clicked = false;
+		// Attack bound to a key instead of the mouse: the same click, taken here.
 		while (client.options.keyAttack.consumeClick()) {
 			clicked = true;
 		}

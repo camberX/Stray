@@ -1,6 +1,5 @@
 package dev.stray.client.dungeon.autoleap;
 
-import dev.stray.client.combat.OdinClicks;
 import dev.stray.client.config.StrayConfig;
 import dev.stray.client.dungeon.DevMode;
 import dev.stray.client.dungeon.DungeonParty;
@@ -26,8 +25,10 @@ import java.util.Locale;
  *
  * <p>Every step runs at the start of a tick (before the game handles keys and sends this
  * tick's movement), one step per tick, through vanilla paths: the hotbar slot the way the
- * number keys pick it, the use key for the leap, and the same container click and close
- * a mouse click on the menu sends. Nothing is sent that a fast player could not send.
+ * number keys pick it, the leap used the way a right click into the air uses it (quoi's
+ * PlayerUtils.interact: whatever is under the crosshair can't take the click), and the same
+ * container click and close a mouse click on the menu sends. Like quoi, your own use key is
+ * held up while a leap runs, so a held right click can't use the leap a second time.
  */
 public final class LeapRunner {
 	private static final String[] LEAP_IDS = {"INFINITE_SPIRIT_LEAP", "SPIRIT_LEAP"};
@@ -60,6 +61,29 @@ public final class LeapRunner {
 
 	public static boolean busy() {
 		return step != Step.IDLE;
+	}
+
+	/** Set while a leap holds up your use key (quoi's suppressUseInput). */
+	private static boolean useHeld;
+
+	/** Lets go of the use key and drops queued use clicks, for as long as the leap runs. */
+	private static void holdUseKey(Minecraft client) {
+		useHeld = true;
+		client.options.keyUse.setDown(false);
+		while (client.options.keyUse.consumeClick()) {
+			// drained
+		}
+	}
+
+	/** The leap is over: the use key is down again only if you still hold it (quoi's restoreUseInput). */
+	private static void releaseUseKey() {
+		if (!useHeld) {
+			return;
+		}
+		useHeld = false;
+		Minecraft client = Minecraft.getInstance();
+		boolean down = dev.stray.client.combat.OdinClicks.isPressed(((dev.stray.client.mixin.KeyMappingAccessor) client.options.keyUse).stray$boundKey());
+		client.options.keyUse.setDown(down);
 	}
 
 	/** Leap to a teammate by name. Messages in chat when it can't. */
@@ -209,10 +233,8 @@ public final class LeapRunner {
 				return;
 			}
 		}
-		// Your own right clicks would use the leap a second time; drop them while leaping.
-		while (client.options.keyUse.consumeClick()) {
-			// drained
-		}
+		// Your own right clicks (or a held right click) would use the leap a second time.
+		holdUseKey(client);
 		switch (step) {
 			case SWAP -> {
 				int slot = leapSlot(player);
@@ -232,7 +254,9 @@ public final class LeapRunner {
 				if (client.gui.screen() != null) {
 					return;
 				}
-				OdinClicks.rightClick();
+				// Like quoi: use the item itself, as a right click into the air does, so the
+				// terminal or teammate under the crosshair can't take the click.
+				client.gameMode.useItem(player, net.minecraft.world.InteractionHand.MAIN_HAND);
 				step = Step.AWAIT_MENU;
 				waitTicks = 0;
 			}
@@ -363,6 +387,7 @@ public final class LeapRunner {
 	}
 
 	private static void finish() {
+		releaseUseKey();
 		step = Step.IDLE;
 		target = null;
 		targetLabel = null;
