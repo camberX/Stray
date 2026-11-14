@@ -234,7 +234,7 @@ public final class SackLive {
 		Matcher matcher = MOVED.matcher(text);
 		List<Change> out = new ArrayList<>();
 		if (matcher.find()) {
-			long amount = matcher.group(1) == null ? 1L : number(matcher.group(1));
+			long amount = matcher.group(1) == null ? 1L : Text.count(matcher.group(1));
 			String name = cleanName(matcher.group(2));
 			if (amount > 0L && !skipName(name)) {
 				out.add(new Change(name, amount));
@@ -259,7 +259,7 @@ public final class SackLive {
 				if (skipName(name)) {
 					continue;
 				}
-				long amount = number(matcher.group(2));
+				long amount = Text.count(matcher.group(2));
 				if (amount == 0L) {
 					continue;
 				}
@@ -295,17 +295,6 @@ public final class SackLive {
 		name = name.replaceAll("(?i)\\s*\\([^)]*\\)\\s*$", "");
 		name = Text.collapse(name).trim();
 		return name;
-	}
-
-	private static long number(String raw) {
-		if (raw == null || raw.isBlank()) {
-			return 0L;
-		}
-		try {
-			return Long.parseLong(raw.replace(",", ""));
-		} catch (NumberFormatException ignored) {
-			return 0L;
-		}
 	}
 
 	private static String plain(Component message) {

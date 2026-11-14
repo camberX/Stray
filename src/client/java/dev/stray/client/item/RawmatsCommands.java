@@ -6,6 +6,7 @@ import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.suggestion.SuggestionProvider;
 import dev.stray.client.config.StrayConfig;
 import dev.stray.client.ui.Theme;
+import dev.stray.client.util.Chat;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommands;
 import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource;
 import net.minecraft.client.Minecraft;
@@ -75,7 +76,7 @@ public final class RawmatsCommands {
 		ItemStack held = ItemIds.held(player);
 		String id = ItemStorage.idOf(held);
 		if (id == null) {
-			tell(muted("Hold a Skyblock item or type /st rawmats <id> [count]."));
+			Chat.tell(muted("Hold a Skyblock item or type /st rawmats <id> [count]."));
 			return 0;
 		}
 		return track(id);
@@ -88,13 +89,13 @@ public final class RawmatsCommands {
 		String trimmed = query.trim();
 		if (trimmed.equalsIgnoreCase("clear") || trimmed.equalsIgnoreCase("off") || trimmed.equalsIgnoreCase("none")) {
 			RawmatsTracker.clear();
-			tell(brand().append(sep()).append(Component.literal("RAW MATS").withStyle(style(Theme.ACCENT).withBold(true)))
+			Chat.tell(brand().append(sep()).append(Component.literal("RAW MATS").withStyle(style(Theme.ACCENT).withBold(true)))
 				.append(Component.literal(" cleared").withStyle(style(Theme.MUTED))));
 			return Command.SINGLE_SUCCESS;
 		}
 		if (trimmed.equalsIgnoreCase("refresh")) {
 			SkyblockProfileApi.refresh();
-			tell(brand().append(sep()).append(Component.literal("RAW MATS").withStyle(style(Theme.ACCENT).withBold(true)))
+			Chat.tell(brand().append(sep()).append(Component.literal("RAW MATS").withStyle(style(Theme.ACCENT).withBold(true)))
 				.append(Component.literal(" refreshing storage").withStyle(style(Theme.MUTED))));
 			return Command.SINGLE_SUCCESS;
 		}
@@ -102,7 +103,7 @@ public final class RawmatsCommands {
 			StrayConfig config = StrayConfig.get();
 			config.rawmatsEnchanted = trimmed.toLowerCase(Locale.ROOT).startsWith("ench");
 			config.save();
-			tell(brand().append(sep()).append(Component.literal("RAW MATS").withStyle(style(Theme.ACCENT).withBold(true)))
+			Chat.tell(brand().append(sep()).append(Component.literal("RAW MATS").withStyle(style(Theme.ACCENT).withBold(true)))
 				.append(Component.literal(" " + config.rawmatsModeLabel()).withStyle(style(Theme.TEXT))));
 			return Command.SINGLE_SUCCESS;
 		}
@@ -112,7 +113,7 @@ public final class RawmatsCommands {
 			? SkyblockRecipes.normalize(preview.canonical())
 			: SkyblockRecipes.normalize(parsed.id());
 		if (id.isBlank()) {
-			tell(muted("Unknown item. Try sb:HYPERION or hold the item and run /st rawmats."));
+			Chat.tell(muted("Unknown item. Try sb:HYPERION or hold the item and run /st rawmats."));
 			return 0;
 		}
 		RawmatsTracker.set(id, parsed.count());
@@ -129,22 +130,22 @@ public final class RawmatsCommands {
 		} else {
 			line.append(Component.literal("  no craft tree, tracking the item itself").withStyle(style(Theme.MUTED)));
 		}
-		tell(line);
+		Chat.tell(line);
 		int shown = 0;
 		for (RawmatsTracker.Line row : snap.lines()) {
 			if (shown >= 8) {
-				tell(muted("  +" + (snap.lines().size() - shown) + " more on the HUD"));
+				Chat.tell(muted("  +" + (snap.lines().size() - shown) + " more on the HUD"));
 				break;
 			}
 			String mark = row.done() ? "done" : row.have() + "/" + row.need();
-			tell(Component.literal("  " + row.name() + "  " + mark).withStyle(style(row.done() ? Theme.ACCENT : Theme.TEXT)));
+			Chat.tell(Component.literal("  " + row.name() + "  " + mark).withStyle(style(row.done() ? Theme.ACCENT : Theme.TEXT)));
 			if (row.hasNote()) {
-				tell(muted("    " + row.note()));
+				Chat.tell(muted("    " + row.note()));
 			}
 			shown++;
 		}
 		if (!ItemStorage.hasApiStorage() && (!snap.sawEnder() || !snap.sawBackpack() || !snap.sawSacks())) {
-			tell(muted("Ender Chest, backpacks, and sacks load when you join a server or run /st rawmats."));
+			Chat.tell(muted("Ender Chest, backpacks, and sacks load when you join a server or run /st rawmats."));
 		}
 		return Command.SINGLE_SUCCESS;
 	}
@@ -193,10 +194,4 @@ public final class RawmatsCommands {
 		return Style.EMPTY.withColor(color & 0xFFFFFF);
 	}
 
-	private static void tell(Component message) {
-		Minecraft client = Minecraft.getInstance();
-		if (client.gui != null) {
-			client.gui.hud.getChat().addClientSystemMessage(message);
-		}
-	}
 }

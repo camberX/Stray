@@ -1,17 +1,15 @@
 package dev.stray.client.farming;
 
+import dev.stray.client.util.TabList;
 import dev.stray.client.util.Text;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientPacketListener;
 import net.minecraft.client.multiplayer.PlayerInfo;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.level.GameType;
-import net.minecraft.world.scores.DisplaySlot;
 import net.minecraft.world.scores.Objective;
-import net.minecraft.world.scores.PlayerScoreEntry;
 import net.minecraft.world.scores.PlayerTeam;
 import net.minecraft.world.scores.Scoreboard;
-import net.minecraft.world.scores.TeamColor;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -134,7 +132,7 @@ public final class JacobContestTracker {
 		infos.sort(TAB_ORDER);
 		List<String> lines = new ArrayList<>(infos.size());
 		for (PlayerInfo info : infos) {
-			String line = clean(tabName(info));
+			String line = clean(TabList.displayName(info));
 			if (!line.isEmpty()) {
 				lines.add(line);
 			}
@@ -240,7 +238,7 @@ public final class JacobContestTracker {
 			return List.of();
 		}
 		Scoreboard scoreboard = client.level.getScoreboard();
-		Objective objective = sidebarObjective(scoreboard, client.player.getScoreboardName());
+		Objective objective = TabList.sidebarObjective(scoreboard, client.player.getScoreboardName());
 		if (objective == null) {
 			return List.of();
 		}
@@ -249,34 +247,13 @@ public final class JacobContestTracker {
 		if (!title.isEmpty()) {
 			lines.add(title);
 		}
-		List<PlayerScoreEntry> entries = new ArrayList<>();
-		for (PlayerScoreEntry entry : scoreboard.listPlayerScores(objective)) {
-			if (!entry.isHidden()) {
-				entries.add(entry);
-			}
-		}
-		entries.sort(Comparator.comparingInt(PlayerScoreEntry::value).reversed());
-		for (PlayerScoreEntry entry : entries) {
-			Component raw = entry.display() != null ? entry.display() : Component.literal(entry.owner());
-			String text = clean(PlayerTeam.formatNameForTeam(scoreboard.getPlayersTeam(entry.owner()), raw));
+		for (Component line : TabList.sidebarLines(scoreboard, objective)) {
+			String text = clean(line);
 			if (!text.isEmpty()) {
 				lines.add(text);
 			}
 		}
 		return lines;
-	}
-
-	private static Objective sidebarObjective(Scoreboard scoreboard, String playerName) {
-		Objective objective = scoreboard.getDisplayObjective(DisplaySlot.SIDEBAR);
-		PlayerTeam team = scoreboard.getPlayersTeam(playerName);
-		DisplaySlot colored = team == null ? null : team.getColor().map(TeamColor::displaySlot).orElse(null);
-		if (colored != null) {
-			Objective teamObjective = scoreboard.getDisplayObjective(colored);
-			if (teamObjective != null) {
-				return teamObjective;
-			}
-		}
-		return objective;
 	}
 
 	private static boolean jacobLine(String line) {
@@ -492,13 +469,6 @@ public final class JacobContestTracker {
 
 	private static int safeRound(double value) {
 		return (int) Math.max(0d, Math.min(Integer.MAX_VALUE, Math.round(value)));
-	}
-
-	private static Component tabName(PlayerInfo info) {
-		Component display = info.getTabListDisplayName();
-		return display != null
-			? display
-			: PlayerTeam.formatNameForTeam(info.getTeam(), Component.literal(info.getProfile().name()));
 	}
 
 	private static String clean(Component component) {

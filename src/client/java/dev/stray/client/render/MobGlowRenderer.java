@@ -2,6 +2,7 @@ package dev.stray.client.render;
 
 import dev.stray.client.config.StrayConfig;
 import dev.stray.client.mixin.ClientLevelAccessor;
+import dev.stray.client.util.Sight;
 import it.unimi.dsi.fastutil.ints.Int2IntOpenHashMap;
 import it.unimi.dsi.fastutil.ints.IntList;
 import net.minecraft.client.Minecraft;
@@ -14,9 +15,7 @@ import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.phys.AABB;
-import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.scores.PlayerTeam;
 
@@ -183,7 +182,7 @@ public final class MobGlowRenderer {
 		int slayer = dev.stray.client.slayer.SlayerWorld.glow(entity);
 		if (slayer != 0) {
 			// Stray Legit: slayer glow only on what you can see.
-			if (dev.stray.Edition.LEGIT && occluded(client, client.gameRenderer.mainCamera().position(), entity.getEyePosition())) {
+			if (dev.stray.Edition.LEGIT && Sight.occluded(client, client.gameRenderer.mainCamera().position(), entity.getEyePosition())) {
 				return 0;
 			}
 			return slayer;
@@ -239,7 +238,7 @@ public final class MobGlowRenderer {
 		boolean through = (star && config.starVisuals.glowThroughWalls)
 			|| (player && config.playerVisuals.glowThroughWalls)
 			|| (mob && config.mobVisuals.glowThroughWalls);
-		if (!through && occluded(client, camera, entity.getEyePosition())) {
+		if (!through && Sight.occluded(client, camera, entity.getEyePosition())) {
 			return 0;
 		}
 		if (star) {
@@ -627,17 +626,4 @@ public final class MobGlowRenderer {
 		return client.level.entitiesForRendering();
 	}
 
-	private static boolean occluded(Minecraft client, Vec3 from, Vec3 to) {
-		HitResult hit = client.level.clip(new ClipContext(
-			from,
-			to,
-			ClipContext.Block.VISUAL,
-			ClipContext.Fluid.NONE,
-			client.player
-		));
-		if (hit.getType() == HitResult.Type.MISS) {
-			return false;
-		}
-		return hit.getLocation().distanceToSqr(from) + 0.36 < to.distanceToSqr(from);
-	}
 }

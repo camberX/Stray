@@ -1,5 +1,6 @@
 package dev.stray.client.location;
 
+import dev.stray.client.util.TabList;
 import dev.stray.client.util.Text;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -226,7 +227,7 @@ public final class SkyblockLocation {
 		infos.sort(TAB_ORDER);
 		List<String> lines = new ArrayList<>(infos.size());
 		for (PlayerInfo info : infos) {
-			String text = plain(tabName(info)).trim();
+			String text = plain(TabList.displayName(info)).trim();
 			if (!text.isEmpty()) {
 				lines.add(text);
 			}
@@ -283,14 +284,6 @@ public final class SkyblockLocation {
 			}
 		}
 		return digit ? value : "";
-	}
-
-	private static Component tabName(PlayerInfo info) {
-		Component display = info.getTabListDisplayName();
-		if (display != null) {
-			return display;
-		}
-		return PlayerTeam.formatNameForTeam(info.getTeam(), Component.literal(info.getProfile().name()));
 	}
 
 	public static void requestLocraw(Minecraft client) {

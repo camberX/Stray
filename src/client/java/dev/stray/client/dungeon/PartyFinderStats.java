@@ -1,5 +1,6 @@
 package dev.stray.client.dungeon;
 
+import dev.stray.client.util.Json;
 import dev.stray.client.util.Text;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
@@ -141,15 +142,15 @@ public final class PartyFinderStats {
 	}
 
 	private static void print(String name, String role, JsonObject member) {
-		JsonObject dungeons = object(member, "dungeons");
-		JsonObject types = object(dungeons, "dungeon_types");
-		JsonObject catacombs = object(types, "catacombs");
-		JsonObject master = object(types, "master_catacombs");
-		int cata = level(num(catacombs, "experience"));
-		double classAvg = classAverage(object(dungeons, "player_classes"));
-		int secrets = (int) num(dungeons, "secrets");
+		JsonObject dungeons = Json.object(member, "dungeons");
+		JsonObject types = Json.object(dungeons, "dungeon_types");
+		JsonObject catacombs = Json.object(types, "catacombs");
+		JsonObject master = Json.object(types, "master_catacombs");
+		int cata = level(Json.num(catacombs, "experience"));
+		double classAvg = classAverage(Json.object(dungeons, "player_classes"));
+		int secrets = (int) Json.num(dungeons, "secrets");
 		if (secrets == 0) {
-			secrets = (int) num(object(object(member, "player_stats"), "dungeons"), "secrets_found");
+			secrets = (int) Json.num(Json.object(Json.object(member, "player_stats"), "dungeons"), "secrets_found");
 		}
 		List<Floor> normal = floors(catacombs, false);
 		List<Floor> masterFloors = floors(master, true);
@@ -170,7 +171,7 @@ public final class PartyFinderStats {
 			header.append(Component.literal("  ").setStyle(DIM));
 			header.append(Component.literal(role).setStyle(Style.EMPTY.withColor(ChatFormatting.YELLOW)));
 		} else {
-			String selected = pretty(string(dungeons, "selected_dungeon_class"));
+			String selected = pretty(Json.string(dungeons, "selected_dungeon_class"));
 			if (!selected.isBlank()) {
 				header.append(Component.literal("  ").setStyle(DIM));
 				header.append(Component.literal(selected).setStyle(Style.EMPTY.withColor(ChatFormatting.YELLOW)));
@@ -208,7 +209,7 @@ public final class PartyFinderStats {
 	private static MutableComponent pets(JsonObject member) {
 		MutableComponent line = line("");
 		line.append(label("Pets", ChatFormatting.GRAY));
-		JsonArray pets = array(object(member, "pets_data"), "pets");
+		JsonArray pets = array(Json.object(member, "pets_data"), "pets");
 		if (pets == null) {
 			pets = array(member, "pets");
 		}
@@ -219,11 +220,11 @@ public final class PartyFinderStats {
 					continue;
 				}
 				JsonObject pet = element.getAsJsonObject();
-				String type = string(pet, "type").toUpperCase(Locale.ROOT);
+				String type = Json.string(pet, "type").toUpperCase(Locale.ROOT);
 				if (!DUNGEON_PET_SET.contains(type)) {
 					continue;
 				}
-				String tier = string(pet, "tier").toUpperCase(Locale.ROOT);
+				String tier = Json.string(pet, "tier").toUpperCase(Locale.ROOT);
 				found.computeIfAbsent(type, ignored -> new LinkedHashMap<>())
 					.merge(tier, bool(pet, "active"), (left, right) -> left || right);
 			}
@@ -360,11 +361,11 @@ public final class PartyFinderStats {
 	 * (epic) and Folf is Catacombs Cap (rare).
 	 */
 	private static int shardLevel(JsonObject member, String attribute, int[] cumulative) {
-		JsonObject stacks = object(object(member, "attributes"), "stacks");
+		JsonObject stacks = Json.object(Json.object(member, "attributes"), "stacks");
 		if (stacks == null || !stacks.has(attribute)) {
 			return 0;
 		}
-		int syphoned = (int) num(stacks, attribute);
+		int syphoned = (int) Json.num(stacks, attribute);
 		int level = 0;
 		for (int i = 1; i < cumulative.length; i++) {
 			if (syphoned >= cumulative[i]) {
@@ -379,29 +380,29 @@ public final class PartyFinderStats {
 	}
 
 	private static int magicalPower(JsonObject member) {
-		JsonObject bag = object(member, "accessory_bag_storage");
-		int power = (int) num(bag, "highest_magical_power");
+		JsonObject bag = Json.object(member, "accessory_bag_storage");
+		int power = (int) Json.num(bag, "highest_magical_power");
 		if (power == 0) {
-			power = (int) num(member, "magical_power");
+			power = (int) Json.num(member, "magical_power");
 		}
 		if (power == 0) {
-			power = (int) num(bag, "magical_power");
+			power = (int) Json.num(bag, "magical_power");
 		}
 		return power;
 	}
 
 	private static String power(JsonObject member) {
-		String selected = string(object(member, "accessory_bag_storage"), "selected_power");
+		String selected = Json.string(Json.object(member, "accessory_bag_storage"), "selected_power");
 		if (selected.isBlank()) {
-			selected = string(member, "selected_power");
+			selected = Json.string(member, "selected_power");
 		}
 		return selected.isBlank() ? "—" : pretty(selected);
 	}
 
 	private static String arrow(JsonObject member) {
-		String favorite = string(object(member, "item_data"), "favorite_arrow");
+		String favorite = Json.string(Json.object(member, "item_data"), "favorite_arrow");
 		if (favorite.isBlank()) {
-			favorite = string(member, "favorite_arrow");
+			favorite = Json.string(member, "favorite_arrow");
 		}
 		List<ProfileViewer.SlotItem> quiver = ProfileViewer.storedItems(member, "quiver", "inv_quiver", "quiver_contents");
 		if (!favorite.isBlank()) {
@@ -460,15 +461,15 @@ public final class PartyFinderStats {
 	}
 
 	private static Integer bloodMobs(JsonObject member) {
-		JsonObject stats = object(member, "player_stats");
+		JsonObject stats = Json.object(member, "player_stats");
 		if (stats != null && stats.has("blood_mobs_killed")) {
-			return (int) num(stats, "blood_mobs_killed");
+			return (int) Json.num(stats, "blood_mobs_killed");
 		}
-		JsonObject dungeons = object(member, "dungeons");
+		JsonObject dungeons = Json.object(member, "dungeons");
 		if (dungeons != null && dungeons.has("blood_mobs_killed")) {
-			return (int) num(dungeons, "blood_mobs_killed");
+			return (int) Json.num(dungeons, "blood_mobs_killed");
 		}
-		JsonObject kills = object(stats, "kills");
+		JsonObject kills = Json.object(stats, "kills");
 		if (kills == null) {
 			return null;
 		}
@@ -477,7 +478,7 @@ public final class PartyFinderStats {
 		for (String key : kills.keySet()) {
 			String norm = norm(key);
 			if (norm.contains("lost_adventurer") || norm.contains("frozen_adventurer") || norm.contains("angry_archaeologist")) {
-				total += (int) num(kills, key);
+				total += (int) Json.num(kills, key);
 				found = true;
 			}
 		}
@@ -488,7 +489,7 @@ public final class PartyFinderStats {
 		String[] keys = {"healer", "mage", "berserk", "archer", "tank"};
 		double sum = 0d;
 		for (String key : keys) {
-			sum += level(num(object(classes, key), "experience"));
+			sum += level(Json.num(Json.object(classes, key), "experience"));
 		}
 		return sum / keys.length;
 	}
@@ -510,8 +511,8 @@ public final class PartyFinderStats {
 
 	private static List<Floor> floors(JsonObject type, boolean master) {
 		List<Floor> out = new ArrayList<>();
-		JsonObject completions = object(type, "tier_completions");
-		JsonObject best = object(type, "fastest_time_s_plus");
+		JsonObject completions = Json.object(type, "tier_completions");
+		JsonObject best = Json.object(type, "fastest_time_s_plus");
 		int start = master ? 1 : 0;
 		for (int i = start; i <= 7; i++) {
 			String name = master ? "M" + i : (i == 0 ? "Ent" : "F" + i);
@@ -534,9 +535,9 @@ public final class PartyFinderStats {
 		}
 		String raw = Integer.toString(key);
 		if (object.has(raw)) {
-			return (int) num(object, raw);
+			return (int) Json.num(object, raw);
 		}
-		return (int) num(object, raw + ".0");
+		return (int) Json.num(object, raw + ".0");
 	}
 
 	private static String clock(int millis) {
@@ -670,40 +671,11 @@ public final class PartyFinderStats {
 		return text == null ? "" : Text.strip(text).trim();
 	}
 
-	private static JsonObject object(JsonObject parent, String key) {
-		if (parent == null || key == null || !parent.has(key) || !parent.get(key).isJsonObject()) {
-			return null;
-		}
-		return parent.getAsJsonObject(key);
-	}
-
 	private static JsonArray array(JsonObject parent, String key) {
 		if (parent == null || key == null || !parent.has(key) || !parent.get(key).isJsonArray()) {
 			return null;
 		}
 		return parent.getAsJsonArray(key);
-	}
-
-	private static String string(JsonObject object, String key) {
-		if (object == null || key == null || !object.has(key) || !object.get(key).isJsonPrimitive()) {
-			return "";
-		}
-		try {
-			return object.get(key).getAsString();
-		} catch (Exception ignored) {
-			return "";
-		}
-	}
-
-	private static double num(JsonObject object, String key) {
-		if (object == null || key == null || !object.has(key) || !object.get(key).isJsonPrimitive()) {
-			return 0d;
-		}
-		try {
-			return object.get(key).getAsDouble();
-		} catch (Exception ignored) {
-			return 0d;
-		}
 	}
 
 	private static boolean bool(JsonObject object, String key) {

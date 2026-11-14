@@ -3,13 +3,9 @@ package dev.stray.client.visual;
 import com.mojang.renderpearl.api.buffers.GpuBuffer;
 import com.mojang.renderpearl.api.buffers.GpuBufferSlice;
 import com.mojang.renderpearl.api.pipeline.BlendFunction;
-import com.mojang.renderpearl.api.pipeline.ColorTargetState;
-import com.mojang.renderpearl.api.pipeline.DepthStencilState;
 import com.mojang.renderpearl.api.pipeline.RenderPipeline;
 import com.mojang.blaze3d.pipeline.RenderTarget;
-import com.mojang.renderpearl.api.pipeline.CompareOp;
 import com.mojang.renderpearl.api.pipeline.BlendFactor;
-import com.mojang.renderpearl.api.pipeline.UniformType;
 import com.mojang.renderpearl.api.commands.RenderPass;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.renderpearl.api.textures.FilterMode;
@@ -26,7 +22,6 @@ import dev.stray.Stray;
 import dev.stray.client.mixin.RenderPipelinesInvoker;
 import dev.stray.client.render.RenderCompat;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.client.renderer.texture.AbstractTexture;
 import net.minecraft.resources.Identifier;
 import net.minecraft.util.Mth;
@@ -37,7 +32,6 @@ import org.joml.Vector4f;
 
 import java.util.Optional;
 import java.util.OptionalDouble;
-import java.util.OptionalInt;
 
 /**
  * Pre-rendered End sky: six static cube-face textures plus a short frame

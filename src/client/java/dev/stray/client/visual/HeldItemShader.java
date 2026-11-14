@@ -5,8 +5,6 @@ import com.mojang.renderpearl.api.pipeline.ColorTargetState;
 import com.mojang.renderpearl.api.pipeline.DepthStencilState;
 import com.mojang.renderpearl.api.pipeline.RenderPipeline;
 import com.mojang.blaze3d.pipeline.RenderTarget;
-import com.mojang.blaze3d.pipeline.TextureTarget;
-import com.mojang.renderpearl.api.pipeline.CompareOp;
 import com.mojang.renderpearl.api.pipeline.BindGroupLayout;
 import com.mojang.renderpearl.api.pipeline.UniformType;
 import com.mojang.renderpearl.api.commands.CommandEncoder;
@@ -22,7 +20,6 @@ import org.lwjgl.opengl.GL11;
 //?}
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.blaze3d.vertex.QuadInstance;
 import com.mojang.renderpearl.api.pipeline.PrimitiveTopology;
 import dev.stray.Stray;
 import dev.stray.client.config.EntityKind;

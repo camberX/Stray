@@ -5,6 +5,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.JsonPrimitive;
 import dev.stray.Stray;
+import dev.stray.client.util.Json;
 import net.minecraft.client.Minecraft;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtAccounter;
@@ -134,7 +135,7 @@ public final class SkyblockProfileApi {
 	private static boolean applyMember(JsonObject member) {
 		Map<String, Long> ender = new HashMap<>();
 		Map<String, Long> bags = new HashMap<>();
-		JsonObject inventory = object(member, "inventory");
+		JsonObject inventory = Json.object(member, "inventory");
 		boolean sawEnder = ingestStorage(inventory, ender, true);
 		boolean sawBags = ingestStorage(inventory, bags, false);
 		if (!sawEnder) {
@@ -149,7 +150,7 @@ public final class SkyblockProfileApi {
 		sawBags |= ingestBlob(member, ender, bags, false);
 		JsonElement invEl = member.get("inventory");
 		if (invEl != null && invEl.isJsonPrimitive()) {
-			CompoundTag tag = readNbt(data(invEl));
+			CompoundTag tag = readNbt(Json.data(invEl));
 			if (tag != null) {
 				boolean[] found = new boolean[2];
 				walkStorageNbt(tag, ender, bags, found);
@@ -179,12 +180,12 @@ public final class SkyblockProfileApi {
 			if (root == null) {
 				continue;
 			}
-			saw |= ingestSackObject(object(root, "sacks_counts"), dest);
-			JsonObject sacks = object(root, "sacks");
+			saw |= ingestSackObject(Json.object(root, "sacks_counts"), dest);
+			JsonObject sacks = Json.object(root, "sacks");
 			if (sacks == null) {
 				continue;
 			}
-			JsonObject counts = object(sacks, "counts");
+			JsonObject counts = Json.object(sacks, "counts");
 			if (counts != null) {
 				saw |= ingestSackObject(counts, dest);
 				for (Map.Entry<String, JsonElement> entry : sacks.entrySet()) {
@@ -342,7 +343,7 @@ public final class SkyblockProfileApi {
 		if (parent == null) {
 			return false;
 		}
-		String blob = data(parent);
+		String blob = Json.data(parent);
 		if (blob.isEmpty()) {
 			return false;
 		}
@@ -377,7 +378,7 @@ public final class SkyblockProfileApi {
 			return false;
 		}
 		boolean saw = false;
-		String blob = data(element);
+		String blob = Json.data(element);
 		if (!blob.isEmpty()) {
 			CompoundTag tag = readNbt(blob);
 			if (tag != null) {
@@ -427,12 +428,12 @@ public final class SkyblockProfileApi {
 		if (object == null) {
 			return null;
 		}
-		JsonObject extra = object(object(object, "tag"), "ExtraAttributes");
+		JsonObject extra = Json.object(Json.object(object, "tag"), "ExtraAttributes");
 		if (extra == null) {
-			extra = object(object, "ExtraAttributes");
+			extra = Json.object(object, "ExtraAttributes");
 		}
 		if (extra == null) {
-			extra = object(object(object, "components"), "minecraft:custom_data");
+			extra = Json.object(Json.object(object, "components"), "minecraft:custom_data");
 		}
 		if (extra != null) {
 			String id = skyblockId(string(extra, "id"));
@@ -567,7 +568,7 @@ public final class SkyblockProfileApi {
 			if (fallback == null) {
 				fallback = member;
 			}
-			if (bool(profile, "selected")) {
+			if (Json.bool(profile, "selected")) {
 				selected = member;
 				break;
 			}
@@ -576,11 +577,11 @@ public final class SkyblockProfileApi {
 	}
 
 	private static JsonObject memberIn(JsonObject profile, String compact) {
-		JsonObject members = object(profile, "members");
+		JsonObject members = Json.object(profile, "members");
 		if (members == null) {
 			return null;
 		}
-		JsonObject direct = object(members, compact);
+		JsonObject direct = Json.object(members, compact);
 		if (direct != null) {
 			return direct;
 		}
@@ -590,30 +591,6 @@ public final class SkyblockProfileApi {
 			}
 		}
 		return null;
-	}
-
-	private static String data(JsonElement element) {
-		if (element == null || element.isJsonNull()) {
-			return "";
-		}
-		if (element.isJsonPrimitive()) {
-			JsonPrimitive primitive = element.getAsJsonPrimitive();
-			return primitive.isString() ? primitive.getAsString() : "";
-		}
-		if (!element.isJsonObject()) {
-			return "";
-		}
-		JsonObject object = element.getAsJsonObject();
-		for (String key : new String[]{"data", "value", "contents", "nbt", "bytes", "item_bytes"}) {
-			JsonElement value = object.get(key);
-			if (value != null && value.isJsonPrimitive() && value.getAsJsonPrimitive().isString()) {
-				String text = value.getAsString();
-				if (!text.isBlank()) {
-					return text;
-				}
-			}
-		}
-		return "";
 	}
 
 	private static String string(JsonObject object, String key) {
@@ -626,22 +603,6 @@ public final class SkyblockProfileApi {
 		}
 		JsonPrimitive primitive = value.getAsJsonPrimitive();
 		return primitive.isString() ? primitive.getAsString() : primitive.getAsString();
-	}
-
-	private static JsonObject object(JsonObject parent, String key) {
-		if (parent == null || key == null || !parent.has(key)) {
-			return null;
-		}
-		JsonElement value = parent.get(key);
-		return value != null && value.isJsonObject() ? value.getAsJsonObject() : null;
-	}
-
-	private static boolean bool(JsonObject object, String key) {
-		if (object == null || !object.has(key)) {
-			return false;
-		}
-		JsonElement value = object.get(key);
-		return value != null && value.isJsonPrimitive() && value.getAsBoolean();
 	}
 
 	private static String compact(UUID uuid) {

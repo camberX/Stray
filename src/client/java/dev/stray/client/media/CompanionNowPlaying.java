@@ -6,6 +6,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import dev.stray.client.config.StrayConfig;
 
+import dev.stray.client.util.Text;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -212,7 +213,7 @@ final class CompanionNowPlaying {
 				return "";
 			}
 			JsonObject json = root.getAsJsonObject();
-			return firstNonBlank(text(json, "accessToken"), text(json, "token"), text(json, "access_token"));
+			return Text.firstNonBlank(text(json, "accessToken"), text(json, "token"), text(json, "access_token"));
 		} catch (Exception exception) {
 			return "";
 		}
@@ -290,7 +291,7 @@ final class CompanionNowPlaying {
 			if (player.has("hasSong") && !bool(player, "hasSong", true)) {
 				return NowPlaying.none();
 			}
-			String title = firstNonBlank(
+			String title = Text.firstNonBlank(
 				join(track, "title", "song", "name", "videoTitle"),
 				join(root, "title", "song", "name", "videoTitle"),
 				join(info, "name", "title"),
@@ -299,7 +300,7 @@ final class CompanionNowPlaying {
 			if (title.isBlank()) {
 				return NowPlaying.none();
 			}
-			String artist = firstNonBlank(
+			String artist = Text.firstNonBlank(
 				join(track, "artist", "artists", "artistsName", "artistName", "author"),
 				join(root, "artist", "artists", "artistsName", "artistName", "author"),
 				join(info, "artistName", "artist", "artists"),
@@ -307,7 +308,7 @@ final class CompanionNowPlaying {
 			);
 			boolean paused = paused(player, root);
 			String app = kindOf(endpoint).equals("ytmd") ? "YouTube Music Desktop" : "YouTube Music";
-			String videoId = firstNonBlank(
+			String videoId = Text.firstNonBlank(
 				join(root, "videoId"),
 				join(track, "videoId"),
 				join(video, "id", "videoId"),
@@ -317,7 +318,7 @@ final class CompanionNowPlaying {
 			return NowPlaying.sampled(
 				title,
 				artist,
-				firstNonBlank(join(track, "album"), join(root, "album"), join(info, "albumName", "album"), join(video, "album")),
+				Text.firstNonBlank(join(track, "album"), join(root, "album"), join(info, "albumName", "album"), join(video, "album")),
 				app,
 				kindOf(endpoint),
 				cover(track, root, info, video, videoId),
@@ -347,18 +348,18 @@ final class CompanionNowPlaying {
 	}
 
 	private static NowPlaying parseYtmSong(JsonObject root, String endpoint) {
-		String title = firstNonBlank(text(root, "title"), text(root, "alternativeTitle"));
+		String title = Text.firstNonBlank(text(root, "title"), text(root, "alternativeTitle"));
 		if (title.isBlank()) {
 			return NowPlaying.none();
 		}
-		String artist = firstNonBlank(text(root, "artist"), join(root, "artists", "author"));
+		String artist = Text.firstNonBlank(text(root, "artist"), join(root, "artists", "author"));
 		String album = text(root, "album");
-		String videoId = firstNonBlank(text(root, "videoId"), videoIdFromUrl(text(root, "url")));
+		String videoId = Text.firstNonBlank(text(root, "videoId"), videoIdFromUrl(text(root, "url")));
 		String imageSrc = preferJpeg(text(root, "imageSrc"));
 		boolean paused = bool(root, "isPaused", false);
 		long position = positionMs(new JsonObject(), root);
 		long duration = durationMs(new JsonObject(), new JsonObject(), root);
-		String art = firstNonBlank(
+		String art = Text.firstNonBlank(
 			imageSrc,
 			preferJpeg(join(root, "thumbnailUrl", "thumbnail", "cover", "albumArt", "artworkUrl")),
 			artworkUrl(root),
@@ -490,7 +491,7 @@ final class CompanionNowPlaying {
 			|| bool(root, "paused", false)) {
 			return true;
 		}
-		String status = firstNonBlank(
+		String status = Text.firstNonBlank(
 			join(player, "status", "playbackStatus", "playerState"),
 			join(root, "status", "playbackStatus", "playerState")
 		).toLowerCase();
@@ -700,17 +701,8 @@ final class CompanionNowPlaying {
 		return 0d;
 	}
 
-	private static String firstNonBlank(String... values) {
-		for (String value : values) {
-			if (value != null && !value.isBlank()) {
-				return value;
-			}
-		}
-		return "";
-	}
-
 	private static String cover(JsonObject track, JsonObject root, JsonObject info, JsonObject video, String videoId) {
-		return firstNonBlank(
+		return Text.firstNonBlank(
 			preferJpeg(join(track, "imageSrc", "thumbnailUrl", "thumbnail", "cover", "albumArt", "image", "albumCover", "coverUrl", "artworkUrl")),
 			preferJpeg(join(root, "imageSrc", "thumbnailUrl", "thumbnail", "cover", "albumArt", "image", "albumCover", "coverUrl", "artworkUrl")),
 			preferJpeg(join(info, "artworkUrl", "cover", "imageSrc", "thumbnailUrl")),

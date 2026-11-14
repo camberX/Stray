@@ -2,7 +2,6 @@ package dev.stray.client.mixin;
 
 import dev.stray.client.menu.NoCursorReset;
 import dev.stray.client.ui.ChatPeek;
-import dev.stray.client.ui.LoadoutsScreen;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.MouseHandler;
 import net.minecraft.client.gui.screens.inventory.ContainerScreen;

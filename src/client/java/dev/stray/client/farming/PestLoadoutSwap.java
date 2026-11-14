@@ -1,22 +1,12 @@
 package dev.stray.client.farming;
 
-import dev.stray.client.util.Text;
 import dev.stray.client.config.StrayConfig;
 import dev.stray.client.debug.StrayDebug;
 import dev.stray.client.ui.LoadoutSwap;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
-import net.minecraft.world.scores.DisplaySlot;
-import net.minecraft.world.scores.Objective;
-import net.minecraft.world.scores.PlayerScoreEntry;
-import net.minecraft.world.scores.PlayerTeam;
-import net.minecraft.world.scores.Scoreboard;
-import net.minecraft.world.scores.TeamColor;
 
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.regex.Matcher;

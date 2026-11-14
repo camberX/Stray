@@ -3,7 +3,6 @@ package dev.stray.client.ui;
 import dev.stray.client.config.StrayConfig;
 import dev.stray.client.render.GuiDraw;
 import dev.stray.client.render.GuiFrostBlur;
-import dev.stray.client.render.Starfield;
 import dev.stray.client.render.TitleBackdrop;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;

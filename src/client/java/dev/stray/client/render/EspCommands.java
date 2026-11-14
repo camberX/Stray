@@ -6,9 +6,9 @@ import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import dev.stray.client.config.UnloadState;
 import dev.stray.client.config.StrayConfig;
 import dev.stray.client.ui.Theme;
+import dev.stray.client.util.Chat;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommands;
 import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource;
-import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.network.chat.Style;
@@ -31,10 +31,10 @@ public final class EspCommands {
 		StrayConfig config = StrayConfig.get();
 		List<String> labels = config.nametagEspLabels();
 		if (labels.isEmpty()) {
-			tell(muted("Glow ESP nametags that contain a word: /st esp <text>. Add more than one. /st esp clear turns them all off."));
+			Chat.tell(muted("Glow ESP nametags that contain a word: /st esp <text>. Add more than one. /st esp clear turns them all off."));
 			return Command.SINGLE_SUCCESS;
 		}
-		tell(brand().append(sep()).append(Component.literal("ESP").withStyle(style(Theme.ACCENT).withBold(true)))
+		Chat.tell(brand().append(sep()).append(Component.literal("ESP").withStyle(style(Theme.ACCENT).withBold(true)))
 			.append(Component.literal(" glowing nametags containing ").withStyle(style(Theme.MUTED)))
 			.append(Component.literal(String.join(", ", labels)).withStyle(style(Theme.TEXT))));
 		int learned = 0;
@@ -42,7 +42,7 @@ public final class EspCommands {
 			learned += EspMobPrint.learned(label.toLowerCase(Locale.ROOT));
 		}
 		if (learned > 0) {
-			tell(muted("Learned " + learned + " look" + (learned == 1 ? "" : "s") + " from named mobs — copies glow at render distance."));
+			Chat.tell(muted("Learned " + learned + " look" + (learned == 1 ? "" : "s") + " from named mobs — copies glow at render distance."));
 		}
 		return Command.SINGLE_SUCCESS;
 	}
@@ -55,7 +55,7 @@ public final class EspCommands {
 			EspMobPrint.clear();
 			config.save();
 			UnloadState.markDirty();
-			tell(brand().append(sep()).append(Component.literal("ESP").withStyle(style(Theme.ACCENT).withBold(true)))
+			Chat.tell(brand().append(sep()).append(Component.literal("ESP").withStyle(style(Theme.ACCENT).withBold(true)))
 				.append(Component.literal(" nametag filters cleared").withStyle(style(Theme.MUTED))));
 			return Command.SINGLE_SUCCESS;
 		}
@@ -65,16 +65,16 @@ public final class EspCommands {
 				EspMobPrint.drop(drop.toLowerCase(Locale.ROOT));
 				config.save();
 				UnloadState.markDirty();
-				tell(brand().append(sep()).append(Component.literal("ESP").withStyle(style(Theme.ACCENT).withBold(true)))
+				Chat.tell(brand().append(sep()).append(Component.literal("ESP").withStyle(style(Theme.ACCENT).withBold(true)))
 					.append(Component.literal(" removed ").withStyle(style(Theme.MUTED)))
 					.append(Component.literal(drop).withStyle(style(Theme.TEXT))));
 			} else {
-				tell(muted("No nametag ESP named " + drop + "."));
+				Chat.tell(muted("No nametag ESP named " + drop + "."));
 			}
 			return Command.SINGLE_SUCCESS;
 		}
 		if (!config.addNametagEsp(trimmed)) {
-			tell(brand().append(sep()).append(Component.literal("ESP").withStyle(style(Theme.ACCENT).withBold(true)))
+			Chat.tell(brand().append(sep()).append(Component.literal("ESP").withStyle(style(Theme.ACCENT).withBold(true)))
 				.append(Component.literal(" already glowing ").withStyle(style(Theme.MUTED)))
 				.append(Component.literal(trimmed).withStyle(style(Theme.TEXT))));
 			return Command.SINGLE_SUCCESS;
@@ -94,10 +94,10 @@ public final class EspCommands {
 		if (nearby > 0) {
 			line.append(Component.literal("  " + nearby + " nearby").withStyle(style(Theme.MUTED)));
 		}
-		tell(line);
+		Chat.tell(line);
 		int learned = EspMobPrint.learned(trimmed.toLowerCase(Locale.ROOT));
 		if (learned == 0) {
-			tell(muted("Walk up to one named mob in this world. Stray copies its type and armor, then forgets the look when you change worlds."));
+			Chat.tell(muted("Walk up to one named mob in this world. Stray copies its type and armor, then forgets the look when you change worlds."));
 		}
 		return Command.SINGLE_SUCCESS;
 	}
@@ -118,10 +118,4 @@ public final class EspCommands {
 		return Style.EMPTY.withColor(color & 0xFFFFFF);
 	}
 
-	private static void tell(Component message) {
-		Minecraft client = Minecraft.getInstance();
-		if (client.gui != null) {
-			client.gui.hud.getChat().addClientSystemMessage(message);
-		}
-	}
 }

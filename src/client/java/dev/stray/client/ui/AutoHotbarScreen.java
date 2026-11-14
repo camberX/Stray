@@ -4,6 +4,7 @@ import com.mojang.blaze3d.platform.InputConstants;
 import dev.stray.client.input.MouseButtons;
 import dev.stray.client.item.AutoHotbar;
 import dev.stray.client.render.GuiDraw;
+import dev.stray.client.util.TextFit;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
@@ -151,11 +152,11 @@ public class AutoHotbarScreen extends Screen {
 			}
 			float delW = 16;
 			float chipW = 26;
-			String shownName = clip(font, key, (int) (listW * 0.35f));
+			String shownName = TextFit.smallUnlessTiny(font, key, (int) (listW * 0.35f));
 			GuiDraw.small(graphics, font, shownName, listX + 6, rowY + 4, on ? Theme.ACCENT : Theme.OFF);
 			int count = setup.rules.getOrDefault(key, List.of()).size();
 			String right = count + " item" + (count == 1 ? "" : "s") + " · " + rows.get(i).getValue();
-			GuiDraw.small(graphics, font, clip(font, right, (int) (listW - delW - chipW - 22 - GuiDraw.smallWidth(font, shownName))),
+			GuiDraw.small(graphics, font, TextFit.smallUnlessTiny(font, right, (int) (listW - delW - chipW - 22 - GuiDraw.smallWidth(font, shownName))),
 				listX + 12 + GuiDraw.smallWidth(font, shownName), rowY + 4, hover ? Theme.TEXT : Theme.MUTED);
 			float chipX = listX + listW - delW - chipW - 4;
 			String chip = on ? "on" : "off";
@@ -326,7 +327,7 @@ public class AutoHotbarScreen extends Screen {
 		float labelW = GuiDraw.smallWidth(font, label) + 6;
 		GuiDraw.small(graphics, font, label, x + 6, y + 5, Theme.MUTED);
 		String shown = value.isEmpty() && !focused ? placeholder : value;
-		String clipped = clipField(font, shown, focused ? cursor : shown.length(), (int) (w - labelW - 14));
+		String clipped = TextFit.clipField(font, shown, focused ? cursor : shown.length(), (int) (w - labelW - 14));
 		float textX = x + 6 + labelW;
 		float textY = GuiDraw.middle(y, FIELD_H);
 		GuiDraw.menu(graphics, font, clipped, textX, textY, value.isEmpty() && !focused ? Theme.OFF : Theme.TEXT);
@@ -373,32 +374,6 @@ public class AutoHotbarScreen extends Screen {
 		windowH = Math.min(MENU_H, Math.max(1, height - 16));
 		windowX = (width - windowW) / 2f;
 		windowY = (height - windowH) / 2f;
-	}
-
-	private static String clipField(Font font, String value, int cursor, int maxWidth) {
-		if (GuiDraw.menuWidth(font, value) <= maxWidth) {
-			return value;
-		}
-		int from = 0;
-		while (from < cursor && GuiDraw.menuWidth(font, value.substring(from)) > maxWidth) {
-			from++;
-		}
-		String slice = value.substring(from);
-		while (slice.length() > 1 && GuiDraw.menuWidth(font, slice) > maxWidth) {
-			slice = slice.substring(0, slice.length() - 1);
-		}
-		return slice;
-	}
-
-	private static String clip(Font font, String value, int maxWidth) {
-		if (maxWidth <= 8 || GuiDraw.smallWidth(font, value) <= maxWidth) {
-			return value;
-		}
-		String trimmed = value;
-		while (trimmed.length() > 1 && GuiDraw.smallWidth(font, trimmed + "..") > maxWidth) {
-			trimmed = trimmed.substring(0, trimmed.length() - 1);
-		}
-		return trimmed + "..";
 	}
 
 	// ---------------------------------------------------------------- input

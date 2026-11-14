@@ -16,6 +16,7 @@ import dev.stray.client.profile.ProfileViewer;
 import dev.stray.client.render.GuiDraw;
 import dev.stray.client.render.NametagRenderer;
 import dev.stray.client.render.PlayerPreview;
+import dev.stray.client.util.Utils;
 import dev.stray.client.visual.NickHider;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
@@ -48,7 +49,6 @@ public class ProfileViewerScreen extends Screen {
 	private static final float MENU_W = 760;
 	private static final float MENU_H = 430;
 	private static final float RAIL = 96;
-	private static final float ROW = 20;
 	private static final float CHIP_H = 22;
 	private static final float SLOT_GAP = 4;
 	private static final String GLASS = "#";
@@ -112,7 +112,6 @@ public class ProfileViewerScreen extends Screen {
 	private float railY = Float.NaN;
 	private int wardrobePage;
 	private int equipPage;
-	private int previewSet = -1;
 	private String paneName = "Inventory";
 	private float slot = 28;
 
@@ -182,7 +181,7 @@ public class ProfileViewerScreen extends Screen {
 		int dim = Anim.fade(0x30000000, appear);
 		GuiDraw.fill(graphics, 0, 0, width, height, dim);
 
-		float ease = ease(appear);
+		float ease = Utils.easeOutCubic(appear);
 		float scale = (0.92f + 0.08f * ease) * StrayConfig.normalizeMenuScale(StrayConfig.get().menuScale);
 		float lift = (1f - ease) * 12f;
 		float cx = windowX + windowW * 0.5f;
@@ -204,7 +203,7 @@ public class ProfileViewerScreen extends Screen {
 
 		drawHeader(graphics, font, localMx, localMy);
 		drawRail(graphics, font, localMx, localMy);
-		float t = ease(tabAnim);
+		float t = Utils.easeOutCubic(tabAnim);
 		float slide = (1f - t) * 8f;
 		graphics.pose().pushMatrix();
 		graphics.pose().translate(0f, slide);
@@ -1400,40 +1399,6 @@ public class ProfileViewerScreen extends Screen {
 		);
 	}
 
-	private void drawRows(
-		GuiGraphicsExtractor graphics,
-		Font font,
-		int mouseX,
-		int mouseY,
-		float x,
-		float y,
-		float w,
-		float h,
-		int count,
-		RowDraw draw
-	) {
-		float listX = x + 8;
-		float listY = y + 8;
-		float listW = w - 16;
-		float listH = h - 16;
-		float max = Math.max(0f, count * ROW - listH);
-		listScroll = Mth.clamp(listScroll, 0f, max);
-		boolean clip = GuiDraw.scissor(graphics, listX, listY, listW, listH);
-		int first = (int) (listScroll / ROW);
-		int last = Math.min(count - 1, first + (int) (listH / ROW) + 1);
-		for (int i = first; i <= last; i++) {
-			float ry = listY + i * ROW - listScroll;
-			if (GuiDraw.hovered(mouseX, mouseY, listX, ry, listW, ROW)
-				&& GuiDraw.hovered(mouseX, mouseY, listX, listY, listW, listH)) {
-				GuiDraw.rounded(graphics, listX, ry, listW, ROW, 4, 0x10FFFFFF);
-			}
-			draw.draw(i, listX + 4, ry, listW - 8);
-		}
-		if (clip) {
-			GuiDraw.disableScissor(graphics);
-		}
-	}
-
 	private void sectionTitle(GuiGraphicsExtractor graphics, Font font, float x, float y, float w, ItemStack icon, String title) {
 		paintItem(graphics, font, icon, x, y - 1, 16, false);
 		GuiDraw.menu(graphics, font, title, x + 20, y + 3, ACC);
@@ -1464,32 +1429,6 @@ public class ProfileViewerScreen extends Screen {
 		paintItem(graphics, font, icon, x, y, 18, false);
 		GuiDraw.menu(graphics, font, label, x + 22, GuiDraw.middle(y, 18), StageUi.MUTED);
 		GuiDraw.menu(graphics, font, value, x + w - GuiDraw.menuWidth(font, value), GuiDraw.middle(y, 18), StageUi.TEXT);
-	}
-
-	private void skillBar(
-		GuiGraphicsExtractor graphics,
-		Font font,
-		int mouseX,
-		int mouseY,
-		float x,
-		float y,
-		float w,
-		ProfileViewer.Skill skill
-	) {
-		boolean hover = GuiDraw.hovered(mouseX, mouseY, x, y, w, 26);
-		if (hover) {
-			tooltip = skill.name() + "  " + skill.level() + (skill.level() > skill.cap() ? "" : " / " + skill.cap())
-				+ "\n" + prettyNumber((long) skill.xp()) + " xp";
-		}
-		paintItem(graphics, font, skillIcon(skill.name()), x, y, 18, false);
-		GuiDraw.menu(graphics, font, skill.name(), x + 22, y, StageUi.MUTED);
-		String value = skill.level() > skill.cap() ? String.valueOf(skill.level()) : skill.level() + " / " + skill.cap();
-		GuiDraw.menu(graphics, font, value, x + w - GuiDraw.menuWidth(font, value), y, StageUi.TEXT);
-		GuiDraw.rounded(graphics, x + 22, y + 14, w - 22, 5, 2, 0x14FFFFFF);
-		float fill = Math.max(0f, Math.min(1f, skill.progress()));
-		if (fill > 0.01f) {
-			GuiDraw.rounded(graphics, x + 22, y + 14, Math.max(4f, (w - 22) * fill), 5, 2, ACC);
-		}
 	}
 
 	private float skillChips(
@@ -1562,41 +1501,6 @@ public class ProfileViewerScreen extends Screen {
 		return cy + CHIP_H;
 	}
 
-	private float classChips(
-		GuiGraphicsExtractor graphics,
-		Font font,
-		int mouseX,
-		int mouseY,
-		float x,
-		float y,
-		float w,
-		float maxY,
-		List<ProfileViewer.Skill> classes
-	) {
-		float cx = x;
-		float cy = y;
-		for (ProfileViewer.Skill skill : classes) {
-			String level = String.valueOf(skill.level());
-			float cw = 16 + 4 + GuiDraw.menuWidth(font, level) + 8;
-			if (cx + cw > x + w && cx > x) {
-				cx = x;
-				cy += CHIP_H + 4;
-			}
-			if (cy + CHIP_H > maxY) {
-				return cy;
-			}
-			boolean hover = GuiDraw.hovered(mouseX, mouseY, cx, cy, cw, CHIP_H);
-			card(graphics, cx, cy, cw, CHIP_H, 6, hover ? Theme.CARD_HOVER : Theme.CARD, hover ? ACC : LINE);
-			paintItem(graphics, font, classIcon(skill.name()), cx + 3, cy + 3, 16, false);
-			GuiDraw.menu(graphics, font, level, cx + 22, GuiDraw.middle(cy, CHIP_H), StageUi.TEXT);
-			if (hover) {
-				tooltip = skill.name() + "  " + skill.level();
-			}
-			cx += cw + 5;
-		}
-		return cy + CHIP_H;
-	}
-
 	private void paintItem(GuiGraphicsExtractor graphics, Font font, ItemStack stack, float x, float y, float size, boolean decorations) {
 		if (stack == null || stack.isEmpty() || size <= 1f) {
 			return;
@@ -1662,11 +1566,6 @@ public class ProfileViewerScreen extends Screen {
 			appear = Math.min(1f, appear + dt / 0.22f);
 		}
 		tabAnim = Math.min(1f, tabAnim + dt / 0.2f);
-	}
-
-	private static float ease(float t) {
-		float u = 1f - Mth.clamp(t, 0f, 1f);
-		return 1f - u * u * u;
 	}
 
 	@Override
@@ -1960,47 +1859,7 @@ public class ProfileViewerScreen extends Screen {
 		if (level <= 0) {
 			return Component.literal(name);
 		}
-		return NickHider.parseLegacy("§8[" + levelColor(level) + level + "§8] §7" + name);
-	}
-
-	private static String levelColor(int level) {
-		if (level >= 480) {
-			return "§4";
-		}
-		if (level >= 440) {
-			return "§c";
-		}
-		if (level >= 400) {
-			return "§6";
-		}
-		if (level >= 360) {
-			return "§5";
-		}
-		if (level >= 320) {
-			return "§d";
-		}
-		if (level >= 280) {
-			return "§9";
-		}
-		if (level >= 240) {
-			return "§3";
-		}
-		if (level >= 200) {
-			return "§b";
-		}
-		if (level >= 160) {
-			return "§2";
-		}
-		if (level >= 120) {
-			return "§a";
-		}
-		if (level >= 80) {
-			return "§e";
-		}
-		if (level >= 40) {
-			return "§f";
-		}
-		return "§7";
+		return NickHider.parseLegacy("§8[" + dev.stray.client.profile.ProfileViewer.levelColor(level) + level + "§8] §7" + name);
 	}
 
 	private static ItemStack sky(String id) {
@@ -2062,7 +1921,7 @@ public class ProfileViewerScreen extends Screen {
 	}
 
 	private static String petLoreId(ProfileViewer.Pet pet) {
-		return petType(pet) + ";" + petTierIndex(pet == null ? "" : pet.tier());
+		return petType(pet) + ";" + Utils.petTierIndex(pet == null ? "" : pet.tier());
 	}
 
 	private static String petType(ProfileViewer.Pet pet) {
@@ -2089,7 +1948,7 @@ public class ProfileViewerScreen extends Screen {
 		if (stack.isEmpty()) {
 			return stack;
 		}
-		int tier = petTierIndex(pet.tier());
+		int tier = Utils.petTierIndex(pet.tier());
 		String loreId = pet.type() == null ? "" : pet.type().trim().toUpperCase(Locale.ROOT) + ";" + tier;
 		SkyblockPetLore.request();
 		SkyblockLore.Snapshot snapshot = null;
@@ -2108,46 +1967,6 @@ public class ProfileViewerScreen extends Screen {
 			snapshot
 		).apply(stack);
 		return stack;
-	}
-
-	private static int petTierIndex(String tier) {
-		return switch (tier == null ? "" : tier.toLowerCase(Locale.ROOT)) {
-			case "uncommon" -> 1;
-			case "rare" -> 2;
-			case "epic" -> 3;
-			case "legendary" -> 4;
-			case "mythic" -> 5;
-			default -> 0;
-		};
-	}
-
-	private static String tierCode(String tier) {
-		return switch (tier == null ? "" : tier.toLowerCase(Locale.ROOT)) {
-			case "uncommon" -> "§a";
-			case "rare" -> "§9";
-			case "epic" -> "§5";
-			case "legendary" -> "§6";
-			case "mythic" -> "§d";
-			default -> "§f";
-		};
-	}
-
-	private static String petFamily(String type) {
-		return switch (type == null ? "" : type.toUpperCase(Locale.ROOT)) {
-			case "WOLF", "TIGER", "LION", "ENDERMAN", "ENDER_DRAGON", "GOLDEN_DRAGON", "BLAZE",
-				"SKELETON", "ZOMBIE", "SPIDER", "TARANTULA", "HOUND", "PHOENIX", "GRIFFIN",
-				"BLACK_CAT", "WITHER_SKELETON", "GOLEM", "IRON_GOLEM", "KUUDRA" -> "Combat";
-			case "RABBIT", "CHICKEN", "PIG", "MOOSHROOM_COW", "ELEPHANT", "SLUG", "BEE" -> "Farming";
-			case "ARMADILLO", "SILVERFISH", "ROCK", "MITHRIL_GOLEM", "SCATHA", "SNAIL",
-				"BAL", "MOLE", "GLACITE_GOLEM", "GOBLIN" -> "Mining";
-			case "SQUID", "DOLPHIN", "BLUE_WHALE", "FLYING_FISH", "MEGALODON", "BABY_YETI",
-				"AMMONITE", "PENGUIN", "REINDEER", "SPINOSAURUS" -> "Fishing";
-			case "OCELOT", "MONKEY", "GIRAFFE" -> "Foraging";
-			case "JELLYFISH", "PARROT", "SHEEP" -> "Alchemy";
-			case "GUARDIAN" -> "Enchanting";
-			case "OWL" -> "Taming";
-			default -> "Skyblock";
-		};
 	}
 
 	private static final Map<String, String> PET_HEADS = petHeads();
@@ -2262,15 +2081,6 @@ public class ProfileViewerScreen extends Screen {
 			}
 		}
 		return new ProfileViewer.Skill(name, 0, 60, 0, 0f);
-	}
-
-	private static String prettyMode(String mode) {
-		return switch (mode == null ? "" : mode.toLowerCase(Locale.ROOT)) {
-			case "ironman" -> "Ironman";
-			case "bingo" -> "Bingo";
-			case "island" -> "Stranded";
-			default -> "Normal profile";
-		};
 	}
 
 	private static String skyblockLevel(ProfileViewer.Profile profile) {

@@ -4,9 +4,9 @@ import com.mojang.brigadier.Command;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import dev.stray.client.location.SkyblockLocation;
 import dev.stray.client.ui.Theme;
+import dev.stray.client.util.Chat;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommands;
 import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource;
-import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.network.chat.Style;
@@ -36,14 +36,14 @@ public final class FairySoulCommands {
 		int foundHere = Math.max(0, total - left);
 		int found = FairySoulProgress.count();
 		String where = island.isEmpty() ? "unknown island" : island;
-		tell(brand()
+		Chat.tell(brand()
 			.append(sep())
 			.append(Component.literal("FAIRY SOULS").withStyle(style(Theme.ACCENT).withBold(true)))
 			.append(Component.literal(" " + where + " " + foundHere + "/" + total).withStyle(style(Theme.TEXT)))
 			.append(Component.literal(left > 0 ? "  " + left + " left here" : "  none left here").withStyle(style(Theme.MUTED))));
-		tell(Component.literal("area " + empty(SkyblockLocation.area) + "  poi " + empty(SkyblockLocation.poi)
+		Chat.tell(Component.literal("area " + empty(SkyblockLocation.area) + "  poi " + empty(SkyblockLocation.poi)
 			+ "  " + found + " saved").withStyle(style(Theme.MUTED)));
-		tell(Component.literal("/stray fairysouls reset shows them all again.").withStyle(style(Theme.MUTED)));
+		Chat.tell(Component.literal("/stray fairysouls reset shows them all again.").withStyle(style(Theme.MUTED)));
 		return Command.SINGLE_SUCCESS;
 	}
 
@@ -53,7 +53,7 @@ public final class FairySoulCommands {
 
 	private static int reset() {
 		int n = FairySoulProgress.reset();
-		tell(brand()
+		Chat.tell(brand()
 			.append(sep())
 			.append(Component.literal("FAIRY SOULS").withStyle(style(Theme.ACCENT).withBold(true)))
 			.append(Component.literal(" reset").withStyle(style(Theme.TEXT)))
@@ -73,10 +73,4 @@ public final class FairySoulCommands {
 		return Style.EMPTY.withColor(color & 0xFFFFFF);
 	}
 
-	private static void tell(Component message) {
-		Minecraft client = Minecraft.getInstance();
-		if (client.gui != null) {
-			client.gui.hud.getChat().addClientSystemMessage(message);
-		}
-	}
 }

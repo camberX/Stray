@@ -1,5 +1,6 @@
 package dev.stray.client.farming;
 
+import dev.stray.client.util.TabList;
 import dev.stray.client.util.Text;
 import dev.stray.client.config.StrayConfig;
 import dev.stray.client.item.ItemAppearance;
@@ -8,6 +9,7 @@ import dev.stray.client.item.ItemStorage;
 import dev.stray.client.item.SkyblockItems;
 import dev.stray.client.item.SkyblockRecipes;
 import dev.stray.client.mixin.AbstractContainerScreenAccessor;
+import dev.stray.client.util.Utils;
 import dev.stray.client.visual.NickSteal;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
@@ -59,35 +61,35 @@ public final class GardenHud {
 		850000, 900000, 950000, 1000000, 1050000, 1100000, 1150000, 1200000, 1250000, 1300000,
 		1500000, 2000000, 2500000, 3000000, 3500000, 4000000, 4500000, 5000000, 5500000
 	};
-	private static final long[] CROP_WHEAT = cropCum(
+	private static final long[] CROP_WHEAT = Utils.cumulative(
 		30, 50, 80, 200, 350, 700, 1500, 2500, 3500, 5000,
 		6500, 8000, 10000, 20000, 35000, 50000, 75000, 100000, 175000, 250000,
 		325000, 400000, 500000, 650000, 800000, 800000, 800000, 800000, 800000, 800000,
 		800000, 800000, 800000, 800000, 800000, 800000, 800000, 800000, 800000, 800000,
 		800000, 800000, 800000, 800000, 800000, 800000
 	);
-	private static final long[] CROP_CARROT = cropCum(
+	private static final long[] CROP_CARROT = Utils.cumulative(
 		100, 150, 250, 500, 1000, 2000, 4500, 9000, 12000, 15000,
 		20000, 25000, 35000, 70000, 120000, 180000, 250000, 350000, 600000, 850000,
 		1100000, 1400000, 1800000, 2200000, 2600000, 2600000, 2600000, 2600000, 2600000, 2600000,
 		2600000, 2600000, 2600000, 2600000, 2600000, 2600000, 2600000, 2600000, 2600000, 2600000,
 		2600000, 2600000, 2600000, 2600000, 2600000, 2600000
 	);
-	private static final long[] CROP_MELON = cropCum(
+	private static final long[] CROP_MELON = Utils.cumulative(
 		150, 250, 400, 1000, 1800, 3500, 7500, 12500, 17500, 25000,
 		32500, 40000, 50000, 100000, 175000, 250000, 375000, 500000, 875000, 1200000,
 		1600000, 2000000, 2500000, 3200000, 4000000, 4000000, 4000000, 4000000, 4000000, 4000000,
 		4000000, 4000000, 4000000, 4000000, 4000000, 4000000, 4000000, 4000000, 4000000, 4000000,
 		4000000, 4000000, 4000000, 4000000, 4000000, 4000000
 	);
-	private static final long[] CROP_CANE = cropCum(
+	private static final long[] CROP_CANE = Utils.cumulative(
 		60, 100, 160, 400, 700, 1400, 3000, 5000, 7000, 10000,
 		13000, 16000, 20000, 40000, 70000, 100000, 150000, 200000, 350000, 500000,
 		650000, 800000, 1000000, 1300000, 1600000, 1600000, 1600000, 1600000, 1600000, 1600000,
 		1600000, 1600000, 1600000, 1600000, 1600000, 1600000, 1600000, 1600000, 1600000, 1600000,
 		1600000, 1600000, 1600000, 1600000, 1600000, 1600000
 	);
-	private static final long[] CROP_WART = cropCum(
+	private static final long[] CROP_WART = Utils.cumulative(
 		90, 150, 250, 500, 1000, 2000, 4000, 7500, 10000, 15000,
 		20000, 25000, 30000, 50000, 100000, 150000, 200000, 300000, 500000, 750000,
 		1000000, 1300000, 1600000, 2000000, 2400000, 2400000, 2400000, 2400000, 2400000, 2400000,
@@ -1491,7 +1493,7 @@ public final class GardenHud {
 		List<String> raw = new ArrayList<>(infos.size());
 		List<String> clean = new ArrayList<>(infos.size());
 		for (PlayerInfo info : infos) {
-			Component component = tabName(info);
+			Component component = TabList.displayName(info);
 			String colored = component == null ? "" : NickSteal.toLegacy(component);
 			String line = clean(colored);
 			if (line.isEmpty()) {
@@ -1515,13 +1517,6 @@ public final class GardenHud {
 			named = cleaned == null ? "" : cleaned;
 		}
 		return visitorLabel(named);
-	}
-
-	private static Component tabName(PlayerInfo info) {
-		Component display = info.getTabListDisplayName();
-		return display != null
-			? display
-			: PlayerTeam.formatNameForTeam(info.getTeam(), Component.literal(info.getProfile().name()));
 	}
 
 	private static CompoundTag extra(ItemStack stack) {
@@ -1706,16 +1701,6 @@ public final class GardenHud {
 		String text = clean(name);
 		int space = text.lastIndexOf(' ');
 		return space > 0 && text.length() > 18 ? text.substring(space + 1) : text;
-	}
-
-	private static long[] cropCum(long... steps) {
-		long[] out = new long[steps.length + 1];
-		long total = 0L;
-		for (int i = 0; i < steps.length; i++) {
-			total += steps[i];
-			out[i + 1] = total;
-		}
-		return out;
 	}
 
 	public record ContestSnap(boolean present, boolean active, List<String> crops, String boosted, String time) {

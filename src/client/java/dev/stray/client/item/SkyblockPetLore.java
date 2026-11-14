@@ -1,11 +1,13 @@
 package dev.stray.client.item;
 
+import dev.stray.client.util.Json;
 import dev.stray.client.util.Text;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import dev.stray.Stray;
+import dev.stray.client.util.Utils;
 import net.minecraft.util.Util;
 
 import java.net.URI;
@@ -82,7 +84,7 @@ public final class SkyblockPetLore {
 
 	public static int maxLevel(String type) {
 		JsonObject custom = custom(type);
-		int max = custom == null ? 0 : (int) num(custom, "max_level");
+		int max = custom == null ? 0 : (int) Json.num(custom, "max_level");
 		return max > 0 ? max : 100;
 	}
 
@@ -96,7 +98,7 @@ public final class SkyblockPetLore {
 		boolean active,
 		SkyblockLore.Snapshot snapshot
 	) {
-		String color = tierCode(tier);
+		String color = Utils.petTierCode(tier);
 		String label = name == null || name.isBlank() ? pretty(type) : name;
 		String title = "§7[Lvl " + Math.max(1, level) + "] " + color + label;
 		Map<String, String> keys = replacements(type, tier, level, held);
@@ -179,17 +181,17 @@ public final class SkyblockPetLore {
 		if (nums == null || type == null || type.isBlank()) {
 			return out;
 		}
-		JsonObject pet = object(nums, type.trim().toUpperCase(Locale.ROOT));
+		JsonObject pet = Json.object(nums, type.trim().toUpperCase(Locale.ROOT));
 		if (pet == null) {
 			return out;
 		}
 		String rarity = boostedTier(tier, held);
-		JsonObject band = object(pet, rarity);
+		JsonObject band = Json.object(pet, rarity);
 		if (band == null || !band.has("1") || !band.has("100")) {
 			return out;
 		}
-		JsonObject min = object(band, "1");
-		JsonObject max = object(band, "100");
+		JsonObject min = Json.object(band, "1");
+		JsonObject max = Json.object(band, "100");
 		int minStatsLevel = 0;
 		int maxStatsLevel = 100;
 		int curve = -1;
@@ -214,19 +216,19 @@ public final class SkyblockPetLore {
 		}
 		float minMix = (maxStatsLevel - (minStatsLevel - (curve == -1 ? 0 : 1)) - statsLevel) / 99f;
 		float maxMix = (statsLevel - 1) / 99f;
-		JsonArray otherMin = array(min, "otherNums");
-		JsonArray otherMax = array(max, "otherNums");
+		JsonArray otherMin = Json.array(min, "otherNums");
+		JsonArray otherMax = Json.array(max, "otherNums");
 		int others = Math.min(size(otherMin), size(otherMax));
 		for (int i = 0; i < others; i++) {
 			float val = otherMin.get(i).getAsFloat() * minMix + otherMax.get(i).getAsFloat() * maxMix;
 			out.put(String.valueOf(i), prettyNum(Math.floor(val * 10f) / 10f));
 		}
-		JsonObject maxStats = object(max, "statNums");
-		JsonObject minStats = object(min, "statNums");
+		JsonObject maxStats = Json.object(max, "statNums");
+		JsonObject minStats = Json.object(min, "statNums");
 		if (maxStats != null) {
 			for (String key : maxStats.keySet()) {
-				float statMax = (float) num(maxStats, key);
-				float statMin = (float) num(minStats, key);
+				float statMax = (float) Json.num(maxStats, key);
+				float statMin = (float) Json.num(minStats, key);
 				float val = statMin * minMix + statMax * maxMix;
 				String body = prettyNum(Math.floor(val * 10f) / 10f);
 				out.put(key, (statMin > 0 ? "+" : "") + body);
@@ -253,8 +255,8 @@ public final class SkyblockPetLore {
 	private static int[] costs(String type, String tier, int max) {
 		JsonObject pets = PETS;
 		if (pets != null) {
-			int offset = (int) num(object(pets, "pet_rarity_offset"), rarityKey(tier));
-			JsonArray levels = array(pets, "pet_levels");
+			int offset = (int) Json.num(Json.object(pets, "pet_rarity_offset"), rarityKey(tier));
+			JsonArray levels = Json.array(pets, "pet_levels");
 			List<Integer> out = new ArrayList<>();
 			if (levels != null) {
 				int take = Math.min(Math.max(0, max - 1), Math.max(0, levels.size() - offset));
@@ -263,8 +265,8 @@ public final class SkyblockPetLore {
 				}
 			}
 			JsonObject custom = custom(type);
-			if (custom != null && (int) num(custom, "type") == 1) {
-				JsonArray extra = array(custom, "pet_levels");
+			if (custom != null && (int) Json.num(custom, "type") == 1) {
+				JsonArray extra = Json.array(custom, "pet_levels");
 				if (extra != null) {
 					for (int i = 0; i < extra.size() && out.size() < max - 1; i++) {
 						out.add((int) Math.round(extra.get(i).getAsDouble()));
@@ -306,7 +308,7 @@ public final class SkyblockPetLore {
 		if (type == null || type.isBlank() || PETS == null) {
 			return null;
 		}
-		return object(object(PETS, "custom_pet_leveling"), type.trim().toUpperCase(Locale.ROOT));
+		return Json.object(Json.object(PETS, "custom_pet_leveling"), type.trim().toUpperCase(Locale.ROOT));
 	}
 
 	private static String rarityKey(String tier) {
@@ -401,17 +403,6 @@ public final class SkyblockPetLore {
 		};
 	}
 
-	private static String tierCode(String tier) {
-		return switch (tier == null ? "" : tier.toLowerCase(Locale.ROOT)) {
-			case "uncommon" -> "§a";
-			case "rare" -> "§9";
-			case "epic" -> "§5";
-			case "legendary" -> "§6";
-			case "mythic" -> "§d";
-			default -> "§f";
-		};
-	}
-
 	private static String pretty(String raw) {
 		if (raw == null || raw.isBlank()) {
 			return "";
@@ -439,22 +430,6 @@ public final class SkyblockPetLore {
 		return String.valueOf(value);
 	}
 
-	private static JsonObject object(JsonObject parent, String key) {
-		if (parent == null || key == null || !parent.has(key)) {
-			return null;
-		}
-		JsonElement value = parent.get(key);
-		return value != null && value.isJsonObject() ? value.getAsJsonObject() : null;
-	}
-
-	private static JsonArray array(JsonObject parent, String key) {
-		if (parent == null || key == null || !parent.has(key)) {
-			return null;
-		}
-		JsonElement value = parent.get(key);
-		return value != null && value.isJsonArray() ? value.getAsJsonArray() : null;
-	}
-
 	private static int size(JsonArray array) {
 		return array == null ? 0 : array.size();
 	}
@@ -465,17 +440,6 @@ public final class SkyblockPetLore {
 		}
 		String value = object.get(key).getAsString();
 		return value == null ? "" : value;
-	}
-
-	private static double num(JsonObject object, String key) {
-		if (object == null || key == null || !object.has(key) || !object.get(key).isJsonPrimitive()) {
-			return 0d;
-		}
-		try {
-			return object.get(key).getAsDouble();
-		} catch (Exception ignored) {
-			return 0d;
-		}
 	}
 
 	private static int parseInt(String raw) {

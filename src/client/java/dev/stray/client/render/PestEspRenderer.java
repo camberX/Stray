@@ -2,6 +2,7 @@ package dev.stray.client.render;
 
 import dev.stray.client.config.StrayConfig;
 import dev.stray.client.farming.PestEsp;
+import dev.stray.client.util.Sight;
 import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderEvents;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
@@ -10,8 +11,6 @@ import net.minecraft.gizmos.GizmoProperties;
 import net.minecraft.gizmos.GizmoStyle;
 import net.minecraft.gizmos.Gizmos;
 import net.minecraft.network.chat.Component;
-import net.minecraft.world.level.ClipContext;
-import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Vector3fc;
 
@@ -95,7 +94,7 @@ public final class PestEspRenderer {
 			if (facing <= 0.12) {
 				continue;
 			}
-			if (!through && occluded(client, camera, at)) {
+			if (!through && Sight.occluded(client, camera, at)) {
 				continue;
 			}
 			Vec3 ndc = client.gameRenderer.projectPointToScreen(at);
@@ -111,17 +110,4 @@ public final class PestEspRenderer {
 		}
 	}
 
-	private static boolean occluded(Minecraft client, Vec3 from, Vec3 to) {
-		HitResult hit = client.level.clip(new ClipContext(
-			from,
-			to,
-			ClipContext.Block.VISUAL,
-			ClipContext.Fluid.NONE,
-			client.player
-		));
-		if (hit.getType() == HitResult.Type.MISS) {
-			return false;
-		}
-		return hit.getLocation().distanceToSqr(from) + 0.36 < to.distanceToSqr(from);
-	}
 }

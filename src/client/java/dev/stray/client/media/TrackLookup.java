@@ -4,6 +4,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import dev.stray.client.util.Text;
 import net.minecraft.util.Util;
 
 import java.net.URI;
@@ -371,7 +372,7 @@ final class TrackLookup {
 				rowTitle = text(row, "title", "title_short");
 				rowArtist = nested(row, "artist", "name");
 				rowAlbum = nested(row, "album", "title");
-				art = firstNonBlank(
+				art = Text.firstNonBlank(
 					nested(row, "album", "cover_medium"),
 					nested(row, "album", "cover_big"),
 					nested(row, "album", "cover")
@@ -479,15 +480,6 @@ final class TrackLookup {
 			}
 			String value = json.get(key).getAsString().trim();
 			if (!value.isBlank()) {
-				return value;
-			}
-		}
-		return "";
-	}
-
-	private static String firstNonBlank(String... values) {
-		for (String value : values) {
-			if (value != null && !value.isBlank()) {
 				return value;
 			}
 		}

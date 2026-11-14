@@ -2,7 +2,6 @@ package dev.stray.client.mixin;
 
 import dev.stray.client.render.GuiDraw;
 import dev.stray.client.ui.ContainerChrome;
-import dev.stray.client.ui.LoadoutsScreen;
 import dev.stray.client.ui.MenuChrome;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;

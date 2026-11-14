@@ -1,6 +1,5 @@
 package dev.stray.client.ui;
 
-import dev.stray.client.config.StrayConfig;
 import dev.stray.client.render.GuiDraw;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 

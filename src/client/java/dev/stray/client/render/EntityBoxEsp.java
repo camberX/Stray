@@ -4,6 +4,7 @@ import dev.stray.client.config.EntityKind;
 import dev.stray.client.config.EntityVisuals;
 import dev.stray.client.config.StrayConfig;
 import dev.stray.client.ui.Theme;
+import dev.stray.client.util.Sight;
 import net.minecraft.client.Camera;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
@@ -55,7 +56,7 @@ public final class EntityBoxEsp {
 			if (!EntityScreenBoxes.facing(mid, camPos, forward)) {
 				continue;
 			}
-			if (!visuals.boxThroughWalls && EntityScreenBoxes.occluded(client, camPos, mid)) {
+			if (!visuals.boxThroughWalls && Sight.occluded(client, camPos, mid)) {
 				continue;
 			}
 			EntityScreenBoxes.Box box = EntityScreenBoxes.project(

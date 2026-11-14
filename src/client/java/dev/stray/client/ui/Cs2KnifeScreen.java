@@ -756,25 +756,6 @@ public final class Cs2KnifeScreen extends Screen {
 		return hy + 14;
 	}
 
-	private static int fromHue(float h) {
-		h = (h % 1f + 1f) % 1f * 6f;
-		int i = (int) Math.floor(h);
-		float f = h - i;
-		float q = 1f - f;
-		float r;
-		float g;
-		float b;
-		switch (i) {
-			case 0 -> { r = 1; g = f; b = 0; }
-			case 1 -> { r = q; g = 1; b = 0; }
-			case 2 -> { r = 0; g = 1; b = f; }
-			case 3 -> { r = 0; g = q; b = 1; }
-			case 4 -> { r = f; g = 0; b = 1; }
-			default -> { r = 1; g = 0; b = q; }
-		}
-		return (Math.round(r * 255) << 16) | (Math.round(g * 255) << 8) | Math.round(b * 255);
-	}
-
 	private void drawFinishes(GuiGraphicsExtractor g, Cs2Library lib, int mouseX, int mouseY, long now, float alpha) {
 		int x = midX();
 		int y = gridTop();

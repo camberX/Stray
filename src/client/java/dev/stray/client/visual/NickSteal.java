@@ -1,5 +1,6 @@
 package dev.stray.client.visual;
 
+import dev.stray.client.util.Json;
 import dev.stray.client.util.Text;
 import com.google.common.collect.ImmutableMultimap;
 import com.google.gson.JsonArray;
@@ -160,12 +161,12 @@ public final class NickSteal {
 	private static void lookup(int gen, String query) {
 		try {
 			JsonObject mojang = getJson(MOJANG + encode(query));
-			UUID uuid = uuidOf(string(mojang, "id"));
-			String named = string(mojang, "name");
+			UUID uuid = uuidOf(Json.string(mojang, "id"));
+			String named = Json.string(mojang, "name");
 			if (uuid == null) {
 				JsonObject ashcon = getJson(ASHCON + encode(query));
-				uuid = uuidOf(string(ashcon, "uuid"));
-				named = string(ashcon, "username");
+				uuid = uuidOf(Json.string(ashcon, "uuid"));
+				named = Json.string(ashcon, "username");
 			}
 			if (uuid == null) {
 				fail(gen, "No player called " + query);
@@ -187,9 +188,9 @@ public final class NickSteal {
 						continue;
 					}
 					JsonObject property = element.getAsJsonObject();
-					if ("textures".equalsIgnoreCase(string(property, "name"))) {
-						value = string(property, "value");
-						signature = string(property, "signature");
+					if ("textures".equalsIgnoreCase(Json.string(property, "name"))) {
+						value = Json.string(property, "value");
+						signature = Json.string(property, "signature");
 						break;
 					}
 				}
@@ -198,13 +199,13 @@ public final class NickSteal {
 				return;
 			}
 			JsonObject soopy = getJson(SOOPY_PLAYER + compact);
-			JsonObject stats = object(object(soopy, "data"), "stats");
-			String prefix = string(stats, "prefixCalculated").trim();
+			JsonObject stats = Json.object(Json.object(soopy, "data"), "stats");
+			String prefix = Json.string(stats, "prefixCalculated").trim();
 			if (prefix.contains("undefined")) {
 				prefix = "";
 			}
 			if (prefix.isEmpty()) {
-				prefix = string(stats, "prefix").trim();
+				prefix = Json.string(stats, "prefix").trim();
 			}
 			if (prefix.contains("undefined")) {
 				prefix = "";
@@ -246,12 +247,12 @@ public final class NickSteal {
 				continue;
 			}
 			JsonObject profile = element.getAsJsonObject();
-			JsonObject members = object(profile, "members");
+			JsonObject members = Json.object(profile, "members");
 			JsonObject member = null;
 			if (members != null) {
 				for (String key : members.keySet()) {
 					if (key.replace("-", "").equalsIgnoreCase(compact)) {
-						member = object(members, key);
+						member = Json.object(members, key);
 						break;
 					}
 				}
@@ -259,7 +260,7 @@ public final class NickSteal {
 			if (member == null) {
 				continue;
 			}
-			double xp = num(object(member, "leveling"), "experience");
+			double xp = Json.num(Json.object(member, "leveling"), "experience");
 			int level = (int) Math.floor(xp / 100d);
 			boolean chosen = profile.has("selected") && profile.get("selected").isJsonPrimitive() && profile.get("selected").getAsBoolean();
 			if (chosen) {
@@ -467,35 +468,6 @@ public final class NickSteal {
 			return element != null && element.isJsonObject() ? element.getAsJsonObject() : null;
 		} catch (Exception ignored) {
 			return null;
-		}
-	}
-
-	private static JsonObject object(JsonObject parent, String key) {
-		if (parent == null || key == null || !parent.has(key) || !parent.get(key).isJsonObject()) {
-			return null;
-		}
-		return parent.getAsJsonObject(key);
-	}
-
-	private static String string(JsonObject object, String key) {
-		if (object == null || key == null || !object.has(key) || !object.get(key).isJsonPrimitive()) {
-			return "";
-		}
-		try {
-			return object.get(key).getAsString();
-		} catch (Exception ignored) {
-			return "";
-		}
-	}
-
-	private static double num(JsonObject object, String key) {
-		if (object == null || key == null || !object.has(key) || !object.get(key).isJsonPrimitive()) {
-			return 0d;
-		}
-		try {
-			return object.get(key).getAsDouble();
-		} catch (Exception ignored) {
-			return 0d;
 		}
 	}
 

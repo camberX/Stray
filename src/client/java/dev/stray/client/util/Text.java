@@ -1,5 +1,10 @@
 package dev.stray.client.util;
 
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.Style;
+
+import java.util.Optional;
+
 /**
  * Small string helpers used all over the mod for chat, scoreboard, tab list,
  * lore and nametag text. They do what the old {@code replaceAll} chains did
@@ -92,5 +97,41 @@ public final class Text {
 	/** Characters regex {@code .} does not match by default. */
 	private static boolean isLineTerminator(char c) {
 		return c == '\n' || c == '\r' || c == '\u0085' || c == ' ' || c == ' ';
+	}
+
+	/** The first value that is not null or blank, "" when there is none. */
+	public static String firstNonBlank(String... values) {
+		for (String value : values) {
+			if (value != null && !value.isBlank()) {
+				return value;
+			}
+		}
+		return "";
+	}
+
+	/** Appends a line break and then the component's text as written (formatting codes kept). */
+	public static void appendLine(StringBuilder out, Component component) {
+		if (component == null) {
+			return;
+		}
+		out.append('\n');
+		component.visit((style, text) -> {
+			if (text != null) {
+				out.append(text);
+			}
+			return Optional.empty();
+		}, Style.EMPTY);
+	}
+
+	/** A whole number that may use thousands separators ("1,234"), 0 when it is not one. */
+	public static long count(String raw) {
+		if (raw == null || raw.isBlank()) {
+			return 0L;
+		}
+		try {
+			return Long.parseLong(raw.replace(",", ""));
+		} catch (NumberFormatException ignored) {
+			return 0L;
+		}
 	}
 }

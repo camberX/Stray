@@ -2,9 +2,7 @@ package dev.stray.client.render;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.phys.AABB;
-import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Vector3fc;
 
@@ -70,20 +68,6 @@ final class EntityScreenBoxes {
 	static boolean facing(Vec3 mid, Vec3 camPos, Vector3fc forward) {
 		Vec3 rel = mid.subtract(camPos);
 		return rel.x * forward.x() + rel.y * forward.y() + rel.z * forward.z() > 0.12;
-	}
-
-	static boolean occluded(Minecraft client, Vec3 from, Vec3 to) {
-		HitResult hit = client.level.clip(new ClipContext(
-			from,
-			to,
-			ClipContext.Block.VISUAL,
-			ClipContext.Fluid.NONE,
-			client.player
-		));
-		if (hit.getType() == HitResult.Type.MISS) {
-			return false;
-		}
-		return hit.getLocation().distanceToSqr(from) + 0.36 < to.distanceToSqr(from);
 	}
 
 	record Box(float x, float y, float w, float h) {

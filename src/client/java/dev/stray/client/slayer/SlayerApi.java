@@ -1,5 +1,6 @@
 package dev.stray.client.slayer;
 
+import dev.stray.client.util.TabList;
 import dev.stray.client.util.Text;
 import dev.stray.client.config.StrayConfig;
 import dev.stray.client.location.SkyblockLocation;
@@ -9,10 +10,7 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.decoration.ArmorStand;
 import net.minecraft.world.phys.AABB;
-import net.minecraft.world.scores.DisplaySlot;
 import net.minecraft.world.scores.Objective;
-import net.minecraft.world.scores.PlayerScoreEntry;
-import net.minecraft.world.scores.PlayerTeam;
 import net.minecraft.world.scores.Scoreboard;
 
 import java.util.ArrayList;
@@ -616,28 +614,13 @@ public final class SlayerApi {
 			return List.of();
 		}
 		Scoreboard scoreboard = client.level.getScoreboard();
-		Objective objective = scoreboard.getDisplayObjective(DisplaySlot.SIDEBAR);
-		PlayerTeam own = scoreboard.getPlayersTeam(client.player.getScoreboardName());
-		if (own != null && own.getColor().isPresent()) {
-			DisplaySlot slot = own.getColor().get().displaySlot();
-			if (slot != null && scoreboard.getDisplayObjective(slot) != null) {
-				objective = scoreboard.getDisplayObjective(slot);
-			}
-		}
+		Objective objective = TabList.sidebarObjective(scoreboard, client.player.getScoreboardName());
 		if (objective == null) {
 			return List.of();
 		}
-		List<PlayerScoreEntry> entries = new ArrayList<>();
-		for (PlayerScoreEntry entry : scoreboard.listPlayerScores(objective)) {
-			if (!entry.isHidden()) {
-				entries.add(entry);
-			}
-		}
-		entries.sort(Comparator.comparingInt(PlayerScoreEntry::value).reversed());
 		List<String> lines = new ArrayList<>();
-		for (PlayerScoreEntry entry : entries) {
-			Component raw = entry.display() != null ? entry.display() : Component.literal(entry.owner());
-			String text = Text.collapse(Text.strip(PlayerTeam.formatNameForTeam(scoreboard.getPlayersTeam(entry.owner()), raw).getString())
+		for (Component line : TabList.sidebarLines(scoreboard, objective)) {
+			String text = Text.collapse(Text.strip(line.getString())
 				.replace(' ', ' ')
 				.replaceAll("[\\p{Cf}\\p{Co}]", ""))
 				.trim();

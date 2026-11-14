@@ -2,9 +2,9 @@ package dev.stray.client.foraging;
 
 import dev.stray.client.config.StrayConfig;
 import dev.stray.client.location.SkyblockLocation;
+import dev.stray.client.util.Chat;
 import dev.stray.client.visual.NickSteal;
 import com.mojang.math.Transformation;
-import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.ClickEvent;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.HoverEvent;
@@ -251,7 +251,7 @@ public final class ForagingTweaks {
 				.withClickEvent(new ClickEvent.RunCommand("/treegifts"))
 		);
 		resetSweep();
-		tell(out);
+		Chat.tell(out);
 	}
 
 	private static void resetSweep() {
@@ -278,7 +278,7 @@ public final class ForagingTweaks {
 				return false;
 			}
 			// Not a Tree Gift after all: show the separator we held back.
-			tell(held);
+			Chat.tell(held);
 		}
 		if (!enabled) {
 			if (inGift) {
@@ -364,11 +364,11 @@ public final class ForagingTweaks {
 		if (giftHover != null) {
 			style = style.withHoverEvent(giftHover);
 		}
-		tell(Component.literal(
+		Chat.tell(Component.literal(
 			"§9" + tree + "Tree Gift. §7You helped cut " + percent + " §7and gained §e" + giftRewards + " rewards§a!"
 		).withStyle(style));
 		for (String drop : giftDrops) {
-			tell(Component.literal("§f - " + drop));
+			Chat.tell(Component.literal("§f - " + drop));
 		}
 		giftDrops.clear();
 		giftHover = null;
@@ -408,10 +408,4 @@ public final class ForagingTweaks {
 		return value.endsWith(".0") ? value.substring(0, value.length() - 2) : value;
 	}
 
-	private static void tell(Component message) {
-		Minecraft client = Minecraft.getInstance();
-		if (client.gui != null) {
-			client.gui.hud.getChat().addClientSystemMessage(message);
-		}
-	}
 }

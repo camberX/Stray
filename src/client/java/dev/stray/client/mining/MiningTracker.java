@@ -1,5 +1,6 @@
 package dev.stray.client.mining;
 
+import dev.stray.client.util.TabList;
 import dev.stray.client.util.Text;
 import dev.stray.client.config.StrayConfig;
 import dev.stray.client.item.ItemText;
@@ -281,7 +282,7 @@ public final class MiningTracker {
 		boolean saw = false;
 		int left = 0;
 		for (PlayerInfo info : infos) {
-			String line = cleanName(plain(tabName(info)));
+			String line = cleanName(plain(TabList.displayName(info)));
 			if (line.isEmpty()) {
 				continue;
 			}
@@ -515,7 +516,7 @@ public final class MiningTracker {
 		String pending = null;
 		int limit = Math.min(80, infos.size());
 		for (int i = 0; i < limit; i++) {
-			String line = cleanName(plain(tabName(infos.get(i))));
+			String line = cleanName(plain(TabList.displayName(infos.get(i))));
 			if (line.isEmpty()) {
 				continue;
 			}
@@ -545,14 +546,6 @@ public final class MiningTracker {
 			pending = line;
 		}
 		return List.copyOf(out);
-	}
-
-	private static Component tabName(PlayerInfo info) {
-		Component display = info.getTabListDisplayName();
-		if (display != null) {
-			return display;
-		}
-		return PlayerTeam.formatNameForTeam(info.getTeam(), Component.literal(info.getProfile().name()));
 	}
 
 	private static boolean isCommissionsHeader(String line) {

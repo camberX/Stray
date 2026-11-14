@@ -2,9 +2,6 @@ package dev.stray.client.render;
 
 import dev.stray.Stray;
 import dev.stray.client.config.StrayConfig;
-import dev.stray.client.ui.ClickGui;
-import dev.stray.client.ui.ControlChrome;
-import dev.stray.client.ui.LoadoutsScreen;
 import dev.stray.client.ui.MenuFont;
 import dev.stray.client.ui.StrayScreen;
 import dev.stray.client.ui.Theme;
@@ -1078,7 +1075,6 @@ public final class GuiDraw {
 		return font.width(MenuFont.shadowSmall(value));
 	}
 
-
 	public static int titleWidth(Font font, String value) {
 		return font.width(MenuFont.shadowTitle(value));
 	}
@@ -1123,13 +1119,6 @@ public final class GuiDraw {
 	/** Width of {@link #hud} text: measured in the same font it draws in. */
 	public static int hudWidth(Font font, Component value) {
 		return font.width(inter(value));
-	}
-
-	private static int scaledWidth(int width, float scale) {
-		if (scale >= 0.999f) {
-			return width;
-		}
-		return Math.max(0, Math.round(width * scale));
 	}
 
 	public static boolean hovered(double mouseX, double mouseY, float x, float y, float w, float h) {

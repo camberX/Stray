@@ -1,5 +1,6 @@
 package dev.stray.client.skill;
 
+import dev.stray.client.util.TabList;
 import dev.stray.client.util.Text;
 import dev.stray.client.config.StrayConfig;
 import dev.stray.client.item.ItemAppearance;
@@ -218,7 +219,7 @@ public final class SkillProgressTracker {
 		infos.sort(TAB_ORDER);
 		int limit = Math.min(80, infos.size());
 		for (int i = 0; i < limit; i++) {
-			String line = clean(tabName(infos.get(i)));
+			String line = clean(TabList.displayName(infos.get(i)));
 			if (line.isEmpty()) {
 				continue;
 			}
@@ -295,38 +296,18 @@ public final class SkillProgressTracker {
 
 	private static String itemBlob(ItemStack stack) {
 		StringBuilder out = new StringBuilder();
-		append(out, stack.get(DataComponents.CUSTOM_NAME));
-		append(out, stack.getHoverName());
+		Text.appendLine(out, stack.get(DataComponents.CUSTOM_NAME));
+		Text.appendLine(out, stack.getHoverName());
 		ItemLore lore = stack.get(DataComponents.LORE);
 		if (lore != null) {
 			for (Component line : lore.lines()) {
-				append(out, line);
+				Text.appendLine(out, line);
 			}
 			for (Component line : lore.styledLines()) {
-				append(out, line);
+				Text.appendLine(out, line);
 			}
 		}
 		return clean(out.toString());
-	}
-
-	private static void append(StringBuilder out, Component component) {
-		if (component == null) {
-			return;
-		}
-		out.append('\n');
-		component.visit((style, text) -> {
-			if (text != null) {
-				out.append(text);
-			}
-			return Optional.empty();
-		}, Style.EMPTY);
-	}
-
-	private static Component tabName(PlayerInfo info) {
-		Component display = info.getTabListDisplayName();
-		return display != null
-			? display
-			: PlayerTeam.formatNameForTeam(info.getTeam(), Component.literal(info.getProfile().name()));
 	}
 
 	private static void remember(SkillKind kind, int level) {

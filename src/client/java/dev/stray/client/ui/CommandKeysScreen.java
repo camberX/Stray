@@ -6,6 +6,7 @@ import dev.stray.client.config.StrayConfig;
 import dev.stray.client.input.CommandKeys;
 import dev.stray.client.input.MouseButtons;
 import dev.stray.client.render.GuiDraw;
+import dev.stray.client.util.TextFit;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
@@ -145,7 +146,7 @@ public class CommandKeysScreen extends Screen {
 			GuiDraw.small(graphics, font, label, listX + 5 + (chipW - GuiDraw.smallWidth(font, label)) * 0.5f, rowY + 5, Theme.ACCENT);
 			float delW = 16;
 			float textX = listX + 12 + chipW;
-			String shown = clip(font, "/" + row.command, (int) (listW - delW - (textX - listX) - 6));
+			String shown = TextFit.smallUnlessTiny(font, "/" + row.command, (int) (listW - delW - (textX - listX) - 6));
 			GuiDraw.small(graphics, font, shown, textX, rowY + 5, hover ? Theme.TEXT : Theme.MUTED);
 			boolean delHover = GuiDraw.hovered(mouseX, mouseY, listX + listW - delW - 2, rowY, delW, ROW_H);
 			GuiDraw.small(graphics, font, "×", listX + listW - 14, rowY + 5, delHover ? Theme.DANGER : Theme.OFF);
@@ -217,7 +218,7 @@ public class CommandKeysScreen extends Screen {
 		float labelW = GuiDraw.smallWidth(font, "Run /") + 6;
 		GuiDraw.small(graphics, font, "Run /", x + 6, y + 5, Theme.MUTED);
 		String shown = command.isEmpty() && !focused ? "warp garden" : command;
-		String clipped = clipField(font, shown, focused ? cursor : shown.length(), (int) (w - labelW - 14));
+		String clipped = TextFit.clipField(font, shown, focused ? cursor : shown.length(), (int) (w - labelW - 14));
 		float textX = x + 6 + labelW;
 		GuiDraw.menu(graphics, font, clipped, textX, GuiDraw.middle(y, FIELD_H), command.isEmpty() && !focused ? Theme.OFF : Theme.TEXT);
 		if (focused && !TextKeys.isSelected(FIELD_KEY) && ((System.currentTimeMillis() - blinkAt) / 530) % 2 == 0) {
@@ -286,32 +287,6 @@ public class CommandKeysScreen extends Screen {
 		}
 		windowX = Mth.clamp(windowX, 4, Math.max(4, width - windowW - 4));
 		windowY = Mth.clamp(windowY, 4, Math.max(4, height - windowH - 4));
-	}
-
-	private static String clipField(Font font, String value, int cursor, int maxWidth) {
-		if (GuiDraw.menuWidth(font, value) <= maxWidth) {
-			return value;
-		}
-		int from = 0;
-		while (from < cursor && GuiDraw.menuWidth(font, value.substring(from)) > maxWidth) {
-			from++;
-		}
-		String slice = value.substring(from);
-		while (slice.length() > 1 && GuiDraw.menuWidth(font, slice) > maxWidth) {
-			slice = slice.substring(0, slice.length() - 1);
-		}
-		return slice;
-	}
-
-	private static String clip(Font font, String value, int maxWidth) {
-		if (maxWidth <= 8 || GuiDraw.smallWidth(font, value) <= maxWidth) {
-			return value;
-		}
-		String trimmed = value;
-		while (trimmed.length() > 1 && GuiDraw.smallWidth(font, trimmed + "..") > maxWidth) {
-			trimmed = trimmed.substring(0, trimmed.length() - 1);
-		}
-		return trimmed + "..";
 	}
 
 	@Override

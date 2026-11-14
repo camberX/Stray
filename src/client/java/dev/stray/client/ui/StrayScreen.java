@@ -31,12 +31,12 @@ import dev.stray.client.render.MobCatalog;
 import dev.stray.client.render.NametagRenderer;
 import dev.stray.client.render.PlayerPreview;
 import dev.stray.client.render.Starfield;
+import dev.stray.client.util.Utils;
 import dev.stray.client.visual.CustomCape;
 import dev.stray.client.visual.NickHider;
 import dev.stray.client.visual.NickSteal;
 import dev.stray.client.visual.ShopCape;
 import dev.stray.client.visual.WorldTint;
-import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.PlayerFaceExtractor;
@@ -77,7 +77,6 @@ public class StrayScreen extends Screen {
 	private static final float SETTINGS_H = 480;
 	private static final float FONT_SEARCH_H = 14;
 	private static final float FONT_ROW = 16;
-	private static final int FONT_VISIBLE = 6;
 	private static final float COG_W = 14;
 
 	private enum Group {
@@ -1021,7 +1020,7 @@ public class StrayScreen extends Screen {
 			return;
 		}
 		GuiDraw.title(graphics, font, "STRAY", windowX + 10, windowY + 8, Theme.TEXT);
-		GuiDraw.small(graphics, font, "v" + modVersion(), windowX + 10 + GuiDraw.titleWidth(font, "STRAY") + 3, windowY + 10, Theme.ACCENT);
+		GuiDraw.small(graphics, font, "v" + Utils.modVersion(), windowX + 10 + GuiDraw.titleWidth(font, "STRAY") + 3, windowY + 10, Theme.ACCENT);
 		GuiDraw.rounded(graphics, windowX + 10, windowY + 20, 16, 2, 1, Theme.ACCENT);
 		hits.add(new Hit(windowX, windowY, SIDEBAR_W, 26, mx -> startDrag(mx, lastClickY), true));
 
@@ -1758,7 +1757,7 @@ public class StrayScreen extends Screen {
 			scale,
 			ControlChrome.accent()
 		);
-		drawRailCaption(graphics, font, modVersion(), railX + railW * 0.5f, gy + 9f * scale + 1f, railW - 8f, ControlChrome.accent());
+		drawRailCaption(graphics, font, Utils.modVersion(), railX + railW * 0.5f, gy + 9f * scale + 1f, railW - 8f, ControlChrome.accent());
 	}
 
 	private static int groupSize(Group group) {
@@ -2163,20 +2162,6 @@ public class StrayScreen extends Screen {
 		return sum;
 	}
 
-	private static String currentFontLabel() {
-		return fontLabel(StrayConfig.get().uiFont);
-	}
-
-	private static String fontLabel(String family) {
-		if (family == null || family.isBlank()) {
-			return "Nunito";
-		}
-		if (MenuFont.minecraftFamily(family)) {
-			return MenuFont.MINECRAFT_FAMILY;
-		}
-		return family;
-	}
-
 	private List<String> fontMatches() {
 		String q = fontQuery.trim().toLowerCase(Locale.ROOT);
 		List<String> out = new ArrayList<>();
@@ -2195,91 +2180,6 @@ public class StrayScreen extends Screen {
 			}
 		}
 		return out;
-	}
-
-	private void drawFontPicker(GuiGraphicsExtractor graphics, Font font, float x, float y, float w, int mouseX, int mouseY) {
-		GuiDraw.small(graphics, font, "Font", x, y + 1, Theme.MUTED);
-		y += 12;
-		float rowY = y;
-		boolean hover = GuiDraw.hovered(mouseX, mouseY, x, rowY, w, ROW);
-		ClickLook.panel(graphics, x, rowY + 1, w, ROW - 2, 5, hover || fontPickerOpen ? Theme.CARD_HOVER : Theme.CARD, fontPickerOpen ? Theme.ACCENT : Theme.LINE);
-		GuiDraw.menu(graphics, font, clip(font, currentFontLabel(), (int) w - 18), x + 5, GuiDraw.middle(rowY, ROW), Theme.TEXT);
-		GuiDraw.small(graphics, font, fontPickerOpen ? "^" : "v", x + w - 8 - GuiDraw.smallWidth(font, fontPickerOpen ? "^" : "v"), GuiDraw.middle(rowY, ROW) + 1, Theme.MUTED);
-		hits.add(new Hit(x, rowY, w, ROW, () -> {
-			fontPickerOpen = !fontPickerOpen;
-			fontSearchFocused = fontPickerOpen;
-			if (fontPickerOpen) {
-				fontQuery = "";
-				fontScroll = 0f;
-			}
-		}));
-		if (!fontPickerOpen) {
-			return;
-		}
-		float searchY = rowY + ROW + 2;
-		fontListX = x;
-		fontListY = searchY + FONT_SEARCH_H + 2;
-		fontListW = w;
-		fontListH = FONT_VISIBLE * FONT_ROW;
-		ClickLook.panel(graphics, x, searchY, w, FONT_SEARCH_H + 2 + fontListH + 2, 5, Theme.CARD, Theme.LINE);
-		boolean searchHover = GuiDraw.hovered(mouseX, mouseY, x, searchY, w, FONT_SEARCH_H);
-		if (fontSearchFocused || searchHover) {
-			GuiDraw.rounded(graphics, x + 1, searchY + 1, w - 2, FONT_SEARCH_H - 1, 4, Theme.CARD_HOVER);
-		}
-		markIf(fontSearchFocused, graphics, x, searchY, w, FONT_SEARCH_H);
-		String shown = fontQuery.isEmpty() ? (fontSearchFocused ? caret(true) : "Search fonts") : fontQuery + caret(fontSearchFocused);
-		GuiDraw.menu(graphics, font, clip(font, shown, (int) w - 10), x + 5, GuiDraw.middle(searchY, FONT_SEARCH_H), fontQuery.isEmpty() && !fontSearchFocused ? Theme.MUTED : Theme.TEXT);
-		hits.add(new Hit(x, searchY, w, FONT_SEARCH_H, () -> fontSearchFocused = true));
-		List<String> matches = fontMatches();
-		float maxScroll = Math.max(0f, matches.size() * FONT_ROW - fontListH);
-		fontScroll = Mth.clamp(fontScroll, 0f, maxScroll);
-		boolean clip = GuiDraw.scissor(graphics, fontListX, fontListY, fontListW, fontListH);
-		if (matches.isEmpty()) {
-			GuiDraw.menu(graphics, font, "No fonts found", fontListX + 4, GuiDraw.middle(fontListY, fontListH), Theme.MUTED);
-		} else {
-			float iy = fontListY - fontScroll;
-			String selected = StrayConfig.get().uiFont == null ? "" : StrayConfig.get().uiFont;
-			for (String family : matches) {
-				if (iy + FONT_ROW > fontListY && iy < fontListY + fontListH) {
-					boolean on = family.equals(selected) || (family.isEmpty() && selected.isBlank()) || (MenuFont.minecraftFamily(family) && MenuFont.minecraftFamily(selected));
-					boolean rowHover = GuiDraw.hovered(mouseX, mouseY, fontListX, iy, fontListW, FONT_ROW)
-						&& GuiDraw.hovered(mouseX, mouseY, fontListX, fontListY, fontListW, fontListH);
-					if (on || rowHover) {
-						GuiDraw.rounded(graphics, fontListX, iy, fontListW, FONT_ROW, 3, on ? Theme.CARD_HOVER : Theme.CARD);
-					}
-					String label = family.isEmpty() ? "Nunito (default)" : fontLabel(family);
-					GuiDraw.menu(graphics, font, clip(font, label, (int) fontListW - 10), fontListX + 5, GuiDraw.middle(iy, FONT_ROW), on ? Theme.ACCENT : Theme.TEXT);
-					String pick = family;
-					float hitY = Math.max(iy, fontListY);
-					float hitB = Math.min(iy + FONT_ROW, fontListY + fontListH);
-					if (hitB - hitY >= 3f) {
-						hits.add(new Hit(fontListX, hitY, fontListW, hitB - hitY, () -> pickFont(pick)));
-					}
-				}
-				iy += FONT_ROW;
-			}
-		}
-		if (clip) {
-			GuiDraw.disableScissor(graphics);
-		}
-		if (maxScroll > 1f) {
-			float trackX = x + w - 4;
-			float trackH = fontListH - 4;
-			float trackY = fontListY + 2;
-			GuiDraw.rounded(graphics, trackX, trackY, 2.4f, trackH, 1.2f, Theme.TRACK);
-			float thumbH = Math.max(12f, trackH * trackH / (trackH + maxScroll));
-			float thumbY = trackY + (fontScroll / maxScroll) * (trackH - thumbH);
-			GuiDraw.rounded(graphics, trackX - 0.4f, thumbY, 3.2f, thumbH, 1.6f, Theme.ACCENT);
-		}
-	}
-
-	private void pickFont(String family) {
-		String current = StrayConfig.get().uiFont == null ? "" : StrayConfig.get().uiFont;
-		String next = family == null ? "" : family;
-		if (next.equals(current) || (next.isEmpty() && current.isBlank()) || (MenuFont.minecraftFamily(next) && MenuFont.minecraftFamily(current))) {
-			return;
-		}
-		UiFontPack.apply(next);
 	}
 
 	private static int menuScaleChip() {
@@ -2998,29 +2898,6 @@ public class StrayScreen extends Screen {
 			float[] values = {1.00f, 0.90f, 0.75f, 0.50f};
 			config.menuScale = values[index];
 		});
-	}
-
-	private void drawControlFeaturePage(
-		GuiGraphicsExtractor graphics,
-		Font font,
-		int mouseX,
-		int mouseY,
-		float left,
-		float right,
-		float top,
-		float col,
-		float ix,
-		float rx,
-		float iw
-	) {
-		Feature feature = featureId;
-		if (feature == null) {
-			return;
-		}
-		float y = featureCard(graphics, font, left, top, col, cardHeight(Math.max(3, feature.rows())), feature.title);
-		drawFeatureFields(graphics, font, mouseX, mouseY, ix, y, iw, feature);
-		y = featureCard(graphics, font, right, top, col, cardHeight(1), "Done");
-		cycle(graphics, font, rx, y, iw, mouseX, mouseY, "Back", tab.label, () -> featureOpen = false);
 	}
 
 	private void drawPageScrollbar(GuiGraphicsExtractor graphics) {
@@ -5125,13 +5002,6 @@ public class StrayScreen extends Screen {
 
 	private static String hex(int rgb) {
 		return String.format(Locale.ROOT, "#%06X", rgb & 0xFFFFFF);
-	}
-
-	private static String modVersion() {
-		return FabricLoader.getInstance()
-			.getModContainer("stray")
-			.map(container -> container.getMetadata().getVersion().getFriendlyString())
-			.orElse("1.3.33");
 	}
 
 	@Override

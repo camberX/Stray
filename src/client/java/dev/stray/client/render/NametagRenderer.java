@@ -6,6 +6,7 @@ import dev.stray.client.config.StrayConfig;
 import dev.stray.client.ui.Anim;
 import dev.stray.client.ui.MenuFont;
 import dev.stray.client.ui.Theme;
+import dev.stray.client.util.Sight;
 import dev.stray.client.visual.NickHider;
 import dev.stray.client.visual.ShopCape;
 import net.minecraft.client.Camera;
@@ -20,12 +21,9 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Avatar;
 import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.decoration.ArmorStand;
-import net.minecraft.world.level.ClipContext;
-import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Vector3fc;
 
@@ -308,27 +306,13 @@ public final class NametagRenderer {
 		if (cached != null) {
 			return cached;
 		}
-		boolean value = occluded(client, from, to);
+		boolean value = Sight.occluded(client, from, to);
 		OCCLUSION.put(id, value);
 		return value;
 	}
 
 	private static int occlusionTick = Integer.MIN_VALUE;
 	private static final Map<UUID, Boolean> OCCLUSION = new HashMap<>();
-
-	private static boolean occluded(Minecraft client, Vec3 from, Vec3 to) {
-		HitResult hit = client.level.clip(new ClipContext(
-			from,
-			to,
-			ClipContext.Block.VISUAL,
-			ClipContext.Fluid.NONE,
-			client.player
-		));
-		if (hit.getType() == HitResult.Type.MISS) {
-			return false;
-		}
-		return hit.getLocation().distanceToSqr(from) + 0.36 < to.distanceToSqr(from);
-	}
 
 	private static Component label(AbstractClientPlayer player) {
 		Component name = player.getDisplayName();

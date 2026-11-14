@@ -9,6 +9,8 @@ import dev.stray.Stray;
 import dev.stray.client.item.SkyblockItems;
 import dev.stray.client.item.SkyblockLore;
 import dev.stray.client.item.SkyblockPetLore;
+import dev.stray.client.util.Json;
+import dev.stray.client.util.Utils;
 import net.minecraft.client.Minecraft;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
@@ -109,46 +111,45 @@ public final class ProfileViewer {
 	private static final int[] SLAYER_ENDER = {10, 30, 250, 1500, 5000, 20000, 100000, 400000, 1000000};
 	private static final int[] SLAYER_BLAZE = {10, 30, 250, 1500, 5000, 20000, 100000, 400000, 1000000};
 	private static final int[] SLAYER_VAMP = {20, 75, 240, 840, 2400};
-	private static final long[] GARDEN_XP = cropCum(
+	private static final long[] GARDEN_XP = Utils.cumulative(
 		70, 70, 140, 240, 600, 1500, 2000, 2500, 3000, 10000, 10000, 10000, 10000, 10000
 	);
 	/** Cumulative harvests to reach each Garden crop milestone. Wiki tables, 46 tiers. */
-	private static final long[] CROP_WHEAT = cropCum(
+	private static final long[] CROP_WHEAT = Utils.cumulative(
 		30, 50, 80, 200, 350, 700, 1500, 2500, 3500, 5000,
 		6500, 8000, 10000, 20000, 35000, 50000, 75000, 100000, 175000, 250000,
 		325000, 400000, 500000, 650000, 800000, 800000, 800000, 800000, 800000, 800000,
 		800000, 800000, 800000, 800000, 800000, 800000, 800000, 800000, 800000, 800000,
 		800000, 800000, 800000, 800000, 800000, 800000
 	);
-	private static final long[] CROP_CARROT = cropCum(
+	private static final long[] CROP_CARROT = Utils.cumulative(
 		100, 150, 250, 500, 1000, 2000, 4500, 9000, 12000, 15000,
 		20000, 25000, 35000, 70000, 120000, 180000, 250000, 350000, 600000, 850000,
 		1100000, 1400000, 1800000, 2200000, 2600000, 2600000, 2600000, 2600000, 2600000, 2600000,
 		2600000, 2600000, 2600000, 2600000, 2600000, 2600000, 2600000, 2600000, 2600000, 2600000,
 		2600000, 2600000, 2600000, 2600000, 2600000, 2600000
 	);
-	private static final long[] CROP_MELON = cropCum(
+	private static final long[] CROP_MELON = Utils.cumulative(
 		150, 250, 400, 1000, 1800, 3500, 7500, 12500, 17500, 25000,
 		32500, 40000, 50000, 100000, 175000, 250000, 375000, 500000, 875000, 1200000,
 		1600000, 2000000, 2500000, 3200000, 4000000, 4000000, 4000000, 4000000, 4000000, 4000000,
 		4000000, 4000000, 4000000, 4000000, 4000000, 4000000, 4000000, 4000000, 4000000, 4000000,
 		4000000, 4000000, 4000000, 4000000, 4000000, 4000000
 	);
-	private static final long[] CROP_CANE = cropCum(
+	private static final long[] CROP_CANE = Utils.cumulative(
 		60, 100, 160, 400, 700, 1400, 3000, 5000, 7000, 10000,
 		13000, 16000, 20000, 40000, 70000, 100000, 150000, 200000, 350000, 500000,
 		650000, 800000, 1000000, 1300000, 1600000, 1600000, 1600000, 1600000, 1600000, 1600000,
 		1600000, 1600000, 1600000, 1600000, 1600000, 1600000, 1600000, 1600000, 1600000, 1600000,
 		1600000, 1600000, 1600000, 1600000, 1600000, 1600000
 	);
-	private static final long[] CROP_WART = cropCum(
+	private static final long[] CROP_WART = Utils.cumulative(
 		90, 150, 250, 500, 1000, 2000, 4000, 7500, 10000, 15000,
 		20000, 25000, 30000, 50000, 100000, 150000, 200000, 300000, 500000, 750000,
 		1000000, 1300000, 1600000, 2000000, 2400000, 2400000, 2400000, 2400000, 2400000, 2400000,
 		2400000, 2400000, 2400000, 2400000, 2400000, 2400000, 2400000, 2400000, 2400000, 2400000,
 		2400000, 2400000, 2400000, 2400000, 2400000, 2400000
 	);
-	private static final String ELITE_GARDEN = "https://api.elitebot.dev/garden/";
 	private static final String[] COLLECTION_TYPES = {
 		"FARMING", "MINING", "COMBAT", "FORAGING", "FISHING", "RIFT", "OTHER"
 	};
@@ -710,7 +711,7 @@ public final class ProfileViewer {
 		if (member == null || keys == null) {
 			return List.of();
 		}
-		JsonObject inventory = object(member, "inventory");
+		JsonObject inventory = Json.object(member, "inventory");
 		for (String key : keys) {
 			List<SlotItem> items = new ArrayList<>();
 			for (SlotItem item : parseBag(key, bagOf(inventory, member, key), 9, 0).slots()) {
@@ -738,7 +739,7 @@ public final class ProfileViewer {
 			if (chosen == null) {
 				chosen = profile;
 			}
-			if (bool(profile, "selected")) {
+			if (Json.bool(profile, "selected")) {
 				chosen = profile;
 				break;
 			}
@@ -953,35 +954,35 @@ public final class ProfileViewer {
 	}
 
 	private static JsonObject soopyAsProfiles(JsonObject soopy) {
-		JsonObject data = object(soopy, "data");
-		JsonObject map = object(data, "profiles");
+		JsonObject data = Json.object(soopy, "data");
+		JsonObject map = Json.object(data, "profiles");
 		if (map == null || map.size() == 0) {
 			return null;
 		}
-		String current = compact(string(object(data, "stats"), "currentProfileId"));
+		String current = compact(string(Json.object(data, "stats"), "currentProfileId"));
 		JsonArray list = new JsonArray();
 		for (String key : map.keySet()) {
-			JsonObject src = object(map, key);
+			JsonObject src = Json.object(map, key);
 			if (src == null) {
 				continue;
 			}
 			JsonObject profile = new JsonObject();
 			profile.addProperty("profile_id", key);
 			profile.addProperty("cute_name", string(src, "cute_name"));
-			profile.addProperty("selected", compact(key).equals(current) || bool(src, "selected"));
+			profile.addProperty("selected", compact(key).equals(current) || Json.bool(src, "selected"));
 			String mode = string(src, "game_mode");
 			if (mode.isBlank()) {
 				mode = string(src, "gameMode");
 			}
 			profile.addProperty("game_mode", mode);
 			JsonObject banking = new JsonObject();
-			double bank = num(object(src, "stats"), "bank_balance");
+			double bank = num(Json.object(src, "stats"), "bank_balance");
 			if (bank == 0d) {
 				bank = num(src, "bank_balance");
 			}
 			banking.addProperty("balance", bank);
 			profile.add("banking", banking);
-			JsonObject members = object(src, "members");
+			JsonObject members = Json.object(src, "members");
 			if (members != null) {
 				profile.add("members", members);
 			}
@@ -1147,7 +1148,7 @@ public final class ProfileViewer {
 		if (profile == null || member == null) {
 			return profile;
 		}
-		JsonObject inventory = object(member, "inventory");
+		JsonObject inventory = Json.object(member, "inventory");
 		Bag inv = parseBag("Inventory", first(inventory, member, "inv_contents"), 9, 36);
 		Bag armor = parseBag("Armor", first(inventory, member, "inv_armor"), 1, 4);
 		List<Bag> ender = parseEnder(inventory, member);
@@ -1245,7 +1246,7 @@ public final class ProfileViewer {
 	}
 
 	private static Resolved fromPlayerDb(JsonObject root, String name) {
-		JsonObject player = object(object(root, "data"), "player");
+		JsonObject player = Json.object(Json.object(root, "data"), "player");
 		if (player == null) {
 			return null;
 		}
@@ -1257,7 +1258,7 @@ public final class ProfileViewer {
 			return null;
 		}
 		String named = string(player, "username");
-		String[] textures = texturesOf(array(player, "properties"));
+		String[] textures = texturesOf(Json.array(player, "properties"));
 		return new Resolved(named.isBlank() ? name : named, uuid, textures[0], textures[1]);
 	}
 
@@ -1282,7 +1283,7 @@ public final class ProfileViewer {
 			return null;
 		}
 		String named = string(ashcon, "username");
-		JsonObject raw = object(object(ashcon, "textures"), "raw");
+		JsonObject raw = Json.object(Json.object(ashcon, "textures"), "raw");
 		return new Resolved(named.isBlank() ? name : named, uuid, string(raw, "value"), string(raw, "signature"));
 	}
 
@@ -1305,11 +1306,11 @@ public final class ProfileViewer {
 			CompletableFuture.allOf(ashconFuture, sessionFuture).join();
 		} catch (Exception ignored) {
 		}
-		JsonObject textures = object(object(ashconFuture.getNow(null), "textures"), "raw");
+		JsonObject textures = Json.object(Json.object(ashconFuture.getNow(null), "textures"), "raw");
 		String value = string(textures, "value");
 		String signature = string(textures, "signature");
 		if (value.isBlank()) {
-			String[] session = texturesOf(array(sessionFuture.getNow(null), "properties"));
+			String[] session = texturesOf(Json.array(sessionFuture.getNow(null), "properties"));
 			value = session[0];
 			signature = session[1];
 		}
@@ -1413,9 +1414,9 @@ public final class ProfileViewer {
 		JsonObject garden
 	) {
 		JsonObject soopyMember = soopyMember(soopy, string(profile, "profile_id"), string(profile, "cute_name"), compact);
-		JsonObject soopySkills = object(object(soopyMember, "skills"), "levels");
-		JsonObject playerData = object(member, "player_data");
-		JsonObject experience = object(playerData, "experience");
+		JsonObject soopySkills = Json.object(Json.object(soopyMember, "skills"), "levels");
+		JsonObject playerData = Json.object(member, "player_data");
+		JsonObject experience = Json.object(playerData, "experience");
 		List<Skill> skills = new ArrayList<>();
 		skills.add(skill("Farming", skillXp(experience, member, soopySkills, "farming", "SKILL_FARMING", "experience_skill_farming"), 60, soopySkills));
 		skills.add(skill("Mining", skillXp(experience, member, soopySkills, "mining", "SKILL_MINING", "experience_skill_mining"), 60, soopySkills));
@@ -1440,29 +1441,29 @@ public final class ProfileViewer {
 			average /= counted;
 		}
 
-		JsonObject currencies = object(member, "currencies");
+		JsonObject currencies = Json.object(member, "currencies");
 		double purse = num(currencies, "coin_purse");
 		if (purse == 0d) {
 			purse = num(member, "coin_purse");
 		}
-		double bank = num(object(profile, "banking"), "balance");
-		double personal = num(object(member, "profile"), "bank_account");
+		double bank = num(Json.object(profile, "banking"), "balance");
+		double personal = num(Json.object(member, "profile"), "bank_account");
 		if (personal == 0d) {
 			personal = num(currencies, "personal_bank");
 		}
 		bank += personal;
 
-		JsonObject leveling = object(member, "leveling");
+		JsonObject leveling = Json.object(member, "leveling");
 		double sbXp = num(leveling, "experience");
 		int sbLevel = (int) Math.floor(sbXp / 100d);
 		float sbProgress = (float) ((sbXp % 100d) / 100d);
 
-		int souls = (int) num(object(member, "fairy_soul"), "total_collected");
+		int souls = (int) num(Json.object(member, "fairy_soul"), "total_collected");
 		if (souls == 0) {
 			souls = (int) num(member, "fairy_souls_collected");
 		}
 
-		JsonObject profileMember = object(member, "profile");
+		JsonObject profileMember = Json.object(member, "profile");
 		long firstJoin = (long) num(profileMember, "first_join");
 		if (firstJoin == 0L) {
 			firstJoin = (long) num(member, "first_join");
@@ -1470,7 +1471,7 @@ public final class ProfileViewer {
 		if (firstJoin == 0L) {
 			firstJoin = (long) num(profile, "created_at");
 		}
-		boolean cookie = bool(currencies, "cookie_buff_active") || bool(profileMember, "cookie_buff_active");
+		boolean cookie = Json.bool(currencies, "cookie_buff_active") || Json.bool(profileMember, "cookie_buff_active");
 		if (!cookie) {
 			long expiry = (long) num(profileMember, "cookie_buff_expiry");
 			if (expiry == 0L) {
@@ -1481,9 +1482,9 @@ public final class ProfileViewer {
 			}
 			cookie = expiry > System.currentTimeMillis();
 		}
-		JsonObject stats = object(member, "player_stats");
+		JsonObject stats = Json.object(member, "player_stats");
 		if (stats == null) {
-			stats = object(member, "stats");
+			stats = Json.object(member, "stats");
 		}
 		long kills = statCount(stats, "kills");
 		long deaths = statCount(stats, "deaths");
@@ -1493,7 +1494,7 @@ public final class ProfileViewer {
 		Mining mining = parseMining(member, soopyMember);
 		Farming farming = parseFarming(member, garden);
 		List<Pet> pets = parsePets(member);
-		JsonObject inventory = object(member, "inventory");
+		JsonObject inventory = Json.object(member, "inventory");
 		Bag inv = parseBag("Inventory", first(inventory, member, "inv_contents"), 9, 36);
 		Bag armor = parseBag("Armor", first(inventory, member, "inv_armor"), 1, 4);
 		Extras extras = parseExtras(inventory, member);
@@ -1538,7 +1539,7 @@ public final class ProfileViewer {
 		items += sackWorth(member, inventory);
 		items += essenceWorth(currencies);
 		for (Pet pet : pets) {
-			items += priceOf(pet.type() + ";" + petTier(pet.tier()));
+			items += priceOf(pet.type() + ";" + Utils.petTierIndex(pet.tier()));
 		}
 		double net = purse + bank + items;
 		double helper = skyhelperNetworth(soopyMember);
@@ -1553,7 +1554,7 @@ public final class ProfileViewer {
 			string(profile, "profile_id"),
 			cute,
 			mode,
-			bool(profile, "selected"),
+			Json.bool(profile, "selected"),
 			purse,
 			bank,
 			items,
@@ -1625,13 +1626,13 @@ public final class ProfileViewer {
 		Bag fishing = parseBag("Fishing", bagOf(inventory, member, "fishing_bag"), 9, 36);
 		List<Bag> other = new ArrayList<>();
 		otherBags(inventory, other);
-		otherBags(object(inventory, "bag_contents"), other);
+		otherBags(Json.object(inventory, "bag_contents"), other);
 		// Hypixel moved the wardrobe into member.loadout: armor and equipment sets keyed by id,
 		// each piece its own NBT blob, with the worn set in equipped_set.
-		JsonObject loadout = object(member, "loadout");
+		JsonObject loadout = Json.object(member, "loadout");
 		int equipmentSlot = -1;
 		if (loadout != null) {
-			JsonObject armorSets = object(loadout, "armor");
+			JsonObject armorSets = Json.object(loadout, "armor");
 			if (armorSets != null) {
 				Bag sets = setBag("Wardrobe", armorSets, new String[] {"HELMET", "CHESTPLATE", "LEGGINGS", "BOOTS"});
 				if (!sets.vacant()) {
@@ -1642,7 +1643,7 @@ public final class ProfileViewer {
 					wardrobeSlot = on;
 				}
 			}
-			JsonObject equipSets = object(loadout, "equipment");
+			JsonObject equipSets = Json.object(loadout, "equipment");
 			if (equipSets != null) {
 				Bag sets = setBag("Equipment Wardrobe", equipSets, new String[] {"EQUIPMENT_SLOT_1", "EQUIPMENT_SLOT_2", "EQUIPMENT_SLOT_3", "EQUIPMENT_SLOT_4"});
 				if (!sets.vacant()) {
@@ -1651,7 +1652,7 @@ public final class ProfileViewer {
 				equipmentSlot = intOf(equipSets, "equipped_set");
 			}
 		}
-		JsonObject storage = object(member, "accessory_bag_storage");
+		JsonObject storage = Json.object(member, "accessory_bag_storage");
 		int magicalPower = storage == null ? 0 : intOf(storage, "highest_magical_power");
 		String power = storage == null ? "" : string(storage, "selected_power");
 		if (magicalPower <= 0) {
@@ -1834,11 +1835,11 @@ public final class ProfileViewer {
 	}
 
 	private static Dungeon parseDungeons(JsonObject member, JsonObject soopy) {
-		JsonObject dungeons = object(member, "dungeons");
-		JsonObject types = object(dungeons, "dungeon_types");
-		JsonObject cata = object(types, "catacombs");
-		JsonObject master = object(types, "master_catacombs");
-		JsonObject soopyDungeons = object(soopy, "dungeons");
+		JsonObject dungeons = Json.object(member, "dungeons");
+		JsonObject types = Json.object(dungeons, "dungeon_types");
+		JsonObject cata = Json.object(types, "catacombs");
+		JsonObject master = Json.object(types, "master_catacombs");
+		JsonObject soopyDungeons = Json.object(soopy, "dungeons");
 		double xp = num(cata, "experience");
 		if (xp <= 0d) {
 			xp = num(soopyDungeons, "catacombs_xp");
@@ -1846,12 +1847,12 @@ public final class ProfileViewer {
 		Skill level = dungeonFrom("Catacombs", xp, soopyDungeons);
 		int secrets = (int) num(dungeons, "secrets");
 		if (secrets == 0) {
-			secrets = (int) num(object(object(member, "player_stats"), "dungeons"), "secrets_found");
+			secrets = (int) num(Json.object(Json.object(member, "player_stats"), "dungeons"), "secrets_found");
 		}
 		if (secrets == 0) {
-			secrets = (int) num(object(member, "player_stats"), "secrets_found");
+			secrets = (int) num(Json.object(member, "player_stats"), "secrets_found");
 		}
-		JsonObject classes = object(dungeons, "player_classes");
+		JsonObject classes = Json.object(dungeons, "player_classes");
 		List<Skill> out = new ArrayList<>();
 		out.add(classSkill(classes, "healer", "Healer"));
 		out.add(classSkill(classes, "mage", "Mage"));
@@ -1863,19 +1864,19 @@ public final class ProfileViewer {
 		List<Floor> masterFloors = parseFloors(master, true);
 		int runs = sumFloors(normal) + sumFloors(masterFloors);
 		if (runs == 0) {
-			runs = sumKeyed(object(cata, "times_played")) + sumKeyed(object(master, "times_played"));
+			runs = sumKeyed(Json.object(cata, "times_played")) + sumKeyed(Json.object(master, "times_played"));
 		}
 		return new Dungeon(level.level(), level.progress(), secrets, List.copyOf(out), selected, runs, List.copyOf(normal), List.copyOf(masterFloors));
 	}
 
 	private static List<Floor> parseFloors(JsonObject type, boolean master) {
 		List<Floor> out = new ArrayList<>();
-		JsonObject completions = object(type, "tier_completions");
+		JsonObject completions = Json.object(type, "tier_completions");
 		if (completions == null) {
-			completions = object(type, "milestone_completions");
+			completions = Json.object(type, "milestone_completions");
 		}
-		JsonObject bestS = object(type, "fastest_time_s");
-		JsonObject bestSPlus = object(type, "fastest_time_s_plus");
+		JsonObject bestS = Json.object(type, "fastest_time_s");
+		JsonObject bestSPlus = Json.object(type, "fastest_time_s_plus");
 		int start = master ? 1 : 0;
 		for (int i = start; i <= 7; i++) {
 			String name = master ? "M" + i : (i == 0 ? "E" : "F" + i);
@@ -1915,19 +1916,19 @@ public final class ProfileViewer {
 	}
 
 	private static Skill classSkill(JsonObject classes, String key, String name) {
-		return dungeonFrom(name, num(object(classes, key), "experience"), null);
+		return dungeonFrom(name, num(Json.object(classes, key), "experience"), null);
 	}
 
 	private static List<Slayer> parseSlayers(JsonObject member, JsonObject soopy) {
-		JsonObject slayer = object(member, "slayer");
-		JsonObject bosses = object(slayer, "slayer_bosses");
+		JsonObject slayer = Json.object(member, "slayer");
+		JsonObject bosses = Json.object(slayer, "slayer_bosses");
 		if (bosses == null) {
-			bosses = object(member, "slayer_bosses");
+			bosses = Json.object(member, "slayer_bosses");
 		}
 		if (bosses == null) {
 			bosses = slayer;
 		}
-		JsonObject soopySlayer = object(soopy, "slayer");
+		JsonObject soopySlayer = Json.object(soopy, "slayer");
 		List<Slayer> out = new ArrayList<>();
 		out.add(slayer("Zombie", bosses, soopySlayer, "zombie", SLAYER_ZOMBIE));
 		out.add(slayer("Spider", bosses, soopySlayer, "spider", SLAYER_SPIDER));
@@ -1942,7 +1943,7 @@ public final class ProfileViewer {
 		JsonObject tree = firstSkillTree(member, extra);
 		JsonObject core = bestCore(miningCore(member), extra == null ? null : miningCore(extra));
 		if (core == null && extra != null) {
-			core = object(extra, "mining_core");
+			core = Json.object(extra, "mining_core");
 		}
 		JsonObject nodes = miningNodes(tree);
 		if (!hasPerkLevels(nodes)) {
@@ -1954,9 +1955,9 @@ public final class ProfileViewer {
 			return Mining.empty();
 		}
 		int fromXp = xp > 0d ? skillFrom("HOTM", xp, HOTM_XP, 10).level() : 0;
-		int listed = (int) num(object(extra, "hotm_level"), "level");
+		int listed = (int) num(Json.object(extra, "hotm_level"), "level");
 		int hotm = fromXp > 0 ? fromXp : Math.max(listed, Math.max(hotmFromPerks(perks), inferHotm(core)));
-		if (hotm == 0 && (bool(core, "received_free_tier") || !perks.isEmpty())) {
+		if (hotm == 0 && (Json.bool(core, "received_free_tier") || !perks.isEmpty())) {
 			hotm = 1;
 		}
 		return new Mining(hotm, powder(core, "mithril"), powder(core, "gemstone"), powder(core, "glacite"), perks);
@@ -1964,35 +1965,35 @@ public final class ProfileViewer {
 
 	private static JsonObject firstSkillTree(JsonObject member, JsonObject extra) {
 		JsonObject tree = skillTree(member);
-		return hasPerkLevels(miningNodes(tree)) || num(object(tree, "experience"), "mining") > 0d ? tree : skillTree(extra);
+		return hasPerkLevels(miningNodes(tree)) || num(Json.object(tree, "experience"), "mining") > 0d ? tree : skillTree(extra);
 	}
 
 	private static JsonObject skillTree(JsonObject member) {
-		JsonObject tree = object(member, "skill_tree");
+		JsonObject tree = Json.object(member, "skill_tree");
 		if (tree == null) {
-			tree = object(object(member, "player_data"), "skill_tree");
+			tree = Json.object(Json.object(member, "player_data"), "skill_tree");
 		}
 		return tree;
 	}
 
 	private static JsonObject miningNodes(JsonObject tree) {
-		JsonObject nodes = object(tree, "nodes");
+		JsonObject nodes = Json.object(tree, "nodes");
 		if (nodes == null) {
 			return null;
 		}
-		int slot = (int) num(object(tree, "selected_skill_tree_slot"), "mining");
+		int slot = (int) num(Json.object(tree, "selected_skill_tree_slot"), "mining");
 		String key = slot <= 1 ? "mining" : "mining_" + slot;
-		JsonObject selected = object(nodes, key);
+		JsonObject selected = Json.object(nodes, key);
 		if (hasPerkLevels(selected)) {
 			return selected;
 		}
-		JsonObject best = object(nodes, "mining");
+		JsonObject best = Json.object(nodes, "mining");
 		int bestCount = perkCount(best);
 		for (String name : nodes.keySet()) {
 			if (name == null || !name.startsWith("mining")) {
 				continue;
 			}
-			JsonObject map = object(nodes, name);
+			JsonObject map = Json.object(nodes, name);
 			int count = perkCount(map);
 			if (count > bestCount) {
 				best = map;
@@ -2003,7 +2004,7 @@ public final class ProfileViewer {
 	}
 
 	private static double miningXp(JsonObject tree, JsonObject core, JsonObject extra) {
-		double xp = num(object(tree, "experience"), "mining");
+		double xp = num(Json.object(tree, "experience"), "mining");
 		if (xp > 0d) {
 			return xp;
 		}
@@ -2012,10 +2013,10 @@ public final class ProfileViewer {
 			xp = num(core, "hotm_experience");
 		}
 		if (xp == 0d) {
-			xp = num(object(core, "hotm"), "experience");
+			xp = num(Json.object(core, "hotm"), "experience");
 		}
 		if (xp == 0d) {
-			xp = num(object(extra, "hotm_level"), "totalExp");
+			xp = num(Json.object(extra, "hotm_level"), "totalExp");
 		}
 		return xp;
 	}
@@ -2038,12 +2039,12 @@ public final class ProfileViewer {
 	}
 
 	private static JsonObject nodesOf(JsonObject core) {
-		JsonObject nodes = object(core, "nodes");
+		JsonObject nodes = Json.object(core, "nodes");
 		if (nodes == null) {
-			nodes = object(core, "perks");
+			nodes = Json.object(core, "perks");
 		}
 		if (nodes == null) {
-			nodes = object(object(core, "hotm"), "nodes");
+			nodes = Json.object(Json.object(core, "hotm"), "nodes");
 		}
 		return nodes;
 	}
@@ -2075,7 +2076,7 @@ public final class ProfileViewer {
 		long gemSpent = (long) num(core, "powder_spent_gemstone");
 		long glaciteSpent = (long) num(core, "powder_spent_glacite");
 		int hotm = 0;
-		if (bool(core, "received_free_tier") || mithril > 0L || mithrilSpent > 0L) {
+		if (Json.bool(core, "received_free_tier") || mithril > 0L || mithrilSpent > 0L) {
 			hotm = 1;
 		}
 		if (mithrilSpent >= 3_000L || mithril >= 12_000L) {
@@ -2094,19 +2095,19 @@ public final class ProfileViewer {
 	}
 
 	private static JsonObject miningCore(JsonObject member) {
-		JsonObject core = object(member, "mining_core");
+		JsonObject core = Json.object(member, "mining_core");
 		if (validMining(core)) {
 			return core;
 		}
-		core = object(object(member, "player_data"), "mining_core");
+		core = Json.object(Json.object(member, "player_data"), "mining_core");
 		if (validMining(core)) {
 			return core;
 		}
-		core = object(member, "hotm");
+		core = Json.object(member, "hotm");
 		if (validMining(core)) {
 			return core;
 		}
-		core = object(object(member, "player_data"), "hotm");
+		core = Json.object(Json.object(member, "player_data"), "hotm");
 		if (validMining(core)) {
 			return core;
 		}
@@ -2123,13 +2124,13 @@ public final class ProfileViewer {
 			return null;
 		}
 		for (String key : object.keySet()) {
-			JsonObject child = object(object, key);
+			JsonObject child = Json.object(object, key);
 			if (validMining(child) && ("mining_core".equals(key) || "hotm".equals(key) || child.has("nodes") || child.has("powder_mithril"))) {
 				return child;
 			}
 		}
 		for (String key : object.keySet()) {
-			JsonObject found = findMining(object(object, key), depth + 1);
+			JsonObject found = findMining(Json.object(object, key), depth + 1);
 			if (found != null) {
 				return found;
 			}
@@ -2147,7 +2148,7 @@ public final class ProfileViewer {
 		if (total > 0L) {
 			return total;
 		}
-		JsonObject nested = object(object(core, "powder"), kind);
+		JsonObject nested = Json.object(Json.object(core, "powder"), kind);
 		total = (long) (num(nested, "available") + num(nested, "spent"));
 		if (total > 0L) {
 			return total;
@@ -2204,44 +2205,18 @@ public final class ProfileViewer {
 		return (int) num(nodes, key);
 	}
 
-	private static Map<String, JsonObject> gardenByProfile(JsonObject root) {
-		Map<String, JsonObject> out = new ConcurrentHashMap<>();
-		if (root == null || !root.has("profiles") || !root.get("profiles").isJsonArray()) {
-			return out;
-		}
-		List<CompletableFuture<Void>> jobs = new ArrayList<>();
-		for (JsonElement element : root.getAsJsonArray("profiles")) {
-			if (element == null || !element.isJsonObject()) {
-				continue;
-			}
-			String id = compact(string(element.getAsJsonObject(), "profile_id"));
-			if (id.isBlank()) {
-				continue;
-			}
-			jobs.add(getJsonAsync(ELITE_GARDEN + id, Duration.ofSeconds(2)).thenAccept(elite -> {
-				if (elite != null && (elite.has("crops") || elite.has("gardenLevel") || elite.has("experience"))) {
-					out.put(id, elite);
-				}
-			}));
-		}
-		if (!jobs.isEmpty()) {
-			CompletableFuture.allOf(jobs.toArray(CompletableFuture[]::new)).join();
-		}
-		return out;
-	}
-
 	private static Farming parseFarming(JsonObject member, JsonObject gardenApi) {
-		JsonObject nested = object(member, "garden_player_data");
+		JsonObject nested = Json.object(member, "garden_player_data");
 		if (nested == null) {
-			nested = object(member, "garden");
+			nested = Json.object(member, "garden");
 		}
 		JsonObject garden = gardenApi != null ? gardenApi : nested;
 		int visitors = (int) num(garden, "uniqueVisitors");
 		if (visitors == 0) {
-			visitors = (int) num(object(garden, "commission_data"), "unique_npcs_served");
+			visitors = (int) num(Json.object(garden, "commission_data"), "unique_npcs_served");
 		}
 		if (visitors == 0) {
-			visitors = (int) num(object(nested, "commission_data"), "unique_npcs_served");
+			visitors = (int) num(Json.object(nested, "commission_data"), "unique_npcs_served");
 		}
 		if (visitors == 0) {
 			visitors = (int) num(garden, "unique_visitors");
@@ -2257,12 +2232,12 @@ public final class ProfileViewer {
 			}
 			level = skillFrom("Garden", gardenXp, GARDEN_XP, 15).level();
 		}
-		JsonObject resources = object(garden, "crops");
+		JsonObject resources = Json.object(garden, "crops");
 		if (resources == null) {
-			resources = object(garden, "resources_collected");
+			resources = Json.object(garden, "resources_collected");
 		}
 		if (resources == null) {
-			resources = object(nested, "resources_collected");
+			resources = Json.object(nested, "resources_collected");
 		}
 		List<Crop> crops = new ArrayList<>();
 		crops.add(crop("Wheat", CROP_WHEAT, cropAmount(resources, "wheat", "WHEAT")));
@@ -2319,21 +2294,11 @@ public final class ProfileViewer {
 		return new Crop(name, amount, level, cap, progress);
 	}
 
-	private static long[] cropCum(long... steps) {
-		long[] out = new long[steps.length + 1];
-		long total = 0L;
-		for (int i = 0; i < steps.length; i++) {
-			total += steps[i];
-			out[i + 1] = total;
-		}
-		return out;
-	}
-
 	private static List<Pet> parsePets(JsonObject member) {
 		List<Pet> out = new ArrayList<>();
-		JsonArray pets = array(object(member, "pets_data"), "pets");
+		JsonArray pets = Json.array(Json.object(member, "pets_data"), "pets");
 		if (pets == null) {
-			pets = array(member, "pets");
+			pets = Json.array(member, "pets");
 		}
 		if (pets == null) {
 			return out;
@@ -2351,7 +2316,7 @@ public final class ProfileViewer {
 			int level = SkyblockPetLore.level(type, string(pet, "tier"), num(pet, "exp"));
 			String held = string(pet, "heldItem");
 			int candy = (int) num(pet, "candyUsed");
-			out.add(new Pet(pretty(type), type, tier, level, bool(pet, "active"), held, candy));
+			out.add(new Pet(pretty(type), type, tier, level, Json.bool(pet, "active"), held, candy));
 			int rarity = switch (string(pet, "tier").toUpperCase(Locale.ROOT)) {
 				case "UNCOMMON" -> 1;
 				case "RARE" -> 2;
@@ -2368,12 +2333,12 @@ public final class ProfileViewer {
 
 	private static List<Collection> parseCollections(JsonObject member) {
 		List<Collection> out = new ArrayList<>();
-		JsonObject collection = object(member, "collection");
+		JsonObject collection = Json.object(member, "collection");
 		if (collection == null) {
-			collection = object(member, "collections");
+			collection = Json.object(member, "collections");
 		}
 		if (collection == null) {
-			collection = object(object(member, "player_data"), "collection");
+			collection = Json.object(Json.object(member, "player_data"), "collection");
 		}
 		if (collection == null) {
 			return out;
@@ -2479,9 +2444,9 @@ public final class ProfileViewer {
 	}
 
 	private static JsonElement bagOf(JsonObject inventory, JsonObject member, String name) {
-		JsonObject bags = object(inventory, "bag_contents");
+		JsonObject bags = Json.object(inventory, "bag_contents");
 		if (bags == null) {
-			bags = object(member, "bag_contents");
+			bags = Json.object(member, "bag_contents");
 		}
 		if (bags != null && bags.has(name)) {
 			return bags.get(name);
@@ -2522,15 +2487,15 @@ public final class ProfileViewer {
 
 	private static List<Bag> parseBackpacks(JsonObject inventory, JsonObject member) {
 		List<Bag> out = new ArrayList<>();
-		JsonObject bags = object(inventory, "backpack_contents");
+		JsonObject bags = Json.object(inventory, "backpack_contents");
 		if (bags == null) {
-			bags = object(member, "backpack_contents");
+			bags = Json.object(member, "backpack_contents");
 		}
 		if (bags == null) {
-			bags = object(inventory, "backpacks");
+			bags = Json.object(inventory, "backpacks");
 		}
 		if (bags == null) {
-			bags = object(member, "backpacks");
+			bags = Json.object(member, "backpacks");
 		}
 		if (bags != null) {
 			List<String> keys = new ArrayList<>(bags.keySet());
@@ -2629,9 +2594,9 @@ public final class ProfileViewer {
 		if (element == null || element.isJsonNull()) {
 			return Bag.empty(name, columns, fallbackSize);
 		}
-		CompoundTag tag = readNbt(data(element));
+		CompoundTag tag = readNbt(Json.data(element));
 		if (tag == null && element.isJsonObject()) {
-			tag = readNbt(data(element.getAsJsonObject().get("data")));
+			tag = readNbt(Json.data(element.getAsJsonObject().get("data")));
 		}
 		List<SlotItem> raw = parseSlotList(tag);
 		int size = paddedSize(raw, fallbackSize, columns);
@@ -2852,7 +2817,7 @@ public final class ProfileViewer {
 					JsonObject pet = JsonParser.parseString(petInfo).getAsJsonObject();
 					String type = string(pet, "type");
 					if (!type.isBlank()) {
-						return type.toUpperCase(Locale.ROOT) + ";" + petTier(string(pet, "tier"));
+						return type.toUpperCase(Locale.ROOT) + ";" + Utils.petTierIndex(string(pet, "tier"));
 					}
 				} catch (Exception ignored) {
 				}
@@ -2932,14 +2897,14 @@ public final class ProfileViewer {
 
 	private static Skill skill(String name, double xp, int cap, long[] table, boolean overflow, JsonObject soopySkills) {
 		Skill computed = skillFrom(name, xp, table, cap, overflow ? Overflow.SKILL : Overflow.NONE);
-		JsonObject soopy = object(soopySkills, name.toLowerCase(Locale.ROOT));
-		int soopyLevel = (int) num(object(soopy, "over60"), "level");
+		JsonObject soopy = Json.object(soopySkills, name.toLowerCase(Locale.ROOT));
+		int soopyLevel = (int) num(Json.object(soopy, "over60"), "level");
 		if (soopyLevel <= 0) {
 			soopyLevel = (int) num(soopy, "level");
 		}
 		if (soopyLevel > computed.level()) {
 			double soopyXp = num(soopy, "xp");
-			float progress = (float) num(object(soopy, "over60"), "progress");
+			float progress = (float) num(Json.object(soopy, "over60"), "progress");
 			if (progress <= 0f) {
 				progress = (float) num(soopy, "progress");
 			}
@@ -3002,14 +2967,14 @@ public final class ProfileViewer {
 	}
 
 	private static Slayer slayer(String name, JsonObject bosses, JsonObject soopySlayer, String key, int[] table) {
-		JsonObject boss = object(bosses, key);
+		JsonObject boss = Json.object(bosses, key);
 		double xp = num(boss, "xp");
 		if (xp <= 0d) {
-			xp = num(object(soopySlayer, key), "xp");
+			xp = num(Json.object(soopySlayer, key), "xp");
 		}
 		int level = slayerLevel(xp, table);
 		level = Math.max(level, claimedSlayer(boss));
-		JsonObject extra = object(soopySlayer, key);
+		JsonObject extra = Json.object(soopySlayer, key);
 		level = Math.max(level, (int) num(extra, "level"));
 		level = Math.max(level, (int) num(extra, "claimed_level"));
 		return new Slayer(name, level, xp);
@@ -3032,7 +2997,7 @@ public final class ProfileViewer {
 
 	private static int claimedSlayer(JsonObject boss) {
 		int best = (int) num(boss, "claimed_level");
-		JsonObject claimed = object(boss, "claimed_levels");
+		JsonObject claimed = Json.object(boss, "claimed_levels");
 		if (claimed == null) {
 			return best;
 		}
@@ -3075,17 +3040,17 @@ public final class ProfileViewer {
 			xp = num(member, legacy);
 		}
 		if (xp == 0d) {
-			xp = num(object(soopySkills, soopyKey), "xp");
+			xp = num(Json.object(soopySkills, soopyKey), "xp");
 		}
 		return xp;
 	}
 
 	private static JsonObject memberIn(JsonObject profile, String compact) {
-		JsonObject members = object(profile, "members");
+		JsonObject members = Json.object(profile, "members");
 		if (members == null) {
 			return null;
 		}
-		JsonObject direct = object(members, compact);
+		JsonObject direct = Json.object(members, compact);
 		if (direct != null) {
 			return direct;
 		}
@@ -3139,46 +3104,6 @@ public final class ProfileViewer {
 				return null;
 			}
 		}
-	}
-
-	private static String data(JsonElement element) {
-		if (element == null || element.isJsonNull()) {
-			return "";
-		}
-		if (element.isJsonPrimitive()) {
-			JsonPrimitive primitive = element.getAsJsonPrimitive();
-			return primitive.isString() ? primitive.getAsString() : "";
-		}
-		if (!element.isJsonObject()) {
-			return "";
-		}
-		JsonObject object = element.getAsJsonObject();
-		for (String key : new String[]{"data", "value", "contents", "nbt", "bytes", "item_bytes"}) {
-			JsonElement value = object.get(key);
-			if (value != null && value.isJsonPrimitive() && value.getAsJsonPrimitive().isString()) {
-				String text = value.getAsString();
-				if (!text.isBlank()) {
-					return text;
-				}
-			}
-		}
-		return "";
-	}
-
-	private static JsonObject object(JsonObject parent, String key) {
-		if (parent == null || key == null || !parent.has(key)) {
-			return null;
-		}
-		JsonElement value = parent.get(key);
-		return value != null && value.isJsonObject() ? value.getAsJsonObject() : null;
-	}
-
-	private static JsonArray array(JsonObject parent, String key) {
-		if (parent == null || key == null || !parent.has(key)) {
-			return null;
-		}
-		JsonElement value = parent.get(key);
-		return value != null && value.isJsonArray() ? value.getAsJsonArray() : null;
 	}
 
 	private static String string(JsonObject object, String key) {
@@ -3246,12 +3171,12 @@ public final class ProfileViewer {
 			Map<String, Double> next = new ConcurrentHashMap<>(PRICES);
 			List<CompletableFuture<Void>> jobs = new ArrayList<>();
 			jobs.add(getJsonAsync("https://api.hypixel.net/v2/skyblock/bazaar").thenAccept(root -> {
-				JsonObject products = object(root, "products");
+				JsonObject products = Json.object(root, "products");
 				if (products == null) {
 					return;
 				}
 				for (String id : products.keySet()) {
-					JsonObject quick = object(object(products, id), "quick_status");
+					JsonObject quick = Json.object(Json.object(products, id), "quick_status");
 					double sell = num(quick, "sellPrice");
 					double buy = num(quick, "buyPrice");
 					double value = buy > 0 ? buy : sell;
@@ -3305,12 +3230,12 @@ public final class ProfileViewer {
 	}
 
 	private static double sackWorth(JsonObject member, JsonObject inventory) {
-		JsonObject sacks = object(member, "sacks_counts");
+		JsonObject sacks = Json.object(member, "sacks_counts");
 		if (sacks == null) {
-			sacks = object(inventory, "sacks_counts");
+			sacks = Json.object(inventory, "sacks_counts");
 		}
 		if (sacks == null) {
-			sacks = object(object(member, "sacks"), "counts");
+			sacks = Json.object(Json.object(member, "sacks"), "counts");
 		}
 		if (sacks == null) {
 			return 0d;
@@ -3323,13 +3248,13 @@ public final class ProfileViewer {
 	}
 
 	private static double essenceWorth(JsonObject currencies) {
-		JsonObject essence = object(currencies, "essence");
+		JsonObject essence = Json.object(currencies, "essence");
 		if (essence == null) {
 			return 0d;
 		}
 		double total = 0d;
 		for (String key : essence.keySet()) {
-			JsonObject entry = object(essence, key);
+			JsonObject entry = Json.object(essence, key);
 			double amount = entry != null ? num(entry, "current") : num(essence, key);
 			if (amount <= 0d) {
 				continue;
@@ -3444,7 +3369,7 @@ public final class ProfileViewer {
 				return 0d;
 			}
 			JsonObject root = JsonParser.parseString(response.body()).getAsJsonObject();
-			JsonObject nw = object(root, "networth");
+			JsonObject nw = Json.object(root, "networth");
 			double total = num(nw, "networth");
 			if (total <= 0d) {
 				total = num(root, "networth");
@@ -3470,7 +3395,7 @@ public final class ProfileViewer {
 		}
 		JsonObject profile = dumpProfile(root, selected.id());
 		JsonObject member = memberIn(profile, compact);
-		double bank = num(object(profile, "banking"), "balance");
+		double bank = num(Json.object(profile, "banking"), "balance");
 		if (bank <= 0d) {
 			bank = selected.bank();
 		}
@@ -3619,17 +3544,6 @@ public final class ProfileViewer {
 		return Map.copyOf(out);
 	}
 
-	private static int petTier(String tier) {
-		return switch (tier == null ? "" : tier.toLowerCase(Locale.ROOT)) {
-			case "uncommon" -> 1;
-			case "rare" -> 2;
-			case "epic" -> 3;
-			case "legendary" -> 4;
-			case "mythic" -> 5;
-			default -> 0;
-		};
-	}
-
 	private static long statCount(JsonObject stats, String key) {
 		if (stats == null || key == null || !stats.has(key)) {
 			return 0L;
@@ -3657,14 +3571,6 @@ public final class ProfileViewer {
 			}
 		}
 		return (long) sum;
-	}
-
-	private static boolean bool(JsonObject object, String key) {
-		if (object == null || !object.has(key)) {
-			return false;
-		}
-		JsonElement value = object.get(key);
-		return value != null && value.isJsonPrimitive() && value.getAsBoolean();
 	}
 
 	private static String pretty(String raw) {
@@ -3758,14 +3664,14 @@ public final class ProfileViewer {
 	}
 
 	private static JsonObject soopyMember(JsonObject soopy, String profileId, String cute, String compact) {
-		JsonObject profiles = object(object(soopy, "data"), "profiles");
+		JsonObject profiles = Json.object(Json.object(soopy, "data"), "profiles");
 		if (profiles == null) {
 			return null;
 		}
-		JsonObject match = object(profiles, compact(profileId));
+		JsonObject match = Json.object(profiles, compact(profileId));
 		if (match == null && cute != null && !cute.isBlank()) {
 			for (String key : profiles.keySet()) {
-				JsonObject profile = object(profiles, key);
+				JsonObject profile = Json.object(profiles, key);
 				if (cute.equalsIgnoreCase(string(profile, "cute_name"))) {
 					match = profile;
 					break;
@@ -3773,16 +3679,16 @@ public final class ProfileViewer {
 			}
 		}
 		if (match == null) {
-			JsonObject stats = object(object(soopy, "data"), "stats");
-			match = object(profiles, string(stats, "currentProfileId"));
+			JsonObject stats = Json.object(Json.object(soopy, "data"), "stats");
+			match = Json.object(profiles, string(stats, "currentProfileId"));
 		}
-		return object(object(match, "members"), compact);
+		return Json.object(Json.object(match, "members"), compact);
 	}
 
 	private static double skyhelperNetworth(JsonObject member) {
-		JsonObject nw = object(member, "skyhelperNetworth");
+		JsonObject nw = Json.object(member, "skyhelperNetworth");
 		if (nw == null) {
-			nw = object(member, "networth");
+			nw = Json.object(member, "networth");
 		}
 		double total = num(nw, "total");
 		if (total <= 0d) {
@@ -3792,13 +3698,13 @@ public final class ProfileViewer {
 	}
 
 	private static boolean skyhelperHasCoins(JsonObject member) {
-		JsonObject cats = object(object(member, "skyhelperNetworth"), "categories");
-		return num(object(cats, "coins"), "total") > 0d;
+		JsonObject cats = Json.object(Json.object(member, "skyhelperNetworth"), "categories");
+		return num(Json.object(cats, "coins"), "total") > 0d;
 	}
 
 	private static String taggedName(String name, JsonObject soopyPlayer, Profile profile) {
 		String raw = name == null || name.isBlank() ? "?" : name;
-		JsonObject stats = object(object(soopyPlayer, "data"), "stats");
+		JsonObject stats = Json.object(Json.object(soopyPlayer, "data"), "stats");
 		String prefix = string(stats, "nameWithPrefix");
 		if (prefix.isBlank()) {
 			prefix = string(stats, "prefixCalculated") + raw;

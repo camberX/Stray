@@ -2,9 +2,6 @@ package dev.stray.client.ui;
 
 import dev.stray.client.config.StrayConfig;
 import dev.stray.client.mixin.ChatComponentAccessor;
-import dev.stray.client.render.GuiDraw;
-import dev.stray.client.render.GuiFrostBlur;
-import dev.stray.client.render.HudChrome;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.ChatComponent;

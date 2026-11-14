@@ -12,7 +12,6 @@ import dev.stray.client.render.RenderCompat;
 import dev.stray.Stray;
 import dev.stray.client.config.StrayConfig;
 import dev.stray.client.cs2.Cs2Knives;
-import dev.stray.client.cs2.s2.S2Model;
 import dev.stray.client.visual.HeldItemShader;
 import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.client.renderer.SubmitNodeCollector;

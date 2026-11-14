@@ -120,7 +120,7 @@ public final class RawmatsTracker {
 			return;
 		}
 		String id = SkyblockItems.idFromName(matcher.group(1));
-		long count = countOf(matcher.group(2));
+		long count = Text.count(matcher.group(2));
 		if (id == null || id.isBlank() || count <= 0L) {
 			return;
 		}
@@ -137,17 +137,6 @@ public final class RawmatsTracker {
 			}
 		}
 		snapTick = Integer.MIN_VALUE;
-	}
-
-	private static long countOf(String raw) {
-		if (raw == null || raw.isBlank()) {
-			return 0L;
-		}
-		try {
-			return Long.parseLong(raw.replace(",", ""));
-		} catch (NumberFormatException ignored) {
-			return 0L;
-		}
 	}
 
 	public static String set(String query) {

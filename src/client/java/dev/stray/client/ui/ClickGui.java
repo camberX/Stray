@@ -1,26 +1,16 @@
 package dev.stray.client.ui;
 
 import dev.stray.Stray;
-import dev.stray.client.combat.OdinClicks;
 import dev.stray.client.config.EntityKind;
 import dev.stray.client.config.StrayConfig;
 import dev.stray.client.config.UnloadState;
-import dev.stray.client.render.ArrayListHud;
 import dev.stray.client.render.GuiDraw;
-import dev.stray.client.render.MobCatalog;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
-import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.FontDescription;
-import net.minecraft.network.chat.Style;
-import net.minecraft.util.Mth;
 
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Locale;
-import java.util.Map;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 

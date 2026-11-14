@@ -5,6 +5,7 @@ import dev.stray.client.config.StrayConfig;
 import dev.stray.client.hud.CustomTitle;
 import dev.stray.client.input.MouseButtons;
 import dev.stray.client.render.GuiDraw;
+import dev.stray.client.util.TextFit;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
@@ -144,8 +145,8 @@ public class CustomTitleScreen extends Screen {
 				GuiDraw.rounded(graphics, listX + 1, rowY, listW - 2, ROW_H, 4, 0x14FFFFFF);
 			}
 			float delW = 16;
-			String shownLeft = clip(font, row.trigger, (int) (listW * 0.38f));
-			String shownRight = clip(font, row.title, (int) (listW - delW - 18 - GuiDraw.smallWidth(font, shownLeft)));
+			String shownLeft = TextFit.smallUnlessTiny(font, row.trigger, (int) (listW * 0.38f));
+			String shownRight = TextFit.smallUnlessTiny(font, row.title, (int) (listW - delW - 18 - GuiDraw.smallWidth(font, shownLeft)));
 			GuiDraw.small(graphics, font, shownLeft, listX + 6, rowY + 3, Theme.ACCENT);
 			GuiDraw.small(
 				graphics,
@@ -305,17 +306,6 @@ public class CustomTitleScreen extends Screen {
 			slice = slice.substring(0, slice.length() - 1);
 		}
 		return slice;
-	}
-
-	private static String clip(Font font, String value, int maxWidth) {
-		if (maxWidth <= 8 || GuiDraw.smallWidth(font, value) <= maxWidth) {
-			return value;
-		}
-		String trimmed = value;
-		while (trimmed.length() > 1 && GuiDraw.smallWidth(font, trimmed + "..") > maxWidth) {
-			trimmed = trimmed.substring(0, trimmed.length() - 1);
-		}
-		return trimmed + "..";
 	}
 
 	@Override

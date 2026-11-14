@@ -1,5 +1,6 @@
 package dev.stray.client.media;
 
+import dev.stray.client.util.Text;
 import net.minecraft.util.Mth;
 
 import java.util.Locale;
@@ -81,7 +82,7 @@ public record NowPlaying(
 			return base;
 		}
 		NowPlaying other = extra.cleaned();
-		String mergedAlbum = firstNonBlank(base.album, other.album);
+		String mergedAlbum = Text.firstNonBlank(base.album, other.album);
 		boolean companion = companionSource(other.source);
 		boolean playing = companion ? other.playing : base.playing;
 		long sourcePos = pickSourcePosition(other.sourcePositionMs, base.sourcePositionMs, companion);
@@ -92,9 +93,9 @@ public record NowPlaying(
 			base.title,
 			preferArtist(mergedAlbum, base.artist, other.artist),
 			mergedAlbum,
-			firstNonBlank(other.app, base.app),
-			companion ? other.source : firstNonBlank(base.source, other.source),
-			firstNonBlank(base.cover, other.cover),
+			Text.firstNonBlank(other.app, base.app),
+			companion ? other.source : Text.firstNonBlank(base.source, other.source),
+			Text.firstNonBlank(base.cover, other.cover),
 			playing,
 			pos,
 			dur,
@@ -112,10 +113,10 @@ public record NowPlaying(
 		return new NowPlaying(
 			base.title,
 			newArtist,
-			firstNonBlank(base.album, catalogAlbum),
+			Text.firstNonBlank(base.album, catalogAlbum),
 			base.app,
 			base.source,
-			firstNonBlank(base.cover, catalogCover),
+			Text.firstNonBlank(base.cover, catalogCover),
 			base.playing,
 			base.positionMs,
 			base.durationMs > 0L ? base.durationMs : Math.max(0L, catalogDurationMs),
@@ -470,15 +471,6 @@ public record NowPlaying(
 		for (String value : values) {
 			if (!placeholder(value)) {
 				return value.trim();
-			}
-		}
-		return "";
-	}
-
-	private static String firstNonBlank(String... values) {
-		for (String value : values) {
-			if (value != null && !value.isBlank()) {
-				return value;
 			}
 		}
 		return "";

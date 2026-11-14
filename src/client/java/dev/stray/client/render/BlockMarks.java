@@ -3,7 +3,6 @@ package dev.stray.client.render;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import com.mojang.blaze3d.platform.InputConstants;
 import dev.stray.client.StrayClient;
 import dev.stray.client.combat.OdinClicks;
 import dev.stray.client.config.IslandSaves;

@@ -1,5 +1,6 @@
 package dev.stray.client.render;
 
+import dev.stray.client.util.Sight;
 import dev.stray.client.util.Text;
 import dev.stray.client.config.EntityKind;
 import dev.stray.client.config.EntityVisuals;
@@ -106,7 +107,7 @@ public final class EntityHealthBars {
 			if (!EntityScreenBoxes.facing(mid, camPos, forward)) {
 				continue;
 			}
-			if (!visuals.healthThroughWalls && EntityScreenBoxes.occluded(client, camPos, mid)) {
+			if (!visuals.healthThroughWalls && Sight.occluded(client, camPos, mid)) {
 				continue;
 			}
 			EntityScreenBoxes.Box screen = EntityScreenBoxes.project(

@@ -3,7 +3,6 @@ package dev.stray.client.cs2.pack;
 import dev.stray.client.cs2.skin.Assets;
 import dev.stray.client.cs2.skin.Tex;
 
-import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;

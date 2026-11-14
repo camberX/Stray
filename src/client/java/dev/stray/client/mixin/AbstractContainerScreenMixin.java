@@ -8,7 +8,6 @@ import dev.stray.client.farming.GardenPlots;
 import dev.stray.client.item.StoragePreview;
 import dev.stray.client.ui.ChestFillers;
 import dev.stray.client.ui.ContainerChrome;
-import dev.stray.client.ui.LoadoutsScreen;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.input.KeyEvent;

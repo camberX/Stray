@@ -8,7 +8,6 @@ import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.food.FoodData;
 
 public final class StatusHudRenderer {
 	public static final float BAR_W = 81;

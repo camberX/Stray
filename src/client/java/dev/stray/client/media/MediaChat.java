@@ -2,6 +2,7 @@ package dev.stray.client.media;
 
 import dev.stray.client.config.StrayConfig;
 import dev.stray.client.ui.Theme;
+import dev.stray.client.util.Chat;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.ClickEvent;
 import net.minecraft.network.chat.Component;
@@ -53,18 +54,18 @@ public final class MediaChat {
 		if (client.player == null || client.gui == null) {
 			return false;
 		}
-		tell(nowPlayingLine(track));
+		Chat.tell(nowPlayingLine(track));
 		return true;
 	}
 
 	public static int nowPlaying() {
 		NowPlaying track = MediaSession.current();
 		if (!track.present()) {
-			tell(muted("Nothing playing. Start Spotify or YouTube Music, then open chat and click the HUD."));
+			Chat.tell(muted("Nothing playing. Start Spotify or YouTube Music, then open chat and click the HUD."));
 			return 1;
 		}
-		tell(nowPlayingLine(track));
-		tell(controls(track));
+		Chat.tell(nowPlayingLine(track));
+		Chat.tell(controls(track));
 		return 1;
 	}
 
@@ -72,7 +73,7 @@ public final class MediaChat {
 		NowPlaying before = MediaSession.current();
 		boolean ok = MediaSession.playPause();
 		if (!ok) {
-			tell(Component.literal("Could not reach the media player.").withStyle(style(Theme.DANGER)));
+			Chat.tell(Component.literal("Could not reach the media player.").withStyle(style(Theme.DANGER)));
 			return 0;
 		}
 		boolean playing = before.present() && !before.playing();
@@ -82,17 +83,17 @@ public final class MediaChat {
 		if (before.present()) {
 			line.append(Component.literal("  " + before.title()).withStyle(style(Theme.TEXT)));
 		}
-		tell(line);
+		Chat.tell(line);
 		return 1;
 	}
 
 	public static int skip(boolean next) {
 		boolean ok = next ? MediaSession.next() : MediaSession.previous();
 		if (!ok) {
-			tell(Component.literal("Could not skip.").withStyle(style(Theme.DANGER)));
+			Chat.tell(Component.literal("Could not skip.").withStyle(style(Theme.DANGER)));
 			return 0;
 		}
-		tell(brand()
+		Chat.tell(brand()
 			.append(sep())
 			.append(Component.literal(next ? "NEXT TRACK" : "PREVIOUS TRACK").withStyle(style(Theme.ACCENT).withBold(true))));
 		return 1;
@@ -152,10 +153,4 @@ public final class MediaChat {
 		return Style.EMPTY.withColor(color & 0xFFFFFF);
 	}
 
-	private static void tell(Component message) {
-		Minecraft client = Minecraft.getInstance();
-		if (client.gui != null) {
-			client.gui.hud.getChat().addClientSystemMessage(message);
-		}
-	}
 }

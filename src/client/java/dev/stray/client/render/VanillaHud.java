@@ -1,7 +1,6 @@
 package dev.stray.client.render;
 
 import dev.stray.client.config.StrayConfig;
-import dev.stray.client.ui.LoadoutsScreen;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;

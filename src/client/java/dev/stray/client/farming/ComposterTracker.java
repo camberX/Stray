@@ -1,5 +1,6 @@
 package dev.stray.client.farming;
 
+import dev.stray.client.util.TabList;
 import dev.stray.client.util.Text;
 import dev.stray.client.config.StrayConfig;
 import dev.stray.client.item.ItemAppearance;
@@ -9,7 +10,6 @@ import net.minecraft.client.multiplayer.ClientPacketListener;
 import net.minecraft.client.multiplayer.PlayerInfo;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.Style;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.component.CustomData;
@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
-import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -126,7 +125,7 @@ public final class ComposterTracker {
 		infos.sort(TAB_ORDER);
 		List<String> lines = new ArrayList<>(infos.size());
 		for (PlayerInfo info : infos) {
-			lines.add(clean(tabName(info)));
+			lines.add(clean(TabList.displayName(info)));
 		}
 		String profile = "";
 		for (String line : lines) {
@@ -455,16 +454,16 @@ public final class ComposterTracker {
 				return "";
 			}
 			StringBuilder out = new StringBuilder();
-			append(out, stack.get(DataComponents.CUSTOM_NAME));
-			append(out, stack.get(DataComponents.ITEM_NAME));
-			append(out, stack.getHoverName());
+			Text.appendLine(out, stack.get(DataComponents.CUSTOM_NAME));
+			Text.appendLine(out, stack.get(DataComponents.ITEM_NAME));
+			Text.appendLine(out, stack.getHoverName());
 			ItemLore lore = stack.get(DataComponents.LORE);
 			if (lore != null) {
 				for (Component line : lore.lines()) {
-					append(out, line);
+					Text.appendLine(out, line);
 				}
 				for (Component line : lore.styledLines()) {
-					append(out, line);
+					Text.appendLine(out, line);
 				}
 			}
 			CustomData data = stack.get(DataComponents.CUSTOM_DATA);
@@ -475,19 +474,6 @@ public final class ComposterTracker {
 		} finally {
 			ItemAppearance.resume(prior);
 		}
-	}
-
-	private static void append(StringBuilder out, Component component) {
-		if (component == null) {
-			return;
-		}
-		out.append('\n');
-		component.visit((style, text) -> {
-			if (text != null) {
-				out.append(text);
-			}
-			return Optional.empty();
-		}, Style.EMPTY);
 	}
 
 	private static void readUpgrades(Minecraft client, String profile) {
@@ -630,13 +616,6 @@ public final class ComposterTracker {
 			return hours + "h " + minutes + "m";
 		}
 		return minutes + "m " + seconds + "s";
-	}
-
-	private static Component tabName(PlayerInfo info) {
-		Component display = info.getTabListDisplayName();
-		return display != null
-			? display
-			: PlayerTeam.formatNameForTeam(info.getTeam(), Component.literal(info.getProfile().name()));
 	}
 
 	private static String stripCodes(String text) {

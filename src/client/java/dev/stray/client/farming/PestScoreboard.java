@@ -1,17 +1,13 @@
 package dev.stray.client.farming;
 
+import dev.stray.client.util.TabList;
 import dev.stray.client.util.Text;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
-import net.minecraft.world.scores.DisplaySlot;
 import net.minecraft.world.scores.Objective;
-import net.minecraft.world.scores.PlayerScoreEntry;
-import net.minecraft.world.scores.PlayerTeam;
 import net.minecraft.world.scores.Scoreboard;
-import net.minecraft.world.scores.TeamColor;
 
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -59,39 +55,18 @@ public final class PestScoreboard {
 			return List.of();
 		}
 		Scoreboard scoreboard = client.level.getScoreboard();
-		Objective objective = sidebarObjective(scoreboard, client.player.getScoreboardName());
+		Objective objective = TabList.sidebarObjective(scoreboard, client.player.getScoreboardName());
 		if (objective == null) {
 			return List.of();
 		}
-		List<PlayerScoreEntry> entries = new ArrayList<>();
-		for (PlayerScoreEntry entry : scoreboard.listPlayerScores(objective)) {
-			if (!entry.isHidden()) {
-				entries.add(entry);
-			}
-		}
-		entries.sort(Comparator.comparingInt(PlayerScoreEntry::value).reversed());
-		List<String> lines = new ArrayList<>(entries.size());
-		for (PlayerScoreEntry entry : entries) {
-			Component raw = entry.display() != null ? entry.display() : Component.literal(entry.owner());
-			String text = clean(PlayerTeam.formatNameForTeam(scoreboard.getPlayersTeam(entry.owner()), raw));
+		List<String> lines = new ArrayList<>();
+		for (Component line : TabList.sidebarLines(scoreboard, objective)) {
+			String text = clean(line);
 			if (!text.isEmpty()) {
 				lines.add(text);
 			}
 		}
 		return lines;
-	}
-
-	private static Objective sidebarObjective(Scoreboard scoreboard, String playerName) {
-		Objective objective = scoreboard.getDisplayObjective(DisplaySlot.SIDEBAR);
-		PlayerTeam team = scoreboard.getPlayersTeam(playerName);
-		DisplaySlot colored = team == null ? null : team.getColor().map(TeamColor::displaySlot).orElse(null);
-		if (colored != null) {
-			Objective teamObjective = scoreboard.getDisplayObjective(colored);
-			if (teamObjective != null) {
-				return teamObjective;
-			}
-		}
-		return objective;
 	}
 
 	private static String clean(Component component) {

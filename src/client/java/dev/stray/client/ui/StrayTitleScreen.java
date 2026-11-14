@@ -6,7 +6,7 @@ import dev.stray.client.input.MouseButtons;
 //?}
 import dev.stray.client.render.GuiDraw;
 import dev.stray.client.render.TitleBackdrop;
-import net.fabricmc.loader.api.FabricLoader;
+import dev.stray.client.util.Utils;
 import net.minecraft.SharedConstants;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
@@ -101,7 +101,7 @@ public class StrayTitleScreen extends Screen {
 			ShadowLook.window(graphics, colX - pad, winY, colW + pad * 2, winH, ShadowLook.WINDOW_R, Anim.fade(ShadowLook.FILL, fade));
 		}
 		GuiDraw.title(graphics, font, "Stray", colX + 2, GuiDraw.middle(colY - 18, 16), Anim.fade(ShadowLook.TEXT, fade));
-		String ver = "v" + modVersion();
+		String ver = "v" + Utils.modVersion();
 		GuiDraw.small(graphics, font, ver, colX + colW - 2 - GuiDraw.smallWidth(font, ver), GuiDraw.middle(colY - 18, 16), Anim.fade(ShadowLook.MUTED, fade));
 
 		float y = colY;
@@ -181,13 +181,6 @@ public class StrayTitleScreen extends Screen {
 		int color = hovered ? Theme.ACCENT : Theme.MUTED;
 		GuiDraw.small(graphics, font, label, x, y, Anim.fade(color, fade));
 		hits.add(new Hit(x - 2, y - 2, w + 4, 12, action));
-	}
-
-	private float anim(String key, float target) {
-		float current = hovers.getOrDefault(key, 0f);
-		float next = Anim.exp(current, target, 18f, dt);
-		hovers.put(key, next);
-		return next;
 	}
 
 	private void tickAnim() {
@@ -271,13 +264,6 @@ public class StrayTitleScreen extends Screen {
 			}
 		}
 		return super.mouseClicked(event, doubled);
-	}
-
-	private static String modVersion() {
-		return FabricLoader.getInstance()
-			.getModContainer("stray")
-			.map(container -> container.getMetadata().getVersion().getFriendlyString())
-			.orElse("1.3.33");
 	}
 
 	private record Hit(float x, float y, float w, float h, Runnable click) {

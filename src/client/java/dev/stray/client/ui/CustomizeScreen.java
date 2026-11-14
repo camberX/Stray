@@ -1,6 +1,5 @@
 package dev.stray.client.ui;
 
-import dev.stray.client.config.StrayConfig;
 import dev.stray.client.item.custom.CustomItems;
 import dev.stray.client.render.GuiDraw;
 import net.minecraft.client.Minecraft;
@@ -14,7 +13,6 @@ import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.tags.ItemTags;
-import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.decoration.ArmorStand;

@@ -6,6 +6,7 @@ import dev.stray.client.item.ItemAppearance;
 import dev.stray.client.item.ItemIds;
 import dev.stray.client.item.SkyblockItems;
 import dev.stray.client.render.GuiDraw;
+import dev.stray.client.util.TextFit;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
@@ -165,7 +166,7 @@ public class ItemEditScreen extends Screen {
 			TextKeys.mark(graphics, "item-edit", fieldX, fieldY, fieldW, FIELD_H);
 		}
 		String shown = query.isEmpty() && !focused ? "minecraft: or sb:" : query;
-		String clipped = clipField(font, shown, cursor, (int) fieldW - 14);
+		String clipped = TextFit.clipField(font, shown, cursor, (int) fieldW - 14);
 		int color = query.isEmpty() && !focused ? Theme.MUTED : Theme.TEXT;
 		float textX = fieldX + 7;
 		float textY = GuiDraw.middle(fieldY, FIELD_H);
@@ -197,7 +198,7 @@ public class ItemEditScreen extends Screen {
 				GuiDraw.rounded(graphics, fieldX, listY, fieldW, 14, 4, 0x14FFFFFF);
 			}
 			String label = suggestionLabel(id);
-			GuiDraw.small(graphics, font, clip(font, label, (int) fieldW - 10), fieldX + 5, listY + 2, hover ? Theme.TEXT : Theme.MUTED);
+			GuiDraw.small(graphics, font, TextFit.small(font, label, (int) fieldW - 10), fieldX + 5, listY + 2, hover ? Theme.TEXT : Theme.MUTED);
 			final String pick = id;
 			hits.add(new Hit(fieldX, listY, fieldW, 14, mx -> applySuggestion(pick)));
 			listY += 15;
@@ -208,7 +209,7 @@ public class ItemEditScreen extends Screen {
 		}
 
 		String line = status.isBlank() ? "Looks like this on your client only" : status;
-		GuiDraw.small(graphics, font, clip(font, line, (int) fieldW - 4), fieldX, statusY, Theme.MUTED);
+		GuiDraw.small(graphics, font, TextFit.small(font, line, (int) fieldW - 4), fieldX, statusY, Theme.MUTED);
 	}
 
 	private static String suggestionLabel(String id) {
@@ -307,32 +308,6 @@ public class ItemEditScreen extends Screen {
 			}
 		}
 		return best;
-	}
-
-	private static String clipField(Font font, String value, int cursor, int maxWidth) {
-		if (GuiDraw.menuWidth(font, value) <= maxWidth) {
-			return value;
-		}
-		int from = 0;
-		while (from < cursor && GuiDraw.menuWidth(font, value.substring(from)) > maxWidth) {
-			from++;
-		}
-		String slice = value.substring(from);
-		while (slice.length() > 1 && GuiDraw.menuWidth(font, slice) > maxWidth) {
-			slice = slice.substring(0, slice.length() - 1);
-		}
-		return slice;
-	}
-
-	private static String clip(Font font, String value, int maxWidth) {
-		if (GuiDraw.smallWidth(font, value) <= maxWidth) {
-			return value;
-		}
-		String trimmed = value;
-		while (trimmed.length() > 1 && GuiDraw.smallWidth(font, trimmed + "..") > maxWidth) {
-			trimmed = trimmed.substring(0, trimmed.length() - 1);
-		}
-		return trimmed + "..";
 	}
 
 	@Override

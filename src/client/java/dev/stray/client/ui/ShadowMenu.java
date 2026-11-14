@@ -1,6 +1,7 @@
 package dev.stray.client.ui;
 
 import dev.stray.client.render.GuiDraw;
+import dev.stray.client.util.Utils;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
@@ -116,7 +117,7 @@ public final class ShadowMenu {
 
 	private static void frame(StrayScreen screen, GuiGraphicsExtractor graphics, Font font, int mouseX, int mouseY) {
 		tick(screen);
-		float t = ease(Mth.clamp(screen.clickAppear(), 0f, 1f) * openT);
+		float t = Utils.easeOutCubic(Mth.clamp(screen.clickAppear(), 0f, 1f) * openT);
 		GuiDraw.fill(graphics, 0, 0, screen.width, screen.height, Anim.fade(0x30000000, t));
 		sheetW = Math.min(440f, screen.width - 24f);
 		sheetX = (screen.width - sheetW) * 0.5f;
@@ -325,12 +326,12 @@ public final class ShadowMenu {
 		chipScroll = Mth.clamp(chipScroll, 0f, Math.max(0f, content - chipsH));
 		boolean clip = GuiDraw.scissor(graphics, x - 2f, y - 1f, w + 4f, chipsH + 2f);
 		int mark = screen.clickHitMark();
-		float ct = ease(catT);
+		float ct = Utils.easeOutCubic(catT);
 		for (int i = 0; i < items.size(); i++) {
 			MenuItems.Item item = items.get(i);
 			float[] s = spots.get(i);
 			float delay = Math.min(i, 16) * 0.025f;
-			float k = ease(Mth.clamp((catT - delay) / (1f - delay), 0f, 1f)) * t;
+			float k = Utils.easeOutCubic(Mth.clamp((catT - delay) / (1f - delay), 0f, 1f)) * t;
 			float cx = x + s[0];
 			float cy = y + s[1] - chipScroll + (1f - k) * 5f;
 			if (cy + CHIP_H < y || cy > y + chipsH) {
@@ -422,8 +423,8 @@ public final class ShadowMenu {
 		float bottom,
 		float t
 	) {
-		float st = ease(selT) * t;
-		float lift = (1f - ease(selT)) * 6f;
+		float st = Utils.easeOutCubic(selT) * t;
+		float lift = (1f - Utils.easeOutCubic(selT)) * 6f;
 		setTop = y;
 		setBottom = bottom;
 		float content = settingsHeight(screen, Minecraft.getInstance().font, mod, w);
@@ -722,11 +723,6 @@ public final class ShadowMenu {
 		float value = Math.abs(target - current) < 0.002f ? target : current + (target - current) * (1f - (float) Math.exp(-speed * dt));
 		map.put(key, value);
 		return value;
-	}
-
-	private static float ease(float t) {
-		float u = 1f - Mth.clamp(t, 0f, 1f);
-		return 1f - u * u * u;
 	}
 
 	private static boolean contains(double x, double y, float rx, float ry, float rw, float rh) {
