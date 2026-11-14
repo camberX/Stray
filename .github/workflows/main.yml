@@ -1,0 +1,21 @@
+name: Build and Notify Discord
+
+on: [push, pull_request]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run your build or tests
+        run: echo "Running build steps..."
+
+      # Sends the embed even if previous steps fail
+      - name: Discord Notification
+        if: always()
+        uses: sarisia/actions-status-discord@v1
+        with:
+          webhook: ${{ secrets.DISCORD_WEBHOOK }}
+          title: "Workflow Run: ${{ github.workflow }}"
+          description: "Triggered by **${{ github.actor }}** on branch `${{ github.ref_name }}`"
