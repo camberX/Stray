@@ -54,10 +54,6 @@ public final class ItemAppearance {
 		return skin.display;
 	}
 
-	public static ItemStack named(ItemStack stack) {
-		return stack;
-	}
-
 	public static String displayId(ItemStack stack) {
 		Skin skin = find(stack);
 		return skin == null ? null : skin.displayId;

@@ -69,11 +69,17 @@ public final class PickupLogRenderer {
 			for (Map.Entry<String, InventoryTotal> row : current.entrySet()) {
 				InventoryTotal before = inventory.get(row.getKey());
 				int gained = row.getValue().amount - (before == null ? 0 : before.amount);
-				if (gained > 0 && StrayConfig.get().pickupLogEnabled) {
-					add(row.getValue().stack, gained);
+				if (gained <= 0) {
+					continue;
 				}
-				if (gained > 0 && client.gui.screen() == null) {
-					dev.stray.client.slayer.SlayerProfit.onItemGain(row.getValue().stack, gained);
+				// A single-count copy, made only now that something was gained (not for every
+				// item on every tick).
+				ItemStack one = row.getValue().stack.copyWithCount(1);
+				if (StrayConfig.get().pickupLogEnabled) {
+					add(one, gained);
+				}
+				if (client.gui.screen() == null) {
+					dev.stray.client.slayer.SlayerProfit.onItemGain(one, gained);
 				}
 			}
 		}
@@ -191,7 +197,7 @@ public final class PickupLogRenderer {
 			String key = ItemIds.idOf(stack) + '\u0000' + stack.getHoverName().getString();
 			InventoryTotal total = totals.get(key);
 			if (total == null) {
-				totals.put(key, new InventoryTotal(stack.copyWithCount(1), stack.getCount()));
+				totals.put(key, new InventoryTotal(stack, stack.getCount()));
 			} else {
 				total.amount += stack.getCount();
 			}

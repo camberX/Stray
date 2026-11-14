@@ -1,6 +1,5 @@
 package dev.stray.client.mixin;
 
-import dev.stray.client.item.ItemAppearance;
 import dev.stray.client.menu.SackRecipe;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Player;
@@ -21,49 +20,12 @@ public class ItemStackMixin {
 		dev.stray.client.item.custom.CustomItems.copied((ItemStack) (Object) this, cir.getReturnValue());
 	}
 
-	@Inject(method = "getCustomName", at = @At("HEAD"), cancellable = true)
-	private void stray$customName(CallbackInfoReturnable<Component> cir) {
-		ItemStack shown = ItemAppearance.named((ItemStack) (Object) this);
-		if (shown != (Object) this) {
-			cir.setReturnValue(shown.getCustomName());
-		}
-	}
-
-	@Inject(method = "getHoverName", at = @At("HEAD"), cancellable = true)
-	private void stray$hoverName(CallbackInfoReturnable<Component> cir) {
-		ItemStack shown = ItemAppearance.named((ItemStack) (Object) this);
-		if (shown != (Object) this) {
-			cir.setReturnValue(shown.getHoverName());
-		}
-	}
-
-	@Inject(method = "getStyledHoverName", at = @At("HEAD"), cancellable = true)
-	private void stray$styledHoverName(CallbackInfoReturnable<Component> cir) {
-		ItemStack shown = ItemAppearance.named((ItemStack) (Object) this);
-		if (shown != (Object) this) {
-			cir.setReturnValue(shown.getStyledHoverName());
-		}
-	}
-
 	/** Item customization: the custom name wins over the item's own (SkyOcean port). */
 	@Inject(method = {"getStyledHoverName", "getHoverName"}, at = @At("RETURN"), cancellable = true, require = 0)
 	private void stray$customizedName(CallbackInfoReturnable<Component> cir) {
 		Component custom = dev.stray.client.item.custom.CustomItems.displayName((ItemStack) (Object) this, cir.getReturnValue());
 		if (custom != null) {
 			cir.setReturnValue(custom);
-		}
-	}
-
-	@Inject(method = "getTooltipLines", at = @At("HEAD"), cancellable = true)
-	private void stray$tooltip(
-		Item.TooltipContext context,
-		Player player,
-		TooltipFlag flag,
-		CallbackInfoReturnable<List<Component>> cir
-	) {
-		ItemStack shown = ItemAppearance.named((ItemStack) (Object) this);
-		if (shown != (Object) this) {
-			cir.setReturnValue(shown.getTooltipLines(context, player, flag));
 		}
 	}
 

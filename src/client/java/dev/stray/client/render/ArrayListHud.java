@@ -64,7 +64,7 @@ public final class ArrayListHud {
 				GuiFrostBlur.blitWindow(graphics, x, y, row.width, ROW_H, ShadowLook.SLOT_R);
 				GuiDraw.roundedFine(graphics, x, y, row.width, ROW_H, ShadowLook.SLOT_R, Theme.HUD_WINDOW);
 			}
-			GuiDraw.text(graphics, font, MenuFont.shadow(row.label), x + PAD, GuiDraw.middle(y, ROW_H), ShadowLook.TEXT, false);
+			GuiDraw.text(graphics, font, row.text, x + PAD, GuiDraw.middle(y, ROW_H), ShadowLook.TEXT, false);
 			GuiDraw.circle(graphics, right - PAD * 0.5f - DOT * 0.5f - 1f, y + ROW_H * 0.5f, DOT * 0.5f, row.color);
 			y += ROW_H + GAP;
 		}
@@ -103,9 +103,11 @@ public final class ArrayListHud {
 	}
 
 	private static Row row(Font font, String label, int color) {
-		return new Row(label, 0xFF000000 | color, PAD + font.width(MenuFont.shadow(label)) + PAD + DOT + 2f);
+		// The styled label is kept with the row: it is measured here and drawn every frame.
+		net.minecraft.network.chat.Component text = MenuFont.shadow(label);
+		return new Row(text, 0xFF000000 | color, PAD + font.width(text) + PAD + DOT + 2f);
 	}
 
-	private record Row(String label, int color, float width) {
+	private record Row(net.minecraft.network.chat.Component text, int color, float width) {
 	}
 }

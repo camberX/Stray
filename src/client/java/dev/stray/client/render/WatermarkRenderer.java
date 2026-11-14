@@ -127,25 +127,39 @@ public final class WatermarkRenderer {
 		return w + (parts.isEmpty() ? SH_PAD : 8f);
 	}
 
+	private static final String[] PART_KEYS = {"shadow:0", "shadow:1", "shadow:2", "shadow:3"};
+
+	/** One pass per frame: the parts are built and measured once, then laid out and drawn. */
 	private static void drawShadow(GuiGraphicsExtractor graphics, Font font) {
-		float w = shadowWidth(font);
+		List<String> parts = shadowParts();
+		int count = parts.size();
+		Component brand = MenuFont.shadow("Stray");
+		float bw = 7f + font.width(brand) + 7f;
+		Component[] texts = new Component[count];
+		float[] widths = new float[count];
+		float w = SH_PAD + bw;
+		for (int i = 0; i < count; i++) {
+			texts[i] = MenuFont.shadow(parts.get(i));
+			widths[i] = stableWidth(font, texts[i], i < PART_KEYS.length ? PART_KEYS[i] : "shadow:" + i);
+			w += SH_GAP + widths[i];
+		}
+		w += count == 0 ? SH_PAD : 8f;
 		float r = HEIGHT * 0.5f;
 		if (HudChrome.background()) {
 			dev.stray.client.ui.ShadowLook.panel(graphics, 0, 0, w, HEIGHT, r, dev.stray.client.ui.ShadowLook.FILL);
 		}
-		float bw = shadowBrandW(font);
 		GuiDraw.roundedFine(graphics, SH_PAD, SH_PAD, bw, SH_PILL, SH_PILL * 0.5f, 0xFFEEF1F5);
 		// Same font, size and baseline as the stats beside it, so it sits centred in its pill.
-		GuiDraw.text(graphics, font, MenuFont.shadow("Stray"), SH_PAD + 7f, Math.round(GuiDraw.middle(0, HEIGHT)), 0xFF0B0E13, false);
+		float textY = Math.round(GuiDraw.middle(0, HEIGHT));
+		GuiDraw.text(graphics, font, brand, SH_PAD + 7f, textY, 0xFF0B0E13, false);
 		float x = SH_PAD + bw;
-		List<String> parts = shadowParts();
-		for (int i = 0; i < parts.size(); i++) {
+		for (int i = 0; i < count; i++) {
 			if (i > 0) {
 				GuiDraw.circle(graphics, x + SH_GAP * 0.5f, HEIGHT * 0.5f, 1f, 0x40FFFFFF);
 			}
 			x += SH_GAP;
-			GuiDraw.text(graphics, font, MenuFont.shadow(parts.get(i)), x, Math.round(GuiDraw.middle(0, HEIGHT)), i == 0 ? 0xFFEEF1F5 : 0xFF9AA4AF, false);
-			x += stableWidth(font, MenuFont.shadow(parts.get(i)), "shadow:" + i);
+			GuiDraw.text(graphics, font, texts[i], x, textY, i == 0 ? 0xFFEEF1F5 : 0xFF9AA4AF, false);
+			x += widths[i];
 		}
 	}
 

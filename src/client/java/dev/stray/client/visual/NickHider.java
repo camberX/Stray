@@ -11,7 +11,18 @@ import net.minecraft.network.chat.contents.TranslatableContents;
 import net.minecraft.util.FormattedCharSequence;
 
 public final class NickHider {
-	private static final ThreadLocal<Integer> DEPTH = ThreadLocal.withInitial(() -> 0);
+	/** How deep this thread is inside a rewrite (a plain counter, so reading it allocates nothing). */
+	private static final class Depth {
+		int value;
+	}
+
+	private static final ThreadLocal<Depth> DEPTH = ThreadLocal.withInitial(Depth::new);
+
+	/** Neither name feature is on: every text hook can hand its text straight back. */
+	private static boolean idle() {
+		StrayConfig config = StrayConfig.get();
+		return !config.nickEnabled && !config.hideOtherNames;
+	}
 	private static String cachedRaw = "";
 	private static Component cachedFormatted = Component.empty();
 	private static String cachedPlain = "";
@@ -20,7 +31,7 @@ public final class NickHider {
 	}
 
 	public static boolean active() {
-		if (DEPTH.get() > 0) {
+		if (DEPTH.get().value > 0) {
 			return false;
 		}
 		StrayConfig config = StrayConfig.get();
@@ -31,11 +42,12 @@ public final class NickHider {
 	}
 
 	public static void suppress() {
-		DEPTH.set(DEPTH.get() + 1);
+		DEPTH.get().value++;
 	}
 
 	public static void resume() {
-		DEPTH.set(Math.max(0, DEPTH.get() - 1));
+		Depth depth = DEPTH.get();
+		depth.value = Math.max(0, depth.value - 1);
 	}
 
 	public static String realName() {
@@ -78,7 +90,7 @@ public final class NickHider {
 		if (name.isEmpty() || !containsName(component.getString(), name)) {
 			return component;
 		}
-		DEPTH.set(DEPTH.get() + 1);
+		DEPTH.get().value++;
 		try {
 			if (NickSteal.active()) {
 				// Rank and level tags live in sibling components before the
@@ -98,8 +110,11 @@ public final class NickHider {
 
 	/** Your own name (nick hider), then everyone else's (Hide other names). */
 	public static String rewrite(String text) {
+		if (idle()) {
+			return text;
+		}
 		String out = rewriteSelf(text);
-		return DEPTH.get() > 0 ? out : OtherNames.rewrite(out);
+		return DEPTH.get().value > 0 ? out : OtherNames.rewrite(out);
 	}
 
 	/**
@@ -112,13 +127,19 @@ public final class NickHider {
 	}
 
 	public static Component rewrite(Component component) {
+		if (idle()) {
+			return component;
+		}
 		Component out = rewriteSelf(component);
-		return DEPTH.get() > 0 ? out : OtherNames.rewrite(out);
+		return DEPTH.get().value > 0 ? out : OtherNames.rewrite(out);
 	}
 
 	public static FormattedCharSequence rewrite(FormattedCharSequence sequence) {
+		if (idle()) {
+			return sequence;
+		}
 		FormattedCharSequence out = rewriteSelf(sequence);
-		return DEPTH.get() > 0 ? out : OtherNames.rewrite(out);
+		return DEPTH.get().value > 0 ? out : OtherNames.rewrite(out);
 	}
 
 	/** Reused per thread: the characters and styles of the sequence being checked. */

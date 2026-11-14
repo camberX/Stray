@@ -616,18 +616,36 @@ public final class ClickGui {
 		"Command rings", "Movement rings", "Align triggerbot", "Terminal GUI", "Lever triggerbot", "Auto leap", "Fast leap"
 	);
 
+	/**
+	 * The module list is the same until the config object is swapped (load, reset): its entries
+	 * only hold getters and setters on that object. Built once per config instead of on every
+	 * call (the ArrayList HUD asks ten times a second).
+	 */
+	private static List<Mod> modulesCache;
+	private static StrayConfig modulesFor;
+	private static Object modulesSlayer;
+
 	static List<Mod> modules() {
+		StrayConfig config = StrayConfig.get();
+		List<Mod> cached = modulesCache;
+		if (cached != null && modulesFor == config && modulesSlayer == config.slayer) {
+			return cached;
+		}
 		List<Mod> all = allModules();
-		if (!dev.stray.Edition.LEGIT) {
-			return all;
-		}
-		List<Mod> kept = new ArrayList<>(all.size());
-		for (Mod mod : all) {
-			if (!LEGIT_REMOVED.contains(mod.name)) {
-				kept.add(mod);
+		if (dev.stray.Edition.LEGIT) {
+			List<Mod> kept = new ArrayList<>(all.size());
+			for (Mod mod : all) {
+				if (!LEGIT_REMOVED.contains(mod.name)) {
+					kept.add(mod);
+				}
 			}
+			all = kept;
 		}
-		return kept;
+		all = java.util.Collections.unmodifiableList(all);
+		modulesFor = config;
+		modulesSlayer = config.slayer;
+		modulesCache = all;
+		return all;
 	}
 
 	private static List<Mod> allModules() {
