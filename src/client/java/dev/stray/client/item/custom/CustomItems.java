@@ -100,6 +100,12 @@ public final class CustomItems {
 		public Boolean glint;
 		/** Minecraft item id whose model the item is drawn with, e.g. minecraft:diamond_sword. */
 		public String model;
+		/**
+		 * What the customized item is (its SkyBlock id and Minecraft item), remembered so the look
+		 * can be shared with other Stray users before the item is worn. Not an override.
+		 */
+		public String sbId;
+		public String item;
 
 		boolean empty() {
 			return (name == null || name.isEmpty()) && color == null && trimPattern == null && skin == null && glint == null
@@ -255,7 +261,31 @@ public final class CustomItems {
 		if (key != null && key.startsWith("s:")) {
 			return SharedCustomize.data(key);
 		}
-		return key == null ? null : ITEMS.get(key);
+		Data data = key == null ? null : ITEMS.get(key);
+		if (data != null && data.item == null) {
+			// Customized before items remembered what they are: learn it now, once.
+			identify(data, stack);
+			save();
+		}
+		return data;
+	}
+
+	private static void identify(Data data, ItemStack stack) {
+		data.sbId = ItemIds.skyblockId(stack);
+		data.item = BuiltInRegistries.ITEM.getKey(stack.getItem()).toString();
+	}
+
+	/** Your customized items with a dye or head skin (newest last), for sharing; at most {@code max}. */
+	public static List<Map.Entry<String, Data>> shareable(int max) {
+		load();
+		List<Map.Entry<String, Data>> out = new ArrayList<>();
+		for (Map.Entry<String, Data> entry : ITEMS.entrySet()) {
+			Data data = entry.getValue();
+			if ((data.color != null || data.skin != null) && data.item != null) {
+				out.add(entry);
+			}
+		}
+		return out.size() <= max ? out : out.subList(out.size() - max, out.size());
 	}
 
 	/**
@@ -284,7 +314,9 @@ public final class CustomItems {
 		if (key == null || key.startsWith("s:")) {
 			return null;
 		}
-		return ITEMS.computeIfAbsent(key, k -> new Data());
+		Data data = ITEMS.computeIfAbsent(key, k -> new Data());
+		identify(data, stack);
+		return data;
 	}
 
 	public static boolean reset(ItemStack stack) {

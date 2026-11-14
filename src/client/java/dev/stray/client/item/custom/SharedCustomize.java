@@ -21,33 +21,37 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
-import java.util.EnumMap;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * /st customize, shared with other Stray users: the dye and head skin of the armor you wear
- * go to stray.gay (Share with Stray users, off by default), and the armor other Stray users
- * wear is drawn with theirs.
+ * /st customize, shared with other Stray users: the dyes and head skins you set go to
+ * stray.gay (Share, off by default), and the armor other Stray users wear is drawn with theirs.
  *
- * <p>Only the four worn pieces are shared, each with its slot, SkyBlock id and Minecraft item,
- * since other players' armor may come without the item's UUID. A piece someone wears is tagged
- * when the server sends it ({@link #tag}), and again when their shared look changes.
+ * <p>Every customized piece is shared, not only what is worn, so another player's look is
+ * already here when they change armor: the new piece is matched the moment the server sends it
+ * ({@link #tag}), with nothing to upload or download. A piece is matched by its item UUID when
+ * the server sends one, else by SkyBlock id, else by Minecraft item.
  */
 public final class SharedCustomize {
 	private static final String BASE = "https://stray.gay";
-	private static final int MAX_BYTES = 16 * 1024;
+	private static final int MAX_BYTES = 64 * 1024;
+	/** How many customized pieces are shared at most (the newest ones). */
+	private static final int MAX_ITEMS = 48;
 	private static final EquipmentSlot[] SLOTS = {EquipmentSlot.HEAD, EquipmentSlot.CHEST, EquipmentSlot.LEGS, EquipmentSlot.FEET};
 	private static final Gson GSON = new Gson();
 	private static final HttpClient HTTP = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(8)).build();
 
-	private record Entry(String id, String item, CustomItems.Data data) {
+	/** One shared piece: its customize key ("u:<uuid>", "t:...", "i:<id>"), what it is, and its look. */
+	private record Entry(String key, String id, String item, CustomItems.Data data) {
 	}
 
 	private static final class Shared {
 		volatile String hash = "";
-		volatile Map<EquipmentSlot, Entry> slots = Map.of();
+		volatile List<Entry> entries = List.of();
 	}
 
 	private static final Map<UUID, Shared> PLAYERS = new ConcurrentHashMap<>();
@@ -95,15 +99,15 @@ public final class SharedCustomize {
 			if (response.statusCode() != 200 || response.body().length() > MAX_BYTES || !hash.equals(shared.hash)) {
 				return;
 			}
-			shared.slots = parse(response.body());
+			shared.entries = parse(response.body());
 			Minecraft.getInstance().execute(() -> retag(uuid));
 		} catch (Exception exception) {
 			Stray.LOGGER.debug("Shared customize for {} failed", uuid, exception);
 		}
 	}
 
-	private static Map<EquipmentSlot, Entry> parse(String body) {
-		Map<EquipmentSlot, Entry> out = new EnumMap<>(EquipmentSlot.class);
+	private static List<Entry> parse(String body) {
+		List<Entry> out = new ArrayList<>();
 		JsonElement root = JsonParser.parseString(body);
 		if (!root.isJsonObject() || !root.getAsJsonObject().has("items")) {
 			return out;
@@ -113,10 +117,6 @@ public final class SharedCustomize {
 				continue;
 			}
 			JsonObject item = element.getAsJsonObject();
-			EquipmentSlot slot = slot(string(item, "slot"));
-			if (slot == null) {
-				continue;
-			}
 			CustomItems.Data data = new CustomItems.Data();
 			if (item.has("color") && item.get("color").isJsonObject()) {
 				data.color = GSON.fromJson(item.get("color"), CustomItems.ColorSpec.class);
@@ -125,22 +125,52 @@ public final class SharedCustomize {
 				data.skin = GSON.fromJson(item.get("skin"), CustomItems.SkinSpec.class);
 			}
 			if (data.color != null || data.skin != null) {
-				out.put(slot, new Entry(string(item, "id"), string(item, "item"), data));
+				out.add(new Entry(string(item, "key"), string(item, "id"), string(item, "item"), data));
 			}
 		}
-		return out;
+		return List.copyOf(out);
 	}
 
-	/** The server set a piece of another player's equipment: tag it when their look is for it. */
+	/** The server set a piece of another player's equipment: tag it when they shared a look for it. */
 	public static void tag(Player player, EquipmentSlot slot, ItemStack stack) {
 		Shared shared = PLAYERS.get(player.getUUID());
 		if (shared == null || stack == null || stack.isEmpty()) {
 			return;
 		}
-		Entry entry = shared.slots.get(slot);
-		if (entry != null && matches(entry, stack)) {
-			CustomItems.tagShared(stack, key(player.getUUID(), slot));
+		int index = match(shared.entries, stack);
+		if (index >= 0) {
+			CustomItems.tagShared(stack, "s:" + player.getUUID() + ":" + index);
 		}
+	}
+
+	/** Which shared entry is this item: the same item UUID, else the same SkyBlock id, else the same Minecraft item. */
+	private static int match(List<Entry> entries, ItemStack stack) {
+		if (entries.isEmpty()) {
+			return -1;
+		}
+		String key = CustomItems.keyOf(stack);
+		if (key != null && !key.startsWith("s:")) {
+			for (int i = 0; i < entries.size(); i++) {
+				if (key.equals(entries.get(i).key())) {
+					return i;
+				}
+			}
+		}
+		String id = ItemIds.skyblockId(stack);
+		String item = BuiltInRegistries.ITEM.getKey(stack.getItem()).toString();
+		int byItem = -1;
+		for (int i = entries.size() - 1; i >= 0; i--) {
+			Entry entry = entries.get(i);
+			if (id != null && id.equals(entry.id())) {
+				return i;
+			}
+			// The server sent no SkyBlock id (other players' armor may come without one): the newest
+			// piece of the same Minecraft item.
+			if (byItem < 0 && id == null && item.equals(entry.item())) {
+				byItem = i;
+			}
+		}
+		return byItem;
 	}
 
 	/** Tag (or untag) what a player wears now, after their shared look arrived or went away. */
@@ -160,42 +190,20 @@ public final class SharedCustomize {
 		}
 	}
 
-	private static boolean matches(Entry entry, ItemStack stack) {
-		String id = ItemIds.skyblockId(stack);
-		if (entry.id() != null && id != null) {
-			return entry.id().equals(id);
-		}
-		return entry.item() != null && entry.item().equals(BuiltInRegistries.ITEM.getKey(stack.getItem()).toString());
-	}
-
-	/** The shared look under a key from {@link #key}. */
+	/** The shared look under a tag key: "s:<player uuid>:<entry index>". */
 	static CustomItems.Data data(String key) {
-		// "s:<uuid>:<slot>"
 		int split = key.lastIndexOf(':');
 		if (split < 3) {
 			return null;
 		}
 		try {
 			Shared shared = PLAYERS.get(UUID.fromString(key.substring(2, split)));
-			EquipmentSlot slot = slot(key.substring(split + 1));
-			Entry entry = shared == null || slot == null ? null : shared.slots.get(slot);
-			return entry == null ? null : entry.data();
+			int index = Integer.parseInt(key.substring(split + 1));
+			List<Entry> entries = shared == null ? List.of() : shared.entries;
+			return index >= 0 && index < entries.size() ? entries.get(index).data() : null;
 		} catch (IllegalArgumentException exception) {
 			return null;
 		}
-	}
-
-	private static String key(UUID uuid, EquipmentSlot slot) {
-		return "s:" + uuid + ":" + slot.getName();
-	}
-
-	private static EquipmentSlot slot(String name) {
-		for (EquipmentSlot slot : SLOTS) {
-			if (slot.getName().equals(name)) {
-				return slot;
-			}
-		}
-		return null;
 	}
 
 	private static String string(JsonObject json, String key) {
@@ -206,8 +214,9 @@ public final class SharedCustomize {
 	// ------------------------------------------------------------------ yours
 
 	/**
-	 * Once a second: what you wear and how it is customized. When that changes (or sharing is
-	 * turned on or off) and stays the same for 3 seconds, it is sent.
+	 * Once a second: your customized pieces. When they change (a new dye or skin, or sharing
+	 * turned on or off) and stay the same for 3 seconds, they are sent. Changing armor sends
+	 * nothing: every piece is already shared.
 	 */
 	public static void tick(Minecraft client) {
 		long now = System.currentTimeMillis();
@@ -215,7 +224,7 @@ public final class SharedCustomize {
 			return;
 		}
 		nextCheck = now + 1_000L;
-		String want = StrayConfig.get().customizeShare ? mine(client.player) : "";
+		String want = StrayConfig.get().customizeShare ? mine() : "";
 		if (sent == null && want.isEmpty()) {
 			// Never shared this session and nothing to share: leave the server alone.
 			return;
@@ -248,22 +257,20 @@ public final class SharedCustomize {
 		});
 	}
 
-	/** Your worn pieces with a custom dye or head skin, as the JSON the server takes. */
-	private static String mine(Player player) {
+	/** Your customized pieces with a dye or head skin, as the JSON the server takes ("" for none). */
+	private static String mine() {
 		JsonArray items = new JsonArray();
-		for (EquipmentSlot slot : SLOTS) {
-			ItemStack stack = player.getItemBySlot(slot);
-			CustomItems.Data data = stack.isEmpty() ? null : CustomItems.get(stack);
-			if (data == null || data.color == null && data.skin == null) {
-				continue;
-			}
+		for (Map.Entry<String, CustomItems.Data> entry : CustomItems.shareable(MAX_ITEMS)) {
+			CustomItems.Data data = entry.getValue();
 			JsonObject item = new JsonObject();
-			item.addProperty("slot", slot.getName());
-			String id = ItemIds.skyblockId(stack);
-			if (id != null) {
-				item.addProperty("id", id);
+			if (!CustomItems.sharedKey(entry.getKey())) {
+				// "i:" keys apply to every copy of an id; the id alone says that.
+				item.addProperty("key", entry.getKey());
 			}
-			item.addProperty("item", BuiltInRegistries.ITEM.getKey(stack.getItem()).toString());
+			if (data.sbId != null) {
+				item.addProperty("id", data.sbId);
+			}
+			item.addProperty("item", data.item);
 			if (data.color != null) {
 				item.add("color", GSON.toJsonTree(data.color));
 			}
