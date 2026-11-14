@@ -15,6 +15,13 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.6.0", new String[]{
+			"Shared customize: /st customize has a Share button (off by default). With it on, other Stray users see the custom dyes and head skins of the armor you wear.",
+			"Hide other names: names the scoreboard cuts short (UltraCharge0) are hidden too, and Hypixel's NPCs, dungeon room names and M7 dragons are no longer treated as player names. /stray debug dev othername why <word> tells you why a word is swapped.",
+			"/pv and /profile: tab completes player names (you, your party, players nearby and the tab list); with no name they open your own profile.",
+			"World editor: /stray editor as f7 (or m7) saves your edits on your own server with the boss map to that floor, so they show there on Hypixel. /stray editor as off goes back.",
+			"Smoother HUD: the ArrayList, watermark, name hiding and pickup log do less work every frame, and the code was tidied up behind the scenes."
+		}),
 		new Entry("1.5.99", new String[]{
 			"Auto leap and Fast leap (Dungeons, not in Stray Legit), ported from quoi by jcnlk with permission: on F7/M7 boss moments (crushes, Storm, P3 sections, I4, Necron, relic, door opener) Auto leap uses your Spirit Leap on the teammate you set, by class or name; Fast leap does it on left click while you hold the leap. The leap menu stays hidden, every step happens at the start of a tick with normal clicks, and you can save and load presets. Test it anywhere with /stray debug dev leap <player>.",
 			"Leap menu: Teammate POV keeps the last picture, greyed with \"Out of range\", when a teammate leaves the server's range. Outside the boss there are no panel frames, just the cards. Card size goes up to 300%, and there is a Background opacity slider.",
