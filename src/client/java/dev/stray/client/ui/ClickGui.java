@@ -202,6 +202,7 @@ public final class ClickGui {
 	static final String TERMINALS = "Terminal GUI";
 	static final String TITLES = "F7 titles";
 	static final String LEVER = "Lever triggerbot";
+	static final String ETHERWARP_AIM = "Etherwarp aim";
 	static final String AUTO_LEAP = "Auto leap";
 	static final String FAST_LEAP = "Fast leap";
 	static final String MAP = "Dungeon map";
@@ -417,6 +418,7 @@ public final class ClickGui {
 		java.util.Map.entry("Party stats", "Shows a stats card when someone joins from the party finder."),
 		java.util.Map.entry("Auto leap", "F7/M7: leaps to the teammate you pick when a boss moment happens (crushes, P3 sections, I4, relic...). Silent menu, every step at tick start. Ported from quoi by jcnlk, used with permission."),
 		java.util.Map.entry("Fast leap", "F7/M7: while holding a Spirit Leap, left click leaps to the teammate set for where you are in the fight. Ported from quoi by jcnlk, used with permission."),
+		java.util.Map.entry("Etherwarp aim", "Sneak with an etherwarp item: the crosshair is pulled to your points for the room and it right clicks when it is on one. Edit mode: middle click a block to add or remove a point."),
 		java.util.Map.entry("Lever triggerbot", "Right clicks a lever once when your crosshair lands on it (after the delay). Look away and back to flip it again."),
 		java.util.Map.entry("Terminal GUI", "F7 terminals in a clean Shadow window: only the slots left to click light up, and a click anywhere on one goes to that slot. Try it with /stray debug dev terminal."),
 		java.util.Map.entry("Terminal highlight", "F7 phase 3: a glow on the command block of every terminal in your section that is not done yet, with its number above it."),
@@ -603,7 +605,7 @@ public final class ClickGui {
 	/** Modules Stray Legit leaves out: they automate input or are the loadouts / wardrobe menus. */
 	private static final java.util.Set<String> LEGIT_REMOVED = java.util.Set.of(
 		"Auto clicker", "Experiments", "Book combine", "Loadouts", "Wardrobe", "Auto DNA",
-		"Command rings", "Movement rings", "Align triggerbot", "Terminal GUI", "Lever triggerbot", "Auto leap", "Fast leap"
+		"Command rings", "Movement rings", "Align triggerbot", "Terminal GUI", "Lever triggerbot", "Etherwarp aim", "Auto leap", "Fast leap"
 	);
 
 	/**
@@ -649,6 +651,7 @@ public final class ClickGui {
 		mods.add(mod("Mask timers", "Dungeons", StrayScreen.Feature.MASK_TIMERS, null, () -> config.maskTimers, v -> config.maskTimers = v, true, false));
 		mods.add(mod(ALIGN, "Dungeons", StrayScreen.Feature.ALIGN_BOT, null, () -> config.alignTriggerbot, v -> config.alignTriggerbot = v, true, false));
 		mods.add(mod(LEVER, "Dungeons", StrayScreen.Feature.LEVER_BOT, null, () -> config.leverTriggerbot, v -> config.leverTriggerbot = v, true, false));
+		mods.add(mod(ETHERWARP_AIM, "Dungeons", StrayScreen.Feature.ETHERWARP_AIM, null, () -> config.etherwarpAim, v -> config.etherwarpAim = v, true, false));
 		mods.add(mod(AUTO_LEAP, "Dungeons", StrayScreen.Feature.AUTO_LEAP, null, () -> config.autoLeap, v -> config.autoLeap = v, true, false));
 		mods.add(mod(FAST_LEAP, "Dungeons", StrayScreen.Feature.FAST_LEAP, null, () -> config.fastLeap, v -> config.fastLeap = v, true, false));
 		mods.add(mod("Star mobs", "Dungeons", StrayScreen.Feature.STAR, EntityKind.STAR, () -> config.starVisuals.glowEnabled, v -> {

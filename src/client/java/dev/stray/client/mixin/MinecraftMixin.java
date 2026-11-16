@@ -24,6 +24,7 @@ public class MinecraftMixin {
 		if (!dev.stray.Edition.LEGIT) {
 			dev.stray.client.dungeon.AlignTriggerbot.beforeKeybinds((Minecraft) (Object) this);
 			dev.stray.client.dungeon.LeverTriggerbot.beforeKeybinds((Minecraft) (Object) this);
+			dev.stray.client.dungeon.EtherwarpAim.beforeKeybinds((Minecraft) (Object) this);
 			dev.stray.client.dungeon.autoleap.AutoLeap.beforeKeybinds((Minecraft) (Object) this);
 			dev.stray.client.dungeon.autoleap.LeapRunner.beforeKeybinds((Minecraft) (Object) this);
 		}
@@ -56,6 +57,12 @@ public class MinecraftMixin {
 	/** Middle-click (pick block) toggles a Stray block mark when that feature is on. */
 	@Inject(method = "pickBlockOrEntity", at = @At("HEAD"), cancellable = true)
 	private void stray$blockMark(CallbackInfo ci) {
+		if (!dev.stray.Edition.LEGIT) {
+			if (dev.stray.client.dungeon.EtherwarpAim.onPick((Minecraft) (Object) this)) {
+				ci.cancel();
+				return;
+			}
+		}
 		if (BlockMarks.onPick((Minecraft) (Object) this)) {
 			ci.cancel();
 		}

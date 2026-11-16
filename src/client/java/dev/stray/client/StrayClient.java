@@ -214,6 +214,9 @@ public final class StrayClient implements ClientModInitializer {
 		BlockOutlineGlow.init();
 		dev.stray.client.dungeon.TerminalHighlight.init();
 		BlockMarks.init();
+		if (!dev.stray.Edition.LEGIT) {
+			dev.stray.client.dungeon.EtherwarpAim.init();
+		}
 		dev.stray.client.editor.WorldEditor.init();
 		StrayLive.init();
 		PathRecorder.init();
@@ -602,6 +605,9 @@ public final class StrayClient implements ClientModInitializer {
 			MetalDetector.tick(client);
 			NucleusAlerts.tick(client);
 			BlockMarks.tick(client);
+			if (!dev.stray.Edition.LEGIT) {
+				dev.stray.client.dungeon.EtherwarpAim.tick(client);
+			}
 			PathRecorder.tick(client);
 			if (!dev.stray.Edition.LEGIT) { CommandRings.tick(client); }
 			if (!dev.stray.Edition.LEGIT) { PathWalker.tick(client); }
@@ -632,6 +638,7 @@ public final class StrayClient implements ClientModInitializer {
 			RouteMiner.reset();
 			MetalDetector.onWorldChange();
 			BlockMarks.onWorldChange();
+			if (!dev.stray.Edition.LEGIT) { dev.stray.client.dungeon.EtherwarpAim.onWorldChange(); }
 			if (!dev.stray.Edition.LEGIT) { CommandRings.onWorldChange(); }
 			if (!dev.stray.Edition.LEGIT) { PathWalker.stop(false); }
 			NucleusAlerts.reset();
@@ -985,6 +992,10 @@ public final class StrayClient implements ClientModInitializer {
 		}));
 		if (!dev.stray.Edition.LEGIT) {
 			// /stray debug dev screen <name>: opens a submenu directly, for checking how it looks.
+			node.then(ClientCommands.literal("etherwarp").executes(context -> {
+				context.getSource().sendFeedback(Component.literal("§bStray §7" + dev.stray.client.dungeon.EtherwarpAim.debug()));
+				return Command.SINGLE_SUCCESS;
+			}));
 			node.then(ClientCommands.literal("screen").then(ClientCommands.argument("name", com.mojang.brigadier.arguments.StringArgumentType.word())
 				.suggests((context, builder) -> {
 					for (String name : new String[] {"autohotbar", "keys", "shortcuts", "titles", "blockmark", "itemedit", "account", "cosmetics", "cape"}) {
@@ -998,6 +1009,7 @@ public final class StrayClient implements ClientModInitializer {
 					client.execute(() -> {
 						net.minecraft.client.gui.screens.Screen screen = switch (name) {
 							case "autohotbar" -> new dev.stray.client.ui.AutoHotbarScreen(null);
+							case "etherwarp" -> new dev.stray.client.ui.EtherwarpAimScreen(null);
 							case "keys" -> new dev.stray.client.ui.CommandKeysScreen(null);
 							case "shortcuts" -> new dev.stray.client.ui.CommandShortcutScreen(null);
 							case "titles" -> new dev.stray.client.ui.CustomTitleScreen(null);

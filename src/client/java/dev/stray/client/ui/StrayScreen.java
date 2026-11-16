@@ -181,6 +181,7 @@ public class StrayScreen extends Screen {
 		LEAP_MENU("Leap menu", 9),
 		ALIGN_BOT("Align triggerbot", 2),
 		LEVER_BOT("Lever triggerbot", 2),
+		ETHERWARP_AIM("Etherwarp aim", 1),
 		F7_TITLES("F7 titles", 4),
 		TERM_HIGHLIGHT("Terminal highlight", 4),
 		SCOREBOARD("Scoreboard", 1),
@@ -3977,6 +3978,11 @@ public class StrayScreen extends Screen {
 			case LEVER_BOT -> {
 				y = slider(graphics, font, ix, y, iw, "Delay", config.leverTriggerbotDelay + "ms", config.leverTriggerbotDelay / 300f, v -> config.leverTriggerbotDelay = snapInt(v * 300f, 0, 300, 5));
 				toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Dungeons only", config.leverTriggerbotDungeonsOnly, v -> config.leverTriggerbotDungeonsOnly = v);
+			}
+			case ETHERWARP_AIM -> {
+				if (!dev.stray.Edition.LEGIT) {
+					clickAction(graphics, font, ix, y, iw, "Open settings", () -> minecraft.gui.setScreen(new EtherwarpAimScreen(minecraft.gui.screen())));
+				}
 			}
 			case AUTO_LEAP -> drawLeapPanel(graphics, font, ix, y, iw, mouseX, mouseY, true);
 			case FAST_LEAP -> drawLeapPanel(graphics, font, ix, y, iw, mouseX, mouseY, false);

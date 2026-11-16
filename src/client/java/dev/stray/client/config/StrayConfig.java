@@ -356,6 +356,13 @@ public final class StrayConfig {
 	public boolean leverTriggerbot = false;
 	public int leverTriggerbotDelay = 80;
 	public boolean leverTriggerbotDungeonsOnly = true;
+	public boolean etherwarpAim = false;
+	public boolean etherwarpAimAssist = true;
+	public boolean etherwarpAimEdit = false;
+	public int etherwarpAimSpeed = 40;
+	public float etherwarpAimRange = 4.0f;
+	public int etherwarpAimDelay = 60;
+	public int etherwarpAimRgb = 0xB57CFF;
 	public boolean terminalGuiEnabled = false;
 	public int terminalScale = 100;
 	public int terminalFirstClickDelay = 7;
@@ -1775,6 +1782,12 @@ public final class StrayConfig {
 				loaded.terminalFirstClickDelay = Math.max(0, Math.min(8, loaded.terminalFirstClickDelay));
 				loaded.terminalScale = Math.max(50, Math.min(200, loaded.terminalScale));
 				loaded.leverTriggerbotDelay = Math.max(0, Math.min(300, loaded.leverTriggerbotDelay));
+				loaded.etherwarpAimSpeed = Math.max(1, Math.min(100, loaded.etherwarpAimSpeed));
+				loaded.etherwarpAimRange = Math.max(0.5f, Math.min(15f, loaded.etherwarpAimRange));
+				loaded.etherwarpAimDelay = Math.max(0, Math.min(300, loaded.etherwarpAimDelay));
+				if ((loaded.etherwarpAimRgb & 0xFFFFFF) == 0) {
+					loaded.etherwarpAimRgb = 0xB57CFF;
+				}
 				loaded.alignTriggerbotDelay = Math.max(10, Math.min(400, loaded.alignTriggerbotDelay));
 				loaded.dungeonMapRoomInfo = Math.floorMod(loaded.dungeonMapRoomInfo, 5);
 				loaded.dungeonMapPlayerNames = Math.floorMod(loaded.dungeonMapPlayerNames, 3);

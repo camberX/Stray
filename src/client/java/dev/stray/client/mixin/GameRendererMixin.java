@@ -24,6 +24,9 @@ public class GameRendererMixin {
 	@Inject(method = "render", at = @At("HEAD"))
 	private void stray$beginFrame(CallbackInfo ci) {
 		MobGlowRenderer.beginFrame();
+		if (!dev.stray.Edition.LEGIT) {
+			dev.stray.client.dungeon.EtherwarpAim.frame(net.minecraft.client.Minecraft.getInstance());
+		}
 	}
 
 	@Inject(method = "renderLevel", at = @At("HEAD"))

@@ -92,6 +92,9 @@ public final class StrayHud {
 		MetalDetector.extract(graphics, delta);
 		HudChrome.element(null);
 		BlockMarks.extract(graphics, delta);
+		if (!dev.stray.Edition.LEGIT) {
+			dev.stray.client.dungeon.EtherwarpAim.extract(graphics);
+		}
 		HudChrome.element(null);
 		dev.stray.client.dungeon.TerminalHighlight.extract(graphics, delta);
 		HudChrome.element(null);

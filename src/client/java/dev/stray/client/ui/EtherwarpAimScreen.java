@@ -1,0 +1,111 @@
+package dev.stray.client.ui;
+
+import dev.stray.client.config.StrayConfig;
+import dev.stray.client.dungeon.DungeonRooms;
+import dev.stray.client.dungeon.EtherwarpAim;
+import dev.stray.client.render.GuiDraw;
+import net.minecraft.client.gui.screens.Screen;
+
+import java.util.Locale;
+
+/**
+ * Etherwarp aim settings, with a preview of your screen: the crosshair and the circle in which
+ * the aim assist starts pulling, drawn to scale for your field of view and window shape.
+ */
+public class EtherwarpAimScreen extends SubScreen {
+	private static final int[] SWATCHES = {
+		0xB57CFF, 0x2FB5FF, 0x52E08A, 0xFFD34F, 0xFF7A1A, 0xE8414B, 0xFF4F8B, 0xF4F6FF
+	};
+	private static final float PREVIEW_W = 190f;
+
+	public EtherwarpAimScreen(Screen parent) {
+		super("Etherwarp aim", parent, 470);
+	}
+
+	@Override
+	protected void save() {
+		StrayConfig.get().save();
+	}
+
+	@Override
+	protected float body(float x, float y, float w) {
+		StrayConfig config = StrayConfig.get();
+		float gap = 16f;
+		float pw = PREVIEW_W;
+		float lw = w - pw - gap;
+		float top = y;
+
+		// Settings on the left.
+		float ly = section("Aim", x, y);
+		ly = toggleRow("Aim assist", config.etherwarpAimAssist, x, ly, lw, v -> config.etherwarpAimAssist = v);
+		ly = slider("Speed", Integer.toString(config.etherwarpAimSpeed), (config.etherwarpAimSpeed - 1) / 99f, x, ly + 2f, lw,
+			t -> config.etherwarpAimSpeed = Math.round(1 + (float) t * 99f));
+		ly = slider("Range", String.format(Locale.ROOT, "%.1f°", config.etherwarpAimRange), (config.etherwarpAimRange - 0.5f) / 14.5f, x, ly + 2f, lw,
+			t -> config.etherwarpAimRange = Math.round((0.5f + (float) t * 14.5f) * 2f) / 2f);
+		ly = slider("Delay", config.etherwarpAimDelay + "ms", config.etherwarpAimDelay / 300f, x, ly + 2f, lw,
+			t -> config.etherwarpAimDelay = Math.round((float) t * 60f) * 5);
+		ly = divider(x, ly + 4f, lw);
+
+		ly = section("Points", x, ly);
+		ly = toggleRow("Edit mode", config.etherwarpAimEdit, x, ly, lw, v -> config.etherwarpAimEdit = v);
+		// Point colour.
+		float sx = x;
+		float size = 14f;
+		ly += 4f;
+		for (int color : SWATCHES) {
+			boolean on = (config.etherwarpAimRgb & 0xFFFFFF) == color;
+			boolean hot = hovered(sx, ly, size, size);
+			if (on || hot) {
+				GuiDraw.roundedFine(graphics, sx - 2f, ly - 2f, size + 4f, size + 4f, 5f, on ? 0xFFEEF1F5 : 0x60FFFFFF);
+			}
+			GuiDraw.roundedFine(graphics, sx, ly, size, size, 4f, 0xFF000000 | color);
+			hit(sx, ly, size, size, () -> config.etherwarpAimRgb = color);
+			sx += size + 6f;
+		}
+		ly += size + 10f;
+		int here = EtherwarpAim.count();
+		DungeonRooms.Room room = DungeonRooms.current();
+		String place = room == null ? "Not in a room" : room.name();
+		text(fit(place, lw - 90f), x, ly, BUTTON, MUTED);
+		String clear = here == 0 ? "No points" : "Clear " + here;
+		float cw = buttonWidth(clear);
+		button(clear, x + lw - cw, ly, cw, Style.DANGER, here == 0 ? null : EtherwarpAim::clearHere);
+		ly += BUTTON;
+
+		// The preview on the right.
+		float ph = previewHeight(pw);
+		drawPreview(x + lw + gap, top + 16f, pw, ph, config);
+		section("Preview", x + lw + gap, top);
+		GuiDraw.fill(graphics, x + lw + gap * 0.5f, top, 0.5f, Math.max(ly, top + 16f + ph) - top, 0x18FFFFFF);
+
+		float bottom = Math.max(ly, top + 16f + ph) + 12f;
+		return buttons(x, bottom, w, new Object[][] {}, new Object[][] {{"Done", Style.PRIMARY, (Runnable) this::onClose}});
+	}
+
+	/** The preview has the shape of your game window. */
+	private float previewHeight(float pw) {
+		float aspect = minecraft == null || minecraft.getWindow().getHeight() == 0 ? 16f / 9f
+			: (float) minecraft.getWindow().getWidth() / minecraft.getWindow().getHeight();
+		return pw / Math.max(0.5f, aspect);
+	}
+
+	private void drawPreview(float x, float y, float w, float h, StrayConfig config) {
+		GuiDraw.roundedFine(graphics, x, y, w, h, ShadowLook.CONTROL_R, 0x40000000);
+		GuiDraw.roundedOutline(graphics, x, y, w, h, ShadowLook.CONTROL_R, 0x22FFFFFF, 1f);
+		float cx = x + w * 0.5f;
+		float cy = y + h * 0.5f;
+		// How far the range reaches on screen: tan(range) over tan(half the vertical FOV), of half the height.
+		double fov = minecraft == null ? 70.0 : minecraft.options.fov().get();
+		double reach = Math.tan(Math.toRadians(config.etherwarpAimRange)) / Math.tan(Math.toRadians(fov * 0.5));
+		float r = (float) (reach * h * 0.5);
+		int rgb = config.etherwarpAimRgb & 0xFFFFFF;
+		GuiDraw.circle(graphics, cx, cy, r, 0x22000000 | rgb);
+		GuiDraw.roundedOutline(graphics, cx - r, cy - r, r * 2f, r * 2f, r, 0xC0000000 | rgb, 1f);
+		// The crosshair.
+		float arm = 4.5f;
+		GuiDraw.fill(graphics, cx - arm, cy - 0.5f, arm * 2f, 1f, 0xFFEEF1F5);
+		GuiDraw.fill(graphics, cx - 0.5f, cy - arm, 1f, arm * 2f, 0xFFEEF1F5);
+		String label = String.format(Locale.ROOT, "%.1f° · FOV %d", config.etherwarpAimRange, Math.round(fov));
+		GuiDraw.small(graphics, font, label, x + 6f, y + h - 11f, FAINT);
+	}
+}
