@@ -15,6 +15,9 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.6.2", new String[]{
+			"/stray loadout <1-9> (not in Stray Legit): swaps to that SkyBlock loadout silently, the same way the pest cooldown's auto loadout does. It starts once chat is closed."
+		}),
 		new Entry("1.6.1", new String[]{
 			"New look for the older menus: Auto hotbar, Command keys, Shortcuts, Titles, Block marks, Item look, Accounts, Cosmetics and the Cape creator now share the Shadow style, with centered text and no extra help lines. The HUD editor, CS2 knife and Customize windows got the same window style.",
 			"Click GUI: the switch beside a feature's name in its settings is gone (the feature card already turns it on and off), and so are the repeated Glow ESP and Robot parts switches.",
