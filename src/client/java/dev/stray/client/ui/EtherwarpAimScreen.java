@@ -52,21 +52,8 @@ public class EtherwarpAimScreen extends SubScreen {
 
 		ly = section("Points", x, ly);
 		ly = toggleRow("Edit mode", config.etherwarpAimEdit, x, ly, lw, v -> config.etherwarpAimEdit = v);
-		// Point colour.
-		float sx = x;
-		float size = 14f;
-		ly += 4f;
-		for (int color : SWATCHES) {
-			boolean on = (config.etherwarpAimRgb & 0xFFFFFF) == color;
-			boolean hot = hovered(sx, ly, size, size);
-			if (on || hot) {
-				GuiDraw.roundedFine(graphics, sx - 2f, ly - 2f, size + 4f, size + 4f, 5f, on ? 0xFFEEF1F5 : 0x60FFFFFF);
-			}
-			GuiDraw.roundedFine(graphics, sx, ly, size, size, 4f, 0xFF000000 | color);
-			hit(sx, ly, size, size, () -> config.etherwarpAimRgb = color);
-			sx += size + 6f;
-		}
-		ly += size + 10f;
+		ly = swatches("Points", config.etherwarpAimRgb, v -> config.etherwarpAimRgb = v, x, ly + 4f, lw);
+		ly = swatches("Next", config.etherwarpAimNextRgb, v -> config.etherwarpAimNextRgb = v, x, ly + 4f, lw) + 6f;
 		int here = EtherwarpAim.count();
 		DungeonRooms.Room room = DungeonRooms.current();
 		String place = room == null ? "Not in a room" : room.name();
@@ -84,6 +71,27 @@ public class EtherwarpAimScreen extends SubScreen {
 
 		float bottom = Math.max(ly, top + 16f + ph) + 12f;
 		return buttons(x, bottom, w, new Object[][] {}, new Object[][] {{"Done", Style.PRIMARY, (Runnable) this::onClose}});
+	}
+
+	/** A label and a row of colours to pick from. Returns the next y. */
+	private float swatches(String label, int current, java.util.function.IntConsumer set, float x, float y, float w) {
+		float size = 14f;
+		text(label, x, y, size, MUTED);
+		float sx = x + Math.max(56f, textWidth(label) + 12f);
+		for (int color : SWATCHES) {
+			if (sx + size > x + w) {
+				break;
+			}
+			boolean on = (current & 0xFFFFFF) == color;
+			boolean hot = hovered(sx, y, size, size);
+			if (on || hot) {
+				GuiDraw.roundedFine(graphics, sx - 2f, y - 2f, size + 4f, size + 4f, 5f, on ? 0xFFEEF1F5 : 0x60FFFFFF);
+			}
+			GuiDraw.roundedFine(graphics, sx, y, size, size, 4f, 0xFF000000 | color);
+			hit(sx, y, size, size, () -> set.accept(color));
+			sx += size + 6f;
+		}
+		return y + size + 4f;
 	}
 
 	private static String rangeLabel(float range) {

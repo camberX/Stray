@@ -72,6 +72,10 @@ public final class EtherwarpAim {
 	/** Turn still owed from steps smaller than one mouse count. */
 	private static float restYaw;
 	private static float restPitch;
+	/** Where the points in {@link #live} came from, to start over when that changes. */
+	private static String liveKey;
+	/** Index of the point to warp to next; past the end once the route is done. */
+	private static int next;
 
 	private EtherwarpAim() {
 	}
@@ -89,8 +93,15 @@ public final class EtherwarpAim {
 	public static void onWorldChange() {
 		DungeonRooms.reset();
 		live = List.of();
+		liveKey = null;
+		next = 0;
 		clicked = null;
 		aimed = null;
+	}
+
+	/** The point to warp to next, or null when there is none (no points, or the route is done). */
+	public static BlockPos target() {
+		return next >= 0 && next < live.size() ? live.get(next) : null;
 	}
 
 	/** Once a tick: which room you are in and where its points are. */
@@ -102,7 +113,13 @@ public final class EtherwarpAim {
 		}
 		DungeonRooms.update(client);
 		DungeonRooms.Room room = DungeonRooms.current();
-		Set<BlockPos> stored = SAVED.get(key(room));
+		String key = key(room);
+		if (key == null ? liveKey != null : !key.equals(liveKey)) {
+			// A new room: start its route from the first point.
+			liveKey = key;
+			next = 0;
+		}
+		Set<BlockPos> stored = key == null ? null : SAVED.get(key);
 		if (stored == null || stored.isEmpty()) {
 			live = List.of();
 			return;
@@ -115,6 +132,13 @@ public final class EtherwarpAim {
 			}
 		}
 		live = world;
+		// Standing on a point: the one after it is next (also when you skip ahead or go back).
+		if (client.player.onGround()) {
+			int on = live.indexOf(client.player.getOnPos());
+			if (on >= 0) {
+				next = on + 1;
+			}
+		}
 	}
 
 	/**
@@ -140,7 +164,7 @@ public final class EtherwarpAim {
 	/** At the start of a tick, where the game reads the use key. */
 	public static void beforeKeybinds(Minecraft client) {
 		LocalPlayer player = client.player;
-		if (!ready(client) || live.isEmpty()) {
+		if (!ready(client) || target() == null) {
 			aimed = null;
 			clicked = null;
 			return;
@@ -210,8 +234,8 @@ public final class EtherwarpAim {
 		if (hit.getType() != HitResult.Type.BLOCK) {
 			return null;
 		}
-		BlockPos pos = hit.getBlockPos();
-		return live.contains(pos) ? pos.immutable() : null;
+		BlockPos target = target();
+		return target != null && hit.getBlockPos().equals(target) ? target : null;
 	}
 
 	/** What the feature sees right now, for /stray debug dev etherwarp. */
@@ -237,7 +261,7 @@ public final class EtherwarpAim {
 		BlockHitResult cross = ray(client, player, look);
 		near.append(" cross ").append(cross.getType() == HitResult.Type.BLOCK ? cross.getBlockPos().toShortString() : "miss");
 		return where + " · key " + key(room) + " · " + live.size() + " live · sneak " + player.isShiftKeyDown()
-			+ " · ether " + holdingEther(player) + " · on point " + (looked != null) + " · ready " + ready(client) + near;
+			+ " · ether " + holdingEther(player) + " · on point " + (looked != null) + " · ready " + ready(client) + " · next " + (next + 1) + "/" + live.size() + near;
 	}
 
 	// ------------------------------------------------------------------ magnet
@@ -300,8 +324,9 @@ public final class EtherwarpAim {
 	 */
 	private static Vec3 bestSpot(Minecraft client, LocalPlayer player, Vec3 eye, Vec3 look, double range) {
 		List<double[]> spots = new ArrayList<>();
-		BlockPos.MutableBlockPos next = new BlockPos.MutableBlockPos();
-		for (BlockPos pos : live) {
+		BlockPos.MutableBlockPos beside = new BlockPos.MutableBlockPos();
+		BlockPos target = target();
+		for (BlockPos pos : target == null ? List.<BlockPos>of() : List.of(target)) {
 			Vec3 center = Vec3.atCenterOf(pos);
 			double dist = center.distanceTo(eye);
 			if (dist > RANGE || dist < 1.0) {
@@ -314,9 +339,9 @@ public final class EtherwarpAim {
 					// Faces away from you.
 					continue;
 				}
-				next.setWithOffset(pos, face);
-				net.minecraft.world.level.block.state.BlockState there = client.level.getBlockState(next);
-				if (net.minecraft.world.level.block.Block.isFaceFull(there.getCollisionShape(client.level, next), face.getOpposite())) {
+				beside.setWithOffset(pos, face);
+				net.minecraft.world.level.block.state.BlockState there = client.level.getBlockState(beside);
+				if (net.minecraft.world.level.block.Block.isFaceFull(there.getCollisionShape(client.level, beside), face.getOpposite())) {
 					// Covered by the block next to it.
 					continue;
 				}
@@ -430,10 +455,14 @@ public final class EtherwarpAim {
 			return;
 		}
 		int rgb = config.etherwarpAimRgb & 0xFFFFFF;
+		int nextRgb = config.etherwarpAimNextRgb & 0xFFFFFF;
+		BlockPos target = target();
 		for (BlockPos pos : live) {
 			boolean hot = pos.equals(aimed);
-			GizmoProperties box = Gizmos.cuboid(new AABB(pos).inflate(hot ? 0.03 : 0.005),
-				GizmoStyle.strokeAndFill(hot ? 0xFFFFFFFF : 0xE6000000 | rgb, hot ? 3f : 2f, 0x50000000 | rgb));
+			boolean isNext = pos.equals(target);
+			int color = isNext ? nextRgb : rgb;
+			GizmoProperties box = Gizmos.cuboid(new AABB(pos).inflate(hot || isNext ? 0.03 : 0.005),
+				GizmoStyle.strokeAndFill(hot ? 0xFFFFFFFF : (isNext ? 0xF0000000 : 0x90000000) | color, isNext ? 3f : 2f, (isNext ? 0x60000000 : 0x30000000) | color));
 			box.setAlwaysOnTop();
 		}
 	}
@@ -442,7 +471,13 @@ public final class EtherwarpAim {
 	public static void extract(GuiGraphicsExtractor graphics) {
 		Minecraft client = Minecraft.getInstance();
 		StrayConfig config = StrayConfig.get();
-		if (!config.etherwarpAim || !config.etherwarpAimEdit || client.player == null || client.gui.hud.isHidden()) {
+		if (!config.etherwarpAim || client.player == null || client.gui.hud.isHidden()) {
+			return;
+		}
+		if (config.etherwarpAimEdit || holdingEther(client.player)) {
+			numbers(graphics, client, config);
+		}
+		if (!config.etherwarpAimEdit) {
 			return;
 		}
 		DungeonRooms.Room room = DungeonRooms.current();
@@ -450,7 +485,7 @@ public final class EtherwarpAim {
 			: room.rotated() ? room.name() + " · " + room.rotation() + "°"
 			: room.name() + " · turn unknown";
 		int n = count();
-		String text = "EDIT · " + place + " · " + n + (n == 1 ? " point" : " points");
+		String text = "EDIT · " + place + " · " + n + (n == 1 ? " point" : " points") + (n > 0 ? " · next " + (next < n ? Integer.toString(next + 1) : "done") : "");
 		Font font = client.font;
 		Component line = MenuFont.shadow(text);
 		float w = font.width(line) + 16f;
@@ -460,6 +495,39 @@ public final class EtherwarpAim {
 		GuiDraw.roundedFine(graphics, x, y, w, h, h * 0.5f, 0xC00B0E13);
 		GuiDraw.roundedFine(graphics, x + 7f, y + 6.5f, 3f, 3f, 1.5f, 0xFF000000 | (config.etherwarpAimRgb & 0xFFFFFF));
 		GuiDraw.text(graphics, font, line, x + 13f, Math.round(GuiDraw.middle(y, h)), 0xFFEEF1F5, false);
+	}
+
+	/** Each point's place in the route, over its block; the next one in its own colour. */
+	private static void numbers(GuiGraphicsExtractor graphics, Minecraft client, StrayConfig config) {
+		net.minecraft.client.Camera camera = client.gameRenderer.mainCamera();
+		if (!camera.isInitialized() || live.isEmpty()) {
+			return;
+		}
+		Vec3 cam = camera.position();
+		org.joml.Vector3fc forward = camera.forwardVector();
+		Font font = client.font;
+		BlockPos target = target();
+		for (int i = 0; i < live.size(); i++) {
+			BlockPos pos = live.get(i);
+			Vec3 at = Vec3.atCenterOf(pos).add(0, 0.85, 0);
+			Vec3 rel = at.subtract(cam);
+			if (rel.x * forward.x() + rel.y * forward.y() + rel.z * forward.z() <= 0.1) {
+				continue;
+			}
+			Vec3 ndc = client.gameRenderer.projectPointToScreen(at);
+			if (Math.abs(ndc.x) > 1.1 || Math.abs(ndc.y) > 1.1) {
+				continue;
+			}
+			float x = (float) ((ndc.x * 0.5 + 0.5) * graphics.guiWidth());
+			float y = (float) ((-ndc.y * 0.5 + 0.5) * graphics.guiHeight());
+			boolean isNext = pos.equals(target);
+			Component label = MenuFont.shadow(Integer.toString(i + 1));
+			float w = Math.max(14f, font.width(label) + 8f);
+			float h = 14f;
+			int color = 0xFF000000 | ((isNext ? config.etherwarpAimNextRgb : config.etherwarpAimRgb) & 0xFFFFFF);
+			GuiDraw.roundedFine(graphics, x - w * 0.5f, y - h, w, h, h * 0.5f, isNext ? color : 0xC00B0E13);
+			GuiDraw.text(graphics, font, label, x - font.width(label) * 0.5f, Math.round(GuiDraw.middle(y - h, h)), isNext ? 0xFF0B0E13 : color, false);
+		}
 	}
 
 	// ------------------------------------------------------------------ storage

@@ -363,6 +363,7 @@ public final class StrayConfig {
 	public float etherwarpAimRange = 10.0f;
 	public int etherwarpAimDelay = 60;
 	public int etherwarpAimRgb = 0xB57CFF;
+	public int etherwarpAimNextRgb = 0x52E08A;
 	public boolean terminalGuiEnabled = false;
 	public int terminalScale = 100;
 	public int terminalFirstClickDelay = 7;
@@ -1787,6 +1788,9 @@ public final class StrayConfig {
 				loaded.etherwarpAimDelay = Math.max(0, Math.min(300, loaded.etherwarpAimDelay));
 				if ((loaded.etherwarpAimRgb & 0xFFFFFF) == 0) {
 					loaded.etherwarpAimRgb = 0xB57CFF;
+				}
+				if ((loaded.etherwarpAimNextRgb & 0xFFFFFF) == 0) {
+					loaded.etherwarpAimNextRgb = 0x52E08A;
 				}
 				loaded.alignTriggerbotDelay = Math.max(10, Math.min(400, loaded.alignTriggerbotDelay));
 				loaded.dungeonMapRoomInfo = Math.floorMod(loaded.dungeonMapRoomInfo, 5);
