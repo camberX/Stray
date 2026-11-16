@@ -417,7 +417,7 @@ public final class Cs2KnifeScreen extends Screen {
 		g.pose().scale(s, s);
 		g.pose().translate(-cx, -cy);
 
-		GuiDraw.panel(g, left, top, W, H, 10, Theme.WINDOW, Theme.LINE);
+		ShadowLook.window(g, left, top, W, H, ShadowLook.WINDOW_R, ShadowLook.FILL);
 		knifeScrollT = ease(knifeScrollT, knifeScroll, 16f);
 		finishScrollT = ease(finishScrollT, finishScroll, 16f);
 		tabT = ease(tabT, tab, 14f);

@@ -88,7 +88,7 @@ public class HudEditorScreen extends Screen {
 				hovered = true;
 			}
 			if (!HudLayout.enabled(box.id())) {
-				ClickLook.outside(graphics, box.x(), box.y(), box.w(), box.h(), 5, Theme.withAlpha(Theme.WINDOW, 80), Theme.LINE);
+				GuiDraw.roundedFine(graphics, box.x(), box.y(), box.w(), box.h(), ShadowLook.SLOT_R, 0x50000000);
 				GuiDraw.small(graphics, font, box.id().label, box.x() + 6, box.y() + 4, Theme.MUTED);
 			}
 			int outline = dragging == box.id() || selected == box.id()
@@ -107,7 +107,7 @@ public class HudEditorScreen extends Screen {
 				if (tagY < 22) {
 					tagY = box.bottom() + 3;
 				}
-				ClickLook.outside(graphics, tagX, tagY, tagW, 12, 3, Theme.WINDOW, Theme.ACCENT);
+				GuiDraw.roundedFine(graphics, tagX, tagY, tagW, 12, 6, 0xE60B0E13);
 				GuiDraw.small(graphics, font, tag, tagX + 5, tagY + 1, Theme.TEXT);
 			}
 		}
@@ -126,22 +126,22 @@ public class HudEditorScreen extends Screen {
 		float x = (guiW - BAR_W) * 0.5f;
 		float y = barY;
 		ShadowLook.window(graphics, x, y, BAR_W, h, ShadowLook.CONTROL_R * 2f, ShadowLook.FILL);
-		GuiDraw.small(graphics, font, "HUD EDITOR", x + 8, y + 5, Theme.ACCENT);
+		GuiDraw.small(graphics, font, "HUD EDITOR", x + 8, y + 5, ShadowLook.TEXT);
 		boolean free = minecraft.hasShiftDown();
 		GuiDraw.small(graphics, font, free ? "Free move" : "Snap · scroll to scale", x + 78, y + 5, Theme.MUTED);
 
 		float dw = 40;
 		float dx = x + BAR_W - dw - 6;
 		boolean hover = GuiDraw.hovered(mouseX, mouseY, dx, y + 3, dw, 14);
-		ClickLook.outside(graphics, dx, y + 3, dw, 14, 5, hover ? Theme.CARD_HOVER : Theme.CARD, hover ? Theme.ACCENT : Theme.LINE);
-		GuiDraw.menu(graphics, font, "Done", dx + (dw - GuiDraw.menuWidth(font, "Done")) * 0.5f, GuiDraw.middle(y + 3, 14), Theme.TEXT);
+		GuiDraw.roundedFine(graphics, dx, y + 3, dw, 14, 7, hover ? 0xFFFFFFFF : 0xFFEEF1F5);
+		GuiDraw.text(graphics, font, MenuFont.shadow("Done"), dx + (dw - font.width(MenuFont.shadow("Done"))) * 0.5f, Math.round(GuiDraw.middle(y + 3, 14)), 0xFF0B0E13, false);
 	}
 
 	private void drawInspector(GuiGraphicsExtractor graphics, Font font, int mouseX, int mouseY, int guiW, int guiH) {
 		inspectX = (guiW - INSPECT_W) * 0.5f;
 		inspectY = guiH - INSPECT_H - 8;
-		ClickLook.outside(graphics, inspectX, inspectY, INSPECT_W, INSPECT_H, 6, Theme.WINDOW, Theme.ACCENT);
-		GuiDraw.small(graphics, font, selected.label, inspectX + 8, inspectY + 6, Theme.ACCENT);
+		ShadowLook.window(graphics, inspectX, inspectY, INSPECT_W, INSPECT_H, ShadowLook.CONTROL_R * 2f, ShadowLook.FILL);
+		GuiDraw.small(graphics, font, selected.label, inspectX + 8, inspectY + 6, ShadowLook.TEXT);
 		GuiDraw.small(graphics, font, "Scale", inspectX + 64, inspectY + 6, Theme.MUTED);
 
 		sliderX = inspectX + 92;
@@ -149,9 +149,9 @@ public class HudEditorScreen extends Screen {
 		float scale = HudLayout.scale(selected);
 		float t = (scale - HudLayout.SCALE_MIN) / (HudLayout.SCALE_MAX - HudLayout.SCALE_MIN);
 		boolean hover = GuiDraw.hovered(mouseX, mouseY, sliderX - 2, inspectY, SLIDER_W + 4, INSPECT_H);
-		GuiDraw.pill(graphics, sliderX, sliderY, SLIDER_W, 3, Theme.TRACK);
-		GuiDraw.pill(graphics, sliderX, sliderY, Math.max(3, SLIDER_W * t), 3, Theme.ACCENT);
-		GuiDraw.circle(graphics, sliderX + SLIDER_W * t, sliderY + 1.5f, hover || scaling ? 4.2f : 3.6f, Theme.ACCENT);
+		GuiDraw.pill(graphics, sliderX, sliderY, SLIDER_W, 3, 0x22FFFFFF);
+		GuiDraw.pill(graphics, sliderX, sliderY, Math.max(3, SLIDER_W * t), 3, 0xB0FFFFFF);
+		GuiDraw.circle(graphics, sliderX + SLIDER_W * t, sliderY + 1.5f, hover || scaling ? 4.5f : 4f, 0xFFEEF1F5);
 
 		String pct = Math.round(scale * 100) + "%";
 		GuiDraw.small(graphics, font, pct, inspectX + INSPECT_W - GuiDraw.smallWidth(font, pct) - 8, inspectY + 6, Theme.TEXT);

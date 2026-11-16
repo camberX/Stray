@@ -1,54 +1,41 @@
 package dev.stray.client.ui;
 
-import com.mojang.blaze3d.platform.InputConstants;
 import dev.stray.client.account.AccountStore;
 import dev.stray.client.input.MouseButtons;
-import dev.stray.client.render.GuiDraw;
 import dev.stray.client.render.TitleBackdrop;
-import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.client.input.CharacterEvent;
-import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.input.MouseButtonEvent;
-import net.minecraft.network.chat.Component;
-import net.minecraft.util.Mth;
 
-import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.UUID;
 
-/**
- * Title-screen account list: Microsoft device code, session token, switch.
- */
-public class AccountScreen extends Screen {
-	private static final float MENU_W = 384;
-	private static final float MENU_H = 300;
-	private static final float ROW_H = 28;
-	private static final float BTN_H = 22;
-	private static final float PAD = 16;
-	private static final int VISIBLE = 5;
-	private static final float STAR = 22;
+/** Title-screen account list: Microsoft device code, session token, switch. */
+public class AccountScreen extends SubScreen {
+	private static final float ROW_H = 26f;
 	private static final int OK = 0xFF3DDC84;
-	private static final int FAIL = 0xFFEF5350;
+	private static final String STAR_ON = "";
+	private static final String STAR_OFF = "";
 
-	private final Screen parent;
-	private final List<Hit> hits = new ArrayList<>();
-	private float scroll;
+	private final Input token = input("account-token", 4096, "Paste a session token");
 	private UUID selectedId;
-	private boolean tokenFocus;
-	private int tokenCursor;
-	private String token = "";
+	/** The row under the mouse this frame, for double click to switch. */
+	private int hoveredRow = -1;
 	private volatile String status = "";
 
 	public AccountScreen(Screen parent) {
-		super(Component.literal("Accounts"));
-		this.parent = parent;
+		super("Accounts", parent, 360);
+		token.display = AccountScreen::mask;
+		token.clean = value -> value.replace("\n", "").replace("\r", "").trim();
+		// Nothing focused at first: the list is what you came for.
+		focusInput(null);
 	}
 
 	@Override
 	protected void init() {
+		super.init();
 		AccountStore.rememberLauncher(minecraft);
 		if (selectedId == null) {
 			for (AccountStore.Entry entry : AccountStore.accounts()) {
@@ -61,198 +48,71 @@ public class AccountScreen extends Screen {
 	}
 
 	@Override
-	public void onClose() {
-		minecraft.gui.setScreen(parent);
-	}
-
-	@Override
-	public boolean isPauseScreen() {
-		return false;
-	}
-
-	@Override
 	public void extractBackground(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float delta) {
-		TitleBackdrop.draw(graphics, width, height);
+		if (minecraft.level == null) {
+			TitleBackdrop.draw(graphics, width, height);
+		}
 	}
 
 	@Override
-	public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float delta) {
-		hits.clear();
-		Theme.refresh();
-		Font font = minecraft.font;
-		float x = (width - MENU_W) * 0.5f;
-		float y = (height - MENU_H) * 0.42f;
-		if (ControlChrome.on()) {
-			ControlChrome.glass(graphics, x, y, MENU_W, MENU_H, ControlChrome.WINDOW_R, ControlChrome.windowFill());
-		} else {
-			ClickLook.outside(graphics, x, y, MENU_W, MENU_H, Theme.WINDOW_RADIUS, Theme.WINDOW, Theme.LINE);
-		}
-		GuiDraw.title(graphics, font, "ACCOUNTS", x + PAD, y + 12, ControlChrome.on() ? ControlChrome.text() : Theme.TEXT);
+	protected String subtitle() {
 		String current = AccountStore.currentName();
-		if (!current.isBlank()) {
-			GuiDraw.small(graphics, font, current, x + MENU_W - PAD - GuiDraw.smallWidth(font, current), y + 16, Theme.ACCENT);
-		}
+		return current.isBlank() ? "switch without restarting" : "playing as " + current;
+	}
+
+	@Override
+	protected float body(float x, float y, float w) {
+		List<AccountStore.Entry> accounts = AccountStore.accounts();
+		hoveredRow = -1;
+		y = section("Saved", x, y);
+		float after = 4f + GAP + 14f + BUTTON + GAP + FIELD + 4f + 14f + 6f + BUTTON;
+		y = list("accounts", accounts.size(), ROW_H, x, y, w, listHeight(y, after, ROW_H, Math.min(accounts.size(), 6), 2), "No saved accounts yet", (i, rx, ry, rw, rh, hot) -> {
+			AccountStore.Entry entry = accounts.get(i);
+			boolean selected = entry.uuid.equals(selectedId);
+			boolean playing = entry.active();
+			boolean failed = selected && entry.uuid.equals(AccountStore.lastFailedId());
+			card(rx, ry, rw, rh, hot, selected);
+			// The star pins an account to the top.
+			float sx = rx + 4f;
+			boolean starHot = hovered(sx, ry, 18f, rh);
+			if (hot && !starHot) {
+				hoveredRow = i;
+			}
+			icon(entry.favorite ? STAR_ON : STAR_OFF, sx + 4.5f, ry, rh, entry.favorite ? TEXT : starHot ? MUTED : FAINT);
+			String kind = failed ? "failed" : playing ? "playing" : entry.kindLabel();
+			int kindColor = failed ? DANGER : playing ? OK : MUTED;
+			float tagX = rx + rw - 8f - textWidth(kind) - 12f;
+			tag(kind, tagX, ry, rh, kindColor);
+			text(fit(entry.name, tagX - rx - 32f), rx + 26f, ry, rh, playing || selected ? TEXT : MUTED);
+			hit(rx, ry, rw, rh, () -> select(i));
+			hit(sx, ry, 18f, rh, () -> toggleFavorite(i));
+		});
+		y += 4f + GAP;
+
+		boolean idle = !AccountStore.busy();
+		y = section("Add", x, y);
+		float third = (w - GAP * 2) / 3f;
+		button("Microsoft", x, y, third, Style.SECONDARY, idle ? this::microsoft : null);
+		button("Prism", x + third + GAP, y, third, Style.SECONDARY, idle ? this::prism : null);
+		button("Launcher", x + (third + GAP) * 2, y, third, Style.SECONDARY, idle ? this::launcher : null);
+		y += BUTTON + GAP;
+		float addW = buttonWidth("Add");
+		field(token, null, 0f, x, y, w - addW - GAP);
+		button("Add", x + w - addW, y + (FIELD - BUTTON) * 0.5f, addW, Style.SECONDARY, idle && !token.get().isBlank() ? this::addToken : null);
+		y += FIELD + 4f;
+
 		String note = status;
 		String url = AccountStore.deviceUrl();
-		if (url != null && !url.isBlank() && note.isBlank()) {
-			note = "Open microsoft.com/link";
+		if (note.isBlank() && url != null && !url.isBlank()) {
+			note = "Open microsoft.com/link and enter the code";
 		}
-		if (!note.isBlank()) {
-			GuiDraw.small(graphics, font, note, x + PAD, y + 28, Theme.WARN);
-		}
-
-		List<AccountStore.Entry> accounts = AccountStore.accounts();
-		float listX = x + PAD;
-		float listY = y + 44;
-		float listW = MENU_W - PAD * 2;
-		float listH = ROW_H * VISIBLE;
-		int maxScroll = Math.max(0, accounts.size() - VISIBLE);
-		scroll = Mth.clamp(scroll, 0, maxScroll);
-		int first = (int) scroll;
-		if (GuiDraw.scissor(graphics, listX, listY, listW, listH)) {
-			for (int i = 0; i < VISIBLE + 1; i++) {
-				int index = first + i;
-				if (index >= accounts.size()) {
-					break;
-				}
-				float rowY = listY + (index - scroll) * ROW_H;
-				row(graphics, font, mouseX, mouseY, listX, rowY, listW, accounts.get(index), index);
-			}
-			GuiDraw.disableScissor(graphics);
-		}
-		if (accounts.isEmpty()) {
-			GuiDraw.small(graphics, font, "No saved accounts yet.", listX, listY + 8, Theme.MUTED);
-		}
-
-		float actionsY = listY + listH + 12;
-		float third = (listW - 16) * (1f / 3f);
-		button(graphics, font, mouseX, mouseY, listX, actionsY, third, "Microsoft", !AccountStore.busy(), this::microsoft);
-		button(graphics, font, mouseX, mouseY, listX + third + 8, actionsY, third, "Prism", !AccountStore.busy(), this::prism);
-		button(graphics, font, mouseX, mouseY, listX + (third + 8) * 2, actionsY, third, "Launcher", !AccountStore.busy(), this::launcher);
-
-		float fieldY = actionsY + BTN_H + 8;
-		field(graphics, font, mouseX, mouseY, listX, fieldY, listW - 72, "Session token");
-		button(graphics, font, mouseX, mouseY, listX + listW - 64, fieldY, 64, "Add", !AccountStore.busy() && !token.isBlank(), this::addToken);
-
-		float rowY = fieldY + BTN_H + 8;
-		float half = (listW - 8) * 0.5f;
-		button(graphics, font, mouseX, mouseY, listX, rowY, half, "Switch", canSwitch(), this::switchSelected);
-		button(graphics, font, mouseX, mouseY, listX + half + 8, rowY, half, "Remove", selectedValid(), this::removeSelected);
-	}
-
-	private void row(
-		GuiGraphicsExtractor graphics,
-		Font font,
-		int mouseX,
-		int mouseY,
-		float x,
-		float y,
-		float w,
-		AccountStore.Entry entry,
-		int index
-	) {
-		boolean hovered = GuiDraw.hovered(mouseX, mouseY, x, y, w, ROW_H - 2);
-		boolean selected = entry.uuid.equals(selectedId);
-		boolean loggedIn = entry.active();
-		boolean failed = selected && entry.uuid.equals(AccountStore.lastFailedId());
-		int outline = Theme.LINE;
-		int fill = Theme.CARD;
-		if (selected && failed) {
-			outline = FAIL;
-			fill = Theme.withAlpha(FAIL, 48);
-		} else if (selected && loggedIn) {
-			outline = OK;
-			fill = Theme.withAlpha(OK, 48);
-		} else if (selected || hovered) {
-			outline = Theme.ACCENT;
-			fill = Theme.CARD_HOVER;
-		}
-		if (ControlChrome.on()) {
-			int glass = selected && (failed || loggedIn)
-				? fill
-				: (selected || hovered ? Theme.CARD_HOVER : ControlChrome.cardFill());
-			ControlChrome.glass(graphics, x, y, w, ROW_H - 4, 10f, glass);
-			if (selected && (failed || loggedIn)) {
-				GuiDraw.roundedOutline(graphics, x, y, w, ROW_H - 4, 10f, outline, 1.4f);
-			}
-		} else {
-			ClickLook.outside(graphics, x, y, w, ROW_H - 4, 6, fill, outline);
-		}
-		int text = ControlChrome.on() ? ControlChrome.cardText() : Theme.TEXT;
-		float starCx = x + 12;
-		float starCy = y + (ROW_H - 4) * 0.5f;
-		favoriteMark(graphics, starCx, starCy, entry.favorite);
-		GuiDraw.menu(graphics, font, entry.name, x + 24, GuiDraw.middle(y, ROW_H - 4), text);
-		String kind = loggedIn ? "playing" : entry.kindLabel();
-		int kindColor = selected && failed ? FAIL : (loggedIn ? OK : Theme.MUTED);
-		GuiDraw.small(graphics, font, kind, x + w - 10 - GuiDraw.smallWidth(font, kind), y + 8, kindColor);
-		hits.add(new Hit(x, y, w, ROW_H - 2, () -> select(index), () -> {
-			select(index);
-			if (canSwitch()) {
-				switchSelected();
-			}
-		}));
-		hits.add(new Hit(x, y, STAR, ROW_H - 2, () -> toggleFavorite(index)));
-	}
-
-	private static void favoriteMark(GuiGraphicsExtractor graphics, float cx, float cy, boolean on) {
-		int color = on ? Theme.ACCENT : Theme.MUTED;
-		float longArm = on ? 5.1f : 4.3f;
-		float shortArm = on ? 3.3f : 2.7f;
-		float thick = on ? 1.55f : 1.2f;
-		GuiDraw.stroke(graphics, cx, cy - longArm, cx, cy + longArm, thick, color);
-		GuiDraw.stroke(graphics, cx - shortArm, cy, cx + shortArm, cy, thick, color);
-		float diag = shortArm * 0.72f;
-		GuiDraw.stroke(graphics, cx - diag, cy - diag, cx + diag, cy + diag, thick * 0.85f, color);
-		GuiDraw.stroke(graphics, cx - diag, cy + diag, cx + diag, cy - diag, thick * 0.85f, color);
-		if (on) {
-			GuiDraw.circle(graphics, cx, cy, 1.55f, color);
-		}
-	}
-
-	private void field(GuiGraphicsExtractor graphics, Font font, int mouseX, int mouseY, float x, float y, float w, String hint) {
-		boolean hovered = GuiDraw.hovered(mouseX, mouseY, x, y, w, BTN_H);
-		int outline = tokenFocus || hovered ? Theme.ACCENT : Theme.LINE;
-		if (ControlChrome.on()) {
-			ControlChrome.glass(graphics, x, y, w, BTN_H, 10f, ControlChrome.cardFill());
-		} else {
-			ClickLook.outside(graphics, x, y, w, BTN_H, 6, Theme.CARD, outline);
-		}
-		if (tokenFocus) {
-			TextKeys.mark(graphics, "account-token", x, y, w, BTN_H);
-		}
-		String shown = token.isBlank() ? hint : mask(token);
-		int color = token.isBlank() ? Theme.MUTED : (ControlChrome.on() ? ControlChrome.cardText() : Theme.TEXT);
-		GuiDraw.small(graphics, font, shown, x + 8, y + 7, color);
-		hits.add(new Hit(x, y, w, BTN_H, () -> tokenFocus = true));
-	}
-
-	private void button(
-		GuiGraphicsExtractor graphics,
-		Font font,
-		int mouseX,
-		int mouseY,
-		float x,
-		float y,
-		float w,
-		String label,
-		boolean enabled,
-		Runnable action
-	) {
-		boolean hovered = enabled && GuiDraw.hovered(mouseX, mouseY, x, y, w, BTN_H);
-		if (ControlChrome.on()) {
-			ControlChrome.glass(graphics, x, y, w, BTN_H, 10f, hovered ? Theme.CARD_HOVER : ControlChrome.cardFill());
-		} else {
-			ClickLook.outside(graphics, x, y, w, BTN_H, 6, Theme.CARD, hovered ? Theme.ACCENT : Theme.LINE);
-		}
-		int text = enabled
-			? (ControlChrome.on() ? ControlChrome.cardText() : Theme.TEXT)
-			: Theme.MUTED;
-		float labelW = GuiDraw.smallWidth(font, label);
-		GuiDraw.small(graphics, font, label, x + (w - labelW) * 0.5f, y + 7, text);
-		if (enabled) {
-			hits.add(new Hit(x, y, w, BTN_H, action));
-		}
+		String lower = note.toLowerCase(Locale.ROOT);
+		boolean error = lower.contains("fail") || lower.contains("error") || lower.contains("couldn");
+		y = hint(note.isBlank() ? "Double click an account to switch · the star pins it on top" : note, x, y + 2f, w, error) + 6f;
+		boolean picked = selectedIndex() >= 0;
+		return buttons(x, y, w,
+			new Object[][] {{"Remove", Style.DANGER, picked ? (Runnable) this::removeSelected : null}},
+			new Object[][] {{"Done", Style.SECONDARY, (Runnable) this::onClose}, {"Switch", Style.PRIMARY, picked && idle ? (Runnable) this::switchSelected : null}});
 	}
 
 	private int selectedIndex() {
@@ -278,16 +138,7 @@ public class AccountScreen extends Screen {
 	private void toggleFavorite(int index) {
 		click();
 		select(index);
-		int moved = AccountStore.toggleFavorite(index);
-		select(moved);
-	}
-
-	private boolean selectedValid() {
-		return selectedIndex() >= 0;
-	}
-
-	private boolean canSwitch() {
-		return !AccountStore.busy() && selectedValid();
+		select(AccountStore.toggleFavorite(index));
 	}
 
 	private void microsoft() {
@@ -306,20 +157,28 @@ public class AccountScreen extends Screen {
 	}
 
 	private void addToken() {
+		if (AccountStore.busy() || token.get().isBlank()) {
+			return;
+		}
 		click();
-		AccountStore.addToken(token, this::setStatus);
-		token = "";
-		tokenCursor = 0;
+		AccountStore.addToken(token.get(), this::setStatus);
+		token.set("");
 	}
 
 	private void switchSelected() {
+		if (AccountStore.busy() || selectedIndex() < 0) {
+			return;
+		}
 		click();
 		AccountStore.switchTo(selectedIndex(), this::setStatus);
 	}
 
 	private void removeSelected() {
-		click();
 		int index = selectedIndex();
+		if (index < 0) {
+			return;
+		}
+		click();
 		AccountStore.remove(index);
 		List<AccountStore.Entry> accounts = AccountStore.accounts();
 		if (accounts.isEmpty()) {
@@ -328,6 +187,13 @@ public class AccountScreen extends Screen {
 			select(Math.min(index, accounts.size() - 1));
 		}
 		setStatus("Removed.");
+	}
+
+	@Override
+	protected void submit() {
+		if (token.focused() && !token.get().isBlank()) {
+			addToken();
+		}
 	}
 
 	private void setStatus(String message) {
@@ -339,7 +205,6 @@ public class AccountScreen extends Screen {
 	}
 
 	private void click() {
-		tokenFocus = false;
 		AbstractWidget.playButtonClickSound(minecraft.getSoundManager());
 	}
 
@@ -352,102 +217,11 @@ public class AccountScreen extends Screen {
 
 	@Override
 	public boolean mouseClicked(MouseButtonEvent event, boolean doubled) {
-		if (!MouseButtons.left(event)) {
-			return super.mouseClicked(event, doubled);
-		}
-		tokenFocus = false;
-		for (int i = hits.size() - 1; i >= 0; i--) {
-			Hit hit = hits.get(i);
-			if (hit.contains(event.x(), event.y())) {
-				if (doubled) {
-					if (hit.doubleClick != null) {
-						hit.doubleClick.run();
-					}
-					return true;
-				}
-				hit.click.run();
-				return true;
-			}
+		if (doubled && MouseButtons.left(event) && hoveredRow >= 0) {
+			select(hoveredRow);
+			switchSelected();
+			return true;
 		}
 		return super.mouseClicked(event, doubled);
-	}
-
-	@Override
-	public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
-		if (scrollY != 0) {
-			scroll = (float) (scroll - scrollY);
-			return true;
-		}
-		return super.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
-	}
-
-	@Override
-	public boolean keyPressed(KeyEvent event) {
-		if (tokenFocus) {
-			if (TextKeys.caretKey(event, "account-token", token, () -> {
-				token = "";
-				tokenCursor = 0;
-			})) {
-				return true;
-			}
-			if (event.key() == InputConstants.KEY_BACKSPACE && tokenCursor > 0) {
-				token = token.substring(0, tokenCursor - 1) + token.substring(tokenCursor);
-				tokenCursor--;
-				return true;
-			}
-			if (event.key() == InputConstants.KEY_DELETE && tokenCursor < token.length()) {
-				token = token.substring(0, tokenCursor) + token.substring(tokenCursor + 1);
-				return true;
-			}
-			if (event.key() == InputConstants.KEY_LEFT) {
-				tokenCursor = Math.max(0, tokenCursor - 1);
-				return true;
-			}
-			if (event.key() == InputConstants.KEY_RIGHT) {
-				tokenCursor = Math.min(token.length(), tokenCursor + 1);
-				return true;
-			}
-			if (event.isPaste()) {
-				String clip = minecraft.keyboardHandler.getClipboard();
-				if (clip != null && !clip.isBlank()) {
-					String insert = clip.replace("\n", "").replace("\r", "").trim();
-					token = token.substring(0, tokenCursor) + insert + token.substring(tokenCursor);
-					tokenCursor += insert.length();
-				}
-				return true;
-			}
-			if (event.key() == InputConstants.KEY_RETURN || event.key() == InputConstants.KEY_NUMPADENTER) {
-				addToken();
-				return true;
-			}
-		}
-		return super.keyPressed(event);
-	}
-
-	@Override
-	public boolean charTyped(CharacterEvent event) {
-		if (tokenFocus && event.isAllowedChatCharacter()) {
-			if (TextKeys.takeSelection("account-token")) {
-				token = "";
-				tokenCursor = 0;
-			}
-			String insert = event.codepointAsString();
-			if (!insert.isEmpty() && token.length() < 4096) {
-				token = token.substring(0, tokenCursor) + insert + token.substring(tokenCursor);
-				tokenCursor += insert.length();
-			}
-			return true;
-		}
-		return super.charTyped(event);
-	}
-
-	private record Hit(float x, float y, float w, float h, Runnable click, Runnable doubleClick) {
-		Hit(float x, float y, float w, float h, Runnable click) {
-			this(x, y, w, h, click, null);
-		}
-
-		boolean contains(double mx, double my) {
-			return GuiDraw.hovered(mx, my, x, y, w, h);
-		}
 	}
 }

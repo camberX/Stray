@@ -174,7 +174,7 @@ public final class CustomTitle {
 		return needle(trigger);
 	}
 
-	static Component parse(String raw) {
+	public static Component parse(String raw) {
 		if (raw == null || raw.isEmpty()) {
 			return Component.empty();
 		}

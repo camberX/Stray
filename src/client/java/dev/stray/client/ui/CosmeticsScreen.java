@@ -9,7 +9,6 @@ import dev.stray.client.visual.CosmeticsApi;
 import dev.stray.client.visual.CustomCape;
 import dev.stray.client.visual.ShopCape;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.input.MouseButtonEvent;
@@ -18,16 +17,12 @@ import net.minecraft.client.renderer.entity.EntityRenderDispatcher;
 import net.minecraft.client.renderer.entity.EntityRenderer;
 import net.minecraft.client.renderer.entity.state.EntityRenderState;
 import net.minecraft.client.renderer.entity.state.LivingEntityRenderState;
-import net.minecraft.network.chat.Component;
 import net.minecraft.util.Mth;
 import net.minecraft.util.Util;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
 
 import java.nio.file.Files;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.function.DoubleConsumer;
 
 /**
  * Cosmetics: a live 3D preview of your player on the left, and on the right the cosmetics you
@@ -35,7 +30,7 @@ import java.util.function.DoubleConsumer;
  * at once and is sent to stray.gay a moment later (see {@link CosmeticsApi}). The preview turns
  * to face whatever you are editing; drag it to look around.
  */
-public final class CosmeticsScreen extends Screen {
+public final class CosmeticsScreen extends SubScreen {
 	private static final String[] WING_STYLES = {"angel", "demon", "fairy", "phoenix", "butterfly"};
 	private static final String[] WING_NAMES = {"Angel", "Demon", "Fairy", "Phoenix", "Butterfly"};
 	private static final int[] WING_DEFAULTS = {0xF4F6FF, 0x2B1D2E, 0x9AE6FF, 0xFF7A1A, 0x3D98CB};
@@ -43,130 +38,79 @@ public final class CosmeticsScreen extends Screen {
 		0xF4F6FF, 0x2B1D2E, 0x9AE6FF, 0xFF7A1A, 0x3D98CB, 0xFF4F8B,
 		0xB57BFF, 0x52E08A, 0xFFD34F, 0xE8414B, 0x1C1C1C, 0xC9CED6
 	};
-	private static final float PAD = 10f;
-	private static final float ROW = 16f;
+	private static final float PREVIEW_W = 150f;
+	private static final float AREA_H = 270f;
+	private static final float CARD_PAD = 10f;
 
-	private final Screen parent;
-	private final List<Hit> hits = new ArrayList<>();
-	private float winX;
-	private float winY;
-	private float winW;
-	private float winH;
-	private float listX;
-	private float listY;
-	private float listW;
-	private float listH;
-	private float scroll;
-	private float contentH;
 	/** Preview yaw: where it is, where it is turning to, and whether you are dragging it. */
 	private float yaw = 25f;
 	private float targetYaw = 25f;
 	private float pitch = 6f;
 	private boolean draggingModel;
 	private long lastDragAt;
-	private DoubleConsumer draggingSlider;
-	private float sliderX;
-	private float sliderW;
+	private float previewX;
+	private float previewY;
+	private float previewW;
+	private float previewH;
 	private boolean pickingSkin;
 	private String focus = "skin";
 
 	public CosmeticsScreen(Screen parent) {
-		super(Component.literal("Cosmetics"));
-		this.parent = parent;
+		super("Cosmetics", parent, 480);
 		CosmeticsApi.refresh();
 	}
 
-	private record Hit(float x, float y, float w, float h, Runnable click, DoubleConsumer slide) {
-		boolean contains(double mx, double my) {
-			return mx >= x && mx <= x + w && my >= y && my <= y + h;
-		}
-	}
-
 	@Override
-	public boolean isPauseScreen() {
-		return false;
-	}
-
-	@Override
-	public void onClose() {
-		if (minecraft != null) {
-			minecraft.gui.setScreen(parent);
-		}
-	}
-
-	@Override
-	public void extractBackground(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float delta) {
-	}
-
-	private void layout() {
-		winW = Math.min(470f, width - 20f);
-		winH = Math.min(310f, height - 20f);
-		winX = (width - winW) / 2f;
-		winY = (height - winH) / 2f;
+	protected String subtitle() {
+		return "only players with Stray see these";
 	}
 
 	@Override
 	public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float delta) {
-		hits.clear();
-		layout();
-		Font font = minecraft.font;
-		GuiDraw.fill(graphics, 0, 0, width, height, 0xB4000000);
-		ClickLook.outside(graphics, winX, winY, winW, winH, Theme.WINDOW_RADIUS, Theme.WINDOW, Theme.LINE);
-		GuiDraw.title(graphics, font, "COSMETICS", winX + 12, winY + 8, Theme.TEXT);
-		GuiDraw.small(graphics, font, "Only players with Stray see these", winX + 12 + GuiDraw.titleWidth(font, "COSMETICS") + 6, winY + 10, Theme.MUTED);
-		closeButton(graphics, font, mouseX, mouseY);
-
-		float previewW = Math.min(150f, winW * 0.34f);
-		float top = winY + 28f;
-		float bottom = winY + winH - 22f;
-		drawPreview(graphics, font, mouseX, mouseY, winX + PAD, top, previewW, bottom - top, delta);
-
-		listX = winX + PAD + previewW + PAD;
-		listY = top;
-		listW = winX + winW - PAD - listX;
-		listH = bottom - top;
-		boolean clip = GuiDraw.scissor(graphics, listX, listY, listW, listH);
-		int mark = hits.size();
-		float y = listY - scroll;
-		CosmeticsApi.Mine mine = CosmeticsApi.mine();
-		if (mine == null) {
-			GuiDraw.menu(graphics, font, CosmeticsApi.loading() ? "Logging in to stray.gay…" : "Couldn't load your cosmetics.", listX + 4, y + 4, Theme.MUTED);
-			if (!CosmeticsApi.loading()) {
-				y = button(graphics, font, mouseX, mouseY, listX + 4, y + 18, 70, "Try again", CosmeticsApi::refresh) + 4;
-			}
-		} else {
-			y = skinCard(graphics, font, mouseX, mouseY, mine, y);
-			y = capeCard(graphics, font, mouseX, mouseY, mine, y);
-			y = wingsCard(graphics, font, mouseX, mouseY, mine, y);
-			y = chestCard(graphics, font, mouseX, mouseY, mine, y);
-		}
-		contentH = y + scroll - listY;
-		// Clicks outside the visible list area don't count.
-		for (int i = hits.size() - 1; i >= mark; i--) {
-			Hit hit = hits.get(i);
-			if (hit.y + hit.h < listY || hit.y > listY + listH) {
-				hits.remove(i);
-			}
-		}
-		if (clip) {
-			GuiDraw.disableScissor(graphics);
-		}
-		String status = CosmeticsApi.status();
-		if (!status.isBlank()) {
-			GuiDraw.small(graphics, font, status, winX + 12, winY + winH - 15, Theme.MUTED);
-		}
+		super.extractRenderState(graphics, mouseX, mouseY, delta);
 		yaw += Mth.wrapDegrees(targetYaw - yaw) * Math.min(1f, delta * 0.25f + 0.08f);
+	}
+
+	@Override
+	protected float body(float x, float y, float w) {
+		float h = Math.max(140f, Math.min(AREA_H, room(y, 14f + 6f)));
+		float pw = Math.min(PREVIEW_W, w * 0.34f);
+		drawPreview(x, y, pw, h);
+		float lx = x + pw + 12f;
+		float lw = x + w - lx;
+		scrollArea("cosmetics", lx, y, lw, h, (cx, cy, cw) -> {
+			CosmeticsApi.Mine mine = CosmeticsApi.mine();
+			if (mine == null) {
+				text(CosmeticsApi.loading() ? "Logging in to stray.gay…" : "Couldn't load your cosmetics.", cx + 4f, cy, 20f, MUTED);
+				if (!CosmeticsApi.loading()) {
+					cy += 22f;
+					button("Try again", cx + 4f, cy, Style.SECONDARY, CosmeticsApi::refresh);
+					cy += BUTTON;
+				}
+				return cy + 20f;
+			}
+			cy = skinCard(mine, cx, cy, cw);
+			cy = capeCard(mine, cx, cy, cw);
+			cy = wingsCard(mine, cx, cy, cw);
+			return chestCard(mine, cx, cy, cw);
+		});
+		y += h + 4f;
+		String status = CosmeticsApi.status();
+		return hint(status.isBlank() ? "Changes save on their own" : status, x, y + 2f, w, false);
 	}
 
 	// ------------------------------------------------------------------ preview
 
-	private void drawPreview(GuiGraphicsExtractor graphics, Font font, int mouseX, int mouseY, float x, float y, float w, float h, float delta) {
-		GuiDraw.rounded(graphics, x, y, w, h, 6, Theme.CARD);
-		hits.add(new Hit(x, y, w, h, null, null));
+	private void drawPreview(float x, float y, float w, float h) {
+		previewX = x;
+		previewY = y;
+		previewW = w;
+		previewH = h;
+		GuiDraw.roundedFine(graphics, x, y, w, h, ShadowLook.CONTROL_R, 0x0AFFFFFF);
 		LocalPlayer player = minecraft.player;
 		if (player == null) {
-			GuiDraw.small(graphics, font, "Join a world", x + 8, y + h / 2f - 8, Theme.MUTED);
-			GuiDraw.small(graphics, font, "to see the preview", x + 8, y + h / 2f + 2, Theme.MUTED);
+			GuiDraw.small(graphics, font, "Join a world", x + (w - GuiDraw.smallWidth(font, "Join a world")) / 2f, y + h / 2f - 8, MUTED);
+			GuiDraw.small(graphics, font, "to see the preview", x + (w - GuiDraw.smallWidth(font, "to see the preview")) / 2f, y + h / 2f + 2, MUTED);
 			return;
 		}
 		if (!draggingModel && Util.getMillis() - lastDragAt > 2500L) {
@@ -178,7 +122,8 @@ public final class CosmeticsScreen extends Screen {
 		int y1 = Math.round(y + h - 14);
 		int scale = Math.round(Math.min((y1 - y0) / 2.4f, (x1 - x0) / 1.4f));
 		renderPlayer(graphics, player, x0, y0, x1, y1, scale, yaw, pitch);
-		GuiDraw.small(graphics, font, "Drag to turn", x + (w - GuiDraw.smallWidth(font, "Drag to turn")) / 2f, y + h - 12, Theme.MUTED);
+		String drag = "DRAG TO TURN";
+		GuiDraw.small(graphics, font, drag, x + (w - GuiDraw.smallWidth(font, drag)) / 2f, y + h - 12, FAINT);
 	}
 
 	/** The side of the player that shows what you are editing. */
@@ -218,54 +163,66 @@ public final class CosmeticsScreen extends Screen {
 
 	// ------------------------------------------------------------------ cards
 
-	private float card(GuiGraphicsExtractor graphics, Font font, int mouseX, int mouseY, String id, String title, String note, float y, float bodyH) {
-		float h = 22f + bodyH;
-		boolean hot = GuiDraw.hovered(mouseX, mouseY, listX, y, listW, h) && GuiDraw.hovered(mouseX, mouseY, listX, listY, listW, listH);
-		if (hot && !draggingModel && draggingSlider == null) {
+	/** A cosmetic's card: title, a note on the right, then {@code bodyH} of controls. Returns the body's y. */
+	private float card(String id, String title, String note, float x, float y, float w, float bodyH) {
+		float h = 30f + bodyH + CARD_PAD;
+		if (hovered(x, y, w, h) && !draggingModel) {
 			focus = id;
 		}
-		GuiDraw.rounded(graphics, listX, y, listW, h, 6, focus.equals(id) ? Theme.CARD_HOVER : Theme.CARD);
-		GuiDraw.menu(graphics, font, title, listX + 8, y + 6, Theme.TEXT);
+		ShadowLook.card(graphics, x, y, w, h, ShadowLook.CONTROL_R, focus.equals(id), false);
+		text(title, x + CARD_PAD, y + 6f, 18f, TEXT);
 		if (note != null && !note.isBlank()) {
-			float nw = GuiDraw.smallWidth(font, note);
-			GuiDraw.small(graphics, font, note, listX + listW - 8 - nw, y + 7, Theme.MUTED);
+			String shown = fit(note, w - CARD_PAD * 2 - textWidth(title) - 12f);
+			GuiDraw.small(graphics, font, shown, x + w - CARD_PAD - GuiDraw.smallWidth(font, shown), smallMiddle(y + 6f, 18f), MUTED);
 		}
-		return y + 20f;
+		return y + 30f;
 	}
 
-	private float skinCard(GuiGraphicsExtractor graphics, Font font, int mouseX, int mouseY, CosmeticsApi.Mine mine, float y) {
+	private float end(float y, float bodyH) {
+		return y + 30f + bodyH + CARD_PAD + 6f;
+	}
+
+	private float note(String value, float x, float y, float w) {
+		GuiDraw.small(graphics, font, dev.stray.client.util.TextFit.small(font, value, (int) (w - CARD_PAD * 2)), x + CARD_PAD, y + 3f, FAINT);
+		return y + 12f;
+	}
+
+	private float skinCard(CosmeticsApi.Mine mine, float x, float y, float w) {
 		boolean slim = currentBool("skin", "slim", mine.skinSlim());
-		String note = mine.skinHas() ? (slim ? "Stray skin · slim arms" : "Stray skin · classic arms") : "Your Minecraft skin";
+		String sub = mine.skinHas() ? (slim ? "Stray skin · slim arms" : "Stray skin · classic arms") : "Your Minecraft skin";
+		float bodyH = BUTTON + 4f + 12f;
 		float top = y;
-		y = card(graphics, font, mouseX, mouseY, "skin", "Skin", note, y, ROW * 2 + 8);
-		float x = listX + 8;
-		x = buttonX(graphics, font, mouseX, mouseY, x, y, pickingSkin ? "Choosing…" : "Choose PNG…", this::pickSkin) + 4;
+		y = card("skin", "Skin", sub, x, y, w, bodyH);
+		float bx = x + CARD_PAD;
+		bx += button(pickingSkin ? "Choosing…" : "Choose PNG", bx, y, Style.SECONDARY, this::pickSkin) + GAP;
 		if (mine.skinHas()) {
-			x = toggleChip(graphics, font, mouseX, mouseY, x, y, "Classic", !slim, () -> CosmeticsApi.change("skin", "slim", new JsonPrimitive(false))) + 2;
-			x = toggleChip(graphics, font, mouseX, mouseY, x, y, "Slim", slim, () -> CosmeticsApi.change("skin", "slim", new JsonPrimitive(true))) + 4;
-			buttonX(graphics, font, mouseX, mouseY, x, y, "Remove", CosmeticsApi::removeSkin);
+			float cy = y + (BUTTON - 18f) * 0.5f;
+			bx += chip("Classic", bx, cy, !slim, () -> CosmeticsApi.change("skin", "slim", new JsonPrimitive(false))) + 3f;
+			bx += chip("Slim", bx, cy, slim, () -> CosmeticsApi.change("skin", "slim", new JsonPrimitive(true))) + GAP;
+			button("Remove", bx, y, Style.DANGER, CosmeticsApi::removeSkin);
 		}
 		String limit = mine.skinRetry() > 0 ? "Next upload in " + mine.skinRetry() + "s" : mine.skinLeft() + " uploads left today";
-		GuiDraw.small(graphics, font, "64x64 PNG. Your real Minecraft skin stays the same. " + limit + ".", listX + 8, y + ROW + 4, Theme.MUTED);
-		return top + 22f + ROW * 2 + 8 + 6f;
+		note("64x64 PNG; your real skin stays the same. " + limit + ".", x, y + BUTTON + 4f, w);
+		return end(top, bodyH);
 	}
 
-	private float capeCard(GuiGraphicsExtractor graphics, Font font, int mouseX, int mouseY, CosmeticsApi.Mine mine, float y) {
+	private float capeCard(CosmeticsApi.Mine mine, float x, float y, float w) {
 		float top = y;
 		if (!mine.whitelisted()) {
-			y = card(graphics, font, mouseX, mouseY, "cape", "Cape", "Not on the cape list", y, ROW);
-			GuiDraw.small(graphics, font, "Capes are given out on stray.gay.", listX + 8, y + 3, Theme.MUTED);
-			return top + 22f + ROW + 6f;
+			y = card("cape", "Cape", "Not on the cape list", x, y, w, 12f);
+			note("Capes are given out on stray.gay.", x, y, w);
+			return end(top, 12f);
 		}
-		String note = mine.hasCape() ? "Live" : "No cape yet";
+		String sub = mine.hasCape() ? "Live" : "No cape yet";
 		if (mine.capeRetry() > 0) {
-			note += " · change in " + duration(mine.capeRetry());
+			sub += " · change in " + duration(mine.capeRetry());
 		}
-		y = card(graphics, font, mouseX, mouseY, "cape", "Cape", note, y, ROW * 2 + 8);
-		float x = listX + 8;
-		x = buttonX(graphics, font, mouseX, mouseY, x, y, "Cape creator…", CustomCape::pickCreate) + 4;
+		float bodyH = BUTTON + 4f + 12f;
+		y = card("cape", "Cape", sub, x, y, w, bodyH);
+		float bx = x + CARD_PAD;
+		bx += button("Cape creator", bx, y, Style.SECONDARY, CustomCape::pickCreate) + GAP;
 		if (CustomCape.ready()) {
-			x = buttonX(graphics, font, mouseX, mouseY, x, y, "Publish", () -> {
+			bx += button("Publish", bx, y, Style.PRIMARY, () -> {
 				ShopCape.publish(CustomCape.png());
 				Util.nonCriticalIoPool().execute(() -> {
 					try {
@@ -274,134 +231,101 @@ public final class CosmeticsScreen extends Screen {
 					}
 					CosmeticsApi.refresh();
 				});
-			}) + 4;
+			}) + GAP;
 		}
 		if (mine.hasCape()) {
-			buttonX(graphics, font, mouseX, mouseY, x, y, "Remove", () -> {
+			button("Remove", bx, y, Style.DANGER, () -> {
 				ShopCape.unpublish();
 				CosmeticsApi.refresh();
 			});
 		}
 		String status = ShopCape.publishStatus();
-		GuiDraw.small(graphics, font, status.isBlank() ? "Make a cape from any image, then publish it." : status, listX + 8, y + ROW + 4, Theme.MUTED);
-		return top + 22f + ROW * 2 + 8 + 6f;
+		note(status.isBlank() ? "Make a cape from any image, then publish it." : status, x, y + BUTTON + 4f, w);
+		return end(top, bodyH);
 	}
 
-	private float wingsCard(GuiGraphicsExtractor graphics, Font font, int mouseX, int mouseY, CosmeticsApi.Mine mine, float y) {
+	private float wingsCard(CosmeticsApi.Mine mine, float x, float y, float w) {
 		float top = y;
 		if (!mine.wingsGranted()) {
-			y = card(graphics, font, mouseX, mouseY, "wings", "Wings", "Not unlocked", y, ROW);
-			GuiDraw.small(graphics, font, "Wings are given out on stray.gay.", listX + 8, y + 3, Theme.MUTED);
-			return top + 22f + ROW + 6f;
+			y = card("wings", "Wings", "Not unlocked", x, y, w, 12f);
+			note("Wings are given out on stray.gay.", x, y, w);
+			return end(top, 12f);
 		}
 		boolean hidden = currentBool("wings", "hidden", mine.wingsHidden());
 		String style = currentText("wings", "style", mine.wingsStyle());
 		String rgb = currentText("wings", "rgb", mine.wingsRgb());
-		y = card(graphics, font, mouseX, mouseY, "wings", "Wings", hidden ? "Hidden" : "Showing", y, ROW * 3 + 12);
-		float x = listX + 8;
-		x = toggleChip(graphics, font, mouseX, mouseY, x, y, hidden ? "Show" : "Hide", false, () -> CosmeticsApi.change("wings", "hidden", new JsonPrimitive(!currentBool("wings", "hidden", mine.wingsHidden())))) + 8;
+		// Style chips wrap to as many lines as they need.
+		float inner = w - CARD_PAD * 2;
+		int lines = 1;
+		float run = chipWidth(hidden ? "Show" : "Hide") + 8f;
+		for (String name : WING_NAMES) {
+			float cw = chipWidth(name) + 3f;
+			if (run + cw > inner + 3f) {
+				lines++;
+				run = 0f;
+			}
+			run += cw;
+		}
+		float chipsH = lines * 21f - 3f;
+		float bodyH = chipsH + 6f + 14f + 4f + 12f;
+		y = card("wings", "Wings", hidden ? "Hidden" : "Showing", x, y, w, bodyH);
+		float cx = x + CARD_PAD;
+		float cy = y;
+		cx += chip(hidden ? "Show" : "Hide", cx, cy, false, () -> CosmeticsApi.change("wings", "hidden", new JsonPrimitive(!currentBool("wings", "hidden", mine.wingsHidden())))) + 8f;
 		for (int i = 0; i < WING_STYLES.length; i++) {
 			String id = WING_STYLES[i];
 			String defaultRgb = String.format("%06X", WING_DEFAULTS[i]);
-			x = toggleChip(graphics, font, mouseX, mouseY, x, y, WING_NAMES[i], id.equals(style), () -> {
+			if (cx + chipWidth(WING_NAMES[i]) > x + w - CARD_PAD) {
+				cx = x + CARD_PAD;
+				cy += 21f;
+			}
+			cx += chip(WING_NAMES[i], cx, cy, id.equals(style), () -> {
 				// A new style starts in its own color, like on the desk; pick a swatch after.
 				CosmeticsApi.change("wings", "style", new JsonPrimitive(id));
 				CosmeticsApi.change("wings", "rgb", new JsonPrimitive(defaultRgb));
-			}) + 2;
+			}) + 3f;
 		}
-		float sy = y + ROW + 4;
-		float sx = listX + 8;
-		float size = 12f;
+		float sy = y + chipsH + 6f;
+		float sx = x + CARD_PAD;
+		float size = 14f;
 		for (int color : SWATCHES) {
-			String hex = String.format("%06X", color);
-			boolean on = hex.equalsIgnoreCase(rgb);
-			boolean hot = GuiDraw.hovered(mouseX, mouseY, sx, sy, size, size);
-			GuiDraw.rounded(graphics, sx - 1, sy - 1, size + 2, size + 2, 3, on ? Theme.ACCENT : hot ? Theme.TEXT : Theme.LINE);
-			GuiDraw.rounded(graphics, sx, sy, size, size, 2, 0xFF000000 | color);
-			hits.add(new Hit(sx, sy, size, size, () -> CosmeticsApi.change("wings", "rgb", new JsonPrimitive(hex)), null));
-			sx += size + 4;
-			if (sx + size > listX + listW - 8) {
+			if (sx + size > x + w - CARD_PAD) {
 				break;
 			}
+			String hex = String.format("%06X", color);
+			boolean on = hex.equalsIgnoreCase(rgb);
+			boolean hot = hovered(sx, sy, size, size);
+			if (on || hot) {
+				GuiDraw.roundedFine(graphics, sx - 2f, sy - 2f, size + 4f, size + 4f, 5f, on ? 0xFFEEF1F5 : 0x60FFFFFF);
+			}
+			GuiDraw.roundedFine(graphics, sx, sy, size, size, 4f, 0xFF000000 | color);
+			hit(sx, sy, size, size, () -> CosmeticsApi.change("wings", "rgb", new JsonPrimitive(hex)));
+			sx += size + 5f;
 		}
-		GuiDraw.small(graphics, font, "Pick a style and a color. Everyone with Stray sees it straight away.", listX + 8, y + ROW * 2 + 10, Theme.MUTED);
-		return top + 22f + ROW * 3 + 12 + 6f;
+		note("Everyone with Stray sees it straight away.", x, sy + size + 4f, w);
+		return end(top, bodyH);
 	}
 
-	private float chestCard(GuiGraphicsExtractor graphics, Font font, int mouseX, int mouseY, CosmeticsApi.Mine mine, float y) {
+	private float chestCard(CosmeticsApi.Mine mine, float x, float y, float w) {
 		float top = y;
 		if (!mine.chestGranted()) {
-			y = card(graphics, font, mouseX, mouseY, "chest", "Chest", "Not unlocked", y, ROW);
-			GuiDraw.small(graphics, font, "Given out on stray.gay.", listX + 8, y + 3, Theme.MUTED);
-			return top + 22f + ROW + 6f;
+			y = card("chest", "Chest", "Not unlocked", x, y, w, 12f);
+			note("Given out on stray.gay.", x, y, w);
+			return end(top, 12f);
 		}
 		boolean hidden = currentBool("chest", "hidden", mine.chestHidden());
 		float size = currentFloat("chest", "size", mine.chestSize());
 		float lift = currentFloat("chest", "y", mine.chestY());
-		y = card(graphics, font, mouseX, mouseY, "chest", "Chest", hidden ? "Hidden" : "Showing", y, ROW * 3 + 8);
-		toggleChip(graphics, font, mouseX, mouseY, listX + 8, y, hidden ? "Show" : "Hide", false, () -> CosmeticsApi.change("chest", "hidden", new JsonPrimitive(!currentBool("chest", "hidden", mine.chestHidden()))));
-		y += ROW + 4;
-		y = slider(graphics, font, mouseX, mouseY, y, "Size", Math.round(size * 100) + "%", (size - 0.5f) / 1.1f,
+		float bodyH = 18f + 6f + 20f + 20f - 2f;
+		y = card("chest", "Chest", hidden ? "Hidden" : "Showing", x, y, w, bodyH);
+		chip(hidden ? "Show" : "Hide", x + CARD_PAD, y, false, () -> CosmeticsApi.change("chest", "hidden", new JsonPrimitive(!currentBool("chest", "hidden", mine.chestHidden()))));
+		y += 18f + 6f;
+		float sw = w - CARD_PAD * 2;
+		y = slider("Size", Math.round(size * 100) + "%", (size - 0.5f) / 1.1f, x + CARD_PAD, y, sw,
 			t -> CosmeticsApi.change("chest", "size", new JsonPrimitive(Math.round((0.5f + (float) t * 1.1f) * 100f) / 100f)));
-		slider(graphics, font, mouseX, mouseY, y, "Position", Math.abs(lift) < 0.05f ? "0" : String.format(java.util.Locale.ROOT, "%+.1f", -lift), (lift + 1.5f) / 3.5f,
+		slider("Position", Math.abs(lift) < 0.05f ? "0" : String.format(java.util.Locale.ROOT, "%+.1f", -lift), (lift + 1.5f) / 3.5f, x + CARD_PAD, y, sw,
 			t -> CosmeticsApi.change("chest", "y", new JsonPrimitive(Math.round((-1.5f + (float) t * 3.5f) * 20f) / 20f)));
-		return top + 22f + ROW * 3 + 8 + 6f;
-	}
-
-	// ------------------------------------------------------------------ widgets
-
-	private float slider(GuiGraphicsExtractor graphics, Font font, int mouseX, int mouseY, float y, String label, String value, float t, DoubleConsumer set) {
-		float x = listX + 8;
-		float labelW = 52f;
-		float valueW = 34f;
-		float trackX = x + labelW;
-		float trackW = listW - 16 - labelW - valueW;
-		GuiDraw.menu(graphics, font, label, x, y + 3, Theme.TEXT);
-		float cy = y + ROW / 2f;
-		GuiDraw.rounded(graphics, trackX, cy - 2, trackW, 4, 2, Theme.TRACK);
-		float k = Mth.clamp(t, 0f, 1f);
-		GuiDraw.rounded(graphics, trackX, cy - 2, trackW * k, 4, 2, Theme.ACCENT);
-		GuiDraw.rounded(graphics, trackX + trackW * k - 4, cy - 4, 8, 8, 4, Theme.TEXT);
-		GuiDraw.menu(graphics, font, value, trackX + trackW + 6, y + 3, Theme.MUTED);
-		hits.add(new Hit(trackX - 4, y, trackW + 8, ROW, null, set));
-		if (draggingSlider == set) {
-			sliderX = trackX;
-			sliderW = trackW;
-		}
-		return y + ROW + 2;
-	}
-
-	private float button(GuiGraphicsExtractor graphics, Font font, int mouseX, int mouseY, float x, float y, float w, String label, Runnable click) {
-		boolean hot = GuiDraw.hovered(mouseX, mouseY, x, y, w, ROW - 2);
-		GuiDraw.rounded(graphics, x, y, w, ROW - 2, 4, hot ? Theme.ACCENT_DIM : Theme.TRACK);
-		GuiDraw.menu(graphics, font, label, x + (w - GuiDraw.menuWidth(font, label)) / 2f, y + 3, Theme.TEXT);
-		hits.add(new Hit(x, y, w, ROW - 2, click, null));
-		return y + ROW;
-	}
-
-	private float buttonX(GuiGraphicsExtractor graphics, Font font, int mouseX, int mouseY, float x, float y, String label, Runnable click) {
-		float w = GuiDraw.menuWidth(font, label) + 14f;
-		button(graphics, font, mouseX, mouseY, x, y, w, label, click);
-		return x + w;
-	}
-
-	private float toggleChip(GuiGraphicsExtractor graphics, Font font, int mouseX, int mouseY, float x, float y, String label, boolean on, Runnable click) {
-		float w = GuiDraw.menuWidth(font, label) + 12f;
-		boolean hot = GuiDraw.hovered(mouseX, mouseY, x, y, w, ROW - 2);
-		GuiDraw.rounded(graphics, x, y, w, ROW - 2, 7, on ? Theme.ACCENT : hot ? Theme.ACCENT_DIM : Theme.TRACK);
-		GuiDraw.menu(graphics, font, label, x + 6, y + 3, on ? 0xFF0B0E14 : Theme.TEXT);
-		hits.add(new Hit(x, y, w, ROW - 2, click, null));
-		return x + w;
-	}
-
-	private void closeButton(GuiGraphicsExtractor graphics, Font font, int mouseX, int mouseY) {
-		float s = 14f;
-		float x = winX + winW - s - 8;
-		float y = winY + 7;
-		boolean hot = GuiDraw.hovered(mouseX, mouseY, x, y, s, s);
-		GuiDraw.rounded(graphics, x, y, s, s, 4, hot ? 0xFFE8414B : Theme.TRACK);
-		GuiDraw.menu(graphics, font, "×", x + (s - GuiDraw.menuWidth(font, "×")) / 2f, y + 3, Theme.TEXT);
-		hits.add(new Hit(x, y, s, s, this::onClose, null));
+		return end(top, bodyH);
 	}
 
 	// ------------------------------------------------------------------ values
@@ -456,38 +380,19 @@ public final class CosmeticsScreen extends Screen {
 
 	@Override
 	public boolean mouseClicked(MouseButtonEvent event, boolean doubled) {
-		if (!MouseButtons.left(event)) {
-			return super.mouseClicked(event, doubled);
+		if (super.mouseClicked(event, doubled)) {
+			return true;
 		}
-		for (int i = hits.size() - 1; i >= 0; i--) {
-			Hit hit = hits.get(i);
-			if (!hit.contains(event.x(), event.y())) {
-				continue;
-			}
-			if (hit.slide != null) {
-				draggingSlider = hit.slide;
-				sliderX = hit.x + 4;
-				sliderW = hit.w - 8;
-				hit.slide.accept(Mth.clamp((event.x() - sliderX) / sliderW, 0, 1));
-				return true;
-			}
-			if (hit.click != null) {
-				hit.click.run();
-				return true;
-			}
+		if (MouseButtons.left(event) && GuiDraw.hovered(event.x(), event.y(), previewX, previewY, previewW, previewH)) {
 			// The preview panel: start turning the model.
 			draggingModel = true;
 			return true;
 		}
-		return super.mouseClicked(event, doubled);
+		return false;
 	}
 
 	@Override
 	public boolean mouseDragged(MouseButtonEvent event, double dx, double dy) {
-		if (draggingSlider != null) {
-			draggingSlider.accept(Mth.clamp((event.x() - sliderX) / Math.max(1f, sliderW), 0, 1));
-			return true;
-		}
 		if (draggingModel) {
 			targetYaw -= (float) dx * 2.2f;
 			yaw = targetYaw;
@@ -500,20 +405,10 @@ public final class CosmeticsScreen extends Screen {
 
 	@Override
 	public boolean mouseReleased(MouseButtonEvent event) {
-		draggingSlider = null;
 		if (draggingModel) {
 			draggingModel = false;
 			lastDragAt = Util.getMillis();
 		}
 		return super.mouseReleased(event);
-	}
-
-	@Override
-	public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
-		if (scrollY != 0 && GuiDraw.hovered(mouseX, mouseY, listX, listY, listW, listH)) {
-			scroll = Mth.clamp(scroll - (float) scrollY * 18f, 0f, Math.max(0f, contentH - listH));
-			return true;
-		}
-		return super.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
 	}
 }

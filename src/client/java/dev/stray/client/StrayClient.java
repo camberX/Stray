@@ -971,6 +971,37 @@ public final class StrayClient implements ClientModInitializer {
 			}
 			return Command.SINGLE_SUCCESS;
 		}));
+		if (!dev.stray.Edition.LEGIT) {
+			// /stray debug dev screen <name>: opens a submenu directly, for checking how it looks.
+			node.then(ClientCommands.literal("screen").then(ClientCommands.argument("name", com.mojang.brigadier.arguments.StringArgumentType.word())
+				.suggests((context, builder) -> {
+					for (String name : new String[] {"autohotbar", "keys", "shortcuts", "titles", "blockmark", "itemedit", "account", "cosmetics", "cape"}) {
+						builder.suggest(name);
+					}
+					return builder.buildFuture();
+				})
+				.executes(context -> {
+					String name = com.mojang.brigadier.arguments.StringArgumentType.getString(context, "name");
+					Minecraft client = Minecraft.getInstance();
+					client.execute(() -> {
+						net.minecraft.client.gui.screens.Screen screen = switch (name) {
+							case "autohotbar" -> new dev.stray.client.ui.AutoHotbarScreen(null);
+							case "keys" -> new dev.stray.client.ui.CommandKeysScreen(null);
+							case "shortcuts" -> new dev.stray.client.ui.CommandShortcutScreen(null);
+							case "titles" -> new dev.stray.client.ui.CustomTitleScreen(null);
+							case "blockmark" -> new dev.stray.client.ui.BlockMarkEditScreen(client.player == null ? net.minecraft.core.BlockPos.ZERO : client.player.blockPosition(), "Test mark", "");
+							case "itemedit" -> new dev.stray.client.ui.ItemEditScreen();
+							case "account" -> new dev.stray.client.ui.AccountScreen(null);
+							case "cosmetics" -> new dev.stray.client.ui.CosmeticsScreen(null);
+							default -> null;
+						};
+						if (screen != null) {
+							client.gui.setScreen(screen);
+						}
+					});
+					return Command.SINGLE_SUCCESS;
+				})));
+		}
 		node.then(ClientCommands.literal("othername")
 			.then(ClientCommands.literal("why").then(ClientCommands.argument("word", com.mojang.brigadier.arguments.StringArgumentType.word()).executes(context -> {
 				String word = com.mojang.brigadier.arguments.StringArgumentType.getString(context, "word");

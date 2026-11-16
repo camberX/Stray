@@ -148,7 +148,7 @@ public class StrayScreen extends Screen {
 		AUTO_EXPERIMENTS("Auto experiments", 11),
 		AUTO_BOOKS("Book combine", 3),
 		MOB("Mob glow", 3),
-		STAR("Star mobs", 6),
+		STAR("Star mobs", 5),
 		BLOCK("Block outline", 1),
 		CHEST("Powder Mining", 4),
 		FAIRY("Fairy souls", 1),
@@ -3834,10 +3834,6 @@ public class StrayScreen extends Screen {
 				}
 			}
 			case STAR -> {
-				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Glow ESP", config.starVisuals.glowEnabled, v -> {
-					config.starVisuals.glowEnabled = v;
-					config.starMobEsp = v;
-				});
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Through walls", config.starMobThroughWalls, v -> config.starMobThroughWalls = v);
 				y = slider(graphics, font, ix, y, iw, "Radius", String.format(Locale.ROOT, "%.0f", config.starMobRadius), (config.starMobRadius - GlowBlurRadius.MIN) / (GlowBlurRadius.MAX - GlowBlurRadius.MIN), v -> config.starMobRadius = StrayConfig.clamp(GlowBlurRadius.MIN + v * (GlowBlurRadius.MAX - GlowBlurRadius.MIN), GlowBlurRadius.MIN, GlowBlurRadius.MAX));
 				y = colorRow(graphics, font, ix, y, iw, mouseX, mouseY, "Color", config.starMobRgb, PickerTarget.STAR);

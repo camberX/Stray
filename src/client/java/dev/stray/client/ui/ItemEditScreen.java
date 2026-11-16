@@ -1,64 +1,37 @@
 package dev.stray.client.ui;
 
 import com.mojang.blaze3d.platform.InputConstants;
-import dev.stray.client.input.MouseButtons;
 import dev.stray.client.item.ItemAppearance;
 import dev.stray.client.item.ItemIds;
 import dev.stray.client.item.SkyblockItems;
 import dev.stray.client.render.GuiDraw;
-import dev.stray.client.util.TextFit;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphicsExtractor;
-import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.client.input.CharacterEvent;
 import net.minecraft.client.input.KeyEvent;
-import net.minecraft.client.input.MouseButtonEvent;
-import net.minecraft.network.chat.Component;
-import net.minecraft.util.Mth;
 import net.minecraft.world.item.ItemStack;
 
-import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
-public class ItemEditScreen extends Screen {
-	private static final float MENU_W = 268;
-	private static final float MENU_H = 200;
-	private static final float SLOT = 52;
-	private static final float FIELD_H = 18;
+/** Swap how the held item looks, on this client only. Tab or Enter takes the first suggestion. */
+public class ItemEditScreen extends SubScreen {
+	private static final float PREVIEW = 56f;
 	private static final int SUGGESTIONS = 6;
 
 	private final ItemStack original;
 	private final String originalId;
-	private String query;
-	private int cursor;
-	private boolean focused = true;
-	private boolean placed;
-	private boolean dragging;
-	private double dragOffX;
-	private double dragOffY;
-	private float windowX;
-	private float windowY;
-	private float windowW = MENU_W;
-	private float windowH = MENU_H;
-	private float fieldX;
-	private float fieldY;
-	private float fieldW;
-	private final List<Hit> hits = new ArrayList<>();
+	private final Input query = input("item-edit", 128, "minecraft: or sb:");
 	private ItemIds.Preview preview = ItemIds.Preview.empty();
 	private List<String> suggestions = List.of();
-	private long blinkAt = System.currentTimeMillis();
 	private String status = "";
 
 	public ItemEditScreen() {
-		super(Component.literal("Item"));
+		super("Item", null, 300);
 		Minecraft client = Minecraft.getInstance();
 		ItemStack held = client.player == null ? ItemStack.EMPTY : ItemIds.held(client.player);
 		this.original = held.isEmpty() ? ItemStack.EMPTY : held.copy();
 		this.originalId = ItemIds.idOf(this.original);
 		String shown = ItemAppearance.displayId(held);
-		this.query = shown == null || shown.isBlank() ? originalId : shown;
-		this.cursor = query.length();
+		query.set(shown == null || shown.isBlank() ? originalId : shown);
 	}
 
 	@Override
@@ -71,186 +44,99 @@ public class ItemEditScreen extends Screen {
 	}
 
 	@Override
-	public boolean isPauseScreen() {
-		return false;
+	protected String subtitle() {
+		return "held item look · your client only";
 	}
 
 	@Override
-	public void extractBackground(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float delta) {
-		if (minecraft.level != null) {
-			extractBlurredBackground(graphics);
-		}
-	}
-
-	@Override
-	public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float delta) {
-		hits.clear();
-		Font font = minecraft.font;
-		layout();
+	protected float body(float x, float y, float w) {
 		refresh();
-
-		GuiDraw.fill(graphics, 0, 0, width, height, 0x14000000);
-		ClickLook.outside(graphics, windowX, windowY, windowW, windowH, Theme.WINDOW_RADIUS, Theme.WINDOW, Theme.LINE);
-		GuiDraw.title(graphics, font, "ITEM", windowX + 12, windowY + 8, Theme.TEXT);
-		GuiDraw.small(graphics, font, "ID", windowX + 12 + GuiDraw.titleWidth(font, "ITEM") + 4, windowY + 10, Theme.ACCENT);
-		hits.add(new Hit(windowX, windowY, windowW, 22, mx -> startDrag()));
-
-		float slotX = windowX + (windowW - SLOT) * 0.5f;
-		float slotY = windowY + 28;
-		ClickLook.outside(graphics, slotX, slotY, SLOT, SLOT, 8, Theme.TRACK, Theme.LINE);
+		// The look, big, with its name and where it comes from beside it.
+		GuiDraw.roundedFine(graphics, x, y, PREVIEW, PREVIEW, ShadowLook.CONTROL_R, ShadowLook.CARD);
 		ItemStack stack = previewStack();
 		if (!stack.isEmpty()) {
-			float scale = 3f;
+			float scale = 2.5f;
 			float size = 16f * scale;
-			float ix = slotX + (SLOT - size) * 0.5f;
-			float iy = slotY + (SLOT - size) * 0.5f;
 			graphics.pose().pushMatrix();
-			graphics.pose().translate(ix, iy);
+			graphics.pose().translate(x + (PREVIEW - size) * 0.5f, y + (PREVIEW - size) * 0.5f);
 			graphics.pose().scale(scale, scale);
 			graphics.item(stack, 0, 0);
 			graphics.pose().popMatrix();
 		} else {
 			String mark = preview.kind() == ItemIds.Kind.UNKNOWN ? "?" : "—";
-			GuiDraw.menu(
-				graphics,
-				font,
-				mark,
-				slotX + (SLOT - GuiDraw.menuWidth(font, mark)) * 0.5f,
-				GuiDraw.middle(slotY, SLOT),
-				Theme.OFF
-			);
+			text(mark, x + (PREVIEW - textWidth(mark)) * 0.5f, y, PREVIEW, FAINT);
 		}
-
-		String title = preview.title();
-		if (title.length() > 28) {
-			title = title.substring(0, 27) + "…";
-		}
-		GuiDraw.menu(
-			graphics,
-			font,
-			title,
-			windowX + (windowW - GuiDraw.menuWidth(font, title)) * 0.5f,
-			slotY + SLOT + 6,
-			preview.kind() == ItemIds.Kind.UNKNOWN ? Theme.WARN : Theme.TEXT
-		);
+		float tx = x + PREVIEW + 12f;
+		float tw = x + w - tx;
+		boolean unknown = preview.kind() == ItemIds.Kind.UNKNOWN;
+		String title = preview.title() == null || preview.title().isBlank() ? (unknown ? "Unknown item" : "Nothing") : preview.title();
+		text(fit(title, tw), tx, y + 10f, 14f, unknown ? DANGER : TEXT);
 		String kind = switch (preview.kind()) {
 			case VANILLA -> "Vanilla";
 			case SKYBLOCK -> "Skyblock";
 			case UNKNOWN -> "Unknown";
 			case EMPTY -> "Empty";
 		};
-		GuiDraw.small(
-			graphics,
-			font,
-			kind,
-			windowX + (windowW - GuiDraw.smallWidth(font, kind)) * 0.5f,
-			slotY + SLOT + 18,
-			preview.kind() == ItemIds.Kind.SKYBLOCK ? Theme.ACCENT : Theme.MUTED
-		);
+		tag(kind, tx, y + 30f, 16f, preview.kind() == ItemIds.Kind.SKYBLOCK ? TEXT : MUTED);
+		y += PREVIEW + GAP + 2f;
 
-		fieldX = windowX + 12;
-		fieldY = slotY + SLOT + 32;
-		fieldW = windowW - 24;
-		boolean hoverField = GuiDraw.hovered(mouseX, mouseY, fieldX, fieldY, fieldW, FIELD_H);
-		ClickLook.outside(
-			graphics,
-			fieldX,
-			fieldY,
-			fieldW,
-			FIELD_H,
-			5,
-			focused || hoverField ? Theme.CARD_HOVER : Theme.CARD,
-			focused ? Theme.ACCENT : Theme.LINE
-		);
-		if (focused) {
-			TextKeys.mark(graphics, "item-edit", fieldX, fieldY, fieldW, FIELD_H);
-		}
-		String shown = query.isEmpty() && !focused ? "minecraft: or sb:" : query;
-		String clipped = TextFit.clipField(font, shown, cursor, (int) fieldW - 14);
-		int color = query.isEmpty() && !focused ? Theme.MUTED : Theme.TEXT;
-		float textX = fieldX + 7;
-		float textY = GuiDraw.middle(fieldY, FIELD_H);
-		GuiDraw.menu(graphics, font, clipped, textX, textY, color);
-		if (focused && ((System.currentTimeMillis() - blinkAt) / 530) % 2 == 0) {
-			int caret = Math.min(cursor, clipped.length());
-			if (!query.isEmpty() && !shown.equals(query)) {
-				caret = clipped.length();
+		y = field(query, "Look", labelColumn("Look"), x, y, w);
+		if (!suggestions.isEmpty()) {
+			y += GAP;
+			for (String id : suggestions) {
+				boolean hot = hovered(x, y, w, 18f);
+				card(x, y, w, 18f, hot, false);
+				String name = suggestionName(id);
+				float nx = x + 8f;
+				if (name != null) {
+					text(fit(name, w * 0.55f), nx, y, 18f, hot ? TEXT : MUTED);
+					nx += Math.min(textWidth(name), w * 0.55f) + 8f;
+				}
+				GuiDraw.small(graphics, font, dev.stray.client.util.TextFit.small(font, id, (int) (x + w - 8f - nx)), nx, smallMiddle(y, 18f), FAINT);
+				hit(x, y, w, 18f, () -> apply(id));
+				y += 21f;
 			}
-			float cx = textX + GuiDraw.menuWidth(font, clipped.substring(0, Math.min(caret, clipped.length())));
-			GuiDraw.fill(graphics, cx, fieldY + 4, 1, FIELD_H - 8, Theme.ACCENT);
+			y -= 3f;
 		}
-		hits.add(new Hit(fieldX, fieldY, fieldW, FIELD_H, mx -> {
-			focused = true;
-			cursor = cursorAt(font, query, mx, fieldX + 7);
-			blinkAt = System.currentTimeMillis();
-		}));
-
-		float statusY = windowY + windowH - 16;
-		float listY = fieldY + FIELD_H + 6;
-		float listBottom = statusY - 4;
-		for (int i = 0; i < suggestions.size(); i++) {
-			if (listY + 14 > listBottom) {
-				break;
-			}
-			String id = suggestions.get(i);
-			boolean hover = GuiDraw.hovered(mouseX, mouseY, fieldX, listY, fieldW, 14);
-			if (hover) {
-				GuiDraw.rounded(graphics, fieldX, listY, fieldW, 14, 4, 0x14FFFFFF);
-			}
-			String label = suggestionLabel(id);
-			GuiDraw.small(graphics, font, TextFit.small(font, label, (int) fieldW - 10), fieldX + 5, listY + 2, hover ? Theme.TEXT : Theme.MUTED);
-			final String pick = id;
-			hits.add(new Hit(fieldX, listY, fieldW, 14, mx -> applySuggestion(pick)));
-			listY += 15;
-		}
-
-		if (suggestions.isEmpty()) {
-			GuiDraw.small(graphics, font, "Type Hyperion, sb:HYPERION, or minecraft:stone", fieldX, listY, Theme.OFF);
-		}
-
-		String line = status.isBlank() ? "Looks like this on your client only" : status;
-		GuiDraw.small(graphics, font, TextFit.small(font, line, (int) fieldW - 4), fieldX, statusY, Theme.MUTED);
+		String help = !status.isBlank() ? status
+			: suggestions.isEmpty() && query.get().isBlank() ? "Type Hyperion, sb:HYPERION or minecraft:stone"
+			: "Tab takes the first suggestion · Esc closes";
+		y = hint(help, x, y + GAP + 2f, w, false) + 6f;
+		return buttons(x, y, w,
+			new Object[][] {{"Reset", Style.SECONDARY, (Runnable) () -> {
+				status = "";
+				apply(originalId);
+			}}},
+			new Object[][] {{"Done", Style.PRIMARY, (Runnable) this::onClose}});
 	}
 
-	private static String suggestionLabel(String id) {
-		if (id != null && id.toLowerCase(java.util.Locale.ROOT).startsWith("sb:")) {
+	private static String suggestionName(String id) {
+		if (id != null && id.toLowerCase(Locale.ROOT).startsWith("sb:")) {
 			SkyblockItems.Entry entry = SkyblockItems.get(id.substring(3));
 			if (entry != null && entry.name() != null && !entry.name().isBlank()) {
-				return entry.name() + "  " + id;
+				return entry.name();
 			}
 		}
-		return id;
+		return null;
 	}
 
 	private ItemStack previewStack() {
-		if (!original.isEmpty() && query.trim().equalsIgnoreCase(originalId)) {
+		if (!original.isEmpty() && query.get().trim().equalsIgnoreCase(originalId)) {
 			return original;
 		}
 		return preview.stack();
 	}
 
-	private void layout() {
-		float extra = suggestions.isEmpty() ? 0 : suggestions.size() * 15f;
-		windowW = Math.min(MENU_W, Math.max(1, width - 16));
-		windowH = Math.min(MENU_H + extra, Math.max(1, height - 16));
-		if (!placed) {
-			windowX = (width - windowW) / 2f;
-			windowY = (height - windowH) / 2f;
-			placed = true;
-		}
-		windowX = Mth.clamp(windowX, 4, Math.max(4, width - windowW - 4));
-		windowY = Mth.clamp(windowY, 4, Math.max(4, height - windowH - 4));
-	}
-
 	private void refresh() {
-		preview = ItemIds.resolve(query);
-		String trimmed = query.trim();
+		String value = query.get();
+		preview = ItemIds.resolve(value);
+		String trimmed = value.trim();
 		boolean exact = preview.kind() != ItemIds.Kind.UNKNOWN
 			&& !trimmed.isEmpty()
 			&& (trimmed.equalsIgnoreCase(preview.canonical())
 				|| trimmed.equalsIgnoreCase(originalId)
 				|| (preview.kind() == ItemIds.Kind.SKYBLOCK && trimmed.equalsIgnoreCase(preview.title())));
-		suggestions = exact ? List.of() : ItemIds.suggest(query, SUGGESTIONS);
+		suggestions = exact ? List.of() : ItemIds.suggest(value, SUGGESTIONS);
 		syncHand();
 	}
 
@@ -260,10 +146,7 @@ public class ItemEditScreen extends Screen {
 			return;
 		}
 		ItemStack live = ItemIds.held(client.player);
-		if (live.isEmpty()) {
-			return;
-		}
-		if (preview.kind() == ItemIds.Kind.UNKNOWN) {
+		if (live.isEmpty() || preview.kind() == ItemIds.Kind.UNKNOWN) {
 			return;
 		}
 		if (preview.kind() == ItemIds.Kind.EMPTY) {
@@ -271,7 +154,7 @@ public class ItemEditScreen extends Screen {
 			return;
 		}
 		boolean sameItem = preview.canonical().equalsIgnoreCase(originalId)
-			|| query.trim().equalsIgnoreCase(originalId);
+			|| query.get().trim().equalsIgnoreCase(originalId);
 		if (sameItem) {
 			ItemAppearance.revertModel(client.player, live);
 			return;
@@ -282,182 +165,27 @@ public class ItemEditScreen extends Screen {
 		}
 	}
 
-	private void applySuggestion(String id) {
-		query = id;
-		cursor = query.length();
-		focused = true;
-		blinkAt = System.currentTimeMillis();
+	private void apply(String id) {
+		query.set(id);
+		query.focus();
 		refresh();
 	}
 
-	private void startDrag() {
-		dragging = true;
-		focused = false;
-	}
-
-	private static int cursorAt(Font font, String text, double mouseX, float startX) {
-		float x = (float) mouseX - startX;
-		int best = 0;
-		float bestDist = Float.MAX_VALUE;
-		for (int i = 0; i <= text.length(); i++) {
-			float w = GuiDraw.menuWidth(font, text.substring(0, i));
-			float dist = Math.abs(w - x);
-			if (dist < bestDist) {
-				bestDist = dist;
-				best = i;
-			}
-		}
-		return best;
-	}
-
 	@Override
-	public boolean mouseClicked(MouseButtonEvent event, boolean doubled) {
-		if (!MouseButtons.left(event)) {
-			return super.mouseClicked(event, doubled);
-		}
-		dragging = false;
-		focused = false;
-		for (int i = hits.size() - 1; i >= 0; i--) {
-			Hit hit = hits.get(i);
-			if (hit.contains(event.x(), event.y())) {
-				hit.click(event.x());
-				dragOffX = event.x() - windowX;
-				dragOffY = event.y() - windowY;
-				return true;
-			}
-		}
-		return super.mouseClicked(event, doubled);
-	}
-
-	@Override
-	public boolean mouseDragged(MouseButtonEvent event, double dx, double dy) {
-		if (MouseButtons.left(event) && dragging) {
-			windowX = (float) (event.x() - dragOffX);
-			windowY = (float) (event.y() - dragOffY);
-			return true;
-		}
-		return super.mouseDragged(event, dx, dy);
-	}
-
-	@Override
-	public boolean mouseReleased(MouseButtonEvent event) {
-		dragging = false;
-		return super.mouseReleased(event);
-	}
-
-	@Override
-	public boolean keyPressed(KeyEvent event) {
-		if (event.isEscape()) {
+	protected void submit() {
+		if (!suggestions.isEmpty()) {
+			apply(suggestions.getFirst());
+		} else {
 			onClose();
-			return true;
 		}
-		if (!focused) {
-			if (event.key() == InputConstants.KEY_TAB && !suggestions.isEmpty()) {
-				applySuggestion(suggestions.get(0));
-				return true;
-			}
-			return super.keyPressed(event);
-		}
-		if (event.key() == InputConstants.KEY_TAB && !suggestions.isEmpty()) {
-				applySuggestion(suggestions.get(0));
-			return true;
-		}
-		if (TextKeys.caretKey(event, "item-edit", query, () -> {
-			query = "";
-			cursor = 0;
-		})) {
-			return true;
-		}
-		if (event.key() == InputConstants.KEY_LEFT) {
-			cursor = Math.max(0, cursor - 1);
-			blinkAt = System.currentTimeMillis();
-			return true;
-		}
-		if (event.key() == InputConstants.KEY_RIGHT) {
-			cursor = Math.min(query.length(), cursor + 1);
-			blinkAt = System.currentTimeMillis();
-			return true;
-		}
-		if (event.key() == InputConstants.KEY_HOME) {
-			cursor = 0;
-			blinkAt = System.currentTimeMillis();
-			return true;
-		}
-		if (event.key() == InputConstants.KEY_END) {
-			cursor = query.length();
-			blinkAt = System.currentTimeMillis();
-			return true;
-		}
-		if (event.key() == InputConstants.KEY_BACKSPACE) {
-			if (cursor > 0) {
-				query = query.substring(0, cursor - 1) + query.substring(cursor);
-				cursor--;
-				blinkAt = System.currentTimeMillis();
-			}
-			return true;
-		}
-		if (event.key() == InputConstants.KEY_DELETE) {
-			if (cursor < query.length()) {
-				query = query.substring(0, cursor) + query.substring(cursor + 1);
-				blinkAt = System.currentTimeMillis();
-			}
-			return true;
-		}
-		if (event.isPaste()) {
-			String clip = minecraft.keyboardHandler.getClipboard();
-			if (clip != null && !clip.isBlank()) {
-				String insert = clip.replace("\n", "").replace("\r", "").trim();
-				query = query.substring(0, cursor) + insert + query.substring(cursor);
-				cursor += insert.length();
-				blinkAt = System.currentTimeMillis();
-			}
-			return true;
-		}
-		return super.keyPressed(event);
 	}
 
 	@Override
-	public boolean charTyped(CharacterEvent event) {
-		if (!focused || !event.isAllowedChatCharacter()) {
-			return super.charTyped(event);
-		}
-		String insert = event.codepointAsString();
-		if (insert.isEmpty() || insert.charAt(0) < 32) {
+	protected boolean keyFirst(KeyEvent event) {
+		if (event.key() == InputConstants.KEY_TAB && !suggestions.isEmpty()) {
+			apply(suggestions.getFirst());
 			return true;
 		}
-		if (TextKeys.takeSelection("item-edit")) {
-			query = "";
-			cursor = 0;
-		}
-		query = query.substring(0, cursor) + insert + query.substring(cursor);
-		cursor += insert.length();
-		blinkAt = System.currentTimeMillis();
-		return true;
-	}
-
-	private static final class Hit {
-		final float x, y, w, h;
-		final Click click;
-
-		Hit(float x, float y, float w, float h, Click click) {
-			this.x = x;
-			this.y = y;
-			this.w = w;
-			this.h = h;
-			this.click = click;
-		}
-
-		boolean contains(double mx, double my) {
-			return mx >= x && mx <= x + w && my >= y && my <= y + h;
-		}
-
-		void click(double mx) {
-			click.run(mx);
-		}
-	}
-
-	@FunctionalInterface
-	private interface Click {
-		void run(double mx);
+		return false;
 	}
 }

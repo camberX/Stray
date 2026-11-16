@@ -563,7 +563,7 @@ public final class CustomizeScreen extends Screen {
 	@Override
 	public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float delta) {
 		Theme.refresh();
-		ClickLook.panel(graphics, left, top, W, H, 8f, Theme.WINDOW, Theme.LINE);
+		ShadowLook.window(graphics, left, top, W, H, ShadowLook.WINDOW_R, ShadowLook.FILL);
 		int ink = Theme.TEXT;
 		int muted = Theme.MUTED;
 		label(graphics, "Customize", left + 12, top + 9, Theme.ACCENT);
