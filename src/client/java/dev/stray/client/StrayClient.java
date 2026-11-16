@@ -379,6 +379,18 @@ public final class StrayClient implements ClientModInitializer {
 			if (!dev.stray.Edition.LEGIT) { root.then(CommandRingCommands.command()); }
 			root.then(ClientCommands.literal("shortcuts").executes(context -> CommandShortcuts.open()));
 			if (!dev.stray.Edition.LEGIT) {
+				// /stray loadout <1-9>: silent swap to that loadout, the same way the pest
+				// cooldown's auto loadout does it (hidden menu, click at tick start).
+				root.then(ClientCommands.literal("loadout")
+					.then(ClientCommands.argument("slot", com.mojang.brigadier.arguments.IntegerArgumentType.integer(1, 9)).executes(context -> {
+						int slot = com.mojang.brigadier.arguments.IntegerArgumentType.getInteger(context, "slot");
+						if (LoadoutSwap.queue(slot - 1)) {
+							context.getSource().sendFeedback(Component.literal("§bStray §7swapping to loadout §f" + slot));
+						} else {
+							context.getSource().sendFeedback(Component.literal("§bStray §ca loadout swap is already running"));
+						}
+						return Command.SINGLE_SUCCESS;
+					})));
 				root.then(ClientCommands.literal("autohotbar").executes(context -> {
 					Minecraft mc = Minecraft.getInstance();
 					mc.execute(() -> mc.gui.setScreen(new dev.stray.client.ui.AutoHotbarScreen(mc.gui.screen())));
