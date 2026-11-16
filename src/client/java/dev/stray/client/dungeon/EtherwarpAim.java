@@ -18,6 +18,7 @@ import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.gizmos.GizmoProperties;
 import net.minecraft.gizmos.GizmoStyle;
@@ -68,6 +69,9 @@ public final class EtherwarpAim {
 	private static long aimedSince;
 	private static long waitMs;
 	private static long lastFrameNs;
+	/** Turn still owed from steps smaller than one mouse count. */
+	private static float restYaw;
+	private static float restPitch;
 
 	private EtherwarpAim() {
 	}
@@ -238,50 +242,124 @@ public final class EtherwarpAim {
 
 	// ------------------------------------------------------------------ magnet
 
-	/** Every frame: pull the crosshair toward a close point. */
+	/** Every frame: pull the crosshair toward the nearest open face of a close point. */
 	public static void frame(Minecraft client) {
 		long now = System.nanoTime();
 		float dt = lastFrameNs == 0L ? 0f : Math.min(0.1f, (now - lastFrameNs) / 1.0e9f);
 		lastFrameNs = now;
 		StrayConfig config = StrayConfig.get();
 		if (dt <= 0f || !config.etherwarpAimAssist || !ready(client) || live.isEmpty()) {
+			restYaw = 0f;
+			restPitch = 0f;
 			return;
 		}
 		LocalPlayer player = client.player;
 		Vec3 eye = player.getEyePosition();
 		Vec3 look = player.getViewVector(1f);
-		BlockPos best = null;
-		double bestAngle = config.etherwarpAimRange;
+		Vec3 target = bestSpot(client, player, eye, look, config.etherwarpAimRange);
+		if (target == null) {
+			restYaw = 0f;
+			restPitch = 0f;
+			return;
+		}
+		SmoothRotate.Rotation want = SmoothRotate.to(eye, target);
+		float yaw = player.getYRot();
+		float pitch = player.getXRot();
+		// Speed 1-100: the share of the way it moves each second (exponential, so it eases in).
+		float k = 1f - (float) Math.exp(-config.etherwarpAimSpeed * 0.25f * dt);
+		// Small steps add up until they are a whole mouse step, so a slow pull never stalls.
+		restYaw += SmoothRotate.normalizeYaw(want.yaw() - yaw) * k;
+		restPitch += (want.pitch() - pitch) * k;
+		double gcd = mouseStep(client);
+		float stepYaw = (float) (restYaw - restYaw % gcd);
+		float stepPitch = (float) (restPitch - restPitch % gcd);
+		if (stepYaw == 0f && stepPitch == 0f) {
+			return;
+		}
+		restYaw -= stepYaw;
+		restPitch -= stepPitch;
+		float nextYaw = yaw + stepYaw;
+		float nextPitch = Mth.clamp(pitch + stepPitch, -90f, 90f);
+		player.setYRot(nextYaw);
+		player.setXRot(nextPitch);
+		player.setYHeadRot(nextYaw);
+		player.forceSetRotation(nextYaw, false, nextPitch, false);
+	}
+
+	/** The angle one mouse count turns, like the game's mouse handling. */
+	private static double mouseStep(Minecraft client) {
+		double sensitivity = client.options == null ? 0.5 : client.options.sensitivity().get();
+		double f = sensitivity * 0.6 + 0.2;
+		return Math.max(1.0E-4, f * f * f * 8.0 * 0.15);
+	}
+
+	/**
+	 * Of the points within {@code range} degrees, the spot you can see that is closest to your
+	 * crosshair: the middle or the sides of a face that looks at you and isn't covered by
+	 * another block. Null when no point is in range or visible.
+	 */
+	private static Vec3 bestSpot(Minecraft client, LocalPlayer player, Vec3 eye, Vec3 look, double range) {
+		List<double[]> spots = new ArrayList<>();
+		BlockPos.MutableBlockPos next = new BlockPos.MutableBlockPos();
 		for (BlockPos pos : live) {
 			Vec3 center = Vec3.atCenterOf(pos);
-			Vec3 to = center.subtract(eye);
-			double dist = to.length();
+			double dist = center.distanceTo(eye);
 			if (dist > RANGE || dist < 1.0) {
 				continue;
 			}
-			double angle = Math.toDegrees(Math.acos(Mth.clamp(look.dot(to.scale(1.0 / dist)), -1.0, 1.0)));
-			if (angle > bestAngle) {
-				continue;
+			for (Direction face : Direction.values()) {
+				Vec3 normal = Vec3.atLowerCornerOf(face.getUnitVec3i());
+				Vec3 mid = center.add(normal.scale(0.499));
+				if (mid.subtract(eye).dot(normal) >= 0) {
+					// Faces away from you.
+					continue;
+				}
+				next.setWithOffset(pos, face);
+				net.minecraft.world.level.block.state.BlockState there = client.level.getBlockState(next);
+				if (net.minecraft.world.level.block.Block.isFaceFull(there.getCollisionShape(client.level, next), face.getOpposite())) {
+					// Covered by the block next to it.
+					continue;
+				}
+				// The middle and four spots toward the edges, so a half hidden face still counts.
+				Direction.Axis[] across = acrossAxes(face.getAxis());
+				double[][] offsets = {{0, 0}, {0.3, 0}, {-0.3, 0}, {0, 0.3}, {0, -0.3}};
+				for (double[] o : offsets) {
+					Vec3 spot = mid.add(axis(across[0], o[0])).add(axis(across[1], o[1]));
+					Vec3 to = spot.subtract(eye);
+					double angle = Math.toDegrees(Math.acos(Mth.clamp(look.dot(to.normalize()), -1.0, 1.0)));
+					if (angle <= range) {
+						spots.add(new double[] {angle, spot.x, spot.y, spot.z, pos.getX(), pos.getY(), pos.getZ()});
+					}
+				}
 			}
-			// Only points you could warp to from here: nothing in between.
-			BlockHitResult hit = ray(client, player, to.scale(1.0 / dist));
-			if (hit.getType() != HitResult.Type.BLOCK || !hit.getBlockPos().equals(pos)) {
-				continue;
+		}
+		spots.sort((a, b) -> Double.compare(a[0], b[0]));
+		// The first one with nothing in the way.
+		for (double[] spot : spots) {
+			Vec3 at = new Vec3(spot[1], spot[2], spot[3]);
+			BlockHitResult hit = ray(client, player, at.subtract(eye).normalize());
+			if (hit.getType() == HitResult.Type.BLOCK && hit.getBlockPos().getX() == (int) spot[4]
+				&& hit.getBlockPos().getY() == (int) spot[5] && hit.getBlockPos().getZ() == (int) spot[6]) {
+				return at;
 			}
-			best = pos;
-			bestAngle = angle;
 		}
-		if (best == null) {
-			return;
-		}
-		SmoothRotate.Rotation want = SmoothRotate.to(eye, Vec3.atCenterOf(best));
-		float yaw = player.getYRot();
-		float pitch = player.getXRot();
-		// Speed 1-100: how much of the way it moves each second (exponential, so it eases in).
-		float k = 1f - (float) Math.exp(-config.etherwarpAimSpeed * 0.25f * dt);
-		float nextYaw = yaw + SmoothRotate.normalizeYaw(want.yaw() - yaw) * k;
-		float nextPitch = pitch + (want.pitch() - pitch) * k;
-		SmoothRotate.apply(player, nextYaw, nextPitch);
+		return null;
+	}
+
+	private static Direction.Axis[] acrossAxes(Direction.Axis axis) {
+		return switch (axis) {
+			case X -> new Direction.Axis[] {Direction.Axis.Y, Direction.Axis.Z};
+			case Y -> new Direction.Axis[] {Direction.Axis.X, Direction.Axis.Z};
+			case Z -> new Direction.Axis[] {Direction.Axis.X, Direction.Axis.Y};
+		};
+	}
+
+	private static Vec3 axis(Direction.Axis axis, double amount) {
+		return switch (axis) {
+			case X -> new Vec3(amount, 0, 0);
+			case Y -> new Vec3(0, amount, 0);
+			case Z -> new Vec3(0, 0, amount);
+		};
 	}
 
 	// ------------------------------------------------------------------ edit
