@@ -1,21 +1,18 @@
-name: Build and Notify Discord
+name: Discord
 
-on: [push, pull_request]
+on: push
 
 jobs:
-  build:
+  notify:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-
-      - name: Run your build or tests
-        run: echo "Running build steps..."
-
-      # Sends the embed even if previous steps fail
-      - name: Discord Notification
-        if: always()
-        uses: sarisia/actions-status-discord@v1
-        with:
-          webhook: ${{ secrets.DISCORD_WEBHOOK }}
-          title: "Workflow Run: ${{ github.workflow }}"
-          description: "Triggered by **${{ github.actor }}** on branch `${{ github.ref_name }}`"
+      # Hand the push to Discord's GitHub endpoint so it shows like the native integration:
+      # "[Stray:branch] N new commits" with one line per commit.
+      - name: Post push to Discord
+        env:
+          WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+        run: |
+          curl -fsS -X POST "${WEBHOOK%/}/github" \
+            -H "Content-Type: application/json" \
+            -H "X-GitHub-Event: push" \
+            --data-binary @"$GITHUB_EVENT_PATH"
