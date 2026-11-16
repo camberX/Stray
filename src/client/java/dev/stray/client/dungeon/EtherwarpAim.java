@@ -99,6 +99,13 @@ public final class EtherwarpAim {
 		aimed = null;
 	}
 
+	/** Starts the route of the room you are in over from its first point. */
+	public static void resetRoute() {
+		next = 0;
+		clicked = null;
+		aimed = null;
+	}
+
 	/** The point to warp to next, or null when there is none (no points, or the route is done). */
 	public static BlockPos target() {
 		return next >= 0 && next < live.size() ? live.get(next) : null;

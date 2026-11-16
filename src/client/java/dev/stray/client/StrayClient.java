@@ -394,6 +394,12 @@ public final class StrayClient implements ClientModInitializer {
 						}
 						return Command.SINGLE_SUCCESS;
 					})));
+				// /stray etherwarp reset: start this room's etherwarp route over from point 1.
+				root.then(ClientCommands.literal("etherwarp").then(ClientCommands.literal("reset").executes(context -> {
+					dev.stray.client.dungeon.EtherwarpAim.resetRoute();
+					context.getSource().sendFeedback(Component.literal("§bStray §7etherwarp route reset: next is point §f1"));
+					return Command.SINGLE_SUCCESS;
+				})));
 				root.then(ClientCommands.literal("autohotbar").executes(context -> {
 					Minecraft mc = Minecraft.getInstance();
 					mc.execute(() -> mc.gui.setScreen(new dev.stray.client.ui.AutoHotbarScreen(mc.gui.screen())));

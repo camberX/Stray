@@ -57,10 +57,12 @@ public class EtherwarpAimScreen extends SubScreen {
 		int here = EtherwarpAim.count();
 		DungeonRooms.Room room = DungeonRooms.current();
 		String place = room == null ? "Not in a room" : room.name();
-		text(fit(place, lw - 90f), x, ly, BUTTON, MUTED);
+		text(fit(place, lw - 170f), x, ly, BUTTON, MUTED);
 		String clear = here == 0 ? "No points" : "Clear " + here;
 		float cw = buttonWidth(clear);
 		button(clear, x + lw - cw, ly, cw, Style.DANGER, here == 0 ? null : EtherwarpAim::clearHere);
+		float rw = buttonWidth("Restart");
+		button("Restart", x + lw - cw - GAP - rw, ly, rw, Style.SECONDARY, here == 0 ? null : EtherwarpAim::resetRoute);
 		ly += BUTTON;
 
 		// The preview on the right.
