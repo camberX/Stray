@@ -44,6 +44,13 @@ loom {
 			sourceSet(sourceSets["client"])
 		}
 	}
+
+	// Loom only makes IDE run configs for the root project; every version node is a
+	// subproject here, so ask for them: "Minecraft Client (:26.3)" etc., run dir versions/<mc>/run.
+	runConfigs.configureEach {
+		ideConfigGenerated(true)
+		runDir("run")
+	}
 }
 
 sourceSets.named("client") {
