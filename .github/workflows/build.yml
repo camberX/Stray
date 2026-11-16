@@ -152,12 +152,21 @@ jobs:
         mcs = sorted(d for d in os.listdir("versions") if os.path.isdir(os.path.join("versions", d)))
         title = f"Stray Legit {version}" if os.environ["LEGIT_ONLY"] == "true" else f"Stray {version}"
         text = "\n".join("• " + l for l in lines)
+        newest = sorted(mcs, key=lambda v: [int(p) for p in v.split(".")], reverse=True)
+        def link(label, mc, legit):
+            url = f"https://stray.gay/download?mc={mc}&v={version}" + ("&edition=legit" if legit else "")
+            return f"[{label} {mc}]({url})"
+        rows = []
+        if os.environ["LEGIT_ONLY"] != "true":
+            rows.append(" · ".join(link("Cheat", mc, False) for mc in newest))
+        rows.append(" · ".join(link("Legit", mc, True) for mc in newest))
         embed = {
             "title": title,
             "url": "https://stray.gay",
             "description": text[:4000],
             "color": 0xEEF1F5,
-            "footer": {"text": "Minecraft " + ", ".join(mcs) + " · updates itself in game"},
+            "fields": [{"name": "Download", "value": "\n".join(rows)[:1024]}],
+            "footer": {"text": "Minecraft " + ", ".join(newest) + " · updates itself in game"},
         }
         req = urllib.request.Request(os.environ["WEBHOOK"], data=json.dumps({"embeds": [embed]}).encode(),
                                      headers={"Content-Type": "application/json", "User-Agent": "stray-release"})
