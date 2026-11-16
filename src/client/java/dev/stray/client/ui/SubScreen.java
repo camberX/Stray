@@ -88,10 +88,6 @@ public abstract class SubScreen extends Screen {
 	/** Draws the window's content from ({@code x}, {@code y}), {@code w} wide; returns the bottom. */
 	protected abstract float body(float x, float y, float w);
 
-	/** The small caps line under the title (a count, a place), or null. */
-	protected String subtitle() {
-		return null;
-	}
 
 	/** Enter in a field. */
 	protected void submit() {
@@ -154,7 +150,7 @@ public abstract class SubScreen extends Screen {
 		float x = windowX + PAD;
 		float w = windowW - PAD * 2f;
 		header(x, windowY + PAD - 2f, w);
-		bodyTop = windowY + PAD + 36f;
+		bodyTop = windowY + PAD + 28f;
 		float bottom = body(x, bodyTop, w);
 		// The window fits what was drawn (next frame), within the screen.
 		windowH = Mth.clamp(bottom - windowY + PAD, 80f, Math.max(80f, height - PAD * 2f));
@@ -162,10 +158,6 @@ public abstract class SubScreen extends Screen {
 
 	private void header(float x, float y, float w) {
 		GuiDraw.text(graphics, font, MenuFont.shadowTitle(getTitle().getString()), x, y + 2f, 1f, WHITE, false);
-		String sub = subtitle();
-		if (sub != null && !sub.isEmpty()) {
-			GuiDraw.small(graphics, font, sub.toUpperCase(java.util.Locale.ROOT), x, y + 18f, MUTED);
-		}
 		float size = 20f;
 		float cx = x + w - size + 4f;
 		float cy = y - 2f;
@@ -182,7 +174,7 @@ public abstract class SubScreen extends Screen {
 	 * the window reaches the screen edges. Lists use it to fit small screens and big GUI scales.
 	 */
 	protected float room(float y, float after) {
-		float fullTop = PAD + PAD + 36f;
+		float fullTop = PAD + PAD + 28f;
 		float fullBottom = height - PAD - PAD;
 		return fullBottom - (fullTop + (y - bodyTop)) - after;
 	}
@@ -249,6 +241,9 @@ public abstract class SubScreen extends Screen {
 
 	/** A muted line of help (or an error in red); returns the next y. */
 	protected float hint(String value, float x, float y, float w, boolean error) {
+		if (value == null || value.isBlank()) {
+			return y;
+		}
 		GuiDraw.small(graphics, font, TextFit.small(font, value, (int) w), x, y, error ? DANGER : MUTED);
 		return y + 12f;
 	}

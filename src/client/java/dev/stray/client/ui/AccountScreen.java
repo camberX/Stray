@@ -54,11 +54,6 @@ public class AccountScreen extends SubScreen {
 		}
 	}
 
-	@Override
-	protected String subtitle() {
-		String current = AccountStore.currentName();
-		return current.isBlank() ? "switch without restarting" : "playing as " + current;
-	}
 
 	@Override
 	protected float body(float x, float y, float w) {
@@ -108,7 +103,7 @@ public class AccountScreen extends SubScreen {
 		}
 		String lower = note.toLowerCase(Locale.ROOT);
 		boolean error = lower.contains("fail") || lower.contains("error") || lower.contains("couldn");
-		y = hint(note.isBlank() ? "Double click an account to switch · the star pins it on top" : note, x, y + 2f, w, error) + 6f;
+		y = hint(note, x, y + 2f, w, error) + 8f;
 		boolean picked = selectedIndex() >= 0;
 		return buttons(x, y, w,
 			new Object[][] {{"Remove", Style.DANGER, picked ? (Runnable) this::removeSelected : null}},

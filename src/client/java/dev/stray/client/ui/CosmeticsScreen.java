@@ -60,10 +60,6 @@ public final class CosmeticsScreen extends SubScreen {
 		CosmeticsApi.refresh();
 	}
 
-	@Override
-	protected String subtitle() {
-		return "only players with Stray see these";
-	}
 
 	@Override
 	public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float delta) {
@@ -96,7 +92,7 @@ public final class CosmeticsScreen extends SubScreen {
 		});
 		y += h + 4f;
 		String status = CosmeticsApi.status();
-		return hint(status.isBlank() ? "Changes save on their own" : status, x, y + 2f, w, false);
+		return hint(status, x, y + 2f, w, false);
 	}
 
 	// ------------------------------------------------------------------ preview
@@ -165,7 +161,7 @@ public final class CosmeticsScreen extends SubScreen {
 
 	/** A cosmetic's card: title, a note on the right, then {@code bodyH} of controls. Returns the body's y. */
 	private float card(String id, String title, String note, float x, float y, float w, float bodyH) {
-		float h = 30f + bodyH + CARD_PAD;
+		float h = bodyH <= 0f ? 30f : 30f + bodyH + CARD_PAD;
 		if (hovered(x, y, w, h) && !draggingModel) {
 			focus = id;
 		}
@@ -179,7 +175,7 @@ public final class CosmeticsScreen extends SubScreen {
 	}
 
 	private float end(float y, float bodyH) {
-		return y + 30f + bodyH + CARD_PAD + 6f;
+		return y + (bodyH <= 0f ? 30f : 30f + bodyH + CARD_PAD) + 6f;
 	}
 
 	private float note(String value, float x, float y, float w) {
@@ -202,22 +198,22 @@ public final class CosmeticsScreen extends SubScreen {
 			button("Remove", bx, y, Style.DANGER, CosmeticsApi::removeSkin);
 		}
 		String limit = mine.skinRetry() > 0 ? "Next upload in " + mine.skinRetry() + "s" : mine.skinLeft() + " uploads left today";
-		note("64x64 PNG; your real skin stays the same. " + limit + ".", x, y + BUTTON + 4f, w);
+		note(limit, x, y + BUTTON + 4f, w);
 		return end(top, bodyH);
 	}
 
 	private float capeCard(CosmeticsApi.Mine mine, float x, float y, float w) {
 		float top = y;
 		if (!mine.whitelisted()) {
-			y = card("cape", "Cape", "Not on the cape list", x, y, w, 12f);
-			note("Capes are given out on stray.gay.", x, y, w);
-			return end(top, 12f);
+			y = card("cape", "Cape", "Not on the cape list", x, y, w, 0f);
+			return end(top, 0f);
 		}
 		String sub = mine.hasCape() ? "Live" : "No cape yet";
 		if (mine.capeRetry() > 0) {
 			sub += " · change in " + duration(mine.capeRetry());
 		}
-		float bodyH = BUTTON + 4f + 12f;
+		String status = ShopCape.publishStatus();
+		float bodyH = BUTTON + (status.isBlank() ? 0f : 4f + 12f);
 		y = card("cape", "Cape", sub, x, y, w, bodyH);
 		float bx = x + CARD_PAD;
 		bx += button("Cape creator", bx, y, Style.SECONDARY, CustomCape::pickCreate) + GAP;
@@ -239,17 +235,17 @@ public final class CosmeticsScreen extends SubScreen {
 				CosmeticsApi.refresh();
 			});
 		}
-		String status = ShopCape.publishStatus();
-		note(status.isBlank() ? "Make a cape from any image, then publish it." : status, x, y + BUTTON + 4f, w);
+		if (!status.isBlank()) {
+			note(status, x, y + BUTTON + 4f, w);
+		}
 		return end(top, bodyH);
 	}
 
 	private float wingsCard(CosmeticsApi.Mine mine, float x, float y, float w) {
 		float top = y;
 		if (!mine.wingsGranted()) {
-			y = card("wings", "Wings", "Not unlocked", x, y, w, 12f);
-			note("Wings are given out on stray.gay.", x, y, w);
-			return end(top, 12f);
+			y = card("wings", "Wings", "Not unlocked", x, y, w, 0f);
+			return end(top, 0f);
 		}
 		boolean hidden = currentBool("wings", "hidden", mine.wingsHidden());
 		String style = currentText("wings", "style", mine.wingsStyle());
@@ -267,7 +263,7 @@ public final class CosmeticsScreen extends SubScreen {
 			run += cw;
 		}
 		float chipsH = lines * 21f - 3f;
-		float bodyH = chipsH + 6f + 14f + 4f + 12f;
+		float bodyH = chipsH + 6f + 14f;
 		y = card("wings", "Wings", hidden ? "Hidden" : "Showing", x, y, w, bodyH);
 		float cx = x + CARD_PAD;
 		float cy = y;
@@ -302,16 +298,14 @@ public final class CosmeticsScreen extends SubScreen {
 			hit(sx, sy, size, size, () -> CosmeticsApi.change("wings", "rgb", new JsonPrimitive(hex)));
 			sx += size + 5f;
 		}
-		note("Everyone with Stray sees it straight away.", x, sy + size + 4f, w);
 		return end(top, bodyH);
 	}
 
 	private float chestCard(CosmeticsApi.Mine mine, float x, float y, float w) {
 		float top = y;
 		if (!mine.chestGranted()) {
-			y = card("chest", "Chest", "Not unlocked", x, y, w, 12f);
-			note("Given out on stray.gay.", x, y, w);
-			return end(top, 12f);
+			y = card("chest", "Chest", "Not unlocked", x, y, w, 0f);
+			return end(top, 0f);
 		}
 		boolean hidden = currentBool("chest", "hidden", mine.chestHidden());
 		float size = currentFloat("chest", "size", mine.chestSize());

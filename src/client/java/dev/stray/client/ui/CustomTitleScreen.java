@@ -19,10 +19,6 @@ public class CustomTitleScreen extends SubScreen {
 		CustomTitle.normalize(StrayConfig.get());
 	}
 
-	@Override
-	protected String subtitle() {
-		return StrayConfig.get().customTitles.size() + " of " + CustomTitle.MAX + " · chat to title";
-	}
 
 	@Override
 	protected void save() {
@@ -36,8 +32,6 @@ public class CustomTitleScreen extends SubScreen {
 		if (editing >= config.customTitles.size()) {
 			editing = -1;
 		}
-		y = hint("A chat line containing the text shows the title. The first match wins.", x, y + 2f, w, false);
-		y = divider(x, y, w);
 
 		List<StrayConfig.CustomTitleRule> rows = config.customTitles;
 		y = section("Titles", x, y);
@@ -71,7 +65,7 @@ public class CustomTitleScreen extends SubScreen {
 		float labelW = labelColumn("Chat", "Title");
 		y = field(trigger, "Chat", labelW, x, y, w) + GAP;
 		y = field(title, "Title", labelW, x, y, w) + 4f;
-		y = hint("Enter adds · Tab switches fields · & codes and &#RRGGBB", x, y + 2f, w, false) + 6f;
+		y += 8f;
 		return buttons(x, y, w,
 			new Object[][] {{editing >= 0 ? "New" : "Clear", Style.SECONDARY, (Runnable) this::clearFields}},
 			new Object[][] {{"Done", Style.SECONDARY, (Runnable) this::onClose}, {editing >= 0 ? "Save" : "Add", Style.PRIMARY, (Runnable) this::submit}});

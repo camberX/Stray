@@ -31,10 +31,6 @@ public class CommandKeysScreen extends SubScreen {
 		CommandKeys.normalize(StrayConfig.get());
 	}
 
-	@Override
-	protected String subtitle() {
-		return StrayConfig.get().commandKeys.size() + " of " + CommandKeys.MAX + " · key to command";
-	}
 
 	@Override
 	protected void save() {
@@ -92,10 +88,7 @@ public class CommandKeysScreen extends SubScreen {
 			error = "";
 		}) + GAP;
 		y = field(command, "Run /", labelW, x, y, w) + 4f;
-		String help = !error.isEmpty() ? error
-			: listening ? "Press a key or mouse button · Esc clears"
-			: "Enter adds · runs when you press the key in game";
-		y = hint(help, x, y + 2f, w, !error.isEmpty()) + 6f;
+		y = hint(error, x, y + 2f, w, true) + 8f;
 		return buttons(x, y, w,
 			new Object[][] {{editing >= 0 ? "New" : "Clear", Style.SECONDARY, (Runnable) this::clearFields}},
 			new Object[][] {{"Done", Style.SECONDARY, (Runnable) this::onClose}, {editing >= 0 ? "Save" : "Add", Style.PRIMARY, (Runnable) this::submit}});

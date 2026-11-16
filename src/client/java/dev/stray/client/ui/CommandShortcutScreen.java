@@ -16,10 +16,6 @@ public class CommandShortcutScreen extends SubScreen {
 		CommandShortcuts.normalize(StrayConfig.get());
 	}
 
-	@Override
-	protected String subtitle() {
-		return StrayConfig.get().commandShortcuts.size() + " of " + CommandShortcuts.MAX + " · chat aliases";
-	}
 
 	@Override
 	protected void save() {
@@ -34,7 +30,6 @@ public class CommandShortcutScreen extends SubScreen {
 			config.commandShortcutsPassArgs = v;
 			config.save();
 		});
-		y = hint(config.commandShortcutsPassArgs ? "/alias extra keeps \"extra\" after the command" : "/alias extra drops \"extra\"", x, y + 2f, w, false);
 		y = divider(x, y, w);
 
 		List<StrayConfig.CommandShortcut> rows = config.commandShortcuts;
@@ -65,7 +60,7 @@ public class CommandShortcutScreen extends SubScreen {
 		float labelW = labelColumn("Alias", "Run");
 		y = field(alias, "Alias", labelW, x, y, w) + GAP;
 		y = field(command, "Run", labelW, x, y, w) + 4f;
-		y = hint("Enter adds · Tab switches fields · Tab in chat completes", x, y + 2f, w, false) + 6f;
+		y += 8f;
 		return buttons(x, y, w,
 			new Object[][] {{"Clear", Style.SECONDARY, (Runnable) this::clearFields}},
 			new Object[][] {{"Done", Style.SECONDARY, (Runnable) this::onClose}, {"Add", Style.PRIMARY, (Runnable) this::submit}});

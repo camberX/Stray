@@ -39,11 +39,6 @@ public class AutoHotbarScreen extends SubScreen {
 		}
 	}
 
-	@Override
-	protected String subtitle() {
-		int count = AutoHotbar.setup().triggers.size();
-		return count + (count == 1 ? " trigger" : " triggers") + " · items to slots on a chat message";
-	}
 
 	@Override
 	protected void save() {
@@ -88,19 +83,16 @@ public class AutoHotbarScreen extends SubScreen {
 				}
 				AutoHotbar.save();
 			}) - 8f;
-			int count = setup.rules.getOrDefault(key, List.of()).size();
-			String items = count + (count == 1 ? " item" : " items");
-			// Name on top, the message under it.
-			GuiDraw.text(graphics, font, MenuFont.shadow(fit(key, right - rx - 8f - textWidth(items) - 8f)), rx + 8f, ry + 4f, on ? TEXT : MUTED, false);
-			GuiDraw.small(graphics, font, items, right - GuiDraw.smallWidth(font, items), ry + 3f, FAINT);
-			GuiDraw.small(graphics, font, dev.stray.client.util.TextFit.small(font, rows.get(i).getValue(), (int) (right - rx - 8f)), rx + 8f, ry + 15f, FAINT);
+			// Name over the message, the pair centred in the row (capitals measured on the fonts).
+			GuiDraw.text(graphics, font, MenuFont.shadow(fit(key, right - rx - 8f)), rx + 8f, ry + 5f, on ? TEXT : MUTED, false);
+			GuiDraw.small(graphics, font, dev.stray.client.util.TextFit.small(font, rows.get(i).getValue(), (int) (right - rx - 8f)), rx + 8f, ry + 11f, FAINT);
 			hit(rx, ry, right - rx, rh, () -> select(key));
 		});
 		y += 4f + GAP;
 		float labelW = labelColumn("Name", "Message");
 		y = field(name, "Name", labelW, x, y, w) + GAP;
 		y = field(message, "Message", labelW, x, y, w) + 4f;
-		y = hint("Enter saves · the message must match the chat line exactly", x, y + 2f, w, false) + 6f;
+		y += 8f;
 		return buttons(x, y, w,
 			new Object[][] {{"New", Style.SECONDARY, (Runnable) this::newTrigger}},
 			new Object[][] {{"Done", Style.SECONDARY, (Runnable) this::onClose}, {selected == null ? "Add" : "Save", Style.PRIMARY, (Runnable) this::submit}});
@@ -141,9 +133,9 @@ public class AutoHotbarScreen extends SubScreen {
 			noteHover(stack, cx, hy);
 		}
 		y = hy + CELL + 8f;
-		String help = !picked.isEmpty() ? "Now click the hotbar slot for " + picked.getHoverName().getString()
+		String help = !picked.isEmpty() ? picked.getHoverName().getString()
 			: !hovered.isEmpty() ? hovered.getHoverName().getString()
-			: "Click an item, then a hotbar slot. A hotbar slot alone clears it.";
+			: "";
 		return hint(help, x, y, w, false);
 	}
 

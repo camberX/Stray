@@ -28,10 +28,6 @@ public class BlockMarkEditScreen extends SubScreen {
 		this.icon.set(icon == null ? "" : icon);
 	}
 
-	@Override
-	protected String subtitle() {
-		return pos.getX() + " " + pos.getY() + " " + pos.getZ();
-	}
 
 	@Override
 	protected float body(float x, float y, float w) {
@@ -68,7 +64,7 @@ public class BlockMarkEditScreen extends SubScreen {
 			}
 			y -= 3f;
 		}
-		y = hint("Enter saves · Tab switches or completes · Esc cancels", x, y + GAP + 2f, w, false) + 6f;
+		y += GAP + 8f;
 		return buttons(x, y, w,
 			new Object[][] {{"Delete", Style.DANGER, (Runnable) () -> {
 				BlockMarks.remove(pos);

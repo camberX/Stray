@@ -22,7 +22,6 @@ public class ItemEditScreen extends SubScreen {
 	private final Input query = input("item-edit", 128, "minecraft: or sb:");
 	private ItemIds.Preview preview = ItemIds.Preview.empty();
 	private List<String> suggestions = List.of();
-	private String status = "";
 
 	public ItemEditScreen() {
 		super("Item", null, 300);
@@ -43,10 +42,6 @@ public class ItemEditScreen extends SubScreen {
 		refresh();
 	}
 
-	@Override
-	protected String subtitle() {
-		return "held item look · your client only";
-	}
 
 	@Override
 	protected float body(float x, float y, float w) {
@@ -98,13 +93,9 @@ public class ItemEditScreen extends SubScreen {
 			}
 			y -= 3f;
 		}
-		String help = !status.isBlank() ? status
-			: suggestions.isEmpty() && query.get().isBlank() ? "Type Hyperion, sb:HYPERION or minecraft:stone"
-			: "Tab takes the first suggestion · Esc closes";
-		y = hint(help, x, y + GAP + 2f, w, false) + 6f;
+		y += GAP + 8f;
 		return buttons(x, y, w,
 			new Object[][] {{"Reset", Style.SECONDARY, (Runnable) () -> {
-				status = "";
 				apply(originalId);
 			}}},
 			new Object[][] {{"Done", Style.PRIMARY, (Runnable) this::onClose}});
@@ -161,7 +152,6 @@ public class ItemEditScreen extends SubScreen {
 		}
 		if (preview.kind() == ItemIds.Kind.VANILLA || preview.kind() == ItemIds.Kind.SKYBLOCK) {
 			ItemAppearance.set(client.player, live, preview.stack(), preview.canonical());
-			status = "Showing " + preview.title();
 		}
 	}
 

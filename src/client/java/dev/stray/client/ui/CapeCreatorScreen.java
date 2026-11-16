@@ -67,10 +67,6 @@ public class CapeCreatorScreen extends SubScreen {
 		super.onClose();
 	}
 
-	@Override
-	protected String subtitle() {
-		return "crop an image onto your cape";
-	}
 
 	@Override
 	protected float body(float x, float y, float w) {
@@ -104,7 +100,7 @@ public class CapeCreatorScreen extends SubScreen {
 		int rh = Math.min(Math.max(1, Math.round(crop.h * srcH)), srcH - rv);
 		GuiDraw.blit(graphics, SOURCE_ID, px + 4f, py + 4f, PREVIEW_W - 8f, PREVIEW_H - 8f, ru, rv, rw, rh, srcW, srcH);
 
-		y = hint("Drag to pan · scroll to zoom · Enter applies", x, y + STAGE_H + GAP, w, false) + 6f;
+		y += STAGE_H + GAP + 6f;
 		return buttons(x, y, w,
 			new Object[][] {{"Reset", Style.SECONDARY, (Runnable) () -> crop = CapeCrop.cover(srcW, srcH)}},
 			new Object[][] {{"Cancel", Style.SECONDARY, (Runnable) this::onClose}, {"Apply cape", Style.PRIMARY, (Runnable) this::submit}});
