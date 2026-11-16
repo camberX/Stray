@@ -15,6 +15,12 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.6.1", new String[]{
+			"New look for the older menus: Auto hotbar, Command keys, Shortcuts, Titles, Block marks, Item look, Accounts, Cosmetics and the Cape creator now share the Shadow style, with centered text and no extra help lines. The HUD editor, CS2 knife and Customize windows got the same window style.",
+			"Click GUI: the switch beside a feature's name in its settings is gone (the feature card already turns it on and off), and so are the repeated Glow ESP and Robot parts switches.",
+			"Auto leap and Fast leap (not in Stray Legit): the leap now goes through exactly the way quoi does it, so it no longer waits for a right click after a terminal.",
+			"Shared customize: every customized piece is shared up front, so other Stray users see your armor straight away when you swap sets."
+		}),
 		new Entry("1.6.0", new String[]{
 			"Shared customize: /st customize has a Share button (off by default). With it on, other Stray users see the custom dyes and head skins of the armor you wear.",
 			"Hide other names: names the scoreboard cuts short (UltraCharge0) are hidden too, and Hypixel's NPCs, dungeon room names and M7 dragons are no longer treated as player names. /stray debug dev othername why <word> tells you why a word is swapped.",
