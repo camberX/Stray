@@ -434,14 +434,8 @@ public final class ShadowMenu {
 		int mark = screen.clickHitMark();
 		try {
 			float top = y - setScroll + lift;
-			bigText(graphics, font, fitTitle(font, ClickGui.display(mod.name()), w - 40f), x, top + 2f, 1f, Anim.fade(WHITE, st));
+			bigText(graphics, font, fitTitle(font, ClickGui.display(mod.name()), w), x, top + 2f, 1f, Anim.fade(WHITE, st));
 			label(graphics, font, ClickGui.display(mod.column()).toUpperCase(java.util.Locale.ROOT), x, top + 18f, Anim.fade(ShadowLook.FAINT, st));
-			if (!mod.hold()) {
-				float k = approachIn(knob, "set:" + mod.name(), mod.on().getAsBoolean() ? 1f : 0f, 16f);
-				float sx = x + w - 24f;
-				toggle(graphics, sx, top + 4f, 24f, 12f, k, st);
-				screen.clickHit(sx - 2f, top + 2f, 28f, 16f, () -> ClickGui.toggle(mod));
-			}
 			float by = top + 34f;
 			if (ClickGui.moduleHasSettings(mod) && st > 0.06f) {
 				contentAlpha = st;
