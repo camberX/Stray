@@ -150,7 +150,7 @@ public abstract class SubScreen extends Screen {
 		float x = windowX + PAD;
 		float w = windowW - PAD * 2f;
 		header(x, windowY + PAD - 2f, w);
-		bodyTop = windowY + PAD + 28f;
+		bodyTop = windowY + PAD + 20f;
 		float bottom = body(x, bodyTop, w);
 		// The window fits what was drawn (next frame), within the screen.
 		windowH = Mth.clamp(bottom - windowY + PAD, 80f, Math.max(80f, height - PAD * 2f));
@@ -174,7 +174,7 @@ public abstract class SubScreen extends Screen {
 	 * the window reaches the screen edges. Lists use it to fit small screens and big GUI scales.
 	 */
 	protected float room(float y, float after) {
-		float fullTop = PAD + PAD + 28f;
+		float fullTop = PAD + PAD + 20f;
 		float fullBottom = height - PAD - PAD;
 		return fullBottom - (fullTop + (y - bodyTop)) - after;
 	}
@@ -414,9 +414,11 @@ public abstract class SubScreen extends Screen {
 		float room = x + w - 10f - textX;
 		boolean empty = in.value.isEmpty();
 		if (empty && !focus) {
-			text(fit(in.placeholder, room), textX, y, FIELD, FAINT);
+			String hint = fit(in.placeholder, room);
+			text(hint, centred(textX, room, hint), y, FIELD, FAINT);
 		} else if (in.display != null) {
 			String shown = fit(in.display.apply(in.value), room);
+			textX = centred(textX, room, shown);
 			text(shown, textX, y, FIELD, TEXT);
 			if (focus && !TextKeys.isSelected(in.key) && ((System.currentTimeMillis() - blinkAt) / 530) % 2 == 0) {
 				GuiDraw.fill(graphics, textX + textWidth(shown), y + 6f, 1f, FIELD - 12f, WHITE);
@@ -424,6 +426,7 @@ public abstract class SubScreen extends Screen {
 		} else {
 			String shown = clipAroundCaret(in.value, focus ? in.cursor : in.value.length(), room);
 			int from = in.value.indexOf(shown);
+			textX = centred(textX, room, shown);
 			text(shown, textX, y, FIELD, TEXT);
 			if (focus && !TextKeys.isSelected(in.key) && ((System.currentTimeMillis() - blinkAt) / 530) % 2 == 0) {
 				int caret = Mth.clamp(in.cursor - Math.max(0, from), 0, shown.length());
@@ -435,6 +438,11 @@ public abstract class SubScreen extends Screen {
 		return y + FIELD;
 	}
 
+	/** Where {@code value} starts to sit centred in {@code room} from {@code start}; the start when it fills it. */
+	private float centred(float start, float room, String value) {
+		return start + Math.max(0f, (room - textWidth(value)) * 0.5f);
+	}
+
 	/** A field-shaped box with any text (a key capture, a picker); returns the next y. */
 	protected float valueBox(String label, float labelW, String value, int color, boolean active, float x, float y, float w, Runnable click) {
 		box(x, y, w, active, hovered(x, y, w, FIELD));
@@ -443,7 +451,9 @@ public abstract class SubScreen extends Screen {
 			text(label, textX, y, FIELD, MUTED);
 			textX += labelW;
 		}
-		text(fit(value, x + w - 10f - textX), textX, y, FIELD, color);
+		float room = x + w - 10f - textX;
+		String shown = fit(value, room);
+		text(shown, centred(textX, room, shown), y, FIELD, color);
 		hit(x, y, w, FIELD, click);
 		return y + FIELD;
 	}
