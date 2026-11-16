@@ -132,11 +132,17 @@ public final class EtherwarpAim {
 			}
 		}
 		live = world;
-		// Standing on a point: the one after it is next (also when you skip ahead or go back).
-		if (client.player.onGround()) {
-			int on = live.indexOf(client.player.getOnPos());
-			if (on >= 0) {
-				next = on + 1;
+		// On (or right over) a point: the one after it is next, also when you skip ahead or go
+		// back. Measured from your feet to the top of the block, so landing a hair off its middle
+		// or a tick in the air still counts and it never aims down at where you stand.
+		Vec3 feet = client.player.position();
+		for (int i = 0; i < live.size(); i++) {
+			BlockPos pos = live.get(i);
+			double dx = feet.x - (pos.getX() + 0.5);
+			double dz = feet.z - (pos.getZ() + 0.5);
+			double dy = feet.y - (pos.getY() + 1.0);
+			if (dx * dx + dz * dz < 1.0 && dy > -0.5 && dy < 1.5) {
+				next = i + 1;
 			}
 		}
 	}
@@ -317,58 +323,90 @@ public final class EtherwarpAim {
 		return Math.max(1.0E-4, f * f * f * 8.0 * 0.15);
 	}
 
+	/** Spots tested per frame at most; the closest to the crosshair are tested first. */
+	private static final int MAX_RAYS = 160;
+	/** How far from a face's middle a spot may be (a hair inside its edge). */
+	private static final double EDGE = 0.42;
+
 	/**
-	 * Of the points within {@code range} degrees, the spot you can see that is closest to your
-	 * crosshair: the middle or the sides of a face that looks at you and isn't covered by
-	 * another block. Null when no point is in range or visible.
+	 * The spot on the next point closest to your crosshair that you can actually see: on a face
+	 * that looks at you and isn't covered by the block next to it, and with nothing in front of
+	 * it. First the place on each face nearest to where you look, then a grid over the face, so
+	 * when part of a face is hidden it goes for the free part. Null when none is in range.
 	 */
 	private static Vec3 bestSpot(Minecraft client, LocalPlayer player, Vec3 eye, Vec3 look, double range) {
+		BlockPos target = target();
+		if (target == null) {
+			return null;
+		}
+		Vec3 center = Vec3.atCenterOf(target);
+		double dist = center.distanceTo(eye);
+		if (dist > RANGE || dist < 1.0) {
+			return null;
+		}
 		List<double[]> spots = new ArrayList<>();
 		BlockPos.MutableBlockPos beside = new BlockPos.MutableBlockPos();
-		BlockPos target = target();
-		for (BlockPos pos : target == null ? List.<BlockPos>of() : List.of(target)) {
-			Vec3 center = Vec3.atCenterOf(pos);
-			double dist = center.distanceTo(eye);
-			if (dist > RANGE || dist < 1.0) {
+		for (Direction face : Direction.values()) {
+			Vec3 normal = Vec3.atLowerCornerOf(face.getUnitVec3i());
+			Vec3 mid = center.add(normal.scale(0.499));
+			if (mid.subtract(eye).dot(normal) >= 0) {
+				// Faces away from you.
 				continue;
 			}
-			for (Direction face : Direction.values()) {
-				Vec3 normal = Vec3.atLowerCornerOf(face.getUnitVec3i());
-				Vec3 mid = center.add(normal.scale(0.499));
-				if (mid.subtract(eye).dot(normal) >= 0) {
-					// Faces away from you.
-					continue;
+			beside.setWithOffset(target, face);
+			net.minecraft.world.level.block.state.BlockState there = client.level.getBlockState(beside);
+			if (net.minecraft.world.level.block.Block.isFaceFull(there.getCollisionShape(client.level, beside), face.getOpposite())) {
+				// Covered by the block next to it.
+				continue;
+			}
+			Direction.Axis[] across = acrossAxes(face.getAxis());
+			// Where your view crosses this face's plane, kept on the face.
+			double denom = look.dot(normal);
+			if (denom < -1.0E-4) {
+				double t = mid.subtract(eye).dot(normal) / denom;
+				if (t > 0) {
+					Vec3 cross = eye.add(look.scale(t)).subtract(mid);
+					double u = Mth.clamp(component(cross, across[0]), -EDGE, EDGE);
+					double v = Mth.clamp(component(cross, across[1]), -EDGE, EDGE);
+					addSpot(spots, eye, look, range, mid.add(axis(across[0], u)).add(axis(across[1], v)));
 				}
-				beside.setWithOffset(pos, face);
-				net.minecraft.world.level.block.state.BlockState there = client.level.getBlockState(beside);
-				if (net.minecraft.world.level.block.Block.isFaceFull(there.getCollisionShape(client.level, beside), face.getOpposite())) {
-					// Covered by the block next to it.
-					continue;
-				}
-				// The middle and four spots toward the edges, so a half hidden face still counts.
-				Direction.Axis[] across = acrossAxes(face.getAxis());
-				double[][] offsets = {{0, 0}, {0.3, 0}, {-0.3, 0}, {0, 0.3}, {0, -0.3}};
-				for (double[] o : offsets) {
-					Vec3 spot = mid.add(axis(across[0], o[0])).add(axis(across[1], o[1]));
-					Vec3 to = spot.subtract(eye);
-					double angle = Math.toDegrees(Math.acos(Mth.clamp(look.dot(to.normalize()), -1.0, 1.0)));
-					if (angle <= range) {
-						spots.add(new double[] {angle, spot.x, spot.y, spot.z, pos.getX(), pos.getY(), pos.getZ()});
-					}
+			}
+			// A grid over the face for when that place is hidden.
+			for (int a = -3; a <= 3; a++) {
+				for (int b = -3; b <= 3; b++) {
+					addSpot(spots, eye, look, range, mid.add(axis(across[0], a * EDGE / 3.0)).add(axis(across[1], b * EDGE / 3.0)));
 				}
 			}
 		}
 		spots.sort((a, b) -> Double.compare(a[0], b[0]));
-		// The first one with nothing in the way.
+		int rays = 0;
 		for (double[] spot : spots) {
+			if (rays++ >= MAX_RAYS) {
+				break;
+			}
 			Vec3 at = new Vec3(spot[1], spot[2], spot[3]);
 			BlockHitResult hit = ray(client, player, at.subtract(eye).normalize());
-			if (hit.getType() == HitResult.Type.BLOCK && hit.getBlockPos().getX() == (int) spot[4]
-				&& hit.getBlockPos().getY() == (int) spot[5] && hit.getBlockPos().getZ() == (int) spot[6]) {
+			if (hit.getType() == HitResult.Type.BLOCK && hit.getBlockPos().equals(target)) {
 				return at;
 			}
 		}
 		return null;
+	}
+
+	private static void addSpot(List<double[]> spots, Vec3 eye, Vec3 look, double range, Vec3 spot) {
+		Vec3 to = spot.subtract(eye).normalize();
+		double angle = Math.toDegrees(Math.acos(Mth.clamp(look.dot(to), -1.0, 1.0)));
+		if (angle <= range) {
+			spots.add(new double[] {angle, spot.x, spot.y, spot.z});
+		}
+	}
+
+	private static double component(Vec3 vec, Direction.Axis axis) {
+		return switch (axis) {
+			case X -> vec.x;
+			case Y -> vec.y;
+			case Z -> vec.z;
+		};
 	}
 
 	private static Direction.Axis[] acrossAxes(Direction.Axis axis) {
