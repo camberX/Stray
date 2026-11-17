@@ -399,6 +399,17 @@ public final class StrayClient implements ClientModInitializer {
 					dev.stray.client.dungeon.EtherwarpAim.resetRoute();
 					context.getSource().sendFeedback(Component.literal("§bStray §7etherwarp route reset: next is point §f1"));
 					return Command.SINGLE_SUCCESS;
+				})).then(ClientCommands.literal("edit").executes(context -> {
+					// /stray etherwarp edit: toggles edit mode (middle click a block to add or remove a point).
+					StrayConfig config = StrayConfig.get();
+					config.etherwarpAimEdit = !config.etherwarpAimEdit;
+					config.save();
+					String text = "§bStray §7etherwarp edit mode " + (config.etherwarpAimEdit ? "§aon§7: middle click a block to add or remove a point" : "§coff");
+					if (config.etherwarpAimEdit && !config.etherwarpAim) {
+						text += "\n§7Etherwarp aim itself is off: turn it on in Dungeons, or the points won't be made.";
+					}
+					context.getSource().sendFeedback(Component.literal(text));
+					return Command.SINGLE_SUCCESS;
 				})));
 				root.then(ClientCommands.literal("autohotbar").executes(context -> {
 					Minecraft mc = Minecraft.getInstance();

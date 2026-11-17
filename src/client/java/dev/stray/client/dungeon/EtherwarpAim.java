@@ -250,6 +250,13 @@ public final class EtherwarpAim {
 	public static void beforeKeybinds(Minecraft client) {
 		LocalPlayer player = client.player;
 		StrayConfig config = StrayConfig.get();
+		// Edit mode takes the middle click here, before vanilla's pick block and before other
+		// mods that use pick block can have it.
+		if (config.etherwarpAimEdit && player != null && client.gui.screen() == null) {
+			while (client.options.keyPickItem.consumeClick()) {
+				onPick(client);
+			}
+		}
 		// Swap back the tick after the click (or when you stop aiming after a swap).
 		if (swappedFrom >= 0 && player != null) {
 			boolean done = swapBackNext && --swapBackIn <= 0
@@ -589,12 +596,17 @@ public final class EtherwarpAim {
 	/** Middle click in edit mode: add or remove the point you look at. True when used. */
 	public static boolean onPick(Minecraft client) {
 		StrayConfig config = StrayConfig.get();
-		if (!config.etherwarpAim || !config.etherwarpAimEdit || client.player == null || client.level == null || client.gui.screen() != null) {
+		if (!config.etherwarpAimEdit || client.player == null || client.level == null || client.gui.screen() != null) {
 			return false;
+		}
+		if (!config.etherwarpAim) {
+			chat("§7Edit mode is on, but §fEtherwarp aim §7itself is off: turn it on in Dungeons to add points.");
+			return true;
 		}
 		BlockHitResult hit = ray(client, client.player, client.player.getViewVector(1f));
 		if (hit.getType() != HitResult.Type.BLOCK) {
-			return false;
+			chat("§7Look at a block (within " + (int) RANGE + " blocks) to add a point.");
+			return true;
 		}
 		DungeonRooms.Room room = DungeonRooms.current();
 		String key = key(room);
@@ -616,6 +628,10 @@ public final class EtherwarpAim {
 		save();
 		tick(client);
 		client.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.NOTE_BLOCK_HAT.value(), added ? 1.4f : 0.8f, 0.6f));
+		String where = room == null ? key.replace("@", "") : room.name();
+		chat(added
+			? "§aPoint " + points.size() + " added §7in §f" + where
+			: "§cPoint removed §7in §f" + where + " §7(" + points.size() + " left)");
 		return true;
 	}
 
