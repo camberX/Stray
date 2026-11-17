@@ -69,10 +69,20 @@ public final class EtherwarpAim {
 	private static long aimedSince;
 	private static long waitMs;
 	private static long lastFrameNs;
+	public static final int STYLE_OUTLINE_FILL = 0;
+	public static final int STYLE_OUTLINE = 1;
+	public static final int STYLE_GLOW_FILL = 2;
+	public static final int STYLE_GLOW = 3;
+	private static volatile boolean glowThisFrame;
 	/** Auto swap: the slot you held before it picked the etherwarp item, or -1. */
 	private static int swappedFrom = -1;
 	private static long swappedAt;
 	private static boolean swapBackNext;
+	/** Ticks left until the swap back. */
+	private static int swapBackIn;
+	/** The last click, so a slow server answer doesn't make it click the same point again. */
+	private static long lastClickAt;
+	private static BlockPos lastClickTarget;
 	/** Turn still owed from steps smaller than one mouse count. */
 	private static float restYaw;
 	private static float restPitch;
@@ -89,6 +99,37 @@ public final class EtherwarpAim {
 	public static void init() {
 		load();
 		LevelRenderEvents.BEFORE_GIZMOS.register(context -> emitBoxes());
+		// The glow styles: the same outline post pass the terminal highlight glows with.
+		LevelRenderEvents.END_EXTRACTION.register(context -> {
+			glowThisFrame = glowing();
+			if (glowThisFrame) {
+				context.levelState().shouldShowEntityOutlines = true;
+			}
+		});
+		LevelRenderEvents.COLLECT_SUBMITS.register(context -> {
+			if (!glowThisFrame || context.poseStack() == null) {
+				return;
+			}
+			Vec3 camera = context.levelState().cameraRenderState.pos;
+			StrayConfig config = StrayConfig.get();
+			BlockPos target = target();
+			List<BlockPos> points = live;
+			context.submitNodeCollector().submitCustomGeometry(context.poseStack(),
+				net.minecraft.client.renderer.rendertype.RenderTypes.outline(net.minecraft.resources.Identifier.fromNamespaceAndPath("minecraft", "textures/block/white_concrete.png")),
+				(pose, consumer) -> {
+					for (int i = 0; i < points.size(); i++) {
+						if (!shown(i, config)) {
+							continue;
+						}
+						BlockPos pos = points.get(i);
+						int color = 0xFF000000 | ((pos.equals(target) ? config.etherwarpAimNextRgb : config.etherwarpAimRgb) & 0xFFFFFF);
+						float x = (float) (pos.getX() - camera.x);
+						float y = (float) (pos.getY() - camera.y);
+						float z = (float) (pos.getZ() - camera.z);
+						box(consumer, pose, color, x, y, z, x + 1f, y + 1f, z + 1f);
+					}
+				});
+		});
 		ClientLifecycleEvents.CLIENT_STOPPING.register(client -> save());
 	}
 
@@ -142,7 +183,7 @@ public final class EtherwarpAim {
 			next = key == null ? 0 : PROGRESS.getOrDefault(key, 0);
 		}
 		Set<BlockPos> stored = key == null ? null : SAVED.get(key);
-		if (stored == null || stored.isEmpty()) {
+		if (stored == null || stored.isEmpty() || config.etherwarpAimHideDone && secretsDone(room)) {
 			live = List.of();
 			return;
 		}
@@ -175,6 +216,15 @@ public final class EtherwarpAim {
 	 * outside known rooms the boss floor or island (points as they are). Null when they can't
 	 * be saved yet (a room whose turn isn't known, or between rooms in a run).
 	 */
+	/** In a run: the room on the map has its green check (every secret found). */
+	private static boolean secretsDone(DungeonRooms.Room room) {
+		if (room == null || !dev.stray.client.location.SkyblockLocation.inDungeon) {
+			return false;
+		}
+		dev.stray.client.dungeon.map.UniqueRoom unique = dev.stray.client.dungeon.map.DungeonScanner.UNIQUE_ROOMS.get(room.name());
+		return unique != null && unique.mainRoom != null && unique.mainRoom.state() == dev.stray.client.dungeon.map.RoomState.GREEN;
+	}
+
 	private static String key(DungeonRooms.Room room) {
 		if (room != null) {
 			return room.rotated() ? room.name() : null;
@@ -196,8 +246,8 @@ public final class EtherwarpAim {
 		StrayConfig config = StrayConfig.get();
 		// Swap back the tick after the click (or when you stop aiming after a swap).
 		if (swappedFrom >= 0 && player != null) {
-			boolean done = swapBackNext || !ready(client) || lookedAtPoint(client, player) == null
-				&& System.currentTimeMillis() - swappedAt > 400L;
+			boolean done = swapBackNext && --swapBackIn <= 0
+				|| !swapBackNext && (!ready(client) || lookedAtPoint(client, player) == null && System.currentTimeMillis() - swappedAt > 400L);
 			if (done) {
 				if (config.etherwarpAimSwapBack && swappedFrom < 9) {
 					// The same as pressing that hotbar number key.
@@ -226,7 +276,7 @@ public final class EtherwarpAim {
 			clicked = null;
 			waitMs = delay(config);
 		}
-		if (target.equals(clicked)) {
+		if (target.equals(clicked) || target.equals(lastClickTarget) && now - lastClickAt < retryWait(client)) {
 			return;
 		}
 		if (!holdingEther(player)) {
@@ -253,9 +303,27 @@ public final class EtherwarpAim {
 		}
 		clicked = target;
 		OdinClicks.rightClick();
+		lastClickAt = now;
+		lastClickTarget = target;
 		if (swappedFrom >= 0) {
 			swapBackNext = true;
+			swapBackIn = Mth.clamp(config.etherwarpAimSwapBackTicks, 1, 20);
 		}
+	}
+
+	/**
+	 * How long after a click the same point can't be clicked again: the warp shows only once the
+	 * server answers, so with ping the crosshair can still be on the point a moment later.
+	 */
+	private static long retryWait(Minecraft client) {
+		int ping = 100;
+		if (client.getConnection() != null && client.player != null) {
+			net.minecraft.client.multiplayer.PlayerInfo info = client.getConnection().getPlayerInfo(client.player.getUUID());
+			if (info != null && info.getLatency() > 0) {
+				ping = info.getLatency();
+			}
+		}
+		return Mth.clamp(ping * 2L + 350L, 500L, 2500L);
 	}
 
 	/** The hotbar slot of an item with Ether Transmission, or -1. */
@@ -424,6 +492,11 @@ public final class EtherwarpAim {
 		if (hx * hx + hz * hz < 2.25 && center.y < feet.y) {
 			return null;
 		}
+		// Keep away from the edges by what the aim can actually hit at this distance: the view
+		// only turns in whole mouse steps, so far away a spot near an edge can land just off the
+		// block. A few mouse steps of room, never more than most of the face.
+		double slack = dist * Math.tan(Math.toRadians(Math.max(0.1, mouseStep(client) * 3.0)));
+		double edge = Mth.clamp(0.5 - Math.max(0.08, slack), 0.1, EDGE);
 		List<double[]> spots = new ArrayList<>();
 		BlockPos.MutableBlockPos beside = new BlockPos.MutableBlockPos();
 		for (Direction face : Direction.values()) {
@@ -446,15 +519,15 @@ public final class EtherwarpAim {
 				double t = mid.subtract(eye).dot(normal) / denom;
 				if (t > 0) {
 					Vec3 cross = eye.add(look.scale(t)).subtract(mid);
-					double u = Mth.clamp(component(cross, across[0]), -EDGE, EDGE);
-					double v = Mth.clamp(component(cross, across[1]), -EDGE, EDGE);
+					double u = Mth.clamp(component(cross, across[0]), -edge, edge);
+					double v = Mth.clamp(component(cross, across[1]), -edge, edge);
 					addSpot(spots, eye, look, range, mid.add(axis(across[0], u)).add(axis(across[1], v)));
 				}
 			}
 			// A grid over the face for when that place is hidden.
 			for (int a = -3; a <= 3; a++) {
 				for (int b = -3; b <= 3; b++) {
-					addSpot(spots, eye, look, range, mid.add(axis(across[0], a * EDGE / 3.0)).add(axis(across[1], b * EDGE / 3.0)));
+					addSpot(spots, eye, look, range, mid.add(axis(across[0], a * edge / 3.0)).add(axis(across[1], b * edge / 3.0)));
 				}
 			}
 		}
@@ -584,10 +657,50 @@ public final class EtherwarpAim {
 			int fill = Mth.clamp(isNext ? config.etherwarpAimNextAlpha : config.etherwarpAimAlpha, 0, 255);
 			// The outline follows the opacity, a little stronger so the edges still read.
 			int line = Math.min(255, fill * 2 + 50);
-			GizmoProperties box = Gizmos.cuboid(new AABB(pos).inflate(hot || isNext ? 0.03 : 0.005),
-				GizmoStyle.strokeAndFill(hot ? 0xFFFFFFFF : line << 24 | color, isNext ? 3f : 2f, fill << 24 | color));
+			int style = config.etherwarpAimStyle;
+			boolean outline = style == STYLE_OUTLINE_FILL || style == STYLE_OUTLINE;
+			boolean filled = style == STYLE_OUTLINE_FILL || style == STYLE_GLOW_FILL;
+			AABB bounds = new AABB(pos).inflate(hot || isNext ? 0.03 : 0.005);
+			GizmoProperties box;
+			if (outline && filled) {
+				box = Gizmos.cuboid(bounds, GizmoStyle.strokeAndFill(hot ? 0xFFFFFFFF : line << 24 | color, isNext ? 3f : 2f, fill << 24 | color));
+			} else if (outline) {
+				box = Gizmos.cuboid(bounds, GizmoStyle.stroke(hot ? 0xFFFFFFFF : line << 24 | color, isNext ? 3f : 2f));
+			} else if (filled) {
+				box = Gizmos.cuboid(bounds, GizmoStyle.fill(fill << 24 | color));
+			} else {
+				// Glow only: the glow pass draws it (see glow()).
+				continue;
+			}
 			box.setAlwaysOnTop();
 		}
+	}
+
+	private static boolean glowing() {
+		StrayConfig config = StrayConfig.get();
+		Minecraft client = Minecraft.getInstance();
+		int style = config.etherwarpAimStyle;
+		return config.etherwarpAim && (style == STYLE_GLOW_FILL || style == STYLE_GLOW) && client.player != null
+			&& !live.isEmpty() && showing(client.player) && !dev.stray.client.render.TopDownCapture.offscreen();
+	}
+
+	private static void box(com.mojang.blaze3d.vertex.VertexConsumer consumer, com.mojang.blaze3d.vertex.PoseStack.Pose pose, int color,
+			float x0, float y0, float z0, float x1, float y1, float z1) {
+		quad(consumer, pose, color, x0, y0, z0, x1, y0, z0, x1, y0, z1, x0, y0, z1);
+		quad(consumer, pose, color, x0, y1, z0, x0, y1, z1, x1, y1, z1, x1, y1, z0);
+		quad(consumer, pose, color, x0, y0, z0, x0, y1, z0, x1, y1, z0, x1, y0, z0);
+		quad(consumer, pose, color, x0, y0, z1, x1, y0, z1, x1, y1, z1, x0, y1, z1);
+		quad(consumer, pose, color, x0, y0, z0, x0, y0, z1, x0, y1, z1, x0, y1, z0);
+		quad(consumer, pose, color, x1, y0, z0, x1, y1, z0, x1, y1, z1, x1, y0, z1);
+	}
+
+	private static void quad(com.mojang.blaze3d.vertex.VertexConsumer consumer, com.mojang.blaze3d.vertex.PoseStack.Pose pose, int color,
+			float x0, float y0, float z0, float x1, float y1, float z1,
+			float x2, float y2, float z2, float x3, float y3, float z3) {
+		consumer.addVertex(pose, x0, y0, z0).setUv(0f, 0f).setColor(color);
+		consumer.addVertex(pose, x1, y1, z1).setUv(1f, 0f).setColor(color);
+		consumer.addVertex(pose, x2, y2, z2).setUv(1f, 1f).setColor(color);
+		consumer.addVertex(pose, x3, y3, z3).setUv(0f, 1f).setColor(color);
 	}
 
 	/** Points show in edit mode and while you could warp: the item in hand, or in the hotbar with auto swap. */
@@ -608,7 +721,7 @@ public final class EtherwarpAim {
 		if (!config.etherwarpAim || client.player == null || client.gui.hud.isHidden()) {
 			return;
 		}
-		if (showing(client.player)) {
+		if (showing(client.player) && config.etherwarpAimNumbers) {
 			numbers(graphics, client, config);
 		}
 		if (!config.etherwarpAimEdit) {

@@ -72,12 +72,33 @@ public class EtherwarpAimScreen extends SubScreen {
 		ly = toggleRow("Auto swap", config.etherwarpAimAutoSwap, x, ly, lw, v -> config.etherwarpAimAutoSwap = v);
 		if (config.etherwarpAimAutoSwap) {
 			ly = toggleRow("Swap back", config.etherwarpAimSwapBack, x + 10f, ly, lw - 10f, v -> config.etherwarpAimSwapBack = v);
+			if (config.etherwarpAimSwapBack) {
+				int ticks = config.etherwarpAimSwapBackTicks;
+				ly = slider("After", ticks + (ticks == 1 ? " tick" : " ticks"), (ticks - 1) / 19f, x + 10f, ly + 2f, lw - 10f,
+					t -> config.etherwarpAimSwapBackTicks = 1 + Math.round((float) t * 19f));
+			}
 		}
 		ly = divider(x, ly + 4f, lw);
 
 		ly = section("Points", x, ly);
 		ly = toggleRow("Edit mode", config.etherwarpAimEdit, x, ly, lw, v -> config.etherwarpAimEdit = v);
 		ly = toggleRow("Only the next two", config.etherwarpAimNextTwo, x, ly, lw, v -> config.etherwarpAimNextTwo = v);
+		ly = toggleRow("Numbers", config.etherwarpAimNumbers, x, ly, lw, v -> config.etherwarpAimNumbers = v);
+		ly = toggleRow("Hide when secrets are done", config.etherwarpAimHideDone, x, ly, lw, v -> config.etherwarpAimHideDone = v);
+		// How the points are drawn.
+		text("Style", x, ly + 2f, 18f, MUTED);
+		float cx = x + 56f;
+		String[] styles = {"Outline + fill", "Outline", "Glow + fill", "Glow"};
+		float cy = ly + 2f;
+		for (int i = 0; i < styles.length; i++) {
+			int style = i;
+			if (cx + chipWidth(styles[i]) > x + lw) {
+				cx = x + 56f;
+				cy += 21f;
+			}
+			cx += chip(styles[i], cx, cy, config.etherwarpAimStyle == i, () -> config.etherwarpAimStyle = style) + 4f;
+		}
+		ly = cy + 18f + 6f;
 		ly = colorPicker("points", "Points", config.etherwarpAimRgb, config.etherwarpAimAlpha, x, ly + 2f, lw,
 			v -> config.etherwarpAimRgb = v == 0 ? 0x010101 : v, v -> config.etherwarpAimAlpha = v);
 		ly = colorPicker("next", "Next", config.etherwarpAimNextRgb, config.etherwarpAimNextAlpha, x, ly, lw,

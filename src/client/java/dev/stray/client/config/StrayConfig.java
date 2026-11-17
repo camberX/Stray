@@ -369,6 +369,11 @@ public final class StrayConfig {
 	public boolean etherwarpAimNextTwo = false;
 	public boolean etherwarpAimAutoSwap = false;
 	public boolean etherwarpAimSwapBack = true;
+	public int etherwarpAimSwapBackTicks = 1;
+	public boolean etherwarpAimNumbers = true;
+	public boolean etherwarpAimHideDone = true;
+	/** 0 outline + fill, 1 outline, 2 glow + fill, 3 glow. */
+	public int etherwarpAimStyle = 0;
 	public boolean terminalGuiEnabled = false;
 	public int terminalScale = 100;
 	public int terminalFirstClickDelay = 7;
@@ -1795,6 +1800,8 @@ public final class StrayConfig {
 					loaded.etherwarpAimRgb = 0xB57CFF;
 				}
 				loaded.etherwarpAimAlpha = Math.max(0, Math.min(255, loaded.etherwarpAimAlpha));
+				loaded.etherwarpAimSwapBackTicks = Math.max(1, Math.min(20, loaded.etherwarpAimSwapBackTicks));
+				loaded.etherwarpAimStyle = Math.max(0, Math.min(3, loaded.etherwarpAimStyle));
 				loaded.etherwarpAimNextAlpha = Math.max(0, Math.min(255, loaded.etherwarpAimNextAlpha));
 				if ((loaded.etherwarpAimNextRgb & 0xFFFFFF) == 0) {
 					loaded.etherwarpAimNextRgb = 0x52E08A;
