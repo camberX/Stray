@@ -13,10 +13,9 @@ import java.util.Locale;
  * the aim assist starts pulling, drawn to scale for your field of view and window shape.
  */
 public class EtherwarpAimScreen extends SubScreen {
-	private static final int[] SWATCHES = {
-		0xB57CFF, 0x2FB5FF, 0x52E08A, 0xFFD34F, 0xFF7A1A, 0xE8414B, 0xFF4F8B, 0xF4F6FF
-	};
 	private static final float PREVIEW_W = 190f;
+	/** How tall the settings were last frame. */
+	private float contentH = 400f;
 
 	public EtherwarpAimScreen(Screen parent) {
 		super("Etherwarp aim", parent, 470);
@@ -35,7 +34,27 @@ public class EtherwarpAimScreen extends SubScreen {
 		float lw = w - pw - gap;
 		float top = y;
 
-		// Settings on the left.
+		// Settings on the left, scrolling when they don't fit (a colour picker open, a short window).
+		float visible = Math.max(80f, Math.min(contentH, room(y, BUTTON + 12f)));
+		scrollArea("settings", x, y, lw, visible, (sx, sy, sw) -> {
+			float bottom = settings(config, sx, sy, sw);
+			contentH = bottom - sy;
+			return bottom;
+		});
+		float ly = y + visible;
+
+		// The preview on the right.
+		float ph = previewHeight(pw);
+		drawPreview(x + lw + gap, top + 16f, pw, ph, config);
+		section("Preview", x + lw + gap, top);
+		GuiDraw.fill(graphics, x + lw + gap * 0.5f, top, 0.5f, Math.max(ly, top + 16f + ph) - top, 0x18FFFFFF);
+
+		float bottom = Math.max(ly, top + 16f + ph) + 12f;
+		return buttons(x, bottom, w, new Object[][] {}, new Object[][] {{"Done", Style.PRIMARY, (Runnable) this::onClose}});
+	}
+
+	/** Everything on the left; scrolls when the window is short. Returns the bottom. */
+	private float settings(StrayConfig config, float x, float y, float lw) {
 		float ly = section("Aim", x, y);
 		ly = toggleRow("Aim assist", config.etherwarpAimAssist, x, ly, lw, v -> config.etherwarpAimAssist = v);
 		ly = slider("Speed", Integer.toString(config.etherwarpAimSpeed), (config.etherwarpAimSpeed - 1) / 99f, x, ly + 2f, lw,
@@ -50,10 +69,19 @@ public class EtherwarpAimScreen extends SubScreen {
 			t -> config.etherwarpAimDelay = Math.round((float) t * 60f) * 5);
 		ly = divider(x, ly + 4f, lw);
 
+		ly = toggleRow("Auto swap", config.etherwarpAimAutoSwap, x, ly, lw, v -> config.etherwarpAimAutoSwap = v);
+		if (config.etherwarpAimAutoSwap) {
+			ly = toggleRow("Swap back", config.etherwarpAimSwapBack, x + 10f, ly, lw - 10f, v -> config.etherwarpAimSwapBack = v);
+		}
+		ly = divider(x, ly + 4f, lw);
+
 		ly = section("Points", x, ly);
 		ly = toggleRow("Edit mode", config.etherwarpAimEdit, x, ly, lw, v -> config.etherwarpAimEdit = v);
-		ly = swatches("Points", config.etherwarpAimRgb, v -> config.etherwarpAimRgb = v, x, ly + 4f, lw);
-		ly = swatches("Next", config.etherwarpAimNextRgb, v -> config.etherwarpAimNextRgb = v, x, ly + 4f, lw) + 6f;
+		ly = toggleRow("Only the next two", config.etherwarpAimNextTwo, x, ly, lw, v -> config.etherwarpAimNextTwo = v);
+		ly = colorPicker("points", "Points", config.etherwarpAimRgb, config.etherwarpAimAlpha, x, ly + 2f, lw,
+			v -> config.etherwarpAimRgb = v == 0 ? 0x010101 : v, v -> config.etherwarpAimAlpha = v);
+		ly = colorPicker("next", "Next", config.etherwarpAimNextRgb, config.etherwarpAimNextAlpha, x, ly, lw,
+			v -> config.etherwarpAimNextRgb = v == 0 ? 0x010101 : v, v -> config.etherwarpAimNextAlpha = v) + 6f;
 		int here = EtherwarpAim.count();
 		DungeonRooms.Room room = DungeonRooms.current();
 		String place = room == null ? "Not in a room" : room.name();
@@ -65,35 +93,7 @@ public class EtherwarpAimScreen extends SubScreen {
 		button("Restart", x + lw - cw - GAP - rw, ly, rw, Style.SECONDARY, here == 0 ? null : EtherwarpAim::resetRoute);
 		ly += BUTTON;
 
-		// The preview on the right.
-		float ph = previewHeight(pw);
-		drawPreview(x + lw + gap, top + 16f, pw, ph, config);
-		section("Preview", x + lw + gap, top);
-		GuiDraw.fill(graphics, x + lw + gap * 0.5f, top, 0.5f, Math.max(ly, top + 16f + ph) - top, 0x18FFFFFF);
-
-		float bottom = Math.max(ly, top + 16f + ph) + 12f;
-		return buttons(x, bottom, w, new Object[][] {}, new Object[][] {{"Done", Style.PRIMARY, (Runnable) this::onClose}});
-	}
-
-	/** A label and a row of colours to pick from. Returns the next y. */
-	private float swatches(String label, int current, java.util.function.IntConsumer set, float x, float y, float w) {
-		float size = 14f;
-		text(label, x, y, size, MUTED);
-		float sx = x + Math.max(56f, textWidth(label) + 12f);
-		for (int color : SWATCHES) {
-			if (sx + size > x + w) {
-				break;
-			}
-			boolean on = (current & 0xFFFFFF) == color;
-			boolean hot = hovered(sx, y, size, size);
-			if (on || hot) {
-				GuiDraw.roundedFine(graphics, sx - 2f, y - 2f, size + 4f, size + 4f, 5f, on ? 0xFFEEF1F5 : 0x60FFFFFF);
-			}
-			GuiDraw.roundedFine(graphics, sx, y, size, size, 4f, 0xFF000000 | color);
-			hit(sx, y, size, size, () -> set.accept(color));
-			sx += size + 6f;
-		}
-		return y + size + 4f;
+		return ly;
 	}
 
 	private static String rangeLabel(float range) {

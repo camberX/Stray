@@ -69,6 +69,10 @@ public final class EtherwarpAim {
 	private static long aimedSince;
 	private static long waitMs;
 	private static long lastFrameNs;
+	/** Auto swap: the slot you held before it picked the etherwarp item, or -1. */
+	private static int swappedFrom = -1;
+	private static long swappedAt;
+	private static boolean swapBackNext;
 	/** Turn still owed from steps smaller than one mouse count. */
 	private static float restYaw;
 	private static float restPitch;
@@ -177,6 +181,21 @@ public final class EtherwarpAim {
 	/** At the start of a tick, where the game reads the use key. */
 	public static void beforeKeybinds(Minecraft client) {
 		LocalPlayer player = client.player;
+		StrayConfig config = StrayConfig.get();
+		// Swap back the tick after the click (or when you stop aiming after a swap).
+		if (swappedFrom >= 0 && player != null) {
+			boolean done = swapBackNext || !ready(client) || lookedAtPoint(client, player) == null
+				&& System.currentTimeMillis() - swappedAt > 400L;
+			if (done) {
+				if (config.etherwarpAimSwapBack && swappedFrom < 9) {
+					// The same as pressing that hotbar number key.
+					player.getInventory().setSelectedSlot(swappedFrom);
+				}
+				swappedFrom = -1;
+				swapBackNext = false;
+				return;
+			}
+		}
 		if (!ready(client) || target() == null) {
 			aimed = null;
 			clicked = null;
@@ -193,9 +212,27 @@ public final class EtherwarpAim {
 			aimed = target;
 			aimedSince = now;
 			clicked = null;
-			waitMs = delay(StrayConfig.get());
+			waitMs = delay(config);
 		}
-		if (target.equals(clicked) || now - aimedSince < waitMs) {
+		if (target.equals(clicked)) {
+			return;
+		}
+		if (!holdingEther(player)) {
+			// Auto swap: pick up the etherwarp item now, click on a later tick.
+			int slot = etherSlot(player);
+			if (!config.etherwarpAimAutoSwap || slot < 0) {
+				return;
+			}
+			if (swappedFrom < 0) {
+				swappedFrom = player.getInventory().getSelectedSlot();
+			}
+			swappedAt = now;
+			player.getInventory().setSelectedSlot(slot);
+			// At least a tick between the swap and the click, and the delay from here.
+			aimedSince = now;
+			return;
+		}
+		if (now - aimedSince < waitMs) {
 			return;
 		}
 		// The use key on an entity uses the entity, not the item: wait until it is out of the way.
@@ -204,6 +241,19 @@ public final class EtherwarpAim {
 		}
 		clicked = target;
 		OdinClicks.rightClick();
+		if (swappedFrom >= 0) {
+			swapBackNext = true;
+		}
+	}
+
+	/** The hotbar slot of an item with Ether Transmission, or -1. */
+	private static int etherSlot(LocalPlayer player) {
+		for (int i = 0; i < 9; i++) {
+			if (hasEther(player.getInventory().getItem(i))) {
+				return i;
+			}
+		}
+		return -1;
 	}
 
 	private static long delay(StrayConfig config) {
@@ -215,12 +265,16 @@ public final class EtherwarpAim {
 	private static boolean ready(Minecraft client) {
 		LocalPlayer player = client.player;
 		return StrayConfig.get().etherwarpAim && player != null && client.level != null && client.gui.screen() == null
-			&& !player.isSpectator() && player.isShiftKeyDown() && holdingEther(player)
+			&& !player.isSpectator() && player.isShiftKeyDown()
+			&& (holdingEther(player) || StrayConfig.get().etherwarpAimAutoSwap && etherSlot(player) >= 0)
 			&& !dev.stray.client.movement.Freecam.active();
 	}
 
 	public static boolean holdingEther(LocalPlayer player) {
-		ItemStack stack = player.getMainHandItem();
+		return hasEther(player.getMainHandItem());
+	}
+
+	private static boolean hasEther(ItemStack stack) {
 		if (stack.isEmpty()) {
 			return false;
 		}
@@ -496,20 +550,36 @@ public final class EtherwarpAim {
 		if (!config.etherwarpAim || client.player == null || live.isEmpty()) {
 			return;
 		}
-		if (!config.etherwarpAimEdit && !holdingEther(client.player)) {
+		if (!showing(client.player)) {
 			return;
 		}
-		int rgb = config.etherwarpAimRgb & 0xFFFFFF;
-		int nextRgb = config.etherwarpAimNextRgb & 0xFFFFFF;
 		BlockPos target = target();
-		for (BlockPos pos : live) {
+		for (int i = 0; i < live.size(); i++) {
+			if (!shown(i, config)) {
+				continue;
+			}
+			BlockPos pos = live.get(i);
 			boolean hot = pos.equals(aimed);
 			boolean isNext = pos.equals(target);
-			int color = isNext ? nextRgb : rgb;
+			int color = (isNext ? config.etherwarpAimNextRgb : config.etherwarpAimRgb) & 0xFFFFFF;
+			int fill = Mth.clamp(isNext ? config.etherwarpAimNextAlpha : config.etherwarpAimAlpha, 0, 255);
+			// The outline follows the opacity, a little stronger so the edges still read.
+			int line = Math.min(255, fill * 2 + 50);
 			GizmoProperties box = Gizmos.cuboid(new AABB(pos).inflate(hot || isNext ? 0.03 : 0.005),
-				GizmoStyle.strokeAndFill(hot ? 0xFFFFFFFF : (isNext ? 0xF0000000 : 0x90000000) | color, isNext ? 3f : 2f, (isNext ? 0x60000000 : 0x30000000) | color));
+				GizmoStyle.strokeAndFill(hot ? 0xFFFFFFFF : line << 24 | color, isNext ? 3f : 2f, fill << 24 | color));
 			box.setAlwaysOnTop();
 		}
+	}
+
+	/** Points show in edit mode and while you could warp: the item in hand, or in the hotbar with auto swap. */
+	private static boolean showing(LocalPlayer player) {
+		StrayConfig config = StrayConfig.get();
+		return config.etherwarpAimEdit || holdingEther(player) || config.etherwarpAimAutoSwap && etherSlot(player) >= 0;
+	}
+
+	/** Whether point {@code i} is drawn: all of them, or with "next two" only the next and the one after (all in edit mode). */
+	private static boolean shown(int i, StrayConfig config) {
+		return config.etherwarpAimEdit || !config.etherwarpAimNextTwo || i == next || i == next + 1;
 	}
 
 	/** Edit mode HUD: the room you are in, its turn and how many points it has. */
@@ -519,7 +589,7 @@ public final class EtherwarpAim {
 		if (!config.etherwarpAim || client.player == null || client.gui.hud.isHidden()) {
 			return;
 		}
-		if (config.etherwarpAimEdit || holdingEther(client.player)) {
+		if (showing(client.player)) {
 			numbers(graphics, client, config);
 		}
 		if (!config.etherwarpAimEdit) {
@@ -553,6 +623,9 @@ public final class EtherwarpAim {
 		Font font = client.font;
 		BlockPos target = target();
 		for (int i = 0; i < live.size(); i++) {
+			if (!shown(i, config)) {
+				continue;
+			}
 			BlockPos pos = live.get(i);
 			Vec3 at = Vec3.atCenterOf(pos).add(0, 0.85, 0);
 			Vec3 rel = at.subtract(cam);

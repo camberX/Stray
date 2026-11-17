@@ -644,6 +644,120 @@ public abstract class SubScreen extends Screen {
 		return y + h + 2f;
 	}
 
+	/** The colour picker that is open (its id), or null. */
+	private String openPicker;
+	/** Hue, saturation, brightness per picker, so the hue stays put when you drag to grey. */
+	private final java.util.Map<String, float[]> pickerHsv = new java.util.HashMap<>();
+	private final java.util.Map<String, DoubleConsumer[]> pickerSetters = new java.util.HashMap<>();
+
+	/**
+	 * A colour row: label, swatch (with its opacity over a checkerboard) and hex. Clicking it
+	 * opens hue, saturation, brightness and opacity sliders under it. {@code alpha} is 0-255.
+	 * Returns the next y.
+	 */
+	protected float colorPicker(String id, String label, int rgb, int alpha, float x, float y, float w,
+			java.util.function.IntConsumer setRgb, java.util.function.IntConsumer setAlpha) {
+		float h = 20f;
+		boolean open = id.equals(openPicker);
+		boolean hot = hovered(x, y, w, h);
+		text(label, x, y, h, open || hot ? TEXT : MUTED);
+		String hex = String.format(java.util.Locale.ROOT, "#%06X · %d%%", rgb & 0xFFFFFF, Math.round(alpha / 2.55f));
+		float sw = 26f;
+		float sx = x + w - sw;
+		text(hex, sx - 8f - textWidth(hex), y, h, open ? TEXT : MUTED);
+		checker(sx, y + 3f, sw, h - 6f);
+		GuiDraw.roundedFine(graphics, sx, y + 3f, sw, h - 6f, 4f, (Mth.clamp(alpha, 0, 255) << 24) | (rgb & 0xFFFFFF));
+		GuiDraw.roundedOutline(graphics, sx, y + 3f, sw, h - 6f, 4f, open ? 0xC0FFFFFF : 0x30FFFFFF, 1f);
+		hit(x, y, w, h, () -> openPicker = open ? null : id);
+		y += h + 2f;
+		if (!open) {
+			pickerHsv.remove(id);
+			return y;
+		}
+		float[] hsv = pickerHsv.computeIfAbsent(id, k -> hsvOf(rgb));
+		// Keep it in step when the colour was changed somewhere else.
+		if (rgbOf(hsv[0], hsv[1], hsv[2]) != (rgb & 0xFFFFFF)) {
+			float[] now = hsvOf(rgb);
+			hsv[0] = now[1] < 0.01f || now[2] < 0.01f ? hsv[0] : now[0];
+			hsv[1] = now[1];
+			hsv[2] = now[2];
+		}
+		DoubleConsumer[] setters = pickerSetters.computeIfAbsent(id, k -> new DoubleConsumer[4]);
+		setters[0] = t -> { hsv[0] = (float) t; setRgb.accept(rgbOf(hsv[0], hsv[1], hsv[2])); };
+		setters[1] = t -> { hsv[1] = (float) t; setRgb.accept(rgbOf(hsv[0], hsv[1], hsv[2])); };
+		setters[2] = t -> { hsv[2] = (float) t; setRgb.accept(rgbOf(hsv[0], hsv[1], hsv[2])); };
+		setters[3] = t -> setAlpha.accept(Math.round((float) t * 255f));
+		float ix = x + 10f;
+		float iw = w - 10f;
+		y = gradientSlider("Hue", hsv[0], ix, y, iw, setters[0], t -> rgbOf((float) t, 1f, 1f), false);
+		y = gradientSlider("Saturation", hsv[1], ix, y, iw, setters[1], t -> rgbOf(hsv[0], (float) t, Math.max(0.35f, hsv[2])), false);
+		y = gradientSlider("Brightness", hsv[2], ix, y, iw, setters[2], t -> rgbOf(hsv[0], hsv[1], (float) t), false);
+		y = gradientSlider("Opacity", alpha / 255f, ix, y, iw, setters[3], t -> rgb & 0xFFFFFF, true);
+		return y + 4f;
+	}
+
+	/** Hue (0-1), saturation and brightness of a colour. */
+	private static float[] hsvOf(int rgb) {
+		float[] hsv = dev.stray.client.visual.WorldTint.rgbToHsv(rgb & 0xFFFFFF);
+		hsv[0] /= 360f;
+		return hsv;
+	}
+
+	private static int rgbOf(float hue, float sat, float value) {
+		return dev.stray.client.visual.WorldTint.hsvToRgb(hue * 360f, sat, value);
+	}
+
+	/** A slider whose track shows what it picks: {@code color} gives the colour at each point. */
+	private float gradientSlider(String label, float t, float x, float y, float w, DoubleConsumer set,
+			java.util.function.DoubleToIntFunction color, boolean alphaTrack) {
+		float h = 16f;
+		float labelW = 70f;
+		float tx = x + labelW;
+		float tw = Math.max(20f, w - labelW - 6f);
+		text(label, x, y, h, FAINT);
+		float k = Mth.clamp(t, 0f, 1f);
+		float ty = y + h * 0.5f - 3f;
+		if (alphaTrack) {
+			checker(tx, ty, tw, 6f);
+		}
+		int steps = 32;
+		for (int i = 0; i < steps; i++) {
+			float a = i / (float) steps;
+			float b = (i + 1) / (float) steps;
+			int c = color.applyAsInt((a + b) * 0.5) & 0xFFFFFF;
+			int alpha = alphaTrack ? Math.round((a + b) * 0.5f * 255f) : 255;
+			GuiDraw.fill(graphics, tx + tw * a, ty, tw * (b - a) + 0.3f, 6f, alpha << 24 | c);
+		}
+		GuiDraw.roundedOutline(graphics, tx, ty, tw, 6f, 3f, 0x30FFFFFF, 1f);
+		boolean hot = hovered(tx - 5f, y, tw + 10f, h) || sliding == set;
+		float knob = hot ? 10f : 9f;
+		GuiDraw.roundedFine(graphics, tx + tw * k - knob * 0.5f, y + h * 0.5f - knob * 0.5f, knob, knob, knob * 0.5f, WHITE);
+		GuiDraw.roundedFine(graphics, tx + tw * k - knob * 0.5f + 2f, y + h * 0.5f - knob * 0.5f + 2f, knob - 4f, knob - 4f, (knob - 4f) * 0.5f,
+			0xFF000000 | (color.applyAsInt(k) & 0xFFFFFF));
+		if (sliding == set) {
+			slideX = tx;
+			slideW = tw;
+		}
+		hit(tx - 5f, y, tw + 10f, h, () -> {
+			sliding = set;
+			slideX = tx;
+			slideW = tw;
+			set.accept(Mth.clamp((mouseX - tx) / tw, 0f, 1f));
+		});
+		return y + h + 1f;
+	}
+
+	/** A small grey checkerboard, for showing see-through colours. */
+	protected void checker(float x, float y, float w, float h) {
+		float cell = 3f;
+		for (float cy = 0; cy < h; cy += cell) {
+			for (float cx = 0; cx < w; cx += cell) {
+				boolean dark = ((int) (cx / cell) + (int) (cy / cell)) % 2 == 0;
+				GuiDraw.fill(graphics, x + cx, y + cy, Math.min(cell, w - cx), Math.min(cell, h - cy), dark ? 0xFF3A3F47 : 0xFF6A707A);
+			}
+		}
+	}
+
 	@Override
 	public boolean mouseDragged(MouseButtonEvent event, double dx, double dy) {
 		if (sliding != null && MouseButtons.left(event)) {
