@@ -1016,6 +1016,7 @@ public final class StrayClient implements ClientModInitializer {
 						net.minecraft.client.gui.screens.Screen screen = switch (name) {
 							case "autohotbar" -> new dev.stray.client.ui.AutoHotbarScreen(null);
 							case "etherwarp" -> new dev.stray.client.ui.EtherwarpAimScreen(null);
+							case "routes" -> new dev.stray.client.ui.EtherwarpRoutesScreen(null);
 							case "keys" -> new dev.stray.client.ui.CommandKeysScreen(null);
 							case "shortcuts" -> new dev.stray.client.ui.CommandShortcutScreen(null);
 							case "titles" -> new dev.stray.client.ui.CustomTitleScreen(null);

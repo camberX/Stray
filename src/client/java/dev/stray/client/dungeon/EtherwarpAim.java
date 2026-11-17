@@ -727,7 +727,7 @@ public final class EtherwarpAim {
 		if (!config.etherwarpAim || client.player == null || client.gui.hud.isHidden()) {
 			return;
 		}
-		if (showing(client.player) && config.etherwarpAimNumbers) {
+		if (showing(client.player) && config.etherwarpAimNumbers && client.gui.screen() == null) {
 			numbers(graphics, client, config);
 		}
 		if (!config.etherwarpAimEdit) {
@@ -784,6 +784,61 @@ public final class EtherwarpAim {
 			GuiDraw.roundedFine(graphics, x - w * 0.5f, y - h, w, h, h * 0.5f, isNext ? color : 0xC00B0E13);
 			GuiDraw.text(graphics, font, label, x - font.width(label) * 0.5f, Math.round(GuiDraw.middle(y - h, h)), isNext ? 0xFF0B0E13 : color, false);
 		}
+	}
+
+	/** Every saved room and its points (room coordinates), for sharing. */
+	public static JsonObject exportRooms() {
+		load();
+		JsonObject rooms = new JsonObject();
+		for (Map.Entry<String, Set<BlockPos>> entry : SAVED.entrySet()) {
+			JsonArray list = new JsonArray();
+			for (BlockPos pos : entry.getValue()) {
+				JsonArray xyz = new JsonArray();
+				xyz.add(pos.getX());
+				xyz.add(pos.getY());
+				xyz.add(pos.getZ());
+				list.add(xyz);
+			}
+			rooms.add(entry.getKey(), list);
+		}
+		return rooms;
+	}
+
+	public static int savedRooms() {
+		load();
+		return SAVED.size();
+	}
+
+	/**
+	 * Takes a shared route: each of its rooms replaces your points for that room, your other
+	 * rooms stay. Returns how many rooms it brought in.
+	 */
+	public static int importRooms(JsonObject rooms) {
+		load();
+		int count = 0;
+		for (String key : rooms.keySet()) {
+			JsonElement element = rooms.get(key);
+			if (!element.isJsonArray() || key.isBlank() || key.length() > 64) {
+				continue;
+			}
+			Set<BlockPos> points = new LinkedHashSet<>();
+			for (JsonElement point : element.getAsJsonArray()) {
+				if (point.isJsonArray() && point.getAsJsonArray().size() == 3 && points.size() < 64) {
+					JsonArray xyz = point.getAsJsonArray();
+					points.add(new BlockPos(xyz.get(0).getAsInt(), xyz.get(1).getAsInt(), xyz.get(2).getAsInt()));
+				}
+			}
+			if (!points.isEmpty()) {
+				SAVED.put(key, points);
+				PROGRESS.remove(key);
+				count++;
+			}
+		}
+		if (count > 0) {
+			save();
+			liveKey = null;
+		}
+		return count;
 	}
 
 	// ------------------------------------------------------------------ storage

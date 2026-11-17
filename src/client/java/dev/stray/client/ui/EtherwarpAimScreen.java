@@ -50,7 +50,7 @@ public class EtherwarpAimScreen extends SubScreen {
 		GuiDraw.fill(graphics, x + lw + gap * 0.5f, top, 0.5f, Math.max(ly, top + 16f + ph) - top, 0x18FFFFFF);
 
 		float bottom = Math.max(ly, top + 16f + ph) + 12f;
-		return buttons(x, bottom, w, new Object[][] {}, new Object[][] {{"Done", Style.PRIMARY, (Runnable) this::onClose}});
+		return buttons(x, bottom, w, new Object[][] {{"Browse routes", Style.SECONDARY, (Runnable) () -> minecraft.gui.setScreen(new EtherwarpRoutesScreen(this))}}, new Object[][] {{"Done", Style.PRIMARY, (Runnable) this::onClose}});
 	}
 
 	/** Everything on the left; scrolls when the window is short. Returns the bottom. */
