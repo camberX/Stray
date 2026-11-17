@@ -122,7 +122,13 @@ public final class EtherwarpAim {
 							continue;
 						}
 						BlockPos pos = points.get(i);
-						int color = 0xFF000000 | ((pos.equals(target) ? config.etherwarpAimNextRgb : config.etherwarpAimRgb) & 0xFFFFFF);
+						boolean isNext = pos.equals(target);
+						int rgb = (isNext ? config.etherwarpAimNextRgb : config.etherwarpAimRgb) & 0xFFFFFF;
+						// Like the terminal glow: 0.15-0.90 opacity. The glow pass treats fully
+						// opaque texels as vanilla glowing and leaves them out of the soft halo.
+						int fill = isNext ? config.etherwarpAimNextAlpha : config.etherwarpAimAlpha;
+						int alpha = Mth.clamp(fill * 2 + 50, 38, 229);
+						int color = alpha << 24 | rgb;
 						float x = (float) (pos.getX() - camera.x);
 						float y = (float) (pos.getY() - camera.y);
 						float z = (float) (pos.getZ() - camera.z);
