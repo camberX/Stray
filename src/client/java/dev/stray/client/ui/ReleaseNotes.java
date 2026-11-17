@@ -15,6 +15,13 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.6.3", new String[]{
+			"Etherwarp aim (not in Stray Legit): set etherwarp points per dungeon room in edit mode (middle click a block). Points are saved relative to the room, so they follow its rotation, and they form a numbered route with the next point in its own colour.",
+			"Sneaking with an Ether Transmission item, the crosshair is pulled to the free part of the next point's open face and it right clicks once it is on it. Speed, range (up to 180°) and click delay are adjustable, with a preview of the range on your screen.",
+			"Auto swap picks up your etherwarp item from the hotbar for the click and can swap back after a set number of ticks.",
+			"Outline, fill and glow styles, colour pickers with opacity, numbers on or off, only the next two points, and rooms with every secret found are hidden.",
+			"Route browser: share your points on stray.gay and use other players' routes; the eye shows which rooms a route has. /stray etherwarp reset starts a room's route over."
+		}),
 		new Entry("1.6.2", new String[]{
 			"/stray loadout <1-9> (not in Stray Legit): swaps to that SkyBlock loadout silently, the same way the pest cooldown's auto loadout does. It starts once chat is closed."
 		}),
