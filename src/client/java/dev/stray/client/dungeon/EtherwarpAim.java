@@ -80,6 +80,8 @@ public final class EtherwarpAim {
 	private static String liveKey;
 	/** Index of the point to warp to next; past the end once the route is done. */
 	private static int next;
+	/** Where you are in each room's route, kept until you leave the world or reset it. */
+	private static final Map<String, Integer> PROGRESS = new java.util.HashMap<>();
 
 	private EtherwarpAim() {
 	}
@@ -99,6 +101,7 @@ public final class EtherwarpAim {
 		live = List.of();
 		liveKey = null;
 		next = 0;
+		PROGRESS.clear();
 		clicked = null;
 		aimed = null;
 	}
@@ -106,6 +109,9 @@ public final class EtherwarpAim {
 	/** Starts the route of the room you are in over from its first point. */
 	public static void resetRoute() {
 		next = 0;
+		if (liveKey != null) {
+			PROGRESS.remove(liveKey);
+		}
 		clicked = null;
 		aimed = null;
 	}
@@ -126,9 +132,14 @@ public final class EtherwarpAim {
 		DungeonRooms.Room room = DungeonRooms.current();
 		String key = key(room);
 		if (key == null ? liveKey != null : !key.equals(liveKey)) {
-			// A new room: start its route from the first point.
+			// Another room: keep where you were in the old one, pick up where you were in this
+			// one (from the first point if new). Room detection can blink for a tick between
+			// cells; that must not throw the route back to point 1.
+			if (liveKey != null) {
+				PROGRESS.put(liveKey, next);
+			}
 			liveKey = key;
-			next = 0;
+			next = key == null ? 0 : PROGRESS.getOrDefault(key, 0);
 		}
 		Set<BlockPos> stored = key == null ? null : SAVED.get(key);
 		if (stored == null || stored.isEmpty()) {
@@ -152,7 +163,8 @@ public final class EtherwarpAim {
 			double dx = feet.x - (pos.getX() + 0.5);
 			double dz = feet.z - (pos.getZ() + 0.5);
 			double dy = feet.y - (pos.getY() + 1.0);
-			if (dx * dx + dz * dz < 1.0 && dy > -0.5 && dy < 1.5) {
+			// dy down to -1: slabs, stairs and other low blocks put your feet under the top.
+			if (pos.equals(client.player.getOnPos()) || dx * dx + dz * dz < 1.0 && dy > -1.05 && dy < 1.5) {
 				next = i + 1;
 			}
 		}
@@ -403,6 +415,13 @@ public final class EtherwarpAim {
 		Vec3 center = Vec3.atCenterOf(target);
 		double dist = center.distanceTo(eye);
 		if (dist > RANGE || dist < 1.0) {
+			return null;
+		}
+		// Never pull down onto the block you stand on or right beside your feet: you are there.
+		Vec3 feet = player.position();
+		double hx = center.x - feet.x;
+		double hz = center.z - feet.z;
+		if (hx * hx + hz * hz < 2.25 && center.y < feet.y) {
 			return null;
 		}
 		List<double[]> spots = new ArrayList<>();
