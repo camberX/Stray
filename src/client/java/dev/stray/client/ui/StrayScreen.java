@@ -3528,8 +3528,11 @@ public class StrayScreen extends Screen {
 				return leapField(graphics, font, x, y, w, mouseX, mouseY, label, (auto ? "auto:" : "fast:") + id,
 					() -> target.name == null ? "" : target.name, v -> target.name = v, "off");
 			}
-			dev.stray.client.dungeon.DungeonParty.DungeonClass clazz = dev.stray.client.dungeon.autoleap.AutoLeap.classAt(target.clazz);
-			return cycle(graphics, font, x, y, w, mouseX, mouseY, label, () -> clazz == null ? "Off" : clazz.label, () -> {
+			// Read live: uid? steps through the classes to list them in its dropdown.
+			return cycle(graphics, font, x, y, w, mouseX, mouseY, label, () -> {
+				dev.stray.client.dungeon.DungeonParty.DungeonClass clazz = dev.stray.client.dungeon.autoleap.AutoLeap.classAt(target.clazz);
+				return clazz == null ? "Off" : clazz.label;
+			}, () -> {
 				int next = target.clazz + 1;
 				target.clazz = next >= dev.stray.client.dungeon.autoleap.AutoLeap.CLASSES.length ? -1 : next;
 			});
@@ -3540,6 +3543,9 @@ public class StrayScreen extends Screen {
 	/** Label on the left, a small text field on the right. */
 	private float leapField(GuiGraphicsExtractor graphics, Font font, float x, float y, float w, int mouseX, int mouseY,
 		String label, String key, java.util.function.Supplier<String> get, java.util.function.Consumer<String> set, String placeholder) {
+		if (UidMenu.drawing()) {
+			return uidField(graphics, font, x, y, w, mouseX, mouseY, label, key, get, set, placeholder);
+		}
 		float row = rowH();
 		boolean focused = key.equals(leapFocus);
 		float labelY = GuiDraw.middle(y, row);
@@ -5862,6 +5868,26 @@ public class StrayScreen extends Screen {
 		hits.add(new Hit(x, y, w, 12, () -> bindListen = which));
 		UidMenu.extent(y + 12);
 		return y + 17;
+	}
+
+	/** A label with a text box on its right (Textbox::draw), 20 px tall. */
+	private float uidField(GuiGraphicsExtractor graphics, Font font, float x, float y, float w, int mouseX, int mouseY,
+		String label, String key, java.util.function.Supplier<String> get, java.util.function.Consumer<String> set, String placeholder) {
+		boolean focused = key.equals(leapFocus);
+		float fw = Math.min(120f, (w - 20) * 0.55f);
+		float fx = x + w - fw;
+		UidLook.text(graphics, font, UidLook.fit(font, label, fx - x - 26), x + 20, y + 5, UidLook.LABEL);
+		UidLook.textbox(graphics, fx, y, fw, 20);
+		String value = get.get();
+		boolean empty = value.isEmpty() && !focused;
+		String shown = empty ? placeholder : value + caret(focused);
+		UidLook.text(graphics, font, UidLook.fit(font, shown, fw - 10), fx + 5, y + 5, empty ? UidLook.KEY : focused ? UidMenu.accent() : UidLook.LABEL);
+		hits.add(new Hit(fx, y, fw, 20, () -> {
+			leapFocus = key;
+			leapFieldRef = new TextKeys.Field("leap-" + key, get, set, 16);
+		}));
+		UidMenu.extent(y + 20);
+		return y + 25;
 	}
 
 	private float uidButton(GuiGraphicsExtractor graphics, Font font, float x, float y, float w, int mouseX, int mouseY, String label, Runnable action) {

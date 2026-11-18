@@ -1,0 +1,29 @@
+{
+	"providers": [
+		{
+			"type": "ttf",
+			"file": "stray:uid_sans.ttf",
+			"shift": [
+				0,
+				0
+			],
+			"size": 9,
+			"oversample": 1.25
+		},
+		{
+			"type": "reference",
+			"id": "minecraft:include/space"
+		},
+		{
+			"type": "reference",
+			"id": "minecraft:include/default",
+			"filter": {
+				"uniform": false
+			}
+		},
+		{
+			"type": "reference",
+			"id": "minecraft:include/unifont"
+		}
+	]
+}

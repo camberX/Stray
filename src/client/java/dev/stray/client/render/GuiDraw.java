@@ -986,6 +986,11 @@ public final class GuiDraw {
 	}
 
 	public static void text(GuiGraphicsExtractor graphics, Font font, Component value, float x, float y, int color, boolean shadow) {
+		if (dev.stray.client.ui.UidMenu.drawing() && !shadow) {
+			// uid?: onto whole screen pixels, not whole menu units (those blur at 125 %).
+			dev.stray.client.ui.UidLook.drawSnapped(graphics, font, value, x, y, color);
+			return;
+		}
 		component(graphics, font, MenuFont.crisp(value, poseScale(graphics)), Math.round(x), Math.round(y), color, shadow);
 	}
 

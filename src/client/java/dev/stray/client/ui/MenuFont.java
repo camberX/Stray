@@ -1,5 +1,7 @@
 package dev.stray.client.ui;
 
+import net.minecraft.util.Mth;
+
 import dev.stray.Stray;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
@@ -33,6 +35,8 @@ public final class MenuFont {
 	 * pick the copy for the current GUI scale.
 	 */
 	private static final Style[][] HYPR_SCALED = new Style[10][6];
+	/** uid?'s fonts rasterized at 100 % to 300 % in quarters (uid_d100 ... uid_d300). */
+	private static final Style[][] UID_EXACT = new Style[2][9];
 	/** Every scaled copy (and the base icon font) mapped to its family, for {@link #crisp}. */
 	private static final java.util.Map<FontDescription, Integer> FAMILY = new java.util.HashMap<>();
 
@@ -43,6 +47,14 @@ public final class MenuFont {
 				FontDescription desc = new FontDescription.Resource(Stray.id(names[f] + "_" + (s + 1)));
 				HYPR_SCALED[f][s] = Style.EMPTY.withFont(desc);
 				FAMILY.put(desc, f);
+			}
+		}
+		String[] exact = {"uid", "uid_bold"};
+		for (int f = 0; f < exact.length; f++) {
+			for (int q = 4; q <= 12; q++) {
+				FontDescription desc = new FontDescription.Resource(Stray.id(exact[f] + "_d" + (q * 25)));
+				UID_EXACT[f][q - 4] = Style.EMPTY.withFont(desc);
+				FAMILY.put(desc, 7 + f);
 			}
 		}
 		FAMILY.put(new FontDescription.Resource(ICON_ID), 3);
@@ -75,13 +87,16 @@ public final class MenuFont {
 		// Never a smaller copy than needed: shrinking a sharper glyph (now smoothly sampled) beats
 		// blowing up a blurrier one.
 		int step = (int) Math.ceil(gui * poseScale - 0.05);
-		if ((family == 7 || family == 8) && gui * poseScale < 1.05) {
-			// uid?'s 9 px text at 1:1: rasterized at twice the size and sampled down smoothly, so
-			// the letters keep their shape instead of snapping to a 9 px grid.
-			step *= 2;
+		Style target;
+		if (family == 7 || family == 8) {
+			// uid?'s 9 px text: the copy rasterized at exactly this scale (100 % to 300 % in
+			// quarters), so with its origin on a whole pixel every glyph lands 1:1 and stays sharp.
+			int quarter = Mth.clamp((int) Math.round(gui * poseScale * 4.0), 4, 12);
+			target = UID_EXACT[family - 7][quarter - 4];
+		} else {
+			step = Math.max(1, Math.min(6, step));
+			target = HYPR_SCALED[family][step - 1];
 		}
-		step = Math.max(1, Math.min(6, step));
-		Style target = HYPR_SCALED[family][step - 1];
 		if (target.getFont().equals(value.getStyle().getFont())) {
 			return value;
 		}

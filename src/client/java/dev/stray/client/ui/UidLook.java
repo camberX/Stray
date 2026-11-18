@@ -18,9 +18,13 @@ public final class UidLook {
 	public static final int FRAME = 0xFF282828;
 	public static final int GROUP = 0xFF171717;
 	public static final int GROUP_EDGE = 0xFF282828;
-	public static final int LABEL = 0xC8FFFFFF;
+	/**
+	 * Labels: the original's 0xC8 white, a little brighter, as its ClearType text reads bolder
+	 * than Minecraft's plain grayscale glyphs.
+	 */
+	public static final int LABEL = 0xE0FFFFFF;
 	public static final int LABEL_OFF = 0x46FFFFFF;
-	public static final int VALUE = 0x88FFFFFF;
+	public static final int VALUE = 0xA0FFFFFF;
 	public static final int KEY = 0x64FFFFFF;
 	public static final int KEY_HOVER = 0x82FFFFFF;
 	public static final int KEY_LISTEN = 0xFFFF0000;
@@ -94,25 +98,60 @@ public final class UidLook {
 
 	// ------------------------------------------------------------------ text
 
+	/**
+	 * Text at exactly (x, y) through the pose: GuiDraw rounds to whole menu units, which at
+	 * 125 % puts every other row half a screen pixel off and blurs it.
+	 */
+	static void draw(GuiGraphicsExtractor graphics, Font font, Component value, float x, float y, float scale, int color) {
+		graphics.pose().pushMatrix();
+		graphics.pose().translate(x, y);
+		if (scale != 1f) {
+			graphics.pose().scale(scale, scale);
+		}
+		graphics.text(font, MenuFont.crisp(value, GuiDraw.poseScale(graphics)), 0, 0, color, false);
+		graphics.pose().popMatrix();
+	}
+
+	/** Any text while uid? draws, placed on whole screen pixels. */
+	public static void drawSnapped(GuiGraphicsExtractor graphics, Font font, Component value, float x, float y, int color) {
+		draw(graphics, font, value, snap(x), snap(y), 1f, color);
+	}
+
+	/** Onto a whole screen pixel: the glyphs are rasterized at this exact scale, so they then land 1:1. */
+	static float snap(float v) {
+		double s = UidMenu.dpiScale();
+		return (float) (Math.round(v * s) / s);
+	}
+
 	public static void text(GuiGraphicsExtractor graphics, Font font, String value, float x, float y, int color) {
 		if ((color >>> 24) < 4 || value == null || value.isEmpty()) {
 			return;
 		}
-		GuiDraw.text(graphics, font, MenuFont.uid(value), x, y + TEXT_DROP, 1f, color, false);
+		draw(graphics, font, MenuFont.uid(value), snap(x), snap(y + TEXT_DROP), 1f, color);
 	}
 
 	public static void bold(GuiGraphicsExtractor graphics, Font font, String value, float x, float y, int color) {
 		if ((color >>> 24) < 4 || value == null || value.isEmpty()) {
 			return;
 		}
-		GuiDraw.text(graphics, font, MenuFont.uidBold(value), x, y + TEXT_DROP, 1f, color, false);
+		draw(graphics, font, MenuFont.uidBold(value), snap(x), snap(y + TEXT_DROP), 1f, color);
+	}
+
+	/**
+	 * The pixel font is only sharp at whole multiples of its pixels: draw it at the nearest
+	 * whole multiple of the DPI scale (so at 125 % it stays 1:1), centred where 8 px would sit.
+	 */
+	private static float smallScale() {
+		double s = UidMenu.dpiScale();
+		return (float) (Math.max(1, Math.round(s)) / s);
 	}
 
 	public static void small(GuiGraphicsExtractor graphics, Font font, String value, float x, float y, int color) {
 		if ((color >>> 24) < 4 || value == null || value.isEmpty()) {
 			return;
 		}
-		GuiDraw.text(graphics, font, MenuFont.uidSmall(value), x, y, 1f, color, false);
+		float k = smallScale();
+		draw(graphics, font, MenuFont.uidSmall(value), snap(x), snap(y + (1f - k) * 4f), k, color);
 	}
 
 	/** Small text with a 1 px black outline (slider values). */
@@ -122,14 +161,18 @@ public final class UidLook {
 		}
 		int shade = (color >>> 24) << 24;
 		Component c = MenuFont.uidSmall(value);
+		float k = smallScale();
+		float px = (float) (1.0 / UidMenu.dpiScale());
+		float sx = snap(x);
+		float sy = snap(y + (1f - k) * 4f);
 		for (int dx = -1; dx <= 1; dx++) {
 			for (int dy = -1; dy <= 1; dy++) {
 				if (dx != 0 || dy != 0) {
-					GuiDraw.text(graphics, font, c, x + dx, y + dy, 1f, shade, false);
+					draw(graphics, font, c, sx + dx * px * Math.round(k * UidMenu.dpiScale()), sy + dy * px * Math.round(k * UidMenu.dpiScale()), k, shade);
 				}
 			}
 		}
-		GuiDraw.text(graphics, font, c, x, y, 1f, color, false);
+		draw(graphics, font, c, sx, sy, k, color);
 	}
 
 	public static float width(Font font, String value) {
@@ -141,7 +184,7 @@ public final class UidLook {
 	}
 
 	public static float smallWidth(Font font, String value) {
-		return value == null ? 0f : font.width(MenuFont.uidSmall(value));
+		return value == null ? 0f : font.width(MenuFont.uidSmall(value)) * smallScale();
 	}
 
 	// ------------------------------------------------------------------ window
