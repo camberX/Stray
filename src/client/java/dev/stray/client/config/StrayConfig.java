@@ -579,6 +579,8 @@ public final class StrayConfig {
 	public boolean hudHotbar = false;
 	/** The hotbar selection box glides to the new slot instead of snapping. */
 	public boolean smoothHotbar = false;
+	/** Jump at the edge of a block while walking (/stray edge). Not in Stray Legit. */
+	public boolean edgeJump = false;
 	/** How fast it glides (higher is quicker). */
 	public int smoothHotbarSpeed = 18;
 	public boolean hudHealth = false;
