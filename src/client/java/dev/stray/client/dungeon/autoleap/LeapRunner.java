@@ -286,6 +286,19 @@ public final class LeapRunner {
 		return silentMenu != null ? menu == silentMenu : menu != Minecraft.getInstance().player.inventoryMenu;
 	}
 
+	/**
+	 * Tick start with a screen open, where {@link #beforeKeybinds} doesn't run: the head click
+	 * when the leap menu is shown as a screen ("Show leap menu"). Nothing else runs here.
+	 */
+	public static void screenStep(Minecraft client) {
+		LocalPlayer player = client.player;
+		if (step != Step.CLICK || silentMenu != null || client.gui.screen() == null || player == null || client.gameMode == null) {
+			return;
+		}
+		holdUseKey(client);
+		click(client, player);
+	}
+
 	private static void click(Minecraft client, LocalPlayer player) {
 		AbstractContainerMenu menu = player.containerMenu;
 		if (!ourMenu(menu)) {

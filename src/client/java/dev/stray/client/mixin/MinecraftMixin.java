@@ -38,6 +38,17 @@ public class MinecraftMixin {
 	}
 
 	/** In freecam the (unmoved) player's crosshair target is meaningless: no block outline for it. */
+	/**
+	 * The same moment of the tick as {@link #stray$preKeybinds}, but also with a screen open
+	 * (vanilla only handles keys without one): Auto Leap's head click in a shown leap menu.
+	 */
+	@Inject(method = "tick", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/Gui;tick()V", shift = At.Shift.AFTER))
+	private void stray$screenTickStart(CallbackInfo ci) {
+		if (!dev.stray.Edition.LEGIT) {
+			dev.stray.client.dungeon.autoleap.LeapRunner.screenStep((Minecraft) (Object) this);
+		}
+	}
+
 	@Inject(method = "pick", at = @At("RETURN"))
 	private void stray$ghostPickEnd(float partialTicks, CallbackInfo ci) {
 		if (dev.stray.client.movement.Freecam.active()) {
