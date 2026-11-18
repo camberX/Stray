@@ -747,6 +747,9 @@ public final class EtherwarpAim {
 		if (showing(client.player) && config.etherwarpAimNumbers && client.gui.screen() == null) {
 			numbers(graphics, client, config);
 		}
+		if (config.etherwarpAimCircle && config.etherwarpAimAssist && client.gui.screen() == null && holdingEther(client.player)) {
+			rangeCircle(graphics, client, config);
+		}
 		if (!config.etherwarpAimEdit) {
 			return;
 		}
@@ -765,6 +768,29 @@ public final class EtherwarpAim {
 		GuiDraw.roundedFine(graphics, x, y, w, h, h * 0.5f, 0xC00B0E13);
 		GuiDraw.roundedFine(graphics, x + 7f, y + 6.5f, 3f, 3f, 1.5f, 0xFF000000 | (config.etherwarpAimRgb & 0xFFFFFF));
 		GuiDraw.text(graphics, font, line, x + 13f, Math.round(GuiDraw.middle(y, h)), 0xFFEEF1F5, false);
+	}
+
+	/**
+	 * The aim assist's reach around your crosshair, like an aim FOV circle: tan(range) over
+	 * tan(half the vertical FOV), of half the screen height. Past about 80° it would cover the
+	 * screen, so it isn't drawn.
+	 */
+	private static void rangeCircle(GuiGraphicsExtractor graphics, Minecraft client, StrayConfig config) {
+		double range = config.etherwarpAimRange;
+		if (range >= 80.0) {
+			return;
+		}
+		double fov = client.options.fov().get();
+		float r = (float) (Math.tan(Math.toRadians(range)) / Math.tan(Math.toRadians(fov * 0.5)) * graphics.guiHeight() * 0.5);
+		if (r < 2f) {
+			return;
+		}
+		float cx = graphics.guiWidth() * 0.5f;
+		float cy = graphics.guiHeight() * 0.5f;
+		int rgb = config.etherwarpAimRgb & 0xFFFFFF;
+		// Brighter while sneaking, when the assist is actually pulling.
+		int alpha = client.player.isShiftKeyDown() ? 0xB0 : 0x60;
+		GuiDraw.roundedOutline(graphics, cx - r, cy - r, r * 2f, r * 2f, r, alpha << 24 | rgb, 0.5f);
 	}
 
 	/** Each point's place in the route, over its block; the next one in its own colour. */

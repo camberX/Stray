@@ -65,6 +65,7 @@ public class EtherwarpAimScreen extends SubScreen {
 				float range = 0.5f + (float) (t * t) * 179.5f;
 				config.etherwarpAimRange = range < 10f ? Math.round(range * 2f) / 2f : Math.round(range);
 			});
+		ly = toggleRow("Show range circle", config.etherwarpAimCircle, x, ly + 2f, lw, v -> config.etherwarpAimCircle = v);
 		ly = slider("Delay", config.etherwarpAimDelay + "ms", config.etherwarpAimDelay / 300f, x, ly + 2f, lw,
 			t -> config.etherwarpAimDelay = Math.round((float) t * 60f) * 5);
 		ly = divider(x, ly + 4f, lw);
@@ -148,7 +149,7 @@ public class EtherwarpAimScreen extends SubScreen {
 			boolean clip = GuiDraw.scissor(graphics, x, y, w, h);
 			try {
 				GuiDraw.circle(graphics, cx, cy, r, 0x22000000 | rgb);
-				GuiDraw.roundedOutline(graphics, cx - r, cy - r, r * 2f, r * 2f, r, 0xC0000000 | rgb, 1f);
+				GuiDraw.roundedOutline(graphics, cx - r, cy - r, r * 2f, r * 2f, r, 0xB0000000 | rgb, 0.5f);
 			} finally {
 				if (clip) {
 					GuiDraw.disableScissor(graphics);
