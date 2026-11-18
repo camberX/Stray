@@ -3144,6 +3144,9 @@ public class StrayScreen extends Screen {
 		String label,
 		Runnable click
 	) {
+		if (UidMenu.drawing()) {
+			return uidButton(graphics, font, x, y, w, mouseX, mouseY, label, click);
+		}
 		float row = rowH();
 		boolean hovered = GuiDraw.hovered(mouseX, mouseY, x, y, w, row);
 		if (hovered) {
@@ -3580,6 +3583,14 @@ public class StrayScreen extends Screen {
 		boolean placeholder,
 		Runnable focus
 	) {
+		if (UidMenu.drawing()) {
+			// A full-width text box, 20 px, in the label column.
+			UidLook.textbox(graphics, x + 20, y, w - 20, 20);
+			UidLook.text(graphics, font, UidLook.fit(font, shown, w - 30), x + 25, y + 5, placeholder ? UidLook.KEY : focused ? UidMenu.accent() : UidLook.LABEL);
+			hits.add(new Hit(x + 20, y, w - 20, 20, focus));
+			UidMenu.extent(y + 20);
+			return y + 25;
+		}
 		float row = rowH();
 		boolean hover = GuiDraw.hovered(mouseX, mouseY, x, y, w, row);
 		ClickLook.panel(graphics, x, y + 1, w, row - 2, 4, focused || hover ? Theme.CARD_HOVER : Theme.CARD, focused ? Theme.ACCENT : Theme.LINE);
@@ -3947,16 +3958,23 @@ public class StrayScreen extends Screen {
 			}
 			case SKILL -> {
 				SkillProgressTracker.poll(minecraft);
+				// uid?: the preview in the label column, the note as a hint row under it.
+				float px = UidMenu.drawing() ? ix + 20 : ix;
 				SkillProgressHudRenderer.draw(
 					graphics,
 					font,
 					minecraft.player,
-					ix,
+					px,
 					y,
 					1f,
 					SkillProgressTracker.snapshot()
 				);
-				GuiDraw.small(graphics, font, "From the action bar. HUD editor to move.", ix, y + SkillProgressHudRenderer.drawHeight() + 2, fade());
+				if (UidMenu.drawing()) {
+					UidMenu.extent(y + SkillProgressHudRenderer.drawHeight());
+					hint(graphics, font, ix, y + SkillProgressHudRenderer.drawHeight() + 5, iw, "From the action bar. HUD editor to move.");
+				} else {
+					GuiDraw.small(graphics, font, "From the action bar. HUD editor to move.", ix, y + SkillProgressHudRenderer.drawHeight() + 2, fade());
+				}
 			}
 			case MINING -> toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Ability alert", config.miningAbilityAlert, v -> config.miningAbilityAlert = v);
 			case TOP_DOWN -> {
@@ -4401,6 +4419,17 @@ public class StrayScreen extends Screen {
 		int bindWhich,
 		InputConstants.Key key
 	) {
+		if (UidMenu.drawing()) {
+			// The checkbox with its key inline on the right, the CPS slider under it.
+			float next = uidToggle(graphics, font, x, y, w, mouseX, mouseY, label, enabled, setEnabled);
+			boolean listening = bindListen == bindWhich;
+			String value = "[" + (listening ? "..." : UidMenu.keyText(OdinClicks.keyLabel(key))) + "]";
+			float vw = UidLook.smallWidth(font, value);
+			boolean hovered = GuiDraw.hovered(mouseX, mouseY, x + w - vw - 2, y, vw + 4, 13);
+			UidLook.small(graphics, font, value, x + w - vw, y + 2, listening ? UidLook.KEY_LISTEN : hovered ? UidLook.KEY_HOVER : UidLook.KEY);
+			hits.add(new Hit(x + w - vw - 2, y, vw + 4, 13, () -> bindListen = bindWhich));
+			return uidSlider(graphics, font, x, next, w, label + " CPS", cpsLabel(cps), (cps - 3.0f) / 12.0f, setCps);
+		}
 		float split = Math.min(w * 0.46f, w - 72f);
 		toggle(graphics, font, x, y, split, mouseX, mouseY, label, enabled, setEnabled);
 		slider(graphics, font, x + split + 4, y, Math.max(48f, w - split - 4), "CPS", cpsLabel(cps), (cps - 3.0f) / 12.0f, setCps);
@@ -4758,6 +4787,9 @@ public class StrayScreen extends Screen {
 	}
 
 	private float readout(GuiGraphicsExtractor graphics, Font font, float x, float y, float w, String label, boolean on) {
+		if (UidMenu.drawing()) {
+			return uidStat(graphics, font, x, y, w, label, on ? "ON" : "OFF", on ? UidMenu.accent() : UidLook.VALUE);
+		}
 		float labelY = GuiDraw.middle(y, ROW);
 		GuiDraw.menu(graphics, font, label, x + 1, labelY, ink());
 		GuiDraw.menu(graphics, font, on ? "ON" : "OFF", x + w - GuiDraw.menuWidth(font, on ? "ON" : "OFF"), labelY, on ? Theme.ACCENT : fade());
@@ -4765,6 +4797,9 @@ public class StrayScreen extends Screen {
 	}
 
 	private float statRow(GuiGraphicsExtractor graphics, Font font, float x, float y, float w, String label, String value) {
+		if (UidMenu.drawing()) {
+			return uidStat(graphics, font, x, y, w, label, value, UidMenu.accent());
+		}
 		float labelY = GuiDraw.middle(y, ROW);
 		GuiDraw.menu(graphics, font, label, x + 1, labelY, ink());
 		GuiDraw.menu(graphics, font, value, x + w - GuiDraw.menuWidth(font, value), labelY, Theme.ACCENT);
@@ -4772,6 +4807,12 @@ public class StrayScreen extends Screen {
 	}
 
 	private float hint(GuiGraphicsExtractor graphics, Font font, float x, float y, float w, String text) {
+		if (UidMenu.drawing()) {
+			// A dim line in the label column, a row of its own.
+			UidLook.text(graphics, font, UidLook.fit(font, text, w - 20), x + 20, y + 1, 0x88FFE08A);
+			UidMenu.extent(y + 12);
+			return y + 17;
+		}
 		GuiDraw.small(graphics, font, text, x + 1, GuiDraw.middle(y, ROW) + 1, Theme.WARN);
 		return y + ROW;
 	}
@@ -5578,6 +5619,18 @@ public class StrayScreen extends Screen {
 		return hits.size();
 	}
 
+	/** The lowest edge of the click areas added since {@code mark}, or {@code floor} when lower. */
+	float clickHitsBottom(int mark, float floor) {
+		float bottom = floor;
+		for (int i = Math.max(0, mark); i < hits.size(); i++) {
+			Hit hit = hits.get(i);
+			if (hit.h < 10000f) {
+				bottom = Math.max(bottom, hit.y + hit.h);
+			}
+		}
+		return bottom;
+	}
+
 	void clickHitRewind(int mark) {
 		if (mark >= 0 && mark < hits.size()) {
 			hits.subList(mark, hits.size()).clear();
@@ -5888,6 +5941,15 @@ public class StrayScreen extends Screen {
 		}));
 		UidMenu.extent(y + 20);
 		return y + 25;
+	}
+
+	/** A label with a value on the right. */
+	private float uidStat(GuiGraphicsExtractor graphics, Font font, float x, float y, float w, String label, String value, int color) {
+		float vw = UidLook.width(font, value);
+		UidLook.text(graphics, font, UidLook.fit(font, label, w - vw - 28), x + 20, y + 1, UidLook.LABEL);
+		UidLook.text(graphics, font, value, x + w - vw, y + 1, color);
+		UidMenu.extent(y + 13);
+		return y + 18;
 	}
 
 	private float uidButton(GuiGraphicsExtractor graphics, Font font, float x, float y, float w, int mouseX, int mouseY, String label, Runnable action) {

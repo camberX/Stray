@@ -249,8 +249,11 @@ public final class UidMenu {
 					UidLook.group(graphics, font, gx, gy, groupW, gh, group.title());
 					extent = gy;
 					float top = gy + 12;
+					int rows = screen.clickHitMark();
 					drawGroup(screen, graphics, font, mx, my, group, gx + 10, top, groupW - 20);
-					float h = extent - gy + 9;
+					// Rows not drawn in this look don't report how far they go; their click areas do.
+					float bottom = screen.clickHitsBottom(rows, extent);
+					float h = bottom - gy + 9;
 					heights.put(group.key(), Math.max(24f, h));
 				}
 				colY[col] += gh + 20;

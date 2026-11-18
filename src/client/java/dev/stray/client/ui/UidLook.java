@@ -115,6 +115,8 @@ public final class UidLook {
 	/** Any text while uid? draws, placed on whole screen pixels. */
 	public static void drawSnapped(GuiGraphicsExtractor graphics, Font font, Component value, float x, float y, int color) {
 		draw(graphics, font, value, snap(x), snap(y), 1f, color);
+		// Rows not drawn in this look still count toward their group's height through their text.
+		UidMenu.extent(y + 11);
 	}
 
 	/** Onto a whole screen pixel: the glyphs are rasterized at this exact scale, so they then land 1:1. */
