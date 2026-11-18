@@ -356,6 +356,15 @@ public final class StrayConfig {
 	public boolean leverTriggerbot = false;
 	public int leverTriggerbotDelay = 80;
 	public boolean leverTriggerbotDungeonsOnly = true;
+	/** Secret hitboxes (full edition): bigger levers, buttons, secret skulls and mushrooms to aim at. */
+	public boolean secretHitboxes = false;
+	public boolean secretHitboxesDungeonsOnly = true;
+	public boolean secretHitboxLever = true;
+	public float secretHitboxLeverSize = 1f;
+	public boolean secretHitboxButton = true;
+	public float secretHitboxButtonSize = 1f;
+	public boolean secretHitboxSkull = true;
+	public boolean secretHitboxMushroom = true;
 	public boolean etherwarpAim = false;
 	public boolean etherwarpAimAssist = true;
 	public boolean etherwarpAimEdit = false;
@@ -583,6 +592,8 @@ public final class StrayConfig {
 	/** 0 = by class, 1 = by player name. */
 	public int leapMode = 0;
 	public boolean leapSwapBack = false;
+	/** Auto / Fast Leap open the leap menu as the normal screen instead of silently. */
+	public boolean leapShowMenu = false;
 	public boolean autoLeapP3 = false;
 	public boolean fastLeapP3 = false;
 	/** P3: wait for the section's gate (or the Core) too, not just its tasks. */
@@ -1797,6 +1808,8 @@ public final class StrayConfig {
 				loaded.terminalFirstClickDelay = Math.max(0, Math.min(8, loaded.terminalFirstClickDelay));
 				loaded.terminalScale = Math.max(50, Math.min(200, loaded.terminalScale));
 				loaded.leverTriggerbotDelay = Math.max(0, Math.min(300, loaded.leverTriggerbotDelay));
+				loaded.secretHitboxLeverSize = Math.max(0.5f, Math.min(1f, loaded.secretHitboxLeverSize));
+				loaded.secretHitboxButtonSize = Math.max(0.375f, Math.min(1f, loaded.secretHitboxButtonSize));
 				loaded.etherwarpAimSpeed = Math.max(1, Math.min(100, loaded.etherwarpAimSpeed));
 				loaded.etherwarpAimRange = Math.max(0.5f, Math.min(180f, loaded.etherwarpAimRange));
 				loaded.etherwarpAimDelay = Math.max(0, Math.min(300, loaded.etherwarpAimDelay));

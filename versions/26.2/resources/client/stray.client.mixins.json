@@ -45,6 +45,8 @@
 		"GuiAccessor",
 		"GuiMixin",
 		"LeapSilentMixin",
+		"SecretHitboxMixin",
+		"SecretHitboxOutlineMixin",
 		"FastLeapClickMixin",
 		"SubmitTextNamesMixin",
 		"ChatLineNamesMixin",

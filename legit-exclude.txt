@@ -21,6 +21,9 @@ dev/stray/client/dungeon/DungeonRooms*.class
 dev/stray/client/ui/EtherwarpAimScreen*.class
 dev/stray/client/ui/EtherwarpRoutesScreen*.class
 dev/stray/client/dungeon/EtherwarpRoutes*.class
+# Secret hitboxes (NoammAddons): bigger lever / button / skull / mushroom hitboxes
+dev/stray/client/dungeon/SecretHitboxes*.class
+dev/stray/client/mixin/SecretHitbox*.class
 # Custom F7 terminal GUIs (solver: clicks land only on the solution)
 dev/stray/client/dungeon/terminal/**
 # Loadouts and wardrobe menus
@@ -51,6 +54,8 @@ dev/stray/client/mining/KeepBreakProgress*.class
 mixin: ClientLevelMixin
 mixin: LeapSilentMixin
 mixin: FastLeapClickMixin
+mixin: SecretHitboxMixin
+mixin: SecretHitboxOutlineMixin
 # Account manager (Microsoft login, Prism import, session switching)
 dev/stray/client/account/**
 dev/stray/client/ui/AccountScreen*.class

@@ -605,7 +605,7 @@ public final class ClickGui {
 	/** Modules Stray Legit leaves out: they automate input or are the loadouts / wardrobe menus. */
 	private static final java.util.Set<String> LEGIT_REMOVED = java.util.Set.of(
 		"Auto clicker", "Experiments", "Book combine", "Loadouts", "Wardrobe", "Auto DNA",
-		"Command rings", "Movement rings", "Align triggerbot", "Terminal GUI", "Lever triggerbot", "Etherwarp aim", "Auto leap", "Fast leap"
+		"Command rings", "Movement rings", "Align triggerbot", "Terminal GUI", "Lever triggerbot", "Secret hitboxes", "Etherwarp aim", "Auto leap", "Fast leap"
 	);
 
 	/**
@@ -651,6 +651,7 @@ public final class ClickGui {
 		mods.add(mod("Mask timers", "Dungeons", StrayScreen.Feature.MASK_TIMERS, null, () -> config.maskTimers, v -> config.maskTimers = v, true, false));
 		mods.add(mod(ALIGN, "Dungeons", StrayScreen.Feature.ALIGN_BOT, null, () -> config.alignTriggerbot, v -> config.alignTriggerbot = v, true, false));
 		mods.add(mod(LEVER, "Dungeons", StrayScreen.Feature.LEVER_BOT, null, () -> config.leverTriggerbot, v -> config.leverTriggerbot = v, true, false));
+		mods.add(mod("Secret hitboxes", "Dungeons", StrayScreen.Feature.SECRET_HITBOXES, null, () -> config.secretHitboxes, v -> config.secretHitboxes = v, true, false));
 		mods.add(mod(ETHERWARP_AIM, "Dungeons", StrayScreen.Feature.ETHERWARP_AIM, null, () -> config.etherwarpAim, v -> config.etherwarpAim = v, true, false));
 		mods.add(mod(AUTO_LEAP, "Dungeons", StrayScreen.Feature.AUTO_LEAP, null, () -> config.autoLeap, v -> config.autoLeap = v, true, false));
 		mods.add(mod(FAST_LEAP, "Dungeons", StrayScreen.Feature.FAST_LEAP, null, () -> config.fastLeap, v -> config.fastLeap = v, true, false));

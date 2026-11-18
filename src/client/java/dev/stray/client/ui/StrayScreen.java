@@ -181,6 +181,7 @@ public class StrayScreen extends Screen {
 		LEAP_MENU("Leap menu", 9),
 		ALIGN_BOT("Align triggerbot", 2),
 		LEVER_BOT("Lever triggerbot", 2),
+		SECRET_HITBOXES("Secret hitboxes", 5),
 		ETHERWARP_AIM("Etherwarp aim", 1),
 		F7_TITLES("F7 titles", 4),
 		TERM_HIGHLIGHT("Terminal highlight", 4),
@@ -268,6 +269,10 @@ public class StrayScreen extends Screen {
 			}
 			if (this == AUTO_LEAP || this == FAST_LEAP) {
 				return leapRows(this == AUTO_LEAP);
+			}
+			if (this == SECRET_HITBOXES) {
+				StrayConfig config = StrayConfig.get();
+				return dev.stray.Edition.LEGIT ? 1 : baseRows + (config.secretHitboxLever ? 1 : 0) + (config.secretHitboxButton ? 1 : 0);
 			}
 			if (this == NICK) {
 				return NickSteal.status() == NickSteal.Status.OFF ? 2 : 3;
@@ -3407,7 +3412,7 @@ public class StrayScreen extends Screen {
 	static int leapRows(boolean auto) {
 		if (!dev.stray.Edition.LEGIT) {
 			StrayConfig config = StrayConfig.get();
-			int rows = 2;
+			int rows = 3;
 			for (dev.stray.client.dungeon.autoleap.AutoLeap.Target target : dev.stray.client.dungeon.autoleap.AutoLeap.targets()) {
 				if (auto ? !target.auto() : !target.fast()) {
 					continue;
@@ -3438,6 +3443,7 @@ public class StrayScreen extends Screen {
 				leapFocus = null;
 			});
 			y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Swap back", config.leapSwapBack, v -> config.leapSwapBack = v);
+			y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Show leap menu", config.leapShowMenu, v -> config.leapShowMenu = v);
 			for (dev.stray.client.dungeon.autoleap.AutoLeap.Target target : dev.stray.client.dungeon.autoleap.AutoLeap.targets()) {
 				if (auto ? !target.auto() : !target.fast()) {
 					continue;
@@ -3978,6 +3984,23 @@ public class StrayScreen extends Screen {
 			case LEVER_BOT -> {
 				y = slider(graphics, font, ix, y, iw, "Delay", config.leverTriggerbotDelay + "ms", config.leverTriggerbotDelay / 300f, v -> config.leverTriggerbotDelay = snapInt(v * 300f, 0, 300, 5));
 				toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Dungeons only", config.leverTriggerbotDungeonsOnly, v -> config.leverTriggerbotDungeonsOnly = v);
+			}
+			case SECRET_HITBOXES -> {
+				if (!dev.stray.Edition.LEGIT) {
+					y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Dungeons only", config.secretHitboxesDungeonsOnly, v -> config.secretHitboxesDungeonsOnly = v);
+					y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Levers", config.secretHitboxLever, v -> config.secretHitboxLever = v);
+					if (config.secretHitboxLever) {
+						y = slider(graphics, font, ix + 8, y, iw - 8, "Size", Math.round(config.secretHitboxLeverSize * 16f) + "/16", (config.secretHitboxLeverSize - 0.5f) / 0.5f,
+							v -> config.secretHitboxLeverSize = Math.round((0.5f + v * 0.5f) * 16f) / 16f);
+					}
+					y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Buttons", config.secretHitboxButton, v -> config.secretHitboxButton = v);
+					if (config.secretHitboxButton) {
+						y = slider(graphics, font, ix + 8, y, iw - 8, "Size", Math.round(config.secretHitboxButtonSize * 16f) + "/16", (config.secretHitboxButtonSize - 0.375f) / 0.625f,
+							v -> config.secretHitboxButtonSize = Math.round((0.375f + v * 0.625f) * 16f) / 16f);
+					}
+					y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Essence and key skulls", config.secretHitboxSkull, v -> config.secretHitboxSkull = v);
+					toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Mushrooms", config.secretHitboxMushroom, v -> config.secretHitboxMushroom = v);
+				}
 			}
 			case ETHERWARP_AIM -> {
 				if (!dev.stray.Edition.LEGIT) {
