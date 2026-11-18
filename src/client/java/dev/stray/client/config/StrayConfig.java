@@ -474,22 +474,55 @@ public final class StrayConfig {
 	public int terminalHighlightRgb = 0xB57CFF;
 	public float terminalHighlightOpacity = 0.6f;
 	public boolean alignTriggerbotRandom = true;
-	/** Dungeon map (NoammAddons' map, in the Shadow look). */
+	/** Dungeon map (NoammAddons' map, ported with noamm's permission). */
 	public boolean dungeonMapEnabled = false;
-	/** 0 checkmarks, 1 secrets, 2 room names, 3 names + secrets, 4 secrets + puzzle names. */
-	public int dungeonMapRoomInfo = 0;
-	/** 0 off, 1 while holding a leap, 2 always. */
-	public int dungeonMapPlayerNames = 1;
-	public boolean dungeonMapHeads = true;
-	public boolean dungeonMapClassBorders = true;
-	public boolean dungeonMapPredict = true;
-	public boolean dungeonMapHideInBoss = false;
+	/** Draws the map in the streamproof overlay instead of the game frame. */
+	public boolean dungeonMapStreamproof = false;
 	/** Full edition only: shows rooms you have not opened yet, from the loaded world. */
 	public boolean dungeonMapCheater = false;
-	/** Your own marker as the vanilla map arrow instead of your head. */
+	public boolean dungeonMapHideInBoss = false;
+	/** 0 checkmarks, 1 secrets, 2 room names, 3 names + secrets, 4 secrets + puzzle names. */
+	public int dungeonMapRoomInfo = 0;
+	public boolean dungeonMapCenterText = true;
+	public boolean dungeonMapHideBloodText = false;
+	public boolean dungeonMapHideQuestion = false;
+	public boolean dungeonMapLimitNames = true;
+	public boolean dungeonMapPredict = true;
+	/** Percent. */
+	public int dungeonMapTextScale = 100;
+	public int dungeonMapCheckmarkScale = 100;
+	public int dungeonMapDoorWidth = 6;
+	public int dungeonMapBorderWidth = 1;
+	public int dungeonMapBackground = 0x32FFFFFF;
+	public int dungeonMapBorderColor = 0xFFFFFFFF;
+	public int dungeonMapUndiscoveredTint = 50;
+	public int dungeonMapColorUndiscovered = 0xFF000000;
+	/** 0 off, 1 while holding a leap, 2 always. */
+	public int dungeonMapPlayerNames = 0;
+	public int dungeonMapHeadScale = 100;
+	public int dungeonMapNameScale = 50;
+	public boolean dungeonMapAnimateHeads = true;
+	public int dungeonMapHeadBorder = 0xFF000000;
+	public boolean dungeonMapClassBorders = false;
+	public boolean dungeonMapClassNames = false;
+	/** Your own marker as NoammAddons' arrow instead of your head. */
 	public boolean dungeonMapSelfArrow = false;
-	/** Size of the rooms inside the panel, percent; the panel itself stays the same. */
-	public int dungeonMapZoom = 100;
+	public int dungeonMapArrowColor = 0xFF00FF00;
+	public int dungeonMapColorUnopened = 0xFF414141;
+	public int dungeonMapColorBlood = 0xFFFF0000;
+	public int dungeonMapColorFairy = 0xFFF27FA5;
+	public int dungeonMapColorRare = 0xFFB2B2B2;
+	public int dungeonMapColorMiniboss = 0xFFE5E533;
+	public int dungeonMapColorPuzzle = 0xFFB24CD8;
+	public int dungeonMapColorTrap = 0xFFD87F33;
+	public int dungeonMapColorRoom = 0xFF72431B;
+	public int dungeonMapColorEntrance = 0xFF007C00;
+	public int dungeonMapColorUnopenedDoor = 0xFF414141;
+	public int dungeonMapColorBloodDoor = 0xFFFF0000;
+	public int dungeonMapColorWitherDoor = 0xFF101010;
+	public int dungeonMapColorRoomDoor = 0xFF72431B;
+	public int dungeonMapColorOpenWitherDoor = 0xFF72431B;
+	public int dungeonMapColorEntranceDoor = 0xFF007C00;
 	public boolean arrayListAccent = false;
 	public java.util.List<String> arrayListHidden = new java.util.ArrayList<>();
 	public java.util.List<ClickColumnPos> clickColumns = new java.util.ArrayList<>();
@@ -1840,7 +1873,13 @@ public final class StrayConfig {
 				loaded.alignTriggerbotDelay = Math.max(10, Math.min(400, loaded.alignTriggerbotDelay));
 				loaded.dungeonMapRoomInfo = Math.floorMod(loaded.dungeonMapRoomInfo, 5);
 				loaded.dungeonMapPlayerNames = Math.floorMod(loaded.dungeonMapPlayerNames, 3);
-				loaded.dungeonMapZoom = Math.max(100, Math.min(200, loaded.dungeonMapZoom));
+				loaded.dungeonMapTextScale = clamp(loaded.dungeonMapTextScale, 40, 150);
+				loaded.dungeonMapCheckmarkScale = clamp(loaded.dungeonMapCheckmarkScale, 30, 150);
+				loaded.dungeonMapDoorWidth = clamp(loaded.dungeonMapDoorWidth, 6, 10);
+				loaded.dungeonMapBorderWidth = clamp(loaded.dungeonMapBorderWidth, 0, 5);
+				loaded.dungeonMapUndiscoveredTint = clamp(loaded.dungeonMapUndiscoveredTint, 0, 100);
+				loaded.dungeonMapHeadScale = clamp(loaded.dungeonMapHeadScale, 30, 150);
+				loaded.dungeonMapNameScale = clamp(loaded.dungeonMapNameScale, 30, 150);
 				loaded.slotSlayer = hudSlot(loaded.slotSlayer);
 				loaded.slotSlayerProfit = hudSlot(loaded.slotSlayerProfit);
 				loaded.slotSlayerRng = hudSlot(loaded.slotSlayerRng);
@@ -2759,6 +2798,22 @@ public final class StrayConfig {
 		slotSlayerKills = new HudSlot();
 		slotSlayerDagger = new HudSlot();
 		slotSlayerPillar = new HudSlot();
+	}
+
+	/** An int ARGB colour field by name (the menu's generic colour picker). */
+	public int argbField(String name) {
+		try {
+			return StrayConfig.class.getField(name).getInt(this);
+		} catch (ReflectiveOperationException | RuntimeException e) {
+			return 0xFFFFFFFF;
+		}
+	}
+
+	public void setArgbField(String name, int argb) {
+		try {
+			StrayConfig.class.getField(name).setInt(this, argb);
+		} catch (ReflectiveOperationException | RuntimeException ignored) {
+		}
 	}
 
 	public static int clamp(int value, int min, int max) {

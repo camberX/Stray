@@ -51,6 +51,10 @@ public final class EntityBoxEsp {
 			if (!visuals.boxEnabled || !include(client, living, visuals, camPos)) {
 				continue;
 			}
+			if (!dev.stray.Edition.LEGIT && visuals.boxStreamproof && EntityKind.of(living) == EntityKind.STAR) {
+				// Drawn in the streamproof overlay instead (StarMobOverlay).
+				continue;
+			}
 			Vec3 feet = living.getPosition(partial);
 			Vec3 mid = feet.add(0.0, living.getBbHeight() * 0.5, 0.0);
 			if (!EntityScreenBoxes.facing(mid, camPos, forward)) {
@@ -74,7 +78,7 @@ public final class EntityBoxEsp {
 		}
 	}
 
-	private static boolean include(Minecraft client, LivingEntity living, EntityVisuals visuals, Vec3 camPos) {
+	static boolean include(Minecraft client, LivingEntity living, EntityVisuals visuals, Vec3 camPos) {
 		if (living.isRemoved() || living.isDeadOrDying() || living instanceof ArmorStand) {
 			return false;
 		}

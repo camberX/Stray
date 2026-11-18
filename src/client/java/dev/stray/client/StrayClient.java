@@ -234,7 +234,7 @@ public final class StrayClient implements ClientModInitializer {
 		if (!dev.stray.Edition.LEGIT) { dev.stray.client.item.AutoHotbar.init(); }
 		if (!dev.stray.Edition.LEGIT) { dev.stray.client.dungeon.AlignTriggerbot.init(); }
 		if (!dev.stray.Edition.LEGIT) { dev.stray.client.dungeon.autoleap.AutoLeap.init(); }
-		dev.stray.client.dungeon.map.NoammData.start();
+		dev.stray.client.dungeon.map.Rooms.start();
 		ClientReceiveMessageEvents.ALLOW_GAME.register((message, overlay) -> {
 			if (!overlay) {
 				String plain = message.getString();
@@ -1004,17 +1004,30 @@ public final class StrayClient implements ClientModInitializer {
 				StrayConfig.get().dungeonMapEnabled = true;
 				StrayConfig.get().save();
 			}
-			String rooms = dev.stray.client.dungeon.map.RoomDatabase.size() > 0
-				? dev.stray.client.dungeon.map.RoomDatabase.size() + " rooms from " + dev.stray.client.dungeon.map.RoomDatabase.source()
-				: "§cno room data yet§7 (download: " + dev.stray.client.dungeon.map.NoammData.status() + ")";
-			context.getSource().sendFeedback(Component.literal("§bStray §7map preview " + (on ? "§aon§7: a sample dungeon on the HUD. " + rooms : "§coff§7.")));
+			String rooms = dev.stray.client.dungeon.map.Rooms.source();
+			context.getSource().sendFeedback(Component.literal("§bStray §7map preview " + (on ? "§aon§7: a sample dungeon on the HUD. " : "§coff§7. ") + "Rooms: " + rooms));
 			if (dev.stray.client.location.SkyblockLocation.inDungeon) {
-				context.getSource().sendFeedback(Component.literal("§bStray §7scan: §f" + dev.stray.client.dungeon.map.DungeonScanner.scannedRooms()
-					+ "§7 room cells, " + (dev.stray.client.dungeon.map.DungeonScanner.finished() ? "all loaded" : "still waiting for chunks")
-					+ ", show unopened rooms " + (dev.stray.client.dungeon.map.DungeonMap.cheater() ? "§aon" : "§coff")));
+				int cells = 0;
+				for (dev.stray.client.dungeon.map.Tile tile : dev.stray.client.dungeon.map.Scanner.GRID) {
+					if (tile instanceof dev.stray.client.dungeon.map.RoomTile) {
+						cells++;
+					}
+				}
+				context.getSource().sendFeedback(Component.literal("§bStray §7scan: §f" + cells + "§7 room cells, "
+					+ (dev.stray.client.dungeon.map.Scanner.hasScanned ? "all loaded" : "still waiting for chunks")
+					+ ", calibrated " + dev.stray.client.dungeon.map.MapUtils.calibrated));
 			}
 			return Command.SINGLE_SUCCESS;
 		}));
+		if (!dev.stray.Edition.LEGIT) {
+			// /stray debug dev overlay: the streamproof overlay window's state (and a fresh try after a failure).
+			node.then(ClientCommands.literal("overlay").executes(context -> {
+				String before = dev.stray.client.render.overlay.window.Streamproof.status();
+				dev.stray.client.render.overlay.window.Streamproof.retry();
+				context.getSource().sendFeedback(Component.literal("§bStray §7streamproof overlay: §f" + before + "§7 (trying again if it was off)"));
+				return Command.SINGLE_SUCCESS;
+			}));
+		}
 		if (!dev.stray.Edition.LEGIT) {
 			// /stray debug dev screen <name>: opens a submenu directly, for checking how it looks.
 			node.then(ClientCommands.literal("etherwarp").executes(context -> {

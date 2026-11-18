@@ -1,6 +1,6 @@
 package dev.stray.client.dungeon.map;
 
-/** One cell of the 11 x 11 dungeon grid: a room piece, a door, or nothing known yet. */
+/** One cell of the 11x11 dungeon grid: a room, a door, a room connector or nothing. */
 public abstract class Tile {
 	public final int x;
 	public final int z;
@@ -15,18 +15,18 @@ public abstract class Tile {
 		return state;
 	}
 
-	public void setState(RoomState value) {
-		state = value;
+	public void setState(RoomState state) {
+		this.state = state;
 	}
 
-	/** Fill colour on the map. */
+	/** ARGB. */
 	public abstract int color();
 
 	public int row() {
-		return (z - DungeonScanner.START_Z) / (DungeonScanner.ROOM_SIZE >> 1);
+		return (z - Scanner.START_Z) / (Scanner.ROOM_SIZE >> 1);
 	}
 
 	public int column() {
-		return (x - DungeonScanner.START_X) / (DungeonScanner.ROOM_SIZE >> 1);
+		return (x - Scanner.START_X) / (Scanner.ROOM_SIZE >> 1);
 	}
 }

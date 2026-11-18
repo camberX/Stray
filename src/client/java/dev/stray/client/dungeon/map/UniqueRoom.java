@@ -1,12 +1,13 @@
 package dev.stray.client.dungeon.map;
 
+import dev.stray.client.config.StrayConfig;
+
 import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.LinkedHashMap;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-/** All the cells of one room, with where its checkmark or name goes. From NoammAddons (CC0). */
+/** One whole room (all its grid cells). */
 public final class UniqueRoom {
 	private int topLeftX;
 	private int topLeftY;
@@ -16,25 +17,23 @@ public final class UniqueRoom {
 	public RoomTile mainRoom;
 	public final RoomData data;
 	public final String name;
-	public final String[] splitName;
+	public final String[] nameLines;
+	public Integer highestBlock;
 	private int foundSecrets;
-
 	private boolean boundsDirty = true;
 	public float maxWidth;
 	public float maxHeight;
 
 	public UniqueRoom(int arrX, int arrY, RoomTile tile) {
-		topLeftX = arrX;
-		topLeftY = arrY;
-		centerX = arrX;
-		centerY = arrY;
+		topLeftX = centerX = arrX;
+		topLeftY = centerY = arrY;
 		tiles.add(tile);
 		mainRoom = tile;
 		data = tile.data;
 		name = data.name();
-		splitName = name.split(" ");
-		DungeonScanner.cryptCount += data.crypts();
-		DungeonScanner.secretCount += data.secrets();
+		nameLines = name.split(" ");
+		Scanner.cryptCount += data.crypts();
+		Scanner.secretCount += data.secrets();
 	}
 
 	public int foundSecrets() {
@@ -45,7 +44,7 @@ public final class UniqueRoom {
 		foundSecrets = value;
 	}
 
-	/** The room's size on the map, for fitting its name inside. */
+	/** Space the room's text may use, in map pixels. */
 	public void updateBounds(float roomSize, float gapSize) {
 		if (!boundsDirty) {
 			return;
@@ -64,8 +63,8 @@ public final class UniqueRoom {
 				minZ = Math.min(minZ, tile.z);
 				maxZ = Math.max(maxZ, tile.z);
 			}
-			int wide = (maxX - minX) / DungeonScanner.ROOM_SIZE + 1;
-			int tall = (maxZ - minZ) / DungeonScanner.ROOM_SIZE + 1;
+			int wide = (maxX - minX) / Scanner.ROOM_SIZE + 1;
+			int tall = (maxZ - minZ) / Scanner.ROOM_SIZE + 1;
 			w = wide * roomSize + Math.max(0, wide - 1) * gapSize;
 			h = tall * roomSize + Math.max(0, tall - 1) * gapSize;
 		}
@@ -93,18 +92,21 @@ public final class UniqueRoom {
 			centerY = y;
 			return;
 		}
-		// (row, column) of each real cell
-		List<int[]> cells = new ArrayList<>();
+		// [row, column] of the real (non-separator) cells
+		Map<Integer, Integer> columns = new HashMap<>();
+		Map<Integer, Integer> rows = new HashMap<>();
 		for (RoomTile t : tiles) {
-			if (!t.isSeparator) {
-				cells.add(new int[] {t.row(), t.column()});
+			if (t.isSeparator) {
+				continue;
 			}
+			columns.merge(t.column(), 1, Integer::sum);
+			rows.merge(t.row(), 1, Integer::sum);
 		}
-		if (cells.isEmpty()) {
+		if (columns.isEmpty()) {
 			return;
 		}
-		List<Map.Entry<Integer, Integer>> xRooms = grouped(cells, 1);
-		List<Map.Entry<Integer, Integer>> zRooms = grouped(cells, 0);
+		List<Map.Entry<Integer, Integer>> xRooms = sorted(columns);
+		List<Map.Entry<Integer, Integer>> zRooms = sorted(rows);
 		if (zRooms.size() == 1 || !zRooms.get(0).getValue().equals(zRooms.get(1).getValue())) {
 			int sum = 0;
 			for (Map.Entry<Integer, Integer> e : xRooms) {
@@ -125,23 +127,14 @@ public final class UniqueRoom {
 		}
 	}
 
-	/** Groups cells by row (0) or column (1): key and count, biggest group first, stable otherwise. */
-	private static List<Map.Entry<Integer, Integer>> grouped(List<int[]> cells, int axis) {
-		Map<Integer, Integer> counts = new LinkedHashMap<>();
-		for (int[] cell : cells) {
-			counts.merge(cell[axis], 1, Integer::sum);
-		}
+	private static List<Map.Entry<Integer, Integer>> sorted(Map<Integer, Integer> counts) {
 		List<Map.Entry<Integer, Integer>> list = new ArrayList<>(counts.entrySet());
-		list.sort(Comparator.comparingInt((Map.Entry<Integer, Integer> e) -> e.getValue()).reversed());
+		list.sort((a, b) -> Integer.compare(b.getValue(), a.getValue()));
 		return list;
 	}
 
-	/** Grid column and row where the checkmark or name goes (the room's middle). */
-	public int checkColumn() {
-		return centerX;
-	}
-
-	public int checkRow() {
-		return centerY;
+	/** [column, row] where the checkmark or text goes. */
+	public int[] checkmarkPosition() {
+		return StrayConfig.get().dungeonMapCenterText ? new int[]{centerX, centerY} : new int[]{topLeftX, topLeftY};
 	}
 }

@@ -798,7 +798,7 @@ public final class HudLayout {
 			case CROP_FEVER -> GardenHudRenderer.cropFeverWidth(font) * scale;
 			case GREENHOUSE_GROWTH -> GardenHudRenderer.greenhouseWidth(font) * scale;
 			case TOP_DOWN -> TopDownHudRenderer.drawWidth() * scale;
-			case DUNGEON_MAP -> dev.stray.client.dungeon.map.DungeonMapRenderer.drawWidth() * scale;
+			case DUNGEON_MAP -> dev.stray.client.dungeon.map.MapRenderer.SIZE * scale;
 			case F7_TITLE, F7_LIGHTNING, F7_TERMINAL -> dev.stray.client.dungeon.F7Titles.boxWidth(id) * scale;
 			case ARRAY_LIST -> ArrayListHud.width(font) * scale;
 			case MASK_TIMERS -> dev.stray.client.dungeon.MaskTimers.width(font) * scale;
@@ -840,7 +840,7 @@ public final class HudLayout {
 			case CROP_FEVER -> GardenHudRenderer.cropFeverHeight() * scale;
 			case GREENHOUSE_GROWTH -> GardenHudRenderer.greenhouseHeight() * scale;
 			case TOP_DOWN -> TopDownHudRenderer.drawHeight() * scale;
-			case DUNGEON_MAP -> dev.stray.client.dungeon.map.DungeonMapRenderer.drawHeight() * scale;
+			case DUNGEON_MAP -> dev.stray.client.dungeon.map.MapRenderer.SIZE * scale;
 			case F7_TITLE, F7_LIGHTNING, F7_TERMINAL -> dev.stray.client.dungeon.F7Titles.boxHeight(id) * scale;
 			case ARRAY_LIST -> ArrayListHud.height(font) * scale;
 			case MASK_TIMERS -> dev.stray.client.dungeon.MaskTimers.height() * scale;

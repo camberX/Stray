@@ -1,29 +1,21 @@
 package dev.stray.client.dungeon.map;
 
 import net.minecraft.world.level.block.Block;
+import net.minecraft.world.item.DyeColor;
 import net.minecraft.world.level.block.Blocks;
 
 public enum DoorType {
-	BLOOD,
-	WITHER,
-	NORMAL,
-	ENTRANCE;
-
-	/** The block that stands in the doorway at y 69 for this kind of door. */
-	public Block source() {
-		return switch (this) {
-			case BLOOD -> Blocks.DYED_TERRACOTTA.red();
-			case WITHER -> Blocks.COAL_BLOCK;
-			case NORMAL -> Blocks.AIR;
-			case ENTRANCE -> Blocks.INFESTED_CHISELED_STONE_BRICKS;
-		};
-	}
+	BLOOD, WITHER, NORMAL, ENTRANCE;
 
 	public static DoorType fromBlock(Block block) {
-		for (DoorType type : values()) {
-			if (type.source() == block) {
-				return type;
-			}
+		if (block == Blocks.DYED_TERRACOTTA.pick(DyeColor.RED)) {
+			return BLOOD;
+		}
+		if (block == Blocks.COAL_BLOCK) {
+			return WITHER;
+		}
+		if (block == Blocks.INFESTED_CHISELED_STONE_BRICKS) {
+			return ENTRANCE;
 		}
 		return NORMAL;
 	}

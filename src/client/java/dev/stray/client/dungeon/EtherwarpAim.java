@@ -227,7 +227,7 @@ public final class EtherwarpAim {
 		if (room == null || !dev.stray.client.location.SkyblockLocation.inDungeon) {
 			return false;
 		}
-		dev.stray.client.dungeon.map.UniqueRoom unique = dev.stray.client.dungeon.map.DungeonScanner.UNIQUE_ROOMS.get(room.name());
+		dev.stray.client.dungeon.map.UniqueRoom unique = dev.stray.client.dungeon.map.Scanner.UNIQUE_ROOMS.get(room.name());
 		return unique != null && unique.mainRoom != null && unique.mainRoom.state() == dev.stray.client.dungeon.map.RoomState.GREEN;
 	}
 

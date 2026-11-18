@@ -1,93 +1,80 @@
 package dev.stray.client.dungeon.map;
 
+import dev.stray.client.config.StrayConfig;
 import dev.stray.client.dungeon.DungeonParty;
 import net.minecraft.client.player.AbstractClientPlayer;
 import net.minecraft.world.entity.player.PlayerSkin;
 
-/**
- * A head on the map. Teammates out of render distance move by the map item's markers,
- * which jump a few pixels at a time, so their head glides to each new spot over 350 ms.
- */
+/** A head on the map. */
 public final class MapPlayer {
-	private static final float GLIDE_MS = 350f;
-
+	private static final long ANIMATION_MS = 350L;
 	public final String name;
-	public DungeonParty.DungeonClass clazz;
+	public DungeonParty.DungeonClass clazz = DungeonParty.DungeonClass.EMPTY;
 	public PlayerSkin skin;
 	public boolean dead;
-	public AbstractClientPlayer entity;
 	public boolean self;
-	String icon = "";
-
+	public AbstractClientPlayer entity;
+	public String icon = "";
+	public float mapX;
+	public float mapZ;
+	public float yaw;
+	private boolean placed;
 	private float fromX;
 	private float fromZ;
 	private float fromYaw;
-	private float toX;
-	private float toZ;
-	private float toYaw;
-	private long startMs;
-	private boolean placed;
+	private long moveStart;
+	private float drawX;
+	private float drawZ;
+	private float drawYaw;
 
 	public MapPlayer(String name) {
 		this.name = name;
 	}
 
-	/** Sets where the head is headed; it glides there from wherever it is now. */
+	/** A new position from the map decoration. */
 	public void target(float x, float z, float yaw) {
-		if (placed && x == toX && z == toZ && yaw == toYaw) {
+		if (!placed) {
+			placed = true;
+			drawX = mapX = x;
+			drawZ = mapZ = z;
+			drawYaw = this.yaw = yaw;
 			return;
 		}
-		long now = System.currentTimeMillis();
-		if (!placed) {
-			fromX = x;
-			fromZ = z;
-			fromYaw = yaw;
-			placed = true;
-		} else {
-			fromX = mapX(now);
-			fromZ = mapZ(now);
-			fromYaw = yaw(now);
+		if (x == mapX && z == mapZ && yaw == this.yaw) {
+			return;
 		}
-		toX = x;
-		toZ = z;
-		toYaw = yaw;
-		startMs = now;
-	}
-
-	/** Puts the head straight there (the preview, or a player you can see). */
-	public void place(float x, float z, float yaw) {
-		fromX = toX = x;
-		fromZ = toZ = z;
-		fromYaw = toYaw = yaw;
-		startMs = 0L;
-		placed = true;
+		fromX = drawX;
+		fromZ = drawZ;
+		fromYaw = drawYaw;
+		moveStart = System.currentTimeMillis();
+		mapX = x;
+		mapZ = z;
+		this.yaw = yaw;
 	}
 
 	public boolean placed() {
-		return placed;
+		return placed || (entity != null && entity.isAlive());
 	}
 
-	private float progress(long now) {
-		return Math.min(1f, (now - startMs) / GLIDE_MS);
-	}
-
-	public float mapX(long now) {
-		float t = ease(progress(now));
-		return fromX + (toX - fromX) * t;
-	}
-
-	public float mapZ(long now) {
-		float t = ease(progress(now));
-		return fromZ + (toZ - fromZ) * t;
-	}
-
-	public float yaw(long now) {
-		float t = ease(progress(now));
-		float delta = ((toYaw - fromYaw) % 360f + 540f) % 360f - 180f;
-		return fromYaw + delta * t;
-	}
-
-	private static float ease(float t) {
-		return 1f - (1f - t) * (1f - t) * (1f - t);
+	/** [x, z, yaw] to draw at. */
+	public float[] position(float partialTick) {
+		if (entity != null && entity.isAlive()) {
+			double x = entity.xo + (entity.getX() - entity.xo) * partialTick;
+			double z = entity.zo + (entity.getZ() - entity.zo) * partialTick;
+			float[] m = MapUtils.toMap(x, z);
+			drawX = m[0];
+			drawZ = m[1];
+			drawYaw = entity.getViewYRot(partialTick);
+			return new float[]{drawX, drawZ, drawYaw};
+		}
+		if (!StrayConfig.get().dungeonMapAnimateHeads) {
+			return new float[]{mapX, mapZ, yaw};
+		}
+		float t = Math.min(1f, (System.currentTimeMillis() - moveStart) / (float) ANIMATION_MS);
+		drawX = fromX + (mapX - fromX) * t;
+		drawZ = fromZ + (mapZ - fromZ) * t;
+		float delta = ((yaw - fromYaw) % 360f + 540f) % 360f - 180f;
+		drawYaw = fromYaw + delta * t;
+		return new float[]{drawX, drawZ, drawYaw};
 	}
 }

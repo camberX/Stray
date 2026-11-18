@@ -12,39 +12,36 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-/** A finished-looking sample dungeon for the HUD editor and /stray debug dev map. From NoammAddons (CC0). */
-final class MapPreview {
-	static final int CONNECTOR_SIZE = 4;
-
+/** NoammAddons' sample dungeon, shown in the HUD editor and outside runs. */
+public final class MapPreview {
+	public static final int CONNECTOR_SIZE = 4;
 	private static Built built;
 	private static boolean builtCheater;
 
-	record Built(Tile[] tiles, List<UniqueRoom> rooms, List<MapPlayer> players, Map<Integer, List<RoomType>> predictions) {
+	public record Built(Tile[] tiles, List<UniqueRoom> rooms, List<MapPlayer> players, Map<Integer, List<RoomType>> predictions) {
 	}
 
 	private MapPreview() {
 	}
 
-	static Built get() {
+	public static Built get() {
 		boolean cheater = DungeonMap.cheater();
-		if (built != null && builtCheater == cheater) {
-			return built;
+		if (built == null || builtCheater != cheater) {
+			builtCheater = cheater;
+			built = build();
 		}
-		builtCheater = cheater;
-		built = build();
 		return built;
 	}
 
 	private static Built build() {
 		Tile[] tiles = new Tile[121];
-		for (int i = 0; i < tiles.length; i++) {
-			tiles[i] = new UnknownTile(0, 0);
-		}
+		Arrays.fill(tiles, UnknownTile.EMPTY);
 		List<UniqueRoom> rooms = new ArrayList<>();
 		Map<Integer, List<RoomType>> predictions = new HashMap<>();
 		List<MapPlayer> players = new ArrayList<>();
@@ -57,51 +54,54 @@ final class MapPreview {
 		} catch (Exception e) {
 			return new Built(tiles, rooms, players, predictions);
 		}
-		int crypts = DungeonScanner.cryptCount;
-		int secrets = DungeonScanner.secretCount;
+		int crypts = Scanner.cryptCount;
+		int secrets = Scanner.secretCount;
 		JsonArray doors = root.getAsJsonArray("doors");
-		for (JsonElement element : root.getAsJsonArray("rooms")) {
-			JsonObject entry = element.getAsJsonObject();
-			String name = entry.get("name").getAsString();
-			RoomType type = RoomType.parse(entry.get("type").getAsString());
-			RoomState state = RoomState.valueOf(entry.get("state").getAsString());
-			int foundSecrets = entry.get("foundSecrets").getAsInt();
-			List<int[]> cells = new ArrayList<>();
-			for (JsonElement cell : entry.getAsJsonArray("tiles")) {
-				JsonArray pair = cell.getAsJsonArray();
-				cells.add(new int[] {pair.get(0).getAsInt(), pair.get(1).getAsInt()});
-			}
-			RoomData data = RoomDatabase.byName(name);
+		for (JsonElement el : root.getAsJsonArray("rooms")) {
+			JsonObject room = el.getAsJsonObject();
+			String name = room.get("name").getAsString();
+			RoomType type = RoomType.parse(room.get("type").getAsString());
+			RoomState state = RoomState.valueOf(room.get("state").getAsString());
+			RoomData data = Rooms.byName(name);
 			if (data == null) {
-				// Without the room list, still show the sample's names.
-				int real = 0;
+				data = RoomData.unknown(type);
+			}
+			List<int[]> cells = new ArrayList<>();
+			for (JsonElement c : room.getAsJsonArray("tiles")) {
+				JsonArray a = c.getAsJsonArray();
+				cells.add(new int[]{a.get(0).getAsInt(), a.get(1).getAsInt()});
+			}
+			List<int[]> visible = cells;
+			if (!builtCheater && (state == RoomState.UNOPENED || state == RoomState.UNDISCOVERED)) {
+				visible = new ArrayList<>();
 				for (int[] cell : cells) {
-					if (cell[0] % 2 == 0 && cell[1] % 2 == 0) {
-						real++;
+					for (JsonElement d : doors) {
+						JsonObject door = d.getAsJsonObject();
+						if (Math.abs(door.get("x").getAsInt() - cell[0]) + Math.abs(door.get("y").getAsInt() - cell[1]) == 1) {
+							visible.add(cell);
+							break;
+						}
 					}
 				}
-				data = new RoomData(name, type, real <= 1 ? RoomShape.S1x1 : RoomShape.S2x1, List.of(), Math.max(foundSecrets, 0), 0, 0);
 			}
 			UniqueRoom unique = null;
-			for (int[] cell : visibleCells(state, cells, doors)) {
-				int arrX = cell[0];
-				int arrY = cell[1];
-				RoomTile tile = new RoomTile(worldX(arrX), worldZ(arrY), data);
-				tile.isSeparator = arrX % 2 == 1 || arrY % 2 == 1;
-				tile.setState(displayState(state));
+			for (int[] cell : visible) {
+				RoomTile tile = new RoomTile(worldX(cell[0]), worldZ(cell[1]), data);
+				tile.isSeparator = cell[0] % 2 == 1 || cell[1] % 2 == 1;
+				tile.setState(display(state));
 				if (unique == null) {
-					unique = new UniqueRoom(arrX, arrY, tile);
-					unique.setFoundSecrets(foundSecrets);
+					unique = new UniqueRoom(cell[0], cell[1], tile);
+					unique.setFoundSecrets(room.get("foundSecrets").getAsInt());
 				} else {
-					unique.addTile(arrX, arrY, tile);
+					unique.addTile(cell[0], cell[1], tile);
 				}
 				tile.uniqueRoom = unique;
-				tiles[arrY * 11 + arrX] = tile;
+				tiles[cell[1] * 11 + cell[0]] = tile;
 			}
 			if (unique != null) {
 				rooms.add(unique);
 			}
-			JsonElement predicted = entry.get("predicted");
+			JsonElement predicted = room.get("predicted");
 			if (predicted != null && predicted.isJsonArray() && cells.size() == 1) {
 				List<RoomType> types = new ArrayList<>();
 				for (JsonElement t : predicted.getAsJsonArray()) {
@@ -110,65 +110,37 @@ final class MapPreview {
 				predictions.put(cells.get(0)[1] * 11 + cells.get(0)[0], types);
 			}
 		}
-		for (JsonElement element : doors) {
-			JsonObject door = element.getAsJsonObject();
+		for (JsonElement d : doors) {
+			JsonObject door = d.getAsJsonObject();
 			int x = door.get("x").getAsInt();
 			int y = door.get("y").getAsInt();
 			DoorTile tile = new DoorTile(worldX(x), worldZ(y), DoorType.valueOf(door.get("type").getAsString()), tiles);
 			tile.opened = door.get("opened").getAsBoolean();
-			tile.setState(displayState(RoomState.valueOf(door.get("state").getAsString())));
+			tile.setState(display(RoomState.valueOf(door.get("state").getAsString())));
 			tiles[y * 11 + x] = tile;
 		}
-		DungeonScanner.cryptCount = crypts;
-		DungeonScanner.secretCount = secrets;
-
+		Scanner.cryptCount = crypts;
+		Scanner.secretCount = secrets;
 		Minecraft client = Minecraft.getInstance();
-		JsonArray list = root.getAsJsonArray("players");
-		for (int i = 0; i < list.size(); i++) {
-			JsonObject entry = list.get(i).getAsJsonObject();
-			DungeonParty.DungeonClass clazz = DungeonParty.DungeonClass.fromName(entry.get("clazz").getAsString());
+		int i = 0;
+		for (JsonElement p : root.getAsJsonArray("players")) {
+			JsonObject obj = p.getAsJsonObject();
+			DungeonParty.DungeonClass clazz = DungeonParty.DungeonClass.fromName(obj.get("clazz").getAsString());
 			String name = i == 0 && client.getUser() != null ? client.getUser().getName() : clazz.label;
 			MapPlayer player = new MapPlayer(name);
 			player.clazz = clazz;
 			player.self = i == 0;
-			if (i == 0 && client.player != null) {
-				player.skin = client.player.getSkin();
-			} else {
-				player.skin = DefaultPlayerSkin.get(new UUID(0, i));
-			}
-			float col = entry.get("col").getAsFloat();
-			float row = entry.get("row").getAsFloat();
-			float mx = MapCalibration.startX + col * (MapCalibration.mapRoomSize + CONNECTOR_SIZE) + MapCalibration.mapRoomSize / 2f;
-			float mz = MapCalibration.startZ + row * (MapCalibration.mapRoomSize + CONNECTOR_SIZE) + MapCalibration.mapRoomSize / 2f;
-			player.place(mx, mz, entry.get("yaw").getAsFloat());
+			player.skin = i == 0 && client.player != null ? client.player.getSkin() : DefaultPlayerSkin.get(new UUID(0, i));
+			float x = MapUtils.startX + obj.get("col").getAsFloat() * (MapUtils.mapRoomSize + CONNECTOR_SIZE) + MapUtils.mapRoomSize / 2f;
+			float z = MapUtils.startZ + obj.get("row").getAsFloat() * (MapUtils.mapRoomSize + CONNECTOR_SIZE) + MapUtils.mapRoomSize / 2f;
+			player.target(x, z, obj.get("yaw").getAsFloat());
 			players.add(player);
-		}
-		// Yourself last, so your head is drawn on top.
-		if (!players.isEmpty()) {
-			players.add(players.remove(0));
+			i++;
 		}
 		return new Built(tiles, rooms, players, predictions);
 	}
 
-	/** Unopened rooms only show the cells next to a door, like on the real map. */
-	private static List<int[]> visibleCells(RoomState state, List<int[]> cells, JsonArray doors) {
-		if (builtCheater || (state != RoomState.UNOPENED && state != RoomState.UNDISCOVERED)) {
-			return cells;
-		}
-		List<int[]> out = new ArrayList<>();
-		for (int[] cell : cells) {
-			for (JsonElement element : doors) {
-				JsonObject door = element.getAsJsonObject();
-				if (Math.abs(door.get("x").getAsInt() - cell[0]) + Math.abs(door.get("y").getAsInt() - cell[1]) == 1) {
-					out.add(cell);
-					break;
-				}
-			}
-		}
-		return out;
-	}
-
-	private static RoomState displayState(RoomState state) {
+	private static RoomState display(RoomState state) {
 		if (state != RoomState.UNOPENED && state != RoomState.UNDISCOVERED) {
 			return state;
 		}
@@ -176,10 +148,10 @@ final class MapPreview {
 	}
 
 	private static int worldX(int arrX) {
-		return DungeonScanner.START_X + arrX * (DungeonScanner.ROOM_SIZE >> 1);
+		return Scanner.START_X + arrX * (Scanner.ROOM_SIZE >> 1);
 	}
 
 	private static int worldZ(int arrY) {
-		return DungeonScanner.START_Z + arrY * (DungeonScanner.ROOM_SIZE >> 1);
+		return Scanner.START_Z + arrY * (Scanner.ROOM_SIZE >> 1);
 	}
 }

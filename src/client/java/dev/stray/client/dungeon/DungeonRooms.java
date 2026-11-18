@@ -1,8 +1,8 @@
 package dev.stray.client.dungeon;
 
-import dev.stray.client.dungeon.map.DungeonScanner;
+import dev.stray.client.dungeon.map.Scanner;
 import dev.stray.client.dungeon.map.RoomData;
-import dev.stray.client.dungeon.map.RoomDatabase;
+import dev.stray.client.dungeon.map.Rooms;
 import dev.stray.client.dungeon.map.RoomShape;
 import dev.stray.client.dungeon.map.RoomType;
 import net.minecraft.client.Minecraft;
@@ -22,8 +22,8 @@ import java.util.List;
  * servers that paste single rooms, not only in a real run.
  */
 public final class DungeonRooms {
-	private static final int HALF = DungeonScanner.HALF_ROOM_SIZE;
-	private static final int SIZE = DungeonScanner.ROOM_SIZE;
+	private static final int HALF = Scanner.HALF_ROOM_SIZE;
+	private static final int SIZE = Scanner.ROOM_SIZE;
 	private static final net.minecraft.world.level.block.Block BLUE = Blocks.DYED_TERRACOTTA.pick(net.minecraft.world.item.DyeColor.BLUE);
 
 	private static Room current;
@@ -70,8 +70,8 @@ public final class DungeonRooms {
 			reset();
 			return;
 		}
-		int cx = (int) Math.rint((client.player.getX() - DungeonScanner.START_X) / SIZE);
-		int cz = (int) Math.rint((client.player.getZ() - DungeonScanner.START_Z) / SIZE);
+		int cx = (int) Math.rint((client.player.getX() - Scanner.START_X) / SIZE);
+		int cz = (int) Math.rint((client.player.getZ() - Scanner.START_Z) / SIZE);
 		long now = System.currentTimeMillis();
 		boolean moved = cx != cellX || cz != cellZ;
 		if (!moved && (current != null && current.rotated() || now < nextLook)) {
@@ -84,20 +84,20 @@ public final class DungeonRooms {
 	}
 
 	private static int centerX(int cell) {
-		return DungeonScanner.START_X + cell * SIZE;
+		return Scanner.START_X + cell * SIZE;
 	}
 
 	private static int centerZ(int cell) {
-		return DungeonScanner.START_Z + cell * SIZE;
+		return Scanner.START_Z + cell * SIZE;
 	}
 
 	private static RoomData dataAt(ClientLevel level, int cx, int cz) {
 		int x = centerX(cx);
 		int z = centerZ(cz);
-		if (!DungeonScanner.loaded(level, x >> 4, z >> 4)) {
+		if (!Scanner.loaded(level, x >> 4, z >> 4)) {
 			return null;
 		}
-		return RoomDatabase.byCore(DungeonScanner.core(level, x, z));
+		return Rooms.byCore(Scanner.core(level, x, z));
 	}
 
 	private static Room find(ClientLevel level, int cx, int cz) {
@@ -148,7 +148,7 @@ public final class DungeonRooms {
 			// Not all of it loaded yet.
 			return unturned;
 		}
-		int roof = DungeonScanner.highestY(level, centerX(cx), centerZ(cz));
+		int roof = Scanner.highestY(level, centerX(cx), centerZ(cz));
 		if (roof <= 0) {
 			return unturned;
 		}
@@ -158,7 +158,7 @@ public final class DungeonRooms {
 			int[] zs = {minZ - HALF, minZ - HALF, maxZ + HALF, maxZ + HALF};
 			for (int i = 0; i < 4; i++) {
 				pos.set(xs[i], roof, zs[i]);
-				if (DungeonScanner.loaded(level, xs[i] >> 4, zs[i] >> 4) && level.getBlockState(pos).getBlock() == BLUE) {
+				if (Scanner.loaded(level, xs[i] >> 4, zs[i] >> 4) && level.getBlockState(pos).getBlock() == BLUE) {
 					return new Room(data.name(), new BlockPos(xs[i], 0, zs[i]), i * 90, true);
 				}
 			}
@@ -169,7 +169,7 @@ public final class DungeonRooms {
 			for (int i = 0; i < 4; i++) {
 				int x = centerX(cell[0]) + corners[i][0];
 				int z = centerZ(cell[1]) + corners[i][1];
-				if (!DungeonScanner.loaded(level, x >> 4, z >> 4)) {
+				if (!Scanner.loaded(level, x >> 4, z >> 4)) {
 					return unturned;
 				}
 				if (level.getBlockState(pos.set(x, roof, z)).getBlock() == BLUE) {

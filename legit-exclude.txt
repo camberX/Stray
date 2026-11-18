@@ -69,3 +69,8 @@ dev/stray/client/mixin/LeapSilentMixin*.class
 dev/stray/client/mixin/FastLeapClickMixin*.class
 dev/stray/client/mixin/LivingEntitySwingAccessor*.class
 dev/stray/client/mixin/SwingWatchMixin*.class
+# Streamproof overlay window (and what only draws into it)
+dev/stray/client/render/overlay/window/**
+dev/stray/client/render/StarMobOverlay*.class
+mixin: StreamproofMixin
+mixin: OverlayWindowEventMixin

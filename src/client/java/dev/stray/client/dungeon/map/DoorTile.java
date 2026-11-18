@@ -1,5 +1,7 @@
 package dev.stray.client.dungeon.map;
 
+import dev.stray.client.config.StrayConfig;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -7,10 +9,11 @@ public final class DoorTile extends Tile {
 	public DoorType type;
 	public boolean opened;
 	private final Tile[] grid;
+	/** Grid indices of the two cells this door joins. */
 	public final int[] roomTileIndices;
 
 	public DoorTile(int x, int z, DoorType type) {
-		this(x, z, type, DungeonScanner.GRID);
+		this(x, z, type, Scanner.GRID);
 	}
 
 	public DoorTile(int x, int z, DoorType type, Tile[] grid) {
@@ -19,29 +22,29 @@ public final class DoorTile extends Tile {
 		this.grid = grid;
 		int row = row();
 		int column = column();
-		List<Integer> neighbors = new ArrayList<>(2);
+		List<Integer> out = new ArrayList<>(2);
 		if ((row & 1) == 0) {
 			if (column - 1 >= 0) {
-				neighbors.add(row * 11 + column - 1);
+				out.add(row * 11 + column - 1);
 			}
 			if (column + 1 <= 10) {
-				neighbors.add(row * 11 + column + 1);
+				out.add(row * 11 + column + 1);
 			}
 		} else {
 			if (row - 1 >= 0) {
-				neighbors.add((row - 1) * 11 + column);
+				out.add((row - 1) * 11 + column);
 			}
 			if (row + 1 <= 10) {
-				neighbors.add((row + 1) * 11 + column);
+				out.add((row + 1) * 11 + column);
 			}
 		}
-		roomTileIndices = neighbors.stream().mapToInt(Integer::intValue).toArray();
+		roomTileIndices = out.stream().mapToInt(Integer::intValue).toArray();
 	}
 
 	public List<RoomTile> roomTiles() {
 		List<RoomTile> out = new ArrayList<>(2);
 		for (int index : roomTileIndices) {
-			if (index >= 0 && index < grid.length && grid[index] instanceof RoomTile room) {
+			if (grid[index] instanceof RoomTile room) {
 				out.add(room);
 			}
 		}
@@ -50,19 +53,20 @@ public final class DoorTile extends Tile {
 
 	@Override
 	public int color() {
+		StrayConfig c = StrayConfig.get();
 		if (state == RoomState.UNOPENED) {
-			return MapColors.UNOPENED_DOOR;
+			return c.dungeonMapColorUnopenedDoor;
 		}
 		if (type == DoorType.BLOOD) {
-			return MapColors.room(RoomType.BLOOD);
+			return c.dungeonMapColorBloodDoor;
 		}
 		if (type == DoorType.ENTRANCE) {
-			return MapColors.room(RoomType.ENTRANCE);
+			return c.dungeonMapColorEntranceDoor;
 		}
 		if (type == DoorType.WITHER || DungeonTree.isFairy(this)) {
-			return opened && state != RoomState.UNDISCOVERED ? MapColors.room(RoomType.NORMAL) : MapColors.WITHER_DOOR;
+			return opened && state != RoomState.UNDISCOVERED ? c.dungeonMapColorOpenWitherDoor : c.dungeonMapColorWitherDoor;
 		}
-		List<RoomTile> colored = new ArrayList<>();
+		List<RoomTile> colored = new ArrayList<>(2);
 		for (RoomTile room : roomTiles()) {
 			if (room.data.type() != RoomType.NORMAL) {
 				colored.add(room);
@@ -79,6 +83,6 @@ public final class DoorTile extends Tile {
 		} else if (!colored.isEmpty()) {
 			pick = colored.get(0);
 		}
-		return pick == null ? MapColors.room(RoomType.NORMAL) : pick.color();
+		return pick != null ? pick.color() : c.dungeonMapColorRoomDoor;
 	}
 }

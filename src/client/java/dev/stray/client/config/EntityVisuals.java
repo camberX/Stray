@@ -25,6 +25,8 @@ public final class EntityVisuals {
 	public float healthWidth = 3f;
 	public boolean boxEnabled = false;
 	public boolean boxThroughWalls = false;
+	/** Star mobs, full edition: drawn in the streamproof overlay instead of the game frame. */
+	public boolean boxStreamproof = false;
 	public int boxRange = 48;
 	public int boxRgb = 0x2FB5FF;
 	public float boxOpacity = 0.90f;

@@ -1,9 +1,10 @@
 package dev.stray.client.dungeon.map;
 
+import dev.stray.client.config.StrayConfig;
+
 public final class RoomTile extends Tile {
 	public RoomData data;
 	public UniqueRoom uniqueRoom;
-	/** The piece between two cells of the same room (or the middle of a 2x2). */
 	public boolean isSeparator;
 
 	public RoomTile(int x, int z, RoomData data) {
@@ -12,38 +13,48 @@ public final class RoomTile extends Tile {
 	}
 
 	@Override
-	public void setState(RoomState value) {
+	public void setState(RoomState next) {
 		RoomState old = state;
-		state = value;
-		if (old == value || uniqueRoom == null || uniqueRoom.mainRoom != this || "Unknown".equals(data.name())) {
+		state = next;
+		if (old == next || uniqueRoom == null || uniqueRoom.mainRoom != this || data.isUnknown()) {
 			return;
 		}
-		if (value == RoomState.GREEN) {
+		if (next == RoomState.GREEN) {
 			uniqueRoom.setFoundSecrets(uniqueRoom.data.secrets());
 		}
 	}
 
 	@Override
 	public int color() {
+		StrayConfig c = StrayConfig.get();
 		if (state == RoomState.UNOPENED) {
-			return MapColors.UNOPENED;
+			return c.dungeonMapColorUnopened;
 		}
-		return MapColors.room(data.type());
+		return switch (data.type()) {
+			case BLOOD -> c.dungeonMapColorBlood;
+			case FAIRY -> c.dungeonMapColorFairy;
+			case RARE -> c.dungeonMapColorRare;
+			case CHAMPION -> c.dungeonMapColorMiniboss;
+			case PUZZLE -> c.dungeonMapColorPuzzle;
+			case TRAP -> c.dungeonMapColorTrap;
+			case ENTRANCE -> c.dungeonMapColorEntrance;
+			default -> c.dungeonMapColorRoom;
+		};
+	}
+
+	/** Adds this tile to the room called {@code name} (making that room when it's the first tile). */
+	public void addToUnique(int row, int column, String name) {
+		UniqueRoom unique = Scanner.UNIQUE_ROOMS.get(name);
+		if (unique == null) {
+			unique = new UniqueRoom(column, row, this);
+			Scanner.UNIQUE_ROOMS.put(data.name(), unique);
+		} else {
+			unique.addTile(column, row, this);
+		}
+		uniqueRoom = unique;
 	}
 
 	public void addToUnique(int row, int column) {
 		addToUnique(row, column, data.name());
-	}
-
-	public void addToUnique(int row, int column, String roomName) {
-		UniqueRoom unique = DungeonScanner.UNIQUE_ROOMS.get(roomName);
-		if (unique == null) {
-			UniqueRoom made = new UniqueRoom(column, row, this);
-			DungeonScanner.UNIQUE_ROOMS.put(data.name(), made);
-			uniqueRoom = made;
-		} else {
-			unique.addTile(column, row, this);
-			uniqueRoom = unique;
-		}
 	}
 }

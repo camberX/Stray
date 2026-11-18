@@ -264,6 +264,15 @@ public class StrayScreen extends Screen {
 			if (this == LOADOUTS) {
 				return baseRows + 1 + (StrayConfig.get().loadoutSwapTri ? 1 : 0);
 			}
+			if (this == BOX && visualsKind == EntityKind.STAR && !dev.stray.Edition.LEGIT) {
+				return baseRows + 1;
+			}
+			if (this == DUNGEON_MAP) {
+				StrayConfig c = StrayConfig.get();
+				boolean full = !dev.stray.Edition.LEGIT;
+				return 34 + (full ? 2 : 0) + (full && c.dungeonMapCheater ? 1 : 0) + (c.dungeonMapRoomInfo >= 2 ? 1 : 0)
+					+ (c.dungeonMapClassBorders ? 0 : 1) + (c.dungeonMapSelfArrow ? 1 : 0);
+			}
 			if (this == PATHS) {
 				return baseRows + Math.min(PathRecorder.here().size(), 10);
 			}
@@ -290,7 +299,7 @@ public class StrayScreen extends Screen {
 	}
 
 	private enum PickerTarget {
-		WORLD, SKY, FOG, NODE, THEME, PANE, CONTROL, PILL, MOB, STAR, BLOCK, TITANIUM, CHEST, PEST, HELD_ITEM, HELD_ITEM_OUTLINE, FILL, FILL_OUTLINE, MARKS, PATHS, RINGS, HEALTH_FULL, HEALTH_EMPTY, BOX, SLAYER, TERMINAL, TERM_HIGHLIGHT, UID_ACCENT
+		WORLD, SKY, FOG, NODE, THEME, PANE, CONTROL, PILL, MOB, STAR, BLOCK, TITANIUM, CHEST, PEST, HELD_ITEM, HELD_ITEM_OUTLINE, FILL, FILL_OUTLINE, MARKS, PATHS, RINGS, HEALTH_FULL, HEALTH_EMPTY, BOX, SLAYER, TERMINAL, TERM_HIGHLIGHT, UID_ACCENT, ARGB_FIELD
 	}
 
 	/** Which slayer colour the SLAYER picker edits (see SlayerSettings.color). */
@@ -298,6 +307,9 @@ public class StrayScreen extends Screen {
 
 	/** Which terminal colour the TERMINAL picker edits (see StrayConfig.terminalColor). */
 	private static String terminalColorKey = "solution";
+
+	/** Which ARGB config field the ARGB_FIELD picker edits (a StrayConfig field name). */
+	private static String argbFieldKey = "dungeonMapBackground";
 
 	private record SearchEntry(String label, Tab tab, String hint) {
 	}
@@ -740,7 +752,7 @@ public class StrayScreen extends Screen {
 	private float nametagEspListY;
 	private float nametagEspListW;
 	private float nametagEspListH;
-	private EntityKind visualsKind = EntityKind.PLAYER;
+	private static EntityKind visualsKind = EntityKind.PLAYER;
 	private static EntityKind pickerKind = EntityKind.PLAYER;
 	private float tabScroll;
 	private float tabScrollMax;
@@ -4249,16 +4261,53 @@ public class StrayScreen extends Screen {
 			case DUNGEON_MAP -> {
 				String[] info = {"Checkmarks", "Secrets", "Room names", "Names + secrets", "Secrets + puzzles"};
 				String[] names = {"Off", "Holding leap", "Always"};
-				y = cycle(graphics, font, ix, y, iw, mouseX, mouseY, "Rooms", () -> info[Math.floorMod(config.dungeonMapRoomInfo, info.length)], () -> config.dungeonMapRoomInfo = Math.floorMod(config.dungeonMapRoomInfo + 1, info.length));
-				y = slider(graphics, font, ix, y, iw, "Map size", config.dungeonMapZoom + "%", (config.dungeonMapZoom - 100) / 100f, v -> config.dungeonMapZoom = snapInt(100 + v * 100f, 100, 200, 5));
-				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Player heads", config.dungeonMapHeads, v -> config.dungeonMapHeads = v);
-				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Arrow for yourself", config.dungeonMapSelfArrow, v -> config.dungeonMapSelfArrow = v);
-				y = cycle(graphics, font, ix, y, iw, mouseX, mouseY, "Names", () -> names[Math.floorMod(config.dungeonMapPlayerNames, names.length)], () -> config.dungeonMapPlayerNames = Math.floorMod(config.dungeonMapPlayerNames + 1, names.length));
-				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Class colours", config.dungeonMapClassBorders, v -> config.dungeonMapClassBorders = v);
-				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Guess unopened 1x1s", config.dungeonMapPredict, v -> config.dungeonMapPredict = v);
-				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Hide in boss", config.dungeonMapHideInBoss, v -> config.dungeonMapHideInBoss = v);
 				if (!dev.stray.Edition.LEGIT) {
-					toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Show unopened rooms", config.dungeonMapCheater, v -> config.dungeonMapCheater = v);
+					y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Streamproof", config.dungeonMapStreamproof, v -> config.dungeonMapStreamproof = v);
+					y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Show unopened rooms", config.dungeonMapCheater, v -> config.dungeonMapCheater = v);
+					if (config.dungeonMapCheater) {
+						y = slider(graphics, font, ix, y, iw, "Undiscovered tint", config.dungeonMapUndiscoveredTint + "%", config.dungeonMapUndiscoveredTint / 100f, v -> config.dungeonMapUndiscoveredTint = snapInt(v * 100f, 0, 100, 1));
+					}
+				}
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Hide in boss", config.dungeonMapHideInBoss, v -> config.dungeonMapHideInBoss = v);
+				y = cycle(graphics, font, ix, y, iw, mouseX, mouseY, "Checkmark style", () -> info[Math.floorMod(config.dungeonMapRoomInfo, info.length)], () -> config.dungeonMapRoomInfo = Math.floorMod(config.dungeonMapRoomInfo + 1, info.length));
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Center checkmark/text", config.dungeonMapCenterText, v -> config.dungeonMapCenterText = v);
+				if (config.dungeonMapRoomInfo >= 2) {
+					y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Limit room name size", config.dungeonMapLimitNames, v -> config.dungeonMapLimitNames = v);
+				}
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Hide blood room text", config.dungeonMapHideBloodText, v -> config.dungeonMapHideBloodText = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Hide unknown room checkmark", config.dungeonMapHideQuestion, v -> config.dungeonMapHideQuestion = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Predict unopened 1x1s", config.dungeonMapPredict, v -> config.dungeonMapPredict = v);
+				y = slider(graphics, font, ix, y, iw, "Text scale", config.dungeonMapTextScale + "%", (config.dungeonMapTextScale - 40) / 110f, v -> config.dungeonMapTextScale = snapInt(40 + v * 110f, 40, 150, 10));
+				y = slider(graphics, font, ix, y, iw, "Checkmark scale", config.dungeonMapCheckmarkScale + "%", (config.dungeonMapCheckmarkScale - 30) / 120f, v -> config.dungeonMapCheckmarkScale = snapInt(30 + v * 120f, 30, 150, 10));
+				y = slider(graphics, font, ix, y, iw, "Door width", String.valueOf(config.dungeonMapDoorWidth), (config.dungeonMapDoorWidth - 6) / 4f, v -> config.dungeonMapDoorWidth = snapInt(6 + v * 4f, 6, 10, 1));
+				y = slider(graphics, font, ix, y, iw, "Border thickness", String.valueOf(config.dungeonMapBorderWidth), config.dungeonMapBorderWidth / 5f, v -> config.dungeonMapBorderWidth = snapInt(v * 5f, 0, 5, 1));
+				y = argbColor(graphics, font, ix, y, iw, mouseX, mouseY, "Background", "dungeonMapBackground");
+				y = argbColor(graphics, font, ix, y, iw, mouseX, mouseY, "Border", "dungeonMapBorderColor");
+				y = cycle(graphics, font, ix, y, iw, mouseX, mouseY, "Player names", () -> names[Math.floorMod(config.dungeonMapPlayerNames, names.length)], () -> config.dungeonMapPlayerNames = Math.floorMod(config.dungeonMapPlayerNames + 1, names.length));
+				y = slider(graphics, font, ix, y, iw, "Head scale", config.dungeonMapHeadScale + "%", (config.dungeonMapHeadScale - 30) / 120f, v -> config.dungeonMapHeadScale = snapInt(30 + v * 120f, 30, 150, 10));
+				y = slider(graphics, font, ix, y, iw, "Name scale", config.dungeonMapNameScale + "%", (config.dungeonMapNameScale - 30) / 120f, v -> config.dungeonMapNameScale = snapInt(30 + v * 120f, 30, 150, 10));
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Animate heads", config.dungeonMapAnimateHeads, v -> config.dungeonMapAnimateHeads = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Class head borders", config.dungeonMapClassBorders, v -> config.dungeonMapClassBorders = v);
+				if (!config.dungeonMapClassBorders) {
+					y = argbColor(graphics, font, ix, y, iw, mouseX, mouseY, "Head border", "dungeonMapHeadBorder");
+				}
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Class name colours", config.dungeonMapClassNames, v -> config.dungeonMapClassNames = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Arrow for yourself", config.dungeonMapSelfArrow, v -> config.dungeonMapSelfArrow = v);
+				if (config.dungeonMapSelfArrow) {
+					y = argbColor(graphics, font, ix, y, iw, mouseX, mouseY, "Arrow colour", "dungeonMapArrowColor");
+				}
+				String[][] colors = {
+					{"Unopened room", "dungeonMapColorUnopened"}, {"Blood room", "dungeonMapColorBlood"}, {"Fairy room", "dungeonMapColorFairy"},
+					{"Rare room", "dungeonMapColorRare"}, {"Miniboss room", "dungeonMapColorMiniboss"}, {"Puzzle room", "dungeonMapColorPuzzle"},
+					{"Trap room", "dungeonMapColorTrap"}, {"Normal room", "dungeonMapColorRoom"}, {"Entrance room", "dungeonMapColorEntrance"},
+					{"Unopened door", "dungeonMapColorUnopenedDoor"}, {"Blood door", "dungeonMapColorBloodDoor"}, {"Wither door", "dungeonMapColorWitherDoor"},
+					{"Opened wither door", "dungeonMapColorOpenWitherDoor"}, {"Normal door", "dungeonMapColorRoomDoor"}, {"Entrance door", "dungeonMapColorEntranceDoor"}
+				};
+				for (int i = 0; i < colors.length; i++) {
+					float next = argbColor(graphics, font, ix, y, iw, mouseX, mouseY, colors[i][0], colors[i][1]);
+					if (i < colors.length - 1) {
+						y = next;
+					}
 				}
 			}
 			case TERMINALS -> {
@@ -4329,7 +4378,10 @@ public class StrayScreen extends Screen {
 				y = slider(graphics, font, ix, y, iw, "Range", visuals.boxRange + "m", (visuals.boxRange - 16) / 80f, v -> visuals.boxRange = StrayConfig.clamp(16 + Math.round(v * 80f), 16, 96));
 				y = slider(graphics, font, ix, y, iw, "Line", String.format(java.util.Locale.ROOT, "%.1f", visuals.boxWidth), (visuals.boxWidth - 1f) / 5f, v -> visuals.boxWidth = StrayConfig.clamp(1f + v * 5f, 1f, 6f));
 				y = slider(graphics, font, ix, y, iw, "Fill", Math.round(visuals.boxFill * 100) + "%", visuals.boxFill / 0.55f, v -> visuals.boxFill = StrayConfig.clamp(v * 0.55f, 0f, 0.55f));
-				colorRow(graphics, font, ix, y, iw, mouseX, mouseY, "Color", visuals.boxRgb, PickerTarget.BOX);
+				float colorEnd = colorRow(graphics, font, ix, y, iw, mouseX, mouseY, "Color", visuals.boxRgb, PickerTarget.BOX);
+				if (visualsKind == EntityKind.STAR && !dev.stray.Edition.LEGIT) {
+					toggle(graphics, font, ix, colorEnd, iw, mouseX, mouseY, "Streamproof", visuals.boxStreamproof, v -> visuals.boxStreamproof = v);
+				}
 			}
 			case NAMETAGS -> {
 				y = cycle(graphics, font, ix, y, iw, mouseX, mouseY, "Style", () -> visuals.nametagStyleLabel(), visuals::cycleNametagStyle);
@@ -4739,6 +4791,10 @@ public class StrayScreen extends Screen {
 		return y + row;
 	}
 
+	private float argbColor(GuiGraphicsExtractor graphics, Font font, float x, float y, float w, int mouseX, int mouseY, String label, String field) {
+		return colorRow(graphics, font, x, y, w, mouseX, mouseY, label, StrayConfig.get().argbField(field) & 0xFFFFFF, PickerTarget.ARGB_FIELD, () -> argbFieldKey = field);
+	}
+
 	private float terminalColor(GuiGraphicsExtractor graphics, Font font, float x, float y, float w, int mouseX, int mouseY, String label, String key) {
 		return colorRow(graphics, font, x, y, w, mouseX, mouseY, label, StrayConfig.get().terminalColor(key), PickerTarget.TERMINAL, () -> terminalColorKey = key);
 	}
@@ -4988,6 +5044,7 @@ public class StrayScreen extends Screen {
 			case BOX -> config.visuals(pickerKind).boxRgb = packed == 0 ? 0x2FB5FF : packed;
 			case SLAYER -> config.slayer.setColor(slayerColorKey, packed == 0 ? 0xFFFFFF : packed);
 			case TERMINAL -> config.setTerminalColor(terminalColorKey, packed == 0 ? 0xFFFFFF : packed);
+			case ARGB_FIELD -> config.setArgbField(argbFieldKey, (config.argbField(argbFieldKey) & 0xFF000000) | (packed & 0xFFFFFF));
 			case THEME -> Theme.applyCustom(packed);
 			case UID_ACCENT -> config.uidAccent = packed == 0 ? 0x9FCA2B : packed;
 			case PANE -> Theme.applyPane(packed);
@@ -5042,6 +5099,7 @@ public class StrayScreen extends Screen {
 			case WORLD -> config.worldTintStrength;
 			case SKY -> config.skyTintStrength;
 			case FOG -> config.fogDensity;
+			case ARGB_FIELD -> (config.argbField(argbFieldKey) >>> 24) / 255f;
 			case THEME, UID_ACCENT, HELD_ITEM_OUTLINE, FILL_OUTLINE, MARKS, PATHS, RINGS, HEALTH_FULL, HEALTH_EMPTY, SLAYER, TERMINAL -> 1f;
 		};
 	}
@@ -5067,6 +5125,7 @@ public class StrayScreen extends Screen {
 			case WORLD -> config.worldTintStrength = clamped;
 			case SKY -> config.skyTintStrength = clamped;
 			case FOG -> config.fogDensity = clamped;
+			case ARGB_FIELD -> config.setArgbField(argbFieldKey, (Math.round(clamped * 255f) << 24) | (config.argbField(argbFieldKey) & 0xFFFFFF));
 			case THEME, UID_ACCENT, HELD_ITEM_OUTLINE, FILL_OUTLINE, MARKS, PATHS, RINGS, HEALTH_FULL, HEALTH_EMPTY, SLAYER, TERMINAL -> {
 				return;
 			}

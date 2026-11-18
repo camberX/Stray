@@ -6,6 +6,7 @@ import dev.stray.client.location.SkyblockLocation;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.multiplayer.PlayerInfo;
+import net.minecraft.core.BlockPos;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.ItemStack;
@@ -18,26 +19,25 @@ import net.minecraft.world.level.saveddata.maps.MapItemSavedData;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * NoammAddons' dungeon map, ported (CC0): rooms come from the world (names, shapes) and
- * from the map item in your last hotbar slot (what is opened, checkmarks, where your
- * teammates are). Only reads what the client already has; sends nothing.
+ * NoammAddons' dungeon map (ported with noamm's permission): rooms come from the loaded
+ * world, what's opened and where teammates are comes from the map item in hotbar slot 9.
+ * Only reads what the client already has.
  */
 public final class DungeonMap {
 	private static final Pattern SECRETS = Pattern.compile("(\\d+)/(\\d+) Secrets");
 	private static final Pattern PUZZLES = Pattern.compile("Puzzles: \\((\\d)\\)");
-
-	/** Puzzle count from the tab list, for guessing unopened 1x1s. */
 	public static int maxPuzzleCount;
-
+	public static boolean started;
 	private static final Map<String, MapPlayer> PLAYERS = new LinkedHashMap<>();
-	private static boolean preview;
 	private static ClientLevel lastLevel;
 	private static boolean wasInDungeon;
 	private static int ticks;
@@ -47,16 +47,16 @@ public final class DungeonMap {
 	private DungeonMap() {
 	}
 
-	/** The sample dungeon (for testing outside a run, e.g. /stray debug dev map). */
-	public static void setPreview(boolean on) {
-		preview = on;
-	}
+	private static boolean preview;
 
 	public static boolean previewActive() {
 		return preview;
 	}
 
-	/** Full edition only: also shows rooms nobody has opened yet. */
+	public static void setPreview(boolean on) {
+		preview = on;
+	}
+
 	public static boolean cheater() {
 		return !dev.stray.Edition.LEGIT && StrayConfig.get().dungeonMapCheater;
 	}
@@ -64,19 +64,22 @@ public final class DungeonMap {
 	public static void tick(Minecraft client) {
 		if (client.level != lastLevel) {
 			lastLevel = client.level;
-			resetRun();
+			reset();
 		}
 		if (client.level == null || client.player == null) {
 			return;
 		}
 		if (!SkyblockLocation.inDungeon) {
 			if (wasInDungeon) {
-				resetRun();
+				reset();
 			}
 			wasInDungeon = false;
 			return;
 		}
 		wasInDungeon = true;
+		// The scan also feeds Etherwarp aim's room names, so it runs with the map off too.
+		Scanner.tick(client);
+		DungeonTree.tick(client);
 		if (!StrayConfig.get().dungeonMapEnabled) {
 			return;
 		}
@@ -84,26 +87,24 @@ public final class DungeonMap {
 		if (maxPuzzleCount == 0 && ++ticks % 20 == 0) {
 			readPuzzleCount(client);
 		}
-		DungeonScanner.tick(client);
 		readMap(client);
 	}
 
-	private static void resetRun() {
-		DungeonScanner.reset();
-		MapCalibration.reset();
-		HotbarMapScanner.calibrate();
+	public static void reset() {
+		Scanner.reset();
+		MapUtils.reset();
 		SpecialColumn.reset();
-		DungeonMapRenderer.reset();
+		DungeonTree.resetRooms();
 		PLAYERS.clear();
 		maxPuzzleCount = 0;
+		started = false;
 	}
 
 	private static void syncPlayers(Minecraft client) {
 		String self = client.getUser() == null ? "" : client.getUser().getName();
-		java.util.List<DungeonParty.Member> team = DungeonParty.all();
+		List<DungeonParty.Member> team = DungeonParty.all();
 		if (!team.isEmpty()) {
-			// Drop players who left the party so their head doesn't linger on the map.
-			java.util.Set<String> names = new java.util.HashSet<>();
+			Set<String> names = new HashSet<>();
 			for (DungeonParty.Member member : team) {
 				names.add(member.name);
 			}
@@ -116,7 +117,7 @@ public final class DungeonMap {
 			player.dead = member.dead;
 			player.entity = member.entity;
 			player.self = member.name.equals(self);
-			if (player.self && player.entity == null) {
+			if (player.self) {
 				player.entity = client.player;
 			}
 		}
@@ -146,33 +147,32 @@ public final class DungeonMap {
 			return;
 		}
 		MapItemSavedData data = client.level.getMapData(id);
-		if (data == null) {
+		if (data == null || !MapUtils.calibrate(data)) {
 			return;
 		}
-		if (MapCalibration.calibrate(data)) {
-			updateRooms(client, data);
-			updatePlayers(data);
-		}
+		started = true;
+		updateRooms(client, data);
+		updatePlayers(data);
 	}
 
 	private static void updateRooms(Minecraft client, MapItemSavedData data) {
 		if (SkyblockLocation.inBoss) {
 			return;
 		}
-		MapPlayer self = selfPlayer();
+		MapPlayer self = self();
 		if (self != null && self.dead) {
 			return;
 		}
-		HotbarMapScanner.updateMap(data);
+		HotbarScanner.updateMap(data);
 		for (int x = 0; x <= 10; x++) {
 			for (int z = 0; z <= 10; z++) {
 				int index = z * 11 + x;
-				Tile room = DungeonScanner.GRID[index];
-				Tile mapTile = HotbarMapScanner.tile(x, z);
+				Tile room = Scanner.GRID[index];
+				Tile mapTile = HotbarScanner.tile(x, z);
 				if (room instanceof UnknownTile) {
-					DungeonScanner.setTile(index, mapTile);
+					Scanner.setTile(index, mapTile);
 					if (mapTile instanceof RoomTile mapRoom) {
-						for (RoomTile connected : HotbarMapScanner.connected(x, z)) {
+						for (RoomTile connected : HotbarScanner.connected(x, z)) {
 							if (!"Unknown".equals(connected.data.name())) {
 								mapRoom.addToUnique(z, x, connected.data.name());
 								break;
@@ -185,10 +185,8 @@ public final class DungeonMap {
 				if (mapTile.state().ordinal() < room.state().ordinal() || puzzle) {
 					room.setState(mapTile.state());
 				}
-				if (mapTile instanceof RoomTile m && room instanceof RoomTile r && m.data.type() != r.data.type()) {
-					if (r.data.name().equals(m.data.name())) {
-						r.data = m.data;
-					}
+				if (mapTile instanceof RoomTile m && room instanceof RoomTile r && m.data.type() != r.data.type() && r.data.name().equals(m.data.name())) {
+					r.data = m.data;
 				}
 				if (mapTile instanceof DoorTile m && room instanceof DoorTile r && m.type == DoorType.WITHER && r.type != DoorType.WITHER) {
 					r.type = m.type;
@@ -197,14 +195,14 @@ public final class DungeonMap {
 					if (mapTile instanceof DoorTile m && m.type == DoorType.WITHER) {
 						door.opened = false;
 					} else if (!door.opened) {
-						if (DungeonScanner.loaded(client.level, door.x >> 4, door.z >> 4)) {
-							BlockState state = client.level.getBlockState(new net.minecraft.core.BlockPos(door.x, 69, door.z));
+						if (Scanner.loaded(client.level, door.x >> 4, door.z >> 4)) {
+							BlockState state = client.level.getBlockState(new BlockPos(door.x, 69, door.z));
 							if (state.isAir() || state.is(Blocks.BARRIER)) {
 								door.opened = true;
 							}
 						} else if (mapTile instanceof DoorTile m && m.state() == RoomState.DISCOVERED) {
 							if (door.type == DoorType.BLOOD) {
-								for (Tile tile : DungeonScanner.GRID) {
+								for (Tile tile : Scanner.GRID) {
 									if (tile instanceof RoomTile r && r.data.type() == RoomType.BLOOD) {
 										if (r.state() != RoomState.UNOPENED) {
 											door.opened = true;
@@ -239,19 +237,14 @@ public final class DungeonMap {
 		}
 		for (Map.Entry<String, MapDecoration> entry : decorations.entrySet()) {
 			String key = entry.getKey();
-			MapDecoration decoration = entry.getValue();
-			if (decoration.type().value() == MapDecorationTypes.FRAME.value()) {
+			if (entry.getValue().type().value() == MapDecorationTypes.FRAME.value()) {
 				if (self != null) {
 					self.icon = key;
 				}
 				continue;
 			}
-			if (key.isEmpty()) {
-				continue;
-			}
-			char last = key.charAt(key.length() - 1);
-			if (Character.isDigit(last)) {
-				int index = last - '0';
+			if (!key.isEmpty() && Character.isDigit(key.charAt(key.length() - 1))) {
+				int index = key.charAt(key.length() - 1) - '0';
 				if (index < living.size()) {
 					living.get(index).icon = key;
 				}
@@ -262,10 +255,9 @@ public final class DungeonMap {
 				continue;
 			}
 			MapDecoration decoration = decorations.get(player.icon);
-			if (decoration == null) {
-				continue;
+			if (decoration != null) {
+				player.target((decoration.x() + 128) >> 1, (decoration.y() + 128) >> 1, decoration.rot() * 22.5f);
 			}
-			player.target((decoration.x() + 128) >> 1, (decoration.y() + 128) >> 1, decoration.rot() * 22.5f);
 		}
 	}
 
@@ -286,31 +278,26 @@ public final class DungeonMap {
 		}
 	}
 
-	/** Action bar "6/10 Secrets": the secrets found in the room you are standing in. */
+	/** Action bar "6/10 Secrets": secrets found in the room you stand in. */
 	public static void onActionBar(String plain) {
 		if (plain == null || !SkyblockLocation.inDungeon || !StrayConfig.get().dungeonMapEnabled) {
 			return;
 		}
 		Matcher m = SECRETS.matcher(plain.replaceAll("§.", ""));
-		if (!m.find()) {
-			return;
-		}
 		Minecraft client = Minecraft.getInstance();
-		if (client.player == null) {
+		if (!m.find() || client.player == null) {
 			return;
 		}
 		int found = Integer.parseInt(m.group(1));
 		int max = Integer.parseInt(m.group(2));
-		int[] grid = DungeonScanner.roomGrid(client.player.getX(), client.player.getZ());
-		if (!(DungeonScanner.GRID[grid[1] * 11 + grid[0]] instanceof RoomTile tile) || "Unknown".equals(tile.data.name())) {
-			return;
-		}
-		if (tile.uniqueRoom != null && tile.uniqueRoom.foundSecrets() != found && tile.data.secrets() == max) {
+		int[] grid = Scanner.roomGrid(client.player.getX(), client.player.getZ());
+		if (Scanner.GRID[grid[1] * 11 + grid[0]] instanceof RoomTile tile && !"Unknown".equals(tile.data.name())
+			&& tile.uniqueRoom != null && tile.data.secrets() == max) {
 			tile.uniqueRoom.setFoundSecrets(found);
 		}
 	}
 
-	static MapPlayer selfPlayer() {
+	public static MapPlayer self() {
 		for (MapPlayer player : PLAYERS.values()) {
 			if (player.self) {
 				return player;
@@ -319,18 +306,18 @@ public final class DungeonMap {
 		return null;
 	}
 
-	/** Heads to draw in a real run: living teammates, then yourself on top. */
-	static List<MapPlayer> heads() {
+	/** Heads to draw: living teammates, then yourself on top. */
+	public static List<MapPlayer> heads() {
 		List<MapPlayer> out = new ArrayList<>();
 		MapPlayer self = null;
 		for (MapPlayer player : PLAYERS.values()) {
 			if (player.self) {
 				self = player;
-			} else if (!player.dead) {
+			} else if (!player.dead && player.placed()) {
 				out.add(player);
 			}
 		}
-		if (self != null) {
+		if (self != null && self.placed()) {
 			out.add(self);
 		}
 		return out;

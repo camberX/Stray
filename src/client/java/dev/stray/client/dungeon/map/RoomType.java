@@ -1,10 +1,9 @@
 package dev.stray.client.dungeon.map;
 
-/** What a dungeon room is, as the map and room data name it. From NoammAddons (CC0). */
+/** Room kinds, as in NoammAddons' map (used with noamm's permission). */
 public enum RoomType {
 	BLOOD, FAIRY, RARE, CHAMPION, PUZZLE, TRAP, NORMAL, ENTRANCE;
 
-	/** The room's colour on the vanilla dungeon map, or null when it is not a room colour. */
 	public static RoomType fromMapColor(int color) {
 		return switch (color) {
 			case 18 -> BLOOD;
@@ -20,12 +19,9 @@ public enum RoomType {
 	}
 
 	public static RoomType parse(String raw) {
-		if (raw == null) {
-			return NORMAL;
-		}
 		try {
-			return valueOf(raw.trim().toUpperCase(java.util.Locale.ROOT));
-		} catch (IllegalArgumentException e) {
+			return valueOf(raw);
+		} catch (RuntimeException e) {
 			return NORMAL;
 		}
 	}
