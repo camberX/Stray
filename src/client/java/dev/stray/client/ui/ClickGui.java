@@ -475,7 +475,7 @@ public final class ClickGui {
 		java.util.Map.entry("Auto hotbar", "A chat message you pick moves your mapped items into their hotbar slots. Swaps while your inventory is open (it can open and close it for you), or with Swap without inventory like NoammAddons did. Not in Stray Legit."),
 		java.util.Map.entry("Greenhouse growth", "Time until the next Greenhouse growth stage. Open the Crop Diagnostics menu in the Greenhouse once to read it."),
 		java.util.Map.entry("Smooth hotbar", "When you change hotbar slot, the selection box glides there instead of snapping; further jumps move faster."),
-		java.util.Map.entry("Edge jump", "Jumps at the edge of the block while you walk (not while sneaking). Toggle with /stray edge. Not in Stray Legit."),
+		java.util.Map.entry("Edge jump", "Jumps once at the next block edge you walk off (not while sneaking), then turns itself off. Arm it with /stray edge. Not in Stray Legit."),
 		java.util.Map.entry("F7 titles", "Short titles in the F7 boss: crystals, wither phases, Storm's lightning timer and who did which terminal. Also shown over the leap menu."),
 		java.util.Map.entry("Align triggerbot", "F7 arrow align: while you look at an arrow that is not right yet, it right clicks it with your delay until it is. Before phase 3 the first arrow you click stops one short so the device is not done early; after Goldor's first line it finishes that one too. Clicks go through the normal use key."),
 		java.util.Map.entry("Own nametag", "Shows your own name above your head in third person (F5)."),

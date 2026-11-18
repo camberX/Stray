@@ -382,12 +382,12 @@ public final class StrayClient implements ClientModInitializer {
 			if (!dev.stray.Edition.LEGIT) { root.then(CommandRingCommands.command()); }
 			root.then(ClientCommands.literal("shortcuts").executes(context -> CommandShortcuts.open()));
 			if (!dev.stray.Edition.LEGIT) {
-				// /stray edge: toggles edge jump (jump at the edge of the block while walking).
+				// /stray edge: arms edge jump (one jump at the next block edge, then off); again to cancel.
 				root.then(ClientCommands.literal("edge").executes(context -> {
 					StrayConfig config = StrayConfig.get();
 					config.edgeJump = !config.edgeJump;
 					config.save();
-					context.getSource().sendFeedback(Component.literal("§bStray §7edge jump " + (config.edgeJump ? "§aon" : "§coff")));
+					context.getSource().sendFeedback(Component.literal("§bStray §7edge jump " + (config.edgeJump ? "§aarmed§7: jumps at the next edge, then turns off" : "§coff")));
 					return Command.SINGLE_SUCCESS;
 				}));
 				// /stray loadout <1-9>: silent swap to that loadout, the same way the pest

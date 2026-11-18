@@ -8,9 +8,10 @@ import net.minecraft.world.entity.player.Input;
 import net.minecraft.world.phys.AABB;
 
 /**
- * Edge jump: while you walk on the ground (not sneaking), you jump on the tick where nothing is
- * left under your hitbox, i.e. at the very edge of the block. It only adds the jump to this tick's
- * input, the same as pressing space. Toggle with {@code /stray edge}. Not in Stray Legit.
+ * Edge jump: once armed with {@code /stray edge}, the next time you walk off a block on the ground
+ * (not sneaking) you jump on the tick where nothing is left under your hitbox, i.e. at the very
+ * edge. It only adds the jump to this tick's input, the same as pressing space, then switches
+ * itself off until the command is used again. Not in Stray Legit.
  */
 public final class EdgeJump {
 	private EdgeJump() {
@@ -35,6 +36,11 @@ public final class EdgeJump {
 		AABB below = player.getBoundingBox().move(0.0, -0.5, 0.0).inflate(-0.001, 0.0, -0.001);
 		if (client.level.noCollision(player, below)) {
 			input.keyPresses = new Input(keys.forward(), keys.backward(), keys.left(), keys.right(), true, keys.shift(), keys.sprint());
+			// One jump per /stray edge.
+			StrayConfig config = StrayConfig.get();
+			config.edgeJump = false;
+			config.save();
+			client.gui.hud.getChat().addClientSystemMessage(net.minecraft.network.chat.Component.literal("§bStray §7edge jump used, now §coff"));
 		}
 	}
 }
