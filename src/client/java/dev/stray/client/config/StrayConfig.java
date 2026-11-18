@@ -598,6 +598,8 @@ public final class StrayConfig {
 	public boolean leapShowMenu = false;
 	/** Auto / Fast Leap swing your arm on your screen when they use the leap (nothing is sent). */
 	public boolean leapSwing = false;
+	/** Auto / Fast Leap: extra ticks to wait in the leap menu before clicking (0 = the first tick). */
+	public int leapMenuWait = 0;
 	public boolean autoLeapP3 = false;
 	public boolean fastLeapP3 = false;
 	/** P3: wait for the section's gate (or the Core) too, not just its tasks. */
@@ -1812,6 +1814,7 @@ public final class StrayConfig {
 				loaded.terminalFirstClickDelay = Math.max(0, Math.min(8, loaded.terminalFirstClickDelay));
 				loaded.terminalScale = Math.max(50, Math.min(200, loaded.terminalScale));
 				loaded.leverTriggerbotDelay = Math.max(0, Math.min(300, loaded.leverTriggerbotDelay));
+				loaded.leapMenuWait = Math.max(0, Math.min(20, loaded.leapMenuWait));
 				loaded.secretHitboxMode = Math.max(0, Math.min(2, loaded.secretHitboxMode));
 				loaded.secretHitboxLeverSize = Math.max(0.5f, Math.min(1f, loaded.secretHitboxLeverSize));
 				loaded.secretHitboxButtonSize = Math.max(0.375f, Math.min(1f, loaded.secretHitboxButtonSize));

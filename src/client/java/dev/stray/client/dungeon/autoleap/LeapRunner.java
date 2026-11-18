@@ -44,6 +44,8 @@ public final class LeapRunner {
 	private static String targetLabel;
 	private static int previousSlot = -1;
 	private static int waitTicks;
+	/** Ticks the leap menu has been open, for "Wait in menu". */
+	private static int menuTicks;
 	private static int menuId = -1;
 	private static AbstractContainerMenu silentMenu;
 	/** A leap asked for while a screen or another leap was in the way; tried each tick. */
@@ -323,6 +325,10 @@ public final class LeapRunner {
 			fail("the leap menu closed");
 			return;
 		}
+		// "Wait in menu": extra ticks before the click; 0 clicks on the first tick, as before.
+		if (menuTicks++ < StrayConfig.get().leapMenuWait) {
+			return;
+		}
 		int slot = headSlot(menu, target);
 		if (slot < 0) {
 			if (++waitTicks > HEAD_TIMEOUT) {
@@ -377,6 +383,7 @@ public final class LeapRunner {
 			menuId = packet.getContainerId();
 			step = Step.CLICK;
 			waitTicks = 0;
+			menuTicks = 0;
 			return false;
 		}
 		AbstractContainerMenu menu = packet.getType().create(packet.getContainerId(), player.getInventory());
@@ -385,6 +392,7 @@ public final class LeapRunner {
 		menuId = packet.getContainerId();
 		step = Step.CLICK;
 		waitTicks = 0;
+		menuTicks = 0;
 		return true;
 	}
 
