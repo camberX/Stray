@@ -36,6 +36,7 @@ final class OverlayGl implements Canvas {
 	private static final float ATLAS_EM = 48f;
 	/** GUI units per em: close to the game font's size. */
 	private static final float TEXT_EM = 9.5f;
+	private static final float BASELINE = 7f;
 	private static final int FIRST = 32;
 	private static final int COUNT = 224;
 
@@ -303,6 +304,34 @@ final class OverlayGl implements Canvas {
 		flush();
 	}
 
+	/**
+	 * Darkens what was drawn as if it sat under a menu's dark background: colour becomes
+	 * colour * (1 - d) + shade * d where something was drawn; transparent pixels stay clear.
+	 */
+	void dim(float d, int shade) {
+		flush();
+		GL33C.glBlendFuncSeparate(GL33C.GL_DST_ALPHA, GL33C.GL_ONE_MINUS_SRC_ALPHA, GL33C.GL_ZERO, GL33C.GL_ONE);
+		pose.pushMatrix();
+		pose.identity();
+		int a = Math.round(Math.max(0f, Math.min(1f, d)) * 255f);
+		fill(0, 0, width, height, (a << 24) | (shade & 0xFFFFFF));
+		pose.popMatrix();
+		flush();
+		GL33C.glBlendFunc(GL33C.GL_ONE, GL33C.GL_ONE_MINUS_SRC_ALPHA);
+	}
+
+	/** Clears a window-pixel rect back to see-through (the game's GUI shows there). */
+	void erase(int x, int y, int w, int h) {
+		flush();
+		if (w <= 0 || h <= 0) {
+			return;
+		}
+		GL33C.glEnable(GL33C.GL_SCISSOR_TEST);
+		GL33C.glScissor(x, height - y - h, w, h);
+		GL33C.glClear(GL33C.GL_COLOR_BUFFER_BIT);
+		GL33C.glDisable(GL33C.GL_SCISSOR_TEST);
+	}
+
 	private void state(int newMode, int tex, boolean lin) {
 		if (newMode != mode || tex != texture || lin != linear || count + 6 > MAX_VERTS) {
 			flush();
@@ -424,12 +453,13 @@ final class OverlayGl implements Canvas {
 		state(2, fontTexture, true);
 		float s = TEXT_EM / ATLAS_EM;
 		pose.pushMatrix();
-		pose.translate(x, y + 0.5f);
+		pose.translate(x, y);
 		pose.scale(s);
 		int color = argb;
 		try (MemoryStack stack = MemoryStack.stackPush()) {
 			FloatBuffer px = stack.floats(0f);
-			FloatBuffer py = stack.floats(ascent);
+			// Baseline where the game font has it (7 units down), so text sits like vanilla text.
+			FloatBuffer py = stack.floats(BASELINE / s);
 			STBTTAlignedQuad q = STBTTAlignedQuad.malloc(stack);
 			for (int i = 0; i < text.length(); i++) {
 				char ch = text.charAt(i);
