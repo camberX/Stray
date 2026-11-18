@@ -2,7 +2,13 @@ package dev.stray.client.dungeon;
 
 import dev.stray.client.config.StrayConfig;
 import dev.stray.client.location.SkyblockLocation;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.HitResult;
+import net.minecraft.world.phys.Vec3;
+import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.block.Block;
@@ -23,8 +29,9 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * Bigger hitboxes for secrets, like NoammAddons' Secret Hitboxes (Secrets.kt): levers and
  * buttons grow over their wall, wither essence and redstone key skulls and mushrooms become a
- * full block, so they are easier to hit. Only the shape your crosshair finds changes; the
- * outline you see while looking at one stays the block's normal one (see {@link #outline}).
+ * full block, so they are easier to hit. The outline you see while looking at one is, by
+ * mode: the bigger box, the block's normal one, or the normal one only while your crosshair is
+ * really on the block (the click still lands anywhere in the bigger box).
  * Full edition only.
  */
 public final class SecretHitboxes {
@@ -50,8 +57,42 @@ public final class SecretHitboxes {
 	private SecretHitboxes() {
 	}
 
+	public static final String[] MODES = {"Expanded", "Normal outline", "Only on the block"};
+
+	/** Outline extraction starts or ends. Expanded mode lets the outline use the bigger box. */
 	public static void outline(boolean on) {
-		outline = on;
+		outline = on && StrayConfig.get().secretHitboxMode != 0;
+	}
+
+	/**
+	 * "Only on the block": true when the block you target is a bigger secret but the crosshair
+	 * misses its real shape, so no outline is drawn.
+	 */
+	public static boolean hideOutline() {
+		if (StrayConfig.get().secretHitboxMode != 2) {
+			return false;
+		}
+		Minecraft client = Minecraft.getInstance();
+		Entity camera = client.getCameraEntity();
+		if (!(client.hitResult instanceof BlockHitResult hit) || hit.getType() == HitResult.Type.MISS || client.level == null || camera == null || client.player == null) {
+			return false;
+		}
+		BlockPos pos = hit.getBlockPos();
+		BlockState state = client.level.getBlockState(pos);
+		boolean was = outline;
+		try {
+			outline = false;
+			if (shape(state.getBlock(), state, client.level, pos) == null) {
+				return false;
+			}
+			outline = true;
+			VoxelShape real = state.getShape(client.level, pos, CollisionContext.of(camera));
+			Vec3 eye = camera.getEyePosition(1.0F);
+			Vec3 end = eye.add(camera.getViewVector(1.0F).scale(client.player.blockInteractionRange() + 1.0));
+			return real.isEmpty() || real.clip(eye, end, pos) == null;
+		} finally {
+			outline = was;
+		}
 	}
 
 	/** The shape to use instead of the block's own, or null to keep it. */

@@ -359,6 +359,8 @@ public final class StrayConfig {
 	/** Secret hitboxes (full edition): bigger levers, buttons, secret skulls and mushrooms to aim at. */
 	public boolean secretHitboxes = false;
 	public boolean secretHitboxesDungeonsOnly = true;
+	/** Outline: 0 the bigger box, 1 the normal one, 2 the normal one only while really on the block. */
+	public int secretHitboxMode = 1;
 	public boolean secretHitboxLever = true;
 	public float secretHitboxLeverSize = 1f;
 	public boolean secretHitboxButton = true;
@@ -1808,6 +1810,7 @@ public final class StrayConfig {
 				loaded.terminalFirstClickDelay = Math.max(0, Math.min(8, loaded.terminalFirstClickDelay));
 				loaded.terminalScale = Math.max(50, Math.min(200, loaded.terminalScale));
 				loaded.leverTriggerbotDelay = Math.max(0, Math.min(300, loaded.leverTriggerbotDelay));
+				loaded.secretHitboxMode = Math.max(0, Math.min(2, loaded.secretHitboxMode));
 				loaded.secretHitboxLeverSize = Math.max(0.5f, Math.min(1f, loaded.secretHitboxLeverSize));
 				loaded.secretHitboxButtonSize = Math.max(0.375f, Math.min(1f, loaded.secretHitboxButtonSize));
 				loaded.etherwarpAimSpeed = Math.max(1, Math.min(100, loaded.etherwarpAimSpeed));

@@ -181,7 +181,7 @@ public class StrayScreen extends Screen {
 		LEAP_MENU("Leap menu", 9),
 		ALIGN_BOT("Align triggerbot", 2),
 		LEVER_BOT("Lever triggerbot", 2),
-		SECRET_HITBOXES("Secret hitboxes", 5),
+		SECRET_HITBOXES("Hitboxes", 6),
 		ETHERWARP_AIM("Etherwarp aim", 1),
 		F7_TITLES("F7 titles", 4),
 		TERM_HIGHLIGHT("Terminal highlight", 4),
@@ -272,7 +272,8 @@ public class StrayScreen extends Screen {
 			}
 			if (this == SECRET_HITBOXES) {
 				StrayConfig config = StrayConfig.get();
-				return dev.stray.Edition.LEGIT ? 1 : baseRows + (config.secretHitboxLever ? 1 : 0) + (config.secretHitboxButton ? 1 : 0);
+				return dev.stray.Edition.LEGIT ? 1 : baseRows + (config.secretHitboxLever ? 1 : 0) + (config.secretHitboxButton ? 1 : 0)
+					+ ("hitboxmode".equals(dropdownOpen) ? dev.stray.client.dungeon.SecretHitboxes.MODES.length : 0);
 			}
 			if (this == NICK) {
 				return NickSteal.status() == NickSteal.Status.OFF ? 2 : 3;
@@ -3987,6 +3988,8 @@ public class StrayScreen extends Screen {
 			}
 			case SECRET_HITBOXES -> {
 				if (!dev.stray.Edition.LEGIT) {
+					y = dropdown(graphics, font, ix, y, iw, mouseX, mouseY, "hitboxmode", "Outline", dev.stray.client.dungeon.SecretHitboxes.MODES,
+						config.secretHitboxMode, i -> config.secretHitboxMode = i);
 					y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Dungeons only", config.secretHitboxesDungeonsOnly, v -> config.secretHitboxesDungeonsOnly = v);
 					y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Levers", config.secretHitboxLever, v -> config.secretHitboxLever = v);
 					if (config.secretHitboxLever) {
