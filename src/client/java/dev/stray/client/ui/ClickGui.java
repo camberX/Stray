@@ -193,7 +193,7 @@ public final class ClickGui {
 		int style = "uid".equals(config.clickGuiStyle) ? 1 : 0;
 		y = UidMenu.drawing()
 			? screen.clickDropdown(graphics, font, x, y, w, "menu-style", "Menu style", STYLE_LABELS, style, i -> setStyle(STYLES[i]))
-			: next(screen.clickCycle(graphics, font, x, y, w, "Menu style", STYLE_LABELS[style], () -> setStyle(STYLES[(style + 1) % STYLES.length])), y);
+			: next(screen.clickCycle(graphics, font, x, y, w, "Menu style", () -> STYLE_LABELS["uid".equals(StrayConfig.get().clickGuiStyle) ? 1 : 0], () -> setStyle(STYLES[(style + 1) % STYLES.length])), y);
 		if (style == 1) {
 			y = screen.clickDropdown(graphics, font, x, y, w, "uid-dpi", "DPI scale", UidMenu.DPI_LABELS, config.uidDpi, i -> {
 				StrayConfig.get().uidDpi = i;
@@ -262,10 +262,11 @@ public final class ClickGui {
 			UnloadState.markDirty();
 		}), y);
 		int current = StrayConfig.get().noCursorResetTimeout;
-		screen.clickCycle(graphics, font, x, y, w, "Timeout", current + "ms", () -> {
+		screen.clickCycle(graphics, font, x, y, w, "Timeout", () -> StrayConfig.get().noCursorResetTimeout + "ms", () -> {
+			int now = StrayConfig.get().noCursorResetTimeout;
 			int next = TIMEOUTS[0];
 			for (int i = 0; i < TIMEOUTS.length; i++) {
-				if (TIMEOUTS[i] == current) {
+				if (TIMEOUTS[i] == now) {
 					next = TIMEOUTS[(i + 1) % TIMEOUTS.length];
 				}
 			}

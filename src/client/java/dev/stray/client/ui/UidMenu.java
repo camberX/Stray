@@ -26,7 +26,7 @@ public final class UidMenu {
 	private static final float TAB_H = 64f;
 	/** Tabs start 20 px down the window (MenuWindow::update_dpi). */
 	private static final float TAB_TOP = 20f;
-	public static final String[] DPI_LABELS = {"100%", "125%", "150%", "175%", "200%"};
+	public static final String[] DPI_LABELS = {"Auto", "100%", "125%", "150%", "175%", "200%"};
 
 	/** A rail tab: its icon and the click GUI categories it holds. */
 	private record Tab(String name, String glyph, String[] categories) {
@@ -87,8 +87,21 @@ public final class UidMenu {
 	static float unit() {
 		Minecraft client = Minecraft.getInstance();
 		double gui = client == null || client.getWindow() == null ? 2.0 : client.getWindow().getGuiScale();
+		return (float) (dpiScale() / Math.max(1.0, gui));
+	}
+
+	/**
+	 * The DPI scale: as picked, or "Auto": the menu is sized for a 1080p screen, so scale with the
+	 * window's height in 25 % steps (1440p 125 %, 4K 200 %).
+	 */
+	static double dpiScale() {
 		int dpi = Mth.clamp(StrayConfig.get().uidDpi, 0, DPI_LABELS.length - 1);
-		return (float) ((1.0 + dpi * 0.25) / Math.max(1.0, gui));
+		if (dpi > 0) {
+			return 1.0 + (dpi - 1) * 0.25;
+		}
+		Minecraft client = Minecraft.getInstance();
+		int height = client == null || client.getWindow() == null ? 1080 : client.getWindow().getHeight();
+		return Mth.clamp(Math.round(height / 1080.0 * 4.0) / 4.0, 1.0, 3.0);
 	}
 
 	/** A row reports how far down it drew, so the group knows its height. */

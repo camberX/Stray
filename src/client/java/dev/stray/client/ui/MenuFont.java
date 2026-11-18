@@ -75,6 +75,11 @@ public final class MenuFont {
 		// Never a smaller copy than needed: shrinking a sharper glyph (now smoothly sampled) beats
 		// blowing up a blurrier one.
 		int step = (int) Math.ceil(gui * poseScale - 0.05);
+		if ((family == 7 || family == 8) && gui * poseScale < 1.05) {
+			// uid?'s 9 px text at 1:1: rasterized at twice the size and sampled down smoothly, so
+			// the letters keep their shape instead of snapping to a 9 px grid.
+			step *= 2;
+		}
 		step = Math.max(1, Math.min(6, step));
 		Style target = HYPR_SCALED[family][step - 1];
 		if (target.getFont().equals(value.getStyle().getFont())) {

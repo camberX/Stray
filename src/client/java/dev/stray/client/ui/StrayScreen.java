@@ -2118,7 +2118,7 @@ public class StrayScreen extends Screen {
 			return;
 		}
 		GuiDraw.menu(graphics, font, "Theme", settingsX + 8, settingsY + 6, Theme.HEADER);
-		float y = cycle(graphics, font, settingsX + 8, settingsY + 20, PANEL_W - 16, mouseX, mouseY, "Menu", StrayConfig.get().clickGui ? "Click GUI" : "Stray", () -> {
+		float y = cycle(graphics, font, settingsX + 8, settingsY + 20, PANEL_W - 16, mouseX, mouseY, "Menu", () -> StrayConfig.get().clickGui ? "Click GUI" : "Stray", () -> {
 			StrayConfig config = StrayConfig.get();
 			config.clickGui = true;
 			UnloadState.markDirty();
@@ -2866,7 +2866,7 @@ public class StrayScreen extends Screen {
 		StrayConfig config = StrayConfig.get();
 		float y = sectionLabel(graphics, font, left, top, "Window");
 		y = featureCard(graphics, font, left, y, col, cardHeight(9), "Control");
-		y = cycle(graphics, font, ix, y, iw, mouseX, mouseY, "Menu", config.clickGui ? "Click GUI" : "Stray", () -> {
+		y = cycle(graphics, font, ix, y, iw, mouseX, mouseY, "Menu", () -> config.clickGui ? "Click GUI" : "Stray", () -> {
 			config.clickGui = true;
 			UnloadState.markDirty();
 		});
@@ -3449,7 +3449,7 @@ public class StrayScreen extends Screen {
 	private void drawLeapPanel(GuiGraphicsExtractor graphics, Font font, float ix, float y, float iw, int mouseX, int mouseY, boolean auto) {
 		if (!dev.stray.Edition.LEGIT) {
 			StrayConfig config = StrayConfig.get();
-			y = cycle(graphics, font, ix, y, iw, mouseX, mouseY, "Leap to", config.leapMode == 1 ? "Player name" : "Class", () -> {
+			y = cycle(graphics, font, ix, y, iw, mouseX, mouseY, "Leap to", () -> config.leapMode == 1 ? "Player name" : "Class", () -> {
 				config.leapMode = config.leapMode == 1 ? 0 : 1;
 				leapFocus = null;
 			});
@@ -3529,7 +3529,7 @@ public class StrayScreen extends Screen {
 					() -> target.name == null ? "" : target.name, v -> target.name = v, "off");
 			}
 			dev.stray.client.dungeon.DungeonParty.DungeonClass clazz = dev.stray.client.dungeon.autoleap.AutoLeap.classAt(target.clazz);
-			return cycle(graphics, font, x, y, w, mouseX, mouseY, label, clazz == null ? "Off" : clazz.label, () -> {
+			return cycle(graphics, font, x, y, w, mouseX, mouseY, label, () -> clazz == null ? "Off" : clazz.label, () -> {
 				int next = target.clazz + 1;
 				target.clazz = next >= dev.stray.client.dungeon.autoleap.AutoLeap.CLASSES.length ? -1 : next;
 			});
@@ -3741,7 +3741,7 @@ public class StrayScreen extends Screen {
 		}
 		switch (feature) {
 			case WORLD -> {
-				y = cycle(graphics, font, ix, y, iw, mouseX, mouseY, "Mode", config.worldTintModeLabel(), config::cycleWorldTintMode);
+				y = cycle(graphics, font, ix, y, iw, mouseX, mouseY, "Mode", () -> config.worldTintModeLabel(), config::cycleWorldTintMode);
 				y = colorRow(graphics, font, ix, y, iw, mouseX, mouseY, "Color", config.worldTintRgb, PickerTarget.WORLD);
 				y = slider(graphics, font, ix, y, iw, "Strength", String.format(Locale.ROOT, "%.0f", config.worldTintStrength * 100), config.worldTintStrength, v -> config.worldTintStrength = v);
 				if (config.worldTintUsesLightmap()) {
@@ -3756,8 +3756,8 @@ public class StrayScreen extends Screen {
 				slider(graphics, font, ix, y, iw, "Strength", String.format(Locale.ROOT, "%.0f", config.skyTintStrength * 100), config.skyTintStrength, v -> config.skyTintStrength = v);
 			}
 			case AMBIENCE -> {
-				y = cycle(graphics, font, ix, y, iw, mouseX, mouseY, "Weather", config.weatherLabel(), config::cycleWeather);
-				y = cycle(graphics, font, ix, y, iw, mouseX, mouseY, "Time", config.clockLabel(), config::cycleTime);
+				y = cycle(graphics, font, ix, y, iw, mouseX, mouseY, "Weather", () -> config.weatherLabel(), config::cycleWeather);
+				y = cycle(graphics, font, ix, y, iw, mouseX, mouseY, "Time", () -> config.clockLabel(), config::cycleTime);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Precipitation", config.ambiencePrecipitation, v -> config.ambiencePrecipitation = v);
 				slider(
 					graphics,
@@ -3788,13 +3788,13 @@ public class StrayScreen extends Screen {
 				});
 			}
 			case MOTION -> {
-				y = cycle(graphics, font, ix, y, iw, mouseX, mouseY, "Algorithm", config.motionBlurAlgorithmLabel(), config::cycleMotionBlurAlgorithm);
+				y = cycle(graphics, font, ix, y, iw, mouseX, mouseY, "Algorithm", () -> config.motionBlurAlgorithmLabel(), config::cycleMotionBlurAlgorithm);
 				y = slider(graphics, font, ix, y, iw, "Strength", String.format(Locale.ROOT, "%.1f", config.motionBlurStrength), config.motionBlurStrength / 2.0f, v -> config.motionBlurStrength = StrayConfig.clamp(v * 2.0f, 0f, 2f));
 				toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Refresh scale", config.motionBlurRefreshScale, v -> config.motionBlurRefreshScale = v);
 			}
 			case HELD_ITEM -> {
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Silhouette", config.heldItemShaderSilhouette, v -> config.heldItemShaderSilhouette = v);
-				y = cycle(graphics, font, ix, y, iw, mouseX, mouseY, "Style", config.heldItemShaderStyleLabel(), config::cycleHeldItemShaderStyle);
+				y = cycle(graphics, font, ix, y, iw, mouseX, mouseY, "Style", () -> config.heldItemShaderStyleLabel(), config::cycleHeldItemShaderStyle);
 				y = colorRow(graphics, font, ix, y, iw, mouseX, mouseY, "Tint", config.heldItemShaderRgb, PickerTarget.HELD_ITEM);
 				y = colorRow(graphics, font, ix, y, iw, mouseX, mouseY, "Outline", config.heldItemShaderOutlineRgb, PickerTarget.HELD_ITEM_OUTLINE);
 				y = slider(graphics, font, ix, y, iw, "Tint", Math.round(config.heldItemShaderFill * 100) + "%", (config.heldItemShaderFill - 0.08f) / 0.77f, v -> config.heldItemShaderFill = StrayConfig.clamp(0.08f + v * 0.77f, 0.08f, 0.85f));
@@ -3804,7 +3804,7 @@ public class StrayScreen extends Screen {
 			case FILL -> {
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Silhouette", visuals.shaderSilhouette, v -> visuals.shaderSilhouette = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Through walls", visuals.shaderThroughWalls, v -> visuals.shaderThroughWalls = v);
-				y = cycle(graphics, font, ix, y, iw, mouseX, mouseY, "Style", visuals.shaderStyleLabel(), visuals::cycleShaderStyle);
+				y = cycle(graphics, font, ix, y, iw, mouseX, mouseY, "Style", () -> visuals.shaderStyleLabel(), visuals::cycleShaderStyle);
 				y = colorRow(graphics, font, ix, y, iw, mouseX, mouseY, "Tint", visuals.shaderRgb, PickerTarget.FILL);
 				y = colorRow(graphics, font, ix, y, iw, mouseX, mouseY, "Outline", visuals.shaderOutlineRgb, PickerTarget.FILL_OUTLINE);
 				y = slider(graphics, font, ix, y, iw, "Tint", Math.round(visuals.shaderFill * 100) + "%", (visuals.shaderFill - 0.08f) / 0.77f, v -> visuals.shaderFill = StrayConfig.clamp(0.08f + v * 0.77f, 0.08f, 0.85f));
@@ -3936,8 +3936,8 @@ public class StrayScreen extends Screen {
 				slider(graphics, font, ix, y, iw, "Opacity", Math.round(config.pipOpacity * 100) + "%", config.pipOpacity, v -> config.pipOpacity = StrayConfig.clamp(v, 0.25f, 1f));
 			}
 			case RAWMATS -> {
-				y = cycle(graphics, font, ix, y, iw, mouseX, mouseY, "Materials", config.rawmatsModeLabel(), config::cycleRawmatsMode);
-				cycle(graphics, font, ix, y, iw, mouseX, mouseY, "Display", config.rawmatsDisplayLabel(), config::cycleRawmatsDisplay);
+				y = cycle(graphics, font, ix, y, iw, mouseX, mouseY, "Materials", () -> config.rawmatsModeLabel(), config::cycleRawmatsMode);
+				cycle(graphics, font, ix, y, iw, mouseX, mouseY, "Display", () -> config.rawmatsDisplayLabel(), config::cycleRawmatsDisplay);
 			}
 			case SKILL -> {
 				SkillProgressTracker.poll(minecraft);
@@ -3985,7 +3985,7 @@ public class StrayScreen extends Screen {
 			case LEAP_MENU -> {
 				String[] sorting = dev.stray.client.dungeon.LeapMenu.SORTING;
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Teammate POV", config.leapPov, v -> config.leapPov = v);
-				y = cycle(graphics, font, ix, y, iw, mouseX, mouseY, "Order", sorting[Math.floorMod(config.leapSorting, sorting.length)], () -> config.leapSorting = Math.floorMod(config.leapSorting + 1, sorting.length));
+				y = cycle(graphics, font, ix, y, iw, mouseX, mouseY, "Order", () -> sorting[Math.floorMod(config.leapSorting, sorting.length)], () -> config.leapSorting = Math.floorMod(config.leapSorting + 1, sorting.length));
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Left click only", config.leapLeftClickOnly, v -> config.leapLeftClickOnly = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Keys 1-4 leap", config.leapKeybinds, v -> config.leapKeybinds = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Announce leap", config.leapAnnounce, v -> config.leapAnnounce = v);
@@ -4048,7 +4048,7 @@ public class StrayScreen extends Screen {
 			}
 			case M4_HIGHLIGHT -> {
 				dev.stray.client.dungeon.m4.M4Config m4 = config.m4;
-				y = cycle(graphics, font, ix, y, iw, mouseX, mouseY, "Style", dev.stray.client.dungeon.m4.M4Config.STYLES[Math.floorMod(m4.highlightStyle, dev.stray.client.dungeon.m4.M4Config.STYLES.length)], () -> m4.highlightStyle = Math.floorMod(m4.highlightStyle + 1, dev.stray.client.dungeon.m4.M4Config.STYLES.length));
+				y = cycle(graphics, font, ix, y, iw, mouseX, mouseY, "Style", () -> dev.stray.client.dungeon.m4.M4Config.STYLES[Math.floorMod(m4.highlightStyle, dev.stray.client.dungeon.m4.M4Config.STYLES.length)], () -> m4.highlightStyle = Math.floorMod(m4.highlightStyle + 1, dev.stray.client.dungeon.m4.M4Config.STYLES.length));
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Hide name tags", m4.highlightHideNametags, v -> m4.highlightHideNametags = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Hide highlighted mobs", m4.highlightHideMobs, v -> m4.highlightHideMobs = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Thorn", m4.highlightThorn, v -> m4.highlightThorn = v);
@@ -4066,7 +4066,7 @@ public class StrayScreen extends Screen {
 			}
 			case M4_WAYPOINTS -> {
 				dev.stray.client.dungeon.m4.M4Config m4 = config.m4;
-				y = cycle(graphics, font, ix, y, iw, mouseX, mouseY, "Style", dev.stray.client.dungeon.m4.M4Config.STYLES[Math.floorMod(m4.waypointStyle, dev.stray.client.dungeon.m4.M4Config.STYLES.length)], () -> m4.waypointStyle = Math.floorMod(m4.waypointStyle + 1, dev.stray.client.dungeon.m4.M4Config.STYLES.length));
+				y = cycle(graphics, font, ix, y, iw, mouseX, mouseY, "Style", () -> dev.stray.client.dungeon.m4.M4Config.STYLES[Math.floorMod(m4.waypointStyle, dev.stray.client.dungeon.m4.M4Config.STYLES.length)], () -> m4.waypointStyle = Math.floorMod(m4.waypointStyle + 1, dev.stray.client.dungeon.m4.M4Config.STYLES.length));
 				if (!dev.stray.Edition.LEGIT) {
 					y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Depth", m4.waypointDepth, v -> m4.waypointDepth = v);
 				}
@@ -4124,7 +4124,7 @@ public class StrayScreen extends Screen {
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Best decoy spot", m4.decoyBestSpot, v -> m4.decoyBestSpot = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Hide after bear 1", m4.decoyHideAfterB1, v -> m4.decoyHideAfterB1 = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Cave spot", m4.decoyCave, v -> m4.decoyCave = v);
-				y = cycle(graphics, font, ix, y, iw, mouseX, mouseY, "Style", dev.stray.client.dungeon.m4.M4Config.STYLES[Math.floorMod(m4.decoyStyle, dev.stray.client.dungeon.m4.M4Config.STYLES.length)], () -> m4.decoyStyle = Math.floorMod(m4.decoyStyle + 1, dev.stray.client.dungeon.m4.M4Config.STYLES.length));
+				y = cycle(graphics, font, ix, y, iw, mouseX, mouseY, "Style", () -> dev.stray.client.dungeon.m4.M4Config.STYLES[Math.floorMod(m4.decoyStyle, dev.stray.client.dungeon.m4.M4Config.STYLES.length)], () -> m4.decoyStyle = Math.floorMod(m4.decoyStyle + 1, dev.stray.client.dungeon.m4.M4Config.STYLES.length));
 				if (!dev.stray.Edition.LEGIT) {
 					y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Depth", m4.decoyDepth, v -> m4.decoyDepth = v);
 				}
@@ -4167,14 +4167,14 @@ public class StrayScreen extends Screen {
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Hide particles", m4.hideParticles, v -> m4.hideParticles = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Keep healer circle", m4.keepHealerCircle, v -> m4.keepHealerCircle = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Keep mage beam", m4.keepMageBeam, v -> m4.keepMageBeam = v);
-				y = cycle(graphics, font, ix, y, iw, mouseX, mouseY, "NPCs", new String[] {"All", "Relevant only", "None"}[Math.floorMod(m4.npcVisibility, new String[] {"All", "Relevant only", "None"}.length)], () -> m4.npcVisibility = Math.floorMod(m4.npcVisibility + 1, new String[] {"All", "Relevant only", "None"}.length));
-				y = cycle(graphics, font, ix, y, iw, mouseX, mouseY, "NPC highlight", new String[] {"None", "Relevant only", "All"}[Math.floorMod(m4.npcHighlight, new String[] {"None", "Relevant only", "All"}.length)], () -> m4.npcHighlight = Math.floorMod(m4.npcHighlight + 1, new String[] {"None", "Relevant only", "All"}.length));
-				y = cycle(graphics, font, ix, y, iw, mouseX, mouseY, "NPC style", dev.stray.client.dungeon.m4.M4Config.STYLES[Math.floorMod(m4.npcStyle, dev.stray.client.dungeon.m4.M4Config.STYLES.length)], () -> m4.npcStyle = Math.floorMod(m4.npcStyle + 1, dev.stray.client.dungeon.m4.M4Config.STYLES.length));
+				y = cycle(graphics, font, ix, y, iw, mouseX, mouseY, "NPCs", () -> new String[] {"All", "Relevant only", "None"}[Math.floorMod(m4.npcVisibility, new String[] {"All", "Relevant only", "None"}.length)], () -> m4.npcVisibility = Math.floorMod(m4.npcVisibility + 1, new String[] {"All", "Relevant only", "None"}.length));
+				y = cycle(graphics, font, ix, y, iw, mouseX, mouseY, "NPC highlight", () -> new String[] {"None", "Relevant only", "All"}[Math.floorMod(m4.npcHighlight, new String[] {"None", "Relevant only", "All"}.length)], () -> m4.npcHighlight = Math.floorMod(m4.npcHighlight + 1, new String[] {"None", "Relevant only", "All"}.length));
+				y = cycle(graphics, font, ix, y, iw, mouseX, mouseY, "NPC style", () -> dev.stray.client.dungeon.m4.M4Config.STYLES[Math.floorMod(m4.npcStyle, dev.stray.client.dungeon.m4.M4Config.STYLES.length)], () -> m4.npcStyle = Math.floorMod(m4.npcStyle + 1, dev.stray.client.dungeon.m4.M4Config.STYLES.length));
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Hide invisible armor stands", m4.hideInvisArmorStands, v -> m4.hideInvisArmorStands = v);
 			}
 			case M4_TRAJ -> {
 				dev.stray.client.dungeon.m4.M4Config m4 = config.m4;
-				y = cycle(graphics, font, ix, y, iw, mouseX, mouseY, "Style", dev.stray.client.dungeon.m4.M4Config.STYLES[Math.floorMod(m4.trajectoryStyle, dev.stray.client.dungeon.m4.M4Config.STYLES.length)], () -> m4.trajectoryStyle = Math.floorMod(m4.trajectoryStyle + 1, dev.stray.client.dungeon.m4.M4Config.STYLES.length));
+				y = cycle(graphics, font, ix, y, iw, mouseX, mouseY, "Style", () -> dev.stray.client.dungeon.m4.M4Config.STYLES[Math.floorMod(m4.trajectoryStyle, dev.stray.client.dungeon.m4.M4Config.STYLES.length)], () -> m4.trajectoryStyle = Math.floorMod(m4.trajectoryStyle + 1, dev.stray.client.dungeon.m4.M4Config.STYLES.length));
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Cows", m4.trajectoryCows, v -> m4.trajectoryCows = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Sheep", m4.trajectorySheep, v -> m4.trajectorySheep = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Chickens", m4.trajectoryChickens, v -> m4.trajectoryChickens = v);
@@ -4225,11 +4225,11 @@ public class StrayScreen extends Screen {
 			case DUNGEON_MAP -> {
 				String[] info = {"Checkmarks", "Secrets", "Room names", "Names + secrets", "Secrets + puzzles"};
 				String[] names = {"Off", "Holding leap", "Always"};
-				y = cycle(graphics, font, ix, y, iw, mouseX, mouseY, "Rooms", info[Math.floorMod(config.dungeonMapRoomInfo, info.length)], () -> config.dungeonMapRoomInfo = Math.floorMod(config.dungeonMapRoomInfo + 1, info.length));
+				y = cycle(graphics, font, ix, y, iw, mouseX, mouseY, "Rooms", () -> info[Math.floorMod(config.dungeonMapRoomInfo, info.length)], () -> config.dungeonMapRoomInfo = Math.floorMod(config.dungeonMapRoomInfo + 1, info.length));
 				y = slider(graphics, font, ix, y, iw, "Map size", config.dungeonMapZoom + "%", (config.dungeonMapZoom - 100) / 100f, v -> config.dungeonMapZoom = snapInt(100 + v * 100f, 100, 200, 5));
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Player heads", config.dungeonMapHeads, v -> config.dungeonMapHeads = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Arrow for yourself", config.dungeonMapSelfArrow, v -> config.dungeonMapSelfArrow = v);
-				y = cycle(graphics, font, ix, y, iw, mouseX, mouseY, "Names", names[Math.floorMod(config.dungeonMapPlayerNames, names.length)], () -> config.dungeonMapPlayerNames = Math.floorMod(config.dungeonMapPlayerNames + 1, names.length));
+				y = cycle(graphics, font, ix, y, iw, mouseX, mouseY, "Names", () -> names[Math.floorMod(config.dungeonMapPlayerNames, names.length)], () -> config.dungeonMapPlayerNames = Math.floorMod(config.dungeonMapPlayerNames + 1, names.length));
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Class colours", config.dungeonMapClassBorders, v -> config.dungeonMapClassBorders = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Guess unopened 1x1s", config.dungeonMapPredict, v -> config.dungeonMapPredict = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Hide in boss", config.dungeonMapHideInBoss, v -> config.dungeonMapHideInBoss = v);
@@ -4280,7 +4280,7 @@ public class StrayScreen extends Screen {
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "MF Ruby Route", config.crystalHollowsRubyRoute, v -> config.crystalHollowsRubyRoute = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Focus mode", config.routeMinerFocus, v -> config.routeMinerFocus = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Regenerated Waypoints", config.routeMinerRegen, v -> config.routeMinerRegen = v);
-				cycle(graphics, font, ix, y, iw, mouseX, mouseY, "Gemstone", config.routeMinerGemLabel(), config::cycleRouteMinerGem);
+				cycle(graphics, font, ix, y, iw, mouseX, mouseY, "Gemstone", () -> config.routeMinerGemLabel(), config::cycleRouteMinerGem);
 			}
 			case CH_MAP -> toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Waypoint names", config.crystalHollowsMapLabels, v -> config.crystalHollowsMapLabels = v);
 			case METAL -> toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Tool title", config.metalDetectorToolTitle, v -> config.metalDetectorToolTitle = v);
@@ -4292,8 +4292,8 @@ public class StrayScreen extends Screen {
 				toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Item count", config.inventoryHudCount, v -> config.inventoryHudCount = v);
 			}
 			case HEALTH -> {
-				y = cycle(graphics, font, ix, y, iw, mouseX, mouseY, "Style", visuals.healthStyleLabel(), visuals::cycleHealthStyle);
-				y = cycle(graphics, font, ix, y, iw, mouseX, mouseY, "Side", visuals.healthSideLabel(), visuals::cycleHealthSide);
+				y = cycle(graphics, font, ix, y, iw, mouseX, mouseY, "Style", () -> visuals.healthStyleLabel(), visuals::cycleHealthStyle);
+				y = cycle(graphics, font, ix, y, iw, mouseX, mouseY, "Side", () -> visuals.healthSideLabel(), visuals::cycleHealthSide);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Through walls", visuals.healthThroughWalls, v -> visuals.healthThroughWalls = v);
 				y = slider(graphics, font, ix, y, iw, "Range", visuals.healthRange + "m", (visuals.healthRange - 16) / 80f, v -> visuals.healthRange = StrayConfig.clamp(16 + Math.round(v * 80f), 16, 96));
 				y = slider(graphics, font, ix, y, iw, "Width", String.format(java.util.Locale.ROOT, "%.1f", visuals.healthWidth), (visuals.healthWidth - 1f) / 5f, v -> visuals.healthWidth = StrayConfig.clamp(1f + v * 5f, 1f, 6f));
@@ -4308,7 +4308,7 @@ public class StrayScreen extends Screen {
 				colorRow(graphics, font, ix, y, iw, mouseX, mouseY, "Color", visuals.boxRgb, PickerTarget.BOX);
 			}
 			case NAMETAGS -> {
-				y = cycle(graphics, font, ix, y, iw, mouseX, mouseY, "Style", visuals.nametagStyleLabel(), visuals::cycleNametagStyle);
+				y = cycle(graphics, font, ix, y, iw, mouseX, mouseY, "Style", () -> visuals.nametagStyleLabel(), visuals::cycleNametagStyle);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Through walls", visuals.nametagThroughWalls, v -> visuals.nametagThroughWalls = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Show distance", visuals.nametagDistance, v -> visuals.nametagDistance = v);
 				y = slider(graphics, font, ix, y, iw, "Size", Math.round(visuals.nametagScale * 100) + "%", (visuals.nametagScale - 0.50f) / 1.50f, v -> visuals.nametagScale = StrayConfig.clamp(0.50f + v * 1.50f, 0.50f, 2.00f));
@@ -4317,10 +4317,10 @@ public class StrayScreen extends Screen {
 			}
 			case LOADOUTS -> {
 				if (!dev.stray.Edition.LEGIT) {
-					y = cycle(graphics, font, ix, y, iw, mouseX, mouseY, "Swap A", config.loadoutSwapSlotALabel(), config::cycleLoadoutSwapSlotA);
-					y = cycle(graphics, font, ix, y, iw, mouseX, mouseY, "Swap B", config.loadoutSwapSlotBLabel(), config::cycleLoadoutSwapSlotB);
+					y = cycle(graphics, font, ix, y, iw, mouseX, mouseY, "Swap A", () -> config.loadoutSwapSlotALabel(), config::cycleLoadoutSwapSlotA);
+					y = cycle(graphics, font, ix, y, iw, mouseX, mouseY, "Swap B", () -> config.loadoutSwapSlotBLabel(), config::cycleLoadoutSwapSlotB);
 					if (config.loadoutSwapTri) {
-						y = cycle(graphics, font, ix, y, iw, mouseX, mouseY, "Swap C", config.loadoutSwapSlotCLabel(), config::cycleLoadoutSwapSlotC);
+						y = cycle(graphics, font, ix, y, iw, mouseX, mouseY, "Swap C", () -> config.loadoutSwapSlotCLabel(), config::cycleLoadoutSwapSlotC);
 					}
 					y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "TriSwap", config.loadoutSwapTri, v -> config.loadoutSwapTri = v);
 					y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Hide default menu", config.loadoutHideDefault, v -> config.loadoutHideDefault = v);
@@ -4340,7 +4340,7 @@ public class StrayScreen extends Screen {
 				toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Particle hints", config.particleDetection, v -> config.particleDetection = v);
 			}
 			case ACCENT -> {
-				y = cycle(graphics, font, ix, y, iw, mouseX, mouseY, "Preset", accentPresetLabel(), this::cycleAccentPreset);
+				y = cycle(graphics, font, ix, y, iw, mouseX, mouseY, "Preset", () -> accentPresetLabel(), this::cycleAccentPreset);
 				y = colorRow(graphics, font, ix, y, iw, mouseX, mouseY, "Color", config.themeAccentRgb, PickerTarget.THEME);
 				// One opacity for every Shadow panel: menus, screens, HUD and chat.
 				float opacity = StrayConfig.clamp(config.shadowOpacity, 0.20f, 1f);
@@ -4351,7 +4351,7 @@ public class StrayScreen extends Screen {
 				toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Blur", config.shadowBlur, v -> config.shadowBlur = v);
 			}
 			case PANE -> {
-				y = cycle(graphics, font, ix, y, iw, mouseX, mouseY, "Preset", panePresetLabel(), this::cyclePanePreset);
+				y = cycle(graphics, font, ix, y, iw, mouseX, mouseY, "Preset", () -> panePresetLabel(), this::cyclePanePreset);
 				colorRow(graphics, font, ix, y, iw, mouseX, mouseY, "Color", config.themePaneRgb, PickerTarget.PANE);
 			}
 			case WINDOW -> {
@@ -4525,10 +4525,11 @@ public class StrayScreen extends Screen {
 		StrayClient.syncMenuBindEdges();
 	}
 
-	private float cycle(GuiGraphicsExtractor graphics, Font font, float x, float y, float w, int mouseX, int mouseY, String label, String value, Runnable next) {
+	private float cycle(GuiGraphicsExtractor graphics, Font font, float x, float y, float w, int mouseX, int mouseY, String label, java.util.function.Supplier<String> current, Runnable next) {
 		if (UidMenu.drawing()) {
-			return uidCombo(graphics, font, x, y, w, mouseX, mouseY, label, value, false, next);
+			return uidCycle(graphics, font, x, y, w, mouseX, mouseY, label, current, next);
 		}
+		String value = current.get();
 		float row = rowH();
 		boolean hovered = GuiDraw.hovered(mouseX, mouseY, x, y, w, row);
 		if (hovered) {
@@ -5608,7 +5609,7 @@ public class StrayScreen extends Screen {
 	}
 
 	/** A feature-panel row with the value on the right that steps to the next one when clicked. */
-	float clickCycle(GuiGraphicsExtractor graphics, Font font, float x, float y, float w, String label, String value, Runnable next) {
+	float clickCycle(GuiGraphicsExtractor graphics, Font font, float x, float y, float w, String label, java.util.function.Supplier<String> value, Runnable next) {
 		return cycle(graphics, font, x, y, w, (int) Math.round(ClickGui.pointerX()), (int) Math.round(ClickGui.pointerY()), label, value, next);
 	}
 
@@ -5720,6 +5721,57 @@ public class StrayScreen extends Screen {
 		float h = named ? 35 : 20;
 		UidMenu.extent(y + h);
 		return y + h + 5;
+	}
+
+	/** Options a stepping row went through when its dropdown was opened, by key. */
+	private final Map<String, String[]> uidCycleOptions = new HashMap<>();
+
+	/**
+	 * A row that steps to its next value, as a real dropdown: opening it steps once through all
+	 * values (and back to the current one) to learn the list; picking one steps forward to it.
+	 * Rows whose value doesn't come back around within 64 steps stay a stepping box.
+	 */
+	private float uidCycle(GuiGraphicsExtractor graphics, Font font, float x, float y, float w, int mouseX, int mouseY, String label, java.util.function.Supplier<String> current, Runnable next) {
+		String key = "cyc/" + fieldScope + "/" + label;
+		String value = current.get();
+		String[] options = uidCycleOptions.get(key);
+		if (!key.equals(dropdownOpen) || options == null) {
+			return uidCombo(graphics, font, x, y, w, mouseX, mouseY, label, value, false, () -> {
+				String[] found = uidProbe(current, next);
+				if (found == null) {
+					next.run();
+					UnloadState.markDirty();
+					return;
+				}
+				uidCycleOptions.put(key, found);
+				dropdownOpen = key;
+				UidMenu.popupScroll(0f);
+			});
+		}
+		int selected = java.util.Arrays.asList(options).indexOf(value);
+		return uidDropdown(graphics, font, x, y, w, mouseX, mouseY, key, label, options, selected, index -> {
+			int from = java.util.Arrays.asList(options).indexOf(current.get());
+			int steps = Math.floorMod(index - Math.max(0, from), options.length);
+			for (int i = 0; i < steps; i++) {
+				next.run();
+			}
+		});
+	}
+
+	/** Every value a stepping row goes through, starting at the current one; null when it never comes back. */
+	private static String[] uidProbe(java.util.function.Supplier<String> current, Runnable next) {
+		String start = current.get();
+		java.util.List<String> seen = new java.util.ArrayList<>();
+		seen.add(start);
+		for (int i = 0; i < 64; i++) {
+			next.run();
+			String value = current.get();
+			if (java.util.Objects.equals(value, start)) {
+				return seen.size() > 1 ? seen.toArray(new String[0]) : null;
+			}
+			seen.add(value);
+		}
+		return null;
 	}
 
 	private float uidDropdown(GuiGraphicsExtractor graphics, Font font, float x, float y, float w, int mouseX, int mouseY, String key, String label, String[] options, int selected, java.util.function.IntConsumer pick) {
