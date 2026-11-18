@@ -8,6 +8,7 @@ import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.chunk.status.ChunkStatus;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -184,8 +185,12 @@ public final class Scanner {
 		return false;
 	}
 
+	/**
+	 * Whether the client really has that chunk. (ClientLevel.hasChunk is always true, which made
+	 * the scan finish before far rooms had loaded and never look again.)
+	 */
 	public static boolean loaded(ClientLevel level, int chunkX, int chunkZ) {
-		return level.hasChunk(chunkX, chunkZ);
+		return level.getChunkSource().getChunk(chunkX, chunkZ, ChunkStatus.FULL, false) != null;
 	}
 
 	/** NoammAddons' room core: a hash of the block names from y 140 down to 12. */
