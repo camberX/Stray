@@ -290,7 +290,7 @@ public class StrayScreen extends Screen {
 	}
 
 	private enum PickerTarget {
-		WORLD, SKY, FOG, NODE, THEME, PANE, CONTROL, PILL, MOB, STAR, BLOCK, TITANIUM, CHEST, PEST, HELD_ITEM, HELD_ITEM_OUTLINE, FILL, FILL_OUTLINE, MARKS, PATHS, RINGS, HEALTH_FULL, HEALTH_EMPTY, BOX, SLAYER, TERMINAL, TERM_HIGHLIGHT
+		WORLD, SKY, FOG, NODE, THEME, PANE, CONTROL, PILL, MOB, STAR, BLOCK, TITANIUM, CHEST, PEST, HELD_ITEM, HELD_ITEM_OUTLINE, FILL, FILL_OUTLINE, MARKS, PATHS, RINGS, HEALTH_FULL, HEALTH_EMPTY, BOX, SLAYER, TERMINAL, TERM_HIGHLIGHT, UID_ACCENT
 	}
 
 	/** Which slayer colour the SLAYER picker edits (see SlayerSettings.color). */
@@ -814,6 +814,10 @@ public class StrayScreen extends Screen {
 				finishClose();
 				return;
 			}
+			if (UidMenu.active()) {
+				// uid? draws in its own pixels: clicks, drags and scrolls map through the same scale.
+				viewScale = UidMenu.unit();
+			}
 			ClickGui.extract(this, graphics, mouseX, mouseY);
 			return;
 		}
@@ -980,6 +984,9 @@ public class StrayScreen extends Screen {
 	}
 
 	private float rowH() {
+		if (UidMenu.drawing()) {
+			return 18f;
+		}
 		return controlCenter() ? 20f : ROW;
 	}
 
@@ -3200,6 +3207,9 @@ public class StrayScreen extends Screen {
 			// Stray Legit: ESP only draws what you could see anyway.
 			return y;
 		}
+		if (UidMenu.drawing()) {
+			return uidToggle(graphics, font, x, y, w, mouseX, mouseY, label, value, setter);
+		}
 		float row = rowH();
 		boolean hovered = GuiDraw.hovered(mouseX, mouseY, x, y, w, row);
 		String animKey = rowAnimKey(label, x, y);
@@ -3574,6 +3584,9 @@ public class StrayScreen extends Screen {
 	}
 
 	private float clickButton(GuiGraphicsExtractor graphics, Font font, float x, float y, float w, int mouseX, int mouseY, String label, Runnable action) {
+		if (UidMenu.drawing()) {
+			return uidButton(graphics, font, x, y, w, mouseX, mouseY, label, action);
+		}
 		float row = rowH();
 		boolean hover = GuiDraw.hovered(mouseX, mouseY, x, y, w, row);
 		ClickLook.panel(graphics, x, y + 1, w, row - 2, 4, hover ? Theme.CARD_HOVER : Theme.CARD, Theme.LINE);
@@ -4448,6 +4461,9 @@ public class StrayScreen extends Screen {
 		int which,
 		InputConstants.Key key
 	) {
+		if (UidMenu.drawing()) {
+			return uidBind(graphics, font, x, y, w, mouseX, mouseY, label, which, key);
+		}
 		float row = rowH();
 		boolean listening = bindListen == which;
 		String inner = listening ? "..." : OdinClicks.keyLabel(key);
@@ -4510,6 +4526,9 @@ public class StrayScreen extends Screen {
 	}
 
 	private float cycle(GuiGraphicsExtractor graphics, Font font, float x, float y, float w, int mouseX, int mouseY, String label, String value, Runnable next) {
+		if (UidMenu.drawing()) {
+			return uidCombo(graphics, font, x, y, w, mouseX, mouseY, label, value, false, next);
+		}
 		float row = rowH();
 		boolean hovered = GuiDraw.hovered(mouseX, mouseY, x, y, w, row);
 		if (hovered) {
@@ -4541,6 +4560,9 @@ public class StrayScreen extends Screen {
 		int selected,
 		java.util.function.IntConsumer pick
 	) {
+		if (UidMenu.drawing()) {
+			return uidDropdown(graphics, font, x, y, w, mouseX, mouseY, key, label, options, selected, pick);
+		}
 		float row = rowH();
 		boolean open = key.equals(dropdownOpen);
 		float t = dropdownT.getOrDefault(key, 0f);
@@ -4614,6 +4636,9 @@ public class StrayScreen extends Screen {
 	}
 
 	private float chipRow(GuiGraphicsExtractor graphics, Font font, float x, float y, float w, int mouseX, int mouseY, String[] labels, int selected, java.util.function.IntConsumer pick) {
+		if (UidMenu.drawing()) {
+			return uidDropdown(graphics, font, x, y, w, mouseX, mouseY, "chips/" + String.join("|", labels), "", labels, selected, pick);
+		}
 		float cx = x;
 		float rowY = y;
 		for (int i = 0; i < labels.length; i++) {
@@ -4655,6 +4680,9 @@ public class StrayScreen extends Screen {
 	}
 
 	private float slider(GuiGraphicsExtractor graphics, Font font, float x, float y, float w, String label, String valueText, float progress, Consumer<Float> setter) {
+		if (UidMenu.drawing()) {
+			return uidSlider(graphics, font, x, y, w, label, valueText, progress, setter);
+		}
 		float row = rowH();
 		float labelY = GuiDraw.middle(y, row);
 		GuiDraw.menu(graphics, font, label, x + 1, labelY, ink());
@@ -4688,6 +4716,9 @@ public class StrayScreen extends Screen {
 	}
 
 	private float colorRow(GuiGraphicsExtractor graphics, Font font, float x, float y, float w, int mouseX, int mouseY, String label, int rgb, PickerTarget target, Runnable before) {
+		if (UidMenu.drawing()) {
+			return uidColor(graphics, font, x, y, w, mouseX, mouseY, label, rgb, target, before);
+		}
 		float row = rowH();
 		float labelY = GuiDraw.middle(y, row);
 		GuiDraw.menu(graphics, font, label, x + 1, labelY, ink());
@@ -4743,7 +4774,9 @@ public class StrayScreen extends Screen {
 		float y = pickerY;
 		float w = PICKER_W;
 		float h = pickerHeight();
-		if (ShadowMenu.drawing()) {
+		if (UidMenu.drawing()) {
+			UidLook.panel(graphics, x, y, w, h);
+		} else if (ShadowMenu.drawing()) {
 			ShadowLook.window(graphics, x, y, w, h, ShadowLook.WINDOW_R, Anim.fade(0xF2050709, pickerT));
 		} else {
 			GuiDraw.sheet(graphics, x, y, w, h, 8, Anim.fade(Theme.SHEET, pickerT), Anim.fade(Theme.ACCENT, pickerT));
@@ -4854,11 +4887,14 @@ public class StrayScreen extends Screen {
 		pickerAlpha = opacityToSlider(target);
 		float h = pickerHeight();
 		if (StrayConfig.get().clickGui) {
+			// uid? works in its own pixels; Shadow in GUI units.
+			float sw = UidMenu.active() ? width / UidMenu.unit() : width;
+			float sh = UidMenu.active() ? height / UidMenu.unit() : height;
 			float swatchRight = x + PICKER_W;
 			float right = swatchRight + 6f;
-			float placeX = right + PICKER_W <= width - 4f ? right : x;
-			float maxX = Math.max(4f, width - PICKER_W - 4f);
-			float maxY = Math.max(4f, height - h - 4f);
+			float placeX = right + PICKER_W <= sw - 4f ? right : x;
+			float maxX = Math.max(4f, sw - PICKER_W - 4f);
+			float maxY = Math.max(4f, sh - h - 4f);
 			float placeY = y;
 			if (placeY > maxY) {
 				float above = y - rowH() - 2f - h;
@@ -4905,6 +4941,7 @@ public class StrayScreen extends Screen {
 			case SLAYER -> config.slayer.setColor(slayerColorKey, packed == 0 ? 0xFFFFFF : packed);
 			case TERMINAL -> config.setTerminalColor(terminalColorKey, packed == 0 ? 0xFFFFFF : packed);
 			case THEME -> Theme.applyCustom(packed);
+			case UID_ACCENT -> config.uidAccent = packed == 0 ? 0x9FCA2B : packed;
 			case PANE -> Theme.applyPane(packed);
 			case CONTROL -> {
 				config.controlPaneRgb = packed == 0 ? 0x181818 : packed;
@@ -4923,7 +4960,7 @@ public class StrayScreen extends Screen {
 			case PANE -> 0.20f;
 			case MOB, STAR, BLOCK, TERM_HIGHLIGHT -> 0.15f;
 			case NODE, HELD_ITEM, FILL, CHEST, TITANIUM, PEST, BOX -> 0.08f;
-			case THEME, HELD_ITEM_OUTLINE, FILL_OUTLINE, MARKS, PATHS, RINGS, HEALTH_FULL, HEALTH_EMPTY, SLAYER, TERMINAL -> 1f;
+			case THEME, UID_ACCENT, HELD_ITEM_OUTLINE, FILL_OUTLINE, MARKS, PATHS, RINGS, HEALTH_FULL, HEALTH_EMPTY, SLAYER, TERMINAL -> 1f;
 			default -> 0f;
 		};
 	}
@@ -4957,7 +4994,7 @@ public class StrayScreen extends Screen {
 			case WORLD -> config.worldTintStrength;
 			case SKY -> config.skyTintStrength;
 			case FOG -> config.fogDensity;
-			case THEME, HELD_ITEM_OUTLINE, FILL_OUTLINE, MARKS, PATHS, RINGS, HEALTH_FULL, HEALTH_EMPTY, SLAYER, TERMINAL -> 1f;
+			case THEME, UID_ACCENT, HELD_ITEM_OUTLINE, FILL_OUTLINE, MARKS, PATHS, RINGS, HEALTH_FULL, HEALTH_EMPTY, SLAYER, TERMINAL -> 1f;
 		};
 	}
 
@@ -4982,7 +5019,7 @@ public class StrayScreen extends Screen {
 			case WORLD -> config.worldTintStrength = clamped;
 			case SKY -> config.skyTintStrength = clamped;
 			case FOG -> config.fogDensity = clamped;
-			case THEME, HELD_ITEM_OUTLINE, FILL_OUTLINE, MARKS, PATHS, RINGS, HEALTH_FULL, HEALTH_EMPTY, SLAYER, TERMINAL -> {
+			case THEME, UID_ACCENT, HELD_ITEM_OUTLINE, FILL_OUTLINE, MARKS, PATHS, RINGS, HEALTH_FULL, HEALTH_EMPTY, SLAYER, TERMINAL -> {
 				return;
 			}
 		}
@@ -5129,6 +5166,9 @@ public class StrayScreen extends Screen {
 			return true;
 		}
 		if (StrayConfig.get().clickGui) {
+			if (UidMenu.active()) {
+				UidMenu.press(lx, ly);
+			}
 			return true;
 		}
 		return super.mouseClicked(event, doubled);
@@ -5136,6 +5176,9 @@ public class StrayScreen extends Screen {
 
 	@Override
 	public boolean mouseDragged(MouseButtonEvent event, double dx, double dy) {
+		if (MouseButtons.left(event) && StrayConfig.get().clickGui && UidMenu.active() && UidMenu.drag(localX(event.x()), localY(event.y()))) {
+			return true;
+		}
 		if (MouseButtons.left(event) && dragging) {
 			windowX = localX(event.x()) - (float) dragOffX;
 			windowY = localY(event.y()) - (float) dragOffY;
@@ -5158,6 +5201,7 @@ public class StrayScreen extends Screen {
 
 	@Override
 	public boolean mouseReleased(MouseButtonEvent event) {
+		UidMenu.release();
 		if (dragging && moved) {
 			persistMenuPosition();
 		}
@@ -5573,6 +5617,9 @@ public class StrayScreen extends Screen {
 		float row = rowH();
 		int mouseX = (int) Math.round(ClickGui.pointerX());
 		int mouseY = (int) Math.round(ClickGui.pointerY());
+		if (UidMenu.drawing()) {
+			return uidButton(graphics, font, x, y, w, mouseX, mouseY, label, open);
+		}
 		boolean hovered = GuiDraw.hovered(mouseX, mouseY, x, y, w, row);
 		float hover = anim("hov-" + rowAnimKey(label, x, y), hovered ? 1f : 0f);
 		if (hover > 0.02f) {
@@ -5589,6 +5636,11 @@ public class StrayScreen extends Screen {
 	/** Height {@link #clickDropdown} takes, header row plus however much of the list is open. */
 	float clickDropdownHeight(String key) {
 		return rowH() + dropExtra("click/" + key);
+	}
+
+	/** uid?'s "Menu color" row: its accent, through the colour picker. */
+	float clickUidAccent(GuiGraphicsExtractor graphics, Font font, float x, float y, float w) {
+		return colorRow(graphics, font, x, y, w, (int) Math.round(ClickGui.pointerX()), (int) Math.round(ClickGui.pointerY()), "Menu color", StrayConfig.get().uidAccent, PickerTarget.UID_ACCENT);
 	}
 
 	float clickAppear() {
@@ -5613,6 +5665,164 @@ public class StrayScreen extends Screen {
 		if (pickerT > 0.02f && pickerTarget != null) {
 			drawPicker(graphics, font);
 		}
+	}
+
+
+	// ------------------------------------------------------------------ uid? rows
+	// Sizes and offsets of the menu uid? copies: a checkbox row is 13 px, a slider 25 (10 with no
+	// label), a dropdown 35 (20), a button 28; 5 px between rows. Labels sit 20 px in.
+
+	private float uidToggle(GuiGraphicsExtractor graphics, Font font, float x, float y, float w, int mouseX, int mouseY, String label, boolean value, Consumer<Boolean> setter) {
+		boolean hovered = GuiDraw.hovered(mouseX, mouseY, x, y, w, 13);
+		UidLook.checkbox(graphics, x, y + 3, value, hovered, UidMenu.accent(), true);
+		UidLook.text(graphics, font, UidLook.fit(font, label, w - 28), x + 20, y + 1, UidLook.LABEL);
+		hits.add(new Hit(x, y, w, 13, () -> {
+			setter.accept(!value);
+			UnloadState.markDirty();
+		}));
+		UidMenu.extent(y + 13);
+		return y + 18;
+	}
+
+	private float uidSlider(GuiGraphicsExtractor graphics, Font font, float x, float y, float w, String label, String valueText, float progress, Consumer<Float> setter) {
+		boolean named = label != null && !label.isEmpty();
+		float tx = x + 20;
+		float tw = w - 20;
+		float top = named ? y + 16 : y + 2;
+		if (named) {
+			UidLook.text(graphics, font, UidLook.fit(font, label, tw), tx, y + 1, UidLook.LABEL);
+		}
+		boolean hovered = GuiDraw.hovered(ClickGui.pointerX(), ClickGui.pointerY(), tx - 2, y, tw + 4, top + 8 - y);
+		float t = Mth.clamp(progress, 0f, 1f);
+		UidLook.slider(graphics, tx, top, tw, t, hovered, UidMenu.accent());
+		if (valueText != null && !valueText.isEmpty()) {
+			float fill = (float) Math.floor(t * (tw - 2));
+			float vw = UidLook.smallWidth(font, valueText);
+			UidLook.smallOutlined(graphics, font, valueText, tx + 1 + fill - vw / 2f, top + 2, 0xBBFFFFFF);
+		}
+		hits.add(new Hit(tx - 2, y, tw + 4, top + 8 - y, mx -> setter.accept(Mth.clamp((float) ((mx - tx) / tw), 0f, 1f)), true));
+		float h = named ? 25 : 10;
+		UidMenu.extent(y + h);
+		return y + h + 5;
+	}
+
+	private float uidCombo(GuiGraphicsExtractor graphics, Font font, float x, float y, float w, int mouseX, int mouseY, String label, String value, boolean open, Runnable click) {
+		boolean named = label != null && !label.isEmpty();
+		float bx = x + 20;
+		float bw = w - 20;
+		float by = named ? y + 15 : y;
+		if (named) {
+			UidLook.text(graphics, font, UidLook.fit(font, label, bw), bx, y + 1, UidLook.LABEL);
+		}
+		boolean hovered = GuiDraw.hovered(mouseX, mouseY, bx, by, bw, 20);
+		UidLook.combo(graphics, font, bx, by, bw, value, hovered || open);
+		hits.add(new Hit(bx, by, bw, 20, click));
+		float h = named ? 35 : 20;
+		UidMenu.extent(y + h);
+		return y + h + 5;
+	}
+
+	private float uidDropdown(GuiGraphicsExtractor graphics, Font font, float x, float y, float w, int mouseX, int mouseY, String key, String label, String[] options, int selected, java.util.function.IntConsumer pick) {
+		boolean open = key.equals(dropdownOpen);
+		String value = selected >= 0 && selected < options.length ? options[selected] : "-";
+		float next = uidCombo(graphics, font, x, y, w, mouseX, mouseY, label, value, open, () -> {
+			dropdownOpen = key.equals(dropdownOpen) ? null : key;
+			UidMenu.popupScroll(0f);
+		});
+		if (open) {
+			boolean named = label != null && !label.isEmpty();
+			float bx = x + 20;
+			float bw = w - 20;
+			float py = (named ? y + 15 : y) + 21;
+			UidMenu.defer(() -> {
+				int rows = Math.min(8, options.length);
+				float ph = rows * 20f;
+				float content = options.length * 20f;
+				float scroll = Mth.clamp(UidMenu.popupScroll(), 0f, Math.max(0f, content - ph));
+				UidMenu.popupScroll(scroll);
+				// Anywhere else closes it; the rows on top take their own clicks.
+				hits.add(new Hit(-100000, -100000, 200000, 200000, () -> dropdownOpen = null));
+				UidLook.popup(graphics, bx, py, bw, ph);
+				UidMenu.popup(bx, py, bw, ph);
+				boolean clip = GuiDraw.scissor(graphics, bx, py, bw, ph);
+				try {
+					int mx = (int) Math.round(ClickGui.pointerX());
+					int my = (int) Math.round(ClickGui.pointerY());
+					for (int i = 0; i < options.length; i++) {
+						float ry = py + i * 20f - scroll;
+						if (ry + 20 <= py || ry >= py + ph) {
+							continue;
+						}
+						boolean hot = GuiDraw.hovered(mx, my, bx, ry, bw, 20);
+						UidLook.popupRow(graphics, font, bx, ry, bw, options[i], hot, i == selected, UidMenu.accent());
+						int index = i;
+						float top = Math.max(py, ry);
+						float bottom = Math.min(py + ph, ry + 20);
+						hits.add(new Hit(bx, top, bw, bottom - top, () -> {
+							pick.accept(index);
+							dropdownOpen = null;
+							UidMenu.noPopup();
+							Theme.refresh();
+							UnloadState.markDirty();
+						}));
+					}
+				} finally {
+					if (clip) {
+						GuiDraw.disableScissor(graphics);
+					}
+				}
+				if (content > ph) {
+					UidLook.scrollbar(graphics, bx + bw - 8, py + 1, ph - 2, ph, content, scroll);
+				}
+			});
+		}
+		return next;
+	}
+
+	private float uidColor(GuiGraphicsExtractor graphics, Font font, float x, float y, float w, int mouseX, int mouseY, String label, int rgb, PickerTarget target, Runnable before) {
+		UidLook.text(graphics, font, UidLook.fit(font, label, w - 48), x + 20, y + 1, UidLook.LABEL);
+		float px = x + w - 17;
+		float py = y + 1;
+		UidLook.swatch(graphics, px, py, rgb);
+		hits.add(new Hit(px - 2, y, 21, 13, () -> {
+			if (before != null) {
+				before.run();
+			}
+			if (target == PickerTarget.SKY) {
+				StrayConfig.get().matchSkyToWorld = false;
+			}
+			if (target == PickerTarget.FOG) {
+				StrayConfig.get().matchFogToWorld = false;
+			}
+			openPicker(target, rgb, px + 17 - PICKER_W, y + 15);
+		}));
+		UidMenu.extent(y + 13);
+		return y + 18;
+	}
+
+	private float uidBind(GuiGraphicsExtractor graphics, Font font, float x, float y, float w, int mouseX, int mouseY, String label, int which, InputConstants.Key key) {
+		boolean listening = bindListen == which;
+		String value = "[" + (listening ? "..." : UidMenu.keyText(OdinClicks.keyLabel(key))) + "]";
+		float vw = UidLook.smallWidth(font, value);
+		boolean hovered = GuiDraw.hovered(mouseX, mouseY, x + w - vw - 2, y, vw + 4, 12);
+		UidLook.text(graphics, font, UidLook.fit(font, label, w - vw - 28), x + 20, y + 1, UidLook.LABEL);
+		UidLook.small(graphics, font, value, x + w - vw, y + 1, listening ? UidLook.KEY_LISTEN : hovered ? UidLook.KEY_HOVER : UidLook.KEY);
+		hits.add(new Hit(x, y, w, 12, () -> bindListen = which));
+		UidMenu.extent(y + 12);
+		return y + 17;
+	}
+
+	private float uidButton(GuiGraphicsExtractor graphics, Font font, float x, float y, float w, int mouseX, int mouseY, String label, Runnable action) {
+		float bx = x + 20;
+		float bw = w - 20;
+		boolean hovered = GuiDraw.hovered(mouseX, mouseY, bx, y, bw, 28);
+		boolean held = hovered && minecraft.mouseHandler.isLeftPressed();
+		UidLook.button(graphics, font, bx, y, bw, 28, label, hovered, held);
+		if (action != null) {
+			hits.add(new Hit(bx, y, bw, 28, action));
+		}
+		UidMenu.extent(y + 28);
+		return y + 33;
 	}
 
 	private final class Hit {

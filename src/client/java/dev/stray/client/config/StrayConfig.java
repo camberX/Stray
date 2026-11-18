@@ -328,6 +328,9 @@ public final class StrayConfig {
 	public boolean clickGui = true;
 	/** Click GUI chrome: always {@code shadow} now; kept so old configs load. */
 	public String clickGuiStyle = "shadow";
+	/** uid? menu: DPI scale (0 = 100 % ... 4 = 200 %) and its accent colour. */
+	public int uidDpi = 0;
+	public int uidAccent = 0x9FCA2B;
 	/** Always {@code shadow}; kept so old configs load. */
 	public String guiStyle = "shadow";
 	/** How opaque every Shadow panel is (menus, screens, HUD, chat), 0.2 to 1. */
@@ -1482,6 +1485,7 @@ public final class StrayConfig {
 				// The Stray menu is gone: the click GUI is the menu.
 				loaded.clickGui = true;
 				loaded.clickGuiStyle = normalizeClickGuiStyle(loaded.clickGuiStyle);
+				loaded.uidDpi = Math.max(0, Math.min(4, loaded.uidDpi));
 				loaded.guiStyle = "shadow";
 				loaded.chatStyle = "shadow";
 				if (!json.has("arrayListAccent")) {
@@ -2220,7 +2224,7 @@ public final class StrayConfig {
 
 	/** Shadow is the only click GUI style left. */
 	public static String normalizeClickGuiStyle(String style) {
-		return "shadow";
+		return "uid".equals(style) ? "uid" : "shadow";
 	}
 
 	public static String normalizeHealthBarSide(String side) {

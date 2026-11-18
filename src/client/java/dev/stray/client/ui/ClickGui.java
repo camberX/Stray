@@ -58,6 +58,10 @@ public final class ClickGui {
 	static void extract(StrayScreen screen, GuiGraphicsExtractor graphics, int mouseX, int mouseY) {
 		Font font = Minecraft.getInstance().font;
 		pointer(mouseX, mouseY);
+		if (UidMenu.active()) {
+			UidMenu.draw(screen, graphics, font, mouseX, mouseY);
+			return;
+		}
 		ShadowMenu.draw(screen, graphics, font, mouseX, mouseY);
 		ShadowMenu.drawPicker(screen, graphics, font);
 	}
@@ -116,11 +120,22 @@ public final class ClickGui {
 	}
 
 	static void rightClick(double x, double y) {
+		if (UidMenu.active()) {
+			return;
+		}
 		ShadowMenu.rightClick(x, y);
 	}
 
 	static boolean scroll(double x, double y, double wheel) {
+		if (UidMenu.active()) {
+			return UidMenu.scroll(x, y, wheel);
+		}
 		return ShadowMenu.scroll(x, y, wheel);
+	}
+
+	/** The next row's y: uid? rows have their own heights, the other styles step by a row. */
+	private static float next(float drawn, float y) {
+		return UidMenu.drawing() ? drawn : y + stride();
 	}
 
 	public static List<String> enabledLabels() {
@@ -143,22 +158,20 @@ public final class ClickGui {
 
 	private static void drawArrayList(StrayScreen screen, GuiGraphicsExtractor graphics, Font font, float x, float y, float w) {
 		StrayConfig config = StrayConfig.get();
-		drawChoice(screen, graphics, font, x, y, w, "Accent Color", config.arrayListAccent, () -> {
+		y = next(drawChoice(screen, graphics, font, x, y, w, "Accent Color", config.arrayListAccent, () -> {
 			StrayConfig.get().arrayListAccent = !StrayConfig.get().arrayListAccent;
 			UnloadState.markDirty();
-		});
-		y += stride();
+		}), y);
 		for (Mod mod : modules()) {
 			if (!mod.list) {
 				continue;
 			}
 			boolean shown = config.arrayListShows(mod.name);
 			String name = mod.name;
-			drawChoice(screen, graphics, font, x, y, w, fit(font, display(name), Math.round(w) - 4), shown, () -> {
+			y = next(drawChoice(screen, graphics, font, x, y, w, fit(font, display(name), Math.round(w) - 4), shown, () -> {
 				StrayConfig.get().toggleArrayListShown(name);
 				UnloadState.markDirty();
-			});
-			y += stride();
+			}), y);
 		}
 	}
 
@@ -172,26 +185,46 @@ public final class ClickGui {
 		return count;
 	}
 
+	static final String[] STYLES = {"shadow", "uid"};
+	static final String[] STYLE_LABELS = {"Shadow", "uid?"};
+
 	private static void drawHud(StrayScreen screen, GuiGraphicsExtractor graphics, Font font, float x, float y, float w) {
 		StrayConfig config = StrayConfig.get();
-		drawChoice(screen, graphics, font, x, y, w, "Accent Outlines", config.accentOutlines, () -> {
+		int style = "uid".equals(config.clickGuiStyle) ? 1 : 0;
+		y = UidMenu.drawing()
+			? screen.clickDropdown(graphics, font, x, y, w, "menu-style", "Menu style", STYLE_LABELS, style, i -> setStyle(STYLES[i]))
+			: next(screen.clickCycle(graphics, font, x, y, w, "Menu style", STYLE_LABELS[style], () -> setStyle(STYLES[(style + 1) % STYLES.length])), y);
+		if (style == 1) {
+			y = screen.clickDropdown(graphics, font, x, y, w, "uid-dpi", "DPI scale", UidMenu.DPI_LABELS, config.uidDpi, i -> {
+				StrayConfig.get().uidDpi = i;
+				UnloadState.markDirty();
+			});
+			y = screen.clickUidAccent(graphics, font, x, y, w);
+			y = drawButton(screen, graphics, font, x, y, w, "Reset menu layout", UidMenu::resetPosition);
+		}
+		y = next(drawChoice(screen, graphics, font, x, y, w, "Accent Outlines", config.accentOutlines, () -> {
 			StrayConfig current = StrayConfig.get();
 			current.accentOutlines = !current.accentOutlines;
 			Theme.refresh();
 			UnloadState.markDirty();
-		});
-		y += stride();
+		}), y);
 		drawButton(screen, graphics, font, x, y, w, "HUD Editor", () -> Minecraft.getInstance().gui.setScreen(new HudEditorScreen()));
 	}
 
+	private static void setStyle(String style) {
+		StrayConfig.get().clickGuiStyle = style;
+		StrayConfig.get().save();
+		UnloadState.markDirty();
+	}
+
 	/** Boolean subsetting: the same row and switch the feature panels use. */
-	private static void drawChoice(StrayScreen screen, GuiGraphicsExtractor graphics, Font font, float x, float y, float w, String label, boolean on, Runnable pick) {
-		screen.clickToggle(graphics, font, x, y, w, label, on, pick);
+	private static float drawChoice(StrayScreen screen, GuiGraphicsExtractor graphics, Font font, float x, float y, float w, String label, boolean on, Runnable pick) {
+		return screen.clickToggle(graphics, font, x, y, w, label, on, pick);
 	}
 
 	/** Action row: label and a chevron, as in the feature panels. */
-	private static void drawButton(StrayScreen screen, GuiGraphicsExtractor graphics, Font font, float x, float y, float w, String label, Runnable pick) {
-		screen.clickAction(graphics, font, x, y, w, label, pick);
+	private static float drawButton(StrayScreen screen, GuiGraphicsExtractor graphics, Font font, float x, float y, float w, String label, Runnable pick) {
+		return screen.clickAction(graphics, font, x, y, w, label, pick);
 	}
 
 	static final String CUSTOMIZE = "Customize item";
@@ -217,18 +250,17 @@ public final class ClickGui {
 
 	/** Item customization: open the editor for the held item, or reset it. */
 	private static void drawCustomize(StrayScreen screen, GuiGraphicsExtractor graphics, Font font, float x, float y, float w) {
-		drawButton(screen, graphics, font, x, y, w, "Edit held item", CustomizeScreen::openForHeld);
-		drawButton(screen, graphics, font, x, y + stride(), w, "Reset held item", CustomizeScreen::resetHeld);
+		float below = drawButton(screen, graphics, font, x, y, w, "Edit held item", CustomizeScreen::openForHeld);
+		drawButton(screen, graphics, font, x, next(below, y), w, "Reset held item", CustomizeScreen::resetHeld);
 	}
 
 	private static final int[] TIMEOUTS = {50, 100, 150, 300, 500, 1000};
 
 	private static void drawTimeout(StrayScreen screen, GuiGraphicsExtractor graphics, Font font, float x, float y, float w) {
-		drawChoice(screen, graphics, font, x, y, w, "Skip leap menus", StrayConfig.get().noCursorResetSkipLeap, () -> {
+		y = next(drawChoice(screen, graphics, font, x, y, w, "Skip leap menus", StrayConfig.get().noCursorResetSkipLeap, () -> {
 			StrayConfig.get().noCursorResetSkipLeap = !StrayConfig.get().noCursorResetSkipLeap;
 			UnloadState.markDirty();
-		});
-		y += stride();
+		}), y);
 		int current = StrayConfig.get().noCursorResetTimeout;
 		screen.clickCycle(graphics, font, x, y, w, "Timeout", current + "ms", () -> {
 			int next = TIMEOUTS[0];
@@ -263,7 +295,7 @@ public final class ClickGui {
 		}
 		if (mod.menuStyle) {
 			if (HUD_LOOK.equals(mod.name)) {
-				return stackH(2);
+				return stackH(3);
 			}
 			return stackH(1);
 		}
