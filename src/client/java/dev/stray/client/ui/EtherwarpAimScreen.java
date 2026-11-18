@@ -66,6 +66,14 @@ public class EtherwarpAimScreen extends SubScreen {
 				config.etherwarpAimRange = range < 10f ? Math.round(range * 2f) / 2f : Math.round(range);
 			});
 		ly = toggleRow("Show range circle", config.etherwarpAimCircle, x, ly + 2f, lw, v -> config.etherwarpAimCircle = v);
+		if (config.etherwarpAimCircle) {
+			int fill = config.etherwarpAimCircleFill;
+			ly = slider("Fill", Math.round(fill / 2.55f) + "%", fill / 255f, x + 10f, ly + 2f, lw - 10f,
+				t -> config.etherwarpAimCircleFill = Math.round((float) t * 255f));
+			int rim = config.etherwarpAimCircleRim;
+			ly = slider("Rim", rim + " px", (rim - 1) / 7f, x + 10f, ly + 2f, lw - 10f,
+				t -> config.etherwarpAimCircleRim = 1 + Math.round((float) t * 7f));
+		}
 		ly = slider("Delay", config.etherwarpAimDelay + "ms", config.etherwarpAimDelay / 300f, x, ly + 2f, lw,
 			t -> config.etherwarpAimDelay = Math.round((float) t * 60f) * 5);
 		ly = divider(x, ly + 4f, lw);
@@ -135,21 +143,23 @@ public class EtherwarpAimScreen extends SubScreen {
 		GuiDraw.roundedOutline(graphics, x, y, w, h, ShadowLook.CONTROL_R, 0x22FFFFFF, 1f);
 		float cx = x + w * 0.5f;
 		float cy = y + h * 0.5f;
-		// How far the range reaches on screen: tan(range) over tan(half the vertical FOV), of half the height.
 		double fov = minecraft == null ? 70.0 : minecraft.options.fov().get();
-		// How far the range reaches on screen: tan(range) over tan(half the vertical FOV), of half the height.
 		int rgb = config.etherwarpAimRgb & 0xFFFFFF;
 		double range = config.etherwarpAimRange;
 		if (range >= 89.5) {
 			// Past 90° it reaches behind you: all of the view.
 			GuiDraw.roundedFine(graphics, x, y, w, h, ShadowLook.CONTROL_R, 0x22000000 | rgb);
 		} else {
-			double reach = Math.tan(Math.toRadians(range)) / Math.tan(Math.toRadians(fov * 0.5));
+			// The same measure as the circle in game, scaled to the preview.
+			double reach = EtherwarpAim.reach(minecraft, range);
 			float r = (float) Math.min(reach * h * 0.5, 4000.0);
 			boolean clip = GuiDraw.scissor(graphics, x, y, w, h);
 			try {
-				GuiDraw.circle(graphics, cx, cy, r, 0x22000000 | rgb);
-				GuiDraw.roundedOutline(graphics, cx - r, cy - r, r * 2f, r * 2f, r, 0xB0000000 | rgb, 0.5f);
+				int fill = Math.max(0, Math.min(255, config.etherwarpAimCircleFill));
+				if (fill > 0) {
+					GuiDraw.circle(graphics, cx, cy, r, fill << 24 | rgb);
+				}
+				GuiDraw.ring(graphics, cx, cy, r, config.etherwarpAimCircleRim, 0xC0000000 | rgb);
 			} finally {
 				if (clip) {
 					GuiDraw.disableScissor(graphics);

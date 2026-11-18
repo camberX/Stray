@@ -19,12 +19,17 @@ out vec4 fragColor;
 // circle center at (0,0). Rings (1px outlines) are flagged by u shifted up by 4;
 // a sign test missed rows where the coordinates reach 0, filling a stray line.
 void main() {
-    bool ring = texCoord0.x > 2.5;
-    vec2 p = ring ? vec2(texCoord0.x - 4.0, texCoord0.y) : texCoord0;
+    // u shifted by 4 * n: a ring n screen pixels wide (n = 1 the hairline below).
+    float band = texCoord0.x > 2.5 ? floor((texCoord0.x + 2.0) / 4.0) : 0.0;
+    bool ring = band > 0.5;
+    vec2 p = ring ? vec2(texCoord0.x - band * 4.0, texCoord0.y) : texCoord0;
     float d = length(abs(p));
     float fw = max(length(vec2(dFdx(d), dFdy(d))), 1e-5);
     float mask;
-    if (ring) {
+    if (band > 1.5) {
+        // A band of whole pixels, soft on both edges.
+        mask = clamp((1.0 - d) / fw + 0.5, 0.0, 1.0) - clamp((1.0 - band * fw - d) / fw + 0.5, 0.0, 1.0);
+    } else if (ring) {
         // Measured in whole pixel steps (the larger of the x and y change), a 1px ring lights one
         // pixel per row or column on the curve, like the straight sides, instead of a two-pixel
         // smear where it runs diagonally.

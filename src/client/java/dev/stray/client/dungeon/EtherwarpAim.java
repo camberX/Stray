@@ -771,26 +771,52 @@ public final class EtherwarpAim {
 	}
 
 	/**
-	 * The aim assist's reach around your crosshair, like an aim FOV circle: tan(range) over
-	 * tan(half the vertical FOV), of half the screen height. Past about 80° it would cover the
-	 * screen, so it isn't drawn.
+	 * How far {@code degrees} from the crosshair reaches on screen, as a share of half the
+	 * screen height. Measured by projecting a point that far off your view through the game's
+	 * own camera, so it follows the FOV you actually see (speed and sprint effects included).
+	 * Without a world, from the FOV setting.
 	 */
+	public static double reach(Minecraft client, double degrees) {
+		double a = Math.toRadians(degrees);
+		if (client.level != null && client.gameRenderer != null) {
+			net.minecraft.client.Camera camera = client.gameRenderer.mainCamera();
+			if (camera.isInitialized()) {
+				org.joml.Vector3fc forward = camera.forwardVector();
+				org.joml.Vector3fc up = camera.upVector();
+				Vec3 dir = new Vec3(forward.x() * Math.cos(a) + up.x() * Math.sin(a),
+					forward.y() * Math.cos(a) + up.y() * Math.sin(a),
+					forward.z() * Math.cos(a) + up.z() * Math.sin(a));
+				Vec3 ndc = client.gameRenderer.projectPointToScreen(camera.position().add(dir.scale(10.0)));
+				if (Double.isFinite(ndc.y)) {
+					return Math.abs(ndc.y);
+				}
+			}
+		}
+		double fov = client.options == null ? 70.0 : client.options.fov().get();
+		return Math.tan(a) / Math.tan(Math.toRadians(fov * 0.5));
+	}
+
+	/** The aim assist's reach around your crosshair, like an aim FOV circle. */
 	private static void rangeCircle(GuiGraphicsExtractor graphics, Minecraft client, StrayConfig config) {
 		double range = config.etherwarpAimRange;
 		if (range >= 80.0) {
 			return;
 		}
-		double fov = client.options.fov().get();
-		float r = (float) (Math.tan(Math.toRadians(range)) / Math.tan(Math.toRadians(fov * 0.5)) * graphics.guiHeight() * 0.5);
+		float r = (float) (reach(client, range) * graphics.guiHeight() * 0.5);
 		if (r < 2f) {
 			return;
 		}
-		float cx = graphics.guiWidth() * 0.5f;
-		float cy = graphics.guiHeight() * 0.5f;
+		// The vanilla crosshair is a 15 px sprite at (width - 15) / 2, whole pixels: centre on it.
+		float cx = (graphics.guiWidth() - 15) / 2 + 7.5f;
+		float cy = (graphics.guiHeight() - 15) / 2 + 7.5f;
 		int rgb = config.etherwarpAimRgb & 0xFFFFFF;
+		boolean pulling = client.player.isShiftKeyDown();
+		int fill = Mth.clamp(config.etherwarpAimCircleFill, 0, 255);
+		if (fill > 0) {
+			GuiDraw.circle(graphics, cx, cy, r, (pulling ? fill : fill / 2) << 24 | rgb);
+		}
 		// Brighter while sneaking, when the assist is actually pulling.
-		int alpha = client.player.isShiftKeyDown() ? 0xB0 : 0x60;
-		GuiDraw.roundedOutline(graphics, cx - r, cy - r, r * 2f, r * 2f, r, alpha << 24 | rgb, 0.5f);
+		GuiDraw.ring(graphics, cx, cy, r, config.etherwarpAimCircleRim, (pulling ? 0xC0 : 0x70) << 24 | rgb);
 	}
 
 	/** Each point's place in the route, over its block; the next one in its own colour. */

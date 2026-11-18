@@ -474,6 +474,30 @@ public final class GuiDraw {
 	 * 2 bottom-right, 3 bottom-left. ring draws a 1 screen-pixel outline instead.
 	 */
 	private static boolean sdfCorner(GuiGraphicsExtractor graphics, float x, float y, float radius, int corner, int color, boolean ring) {
+		return sdfCorner(graphics, x, y, radius, corner, color, ring ? 1 : 0);
+	}
+
+	/**
+	 * A circle's outline {@code pixels} screen pixels wide (1 to 8), drawn inward from
+	 * {@code radius}, smooth at any size. Falls back to a plain outline without shaders.
+	 */
+	public static void ring(GuiGraphicsExtractor graphics, float cx, float cy, float radius, int pixels, int color) {
+		if (radius <= 0f || (color >>> 24) == 0) {
+			return;
+		}
+		int band = Mth.clamp(pixels, 1, 8);
+		if (sdfCorner(graphics, cx - radius, cy - radius, radius, 0, color, band)) {
+			sdfCorner(graphics, cx, cy - radius, radius, 1, color, band);
+			sdfCorner(graphics, cx, cy, radius, 2, color, band);
+			sdfCorner(graphics, cx - radius, cy, radius, 3, color, band);
+			return;
+		}
+		roundedOutline(graphics, cx - radius, cy - radius, radius * 2f, radius * 2f, radius, color, band * pixel() / poseScale(graphics));
+	}
+
+	/** band: 0 filled, n a ring n screen pixels wide. */
+	private static boolean sdfCorner(GuiGraphicsExtractor graphics, float x, float y, float radius, int corner, int color, int band) {
+		boolean ring = band > 0;
 		if (!StrayShaders.ready()) {
 			return false;
 		}
@@ -501,8 +525,8 @@ public final class GuiDraw {
 		if (ring) {
 			// Rings are flagged by u >= 3 (see gui_sdf_corner.fsh), not by the sign of the
 			// coordinates, which is ambiguous where they reach 0.
-			u0 += RING_U;
-			u1 += RING_U;
+			u0 += RING_U * band;
+			u1 += RING_U * band;
 		}
 		com.mojang.renderpearl.api.textures.GpuSampler sampler = com.mojang.blaze3d.systems.RenderSystem.getSamplerCache()
 			.getClampToEdge(com.mojang.renderpearl.api.textures.FilterMode.NEAREST);
