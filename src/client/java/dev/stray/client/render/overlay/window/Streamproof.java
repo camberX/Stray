@@ -21,7 +21,6 @@ public final class Streamproof {
 	private static String failure;
 	private static boolean warned;
 	private static boolean drewLast;
-	private static int idle;
 
 	private Streamproof() {
 	}
@@ -64,14 +63,23 @@ public final class Streamproof {
 			}
 		}
 		if (!wanted) {
-			// Keep the window around for a while (opening one is slow), then close it.
-			window.sync(false);
-			if (++idle > 1200) {
-				close();
+			// Kept open (hidden / empty) for the rest of the session: reopening one every time
+			// something wants it would flash a new window each time.
+			boolean visible = window.sync(false);
+			if (drewLast || visible) {
+				window.begin();
+				try {
+					if (gl != null) {
+						gl.begin(window.pixelWidth(), window.pixelHeight(), 1f);
+						gl.end();
+					}
+				} finally {
+					window.end();
+				}
+				drewLast = false;
 			}
 			return;
 		}
-		idle = 0;
 		boolean show = window.sync(true);
 		if (!show && !drewLast) {
 			return;

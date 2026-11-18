@@ -1,10 +1,10 @@
 package dev.stray.client.render.overlay.window;
 
-import com.mojang.renderpearl.api.textures.GpuTexture;
-import com.mojang.renderpearl.backend.opengl.GlTexture;
+import com.mojang.blaze3d.platform.NativeImage;
 import dev.stray.client.render.overlay.Canvas;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.texture.AbstractTexture;
+import net.minecraft.client.renderer.texture.DynamicTexture;
 import net.minecraft.resources.Identifier;
 import org.joml.Matrix3x2f;
 import org.joml.Matrix3x2fStack;
@@ -26,8 +26,9 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * The overlay window's own little 2D renderer (GL 3.3 core, its own context shared with the
- * game's so player skins can be sampled). Premultiplied alpha, since compositors expect that.
+ * The overlay window's own little 2D renderer (GL 3.3 core in its own context, so it works
+ * whether the game itself runs on OpenGL or Vulkan). Textures it needs (checkmarks, player
+ * skins) are copied in from the CPU side. Premultiplied alpha, since compositors expect that.
  */
 final class OverlayGl implements Canvas {
 	private static final int FLOATS = 8;
@@ -52,6 +53,9 @@ final class OverlayGl implements Canvas {
 	private boolean linear;
 	private final Matrix3x2fStack pose = new Matrix3x2fStack(32);
 	private final Map<Identifier, Integer> own = new HashMap<>();
+	/** Skin copies: which game texture object each was made from, so a newly downloaded skin replaces it. */
+	private final Map<Identifier, Object> sources = new HashMap<>();
+	private final Map<Identifier, Long> retryAt = new HashMap<>();
 	private int fontTexture;
 	private STBTTPackedchar.Buffer chars;
 	private float ascent;
@@ -188,42 +192,89 @@ final class OverlayGl implements Canvas {
 		}
 	}
 
-	/** A texture of ours (checkmarks), or the game's (skins) through the shared context. */
+	/** A texture of ours (checkmarks) or a copy of one of the game's (skins). */
 	private int textureFor(Identifier id) {
+		Integer known = own.get(id);
 		if ("stray".equals(id.getNamespace())) {
-			Integer known = own.get(id);
 			if (known != null) {
 				return known;
 			}
 			int tex = 0;
 			try {
-				ByteBuffer png = resource("/assets/stray/" + id.getPath());
-				try (MemoryStack stack = MemoryStack.stackPush()) {
-					IntBuffer w = stack.mallocInt(1);
-					IntBuffer h = stack.mallocInt(1);
-					IntBuffer c = stack.mallocInt(1);
-					ByteBuffer pixels = STBImage.stbi_load_from_memory(png, w, h, c, 4);
-					if (pixels != null) {
-						tex = GL33C.glGenTextures();
-						GL33C.glBindTexture(GL33C.GL_TEXTURE_2D, tex);
-						GL33C.glPixelStorei(GL33C.GL_UNPACK_ALIGNMENT, 4);
-						GL33C.glTexImage2D(GL33C.GL_TEXTURE_2D, 0, GL33C.GL_RGBA8, w.get(0), h.get(0), 0, GL33C.GL_RGBA, GL33C.GL_UNSIGNED_BYTE, pixels);
-						GL33C.glGenerateMipmap(GL33C.GL_TEXTURE_2D);
-						STBImage.stbi_image_free(pixels);
-					}
-				}
+				tex = upload(resource("/assets/stray/" + id.getPath()));
 			} catch (Exception ignored) {
 			}
 			own.put(id, tex);
 			return tex;
 		}
+		AbstractTexture texture;
 		try {
-			AbstractTexture texture = Minecraft.getInstance().getTextureManager().getTexture(id);
-			GpuTexture gpu = texture.getTexture();
-			return gpu instanceof GlTexture gl ? gl.glId() : 0;
+			texture = Minecraft.getInstance().getTextureManager().getTexture(id);
 		} catch (RuntimeException e) {
+			texture = null;
+		}
+		if (known != null && known != 0 && sources.get(id) == texture) {
+			return known;
+		}
+		long now = System.currentTimeMillis();
+		if (known != null && known == 0 && now < retryAt.getOrDefault(id, 0L) && sources.get(id) == texture) {
 			return 0;
 		}
+		int tex = 0;
+		try {
+			if (texture instanceof DynamicTexture dynamic && dynamic.getPixels() != null) {
+				tex = upload(dynamic.getPixels());
+			} else {
+				try (InputStream in = Minecraft.getInstance().getResourceManager().open(id)) {
+					byte[] bytes = in.readAllBytes();
+					ByteBuffer buf = BufferUtils.createByteBuffer(bytes.length);
+					buf.put(bytes).flip();
+					tex = upload(buf);
+				}
+			}
+		} catch (Exception ignored) {
+		}
+		if (known != null && known != 0) {
+			GL33C.glDeleteTextures(known);
+		}
+		own.put(id, tex);
+		sources.put(id, texture);
+		retryAt.put(id, now + 1000L);
+		return tex;
+	}
+
+	private static int upload(ByteBuffer png) {
+		try (MemoryStack stack = MemoryStack.stackPush()) {
+			IntBuffer w = stack.mallocInt(1);
+			IntBuffer h = stack.mallocInt(1);
+			IntBuffer c = stack.mallocInt(1);
+			ByteBuffer pixels = STBImage.stbi_load_from_memory(png, w, h, c, 4);
+			if (pixels == null) {
+				return 0;
+			}
+			int tex = upload(pixels, w.get(0), h.get(0));
+			STBImage.stbi_image_free(pixels);
+			return tex;
+		}
+	}
+
+	private static int upload(NativeImage image) {
+		int w = image.getWidth();
+		int h = image.getHeight();
+		// ABGR ints are R, G, B, A bytes in little-endian memory: plain RGBA.
+		int[] abgr = image.getPixelsABGR();
+		ByteBuffer buf = BufferUtils.createByteBuffer(w * h * 4);
+		buf.asIntBuffer().put(abgr);
+		return upload(buf, w, h);
+	}
+
+	private static int upload(ByteBuffer rgba, int w, int h) {
+		int tex = GL33C.glGenTextures();
+		GL33C.glBindTexture(GL33C.GL_TEXTURE_2D, tex);
+		GL33C.glPixelStorei(GL33C.GL_UNPACK_ALIGNMENT, 4);
+		GL33C.glTexImage2D(GL33C.GL_TEXTURE_2D, 0, GL33C.GL_RGBA8, w, h, 0, GL33C.GL_RGBA, GL33C.GL_UNSIGNED_BYTE, rgba);
+		GL33C.glGenerateMipmap(GL33C.GL_TEXTURE_2D);
+		return tex;
 	}
 
 	void begin(int width, int height, float scale) {

@@ -47,7 +47,7 @@ public final class DungeonMap {
 	private DungeonMap() {
 	}
 
-	private static boolean preview;
+	private static boolean preview = Boolean.getBoolean("stray.mapPreview");
 
 	public static boolean previewActive() {
 		return preview;

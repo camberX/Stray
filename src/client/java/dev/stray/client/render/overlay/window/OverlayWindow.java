@@ -24,6 +24,9 @@ interface OverlayWindow {
 	String describe();
 
 	static OverlayWindow make() {
+		if (GameWindow.wayland()) {
+			return new LayerOverlay();
+		}
 		//? if >=26.3 {
 		return new SdlOverlayWindow();
 		//?} else {

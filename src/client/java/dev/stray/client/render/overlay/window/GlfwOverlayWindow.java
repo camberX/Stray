@@ -10,7 +10,7 @@ import org.lwjgl.system.MemoryStack;
 
 import java.nio.IntBuffer;
 
-// 26.2: a GLFW window sharing the game's GL context.
+// 26.2, X11 and Windows: a GLFW window with its own GL context (game on OpenGL or Vulkan).
 final class GlfwOverlayWindow implements OverlayWindow {
 	private long window;
 	private GLCapabilities caps;
@@ -33,21 +33,13 @@ final class GlfwOverlayWindow implements OverlayWindow {
 		Minecraft client = Minecraft.getInstance();
 		long game = client.getWindow().handle();
 		long current = GLFW.glfwGetCurrentContext();
-		if (current == 0L) {
-			return "the game isn't using OpenGL";
-		}
 		platform = GLFW.glfwGetPlatform();
 		boolean wayland = platform == GLFW.GLFW_PLATFORM_WAYLAND;
 		boolean windows = platform == GLFW.GLFW_PLATFORM_WIN32;
-		if (wayland && !HyprlandIpc.running()) {
-			return "on Wayland this only works on Hyprland (it has to place the window)";
-		}
-		if (wayland) {
-			HyprlandIpc.addRules();
-		}
 		int[] g = gameRect(game);
-		GLCapabilities before = GL.getCapabilities();
+		GLCapabilities before = GameWindow.caps();
 		GLFW.glfwDefaultWindowHints();
+		GLFW.glfwWindowHint(GLFW.GLFW_CLIENT_API, GLFW.GLFW_OPENGL_API);
 		GLFW.glfwWindowHint(GLFW.GLFW_CONTEXT_VERSION_MAJOR, 3);
 		GLFW.glfwWindowHint(GLFW.GLFW_CONTEXT_VERSION_MINOR, 3);
 		GLFW.glfwWindowHint(GLFW.GLFW_OPENGL_PROFILE, GLFW.GLFW_OPENGL_CORE_PROFILE);
@@ -64,12 +56,13 @@ final class GlfwOverlayWindow implements OverlayWindow {
 			GLFW.glfwWindowHint(GLFW.GLFW_FLOATING, GLFW.GLFW_TRUE);
 		}
 		try {
-			window = GLFW.glfwCreateWindow(Math.max(1, g[2]), Math.max(1, g[3]), HyprlandIpc.TITLE, 0L, game);
+			window = GLFW.glfwCreateWindow(Math.max(1, g[2]), Math.max(1, g[3]), HyprlandIpc.TITLE, 0L, 0L);
 			if (window == 0L) {
 				return "could not open the window";
 			}
 			GLFW.glfwMakeContextCurrent(window);
 			GLFW.glfwSwapInterval(0);
+			GameWindow.ensureGl(name -> GLFW.glfwGetProcAddress(name));
 			caps = GL.createCapabilities();
 		} finally {
 			GLFW.glfwDefaultWindowHints();
@@ -81,8 +74,6 @@ final class GlfwOverlayWindow implements OverlayWindow {
 				captureExcluded = Win32Overlay.setup(GLFWNativeWin32.glfwGetWin32Window(window), GLFWNativeWin32.glfwGetWin32Window(game));
 			} catch (Throwable ignored) {
 			}
-		} else if (wayland) {
-			HyprlandIpc.follow();
 		}
 		return null;
 	}
@@ -147,7 +138,7 @@ final class GlfwOverlayWindow implements OverlayWindow {
 	@Override
 	public void begin() {
 		gameContext = GLFW.glfwGetCurrentContext();
-		gameCaps = GL.getCapabilities();
+		gameCaps = GameWindow.caps();
 		GLFW.glfwMakeContextCurrent(window);
 		GL.setCapabilities(caps);
 	}
@@ -161,7 +152,6 @@ final class GlfwOverlayWindow implements OverlayWindow {
 
 	@Override
 	public void destroy() {
-		HyprlandIpc.stop();
 		if (window != 0L) {
 			GLFW.glfwDestroyWindow(window);
 			window = 0L;
