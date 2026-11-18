@@ -21,7 +21,8 @@ import java.util.Locale;
  * Does one Spirit Leap to a teammate, the way quoi's LeapManager does (jcnlk/quoi, used
  * with permission): select the leap in the hotbar, use it, wait for the "Spirit Leap" menu,
  * click the teammate's head, close. The menu is silent: it is opened as a container without
- * a screen, so you keep moving and see nothing.
+ * a screen, so you keep moving and see nothing. With "Show leap menu" on it opens as the normal
+ * screen instead; the clicks and their timing are the same either way.
  *
  * <p>Every step runs at the start of a tick (before the game handles keys and sends this
  * tick's movement), one step per tick, through vanilla paths: the hotbar slot the way the
@@ -277,9 +278,17 @@ public final class LeapRunner {
 		}
 	}
 
+	/** The leap menu we wait to click in: the silent one, or the screen's when the menu is shown. */
+	private static boolean ourMenu(AbstractContainerMenu menu) {
+		if (menu == null || menuId < 0 || menu.containerId != menuId) {
+			return false;
+		}
+		return silentMenu != null ? menu == silentMenu : menu != Minecraft.getInstance().player.inventoryMenu;
+	}
+
 	private static void click(Minecraft client, LocalPlayer player) {
 		AbstractContainerMenu menu = player.containerMenu;
-		if (menu != silentMenu || menu.containerId != menuId) {
+		if (!ourMenu(menu)) {
 			fail("the leap menu closed");
 			return;
 		}
@@ -331,6 +340,14 @@ public final class LeapRunner {
 		if (player == null) {
 			return false;
 		}
+		if (StrayConfig.get().leapShowMenu) {
+			// Let vanilla open it as usual; the next tick start clicks in the screen's menu.
+			silentMenu = null;
+			menuId = packet.getContainerId();
+			step = Step.CLICK;
+			waitTicks = 0;
+			return false;
+		}
 		AbstractContainerMenu menu = packet.getType().create(packet.getContainerId(), player.getInventory());
 		player.containerMenu = menu;
 		silentMenu = menu;
@@ -373,7 +390,7 @@ public final class LeapRunner {
 
 	private static void cancel(boolean closeMenu) {
 		Minecraft client = Minecraft.getInstance();
-		if (closeMenu && client.player != null && silentMenu != null && client.player.containerMenu == silentMenu) {
+		if (closeMenu && client.player != null && ourMenu(client.player.containerMenu)) {
 			client.player.closeContainer();
 		}
 		if (client.player != null && previousSlot >= 0 && previousSlot < 9 && step != Step.IDLE) {
