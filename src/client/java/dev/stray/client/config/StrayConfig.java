@@ -371,6 +371,7 @@ public final class StrayConfig {
 	public boolean etherwarpAimSwapBack = true;
 	public int etherwarpAimSwapBackTicks = 1;
 	public boolean etherwarpAimNumbers = true;
+	public boolean etherwarpAimOnlyHolding = false;
 	public boolean etherwarpAimHideDone = true;
 	/** 0 outline + fill, 1 outline, 2 glow + fill, 3 glow. */
 	public int etherwarpAimStyle = 0;

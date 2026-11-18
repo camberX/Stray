@@ -725,10 +725,11 @@ public final class EtherwarpAim {
 		consumer.addVertex(pose, x3, y3, z3).setUv(0f, 1f).setColor(color);
 	}
 
-	/** Points show in edit mode and while you could warp: the item in hand, or in the hotbar with auto swap. */
+	/** Points show all the time, or with "only while holding" in edit mode and while you could warp (the item in hand, or in the hotbar with auto swap). */
 	private static boolean showing(LocalPlayer player) {
 		StrayConfig config = StrayConfig.get();
-		return config.etherwarpAimEdit || holdingEther(player) || config.etherwarpAimAutoSwap && etherSlot(player) >= 0;
+		return config.etherwarpAimEdit || !config.etherwarpAimOnlyHolding || holdingEther(player)
+			|| config.etherwarpAimAutoSwap && etherSlot(player) >= 0;
 	}
 
 	/** Whether point {@code i} is drawn: all of them, or with "next two" only the next and the one after (all in edit mode). */

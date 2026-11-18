@@ -84,6 +84,7 @@ public class EtherwarpAimScreen extends SubScreen {
 		ly = toggleRow("Edit mode", config.etherwarpAimEdit, x, ly, lw, v -> config.etherwarpAimEdit = v);
 		ly = toggleRow("Only the next two", config.etherwarpAimNextTwo, x, ly, lw, v -> config.etherwarpAimNextTwo = v);
 		ly = toggleRow("Numbers", config.etherwarpAimNumbers, x, ly, lw, v -> config.etherwarpAimNumbers = v);
+		ly = toggleRow("Only while holding the item", config.etherwarpAimOnlyHolding, x, ly, lw, v -> config.etherwarpAimOnlyHolding = v);
 		ly = toggleRow("Hide when secrets are done", config.etherwarpAimHideDone, x, ly, lw, v -> config.etherwarpAimHideDone = v);
 		// How the points are drawn.
 		text("Style", x, ly + 2f, 18f, MUTED);
