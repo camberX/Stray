@@ -187,7 +187,7 @@ public final class LeapRunner {
 	 * Plays the arm swing on your screen only: the swing's state is set directly, not through
 	 * {@code swing(...)}, so nothing about it can be sent to the server.
 	 */
-	private static void swingOnScreen(LocalPlayer player) {
+	static void swingOnScreen(LocalPlayer player) {
 		//? if >=26.3 {
 		dev.stray.client.mixin.LivingEntitySwingAccessor self = (dev.stray.client.mixin.LivingEntitySwingAccessor) player;
 		net.minecraft.world.item.component.SwingAnimation animation = net.minecraft.world.item.component.SwingAnimation.DEFAULT;
@@ -222,6 +222,7 @@ public final class LeapRunner {
 
 	/** Every tick, end: cooldown, world change. Actions wait for {@link #beforeKeybinds}. */
 	public static void tick(Minecraft client) {
+		SwingCheck.tick();
 		if (client.level != lastLevel) {
 			lastLevel = client.level;
 			cancel(false);

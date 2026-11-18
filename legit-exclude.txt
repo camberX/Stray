@@ -56,6 +56,7 @@ mixin: LeapSilentMixin
 mixin: FastLeapClickMixin
 mixin: SecretHitboxMixin
 mixin: LivingEntitySwingAccessor
+mixin: SwingWatchMixin
 mixin: SecretHitboxOutlineMixin
 # Account manager (Microsoft login, Prism import, session switching)
 dev/stray/client/account/**
@@ -65,3 +66,4 @@ dev/stray/client/dungeon/autoleap/**
 dev/stray/client/mixin/LeapSilentMixin*.class
 dev/stray/client/mixin/FastLeapClickMixin*.class
 dev/stray/client/mixin/LivingEntitySwingAccessor*.class
+dev/stray/client/mixin/SwingWatchMixin*.class

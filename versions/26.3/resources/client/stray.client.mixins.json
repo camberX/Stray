@@ -51,6 +51,7 @@
 		"LeapSilentMixin",
 		"SecretHitboxMixin",
 		"LivingEntitySwingAccessor",
+		"SwingWatchMixin",
 		"SecretHitboxOutlineMixin",
 		"FastLeapClickMixin",
 		"SubmitTextNamesMixin",

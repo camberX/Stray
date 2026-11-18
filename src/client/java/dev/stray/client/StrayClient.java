@@ -1118,6 +1118,11 @@ public final class StrayClient implements ClientModInitializer {
 				.then(name));
 		}
 		if (!dev.stray.Edition.LEGIT) {
+			// Auto Leap's client side swing, with a report of what was sent in the second after.
+			node.then(ClientCommands.literal("swing").executes(context -> {
+				dev.stray.client.dungeon.autoleap.SwingCheck.start();
+				return Command.SINGLE_SUCCESS;
+			}));
 			// Leap tests on any server (a test server with an alt): no dungeon or party needed.
 			node.then(ClientCommands.literal("leap")
 				.then(ClientCommands.argument("player", StringArgumentType.word())

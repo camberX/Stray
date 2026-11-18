@@ -28,6 +28,9 @@ public class ConnectionMixin {
 	)
 	private void stray$printSent(Packet<?> packet, io.netty.channel.ChannelFutureListener listener, boolean flush, CallbackInfo ci) {
 		dev.stray.client.net.PacketDebug.onSend(packet);
+		if (!dev.stray.Edition.LEGIT) {
+			dev.stray.client.dungeon.autoleap.SwingCheck.onSend(packet);
+		}
 		if (packet instanceof net.minecraft.network.protocol.game.ServerboundUseItemPacket) {
 			// M4 Tac timer (BirdAddon): looks only.
 			net.minecraft.client.Minecraft client = net.minecraft.client.Minecraft.getInstance();
