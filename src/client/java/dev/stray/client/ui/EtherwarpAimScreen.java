@@ -143,6 +143,9 @@ public class EtherwarpAimScreen extends SubScreen {
 		GuiDraw.roundedOutline(graphics, x, y, w, h, ShadowLook.CONTROL_R, 0x22FFFFFF, 1f);
 		float cx = x + w * 0.5f;
 		float cy = y + h * 0.5f;
+		float zoom = 1f;
+		// One HUD pixel in this menu's coordinates (the menu may draw at its own scale).
+		float unit = 1f / GuiDraw.poseScale(graphics);
 		double fov = minecraft == null ? 70.0 : minecraft.options.fov().get();
 		int rgb = config.etherwarpAimRgb & 0xFFFFFF;
 		double range = config.etherwarpAimRange;
@@ -150,9 +153,15 @@ public class EtherwarpAimScreen extends SubScreen {
 			// Past 90° it reaches behind you: all of the view.
 			GuiDraw.roundedFine(graphics, x, y, w, h, ShadowLook.CONTROL_R, 0x22000000 | rgb);
 		} else {
-			// The same measure as the circle in game, scaled to the preview.
+			// A close-up of your screen around the crosshair at its real size: the circle as many
+			// GUI pixels across as in game, next to the real crosshair. Only when it wouldn't fit
+			// are both shrunk together, so they always keep the proportions you see in game.
 			double reach = EtherwarpAim.reach(minecraft, range);
-			float r = (float) Math.min(reach * h * 0.5, 4000.0);
+			float screenH = minecraft == null ? 270f : minecraft.getWindow().getGuiScaledHeight();
+			float real = (float) Math.min(reach * screenH * 0.5 * unit, 100000.0);
+			float fit = Math.min(w, h) * 0.5f - 8f;
+			zoom = real > fit ? fit / real : 1f;
+			float r = real * zoom;
 			boolean clip = GuiDraw.scissor(graphics, x, y, w, h);
 			try {
 				int fill = Math.max(0, Math.min(255, config.etherwarpAimCircleFill));
@@ -166,11 +175,13 @@ public class EtherwarpAimScreen extends SubScreen {
 				}
 			}
 		}
-		// The crosshair.
-		float arm = 4.5f;
-		GuiDraw.fill(graphics, cx - arm, cy - 0.5f, arm * 2f, 1f, 0xFFEEF1F5);
-		GuiDraw.fill(graphics, cx - 0.5f, cy - arm, 1f, arm * 2f, 0xFFEEF1F5);
-		String label = rangeLabel(config.etherwarpAimRange) + " · FOV " + Math.round(fov);
+		// The crosshair, the size of the vanilla one (9 px across, 1 px lines), shrunk with the circle.
+		float arm = Math.max(1.5f, 4.5f * unit * zoom);
+		float line = Math.max(GuiDraw.pixel() / GuiDraw.poseScale(graphics), unit * zoom);
+		GuiDraw.fill(graphics, cx - arm, cy - line * 0.5f, arm * 2f, line, 0xFFEEF1F5);
+		GuiDraw.fill(graphics, cx - line * 0.5f, cy - arm, line, arm * 2f, 0xFFEEF1F5);
+		String label = rangeLabel(config.etherwarpAimRange) + " · FOV " + Math.round(fov)
+			+ (zoom < 0.995f ? String.format(Locale.ROOT, " · shown at %d%%", Math.round(zoom * 100f)) : " · actual size");
 		GuiDraw.small(graphics, font, label, x + 6f, y + h - 11f, FAINT);
 	}
 }
