@@ -181,6 +181,21 @@ public final class LeapRunner {
 		waitTicks = 0;
 	}
 
+	/**
+	 * Plays the arm swing on your screen only: the swing's state is set directly, not through
+	 * {@code swing(...)}, so nothing about it can be sent to the server.
+	 */
+	private static void swingOnScreen(LocalPlayer player) {
+		//? if >=26.3 {
+		dev.stray.client.mixin.LivingEntitySwingAccessor self = (dev.stray.client.mixin.LivingEntitySwingAccessor) player;
+		net.minecraft.world.item.component.SwingAnimation animation = net.minecraft.world.item.component.SwingAnimation.DEFAULT;
+		self.stray$swingState().startIfAble(net.minecraft.world.InteractionHand.MAIN_HAND, animation, self.stray$swingDuration(animation));
+		//?} else {
+		/*player.swingTime = -1;
+		player.swinging = true;
+		player.swingingArm = net.minecraft.world.InteractionHand.MAIN_HAND;*///?}
+	}
+
 	private static int leapSlot(LocalPlayer player) {
 		for (int i = 0; i < 9; i++) {
 			if (isLeap(player.getInventory().getItem(i))) {
@@ -258,6 +273,9 @@ public final class LeapRunner {
 				// Like quoi: use the item itself, as a right click into the air does, so the
 				// terminal or teammate under the crosshair can't take the click.
 				client.gameMode.useItem(player, net.minecraft.world.InteractionHand.MAIN_HAND);
+				if (StrayConfig.get().leapSwing) {
+					swingOnScreen(player);
+				}
 				step = Step.AWAIT_MENU;
 				waitTicks = 0;
 			}

@@ -46,6 +46,7 @@
 		"GuiMixin",
 		"LeapSilentMixin",
 		"SecretHitboxMixin",
+		"LivingEntitySwingAccessor",
 		"SecretHitboxOutlineMixin",
 		"FastLeapClickMixin",
 		"SubmitTextNamesMixin",

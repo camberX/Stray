@@ -596,6 +596,8 @@ public final class StrayConfig {
 	public boolean leapSwapBack = false;
 	/** Auto / Fast Leap open the leap menu as the normal screen instead of silently. */
 	public boolean leapShowMenu = false;
+	/** Auto / Fast Leap swing your arm on your screen when they use the leap (nothing is sent). */
+	public boolean leapSwing = false;
 	public boolean autoLeapP3 = false;
 	public boolean fastLeapP3 = false;
 	/** P3: wait for the section's gate (or the Core) too, not just its tasks. */
