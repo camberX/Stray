@@ -443,6 +443,7 @@ public final class ClickGui {
 		java.util.Map.entry("Mob box", "Flat boxes around mobs on screen."),
 		java.util.Map.entry("Mob shader", "Fills mobs with a see-through shader."),
 		java.util.Map.entry("Star mobs", "Highlights starred mobs in dungeons."),
+		java.util.Map.entry("Star mob box", "2D boxes around starred mobs; streamproof keeps them off recordings."),
 		java.util.Map.entry("CS2 knife", "Replaces your sword with a CS2 knife, with skins, inspect and swing animations."),
 		java.util.Map.entry("Held item", "A shader on the item in your hand."),
 		java.util.Map.entry("Block outline", "A glowing outline on the block you look at."),
@@ -693,6 +694,7 @@ public final class ClickGui {
 			config.starVisuals.glowEnabled = v;
 			config.starMobEsp = v;
 		}, true, false));
+		mods.add(mod("Star mob box", "Dungeons", StrayScreen.Feature.BOX, EntityKind.STAR, () -> config.starVisuals.boxEnabled, v -> config.starVisuals.boxEnabled = v, true, false));
 		mods.add(mod("Party stats", "Dungeons", null, null, () -> config.partyFinderStats, v -> config.partyFinderStats = v, true, false));
 
 		mods.add(mod("Spirit Bear", "M4", StrayScreen.Feature.M4_BEAR, null, () -> config.m4.spiritBear, v -> config.m4.spiritBear = v, true, false));
