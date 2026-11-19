@@ -159,7 +159,7 @@ public class StrayScreen extends Screen {
 		WARDROBE("Wardrobe menu", 9),
 		NUCLEUS("Nucleus alerts", 2),
 		NODE_ESP("Node ESP", 4),
-		WATERMARK("Watermark", 4),
+		WATERMARK("Watermark", 5),
 		MUSIC("Music", 4),
 		PIP("Picture in picture", 3),
 		RAWMATS("Raw mats", 2),
@@ -3947,6 +3947,8 @@ public class StrayScreen extends Screen {
 				colorRow(graphics, font, ix, y, iw, mouseX, mouseY, "Color", config.colorRgb, PickerTarget.NODE);
 			}
 			case WATERMARK -> {
+				String[] wmStyles = {"Shadow", "uid?"};
+				y = cycle(graphics, font, ix, y, iw, mouseX, mouseY, "Style", () -> wmStyles["uid".equals(config.watermarkStyle) ? 1 : 0], () -> config.watermarkStyle = "uid".equals(config.watermarkStyle) ? "shadow" : "uid");
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "FPS", config.watermarkFps, v -> config.watermarkFps = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Ping", config.watermarkPing, v -> config.watermarkPing = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Clock", config.watermarkTime, v -> config.watermarkTime = v);

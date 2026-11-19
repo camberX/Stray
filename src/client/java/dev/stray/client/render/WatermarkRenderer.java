@@ -22,7 +22,11 @@ public final class WatermarkRenderer {
 	}
 
 	public static float height() {
-		return HEIGHT;
+		return uid() ? UID_H * (float) (uidScale() / guiScale()) : HEIGHT;
+	}
+
+	private static boolean uid() {
+		return "uid".equals(StrayConfig.get().watermarkStyle);
 	}
 
 	public static float occupiedHeight() {
@@ -50,7 +54,11 @@ public final class WatermarkRenderer {
 		if (scale != 1.0f) {
 			graphics.pose().scale(scale, scale);
 		}
-		drawShadow(graphics, font);
+		if (uid()) {
+			drawUid(graphics, scale);
+		} else {
+			drawShadow(graphics, font);
+		}
 		graphics.pose().popMatrix();
 	}
 
@@ -162,6 +170,92 @@ public final class WatermarkRenderer {
 	}
 
 
+	// ---- uid?: the classic cheat-menu watermark: a 30 px box of seven 1 px bands, then
+	// "stray" with ".gay" in the menu colour and the stats, " | " between them, in sharp DejaVu.
+
+	private static final float UID_H = 30f;
+	private static final float UID_PAD = 11f;
+	private static final int[] UID_BANDS = {10, 60, 40, 40, 40, 60, 20};
+	private static final int UID_TEXT = 0xE6FFFFFF;
+
+	private static double guiScale() {
+		Minecraft client = Minecraft.getInstance();
+		return client.getWindow() == null ? 2.0 : client.getWindow().getGuiScale();
+	}
+
+	/** Screen pixels per watermark pixel: sized for 1080p like the menu (125 % at 1440p). */
+	private static double uidScale() {
+		Minecraft client = Minecraft.getInstance();
+		int h = client.getWindow() == null ? 1080 : client.getWindow().getHeight();
+		return net.minecraft.util.Mth.clamp(Math.round(h / 1080.0 * 4.0) / 4.0, 1.0, 3.0);
+	}
+
+	/** Width in watermark pixels. */
+	private static float uidWidth(double s) {
+		float w = UID_PAD + dev.stray.client.ui.UidText.width(7, "stray", s) + dev.stray.client.ui.UidText.width(7, ".gay", s);
+		for (String part : shadowParts()) {
+			w += dev.stray.client.ui.UidText.width(7, " | ", s) + dev.stray.client.ui.UidText.width(7, Text.zeroDigits(part), s);
+		}
+		return w + UID_PAD;
+	}
+
+	private static void drawUid(GuiGraphicsExtractor graphics, float hudScale) {
+		if (!dev.stray.client.ui.UidText.ready()) {
+			return;
+		}
+		double gui = guiScale();
+		double s = uidScale() * hudScale;
+		float w = uidWidth(s);
+		// Work in watermark pixels: one unit is s screen pixels.
+		float unit = (float) (uidScale() / gui);
+		graphics.pose().pushMatrix();
+		graphics.pose().scale(unit, unit);
+		// The frame on whole screen pixels: each band is round(s) pixels wide.
+		org.joml.Vector2f o = graphics.pose().transformPosition(0f, 0f, new org.joml.Vector2f());
+		int px = (int) Math.round(o.x * gui);
+		int py = (int) Math.round(o.y * gui);
+		int pw = (int) Math.round(w * s);
+		int ph = (int) Math.round(UID_H * s);
+		int band = Math.max(1, (int) Math.round(s));
+		graphics.pose().pushMatrix();
+		graphics.pose().identity();
+		float inv = (float) (1.0 / gui);
+		graphics.pose().scale(inv, inv);
+		for (int i = 0; i < UID_BANDS.length; i++) {
+			int c = UID_BANDS[i];
+			int inset = i * band;
+			GuiDraw.fill(graphics, px + inset, py + inset, pw - inset * 2, ph - inset * 2, 0xFF000000 | (c << 16) | (c << 8) | c);
+		}
+		graphics.pose().popMatrix();
+		// Text, measured and placed in watermark pixels.
+		int accent = 0xE6000000 | (StrayConfig.get().uidAccent & 0xFFFFFF);
+		float x = UID_PAD;
+		// Baseline 7 under y: 11 puts the 9 px text in the middle of the 30 px box, where the original sits.
+		float y = 11f;
+		x = uidText(graphics, "stray", x, y, UID_TEXT, s);
+		x = uidText(graphics, ".gay", x, y, accent, s);
+		List<String> parts = shadowParts();
+		for (int i = 0; i < parts.size(); i++) {
+			String part = parts.get(i);
+			x = uidText(graphics, " | ", x, y, UID_TEXT, s);
+			// Numbers take the room of zeros and sit right-aligned in it, so they don't jitter.
+			float room = dev.stray.client.ui.UidText.width(7, Text.zeroDigits(part), s);
+			float real = dev.stray.client.ui.UidText.width(7, part, s);
+			int color = UID_TEXT;
+			if (i == 0 && StrayConfig.get().watermarkFps && HudStats.fps() < 20) {
+				color = 0xE6FF0000;
+			}
+			uidText(graphics, part, x + room - real, y, color, s);
+			x += room;
+		}
+		graphics.pose().popMatrix();
+	}
+
+	private static float uidText(GuiGraphicsExtractor graphics, String text, float x, float y, int color, double s) {
+		dev.stray.client.ui.UidText.draw(graphics, 7, text, x, y, color, s);
+		return x + dev.stray.client.ui.UidText.width(7, text, s);
+	}
+
 	private static int widthTick = Integer.MIN_VALUE;
 	private static float widthCache;
 
@@ -172,7 +266,7 @@ public final class WatermarkRenderer {
 		if (tick == widthTick && widthCache > 0f) {
 			return widthCache;
 		}
-		float w = shadowWidth(font);
+		float w = uid() ? uidWidth(uidScale()) * (float) (uidScale() / guiScale()) : shadowWidth(font);
 		widthTick = tick;
 		widthCache = w;
 		return w;

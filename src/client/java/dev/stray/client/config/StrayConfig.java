@@ -2086,7 +2086,7 @@ public final class StrayConfig {
 	}
 
 	private static String normalizeWatermarkStyle(String style) {
-		return "shadow";
+		return "uid".equals(style) ? "uid" : "shadow";
 	}
 
 	public static final String[] MUSIC_LAYOUTS = {"card", "compact", "poster", "dock", "bar"};

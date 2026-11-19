@@ -113,8 +113,12 @@ public final class UidText {
 	}
 
 	private static Atlas atlas(int family) {
+		return atlas(family, dpi());
+	}
+
+	private static Atlas atlas(int family, double scale) {
 		Face f = FACES[family];
-		int px = Math.max(6, (int) Math.round(EM * dpi()));
+		int px = Math.max(6, (int) Math.round(EM * scale));
 		Atlas a = f.sizes.get(px);
 		if (a == null) {
 			a = new Atlas();
@@ -186,27 +190,37 @@ public final class UidText {
 
 	/** Width in menu units. */
 	public static float width(int family, String text) {
+		return width(family, text, dpi());
+	}
+
+	/** Width in units of {@code scale} screen pixels. */
+	public static float width(int family, String text, double scale) {
 		if (text == null || text.isEmpty() || !ready()) {
 			return 0f;
 		}
 		int fam = family == 8 ? 1 : 0;
-		Atlas a = atlas(fam);
+		Atlas a = atlas(fam, scale);
 		int px = 0;
 		for (int i = 0; i < text.length(); ) {
 			int cp = text.codePointAt(i);
 			i += Character.charCount(cp);
 			px += glyph(fam, a, cp).advance;
 		}
-		return (float) (px / dpi());
+		return (float) (px / scale);
 	}
 
 	/** Draws at (x, y) in the current pose's units (menu units), snapped to screen pixels. */
 	static void draw(GuiGraphicsExtractor graphics, int family, String text, float x, float y, int color) {
-		if (text == null || text.isEmpty()) {
+		draw(graphics, family, text, x, y, color, dpi());
+	}
+
+	/** The same, rasterized for {@code scale} screen pixels per unit (the HUD's own scale). */
+	public static void draw(GuiGraphicsExtractor graphics, int family, String text, float x, float y, int color, double scale) {
+		if (text == null || text.isEmpty() || !ready()) {
 			return;
 		}
 		int fam = family == 8 ? 1 : 0;
-		Atlas a = atlas(fam);
+		Atlas a = atlas(fam, scale);
 		Minecraft client = Minecraft.getInstance();
 		double gui = client.getWindow().getGuiScale();
 		Vector2f origin = graphics.pose().transformPosition(x, y + BASELINE, new Vector2f());
