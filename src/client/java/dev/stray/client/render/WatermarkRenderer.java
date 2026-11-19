@@ -183,6 +183,8 @@ public final class WatermarkRenderer {
 	private static final float EX_INSET = 2f;
 	private static final float EX_BRAND_PAD = 6f;
 	private static final float EX_GAP = 11f;
+	/** After the brand pill there is no dot, so less room. */
+	private static final float EX_FIRST = 7f;
 	private static final float EX_END = 9f;
 	private static final java.util.regex.Pattern EX_UNIT = java.util.regex.Pattern.compile("^(\\S+) (fps|ms)$");
 
@@ -225,8 +227,8 @@ public final class WatermarkRenderer {
 	private static float exWidth(Font font) {
 		float w = EX_INSET + exBrandW(font);
 		List<ExPart> parts = exParts(font);
-		for (ExPart part : parts) {
-			w += EX_GAP + part.width();
+		for (int i = 0; i < parts.size(); i++) {
+			w += (i == 0 ? EX_FIRST : EX_GAP) + parts.get(i).width();
 		}
 		return w + (parts.isEmpty() ? EX_INSET : EX_END);
 	}
@@ -257,7 +259,7 @@ public final class WatermarkRenderer {
 				float d = 2.5f;
 				dev.stray.client.ui.ExLook.rounded(graphics, x + EX_GAP * 0.5f - d * 0.5f, (h - d) * 0.5f, d, d, d * 0.5f, dev.stray.client.ui.ExColors.outline);
 			}
-			x += EX_GAP;
+			x += i == 0 ? EX_FIRST : EX_GAP;
 			int color = dev.stray.client.ui.ExColors.onSurface;
 			if (i == 0 && part.unit() != null && parseInt(part.value().getString()) < 20) {
 				color = dev.stray.client.ui.ExColors.error;
