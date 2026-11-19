@@ -14,15 +14,14 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * The "uid?" click GUI: a 660 x 1000 window in screen pixels (times the DPI scale) with a
+ * The "uid?" click GUI: a 660 x 560 window in screen pixels (times the DPI scale) with a
  * layered frame, a colour strip, a rail of eight 75 x 64 tabs and, per tab, the modules as
  * group boxes in two columns. Each group starts with an "Enabled" checkbox and then the
  * module's own settings, drawn by the same rows every other style uses, in this look.
  */
 public final class UidMenu {
 	public static final float W = 660f;
-	/** Tall enough for every category's full-size tab (20 top, 15 x 64, 20 bottom). */
-	public static final float H = 1000f;
+	public static final float H = 560f;
 	private static final float TAB_W = 75f;
 	private static final float TAB_H = 64f;
 	/** Tabs start 20 px down the window (MenuWindow::update_dpi). */
@@ -33,24 +32,18 @@ public final class UidMenu {
 	private record Tab(String name, String glyph, String[] categories) {
 	}
 
-	/** One full-size tab per click GUI category, the icons the other menu styles use. */
+	/** Eight full-size tabs, each holding one or more click GUI categories. */
 	private static final Tab[] TABS = {
 		new Tab("Dungeons", "\uEAB1", new String[] {"Dungeons"}),
 		new Tab("M4", "\uE799", new String[] {"M4"}),
+		new Tab("Skills", "\uEAD5", new String[] {"Mining", "Farming", "Foraging"}),
 		new Tab("Slayer", "\uEBE9", new String[] {"Slayer"}),
-		new Tab("Mining", "\uEAD5", new String[] {"Mining"}),
-		new Tab("Farming", "\uEA79", new String[] {"Farming"}),
-		new Tab("Foraging", "\uEA63", new String[] {"Foraging"}),
 		new Tab("World", "\uE80B", new String[] {"World"}),
-		new Tab("Entities", "\uE8F4", new String[] {"Entities"}),
-		new Tab("Mobs", "\uE91D", new String[] {"Mobs"}),
-		new Tab("HUD", "\uE871", new String[] {"HUD"}),
-		new Tab("Chat", "\uE0B7", new String[] {"Chat"}),
-		new Tab("Menus", "\uE5C3", new String[] {"Menus"}),
-		new Tab("Player", "\uE7FD", new String[] {"Player"}),
-		new Tab("Keys", "\uE312", new String[] {"Keys"}),
-		new Tab("Client", "\uE8B8", new String[] {"Client"}),
+		new Tab("Visuals", "\uE8F4", new String[] {"Entities", "Mobs"}),
+		new Tab("HUD", "\uE871", new String[] {"HUD", "Chat"}),
+		new Tab("Misc", "\uE8B8", new String[] {"Menus", "Player", "Keys", "Client"}),
 	};
+
 
 
 	private static boolean drawing;
