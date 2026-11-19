@@ -15,6 +15,16 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.6.4", new String[]{
+			"New dungeon map, ported from NoammAddons with noamm's permission: rooms, doors, checkmarks or room names and secrets, teammates' heads, guesses for unopened puzzle, trap and miniboss rooms, every colour adjustable, and a Stray or NoammAddons look.",
+			"Show unopened rooms (not in Stray Legit) shows the whole dungeon from the start, read from the loaded world.",
+			"Streamproof (not in Stray Legit): the dungeon map and a new Star mob box can draw in a separate see-through layer over the game, so recording the game window (OBS, gpu-screen-recorder) leaves them out. On Windows they are also left out of full screen recordings. Works on OpenGL and Vulkan, on Windows, X11 and Wayland (placed over the game window on Hyprland); hidden while a menu is open.",
+			"uid? menu style: a second click GUI next to Shadow, in the look of a classic cheat menu, with tabs, group boxes, its own checkboxes, sliders and dropdowns, sharp desktop-style text, a DPI scale, a menu colour, a fade in and out (Menu animation) and resizing from the bottom-right corner. Switched-off modules only show their switch.",
+			"Hitboxes (not in Stray Legit): bigger lever, button, secret skull and mushroom hitboxes in dungeons, with expanded, normal or only-on-the-block outlines.",
+			"Auto leap (not in Stray Legit): Show leap menu opens the leap menu as the normal screen, a client side swing when leaping (nothing is sent), and a Wait in menu slider.",
+			"Etherwarp aim (not in Stray Legit): a range circle around the crosshair that follows your FOV, a real-size preview, points stay visible with the item put away, and /stray etherwarp edit.",
+			"/stray edge (not in Stray Legit): jumps once at the next block edge."
+		}),
 		new Entry("1.6.3", new String[]{
 			"Etherwarp aim (not in Stray Legit): set etherwarp points per dungeon room in edit mode (middle click a block). Points are saved relative to the room, so they follow its rotation, and they form a numbered route with the next point in its own colour.",
 			"Sneaking with an Ether Transmission item, the crosshair is pulled to the free part of the next point's open face and it right clicks once it is on it. Speed, range (up to 180°) and click delay are adjustable, with a preview of the range on your screen.",
