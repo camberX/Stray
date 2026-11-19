@@ -14,14 +14,15 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * The "uid?" click GUI: a 660 x 560 window in screen pixels (times the DPI scale) with a
+ * The "uid?" click GUI: a 660 x 1000 window in screen pixels (times the DPI scale) with a
  * layered frame, a colour strip, a rail of eight 75 x 64 tabs and, per tab, the modules as
  * group boxes in two columns. Each group starts with an "Enabled" checkbox and then the
  * module's own settings, drawn by the same rows every other style uses, in this look.
  */
 public final class UidMenu {
 	public static final float W = 660f;
-	public static final float H = 560f;
+	/** Tall enough for every category's full-size tab (20 top, 15 x 64, 20 bottom). */
+	public static final float H = 1000f;
 	private static final float TAB_W = 75f;
 	private static final float TAB_H = 64f;
 	/** Tabs start 20 px down the window (MenuWindow::update_dpi). */
@@ -32,16 +33,25 @@ public final class UidMenu {
 	private record Tab(String name, String glyph, String[] categories) {
 	}
 
+	/** One full-size tab per click GUI category, the icons the other menu styles use. */
 	private static final Tab[] TABS = {
-		new Tab("Dungeons", "", new String[] {"Dungeons", "M4"}),
-		new Tab("Skills", "", new String[] {"Mining", "Farming", "Foraging"}),
-		new Tab("Slayer", "", new String[] {"Slayer"}),
-		new Tab("World", "", new String[] {"World"}),
-		new Tab("Visuals", "", new String[] {"Entities", "Mobs"}),
-		new Tab("HUD", "", new String[] {"HUD"}),
-		new Tab("Misc", "", new String[] {"Chat", "Menus", "Player"}),
-		new Tab("Config", "", new String[] {"Keys", "Client"}),
+		new Tab("Dungeons", "\uEAB1", new String[] {"Dungeons"}),
+		new Tab("M4", "\uE799", new String[] {"M4"}),
+		new Tab("Slayer", "\uEBE9", new String[] {"Slayer"}),
+		new Tab("Mining", "\uEAD5", new String[] {"Mining"}),
+		new Tab("Farming", "\uEA79", new String[] {"Farming"}),
+		new Tab("Foraging", "\uEA63", new String[] {"Foraging"}),
+		new Tab("World", "\uE80B", new String[] {"World"}),
+		new Tab("Entities", "\uE8F4", new String[] {"Entities"}),
+		new Tab("Mobs", "\uE91D", new String[] {"Mobs"}),
+		new Tab("HUD", "\uE871", new String[] {"HUD"}),
+		new Tab("Chat", "\uE0B7", new String[] {"Chat"}),
+		new Tab("Menus", "\uE5C3", new String[] {"Menus"}),
+		new Tab("Player", "\uE7FD", new String[] {"Player"}),
+		new Tab("Keys", "\uE312", new String[] {"Keys"}),
+		new Tab("Client", "\uE8B8", new String[] {"Client"}),
 	};
+
 
 	private static boolean drawing;
 	private static int active;
@@ -66,6 +76,11 @@ public final class UidMenu {
 	private static float dragDY;
 	private static float mobListScroll;
 	private static float popupScroll;
+	/** The rail's highlight, gliding to the active tab. */
+	private static float railY = Float.NaN;
+	private static long lastFrame;
+	private static long switchedAt;
+	private static final float PAGE_MS = 190f;
 
 	private UidMenu() {
 	}
@@ -95,13 +110,19 @@ public final class UidMenu {
 	 * window's height in 25 % steps (1440p 125 %, 4K 200 %).
 	 */
 	static double dpiScale() {
-		int dpi = Mth.clamp(StrayConfig.get().uidDpi, 0, DPI_LABELS.length - 1);
-		if (dpi > 0) {
-			return 1.0 + (dpi - 1) * 0.25;
-		}
 		Minecraft client = Minecraft.getInstance();
 		int height = client == null || client.getWindow() == null ? 1080 : client.getWindow().getHeight();
-		return Mth.clamp(Math.round(height / 1080.0 * 4.0) / 4.0, 1.0, 3.0);
+		int dpi = Mth.clamp(StrayConfig.get().uidDpi, 0, DPI_LABELS.length - 1);
+		double picked = dpi > 0 ? 1.0 + (dpi - 1) * 0.25 : Mth.clamp(Math.round(height / 1080.0 * 4.0) / 4.0, 1.0, 3.0);
+		// Never taller than the window: on short screens the whole menu shrinks to fit.
+		return Math.min(picked, Math.max(0.5, (height - 16) / H));
+	}
+
+
+	/** easeOutCubic. */
+	private static float ease(float t) {
+		float u = 1f - t;
+		return 1f - u * u * u;
 	}
 
 	/** A row reports how far down it drew, so the group knows its height. */
@@ -143,19 +164,40 @@ public final class UidMenu {
 		deferred.clear();
 		graphics.pose().pushMatrix();
 		graphics.pose().scale(unit, unit);
+		// Open / close: the window grows from 96 %, rises a little and fades in; closing plays it back.
+		float open = ease(Mth.clamp(screen.clickAppear(), 0f, 1f));
+		long now = System.nanoTime();
+		float dt = lastFrame == 0L ? 0f : Math.min(0.1f, (now - lastFrame) / 1.0e9f);
+		lastFrame = now;
+		float targetY = TAB_TOP + active * TAB_H;
+		railY = Float.isNaN(railY) || open < 0.05f ? targetY : railY + (targetY - railY) * Math.min(1f, dt * 22f);
+		float page = ease(Mth.clamp((now - switchedAt) / (PAGE_MS * 1.0e6f), 0f, 1f));
 		try {
+			GuiDraw.alphaScale = open;
 			GuiDraw.fill(graphics, 0, 0, sw, sh, 0x30000000);
+			float cx = winX + W / 2f;
+			float cy = winY + H / 2f;
+			float grow = 0.96f + 0.04f * open;
+			graphics.pose().translate(cx, cy + (1f - open) * 10f);
+			graphics.pose().scale(grow, grow);
+			graphics.pose().translate(-cx, -cy);
 			UidLook.window(graphics, winX, winY, W, H);
-			float activeY = TAB_TOP + active * TAB_H;
-			UidLook.rail(graphics, winX, winY, H, TAB_W, activeY, TAB_H);
+			UidLook.rail(graphics, winX, winY, H, TAB_W, railY, TAB_H);
 			tabs(screen, graphics, font, mx, my);
+			// Switching tabs: the new page slides in from the right as it fades in.
+			GuiDraw.alphaScale = open * page;
+			graphics.pose().pushMatrix();
+			graphics.pose().translate((1f - page) * 14f, 0f);
 			content(screen, graphics, font, mx, my);
+			graphics.pose().popMatrix();
+			GuiDraw.alphaScale = open;
 			UidLook.strip(graphics, winX, winY, W);
 			for (Runnable r : new ArrayList<>(deferred)) {
 				r.run();
 			}
 			screen.clickPicker(graphics, font);
 		} finally {
+			GuiDraw.alphaScale = 1f;
 			graphics.pose().popMatrix();
 			drawing = false;
 			restoreTheme(saved);
@@ -178,6 +220,7 @@ public final class UidMenu {
 			screen.clickHit(tx, ty, TAB_W, TAB_H, () -> {
 				if (active != index) {
 					active = index;
+					switchedAt = System.nanoTime();
 					ClickGui.blurMobSearch();
 				}
 			});

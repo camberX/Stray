@@ -62,7 +62,7 @@ public final class GuiDraw {
 			graphics.pose().pushMatrix();
 			graphics.pose().translate(x, y);
 			graphics.pose().scale(w, h);
-			graphics.fill(0, 0, 1, 1, color);
+			graphics.fill(0, 0, 1, 1, fade(color));
 			graphics.pose().popMatrix();
 			return;
 		}
@@ -72,7 +72,7 @@ public final class GuiDraw {
 		int y0 = (int) Math.floor(y);
 		int x1 = Math.max(x0 + 1, (int) Math.ceil(x + w));
 		int y1 = Math.max(y0 + 1, (int) Math.ceil(y + h));
-		graphics.fill(x0, y0, x1, y1, color);
+		graphics.fill(x0, y0, x1, y1, fade(color));
 	}
 
 	/**
@@ -86,7 +86,7 @@ public final class GuiDraw {
 		graphics.pose().pushMatrix();
 		graphics.pose().translate(x, y);
 		graphics.pose().scale(w, h);
-		graphics.fill(0, 0, 1, 1, color);
+		graphics.fill(0, 0, 1, 1, fade(color));
 		graphics.pose().popMatrix();
 	}
 
@@ -134,7 +134,7 @@ public final class GuiDraw {
 		graphics.pose().pushMatrix();
 		graphics.pose().translate(x, y);
 		graphics.pose().scale(w, h);
-		graphics.fillGradient(0, 0, 1, 1, top, bottom);
+		graphics.fillGradient(0, 0, 1, 1, fade(top), fade(bottom));
 		graphics.pose().popMatrix();
 	}
 
@@ -199,7 +199,7 @@ public final class GuiDraw {
 		graphics.pose().pushMatrix();
 		graphics.pose().translate(cx - radius, cy - radius);
 		graphics.pose().scale(d, d);
-		graphics.blit(RenderPipelines.GUI_TEXTURED, CIRCLE, 0, 0, 0f, 0f, 1, 1, CIRCLE_TEX, CIRCLE_TEX, CIRCLE_TEX, CIRCLE_TEX, color);
+		graphics.blit(RenderPipelines.GUI_TEXTURED, CIRCLE, 0, 0, 0f, 0f, 1, 1, CIRCLE_TEX, CIRCLE_TEX, CIRCLE_TEX, CIRCLE_TEX, fade(color));
 		graphics.pose().popMatrix();
 	}
 
@@ -234,7 +234,7 @@ public final class GuiDraw {
 			STROKE_TEX_H,
 			STROKE_TEX_W,
 			STROKE_TEX_H,
-			color
+			fade(color)
 		);
 		graphics.pose().popMatrix();
 		dot(graphics, x0, y0, half, color);
@@ -256,7 +256,7 @@ public final class GuiDraw {
 		graphics.pose().pushMatrix();
 		graphics.pose().translate(cx - radius, cy - radius);
 		graphics.pose().scale(d, d);
-		graphics.blit(RenderPipelines.GUI_TEXTURED, CIRCLE, 0, 0, 0f, 0f, 1, 1, CIRCLE_TEX, CIRCLE_TEX, CIRCLE_TEX, CIRCLE_TEX, color);
+		graphics.blit(RenderPipelines.GUI_TEXTURED, CIRCLE, 0, 0, 0f, 0f, 1, 1, CIRCLE_TEX, CIRCLE_TEX, CIRCLE_TEX, CIRCLE_TEX, fade(color));
 		graphics.pose().popMatrix();
 	}
 
@@ -267,7 +267,7 @@ public final class GuiDraw {
 		graphics.pose().pushMatrix();
 		graphics.pose().translate(x, y);
 		graphics.pose().scale(radius, radius);
-		graphics.blit(RenderPipelines.GUI_TEXTURED, CIRCLE, 0, 0, u, v, 1, 1, CIRCLE_HALF, CIRCLE_HALF, CIRCLE_TEX, CIRCLE_TEX, color);
+		graphics.blit(RenderPipelines.GUI_TEXTURED, CIRCLE, 0, 0, u, v, 1, 1, CIRCLE_HALF, CIRCLE_HALF, CIRCLE_TEX, CIRCLE_TEX, fade(color));
 		graphics.pose().popMatrix();
 	}
 
@@ -278,7 +278,7 @@ public final class GuiDraw {
 		graphics.pose().pushMatrix();
 		graphics.pose().translate(x, y);
 		graphics.pose().scale(radius, radius);
-		graphics.blit(RenderPipelines.GUI_TEXTURED, CIRCLE_HOLE, 0, 0, u, v, 1, 1, CIRCLE_HALF, CIRCLE_HALF, CIRCLE_TEX, CIRCLE_TEX, color);
+		graphics.blit(RenderPipelines.GUI_TEXTURED, CIRCLE_HOLE, 0, 0, u, v, 1, 1, CIRCLE_HALF, CIRCLE_HALF, CIRCLE_TEX, CIRCLE_TEX, fade(color));
 		graphics.pose().popMatrix();
 	}
 
@@ -397,7 +397,7 @@ public final class GuiDraw {
 		graphics.pose().pushMatrix();
 		graphics.pose().translate(x, y);
 		graphics.pose().scale(w, h);
-		graphics.blit(pipeline, id, 0, 0, u, v, 1, 1, regionW, regionH, texW, texH, color);
+		graphics.blit(pipeline, id, 0, 0, u, v, 1, 1, regionW, regionH, texW, texH, fade(color));
 		graphics.pose().popMatrix();
 	}
 
@@ -858,7 +858,7 @@ public final class GuiDraw {
 			regionH,
 			RING_TEX,
 			RING_TEX,
-			color
+			fade(color)
 		);
 		graphics.pose().popMatrix();
 	}
@@ -966,13 +966,27 @@ public final class GuiDraw {
 			CIRCLE_HALF,
 			CIRCLE_TEX,
 			CIRCLE_TEX,
-			color
+			fade(color)
 		);
 		graphics.pose().popMatrix();
 	}
 
+	/**
+	 * Fades every colour drawn while a menu animates in, out or between pages (uid? sets it
+	 * around its drawing); 1 the rest of the time.
+	 */
+	public static float alphaScale = 1f;
+
+	public static int fade(int color) {
+		if (alphaScale >= 0.999f) {
+			return color;
+		}
+		int a = Math.round((color >>> 24) * Math.max(0f, alphaScale));
+		return (a << 24) | (color & 0xFFFFFF);
+	}
+
 	public static void text(GuiGraphicsExtractor graphics, Font font, String value, float x, float y, int color, boolean shadow) {
-		graphics.text(font, value, Math.round(x), Math.round(y), color, shadow);
+		graphics.text(font, value, Math.round(x), Math.round(y), fade(color), shadow);
 	}
 
 	public static void text(GuiGraphicsExtractor graphics, Font font, String value, float x, float y, float scale, int color, boolean shadow) {
@@ -981,7 +995,7 @@ public final class GuiDraw {
 		if (scale != 1.0f) {
 			graphics.pose().scale(scale, scale);
 		}
-		graphics.text(font, value, 0, 0, color, shadow);
+		graphics.text(font, value, 0, 0, fade(color), shadow);
 		graphics.pose().popMatrix();
 	}
 
@@ -1007,11 +1021,11 @@ public final class GuiDraw {
 			int alpha = Math.round(((color >>> 24) & 0xFF) * 0.6f);
 			graphics.pose().pushMatrix();
 			graphics.pose().translate(px, px);
-			graphics.text(font, value, x, y, alpha << 24, false);
+			graphics.text(font, value, x, y, fade(alpha << 24), false);
 			graphics.pose().popMatrix();
 			shadow = false;
 		}
-		graphics.text(font, value, x, y, color, shadow);
+		graphics.text(font, value, x, y, fade(color), shadow);
 	}
 
 	/** How much the current pose scales things, so text and hairlines can match real pixels. */

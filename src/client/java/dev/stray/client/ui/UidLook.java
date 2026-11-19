@@ -108,7 +108,7 @@ public final class UidLook {
 		if (scale != 1f) {
 			graphics.pose().scale(scale, scale);
 		}
-		graphics.text(font, MenuFont.crisp(value, GuiDraw.poseScale(graphics)), 0, 0, color, false);
+		graphics.text(font, MenuFont.crisp(value, GuiDraw.poseScale(graphics)), 0, 0, GuiDraw.fade(color), false);
 		graphics.pose().popMatrix();
 	}
 
