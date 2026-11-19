@@ -134,18 +134,11 @@ public final class ThemedHotbar {
 		float bw = w - in * 2f;
 		float p = xp(player);
 		float fill = bw * p;
-		float mid = bw / 2f;
-		if (fill > 0f) {
-			if (GuiDraw.scissor(graphics, bx, y + in, fill, barH)) {
-				UidLook.horizontal(graphics, bx, y + in, mid, barH, 0xFF37B1DA, 0xFFCC46CD);
-				UidLook.horizontal(graphics, bx + mid, y + in, bw - mid, barH, 0xFFCC46CD, 0xFFCCE335);
-				GuiDraw.disableScissor(graphics);
-			}
-		}
+		// The whole strip in colour, the part past your progress dimmed so it still reads as the strip.
+		UidLook.rainbow(graphics, bx, y + in, bw, barH / 2f);
 		if (fill < bw) {
-			GuiDraw.fillSmooth(graphics, bx + fill, y + in, bw - fill, barH, 0xFF3A3A3A);
+			GuiDraw.fillSmooth(graphics, bx + fill, y + in, bw - fill, barH, 0x99000000);
 		}
-		GuiDraw.fillSmooth(graphics, bx, y + in + barH / 2f, bw, barH / 2f, 0x77000000);
 		float sy = y + in + barH + pad;
 		float sx0 = x + in + pad;
 		float sel = picked(player);
@@ -159,16 +152,13 @@ public final class ThemedHotbar {
 		itemsAt(graphics, delta, player, sx0 + 1f, sy + 1f, pitch);
 		int level = level(player);
 		if (level > 0) {
-			Component lv = MenuFont.shadow("lvl ");
 			Component num = MenuFont.shadow(Integer.toString(level));
-			float tw = client.font.width(lv) + client.font.width(num);
-			// Just the text, in the gap between hearts and food where vanilla puts the level.
+			float tw = client.font.width(num);
+			// Just the number, in the gap between hearts and food where vanilla puts the level.
 			float lx = Math.round(graphics.guiWidth() / 2f - tw / 2f);
 			float ty = y - 9f;
-			GuiDraw.text(graphics, client.font, lv, lx + px, ty + px, 0xFF000000, false);
-			GuiDraw.text(graphics, client.font, num, lx + client.font.width(lv) + px, ty + px, 0xFF000000, false);
-			GuiDraw.text(graphics, client.font, lv, lx, ty, UidLook.LABEL, false);
-			GuiDraw.text(graphics, client.font, num, lx + client.font.width(lv), ty, UidMenu.accent(), false);
+			GuiDraw.text(graphics, client.font, num, lx + px, ty + px, 0xFF000000, false);
+			GuiDraw.text(graphics, client.font, num, lx, ty, UidMenu.accent(), false);
 		}
 		if (selected < 0) {
 			return;

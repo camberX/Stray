@@ -455,10 +455,45 @@ public final class UidLook {
 	 * {@code half} tall twice, its lower half darker.
 	 */
 	public static void rainbow(GuiGraphicsExtractor graphics, float x, float y, float w, float half) {
-		float mid = w / 2f;
-		horizontal(graphics, x, y, mid, half * 2f, 0xFF37B1DA, 0xFFCC46CD);
-		horizontal(graphics, x + mid, y, w - mid, half * 2f, 0xFFCC46CD, 0xFFCCE335);
-		GuiDraw.fill(graphics, x, y + half, w, half, 0x77000000);
+		// Drawn on whole screen pixels like the watermark's: under a scaled HUD element the halves
+		// otherwise land between pixels and the darker lower half smears into the colour.
+		var m = graphics.pose();
+		float px = GuiDraw.pixel();
+		int x0 = Math.round((m.m00() * x + m.m10() * y + m.m20()) / px);
+		int y0 = Math.round((m.m01() * x + m.m11() * y + m.m21()) / px);
+		int x1 = Math.round((m.m00() * (x + w) + m.m10() * y + m.m20()) / px);
+		int hp = Math.max(1, Math.round(half * m.m11() / px));
+		int sw = x1 - x0;
+		if (sw <= 0) {
+			return;
+		}
+		graphics.pose().pushMatrix();
+		graphics.pose().identity();
+		graphics.pose().scale(px, px);
+		band(graphics, x0, y0, sw, hp);
+		graphics.pose().popMatrix();
+	}
+
+	/**
+	 * The strip itself in whole units: {@code half} of colour, then {@code half} of the same colours
+	 * darkened. Drawn as two gradients rather than a dark fill over one, because the GUI batch puts
+	 * the gradient's columns over a fill submitted after them.
+	 */
+	public static void band(GuiGraphicsExtractor graphics, float x, float y, float w, float half) {
+		float mid = (float) Math.floor(w / 2f);
+		horizontal(graphics, x, y, mid, half, 0xFF37B1DA, 0xFFCC46CD);
+		horizontal(graphics, x + mid, y, w - mid, half, 0xFFCC46CD, 0xFFCCE335);
+		horizontal(graphics, x, y + half, mid, half, darker(0xFF37B1DA), darker(0xFFCC46CD));
+		horizontal(graphics, x + mid, y + half, w - mid, half, darker(0xFFCC46CD), darker(0xFFCCE335));
+	}
+
+	/** A colour under the strip's #77000000 shade. */
+	private static int darker(int c) {
+		float k = 1f - 0x77 / 255f;
+		int r = Math.round((c >> 16 & 0xFF) * k);
+		int g = Math.round((c >> 8 & 0xFF) * k);
+		int b = Math.round((c & 0xFF) * k);
+		return 0xFF000000 | r << 16 | g << 8 | b;
 	}
 
 	/** A small uid? control outside the menu: flat dark grey with a black edge, lighter on hover. */

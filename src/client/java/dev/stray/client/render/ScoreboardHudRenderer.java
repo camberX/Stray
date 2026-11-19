@@ -23,7 +23,7 @@ import java.util.List;
 public final class ScoreboardHudRenderer {
 	private static final int MAX_ROWS = 15;
 	private static final float PAD = 7;
-	private static final float HEAD = 22;
+	private static final float HEAD = 12;
 	private static final float ROW = 10;
 	private static final float MIN_W = 88;
 	private static final float MAX_W = 300;
@@ -54,13 +54,13 @@ public final class ScoreboardHudRenderer {
 
 	private static void draw(GuiGraphicsExtractor graphics, Font font, Layout layout, float x, float y) {
 		HudChrome.panel(graphics, x, y, layout.w, layout.h, 6, Theme.WINDOW, Theme.LINE);
-		GuiDraw.small(graphics, font, "SCOREBOARD", x + PAD + 4, y + PAD - 1, dev.stray.client.ui.ShadowLook.FAINT);
-		GuiDraw.hud(graphics, font, layout.title, x + PAD + 4, y + PAD + 8, 0xFFFFFFFF);
+		float tw = GuiDraw.hudWidth(font, layout.title);
+		GuiDraw.hud(graphics, font, layout.title, x + Math.round((layout.w - tw) / 2f), y + PAD, 0xFFFFFFFF);
 		float ly = y + PAD + HEAD + 2;
 		for (Line line : layout.lines) {
 			GuiDraw.hud(graphics, font, line.name, x + PAD + 4, ly, 0xFFFFFFFF);
 			if (line.scoreWidth > 0) {
-				float sx = x + layout.w - PAD - line.scoreWidth;
+				float sx = x + layout.w - PAD - 4 - line.scoreWidth;
 				GuiDraw.hud(graphics, font, line.score, sx, ly, 0xFFFFFFFF);
 			}
 			ly += ROW;
@@ -90,9 +90,13 @@ public final class ScoreboardHudRenderer {
 		List<Line> lines = lines(objective.getScoreboard(), objective, font);
 		Component title = MenuFont.applyBody(objective.getDisplayName());
 		float maxLine = GuiDraw.hudWidth(font, title);
+		// At least as wide as vanilla's sidebar: its width in the vanilla font, as vanilla measures it.
+		float vanilla = font.width(objective.getDisplayName());
 		for (Line line : lines) {
 			maxLine = Math.max(maxLine, line.width);
+			vanilla = Math.max(vanilla, line.vanilla);
 		}
+		maxLine = Math.max(maxLine, vanilla - 10);
 		int rows = Math.max(1, lines.size());
 		float w = Math.min(MAX_W, Math.max(MIN_W, maxLine + PAD * 2 + 10));
 		float h = PAD + HEAD + rows * ROW + PAD - 2;
@@ -131,12 +135,15 @@ public final class ScoreboardHudRenderer {
 			Component score = MenuFont.applyBody(entry.formatValue(objective.numberFormatOrDefault(StyledFormat.SIDEBAR_DEFAULT)));
 			int scoreWidth = score.getString().isBlank() ? 0 : GuiDraw.hudWidth(font, score);
 			float width = GuiDraw.hudWidth(font, name) + 8 + scoreWidth;
-			out.add(new Line(name, score, width, scoreWidth));
+			Component vanillaName = PlayerTeam.formatNameForTeam(scoreboard.getPlayersTeam(entry.owner()), raw);
+			Component vanillaScore = entry.formatValue(objective.numberFormatOrDefault(StyledFormat.SIDEBAR_DEFAULT));
+			int vanilla = font.width(vanillaName) + (vanillaScore.getString().isBlank() ? 0 : font.width(": ") + font.width(vanillaScore));
+			out.add(new Line(name, score, width, scoreWidth, vanilla));
 		}
 		return out;
 	}
 
-	private record Line(Component name, Component score, float width, int scoreWidth) {
+	private record Line(Component name, Component score, float width, int scoreWidth, int vanilla) {
 	}
 
 	private record Layout(Component title, List<Line> lines, float w, float h) {

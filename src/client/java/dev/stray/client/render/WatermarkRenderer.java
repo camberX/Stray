@@ -371,10 +371,7 @@ public final class WatermarkRenderer {
 			int bx = px + band * UID_BANDS.length;
 			int by = py + band * UID_BANDS.length;
 			int bw = pw - band * UID_BANDS.length * 2;
-			int half = bw / 2;
-			dev.stray.client.ui.UidLook.horizontal(graphics, bx, by, half, barPx * 2, 0xFF37B1DA, 0xFFCC46CD);
-			dev.stray.client.ui.UidLook.horizontal(graphics, bx + half, by, bw - half, barPx * 2, 0xFFCC46CD, 0xFFCCE335);
-			GuiDraw.fill(graphics, bx, by + barPx, bw, barPx, 0x77000000);
+			dev.stray.client.ui.UidLook.band(graphics, bx, by, bw, barPx);
 		}
 		graphics.pose().popMatrix();
 		// Text, measured and placed in watermark pixels.
