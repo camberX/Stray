@@ -203,16 +203,14 @@ public final class ThemedHotbar {
 		float fill = lw * p;
 		float phase = seconds() * 6f;
 		if (fill > 3f) {
-			float step = 1f;
-			float px0 = lx;
-			float py0 = ly + (float) Math.sin(phase) * 1.1f;
-			for (float t = step; t <= fill - 1.5f; t += step) {
-				float px1 = lx + t;
-				float py1 = ly + (float) Math.sin(t / 7f * Math.PI * 2 + phase) * 1.1f;
-				GuiDraw.stroke(graphics, px0, py0, px1, py1, 1.6f, ExColors.primary);
-				px0 = px1;
-				py0 = py1;
+			// The same points as before (one per unit), drawn as one ribbon.
+			int count = 1 + (int) Math.floor(fill - 1.5f);
+			float[] pts = new float[count * 2];
+			for (int i = 0; i < count; i++) {
+				pts[i * 2] = lx + i;
+				pts[i * 2 + 1] = ly + (float) Math.sin(i / 7f * Math.PI * 2 + phase) * 1.1f;
 			}
+			GuiDraw.polyline(graphics, pts, count, 1.6f, ExColors.primary);
 		}
 		if (fill < lw - 4f) {
 			GuiDraw.stroke(graphics, lx + fill + 3f, ly, lx + lw - 2f, ly, 1.6f, ExColors.secondaryContainer);

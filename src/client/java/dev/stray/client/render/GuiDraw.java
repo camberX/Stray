@@ -203,6 +203,111 @@ public final class GuiDraw {
 		graphics.pose().popMatrix();
 	}
 
+	/**
+	 * An anti-aliased round-capped polyline as one GUI element: a ribbon with mitred joins through
+	 * the stroke texture. Drawing it as a {@link #stroke} per segment put a stroke and two dots per
+	 * segment into the GUI, each overlapping the last, so a wave cost over a thousand elements.
+	 * {@code xy} holds {@code n} points (x, y, x, y, ...).
+	 */
+	public static void polyline(GuiGraphicsExtractor graphics, float[] xy, int n, float width, int color) {
+		if (n < 2 || width <= 0f || (color >>> 24) < 2) {
+			return;
+		}
+		float half = width * 0.5f;
+		// Unit normals per point: the average of the neighbouring segments' normals, lengthened
+		// so the ribbon keeps its width through the bend (a miter, capped for sharp turns).
+		float[] nx = new float[n];
+		float[] ny = new float[n];
+		for (int i = 0; i < n; i++) {
+			float ax = 0f, ay = 0f;
+			if (i > 0) {
+				float dx = xy[i * 2] - xy[i * 2 - 2], dy = xy[i * 2 + 1] - xy[i * 2 - 1];
+				float l = (float) Math.hypot(dx, dy);
+				if (l > 1.0E-5f) {
+					ax += -dy / l;
+					ay += dx / l;
+				}
+			}
+			if (i < n - 1) {
+				float dx = xy[i * 2 + 2] - xy[i * 2], dy = xy[i * 2 + 3] - xy[i * 2 + 1];
+				float l = (float) Math.hypot(dx, dy);
+				if (l > 1.0E-5f) {
+					ax += -dy / l;
+					ay += dx / l;
+				}
+			}
+			float l = (float) Math.hypot(ax, ay);
+			if (l < 1.0E-5f) {
+				ax = 0f;
+				ay = 1f;
+				l = 1f;
+			}
+			ax /= l;
+			ay /= l;
+			// Miter length: 1 / cos(half the turn), from the segment normal against the averaged one.
+			float m = 1f;
+			if (i > 0) {
+				float dx = xy[i * 2] - xy[i * 2 - 2], dy = xy[i * 2 + 1] - xy[i * 2 - 1];
+				float sl = (float) Math.hypot(dx, dy);
+				if (sl > 1.0E-5f) {
+					float cos = (-dy / sl) * ax + (dx / sl) * ay;
+					m = 1f / Math.max(0.5f, cos);
+				}
+			}
+			nx[i] = ax * half * m;
+			ny[i] = ay * half * m;
+		}
+		float minX = Float.MAX_VALUE, minY = Float.MAX_VALUE, maxX = -Float.MAX_VALUE, maxY = -Float.MAX_VALUE;
+		for (int i = 0; i < n; i++) {
+			minX = Math.min(minX, xy[i * 2] - Math.abs(nx[i]));
+			maxX = Math.max(maxX, xy[i * 2] + Math.abs(nx[i]));
+			minY = Math.min(minY, xy[i * 2 + 1] - Math.abs(ny[i]));
+			maxY = Math.max(maxY, xy[i * 2 + 1] + Math.abs(ny[i]));
+		}
+		net.minecraft.client.renderer.texture.AbstractTexture tex = Minecraft.getInstance().getTextureManager().getTexture(STROKE);
+		com.mojang.renderpearl.api.textures.GpuTextureView view = tex == null ? null : tex.getTextureView();
+		if (view != null) {
+			org.joml.Matrix3x2f pose = new org.joml.Matrix3x2f(graphics.pose());
+			net.minecraft.client.gui.navigation.ScreenRectangle scissor = graphics.scissorStack.peek();
+			net.minecraft.client.gui.navigation.ScreenRectangle bounds = new net.minecraft.client.gui.navigation.ScreenRectangle(
+				(int) Math.floor(minX), (int) Math.floor(minY), (int) Math.ceil(maxX - Math.floor(minX)) + 1, (int) Math.ceil(maxY - Math.floor(minY)) + 1).transformMaxBounds(pose);
+			if (scissor != null) {
+				bounds = scissor.intersection(bounds);
+			}
+			if (bounds != null) {
+				graphics.guiRenderState.addGuiElement(new Ribbon(RenderPipelines.GUI_TEXTURED,
+					net.minecraft.client.gui.render.TextureSetup.singleTexture(view, tex.getSampler()), pose, xy.clone(), nx, ny, n, fade(color), scissor, bounds));
+			}
+		}
+		dot(graphics, xy[0], xy[1], half, color);
+		dot(graphics, xy[n * 2 - 2], xy[n * 2 - 1], half, color);
+	}
+
+	private record Ribbon(
+		com.mojang.renderpearl.api.pipeline.RenderPipeline pipeline,
+		net.minecraft.client.gui.render.TextureSetup textureSetup,
+		org.joml.Matrix3x2f pose,
+		float[] xy,
+		float[] nx,
+		float[] ny,
+		int n,
+		int color,
+		net.minecraft.client.gui.navigation.ScreenRectangle scissorArea,
+		net.minecraft.client.gui.navigation.ScreenRectangle bounds
+	) implements net.minecraft.client.renderer.state.gui.GuiElementRenderState {
+		@Override
+		public void buildVertices(com.mojang.blaze3d.vertex.VertexConsumer out) {
+			// Each quad as a blit lays one out: v = 0 on the side the normal points away from.
+			for (int i = 0; i < n - 1; i++) {
+				float ax = xy[i * 2], ay = xy[i * 2 + 1], bx = xy[i * 2 + 2], by = xy[i * 2 + 3];
+				out.addVertexWith2DPose(pose, ax - nx[i], ay - ny[i]).setUv(0f, 0f).setColor(color);
+				out.addVertexWith2DPose(pose, ax + nx[i], ay + ny[i]).setUv(0f, 1f).setColor(color);
+				out.addVertexWith2DPose(pose, bx + nx[i + 1], by + ny[i + 1]).setUv(1f, 1f).setColor(color);
+				out.addVertexWith2DPose(pose, bx - nx[i + 1], by - ny[i + 1]).setUv(1f, 0f).setColor(color);
+			}
+		}
+	}
+
 	/** Anti-aliased round-cap stroke, like a NanoVG line. */
 	public static void stroke(GuiGraphicsExtractor graphics, float x0, float y0, float x1, float y1, float width, int color) {
 		if (width <= 0f || (color >>> 24) < 2) {
