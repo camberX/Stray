@@ -289,9 +289,14 @@ public final class UidMenu {
 			if (!mod.hold()) {
 				y = screen.clickToggle(graphics, font, x, y, w, "Enabled", mod.on().getAsBoolean(), () -> ClickGui.toggle(mod));
 			}
-			if (ClickGui.moduleHasSettings(mod)) {
+			// A switched-off module only shows its switch; its settings come back when it's on.
+			boolean on = mod.hold() || mod.on().getAsBoolean();
+			if (on && ClickGui.moduleHasSettings(mod)) {
+				int mark = screen.clickHitMark();
 				ClickGui.drawModuleSettings(screen, graphics, font, mx, my, mod, x, y, w);
+				y = Math.max(y, Math.max(extent, screen.clickHitsBottom(mark, y)));
 			}
+			y = sharedRows(screen, graphics, font, mod, on, x, y, w);
 			extent(y);
 			return;
 		}
@@ -314,6 +319,19 @@ public final class UidMenu {
 			}
 		}
 		extent(y);
+	}
+
+	/**
+	 * Settings two modules share, shown under whichever of them is on: which star mobs count
+	 * (bats, fels) live under Star mobs, but the star mob box uses them too.
+	 */
+	private static float sharedRows(StrayScreen screen, GuiGraphicsExtractor graphics, Font font, ClickGui.Mod mod, boolean on, float x, float y, float w) {
+		StrayConfig config = StrayConfig.get();
+		if ("Star mob box".equals(mod.name()) && on && !config.starVisuals.glowEnabled) {
+			y = screen.clickToggle(graphics, font, x, y, w, "Highlight bats", config.starMobBats, () -> config.starMobBats = !config.starMobBats);
+			y = screen.clickToggle(graphics, font, x, y, w, "Highlight fels", config.starMobFels, () -> config.starMobFels = !config.starMobFels);
+		}
+		return y;
 	}
 
 	/** A key's name as the menu shows it: upper case, "-" when there is none. */
