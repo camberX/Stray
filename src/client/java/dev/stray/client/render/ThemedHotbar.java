@@ -237,7 +237,9 @@ public final class ThemedHotbar {
 			float px = Math.round(graphics.guiWidth() / 2f - pw / 2f);
 			float py = ly - ph - 2f;
 			ExLook.rounded(graphics, px, py, pw, ph, ph / 2f, ExColors.primary);
-			GuiDraw.text(graphics, client.font, text, px + 5f, GuiDraw.middle(py, ph) + 0.25f, ExColors.onPrimary, false);
+			// Digits have no descenders: centred on the line box they sit high, so a unit lower
+			// (measured: 3 px over them and 7 under before, even after).
+			GuiDraw.text(graphics, client.font, text, px + 5f, GuiDraw.middle(py, ph) + 1.25f, ExColors.onPrimary, false);
 		}
 		offhand(graphics, delta, player, x, y, w, h, (ox, oy, os) -> {
 			ShadowLook.shadow(graphics, ox, oy, os, os, os / 2f, 6, 0x40);

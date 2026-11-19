@@ -411,13 +411,27 @@ public final class UidLook {
 	 * frame on whole screen pixels, then the dark inside at {@code alpha}.
 	 */
 	public static void frame(GuiGraphicsExtractor graphics, float x, float y, float w, float h, int alpha) {
+		frameTop(graphics, x, y, w, h, alpha);
+	}
+
+	/** {@link #frame}, returning how far below {@code y} the free inside starts (under the strip, if drawn). */
+	public static float frameTop(GuiGraphicsExtractor graphics, float x, float y, float w, float h, int alpha) {
 		float p = GuiDraw.pixel() / GuiDraw.poseScale(graphics);
 		float in = frameOnly(graphics, x, y, w, h, alpha);
 		StrayConfig config = StrayConfig.get();
 		boolean bar = config != null && (dev.stray.client.render.HudChrome.shadowInk() ? config.uidBarHud : config.uidBarScreens);
 		if (bar && w > in * 2f + 4f) {
-			rainbow(graphics, x + in, y + in, w - in * 2f, p * dev.stray.client.render.WatermarkRenderer.uidBarPx());
+			float half = p * dev.stray.client.render.WatermarkRenderer.uidBarPx();
+			rainbow(graphics, x + in, y + in, w - in * 2f, half);
+			return in + half * 2f;
 		}
+		return in;
+	}
+
+	/** How far in the banded edge reaches, without drawing (for laying out the inside). */
+	public static float frameInset(GuiGraphicsExtractor graphics) {
+		float p = GuiDraw.pixel() / GuiDraw.poseScale(graphics);
+		return BANDS.length * p * dev.stray.client.render.WatermarkRenderer.uidBandPx();
 	}
 
 	/** The banded frame and dark inside without the colour strip; returns how far in the inside starts. */

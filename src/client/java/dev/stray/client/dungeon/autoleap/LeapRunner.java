@@ -138,6 +138,7 @@ public final class LeapRunner {
 	}
 
 	private static void request(DungeonParty.Member member, String label) {
+		who = member == null ? null : member.name;
 		if (member == null) {
 			message("§cFailed to leap! §f" + label + " §cnot found"
 				+ (loose ? "" : " §7(outside a dungeon: §f/stray debug dev leap <name>§7)"));
@@ -147,6 +148,7 @@ public final class LeapRunner {
 	}
 
 	private static void request(String name, String label) {
+		who = name;
 		Minecraft client = Minecraft.getInstance();
 		if (busy() || client.gui.screen() != null || client.player == null
 			|| client.player.containerMenu != client.player.inventoryMenu) {
@@ -457,6 +459,9 @@ public final class LeapRunner {
 	/** Which leap this is ("Auto leap", "Fast leap"), for its notification; set by whoever asks. */
 	static String source = "Leap";
 
+	/** Who the leap is to, for the notification's face; display only. */
+	private static String who;
+
 	/**
 	 * A leap note: a notification when those are on, and the "Stray »" line in your own chat
 	 * unless that is turned off. Only shown to you; nothing here is sent anywhere.
@@ -464,7 +469,7 @@ public final class LeapRunner {
 	private static void message(String text) {
 		StrayConfig config = StrayConfig.get();
 		if (config.leapNotifications) {
-			LeapToasts.push(source, text);
+			LeapToasts.push(source, text, target != null ? target : who);
 		}
 		if (config.leapHideChat) {
 			return;
