@@ -353,6 +353,64 @@ public final class GuiDraw {
 		hole(graphics, x + r, y + r, r, CIRCLE_HALF, CIRCLE_HALF, cover);
 	}
 
+	/**
+	 * Several textured quads of one texture as a single GUI element, in {@code pose}'s space:
+	 * (x0, y0, x1, y1, u0, v0, u1, v1) per quad, UVs 0..1. The game checks every new GUI element
+	 * for overlap against the ones already placed, so many small blits (glyphs, shadow pieces)
+	 * cost far more than one element carrying them all. Same pipeline and sampler as a blit.
+	 */
+	public static void quads(GuiGraphicsExtractor graphics, Identifier id, org.joml.Matrix3x2f pose, float[] quads, int count, int color) {
+		if (count <= 0 || id == null || (color >>> 24) == 0) {
+			return;
+		}
+		net.minecraft.client.renderer.texture.AbstractTexture tex = Minecraft.getInstance().getTextureManager().getTexture(id);
+		com.mojang.renderpearl.api.textures.GpuTextureView view = tex == null ? null : tex.getTextureView();
+		if (view == null) {
+			return;
+		}
+		float minX = Float.MAX_VALUE, minY = Float.MAX_VALUE, maxX = -Float.MAX_VALUE, maxY = -Float.MAX_VALUE;
+		for (int i = 0; i < count * 8; i += 8) {
+			minX = Math.min(minX, quads[i]);
+			minY = Math.min(minY, quads[i + 1]);
+			maxX = Math.max(maxX, quads[i + 2]);
+			maxY = Math.max(maxY, quads[i + 3]);
+		}
+		net.minecraft.client.gui.navigation.ScreenRectangle scissor = graphics.scissorStack.peek();
+		net.minecraft.client.gui.navigation.ScreenRectangle bounds = new net.minecraft.client.gui.navigation.ScreenRectangle(
+			(int) Math.floor(minX), (int) Math.floor(minY), (int) Math.ceil(maxX - Math.floor(minX)) + 1, (int) Math.ceil(maxY - Math.floor(minY)) + 1).transformMaxBounds(pose);
+		if (scissor != null) {
+			bounds = scissor.intersection(bounds);
+			if (bounds == null) {
+				return;
+			}
+		}
+		graphics.guiRenderState.addGuiElement(new Quads(RenderPipelines.GUI_TEXTURED,
+			net.minecraft.client.gui.render.TextureSetup.singleTexture(view, tex.getSampler()), pose, quads, count, fade(color), scissor, bounds));
+	}
+
+	private record Quads(
+		com.mojang.renderpearl.api.pipeline.RenderPipeline pipeline,
+		net.minecraft.client.gui.render.TextureSetup textureSetup,
+		org.joml.Matrix3x2f pose,
+		float[] quads,
+		int count,
+		int color,
+		net.minecraft.client.gui.navigation.ScreenRectangle scissorArea,
+		net.minecraft.client.gui.navigation.ScreenRectangle bounds
+	) implements net.minecraft.client.renderer.state.gui.GuiElementRenderState {
+		@Override
+		public void buildVertices(com.mojang.blaze3d.vertex.VertexConsumer out) {
+			for (int i = 0; i < count * 8; i += 8) {
+				float x0 = quads[i], y0 = quads[i + 1], x1 = quads[i + 2], y1 = quads[i + 3];
+				float u0 = quads[i + 4], v0 = quads[i + 5], u1 = quads[i + 6], v1 = quads[i + 7];
+				out.addVertexWith2DPose(pose, x0, y0).setUv(u0, v0).setColor(color);
+				out.addVertexWith2DPose(pose, x0, y1).setUv(u0, v1).setColor(color);
+				out.addVertexWith2DPose(pose, x1, y1).setUv(u1, v1).setColor(color);
+				out.addVertexWith2DPose(pose, x1, y0).setUv(u1, v0).setColor(color);
+			}
+		}
+	}
+
 	public static void blit(GuiGraphicsExtractor graphics, Identifier id, float x, float y, float w, float h, float u, float v, int regionW, int regionH, int texW, int texH) {
 		blit(graphics, id, x, y, w, h, u, v, regionW, regionH, texW, texH, 0xFFFFFFFF);
 	}

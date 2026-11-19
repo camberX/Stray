@@ -192,21 +192,25 @@ public final class ShadowLook {
 		int n = tex.corner();
 		int size = tex.size();
 		int far = size - n;
-		piece(graphics, tex, X, Y, cs, cs, 0, 0, n, n, color);
-		piece(graphics, tex, X + W - cs, Y, cs, cs, far, 0, n, n, color);
-		piece(graphics, tex, X, Y + H - cs, cs, cs, 0, far, n, n, color);
-		piece(graphics, tex, X + W - cs, Y + H - cs, cs, cs, far, far, n, n, color);
+		// All nine pieces as one GUI element: each separate blit was its own overlap search.
+		float[] q = new float[9 * 8];
+		int[] at = {0};
+		piece(q, at, tex, X, Y, cs, cs, 0, 0, n, n);
+		piece(q, at, tex, X + W - cs, Y, cs, cs, far, 0, n, n);
+		piece(q, at, tex, X, Y + H - cs, cs, cs, 0, far, n, n);
+		piece(q, at, tex, X + W - cs, Y + H - cs, cs, cs, far, far, n, n);
 		if (mw > 0f) {
-			piece(graphics, tex, X + cs, Y, mw, cs, n, 0, 1, n, color);
-			piece(graphics, tex, X + cs, Y + H - cs, mw, cs, n, far, 1, n, color);
+			piece(q, at, tex, X + cs, Y, mw, cs, n, 0, 1, n);
+			piece(q, at, tex, X + cs, Y + H - cs, mw, cs, n, far, 1, n);
 		}
 		if (mh > 0f) {
-			piece(graphics, tex, X, Y + cs, cs, mh, 0, n, n, 1, color);
-			piece(graphics, tex, X + W - cs, Y + cs, cs, mh, far, n, n, 1, color);
+			piece(q, at, tex, X, Y + cs, cs, mh, 0, n, n, 1);
+			piece(q, at, tex, X + W - cs, Y + cs, cs, mh, far, n, n, 1);
 		}
 		if (mw > 0f && mh > 0f) {
-			piece(graphics, tex, X + cs, Y + cs, mw, mh, n, n, 1, 1, color);
+			piece(q, at, tex, X + cs, Y + cs, mw, mh, n, n, 1, 1);
 		}
+		GuiDraw.quads(graphics, tex.id(), new org.joml.Matrix3x2f(graphics.pose()), q, at[0] / 8, color);
 	}
 
 	/** The shadow texture for this reach and radius (made once, then reused). */
@@ -259,8 +263,21 @@ public final class ShadowLook {
 		return v < 0f ? 0f : v > 1f ? 1f : v;
 	}
 
-	private static void piece(GuiGraphicsExtractor graphics, Soft tex, float x, float y, float w, float h, int u, int v, int rw, int rh, int color) {
-		GuiDraw.blit(graphics, tex.id(), x, y, w, h, u, v, rw, rh, tex.size(), tex.size(), color);
+	private static void piece(float[] q, int[] at, Soft tex, float x, float y, float w, float h, int u, int v, int rw, int rh) {
+		if (w <= 0f || h <= 0f) {
+			return;
+		}
+		float s = tex.size();
+		int i = at[0];
+		q[i] = x;
+		q[i + 1] = y;
+		q[i + 2] = x + w;
+		q[i + 3] = y + h;
+		q[i + 4] = u / s;
+		q[i + 5] = v / s;
+		q[i + 6] = (u + rw) / s;
+		q[i + 7] = (v + rh) / s;
+		at[0] = i + 8;
 	}
 
 	/** A row, button or slot inside a panel: no shadow, faint white fill. */

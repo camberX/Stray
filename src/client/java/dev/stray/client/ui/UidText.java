@@ -280,16 +280,37 @@ public final class UidText {
 			a.texture.upload();
 			a.dirty = false;
 		}
-		graphics.pose().pushMatrix();
-		graphics.pose().identity();
+		// The whole string as one GUI element: a blit per glyph made every glyph its own element,
+		// and each new element is checked for overlap against the ones already placed, so a menu
+		// full of text cost hundreds of FPS.
 		float inv = (float) (1.0 / gui);
-		graphics.pose().scale(inv, inv);
+		org.joml.Matrix3x2f pose = new org.joml.Matrix3x2f().scale(inv, inv);
+		int count = 0;
 		for (Glyph g : glyphs) {
 			if (g.w > 0) {
-				GuiDraw.blit(graphics, a.id, penX + g.left, baseline - g.top, g.w, g.h, g.u, g.v, g.w, g.h, ATLAS, ATLAS, color);
+				count++;
+			}
+		}
+		if (count == 0) {
+			return;
+		}
+		float[] quads = new float[count * 8];
+		int q = 0;
+		for (Glyph g : glyphs) {
+			if (g.w > 0) {
+				int gx = penX + g.left;
+				int gy = baseline - g.top;
+				quads[q++] = gx;
+				quads[q++] = gy;
+				quads[q++] = gx + g.w;
+				quads[q++] = gy + g.h;
+				quads[q++] = g.u / (float) ATLAS;
+				quads[q++] = g.v / (float) ATLAS;
+				quads[q++] = (g.u + g.w) / (float) ATLAS;
+				quads[q++] = (g.v + g.h) / (float) ATLAS;
 			}
 			penX += g.advance;
 		}
-		graphics.pose().popMatrix();
+		GuiDraw.quads(graphics, a.id, pose, quads, count, color);
 	}
 }
