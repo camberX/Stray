@@ -286,6 +286,17 @@ public final class UidLook {
 	}
 
 	/** Track #282828 and thumb #414141, 7 px wide (draw_scrollbar). */
+	/** The resize corner: three short diagonal dashes in the window's bottom-right. */
+	public static void grip(GuiGraphicsExtractor graphics, float right, float bottom, boolean hot) {
+		int color = hot ? 0xA0FFFFFF : 0x40FFFFFF;
+		for (int i = 0; i < 3; i++) {
+			float o = 3f + i * 3f;
+			for (int k = 0; k <= i; k++) {
+				rect(graphics, right - 3f - k * 3f, bottom - o + k * 3f, 1f, 1f, color);
+			}
+		}
+	}
+
 	public static void scrollbar(GuiGraphicsExtractor graphics, float x, float y, float h, float view, float content, float offset) {
 		rect(graphics, x, y, 7, h, 0xFF282828);
 		if (content <= view) {

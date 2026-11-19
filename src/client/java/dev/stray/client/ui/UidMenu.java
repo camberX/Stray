@@ -20,8 +20,11 @@ import java.util.Map;
  * module's own settings, drawn by the same rows every other style uses, in this look.
  */
 public final class UidMenu {
-	public static final float W = 660f;
-	public static final float H = 560f;
+	/** The smallest the window gets; dragging the bottom-right corner makes it bigger. */
+	public static final float MIN_W = 660f;
+	public static final float MIN_H = 560f;
+	/** The corner you grab to resize, in menu units. */
+	private static final float GRIP = 12f;
 	private static final float TAB_W = 75f;
 	private static final float TAB_H = 64f;
 	/** Tabs start 20 px down the window (MenuWindow::update_dpi). */
@@ -49,6 +52,9 @@ public final class UidMenu {
 	private static boolean drawing;
 	private static int active;
 	private static float winX = Float.NaN;
+	private static float winW = MIN_W;
+	private static float winH = MIN_H;
+	private static boolean resizing;
 	private static float winY;
 	/** One menu unit in GUI units: DPI scale over the GUI scale. */
 	private static float unit = 0.5f;
@@ -109,7 +115,7 @@ public final class UidMenu {
 		int dpi = Mth.clamp(StrayConfig.get().uidDpi, 0, DPI_LABELS.length - 1);
 		double picked = dpi > 0 ? 1.0 + (dpi - 1) * 0.25 : Mth.clamp(Math.round(height / 1080.0 * 4.0) / 4.0, 1.0, 3.0);
 		// Never taller than the window: on short screens the whole menu shrinks to fit.
-		return Math.min(picked, Math.max(0.5, (height - 16) / H));
+		return Math.min(picked, Math.max(0.5, (height - 16) / MIN_H));
 	}
 
 
@@ -151,12 +157,19 @@ public final class UidMenu {
 		unit = unit();
 		float sw = screen.width / unit;
 		float sh = screen.height / unit;
-		if (Float.isNaN(winX)) {
-			winX = Math.round((sw - W) / 2f);
-			winY = Math.round((sh - H) / 2f);
+		StrayConfig cfg = StrayConfig.get();
+		if (!resizing) {
+			winW = cfg.uidWidth > 0 ? cfg.uidWidth : MIN_W;
+			winH = cfg.uidHeight > 0 ? cfg.uidHeight : MIN_H;
 		}
-		winX = Math.round(Mth.clamp(winX, 0, Math.max(0, sw - W)));
-		winY = Math.round(Mth.clamp(winY, 0, Math.max(0, sh - H)));
+		winW = Math.round(Mth.clamp(winW, MIN_W, Math.max(MIN_W, sw)));
+		winH = Math.round(Mth.clamp(winH, MIN_H, Math.max(MIN_H, sh)));
+		if (Float.isNaN(winX)) {
+			winX = Math.round((sw - winW) / 2f);
+			winY = Math.round((sh - winH) / 2f);
+		}
+		winX = Math.round(Mth.clamp(winX, 0, Math.max(0, sw - winW)));
+		winY = Math.round(Mth.clamp(winY, 0, Math.max(0, sh - winH)));
 		int mx = Math.round(mouseX / unit);
 		int my = Math.round(mouseY / unit);
 		ClickGui.pointer(mx, my);
@@ -183,8 +196,8 @@ public final class UidMenu {
 		try {
 			GuiDraw.alphaScale = open;
 			GuiDraw.fill(graphics, 0, 0, sw, sh, 0x30000000);
-			UidLook.window(graphics, winX, winY, W, H);
-			UidLook.rail(graphics, winX, winY, H, TAB_W, railY, TAB_H);
+			UidLook.window(graphics, winX, winY, winW, winH);
+			UidLook.rail(graphics, winX, winY, winH, TAB_W, railY, TAB_H);
 			tabs(screen, graphics, font, mx, my);
 			// Switching tabs: the new page slides in from the right as it fades in.
 			GuiDraw.alphaScale = open * page;
@@ -193,7 +206,8 @@ public final class UidMenu {
 			content(screen, graphics, font, mx, my);
 			graphics.pose().popMatrix();
 			GuiDraw.alphaScale = open;
-			UidLook.strip(graphics, winX, winY, W);
+			UidLook.strip(graphics, winX, winY, winW);
+			UidLook.grip(graphics, winX + winW, winY + winH, GuiDraw.hovered(mx, my, winX + winW - GRIP, winY + winH - GRIP, GRIP, GRIP) || resizing);
 			for (Runnable r : new ArrayList<>(deferred)) {
 				r.run();
 			}
@@ -210,7 +224,7 @@ public final class UidMenu {
 		for (int i = 0; i < TABS.length; i++) {
 			float tx = winX + 6;
 			float ty = winY + TAB_TOP + i * TAB_H;
-			if (ty + TAB_H > winY + H - 6) {
+			if (ty + TAB_H > winY + winH - 6) {
 				break;
 			}
 			boolean hovered = GuiDraw.hovered(mx, my, tx, ty, TAB_W, TAB_H);
@@ -270,8 +284,8 @@ public final class UidMenu {
 		// The 24-column grid's area: right of the rail, inside the frame (layout_category_grid).
 		areaX = winX + 6 + TAB_W + 10;
 		areaY = winY + 10 + 10;
-		areaW = W - 6 - TAB_W - 10 - 7 - 10;
-		areaH = H - 10 - 10 - 6 - 10;
+		areaW = winW - 6 - TAB_W - 10 - 7 - 10;
+		areaH = winH - 10 - 10 - 6 - 10;
 		float colW = (float) Math.floor(areaW / 2f);
 		float groupW = colW - 20;
 		List<Group> list = groups(screen);
@@ -494,7 +508,13 @@ public final class UidMenu {
 
 	/** A press nothing else took: on the window it starts a drag. */
 	static boolean press(double x, double y) {
-		if (contains(x, y, winX, winY, W, H)) {
+		if (contains(x, y, winX + winW - GRIP, winY + winH - GRIP, GRIP, GRIP)) {
+			resizing = true;
+			dragDX = (float) x - (winX + winW);
+			dragDY = (float) y - (winY + winH);
+			return true;
+		}
+		if (contains(x, y, winX, winY, winW, winH)) {
 			dragging = true;
 			dragDX = (float) x - winX;
 			dragDY = (float) y - winY;
@@ -504,6 +524,11 @@ public final class UidMenu {
 	}
 
 	static boolean drag(double x, double y) {
+		if (resizing) {
+			winW = Math.max(MIN_W, (float) x - dragDX - winX);
+			winH = Math.max(MIN_H, (float) y - dragDY - winY);
+			return true;
+		}
 		if (!dragging) {
 			return false;
 		}
@@ -514,11 +539,19 @@ public final class UidMenu {
 
 	static void release() {
 		dragging = false;
+		if (resizing) {
+			resizing = false;
+			StrayConfig.get().uidWidth = Math.round(winW);
+			StrayConfig.get().uidHeight = Math.round(winH);
+			dev.stray.client.config.UnloadState.markDirty();
+		}
 	}
 
 	/** "Reset menu layout": back to the middle. */
 	static void resetPosition() {
 		winX = Float.NaN;
+		StrayConfig.get().uidWidth = 0;
+		StrayConfig.get().uidHeight = 0;
 	}
 
 	private static boolean contains(double x, double y, float rx, float ry, float rw, float rh) {

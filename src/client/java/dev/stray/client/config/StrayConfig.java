@@ -77,6 +77,9 @@ public final class StrayConfig {
 	public boolean uiAnimations = false;
 	/** uid? menu fade in / out and page switch, in ms (0 = none). */
 	public int uidAnimMs = 0;
+	/** uid? window size in menu units, 0 = the default 660 x 560. */
+	public int uidWidth = 0;
+	public int uidHeight = 0;
 	public boolean autoUpdate = false;
 	public boolean updateNotify = false;
 	public boolean updateAutoClose = false;
