@@ -475,6 +475,11 @@ public final class StrayConfig {
 	public boolean f7TitlesEnabled = false;
 	/** Bonzo / Spirit Mask and Phoenix Pet cooldowns (NoammAddons, Zyryon look). */
 	public boolean maskTimers = false;
+	/** Dungeon run splits HUD (NoammAddons' timings) with personal bests. */
+	public boolean runSplits = false;
+	public boolean runSplitsBest = true;
+	public boolean runSplitsDiff = true;
+	public boolean runSplitsEstimated = true;
 	/** Auto hotbar (NoammAddons): chat triggers move mapped items into hotbar slots. Not in Stray Legit. */
 	public boolean autoHotbar = false;
 	public int autoHotbarDelay = 100;
@@ -723,6 +728,7 @@ public final class StrayConfig {
 	public HudSlot slotF7Terminal = new HudSlot();
 	public HudSlot slotArrayList = new HudSlot();
 	public HudSlot slotMaskTimers = new HudSlot();
+	public HudSlot slotRunSplits = new HudSlot();
 	public HudSlot slotGreenhouseGrowth = new HudSlot();
 	public HudSlot slotAutoHotbar = new HudSlot();
 	public HudSlot slotM4Timer = new HudSlot();
@@ -1889,6 +1895,7 @@ public final class StrayConfig {
 				loaded.slotF7Terminal = hudSlot(loaded.slotF7Terminal);
 				loaded.slotArrayList = hudSlot(loaded.slotArrayList);
 				loaded.slotMaskTimers = hudSlot(loaded.slotMaskTimers);
+				loaded.slotRunSplits = hudSlot(loaded.slotRunSplits);
 				loaded.slotGreenhouseGrowth = hudSlot(loaded.slotGreenhouseGrowth);
 				loaded.slotAutoHotbar = hudSlot(loaded.slotAutoHotbar);
 				loaded.slotM4Timer = hudSlot(loaded.slotM4Timer);
@@ -2842,6 +2849,7 @@ public final class StrayConfig {
 		slotF7Terminal = new HudSlot();
 		slotArrayList = new HudSlot();
 		slotMaskTimers = new HudSlot();
+		slotRunSplits = new HudSlot();
 		slotGreenhouseGrowth = new HudSlot();
 		slotAutoHotbar = new HudSlot();
 		slotM4Timer = new HudSlot();

@@ -544,6 +544,7 @@ public final class ClickGui {
 		java.util.Map.entry("Themed hotbar", "The hotbar, XP bar and level in the theme's look: Shadow's frosted panel, uid?'s frame with the colour strip as XP, Expressive's tonal pill and wavy XP."),
 		java.util.Map.entry("Smooth hotbar", "When you change hotbar slot, the selection box glides there instead of snapping; further jumps move faster."),
 		java.util.Map.entry("Edge jump", "Jumps once at the next block edge you walk off (not while sneaking), then turns itself off. Arm it with /stray edge. Not in Stray Legit."),
+		java.util.Map.entry("Run splits", "Dungeon splits HUD timed like NoammAddons: blood, portal, boss entry and each boss phase, with your personal best and the difference, Overall and Estimated."),
 		java.util.Map.entry("F7 titles", "Short titles in the F7 boss: crystals, wither phases, Storm's lightning timer and who did which terminal. Also shown over the leap menu."),
 		java.util.Map.entry("Align triggerbot", "F7 arrow align: while you look at an arrow that is not right yet, it right clicks it with your delay until it is. Before phase 3 the first arrow you click stops one short so the device is not done early; after Goldor's first line it finishes that one too. Clicks go through the normal use key."),
 		java.util.Map.entry("Own nametag", "Shows your own name above your head in third person (F5)."),
@@ -757,6 +758,7 @@ public final class ClickGui {
 		mods.add(mod(TERMINALS, "Dungeons", StrayScreen.Feature.TERMINALS, null, () -> config.terminalGuiEnabled, v -> config.terminalGuiEnabled = v, true, false));
 		mods.add(mod(MAP, "Dungeons", StrayScreen.Feature.DUNGEON_MAP, null, () -> config.dungeonMapEnabled, v -> config.dungeonMapEnabled = v, true, false));
 		mods.add(mod(TITLES, "Dungeons", StrayScreen.Feature.F7_TITLES, null, () -> config.f7TitlesEnabled, v -> config.f7TitlesEnabled = v, true, false));
+		mods.add(mod("Run splits", "Dungeons", StrayScreen.Feature.RUN_SPLITS, null, () -> config.runSplits, v -> config.runSplits = v, true, false));
 		mods.add(mod("Terminal highlight", "Dungeons", StrayScreen.Feature.TERM_HIGHLIGHT, null, () -> config.terminalHighlight, v -> config.terminalHighlight = v, true, false));
 		mods.add(mod("Mask timers", "Dungeons", StrayScreen.Feature.MASK_TIMERS, null, () -> config.maskTimers, v -> config.maskTimers = v, true, false));
 		mods.add(mod(ALIGN, "Dungeons", StrayScreen.Feature.ALIGN_BOT, null, () -> config.alignTriggerbot, v -> config.alignTriggerbot = v, true, false));

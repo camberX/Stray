@@ -574,6 +574,7 @@ public final class StrayClient implements ClientModInitializer {
 			dev.stray.client.visual.OtherNames.tick(client);
 			dev.stray.client.dungeon.MaskTimers.tick(client);
 			dev.stray.client.dungeon.m4.M4Features.clientTick();
+			dev.stray.client.dungeon.RunSplits.tick();
 			dev.stray.client.farming.GreenhouseGrowth.tick(client);
 			if (!dev.stray.Edition.LEGIT) { dev.stray.client.item.AutoHotbar.tick(client); }
 			if (!dev.stray.client.dungeon.LeapMenu.active()) {
@@ -655,6 +656,7 @@ public final class StrayClient implements ClientModInitializer {
 			ScathaTimer.reset();
 			dev.stray.client.dungeon.MaskTimers.reset();
 			dev.stray.client.dungeon.m4.M4.onWorldLoad();
+			dev.stray.client.dungeon.RunSplits.reset();
 			if (!dev.stray.Edition.LEGIT) { dev.stray.client.item.AutoHotbar.onWorldChange(); }
 			LassoReel.reset();
 			if (!dev.stray.Edition.LEGIT) { EmptyVacuum.reset(); }

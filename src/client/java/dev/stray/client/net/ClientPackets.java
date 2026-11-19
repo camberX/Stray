@@ -94,6 +94,16 @@ public final class ClientPackets {
 			});
 		}
 		m4(packet);
+		if (packet instanceof net.minecraft.network.protocol.game.ClientboundSystemChatPacket line && !line.overlay()) {
+			// Run splits: read as it arrives, before any mod can hide the line.
+			String text = dev.stray.client.util.Text.strip(line.content().getString());
+			Minecraft.getInstance().execute(() -> dev.stray.client.dungeon.RunSplits.onChat(text));
+		} else if (packet instanceof net.minecraft.network.protocol.game.ClientboundSoundPacket sound) {
+			var event = sound.getSound().value();
+			float volume = sound.getVolume();
+			float pitch = sound.getPitch();
+			Minecraft.getInstance().execute(() -> dev.stray.client.dungeon.RunSplits.onSound(event, volume, pitch));
+		}
 		if (!dev.stray.Edition.LEGIT && packet instanceof net.minecraft.network.protocol.game.ClientboundSystemChatPacket chat) {
 			// Auto hotbar, as NoammAddons did it: every system chat packet (action bar too), read here
 			// before any mod can hide it, with § and & codes removed.

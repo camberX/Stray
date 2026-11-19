@@ -185,6 +185,7 @@ public class StrayScreen extends Screen {
 		ETHERWARP_AIM("Etherwarp aim", 1),
 		F7_TITLES("F7 titles", 4),
 		TERM_HIGHLIGHT("Terminal highlight", 4),
+		RUN_SPLITS("Run splits", 4),
 		SCOREBOARD("Scoreboard", 1),
 		AUTO_LEAP("Auto leap", 1),
 		FAST_LEAP("Fast leap", 1),
@@ -4280,6 +4281,12 @@ public class StrayScreen extends Screen {
 					y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Close inventory when done", config.autoHotbarAutoClose, v -> config.autoHotbarAutoClose = v);
 					toggle(graphics, font, ix, y, iw, mouseX, mouseY, "HUD info", config.autoHotbarHud, v -> config.autoHotbarHud = v);
 				}
+			}
+			case RUN_SPLITS -> {
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Personal best", config.runSplitsBest, v -> config.runSplitsBest = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Difference", config.runSplitsDiff, v -> config.runSplitsDiff = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Estimated", config.runSplitsEstimated, v -> config.runSplitsEstimated = v);
+				clickAction(graphics, font, ix, y, iw, "Reset personal bests", dev.stray.client.dungeon.RunSplits::clearBests);
 			}
 			case MASK_TIMERS -> {
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Dungeons only", config.maskTimersDungeonsOnly, v -> config.maskTimersDungeonsOnly = v);
