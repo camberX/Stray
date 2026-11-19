@@ -264,6 +264,9 @@ public class StrayScreen extends Screen {
 			if (this == LOADOUTS) {
 				return baseRows + 1 + (StrayConfig.get().loadoutSwapTri ? 1 : 0);
 			}
+			if (this == WATERMARK && "uid".equals(StrayConfig.get().watermarkStyle)) {
+				return baseRows + 1;
+			}
 			if (this == BOX && visualsKind == EntityKind.STAR && !dev.stray.Edition.LEGIT) {
 				return baseRows + 1;
 			}
@@ -3949,6 +3952,9 @@ public class StrayScreen extends Screen {
 			case WATERMARK -> {
 				String[] wmStyles = {"Shadow", "uid?"};
 				y = cycle(graphics, font, ix, y, iw, mouseX, mouseY, "Style", () -> wmStyles["uid".equals(config.watermarkStyle) ? 1 : 0], () -> config.watermarkStyle = "uid".equals(config.watermarkStyle) ? "shadow" : "uid");
+				if ("uid".equals(config.watermarkStyle)) {
+					y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Rainbow bar", config.watermarkUidBar, v -> config.watermarkUidBar = v);
+				}
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "FPS", config.watermarkFps, v -> config.watermarkFps = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Ping", config.watermarkPing, v -> config.watermarkPing = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Clock", config.watermarkTime, v -> config.watermarkTime = v);

@@ -90,6 +90,8 @@ public final class StrayConfig {
 	public boolean watermarkTime = false;
 	public boolean watermarkName = false;
 	public String watermarkStyle = "shadow";
+	/** uid? watermark: the menu's blue-pink-yellow bar along the top. */
+	public boolean watermarkUidBar = false;
 	/** HUD element ids (HudLayout.Id names) lined up along the top edge. */
 	public java.util.List<String> hudDocked = new java.util.ArrayList<>();
 	/** CS2 knives (local build only): read from the player's own CS2 install. */

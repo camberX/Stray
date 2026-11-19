@@ -226,6 +226,16 @@ public final class WatermarkRenderer {
 			int inset = i * band;
 			GuiDraw.fill(graphics, px + inset, py + inset, pw - inset * 2, ph - inset * 2, 0xFF000000 | (c << 16) | (c << 8) | c);
 		}
+		if (StrayConfig.get().watermarkUidBar) {
+			// The menu's bar just inside the bands: blue to pink to yellow, its lower half darker.
+			int bx = px + band * UID_BANDS.length;
+			int by = py + band * UID_BANDS.length;
+			int bw = pw - band * UID_BANDS.length * 2;
+			int half = bw / 2;
+			dev.stray.client.ui.UidLook.horizontal(graphics, bx, by, half, band * 2, 0xFF37B1DA, 0xFFCC46CD);
+			dev.stray.client.ui.UidLook.horizontal(graphics, bx + half, by, bw - half, band * 2, 0xFFCC46CD, 0xFFCCE335);
+			GuiDraw.fill(graphics, bx, by + band, bw, band, 0x77000000);
+		}
 		graphics.pose().popMatrix();
 		// Text, measured and placed in watermark pixels.
 		int accent = 0xE6000000 | (StrayConfig.get().uidAccent & 0xFFFFFF);
