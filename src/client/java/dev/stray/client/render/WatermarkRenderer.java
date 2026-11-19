@@ -240,8 +240,9 @@ public final class WatermarkRenderer {
 		// Text, measured and placed in watermark pixels.
 		int accent = 0xE6000000 | (StrayConfig.get().uidAccent & 0xFFFFFF);
 		float x = UID_PAD;
-		// Baseline 7 under y: 11 puts the 9 px text in the middle of the 30 px box, where the original sits.
-		float y = 11f;
+		// Baseline 7 under y: centres the capitals in the space inside the bands (measured on screen);
+		// with the bar on, in the space under the bar.
+		float y = StrayConfig.get().watermarkUidBar ? 12f : 11f;
 		x = uidText(graphics, "stray", x, y, UID_TEXT, s);
 		x = uidText(graphics, ".gay", x, y, accent, s);
 		List<String> parts = shadowParts();
