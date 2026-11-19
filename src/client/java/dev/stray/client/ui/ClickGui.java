@@ -204,6 +204,14 @@ public final class ClickGui {
 				UnloadState.markDirty();
 			});
 			y = screen.clickUidAccent(graphics, font, x, y, w);
+			y = next(drawChoice(screen, graphics, font, x, y, w, "Rainbow bar on HUD", config.uidBarHud, () -> {
+				StrayConfig.get().uidBarHud = !StrayConfig.get().uidBarHud;
+				UnloadState.markDirty();
+			}), y);
+			y = next(drawChoice(screen, graphics, font, x, y, w, "Rainbow bar on screens", config.uidBarScreens, () -> {
+				StrayConfig.get().uidBarScreens = !StrayConfig.get().uidBarScreens;
+				UnloadState.markDirty();
+			}), y);
 			int ms = config.uidAnimMs;
 			y = screen.clickSlider(graphics, font, x, y, w, "Menu animation", ms == 0 ? "Off" : ms + " ms", ms / 600f, v -> {
 				StrayConfig.get().uidAnimMs = Math.round(v * 600f / 25f) * 25;
@@ -213,12 +221,15 @@ public final class ClickGui {
 		} else if (Looks.ex()) {
 			y = drawExTheme(screen, graphics, font, x, y, w);
 		}
-		y = next(drawChoice(screen, graphics, font, x, y, w, "Accent Outlines", config.accentOutlines, () -> {
-			StrayConfig current = StrayConfig.get();
-			current.accentOutlines = !current.accentOutlines;
-			Theme.refresh();
-			UnloadState.markDirty();
-		}), y);
+		if (Looks.shadow()) {
+			// Only Shadow draws outlines in the accent; uid? frames and Expressive surfaces don't.
+			y = next(drawChoice(screen, graphics, font, x, y, w, "Accent Outlines", config.accentOutlines, () -> {
+				StrayConfig current = StrayConfig.get();
+				current.accentOutlines = !current.accentOutlines;
+				Theme.refresh();
+				UnloadState.markDirty();
+			}), y);
+		}
 		drawButton(screen, graphics, font, x, y, w, "HUD Editor", () -> Minecraft.getInstance().gui.setScreen(new HudEditorScreen()));
 	}
 
@@ -351,7 +362,7 @@ public final class ClickGui {
 		}
 		if (mod.menuStyle) {
 			if (HUD_LOOK.equals(mod.name)) {
-				return stackH(Looks.uid() ? 7 : Looks.ex() ? 15 + (StrayConfig.get().exPins.isEmpty() ? 0 : 1) : 3);
+				return stackH(Looks.uid() ? 8 : Looks.ex() ? 14 + (StrayConfig.get().exPins.isEmpty() ? 0 : 1) : 3);
 			}
 			return stackH(1);
 		}
@@ -602,7 +613,7 @@ public final class ClickGui {
 		java.util.Map.entry("Paths", "Record and show walking paths."),
 		java.util.Map.entry("Movement rings", "Movement guide rings (unfinished)."),
 		java.util.Map.entry("Accent", "The accent colour, and the opacity and blur of every Shadow panel."),
-		java.util.Map.entry(HUD_LOOK, "The theme (Shadow, uid?, Expressive), its colours, accent outlines and the HUD editor."),
+		java.util.Map.entry(HUD_LOOK, "The theme (Shadow, uid?, Expressive), its own settings and the HUD editor."),
 		java.util.Map.entry("Auto update", "Updates Stray by itself."),
 		java.util.Map.entry("Auto close", "Closes the game after updating."),
 		java.util.Map.entry("Update notify", "Tells you when an update is out."),
@@ -707,13 +718,20 @@ public final class ClickGui {
 	private static StrayConfig modulesFor;
 	private static Object modulesSlayer;
 
+	private static String modulesLook = "";
+
 	static List<Mod> modules() {
 		StrayConfig config = StrayConfig.get();
 		List<Mod> cached = modulesCache;
-		if (cached != null && modulesFor == config && modulesSlayer == config.slayer) {
+		String look = Looks.current();
+		if (cached != null && modulesFor == config && modulesSlayer == config.slayer && look.equals(modulesLook)) {
 			return cached;
 		}
 		List<Mod> all = allModules();
+		if (!Looks.shadow()) {
+			// Shadow's accent, opacity and blur don't exist in the other themes; theirs are on Look.
+			all.removeIf(mod -> "Accent".equals(mod.name));
+		}
 		if (dev.stray.Edition.LEGIT) {
 			List<Mod> kept = new ArrayList<>(all.size());
 			for (Mod mod : all) {
@@ -726,6 +744,7 @@ public final class ClickGui {
 		all = java.util.Collections.unmodifiableList(all);
 		modulesFor = config;
 		modulesSlayer = config.slayer;
+		modulesLook = look;
 		modulesCache = all;
 		return all;
 	}

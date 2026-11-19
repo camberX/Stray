@@ -176,46 +176,107 @@ public final class WatermarkRenderer {
 	}
 
 
-	// ---- Expressive: a connected button group: "stray" on a primary pill, each stat a tonal
-	// segment joined to it with small inner corners and a round outer end.
+	// ---- Expressive: one tonal pill; "stray" on a primary pill inset at its start, then the
+	// stats as text, the numbers in the surface's text colour and their units small and muted,
+	// with a small dot between them.
 
-	private static final float EX_GAP = 2f;
-	private static final float EX_PAD = 7f;
+	private static final float EX_INSET = 2f;
+	private static final float EX_BRAND_PAD = 6f;
+	private static final float EX_GAP = 11f;
+	private static final float EX_END = 9f;
+	private static final java.util.regex.Pattern EX_UNIT = java.util.regex.Pattern.compile("^(\\S+) (fps|ms)$");
+
+	/**
+	 * A stat split into its number and unit ("662 fps" is 662 and fps). {@code slot} is the
+	 * steady width the whole stat keeps, so the dots after it don't move as the number changes.
+	 */
+	private record ExPart(Component value, Component unit, float slot) {
+		float width() {
+			return slot;
+		}
+	}
+
+	private static List<ExPart> exParts(Font font) {
+		List<String> parts = shadowParts();
+		List<ExPart> out = new java.util.ArrayList<>(parts.size());
+		for (int i = 0; i < parts.size(); i++) {
+			String part = parts.get(i);
+			java.util.regex.Matcher m = EX_UNIT.matcher(part);
+			String key = i < PART_KEYS.length ? PART_KEYS[i] : "ex:" + i;
+			if (m.matches()) {
+				Component value = MenuFont.shadow(m.group(1));
+				Component unit = MenuFont.shadow(m.group(2));
+				// The number and its unit read as one ("3 fps"); the slot is what the widest number
+				// so far took, so a shorter one leaves room after the unit, never inside.
+				Component whole = MenuFont.shadow(m.group(1) + " " + m.group(2));
+				out.add(new ExPart(value, unit, stableWidth(font, whole, "exv:" + key)));
+			} else {
+				Component value = MenuFont.shadow(part);
+				out.add(new ExPart(value, null, stableWidth(font, value, "exv:" + key)));
+			}
+		}
+		return out;
+	}
+
+	private static float exBrandW(Font font) {
+		return EX_BRAND_PAD + font.width(MenuFont.shadowTitle("stray")) + EX_BRAND_PAD;
+	}
 
 	private static float exWidth(Font font) {
-		List<String> parts = shadowParts();
-		float w = EX_PAD + font.width(MenuFont.shadowTitle("stray")) + EX_PAD;
-		for (int i = 0; i < parts.size(); i++) {
-			w += EX_GAP + EX_PAD + stableWidth(font, MenuFont.shadow(parts.get(i)), "ex:" + i) + EX_PAD;
+		float w = EX_INSET + exBrandW(font);
+		List<ExPart> parts = exParts(font);
+		for (ExPart part : parts) {
+			w += EX_GAP + part.width();
 		}
-		return w;
+		return w + (parts.isEmpty() ? EX_INSET : EX_END);
 	}
 
 	private static void drawEx(GuiGraphicsExtractor graphics, Font font) {
-		List<String> parts = shadowParts();
-		int count = parts.size();
+		List<ExPart> parts = exParts(font);
 		float h = HEIGHT;
-		float big = h * 0.5f;
-		float small = 4f;
-		boolean bg = HudChrome.background();
+		float w = exWidth(font);
+		if (HudChrome.background()) {
+			dev.stray.client.ui.ShadowLook.shadow(graphics, 0, 0, w, h, h * 0.5f, 6, 0x40);
+			dev.stray.client.ui.ExLook.rounded(graphics, 0, 0, w, h, h * 0.5f,
+				dev.stray.client.ui.ExColors.alpha(dev.stray.client.ui.ExColors.surfaceMid, dev.stray.client.ui.ExColors.opacity()));
+		}
+		float bh = h - EX_INSET * 2f;
+		float bw = exBrandW(font);
+		dev.stray.client.ui.ExLook.rounded(graphics, EX_INSET, EX_INSET, bw, bh, bh * 0.5f, dev.stray.client.ui.ExColors.primary);
 		Component brand = MenuFont.shadowTitle("stray");
-		float bw = EX_PAD + font.width(brand) + EX_PAD;
-		dev.stray.client.ui.ExLook.sides(graphics, 0, 0, bw, h, big, count == 0 ? big : small, dev.stray.client.ui.ExColors.primary);
+		// "stray" is all lowercase: its x-height, not the font's line box, is what has to sit in the
+		// middle of the pill, which puts it a little lower; snapped to whole screen pixels.
+		float p = GuiDraw.pixel();
+		float brandY = Math.round((GuiDraw.middle(0, h) + 0.75f) / p) * p;
+		GuiDraw.text(graphics, font, brand, EX_INSET + EX_BRAND_PAD, brandY, dev.stray.client.ui.ExColors.onPrimary, false);
 		float textY = Math.round(GuiDraw.middle(0, h));
-		GuiDraw.text(graphics, font, brand, EX_PAD, Math.round(GuiDraw.middle(0, h) - 0.5f), dev.stray.client.ui.ExColors.onPrimary, false);
-		float x = bw;
-		int fill = dev.stray.client.ui.ExColors.alpha(dev.stray.client.ui.ExColors.surfaceHigh, dev.stray.client.ui.ExColors.opacity());
-		for (int i = 0; i < count; i++) {
-			x += EX_GAP;
-			Component text = MenuFont.shadow(parts.get(i));
-			float tw = stableWidth(font, text, "ex:" + i);
-			float sw = EX_PAD + tw + EX_PAD;
-			if (bg) {
-				dev.stray.client.ui.ExLook.sides(graphics, x, 0, sw, h, small, i == count - 1 ? big : small, fill);
+		float x = EX_INSET + bw;
+		for (int i = 0; i < parts.size(); i++) {
+			ExPart part = parts.get(i);
+			if (i > 0) {
+				float d = 2.5f;
+				dev.stray.client.ui.ExLook.rounded(graphics, x + EX_GAP * 0.5f - d * 0.5f, (h - d) * 0.5f, d, d, d * 0.5f, dev.stray.client.ui.ExColors.outline);
 			}
-			int color = i == 0 ? dev.stray.client.ui.ExColors.onSurface : dev.stray.client.ui.ExColors.onSurfaceVariant;
-			GuiDraw.text(graphics, font, text, x + EX_PAD, textY, color, false);
-			x += sw;
+			x += EX_GAP;
+			int color = dev.stray.client.ui.ExColors.onSurface;
+			if (i == 0 && part.unit() != null && parseInt(part.value().getString()) < 20) {
+				color = dev.stray.client.ui.ExColors.error;
+			}
+			// The number, a space, its unit in the same font (so they share a baseline), muted.
+			GuiDraw.text(graphics, font, part.value(), x, textY, color, false);
+			if (part.unit() != null) {
+				float ux = x + font.width(part.value()) + font.width(MenuFont.shadow(" "));
+				GuiDraw.text(graphics, font, part.unit(), ux, textY, dev.stray.client.ui.ExColors.onSurfaceVariant, false);
+			}
+			x += part.width();
+		}
+	}
+
+	private static int parseInt(String value) {
+		try {
+			return Integer.parseInt(value.trim());
+		} catch (NumberFormatException e) {
+			return Integer.MAX_VALUE;
 		}
 	}
 

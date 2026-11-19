@@ -1,5 +1,6 @@
 package dev.stray.client.ui;
 
+import dev.stray.client.config.StrayConfig;
 import dev.stray.client.render.GuiDraw;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
@@ -420,6 +421,18 @@ public final class UidLook {
 			in += band;
 		}
 		GuiDraw.fillSmooth(graphics, x + in, y + in, w - in * 2f, h - in * 2f, Theme.withAlpha(0x171717, a));
+		StrayConfig config = StrayConfig.get();
+		boolean bar = config != null && (dev.stray.client.render.HudChrome.shadowInk() ? config.uidBarHud : config.uidBarScreens);
+		if (bar && w > in * 2f + 4f) {
+			rainbow(graphics, x + in, y + in, w - in * 2f, 2f * p);
+		}
+	}
+
+	/** gamesense's colour strip: cyan to magenta to yellow, as on the watermark and the menu. */
+	public static void rainbow(GuiGraphicsExtractor graphics, float x, float y, float w, float h) {
+		float half = w / 2f;
+		horizontal(graphics, x, y, half, h, 0xFF37B1DA, 0xFFCC46CD);
+		horizontal(graphics, x + half, y, w - half, h, 0xFFCC46CD, 0xFFCCE335);
 	}
 
 	/** A small uid? control outside the menu: flat dark grey with a black edge, lighter on hover. */

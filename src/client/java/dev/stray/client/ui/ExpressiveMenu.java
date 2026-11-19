@@ -50,6 +50,10 @@ public final class ExpressiveMenu {
 	private static int active;
 	/** Which of the tab's categories the chips show: -1 all of them. */
 	private static final int[] filter = new int[TABS.length];
+
+	static {
+		java.util.Arrays.fill(filter, -1);
+	}
 	private static float winX = Float.NaN;
 	private static float winY;
 	private static float winW = DEF_W;

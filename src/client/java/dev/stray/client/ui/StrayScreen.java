@@ -5845,6 +5845,20 @@ public class StrayScreen extends Screen {
 		if (UidMenu.drawing()) {
 			return uidButton(graphics, font, x, y, w, mouseX, mouseY, label, open);
 		}
+		if (ExpressiveMenu.drawing()) {
+			// A list item that opens something: the label at body size, a chevron at the end.
+			float h = 32f;
+			boolean hot = GuiDraw.hovered(mouseX, mouseY, x - 6, y, w + 12, h);
+			ExLook.state(graphics, x - 6, y, w + 12, h, 12f, ExpressiveMenu.anim("exa/" + label + "/" + Math.round(y), hot ? 1f : 0f), false, ExColors.onSurface);
+			ExLook.text(graphics, font, ExLook.BODY, ExLook.fit(font, ExLook.BODY, label, w - 24), x, y + 10, ExColors.onSurface);
+			float cx = x + w - 6;
+			float cy = y + h / 2f;
+			GuiDraw.stroke(graphics, cx - 3, cy - 5, cx + 2, cy, 2f, ExColors.onSurfaceVariant);
+			GuiDraw.stroke(graphics, cx + 2, cy, cx - 3, cy + 5, 2f, ExColors.onSurfaceVariant);
+			hits.add(new Hit(x - 6, y, w + 12, h, open));
+			ExpressiveMenu.extent(y + h);
+			return y + h + 2;
+		}
 		boolean hovered = GuiDraw.hovered(mouseX, mouseY, x, y, w, row);
 		float hover = anim("hov-" + rowAnimKey(label, x, y), hovered ? 1f : 0f);
 		if (hover > 0.02f) {

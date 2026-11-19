@@ -451,6 +451,13 @@ final class OverlayGl implements Canvas {
 		mode = -1;
 	}
 
+	private static int mixArgb(int a, int b, float t) {
+		int r = Math.round(((a >> 16) & 0xFF) + (((b >> 16) & 0xFF) - ((a >> 16) & 0xFF)) * t);
+		int g = Math.round(((a >> 8) & 0xFF) + (((b >> 8) & 0xFF) - ((a >> 8) & 0xFF)) * t);
+		int bl = Math.round((a & 0xFF) + ((b & 0xFF) - (a & 0xFF)) * t);
+		return 0xFF000000 | (r << 16) | (g << 8) | bl;
+	}
+
 	@Override
 	public void panel(float x, float y, float w, float h, float radius, int fill, int edge) {
 		if (dev.stray.client.ui.Looks.uid()) {
@@ -460,12 +467,22 @@ final class OverlayGl implements Canvas {
 			rounded(x + 2, y + 2, w - 4, h - 4, 0f, 0.01f, 0f, 0xFF282828);
 			rounded(x + 4, y + 4, w - 8, h - 8, 0f, 0.01f, 0f, 0xFF3C3C3C);
 			rounded(x + 5, y + 5, w - 10, h - 10, 0f, 0.01f, 0f, 0xFF171717);
+			if (dev.stray.client.config.StrayConfig.get().uidBarHud) {
+				// The colour strip, in slices (the overlay has no gradient fill).
+				int slices = Math.max(8, Math.round((w - 10) / 3f));
+				float sw = (w - 10) / slices;
+				for (int i = 0; i < slices; i++) {
+					float t = i / (float) (slices - 1);
+					int c = t < 0.5f ? mixArgb(0xFF37B1DA, 0xFFCC46CD, t * 2f) : mixArgb(0xFFCC46CD, 0xFFCCE335, (t - 0.5f) * 2f);
+					rounded(x + 5 + i * sw, y + 5, sw + 0.3f, 2f, 0f, 0.01f, 0f, c);
+				}
+			}
 			return;
 		}
 		if (dev.stray.client.ui.Looks.ex()) {
 			// Expressive: a soft shadow and the tonal surface with large rounded corners.
 			float r = Math.min(14f, Math.min(w, h) * 0.5f);
-			rounded(x, y + 2f, w, h, r, 10f, 0f, 0x50000000);
+			rounded(x, y, w, h, r, 8f, 0f, 0x48000000);
 			int a = Math.max(fill >>> 24, 0xE6);
 			rounded(x, y, w, h, r, 0.01f, 0f, (a << 24) | (dev.stray.client.ui.ExColors.surfaceMid & 0xFFFFFF));
 			return;

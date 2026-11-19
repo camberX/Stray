@@ -79,7 +79,9 @@ public final class ExLook {
 		}
 		float rr = Math.min(r, Math.min(w, h) * 0.5f);
 		int a = (fill >>> 24) & 0xFF;
-		ShadowLook.shadow(graphics, x, y + Math.min(3f, h * 0.05f), w, h, rr, Math.min(w, h) < 40f ? 6 : 12, Math.round(0x50 * a / 255f));
+		// The shadow is cut out under the box, so it sits exactly on it: shifted, its cut-out
+		// would show as a lip under see-through surfaces.
+		ShadowLook.shadow(graphics, x, y, w, h, rr, Math.min(w, h) < 40f ? 6 : 10, Math.round(0x48 * a / 255f));
 		if (frost) {
 			GuiFrostBlur.blitWindow(graphics, x, y, w, h, rr);
 		}
