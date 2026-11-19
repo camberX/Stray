@@ -412,7 +412,8 @@ public final class UidLook {
 	 */
 	public static void frame(GuiGraphicsExtractor graphics, float x, float y, float w, float h, int alpha) {
 		float p = GuiDraw.pixel() / GuiDraw.poseScale(graphics);
-		float band = p * Math.max(1, Math.round(1f / (p * 2.5f)) > 3 ? 2 : 1);
+		// Bands as thick as the watermark's, in screen pixels, whatever the HUD or GUI scale.
+		float band = p * dev.stray.client.render.WatermarkRenderer.uidBandPx();
 		int a = Math.max(0, Math.min(255, alpha));
 		float in = 0f;
 		for (int i = 0; i < BANDS.length && in * 2f < Math.min(w, h) - 4f * band; i++) {

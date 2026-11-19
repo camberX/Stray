@@ -175,9 +175,52 @@ final class OverlayGl implements Canvas {
 		}
 	}
 
+	/** Baked faces: 0 Google Sans Flex (Shadow, Expressive), 1 DejaVu Sans, the uid? menu's. */
+	private final STBTTPackedchar.Buffer[] faceChars = new STBTTPackedchar.Buffer[2];
+	private final int[] faceTexture = new int[2];
+	private final float[] faceAscent = new float[2];
+	private final boolean[] faceTried = new boolean[2];
+	private int face = 0;
+
+	/** Makes the look's face the one text draws and measures with (baked the first time). */
+	private void useFace() {
+		int want = dev.stray.client.ui.Looks.uid() ? 1 : 0;
+		if (want == 1 && !faceTried[1]) {
+			faceTried[1] = true;
+			STBTTPackedchar.Buffer keepChars = chars;
+			int keepTex = fontTexture;
+			float keepAscent = ascent;
+			bakeFont("/assets/stray/font/uid_sans.ttf");
+			faceChars[1] = chars;
+			faceTexture[1] = fontTexture;
+			faceAscent[1] = ascent;
+			chars = keepChars;
+			fontTexture = keepTex;
+			ascent = keepAscent;
+		}
+		if (faceChars[0] == null && chars != null && face == 0) {
+			faceChars[0] = chars;
+			faceTexture[0] = fontTexture;
+			faceAscent[0] = ascent;
+		}
+		if (want == 1 && faceChars[1] == null) {
+			want = 0;
+		}
+		if (want != face && faceChars[want] != null) {
+			face = want;
+			chars = faceChars[want];
+			fontTexture = faceTexture[want];
+			ascent = faceAscent[want];
+		}
+	}
+
 	private void bakeFont() {
+		bakeFont("/assets/stray/font/googlesansflex_medium.ttf");
+	}
+
+	private void bakeFont(String file) {
 		try {
-			ByteBuffer ttf = resource("/assets/stray/font/googlesansflex_medium.ttf");
+			ByteBuffer ttf = resource(file);
 			int size = 1024;
 			ByteBuffer bitmap = BufferUtils.createByteBuffer(size * size);
 			chars = STBTTPackedchar.malloc(COUNT);
@@ -461,20 +504,29 @@ final class OverlayGl implements Canvas {
 	@Override
 	public void panel(float x, float y, float w, float h, float radius, int fill, int edge) {
 		if (dev.stray.client.ui.Looks.uid()) {
-			// uid?: square, the banded grey frame (a light line between dark ones) and a dark inside.
-			rounded(x, y, w, h, 0f, 0.01f, 0f, 0xFF0A0A0A);
-			rounded(x + 1, y + 1, w - 2, h - 2, 0f, 0.01f, 0f, 0xFF3C3C3C);
-			rounded(x + 2, y + 2, w - 4, h - 4, 0f, 0.01f, 0f, 0xFF282828);
-			rounded(x + 4, y + 4, w - 8, h - 8, 0f, 0.01f, 0f, 0xFF3C3C3C);
-			rounded(x + 5, y + 5, w - 10, h - 10, 0f, 0.01f, 0f, 0xFF171717);
+			// uid?: square, the watermark's banded grey frame (same greys, same screen-pixel bands)
+			// and the dark inside. One unit here is several screen pixels, so bands are measured in
+			// pixels through the pose.
+			Vector2f o = pose.transformPosition(0f, 0f, new Vector2f());
+			Vector2f one = pose.transformPosition(1f, 0f, new Vector2f());
+			float px = 1f / Math.max(0.0001f, Math.abs(one.x - o.x));
+			float band = px * dev.stray.client.render.WatermarkRenderer.uidBandPx();
+			int[] greys = {0x0A, 0x3C, 0x28, 0x28, 0x28, 0x3C, 0x14};
+			float in = 0f;
+			for (int g : greys) {
+				rounded(x + in, y + in, w - in * 2f, h - in * 2f, 0f, 0.01f, 0f, 0xFF000000 | (g << 16) | (g << 8) | g);
+				in += band;
+			}
+			rounded(x + in, y + in, w - in * 2f, h - in * 2f, 0f, 0.01f, 0f, 0xFF171717);
 			if (dev.stray.client.config.StrayConfig.get().uidBarHud) {
 				// The colour strip, in slices (the overlay has no gradient fill).
-				int slices = Math.max(8, Math.round((w - 10) / 3f));
-				float sw = (w - 10) / slices;
+				float iw = w - in * 2f;
+				int slices = Math.max(8, Math.round(iw / 3f));
+				float sw = iw / slices;
 				for (int i = 0; i < slices; i++) {
 					float t = i / (float) (slices - 1);
 					int c = t < 0.5f ? mixArgb(0xFF37B1DA, 0xFFCC46CD, t * 2f) : mixArgb(0xFFCC46CD, 0xFFCCE335, (t - 0.5f) * 2f);
-					rounded(x + 5 + i * sw, y + 5, sw + 0.3f, 2f, 0f, 0.01f, 0f, c);
+					rounded(x + in + i * sw, y + in, sw + px * 0.5f, 2f * px, 0f, 0.01f, 0f, c);
 				}
 			}
 			return;
@@ -535,6 +587,7 @@ final class OverlayGl implements Canvas {
 	}
 
 	private void glyphs(String text, float x, float y, int argb, boolean shadow) {
+		useFace();
 		if (chars == null || text == null) {
 			return;
 		}
@@ -582,6 +635,7 @@ final class OverlayGl implements Canvas {
 
 	@Override
 	public float width(String text) {
+		useFace();
 		if (chars == null || text == null) {
 			return 0f;
 		}

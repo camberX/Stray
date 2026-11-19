@@ -59,7 +59,12 @@ public final class GuiCanvas implements Canvas {
 	public void text(String text, float x, float y, int argb, boolean shadow) {
 		graphics.pose().pushMatrix();
 		graphics.pose().translate(x, y);
-		graphics.text(font, text, 0, 0, argb, shadow);
+		if (dev.stray.client.ui.Looks.uid()) {
+			// uid?: the map's text in the uid? font (DejaVu Sans), as its menu has it.
+			graphics.text(font, dev.stray.client.ui.MenuFont.shadow(text), 0, 0, argb, shadow);
+		} else {
+			graphics.text(font, text, 0, 0, argb, shadow);
+		}
 		graphics.pose().popMatrix();
 	}
 
@@ -70,6 +75,9 @@ public final class GuiCanvas implements Canvas {
 
 	@Override
 	public float width(String text) {
+		if (dev.stray.client.ui.Looks.uid()) {
+			return font.width(dev.stray.client.ui.MenuFont.shadow(text));
+		}
 		return font.width(text);
 	}
 }
