@@ -106,6 +106,8 @@ public final class StrayHud {
 		HudChrome.element(null);
 		if (!dev.stray.Edition.LEGIT) { CommandRings.extract(graphics, delta); }
 		HudChrome.element(null);
+		if (!dev.stray.Edition.LEGIT) { dev.stray.client.dungeon.autoleap.LeapToasts.extract(graphics); }
+		HudChrome.element(null);
 		HudChrome.element(null);
 		dev.stray.client.editor.EditorHud.extract(graphics, delta);
 		HudChrome.element(null);

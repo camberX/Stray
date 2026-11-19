@@ -1093,12 +1093,31 @@ public final class GuiDraw {
 		text(graphics, font, inter(value), x, y, 1f, color, false);
 	}
 
+	private static boolean symbolsOnly(String part) {
+		boolean any = false;
+		for (int i = 0; i < part.length(); ) {
+			int cp = part.codePointAt(i);
+			i += Character.charCount(cp);
+			if (cp == ' ') {
+				continue;
+			}
+			if (cp <= 0x7F || cp == 0xA7) {
+				return false;
+			}
+			any = true;
+		}
+		return any;
+	}
+
 	/** HUD text in Google Sans Flex, on every part: scoreboard lines carry their own font on each part. */
 	private static Component inter(Component value) {
 		net.minecraft.network.chat.FontDescription inter = MenuFont.bodyLook().getFont();
 		net.minecraft.network.chat.MutableComponent out = Component.empty();
 		value.visit((style, part) -> {
-			out.append(Component.literal(part).withStyle(style.withFont(inter)));
+			// Runs of symbols only (♲ ❤ ⏣ ...) were put in the game's font on purpose: the theme
+			// fonts don't have them, and through their fallback they'd come out the wrong size.
+			boolean symbols = net.minecraft.network.chat.FontDescription.DEFAULT.equals(style.getFont()) && symbolsOnly(part);
+			out.append(Component.literal(part).withStyle(symbols ? style : style.withFont(inter)));
 			return java.util.Optional.empty();
 		}, net.minecraft.network.chat.Style.EMPTY);
 		return out;

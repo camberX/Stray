@@ -647,6 +647,12 @@ public final class StrayConfig {
 	public boolean hudHotbar = false;
 	/** The hotbar selection box glides to the new slot instead of snapping. */
 	public boolean smoothHotbar = false;
+	/** The hotbar, XP bar and level drawn in the theme's look (Shadow, uid?, Expressive). */
+	public boolean themedHotbar = false;
+	/** Auto / Fast Leap: a phone-style notification for each leap (and why one failed). */
+	public boolean leapNotifications = false;
+	/** Auto / Fast Leap: don't put "Stray » Leaping to ..." and the other leap notes in chat. */
+	public boolean leapHideChat = false;
 	/** Jump at the edge of a block while walking (/stray edge). Not in Stray Legit. */
 	public boolean edgeJump = false;
 	/** How fast it glides (higher is quicker). */

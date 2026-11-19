@@ -188,6 +188,7 @@ public final class AutoLeap {
 		}
 		StrayConfig config = StrayConfig.get();
 		if ("i4".equals(id) && melodyTarget != null && (auto ? config.autoLeapMelody : config.fastLeapMelody)) {
+			LeapRunner.source = auto ? "Auto leap" : "Fast leap";
 			LeapRunner.leapToName(melodyTarget);
 			return true;
 		}
@@ -196,6 +197,7 @@ public final class AutoLeap {
 			if (target.name == null || target.name.isBlank()) {
 				return false;
 			}
+			LeapRunner.source = auto ? "Auto leap" : "Fast leap";
 			LeapRunner.leapToName(target.name.trim());
 			return true;
 		}
@@ -203,6 +205,7 @@ public final class AutoLeap {
 		if (clazz == null) {
 			return false;
 		}
+		LeapRunner.source = auto ? "Auto leap" : "Fast leap";
 		LeapRunner.leapToClass(clazz);
 		return true;
 	}
@@ -222,6 +225,7 @@ public final class AutoLeap {
 			if (target.name == null || target.name.isBlank()) {
 				return "no player name set for it (" + (auto ? "Auto" : "Fast") + " Leap settings)";
 			}
+			LeapRunner.source = auto ? "Auto leap" : "Fast leap";
 			LeapRunner.leapToName(target.name.trim());
 			return null;
 		}
@@ -229,6 +233,7 @@ public final class AutoLeap {
 		if (clazz == null) {
 			return "no class set for it (" + (auto ? "Auto" : "Fast") + " Leap settings)";
 		}
+		LeapRunner.source = auto ? "Auto leap" : "Fast leap";
 		LeapRunner.leapToClass(clazz);
 		return null;
 	}
@@ -265,6 +270,7 @@ public final class AutoLeap {
 			|| bloodOpen && (auto ? config.autoLeapDoorAfterBlood : config.fastLeapDoorAfterBlood)) {
 			return false;
 		}
+		LeapRunner.source = auto ? "Auto leap" : "Fast leap";
 		LeapRunner.leapToName(name);
 		return true;
 	}

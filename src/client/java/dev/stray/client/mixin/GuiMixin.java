@@ -57,6 +57,52 @@ public class GuiMixin {
 		}
 	}
 
+	/** Themed hotbar: Stray draws the hotbar in the theme's look instead. */
+	@Inject(method = "extractItemHotbar", at = @At("HEAD"), cancellable = true)
+	private void stray$themedHotbar(GuiGraphicsExtractor graphics, DeltaTracker delta, CallbackInfo ci) {
+		if (dev.stray.client.render.ThemedHotbar.active()) {
+			dev.stray.client.render.ThemedHotbar.draw(graphics, delta, net.minecraft.client.Minecraft.getInstance().player);
+			ci.cancel();
+		}
+	}
+
+	/** Themed hotbar: its own XP bar replaces vanilla's (the locator and jump bars stay). */
+	@com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation(
+		method = "extractHotbarAndDecorations",
+		at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/contextualbar/ContextualBar;extractBackground(Lnet/minecraft/client/gui/GuiGraphicsExtractor;Lnet/minecraft/client/DeltaTracker;)V")
+	)
+	private void stray$themedXpBack(net.minecraft.client.gui.contextualbar.ContextualBar bar, GuiGraphicsExtractor graphics, DeltaTracker delta,
+		com.llamalad7.mixinextras.injector.wrapoperation.Operation<Void> original) {
+		if (bar instanceof net.minecraft.client.gui.contextualbar.ExperienceBar && dev.stray.client.render.ThemedHotbar.active()) {
+			return;
+		}
+		original.call(bar, graphics, delta);
+	}
+
+	@com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation(
+		method = "extractHotbarAndDecorations",
+		at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/contextualbar/ContextualBar;extractRenderState(Lnet/minecraft/client/gui/GuiGraphicsExtractor;Lnet/minecraft/client/DeltaTracker;)V")
+	)
+	private void stray$themedXp(net.minecraft.client.gui.contextualbar.ContextualBar bar, GuiGraphicsExtractor graphics, DeltaTracker delta,
+		com.llamalad7.mixinextras.injector.wrapoperation.Operation<Void> original) {
+		if (bar instanceof net.minecraft.client.gui.contextualbar.ExperienceBar && dev.stray.client.render.ThemedHotbar.active()) {
+			return;
+		}
+		original.call(bar, graphics, delta);
+	}
+
+	@com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation(
+		method = "extractHotbarAndDecorations",
+		at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/contextualbar/ContextualBar;extractExperienceLevel(Lnet/minecraft/client/gui/GuiGraphicsExtractor;Lnet/minecraft/client/gui/Font;I)V")
+	)
+	private void stray$themedLevel(GuiGraphicsExtractor graphics, net.minecraft.client.gui.Font font, int level,
+		com.llamalad7.mixinextras.injector.wrapoperation.Operation<Void> original) {
+		if (dev.stray.client.render.ThemedHotbar.active()) {
+			return;
+		}
+		original.call(graphics, font, level);
+	}
+
 	@Inject(method = "setTitle", at = @At("HEAD"), cancellable = true)
 	private void stray$slayerTitle(Component title, CallbackInfo ci) {
 		if (!dev.stray.client.slayer.SlayerBosses.onTitle(title) || !dev.stray.client.dungeon.F7Titles.onTitle(title)) {

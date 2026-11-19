@@ -3453,7 +3453,7 @@ public class StrayScreen extends Screen {
 	static int leapRows(boolean auto) {
 		if (!dev.stray.Edition.LEGIT) {
 			StrayConfig config = StrayConfig.get();
-			int rows = 5;
+			int rows = 7;
 			for (dev.stray.client.dungeon.autoleap.AutoLeap.Target target : dev.stray.client.dungeon.autoleap.AutoLeap.targets()) {
 				if (auto ? !target.auto() : !target.fast()) {
 					continue;
@@ -3486,6 +3486,8 @@ public class StrayScreen extends Screen {
 			y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Swap back", config.leapSwapBack, v -> config.leapSwapBack = v);
 			y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Show leap menu", config.leapShowMenu, v -> config.leapShowMenu = v);
 			y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Swing (client side)", config.leapSwing, v -> config.leapSwing = v);
+			y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Notifications", config.leapNotifications, v -> config.leapNotifications = v);
+			y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Hide chat message", config.leapHideChat, v -> config.leapHideChat = v);
 			y = slider(graphics, font, ix, y, iw, "Wait in menu", config.leapMenuWait + (config.leapMenuWait == 1 ? " tick" : " ticks"), config.leapMenuWait / 20f,
 				v -> config.leapMenuWait = snapInt(v * 20f, 0, 20, 1));
 			for (dev.stray.client.dungeon.autoleap.AutoLeap.Target target : dev.stray.client.dungeon.autoleap.AutoLeap.targets()) {

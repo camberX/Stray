@@ -412,6 +412,17 @@ public final class UidLook {
 	 */
 	public static void frame(GuiGraphicsExtractor graphics, float x, float y, float w, float h, int alpha) {
 		float p = GuiDraw.pixel() / GuiDraw.poseScale(graphics);
+		float in = frameOnly(graphics, x, y, w, h, alpha);
+		StrayConfig config = StrayConfig.get();
+		boolean bar = config != null && (dev.stray.client.render.HudChrome.shadowInk() ? config.uidBarHud : config.uidBarScreens);
+		if (bar && w > in * 2f + 4f) {
+			rainbow(graphics, x + in, y + in, w - in * 2f, p * dev.stray.client.render.WatermarkRenderer.uidBarPx());
+		}
+	}
+
+	/** The banded frame and dark inside without the colour strip; returns how far in the inside starts. */
+	public static float frameOnly(GuiGraphicsExtractor graphics, float x, float y, float w, float h, int alpha) {
+		float p = GuiDraw.pixel() / GuiDraw.poseScale(graphics);
 		// Bands as thick as the watermark's, in screen pixels, whatever the HUD or GUI scale.
 		float band = p * dev.stray.client.render.WatermarkRenderer.uidBandPx();
 		int a = Math.max(0, Math.min(255, alpha));
@@ -422,11 +433,7 @@ public final class UidLook {
 			in += band;
 		}
 		GuiDraw.fillSmooth(graphics, x + in, y + in, w - in * 2f, h - in * 2f, Theme.withAlpha(0x171717, a));
-		StrayConfig config = StrayConfig.get();
-		boolean bar = config != null && (dev.stray.client.render.HudChrome.shadowInk() ? config.uidBarHud : config.uidBarScreens);
-		if (bar && w > in * 2f + 4f) {
-			rainbow(graphics, x + in, y + in, w - in * 2f, p * dev.stray.client.render.WatermarkRenderer.uidBarPx());
-		}
+		return in;
 	}
 
 	/**

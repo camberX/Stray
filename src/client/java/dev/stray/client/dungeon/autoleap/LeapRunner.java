@@ -454,7 +454,21 @@ public final class LeapRunner {
 		waitTicks = 0;
 	}
 
+	/** Which leap this is ("Auto leap", "Fast leap"), for its notification; set by whoever asks. */
+	static String source = "Leap";
+
+	/**
+	 * A leap note: a notification when those are on, and the "Stray »" line in your own chat
+	 * unless that is turned off. Only shown to you; nothing here is sent anywhere.
+	 */
 	private static void message(String text) {
+		StrayConfig config = StrayConfig.get();
+		if (config.leapNotifications) {
+			LeapToasts.push(source, text);
+		}
+		if (config.leapHideChat) {
+			return;
+		}
 		Minecraft client = Minecraft.getInstance();
 		if (client.player != null) {
 			client.player.sendSystemMessage(Component.literal("§bStray §7» " + text));

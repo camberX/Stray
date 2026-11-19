@@ -541,6 +541,7 @@ public final class ClickGui {
 		java.util.Map.entry("Rabbits", "Rabbits per hutch, and a countdown to the M4 rabbits. From BirdAddon."),
 		java.util.Map.entry("Auto hotbar", "A chat message you pick moves your mapped items into their hotbar slots. Swaps while your inventory is open (it can open and close it for you), or with Swap without inventory like NoammAddons did. Not in Stray Legit."),
 		java.util.Map.entry("Greenhouse growth", "Time until the next Greenhouse growth stage. Open the Crop Diagnostics menu in the Greenhouse once to read it."),
+		java.util.Map.entry("Themed hotbar", "The hotbar, XP bar and level in the theme's look: Shadow's frosted panel, uid?'s frame with the colour strip as XP, Expressive's tonal pill and wavy XP."),
 		java.util.Map.entry("Smooth hotbar", "When you change hotbar slot, the selection box glides there instead of snapping; further jumps move faster."),
 		java.util.Map.entry("Edge jump", "Jumps once at the next block edge you walk off (not while sneaking), then turns itself off. Arm it with /stray edge. Not in Stray Legit."),
 		java.util.Map.entry("F7 titles", "Short titles in the F7 boss: crystals, wither phases, Storm's lightning timer and who did which terminal. Also shown over the leap menu."),
@@ -835,6 +836,7 @@ public final class ClickGui {
 		mods.add(mod("Motion blur", "World", StrayScreen.Feature.MOTION, null, () -> config.motionBlurEnabled, v -> config.motionBlurEnabled = v, true, false));
 		mods.add(mod("Block outline", "World", StrayScreen.Feature.BLOCK, null, () -> config.blockOutlineGlow, v -> config.blockOutlineGlow = v, true, false));
 		mods.add(mod("Smooth hotbar", "HUD", StrayScreen.Feature.SMOOTH_HOTBAR, null, () -> config.smoothHotbar, v -> config.smoothHotbar = v, true, false));
+		mods.add(mod("Themed hotbar", "HUD", null, null, () -> config.themedHotbar, v -> config.themedHotbar = v, true, false));
 		mods.add(mod("Held item", "World", StrayScreen.Feature.HELD_ITEM, null, () -> config.heldItemShaderEnabled, v -> config.heldItemShaderEnabled = v, true, false));
 		mods.add(mod(CS2, "World", null, null, () -> config.cs2KnifeEnabled, v -> config.cs2KnifeEnabled = v, true, false));
 		mods.add(mod("Skull hold", "World", null, null, () -> config.legacySkullHold, v -> config.legacySkullHold = v, true, false));

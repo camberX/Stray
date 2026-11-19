@@ -26,7 +26,7 @@ public final class ScoreboardHudRenderer {
 	private static final float HEAD = 22;
 	private static final float ROW = 10;
 	private static final float MIN_W = 88;
-	private static final float MAX_W = 180;
+	private static final float MAX_W = 300;
 	private static final float EMPTY_H = PAD + HEAD + ROW + PAD;
 	private static int layoutTick = Integer.MIN_VALUE;
 	private static Layout layoutCache;
