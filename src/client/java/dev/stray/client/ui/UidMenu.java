@@ -180,13 +180,17 @@ public final class UidMenu {
 		graphics.pose().scale(unit, unit);
 		// Open / close: a plain fade over "Menu animation" ms; tab switches use the same time.
 		long now = System.nanoTime();
-		float dt = lastFrame == 0L ? 0f : Math.min(0.1f, (now - lastFrame) / 1.0e9f);
-		lastFrame = now;
 		int ms = StrayConfig.get().uidAnimMs;
 		if (screen != fadeScreen) {
+			// A fresh open: start from nothing, and from this frame (not the last time it was shown).
 			fadeScreen = screen;
 			fade = ms > 0 ? 0f : 1f;
+			lastFrame = now;
 		}
+		// The first frames after opening are slow (lists, glyphs); capping the step keeps a
+		// hitch from swallowing the fade in, which is why it looked like it didn't animate.
+		float dt = Math.min(1f / 30f, (now - lastFrame) / 1.0e9f);
+		lastFrame = now;
 		float target = screen.clickClosing() ? 0f : 1f;
 		fade = ms <= 0 ? target : approachLinear(fade, target, dt * 1000f / ms);
 		float open = smooth(fade);
