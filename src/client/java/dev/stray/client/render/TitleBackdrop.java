@@ -54,11 +54,26 @@ public final class TitleBackdrop {
 			return;
 		}
 		Theme.refresh();
+		if (dev.stray.client.ui.Looks.uid()) {
+			// uid?: the cheat-menu backdrop, near-black with its colour strip along the top.
+			GuiDraw.fillGradient(graphics, 0, 0, width, height, 0xFF141414, 0xFF0B0B0B);
+			float half = width / 2f;
+			dev.stray.client.ui.UidLook.horizontal(graphics, 0, 0, half, 2, 0xFF37B1DA, 0xFFCC46CD);
+			dev.stray.client.ui.UidLook.horizontal(graphics, half, 0, width - half, 2, 0xFFCC46CD, 0xFFCCE335);
+			return;
+		}
 		if (!paint(graphics, width, height)) {
 			// Plain dark until the marble shader is ready, so no other background flashes first.
 			GuiDraw.fill(graphics, 0, 0, width, height, 0xFF050709);
 		}
 		GuiDraw.fill(graphics, 0, 0, width, height, Theme.withAlpha(0x000000, 56));
+		if (dev.stray.client.ui.Looks.ex()) {
+			// Expressive: the marble (tinted by the primary colour) under a tonal scrim with two soft
+			// colour blooms, like a Material wallpaper.
+			GuiDraw.fill(graphics, 0, 0, width, height, dev.stray.client.ui.ExColors.alpha(dev.stray.client.ui.ExColors.surfaceDim, 0.62f));
+			dev.stray.client.ui.ShadowLook.glow(graphics, width * 0.08f, height * 0.62f, width * 0.32f, height * 0.30f, 80f, Math.round(Math.min(width, height) * 0.35f), dev.stray.client.ui.ExColors.alpha(dev.stray.client.ui.ExColors.primaryContainer, 0.55f));
+			dev.stray.client.ui.ShadowLook.glow(graphics, width * 0.62f, height * 0.08f, width * 0.30f, height * 0.26f, 80f, Math.round(Math.min(width, height) * 0.30f), dev.stray.client.ui.ExColors.alpha(dev.stray.client.ui.ExColors.tertiaryContainer, 0.45f));
+		}
 	}
 
 	private static boolean paint(GuiGraphicsExtractor graphics, int width, int height) {

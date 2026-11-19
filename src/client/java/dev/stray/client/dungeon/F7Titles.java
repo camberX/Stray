@@ -324,7 +324,8 @@ public final class F7Titles {
 			return;
 		}
 		int a = Math.max(4, Math.round(alpha * 255f));
-		float w = font.width(text) * scale;
-		GuiDraw.text(graphics, font, text, cx - w * 0.5f, y, scale, (a << 24) | 0xFFFFFF, true);
+		Component shown = dev.stray.client.ui.MenuFont.look(text);
+		float w = font.width(shown) * scale;
+		GuiDraw.text(graphics, font, shown, cx - w * 0.5f, y, scale, (a << 24) | 0xFFFFFF, true);
 	}
 }

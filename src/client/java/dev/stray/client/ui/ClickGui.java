@@ -62,6 +62,10 @@ public final class ClickGui {
 			UidMenu.draw(screen, graphics, font, mouseX, mouseY);
 			return;
 		}
+		if (ExpressiveMenu.active()) {
+			ExpressiveMenu.draw(screen, graphics, font, mouseX, mouseY);
+			return;
+		}
 		ShadowMenu.draw(screen, graphics, font, mouseX, mouseY);
 		ShadowMenu.drawPicker(screen, graphics, font);
 	}
@@ -120,7 +124,7 @@ public final class ClickGui {
 	}
 
 	static void rightClick(double x, double y) {
-		if (UidMenu.active()) {
+		if (UidMenu.active() || ExpressiveMenu.active()) {
 			return;
 		}
 		ShadowMenu.rightClick(x, y);
@@ -130,12 +134,15 @@ public final class ClickGui {
 		if (UidMenu.active()) {
 			return UidMenu.scroll(x, y, wheel);
 		}
+		if (ExpressiveMenu.active()) {
+			return ExpressiveMenu.scroll(x, y, wheel);
+		}
 		return ShadowMenu.scroll(x, y, wheel);
 	}
 
 	/** The next row's y: uid? rows have their own heights, the other styles step by a row. */
 	private static float next(float drawn, float y) {
-		return UidMenu.drawing() ? drawn : y + stride();
+		return UidMenu.drawing() || ExpressiveMenu.drawing() ? drawn : y + stride();
 	}
 
 	public static List<String> enabledLabels() {
@@ -185,16 +192,13 @@ public final class ClickGui {
 		return count;
 	}
 
-	static final String[] STYLES = {"shadow", "uid"};
-	static final String[] STYLE_LABELS = {"Shadow", "uid?"};
-
 	private static void drawHud(StrayScreen screen, GuiGraphicsExtractor graphics, Font font, float x, float y, float w) {
 		StrayConfig config = StrayConfig.get();
-		int style = "uid".equals(config.clickGuiStyle) ? 1 : 0;
-		y = UidMenu.drawing()
-			? screen.clickDropdown(graphics, font, x, y, w, "menu-style", "Menu style", STYLE_LABELS, style, i -> setStyle(STYLES[i]))
-			: next(screen.clickCycle(graphics, font, x, y, w, "Menu style", () -> STYLE_LABELS["uid".equals(StrayConfig.get().clickGuiStyle) ? 1 : 0], () -> setStyle(STYLES[(style + 1) % STYLES.length])), y);
-		if (style == 1) {
+		int look = Looks.index();
+		y = UidMenu.drawing() || ExpressiveMenu.drawing()
+			? screen.clickDropdown(graphics, font, x, y, w, "theme", "Theme", Looks.LABELS, look, i -> Looks.set(Looks.ALL[i]))
+			: next(screen.clickCycle(graphics, font, x, y, w, "Theme", () -> Looks.LABELS[Looks.index()], () -> Looks.set(Looks.ALL[(Looks.index() + 1) % Looks.ALL.length])), y);
+		if (Looks.uid()) {
 			y = screen.clickDropdown(graphics, font, x, y, w, "uid-dpi", "DPI scale", UidMenu.DPI_LABELS, config.uidDpi, i -> {
 				StrayConfig.get().uidDpi = i;
 				UnloadState.markDirty();
@@ -206,6 +210,8 @@ public final class ClickGui {
 				UnloadState.markDirty();
 			});
 			y = drawButton(screen, graphics, font, x, y, w, "Reset menu layout", UidMenu::resetPosition);
+		} else if (Looks.ex()) {
+			y = drawExTheme(screen, graphics, font, x, y, w);
 		}
 		y = next(drawChoice(screen, graphics, font, x, y, w, "Accent Outlines", config.accentOutlines, () -> {
 			StrayConfig current = StrayConfig.get();
@@ -216,9 +222,53 @@ public final class ClickGui {
 		drawButton(screen, graphics, font, x, y, w, "HUD Editor", () -> Minecraft.getInstance().gui.setScreen(new HudEditorScreen()));
 	}
 
-	private static void setStyle(String style) {
-		StrayConfig.get().clickGuiStyle = style;
-		StrayConfig.get().save();
+	/** Expressive's theme: the seed, scheme style, contrast, opacity, motion and the pinned roles. */
+	private static float drawExTheme(StrayScreen screen, GuiGraphicsExtractor graphics, Font font, float x, float y, float w) {
+		StrayConfig config = StrayConfig.get();
+		ExpressiveMenu.inline(true);
+		try {
+			return exThemeRows(screen, graphics, font, x, y, w);
+		} finally {
+			ExpressiveMenu.inline(false);
+		}
+	}
+
+	private static float exThemeRows(StrayScreen screen, GuiGraphicsExtractor graphics, Font font, float x, float y, float w) {
+		StrayConfig config = StrayConfig.get();
+		if (ExpressiveMenu.drawing()) {
+			y = ExpressiveMenu.seedRow(screen, graphics, font, x, y, w);
+		}
+		y = next(screen.clickExSeed(graphics, font, x, y, w), y);
+		y = ExpressiveMenu.drawing()
+			? screen.clickDropdown(graphics, font, x, y, w, "ex-scheme", "Scheme style", ExColors.SCHEMES, config.exScheme, i -> exSet(() -> StrayConfig.get().exScheme = i))
+			: next(screen.clickCycle(graphics, font, x, y, w, "Scheme style", () -> ExColors.SCHEMES[StrayConfig.get().exScheme], () -> exSet(() -> StrayConfig.get().exScheme = (StrayConfig.get().exScheme + 1) % ExColors.SCHEMES.length)), y);
+		y = ExpressiveMenu.drawing()
+			? screen.clickDropdown(graphics, font, x, y, w, "ex-contrast", "Contrast", ExColors.CONTRASTS, config.exContrast, i -> exSet(() -> StrayConfig.get().exContrast = i))
+			: next(screen.clickCycle(graphics, font, x, y, w, "Contrast", () -> ExColors.CONTRASTS[StrayConfig.get().exContrast], () -> exSet(() -> StrayConfig.get().exContrast = (StrayConfig.get().exContrast + 1) % ExColors.CONTRASTS.length)), y);
+		float op = config.exOpacity;
+		y = next(screen.clickSlider(graphics, font, x, y, w, "Background opacity", Math.round(op * 100f) + "%", (op - 0.3f) / 0.7f, v -> exSet(() -> StrayConfig.get().exOpacity = Math.round((0.3f + v * 0.7f) * 100f) / 100f)), y);
+		int ms = config.exAnimMs;
+		y = next(screen.clickSlider(graphics, font, x, y, w, "Menu animation", ms == 0 ? "Off" : ms + " ms", ms / 600f, v -> {
+			StrayConfig.get().exAnimMs = Math.round(v * 600f / 25f) * 25;
+			UnloadState.markDirty();
+		}), y);
+		int[] now = {ExColors.primary, ExColors.secondaryContainer, ExColors.tertiaryContainer, ExColors.surface, ExColors.surfaceHigh, ExColors.onSurface, ExColors.outline};
+		for (int i = 0; i < ExColors.PIN_ROLES.length; i++) {
+			String role = ExColors.PIN_ROLES[i];
+			boolean pinned = config.exPins.containsKey(role);
+			y = next(screen.clickExPin(graphics, font, x, y, w, role, ExColors.PIN_LABELS[i] + (pinned ? " (pinned)" : ""), now[i] & 0xFFFFFF), y);
+		}
+		if (!config.exPins.isEmpty()) {
+			y = drawButton(screen, graphics, font, x, y, w, "Unpin all colours", () -> exSet(() -> StrayConfig.get().exPins.clear()));
+		}
+		y = drawButton(screen, graphics, font, x, y, w, "Reset menu layout", ExpressiveMenu::resetPosition);
+		return y;
+	}
+
+	private static void exSet(Runnable change) {
+		change.run();
+		ExColors.invalidate();
+		Theme.refresh();
 		UnloadState.markDirty();
 	}
 
@@ -301,7 +351,7 @@ public final class ClickGui {
 		}
 		if (mod.menuStyle) {
 			if (HUD_LOOK.equals(mod.name)) {
-				return stackH(3);
+				return stackH(Looks.uid() ? 7 : Looks.ex() ? 15 + (StrayConfig.get().exPins.isEmpty() ? 0 : 1) : 3);
 			}
 			return stackH(1);
 		}
@@ -552,7 +602,7 @@ public final class ClickGui {
 		java.util.Map.entry("Paths", "Record and show walking paths."),
 		java.util.Map.entry("Movement rings", "Movement guide rings (unfinished)."),
 		java.util.Map.entry("Accent", "The accent colour, and the opacity and blur of every Shadow panel."),
-		java.util.Map.entry(HUD_LOOK, "Accent outlines and the HUD editor."),
+		java.util.Map.entry(HUD_LOOK, "The theme (Shadow, uid?, Expressive), its colours, accent outlines and the HUD editor."),
 		java.util.Map.entry("Auto update", "Updates Stray by itself."),
 		java.util.Map.entry("Auto close", "Closes the game after updating."),
 		java.util.Map.entry("Update notify", "Tells you when an update is out."),

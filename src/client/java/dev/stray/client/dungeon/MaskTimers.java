@@ -258,7 +258,7 @@ public final class MaskTimers {
 		HudLayout.apply(graphics, font, HudLayout.Id.MASK_TIMERS, () -> {
 			float y = 0f;
 			for (Mask mask : Mask.values()) {
-				GuiDraw.text(graphics, font, Component.literal(line(mask, example, now)), 0f, y, 0xFFFFFFFF, true);
+				GuiDraw.text(graphics, font, dev.stray.client.ui.MenuFont.look(Component.literal(line(mask, example, now))), 0f, y, 0xFFFFFFFF, true);
 				y += LINE;
 			}
 		});
@@ -280,7 +280,7 @@ public final class MaskTimers {
 		}
 		long left = active.invulnUntil - now;
 		String color = left < 1000L ? "§c" : "§a";
-		Component text = Component.literal(active.color + active.name + ": " + color + String.format(Locale.ROOT, "%.1f", left / 1000.0));
+		Component text = dev.stray.client.ui.MenuFont.look(Component.literal(active.color + active.name + ": " + color + String.format(Locale.ROOT, "%.1f", left / 1000.0)));
 		float scale = 1.5f;
 		float x = graphics.guiWidth() * 0.5f - font.width(text) * scale * 0.5f;
 		float y = graphics.guiHeight() / 3f;

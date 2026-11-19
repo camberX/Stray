@@ -58,6 +58,10 @@ public final class Theme {
 	}
 
 	public static void refresh() {
+		if (Looks.ex()) {
+			ExColors.refresh();
+		}
+		ShadowLook.look();
 		int accent = StrayConfig.get().themeAccentRgb & 0xFFFFFF;
 		int pane = StrayConfig.get().themePaneRgb & 0xFFFFFF;
 		if (pane == 0) {
@@ -96,7 +100,8 @@ public final class Theme {
 			NAV_PILL = ControlChrome.selectedFill();
 			SIDEBAR = ControlChrome.railFill();
 			shadow(hudOpacity, opacity);
-			applyAccentOutlines(accent);
+			look();
+			applyAccentOutlines(ACCENT & 0xFFFFFF);
 			return;
 		}
 		TEXT = 0xFFF2F4F7;
@@ -121,7 +126,69 @@ public final class Theme {
 		NAV_PILL = withAlpha(mix(pane, accent, 0.55f), Math.round(230 * opacity));
 		SIDEBAR = withAlpha(mix(0x101820, pane, 0.45f), Math.round(185 * opacity));
 		shadow(hudOpacity, opacity);
-		applyAccentOutlines(accent);
+		look();
+		applyAccentOutlines(ACCENT & 0xFFFFFF);
+	}
+
+	/** uid? and Expressive repaint every shared colour after Shadow's: the whole UI follows the look. */
+	private static void look() {
+		WINDOW_RADIUS = ShadowLook.WINDOW_R;
+		if (Looks.uid()) {
+			int accent = 0xFF000000 | (StrayConfig.get().uidAccent & 0xFFFFFF);
+			ACCENT = accent;
+			ACCENT_DIM = withAlpha(accent, 0x66);
+			WINDOW = 0xF5171717;
+			WINDOW_SOLID = 0xFF171717;
+			SHEET = 0xFF282828;
+			CARD = 0xFF1F1F1F;
+			CARD_HOVER = 0xFF292929;
+			LINE = UidLook.EDGE;
+			TRACK = 0xFF323232;
+			PANEL = 0xFF232323;
+			HUD_WINDOW = 0xF0171717;
+			HUD_LINE = UidLook.EDGE;
+			HUD_LINE_NEUTRAL = UidLook.EDGE;
+			HUD_TRACK = 0xFF323232;
+			HUD_CARD = 0xFF1F1F1F;
+			HUD_CARD_HOVER = 0xFF292929;
+			HUD_PANEL = 0xFF232323;
+			TEXT = UidLook.LABEL;
+			MUTED = UidLook.VALUE;
+			HEADER = UidLook.LABEL;
+			OFF = 0xFF646464;
+			NAV_PILL = 0xFF282828;
+			SIDEBAR = 0xFF0C0C0C;
+			WINDOW_RADIUS = 0f;
+		} else if (Looks.ex()) {
+			ExColors.refresh();
+			float op = ExColors.opacity();
+			ACCENT = ExColors.primary;
+			ACCENT_DIM = ExColors.primaryContainer;
+			WINDOW = ExColors.alpha(ExColors.surface, op);
+			WINDOW_SOLID = ExColors.surface;
+			SHEET = ExColors.alpha(ExColors.surfaceMid, Math.max(op, 0.96f));
+			CARD = ExColors.surfaceHigh;
+			CARD_HOVER = ExColors.surfaceHighest;
+			LINE = ExColors.outlineVariant;
+			TRACK = ExColors.surfaceHighest;
+			PANEL = ExColors.surfaceLow;
+			HUD_WINDOW = ExColors.alpha(ExColors.surfaceMid, op);
+			HUD_LINE = ExColors.outlineVariant;
+			HUD_LINE_NEUTRAL = ExColors.outlineVariant;
+			HUD_TRACK = ExColors.surfaceHighest;
+			HUD_CARD = ExColors.surfaceHigh;
+			HUD_CARD_HOVER = ExColors.surfaceHighest;
+			HUD_PANEL = ExColors.surfaceLow;
+			TEXT = ExColors.onSurface;
+			MUTED = ExColors.onSurfaceVariant;
+			HEADER = ExColors.onSurface;
+			OFF = ExColors.outline;
+			NAV_PILL = ExColors.secondaryContainer;
+			SIDEBAR = ExColors.surfaceLow;
+			DANGER = ExColors.tertiary;
+			WINDOW_RADIUS = 20f;
+		}
+		ShadowLook.look();
 	}
 
 	/** Shadow style: see-through black, faint white lines, white and gray text. */

@@ -92,6 +92,16 @@ public final class HudChrome {
 		if (w < 1f || h < 1f) {
 			return;
 		}
+		if (dev.stray.client.ui.Looks.ex()) {
+			dev.stray.client.ui.ExLook.rounded(graphics, x, y, w, h, Math.min(8f, Math.min(w, h) * 0.5f), exFill(fill));
+			return;
+		}
+		if (dev.stray.client.ui.Looks.uid()) {
+			float p = GuiDraw.pixel() / GuiDraw.poseScale(graphics);
+			GuiDraw.fillSmooth(graphics, x, y, w, h, 0xFF0C0C0C);
+			GuiDraw.fillSmooth(graphics, x + p, y + p, w - 2 * p, h - 2 * p, Theme.withAlpha(0x1A1A1A, Math.max(0xC0, (fill >>> 24) & 0xFF)));
+			return;
+		}
 		int outline = outline();
 		GuiDraw.fillSmooth(graphics, x, y, w, STROKE, outline);
 		GuiDraw.fillSmooth(graphics, x, y + h - STROKE, w, STROKE, outline);
@@ -105,7 +115,32 @@ public final class HudChrome {
 		GuiDraw.rounded(graphics, x, y, w, h, radius, color);
 	}
 
+	private static int exFill(int fill) {
+		int r = (fill >> 16) & 0xFF;
+		int g = (fill >> 8) & 0xFF;
+		int b = fill & 0xFF;
+		if (r < 0x1C && g < 0x1C && b < 0x22) {
+			return dev.stray.client.ui.ExColors.alpha(dev.stray.client.ui.ExColors.surfaceMid, Math.min(1f, ((fill >>> 24) & 0xFF) / 255f * 1.15f));
+		}
+		return fill;
+	}
+
 	public static void slot(GuiGraphicsExtractor graphics, float x, float y, float size, boolean selected) {
+		if (dev.stray.client.ui.Looks.ex()) {
+			dev.stray.client.ui.ExLook.rounded(graphics, x, y, size, size, Math.max(4f, size * 0.28f),
+				selected ? dev.stray.client.ui.ExColors.secondaryContainer : dev.stray.client.ui.ExColors.alpha(dev.stray.client.ui.ExColors.surfaceHigh, 0.85f));
+			if (selected) {
+				GuiDraw.hairline(graphics, x, y, size, size, Math.max(4f, size * 0.28f), dev.stray.client.ui.ExColors.primary);
+			}
+			return;
+		}
+		if (dev.stray.client.ui.Looks.uid()) {
+			dev.stray.client.ui.UidLook.control(graphics, x, y, size, size, false, selected);
+			if (selected) {
+				GuiDraw.fillSmooth(graphics, x, y + size - 2 * GuiDraw.pixel(), size, 2 * GuiDraw.pixel(), dev.stray.client.ui.UidMenu.accent());
+			}
+			return;
+		}
 		int fill = selected ? Theme.HUD_CARD_HOVER : Theme.HUD_TRACK;
 		int outline = neutralOutline ? line() : (selected ? Theme.ACCENT : Theme.HUD_LINE);
 		GuiDraw.well(graphics, x, y, size, fill, outline);

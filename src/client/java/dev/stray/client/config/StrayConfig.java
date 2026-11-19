@@ -90,6 +90,28 @@ public final class StrayConfig {
 	public boolean watermarkTime = false;
 	public boolean watermarkName = false;
 	public String watermarkStyle = "shadow";
+	/**
+	 * The look of everything Stray draws: "shadow", "uid" or "expressive" (Material 3 Expressive).
+	 * The menu, the HUD, Stray's screens and the vanilla menus all follow it.
+	 */
+	public String theme = "shadow";
+	/** False until the first-boot picker has been answered. */
+	public boolean themeChosen = false;
+	/** Expressive: the seed colour every Material colour role is built from. */
+	public int exSeed = 0x6750A4;
+	/** Expressive: 0 tonal, 1 vibrant, 2 expressive, 3 fidelity, 4 monochrome. */
+	public int exScheme = 0;
+	/** Expressive: contrast, 0 standard, 1 medium, 2 high. */
+	public int exContrast = 0;
+	/** Expressive: how opaque its surfaces are, 0.3 to 1. */
+	public float exOpacity = 0.94f;
+	/** Expressive: menu open / close and tab animation, ms (0 = off). */
+	public int exAnimMs = 0;
+	/** Expressive menu window size (0 = default), like the uid? one. */
+	public int exWidth = 0;
+	public int exHeight = 0;
+	/** Expressive: colour roles pinned to a colour of your own (role name to RGB); the rest follow the seed. */
+	public java.util.Map<String, Integer> exPins = new java.util.LinkedHashMap<>();
 	/** uid? watermark: the menu's blue-pink-yellow bar along the top. */
 	public boolean watermarkUidBar = false;
 	/** HUD element ids (HudLayout.Id names) lined up along the top edge. */
@@ -1528,7 +1550,19 @@ public final class StrayConfig {
 				}
 				// The Stray menu is gone: the click GUI is the menu.
 				loaded.clickGui = true;
-				loaded.clickGuiStyle = normalizeClickGuiStyle(loaded.clickGuiStyle);
+				if (!json.has("themeChosen")) {
+					loaded.themeChosen = false;
+				}
+				loaded.theme = normalizeTheme(json.has("theme") ? loaded.theme : loaded.clickGuiStyle);
+				loaded.clickGuiStyle = loaded.theme;
+				loaded.watermarkStyle = loaded.theme;
+				loaded.exScheme = Math.max(0, Math.min(4, loaded.exScheme));
+				loaded.exContrast = Math.max(0, Math.min(2, loaded.exContrast));
+				loaded.exOpacity = clamp(loaded.exOpacity, 0.3f, 1f);
+				loaded.exAnimMs = Math.max(0, Math.min(600, loaded.exAnimMs));
+				if (loaded.exPins == null) {
+					loaded.exPins = new java.util.LinkedHashMap<>();
+				}
 				loaded.uidDpi = Math.max(0, Math.min(5, loaded.uidDpi));
 				loaded.guiStyle = "shadow";
 				loaded.chatStyle = "shadow";
@@ -2088,7 +2122,12 @@ public final class StrayConfig {
 	}
 
 	private static String normalizeWatermarkStyle(String style) {
-		return "uid".equals(style) ? "uid" : "shadow";
+		return normalizeTheme(style);
+	}
+
+	/** One of the three looks; anything else is Shadow. */
+	public static String normalizeTheme(String style) {
+		return "uid".equals(style) || "expressive".equals(style) ? style : "shadow";
 	}
 
 	public static final String[] MUSIC_LAYOUTS = {"card", "compact", "poster", "dock", "bar"};
@@ -2276,7 +2315,7 @@ public final class StrayConfig {
 
 	/** Shadow is the only click GUI style left. */
 	public static String normalizeClickGuiStyle(String style) {
-		return "uid".equals(style) ? "uid" : "shadow";
+		return normalizeTheme(style);
 	}
 
 	public static String normalizeHealthBarSide(String side) {

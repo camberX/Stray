@@ -453,6 +453,23 @@ final class OverlayGl implements Canvas {
 
 	@Override
 	public void panel(float x, float y, float w, float h, float radius, int fill, int edge) {
+		if (dev.stray.client.ui.Looks.uid()) {
+			// uid?: square, the banded grey frame (a light line between dark ones) and a dark inside.
+			rounded(x, y, w, h, 0f, 0.01f, 0f, 0xFF0A0A0A);
+			rounded(x + 1, y + 1, w - 2, h - 2, 0f, 0.01f, 0f, 0xFF3C3C3C);
+			rounded(x + 2, y + 2, w - 4, h - 4, 0f, 0.01f, 0f, 0xFF282828);
+			rounded(x + 4, y + 4, w - 8, h - 8, 0f, 0.01f, 0f, 0xFF3C3C3C);
+			rounded(x + 5, y + 5, w - 10, h - 10, 0f, 0.01f, 0f, 0xFF171717);
+			return;
+		}
+		if (dev.stray.client.ui.Looks.ex()) {
+			// Expressive: a soft shadow and the tonal surface with large rounded corners.
+			float r = Math.min(14f, Math.min(w, h) * 0.5f);
+			rounded(x, y + 2f, w, h, r, 10f, 0f, 0x50000000);
+			int a = Math.max(fill >>> 24, 0xE6);
+			rounded(x, y, w, h, r, 0.01f, 0f, (a << 24) | (dev.stray.client.ui.ExColors.surfaceMid & 0xFFFFFF));
+			return;
+		}
 		// Shadow's look: a soft shadow under it, the translucent black, a 1 px hairline edge.
 		rounded(x, y + 1.5f, w, h, radius, 10f, 0f, 0x60000000);
 		// No frosted blur behind it out here, so it needs to be more solid to read the same.

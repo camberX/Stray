@@ -514,7 +514,7 @@ public final class AutoHotbar {
 			return;
 		}
 		Font font = client.font;
-		HudLayout.apply(graphics, font, HudLayout.Id.AUTO_HOTBAR, () -> GuiDraw.text(graphics, font, Component.literal(text), 0f, 0f, 0xFFFFFFFF, true));
+		HudLayout.apply(graphics, font, HudLayout.Id.AUTO_HOTBAR, () -> GuiDraw.text(graphics, font, dev.stray.client.ui.MenuFont.look(Component.literal(text)), 0f, 0f, 0xFFFFFFFF, true));
 	}
 
 	/** Above the inventory while swapping, where the HUD is covered. */

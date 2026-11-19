@@ -35,7 +35,7 @@ public final class UidText {
 	private static final float GAMMA = 1.3f;
 	private static final int[] LUT = new int[256];
 	private static long library;
-	private static final Face[] FACES = new Face[2];
+	private static final Face[] FACES = new Face[4];
 	private static boolean failed;
 
 	static {
@@ -55,6 +55,7 @@ public final class UidText {
 
 	private static final class Atlas {
 		int px;
+		int face;
 		int ascender;
 		Identifier id;
 		NativeImage image;
@@ -84,8 +85,8 @@ public final class UidText {
 				return false;
 			}
 			library = lib.get(0);
-			String[] files = {"uid_sans.ttf", "uid_sans_bold.ttf"};
-			for (int i = 0; i < 2; i++) {
+			String[] files = {"uid_sans.ttf", "uid_sans_bold.ttf", "ex_medium.ttf", "ex_bold.ttf"};
+			for (int i = 0; i < files.length; i++) {
 				Face f = new Face();
 				try (InputStream in = UidText.class.getResourceAsStream("/assets/stray/font/" + files[i])) {
 					byte[] bytes = in.readAllBytes();
@@ -116,9 +117,40 @@ public final class UidText {
 		return atlas(family, dpi());
 	}
 
+	/**
+	 * Which face a family uses: 7 / 8 are uid?'s regular and bold (9 px); 20 to 24 are Expressive's
+	 * Roboto Flex: 20 body (13 px), 21 body bold, 22 small (11 px), 23 title (18 px bold), 24 headline (28 px bold).
+	 */
+	private static int face(int family) {
+		return switch (family) {
+			case 8 -> 1;
+			case 20, 22 -> 2;
+			case 21, 23, 24 -> 3;
+			default -> 0;
+		};
+	}
+
+	/** The family's size in units. */
+	public static float em(int family) {
+		return switch (family) {
+			case 20, 21 -> 13f;
+			case 22 -> 11f;
+			case 23 -> 18f;
+			case 24 -> 28f;
+			default -> EM;
+		};
+	}
+
+	/** Where the baseline sits under the text's y, in units. */
+	private static float baseline(int family) {
+		return family >= 20 ? Math.round(em(family) * 0.82f) : BASELINE;
+	}
+
 	private static Atlas atlas(int family, double scale) {
+		int key = family;
+		family = face(family);
 		Face f = FACES[family];
-		int px = Math.max(6, (int) Math.round(EM * scale));
+		int px = Math.max(6, (int) Math.round(em(key) * scale));
 		Atlas a = f.sizes.get(px);
 		if (a == null) {
 			a = new Atlas();
@@ -127,6 +159,7 @@ public final class UidText {
 			a.ascender = (int) (f.face.size().metrics().ascender() >> 6);
 			a.image = new NativeImage(ATLAS, ATLAS, true);
 			a.id = Stray.id("dynamic/uid_text_" + family + "_" + px);
+			a.face = family;
 			a.texture = new DynamicTexture(() -> "Stray uid text", a.image);
 			Minecraft.getInstance().getTextureManager().register(a.id, a.texture);
 			f.sizes.put(px, a);
@@ -139,7 +172,7 @@ public final class UidText {
 		if (g != null) {
 			return g;
 		}
-		FT_Face face = FACES[family].face;
+		FT_Face face = FACES[a.face].face;
 		FreeType.FT_Set_Pixel_Sizes(face, 0, a.px);
 		int index = FreeType.FT_Get_Char_Index(face, codepoint);
 		// FT_LOAD_RENDER with the default (full) hinting: DejaVu's own bytecode hints.
@@ -198,8 +231,7 @@ public final class UidText {
 		if (!ready()) {
 			return (int) Math.round(6.5 * scale);
 		}
-		int fam = family == 8 ? 1 : 0;
-		return glyph(fam, atlas(fam, scale), 'H').top;
+		return glyph(family, atlas(family, scale), 'H').top;
 	}
 
 	/** Width in units of {@code scale} screen pixels. */
@@ -207,7 +239,7 @@ public final class UidText {
 		if (text == null || text.isEmpty() || !ready()) {
 			return 0f;
 		}
-		int fam = family == 8 ? 1 : 0;
+		int fam = family;
 		Atlas a = atlas(fam, scale);
 		int px = 0;
 		for (int i = 0; i < text.length(); ) {
@@ -228,11 +260,11 @@ public final class UidText {
 		if (text == null || text.isEmpty() || !ready()) {
 			return;
 		}
-		int fam = family == 8 ? 1 : 0;
+		int fam = family;
 		Atlas a = atlas(fam, scale);
 		Minecraft client = Minecraft.getInstance();
 		double gui = client.getWindow().getGuiScale();
-		Vector2f origin = graphics.pose().transformPosition(x, y + BASELINE, new Vector2f());
+		Vector2f origin = graphics.pose().transformPosition(x, y + baseline(family), new Vector2f());
 		int penX = (int) Math.round(origin.x * gui);
 		int baseline = (int) Math.round(origin.y * gui);
 		// Collect first so newly rasterized glyphs are uploaded before they're drawn.

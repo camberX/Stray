@@ -34,14 +34,15 @@ public final class MenuFont {
 	 * smoothing, so a glyph is only crisp when its texels match screen pixels:
 	 * pick the copy for the current GUI scale.
 	 */
-	private static final Style[][] HYPR_SCALED = new Style[10][6];
+	private static final Style[][] HYPR_SCALED = new Style[16][6];
 	/** uid?'s fonts rasterized at 100 % to 300 % in quarters (uid_d100 ... uid_d300). */
 	private static final Style[][] UID_EXACT = new Style[2][9];
 	/** Every scaled copy (and the base icon font) mapped to its family, for {@link #crisp}. */
 	private static final java.util.Map<FontDescription, Integer> FAMILY = new java.util.HashMap<>();
 
 	static {
-		String[] names = {"hypr", "hypr_small", "hypr_title", "nl_icon", "shadow", "shadow_small", "shadow_title", "uid", "uid_bold", "uid_small"};
+		String[] names = {"hypr", "hypr_small", "hypr_title", "nl_icon", "shadow", "shadow_small", "shadow_title", "uid", "uid_bold", "uid_small",
+			"ex", "ex_small", "ex_title", "uidh", "uidh_small", "uidh_title"};
 		for (int f = 0; f < names.length; f++) {
 			for (int s = 0; s < 6; s++) {
 				FontDescription desc = new FontDescription.Resource(Stray.id(names[f] + "_" + (s + 1)));
@@ -67,6 +68,10 @@ public final class MenuFont {
 		FAMILY.put(new FontDescription.Resource(Stray.id("uid")), 7);
 		FAMILY.put(new FontDescription.Resource(Stray.id("uid_bold")), 8);
 		FAMILY.put(new FontDescription.Resource(Stray.id("uid_small")), 9);
+		String[] looks = {"ex", "ex_small", "ex_title", "uidh", "uidh_small", "uidh_title"};
+		for (int i = 0; i < looks.length; i++) {
+			FAMILY.put(new FontDescription.Resource(Stray.id(looks[i])), 10 + i);
+		}
 	}
 
 	/**
@@ -120,17 +125,63 @@ public final class MenuFont {
 		return HYPR_SCALED[family][scale - 1];
 	}
 
-	/** Google Sans Flex, for the Shadow style; the uid? fonts while that menu draws. */
+	/**
+	 * Stray's text font for the look in use: Google Sans Flex (Shadow), DejaVu Sans (uid?) or
+	 * Roboto Flex (Expressive); inside the uid? menu its exact 9 px copies.
+	 */
+	public static int bodyFamily() {
+		if (UidMenu.drawing()) {
+			return 7;
+		}
+		return Looks.uid() ? 13 : Looks.ex() ? 10 : 4;
+	}
+
+	public static int smallFamily() {
+		if (UidMenu.drawing()) {
+			return 9;
+		}
+		return Looks.uid() ? 14 : Looks.ex() ? 11 : 5;
+	}
+
+	public static int titleFamily() {
+		if (UidMenu.drawing()) {
+			return 8;
+		}
+		return Looks.uid() ? 15 : Looks.ex() ? 12 : 6;
+	}
+
+	/** The look's body text style (what HUD text and vanilla button labels use). */
+	public static Style bodyLook() {
+		return hyprStyle(bodyFamily());
+	}
+
+	/**
+	 * HUD overlays drawn in the game's own font (titles, timers) take the look's font in uid?
+	 * and Expressive; Shadow keeps them as they are.
+	 */
+	public static Component look(Component value) {
+		if (value == null || Looks.shadow()) {
+			return value;
+		}
+		net.minecraft.network.chat.FontDescription font = bodyLook().getFont();
+		net.minecraft.network.chat.MutableComponent out = Component.empty();
+		value.visit((style, part) -> {
+			out.append(Component.literal(part).withStyle(style.withFont(font)));
+			return java.util.Optional.empty();
+		}, Style.EMPTY);
+		return out;
+	}
+
 	public static Component shadow(String value) {
-		return Component.literal(value == null ? "" : value).withStyle(hyprStyle(UidMenu.drawing() ? 7 : 4));
+		return Component.literal(value == null ? "" : value).withStyle(hyprStyle(bodyFamily()));
 	}
 
 	public static Component shadowSmall(String value) {
-		return Component.literal(value == null ? "" : value).withStyle(hyprStyle(UidMenu.drawing() ? 9 : 5));
+		return Component.literal(value == null ? "" : value).withStyle(hyprStyle(smallFamily()));
 	}
 
 	public static Component shadowTitle(String value) {
-		return Component.literal(value == null ? "" : value).withStyle(hyprStyle(UidMenu.drawing() ? 8 : 6));
+		return Component.literal(value == null ? "" : value).withStyle(hyprStyle(titleFamily()));
 	}
 
 	/** uid?: DejaVu Sans at 9 px, the stand-in for Verdana 9. */

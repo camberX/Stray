@@ -113,7 +113,7 @@ public final class M4Hud {
 				for (List<Seg> row : rows) {
 					int x = 0;
 					for (Seg seg : row) {
-						GuiDraw.text(graphics, font, Component.literal(seg.text), x, y, seg.color, true);
+						GuiDraw.text(graphics, font, dev.stray.client.ui.MenuFont.look(Component.literal(seg.text)), x, y, seg.color, true);
 						x += font.width(seg.text) + GAP;
 					}
 					y += LINE;

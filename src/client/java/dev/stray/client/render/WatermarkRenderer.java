@@ -26,7 +26,11 @@ public final class WatermarkRenderer {
 	}
 
 	private static boolean uid() {
-		return "uid".equals(StrayConfig.get().watermarkStyle);
+		return dev.stray.client.ui.Looks.uid();
+	}
+
+	private static boolean ex() {
+		return dev.stray.client.ui.Looks.ex();
 	}
 
 	public static float occupiedHeight() {
@@ -56,6 +60,8 @@ public final class WatermarkRenderer {
 		}
 		if (uid()) {
 			drawUid(graphics, scale);
+		} else if (ex()) {
+			drawEx(graphics, font);
 		} else {
 			drawShadow(graphics, font);
 		}
@@ -169,6 +175,49 @@ public final class WatermarkRenderer {
 		}
 	}
 
+
+	// ---- Expressive: a connected button group: "stray" on a primary pill, each stat a tonal
+	// segment joined to it with small inner corners and a round outer end.
+
+	private static final float EX_GAP = 2f;
+	private static final float EX_PAD = 7f;
+
+	private static float exWidth(Font font) {
+		List<String> parts = shadowParts();
+		float w = EX_PAD + font.width(MenuFont.shadowTitle("stray")) + EX_PAD;
+		for (int i = 0; i < parts.size(); i++) {
+			w += EX_GAP + EX_PAD + stableWidth(font, MenuFont.shadow(parts.get(i)), "ex:" + i) + EX_PAD;
+		}
+		return w;
+	}
+
+	private static void drawEx(GuiGraphicsExtractor graphics, Font font) {
+		List<String> parts = shadowParts();
+		int count = parts.size();
+		float h = HEIGHT;
+		float big = h * 0.5f;
+		float small = 4f;
+		boolean bg = HudChrome.background();
+		Component brand = MenuFont.shadowTitle("stray");
+		float bw = EX_PAD + font.width(brand) + EX_PAD;
+		dev.stray.client.ui.ExLook.sides(graphics, 0, 0, bw, h, big, count == 0 ? big : small, dev.stray.client.ui.ExColors.primary);
+		float textY = Math.round(GuiDraw.middle(0, h));
+		GuiDraw.text(graphics, font, brand, EX_PAD, Math.round(GuiDraw.middle(0, h) - 0.5f), dev.stray.client.ui.ExColors.onPrimary, false);
+		float x = bw;
+		int fill = dev.stray.client.ui.ExColors.alpha(dev.stray.client.ui.ExColors.surfaceHigh, dev.stray.client.ui.ExColors.opacity());
+		for (int i = 0; i < count; i++) {
+			x += EX_GAP;
+			Component text = MenuFont.shadow(parts.get(i));
+			float tw = stableWidth(font, text, "ex:" + i);
+			float sw = EX_PAD + tw + EX_PAD;
+			if (bg) {
+				dev.stray.client.ui.ExLook.sides(graphics, x, 0, sw, h, small, i == count - 1 ? big : small, fill);
+			}
+			int color = i == 0 ? dev.stray.client.ui.ExColors.onSurface : dev.stray.client.ui.ExColors.onSurfaceVariant;
+			GuiDraw.text(graphics, font, text, x + EX_PAD, textY, color, false);
+			x += sw;
+		}
+	}
 
 	// ---- uid?: the classic cheat-menu watermark: a 30 px box of seven 1 px bands, then
 	// "stray" with ".gay" in the menu colour and the stats, " | " between them, in sharp DejaVu.
@@ -290,17 +339,20 @@ public final class WatermarkRenderer {
 
 	private static int widthTick = Integer.MIN_VALUE;
 	private static float widthCache;
+	private static String widthLook = "";
 
 	public static float width(Font font) {
 		Minecraft client = Minecraft.getInstance();
 		StrayConfig config = StrayConfig.get();
 		int tick = client.player == null ? -1 : client.player.tickCount;
-		if (tick == widthTick && widthCache > 0f) {
+		String look = dev.stray.client.ui.Looks.current();
+		if (tick == widthTick && widthCache > 0f && look.equals(widthLook)) {
 			return widthCache;
 		}
-		float w = uid() ? uidWidth(uidScale() * HudLayout.scale(HudLayout.Id.WATERMARK)) * (float) (uidScale() / guiScale()) : shadowWidth(font);
+		float w = uid() ? uidWidth(uidScale() * HudLayout.scale(HudLayout.Id.WATERMARK)) * (float) (uidScale() / guiScale()) : ex() ? exWidth(font) : shadowWidth(font);
 		widthTick = tick;
 		widthCache = w;
+		widthLook = look;
 		return w;
 	}
 

@@ -86,7 +86,7 @@ public final class UidMenu {
 	}
 
 	public static boolean active() {
-		return "uid".equals(StrayConfig.get().clickGuiStyle);
+		return Looks.uid();
 	}
 
 	public static boolean drawing() {

@@ -402,6 +402,42 @@ public final class UidLook {
 	}
 
 	/** The picker panel: #0c0c0c, #3c3c3c and a #282828 inside. */
+	/** gamesense's banded frame greys, outside in (the watermark uses the same). */
+	private static final int[] BANDS = {0x0A, 0x3C, 0x28, 0x28, 0x28, 0x3C, 0x14};
+
+	/**
+	 * A uid? box anywhere outside its menu (HUD panels, screens, vanilla menus): the banded grey
+	 * frame on whole screen pixels, then the dark inside at {@code alpha}.
+	 */
+	public static void frame(GuiGraphicsExtractor graphics, float x, float y, float w, float h, int alpha) {
+		float p = GuiDraw.pixel() / GuiDraw.poseScale(graphics);
+		float band = p * Math.max(1, Math.round(1f / (p * 2.5f)) > 3 ? 2 : 1);
+		int a = Math.max(0, Math.min(255, alpha));
+		float in = 0f;
+		for (int i = 0; i < BANDS.length && in * 2f < Math.min(w, h) - 4f * band; i++) {
+			int g = BANDS[i];
+			ring(graphics, x + in, y + in, w - in * 2f, h - in * 2f, band, Theme.withAlpha((g << 16) | (g << 8) | g, Math.max(a, 200)));
+			in += band;
+		}
+		GuiDraw.fillSmooth(graphics, x + in, y + in, w - in * 2f, h - in * 2f, Theme.withAlpha(0x171717, a));
+	}
+
+	/** A small uid? control outside the menu: flat dark grey with a black edge, lighter on hover. */
+	public static void control(GuiGraphicsExtractor graphics, float x, float y, float w, float h, boolean hover, boolean selected) {
+		float p = GuiDraw.pixel() / GuiDraw.poseScale(graphics);
+		ring(graphics, x, y, w, h, p, EDGE);
+		int top = selected ? 0xFF3A3A3A : hover ? 0xFF323232 : 0xFF2A2A2A;
+		int bottom = selected ? 0xFF2E2E2E : hover ? 0xFF282828 : 0xFF202020;
+		GuiDraw.fillGradient(graphics, x + p, y + p, w - 2f * p, h - 2f * p, top, bottom);
+	}
+
+	private static void ring(GuiGraphicsExtractor graphics, float x, float y, float w, float h, float t, int color) {
+		GuiDraw.fillSmooth(graphics, x, y, w, t, color);
+		GuiDraw.fillSmooth(graphics, x, y + h - t, w, t, color);
+		GuiDraw.fillSmooth(graphics, x, y + t, t, h - 2f * t, color);
+		GuiDraw.fillSmooth(graphics, x + w - t, y + t, t, h - 2f * t, color);
+	}
+
 	public static void panel(GuiGraphicsExtractor graphics, float x, float y, float w, float h) {
 		outline(graphics, x, y, w, h, EDGE);
 		outline(graphics, x + 1, y + 1, w - 2, h - 2, FRAME_LIGHT);

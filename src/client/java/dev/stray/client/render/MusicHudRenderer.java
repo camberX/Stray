@@ -444,7 +444,7 @@ public final class MusicHudRenderer {
 	private static final String NOTE = "\uE405";
 
 	private static Component barText(String value) {
-		return Component.literal(value == null ? "" : value).withStyle(MenuFont.hyprStyle(4));
+		return Component.literal(value == null ? "" : value).withStyle(MenuFont.bodyLook());
 	}
 
 	private static String barLine(NowPlaying track, boolean live) {

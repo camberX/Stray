@@ -80,6 +80,9 @@ public class StrayTitleScreen extends Screen {
 
 	@Override
 	public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float delta) {
+		if (ThemePickerScreen.ask(minecraft, this)) {
+			return;
+		}
 		Theme.refresh();
 		tickAnim();
 		hits.clear();
@@ -155,7 +158,14 @@ public class StrayTitleScreen extends Screen {
 	) {
 		boolean hovered = enabled && GuiDraw.hovered(mouseX, mouseY, x, y, w, BUTTON_H);
 		int fill = hovered ? ShadowLook.CARD_HOVER : ShadowLook.CARD;
-		GuiDraw.roundedFine(graphics, x, y, w, BUTTON_H, ShadowLook.CONTROL_R, Anim.fade(fill, fade));
+		if (Looks.shadow()) {
+			GuiDraw.roundedFine(graphics, x, y, w, BUTTON_H, ShadowLook.CONTROL_R, Anim.fade(fill, fade));
+		} else {
+			// uid? and Expressive draw their own buttons (a framed grey box, a tonal pill).
+			GuiDraw.alphaScale = fade;
+			ShadowLook.card(graphics, x, y, w, BUTTON_H, ShadowLook.CONTROL_R, hovered, false);
+			GuiDraw.alphaScale = 1f;
+		}
 		int text = enabled ? ShadowLook.TEXT : ShadowLook.FAINT;
 		float textX = x + (w - GuiDraw.menuWidth(font, label)) * 0.5f;
 		GuiDraw.menu(graphics, font, label, textX, GuiDraw.middle(y, BUTTON_H), Anim.fade(text, fade));

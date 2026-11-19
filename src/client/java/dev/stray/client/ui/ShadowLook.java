@@ -10,14 +10,14 @@ import net.minecraft.client.gui.GuiGraphicsExtractor;
  * and gray text. It reuses the Click layouts; only the panels and colours change.
  */
 public final class ShadowLook {
-	public static final int TEXT = 0xFFEEF1F5;
-	public static final int MUTED = 0xFF8A94A0;
-	public static final int FAINT = 0xFF5A636E;
-	public static final int LINE = 0x1CFFFFFF;
-	public static final int CARD = 0x0EFFFFFF;
-	public static final int CARD_HOVER = 0x1AFFFFFF;
-	public static final int SELECTED = 0x22FFFFFF;
-	public static final int SELECTED_LINE = 0x30FFFFFF;
+	public static int TEXT = 0xFFEEF1F5;
+	public static int MUTED = 0xFF8A94A0;
+	public static int FAINT = 0xFF5A636E;
+	public static int LINE = 0x1CFFFFFF;
+	public static int CARD = 0x0EFFFFFF;
+	public static int CARD_HOVER = 0x1AFFFFFF;
+	public static int SELECTED = 0x22FFFFFF;
+	public static int SELECTED_LINE = 0x30FFFFFF;
 	private static final int BLACK = 0x050709;
 
 	/** Corner radii, so every Shadow surface rounds the same way: menus and screens, HUD panels, controls, slots. */
@@ -35,6 +35,40 @@ public final class ShadowLook {
 	/** Panel edge: the faint white line, or the accent when accent outlines are on. */
 	public static int edge() {
 		return StrayConfig.get().accentOutlines ? Theme.withAlpha(Theme.ACCENT, 0x90) : LINE;
+	}
+
+	/** Text and card colours for the look in use: the screens that read them follow it. */
+	static void look() {
+		if (Looks.uid()) {
+			TEXT = UidLook.LABEL;
+			MUTED = UidLook.VALUE;
+			FAINT = 0xFF646464;
+			LINE = UidLook.EDGE;
+			CARD = 0xFF1F1F1F;
+			CARD_HOVER = 0xFF292929;
+			SELECTED = 0xFF2E2E2E;
+			SELECTED_LINE = 0xFF3C3C3C;
+			FILL = 0xF0171717;
+		} else if (Looks.ex()) {
+			TEXT = ExColors.onSurface;
+			MUTED = ExColors.onSurfaceVariant;
+			FAINT = ExColors.outline;
+			LINE = ExColors.outlineVariant;
+			CARD = ExColors.surfaceHigh;
+			CARD_HOVER = ExColors.surfaceHighest;
+			SELECTED = ExColors.secondaryContainer;
+			SELECTED_LINE = ExColors.secondary;
+			FILL = ExColors.alpha(ExColors.surfaceMid, ExColors.opacity());
+		} else {
+			TEXT = 0xFFEEF1F5;
+			MUTED = 0xFF8A94A0;
+			FAINT = 0xFF5A636E;
+			LINE = 0x1CFFFFFF;
+			CARD = 0x0EFFFFFF;
+			CARD_HOVER = 0x1AFFFFFF;
+			SELECTED = 0x22FFFFFF;
+			SELECTED_LINE = 0x30FFFFFF;
+		}
 	}
 
 	/** Picks up the opacity setting; {@link Theme#refresh} calls it. */
@@ -62,6 +96,14 @@ public final class ShadowLook {
 		if (w < 2f || h < 2f) {
 			return;
 		}
+		if (Looks.uid() && !UidMenu.drawing()) {
+			UidLook.frame(graphics, x, y, w, h, (fill >>> 24) & 0xFF);
+			return;
+		}
+		if (Looks.ex()) {
+			ExLook.surface(graphics, x, y, w, h, exRadius(radius, w, h), exFill(fill, ExColors.surfaceMid), frost);
+			return;
+		}
 		float r = Math.min(Math.max(2f, radius), Math.min(w, h) * 0.5f);
 		shadow(graphics, x, y, w, h, r, Math.min(w, h) < 40f ? 8 : 12, 0x60);
 		if (frost) {
@@ -69,6 +111,27 @@ public final class ShadowLook {
 		}
 		GuiDraw.roundedFine(graphics, x, y, w, h, r, fill);
 		GuiDraw.hairline(graphics, x, y, w, h, r, edge());
+	}
+
+	/** Expressive rounds about twice as much as Shadow: 12 becomes 22, the HUD's 8 becomes 14. */
+	static float exRadius(float radius, float w, float h) {
+		float r = radius >= WINDOW_R ? 22f : radius >= HUD_R ? 14f : Math.max(radius * 2f, 8f);
+		return Math.min(r, Math.min(w, h) * 0.5f);
+	}
+
+	/**
+	 * A fill meant as Shadow's see-through black becomes the look's own surface at the same
+	 * alpha (so fades still work); a real colour passes through.
+	 */
+	static int exFill(int fill, int surface) {
+		int r = (fill >> 16) & 0xFF;
+		int g = (fill >> 8) & 0xFF;
+		int b = fill & 0xFF;
+		if (r < 0x1C && g < 0x1C && b < 0x22) {
+			int a = (fill >>> 24) & 0xFF;
+			return Theme.withAlpha(surface, Math.min(255, Math.round(a * ExColors.opacity() / 0.78f)));
+		}
+		return fill;
 	}
 
 	/** Texels per GUI unit in the generated shadow textures. */
@@ -203,6 +266,16 @@ public final class ShadowLook {
 	/** A row, button or slot inside a panel: no shadow, faint white fill. */
 	public static void card(GuiGraphicsExtractor graphics, float x, float y, float w, float h, float radius, boolean hover, boolean selected) {
 		if (w < 1f || h < 1f) {
+			return;
+		}
+		if (Looks.uid() && !UidMenu.drawing()) {
+			UidLook.control(graphics, x, y, w, h, hover, selected);
+			return;
+		}
+		if (Looks.ex()) {
+			// Wide small controls are pills; square ones (slots) are rounded squares.
+			float r = h <= 24f ? (w > h * 1.3f ? h * 0.5f : Math.max(3f, h * 0.28f)) : exRadius(radius, w, h);
+			ExLook.rounded(graphics, x, y, w, h, r, selected ? ExColors.secondaryContainer : hover ? ExColors.surfaceHighest : ExColors.surfaceHigh);
 			return;
 		}
 		float r = Math.min(Math.max(1f, radius), Math.min(w, h) * 0.5f);

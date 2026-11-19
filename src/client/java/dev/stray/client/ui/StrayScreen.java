@@ -159,7 +159,7 @@ public class StrayScreen extends Screen {
 		WARDROBE("Wardrobe menu", 9),
 		NUCLEUS("Nucleus alerts", 2),
 		NODE_ESP("Node ESP", 4),
-		WATERMARK("Watermark", 5),
+		WATERMARK("Watermark", 4),
 		MUSIC("Music", 4),
 		PIP("Picture in picture", 3),
 		RAWMATS("Raw mats", 2),
@@ -264,7 +264,7 @@ public class StrayScreen extends Screen {
 			if (this == LOADOUTS) {
 				return baseRows + 1 + (StrayConfig.get().loadoutSwapTri ? 1 : 0);
 			}
-			if (this == WATERMARK && "uid".equals(StrayConfig.get().watermarkStyle)) {
+			if (this == WATERMARK && Looks.uid()) {
 				return baseRows + 1;
 			}
 			if (this == BOX && visualsKind == EntityKind.STAR && !dev.stray.Edition.LEGIT) {
@@ -302,7 +302,7 @@ public class StrayScreen extends Screen {
 	}
 
 	private enum PickerTarget {
-		WORLD, SKY, FOG, NODE, THEME, PANE, CONTROL, PILL, MOB, STAR, BLOCK, TITANIUM, CHEST, PEST, HELD_ITEM, HELD_ITEM_OUTLINE, FILL, FILL_OUTLINE, MARKS, PATHS, RINGS, HEALTH_FULL, HEALTH_EMPTY, BOX, SLAYER, TERMINAL, TERM_HIGHLIGHT, UID_ACCENT, ARGB_FIELD
+		WORLD, SKY, FOG, NODE, THEME, PANE, CONTROL, PILL, MOB, STAR, BLOCK, TITANIUM, CHEST, PEST, HELD_ITEM, HELD_ITEM_OUTLINE, FILL, FILL_OUTLINE, MARKS, PATHS, RINGS, HEALTH_FULL, HEALTH_EMPTY, BOX, SLAYER, TERMINAL, TERM_HIGHLIGHT, UID_ACCENT, ARGB_FIELD, EX_SEED, EX_PIN
 	}
 
 	/** Which slayer colour the SLAYER picker edits (see SlayerSettings.color). */
@@ -686,6 +686,7 @@ public class StrayScreen extends Screen {
 	private float hexFieldX;
 	private float hexFieldY;
 	private float hexFieldW;
+	private float hexFieldH = 13f;
 	private boolean stealFocused;
 	private int pestAlertFocus;
 	private boolean pestAlertLive;
@@ -825,13 +826,15 @@ public class StrayScreen extends Screen {
 			viewLift = 0f;
 			viewCx = 0f;
 			viewCy = 0f;
-			if (closing && (UidMenu.active() ? UidMenu.faded(this) : appear <= 0.02f)) {
+			if (closing && (UidMenu.active() ? UidMenu.faded(this) : ExpressiveMenu.active() ? ExpressiveMenu.faded(this) : appear <= 0.02f)) {
 				finishClose();
 				return;
 			}
 			if (UidMenu.active()) {
 				// uid? draws in its own pixels: clicks, drags and scrolls map through the same scale.
 				viewScale = UidMenu.unit();
+			} else if (ExpressiveMenu.active()) {
+				viewScale = ExpressiveMenu.unit();
 			}
 			ClickGui.extract(this, graphics, mouseX, mouseY);
 			return;
@@ -1001,6 +1004,9 @@ public class StrayScreen extends Screen {
 	private float rowH() {
 		if (UidMenu.drawing()) {
 			return 18f;
+		}
+		if (ExpressiveMenu.drawing()) {
+			return 30f;
 		}
 		return controlCenter() ? 20f : ROW;
 	}
@@ -3159,6 +3165,9 @@ public class StrayScreen extends Screen {
 		String label,
 		Runnable click
 	) {
+		if (ExpressiveMenu.drawing()) {
+			return exButton(graphics, font, x, y, w, mouseX, mouseY, label, click);
+		}
 		if (UidMenu.drawing()) {
 			return uidButton(graphics, font, x, y, w, mouseX, mouseY, label, click);
 		}
@@ -3224,6 +3233,9 @@ public class StrayScreen extends Screen {
 		if (dev.stray.Edition.LEGIT && "Through walls".equals(label)) {
 			// Stray Legit: ESP only draws what you could see anyway.
 			return y;
+		}
+		if (ExpressiveMenu.drawing()) {
+			return exToggle(graphics, font, x, y, w, mouseX, mouseY, label, value, setter);
 		}
 		if (UidMenu.drawing()) {
 			return uidToggle(graphics, font, x, y, w, mouseX, mouseY, label, value, setter);
@@ -3561,6 +3573,9 @@ public class StrayScreen extends Screen {
 	/** Label on the left, a small text field on the right. */
 	private float leapField(GuiGraphicsExtractor graphics, Font font, float x, float y, float w, int mouseX, int mouseY,
 		String label, String key, java.util.function.Supplier<String> get, java.util.function.Consumer<String> set, String placeholder) {
+		if (ExpressiveMenu.drawing()) {
+			return exField(graphics, font, x, y, w, mouseX, mouseY, label, key, get, set, placeholder);
+		}
 		if (UidMenu.drawing()) {
 			return uidField(graphics, font, x, y, w, mouseX, mouseY, label, key, get, set, placeholder);
 		}
@@ -3598,6 +3613,14 @@ public class StrayScreen extends Screen {
 		boolean placeholder,
 		Runnable focus
 	) {
+		if (ExpressiveMenu.drawing()) {
+			boolean hover = GuiDraw.hovered(mouseX, mouseY, x, y, w, 36);
+			ExLook.field(graphics, x, y, w, 36, focused, hover ? 1f : 0f);
+			ExLook.text(graphics, font, ExLook.BODY, ExLook.fit(font, ExLook.BODY, shown, w - 24), x + 12, y + 11, placeholder ? ExColors.onSurfaceVariant : ExColors.onSurface);
+			hits.add(new Hit(x, y, w, 36, focus));
+			ExpressiveMenu.extent(y + 36);
+			return y + 42;
+		}
 		if (UidMenu.drawing()) {
 			// A full-width text box, 20 px, in the label column.
 			UidLook.textbox(graphics, x + 20, y, w - 20, 20);
@@ -3616,6 +3639,9 @@ public class StrayScreen extends Screen {
 	}
 
 	private float clickButton(GuiGraphicsExtractor graphics, Font font, float x, float y, float w, int mouseX, int mouseY, String label, Runnable action) {
+		if (ExpressiveMenu.drawing()) {
+			return exButton(graphics, font, x, y, w, mouseX, mouseY, label, action);
+		}
 		if (UidMenu.drawing()) {
 			return uidButton(graphics, font, x, y, w, mouseX, mouseY, label, action);
 		}
@@ -3950,9 +3976,8 @@ public class StrayScreen extends Screen {
 				colorRow(graphics, font, ix, y, iw, mouseX, mouseY, "Color", config.colorRgb, PickerTarget.NODE);
 			}
 			case WATERMARK -> {
-				String[] wmStyles = {"Shadow", "uid?"};
-				y = cycle(graphics, font, ix, y, iw, mouseX, mouseY, "Style", () -> wmStyles["uid".equals(config.watermarkStyle) ? 1 : 0], () -> config.watermarkStyle = "uid".equals(config.watermarkStyle) ? "shadow" : "uid");
-				if ("uid".equals(config.watermarkStyle)) {
+				// Its style is the theme's (Misc > Look).
+				if (Looks.uid()) {
 					y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Rainbow bar", config.watermarkUidBar, v -> config.watermarkUidBar = v);
 				}
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "FPS", config.watermarkFps, v -> config.watermarkFps = v);
@@ -3989,8 +4014,9 @@ public class StrayScreen extends Screen {
 					1f,
 					SkillProgressTracker.snapshot()
 				);
-				if (UidMenu.drawing()) {
+				if (UidMenu.drawing() || ExpressiveMenu.drawing()) {
 					UidMenu.extent(y + SkillProgressHudRenderer.drawHeight());
+					ExpressiveMenu.extent(y + SkillProgressHudRenderer.drawHeight());
 					hint(graphics, font, ix, y + SkillProgressHudRenderer.drawHeight() + 5, iw, "From the action bar. HUD editor to move.");
 				} else {
 					GuiDraw.small(graphics, font, "From the action bar. HUD editor to move.", ix, y + SkillProgressHudRenderer.drawHeight() + 2, fade());
@@ -4483,6 +4509,11 @@ public class StrayScreen extends Screen {
 		int bindWhich,
 		InputConstants.Key key
 	) {
+		if (ExpressiveMenu.drawing()) {
+			float next = exToggle(graphics, font, x, y, w, mouseX, mouseY, label, enabled, setEnabled);
+			next = exBind(graphics, font, x, next, w, mouseX, mouseY, label + " key", bindWhich, key);
+			return exSlider(graphics, font, x, next, w, label + " CPS", cpsLabel(cps), (cps - 3.0f) / 12.0f, setCps);
+		}
 		if (UidMenu.drawing()) {
 			// The checkbox with its key inline on the right, the CPS slider under it.
 			float next = uidToggle(graphics, font, x, y, w, mouseX, mouseY, label, enabled, setEnabled);
@@ -4560,6 +4591,9 @@ public class StrayScreen extends Screen {
 		int which,
 		InputConstants.Key key
 	) {
+		if (ExpressiveMenu.drawing()) {
+			return exBind(graphics, font, x, y, w, mouseX, mouseY, label, which, key);
+		}
 		if (UidMenu.drawing()) {
 			return uidBind(graphics, font, x, y, w, mouseX, mouseY, label, which, key);
 		}
@@ -4625,6 +4659,9 @@ public class StrayScreen extends Screen {
 	}
 
 	private float cycle(GuiGraphicsExtractor graphics, Font font, float x, float y, float w, int mouseX, int mouseY, String label, java.util.function.Supplier<String> current, Runnable next) {
+		if (ExpressiveMenu.drawing()) {
+			return exCycle(graphics, font, x, y, w, mouseX, mouseY, label, current, next);
+		}
 		if (UidMenu.drawing()) {
 			return uidCycle(graphics, font, x, y, w, mouseX, mouseY, label, current, next);
 		}
@@ -4660,6 +4697,9 @@ public class StrayScreen extends Screen {
 		int selected,
 		java.util.function.IntConsumer pick
 	) {
+		if (ExpressiveMenu.drawing()) {
+			return exDropdown(graphics, font, x, y, w, mouseX, mouseY, key, label, options, selected, pick);
+		}
 		if (UidMenu.drawing()) {
 			return uidDropdown(graphics, font, x, y, w, mouseX, mouseY, key, label, options, selected, pick);
 		}
@@ -4736,6 +4776,9 @@ public class StrayScreen extends Screen {
 	}
 
 	private float chipRow(GuiGraphicsExtractor graphics, Font font, float x, float y, float w, int mouseX, int mouseY, String[] labels, int selected, java.util.function.IntConsumer pick) {
+		if (ExpressiveMenu.drawing()) {
+			return exDropdown(graphics, font, x, y, w, mouseX, mouseY, "chips/" + String.join("|", labels), "", labels, selected, pick);
+		}
 		if (UidMenu.drawing()) {
 			return uidDropdown(graphics, font, x, y, w, mouseX, mouseY, "chips/" + String.join("|", labels), "", labels, selected, pick);
 		}
@@ -4780,6 +4823,9 @@ public class StrayScreen extends Screen {
 	}
 
 	private float slider(GuiGraphicsExtractor graphics, Font font, float x, float y, float w, String label, String valueText, float progress, Consumer<Float> setter) {
+		if (ExpressiveMenu.drawing()) {
+			return exSlider(graphics, font, x, y, w, label, valueText, progress, setter);
+		}
 		if (UidMenu.drawing()) {
 			return uidSlider(graphics, font, x, y, w, label, valueText, progress, setter);
 		}
@@ -4820,6 +4866,9 @@ public class StrayScreen extends Screen {
 	}
 
 	private float colorRow(GuiGraphicsExtractor graphics, Font font, float x, float y, float w, int mouseX, int mouseY, String label, int rgb, PickerTarget target, Runnable before) {
+		if (ExpressiveMenu.drawing()) {
+			return exColor(graphics, font, x, y, w, mouseX, mouseY, label, rgb, target, before);
+		}
 		if (UidMenu.drawing()) {
 			return uidColor(graphics, font, x, y, w, mouseX, mouseY, label, rgb, target, before);
 		}
@@ -4855,6 +4904,9 @@ public class StrayScreen extends Screen {
 	}
 
 	private float readout(GuiGraphicsExtractor graphics, Font font, float x, float y, float w, String label, boolean on) {
+		if (ExpressiveMenu.drawing()) {
+			return exStat(graphics, font, x, y, w, label, on ? "On" : "Off", on ? ExColors.primary : ExColors.onSurfaceVariant);
+		}
 		if (UidMenu.drawing()) {
 			return uidStat(graphics, font, x, y, w, label, on ? "ON" : "OFF", on ? UidMenu.accent() : UidLook.VALUE);
 		}
@@ -4865,6 +4917,9 @@ public class StrayScreen extends Screen {
 	}
 
 	private float statRow(GuiGraphicsExtractor graphics, Font font, float x, float y, float w, String label, String value) {
+		if (ExpressiveMenu.drawing()) {
+			return exStat(graphics, font, x, y, w, label, value, ExColors.primary);
+		}
 		if (UidMenu.drawing()) {
 			return uidStat(graphics, font, x, y, w, label, value, UidMenu.accent());
 		}
@@ -4875,6 +4930,11 @@ public class StrayScreen extends Screen {
 	}
 
 	private float hint(GuiGraphicsExtractor graphics, Font font, float x, float y, float w, String text) {
+		if (ExpressiveMenu.drawing()) {
+			ExLook.text(graphics, font, ExLook.SMALL, ExLook.fit(font, ExLook.SMALL, text, w), x, y + 4, ExColors.tertiary);
+			ExpressiveMenu.extent(y + 18);
+			return y + 22;
+		}
 		if (UidMenu.drawing()) {
 			// A dim line in the label column, a row of its own.
 			UidLook.text(graphics, font, UidLook.fit(font, text, w - 20), x + 20, y + 1, 0x88FFE08A);
@@ -4890,6 +4950,11 @@ public class StrayScreen extends Screen {
 		float y = pickerY;
 		float w = PICKER_W;
 		float h = pickerHeight();
+		if (ExpressiveMenu.drawing()) {
+			drawExPicker(graphics, font);
+			return;
+		}
+		hexFieldH = 13f;
 		if (UidMenu.drawing()) {
 			UidLook.panel(graphics, x, y, w, h);
 		} else if (ShadowMenu.drawing()) {
@@ -4989,8 +5054,16 @@ public class StrayScreen extends Screen {
 		}
 	}
 
-	private static float pickerHeight() {
+	private float pickerHeight() {
+		if (ExpressiveMenu.active() && StrayConfig.get().clickGui) {
+			return pickerTarget != null && opacityMin(pickerTarget) < 0.999f ? 380f : 354f;
+		}
 		return PICKER_H;
+	}
+
+	/** The picker's width: Expressive's is bigger (its pixels are smaller than GUI units). */
+	private float pickerW() {
+		return ExpressiveMenu.active() && StrayConfig.get().clickGui ? 280f : PICKER_W;
 	}
 
 	private void openPicker(PickerTarget target, int rgb, float x, float y) {
@@ -5004,12 +5077,13 @@ public class StrayScreen extends Screen {
 		float h = pickerHeight();
 		if (StrayConfig.get().clickGui) {
 			// uid? works in its own pixels; Shadow in GUI units.
-			float sw = UidMenu.active() ? width / UidMenu.unit() : width;
-			float sh = UidMenu.active() ? height / UidMenu.unit() : height;
-			float swatchRight = x + PICKER_W;
+			float sw = UidMenu.active() ? width / UidMenu.unit() : ExpressiveMenu.active() ? width / ExpressiveMenu.unit() : width;
+			float sh = UidMenu.active() ? height / UidMenu.unit() : ExpressiveMenu.active() ? height / ExpressiveMenu.unit() : height;
+			float pw = pickerW();
+			float swatchRight = x + pw;
 			float right = swatchRight + 6f;
-			float placeX = right + PICKER_W <= sw - 4f ? right : x;
-			float maxX = Math.max(4f, sw - PICKER_W - 4f);
+			float placeX = ExpressiveMenu.active() ? x : right + pw <= sw - 4f ? right : x;
+			float maxX = Math.max(4f, sw - pw - 4f);
 			float maxY = Math.max(4f, sh - h - 4f);
 			float placeY = y;
 			if (placeY > maxY) {
@@ -5059,6 +5133,16 @@ public class StrayScreen extends Screen {
 			case ARGB_FIELD -> config.setArgbField(argbFieldKey, (config.argbField(argbFieldKey) & 0xFF000000) | (packed & 0xFFFFFF));
 			case THEME -> Theme.applyCustom(packed);
 			case UID_ACCENT -> config.uidAccent = packed == 0 ? 0x9FCA2B : packed;
+			case EX_SEED -> {
+				config.exSeed = packed;
+				ExColors.invalidate();
+				Theme.refresh();
+			}
+			case EX_PIN -> {
+				config.exPins.put(exPinRole, packed);
+				ExColors.invalidate();
+				Theme.refresh();
+			}
 			case PANE -> Theme.applyPane(packed);
 			case CONTROL -> {
 				config.controlPaneRgb = packed == 0 ? 0x181818 : packed;
@@ -5071,13 +5155,16 @@ public class StrayScreen extends Screen {
 		}
 	}
 
+	/** Which Expressive role the EX_PIN picker pins. */
+	private static String exPinRole = "primary";
+
 	private static float opacityMin(PickerTarget target) {
 		return switch (target) {
 			case CONTROL, PILL -> 0.12f;
 			case PANE -> 0.20f;
 			case MOB, STAR, BLOCK, TERM_HIGHLIGHT -> 0.15f;
 			case NODE, HELD_ITEM, FILL, CHEST, TITANIUM, PEST, BOX -> 0.08f;
-			case THEME, UID_ACCENT, HELD_ITEM_OUTLINE, FILL_OUTLINE, MARKS, PATHS, RINGS, HEALTH_FULL, HEALTH_EMPTY, SLAYER, TERMINAL -> 1f;
+			case THEME, UID_ACCENT, EX_SEED, EX_PIN, HELD_ITEM_OUTLINE, FILL_OUTLINE, MARKS, PATHS, RINGS, HEALTH_FULL, HEALTH_EMPTY, SLAYER, TERMINAL -> 1f;
 			default -> 0f;
 		};
 	}
@@ -5112,7 +5199,7 @@ public class StrayScreen extends Screen {
 			case SKY -> config.skyTintStrength;
 			case FOG -> config.fogDensity;
 			case ARGB_FIELD -> (config.argbField(argbFieldKey) >>> 24) / 255f;
-			case THEME, UID_ACCENT, HELD_ITEM_OUTLINE, FILL_OUTLINE, MARKS, PATHS, RINGS, HEALTH_FULL, HEALTH_EMPTY, SLAYER, TERMINAL -> 1f;
+			case THEME, UID_ACCENT, EX_SEED, EX_PIN, HELD_ITEM_OUTLINE, FILL_OUTLINE, MARKS, PATHS, RINGS, HEALTH_FULL, HEALTH_EMPTY, SLAYER, TERMINAL -> 1f;
 		};
 	}
 
@@ -5138,7 +5225,7 @@ public class StrayScreen extends Screen {
 			case SKY -> config.skyTintStrength = clamped;
 			case FOG -> config.fogDensity = clamped;
 			case ARGB_FIELD -> config.setArgbField(argbFieldKey, (Math.round(clamped * 255f) << 24) | (config.argbField(argbFieldKey) & 0xFFFFFF));
-			case THEME, UID_ACCENT, HELD_ITEM_OUTLINE, FILL_OUTLINE, MARKS, PATHS, RINGS, HEALTH_FULL, HEALTH_EMPTY, SLAYER, TERMINAL -> {
+			case THEME, UID_ACCENT, EX_SEED, EX_PIN, HELD_ITEM_OUTLINE, FILL_OUTLINE, MARKS, PATHS, RINGS, HEALTH_FULL, HEALTH_EMPTY, SLAYER, TERMINAL -> {
 				return;
 			}
 		}
@@ -5226,7 +5313,7 @@ public class StrayScreen extends Screen {
 		// A click on the leap field itself focuses it again through its hit.
 		leapFocus = null;
 		leapFieldRef = null;
-		if (hexFocused && !(pickerTarget != null && GuiDraw.hovered(lx, ly, hexFieldX, hexFieldY, hexFieldW, 13f))) {
+		if (hexFocused && !(pickerTarget != null && GuiDraw.hovered(lx, ly, hexFieldX, hexFieldY, hexFieldW, hexFieldH))) {
 			hexFocused = false;
 		}
 		if (pestAlertFocus != 0 && !(pestAlertLive && GuiDraw.hovered(lx, ly, pestAlertX, pestAlertY, pestAlertW, pestAlertH))) {
@@ -5261,7 +5348,7 @@ public class StrayScreen extends Screen {
 				return true;
 			}
 		}
-		if (pickerTarget != null && !GuiDraw.hovered(lx, ly, pickerX, pickerY, PICKER_W, pickerHeight())) {
+		if (pickerTarget != null && !GuiDraw.hovered(lx, ly, pickerX, pickerY, pickerW(), pickerHeight())) {
 			pickerTarget = null;
 			return true;
 		}
@@ -5287,6 +5374,8 @@ public class StrayScreen extends Screen {
 		if (StrayConfig.get().clickGui) {
 			if (UidMenu.active()) {
 				UidMenu.press(lx, ly);
+			} else if (ExpressiveMenu.active()) {
+				ExpressiveMenu.press(lx, ly);
 			}
 			return true;
 		}
@@ -5296,6 +5385,9 @@ public class StrayScreen extends Screen {
 	@Override
 	public boolean mouseDragged(MouseButtonEvent event, double dx, double dy) {
 		if (MouseButtons.left(event) && StrayConfig.get().clickGui && UidMenu.active() && UidMenu.drag(localX(event.x()), localY(event.y()))) {
+			return true;
+		}
+		if (MouseButtons.left(event) && StrayConfig.get().clickGui && ExpressiveMenu.active() && ExpressiveMenu.drag(localX(event.x()), localY(event.y()))) {
 			return true;
 		}
 		if (MouseButtons.left(event) && dragging) {
@@ -5321,6 +5413,7 @@ public class StrayScreen extends Screen {
 	@Override
 	public boolean mouseReleased(MouseButtonEvent event) {
 		UidMenu.release();
+		ExpressiveMenu.release();
 		if (dragging && moved) {
 			persistMenuPosition();
 		}
@@ -5651,7 +5744,7 @@ public class StrayScreen extends Screen {
 			stealFocused = false;
 			commitSteal();
 		}
-		boolean uidFade = StrayConfig.get().clickGui && UidMenu.active() && StrayConfig.get().uidAnimMs > 0;
+		boolean uidFade = StrayConfig.get().clickGui && (UidMenu.active() && StrayConfig.get().uidAnimMs > 0 || ExpressiveMenu.active() && StrayConfig.get().exAnimMs > 0);
 		if (!closing && (uidFade || (StrayConfig.get().uiAnimations && appear > 0.04f))) {
 			closing = true;
 			capeFocused = false;
@@ -5775,6 +5868,16 @@ public class StrayScreen extends Screen {
 		return colorRow(graphics, font, x, y, w, (int) Math.round(ClickGui.pointerX()), (int) Math.round(ClickGui.pointerY()), "Menu color", StrayConfig.get().uidAccent, PickerTarget.UID_ACCENT);
 	}
 
+	/** Expressive's seed colour row. */
+	float clickExSeed(GuiGraphicsExtractor graphics, Font font, float x, float y, float w) {
+		return colorRow(graphics, font, x, y, w, (int) Math.round(ClickGui.pointerX()), (int) Math.round(ClickGui.pointerY()), "Seed colour", StrayConfig.get().exSeed, PickerTarget.EX_SEED);
+	}
+
+	/** One Expressive colour role: its colour now; picking one pins it. */
+	float clickExPin(GuiGraphicsExtractor graphics, Font font, float x, float y, float w, String role, String label, int rgb) {
+		return colorRow(graphics, font, x, y, w, (int) Math.round(ClickGui.pointerX()), (int) Math.round(ClickGui.pointerY()), label, rgb, PickerTarget.EX_PIN, () -> exPinRole = role);
+	}
+
 	boolean clickClosing() {
 		return closing;
 	}
@@ -5808,6 +5911,409 @@ public class StrayScreen extends Screen {
 		}
 	}
 
+
+	// ------------------------------------------------------------------ Expressive rows
+	// In the Expressive menu's pixels: a switch row is 30 tall, a slider 44, a dropdown or button
+	// group 50 (label over it), a button 36; 4 between rows. Labels start at the card's padding.
+
+	private float exToggle(GuiGraphicsExtractor graphics, Font font, float x, float y, float w, int mouseX, int mouseY, String label, boolean value, Consumer<Boolean> setter) {
+		float h = 30f;
+		boolean hovered = GuiDraw.hovered(mouseX, mouseY, x - 6, y, w + 12, h);
+		float hover = ExpressiveMenu.anim("exh/" + fieldScope + "/" + label + "/" + Math.round(y), hovered ? 1f : 0f);
+		ExLook.state(graphics, x - 6, y, w + 12, h, 12f, hover, false, ExColors.onSurface);
+		ExLook.text(graphics, font, ExLook.BODY, ExLook.fit(font, ExLook.BODY, label, w - 48), x, y + 9, ExColors.onSurface);
+		float t = ExpressiveMenu.anim("ext/" + fieldScope + "/" + label, value ? 1f : 0f);
+		ExLook.toggle(graphics, x + w - 36, y + 4, 1f, t, hovered);
+		hits.add(new Hit(x - 6, y, w + 12, h, () -> {
+			setter.accept(!value);
+			UnloadState.markDirty();
+		}));
+		ExpressiveMenu.extent(y + h);
+		return y + h + 2;
+	}
+
+	private float exSlider(GuiGraphicsExtractor graphics, Font font, float x, float y, float w, String label, String valueText, float progress, Consumer<Float> setter) {
+		boolean named = label != null && !label.isEmpty();
+		float top = named ? y + 20 : y + 2;
+		if (named) {
+			ExLook.text(graphics, font, ExLook.BODY, ExLook.fit(font, ExLook.BODY, label, w * 0.62f), x, y + 3, ExColors.onSurface);
+		}
+		if (valueText != null && !valueText.isEmpty()) {
+			float vw = ExLook.width(font, ExLook.BOLD, valueText);
+			ExLook.text(graphics, font, ExLook.BOLD, valueText, x + w - vw, y + 3, ExColors.primary);
+		}
+		boolean hovered = GuiDraw.hovered(ClickGui.pointerX(), ClickGui.pointerY(), x - 2, top - 2, w + 4, 24);
+		ExLook.slider(graphics, x, top, w, Mth.clamp(progress, 0f, 1f), hovered, 1f);
+		hits.add(new Hit(x - 2, top - 4, w + 4, 28, mx -> setter.accept(Mth.clamp((float) ((mx - x) / w), 0f, 1f)), true));
+		float bottom = top + 20;
+		ExpressiveMenu.extent(bottom);
+		return bottom + 8;
+	}
+
+	/** Options a stepping row went through when it was opened, by key (as uid?'s). */
+	private final Map<String, String[]> exCycleOptions = new HashMap<>();
+
+	/**
+	 * A stepping row: two or three values become a connected button group; more become a
+	 * dropdown. The values are learnt by stepping through once and back (as uid? does).
+	 */
+	private float exCycle(GuiGraphicsExtractor graphics, Font font, float x, float y, float w, int mouseX, int mouseY, String label, java.util.function.Supplier<String> current, Runnable next) {
+		String key = "excyc/" + fieldScope + "/" + label;
+		String[] options = exCycleOptions.get(key);
+		if (options == null) {
+			options = uidProbe(current, next);
+			if (options == null) {
+				options = new String[0];
+			}
+			exCycleOptions.put(key, options);
+		}
+		String value = current.get();
+		if (options.length == 0 || !java.util.Arrays.asList(options).contains(value)) {
+			// Values that don't come back around: a field that steps on click.
+			return exCombo(graphics, font, x, y, w, mouseX, mouseY, label, value, false, () -> {
+				next.run();
+				exCycleOptions.remove(key);
+				UnloadState.markDirty();
+			});
+		}
+		String[] opts = options;
+		int selected = java.util.Arrays.asList(opts).indexOf(value);
+		return exDropdown(graphics, font, x, y, w, mouseX, mouseY, key, label, opts, selected, index -> {
+			int from = java.util.Arrays.asList(opts).indexOf(current.get());
+			int steps = Math.floorMod(index - Math.max(0, from), opts.length);
+			for (int i = 0; i < steps; i++) {
+				next.run();
+			}
+		});
+	}
+
+	private float exCombo(GuiGraphicsExtractor graphics, Font font, float x, float y, float w, int mouseX, int mouseY, String label, String value, boolean open, Runnable click) {
+		boolean named = label != null && !label.isEmpty();
+		float by = named ? y + 22 : y;
+		if (named) {
+			ExLook.text(graphics, font, ExLook.BODY, ExLook.fit(font, ExLook.BODY, label, w), x, y + 4, ExColors.onSurface);
+		}
+		float bh = 34f;
+		boolean hovered = GuiDraw.hovered(mouseX, mouseY, x, by, w, bh);
+		ExLook.rounded(graphics, x, by, w, bh, open ? 17f : 12f, open ? ExColors.secondaryContainer : ExColors.surfaceHighest);
+		ExLook.state(graphics, x, by, w, bh, 12f, hovered ? 1f : 0f, false, ExColors.onSurface);
+		ExLook.text(graphics, font, ExLook.BODY, ExLook.fit(font, ExLook.BODY, value, w - 40), x + 12, by + 11, open ? ExColors.onSecondaryContainer : ExColors.onSurface);
+		float cx = x + w - 18;
+		float cy = by + bh / 2f + (open ? -1.5f : 1.5f);
+		float d = open ? -1f : 1f;
+		GuiDraw.stroke(graphics, cx - 5, cy - 2.5f * d, cx, cy + 2.5f * d, 2f, ExColors.onSurfaceVariant);
+		GuiDraw.stroke(graphics, cx, cy + 2.5f * d, cx + 5, cy - 2.5f * d, 2f, ExColors.onSurfaceVariant);
+		hits.add(new Hit(x, by, w, bh, click));
+		ExpressiveMenu.extent(by + bh);
+		return by + bh + 8;
+	}
+
+	private float exDropdown(GuiGraphicsExtractor graphics, Font font, float x, float y, float w, int mouseX, int mouseY, String key, String label, String[] options, int selected, java.util.function.IntConsumer pick) {
+		boolean named = label != null && !label.isEmpty();
+		// Two or three short options: a connected button group, every option one click away.
+		if (options.length >= 2 && options.length <= 3 && fitsGroup(font, options, w)) {
+			float by = named ? y + 22 : y;
+			if (named) {
+				ExLook.text(graphics, font, ExLook.BODY, ExLook.fit(font, ExLook.BODY, label, w), x, y + 4, ExColors.onSurface);
+			}
+			float bh = 32f;
+			float gap = 2f;
+			float[] weights = new float[options.length];
+			float total = 0f;
+			for (int i = 0; i < options.length; i++) {
+				weights[i] = (i == selected ? 1.25f : 1f);
+				total += weights[i];
+			}
+			float bx = x;
+			float avail = w - gap * (options.length - 1);
+			for (int i = 0; i < options.length; i++) {
+				float bw = avail * weights[i] / total;
+				boolean hot = GuiDraw.hovered(mouseX, mouseY, bx, by, bw, bh);
+				boolean picked = i == selected;
+				ExLook.segment(graphics, bx, by, bw, bh, i == 0, i == options.length - 1, picked, ExpressiveMenu.anim("seg/" + key + i, hot ? 1f : 0f));
+				int family = picked ? ExLook.BOLD : ExLook.BODY;
+				String text = ExLook.fit(font, family, options[i], bw - 12);
+				float tw = ExLook.width(font, family, text);
+				ExLook.text(graphics, font, family, text, bx + (bw - tw) / 2f, by + 10, picked ? ExColors.onPrimary : ExColors.onSurface);
+				int index = i;
+				hits.add(new Hit(bx, by, bw, bh, () -> {
+					pick.accept(index);
+					Theme.refresh();
+					UnloadState.markDirty();
+				}));
+				bx += bw + gap;
+			}
+			ExpressiveMenu.extent(by + bh);
+			return by + bh + 8;
+		}
+		boolean open = key.equals(dropdownOpen);
+		String value = selected >= 0 && selected < options.length ? options[selected] : "-";
+		float next = exCombo(graphics, font, x, y, w, mouseX, mouseY, label, value, open, () -> {
+			dropdownOpen = key.equals(dropdownOpen) ? null : key;
+			ExpressiveMenu.popupScroll(0f);
+		});
+		if (open) {
+			float py = (named ? y + 22 : y) + 38;
+			ExpressiveMenu.defer(() -> {
+				float rowH = 34f;
+				int rows = Math.min(7, options.length);
+				float ph = rows * rowH + 8;
+				float content = options.length * rowH;
+				float scroll = Mth.clamp(ExpressiveMenu.popupScroll(), 0f, Math.max(0f, content - rows * rowH));
+				ExpressiveMenu.popupScroll(scroll);
+				hits.add(new Hit(-100000, -100000, 200000, 200000, () -> dropdownOpen = null));
+				ExLook.surface(graphics, x, py, w, ph, 16f, ExColors.surfaceHighest, false);
+				ExpressiveMenu.popup(x, py, w, ph);
+				boolean clip = GuiDraw.scissor(graphics, x, py + 4, w, ph - 8);
+				try {
+					int mx = (int) Math.round(ClickGui.pointerX());
+					int my = (int) Math.round(ClickGui.pointerY());
+					for (int i = 0; i < options.length; i++) {
+						float ry = py + 4 + i * rowH - scroll;
+						if (ry + rowH <= py || ry >= py + ph) {
+							continue;
+						}
+						boolean hot = GuiDraw.hovered(mx, my, x + 4, ry, w - 8, rowH);
+						boolean picked = i == selected;
+						if (picked) {
+							ExLook.rounded(graphics, x + 4, ry + 1, w - 8, rowH - 2, (rowH - 2) / 2f, ExColors.tertiaryContainer);
+						}
+						ExLook.state(graphics, x + 4, ry + 1, w - 8, rowH - 2, 10f, hot ? 1f : 0f, false, ExColors.onSurface);
+						float tx = x + 16;
+						if (picked) {
+							ExpressiveMenu.checkMark(graphics, x + 14, ry + rowH / 2f, 1f, ExColors.onTertiaryContainer);
+							tx += 18;
+						}
+						ExLook.text(graphics, font, picked ? ExLook.BOLD : ExLook.BODY, ExLook.fit(font, ExLook.BODY, options[i], w - (tx - x) - 12), tx, ry + 11, picked ? ExColors.onTertiaryContainer : ExColors.onSurface);
+						int index = i;
+						float top = Math.max(py, ry);
+						float bottom = Math.min(py + ph, ry + rowH);
+						hits.add(new Hit(x, top, w, bottom - top, () -> {
+							pick.accept(index);
+							dropdownOpen = null;
+							ExpressiveMenu.noPopup();
+							Theme.refresh();
+							UnloadState.markDirty();
+						}));
+					}
+				} finally {
+					if (clip) {
+						GuiDraw.disableScissor(graphics);
+					}
+				}
+				ExLook.scrollbar(graphics, x + w - 8, py + 6, ph - 12, rows * rowH, content, scroll, 1f);
+			});
+		}
+		return next;
+	}
+
+	private static boolean fitsGroup(Font font, String[] options, float w) {
+		float each = (w - 4f) / options.length;
+		for (String option : options) {
+			if (ExLook.width(font, ExLook.BOLD, option) > each - 10f) {
+				return false;
+			}
+		}
+		return true;
+	}
+
+	/**
+	 * A colour: inside a card it joins the card's "Colours" chip (opened in a popover); on its
+	 * own it is a swatch, the name and the hex.
+	 */
+	private float exColor(GuiGraphicsExtractor graphics, Font font, float x, float y, float w, int mouseX, int mouseY, String label, int rgb, PickerTarget target, Runnable before) {
+		ExpressiveMenu.PickAt open = (px, py) -> {
+			if (before != null) {
+				before.run();
+			}
+			if (target == PickerTarget.SKY) {
+				StrayConfig.get().matchSkyToWorld = false;
+			}
+			if (target == PickerTarget.FOG) {
+				StrayConfig.get().matchFogToWorld = false;
+			}
+			openPicker(target, rgb, px, py);
+		};
+		if (ExpressiveMenu.collecting()) {
+			ExpressiveMenu.collect(new ExpressiveMenu.Colour(label, rgb & 0xFFFFFF, open));
+			return y;
+		}
+		ExpressiveMenu.Colour colour = new ExpressiveMenu.Colour(label, rgb & 0xFFFFFF, open);
+		return ExpressiveMenu.colourRow(this, graphics, font, mouseX, mouseY, colour, x - 6, y, w + 12, false, () -> open.at(ExpressiveMenu.beside(x - 6, w + 12), y - 40));
+	}
+
+	private float exBind(GuiGraphicsExtractor graphics, Font font, float x, float y, float w, int mouseX, int mouseY, String label, int which, InputConstants.Key key) {
+		boolean listening = bindListen == which;
+		String value = listening ? "Press a key…" : UidMenu.keyText(OdinClicks.keyLabel(key));
+		float kw = ExLook.width(font, ExLook.BODY, value) + 20;
+		float kh = 26f;
+		float kx = x + w - kw;
+		float ky = y + 2;
+		ExLook.text(graphics, font, ExLook.BODY, ExLook.fit(font, ExLook.BODY, label, kx - x - 8), x, y + 9, ExColors.onSurface);
+		boolean hovered = GuiDraw.hovered(mouseX, mouseY, kx, ky, kw, kh);
+		ExLook.rounded(graphics, kx, ky, kw, kh, listening ? kh / 2f : 8f, listening ? ExColors.tertiaryContainer : ExColors.surfaceHighest);
+		ExLook.state(graphics, kx, ky, kw, kh, 8f, hovered ? 1f : 0f, false, ExColors.onSurface);
+		ExLook.text(graphics, font, ExLook.BODY, value, kx + 10, ky + 7, listening ? ExColors.onTertiaryContainer : ExColors.onSurface);
+		hits.add(new Hit(x - 6, y, w + 12, 30, () -> bindListen = which));
+		ExpressiveMenu.extent(y + 30);
+		return y + 32;
+	}
+
+	private float exField(GuiGraphicsExtractor graphics, Font font, float x, float y, float w, int mouseX, int mouseY,
+		String label, String key, java.util.function.Supplier<String> get, java.util.function.Consumer<String> set, String placeholder) {
+		boolean focused = key.equals(leapFocus);
+		float fw = Math.min(160f, w * 0.55f);
+		float fx = x + w - fw;
+		float fh = 32f;
+		ExLook.text(graphics, font, ExLook.BODY, ExLook.fit(font, ExLook.BODY, label, fx - x - 8), x, y + 10, ExColors.onSurface);
+		boolean hover = GuiDraw.hovered(mouseX, mouseY, fx, y, fw, fh);
+		ExLook.field(graphics, fx, y, fw, fh, focused, hover ? 1f : 0f);
+		String value = get.get();
+		boolean empty = value.isEmpty() && !focused;
+		String shown = empty ? placeholder : value + caret(focused);
+		ExLook.text(graphics, font, ExLook.BODY, ExLook.fit(font, ExLook.BODY, shown, fw - 20), fx + 10, y + 10, empty ? ExColors.onSurfaceVariant : ExColors.onSurface);
+		hits.add(new Hit(fx, y, fw, fh, () -> {
+			leapFocus = key;
+			leapFieldRef = new TextKeys.Field("leap-" + key, get, set, 16);
+		}));
+		ExpressiveMenu.extent(y + fh);
+		return y + fh + 6;
+	}
+
+	private float exStat(GuiGraphicsExtractor graphics, Font font, float x, float y, float w, String label, String value, int color) {
+		float vw = ExLook.width(font, ExLook.BOLD, value);
+		ExLook.text(graphics, font, ExLook.BODY, ExLook.fit(font, ExLook.BODY, label, w - vw - 12), x, y + 6, ExColors.onSurface);
+		ExLook.text(graphics, font, ExLook.BOLD, value, x + w - vw, y + 6, color);
+		ExpressiveMenu.extent(y + 24);
+		return y + 26;
+	}
+
+	private float exButton(GuiGraphicsExtractor graphics, Font font, float x, float y, float w, int mouseX, int mouseY, String label, Runnable action) {
+		float h = 36f;
+		boolean hovered = GuiDraw.hovered(mouseX, mouseY, x, y, w, h);
+		boolean held = hovered && minecraft.mouseHandler.isLeftPressed();
+		ExLook.button(graphics, x, y, w, h, false, ExpressiveMenu.anim("exb/" + label + "/" + Math.round(y), hovered ? 1f : 0f), held);
+		String text = ExLook.fit(font, ExLook.BOLD, label, w - 24);
+		float tw = ExLook.width(font, ExLook.BOLD, text);
+		ExLook.text(graphics, font, ExLook.BOLD, text, x + (w - tw) / 2f, y + 12, ExColors.onSecondaryContainer);
+		if (action != null) {
+			hits.add(new Hit(x, y, w, h, action));
+		}
+		ExpressiveMenu.extent(y + h);
+		return y + h + 6;
+	}
+
+	/** Expressive's colour picker: a rounded colour square, hue and opacity tracks with bar handles, the hex, presets. */
+	private void drawExPicker(GuiGraphicsExtractor graphics, Font font) {
+		float x = pickerX;
+		float y = pickerY;
+		float w = pickerW();
+		float h = pickerHeight();
+		int mx = (int) Math.round(ClickGui.pointerX());
+		int my = (int) Math.round(ClickGui.pointerY());
+		hits.add(new Hit(x, y, w, h, () -> { }));
+		ExLook.surface(graphics, x, y, w, h, 28f, ExLook.lerp(0x00000000, ExColors.surfaceHigh, pickerT), false);
+		if (pickerT < 0.7f) {
+			return;
+		}
+		int current = WorldTint.hsvToRgb(pickerHue, pickerSat, pickerVal);
+		boolean alpha = opacityMin(pickerTarget) < 0.999f;
+		float pad = 16f;
+		ExLook.text(graphics, font, ExLook.TITLE, "Colour", x + pad, y + 16, ExColors.onSurface);
+		ExLook.swatch(graphics, x + w - pad - 30, y + 12, 30, Theme.withAlpha(current, Math.round(sliderToOpacity(pickerTarget, pickerAlpha) * 255f)), false);
+		float svX = x + pad;
+		float svY = y + 54;
+		float svW = w - pad * 2;
+		float svH = 128f;
+		GuiDraw.hsvSquare(graphics, svX, svY, svW, svH, pickerHue);
+		GuiDraw.roundedBlitEars(graphics, svX, svY, svW, svH, 14f, ExColors.surfaceHigh);
+		float cursorX = svX + pickerSat * svW;
+		float cursorY = svY + (1f - pickerVal) * svH;
+		GuiDraw.circle(graphics, cursorX, cursorY, 8f, 0x66000000);
+		GuiDraw.circle(graphics, cursorX, cursorY, 7f, 0xFFFFFFFF);
+		GuiDraw.circle(graphics, cursorX, cursorY, 5f, 0xFF000000 | current);
+		hits.add(new Hit(svX, svY, svW, svH, px -> {
+			pickerSat = Mth.clamp((float) ((px - svX) / svW), 0f, 1f);
+			pickerVal = Mth.clamp(1f - (float) ((lastClickY - svY) / svH), 0f, 1f);
+			commitPicker();
+		}, true));
+		float hueY = svY + svH + 14;
+		float trackH = 14f;
+		GuiDraw.hueBar(graphics, svX, hueY, svW, trackH);
+		GuiDraw.roundedBlitEars(graphics, svX, hueY, svW, trackH, trackH / 2f, ExColors.surfaceHigh);
+		exHandle(graphics, svX + (pickerHue / 360f) * svW, hueY, trackH);
+		hits.add(new Hit(svX, hueY - 4, svW, trackH + 8, px -> {
+			pickerHue = Mth.clamp((float) ((px - svX) / svW) * 360f, 0f, 359f);
+			commitPicker();
+		}, true));
+		float next = hueY + trackH + 12;
+		if (alpha) {
+			GuiDraw.alphaBar(graphics, svX, next, svW, trackH, current);
+			GuiDraw.roundedBlitEars(graphics, svX, next, svW, trackH, trackH / 2f, ExColors.surfaceHigh);
+			exHandle(graphics, svX + pickerAlpha * svW, next, trackH);
+			float ay = next;
+			hits.add(new Hit(svX, ay - 4, svW, trackH + 8, px -> {
+				pickerAlpha = Mth.clamp((float) ((px - svX) / svW), 0f, 1f);
+				commitPicker();
+			}, true));
+			next += trackH + 12;
+		}
+		float fieldH = 32f;
+		String percent = Math.round(sliderToOpacity(pickerTarget, pickerAlpha) * 100f) + "%";
+		float percentW = alpha ? 62f : 0f;
+		float fieldW = svW - (alpha ? percentW + 6 : 0);
+		hexFieldX = svX;
+		hexFieldY = next;
+		hexFieldW = fieldW;
+		hexFieldH = fieldH;
+		boolean hexHover = GuiDraw.hovered(mx, my, svX, next, fieldW, fieldH);
+		ExLook.field(graphics, svX, next, fieldW, fieldH, hexFocused, hexHover ? 1f : 0f);
+		String hexShown = hexFocused ? "#" + hexDraft + (!TextKeys.isSelected(hexField.key()) && (System.currentTimeMillis() / 500L) % 2L == 0L ? "|" : "") : hex(current);
+		ExLook.text(graphics, font, ExLook.BODY, hexShown, svX + 12, next + 10, hexFocused ? ExColors.onSurface : ExColors.onSurfaceVariant);
+		hits.add(new Hit(svX, next, fieldW, fieldH, () -> {
+			hexFocused = true;
+			hexDraft = "";
+		}));
+		if (alpha) {
+			ExLook.rounded(graphics, svX + fieldW + 6, next, percentW, fieldH, 10f, ExColors.surfaceHighest);
+			float pw = ExLook.width(font, ExLook.BODY, percent);
+			ExLook.text(graphics, font, ExLook.BODY, percent, svX + fieldW + 6 + (percentW - pw) / 2f, next + 10, ExColors.onSurface);
+		}
+		next += fieldH + 12;
+		int[] presets = {ExColors.primary, ExColors.secondary, ExColors.tertiary, ExColors.error, ExColors.primaryContainer, ExColors.tertiaryContainer, 0xFFFFFFFF, ExColors.outline};
+		float size = 22f;
+		float gapX = (svW - size * presets.length) / (presets.length - 1);
+		for (int i = 0; i < presets.length; i++) {
+			int preset = presets[i] & 0xFFFFFF;
+			float px = svX + i * (size + gapX);
+			ExLook.swatch(graphics, px, next, size, 0xFF000000 | preset, (current & 0xFFFFFF) == preset);
+			hits.add(new Hit(px - 2, next - 2, size + 4, size + 4, () -> {
+				float[] hsv = WorldTint.rgbToHsv(preset);
+				pickerHue = hsv[0];
+				pickerSat = hsv[1];
+				pickerVal = hsv[2];
+				commitPicker();
+				UnloadState.markDirty();
+			}));
+		}
+		next += size + 14;
+		float bw = 96f;
+		float bx = x + w - pad - bw;
+		boolean doneHover = GuiDraw.hovered(mx, my, bx, next, bw, 36);
+		ExLook.button(graphics, bx, next, bw, 36, true, doneHover ? 1f : 0f, false);
+		float dw = ExLook.width(font, ExLook.BOLD, "Done");
+		ExLook.text(graphics, font, ExLook.BOLD, "Done", bx + (bw - dw) / 2f, next + 12, ExColors.onPrimary);
+		hits.add(new Hit(bx, next, bw, 36, () -> {
+			pickerTarget = null;
+			hexFocused = false;
+			UnloadState.markDirty();
+		}));
+	}
+
+	private static void exHandle(GuiGraphicsExtractor graphics, float x, float y, float h) {
+		ExLook.rounded(graphics, x - 3f, y - 5f, 6f, h + 10f, 3f, 0x80000000);
+		ExLook.rounded(graphics, x - 2f, y - 4f, 4f, h + 8f, 2f, 0xFFFFFFFF);
+	}
 
 	// ------------------------------------------------------------------ uid? rows
 	// Sizes and offsets of the menu uid? copies: a checkbox row is 13 px, a slider 25 (10 with no

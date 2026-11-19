@@ -1081,7 +1081,7 @@ public final class GuiDraw {
 
 	/** HUD text in Google Sans Flex, on every part: scoreboard lines carry their own font on each part. */
 	private static Component inter(Component value) {
-		net.minecraft.network.chat.FontDescription inter = MenuFont.hyprStyle(4).getFont();
+		net.minecraft.network.chat.FontDescription inter = MenuFont.bodyLook().getFont();
 		net.minecraft.network.chat.MutableComponent out = Component.empty();
 		value.visit((style, part) -> {
 			out.append(Component.literal(part).withStyle(style.withFont(inter)));

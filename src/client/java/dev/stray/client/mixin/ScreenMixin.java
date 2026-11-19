@@ -71,7 +71,8 @@ public abstract class ScreenMixin {
 	@Inject(method = "extractBlurredBackground", at = @At("HEAD"), cancellable = true)
 	private void stray$sharpStars(GuiGraphicsExtractor graphics, CallbackInfo ci) {
 		Screen self = (Screen) (Object) this;
-		if (MenuChrome.applies(self) && MenuChrome.outOfWorld()) {
+		// uid? menus have no blur behind them, in the world either.
+		if (MenuChrome.applies(self) && (MenuChrome.outOfWorld() || dev.stray.client.ui.Looks.uid())) {
 			ci.cancel();
 		}
 	}
@@ -83,7 +84,9 @@ public abstract class ScreenMixin {
 			return;
 		}
 		if (!MenuChrome.outOfWorld()) {
-			GuiDraw.fill(graphics, 0, 0, width, height, 0x55000000);
+			int dim = dev.stray.client.ui.Looks.uid() ? 0x90070707
+				: dev.stray.client.ui.Looks.ex() ? dev.stray.client.ui.ExColors.alpha(dev.stray.client.ui.ExColors.surfaceDim, 0.45f) : 0x55000000;
+			GuiDraw.fill(graphics, 0, 0, width, height, dim);
 		}
 		ci.cancel();
 	}

@@ -60,12 +60,30 @@ public final class ArrayListHud {
 		boolean background = HudChrome.background();
 		for (Row row : rows) {
 			float x = right - row.width;
-			if (background) {
-				GuiFrostBlur.blitWindow(graphics, x, y, row.width, ROW_H, ShadowLook.SLOT_R);
-				GuiDraw.roundedFine(graphics, x, y, row.width, ROW_H, ShadowLook.SLOT_R, Theme.HUD_WINDOW);
+			if (dev.stray.client.ui.Looks.uid()) {
+				// uid?: flat dark rows, the module's colour as a bar on the right edge.
+				if (background) {
+					GuiDraw.fillSmooth(graphics, x, y, row.width, ROW_H, 0xC0111111);
+				}
+				GuiDraw.fillSmooth(graphics, right - 2f, y, 2f, ROW_H, row.color);
+				GuiDraw.text(graphics, font, row.text, x + PAD - 1f, GuiDraw.middle(y, ROW_H), ShadowLook.TEXT, false);
+			} else if (dev.stray.client.ui.Looks.ex()) {
+				// Expressive: tonal pills, each with a small coloured shape.
+				if (background) {
+					GuiDraw.roundedFine(graphics, x, y, row.width, ROW_H, ROW_H * 0.5f, Theme.HUD_WINDOW);
+				}
+				GuiDraw.text(graphics, font, row.text, x + PAD, GuiDraw.middle(y, ROW_H), ShadowLook.TEXT, false);
+				float d = DOT + 2f;
+				float dx = right - PAD * 0.5f - d * 0.5f - 2f;
+				GuiDraw.roundedFine(graphics, dx - d * 0.5f, y + (ROW_H - d) * 0.5f, d, d, rows.indexOf(row) % 2 == 0 ? d * 0.5f : 1.5f, row.color);
+			} else {
+				if (background) {
+					GuiFrostBlur.blitWindow(graphics, x, y, row.width, ROW_H, ShadowLook.SLOT_R);
+					GuiDraw.roundedFine(graphics, x, y, row.width, ROW_H, ShadowLook.SLOT_R, Theme.HUD_WINDOW);
+				}
+				GuiDraw.text(graphics, font, row.text, x + PAD, GuiDraw.middle(y, ROW_H), ShadowLook.TEXT, false);
+				GuiDraw.circle(graphics, right - PAD * 0.5f - DOT * 0.5f - 1f, y + ROW_H * 0.5f, DOT * 0.5f, row.color);
 			}
-			GuiDraw.text(graphics, font, row.text, x + PAD, GuiDraw.middle(y, ROW_H), ShadowLook.TEXT, false);
-			GuiDraw.circle(graphics, right - PAD * 0.5f - DOT * 0.5f - 1f, y + ROW_H * 0.5f, DOT * 0.5f, row.color);
 			y += ROW_H + GAP;
 		}
 	}
