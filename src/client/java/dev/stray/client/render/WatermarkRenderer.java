@@ -290,6 +290,11 @@ public final class WatermarkRenderer {
 	private static final float UID_INNER_PAD = 4f;
 
 	/** One grey band in screen pixels: half the scale, at least 1, so the outline stays thin. */
+	/** How many screen pixels each half of the uid? colour strip is (the watermark's, for every strip). */
+	public static int uidBarPx() {
+		return Math.max(1, (int) Math.round(uidScale()));
+	}
+
 	/** How many screen pixels one band of the uid? frame is: every uid? frame uses the watermark's. */
 	public static int uidBandPx() {
 		return band(uidScale());

@@ -425,15 +425,19 @@ public final class UidLook {
 		StrayConfig config = StrayConfig.get();
 		boolean bar = config != null && (dev.stray.client.render.HudChrome.shadowInk() ? config.uidBarHud : config.uidBarScreens);
 		if (bar && w > in * 2f + 4f) {
-			rainbow(graphics, x + in, y + in, w - in * 2f, 2f * p);
+			rainbow(graphics, x + in, y + in, w - in * 2f, p * dev.stray.client.render.WatermarkRenderer.uidBarPx());
 		}
 	}
 
-	/** gamesense's colour strip: cyan to magenta to yellow, as on the watermark and the menu. */
-	public static void rainbow(GuiGraphicsExtractor graphics, float x, float y, float w, float h) {
-		float half = w / 2f;
-		horizontal(graphics, x, y, half, h, 0xFF37B1DA, 0xFFCC46CD);
-		horizontal(graphics, x + half, y, w - half, h, 0xFFCC46CD, 0xFFCCE335);
+	/**
+	 * gamesense's colour strip exactly as the watermark draws it: cyan to magenta to yellow,
+	 * {@code half} tall twice, its lower half darker.
+	 */
+	public static void rainbow(GuiGraphicsExtractor graphics, float x, float y, float w, float half) {
+		float mid = w / 2f;
+		horizontal(graphics, x, y, mid, half * 2f, 0xFF37B1DA, 0xFFCC46CD);
+		horizontal(graphics, x + mid, y, w - mid, half * 2f, 0xFFCC46CD, 0xFFCCE335);
+		GuiDraw.fill(graphics, x, y + half, w, half, 0x77000000);
 	}
 
 	/** A small uid? control outside the menu: flat dark grey with a black edge, lighter on hover. */

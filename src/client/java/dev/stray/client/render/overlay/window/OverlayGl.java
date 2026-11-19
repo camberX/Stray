@@ -521,13 +521,16 @@ final class OverlayGl implements Canvas {
 			if (dev.stray.client.config.StrayConfig.get().uidBarHud) {
 				// The colour strip, in slices (the overlay has no gradient fill).
 				float iw = w - in * 2f;
+				float barPx = px * dev.stray.client.render.WatermarkRenderer.uidBarPx();
 				int slices = Math.max(8, Math.round(iw / 3f));
 				float sw = iw / slices;
 				for (int i = 0; i < slices; i++) {
 					float t = i / (float) (slices - 1);
 					int c = t < 0.5f ? mixArgb(0xFF37B1DA, 0xFFCC46CD, t * 2f) : mixArgb(0xFFCC46CD, 0xFFCCE335, (t - 0.5f) * 2f);
-					rounded(x + in + i * sw, y + in, sw + px * 0.5f, 2f * px, 0f, 0.01f, 0f, c);
+					rounded(x + in + i * sw, y + in, sw + px * 0.5f, 2f * barPx, 0f, 0.01f, 0f, c);
 				}
+				// Its lower half darker, as on the watermark.
+				rounded(x + in, y + in + barPx, iw, barPx, 0f, 0.01f, 0f, 0x77000000);
 			}
 			return;
 		}
