@@ -22,7 +22,7 @@ public final class WatermarkRenderer {
 	}
 
 	public static float height() {
-		return uid() ? UID_H * (float) (uidScale() / guiScale()) : HEIGHT;
+		return uid() ? uidHeight(uidScale() * HudLayout.scale(HudLayout.Id.WATERMARK)) * (float) (uidScale() / guiScale()) : HEIGHT;
 	}
 
 	private static boolean uid() {
@@ -173,8 +173,24 @@ public final class WatermarkRenderer {
 	// ---- uid?: the classic cheat-menu watermark: a 30 px box of seven 1 px bands, then
 	// "stray" with ".gay" in the menu colour and the stats, " | " between them, in sharp DejaVu.
 
-	private static final float UID_H = 30f;
-	private static final float UID_PAD = 11f;
+	/** Inside the bands: 16 px tall, text 4 px from the sides (the original's 30 / 11 minus its 7 bands). */
+	private static final float UID_INNER_H = 16f;
+	private static final float UID_INNER_PAD = 4f;
+
+	/** One grey band in screen pixels: half the scale, at least 1, so the outline stays thin. */
+	private static int band(double s) {
+		return Math.max(1, (int) Math.round(s * 0.5));
+	}
+
+	/** The bands' total thickness on one side, in watermark pixels. */
+	private static float frame(double s) {
+		return UID_BANDS.length * band(s) / (float) s;
+	}
+
+	/** Height in watermark pixels: the bands hug the inside, so thinner bands mean a shorter box. */
+	private static float uidHeight(double s) {
+		return UID_INNER_H + frame(s) * 2f;
+	}
 	private static final int[] UID_BANDS = {10, 60, 40, 40, 40, 60, 20};
 	private static final int UID_TEXT = 0xE6FFFFFF;
 
@@ -192,11 +208,11 @@ public final class WatermarkRenderer {
 
 	/** Width in watermark pixels. */
 	private static float uidWidth(double s) {
-		float w = UID_PAD + dev.stray.client.ui.UidText.width(7, "stray", s) + dev.stray.client.ui.UidText.width(7, ".gay", s);
+		float w = frame(s) + UID_INNER_PAD + dev.stray.client.ui.UidText.width(7, "stray", s) + dev.stray.client.ui.UidText.width(7, ".gay", s);
 		for (String part : shadowParts()) {
 			w += dev.stray.client.ui.UidText.width(7, " | ", s) + dev.stray.client.ui.UidText.width(7, Text.zeroDigits(part), s);
 		}
-		return w + UID_PAD;
+		return w + UID_INNER_PAD + frame(s);
 	}
 
 	private static void drawUid(GuiGraphicsExtractor graphics, float hudScale) {
@@ -215,9 +231,9 @@ public final class WatermarkRenderer {
 		int px = (int) Math.round(o.x * gui);
 		int py = (int) Math.round(o.y * gui);
 		int pw = (int) Math.round(w * s);
-		int ph = (int) Math.round(UID_H * s);
+		int ph = (int) Math.round(uidHeight(s) * s);
 		// The grey bands at half the scale (thinner outline); the bar keeps the full scale.
-		int band = Math.max(1, (int) Math.round(s * 0.5));
+		int band = band(s);
 		int barPx = Math.max(1, (int) Math.round(s));
 		graphics.pose().pushMatrix();
 		graphics.pose().identity();
@@ -241,11 +257,11 @@ public final class WatermarkRenderer {
 		graphics.pose().popMatrix();
 		// Text, measured and placed in watermark pixels.
 		int accent = 0xE6000000 | (StrayConfig.get().uidAccent & 0xFFFFFF);
-		float x = UID_PAD;
+		float x = frame(s) + UID_INNER_PAD;
 		// Capitals centred in the space inside the bands (under the bar when it's on), worked out
 		// from the real cap height at this size; text y is 7 units above its baseline.
 		float top = UID_BANDS.length * band / (float) s + (StrayConfig.get().watermarkUidBar ? 2f * barPx / (float) s : 0f);
-		float bottom = UID_H - UID_BANDS.length * band / (float) s;
+		float bottom = uidHeight(s) - UID_BANDS.length * band / (float) s;
 		float cap = dev.stray.client.ui.UidText.capHeight(7, s) / (float) s;
 		float y = (top + bottom) / 2f + cap / 2f - 7f;
 		x = uidText(graphics, "stray", x, y, UID_TEXT, s);
@@ -282,7 +298,7 @@ public final class WatermarkRenderer {
 		if (tick == widthTick && widthCache > 0f) {
 			return widthCache;
 		}
-		float w = uid() ? uidWidth(uidScale()) * (float) (uidScale() / guiScale()) : shadowWidth(font);
+		float w = uid() ? uidWidth(uidScale() * HudLayout.scale(HudLayout.Id.WATERMARK)) * (float) (uidScale() / guiScale()) : shadowWidth(font);
 		widthTick = tick;
 		widthCache = w;
 		return w;
