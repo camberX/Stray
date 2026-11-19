@@ -480,11 +480,35 @@ public final class UidLook {
 	 * the gradient's columns over a fill submitted after them.
 	 */
 	public static void band(GuiGraphicsExtractor graphics, float x, float y, float w, float half) {
-		float mid = (float) Math.floor(w / 2f);
-		horizontal(graphics, x, y, mid, half, 0xFF37B1DA, 0xFFCC46CD);
-		horizontal(graphics, x + mid, y, w - mid, half, 0xFFCC46CD, 0xFFCCE335);
-		horizontal(graphics, x, y + half, mid, half, darker(0xFF37B1DA), darker(0xFFCC46CD));
-		horizontal(graphics, x + mid, y + half, w - mid, half, darker(0xFFCC46CD), darker(0xFFCCE335));
+		// One stretched texture per half: drawing the gradient as a rect per column put thousands of
+		// quads in every HUD frame and cost hundreds of FPS with a few panels on.
+		net.minecraft.resources.Identifier id = stripTexture();
+		int white = GuiDraw.fade(0xFFFFFFFF);
+		GuiDraw.blit(graphics, id, x, y, w, half, 0f, 0f, STRIP_W, 1, STRIP_W, 2, white);
+		GuiDraw.blit(graphics, id, x, y + half, w, half, 0f, 1f, STRIP_W, 1, STRIP_W, 2, white);
+	}
+
+	private static final int STRIP_W = 512;
+	private static net.minecraft.resources.Identifier stripId;
+
+	/** The strip's colours, made once: the top row as drawn, the bottom row under its #77000000 shade. */
+	private static net.minecraft.resources.Identifier stripTexture() {
+		if (stripId != null) {
+			return stripId;
+		}
+		com.mojang.blaze3d.platform.NativeImage image = new com.mojang.blaze3d.platform.NativeImage(STRIP_W, 2, false);
+		int mid = STRIP_W / 2;
+		for (int i = 0; i < STRIP_W; i++) {
+			int c = i < mid
+				? mix(0xFF37B1DA, 0xFFCC46CD, i / (float) (mid - 1))
+				: mix(0xFFCC46CD, 0xFFCCE335, (i - mid) / (float) (STRIP_W - mid - 1));
+			image.setPixel(i, 0, c);
+			image.setPixel(i, 1, darker(c));
+		}
+		net.minecraft.resources.Identifier id = dev.stray.Stray.id("dynamic/uid_strip");
+		net.minecraft.client.Minecraft.getInstance().getTextureManager().register(id, new net.minecraft.client.renderer.texture.DynamicTexture(() -> "stray-uid-strip", image));
+		stripId = id;
+		return id;
 	}
 
 	/** A colour under the strip's #77000000 shade. */
