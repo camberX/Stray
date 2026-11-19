@@ -481,6 +481,8 @@ public final class StrayConfig {
 	/** Full edition only: shows rooms you have not opened yet, from the loaded world. */
 	public boolean dungeonMapCheater = false;
 	public boolean dungeonMapHideInBoss = false;
+	/** 0 Stray (Shadow panel), 1 NoammAddons (flat background and border). */
+	public int dungeonMapStyle = 0;
 	/** 0 checkmarks, 1 secrets, 2 room names, 3 names + secrets, 4 secrets + puzzle names. */
 	public int dungeonMapRoomInfo = 0;
 	public boolean dungeonMapCenterText = true;
@@ -1872,6 +1874,7 @@ public final class StrayConfig {
 				}
 				loaded.alignTriggerbotDelay = Math.max(10, Math.min(400, loaded.alignTriggerbotDelay));
 				loaded.dungeonMapRoomInfo = Math.floorMod(loaded.dungeonMapRoomInfo, 5);
+				loaded.dungeonMapStyle = Math.floorMod(loaded.dungeonMapStyle, 2);
 				loaded.dungeonMapPlayerNames = Math.floorMod(loaded.dungeonMapPlayerNames, 3);
 				loaded.dungeonMapTextScale = clamp(loaded.dungeonMapTextScale, 40, 150);
 				loaded.dungeonMapCheckmarkScale = clamp(loaded.dungeonMapCheckmarkScale, 30, 150);

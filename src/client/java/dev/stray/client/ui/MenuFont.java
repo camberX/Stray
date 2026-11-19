@@ -134,6 +134,15 @@ public final class MenuFont {
 	}
 
 	/** uid?: DejaVu Sans at 9 px, the stand-in for Verdana 9. */
+	/** 7 for uid?'s regular face, 8 for its bold one, -1 for anything else (one plain run only). */
+	public static int uidFamily(Component value) {
+		if (value == null || !value.getSiblings().isEmpty()) {
+			return -1;
+		}
+		Integer family = FAMILY.get(value.getStyle().getFont());
+		return family != null && (family == 7 || family == 8) ? family : -1;
+	}
+
 	public static Component uid(String value) {
 		return Component.literal(value == null ? "" : value).withStyle(hyprStyle(7));
 	}

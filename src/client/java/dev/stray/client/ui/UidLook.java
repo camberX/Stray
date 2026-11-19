@@ -114,7 +114,12 @@ public final class UidLook {
 
 	/** Any text while uid? draws, placed on whole screen pixels. */
 	public static void drawSnapped(GuiGraphicsExtractor graphics, Font font, Component value, float x, float y, int color) {
-		draw(graphics, font, value, snap(x), snap(y), 1f, color);
+		int family = MenuFont.uidFamily(value);
+		if (family > 0 && UidText.ready()) {
+			UidText.draw(graphics, family, value.getString(), x, y, color);
+		} else {
+			draw(graphics, font, value, snap(x), snap(y), 1f, color);
+		}
 		// Rows not drawn in this look still count toward their group's height through their text.
 		UidMenu.extent(y + 11);
 	}
@@ -129,11 +134,19 @@ public final class UidLook {
 		if ((color >>> 24) < 4 || value == null || value.isEmpty()) {
 			return;
 		}
+		if (UidText.ready()) {
+			UidText.draw(graphics, 7, value, x, y + TEXT_DROP, color);
+			return;
+		}
 		draw(graphics, font, MenuFont.uid(value), snap(x), snap(y + TEXT_DROP), 1f, color);
 	}
 
 	public static void bold(GuiGraphicsExtractor graphics, Font font, String value, float x, float y, int color) {
 		if ((color >>> 24) < 4 || value == null || value.isEmpty()) {
+			return;
+		}
+		if (UidText.ready()) {
+			UidText.draw(graphics, 8, value, x, y + TEXT_DROP, color);
 			return;
 		}
 		draw(graphics, font, MenuFont.uidBold(value), snap(x), snap(y + TEXT_DROP), 1f, color);
@@ -178,10 +191,16 @@ public final class UidLook {
 	}
 
 	public static float width(Font font, String value) {
+		if (value != null && UidText.ready()) {
+			return UidText.width(7, value);
+		}
 		return value == null ? 0f : font.width(MenuFont.uid(value));
 	}
 
 	public static float boldWidth(Font font, String value) {
+		if (value != null && UidText.ready()) {
+			return UidText.width(8, value);
+		}
 		return value == null ? 0f : font.width(MenuFont.uidBold(value));
 	}
 

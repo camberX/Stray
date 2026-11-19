@@ -45,6 +45,9 @@ final class OverlayGl implements Canvas {
 	private int vbo;
 	private int uScreen;
 	private int uMode;
+	private int uScreenSize;
+	private int uRr;
+	private int uRp;
 	private int samplerNearest;
 	private int samplerLinear;
 	private final FloatBuffer verts = BufferUtils.createFloatBuffer(MAX_VERTS * FLOATS);
@@ -85,6 +88,9 @@ final class OverlayGl implements Canvas {
 			in vec4 vCol;
 			uniform sampler2D tex;
 			uniform int mode;
+			uniform vec2 screenSize;
+			uniform vec4 rr;
+			uniform vec3 rp;
 			out vec4 outColor;
 			void main() {
 				vec4 c = vCol;
@@ -93,6 +99,13 @@ final class OverlayGl implements Canvas {
 					c *= t;
 				} else if (mode == 2) {
 					c.a *= texture(tex, vUv).r;
+				} else if (mode == 3) {
+					// Rounded rect by distance: rr = centre and half size, rp = radius, feather, ring width.
+					vec2 p = vec2(gl_FragCoord.x, screenSize.y - gl_FragCoord.y) - rr.xy;
+					vec2 q = abs(p) - rr.zw + rp.x;
+					float d = length(max(q, 0.0)) + min(max(q.x, q.y), 0.0) - rp.x;
+					float a = rp.z > 0.0 ? clamp(rp.z - abs(d + rp.z * 0.5) + 0.5 - rp.z * 0.5, 0.0, 1.0) : clamp(0.5 - d / rp.y, 0.0, 1.0);
+					c.a *= a;
 				}
 				outColor = vec4(c.rgb * c.a, c.a);
 			}
@@ -110,6 +123,9 @@ final class OverlayGl implements Canvas {
 		GL33C.glDeleteShader(f);
 		uScreen = GL33C.glGetUniformLocation(program, "screen");
 		uMode = GL33C.glGetUniformLocation(program, "mode");
+		uScreenSize = GL33C.glGetUniformLocation(program, "screenSize");
+		uRr = GL33C.glGetUniformLocation(program, "rr");
+		uRp = GL33C.glGetUniformLocation(program, "rp");
 		vao = GL33C.glGenVertexArrays();
 		vbo = GL33C.glGenBuffers();
 		GL33C.glBindVertexArray(vao);
@@ -291,6 +307,7 @@ final class OverlayGl implements Canvas {
 		GL33C.glClear(GL33C.GL_COLOR_BUFFER_BIT);
 		GL33C.glUseProgram(program);
 		GL33C.glUniform2f(uScreen, width, height);
+		GL33C.glUniform2f(uScreenSize, width, height);
 		GL33C.glBindVertexArray(vao);
 		GL33C.glBindBuffer(GL33C.GL_ARRAY_BUFFER, vbo);
 		GL33C.glActiveTexture(GL33C.GL_TEXTURE0);
@@ -405,6 +422,43 @@ final class OverlayGl implements Canvas {
 		}
 		state(0, 0, false);
 		quad(x, y, x + w, y + h, 0, 0, 0, 0, argb);
+	}
+
+	/** One rounded-rect pass (its own draw call; a map panel needs three). */
+	private void rounded(float x, float y, float w, float h, float radius, float feather, float ring, int argb) {
+		if ((argb >>> 24) == 0 || w <= 0 || h <= 0) {
+			return;
+		}
+		flush();
+		Vector2f a = pose.transformPosition(x, y, new Vector2f());
+		Vector2f b = pose.transformPosition(x + w, y + h, new Vector2f());
+		float scale = Math.abs(b.x - a.x) / w;
+		float hw = Math.abs(b.x - a.x) * 0.5f;
+		float hh = Math.abs(b.y - a.y) * 0.5f;
+		float cx = (a.x + b.x) * 0.5f;
+		float cy = (a.y + b.y) * 0.5f;
+		float r = Math.min(radius * scale, Math.min(hw, hh));
+		float f = Math.max(1f, feather * scale);
+		GL33C.glUniform4f(uRr, cx, cy, hw, hh);
+		GL33C.glUniform3f(uRp, r, f, ring);
+		mode = 3;
+		float pad = f + 2f;
+		pose.pushMatrix();
+		pose.identity();
+		quad(cx - hw - pad, cy - hh - pad, cx + hw + pad, cy + hh + pad, 0, 0, 0, 0, argb);
+		pose.popMatrix();
+		flush();
+		mode = -1;
+	}
+
+	@Override
+	public void panel(float x, float y, float w, float h, float radius, int fill, int edge) {
+		// Shadow's look: a soft shadow under it, the translucent black, a 1 px hairline edge.
+		rounded(x, y + 1.5f, w, h, radius, 10f, 0f, 0x60000000);
+		// No frosted blur behind it out here, so it needs to be more solid to read the same.
+		int alpha = Math.max(fill >>> 24, 0xE6);
+		rounded(x, y, w, h, radius, 0.01f, 0f, (alpha << 24) | (fill & 0xFFFFFF));
+		rounded(x, y, w, h, radius, 0.01f, 1f, edge);
 	}
 
 	@Override

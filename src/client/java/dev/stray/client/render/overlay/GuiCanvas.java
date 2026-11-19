@@ -64,6 +64,11 @@ public final class GuiCanvas implements Canvas {
 	}
 
 	@Override
+	public void panel(float x, float y, float w, float h, float radius, int fill, int edge) {
+		dev.stray.client.ui.ShadowLook.panel(graphics, x, y, w, h, radius, fill);
+	}
+
+	@Override
 	public float width(String text) {
 		return font.width(text);
 	}

@@ -42,6 +42,15 @@ public interface Canvas {
 		fill(x + w, y, t, h, argb);
 	}
 
+	/**
+	 * A Shadow-style panel: soft shadow, rounded translucent fill, hairline edge. Plain
+	 * square fill and border where a canvas can't do better.
+	 */
+	default void panel(float x, float y, float w, float h, float radius, int fill, int edge) {
+		fill(x, y, w, h, fill);
+		border(x, y, w, h, edge, 0.5f);
+	}
+
 	default void centeredText(String text, float cx, float y, int argb, float scale) {
 		push();
 		translate(cx, y);

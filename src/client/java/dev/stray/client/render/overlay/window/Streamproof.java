@@ -96,11 +96,10 @@ public final class Streamproof {
 			int guiH = client.getWindow().getGuiScaledHeight();
 			float scale = pw / (float) Math.max(1, guiW);
 			gl.begin(pw, ph, scale);
-			if (show && !client.gui.hud.isHidden()) {
+			if (show && !client.gui.hud.isHidden() && !menuOpen(client)) {
 				float partial = client.getDeltaTracker().getGameTimeDeltaPartialTick(true);
 				StarMobOverlay.draw(gl, guiW, guiH, partial);
 				DungeonMapHud.overlay(gl, guiW, guiH, partial);
-				underScreen(client, gl, scale);
 			}
 			gl.end();
 			drewLast = show;
@@ -115,25 +114,10 @@ public final class Streamproof {
 		}
 	}
 
-	/**
-	 * With a menu open the overlay can't go under the game's GUI, so it fakes it: everything is
-	 * darkened like the menu's background, and a container's window is cut out so the
-	 * inventory shows over the map instead of under it.
-	 */
-	private static void underScreen(Minecraft client, OverlayGl gl, float scale) {
+	/** Any menu but chat: streamproof things hide (the overlay can't go under the game's GUI). */
+	private static boolean menuOpen(Minecraft client) {
 		net.minecraft.client.gui.screens.Screen screen = client.gui.screen();
-		if (screen == null || screen instanceof net.minecraft.client.gui.screens.ChatScreen) {
-			return;
-		}
-		gl.dim(0.78f, 0x101010);
-		if (screen instanceof net.minecraft.client.gui.screens.inventory.AbstractContainerScreen<?> container) {
-			dev.stray.client.mixin.AbstractContainerScreenAccessor a = (dev.stray.client.mixin.AbstractContainerScreenAccessor) container;
-			int x = (int) Math.floor(a.stray$leftPos() * scale);
-			int y = (int) Math.floor(a.stray$topPos() * scale);
-			int w = (int) Math.ceil(a.stray$imageWidth() * scale);
-			int h = (int) Math.ceil(a.stray$imageHeight() * scale);
-			gl.erase(x, y, w, h);
-		}
+		return screen != null && !(screen instanceof net.minecraft.client.gui.screens.ChatScreen);
 	}
 
 	public static boolean working() {

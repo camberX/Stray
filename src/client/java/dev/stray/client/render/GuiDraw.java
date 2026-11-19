@@ -1097,6 +1097,12 @@ public final class GuiDraw {
 	}
 
 	public static int menuWidth(Font font, String value) {
+		if (dev.stray.client.ui.UidMenu.drawing() && value != null && dev.stray.client.ui.UidText.ready()) {
+			int family = MenuFont.uidFamily(MenuFont.shadow(value));
+			if (family > 0) {
+				return (int) Math.ceil(dev.stray.client.ui.UidText.width(family, value));
+			}
+		}
 		return font.width(MenuFont.shadow(value));
 	}
 

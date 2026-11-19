@@ -41,9 +41,14 @@ public final class MapRenderer {
 		StrayConfig config = StrayConfig.get();
 		float sx = MapUtils.drawStartX();
 		float sz = MapUtils.drawStartZ();
-		c.fill(0, 0, SIZE, SIZE, config.dungeonMapBackground);
-		if (config.dungeonMapBorderWidth > 0) {
-			c.border(0, 0, SIZE, SIZE, config.dungeonMapBorderColor, config.dungeonMapBorderWidth);
+		if (config.dungeonMapStyle == 0) {
+			// Stray's Shadow look: the same rounded, see-through black panel as the HUD.
+			c.panel(0, 0, SIZE, SIZE, dev.stray.client.ui.ShadowLook.HUD_R, dev.stray.client.ui.ShadowLook.FILL, dev.stray.client.ui.ShadowLook.edge());
+		} else {
+			c.fill(0, 0, SIZE, SIZE, config.dungeonMapBackground);
+			if (config.dungeonMapBorderWidth > 0) {
+				c.border(0, 0, SIZE, SIZE, config.dungeonMapBorderColor, config.dungeonMapBorderWidth);
+			}
 		}
 		c.push();
 		c.translate(sx, sz);

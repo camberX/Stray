@@ -270,7 +270,7 @@ public class StrayScreen extends Screen {
 			if (this == DUNGEON_MAP) {
 				StrayConfig c = StrayConfig.get();
 				boolean full = !dev.stray.Edition.LEGIT;
-				return 34 + (full ? 2 : 0) + (full && c.dungeonMapCheater ? 1 : 0) + (c.dungeonMapRoomInfo >= 2 ? 1 : 0)
+				return 32 + (c.dungeonMapStyle == 1 ? 3 : 0) + (full ? 2 : 0) + (full && c.dungeonMapCheater ? 1 : 0) + (c.dungeonMapRoomInfo >= 2 ? 1 : 0)
 					+ (c.dungeonMapClassBorders ? 0 : 1) + (c.dungeonMapSelfArrow ? 1 : 0);
 			}
 			if (this == PATHS) {
@@ -4280,9 +4280,13 @@ public class StrayScreen extends Screen {
 				y = slider(graphics, font, ix, y, iw, "Text scale", config.dungeonMapTextScale + "%", (config.dungeonMapTextScale - 40) / 110f, v -> config.dungeonMapTextScale = snapInt(40 + v * 110f, 40, 150, 10));
 				y = slider(graphics, font, ix, y, iw, "Checkmark scale", config.dungeonMapCheckmarkScale + "%", (config.dungeonMapCheckmarkScale - 30) / 120f, v -> config.dungeonMapCheckmarkScale = snapInt(30 + v * 120f, 30, 150, 10));
 				y = slider(graphics, font, ix, y, iw, "Door width", String.valueOf(config.dungeonMapDoorWidth), (config.dungeonMapDoorWidth - 6) / 4f, v -> config.dungeonMapDoorWidth = snapInt(6 + v * 4f, 6, 10, 1));
-				y = slider(graphics, font, ix, y, iw, "Border thickness", String.valueOf(config.dungeonMapBorderWidth), config.dungeonMapBorderWidth / 5f, v -> config.dungeonMapBorderWidth = snapInt(v * 5f, 0, 5, 1));
-				y = argbColor(graphics, font, ix, y, iw, mouseX, mouseY, "Background", "dungeonMapBackground");
-				y = argbColor(graphics, font, ix, y, iw, mouseX, mouseY, "Border", "dungeonMapBorderColor");
+				String[] styles = {"Stray", "NoammAddons"};
+				y = cycle(graphics, font, ix, y, iw, mouseX, mouseY, "Style", () -> styles[Math.floorMod(config.dungeonMapStyle, 2)], () -> config.dungeonMapStyle = Math.floorMod(config.dungeonMapStyle + 1, 2));
+				if (config.dungeonMapStyle == 1) {
+					y = slider(graphics, font, ix, y, iw, "Border thickness", String.valueOf(config.dungeonMapBorderWidth), config.dungeonMapBorderWidth / 5f, v -> config.dungeonMapBorderWidth = snapInt(v * 5f, 0, 5, 1));
+					y = argbColor(graphics, font, ix, y, iw, mouseX, mouseY, "Background", "dungeonMapBackground");
+					y = argbColor(graphics, font, ix, y, iw, mouseX, mouseY, "Border", "dungeonMapBorderColor");
+				}
 				y = cycle(graphics, font, ix, y, iw, mouseX, mouseY, "Player names", () -> names[Math.floorMod(config.dungeonMapPlayerNames, names.length)], () -> config.dungeonMapPlayerNames = Math.floorMod(config.dungeonMapPlayerNames + 1, names.length));
 				y = slider(graphics, font, ix, y, iw, "Head scale", config.dungeonMapHeadScale + "%", (config.dungeonMapHeadScale - 30) / 120f, v -> config.dungeonMapHeadScale = snapInt(30 + v * 120f, 30, 150, 10));
 				y = slider(graphics, font, ix, y, iw, "Name scale", config.dungeonMapNameScale + "%", (config.dungeonMapNameScale - 30) / 120f, v -> config.dungeonMapNameScale = snapInt(30 + v * 120f, 30, 150, 10));
