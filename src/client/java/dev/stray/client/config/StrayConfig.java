@@ -75,6 +75,8 @@ public final class StrayConfig {
 	public int themePaneRgb = 0x0B0E14;
 	public String themePreset = "cyan";
 	public boolean uiAnimations = false;
+	/** uid? menu fade in / out and page switch, in ms (0 = none). */
+	public int uidAnimMs = 0;
 	public boolean autoUpdate = false;
 	public boolean updateNotify = false;
 	public boolean updateAutoClose = false;
@@ -1875,6 +1877,7 @@ public final class StrayConfig {
 				loaded.alignTriggerbotDelay = Math.max(10, Math.min(400, loaded.alignTriggerbotDelay));
 				loaded.dungeonMapRoomInfo = Math.floorMod(loaded.dungeonMapRoomInfo, 5);
 				loaded.dungeonMapStyle = Math.floorMod(loaded.dungeonMapStyle, 2);
+				loaded.uidAnimMs = clamp(loaded.uidAnimMs, 0, 600);
 				loaded.dungeonMapPlayerNames = Math.floorMod(loaded.dungeonMapPlayerNames, 3);
 				loaded.dungeonMapTextScale = clamp(loaded.dungeonMapTextScale, 40, 150);
 				loaded.dungeonMapCheckmarkScale = clamp(loaded.dungeonMapCheckmarkScale, 30, 150);

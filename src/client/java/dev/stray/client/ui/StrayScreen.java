@@ -822,7 +822,7 @@ public class StrayScreen extends Screen {
 			viewLift = 0f;
 			viewCx = 0f;
 			viewCy = 0f;
-			if (closing && appear <= 0.02f) {
+			if (closing && (UidMenu.active() ? UidMenu.faded(this) : appear <= 0.02f)) {
 				finishClose();
 				return;
 			}
@@ -5643,7 +5643,8 @@ public class StrayScreen extends Screen {
 			stealFocused = false;
 			commitSteal();
 		}
-		if (!closing && StrayConfig.get().uiAnimations && appear > 0.04f) {
+		boolean uidFade = StrayConfig.get().clickGui && UidMenu.active() && StrayConfig.get().uidAnimMs > 0;
+		if (!closing && (uidFade || (StrayConfig.get().uiAnimations && appear > 0.04f))) {
 			closing = true;
 			capeFocused = false;
 			nickFocused = false;
@@ -5764,6 +5765,15 @@ public class StrayScreen extends Screen {
 	/** uid?'s "Menu color" row: its accent, through the colour picker. */
 	float clickUidAccent(GuiGraphicsExtractor graphics, Font font, float x, float y, float w) {
 		return colorRow(graphics, font, x, y, w, (int) Math.round(ClickGui.pointerX()), (int) Math.round(ClickGui.pointerY()), "Menu color", StrayConfig.get().uidAccent, PickerTarget.UID_ACCENT);
+	}
+
+	boolean clickClosing() {
+		return closing;
+	}
+
+	/** A slider row, for click GUI settings outside a feature panel. */
+	float clickSlider(GuiGraphicsExtractor graphics, Font font, float x, float y, float w, String label, String value, float progress, Consumer<Float> set) {
+		return slider(graphics, font, x, y, w, label, value, progress, set);
 	}
 
 	float clickAppear() {

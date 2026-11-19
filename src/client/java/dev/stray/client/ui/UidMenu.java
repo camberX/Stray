@@ -73,7 +73,8 @@ public final class UidMenu {
 	private static float railY = Float.NaN;
 	private static long lastFrame;
 	private static long switchedAt;
-	private static final float PAGE_MS = 190f;
+	private static float fade = 1f;
+	private static Object fadeScreen;
 
 	private UidMenu() {
 	}
@@ -112,10 +113,17 @@ public final class UidMenu {
 	}
 
 
-	/** easeOutCubic. */
-	private static float ease(float t) {
-		float u = 1f - t;
-		return 1f - u * u * u;
+	private static float smooth(float t) {
+		return t * t * (3f - 2f * t);
+	}
+
+	private static float approachLinear(float v, float target, float step) {
+		return v < target ? Math.min(target, v + step) : Math.max(target, v - step);
+	}
+
+	/** Closing has faded all the way out (or there's no fade). */
+	static boolean faded(Object screen) {
+		return screen != fadeScreen || fade <= 0.001f || StrayConfig.get().uidAnimMs <= 0;
 	}
 
 	/** A row reports how far down it drew, so the group knows its height. */
@@ -157,23 +165,24 @@ public final class UidMenu {
 		deferred.clear();
 		graphics.pose().pushMatrix();
 		graphics.pose().scale(unit, unit);
-		// Open / close: the window grows from 96 %, rises a little and fades in; closing plays it back.
-		float open = ease(Mth.clamp(screen.clickAppear(), 0f, 1f));
+		// Open / close: a plain fade over "Menu animation" ms; tab switches use the same time.
 		long now = System.nanoTime();
 		float dt = lastFrame == 0L ? 0f : Math.min(0.1f, (now - lastFrame) / 1.0e9f);
 		lastFrame = now;
+		int ms = StrayConfig.get().uidAnimMs;
+		if (screen != fadeScreen) {
+			fadeScreen = screen;
+			fade = ms > 0 ? 0f : 1f;
+		}
+		float target = screen.clickClosing() ? 0f : 1f;
+		fade = ms <= 0 ? target : approachLinear(fade, target, dt * 1000f / ms);
+		float open = smooth(fade);
 		float targetY = TAB_TOP + active * TAB_H;
-		railY = Float.isNaN(railY) || open < 0.05f ? targetY : railY + (targetY - railY) * Math.min(1f, dt * 22f);
-		float page = ease(Mth.clamp((now - switchedAt) / (PAGE_MS * 1.0e6f), 0f, 1f));
+		railY = Float.isNaN(railY) || ms <= 0 ? targetY : railY + (targetY - railY) * Math.min(1f, dt * 4000f / Math.max(ms, 1));
+		float page = ms <= 0 ? 1f : smooth(Mth.clamp((now - switchedAt) / (ms * 1.0e6f), 0f, 1f));
 		try {
 			GuiDraw.alphaScale = open;
 			GuiDraw.fill(graphics, 0, 0, sw, sh, 0x30000000);
-			float cx = winX + W / 2f;
-			float cy = winY + H / 2f;
-			float grow = 0.96f + 0.04f * open;
-			graphics.pose().translate(cx, cy + (1f - open) * 10f);
-			graphics.pose().scale(grow, grow);
-			graphics.pose().translate(-cx, -cy);
 			UidLook.window(graphics, winX, winY, W, H);
 			UidLook.rail(graphics, winX, winY, H, TAB_W, railY, TAB_H);
 			tabs(screen, graphics, font, mx, my);

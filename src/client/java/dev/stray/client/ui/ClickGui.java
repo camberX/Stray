@@ -200,6 +200,11 @@ public final class ClickGui {
 				UnloadState.markDirty();
 			});
 			y = screen.clickUidAccent(graphics, font, x, y, w);
+			int ms = config.uidAnimMs;
+			y = screen.clickSlider(graphics, font, x, y, w, "Menu animation", ms == 0 ? "Off" : ms + " ms", ms / 600f, v -> {
+				StrayConfig.get().uidAnimMs = Math.round(v * 600f / 25f) * 25;
+				UnloadState.markDirty();
+			});
 			y = drawButton(screen, graphics, font, x, y, w, "Reset menu layout", UidMenu::resetPosition);
 		}
 		y = next(drawChoice(screen, graphics, font, x, y, w, "Accent Outlines", config.accentOutlines, () -> {
