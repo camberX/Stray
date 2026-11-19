@@ -216,7 +216,9 @@ public final class WatermarkRenderer {
 		int py = (int) Math.round(o.y * gui);
 		int pw = (int) Math.round(w * s);
 		int ph = (int) Math.round(UID_H * s);
-		int band = Math.max(1, (int) Math.round(s));
+		// The grey bands at half the scale (thinner outline); the bar keeps the full scale.
+		int band = Math.max(1, (int) Math.round(s * 0.5));
+		int barPx = Math.max(1, (int) Math.round(s));
 		graphics.pose().pushMatrix();
 		graphics.pose().identity();
 		float inv = (float) (1.0 / gui);
@@ -232,17 +234,20 @@ public final class WatermarkRenderer {
 			int by = py + band * UID_BANDS.length;
 			int bw = pw - band * UID_BANDS.length * 2;
 			int half = bw / 2;
-			dev.stray.client.ui.UidLook.horizontal(graphics, bx, by, half, band * 2, 0xFF37B1DA, 0xFFCC46CD);
-			dev.stray.client.ui.UidLook.horizontal(graphics, bx + half, by, bw - half, band * 2, 0xFFCC46CD, 0xFFCCE335);
-			GuiDraw.fill(graphics, bx, by + band, bw, band, 0x77000000);
+			dev.stray.client.ui.UidLook.horizontal(graphics, bx, by, half, barPx * 2, 0xFF37B1DA, 0xFFCC46CD);
+			dev.stray.client.ui.UidLook.horizontal(graphics, bx + half, by, bw - half, barPx * 2, 0xFFCC46CD, 0xFFCCE335);
+			GuiDraw.fill(graphics, bx, by + barPx, bw, barPx, 0x77000000);
 		}
 		graphics.pose().popMatrix();
 		// Text, measured and placed in watermark pixels.
 		int accent = 0xE6000000 | (StrayConfig.get().uidAccent & 0xFFFFFF);
 		float x = UID_PAD;
-		// Baseline 7 under y: centres the capitals in the space inside the bands (measured on screen);
-		// with the bar on, in the space under the bar.
-		float y = StrayConfig.get().watermarkUidBar ? 12f : 11f;
+		// Capitals centred in the space inside the bands (under the bar when it's on), worked out
+		// from the real cap height at this size; text y is 7 units above its baseline.
+		float top = UID_BANDS.length * band / (float) s + (StrayConfig.get().watermarkUidBar ? 2f * barPx / (float) s : 0f);
+		float bottom = UID_H - UID_BANDS.length * band / (float) s;
+		float cap = dev.stray.client.ui.UidText.capHeight(7, s) / (float) s;
+		float y = (top + bottom) / 2f + cap / 2f - 7f;
 		x = uidText(graphics, "stray", x, y, UID_TEXT, s);
 		x = uidText(graphics, ".gay", x, y, accent, s);
 		List<String> parts = shadowParts();

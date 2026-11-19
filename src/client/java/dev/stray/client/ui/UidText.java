@@ -193,6 +193,15 @@ public final class UidText {
 		return width(family, text, dpi());
 	}
 
+	/** Capital height ("H") in screen pixels at {@code scale}: for centring text exactly. */
+	public static int capHeight(int family, double scale) {
+		if (!ready()) {
+			return (int) Math.round(6.5 * scale);
+		}
+		int fam = family == 8 ? 1 : 0;
+		return glyph(fam, atlas(fam, scale), 'H').top;
+	}
+
 	/** Width in units of {@code scale} screen pixels. */
 	public static float width(int family, String text, double scale) {
 		if (text == null || text.isEmpty() || !ready()) {
