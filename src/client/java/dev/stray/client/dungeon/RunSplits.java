@@ -7,14 +7,11 @@ import dev.stray.Stray;
 import dev.stray.client.config.StrayConfig;
 import dev.stray.client.location.SkyblockLocation;
 import dev.stray.client.render.GuiDraw;
-import dev.stray.client.render.HudChrome;
 import dev.stray.client.render.HudLayout;
-import dev.stray.client.ui.Theme;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
-import net.minecraft.network.chat.Component;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
 
@@ -36,6 +33,8 @@ import java.util.regex.Pattern;
  * yourself"), Portal Entry (to entering the boss room), Boss Entry (total so far), then the
  * floor's boss splits from their boss lines (F7/M7 Necron ends when Necron dies, which is the
  * wither hurt sound after "ARGH!"), Cleared (to the "Defeated" line), Overall and Estimated.
+ * The layout follows the splits table it was asked to match: every row always listed, 0.00 (0.00)
+ * for rows not reached yet, and the difference once a row is done.
  *
  * <p>Each row shows the time, your personal best for it in brackets and the difference. The
  * personal best is the fastest finished run per floor, saved in {@code config/stray/runsplits.json}.
@@ -46,6 +45,8 @@ public final class RunSplits {
 	private static final String MORT = "[NPC] Mort: Here, I found this map when I first entered the dungeon.";
 	private static final Pattern WATCHER = Pattern.compile("^\\[BOSS] The Watcher: .+$");
 	private static final String WATCHER_CLEAR = "[BOSS] The Watcher: You have proven yourself. You may pass.";
+	/** Hypixel's dungeon scoreboard: "Time Elapsed: 05m 32s" (or "1h 02m 03s"). */
+	private static final Pattern ELAPSED = Pattern.compile("Time Elapsed:\\s*(?:(\\d+)h\\s*)?(?:(\\d+)m\\s*)?(\\d+)s");
 	private static final Pattern RUN_END = Pattern.compile("^\\s*☠ Defeated (.+) in 0?([\\dhms ]+?)\\s*(\\(NEW RECORD!\\))?$");
 	private static final int LINE = 10;
 	private static final int PAD = 5;
@@ -89,6 +90,8 @@ public final class RunSplits {
 	// The run in progress.
 	private static long runStart;
 	private static long runEnd;
+	/** Picked up partway from the scoreboard: the early rows are guesses, so it is never a personal best. */
+	private static boolean late;
 	private static long bossEntry;
 	private static boolean necronStart;
 	private static final List<Row> rows = new ArrayList<>();
@@ -105,7 +108,7 @@ public final class RunSplits {
 	// ================================================================ input
 
 	public static void onChat(String message) {
-		if (!StrayConfig.get().runSplits || message == null || !SkyblockLocation.inDungeon) {
+		if (!StrayConfig.get().runSplits || message == null) {
 			return;
 		}
 		String msg = message.trim();
@@ -172,7 +175,11 @@ public final class RunSplits {
 	}
 
 	public static void tick() {
-		if (runStart == 0L || runEnd > 0L || bossEntry > 0L || !SkyblockLocation.inBoss) {
+		if (runStart == 0L) {
+			pickUpRun();
+			return;
+		}
+		if (runEnd > 0L || bossEntry > 0L || !SkyblockLocation.inBoss) {
 			return;
 		}
 		long now = System.currentTimeMillis();
@@ -187,7 +194,46 @@ public final class RunSplits {
 		portal.end = now;
 	}
 
+	private static int pickUpTicks;
+
+	/**
+	 * Turned on (or joined) after Mort's line: start from the scoreboard's "Time Elapsed" so the
+	 * splits still show, with Overall right and the rows from here on.
+	 */
+	private static void pickUpRun() {
+		if (!StrayConfig.get().runSplits || !SkyblockLocation.inDungeon || ++pickUpTicks % 20 != 0) {
+			return;
+		}
+		Minecraft client = Minecraft.getInstance();
+		for (String line : dev.stray.client.slayer.SlayerApi.sidebar(client)) {
+			java.util.regex.Matcher m = ELAPSED.matcher(line);
+			if (!m.find()) {
+				continue;
+			}
+			long seconds = (m.group(1) == null ? 0L : Long.parseLong(m.group(1)) * 3600L)
+				+ (m.group(2) == null ? 0L : Long.parseLong(m.group(2)) * 60L)
+				+ Long.parseLong(m.group(3));
+			if (seconds <= 0L) {
+				return;
+			}
+			long now = System.currentTimeMillis();
+			start(now - seconds * 1000L);
+			late = true;
+			if (SkyblockLocation.inBoss) {
+				// Already past the clear: only the boss rows and Overall can be timed from here.
+				bloodOpen.end = bloodOpen.start;
+				bloodClear.start = bloodOpen.start;
+				bloodClear.end = bloodOpen.start;
+				portal.start = bloodOpen.start;
+				portal.end = bloodOpen.start;
+				bossEntry = now;
+			}
+			return;
+		}
+	}
+
 	public static void reset() {
+		late = false;
 		runStart = 0L;
 		runEnd = 0L;
 		bossEntry = 0L;
@@ -259,7 +305,7 @@ public final class RunSplits {
 
 	private static void saveIfBest() {
 		long total = runEnd - runStart;
-		if (total <= 0L) {
+		if (total <= 0L || late) {
 			return;
 		}
 		String key = floorKey();
@@ -316,80 +362,88 @@ public final class RunSplits {
 		if (example) {
 			return List.of(
 				new Line("§aBlood Open", "12.79", "(12.55)", "§c+0.24"),
-				new Line("§cBlood Clear", "54.16", "(50.80)", "§c+3.36"),
+				new Line("§bBlood Clear", "54.16", "(50.80)", "§c+3.36"),
 				new Line("§dPortal Entry", "14.56", "(14.10)", "§c+0.46"),
-				new Line("§6Boss Entry", "1:21.50", "(1:16.65)", "§c+4.85"),
+				new Line("§cBoss Entry", "1:21.50", "(1:16.65)", "§c+4.85"),
 				new Line("§5Maxor", "13.23", "(13.23)", "§f+0.00"),
 				new Line("§bStorm", "47.07", "(43.40)", "§c+3.67"),
-				new Line("§eTerminals", "26.65", "(26.20)", "§c+0.45"),
-				new Line("§7Goldor", "10.15", "(10.00)", "§c+0.15"),
+				new Line("§6Terminals", "26.65", "(26.20)", "§c+0.45"),
+				new Line("§eGoldor", "10.15", "(10.00)", "§c+0.15"),
 				new Line("§cNecron", "7.75", "(7.60)", "§c+0.15"),
-				new Line("§8Cleared", "0.00", "(0.00)", ""),
-				new Line("§fOverall", "3:06.34", "(2:57.15)", "§c+9.19"),
+				new Line("§cCleared", "0.00", "(0.00)", ""),
+				new Line("§7Overall", "3:06.34", "(2:57.15)", "§c+9.19"),
 				new Line("§bEstimated", "3:50.34", "(3:41.15)", "§c+9.19")
 			);
 		}
 		if (runStart == 0L) {
 			return List.of();
 		}
+		if (bossDef == null) {
+			bossDef = bossFor();
+			if (bossDef != null && boss.isEmpty()) {
+				for (Split split : bossDef.splits) {
+					boss.add(new Row(split.name));
+				}
+			}
+		}
 		long now = runEnd > 0L ? runEnd : System.currentTimeMillis();
 		Best best = bests().get(floorKey());
 		StrayConfig config = StrayConfig.get();
 		List<Line> out = new ArrayList<>();
 		out.add(segment("§a", bloodOpen, best, now));
-		out.add(segment("§c", bloodClear, best, now));
+		out.add(segment("§b", bloodClear, best, now));
 		out.add(segment("§d", portal, best, now));
-		long entry = bossEntry > 0L ? bossEntry - runStart : now - runStart;
-		Long bestEntry = best == null ? null : sum(best, bloodOpen.name, bloodClear.name, portal.name);
-		out.add(line("§6Boss Entry", entry, bestEntry, bossEntry > 0L || runEnd == 0L));
+		// Boss Entry: the clear so far, against your best to the same point.
+		long entry = (bossEntry > 0L ? bossEntry : now) - runStart;
+		long entryBest = reachedBest(best, List.of(bloodOpen, bloodClear, portal));
+		out.add(line("§cBoss Entry", entry, entryBest, portal.end > 0L));
 		for (Row row : boss) {
 			out.add(segment(bossColor(row.name), row, best, now));
 		}
-		out.add(segment("§8", cleared, best, now));
+		out.add(segment("§c", cleared, best, now));
 
+		// Overall: against your best to the same point (every row reached so far, the open one
+		// whole). Estimated: your best total plus how far ahead or behind that is.
 		long overall = now - runStart;
-		// What is left of the personal best from here: the rest of the open row, then every row after it.
-		long left = 0L;
-		boolean known = best != null && best.total > 0L;
-		if (known) {
-			for (Row row : segments()) {
-				Long pb = best.segments.get(row.name);
-				if (pb == null || row.end > 0L) {
-					continue;
-				}
-				left += row.started() ? Math.max(0L, pb - row.time(now)) : pb;
-			}
+		List<Row> all = segments();
+		long toHere = reachedBest(best, all);
+		boolean anyDone = false;
+		for (Row row : all) {
+			anyDone |= row.end > 0L;
 		}
-		Long overallBest = known ? Math.max(0L, best.total - left) : null;
-		out.add(line("§fOverall", overall, overallBest, true));
-		if (config.runSplitsEstimated && known && runEnd == 0L) {
-			out.add(line("§bEstimated", overall + left, best.total, true));
+		out.add(line("§7Overall", overall, toHere, anyDone));
+		if (config.runSplitsEstimated && runEnd == 0L) {
+			long total = best == null ? 0L : best.total;
+			out.add(line("§bEstimated", total + (overall - toHere), total, anyDone));
 		}
 		return out;
 	}
 
-	private static Long sum(Best best, String... names) {
+	/** Sum of your best times for the rows already reached (0 for a row with no best). */
+	private static long reachedBest(Best best, List<Row> rows) {
 		long total = 0L;
-		for (String name : names) {
-			Long value = best.segments.get(name);
-			if (value == null) {
-				return null;
+		if (best == null) {
+			return 0L;
+		}
+		for (Row row : rows) {
+			if (row.started()) {
+				total += best.segments.getOrDefault(row.name, 0L);
 			}
-			total += value;
 		}
 		return total;
 	}
 
 	private static Line segment(String color, Row row, Best best, long now) {
-		Long pb = best == null ? null : best.segments.get(row.name);
-		return line(color + row.name, row.time(now), pb, row.started());
+		// Rows not reached yet read 0.00 (0.00); the difference shows once a row is done.
+		long pb = best == null || !row.started() ? 0L : best.segments.getOrDefault(row.name, 0L);
+		return line(color + row.name, row.time(now), pb, row.end > 0L);
 	}
 
-	private static Line line(String label, long ms, Long pb, boolean started) {
+	private static Line line(String label, long ms, long pb, boolean done) {
 		StrayConfig config = StrayConfig.get();
-		String best = config.runSplitsBest ? "(" + (pb == null ? "--" : format(pb)) + ")" : "";
+		String best = config.runSplitsBest ? "(" + format(pb) + ")" : "";
 		String diff = "";
-		if (config.runSplitsDiff && started && pb != null) {
+		if (config.runSplitsDiff && done && pb > 0L) {
 			long d = ms - pb;
 			String color = d < -5L ? "§a" : d > 5L ? "§c" : "§f";
 			diff = color + (d < 0L ? "-" : "+") + format(Math.abs(d));
@@ -401,8 +455,8 @@ public final class RunSplits {
 		return switch (name) {
 			case "Maxor" -> "§5";
 			case "Storm", "Thorn Kill", "Scarf", "Guardifessor" -> "§b";
-			case "Terminals", "Dialogue", "Start Dialogue", "End Dialogue", "The Professor" -> "§e";
-			case "Goldor" -> "§7";
+			case "Terminals" -> "§6";
+			case "Goldor", "Dialogue", "Start Dialogue", "End Dialogue", "The Professor" -> "§e";
 			case "Giants" -> "§d";
 			case "Terracottas" -> "§6";
 			case "Guardians" -> "§9";
@@ -472,7 +526,9 @@ public final class RunSplits {
 		float width = widthOf(w);
 		float height = PAD * 2 + lines.size() * LINE - 1;
 		HudLayout.apply(graphics, font, HudLayout.Id.RUN_SPLITS, () -> {
-			HudChrome.panel(graphics, 0, 0, width, height, 5, Theme.HUD_WINDOW, Theme.HUD_LINE);
+			if (HudLayout.background(HudLayout.Id.RUN_SPLITS)) {
+				GuiDraw.fill(graphics, 0, 0, width, height, 0x80000000);
+			}
 			float y = PAD;
 			for (Line line : lines) {
 				float x = PAD;
@@ -493,9 +549,10 @@ public final class RunSplits {
 		});
 	}
 
+	/** Minecraft's own font with its shadow, like the splits table this matches. */
 	private static void text(GuiGraphicsExtractor graphics, Font font, String text, float x, float y, int color) {
 		if (!text.isEmpty()) {
-			GuiDraw.text(graphics, font, Component.literal(text), x, y, color, true);
+			graphics.text(font, text, Math.round(x), Math.round(y), color, true);
 		}
 	}
 
@@ -541,8 +598,7 @@ public final class RunSplits {
 			Split.at("Necron", null));
 		String maxor = "[BOSS] Maxor: WELL! WELL! WELL! LOOK WHO'S HERE!";
 		FLOORS.put("F7", new Boss(maxor, f7));
-		List<Split> m7 = new ArrayList<>(f7);
-		m7.add(Split.at("Dragons", null));
-		FLOORS.put("M7", new Boss(maxor, List.copyOf(m7)));
+		// M7: no separate Dragons row; Cleared covers the time after Necron.
+		FLOORS.put("M7", new Boss(maxor, f7));
 	}
 }
