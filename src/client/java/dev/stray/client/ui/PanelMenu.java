@@ -83,6 +83,16 @@ public final class PanelMenu {
 	private static long lastFrame;
 	private static Object fadeScreen;
 	private static long openedAt;
+	private static long closingAt;
+	/** Seconds the close takes: each panel's own part, and the step between panels. */
+	private static final float CLOSE_PANEL = 0.17f;
+	private static final float CLOSE_STEP = 0.015f;
+	/** A settings window on its way out: what it showed and where, drawn without taking clicks. */
+	private static ClickGui.Mod ghost;
+	private static boolean ghostMobs;
+	private static final float[] ghostState = new float[7];
+	private static long ghostAt;
+	private static final float GHOST_S = 0.14f;
 	private static long winOpenedAt;
 
 	private PanelMenu() {
@@ -118,6 +128,13 @@ public final class PanelMenu {
 	}
 
 	static void closeWindow() {
+		if (windowOpen() && !Float.isNaN(winX)) {
+			ghost = window;
+			ghostMobs = mobWindow;
+			float[] g = ghostState;
+			g[0] = winX; g[1] = winY; g[2] = winH; g[3] = bodyY; g[4] = bodyH; g[5] = winScroll; g[6] = winContent;
+			ghostAt = System.nanoTime();
+		}
 		window = null;
 		mobWindow = false;
 		ClickGui.blurMobSearch();
@@ -160,12 +177,21 @@ public final class PanelMenu {
 			fade = 0f;
 			lastFrame = now;
 			openedAt = now;
+			closingAt = 0L;
 		}
-		float dt = Math.min(1f / 30f, (now - lastFrame) / 1.0e9f);
 		lastFrame = now;
-		float target = screen.clickClosing() ? 0f : 1f;
-		// A short fade both ways (Material's "effects" speed: about 150 ms).
-		fade = target > fade ? Math.min(target, fade + dt / 0.15f) : Math.max(target, fade - dt / 0.12f);
+		boolean closingNow = screen.clickClosing();
+		if (closingNow && closingAt == 0L) {
+			closingAt = now;
+		} else if (!closingNow) {
+			closingAt = 0L;
+		}
+		float out = closingAt == 0L ? -1f : (now - closingAt) / 1.0e9f;
+		boolean instant = ExMotion.reduced();
+		// In: a quick eased fade. Out: an eased fade while the panels sink away one after another.
+		float in = instant ? 1f : ease(Mth.clamp((now - openedAt) / 1.0e9f / 0.15f, 0f, 1f));
+		float gone = out < 0f ? 0f : instant ? 1f : ease(Mth.clamp(out / (CLOSE_PANEL + CLOSE_STEP * (PANELS.length - 1)), 0f, 1f));
+		fade = out >= 0f && (instant || out >= CLOSE_PANEL + CLOSE_STEP * (PANELS.length - 1)) ? 0f : Math.min(in, 1f - gone);
 		drawing = true;
 		spots.clear();
 		graphics.pose().pushMatrix();
@@ -184,8 +210,15 @@ public final class PanelMenu {
 			for (int i = 0; i < PANELS.length; i++) {
 				// Opening: the panels rise into place one after another.
 				float rise = (1f - ExMotion.since(since - i * 0.03f, ExMotion.SPATIAL)) * 14f;
+				float panelAlpha = Mth.clamp(ExMotion.since(since - i * 0.03f, ExMotion.EFFECTS), 0f, 1f);
+				if (out >= 0f) {
+					float o = instant ? 1f : ease(Mth.clamp((out - i * CLOSE_STEP) / CLOSE_PANEL, 0f, 1f));
+					rise += o * 10f;
+					panelAlpha *= 1f - o;
+				}
 				float was = GuiDraw.alphaScale;
-				GuiDraw.alphaScale = was * Mth.clamp(ExMotion.since(since - i * 0.03f, ExMotion.EFFECTS), 0f, 1f);
+				// The menu's own fade is in alphaScale already; the panels follow their own curve.
+				GuiDraw.alphaScale = (out >= 0f ? 1f : was) * panelAlpha;
 				Row h;
 				try {
 					h = panel(screen, graphics, font, mx, my, i, left + i * (PANEL_W + GAP), TOP + rise, sh - TOP - MARGIN, query);
@@ -197,6 +230,9 @@ public final class PanelMenu {
 					hx = mx;
 					hy = my;
 				}
+			}
+			if (ghost != null || ghostMobs) {
+				ghostWindow(screen, graphics, font);
 			}
 			if (windowOpen()) {
 				window(screen, graphics, font, mx, my, sw, sh);
@@ -219,6 +255,7 @@ public final class PanelMenu {
 		int accent = PanelLook.accent();
 		// The name on its own chip, so nothing behind the menu shows through beside it.
 		float brandW = GuiDraw.titleWidth(font, "stray") + 18f;
+		ShadowLook.shadow(graphics, left, BAR_Y, brandW, BAR_H, PanelLook.RADIUS, 8, 0x80);
 		PanelLook.panel(graphics, left, BAR_Y, brandW, BAR_H, 0xFF1C1C1C);
 		GuiDraw.title(graphics, font, "stray", left + 9f, GuiDraw.middle(BAR_Y, BAR_H), accent);
 		float bx = left + brandW + 6f;
@@ -229,6 +266,7 @@ public final class PanelMenu {
 		float right = left + total;
 		float searchW = right - bx - hudW - themeW - 12f;
 		boolean focused = ClickGui.searchFocused();
+		ShadowLook.shadow(graphics, bx, BAR_Y, searchW, BAR_H, PanelLook.RADIUS, 8, 0x80);
 		PanelLook.panel(graphics, bx, BAR_Y, searchW, BAR_H, 0xFF1C1C1C);
 		if (focused) {
 			GuiDraw.hairline(graphics, bx, BAR_Y, searchW, BAR_H, 4f, accent);
@@ -251,6 +289,7 @@ public final class PanelMenu {
 
 	private static void button(StrayScreen screen, GuiGraphicsExtractor graphics, Font font, int mx, int my, float x, String label, float w, Runnable click) {
 		boolean hover = GuiDraw.hovered(mx, my, x, BAR_Y, w, BAR_H);
+		ShadowLook.shadow(graphics, x, BAR_Y, w, BAR_H, PanelLook.RADIUS, 8, 0x80);
 		PanelLook.panel(graphics, x, BAR_Y, w, BAR_H, hover ? 0xFF262626 : 0xFF1C1C1C);
 		Component text = MenuFont.shadow(label);
 		GuiDraw.text(graphics, font, text, x + Math.round((w - GuiDraw.width(font, text)) / 2f), GuiDraw.middle(BAR_Y, BAR_H), PanelLook.WHITE, false);
@@ -319,6 +358,7 @@ public final class PanelMenu {
 		float bodyMax = maxH - HEAD_H;
 		float bodyHeight = Math.min(content, bodyMax);
 		float h = HEAD_H + bodyHeight;
+		ShadowLook.shadow(graphics, x, y, PANEL_W, h, PanelLook.RADIUS, 12, 0x90);
 		PanelLook.panel(graphics, x, y, PANEL_W, h, 0xF21C1C1C);
 		// Header: the name in the accent; while searching, how many match.
 		GuiDraw.text(graphics, font, MenuFont.shadow(panel.title()), x + 8f, GuiDraw.middle(y, HEAD_H), PanelLook.accent(), false);
@@ -495,6 +535,7 @@ public final class PanelMenu {
 		float tw = w + 16f;
 		float tx = mx + 10f + tw > sw - 4f ? mx - tw - 6f : mx + 10f;
 		float ty = Math.min(my + 10f, sh - h - 4f);
+		ShadowLook.shadow(graphics, tx, ty, tw, h, PanelLook.RADIUS, 12, 0xB0);
 		PanelLook.panel(graphics, tx, ty, tw, h, 0xFA121212);
 		float y = ty + 6f;
 		GuiDraw.text(graphics, font, title, tx + 8f, y, PanelLook.WHITE, false);
@@ -573,6 +614,49 @@ public final class PanelMenu {
 		} finally {
 			GuiDraw.alphaScale = wasAlpha;
 			graphics.pose().popMatrix();
+		}
+	}
+
+	private static float ease(float t) {
+		return t < 0.5f ? 4f * t * t * t : 1f - (float) Math.pow(-2f * t + 2f, 3) / 2f;
+	}
+
+	/** The window just closed, shrinking a touch and fading out where it was; it takes no clicks. */
+	private static void ghostWindow(StrayScreen screen, GuiGraphicsExtractor graphics, Font font) {
+		float t = (System.nanoTime() - ghostAt) / 1.0e9f / GHOST_S;
+		if (t >= 1f || ExMotion.reduced() || (ghost == window && !ghostMobs && ghost != null) || (ghostMobs && mobWindow)) {
+			ghost = null;
+			ghostMobs = false;
+			return;
+		}
+		float e = ease(Mth.clamp(t, 0f, 1f));
+		// Swap the ghost's layout in, draw, then put the open window's back.
+		ClickGui.Mod liveMod = window;
+		boolean liveMobs = mobWindow;
+		float[] live = {winX, winY, winH, bodyY, bodyH, winScroll, winContent};
+		float[] g = ghostState;
+		window = ghost;
+		mobWindow = ghostMobs;
+		winX = g[0]; winY = g[1]; winH = g[2]; bodyY = g[3]; bodyH = g[4]; winScroll = g[5]; winContent = g[6];
+		String title = mobWindow ? MOBS : ClickGui.display(window.name());
+		String where = mobWindow ? "World" : ClickGui.display(window.column());
+		int mark = screen.clickHitMark();
+		float k = 1f - 0.05f * e;
+		graphics.pose().pushMatrix();
+		graphics.pose().translate(winX + WIN_W / 2f, winY + winH / 2f);
+		graphics.pose().scale(k, k);
+		graphics.pose().translate(-(winX + WIN_W / 2f), -(winY + winH / 2f));
+		float wasAlpha = GuiDraw.alphaScale;
+		GuiDraw.alphaScale = wasAlpha * (1f - e);
+		try {
+			windowBody(screen, graphics, font, -10000, -10000, window, title, where);
+		} finally {
+			GuiDraw.alphaScale = wasAlpha;
+			graphics.pose().popMatrix();
+			screen.clickClipHits(mark, -1.0e6f, -1.0e6f, 0f, 0f);
+			window = liveMod;
+			mobWindow = liveMobs;
+			winX = live[0]; winY = live[1]; winH = live[2]; bodyY = live[3]; bodyH = live[4]; winScroll = live[5]; winContent = live[6];
 		}
 	}
 

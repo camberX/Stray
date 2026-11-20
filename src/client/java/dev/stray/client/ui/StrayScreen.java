@@ -5013,6 +5013,12 @@ public class StrayScreen extends Screen {
 		hexFieldH = 13f;
 		if (UidMenu.drawing()) {
 			UidLook.panel(graphics, x, y, w, h);
+		} else if (PanelMenu.drawing()) {
+			float was = GuiDraw.alphaScale;
+			GuiDraw.alphaScale = was * pickerT;
+			ShadowLook.shadow(graphics, x, y, w, h, PanelLook.RADIUS, 14, 0xB0);
+			PanelLook.panel(graphics, x, y, w, h, 0xFE131313);
+			GuiDraw.alphaScale = was;
 		} else if (ShadowMenu.drawing()) {
 			ShadowLook.window(graphics, x, y, w, h, ShadowLook.WINDOW_R, Anim.fade(0xF2050709, pickerT));
 		} else {
