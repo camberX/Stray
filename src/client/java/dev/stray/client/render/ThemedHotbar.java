@@ -66,6 +66,8 @@ public final class ThemedHotbar {
 			uid(graphics, delta, player);
 		} else if (Looks.ex()) {
 			ex(graphics, delta, player);
+		} else if (Looks.panels()) {
+			panels(graphics, delta, player);
 		} else {
 			shadow(graphics, delta, player);
 		}
@@ -113,6 +115,45 @@ public final class ThemedHotbar {
 		offhand(graphics, delta, player, x, y, w, h, (ox, oy, os) -> {
 			ShadowLook.panel(graphics, ox, oy, os, os, 6f, Theme.HUD_WINDOW);
 		});
+	}
+
+	// ------------------------------------------------------------------ Panels
+
+	private static void panels(GuiGraphicsExtractor graphics, DeltaTracker delta, Player player) {
+		Minecraft client = Minecraft.getInstance();
+		float pad = 3f;
+		float w = 9 * PITCH - (PITCH - SLOT) + pad * 2f;
+		float h = SLOT + pad * 2f + 2f;
+		float x = Math.round(graphics.guiWidth() / 2f - w / 2f);
+		float y = graphics.guiHeight() - h - 1f;
+		dev.stray.client.ui.PanelLook.panel(graphics, x, y, w, h, 0xF01C1C1C);
+		float sel = picked(player);
+		for (int i = 0; i < 9; i++) {
+			GuiDraw.roundedFine(graphics, x + pad + i * PITCH, y + pad, SLOT, SLOT, 3f, dev.stray.client.ui.PanelLook.G2);
+		}
+		float sx = x + pad + sel * PITCH;
+		GuiDraw.roundedFine(graphics, sx, y + pad, SLOT, SLOT, 3f, dev.stray.client.ui.PanelLook.G3);
+		GuiDraw.hairline(graphics, sx, y + pad, SLOT, SLOT, 3f, dev.stray.client.ui.PanelLook.accent());
+		items(graphics, delta, player, x + pad + 1f, y + pad + 1f);
+		// XP: one thin accent line along the bottom, grey after your progress.
+		float lx = x + pad;
+		float lw = w - pad * 2f;
+		float ly = y + h - 2.5f;
+		float p = xp(player);
+		GuiDraw.fillSmooth(graphics, lx, ly, lw, 1f, dev.stray.client.ui.PanelLook.EDGE);
+		if (p > 0f) {
+			GuiDraw.fillSmooth(graphics, lx, ly, lw * p, 1f, dev.stray.client.ui.PanelLook.accent());
+		}
+		int level = level(player);
+		if (level > 0) {
+			Component text = MenuFont.shadow(Integer.toString(level));
+			float tw = client.font.width(text);
+			float lvx = Math.round(graphics.guiWidth() / 2f - tw / 2f);
+			float ty = y - 9f;
+			GuiDraw.text(graphics, client.font, text, lvx + 1f, ty + 1f, 0xFF000000, false);
+			GuiDraw.text(graphics, client.font, text, lvx, ty, dev.stray.client.ui.PanelLook.accent(), false);
+		}
+		offhand(graphics, delta, player, x, y, w, h, (ox, oy, os) -> dev.stray.client.ui.PanelLook.panel(graphics, ox, oy, os, os, 0xF01C1C1C));
 	}
 
 	// ------------------------------------------------------------------ uid?

@@ -399,6 +399,16 @@ final class TerminalGui {
 
 	/** The window in the theme's own panel: Shadow's frosted card, uid?'s bevelled frame, an Expressive surface. */
 	private static void window(GuiGraphicsExtractor graphics, float x, float y, float w, float h, float radius, float s) {
+		if (Looks.panels()) {
+			float was = GuiDraw.alphaScale;
+			GuiDraw.alphaScale = was * open;
+			try {
+				dev.stray.client.ui.PanelLook.panel(graphics, x, y, w, h, 0xF51C1C1C);
+			} finally {
+				GuiDraw.alphaScale = was;
+			}
+			return;
+		}
 		if (Looks.uid()) {
 			float was = GuiDraw.alphaScale;
 			GuiDraw.alphaScale = was * open;
@@ -431,13 +441,15 @@ final class TerminalGui {
 			GuiDraw.fillSmooth(graphics, x, y, w, h, color);
 		} else if (Looks.ex()) {
 			ExLook.rounded(graphics, x, y, w, h, Math.min(w, h) * 0.3f, color);
+		} else if (Looks.panels()) {
+			GuiDraw.roundedFine(graphics, x, y, w, h, Math.min(r, Math.min(w, h) * 0.2f), color);
 		} else {
 			GuiDraw.roundedFine(graphics, x, y, w, h, r, color);
 		}
 	}
 
 	private static void outline(GuiGraphicsExtractor graphics, float x, float y, float w, float h, float r, int color) {
-		GuiDraw.hairline(graphics, x, y, w, h, Looks.uid() ? 0f : Looks.ex() ? Math.min(w, h) * 0.3f : r, color);
+		GuiDraw.hairline(graphics, x, y, w, h, Looks.uid() ? 0f : Looks.ex() ? Math.min(w, h) * 0.3f : Looks.panels() ? Math.min(r, Math.min(w, h) * 0.2f) : r, color);
 	}
 
 	/** An empty slot: uid?'s sunken control, an Expressive container tone, Shadow's card. */

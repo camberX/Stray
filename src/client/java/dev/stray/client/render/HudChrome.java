@@ -96,6 +96,10 @@ public final class HudChrome {
 			dev.stray.client.ui.ExLook.rounded(graphics, x, y, w, h, Math.min(8f, Math.min(w, h) * 0.5f), exFill(fill));
 			return;
 		}
+		if (dev.stray.client.ui.Looks.panels()) {
+			dev.stray.client.ui.PanelLook.panel(graphics, x, y, w, h, Theme.withAlpha(0x1C1C1C, Math.max(0xC8, (fill >>> 24) & 0xFF)));
+			return;
+		}
 		if (dev.stray.client.ui.Looks.uid()) {
 			float p = GuiDraw.pixel() / GuiDraw.poseScale(graphics);
 			GuiDraw.fillSmooth(graphics, x, y, w, h, 0xFF0C0C0C);
@@ -132,6 +136,10 @@ public final class HudChrome {
 			if (selected) {
 				GuiDraw.hairline(graphics, x, y, size, size, Math.max(4f, size * 0.28f), dev.stray.client.ui.ExColors.primary);
 			}
+			return;
+		}
+		if (dev.stray.client.ui.Looks.panels()) {
+			dev.stray.client.ui.PanelLook.control(graphics, x, y, size, size, false, selected);
 			return;
 		}
 		if (dev.stray.client.ui.Looks.uid()) {

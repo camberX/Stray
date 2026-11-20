@@ -66,6 +66,10 @@ public final class ClickGui {
 			ExpressiveMenu.draw(screen, graphics, font, mouseX, mouseY);
 			return;
 		}
+		if (PanelMenu.active()) {
+			PanelMenu.draw(screen, graphics, font, mouseX, mouseY);
+			return;
+		}
 		ShadowMenu.draw(screen, graphics, font, mouseX, mouseY);
 		ShadowMenu.drawPicker(screen, graphics, font);
 	}
@@ -124,6 +128,10 @@ public final class ClickGui {
 	}
 
 	static void rightClick(double x, double y) {
+		if (PanelMenu.active()) {
+			PanelMenu.rightClick(x, y);
+			return;
+		}
 		if (UidMenu.active() || ExpressiveMenu.active()) {
 			return;
 		}
@@ -136,6 +144,9 @@ public final class ClickGui {
 		}
 		if (ExpressiveMenu.active()) {
 			return ExpressiveMenu.scroll(x, y, wheel);
+		}
+		if (PanelMenu.active()) {
+			return PanelMenu.scroll(x, y, wheel);
 		}
 		return ShadowMenu.scroll(x, y, wheel);
 	}
@@ -220,6 +231,9 @@ public final class ClickGui {
 			y = drawButton(screen, graphics, font, x, y, w, "Reset menu layout", UidMenu::resetPosition);
 		} else if (Looks.ex()) {
 			y = drawExTheme(screen, graphics, font, x, y, w);
+		} else if (Looks.panels()) {
+			// The accent is the Accent module's colour; this opens it beside the menu.
+			y = drawButton(screen, graphics, font, x, y, w, "Accent colour", () -> PanelMenu.open("Accent"));
 		}
 		if (Looks.shadow()) {
 			// Only Shadow draws outlines in the accent; uid? frames and Expressive surfaces don't.
@@ -366,7 +380,7 @@ public final class ClickGui {
 		}
 		if (mod.menuStyle) {
 			if (HUD_LOOK.equals(mod.name)) {
-				return stackH(Looks.uid() ? 8 : Looks.ex() ? 14 + (StrayConfig.get().exPins.isEmpty() ? 0 : 1) : 3);
+				return stackH(Looks.uid() ? 8 : Looks.ex() ? 14 + (StrayConfig.get().exPins.isEmpty() ? 0 : 1) : Looks.panels() ? 3 : 3);
 			}
 			return stackH(1);
 		}
@@ -734,7 +748,7 @@ public final class ClickGui {
 			return cached;
 		}
 		List<Mod> all = allModules();
-		if (!Looks.shadow()) {
+		if (!Looks.shadow() && !Looks.panels()) {
 			// Shadow's accent, opacity and blur don't exist in the other themes; theirs are on Look.
 			all.removeIf(mod -> "Accent".equals(mod.name));
 		}

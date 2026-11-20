@@ -4,15 +4,17 @@ import dev.stray.client.config.StrayConfig;
 import dev.stray.client.config.UnloadState;
 
 /**
- * The look everything Stray draws follows: Shadow, uid? or Expressive (Material 3 Expressive).
+ * The look everything Stray draws follows: Shadow, uid?, Expressive (Material 3 Expressive) or Panels.
  * One setting picks the menu, the HUD, Stray's own screens and the vanilla menus together.
  */
 public final class Looks {
 	public static final String SHADOW = "shadow";
 	public static final String UID = "uid";
 	public static final String EXPRESSIVE = "expressive";
-	public static final String[] ALL = {SHADOW, UID, EXPRESSIVE};
-	public static final String[] LABELS = {"Shadow", "uid?", "Expressive"};
+	/** Neutral greys, every category's panel side by side, what is on in white with the accent. */
+	public static final String PANELS = "panels";
+	public static final String[] ALL = {SHADOW, UID, EXPRESSIVE, PANELS};
+	public static final String[] LABELS = {"Shadow", "uid?", "Expressive", "Panels"};
 
 	/** While a preview draws another look than the saved one (the first-boot picker). */
 	private static String forced;
@@ -48,6 +50,10 @@ public final class Looks {
 
 	public static boolean ex() {
 		return EXPRESSIVE.equals(current());
+	}
+
+	public static boolean panels() {
+		return PANELS.equals(current());
 	}
 
 	/** Switches everything to this look and saves it. */

@@ -49,6 +49,16 @@ public final class ShadowLook {
 			SELECTED = 0xFF2E2E2E;
 			SELECTED_LINE = 0xFF3C3C3C;
 			FILL = 0xF0171717;
+		} else if (Looks.panels()) {
+			TEXT = PanelLook.WHITE;
+			MUTED = PanelLook.GREY;
+			FAINT = PanelLook.DGREY;
+			LINE = PanelLook.EDGE;
+			CARD = PanelLook.G2;
+			CARD_HOVER = PanelLook.G3;
+			SELECTED = PanelLook.G3;
+			SELECTED_LINE = PanelLook.accent();
+			FILL = Theme.withAlpha(0x1C1C1C, Math.round(StrayConfig.clamp(StrayConfig.get().hudOpacity, 0.2f, 1f) * 255f));
 		} else if (Looks.ex()) {
 			TEXT = ExColors.onSurface;
 			MUTED = ExColors.onSurfaceVariant;
@@ -102,6 +112,10 @@ public final class ShadowLook {
 		}
 		if (Looks.ex()) {
 			ExLook.surface(graphics, x, y, w, h, exRadius(radius, w, h), exFill(fill, ExColors.surfaceMid), frost);
+			return;
+		}
+		if (Looks.panels()) {
+			PanelLook.panel(graphics, x, y, w, h, fill);
 			return;
 		}
 		float r = Math.min(Math.max(2f, radius), Math.min(w, h) * 0.5f);
@@ -293,6 +307,10 @@ public final class ShadowLook {
 			// Wide small controls are pills; square ones (slots) are rounded squares.
 			float r = h <= 24f ? (w > h * 1.3f ? h * 0.5f : Math.max(3f, h * 0.28f)) : exRadius(radius, w, h);
 			ExLook.rounded(graphics, x, y, w, h, r, selected ? ExColors.secondaryContainer : hover ? ExColors.surfaceHighest : ExColors.surfaceHigh);
+			return;
+		}
+		if (Looks.panels()) {
+			PanelLook.control(graphics, x, y, w, h, hover, selected);
 			return;
 		}
 		float r = Math.min(Math.max(1f, radius), Math.min(w, h) * 0.5f);

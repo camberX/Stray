@@ -827,7 +827,7 @@ public class StrayScreen extends Screen {
 			viewLift = 0f;
 			viewCx = 0f;
 			viewCy = 0f;
-			if (closing && (UidMenu.active() ? UidMenu.faded(this) : ExpressiveMenu.active() ? ExpressiveMenu.faded(this) : appear <= 0.02f)) {
+			if (closing && (UidMenu.active() ? UidMenu.faded(this) : ExpressiveMenu.active() ? ExpressiveMenu.faded(this) : PanelMenu.active() ? PanelMenu.faded(this) : appear <= 0.02f)) {
 				finishClose();
 				return;
 			}
@@ -836,6 +836,8 @@ public class StrayScreen extends Screen {
 				viewScale = UidMenu.unit();
 			} else if (ExpressiveMenu.active()) {
 				viewScale = ExpressiveMenu.unit();
+			} else if (PanelMenu.active()) {
+				viewScale = PanelMenu.unit();
 			}
 			ClickGui.extract(this, graphics, mouseX, mouseY);
 			return;
@@ -3294,6 +3296,10 @@ public class StrayScreen extends Screen {
 	}
 
 	private void clickToggle(GuiGraphicsExtractor graphics, float x, float y, float w, float h, float t) {
+		if (PanelMenu.drawing()) {
+			PanelLook.toggle(graphics, x, y, w, h, t);
+			return;
+		}
 		ShadowMenu.toggle(graphics, x, y, w, h, t, ShadowMenu.drawing() ? ShadowMenu.alpha() : 1f);
 	}
 
@@ -4854,7 +4860,12 @@ public class StrayScreen extends Screen {
 		float barW = Math.max(24, w - GuiDraw.menuWidth(font, label) - valueWidth - 16);
 		float barY = y + row * 0.45f;
 		float t = Mth.clamp(progress, 0f, 1f);
-		if (controlCenter()) {
+		if (PanelMenu.drawing()) {
+			// Panels: a hairline track, the accent up to the value, a small white bar for the handle.
+			GuiDraw.fillSmooth(graphics, barX, barY + 0.75f, barW, 1.5f, PanelLook.G3);
+			GuiDraw.fillSmooth(graphics, barX, barY + 0.75f, barW * t, 1.5f, PanelLook.accent());
+			GuiDraw.roundedFine(graphics, barX + (barW - 3f) * t, barY - 2.5f, 3f, 8f, 1f, PanelLook.WHITE);
+		} else if (controlCenter()) {
 			ControlChrome.slider(graphics, barX, barY - 1, barW, 5, t);
 		} else {
 			GuiDraw.pill(graphics, barX, barY, barW, 3, Theme.TRACK);
@@ -5093,8 +5104,8 @@ public class StrayScreen extends Screen {
 		float h = pickerHeight();
 		if (StrayConfig.get().clickGui) {
 			// uid? works in its own pixels; Shadow in GUI units.
-			float sw = UidMenu.active() ? width / UidMenu.unit() : ExpressiveMenu.active() ? width / ExpressiveMenu.unit() : width;
-			float sh = UidMenu.active() ? height / UidMenu.unit() : ExpressiveMenu.active() ? height / ExpressiveMenu.unit() : height;
+			float sw = UidMenu.active() ? width / UidMenu.unit() : ExpressiveMenu.active() ? width / ExpressiveMenu.unit() : PanelMenu.active() ? width / PanelMenu.unit() : width;
+			float sh = UidMenu.active() ? height / UidMenu.unit() : ExpressiveMenu.active() ? height / ExpressiveMenu.unit() : PanelMenu.active() ? height / PanelMenu.unit() : height;
 			float pw = pickerW();
 			float swatchRight = x + pw;
 			float right = swatchRight + 6f;
@@ -5392,6 +5403,8 @@ public class StrayScreen extends Screen {
 				UidMenu.press(lx, ly);
 			} else if (ExpressiveMenu.active()) {
 				ExpressiveMenu.press(lx, ly);
+			} else if (PanelMenu.active()) {
+				PanelMenu.press(lx, ly);
 			}
 			return true;
 		}
@@ -5404,6 +5417,9 @@ public class StrayScreen extends Screen {
 			return true;
 		}
 		if (MouseButtons.left(event) && StrayConfig.get().clickGui && ExpressiveMenu.active() && ExpressiveMenu.drag(localX(event.x()), localY(event.y()))) {
+			return true;
+		}
+		if (MouseButtons.left(event) && StrayConfig.get().clickGui && PanelMenu.active() && PanelMenu.drag(localX(event.x()), localY(event.y()))) {
 			return true;
 		}
 		if (MouseButtons.left(event) && dragging) {
@@ -5430,6 +5446,7 @@ public class StrayScreen extends Screen {
 	public boolean mouseReleased(MouseButtonEvent event) {
 		UidMenu.release();
 		ExpressiveMenu.release();
+		PanelMenu.release();
 		if (dragging && moved) {
 			persistMenuPosition();
 		}
@@ -5502,6 +5519,11 @@ public class StrayScreen extends Screen {
 		}
 		if (StrayConfig.get().clickGui && ClickGui.searchFocused() && (event.isEscape() || event.key() == InputConstants.KEY_RETURN)) {
 			ClickGui.blurSearch();
+			return true;
+		}
+		// Panels: Escape closes the settings window first, then the menu.
+		if (StrayConfig.get().clickGui && PanelMenu.active() && PanelMenu.windowOpen() && event.isEscape() && bindListen == 0 && focusedField() == null) {
+			PanelMenu.closeWindow();
 			return true;
 		}
 		TextKeys.Field field = bindListen != 0 ? null : focusedField();
@@ -5638,6 +5660,12 @@ public class StrayScreen extends Screen {
 	@Override
 	public boolean charTyped(CharacterEvent event) {
 		TextKeys.Field field = bindListen != 0 ? null : focusedField();
+		// Panels: typing anywhere searches (nothing to click first).
+		if (field == null && bindListen == 0 && StrayConfig.get().clickGui && PanelMenu.active() && event.isAllowedChatCharacter()
+			&& !event.codepointAsString().isBlank()) {
+			ClickGui.focusSearch();
+			field = focusedField();
+		}
 		if (field != null) {
 			if (event.isAllowedChatCharacter()) {
 				TextKeys.type(event.codepointAsString(), field);
@@ -5760,7 +5788,7 @@ public class StrayScreen extends Screen {
 			stealFocused = false;
 			commitSteal();
 		}
-		boolean uidFade = StrayConfig.get().clickGui && (UidMenu.active() && StrayConfig.get().uidAnimMs > 0 || ExpressiveMenu.active() && !ExMotion.reduced());
+		boolean uidFade = StrayConfig.get().clickGui && (UidMenu.active() && StrayConfig.get().uidAnimMs > 0 || ExpressiveMenu.active() && !ExMotion.reduced() || PanelMenu.active());
 		if (!closing && (uidFade || (StrayConfig.get().uiAnimations && appear > 0.04f))) {
 			closing = true;
 			capeFocused = false;

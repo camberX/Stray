@@ -2144,9 +2144,9 @@ public final class StrayConfig {
 		return normalizeTheme(style);
 	}
 
-	/** One of the three looks; anything else is Shadow. */
+	/** One of the looks; anything else is Shadow. */
 	public static String normalizeTheme(String style) {
-		return "uid".equals(style) || "expressive".equals(style) ? style : "shadow";
+		return "uid".equals(style) || "expressive".equals(style) || "panels".equals(style) ? style : "shadow";
 	}
 
 	public static final String[] MUSIC_LAYOUTS = {"card", "compact", "poster", "dock", "bar"};

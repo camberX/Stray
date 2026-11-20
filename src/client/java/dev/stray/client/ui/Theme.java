@@ -187,6 +187,34 @@ public final class Theme {
 			SIDEBAR = ExColors.surfaceLow;
 			DANGER = ExColors.tertiary;
 			WINDOW_RADIUS = 20f;
+		} else if (Looks.panels()) {
+			// Panels: pure neutral greys (no tint), white for what is on, the theme accent.
+			int accent = PanelLook.accent();
+			int hudA = Math.round(StrayConfig.clamp(StrayConfig.get().hudOpacity, 0.20f, 1f) * 255);
+			ACCENT = accent;
+			ACCENT_DIM = withAlpha(accent, 0x66);
+			WINDOW = 0xF51C1C1C;
+			WINDOW_SOLID = PanelLook.G1;
+			SHEET = PanelLook.G2;
+			CARD = PanelLook.G2;
+			CARD_HOVER = PanelLook.G3;
+			LINE = PanelLook.EDGE;
+			TRACK = PanelLook.G3;
+			PANEL = PanelLook.G0;
+			HUD_WINDOW = withAlpha(0x1C1C1C, hudA);
+			HUD_LINE = PanelLook.EDGE;
+			HUD_LINE_NEUTRAL = PanelLook.EDGE;
+			HUD_TRACK = PanelLook.G3;
+			HUD_CARD = PanelLook.G2;
+			HUD_CARD_HOVER = PanelLook.G3;
+			HUD_PANEL = PanelLook.G0;
+			TEXT = PanelLook.WHITE;
+			MUTED = PanelLook.GREY;
+			HEADER = PanelLook.WHITE;
+			OFF = PanelLook.DGREY;
+			NAV_PILL = PanelLook.G3;
+			SIDEBAR = PanelLook.G0;
+			WINDOW_RADIUS = PanelLook.RADIUS;
 		}
 		ShadowLook.look();
 	}

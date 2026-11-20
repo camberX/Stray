@@ -62,6 +62,8 @@ public final class WatermarkRenderer {
 			drawUid(graphics, scale);
 		} else if (ex()) {
 			drawEx(graphics, font);
+		} else if (dev.stray.client.ui.Looks.panels()) {
+			drawPanels(graphics, font);
 		} else {
 			drawShadow(graphics, font);
 		}
@@ -175,6 +177,40 @@ public final class WatermarkRenderer {
 		}
 	}
 
+
+	// ---- Panels: a flat grey box, "stray" in the accent, the stats in white and grey with
+	// one-pixel rules between them.
+
+	private static final float PN_PAD = 7f;
+	private static final float PN_GAP = 13f;
+
+	private static float panelsWidth(Font font) {
+		float w = PN_PAD + font.width(MenuFont.shadow("stray"));
+		List<String> parts = shadowParts();
+		for (int i = 0; i < parts.size(); i++) {
+			w += PN_GAP + stableWidth(font, MenuFont.shadow(parts.get(i)), i < PART_KEYS.length ? PART_KEYS[i] : "shadow:" + i);
+		}
+		return w + PN_PAD;
+	}
+
+	private static void drawPanels(GuiGraphicsExtractor graphics, Font font) {
+		List<String> parts = shadowParts();
+		Component brand = MenuFont.shadow("stray");
+		float w = panelsWidth(font);
+		if (HudChrome.background()) {
+			dev.stray.client.ui.PanelLook.panel(graphics, 0, 0, w, HEIGHT, 0xF01C1C1C);
+		}
+		float textY = Math.round(GuiDraw.middle(0, HEIGHT));
+		GuiDraw.text(graphics, font, brand, PN_PAD, textY, dev.stray.client.ui.PanelLook.accent(), false);
+		float x = PN_PAD + font.width(brand);
+		for (int i = 0; i < parts.size(); i++) {
+			Component text = MenuFont.shadow(parts.get(i));
+			GuiDraw.fillSmooth(graphics, x + PN_GAP * 0.5f - 0.5f, 5f, 1f, HEIGHT - 10f, dev.stray.client.ui.PanelLook.EDGE);
+			x += PN_GAP;
+			GuiDraw.text(graphics, font, text, x, textY, i == 0 ? 0xFFFFFFFF : dev.stray.client.ui.PanelLook.GREY, false);
+			x += stableWidth(font, text, i < PART_KEYS.length ? PART_KEYS[i] : "shadow:" + i);
+		}
+	}
 
 	// ---- Expressive: one tonal pill; "stray" on a primary pill inset at its start, then the
 	// stats as text, the numbers in the surface's text colour and their units small and muted,
@@ -419,7 +455,7 @@ public final class WatermarkRenderer {
 		if (tick == widthTick && widthCache > 0f && look.equals(widthLook)) {
 			return widthCache;
 		}
-		float w = uid() ? uidWidth(uidScale() * HudLayout.scale(HudLayout.Id.WATERMARK)) * (float) (uidScale() / guiScale()) : ex() ? exWidth(font) : shadowWidth(font);
+		float w = uid() ? uidWidth(uidScale() * HudLayout.scale(HudLayout.Id.WATERMARK)) * (float) (uidScale() / guiScale()) : ex() ? exWidth(font) : dev.stray.client.ui.Looks.panels() ? panelsWidth(font) : shadowWidth(font);
 		widthTick = tick;
 		widthCache = w;
 		widthLook = look;

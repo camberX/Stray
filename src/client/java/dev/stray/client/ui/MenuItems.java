@@ -17,7 +17,12 @@ final class MenuItems {
 
 	/** What a category shows (or the search results), used by the Shadow menu. */
 	static List<Item> items(StrayScreen screen, String category) {
-		String query = ClickGui.filterText().trim().toLowerCase(Locale.ROOT);
+		return items(screen, category, ClickGui.filterText());
+	}
+
+	/** {@link #items(StrayScreen, String)} with this search instead of the menu's ("" lists the category). */
+	static List<Item> items(StrayScreen screen, String category, String search) {
+		String query = search.trim().toLowerCase(Locale.ROOT);
 		List<Item> out = new ArrayList<>();
 		if (!query.isEmpty()) {
 			for (ClickGui.Mod mod : ClickGui.modules()) {

@@ -23,8 +23,8 @@ import net.minecraft.util.Mth;
 public final class ThemePickerScreen extends Screen {
 	private final Screen parent;
 	private int hovered = -1;
-	private final float[] lift = new float[3];
-	private final float[][] boxes = new float[3][4];
+	private final float[] lift = new float[Looks.ALL.length];
+	private final float[][] boxes = new float[Looks.ALL.length][4];
 	private long lastNs = System.nanoTime();
 
 	public ThemePickerScreen(Screen parent) {
@@ -70,8 +70,9 @@ public final class ThemePickerScreen extends Screen {
 		Font font = minecraft.font;
 		float pad = 14f;
 		float gap = 10f;
-		float winW = Math.min(width - 24f, 700f);
-		float colW = (winW - pad * 2 - gap * 2) / 3f;
+		int n = Looks.ALL.length;
+		float winW = Math.min(width - 24f, 230f * n);
+		float colW = (winW - pad * 2 - gap * (n - 1)) / n;
 		float previewH = colW * 1.08f;
 		float winH = 44f + 16f + previewH + 28f + pad;
 		float winX = (width - winW) / 2f;
@@ -86,7 +87,7 @@ public final class ThemePickerScreen extends Screen {
 			Looks.force(null);
 		}
 		hovered = -1;
-		for (int i = 0; i < 3; i++) {
+		for (int i = 0; i < n; i++) {
 			float cx = winX + pad + i * (colW + gap);
 			float top = winY + 44f;
 			boolean hot = GuiDraw.hovered(mouseX, mouseY, cx - 4, top - 4, colW + 8, 16f + previewH + 30f);
@@ -144,6 +145,7 @@ public final class ThemePickerScreen extends Screen {
 				ExLook.textScale = dpi;
 				exMenu(graphics, font, uw, uh);
 			}
+			case 3 -> panelsMenu(graphics, font, uw, uh);
 			default -> shadowMenu(graphics, font, uw, uh);
 		}
 		graphics.pose().popMatrix();
@@ -179,6 +181,25 @@ public final class ThemePickerScreen extends Screen {
 		GuiDraw.roundedFine(graphics, 10, y, w - 20, 3, 1.5f, 0x22FFFFFF);
 		GuiDraw.roundedFine(graphics, 10, y, (w - 20) * 0.45f, 3, 1.5f, Theme.ACCENT);
 		GuiDraw.circle(graphics, 10 + (w - 20) * 0.45f, y + 1.5f, 3.5f, 0xFFFFFFFF);
+	}
+
+	private void panelsMenu(GuiGraphicsExtractor graphics, Font font, float w, float h) {
+		PanelLook.panel(graphics, 0, 0, w, h, 0xF51C1C1C);
+		GuiDraw.fillSmooth(graphics, 1, 18, w - 2, 1, PanelLook.EDGE);
+		GuiDraw.menu(graphics, font, "Dungeons", 8, GuiDraw.middle(0, 18), PanelLook.WHITE);
+		String count = "2/4";
+		GuiDraw.menu(graphics, font, count, w - 8 - GuiDraw.menuWidth(font, count), GuiDraw.middle(0, 18), PanelLook.accent());
+		String[] rows = {"Leap menu", "Terminal solver", "Dungeon map", "Secret waypoints"};
+		boolean[] on = {true, false, true, false};
+		float y = 22;
+		for (int i = 0; i < rows.length && y + 15 < h - 4; i++) {
+			if (on[i]) {
+				GuiDraw.roundedFine(graphics, 4, y, w - 8, 15, 3f, PanelLook.G3);
+				PanelLook.onBar(graphics, 5, y, 15);
+			}
+			GuiDraw.menu(graphics, font, rows[i], 11, GuiDraw.middle(y, 15), on[i] ? PanelLook.WHITE : PanelLook.GREY);
+			y += 16;
+		}
 	}
 
 	private void uidMenu(GuiGraphicsExtractor graphics, Font font, float w, float h) {
@@ -246,7 +267,7 @@ public final class ThemePickerScreen extends Screen {
 		AbstractWidget.playButtonClickSound(minecraft.getSoundManager());
 		StrayConfig config = StrayConfig.get();
 		config.themeChosen = true;
-		Looks.set(Looks.ALL[Mth.clamp(look, 0, 2)]);
+		Looks.set(Looks.ALL[Mth.clamp(look, 0, Looks.ALL.length - 1)]);
 		minecraft.gui.setScreen(parent);
 	}
 
@@ -258,7 +279,7 @@ public final class ThemePickerScreen extends Screen {
 		/*if (event.button() != 0) {*///?}
 			return super.mouseClicked(event, doubled);
 		}
-		for (int i = 0; i < 3; i++) {
+		for (int i = 0; i < boxes.length; i++) {
 			float[] b = boxes[i];
 			if (event.x() >= b[0] && event.x() <= b[0] + b[2] && event.y() >= b[1] && event.y() <= b[1] + b[3]) {
 				pick(i);

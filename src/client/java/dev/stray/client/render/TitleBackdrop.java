@@ -54,6 +54,12 @@ public final class TitleBackdrop {
 			return;
 		}
 		Theme.refresh();
+		if (dev.stray.client.ui.Looks.panels()) {
+			// Panels: plain neutral greys, the accent as one thin line along the top.
+			GuiDraw.fillGradient(graphics, 0, 0, width, height, 0xFF181818, 0xFF0E0E0E);
+			GuiDraw.fill(graphics, 0, 0, width, 1, dev.stray.client.ui.PanelLook.accent());
+			return;
+		}
 		if (dev.stray.client.ui.Looks.uid()) {
 			// uid?: the cheat-menu backdrop, near-black with its colour strip along the top.
 			GuiDraw.fillGradient(graphics, 0, 0, width, height, 0xFF141414, 0xFF0B0B0B);
