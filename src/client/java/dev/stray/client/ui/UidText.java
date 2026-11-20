@@ -135,9 +135,9 @@ public final class UidText {
 	/** The family's size in units. */
 	public static float em(int family) {
 		if (family >= 30) {
-			// Panels: Google Sans Flex at the sizes Shadow's fonts give the game (which are line
+			// Panels: Google Sans Flex a touch larger than Shadow's fonts in the game (sizes are line
 			// heights, ascender to descender, not em sizes).
-			float height = family == 31 ? 5.5f : family == 32 ? 8f : 6.5f;
+			float height = family == 31 ? 6.25f : family == 32 ? 9f : 7.5f;
 			FT_Face f = FACES[face(family)].face;
 			return height * f.units_per_EM() / Math.max(1f, f.ascender() - f.descender());
 		}
