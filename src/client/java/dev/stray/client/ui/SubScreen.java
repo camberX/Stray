@@ -205,7 +205,7 @@ public abstract class SubScreen extends Screen {
 			out.append(Component.literal(piece).setStyle(style.withFont(body)));
 			return java.util.Optional.empty();
 		}, net.minecraft.network.chat.Style.EMPTY);
-		return out;
+		return MenuFont.realBold(out);
 	}
 
 	protected float textWidth(String value) {

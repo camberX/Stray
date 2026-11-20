@@ -1283,7 +1283,7 @@ public final class GuiDraw {
 			out.append(Component.literal(part).withStyle(symbols ? style : style.withFont(inter)));
 			return java.util.Optional.empty();
 		}, net.minecraft.network.chat.Style.EMPTY);
-		return out;
+		return MenuFont.realBold(out);
 	}
 
 	public static void icon(GuiGraphicsExtractor graphics, Font font, String glyph, float x, float y, int color) {

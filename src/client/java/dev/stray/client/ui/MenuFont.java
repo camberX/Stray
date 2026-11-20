@@ -34,7 +34,7 @@ public final class MenuFont {
 	 * smoothing, so a glyph is only crisp when its texels match screen pixels:
 	 * pick the copy for the current GUI scale.
 	 */
-	private static final Style[][] HYPR_SCALED = new Style[16][6];
+	private static final Style[][] HYPR_SCALED = new Style[19][6];
 	/** uid?'s fonts rasterized at 100 % to 300 % in quarters (uid_d100 ... uid_d300). */
 	private static final Style[][] UID_EXACT = new Style[2][9];
 	/** Every scaled copy (and the base icon font) mapped to its family, for {@link #crisp}. */
@@ -42,7 +42,7 @@ public final class MenuFont {
 
 	static {
 		String[] names = {"hypr", "hypr_small", "hypr_title", "nl_icon", "shadow", "shadow_small", "shadow_title", "uid", "uid_bold", "uid_small",
-			"ex", "ex_small", "ex_title", "uidh", "uidh_small", "uidh_title"};
+			"ex", "ex_small", "ex_title", "uidh", "uidh_small", "uidh_title", "shadow_bold", "ex_bodybold", "uidh_bold"};
 		for (int f = 0; f < names.length; f++) {
 			for (int s = 0; s < 6; s++) {
 				FontDescription desc = new FontDescription.Resource(Stray.id(names[f] + "_" + (s + 1)));
@@ -68,7 +68,7 @@ public final class MenuFont {
 		FAMILY.put(new FontDescription.Resource(Stray.id("uid")), 7);
 		FAMILY.put(new FontDescription.Resource(Stray.id("uid_bold")), 8);
 		FAMILY.put(new FontDescription.Resource(Stray.id("uid_small")), 9);
-		String[] looks = {"ex", "ex_small", "ex_title", "uidh", "uidh_small", "uidh_title"};
+		String[] looks = {"ex", "ex_small", "ex_title", "uidh", "uidh_small", "uidh_title", "shadow_bold", "ex_bodybold", "uidh_bold"};
 		for (int i = 0; i < looks.length; i++) {
 			FAMILY.put(new FontDescription.Resource(Stray.id(looks[i])), 10 + i);
 		}
@@ -150,6 +150,59 @@ public final class MenuFont {
 		return Looks.uid() ? 15 : Looks.ex() ? 12 : 6;
 	}
 
+	/** The real bold face for a body family (Shadow, Expressive, uid? HUD), or -1 when it has none. */
+	private static int boldOf(int family) {
+		return family == 4 ? 16 : family == 10 ? 17 : family == 13 ? 18 : -1;
+	}
+
+	/**
+	 * Bold runs of a theme's body font moved to that font's real bold face. Vanilla fakes bold by
+	 * drawing the text again a unit to the side, which suits the pixel font but doubles the strokes
+	 * of a smooth one (hollow-looking titles on the scoreboard). {@code §l} codes in the text count.
+	 */
+	public static Component realBold(Component value) {
+		if (value == null) {
+			return null;
+		}
+		MutableComponent out = Component.empty();
+		boolean[] changed = {false};
+		value.visit((style, part) -> {
+			Style st = style;
+			StringBuilder buf = new StringBuilder();
+			for (int i = 0; i < part.length(); i++) {
+				char c = part.charAt(i);
+				if (c == '§' && i + 1 < part.length()) {
+					ChatFormatting fmt = ChatFormatting.getByCode(Character.toLowerCase(part.charAt(i + 1)));
+					if (fmt != null) {
+						boldRun(out, buf, st, changed);
+						st = fmt == ChatFormatting.RESET ? Style.EMPTY.withFont(style.getFont()) : st.applyFormat(fmt);
+						i++;
+						continue;
+					}
+				}
+				buf.append(c);
+			}
+			boldRun(out, buf, st, changed);
+			return Optional.empty();
+		}, Style.EMPTY);
+		return changed[0] ? out : value;
+	}
+
+	private static void boldRun(MutableComponent out, StringBuilder buf, Style style, boolean[] changed) {
+		if (buf.length() == 0) {
+			return;
+		}
+		Style st = style;
+		Integer family = st.isBold() ? FAMILY.get(st.getFont()) : null;
+		int bold = family == null ? -1 : boldOf(family);
+		if (bold >= 0) {
+			st = st.withBold(false).withFont(hyprStyle(bold).getFont());
+			changed[0] = true;
+		}
+		out.append(Component.literal(buf.toString()).withStyle(st));
+		buf.setLength(0);
+	}
+
 	/** The look's body text style (what HUD text and vanilla button labels use). */
 	public static Style bodyLook() {
 		return hyprStyle(bodyFamily());
@@ -169,7 +222,7 @@ public final class MenuFont {
 			out.append(Component.literal(part).withStyle(style.withFont(font)));
 			return java.util.Optional.empty();
 		}, Style.EMPTY);
-		return out;
+		return realBold(out);
 	}
 
 	public static Component shadow(String value) {

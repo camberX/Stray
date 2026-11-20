@@ -1,0 +1,29 @@
+{
+	"providers": [
+		{
+			"type": "ttf",
+			"file": "stray:ex_bold.ttf",
+			"shift": [
+				0,
+				-0.25
+			],
+			"size": 6.7,
+			"oversample": 3.0
+		},
+		{
+			"type": "reference",
+			"id": "minecraft:include/space"
+		},
+		{
+			"type": "reference",
+			"id": "minecraft:include/default",
+			"filter": {
+				"uniform": false
+			}
+		},
+		{
+			"type": "reference",
+			"id": "minecraft:include/unifont"
+		}
+	]
+}
