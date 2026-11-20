@@ -38,7 +38,8 @@ import java.util.regex.Pattern;
  *
  * <p>Each row shows the real time, the same row in server ticks in brackets (Hypixel's per-tick
  * pings, 20 a second) and the lag between them (real minus ticks), as NoammAddons shows times.
- * Estimated uses your fastest finished run per floor, saved in {@code config/stray/runsplits.json}.
+ * Estimated adds the optimal row times (F7/M7) to the time so far; on other floors it uses your
+ * fastest finished run per floor, saved in {@code config/stray/runsplits.json}.
  */
 public final class RunSplits {
 	private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
@@ -450,10 +451,16 @@ public final class RunSplits {
 		long overallTicks = Math.max(0L, nowTick - runStartTick);
 		out.add(line("§7Overall", overall, overallTicks, lag));
 		if (config.runSplitsEstimated && runEnd == 0L) {
-			// Your best total plus how far ahead or behind your best to this point you are.
+			// Time so far, plus the rest of the open row and every row still to come at the target
+			// times (the optimal times for the floor; your personal best where there are none).
+			Map<String, Long> target = target(best);
 			long estimate = overall;
-			if (best != null && best.total > 0L) {
-				estimate = best.total + (overall - reachedBest(best, all));
+			for (Row row : all) {
+				Long goal = target.get(row.name);
+				if (goal == null || row.end > 0L) {
+					continue;
+				}
+				estimate += row.started() ? Math.max(0L, goal - row.time(now)) : goal;
 			}
 			long lost = overall - overallTicks * 50L;
 			out.add(line("§bEstimated", estimate, Math.max(0L, (estimate - lost) / 50L), lag));
@@ -461,18 +468,27 @@ public final class RunSplits {
 		return out;
 	}
 
-	/** Sum of your best times for the rows already reached (0 for a row with no best). */
-	private static long reachedBest(Best best, List<Row> rows) {
-		long total = 0L;
-		if (best == null) {
-			return 0L;
+	/**
+	 * Optimal row times (real time, ms) Estimated aims for, per floor. M7's Dragons time is on
+	 * Cleared, which is where the time after Necron is counted.
+	 */
+	private static final Map<String, Map<String, Long>> OPTIMAL = Map.of(
+		"F7", Map.of(
+			"Blood Open", 6_800L, "Blood Clear", 48_300L, "Portal Entry", 3_170L,
+			"Maxor", 13_740L, "Storm", 43_130L, "Terminals", 25_270L, "Goldor", 6_580L, "Necron", 23_760L,
+			"Cleared", 0L),
+		"M7", Map.of(
+			"Blood Open", 6_800L, "Blood Clear", 48_300L, "Portal Entry", 3_170L,
+			"Maxor", 13_740L, "Storm", 43_130L, "Terminals", 25_270L, "Goldor", 6_580L, "Necron", 23_760L,
+			"Cleared", 27_170L)
+	);
+
+	private static Map<String, Long> target(Best best) {
+		Map<String, Long> optimal = OPTIMAL.get(floorKey());
+		if (optimal != null) {
+			return optimal;
 		}
-		for (Row row : rows) {
-			if (row.started()) {
-				total += best.segments.getOrDefault(row.name, 0L);
-			}
-		}
-		return total;
+		return best == null ? Map.of() : best.segments;
 	}
 
 	private static Line row(String color, Row row, long now, boolean lag) {
