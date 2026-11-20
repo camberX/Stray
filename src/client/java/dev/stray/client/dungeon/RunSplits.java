@@ -36,8 +36,9 @@ import java.util.regex.Pattern;
  * The layout follows the splits table it was asked to match: every row always listed, 0.00 (0.00)
  * for rows not reached yet, and the difference once a row is done.
  *
- * <p>Each row shows the time, your personal best for it in brackets and the difference. The
- * personal best is the fastest finished run per floor, saved in {@code config/stray/runsplits.json}.
+ * <p>Each row shows the real time, the same row in server ticks in brackets (Hypixel's per-tick
+ * pings, 20 a second) and the lag between them (real minus ticks), as NoammAddons shows times.
+ * Estimated uses your fastest finished run per floor, saved in {@code config/stray/runsplits.json}.
  */
 public final class RunSplits {
 	private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
@@ -61,14 +62,26 @@ public final class RunSplits {
 	private record Boss(String start, List<Split> splits) {
 	}
 
-	/** One row: its label and when it starts and ends (ms, 0 = not yet). */
+	/** One row: its label and when it starts and ends, in ms and in server ticks (0 = not yet). */
 	private static final class Row {
 		final String name;
 		long start;
 		long end;
+		long startTick;
+		long endTick;
 
 		Row(String name) {
 			this.name = name;
+		}
+
+		void setStart(long ms) {
+			start = ms;
+			startTick = tickAt(ms);
+		}
+
+		void setEnd(long ms) {
+			end = ms;
+			endTick = tickAt(ms);
 		}
 
 		boolean started() {
@@ -78,6 +91,26 @@ public final class RunSplits {
 		long time(long now) {
 			return !started() ? 0L : (end > 0L ? end : now) - start;
 		}
+
+		long ticks() {
+			return !started() ? 0L : Math.max(0L, (end > 0L ? endTick : serverTicks) - startTick);
+		}
+	}
+
+	/**
+	 * Server ticks: Hypixel pings once a tick (ClientboundPingPacket with a non-zero id), which is
+	 * how NoammAddons counts them. Real time minus tick time is the time the server lagged.
+	 */
+	private static long serverTicks;
+
+	public static void serverTick() {
+		serverTicks++;
+	}
+
+	/** The tick at {@code ms}: now, or for a time in the past, now minus that many ticks. */
+	private static long tickAt(long ms) {
+		long ago = System.currentTimeMillis() - ms;
+		return ago <= 0L ? serverTicks : serverTicks - Math.round(ago / 50.0);
 	}
 
 	public static final class Best {
@@ -90,6 +123,9 @@ public final class RunSplits {
 	// The run in progress.
 	private static long runStart;
 	private static long runEnd;
+	private static long runStartTick;
+	private static long runEndTick;
+	private static long bossEntryTick;
 	/** Picked up partway from the scoreboard: the early rows are guesses, so it is never a personal best. */
 	private static boolean late;
 	private static long bossEntry;
@@ -122,14 +158,14 @@ public final class RunSplits {
 		}
 		if (WATCHER_CLEAR.equals(msg) && bloodClear.end == 0L) {
 			if (!bloodClear.started()) {
-				bloodOpen.end = now;
-				bloodClear.start = now;
+				bloodOpen.setEnd(now);
+				bloodClear.setStart(now);
 			}
-			bloodClear.end = now;
-			portal.start = now;
+			bloodClear.setEnd(now);
+			portal.setStart(now);
 		} else if (WATCHER.matcher(msg).matches() && bloodOpen.end == 0L) {
-			bloodOpen.end = now;
-			bloodClear.start = now;
+			bloodOpen.setEnd(now);
+			bloodClear.setStart(now);
 		}
 		if (bossDef == null) {
 			bossDef = bossFor();
@@ -141,7 +177,7 @@ public final class RunSplits {
 		}
 		if (bossDef != null) {
 			if (msg.equals(bossDef.start) && !boss.isEmpty() && !boss.getFirst().started()) {
-				boss.getFirst().start = now;
+				boss.getFirst().setStart(now);
 			}
 			for (int i = 0; i < boss.size(); i++) {
 				Row row = boss.get(i);
@@ -184,14 +220,15 @@ public final class RunSplits {
 		}
 		long now = System.currentTimeMillis();
 		bossEntry = now;
+		bossEntryTick = tickAt(now);
 		if (!portal.started()) {
 			// Blood was skipped or the Watcher lines were missed: close what is open.
 			if (bloodOpen.end == 0L) {
-				bloodOpen.end = now;
+				bloodOpen.setEnd(now);
 			}
-			portal.start = now;
+			portal.setStart(now);
 		}
-		portal.end = now;
+		portal.setEnd(now);
 	}
 
 	private static int pickUpTicks;
@@ -221,12 +258,13 @@ public final class RunSplits {
 			late = true;
 			if (SkyblockLocation.inBoss) {
 				// Already past the clear: only the boss rows and Overall can be timed from here.
-				bloodOpen.end = bloodOpen.start;
-				bloodClear.start = bloodOpen.start;
-				bloodClear.end = bloodOpen.start;
-				portal.start = bloodOpen.start;
-				portal.end = bloodOpen.start;
+				bloodOpen.setEnd(bloodOpen.start);
+				bloodClear.setStart(bloodOpen.start);
+				bloodClear.setEnd(bloodOpen.start);
+				portal.setStart(bloodOpen.start);
+				portal.setEnd(bloodOpen.start);
 				bossEntry = now;
+		bossEntryTick = tickAt(now);
 			}
 			return;
 		}
@@ -246,24 +284,26 @@ public final class RunSplits {
 	private static void start(long now) {
 		reset();
 		runStart = now;
+		runStartTick = tickAt(now);
 		bloodOpen = new Row("Blood Open");
 		bloodClear = new Row("Blood Clear");
 		portal = new Row("Portal Entry");
 		cleared = new Row("Cleared");
-		bloodOpen.start = now;
+		bloodOpen.setStart(now);
 	}
 
 	private static void endBossRow(int i, long now) {
-		boss.get(i).end = now;
+		boss.get(i).setEnd(now);
 		if (i + 1 < boss.size()) {
-			boss.get(i + 1).start = now;
+			boss.get(i + 1).setStart(now);
 		} else {
-			cleared.start = now;
+			cleared.setStart(now);
 		}
 	}
 
 	private static void end(long now) {
 		runEnd = now;
+		runEndTick = serverTicks;
 		for (int i = 0; i < boss.size(); i++) {
 			Row row = boss.get(i);
 			if (row.started() && row.end == 0L) {
@@ -271,7 +311,7 @@ public final class RunSplits {
 			}
 		}
 		if (cleared.started() && cleared.end == 0L) {
-			cleared.end = now;
+			cleared.setEnd(now);
 		}
 		saveIfBest();
 	}
@@ -387,34 +427,39 @@ public final class RunSplits {
 			}
 		}
 		long now = runEnd > 0L ? runEnd : System.currentTimeMillis();
+		long nowTick = runEnd > 0L ? runEndTick : serverTicks;
 		Best best = bests().get(floorKey());
 		StrayConfig config = StrayConfig.get();
-		List<Line> out = new ArrayList<>();
-		out.add(segment("§a", bloodOpen, best, now));
-		out.add(segment("§b", bloodClear, best, now));
-		out.add(segment("§d", portal, best, now));
-		// Boss Entry: the clear so far, against your best to the same point.
-		long entry = (bossEntry > 0L ? bossEntry : now) - runStart;
-		long entryBest = reachedBest(best, List.of(bloodOpen, bloodClear, portal));
-		out.add(line("§cBoss Entry", entry, entryBest, portal.end > 0L));
-		for (Row row : boss) {
-			out.add(segment(bossColor(row.name), row, best, now));
-		}
-		out.add(segment("§c", cleared, best, now));
-
-		// Overall: against your best to the same point (every row reached so far, the open one
-		// whole). Estimated: your best total plus how far ahead or behind that is.
-		long overall = now - runStart;
 		List<Row> all = segments();
-		long toHere = reachedBest(best, all);
+		// The lag column shows once a row is done (none at the very start, like the reference).
 		boolean anyDone = false;
 		for (Row row : all) {
 			anyDone |= row.end > 0L;
 		}
-		out.add(line("§7Overall", overall, toHere, anyDone));
+		boolean lag = anyDone;
+		List<Line> out = new ArrayList<>();
+		out.add(row("§a", bloodOpen, now, lag));
+		out.add(row("§b", bloodClear, now, lag));
+		out.add(row("§d", portal, now, lag));
+		long entry = (bossEntry > 0L ? bossEntry : now) - runStart;
+		long entryTicks = (bossEntry > 0L ? bossEntryTick : nowTick) - runStartTick;
+		out.add(line("§cBoss Entry", entry, entryTicks, lag));
+		for (Row row : boss) {
+			out.add(row(bossColor(row.name), row, now, lag));
+		}
+		out.add(row("§c", cleared, now, lag));
+
+		long overall = now - runStart;
+		long overallTicks = Math.max(0L, nowTick - runStartTick);
+		out.add(line("§7Overall", overall, overallTicks, lag));
 		if (config.runSplitsEstimated && runEnd == 0L) {
-			long total = best == null ? 0L : best.total;
-			out.add(line("§bEstimated", total + (overall - toHere), total, anyDone));
+			// Your best total plus how far ahead or behind your best to this point you are.
+			long estimate = overall;
+			if (best != null && best.total > 0L) {
+				estimate = best.total + (overall - reachedBest(best, all));
+			}
+			long lost = overall - overallTicks * 50L;
+			out.add(line("§bEstimated", estimate, Math.max(0L, (estimate - lost) / 50L), lag));
 		}
 		return out;
 	}
@@ -433,22 +478,22 @@ public final class RunSplits {
 		return total;
 	}
 
-	private static Line segment(String color, Row row, Best best, long now) {
-		// Rows not reached yet read 0.00 (0.00); the difference shows once a row is done.
-		long pb = best == null || !row.started() ? 0L : best.segments.getOrDefault(row.name, 0L);
-		return line(color + row.name, row.time(now), pb, row.end > 0L);
+	private static Line row(String color, Row row, long now, boolean lag) {
+		return line(color + row.name, row.time(now), row.ticks(), lag);
 	}
 
-	private static Line line(String label, long ms, long pb, boolean done) {
+	/** Real time, (tick time), and the lag between them: real minus ticks. */
+	private static Line line(String label, long ms, long ticks, boolean lag) {
 		StrayConfig config = StrayConfig.get();
-		String best = config.runSplitsBest ? "(" + format(pb) + ")" : "";
+		long tickMs = ticks * 50L;
+		String bracket = config.runSplitsBest ? "(" + format(tickMs) + ")" : "";
 		String diff = "";
-		if (config.runSplitsDiff && done && pb > 0L) {
-			long d = ms - pb;
-			String color = d < -5L ? "§a" : d > 5L ? "§c" : "§f";
+		if (config.runSplitsDiff && lag) {
+			long d = ms - tickMs;
+			String color = d > 5L ? "§c" : d < -5L ? "§a" : "§f";
 			diff = color + (d < 0L ? "-" : "+") + format(Math.abs(d));
 		}
-		return new Line(label, format(ms), best, diff);
+		return new Line(label, format(ms), bracket, diff);
 	}
 
 	private static String bossColor(String name) {

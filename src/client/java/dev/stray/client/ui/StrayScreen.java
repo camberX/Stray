@@ -4289,8 +4289,8 @@ public class StrayScreen extends Screen {
 				}
 			}
 			case RUN_SPLITS -> {
-				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Personal best", config.runSplitsBest, v -> config.runSplitsBest = v);
-				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Difference", config.runSplitsDiff, v -> config.runSplitsDiff = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Tick time", config.runSplitsBest, v -> config.runSplitsBest = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Lag", config.runSplitsDiff, v -> config.runSplitsDiff = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Estimated", config.runSplitsEstimated, v -> config.runSplitsEstimated = v);
 				clickAction(graphics, font, ix, y, iw, "Reset personal bests", dev.stray.client.dungeon.RunSplits::clearBests);
 			}

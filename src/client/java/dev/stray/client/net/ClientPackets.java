@@ -28,6 +28,7 @@ public final class ClientPackets {
 			// Hypixel pings every server tick; Odin (BirdAddon's base) counts ticks the same way.
 			if (ping.getId() != 0) {
 				client.execute(dev.stray.client.dungeon.m4.M4::serverTick);
+				client.execute(dev.stray.client.dungeon.RunSplits::serverTick);
 			}
 		} else if (packet instanceof net.minecraft.network.protocol.game.ClientboundEntityEventPacket event) {
 			if (event.getEventId() == 3) {
