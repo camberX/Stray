@@ -107,6 +107,8 @@ public final class StrayConfig {
 	public float exOpacity = 0.94f;
 	/** Expressive: menu open / close and tab animation, ms (0 = off). */
 	public int exAnimMs = 0;
+	/** Expressive: no springs, ripples or entrances (everything jumps to its end). */
+	public boolean exReduceMotion = false;
 	/** Expressive menu window size (0 = default), like the uid? one. */
 	public int exWidth = 0;
 	public int exHeight = 0;

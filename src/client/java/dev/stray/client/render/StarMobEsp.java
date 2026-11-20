@@ -41,6 +41,8 @@ public final class StarMobEsp {
 	);
 	private static final IntOpenHashSet STARRED = new IntOpenHashSet();
 	private static final IntOpenHashSet CHECKED = new IntOpenHashSet();
+	/** Starred mob id to its nameplate stand's id, for the streamproof box label. */
+	private static final it.unimi.dsi.fastutil.ints.Int2IntOpenHashMap STANDS = new it.unimi.dsi.fastutil.ints.Int2IntOpenHashMap();
 
 	private StarMobEsp() {
 	}
@@ -48,6 +50,17 @@ public final class StarMobEsp {
 	public static void reset() {
 		STARRED.clear();
 		CHECKED.clear();
+		STANDS.clear();
+	}
+
+	/** The plain text of a starred mob's nameplate ("✯ Lost Adventurer 1.2M❤"), or null. */
+	public static String plate(Entity mob) {
+		if (mob == null || !STANDS.containsKey(mob.getId())) {
+			return null;
+		}
+		Entity stand = mob.level().getEntity(STANDS.get(mob.getId()));
+		Component name = stand == null ? null : stand.getCustomName();
+		return name == null ? null : Text.strip(name.getString()).trim();
 	}
 
 	public static void onRemoveEntities(IntList ids) {
@@ -58,6 +71,7 @@ public final class StarMobEsp {
 			int id = ids.getInt(i);
 			STARRED.remove(id);
 			CHECKED.remove(id);
+			STANDS.remove(id);
 		}
 	}
 
@@ -142,6 +156,7 @@ public final class StarMobEsp {
 		int id = stand.getId() - offset;
 		Entity mob = stand.level().getEntity(id);
 		if (mob != null && !(mob instanceof ArmorStand) && STARRED.add(id)) {
+			STANDS.put(id, stand.getId());
 			return;
 		}
 		AABB box = stand.getBoundingBox().move(0.0, -1.0, 0.0);
@@ -157,6 +172,7 @@ public final class StarMobEsp {
 				continue;
 			}
 			STARRED.add(other.getId());
+			STANDS.put(other.getId(), stand.getId());
 			return;
 		}
 	}

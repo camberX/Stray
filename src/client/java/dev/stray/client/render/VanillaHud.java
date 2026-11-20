@@ -38,8 +38,8 @@ public final class VanillaHud {
 		if (client.player == null || client.gui.hud.isHidden()) {
 			return true;
 		}
-		return (client.gui.screen() instanceof AbstractContainerScreen<?> || dev.stray.client.EditionGate.loadoutsScreen(client.gui.screen()))
-			&& !HudLayout.editorOpen();
+		// Containers no longer hide the HUD (vanilla keeps its own HUD under them too).
+		return dev.stray.client.EditionGate.loadoutsScreen(client.gui.screen()) && !HudLayout.editorOpen();
 	}
 
 	public static boolean spectator() {

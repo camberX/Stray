@@ -32,6 +32,9 @@ import net.minecraft.world.item.ItemStack;
  * the smooth hotbar. Hearts, food and armour stay vanilla, above it.
  */
 public final class ThemedHotbar {
+	/** The level last drawn, to pop the Expressive pill on a level up. */
+	private static int lastLevel = -1;
+
 	private static final float SLOT = 18f;
 	private static final float PITCH = 20f;
 	private static long startNs = System.nanoTime();
@@ -192,10 +195,22 @@ public final class ThemedHotbar {
 				ExLook.rounded(graphics, sx, y + pad, slot, slot, r, ExColors.surfaceHigh);
 			}
 		}
-		cookie(graphics, x + pad + sel * pitch + slot / 2f, y + pad + slot / 2f, slot / 2f + 1f, ExColors.primaryContainer);
+		// The selection slides to the new slot on a bouncy spring, squashing a little on the way.
+		float at = dev.stray.client.ui.ExMotion.spring("ex-hb-sel", sel, dev.stray.client.ui.ExMotion.SPATIAL_FAST);
+		float travel = Math.min(1f, Math.abs(at - sel));
+		cookie(graphics, x + pad + at * pitch + slot / 2f, y + pad + slot / 2f, (slot / 2f + 1f) * (1f - 0.12f * travel), ExColors.primaryContainer);
 		itemsAt(graphics, delta, player, x + pad + 1.5f, y + pad + 1.5f, pitch);
 		// XP: Material's wavy progress line above the pill, then a flat track and a stop dot.
-		float p = xp(player);
+		// The line grows as XP comes in (from empty again after a level up) instead of jumping.
+		int lvNow = level(player);
+		if (lvNow != lastLevel) {
+			if (lastLevel >= 0 && lvNow > lastLevel) {
+				dev.stray.client.ui.ExMotion.snap("ex-hb-xp", 0f);
+				dev.stray.client.ui.ExMotion.snap("ex-hb-lv", 1.35f);
+			}
+			lastLevel = lvNow;
+		}
+		float p = Math.max(0f, Math.min(1f, dev.stray.client.ui.ExMotion.spring("ex-hb-xp", xp(player), dev.stray.client.ui.ExMotion.EFFECTS_SLOW)));
 		float lw = w - 36f;
 		float lx = x + 18f;
 		// In the gap between the pill and vanilla's hearts (which sit 30 above the bottom).
@@ -224,10 +239,17 @@ public final class ThemedHotbar {
 			float ph = 11f;
 			float px = Math.round(graphics.guiWidth() / 2f - pw / 2f);
 			float py = ly - ph - 2f;
+			// A level up pops the pill and lets it spring back.
+			float pop = dev.stray.client.ui.ExMotion.spring("ex-hb-lv", 1f, dev.stray.client.ui.ExMotion.SPATIAL_FAST);
+			graphics.pose().pushMatrix();
+			graphics.pose().translate(px + pw / 2f, py + ph / 2f);
+			graphics.pose().scale(pop, pop);
+			graphics.pose().translate(-(px + pw / 2f), -(py + ph / 2f));
 			ExLook.rounded(graphics, px, py, pw, ph, ph / 2f, ExColors.primary);
 			// Digits have no descenders: centred on the line box they sit high, so a unit lower
 			// (measured: 3 px over them and 7 under before, even after).
 			GuiDraw.text(graphics, client.font, text, px + 5f, GuiDraw.middle(py, ph) + 1.25f, ExColors.onPrimary, false);
+			graphics.pose().popMatrix();
 		}
 		offhand(graphics, delta, player, x, y, w, h, (ox, oy, os) -> {
 			ShadowLook.shadow(graphics, ox, oy, os, os, os / 2f, 6, 0x40);

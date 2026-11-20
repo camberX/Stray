@@ -63,8 +63,7 @@ public final class InventoryHudRenderer {
 		if (client.player == null || client.gui.hud.isHidden()) {
 			return;
 		}
-		if ((client.gui.screen() instanceof AbstractContainerScreen<?> || dev.stray.client.EditionGate.loadoutsScreen(client.gui.screen()))
-			&& !HudLayout.editorOpen()) {
+		if (dev.stray.client.EditionGate.loadoutsScreen(client.gui.screen()) && !HudLayout.editorOpen()) {
 			return;
 		}
 		StrayConfig config = StrayConfig.get();

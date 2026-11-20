@@ -143,7 +143,7 @@ public final class ExpressiveMenu {
 	}
 
 	static boolean faded(Object screen) {
-		return screen != fadeScreen || fade <= 0.001f || StrayConfig.get().exAnimMs <= 0;
+		return screen != fadeScreen || fade <= 0.001f || ExMotion.reduced();
 	}
 
 	public static void extent(float bottom) {
@@ -189,17 +189,10 @@ public final class ExpressiveMenu {
 
 	/** An eased value per key: switches and hovers glide instead of snapping. */
 	static float anim(String key, float target) {
-		Float now = anims.get(key);
-		if (now == null) {
-			anims.put(key, target);
-			return target;
-		}
-		float next = now + (target - now) * 0.35f;
-		if (Math.abs(next - target) < 0.01f) {
-			next = target;
-		}
-		anims.put(key, next);
-		return next;
+		// Time-based springs (the old per-frame step finished in a few ms at high FPS). Switches
+		// travel on a bouncy spatial spring, everything else fades on an effects spring.
+		boolean travel = key.startsWith("sw:") || key.startsWith("ext/");
+		return ExMotion.spring("ex:" + key, target, travel ? ExMotion.SPATIAL_FAST : ExMotion.EFFECTS);
 	}
 
 	// ------------------------------------------------------------------ drawing
@@ -225,31 +218,51 @@ public final class ExpressiveMenu {
 		int mx = Math.round(mouseX / unit);
 		int my = Math.round(mouseY / unit);
 		ClickGui.pointer(mx, my);
+		ExMotion.frame(mouseX / unit, mouseY / unit);
 		drawing = true;
 		deferred.clear();
 		graphics.pose().pushMatrix();
 		graphics.pose().scale(unit, unit);
 		long now = System.nanoTime();
 		int ms = cfg.exAnimMs;
+		boolean still = ExMotion.reduced();
 		if (screen != fadeScreen) {
 			fadeScreen = screen;
-			fade = ms > 0 ? 0f : 1f;
+			fade = still ? 1f : 0f;
 			lastFrame = now;
 			popoverKey = null;
+			// The cards cascade in on opening, as they do on a tab switch.
+			switchedAt = now;
+			ExMotion.snap("ex-open", fade);
+			ExMotion.snap("ex-grow", fade);
 		}
 		float dt = Math.min(1f / 30f, (now - lastFrame) / 1.0e9f);
 		lastFrame = now;
 		float target = screen.clickClosing() ? 0f : 1f;
-		fade = ms <= 0 ? target : approach(fade, target, dt * 1000f / ms);
-		float open = emphasized(fade);
+		float grow;
+		if (ms > 0 && !still) {
+			// A set length: the old eased fade.
+			fade = approach(fade, target, dt * 1000f / ms);
+			grow = 0.94f + 0.06f * emphasized(fade);
+		} else {
+			// Material: fade on an effects spring, scale on a spatial one that settles past 1 and back.
+			fade = Mth.clamp(ExMotion.spring("ex-open", target, target > 0f ? ExMotion.EFFECTS : ExMotion.EFFECTS_FAST), 0f, 1f);
+			if (target == 0f && fade < 0.01f) {
+				fade = 0f;
+			}
+			grow = 0.9f + 0.1f * ExMotion.spring("ex-grow", target, target > 0f ? ExMotion.SPATIAL : ExMotion.EFFECTS_FAST);
+		}
+		float open = ms > 0 && !still ? emphasized(fade) : fade;
 		float targetY = railTop() + active * railStep();
-		railY = Float.isNaN(railY) || ms <= 0 ? targetY : railY + (targetY - railY) * Math.min(1f, dt * 5000f / Math.max(ms, 1));
-		float page = ms <= 0 ? 1f : emphasized(Mth.clamp((now - switchedAt) / (ms * 1.0e6f), 0f, 1f));
+		if (Float.isNaN(railY)) {
+			ExMotion.snap("ex-railY", targetY);
+		}
+		railY = ExMotion.spring("ex-railY", targetY, ExMotion.SPATIAL);
+		float page = 1f;
 		try {
 			GuiDraw.alphaScale = open;
 			GuiDraw.fill(graphics, 0, 0, sw, sh, ExColors.alpha(0xFF000000, 0.32f));
 			// Opening grows the window a touch from its middle while it fades in.
-			float grow = 0.94f + 0.06f * open;
 			graphics.pose().pushMatrix();
 			graphics.pose().translate(winX + winW / 2f, winY + winH / 2f);
 			graphics.pose().scale(grow, grow);
@@ -258,10 +271,7 @@ public final class ExpressiveMenu {
 			rail(screen, graphics, font, mx, my);
 			header(screen, graphics, font, mx, my);
 			GuiDraw.alphaScale = open * page;
-			graphics.pose().pushMatrix();
-			graphics.pose().translate(0f, (1f - page) * 18f);
 			content(screen, graphics, font, mx, my);
-			graphics.pose().popMatrix();
 			GuiDraw.alphaScale = open;
 			grip(graphics, mx, my);
 			for (Runnable r : new ArrayList<>(deferred)) {
@@ -308,10 +318,11 @@ public final class ExpressiveMenu {
 			}
 			int ink = on ? ExColors.onSecondaryContainer : ExColors.onSurfaceVariant;
 			String glyph = TABS[i].glyph();
-			float scale = 2.3f;
+			float scale = 2.3f * (on ? 0.85f + 0.15f * ExMotion.since((System.nanoTime() - switchedAt) / 1.0e9f, ExMotion.SPATIAL_FAST) : 1f);
 			float gw = GuiDraw.iconWidth(font, glyph, scale);
 			drawIndicatorIfHere(graphics, rx, rw, pillW, pillH, ty, i);
 			GuiDraw.icon(graphics, font, glyph, rx + (rw - gw) / 2f, ty + 4 + (pillH - 9f * scale) / 2f + 1f, scale, ink);
+			ExLook.ripple(graphics, rx + (rw - pillW) / 2f, ty + 4, pillW, pillH, pillH / 2f, ExColors.onSurface);
 			String name = TABS[i].name();
 			int family = on ? ExLook.BOLD : ExLook.SMALL;
 			float nw = ExLook.width(font, family, name);
@@ -334,8 +345,10 @@ public final class ExpressiveMenu {
 		}
 		// Drawn once (with the first tab) so it sits under every icon; it may be between tabs.
 		float py = winY + railY + 4;
-		float stretch = Math.abs((winY + railTop() + active * railStep()) - (winY + railY)) > 2f ? 6f : 0f;
-		ExLook.rounded(graphics, rx + (rw - pillW) / 2f - stretch / 2f, py, pillW + stretch, pillH, pillH / 2f, ExColors.secondaryContainer);
+		// Material's rail: the indicator spreads out from the middle of the new tab while it travels.
+		float spread = ExMotion.since((System.nanoTime() - switchedAt) / 1.0e9f, ExMotion.SPATIAL_FAST);
+		float iw = pillW * (0.45f + 0.55f * spread);
+		ExLook.rounded(graphics, rx + (rw - iw) / 2f, py, iw, pillH, pillH / 2f, ExColors.secondaryContainer);
 	}
 
 	private static void header(StrayScreen screen, GuiGraphicsExtractor graphics, Font font, int mx, int my) {
@@ -354,8 +367,9 @@ public final class ExpressiveMenu {
 		boolean hover = GuiDraw.hovered(mx, my, sx, sy, sw, sh);
 		ExLook.rounded(graphics, sx, sy, sw, sh, sh / 2f, ExColors.surfaceHigh);
 		ExLook.state(graphics, sx, sy, sw, sh, sh / 2f, hover ? 1f : 0f, false, ExColors.onSurface);
-		if (focused) {
-			GuiDraw.hairline(graphics, sx, sy, sw, sh, sh / 2f, ExColors.primary);
+		float ring = Mth.clamp(ExMotion.spring("ex-search", focused ? 1f : 0f, ExMotion.EFFECTS), 0f, 1f);
+		if (ring > 0.01f) {
+			GuiDraw.hairline(graphics, sx, sy, sw, sh, sh / 2f, ExColors.alpha(ExColors.primary, ring));
 		}
 		GuiDraw.icon(graphics, font, MenuFont.SEARCH, sx + 14, sy + (sh - 13.5f) / 2f + 1f, 1.5f, ExColors.onSurfaceVariant);
 		String query = ClickGui.filterText();
@@ -377,16 +391,18 @@ public final class ExpressiveMenu {
 			for (int i = 0; i < labels.length; i++) {
 				boolean picked = filter[active] == i - 1;
 				float lw = ExLook.width(font, picked ? ExLook.BOLD : ExLook.BODY, labels[i]);
-				float cw = lw + (picked ? 44f : 28f);
+				// Picking widens the chip for its check mark on a spatial spring.
+				float pk = ExMotion.spring("ex-chipw" + active + "/" + i, picked ? 1f : 0f, ExMotion.SPATIAL_FAST);
+				float cw = lw + 28f + 16f * Math.max(0f, pk);
 				if (cx + cw > sx - 12) {
 					break;
 				}
 				boolean h = GuiDraw.hovered(mx, my, cx, cy, cw, ch);
 				ExLook.chip(graphics, cx, cy, cw, ch, picked, anim("chip" + active + "/" + i, h ? 1f : 0f));
-				float tx = cx + 14;
-				if (picked) {
-					checkMark(graphics, cx + 14, cy + ch / 2f, 1f, ExColors.onSecondaryContainer);
-					tx += 18;
+				float tx = cx + 14 + 18f * Math.max(0f, Math.min(1f, pk));
+				if (pk > 0.05f) {
+					float ck = Math.min(1f, pk);
+					checkMark(graphics, cx + 14 + (1f - ck) * 4f, cy + ch / 2f, Math.max(0.2f, ck), ExColors.alpha(ExColors.onSecondaryContainer, ck));
 				}
 				ExLook.text(graphics, font, picked ? ExLook.BOLD : ExLook.BODY, labels[i], tx, cy + 10, picked ? ExColors.onSecondaryContainer : ExColors.onSurfaceVariant);
 				int pick = i - 1;
@@ -499,6 +515,9 @@ public final class ExpressiveMenu {
 		float offset = scroll[active];
 		int mark = screen.clickHitMark();
 		boolean clip = GuiDraw.scissor(graphics, areaX - 4, areaY, areaW + 8, areaH);
+		float age = (System.nanoTime() - switchedAt) / 1.0e9f;
+		float base = GuiDraw.alphaScale;
+		int index = 0;
 		try {
 			for (Group group : list) {
 				if (group.mod() != null && !on(group)) {
@@ -506,22 +525,42 @@ public final class ExpressiveMenu {
 					continue;
 				}
 				int col = shortest(colY);
-				float gx = areaX + col * (colW + GAP);
-				float gy = areaY + colY[col] - offset;
 				float gh = Math.max(52f, heights.getOrDefault(group.key(), estimate(group)));
-				if (gy < areaY + areaH && gy + gh > areaY) {
-					float h = card(screen, graphics, font, mx, my, group, gx, gy, colW, gh);
-					heights.put(group.key(), Math.max(52f, h));
+				float[] at = place(group.key(), col * (colW + GAP), colY[col]);
+				float gx = areaX + at[0];
+				float gy = areaY + at[1] - offset;
+				float in = enterCard(age, index++);
+				if (gy + 24f * (1f - in) < areaY + areaH && gy + gh > areaY) {
+					GuiDraw.alphaScale = base * Mth.clamp(in, 0f, 1f);
+					graphics.pose().pushMatrix();
+					graphics.pose().translate(0f, 24f * (1f - in));
+					try {
+						float h = card(screen, graphics, font, mx, my, group, gx, gy, colW, gh);
+						heights.put(group.key(), Math.max(52f, h));
+					} finally {
+						graphics.pose().popMatrix();
+						GuiDraw.alphaScale = base;
+					}
 				}
 				colY[col] += gh + GAP;
 			}
 			if (!off.isEmpty()) {
 				int col = shortest(colY);
-				float gx = areaX + col * (colW + GAP);
-				float gy = areaY + colY[col] - offset;
+				float[] at = place("ex-off", col * (colW + GAP), colY[col]);
+				float gx = areaX + at[0];
+				float gy = areaY + at[1] - offset;
 				float gh = 44f + off.size() * 36f + 8f;
+				float in = enterCard(age, index);
 				if (gy < areaY + areaH && gy + gh > areaY) {
-					offCard(screen, graphics, font, mx, my, off, gx, gy, colW, gh);
+					GuiDraw.alphaScale = base * Mth.clamp(in, 0f, 1f);
+					graphics.pose().pushMatrix();
+					graphics.pose().translate(0f, 24f * (1f - in));
+					try {
+						offCard(screen, graphics, font, mx, my, off, gx, gy, colW, gh);
+					} finally {
+						graphics.pose().popMatrix();
+						GuiDraw.alphaScale = base;
+					}
 				}
 				colY[col] += gh + GAP;
 			}
@@ -540,6 +579,28 @@ public final class ExpressiveMenu {
 		}
 		contentH = tallest;
 		ExLook.scrollbar(graphics, areaX + areaW - 2, areaY + 4, areaH - 8, areaH, contentH, offset, 1f);
+	}
+
+	/**
+	 * Where a card sits in the scrolled content, gliding there on a spatial spring when the layout
+	 * changes (a module switched off moving to the "Off" card, a card growing above it).
+	 */
+	private static float[] place(String key, float x, float y) {
+		if (switching()) {
+			ExMotion.snap("ex-cx" + key, x);
+			ExMotion.snap("ex-cy" + key, y);
+		}
+		return new float[]{ExMotion.spring("ex-cx" + key, x, ExMotion.SPATIAL), ExMotion.spring("ex-cy" + key, y, ExMotion.SPATIAL)};
+	}
+
+	/** In the first moments after a tab switch the cards enter rather than glide from the old tab's places. */
+	private static boolean switching() {
+		return System.nanoTime() - switchedAt < 60_000_000L;
+	}
+
+	/** A card's entrance after a switch: one after another, rising into place. */
+	private static float enterCard(float age, int index) {
+		return ExMotion.since(age - Math.min(index, 12) * 0.035f, ExMotion.SPATIAL);
 	}
 
 	private static int shortest(float[] colY) {
@@ -822,6 +883,27 @@ public final class ExpressiveMenu {
 		// Anywhere outside closes it; its own rows take their clicks first.
 		screen.clickHit(-100000, -100000, 200000, 200000, () -> popoverKey = null);
 		screen.clickHit(px, py, pw, ph, () -> { });
+		// Opening: it grows out from the side of the chip that opened it while it fades in.
+		float in = ExMotion.enter("ex-popover", ExMotion.SPATIAL_FAST);
+		float fadeIn = Mth.clamp(ExMotion.enter("ex-popover-a", ExMotion.EFFECTS), 0f, 1f);
+		float ox = px < popoverAnchorX ? px + pw : px;
+		float oy = Mth.clamp(popoverAnchorY, py, py + ph);
+		float k = 0.85f + 0.15f * in;
+		graphics.pose().pushMatrix();
+		graphics.pose().translate(ox, oy);
+		graphics.pose().scale(k, k);
+		graphics.pose().translate(-ox, -oy);
+		float was = GuiDraw.alphaScale;
+		GuiDraw.alphaScale = was * fadeIn;
+		try {
+			popoverBody(screen, graphics, font, mx, my, px, py, pw, ph, rowsH);
+		} finally {
+			GuiDraw.alphaScale = was;
+			graphics.pose().popMatrix();
+		}
+	}
+
+	private static void popoverBody(StrayScreen screen, GuiGraphicsExtractor graphics, Font font, int mx, int my, float px, float py, float pw, float ph, float rowsH) {
 		ExLook.surface(graphics, px, py, pw, ph, 28f, ExColors.surfaceHighest, false);
 		ExLook.text(graphics, font, ExLook.TITLE, "Colours", px + 20, py + 18, ExColors.onSurface);
 		float cx = px + pw - 44;

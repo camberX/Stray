@@ -269,7 +269,7 @@ public class StrayScreen extends Screen {
 				return baseRows + 1;
 			}
 			if (this == BOX && visualsKind == EntityKind.STAR && !dev.stray.Edition.LEGIT) {
-				return baseRows + 1;
+				return baseRows + 1 + (StrayConfig.get().starVisuals.boxStreamproof ? 5 : 0);
 			}
 			if (this == DUNGEON_MAP) {
 				StrayConfig c = StrayConfig.get();
@@ -4427,7 +4427,14 @@ public class StrayScreen extends Screen {
 				y = slider(graphics, font, ix, y, iw, "Fill", Math.round(visuals.boxFill * 100) + "%", visuals.boxFill / 0.55f, v -> visuals.boxFill = StrayConfig.clamp(v * 0.55f, 0f, 0.55f));
 				float colorEnd = colorRow(graphics, font, ix, y, iw, mouseX, mouseY, "Color", visuals.boxRgb, PickerTarget.BOX);
 				if (visualsKind == EntityKind.STAR && !dev.stray.Edition.LEGIT) {
-					toggle(graphics, font, ix, colorEnd, iw, mouseX, mouseY, "Streamproof", visuals.boxStreamproof, v -> visuals.boxStreamproof = v);
+					float sy = toggle(graphics, font, ix, colorEnd, iw, mouseX, mouseY, "Streamproof", visuals.boxStreamproof, v -> visuals.boxStreamproof = v);
+					if (visuals.boxStreamproof) {
+						sy = cycle(graphics, font, ix, sy, iw, mouseX, mouseY, "Style", () -> visuals.boxStyleLabel(), visuals::cycleBoxStyle);
+						sy = toggle(graphics, font, ix, sy, iw, mouseX, mouseY, "Dark outline", visuals.boxOutline, v -> visuals.boxOutline = v);
+						sy = toggle(graphics, font, ix, sy, iw, mouseX, mouseY, "Name and health", visuals.boxName, v -> visuals.boxName = v);
+						sy = toggle(graphics, font, ix, sy, iw, mouseX, mouseY, "Distance", visuals.boxDistance, v -> visuals.boxDistance = v);
+						toggle(graphics, font, ix, sy, iw, mouseX, mouseY, "Tracer", visuals.boxTracer, v -> visuals.boxTracer = v);
+					}
 				}
 			}
 			case NAMETAGS -> {
@@ -5753,7 +5760,7 @@ public class StrayScreen extends Screen {
 			stealFocused = false;
 			commitSteal();
 		}
-		boolean uidFade = StrayConfig.get().clickGui && (UidMenu.active() && StrayConfig.get().uidAnimMs > 0 || ExpressiveMenu.active() && StrayConfig.get().exAnimMs > 0);
+		boolean uidFade = StrayConfig.get().clickGui && (UidMenu.active() && StrayConfig.get().uidAnimMs > 0 || ExpressiveMenu.active() && !ExMotion.reduced());
 		if (!closing && (uidFade || (StrayConfig.get().uiAnimations && appear > 0.04f))) {
 			closing = true;
 			capeFocused = false;
@@ -6044,7 +6051,8 @@ public class StrayScreen extends Screen {
 			float[] weights = new float[options.length];
 			float total = 0f;
 			for (int i = 0; i < options.length; i++) {
-				weights[i] = (i == selected ? 1.25f : 1f);
+				// The picked option is a little wider; the width springs across when the pick changes.
+				weights[i] = 1f + 0.25f * Math.max(0f, ExMotion.spring("ex-segw/" + key + i, i == selected ? 1f : 0f, ExMotion.SPATIAL_FAST));
 				total += weights[i];
 			}
 			float bx = x;
@@ -6085,9 +6093,14 @@ public class StrayScreen extends Screen {
 				float scroll = Mth.clamp(ExpressiveMenu.popupScroll(), 0f, Math.max(0f, content - rows * rowH));
 				ExpressiveMenu.popupScroll(scroll);
 				hits.add(new Hit(-100000, -100000, 200000, 200000, () -> dropdownOpen = null));
-				ExLook.surface(graphics, x, py, w, ph, 16f, ExColors.surfaceHighest, false);
+				// Material's menu: it unrolls down from the field (a spatial spring) as it fades in.
+				float unroll = Mth.clamp(ExMotion.enter("ex-dd/" + key, ExMotion.SPATIAL_FAST), 0.05f, 1.06f);
+				float shown = Math.max(20f, ph * unroll);
+				float was = GuiDraw.alphaScale;
+				GuiDraw.alphaScale = was * Mth.clamp(ExMotion.enter("ex-dda/" + key, ExMotion.EFFECTS), 0f, 1f);
+				ExLook.surface(graphics, x, py, w, shown, 16f, ExColors.surfaceHighest, false);
 				ExpressiveMenu.popup(x, py, w, ph);
-				boolean clip = GuiDraw.scissor(graphics, x, py + 4, w, ph - 8);
+				boolean clip = GuiDraw.scissor(graphics, x, py + 4, w, Math.max(1f, Math.min(ph, shown) - 8));
 				try {
 					int mx = (int) Math.round(ClickGui.pointerX());
 					int my = (int) Math.round(ClickGui.pointerY());
@@ -6124,7 +6137,10 @@ public class StrayScreen extends Screen {
 						GuiDraw.disableScissor(graphics);
 					}
 				}
-				ExLook.scrollbar(graphics, x + w - 8, py + 6, ph - 12, rows * rowH, content, scroll, 1f);
+				if (unroll > 0.95f) {
+					ExLook.scrollbar(graphics, x + w - 8, py + 6, ph - 12, rows * rowH, content, scroll, 1f);
+				}
+				GuiDraw.alphaScale = was;
 			});
 		}
 		return next;
@@ -6228,6 +6244,26 @@ public class StrayScreen extends Screen {
 
 	/** Expressive's colour picker: a rounded colour square, hue and opacity tracks with bar handles, the hex, presets. */
 	private void drawExPicker(GuiGraphicsExtractor graphics, Font font) {
+		// It grows out of its top corner nearest the row that opened it, and fades in.
+		float in = ExMotion.enter("ex-picker", ExMotion.SPATIAL_FAST);
+		float k = 0.88f + 0.12f * in;
+		float ox = pickerX;
+		float oy = pickerY;
+		graphics.pose().pushMatrix();
+		graphics.pose().translate(ox, oy);
+		graphics.pose().scale(k, k);
+		graphics.pose().translate(-ox, -oy);
+		float was = GuiDraw.alphaScale;
+		GuiDraw.alphaScale = was * Mth.clamp(ExMotion.enter("ex-picker-a", ExMotion.EFFECTS), 0f, 1f);
+		try {
+			drawExPickerBody(graphics, font);
+		} finally {
+			GuiDraw.alphaScale = was;
+			graphics.pose().popMatrix();
+		}
+	}
+
+	private void drawExPickerBody(GuiGraphicsExtractor graphics, Font font) {
 		float x = pickerX;
 		float y = pickerY;
 		float w = pickerW();

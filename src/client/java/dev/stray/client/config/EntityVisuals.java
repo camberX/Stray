@@ -32,6 +32,16 @@ public final class EntityVisuals {
 	public float boxOpacity = 0.90f;
 	public float boxFill = 0.12f;
 	public float boxWidth = 2f;
+	/** Streamproof star mob boxes: 0 full outline, 1 corners only. */
+	public int boxStyle = 0;
+	/** Streamproof: a thin dark edge either side of the line, so it reads on bright scenes. */
+	public boolean boxOutline = false;
+	/** Streamproof: the mob's nameplate (name and health) above the box. */
+	public boolean boxName = false;
+	/** Streamproof: distance in blocks under the box. */
+	public boolean boxDistance = false;
+	/** Streamproof: a line from the bottom of the screen to the box. */
+	public boolean boxTracer = false;
 	public boolean shaderEnabled = false;
 	public boolean shaderThroughWalls = false;
 	public boolean shaderSilhouette = true;
@@ -42,7 +52,16 @@ public final class EntityVisuals {
 	public float shaderSmoke = 0.55f;
 	public String shaderStyle = "smoke";
 
+	public String boxStyleLabel() {
+		return boxStyle == 1 ? "Corners" : "Full";
+	}
+
+	public void cycleBoxStyle() {
+		boxStyle = boxStyle == 1 ? 0 : 1;
+	}
+
 	public void clamp() {
+		boxStyle = boxStyle == 1 ? 1 : 0;
 		glowRadius = StrayConfig.clamp(glowRadius <= 0f ? GlowBlurRadius.DEFAULT : glowRadius, GlowBlurRadius.MIN, GlowBlurRadius.MAX);
 		glowOpacity = StrayConfig.clamp(glowOpacity <= 0f ? 0.58f : glowOpacity, 0.15f, 0.90f);
 		glowRgb = glowRgb & 0xFFFFFF;

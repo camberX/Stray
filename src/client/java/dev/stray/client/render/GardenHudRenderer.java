@@ -162,10 +162,6 @@ public final class GardenHudRenderer {
 	}
 
 	static void extract(GuiGraphicsExtractor graphics, DeltaTracker deltaTracker) {
-		Minecraft client = Minecraft.getInstance();
-		if (client.gui.screen() instanceof AbstractContainerScreen<?>) {
-			return;
-		}
 		paint(graphics);
 	}
 

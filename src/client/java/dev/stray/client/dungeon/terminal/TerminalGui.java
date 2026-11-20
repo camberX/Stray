@@ -4,7 +4,11 @@ import dev.stray.client.config.StrayConfig;
 import dev.stray.client.render.GuiDraw;
 import dev.stray.client.ui.Anim;
 import dev.stray.client.ui.MenuFont;
+import dev.stray.client.ui.ExColors;
+import dev.stray.client.ui.ExLook;
+import dev.stray.client.ui.Looks;
 import dev.stray.client.ui.ShadowLook;
+import dev.stray.client.ui.UidLook;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
@@ -185,7 +189,8 @@ final class TerminalGui {
 		float px = (width - panelW) * 0.5f;
 		float py = (height - panelH) * 0.5f;
 		float gx = px + (panelW - gridW) * 0.5f;
-		float gy = py + header + pad;
+		// uid?'s colour strip takes the top of the inside: half its height down keeps the grid centred.
+		float gy = py + header + pad + (Looks.uid() ? UidLook.stripHeight(graphics) / 2f : 0f);
 
 		// Faint dim so the window stands out from the world.
 		GuiDraw.fill(graphics, 0, 0, width, height, Anim.fade(0x40000000, open));
@@ -200,15 +205,12 @@ final class TerminalGui {
 		graphics.pose().translate(-(px + panelW * 0.5f), -(py + panelH * 0.5f));
 
 		float radius = dev.stray.client.ui.ShadowLook.WINDOW_R * s;
-		ShadowLook.shadow(graphics, px, py, panelW, panelH, radius, 14, Math.round(0x70 * open));
-		dev.stray.client.render.GuiFrostBlur.blitWindow(graphics, px, py, panelW, panelH, radius, open);
-		GuiDraw.roundedFine(graphics, px, py, panelW, panelH, radius, Anim.fade(ShadowLook.FILL, open));
-		GuiDraw.hairline(graphics, px, py, panelW, panelH, radius, Anim.fade(ShadowLook.LINE, open));
+		window(graphics, px, py, panelW, panelH, radius, s);
 
 		// Header: name left, progress right.
 		if (titled) {
 			float ty = py + pad * 0.75f;
-			text(graphics, font, term.name, px + pad, ty, s, Anim.fade(blocked ? ShadowLook.MUTED : ShadowLook.TEXT, open));
+			text(graphics, font, term.name, px + pad, ty, s, Anim.fade(blocked ? muted() : ink(), open));
 		}
 		hovered = -1;
 		lastGx = gx;
@@ -223,7 +225,7 @@ final class TerminalGui {
 		}
 
 		if (doneFade > 0.01f && done != null) {
-			GuiDraw.roundedFine(graphics, gx - 3f * s, gy - 3f * s, gridW + 6f * s, gridH + 6f * s, 6f * s, Anim.fade(0xB8050709, doneFade));
+			shape(graphics, gx - 3f * s, gy - 3f * s, gridW + 6f * s, gridH + 6f * s, 6f * s, Anim.fade(Looks.ex() ? ExColors.alpha(ExColors.surfaceLowest, 0.85f) : 0xB8050709, doneFade));
 			Component c = MenuFont.shadow(done);
 			text(graphics, font, done, gx + (gridW - font.width(c) * s) * 0.5f, gy + (gridH - 9f * s) * 0.5f, s, Anim.fade(0xFF000000 | color("solution"), doneFade));
 		}
@@ -267,7 +269,7 @@ final class TerminalGui {
 					hovered = slot;
 				}
 
-				GuiDraw.roundedFine(graphics, x, y, cell, cell, r, Anim.fade(over ? ShadowLook.CARD_HOVER : ShadowLook.CARD, open));
+				empty(graphics, x, y, cell, r, over, open);
 				float p = PRESENT[slot];
 				if (p > 0.01f) {
 					float size = cell * (0.62f + 0.38f * p) * (1f + 0.05f * HOVER[slot]);
@@ -276,15 +278,15 @@ final class TerminalGui {
 					int base = TINT[slot];
 					glow(graphics, ox, oy, size, size, s, base, p * open * (0.7f + 0.6f * HOVER[slot]));
 					int color = Anim.mix(base, base | 0xFF000000, 0.25f * HOVER[slot]);
-					GuiDraw.roundedFine(graphics, ox, oy, size, size, r * (size / cell), Anim.fade(color, p * open));
+					shape(graphics, ox, oy, size, size, r * (size / cell), Anim.fade(color, p * open));
 					if (HOVER[slot] > 0.02f) {
-						GuiDraw.hairline(graphics, ox, oy, size, size, r * (size / cell), Anim.fade(0x80FFFFFF, HOVER[slot] * p * open));
+						outline(graphics, ox, oy, size, size, r * (size / cell), Anim.fade(0x80FFFFFF, HOVER[slot] * p * open));
 					}
 					String label = label(term, click, index);
 					if (label != null && click != null) {
 						Component c = MenuFont.shadow(label);
 						float ts = s * 0.9f;
-						text(graphics, font, label, x + (cell - font.width(c) * ts) * 0.5f, y + (cell - 9f * ts) * 0.5f + 0.5f, ts, Anim.fade(ShadowLook.TEXT, p * open));
+						text(graphics, font, label, x + (cell - font.width(c) * ts) * 0.5f, y + (cell - 9f * ts) * 0.5f + 0.5f, ts, Anim.fade(ink(), p * open));
 					}
 				}
 				ring(graphics, slot, x, y, cell, r, s);
@@ -328,7 +330,7 @@ final class TerminalGui {
 			return;
 		}
 		float grow = (1f - k) * 4f * s;
-		GuiDraw.hairline(graphics, x - grow, y - grow, cell + grow * 2f, cell + grow * 2f, r + grow, Anim.fade(0xC0FFFFFF, k * open));
+		outline(graphics, x - grow, y - grow, cell + grow * 2f, cell + grow * 2f, r + grow, Anim.fade(0xC0FFFFFF, k * open));
 	}
 
 	private static void melody(
@@ -352,15 +354,15 @@ final class TerminalGui {
 		// Lanes (5 columns x 3 or 4 rows) and the button column on the right.
 		for (int row = 0; row < rows; row++) {
 			for (int col = 0; col < 5; col++) {
-				GuiDraw.roundedFine(graphics, gx + col * step, gy + row * step, cell, cell, r, Anim.fade(row == term.buttonRow ? ShadowLook.CARD_HOVER : ShadowLook.CARD, open));
+				empty(graphics, gx + col * step, gy + row * step, cell, r, row == term.buttonRow, open);
 			}
 		}
 		if (loaded && term.correct >= 0) {
 			melodyColumn = melodyColumn < 0f ? term.correct : Anim.exp(melodyColumn, term.correct, 18f, dt);
 			int column = color("column");
 			glow(graphics, gx + melodyColumn * step - 1.5f * s, gy - 1.5f * s, cell + 3f * s, lanesH + 3f * s, s, column, 0.45f * open);
-			GuiDraw.roundedFine(graphics, gx + melodyColumn * step - 1.5f * s, gy - 1.5f * s, cell + 3f * s, lanesH + 3f * s, r + 1f, Anim.fade(0x40000000 | column, open));
-			GuiDraw.hairline(graphics, gx + melodyColumn * step - 1.5f * s, gy - 1.5f * s, cell + 3f * s, lanesH + 3f * s, r + 1f, Anim.fade(0x70000000 | column, open));
+			shape(graphics, gx + melodyColumn * step - 1.5f * s, gy - 1.5f * s, cell + 3f * s, lanesH + 3f * s, r + 1f, Anim.fade(0x40000000 | column, open));
+			outline(graphics, gx + melodyColumn * step - 1.5f * s, gy - 1.5f * s, cell + 3f * s, lanesH + 3f * s, r + 1f, Anim.fade(0x70000000 | column, open));
 		}
 		if (loaded && term.current >= 0 && term.buttonRow >= 0 && term.buttonRow < rows) {
 			melodyX = melodyX < 0f ? term.current : Anim.exp(melodyX, term.current, 26f, dt);
@@ -368,7 +370,7 @@ final class TerminalGui {
 			int rgb = onTime ? color("button") : color("marker");
 			int color = (onTime ? 0xE0000000 : 0xC8000000) | rgb;
 			glow(graphics, gx + melodyX * step, gy + term.buttonRow * step, cell, cell, s, rgb, open);
-			GuiDraw.roundedFine(graphics, gx + melodyX * step, gy + term.buttonRow * step, cell, cell, r, Anim.fade(color, open));
+			shape(graphics, gx + melodyX * step, gy + term.buttonRow * step, cell, cell, r, Anim.fade(color, open));
 		}
 		float bx = gx + 5 * step;
 		for (int row = 0; row < rows; row++) {
@@ -387,12 +389,82 @@ final class TerminalGui {
 			}
 			float size = cell * (1f + 0.05f * HOVER[slot]);
 			float o = (cell - size) * 0.5f;
-			GuiDraw.roundedFine(graphics, bx + o, y + o, size, size, r, Anim.fade(Anim.mix(color, color | 0xFF000000, 0.2f * HOVER[slot]), open));
+			shape(graphics, bx + o, y + o, size, size, r, Anim.fade(Anim.mix(color, color | 0xFF000000, 0.2f * HOVER[slot]), open));
 			if (HOVER[slot] > 0.02f) {
-				GuiDraw.hairline(graphics, bx + o, y + o, size, size, r, Anim.fade(0x80FFFFFF, HOVER[slot] * open));
+				outline(graphics, bx + o, y + o, size, size, r, Anim.fade(0x80FFFFFF, HOVER[slot] * open));
 			}
 			ring(graphics, slot, bx, y, cell, r, s);
 		}
+	}
+
+	/** The window in the theme's own panel: Shadow's frosted card, uid?'s bevelled frame, an Expressive surface. */
+	private static void window(GuiGraphicsExtractor graphics, float x, float y, float w, float h, float radius, float s) {
+		if (Looks.uid()) {
+			float was = GuiDraw.alphaScale;
+			GuiDraw.alphaScale = was * open;
+			try {
+				UidLook.frame(graphics, x, y, w, h, 0xF0);
+			} finally {
+				GuiDraw.alphaScale = was;
+			}
+			return;
+		}
+		if (Looks.ex()) {
+			float was = GuiDraw.alphaScale;
+			GuiDraw.alphaScale = was * open;
+			try {
+				ExLook.surface(graphics, x, y, w, h, 20f * s, ExColors.alpha(ExColors.surfaceLow, 0.97f), true);
+			} finally {
+				GuiDraw.alphaScale = was;
+			}
+			return;
+		}
+		ShadowLook.shadow(graphics, x, y, w, h, radius, 14, Math.round(0x70 * open));
+		dev.stray.client.render.GuiFrostBlur.blitWindow(graphics, x, y, w, h, radius, open);
+		GuiDraw.roundedFine(graphics, x, y, w, h, radius, Anim.fade(ShadowLook.FILL, open));
+		GuiDraw.hairline(graphics, x, y, w, h, radius, Anim.fade(ShadowLook.LINE, open));
+	}
+
+	/** A filled cell or highlight: square in uid?, Material's rounder squares in Expressive. */
+	private static void shape(GuiGraphicsExtractor graphics, float x, float y, float w, float h, float r, int color) {
+		if (Looks.uid()) {
+			GuiDraw.fillSmooth(graphics, x, y, w, h, color);
+		} else if (Looks.ex()) {
+			ExLook.rounded(graphics, x, y, w, h, Math.min(w, h) * 0.3f, color);
+		} else {
+			GuiDraw.roundedFine(graphics, x, y, w, h, r, color);
+		}
+	}
+
+	private static void outline(GuiGraphicsExtractor graphics, float x, float y, float w, float h, float r, int color) {
+		GuiDraw.hairline(graphics, x, y, w, h, Looks.uid() ? 0f : Looks.ex() ? Math.min(w, h) * 0.3f : r, color);
+	}
+
+	/** An empty slot: uid?'s sunken control, an Expressive container tone, Shadow's card. */
+	private static void empty(GuiGraphicsExtractor graphics, float x, float y, float cell, float r, boolean over, float open) {
+		if (Looks.uid()) {
+			float was = GuiDraw.alphaScale;
+			GuiDraw.alphaScale = was * open;
+			try {
+				UidLook.control(graphics, x, y, cell, cell, over, false);
+			} finally {
+				GuiDraw.alphaScale = was;
+			}
+			return;
+		}
+		if (Looks.ex()) {
+			ExLook.rounded(graphics, x, y, cell, cell, cell * 0.3f, Anim.fade(over ? ExColors.surfaceHighest : ExColors.surfaceHigh, open));
+			return;
+		}
+		GuiDraw.roundedFine(graphics, x, y, cell, cell, r, Anim.fade(over ? ShadowLook.CARD_HOVER : ShadowLook.CARD, open));
+	}
+
+	private static int ink() {
+		return Looks.ex() ? ExColors.onSurface : ShadowLook.TEXT;
+	}
+
+	private static int muted() {
+		return Looks.ex() ? ExColors.onSurfaceVariant : ShadowLook.MUTED;
 	}
 
 	private static void text(GuiGraphicsExtractor graphics, Font font, String value, float x, float y, float scale, int color) {

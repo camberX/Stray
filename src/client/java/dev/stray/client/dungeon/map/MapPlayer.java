@@ -45,7 +45,7 @@ public final class MapPlayer {
 		}
 		fromX = drawX;
 		fromZ = drawZ;
-		fromYaw = drawYaw;
+		fromYaw = net.minecraft.util.Mth.wrapDegrees(drawYaw);
 		moveStart = System.currentTimeMillis();
 		mapX = x;
 		mapZ = z;
@@ -64,7 +64,9 @@ public final class MapPlayer {
 			float[] m = MapUtils.toMap(x, z);
 			drawX = m[0];
 			drawZ = m[1];
-			drawYaw = entity.getViewYRot(partialTick);
+			// The short way between last tick and this one: a teleport (a leap) can reset a yaw that
+			// had wound up to thousands of degrees, and a plain lerp spun the head through every turn.
+			drawYaw = net.minecraft.util.Mth.wrapDegrees(net.minecraft.util.Mth.rotLerp(partialTick, entity.yRotO, entity.getYRot()));
 			return new float[]{drawX, drawZ, drawYaw};
 		}
 		if (!StrayConfig.get().dungeonMapAnimateHeads) {

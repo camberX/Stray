@@ -259,8 +259,12 @@ public final class ClickGui {
 		float op = config.exOpacity;
 		y = next(screen.clickSlider(graphics, font, x, y, w, "Background opacity", Math.round(op * 100f) + "%", (op - 0.3f) / 0.7f, v -> exSet(() -> StrayConfig.get().exOpacity = Math.round((0.3f + v * 0.7f) * 100f) / 100f)), y);
 		int ms = config.exAnimMs;
-		y = next(screen.clickSlider(graphics, font, x, y, w, "Menu animation", ms == 0 ? "Off" : ms + " ms", ms / 600f, v -> {
+		y = next(screen.clickSlider(graphics, font, x, y, w, "Menu animation", ms == 0 ? "Material" : ms + " ms", ms / 600f, v -> {
 			StrayConfig.get().exAnimMs = Math.round(v * 600f / 25f) * 25;
+			UnloadState.markDirty();
+		}), y);
+		y = next(screen.clickToggle(graphics, font, x, y, w, "Reduce motion", config.exReduceMotion, () -> {
+			StrayConfig.get().exReduceMotion = !StrayConfig.get().exReduceMotion;
 			UnloadState.markDirty();
 		}), y);
 		int[] now = {ExColors.primary, ExColors.secondaryContainer, ExColors.tertiaryContainer, ExColors.surface, ExColors.surfaceHigh, ExColors.onSurface, ExColors.outline};

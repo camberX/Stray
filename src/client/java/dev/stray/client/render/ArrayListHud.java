@@ -54,6 +54,10 @@ public final class ArrayListHud {
 	}
 
 	private static void draw(GuiGraphicsExtractor graphics, Font font) {
+		if (dev.stray.client.ui.Looks.ex() && !dev.stray.client.ui.ExMotion.reduced()) {
+			drawExMoving(graphics, font);
+			return;
+		}
 		List<Row> rows = rows(font);
 		float right = width(font);
 		float y = 0f;
@@ -85,6 +89,75 @@ public final class ArrayListHud {
 				GuiDraw.circle(graphics, right - PAD * 0.5f - DOT * 0.5f - 1f, y + ROW_H * 0.5f, DOT * 0.5f, row.color);
 			}
 			y += ROW_H + GAP;
+		}
+	}
+
+	/** Rows on screen last frame by label, and rows on their way out. */
+	private static final java.util.Map<String, Row> shown = new java.util.LinkedHashMap<>();
+	private static final java.util.Map<String, float[]> leaving = new java.util.LinkedHashMap<>();
+
+	/**
+	 * Expressive: new modules slide in from the right on a spatial spring, switched-off ones slide
+	 * back out and fade, and the rest glide up or down to their new places.
+	 */
+	private static void drawExMoving(GuiGraphicsExtractor graphics, Font font) {
+		List<Row> rows = rows(font);
+		float right = width(font);
+		boolean background = HudChrome.background();
+		java.util.Set<String> now = new java.util.HashSet<>();
+		float y = 0f;
+		int index = 0;
+		for (Row row : rows) {
+			String key = row.text.getString();
+			now.add(key);
+			if (!shown.containsKey(key)) {
+				dev.stray.client.ui.ExMotion.snap("ex-al-in" + key, 0f);
+				dev.stray.client.ui.ExMotion.snap("ex-al-y" + key, y);
+			}
+			leaving.remove(key);
+			shown.put(key, row);
+			float in = dev.stray.client.ui.ExMotion.spring("ex-al-in" + key, 1f, dev.stray.client.ui.ExMotion.SPATIAL_FAST);
+			float ry = dev.stray.client.ui.ExMotion.spring("ex-al-y" + key, y, dev.stray.client.ui.ExMotion.SPATIAL);
+			exRow(graphics, font, row, right, ry, in, index++, background);
+			y += ROW_H + GAP;
+		}
+		for (java.util.Iterator<java.util.Map.Entry<String, Row>> it = shown.entrySet().iterator(); it.hasNext(); ) {
+			java.util.Map.Entry<String, Row> e = it.next();
+			if (!now.contains(e.getKey())) {
+				leaving.putIfAbsent(e.getKey(), new float[]{dev.stray.client.ui.ExMotion.spring("ex-al-y" + e.getKey(), 0f, dev.stray.client.ui.ExMotion.SPATIAL)});
+				ghosts.put(e.getKey(), e.getValue());
+				it.remove();
+			}
+		}
+		for (java.util.Iterator<java.util.Map.Entry<String, float[]>> it = leaving.entrySet().iterator(); it.hasNext(); ) {
+			java.util.Map.Entry<String, float[]> e = it.next();
+			Row row = ghosts.get(e.getKey());
+			float out = dev.stray.client.ui.ExMotion.spring("ex-al-in" + e.getKey(), 0f, dev.stray.client.ui.ExMotion.EFFECTS);
+			if (row == null || out < 0.02f) {
+				it.remove();
+				ghosts.remove(e.getKey());
+				continue;
+			}
+			exRow(graphics, font, row, right, e.getValue()[0], out, 0, background);
+		}
+	}
+
+	private static final java.util.Map<String, Row> ghosts = new java.util.HashMap<>();
+
+	private static void exRow(GuiGraphicsExtractor graphics, Font font, Row row, float right, float y, float in, int index, boolean background) {
+		float was = GuiDraw.alphaScale;
+		GuiDraw.alphaScale = was * Math.max(0f, Math.min(1f, in));
+		try {
+			float x = right - row.width + (1f - in) * (row.width + 8f);
+			if (background) {
+				GuiDraw.roundedFine(graphics, x, y, row.width, ROW_H, ROW_H * 0.5f, Theme.HUD_WINDOW);
+			}
+			GuiDraw.text(graphics, font, row.text, x + PAD, GuiDraw.middle(y, ROW_H), ShadowLook.TEXT, false);
+			float d = DOT + 2f;
+			float dx = x + row.width - PAD * 0.5f - d * 0.5f - 2f;
+			GuiDraw.roundedFine(graphics, dx - d * 0.5f, y + (ROW_H - d) * 0.5f, d, d, index % 2 == 0 ? d * 0.5f : 1.5f, row.color);
+		} finally {
+			GuiDraw.alphaScale = was;
 		}
 	}
 

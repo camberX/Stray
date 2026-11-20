@@ -91,10 +91,46 @@ public final class ExLook {
 
 	/** The hover / press tint Material lays over anything you can click. */
 	public static void state(GuiGraphicsExtractor graphics, float x, float y, float w, float h, float r, float hover, boolean pressed, int on) {
-		float a = pressed ? 0.12f : 0.08f * hover;
+		// Material's state layer: hover 8 %, pressed a little more, both easing in and out, and a
+		// ripple spreading from where the pointer went down.
+		String k = key(x, y, w, h);
+		float hv = ExMotion.spring("st" + k, hover, ExMotion.EFFECTS);
+		float pr = ExMotion.spring("sp" + k, pressed || ExMotion.held(x, y, w, h) ? 1f : 0f, ExMotion.EFFECTS_FAST);
+		float a = 0.08f * Math.max(0f, hv) + 0.04f * Math.max(0f, pr);
 		if (a > 0.004f) {
-			rounded(graphics, x, y, w, h, r, ExColors.alpha(on, a));
+			rounded(graphics, x, y, w, h, r, ExColors.alpha(on, Math.min(0.16f, a)));
 		}
+		ripple(graphics, x, y, w, h, r, on);
+	}
+
+	/** A spring key for a control by where it sits. */
+	static String key(float x, float y, float w, float h) {
+		return Math.round(x) + "," + Math.round(y) + "," + Math.round(w) + "," + Math.round(h);
+	}
+
+	/**
+	 * The press ripple, kept inside the shape: the part of its circle's square that lies in the
+	 * control, rounded like a circle until it reaches the edges and like the control once it does.
+	 */
+	public static void ripple(GuiGraphicsExtractor graphics, float x, float y, float w, float h, float r, int on) {
+		float[] rp = ExMotion.ripple(x, y, w, h);
+		if (rp == null || rp[2] < 0.5f || rp[3] < 0.004f) {
+			return;
+		}
+		float x0 = Math.max(x, rp[0] - rp[2]);
+		float y0 = Math.max(y, rp[1] - rp[2]);
+		float x1 = Math.min(x + w, rp[0] + rp[2]);
+		float y1 = Math.min(y + h, rp[1] + rp[2]);
+		float iw = x1 - x0;
+		float ih = y1 - y0;
+		if (iw <= 0f || ih <= 0f) {
+			return;
+		}
+		boolean edge = x0 <= x + 0.01f || y0 <= y + 0.01f || x1 >= x + w - 0.01f || y1 >= y + h - 0.01f;
+		float half = Math.min(iw, ih) * 0.5f;
+		// A circle while it is inside the control; the control's own corners once it meets an edge.
+		float rr = edge ? Math.min(half, Math.max(r, half * 0.6f)) : half;
+		rounded(graphics, x0, y0, iw, ih, rr, ExColors.alpha(on, rp[3]));
 	}
 
 	// ------------------------------------------------------------------ controls
@@ -106,27 +142,34 @@ public final class ExLook {
 	public static void toggle(GuiGraphicsExtractor graphics, float x, float y, float s, float t, boolean hover) {
 		float w = 36f * s;
 		float h = 22f * s;
-		int track = lerp(ExColors.surfaceHighest, ExColors.primary, t);
+		// t may overshoot a little (the spatial spring): the thumb bounces, colours stay in range.
+		float tc = Math.max(0f, Math.min(1f, t));
+		String k = "tg" + key(x, y, w, h);
+		float hv = ExMotion.spring(k + "h", hover ? 1f : 0f, ExMotion.EFFECTS);
+		float pr = ExMotion.spring(k + "p", ExMotion.held(x - 4f * s, y - 4f * s, w + 8f * s, h + 8f * s) ? 1f : 0f, ExMotion.SPATIAL_FAST);
+		int track = lerp(ExColors.surfaceHighest, ExColors.primary, tc);
 		rounded(graphics, x, y, w, h, h * 0.5f, track);
-		if (t < 0.999f) {
+		if (tc < 0.999f) {
 			float ring = 2f * s;
-			int edge = ExColors.alpha(ExColors.outline, 1f - t);
+			int edge = ExColors.alpha(ExColors.outline, 1f - tc);
 			outlineRound(graphics, x, y, w, h, h * 0.5f, ring, edge, track);
 		}
-		float off = (hover ? 12f : 10f) * s;
-		float on = 16f * s;
-		float size = off + (on - off) * t;
+		// The thumb: small when off, bigger when on, bigger still while hovered and held (Material's 28 dp press).
+		float off = (10f + 2f * hv) * s;
+		float on = (16f + 1f * hv) * s;
+		float size = off + (on - off) * tc + (19f * s - (off + (on - off) * tc)) * Math.max(0f, pr);
 		float pad = (h - size) * 0.5f;
 		float left = x + 6f * s - (off - 10f * s) * 0.5f;
 		float right = x + w - pad - size;
 		float tx = left + (right - left) * t;
-		int thumb = lerp(ExColors.outline, ExColors.onPrimary, t);
-		if (hover) {
-			GuiDraw.circle(graphics, tx + size * 0.5f, y + h * 0.5f, 14f * s, ExColors.alpha(t > 0.5f ? ExColors.primary : ExColors.onSurface, 0.10f));
+		int thumb = lerp(ExColors.outline, ExColors.onPrimary, tc);
+		float halo = Math.max(hv, Math.max(0f, pr));
+		if (halo > 0.01f) {
+			GuiDraw.circle(graphics, tx + size * 0.5f, y + h * 0.5f, (12f + 2f * halo) * s, ExColors.alpha(tc > 0.5f ? ExColors.primary : ExColors.onSurface, (0.08f + 0.04f * Math.max(0f, pr)) * halo));
 		}
 		rounded(graphics, tx, y + pad, size, size, size * 0.5f, thumb);
-		if (t > 0.35f) {
-			int check = ExColors.alpha(ExColors.primary, Math.min(1f, (t - 0.35f) / 0.5f));
+		if (tc > 0.35f) {
+			int check = ExColors.alpha(ExColors.primary, Math.min(1f, (tc - 0.35f) / 0.5f));
 			float cx = tx + size * 0.5f;
 			float cy = y + h * 0.5f;
 			float u = size / 16f;
@@ -151,8 +194,12 @@ public final class ExLook {
 	public static void slider(GuiGraphicsExtractor graphics, float x, float y, float w, float t, boolean hover, float s) {
 		t = Math.max(0f, Math.min(1f, t));
 		float th = 12f * s;
-		float hh = (hover ? 22f : 20f) * s;
-		float hw = (hover ? 4f : 3f) * s;
+		String k = "sl" + key(x, y, w, 20f * s);
+		float hv = ExMotion.spring(k + "h", hover ? 1f : 0f, ExMotion.EFFECTS);
+		float pr = ExMotion.spring(k + "p", ExMotion.held(x - 6f * s, y - 4f * s, w + 12f * s, 28f * s) ? 1f : 0f, ExMotion.SPATIAL_FAST);
+		// The handle: taller on hover, narrower while dragged, as Material's does.
+		float hh = (20f + 2f * hv + 2f * Math.max(0f, pr)) * s;
+		float hw = Math.max(1.5f * s, (3f + 1f * hv - 1.5f * pr) * s);
 		float gap = 3f * s;
 		float ty = y + (20f * s - th) * 0.5f;
 		float hx = x + (w - hw) * t;
@@ -177,13 +224,18 @@ public final class ExLook {
 	public static void segment(GuiGraphicsExtractor graphics, float x, float y, float w, float h, boolean first, boolean last, boolean picked, float hover) {
 		float big = h * 0.5f;
 		float small = Math.min(6f, h * 0.25f);
-		float left = picked || first ? big : small;
-		float right = picked || last ? big : small;
-		int fill = picked ? ExColors.primary : ExColors.surfaceHighest;
+		// Picking morphs the corners to a pill and fills it (the spatial spring rounds a bit past).
+		float pk = ExMotion.spring("sg" + key(x, y, w, h), picked ? 1f : 0f, ExMotion.SPATIAL_FAST);
+		float pc = Math.max(0f, Math.min(1f, pk));
+		float left = first ? big : Math.min(big, small + (big - small) * Math.max(0f, pk));
+		float right = last ? big : Math.min(big, small + (big - small) * Math.max(0f, pk));
+		int fill = lerp(ExColors.surfaceHighest, ExColors.primary, pc);
 		sides(graphics, x, y, w, h, left, right, fill);
-		if (hover > 0.01f && !picked) {
-			sidesState(graphics, x, y, w, h, left, right, hover);
+		float hv = ExMotion.spring("sgh" + key(x, y, w, h), hover, ExMotion.EFFECTS) * (1f - pc);
+		if (hv > 0.01f) {
+			sidesState(graphics, x, y, w, h, left, right, hv);
 		}
+		ripple(graphics, x, y, w, h, Math.min(left, right), picked ? ExColors.onPrimary : ExColors.onSurface);
 	}
 
 	private static void sidesState(GuiGraphicsExtractor graphics, float x, float y, float w, float h, float left, float right, float hover) {
@@ -193,20 +245,23 @@ public final class ExLook {
 	/** A filter / input chip: picked ones are secondary container with a check, the rest outlined. */
 	public static void chip(GuiGraphicsExtractor graphics, float x, float y, float w, float h, boolean picked, float hover) {
 		float r = Math.min(8f, h * 0.5f);
-		if (picked) {
-			rounded(graphics, x, y, w, h, r, ExColors.secondaryContainer);
-		} else {
-			outlineRound(graphics, x, y, w, h, r, Math.max(0.5f, h / 32f), ExColors.outlineVariant, ExColors.surfaceMid);
+		float pk = Math.max(0f, Math.min(1f, ExMotion.spring("ch" + Math.round(y) + "," + Math.round(h) + "," + Math.round(x / 4f), picked ? 1f : 0f, ExMotion.EFFECTS)));
+		if (pk < 0.999f) {
+			outlineRound(graphics, x, y, w, h, r, Math.max(0.5f, h / 32f), ExColors.alpha(ExColors.outlineVariant, 1f - pk), ExColors.surfaceMid);
+		}
+		if (pk > 0.001f) {
+			rounded(graphics, x, y, w, h, r, ExColors.alpha(ExColors.secondaryContainer, pk));
 		}
 		state(graphics, x, y, w, h, r, hover, false, picked ? ExColors.onSecondaryContainer : ExColors.onSurface);
 	}
 
 	/** A filled or tonal button (pill). */
 	public static void button(GuiGraphicsExtractor graphics, float x, float y, float w, float h, boolean filled, float hover, boolean pressed) {
-		float r = h * 0.5f;
-		if (pressed) {
-			r = Math.min(r, Math.max(6f, h * 0.3f));
-		}
+		// Expressive buttons squash their corners while pressed and spring back.
+		float pr = ExMotion.spring("bt" + key(x, y, w, h), pressed || ExMotion.held(x, y, w, h) ? 1f : 0f, ExMotion.SPATIAL_FAST);
+		float full = h * 0.5f;
+		float squashed = Math.min(full, Math.max(6f, h * 0.3f));
+		float r = Math.max(2f, Math.min(full, full + (squashed - full) * pr));
 		rounded(graphics, x, y, w, h, r, filled ? ExColors.primary : ExColors.secondaryContainer);
 		state(graphics, x, y, w, h, r, hover, pressed, filled ? ExColors.onPrimary : ExColors.onSecondaryContainer);
 	}
@@ -216,9 +271,12 @@ public final class ExLook {
 		float r = Math.min(10f, h * 0.35f);
 		rounded(graphics, x, y, w, h, r, ExColors.surfaceHighest);
 		state(graphics, x, y, w, h, r, hover, false, ExColors.onSurface);
-		if (focused) {
+		// The focus line grows out from the middle.
+		float f = Math.max(0f, Math.min(1f, ExMotion.spring("fd" + key(x, y, w, h), focused ? 1f : 0f, ExMotion.SPATIAL)));
+		if (f > 0.01f) {
 			float line = Math.max(1.5f, h / 14f);
-			if (GuiDraw.scissor(graphics, x, y + h - line, w, line + 1)) {
+			float lw = w * f;
+			if (GuiDraw.scissor(graphics, x + (w - lw) * 0.5f, y + h - line, lw, line + 1)) {
 				rounded(graphics, x, y, w, h, r, ExColors.primary);
 				GuiDraw.disableScissor(graphics);
 			}
@@ -228,9 +286,10 @@ public final class ExLook {
 	/** A colour swatch: a rounded square, checkered under see-through colours, ringed when picked. */
 	public static void swatch(GuiGraphicsExtractor graphics, float x, float y, float size, int argb, boolean picked) {
 		float r = Math.max(3f, size / 3f);
-		if (picked) {
-			float g = Math.max(2f, size / 10f);
-			rounded(graphics, x - g * 2f, y - g * 2f, size + g * 4f, size + g * 4f, r + g * 2f, ExColors.primary);
+		float pk = ExMotion.spring("sw" + key(x, y, size, size), picked ? 1f : 0f, ExMotion.SPATIAL_FAST);
+		if (pk > 0.01f) {
+			float g = Math.max(2f, size / 10f) * Math.max(0f, pk);
+			rounded(graphics, x - g * 2f, y - g * 2f, size + g * 4f, size + g * 4f, r + g * 2f, ExColors.alpha(ExColors.primary, Math.min(1f, pk)));
 			rounded(graphics, x - g, y - g, size + g * 2f, size + g * 2f, r + g, ExColors.surfaceHigh);
 		}
 		if ((argb >>> 24) < 250) {
@@ -262,11 +321,12 @@ public final class ExLook {
 		if (value == null || value.isEmpty() || (color >>> 24) < 4) {
 			return;
 		}
-		color = GuiDraw.fade(color);
 		if (UidText.ready()) {
+			// UidText fades by the screen's alpha itself (fading here too made text lag its card).
 			UidText.draw(graphics, family, value, x, y, color, textScale);
 			return;
 		}
+		color = GuiDraw.fade(color);
 		float em = UidText.em(family);
 		var comp = family == TITLE || family == HEADLINE || family == BOLD ? MenuFont.shadowTitle(value) : MenuFont.shadow(value);
 		GuiDraw.text(graphics, font, comp, x, y, em / 9f, color, false);

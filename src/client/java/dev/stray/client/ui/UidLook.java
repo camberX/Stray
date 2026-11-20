@@ -428,6 +428,13 @@ public final class UidLook {
 		return in;
 	}
 
+	/** The colour strip's height under {@link #frame} right now (0 when it is turned off). */
+	public static float stripHeight(GuiGraphicsExtractor graphics) {
+		StrayConfig config = StrayConfig.get();
+		boolean bar = config != null && (dev.stray.client.render.HudChrome.shadowInk() ? config.uidBarHud : config.uidBarScreens);
+		return bar ? 2f * GuiDraw.pixel() / GuiDraw.poseScale(graphics) * dev.stray.client.render.WatermarkRenderer.uidBarPx() : 0f;
+	}
+
 	/** How far in the banded edge reaches, without drawing (for laying out the inside). */
 	public static float frameInset(GuiGraphicsExtractor graphics) {
 		float p = GuiDraw.pixel() / GuiDraw.poseScale(graphics);
