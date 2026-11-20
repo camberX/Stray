@@ -474,11 +474,11 @@ public final class RunSplits {
 	 */
 	private static final Map<String, Map<String, Long>> OPTIMAL = Map.of(
 		"F7", Map.of(
-			"Blood Open", 6_800L, "Blood Clear", 48_300L, "Portal Entry", 3_170L,
+			"Blood Open", 0L, "Blood Clear", 48_300L, "Portal Entry", 3_170L,
 			"Maxor", 13_740L, "Storm", 43_130L, "Terminals", 25_270L, "Goldor", 6_580L, "Necron", 23_760L,
 			"Cleared", 0L),
 		"M7", Map.of(
-			"Blood Open", 6_800L, "Blood Clear", 48_300L, "Portal Entry", 3_170L,
+			"Blood Open", 0L, "Blood Clear", 48_300L, "Portal Entry", 3_170L,
 			"Maxor", 13_740L, "Storm", 43_130L, "Terminals", 25_270L, "Goldor", 6_580L, "Necron", 23_760L,
 			"Cleared", 27_170L)
 	);
