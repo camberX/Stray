@@ -446,17 +446,19 @@ public final class PanelMenu {
 				float barH = (ROW_H - 6f) * ExMotion.spring("pn-bar/" + key, on ? 1f : 0f, ExMotion.SPATIAL_FAST);
 				GuiDraw.fillSmooth(graphics, x, y + (ROW_H - Math.max(0f, barH)) * 0.5f, 1.5f, Math.max(0f, barH), PanelLook.accent());
 			}
+			// Text dims through its colour, not alphaScale, so only fades go through the text curve.
+			GuiDraw.alphaScale = was;
 			String chip = row.item() == null ? null : row.item().chip();
 			float chipW = 0f;
 			if (chip != null && !chip.isEmpty()) {
 				Component c = MenuFont.shadowSmall("[" + UidMenu.keyText(chip).toLowerCase(Locale.ROOT) + "]");
 				chipW = GuiDraw.width(font, c) + 6f;
-				GuiDraw.text(graphics, font, c, x + w - chipW + 2f, GuiDraw.middle(y, ROW_H) + 0.5f, PanelLook.GREY, false);
+				GuiDraw.text(graphics, font, c, x + w - chipW + 2f, GuiDraw.middle(y, ROW_H) + 0.5f, dimmed(PanelLook.GREY, dim), false);
 			}
 			Component label = MenuFont.shadow(fit(font, ClickGui.display(row.label()), w - 12f - chipW));
 			int ink = PanelLook.lerp(PanelLook.lerp(PanelLook.GREY, 0xFFD4D4D4, hoverT), PanelLook.WHITE, onT);
 			float nudge = 1.5f * ExMotion.spring("pn-nudge/" + key, hover ? 1f : 0f, ExMotion.SPATIAL_FAST);
-			GuiDraw.text(graphics, font, label, x + 6f + nudge, GuiDraw.middle(y, ROW_H), ink, false);
+			GuiDraw.text(graphics, font, label, x + 6f + nudge, GuiDraw.middle(y, ROW_H), dimmed(ink, dim), false);
 			float under = ExMotion.spring("pn-under/" + key, !query.isEmpty() && !dim ? 1f : 0f, ExMotion.SPATIAL);
 			if (under > 0.01f) {
 				GuiDraw.fillSmooth(graphics, x + 6f + nudge, y + ROW_H - 2.5f, Math.max(0f, Math.min(GuiDraw.width(font, label), w - 12f) * Math.min(1f, under)), 1f, PanelLook.accent());
@@ -466,6 +468,10 @@ public final class PanelMenu {
 		}
 		spots.add(new Spot(x, y, w, ROW_H, row));
 		screen.clickHit(x, y, w, ROW_H, () -> leftClick(row));
+	}
+
+	private static int dimmed(int color, boolean dim) {
+		return dim ? Theme.withAlpha(color, Math.round(((color >>> 24) & 0xFF) * 0.45f)) : color;
 	}
 
 	private static void leftClick(Row row) {

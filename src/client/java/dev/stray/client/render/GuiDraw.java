@@ -623,7 +623,15 @@ public final class GuiDraw {
 		// One GUI element with the shape computed per pixel. Three strips plus four corner
 		// quads made seven, and every GUI element costs an overlap search against the
 		// ones already in its layer; the HUD redraws these every frame.
-		RoundRect.fill(graphics, x, y, w, h, r, color);
+		RoundRect.fill(graphics, x, y, w, h, r, menuFade(color));
+	}
+
+	/**
+	 * The Panels menu fades everything through alphaScale, shapes included; the other looks fade
+	 * their rounded shapes in the colour they pass, so theirs are left as they are.
+	 */
+	private static int menuFade(int color) {
+		return dev.stray.client.ui.PanelMenu.drawing() ? fade(color) : color;
 	}
 
 	private static final Identifier WHITE = Stray.id("textures/gui/white.png");
@@ -773,6 +781,7 @@ public final class GuiDraw {
 			fillSmooth(graphics, x + w - px, y + px, px, h - 2f * px, color);
 			return;
 		}
+		color = menuFade(color);
 		boolean ok = sdfCorner(graphics, x, y, r, 0, color, true)
 			&& sdfCorner(graphics, x + w - r, y, r, 1, color, true)
 			&& sdfCorner(graphics, x + w - r, y + h - r, r, 2, color, true)
