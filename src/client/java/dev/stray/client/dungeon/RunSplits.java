@@ -431,12 +431,9 @@ public final class RunSplits {
 		Best best = bests().get(floorKey());
 		StrayConfig config = StrayConfig.get();
 		List<Row> all = segments();
-		// The lag column shows once a row is done (none at the very start, like the reference).
-		boolean anyDone = false;
-		for (Row row : all) {
-			anyDone |= row.end > 0L;
-		}
-		boolean lag = anyDone;
+		// The lag column shows on every row for the whole run: live for the open row, +0.00 for
+		// rows not reached yet.
+		boolean lag = true;
 		List<Line> out = new ArrayList<>();
 		out.add(row("§a", bloodOpen, now, lag));
 		out.add(row("§b", bloodClear, now, lag));
