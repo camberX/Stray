@@ -40,8 +40,8 @@ import java.util.regex.Pattern;
  * spawn / kill times, the Spirit Bow, mob kills and overkill, the mobs in the arena, the
  * bear particle trail prediction, and the cgm4 / M4Miku practice islands.
  *
- * <p>A server tick is a {@code ClientboundPingPacket} with a non-zero id, as in Odin, which
- * BirdAddon is built on. Packets are handled on the render thread, before vanilla's own
+ * <p>Server ticks come from {@link dev.stray.client.net.ServerTicks}: a {@code ClientboundPingPacket}
+ * with a non-zero id that arrived on its own, as in Odin, which BirdAddon is built on. Packets are handled on the render thread, before vanilla's own
  * handling of the same packet.
  */
 public final class M4 {

@@ -98,8 +98,8 @@ public final class RunSplits {
 	}
 
 	/**
-	 * Server ticks: Hypixel pings once a tick (ClientboundPingPacket with a non-zero id), which is
-	 * how NoammAddons counts them. Real time minus tick time is the time the server lagged.
+	 * Server ticks from {@link dev.stray.client.net.ServerTicks}, counted like NoammAddons. Real time
+	 * minus tick time is the time the server lagged.
 	 */
 	private static long serverTicks;
 

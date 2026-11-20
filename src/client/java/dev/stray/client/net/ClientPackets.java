@@ -24,13 +24,8 @@ public final class ClientPackets {
 	 */
 	private static void m4(Packet<?> packet) {
 		Minecraft client = Minecraft.getInstance();
-		if (packet instanceof net.minecraft.network.protocol.common.ClientboundPingPacket ping) {
-			// Hypixel pings every server tick; Odin (BirdAddon's base) counts ticks the same way.
-			if (ping.getId() != 0) {
-				client.execute(dev.stray.client.dungeon.m4.M4::serverTick);
-				client.execute(dev.stray.client.dungeon.RunSplits::serverTick);
-			}
-		} else if (packet instanceof net.minecraft.network.protocol.game.ClientboundEntityEventPacket event) {
+		// Server ticks for M4 and run splits come from ServerTicks (top-level packets only).
+		if (packet instanceof net.minecraft.network.protocol.game.ClientboundEntityEventPacket event) {
 			if (event.getEventId() == 3) {
 				client.execute(() -> {
 					if (client.level != null) {
@@ -62,10 +57,18 @@ public final class ClientPackets {
 		}
 	}
 
+	/** Every packet as it arrives (from {@code Connection.channelRead0}). */
 	public static void onReceived(Packet<?> packet) {
+		// Server ticks see the packet as it arrived, like NoammAddons: a ping inside a bundle is
+		// not a tick of its own.
+		ServerTicks.onPacket(packet);
+		dispatch(packet);
+	}
+
+	private static void dispatch(Packet<?> packet) {
 		if (packet instanceof BundlePacket<?> bundle) {
 			for (Packet<?> inner : bundle.subPackets()) {
-				onReceived(inner);
+				dispatch(inner);
 			}
 			return;
 		}
