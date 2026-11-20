@@ -178,7 +178,7 @@ public final class WatermarkRenderer {
 	}
 
 
-	// ---- Panels: a flat grey box, "stray" in the accent, the stats in white and grey with
+	// ---- Panels: a flat grey box, "stray" in the accent, the stats in white with
 	// one-pixel rules between them.
 
 	private static final float PN_PAD = 7f;
@@ -207,7 +207,7 @@ public final class WatermarkRenderer {
 			Component text = MenuFont.shadow(parts.get(i));
 			GuiDraw.fillSmooth(graphics, x + PN_GAP * 0.5f - 0.5f, 5f, 1f, HEIGHT - 10f, dev.stray.client.ui.PanelLook.EDGE);
 			x += PN_GAP;
-			GuiDraw.text(graphics, font, text, x, textY, i == 0 ? 0xFFFFFFFF : dev.stray.client.ui.PanelLook.GREY, false);
+			GuiDraw.text(graphics, font, text, x, textY, 0xFFFFFFFF, false);
 			x += stableWidth(font, text, i < PART_KEYS.length ? PART_KEYS[i] : "shadow:" + i);
 		}
 	}
