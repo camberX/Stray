@@ -35,7 +35,7 @@ public final class UidText {
 	private static final float GAMMA = 1.3f;
 	private static final int[] LUT = new int[256];
 	private static long library;
-	private static final Face[] FACES = new Face[4];
+	private static final Face[] FACES = new Face[6];
 	private static boolean failed;
 
 	static {
@@ -85,7 +85,7 @@ public final class UidText {
 				return false;
 			}
 			library = lib.get(0);
-			String[] files = {"uid_sans.ttf", "uid_sans_bold.ttf", "ex_medium.ttf", "ex_bold.ttf"};
+			String[] files = {"uid_sans.ttf", "uid_sans_bold.ttf", "ex_medium.ttf", "ex_bold.ttf", "googlesansflex_medium.ttf", "googlesansflex_bold.ttf"};
 			for (int i = 0; i < files.length; i++) {
 				Face f = new Face();
 				try (InputStream in = UidText.class.getResourceAsStream("/assets/stray/font/" + files[i])) {
@@ -126,12 +126,21 @@ public final class UidText {
 			case 8 -> 1;
 			case 20, 22 -> 2;
 			case 21, 23, 24 -> 3;
+			case 30, 31, 32 -> 4;
+			case 33 -> 5;
 			default -> 0;
 		};
 	}
 
 	/** The family's size in units. */
 	public static float em(int family) {
+		if (family >= 30) {
+			// Panels: Google Sans Flex at the sizes Shadow's fonts give the game (which are line
+			// heights, ascender to descender, not em sizes).
+			float height = family == 31 ? 5.5f : family == 32 ? 8f : 6.5f;
+			FT_Face f = FACES[face(family)].face;
+			return height * f.units_per_EM() / Math.max(1f, f.ascender() - f.descender());
+		}
 		return switch (family) {
 			case 20, 21 -> 13f;
 			case 22 -> 11f;
@@ -221,6 +230,22 @@ public final class UidText {
 		return g;
 	}
 
+	/** True when the family's face has every character of {@code text} (else draw it the game's way). */
+	public static boolean covers(int family, String text) {
+		if (!ready() || text == null) {
+			return false;
+		}
+		FT_Face face = FACES[face(family)].face;
+		for (int i = 0; i < text.length(); ) {
+			int cp = text.codePointAt(i);
+			i += Character.charCount(cp);
+			if (cp != ' ' && FreeType.FT_Get_Char_Index(face, cp) == 0) {
+				return false;
+			}
+		}
+		return true;
+	}
+
 	/** Width in menu units. */
 	public static float width(int family, String text) {
 		return width(family, text, dpi());
@@ -265,8 +290,25 @@ public final class UidText {
 		Minecraft client = Minecraft.getInstance();
 		double gui = client.getWindow().getGuiScale();
 		Vector2f origin = graphics.pose().transformPosition(x, y + baseline(family), new Vector2f());
-		int penX = (int) Math.round(origin.x * gui);
-		int baseline = (int) Math.round(origin.y * gui);
+		emit(graphics, fam, a, text, (int) Math.round(origin.x * gui), (int) Math.round(origin.y * gui), color, gui);
+	}
+
+	/**
+	 * Draws with the capitals centred on {@code midY} (pose units), rasterized for {@code scale}
+	 * screen pixels per pose unit: the Panels menu's text, sharp at any menu scale.
+	 */
+	public static void drawMid(GuiGraphicsExtractor graphics, int family, String text, float x, float midY, int color, double scale) {
+		if (text == null || text.isEmpty() || !ready()) {
+			return;
+		}
+		Atlas a = atlas(family, scale);
+		double gui = Minecraft.getInstance().getWindow().getGuiScale();
+		Vector2f origin = graphics.pose().transformPosition(x, midY, new Vector2f());
+		int cap = glyph(family, a, 'H').top;
+		emit(graphics, family, a, text, (int) Math.round(origin.x * gui), (int) Math.round(origin.y * gui + cap / 2.0), color, gui);
+	}
+
+	private static void emit(GuiGraphicsExtractor graphics, int fam, Atlas a, String text, int penX, int baseline, int color, double gui) {
 		// Collect first so newly rasterized glyphs are uploaded before they're drawn.
 		int n = text.codePointCount(0, text.length());
 		Glyph[] glyphs = new Glyph[n];

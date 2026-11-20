@@ -153,7 +153,7 @@ public final class ClickGui {
 
 	/** The next row's y: uid? rows have their own heights, the other styles step by a row. */
 	private static float next(float drawn, float y) {
-		return UidMenu.drawing() || ExpressiveMenu.drawing() ? drawn : y + stride();
+		return UidMenu.drawing() || ExpressiveMenu.drawing() || PanelMenu.drawing() ? drawn : y + stride();
 	}
 
 	public static List<String> enabledLabels() {
@@ -206,7 +206,7 @@ public final class ClickGui {
 	private static void drawHud(StrayScreen screen, GuiGraphicsExtractor graphics, Font font, float x, float y, float w) {
 		StrayConfig config = StrayConfig.get();
 		int look = Looks.index();
-		y = UidMenu.drawing() || ExpressiveMenu.drawing()
+		y = UidMenu.drawing() || ExpressiveMenu.drawing() || PanelMenu.drawing()
 			? screen.clickDropdown(graphics, font, x, y, w, "theme", "Theme", Looks.LABELS, look, i -> Looks.set(Looks.ALL[i]))
 			: next(screen.clickCycle(graphics, font, x, y, w, "Theme", () -> Looks.LABELS[Looks.index()], () -> Looks.set(Looks.ALL[(Looks.index() + 1) % Looks.ALL.length])), y);
 		if (Looks.uid()) {
@@ -633,7 +633,7 @@ public final class ClickGui {
 		java.util.Map.entry("Paths", "Record and show walking paths."),
 		java.util.Map.entry("Movement rings", "Movement guide rings (unfinished)."),
 		java.util.Map.entry("Accent", "The accent colour, and the opacity and blur of every Shadow panel."),
-		java.util.Map.entry(HUD_LOOK, "The theme (Shadow, uid?, Expressive), its own settings and the HUD editor."),
+		java.util.Map.entry(HUD_LOOK, "The theme (Shadow, uid?, Expressive, Panels), its own settings and the HUD editor."),
 		java.util.Map.entry("Auto update", "Updates Stray by itself."),
 		java.util.Map.entry("Auto close", "Closes the game after updating."),
 		java.util.Map.entry("Update notify", "Tells you when an update is out."),

@@ -239,6 +239,26 @@ public final class MenuFont {
 
 	/** uid?: DejaVu Sans at 9 px, the stand-in for Verdana 9. */
 	/** 7 for uid?'s regular face, 8 for its bold one, -1 for anything else (one plain run only). */
+	/**
+	 * The Panels menu's FreeType family for one plain run of Shadow's text (body, small, title,
+	 * bold), or -1: drawn by {@link UidText} so it lands 1:1 on screen pixels at any menu scale.
+	 */
+	public static int panelFamily(Component value) {
+		if (value == null || !value.getSiblings().isEmpty()) {
+			return -1;
+		}
+		Integer family = FAMILY.get(value.getStyle().getFont());
+		if (family == null) {
+			return -1;
+		}
+		int out = family == 4 ? 30 : family == 5 ? 31 : family == 6 ? 32 : family == 16 ? 33 : -1;
+		if (out == 30 && value.getStyle().isBold()) {
+			out = 33;
+		}
+		String text = value.getString();
+		return out > 0 && text.indexOf('\u00A7') < 0 && UidText.covers(out, text) ? out : -1;
+	}
+
 	public static int uidFamily(Component value) {
 		if (value == null || !value.getSiblings().isEmpty()) {
 			return -1;

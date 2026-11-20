@@ -1163,6 +1163,14 @@ public final class GuiDraw {
 	}
 
 	public static void text(GuiGraphicsExtractor graphics, Font font, Component value, float x, float y, int color, boolean shadow) {
+		if (dev.stray.client.ui.PanelMenu.drawing() && !shadow && (color >>> 24) >= 4) {
+			int family = MenuFont.panelFamily(value);
+			if (family > 0) {
+				// Panels: FreeType at the exact pixel size, every glyph 1:1 on screen pixels.
+				dev.stray.client.ui.UidText.drawMid(graphics, family, value.getString(), x, y + 4.5f, color, panelScale(graphics));
+				return;
+			}
+		}
 		if (dev.stray.client.ui.UidMenu.drawing() && !shadow) {
 			// uid?: onto whole screen pixels, not whole menu units (those blur at 125 %).
 			dev.stray.client.ui.UidLook.drawSnapped(graphics, font, value, x, y, color);
@@ -1306,7 +1314,29 @@ public final class GuiDraw {
 		return iconWidth(font, glyph) * scale;
 	}
 
+	private static double panelScale(GuiGraphicsExtractor graphics) {
+		Minecraft client = Minecraft.getInstance();
+		double gui = client.getWindow() == null ? 2.0 : client.getWindow().getGuiScale();
+		return gui * poseScale(graphics);
+	}
+
+	/** Text width in the current units: Panels' FreeType text while that menu draws, else the font's. */
+	public static float width(Font font, Component value) {
+		if (dev.stray.client.ui.PanelMenu.drawing()) {
+			int family = MenuFont.panelFamily(value);
+			if (family > 0) {
+				Minecraft client = Minecraft.getInstance();
+				double gui = client.getWindow() == null ? 2.0 : client.getWindow().getGuiScale();
+				return dev.stray.client.ui.UidText.width(family, value.getString(), gui * dev.stray.client.ui.PanelMenu.scale());
+			}
+		}
+		return font.width(value);
+	}
+
 	public static int menuWidth(Font font, String value) {
+		if (dev.stray.client.ui.PanelMenu.drawing()) {
+			return (int) Math.ceil(width(font, MenuFont.shadow(value)));
+		}
 		if (dev.stray.client.ui.ExpressiveMenu.drawing()) {
 			return (int) Math.ceil(dev.stray.client.ui.ExLook.width(font, dev.stray.client.ui.ExLook.BODY, value));
 		}
@@ -1320,6 +1350,9 @@ public final class GuiDraw {
 	}
 
 	public static int smallWidth(Font font, String value) {
+		if (dev.stray.client.ui.PanelMenu.drawing()) {
+			return (int) Math.ceil(width(font, MenuFont.shadowSmall(value)));
+		}
 		if (dev.stray.client.ui.ExpressiveMenu.drawing()) {
 			return (int) Math.ceil(dev.stray.client.ui.ExLook.width(font, dev.stray.client.ui.ExLook.SMALL, value));
 		}
@@ -1327,6 +1360,9 @@ public final class GuiDraw {
 	}
 
 	public static int titleWidth(Font font, String value) {
+		if (dev.stray.client.ui.PanelMenu.drawing()) {
+			return (int) Math.ceil(width(font, MenuFont.shadowTitle(value)));
+		}
 		if (dev.stray.client.ui.ExpressiveMenu.drawing()) {
 			return (int) Math.ceil(dev.stray.client.ui.ExLook.width(font, dev.stray.client.ui.ExLook.BOLD, value));
 		}

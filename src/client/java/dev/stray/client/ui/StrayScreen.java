@@ -4687,6 +4687,35 @@ public class StrayScreen extends Screen {
 		if (UidMenu.drawing()) {
 			return uidCycle(graphics, font, x, y, w, mouseX, mouseY, label, current, next);
 		}
+		if (PanelMenu.drawing()) {
+			// Panels: never a value that steps on click; the choices open as a dropdown. They're
+			// found once, the first time it opens, by stepping through them back to the start.
+			String key = "pcyc/" + fieldScope + "/" + label;
+			String now = current.get();
+			String[] options = uidCycleOptions.get(key);
+			if (options == null && key.equals(dropdownOpen)) {
+				options = uidProbe(current, next);
+				if (options == null) {
+					dropdownOpen = null;
+				} else {
+					uidCycleOptions.put(key, options);
+				}
+			}
+			String[] shown = options != null ? options : new String[] {now};
+			int selected = java.util.Arrays.asList(shown).indexOf(now);
+			String[] finalOptions = shown;
+			return dropdown(graphics, font, x, y, w, mouseX, mouseY, key, label, shown, Math.max(0, selected), index -> {
+				if (finalOptions.length < 2) {
+					return;
+				}
+				int from = java.util.Arrays.asList(finalOptions).indexOf(current.get());
+				int steps = Math.floorMod(index - Math.max(0, from), finalOptions.length);
+				for (int i = 0; i < steps; i++) {
+					next.run();
+				}
+				UnloadState.markDirty();
+			});
+		}
 		String value = current.get();
 		float row = rowH();
 		boolean hovered = GuiDraw.hovered(mouseX, mouseY, x, y, w, row);
