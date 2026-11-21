@@ -58,9 +58,6 @@ public final class Theme {
 	}
 
 	public static void refresh() {
-		if (Looks.ex()) {
-			ExColors.refresh();
-		}
 		ShadowLook.look();
 		int accent = StrayConfig.get().themeAccentRgb & 0xFFFFFF;
 		int pane = StrayConfig.get().themePaneRgb & 0xFFFFFF;
@@ -159,34 +156,6 @@ public final class Theme {
 			NAV_PILL = 0xFF282828;
 			SIDEBAR = 0xFF0C0C0C;
 			WINDOW_RADIUS = 0f;
-		} else if (Looks.ex()) {
-			ExColors.refresh();
-			float op = ExColors.opacity();
-			ACCENT = ExColors.primary;
-			ACCENT_DIM = ExColors.primaryContainer;
-			WINDOW = ExColors.alpha(ExColors.surface, op);
-			WINDOW_SOLID = ExColors.surface;
-			SHEET = ExColors.alpha(ExColors.surfaceMid, Math.max(op, 0.96f));
-			CARD = ExColors.surfaceHigh;
-			CARD_HOVER = ExColors.surfaceHighest;
-			LINE = ExColors.outlineVariant;
-			TRACK = ExColors.surfaceHighest;
-			PANEL = ExColors.surfaceLow;
-			HUD_WINDOW = ExColors.alpha(ExColors.surfaceMid, op);
-			HUD_LINE = ExColors.outlineVariant;
-			HUD_LINE_NEUTRAL = ExColors.outlineVariant;
-			HUD_TRACK = ExColors.surfaceHighest;
-			HUD_CARD = ExColors.surfaceHigh;
-			HUD_CARD_HOVER = ExColors.surfaceHighest;
-			HUD_PANEL = ExColors.surfaceLow;
-			TEXT = ExColors.onSurface;
-			MUTED = ExColors.onSurfaceVariant;
-			HEADER = ExColors.onSurface;
-			OFF = ExColors.outline;
-			NAV_PILL = ExColors.secondaryContainer;
-			SIDEBAR = ExColors.surfaceLow;
-			DANGER = ExColors.tertiary;
-			WINDOW_RADIUS = 20f;
 		} else if (Looks.minecraft()) {
 			// Minecraft: the chat box's black, square corners, the game's formatting colours.
 			ACCENT = MinecraftLook.YELLOW;

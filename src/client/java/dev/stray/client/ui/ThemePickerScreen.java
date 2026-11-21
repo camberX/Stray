@@ -54,7 +54,7 @@ public final class ThemePickerScreen extends Screen {
 
 	@Override
 	public void extractBackground(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float delta) {
-		Looks.force(Looks.SHADOW);
+		Looks.force(Looks.PANELS);
 		try {
 			TitleBackdrop.draw(graphics, width, height);
 		} finally {
@@ -77,7 +77,7 @@ public final class ThemePickerScreen extends Screen {
 		float winH = 44f + 16f + previewH + 28f + pad;
 		float winX = (width - winW) / 2f;
 		float winY = Math.max(8f, (height - winH) / 2f);
-		Looks.force(Looks.SHADOW);
+		Looks.force(Looks.PANELS);
 		try {
 			ShadowLook.window(graphics, winX, winY, winW, winH, ShadowLook.WINDOW_R, ShadowLook.FILL);
 			GuiDraw.title(graphics, font, "Pick a theme", winX + pad, winY + 12, ShadowLook.TEXT);
@@ -99,7 +99,7 @@ public final class ThemePickerScreen extends Screen {
 			boxes[i][1] = top - 4;
 			boxes[i][2] = colW + 8;
 			boxes[i][3] = 16f + previewH + 30f;
-			Looks.force(Looks.SHADOW);
+			Looks.force(Looks.PANELS);
 			try {
 				if (lift[i] > 0.02f) {
 					GuiDraw.roundedFine(graphics, cx - 4, top - 4, colW + 8, 16f + previewH + 30f, 10f, Theme.withAlpha(0xFFFFFF, Math.round(0x14 * lift[i])));
@@ -116,7 +116,7 @@ public final class ThemePickerScreen extends Screen {
 			} finally {
 				Looks.force(null);
 			}
-			Looks.force(Looks.SHADOW);
+			Looks.force(Looks.PANELS);
 			try {
 				String hint = hot ? "Use " + Looks.LABELS[i] : "";
 				float hw = GuiDraw.menuWidth(font, hint);

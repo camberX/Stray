@@ -29,9 +29,6 @@ public final class WatermarkRenderer {
 		return dev.stray.client.ui.Looks.uid();
 	}
 
-	private static boolean ex() {
-		return dev.stray.client.ui.Looks.ex();
-	}
 
 	public static float occupiedHeight() {
 		StrayConfig config = StrayConfig.get();
@@ -62,12 +59,8 @@ public final class WatermarkRenderer {
 			drawUid(graphics, scale);
 		} else if (HudChrome.win98()) {
 			drawWin98(graphics, font);
-		} else if (ex()) {
-			drawEx(graphics, font);
-		} else if (dev.stray.client.ui.Looks.panels() || dev.stray.client.ui.Looks.minecraft()) {
-			drawPanels(graphics, font);
 		} else {
-			drawShadow(graphics, font);
+			drawPanels(graphics, font);
 		}
 		graphics.pose().popMatrix();
 	}
@@ -106,12 +99,7 @@ public final class WatermarkRenderer {
 		return (float) state[0];
 	}
 
-	// ---- Shadow: a see-through black pill, "Stray" in a white pill, the stats in Google Sans Flex
-
-	private static final float SH_PAD = 3f;
-	private static final float SH_PILL = HEIGHT - SH_PAD * 2f;
-	private static final float SH_GAP = 9f;
-
+	/** The watermark's stats, in order: fps, ping, time, name (each when switched on). */
 	private static List<String> shadowParts() {
 		StrayConfig config = StrayConfig.get();
 		List<String> parts = new ArrayList<>();
@@ -130,55 +118,7 @@ public final class WatermarkRenderer {
 		return parts;
 	}
 
-	private static float shadowBrandW(Font font) {
-		return 7f + font.width(MenuFont.shadow("Stray")) + 7f;
-	}
-
-	private static float shadowWidth(Font font) {
-		float w = SH_PAD + shadowBrandW(font);
-		List<String> parts = shadowParts();
-		for (String part : parts) {
-			w += SH_GAP + stableWidth(font, MenuFont.shadow(part), "shadow:" + parts.indexOf(part));
-		}
-		return w + (parts.isEmpty() ? SH_PAD : 8f);
-	}
-
 	private static final String[] PART_KEYS = {"shadow:0", "shadow:1", "shadow:2", "shadow:3"};
-
-	/** One pass per frame: the parts are built and measured once, then laid out and drawn. */
-	private static void drawShadow(GuiGraphicsExtractor graphics, Font font) {
-		List<String> parts = shadowParts();
-		int count = parts.size();
-		Component brand = MenuFont.shadow("Stray");
-		float bw = 7f + font.width(brand) + 7f;
-		Component[] texts = new Component[count];
-		float[] widths = new float[count];
-		float w = SH_PAD + bw;
-		for (int i = 0; i < count; i++) {
-			texts[i] = MenuFont.shadow(parts.get(i));
-			widths[i] = stableWidth(font, texts[i], i < PART_KEYS.length ? PART_KEYS[i] : "shadow:" + i);
-			w += SH_GAP + widths[i];
-		}
-		w += count == 0 ? SH_PAD : 8f;
-		float r = HEIGHT * 0.5f;
-		if (HudChrome.background()) {
-			dev.stray.client.ui.ShadowLook.panel(graphics, 0, 0, w, HEIGHT, r, dev.stray.client.ui.ShadowLook.FILL);
-		}
-		GuiDraw.roundedFine(graphics, SH_PAD, SH_PAD, bw, SH_PILL, SH_PILL * 0.5f, 0xFFEEF1F5);
-		// Same font, size and baseline as the stats beside it, so it sits centred in its pill.
-		float textY = Math.round(GuiDraw.middle(0, HEIGHT));
-		GuiDraw.text(graphics, font, brand, SH_PAD + 7f, textY, 0xFF0B0E13, false);
-		float x = SH_PAD + bw;
-		for (int i = 0; i < count; i++) {
-			if (i > 0) {
-				GuiDraw.circle(graphics, x + SH_GAP * 0.5f, HEIGHT * 0.5f, 1f, 0x40FFFFFF);
-			}
-			x += SH_GAP;
-			GuiDraw.text(graphics, font, texts[i], x, textY, i == 0 ? 0xFFEEF1F5 : 0xFF9AA4AF, false);
-			x += widths[i];
-		}
-	}
-
 
 	// ---- Panels: a flat grey box, "stray" in the accent, the stats in white with
 	// one-pixel rules between them.
@@ -222,104 +162,6 @@ public final class WatermarkRenderer {
 			x += PN_GAP;
 			GuiDraw.text(graphics, font, text, x, textY, 0xFFFFFFFF, false);
 			x += stableWidth(font, text, i < PART_KEYS.length ? PART_KEYS[i] : "shadow:" + i);
-		}
-	}
-
-	// ---- Expressive: one tonal pill; "stray" on a primary pill inset at its start, then the
-	// stats as text, the numbers in the surface's text colour and their units small and muted,
-	// with a small dot between them.
-
-	private static final float EX_INSET = 2f;
-	private static final float EX_BRAND_PAD = 6f;
-	private static final float EX_GAP = 11f;
-	/** After the brand pill there is no dot, so less room. */
-	private static final float EX_FIRST = 7f;
-	private static final float EX_END = 9f;
-	private static final java.util.regex.Pattern EX_UNIT = java.util.regex.Pattern.compile("^(\\S+) (fps|ms)$");
-
-	/**
-	 * A stat split into its number and unit ("662 fps" is 662 and fps). {@code slot} is the
-	 * steady width the whole stat keeps, so the dots after it don't move as the number changes.
-	 */
-	private record ExPart(Component value, Component unit, float slot) {
-		float width() {
-			return slot;
-		}
-	}
-
-	private static List<ExPart> exParts(Font font) {
-		List<String> parts = shadowParts();
-		List<ExPart> out = new java.util.ArrayList<>(parts.size());
-		for (int i = 0; i < parts.size(); i++) {
-			String part = parts.get(i);
-			java.util.regex.Matcher m = EX_UNIT.matcher(part);
-			String key = i < PART_KEYS.length ? PART_KEYS[i] : "ex:" + i;
-			if (m.matches()) {
-				Component value = MenuFont.shadow(m.group(1));
-				Component unit = MenuFont.shadow(m.group(2));
-				// The number and its unit read as one ("3 fps"); the slot is what the widest number
-				// so far took, so a shorter one leaves room after the unit, never inside.
-				Component whole = MenuFont.shadow(m.group(1) + " " + m.group(2));
-				out.add(new ExPart(value, unit, stableWidth(font, whole, "exv:" + key)));
-			} else {
-				Component value = MenuFont.shadow(part);
-				out.add(new ExPart(value, null, stableWidth(font, value, "exv:" + key)));
-			}
-		}
-		return out;
-	}
-
-	private static float exBrandW(Font font) {
-		return EX_BRAND_PAD + font.width(MenuFont.shadowTitle("stray")) + EX_BRAND_PAD;
-	}
-
-	private static float exWidth(Font font) {
-		float w = EX_INSET + exBrandW(font);
-		List<ExPart> parts = exParts(font);
-		for (int i = 0; i < parts.size(); i++) {
-			w += (i == 0 ? EX_FIRST : EX_GAP) + parts.get(i).width();
-		}
-		return w + (parts.isEmpty() ? EX_INSET : EX_END);
-	}
-
-	private static void drawEx(GuiGraphicsExtractor graphics, Font font) {
-		List<ExPart> parts = exParts(font);
-		float h = HEIGHT;
-		float w = exWidth(font);
-		if (HudChrome.background()) {
-			dev.stray.client.ui.ShadowLook.shadow(graphics, 0, 0, w, h, h * 0.5f, 6, 0x40);
-			dev.stray.client.ui.ExLook.rounded(graphics, 0, 0, w, h, h * 0.5f,
-				dev.stray.client.ui.ExColors.alpha(dev.stray.client.ui.ExColors.surfaceMid, dev.stray.client.ui.ExColors.opacity()));
-		}
-		float bh = h - EX_INSET * 2f;
-		float bw = exBrandW(font);
-		dev.stray.client.ui.ExLook.rounded(graphics, EX_INSET, EX_INSET, bw, bh, bh * 0.5f, dev.stray.client.ui.ExColors.primary);
-		Component brand = MenuFont.shadowTitle("stray");
-		// "stray" is all lowercase: its x-height, not the font's line box, is what has to sit in the
-		// middle of the pill, which puts it a little lower; snapped to whole screen pixels.
-		float p = GuiDraw.pixel();
-		float brandY = Math.round((GuiDraw.middle(0, h) + 0.75f) / p) * p;
-		GuiDraw.text(graphics, font, brand, EX_INSET + EX_BRAND_PAD, brandY, dev.stray.client.ui.ExColors.onPrimary, false);
-		float textY = Math.round(GuiDraw.middle(0, h));
-		float x = EX_INSET + bw;
-		for (int i = 0; i < parts.size(); i++) {
-			ExPart part = parts.get(i);
-			if (i > 0) {
-				float d = 2.5f;
-				dev.stray.client.ui.ExLook.rounded(graphics, x + EX_GAP * 0.5f - d * 0.5f, (h - d) * 0.5f, d, d, d * 0.5f, dev.stray.client.ui.ExColors.outline);
-			}
-			x += i == 0 ? EX_FIRST : EX_GAP;
-			int color = dev.stray.client.ui.ExColors.onSurface;
-			if (i == 0 && part.unit() != null && parseInt(part.value().getString()) < 20) {
-				color = dev.stray.client.ui.ExColors.error;
-			}
-			// The number, a space, its unit in the same font (so they share a baseline), muted.
-			GuiDraw.text(graphics, font, part.value(), x, textY, color, false);
-			if (part.unit() != null) {
-				float ux = x + font.width(part.value()) + font.width(MenuFont.shadow(" "));
-				GuiDraw.text(graphics, font, part.unit(), ux, textY, dev.stray.client.ui.ExColors.onSurfaceVariant, false);
-			}
-			x += part.width();
 		}
 	}
 
@@ -549,7 +391,7 @@ public final class WatermarkRenderer {
 		if (tick == widthTick && widthCache > 0f && look.equals(widthLook)) {
 			return widthCache;
 		}
-		float w = uid() ? uidWidth(uidScale() * HudLayout.scale(HudLayout.Id.WATERMARK)) * (float) (uidScale() / guiScale()) : HudChrome.win98() ? win98Width(font) : ex() ? exWidth(font) : dev.stray.client.ui.Looks.panels() || dev.stray.client.ui.Looks.minecraft() ? panelsWidth(font) : shadowWidth(font);
+		float w = uid() ? uidWidth(uidScale() * HudLayout.scale(HudLayout.Id.WATERMARK)) * (float) (uidScale() / guiScale()) : HudChrome.win98() ? win98Width(font) : panelsWidth(font);
 		widthTick = tick;
 		widthCache = w;
 		widthLook = look;

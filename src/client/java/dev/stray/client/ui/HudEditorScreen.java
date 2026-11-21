@@ -162,7 +162,7 @@ public class HudEditorScreen extends Screen {
 		GuiDraw.small(graphics, font, "Background", inspectX + 8, bgY + 2, Theme.MUTED);
 		float sw = 18;
 		float sh = 10;
-		ShadowMenu.toggle(graphics, inspectX + INSPECT_W - 8 - sw, bgY + 1, sw, sh, background ? 1f : 0f, 1f);
+		ShadowLook.toggle(graphics, inspectX + INSPECT_W - 8 - sw, bgY + 1, sw, sh, background ? 1f : 0f, 1f);
 	}
 
 	private float bgY;

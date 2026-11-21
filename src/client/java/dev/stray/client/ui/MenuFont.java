@@ -42,8 +42,12 @@ public final class MenuFont {
 
 	static {
 		String[] names = {"hypr", "hypr_small", "hypr_title", "nl_icon", "shadow", "shadow_small", "shadow_title", "uid", "uid_bold", "uid_small",
-			"ex", "ex_small", "ex_title", "uidh", "uidh_small", "uidh_title", "shadow_bold", "ex_bodybold", "uidh_bold"};
+			null, null, null, "uidh", "uidh_small", "uidh_title", "shadow_bold", null, "uidh_bold"};
+		// The nulls are Expressive's old families (removed); the slots stay so the numbers after them do.
 		for (int f = 0; f < names.length; f++) {
+			if (names[f] == null) {
+				continue;
+			}
 			for (int s = 0; s < 6; s++) {
 				FontDescription desc = new FontDescription.Resource(Stray.id(names[f] + "_" + (s + 1)));
 				HYPR_SCALED[f][s] = Style.EMPTY.withFont(desc);
@@ -68,8 +72,11 @@ public final class MenuFont {
 		FAMILY.put(new FontDescription.Resource(Stray.id("uid")), 7);
 		FAMILY.put(new FontDescription.Resource(Stray.id("uid_bold")), 8);
 		FAMILY.put(new FontDescription.Resource(Stray.id("uid_small")), 9);
-		String[] looks = {"ex", "ex_small", "ex_title", "uidh", "uidh_small", "uidh_title", "shadow_bold", "ex_bodybold", "uidh_bold"};
+		String[] looks = {null, null, null, "uidh", "uidh_small", "uidh_title", "shadow_bold", null, "uidh_bold"};
 		for (int i = 0; i < looks.length; i++) {
+			if (looks[i] == null) {
+				continue;
+			}
 			FAMILY.put(new FontDescription.Resource(Stray.id(looks[i])), 10 + i);
 		}
 	}
@@ -133,26 +140,26 @@ public final class MenuFont {
 		if (UidMenu.drawing()) {
 			return 7;
 		}
-		return Looks.uid() ? 13 : Looks.ex() ? 10 : 4;
+		return Looks.uid() ? 13 : 4;
 	}
 
 	public static int smallFamily() {
 		if (UidMenu.drawing()) {
 			return 9;
 		}
-		return Looks.uid() ? 14 : Looks.ex() ? 11 : 5;
+		return Looks.uid() ? 14 : 5;
 	}
 
 	public static int titleFamily() {
 		if (UidMenu.drawing()) {
 			return 8;
 		}
-		return Looks.uid() ? 15 : Looks.ex() ? 12 : 6;
+		return Looks.uid() ? 15 : 6;
 	}
 
 	/** The real bold face for a body family (Shadow, Expressive, uid? HUD), or -1 when it has none. */
 	private static int boldOf(int family) {
-		return family == 4 ? 16 : family == 10 ? 17 : family == 13 ? 18 : -1;
+		return family == 4 ? 16 : family == 13 ? 18 : -1;
 	}
 
 	/**
@@ -209,11 +216,11 @@ public final class MenuFont {
 	}
 
 	/**
-	 * HUD overlays drawn in the game's own font (titles, timers) take the look's font in uid?
-	 * and Expressive; Shadow keeps them as they are.
+	 * HUD overlays drawn in the game's own font (titles, timers) take the look's font in Modern
+	 * and Skeet; Minecraft keeps them as they are.
 	 */
 	public static Component look(Component value) {
-		if (value == null || Looks.shadow() || Looks.minecraft()) {
+		if (value == null || Looks.minecraft()) {
 			return value;
 		}
 		net.minecraft.network.chat.FontDescription font = bodyLook().getFont();

@@ -91,30 +91,15 @@ public final class StrayConfig {
 	public boolean watermarkName = false;
 	public String watermarkStyle = "shadow";
 	/**
-	 * The look of everything Stray draws: "shadow", "uid" or "expressive" (Material 3 Expressive).
+	 * The look of everything Stray draws: "minecraft", "panels" (Modern) or "uid" (Skeet).
 	 * The menu, the HUD, Stray's screens and the vanilla menus all follow it.
 	 */
 	public String theme = "minecraft";
 	public boolean win98Dark = false;
 	/** False until the first-boot picker has been answered. */
 	public boolean themeChosen = false;
-	/** Expressive: the seed colour every Material colour role is built from. */
-	public int exSeed = 0x6750A4;
-	/** Expressive: 0 tonal, 1 vibrant, 2 expressive, 3 fidelity, 4 monochrome. */
-	public int exScheme = 0;
-	/** Expressive: contrast, 0 standard, 1 medium, 2 high. */
-	public int exContrast = 0;
-	/** Expressive: how opaque its surfaces are, 0.3 to 1. */
-	public float exOpacity = 0.94f;
-	/** Expressive: menu open / close and tab animation, ms (0 = off). */
-	public int exAnimMs = 0;
-	/** Expressive: no springs, ripples or entrances (everything jumps to its end). */
+	/** Modern and Minecraft: no springs or entrances in the menu (everything jumps to its end). */
 	public boolean exReduceMotion = false;
-	/** Expressive menu window size (0 = default), like the uid? one. */
-	public int exWidth = 0;
-	public int exHeight = 0;
-	/** Expressive: colour roles pinned to a colour of your own (role name to RGB); the rest follow the seed. */
-	public java.util.Map<String, Integer> exPins = new java.util.LinkedHashMap<>();
 	/** uid? watermark: the menu's blue-pink-yellow bar along the top. */
 	public boolean watermarkUidBar = false;
 	/** uid?: the colour strip along the top of HUD panels (music player, inventory, map...). */
@@ -1577,13 +1562,6 @@ public final class StrayConfig {
 				loaded.theme = normalizeTheme(json.has("theme") ? loaded.theme : loaded.clickGuiStyle);
 				loaded.clickGuiStyle = loaded.theme;
 				loaded.watermarkStyle = loaded.theme;
-				loaded.exScheme = Math.max(0, Math.min(4, loaded.exScheme));
-				loaded.exContrast = Math.max(0, Math.min(2, loaded.exContrast));
-				loaded.exOpacity = clamp(loaded.exOpacity, 0.3f, 1f);
-				loaded.exAnimMs = Math.max(0, Math.min(600, loaded.exAnimMs));
-				if (loaded.exPins == null) {
-					loaded.exPins = new java.util.LinkedHashMap<>();
-				}
 				loaded.uidDpi = Math.max(0, Math.min(5, loaded.uidDpi));
 				loaded.guiStyle = "shadow";
 				loaded.chatStyle = "shadow";

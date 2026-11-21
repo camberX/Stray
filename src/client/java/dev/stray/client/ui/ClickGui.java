@@ -15,7 +15,7 @@ import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 
 /**
- * The click GUI's modules, categories and per-module settings. {@link ShadowMenu} draws the
+ * The click GUI's modules, categories and per-module settings. {@link PanelMenu} and {@link UidMenu} draw the
  * menu itself; this class holds what it shows and the settings widgets it reuses.
  */
 public final class ClickGui {
@@ -62,21 +62,12 @@ public final class ClickGui {
 			UidMenu.draw(screen, graphics, font, mouseX, mouseY);
 			return;
 		}
-		if (ExpressiveMenu.active()) {
-			ExpressiveMenu.draw(screen, graphics, font, mouseX, mouseY);
-			return;
-		}
-		if (PanelMenu.active()) {
-			PanelMenu.draw(screen, graphics, font, mouseX, mouseY);
-			return;
-		}
 		if (Looks.win98()) {
 			Win98Menu.draw(screen, graphics, font, mouseX, mouseY);
 			Win98Menu.drawPicker(screen, graphics, font);
 			return;
 		}
-		ShadowMenu.draw(screen, graphics, font, mouseX, mouseY);
-		ShadowMenu.drawPicker(screen, graphics, font);
+		PanelMenu.draw(screen, graphics, font, mouseX, mouseY);
 	}
 
 	static boolean searchFocused() {
@@ -137,35 +128,24 @@ public final class ClickGui {
 			PanelMenu.rightClick(x, y);
 			return;
 		}
-		if (UidMenu.active() || ExpressiveMenu.active()) {
-			return;
-		}
 		if (Looks.win98()) {
 			Win98Menu.rightClick(x, y);
-			return;
 		}
-		ShadowMenu.rightClick(x, y);
 	}
 
 	static boolean scroll(double x, double y, double wheel) {
 		if (UidMenu.active()) {
 			return UidMenu.scroll(x, y, wheel);
 		}
-		if (ExpressiveMenu.active()) {
-			return ExpressiveMenu.scroll(x, y, wheel);
-		}
-		if (PanelMenu.active()) {
-			return PanelMenu.scroll(x, y, wheel);
-		}
 		if (Looks.win98()) {
 			return Win98Menu.scroll(x, y, wheel);
 		}
-		return ShadowMenu.scroll(x, y, wheel);
+		return PanelMenu.scroll(x, y, wheel);
 	}
 
 	/** The next row's y: uid? rows have their own heights, the other styles step by a row. */
 	private static float next(float drawn, float y) {
-		return UidMenu.drawing() || ExpressiveMenu.drawing() || PanelMenu.drawing() ? drawn : y + stride();
+		return UidMenu.drawing() || PanelMenu.drawing() ? drawn : y + stride();
 	}
 
 	public static List<String> enabledLabels() {
@@ -218,7 +198,7 @@ public final class ClickGui {
 	private static void drawHud(StrayScreen screen, GuiGraphicsExtractor graphics, Font font, float x, float y, float w) {
 		StrayConfig config = StrayConfig.get();
 		int look = Looks.index();
-		y = UidMenu.drawing() || ExpressiveMenu.drawing() || PanelMenu.drawing()
+		y = UidMenu.drawing() || PanelMenu.drawing()
 			? screen.clickDropdown(graphics, font, x, y, w, "theme", "Theme", Looks.LABELS, look, i -> Looks.set(Looks.ALL[i]))
 			: next(screen.clickCycle(graphics, font, x, y, w, "Theme", () -> Looks.LABELS[Looks.index()], () -> Looks.set(Looks.ALL[(Looks.index() + 1) % Looks.ALL.length])), y);
 		if (Looks.uid()) {
@@ -241,78 +221,20 @@ public final class ClickGui {
 				UnloadState.markDirty();
 			});
 			y = drawButton(screen, graphics, font, x, y, w, "Reset menu layout", UidMenu::resetPosition);
-		} else if (Looks.ex()) {
-			y = drawExTheme(screen, graphics, font, x, y, w);
-		} else if (Looks.panels()) {
-			// The accent is the Accent module's colour; this opens it beside the menu.
-			y = drawButton(screen, graphics, font, x, y, w, "Accent colour", () -> PanelMenu.open("Accent"));
 		} else if (Looks.win98()) {
 			y = next(drawChoice(screen, graphics, font, x, y, w, "Dark mode", config.win98Dark, Win98Menu::toggleDark), y);
-		}
-		if (Looks.shadow()) {
-			// Only Shadow draws outlines in the accent; uid? frames and Expressive surfaces don't.
-			y = next(drawChoice(screen, graphics, font, x, y, w, "Accent Outlines", config.accentOutlines, () -> {
-				StrayConfig current = StrayConfig.get();
-				current.accentOutlines = !current.accentOutlines;
-				Theme.refresh();
+		} else {
+			if (Looks.panels()) {
+				// The accent is the Accent module's colour; this opens it beside the menu.
+				y = drawButton(screen, graphics, font, x, y, w, "Accent colour", () -> PanelMenu.open("Accent"));
+			}
+			// Modern and Minecraft animate their menu (panels rising, rows fading); this stills it.
+			y = next(screen.clickToggle(graphics, font, x, y, w, "Reduce motion", config.exReduceMotion, () -> {
+				StrayConfig.get().exReduceMotion = !StrayConfig.get().exReduceMotion;
 				UnloadState.markDirty();
 			}), y);
 		}
 		drawButton(screen, graphics, font, x, y, w, "HUD Editor", () -> Minecraft.getInstance().gui.setScreen(new HudEditorScreen()));
-	}
-
-	/** Expressive's theme: the seed, scheme style, contrast, opacity, motion and the pinned roles. */
-	private static float drawExTheme(StrayScreen screen, GuiGraphicsExtractor graphics, Font font, float x, float y, float w) {
-		StrayConfig config = StrayConfig.get();
-		ExpressiveMenu.inline(true);
-		try {
-			return exThemeRows(screen, graphics, font, x, y, w);
-		} finally {
-			ExpressiveMenu.inline(false);
-		}
-	}
-
-	private static float exThemeRows(StrayScreen screen, GuiGraphicsExtractor graphics, Font font, float x, float y, float w) {
-		StrayConfig config = StrayConfig.get();
-		if (ExpressiveMenu.drawing()) {
-			y = ExpressiveMenu.seedRow(screen, graphics, font, x, y, w);
-		}
-		y = next(screen.clickExSeed(graphics, font, x, y, w), y);
-		y = ExpressiveMenu.drawing()
-			? screen.clickDropdown(graphics, font, x, y, w, "ex-scheme", "Scheme style", ExColors.SCHEMES, config.exScheme, i -> exSet(() -> StrayConfig.get().exScheme = i))
-			: next(screen.clickCycle(graphics, font, x, y, w, "Scheme style", () -> ExColors.SCHEMES[StrayConfig.get().exScheme], () -> exSet(() -> StrayConfig.get().exScheme = (StrayConfig.get().exScheme + 1) % ExColors.SCHEMES.length)), y);
-		y = ExpressiveMenu.drawing()
-			? screen.clickDropdown(graphics, font, x, y, w, "ex-contrast", "Contrast", ExColors.CONTRASTS, config.exContrast, i -> exSet(() -> StrayConfig.get().exContrast = i))
-			: next(screen.clickCycle(graphics, font, x, y, w, "Contrast", () -> ExColors.CONTRASTS[StrayConfig.get().exContrast], () -> exSet(() -> StrayConfig.get().exContrast = (StrayConfig.get().exContrast + 1) % ExColors.CONTRASTS.length)), y);
-		float op = config.exOpacity;
-		y = next(screen.clickSlider(graphics, font, x, y, w, "Background opacity", Math.round(op * 100f) + "%", (op - 0.3f) / 0.7f, v -> exSet(() -> StrayConfig.get().exOpacity = Math.round((0.3f + v * 0.7f) * 100f) / 100f)), y);
-		int ms = config.exAnimMs;
-		y = next(screen.clickSlider(graphics, font, x, y, w, "Menu animation", ms == 0 ? "Material" : ms + " ms", ms / 600f, v -> {
-			StrayConfig.get().exAnimMs = Math.round(v * 600f / 25f) * 25;
-			UnloadState.markDirty();
-		}), y);
-		y = next(screen.clickToggle(graphics, font, x, y, w, "Reduce motion", config.exReduceMotion, () -> {
-			StrayConfig.get().exReduceMotion = !StrayConfig.get().exReduceMotion;
-			UnloadState.markDirty();
-		}), y);
-		int[] now = {ExColors.primary, ExColors.secondaryContainer, ExColors.tertiaryContainer, ExColors.surface, ExColors.surfaceHigh, ExColors.onSurface, ExColors.outline};
-		for (int i = 0; i < ExColors.PIN_ROLES.length; i++) {
-			String role = ExColors.PIN_ROLES[i];
-			boolean pinned = config.exPins.containsKey(role);
-			y = next(screen.clickExPin(graphics, font, x, y, w, role, ExColors.PIN_LABELS[i] + (pinned ? " (pinned)" : ""), now[i] & 0xFFFFFF), y);
-		}
-		if (!config.exPins.isEmpty()) {
-			y = drawButton(screen, graphics, font, x, y, w, "Unpin all colours", () -> exSet(() -> StrayConfig.get().exPins.clear()));
-		}
-		y = drawButton(screen, graphics, font, x, y, w, "Reset menu layout", ExpressiveMenu::resetPosition);
-		return y;
-	}
-
-	private static void exSet(Runnable change) {
-		change.run();
-		ExColors.invalidate();
-		Theme.refresh();
-		UnloadState.markDirty();
 	}
 
 	/** Boolean subsetting: the same row and switch the feature panels use. */
@@ -394,7 +316,7 @@ public final class ClickGui {
 		}
 		if (mod.menuStyle) {
 			if (HUD_LOOK.equals(mod.name)) {
-				return stackH(Looks.uid() ? 8 : Looks.ex() ? 14 + (StrayConfig.get().exPins.isEmpty() ? 0 : 1) : Looks.panels() ? 3 : 3);
+				return stackH(Looks.uid() ? 8 : Looks.panels() ? 4 : 3);
 			}
 			return stackH(1);
 		}
@@ -763,7 +685,7 @@ public final class ClickGui {
 			return cached;
 		}
 		List<Mod> all = allModules();
-		if (!Looks.shadow() && !Looks.panels()) {
+		if (!Looks.panels()) {
 			// Shadow's accent, opacity and blur don't exist in the other themes; theirs are on Look.
 			all.removeIf(mod -> "Accent".equals(mod.name));
 		}

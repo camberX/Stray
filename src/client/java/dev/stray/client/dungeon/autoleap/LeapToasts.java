@@ -1,8 +1,6 @@
 package dev.stray.client.dungeon.autoleap;
 
 import dev.stray.client.render.GuiDraw;
-import dev.stray.client.ui.ExColors;
-import dev.stray.client.ui.ExLook;
 import dev.stray.client.ui.Looks;
 import dev.stray.client.ui.MenuFont;
 import dev.stray.client.ui.ShadowLook;
@@ -150,8 +148,6 @@ public final class LeapToasts {
 		if (Looks.uid()) {
 			top = y + UidLook.frameTop(graphics, x, y, W, H, 0xF0);
 			bottom = y + H - UidLook.frameInset(graphics);
-		} else if (Looks.ex()) {
-			ExLook.surface(graphics, x, y, W, H, H / 2f, ExColors.alpha(ExColors.surfaceHigh, 0.97f), false);
 		} else {
 			ShadowLook.panel(graphics, x, y, W, H, 10f, Theme.HUD_WINDOW);
 		}
@@ -164,11 +160,8 @@ public final class LeapToasts {
 			UidLook.control(graphics, ix, iy, icon, icon, false, false);
 			float p = GuiDraw.pixel() / GuiDraw.poseScale(graphics);
 			GuiDraw.fillSmooth(graphics, ix + p, iy + icon - 2f * p, icon - 2f * p, p, t.kind == Kind.OK ? UidMenu.accent() : tone);
-		} else if (Looks.ex()) {
-			int bg = t.kind == Kind.FAIL ? ExColors.errorContainer : t.kind == Kind.WAIT ? ExColors.tertiaryContainer : ExColors.primaryContainer;
-			ExLook.rounded(graphics, ix, iy, icon, icon, icon / 2f, bg);
 		} else {
-			GuiDraw.roundedFine(graphics, ix, iy, icon, icon, Looks.panels() ? 3f : Looks.minecraft() ? 0f : 6f, Looks.panels() ? dev.stray.client.ui.PanelLook.G2 : Theme.withAlpha(tone, 0x40));
+			GuiDraw.roundedFine(graphics, ix, iy, icon, icon, Looks.panels() ? 3f : 0f, Looks.panels() ? dev.stray.client.ui.PanelLook.G2 : Theme.withAlpha(tone, 0x40));
 		}
 		float face = icon - (Looks.uid() ? 5f : 6f);
 		float fx = ix + (icon - face) / 2f;
@@ -187,8 +180,8 @@ public final class LeapToasts {
 			graphics.pose().popMatrix();
 		}
 		float tx = ix + icon + 6f;
-		int muted = Looks.ex() ? ExColors.onSurfaceVariant : ShadowLook.MUTED;
-		int text = Looks.ex() ? ExColors.onSurface : ShadowLook.TEXT;
+		int muted = ShadowLook.MUTED;
+		int text = ShadowLook.TEXT;
 		// Two 9-tall lines a unit apart, the pair centred in the free inside (per-font nudge for ink).
 		float mid = top + room / 2f;
 		float headY = mid - 9.5f + HEAD_NUDGE[look()];
@@ -208,11 +201,11 @@ public final class LeapToasts {
 		GuiDraw.text(graphics, font, line, tx, bodyY, text, false);
 	}
 
-	/** Shadow, uid?, Expressive: how far each font's ink sits from its 9-tall line box. */
-	private static final float[] HEAD_NUDGE = {-1f, 0f, -1f};
-	private static final float[] BODY_NUDGE = {-1f, 0f, -1f};
+	/** Modern (and Minecraft), Skeet: how far each font's ink sits from its 9-tall line box. */
+	private static final float[] HEAD_NUDGE = {-1f, 0f};
+	private static final float[] BODY_NUDGE = {-1f, 0f};
 
 	private static int look() {
-		return Looks.uid() ? 1 : Looks.ex() ? 2 : 0;
+		return Looks.uid() ? 1 : 0;
 	}
 }

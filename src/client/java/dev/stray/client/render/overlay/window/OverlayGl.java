@@ -534,14 +534,6 @@ final class OverlayGl implements Canvas {
 			}
 			return;
 		}
-		if (dev.stray.client.ui.Looks.ex()) {
-			// Expressive: a soft shadow and the tonal surface with large rounded corners.
-			float r = Math.min(14f, Math.min(w, h) * 0.5f);
-			rounded(x, y, w, h, r, 8f, 0f, 0x48000000);
-			int a = Math.max(fill >>> 24, 0xE6);
-			rounded(x, y, w, h, r, 0.01f, 0f, (a << 24) | (dev.stray.client.ui.ExColors.surfaceMid & 0xFFFFFF));
-			return;
-		}
 		// Shadow's look: a soft shadow under it, the translucent black, a 1 px hairline edge.
 		rounded(x, y + 1.5f, w, h, radius, 10f, 0f, 0x60000000);
 		// No frosted blur behind it out here, so it needs to be more solid to read the same.

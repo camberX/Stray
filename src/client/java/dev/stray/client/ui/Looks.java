@@ -10,9 +10,7 @@ import dev.stray.client.config.UnloadState;
  * a config that still names one opens as Minecraft.
  */
 public final class Looks {
-	public static final String SHADOW = "shadow";
 	public static final String UID = "uid";
-	public static final String EXPRESSIVE = "expressive";
 	/** Neutral greys, every category's panel side by side, what is on in white with the accent. */
 	public static final String PANELS = "panels";
 	/** The game's own look: its font with shadow, chat-black panels, vanilla screens left as they are. */
@@ -46,11 +44,6 @@ public final class Looks {
 		return 0;
 	}
 
-	/** Shadow was removed: never the current look. */
-	public static boolean shadow() {
-		return false;
-	}
-
 	public static boolean minecraft() {
 		return MINECRAFT.equals(current());
 	}
@@ -59,10 +52,6 @@ public final class Looks {
 		return UID.equals(current());
 	}
 
-	/** Expressive was removed: never the current look. */
-	public static boolean ex() {
-		return false;
-	}
 
 	public static boolean win98() {
 		return WIN98.equals(current());
@@ -79,7 +68,6 @@ public final class Looks {
 		config.theme = next;
 		config.clickGuiStyle = next;
 		config.watermarkStyle = next;
-		ExColors.invalidate();
 		Theme.refresh();
 		config.save();
 		UnloadState.markDirty();

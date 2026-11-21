@@ -261,7 +261,7 @@ public final class ControlChrome {
 
 	/** The Shadow switch, the same one the click GUI uses. */
 	public static void toggle(GuiGraphicsExtractor graphics, float x, float y, float w, float h, float t) {
-		ShadowMenu.toggle(graphics, x, y, w, h, t, 1f);
+		ShadowLook.toggle(graphics, x, y, w, h, t, 1f);
 	}
 
 	public static void slider(GuiGraphicsExtractor graphics, float x, float y, float w, float h, float t) {

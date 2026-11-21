@@ -157,15 +157,10 @@ public class StrayTitleScreen extends Screen {
 		Runnable action
 	) {
 		boolean hovered = enabled && GuiDraw.hovered(mouseX, mouseY, x, y, w, BUTTON_H);
-		int fill = hovered ? ShadowLook.CARD_HOVER : ShadowLook.CARD;
-		if (Looks.shadow()) {
-			GuiDraw.roundedFine(graphics, x, y, w, BUTTON_H, ShadowLook.CONTROL_R, Anim.fade(fill, fade));
-		} else {
-			// uid? and Expressive draw their own buttons (a framed grey box, a tonal pill).
-			GuiDraw.alphaScale = fade;
-			ShadowLook.card(graphics, x, y, w, BUTTON_H, ShadowLook.CONTROL_R, hovered, false);
-			GuiDraw.alphaScale = 1f;
-		}
+		// Each look draws its own button (a framed grey box, a grey card, the game's button).
+		GuiDraw.alphaScale = fade;
+		ShadowLook.card(graphics, x, y, w, BUTTON_H, ShadowLook.CONTROL_R, hovered, false);
+		GuiDraw.alphaScale = 1f;
 		int text = enabled ? ShadowLook.TEXT : ShadowLook.FAINT;
 		float textX = x + (w - GuiDraw.menuWidth(font, label)) * 0.5f;
 		GuiDraw.menu(graphics, font, label, textX, GuiDraw.middle(y, BUTTON_H), Anim.fade(text, fade));

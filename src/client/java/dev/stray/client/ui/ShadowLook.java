@@ -69,16 +69,6 @@ public final class ShadowLook {
 			SELECTED = PanelLook.G3;
 			SELECTED_LINE = PanelLook.accent();
 			FILL = Theme.withAlpha(0x1C1C1C, Math.round(StrayConfig.clamp(StrayConfig.get().hudOpacity, 0.2f, 1f) * 255f));
-		} else if (Looks.ex()) {
-			TEXT = ExColors.onSurface;
-			MUTED = ExColors.onSurfaceVariant;
-			FAINT = ExColors.outline;
-			LINE = ExColors.outlineVariant;
-			CARD = ExColors.surfaceHigh;
-			CARD_HOVER = ExColors.surfaceHighest;
-			SELECTED = ExColors.secondaryContainer;
-			SELECTED_LINE = ExColors.secondary;
-			FILL = ExColors.alpha(ExColors.surfaceMid, ExColors.opacity());
 		} else {
 			TEXT = 0xFFEEF1F5;
 			MUTED = 0xFF8A94A0;
@@ -120,10 +110,6 @@ public final class ShadowLook {
 			UidLook.frame(graphics, x, y, w, h, (fill >>> 24) & 0xFF);
 			return;
 		}
-		if (Looks.ex()) {
-			ExLook.surface(graphics, x, y, w, h, exRadius(radius, w, h), exFill(fill, ExColors.surfaceMid), frost);
-			return;
-		}
 		if (Looks.panels()) {
 			PanelLook.panel(graphics, x, y, w, h, fill);
 			return;
@@ -139,27 +125,6 @@ public final class ShadowLook {
 		}
 		GuiDraw.roundedFine(graphics, x, y, w, h, r, fill);
 		GuiDraw.hairline(graphics, x, y, w, h, r, edge());
-	}
-
-	/** Expressive rounds about twice as much as Shadow: 12 becomes 22, the HUD's 8 becomes 14. */
-	static float exRadius(float radius, float w, float h) {
-		float r = radius >= WINDOW_R ? 22f : radius >= HUD_R ? 14f : Math.max(radius * 2f, 8f);
-		return Math.min(r, Math.min(w, h) * 0.5f);
-	}
-
-	/**
-	 * A fill meant as Shadow's see-through black becomes the look's own surface at the same
-	 * alpha (so fades still work); a real colour passes through.
-	 */
-	static int exFill(int fill, int surface) {
-		int r = (fill >> 16) & 0xFF;
-		int g = (fill >> 8) & 0xFF;
-		int b = fill & 0xFF;
-		if (r < 0x1C && g < 0x1C && b < 0x22) {
-			int a = (fill >>> 24) & 0xFF;
-			return Theme.withAlpha(surface, Math.min(255, Math.round(a * ExColors.opacity() / 0.78f)));
-		}
-		return fill;
 	}
 
 	/** Texels per GUI unit in the generated shadow textures. */
@@ -317,12 +282,6 @@ public final class ShadowLook {
 			UidLook.control(graphics, x, y, w, h, hover, selected);
 			return;
 		}
-		if (Looks.ex()) {
-			// Wide small controls are pills; square ones (slots) are rounded squares.
-			float r = h <= 24f ? (w > h * 1.3f ? h * 0.5f : Math.max(3f, h * 0.28f)) : exRadius(radius, w, h);
-			ExLook.rounded(graphics, x, y, w, h, r, selected ? ExColors.secondaryContainer : hover ? ExColors.surfaceHighest : ExColors.surfaceHigh);
-			return;
-		}
 		if (Looks.panels()) {
 			PanelLook.control(graphics, x, y, w, h, hover, selected);
 			return;
@@ -336,5 +295,14 @@ public final class ShadowLook {
 		if (selected) {
 			GuiDraw.hairline(graphics, x, y, w, h, r, SELECTED_LINE);
 		}
+	}
+
+	/** A pill switch: white with a dark knob when on, a faint track when off; {@code t} fades it. */
+	public static void toggle(GuiGraphicsExtractor graphics, float x, float y, float w, float h, float k, float t) {
+		float half = h * 0.5f;
+		GuiDraw.roundedFine(graphics, x, y, w, h, half, Anim.fade(Anim.mix(0x26FFFFFF, 0xFFEEF1F5, k), t));
+		float knobR = half - 1.6f;
+		float kx = x + half + k * (w - h);
+		GuiDraw.circle(graphics, kx, y + half, knobR, Anim.fade(Anim.mix(0xFFB8C0CA, 0xFF0B0E13, k), t));
 	}
 }

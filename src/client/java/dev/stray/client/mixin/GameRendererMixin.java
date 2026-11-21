@@ -90,7 +90,6 @@ public class GameRendererMixin {
 		)
 	)
 	private void stray$captureControlFrost(CallbackInfo ci) {
-		dev.stray.client.render.TitleBackdrop.flush();
 		GuiFrostBlur.captureAfterWorld();
 	}
 }

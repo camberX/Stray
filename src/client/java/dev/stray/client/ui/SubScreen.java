@@ -276,7 +276,7 @@ public abstract class SubScreen extends Screen {
 
 	/** The menu's switch: gray off, white with a dark knob on. */
 	protected void toggle(float x, float y, float w, float h, boolean on) {
-		ShadowMenu.toggle(graphics, x, y, w, h, on ? 1f : 0f, 1f);
+		ShadowLook.toggle(graphics, x, y, w, h, on ? 1f : 0f, 1f);
 	}
 
 	public enum Style { PRIMARY, SECONDARY, DANGER }

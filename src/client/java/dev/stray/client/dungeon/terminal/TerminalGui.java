@@ -4,8 +4,6 @@ import dev.stray.client.config.StrayConfig;
 import dev.stray.client.render.GuiDraw;
 import dev.stray.client.ui.Anim;
 import dev.stray.client.ui.MenuFont;
-import dev.stray.client.ui.ExColors;
-import dev.stray.client.ui.ExLook;
 import dev.stray.client.ui.Looks;
 import dev.stray.client.ui.ShadowLook;
 import dev.stray.client.ui.UidLook;
@@ -225,7 +223,7 @@ final class TerminalGui {
 		}
 
 		if (doneFade > 0.01f && done != null) {
-			shape(graphics, gx - 3f * s, gy - 3f * s, gridW + 6f * s, gridH + 6f * s, 6f * s, Anim.fade(Looks.ex() ? ExColors.alpha(ExColors.surfaceLowest, 0.85f) : 0xB8050709, doneFade));
+			shape(graphics, gx - 3f * s, gy - 3f * s, gridW + 6f * s, gridH + 6f * s, 6f * s, Anim.fade(0xB8050709, doneFade));
 			Component c = MenuFont.shadow(done);
 			text(graphics, font, done, gx + (gridW - font.width(c) * s) * 0.5f, gy + (gridH - 9f * s) * 0.5f, s, Anim.fade(0xFF000000 | color("solution"), doneFade));
 		}
@@ -397,7 +395,7 @@ final class TerminalGui {
 		}
 	}
 
-	/** The window in the theme's own panel: Shadow's frosted card, uid?'s bevelled frame, an Expressive surface. */
+	/** The window in the theme's own panel: the item tooltip (Minecraft), a grey panel (Modern), the bevelled frame (Skeet). */
 	private static void window(GuiGraphicsExtractor graphics, float x, float y, float w, float h, float radius, float s) {
 		if (Looks.minecraft()) {
 			float was = GuiDraw.alphaScale;
@@ -419,47 +417,26 @@ final class TerminalGui {
 			}
 			return;
 		}
-		if (Looks.uid()) {
-			float was = GuiDraw.alphaScale;
-			GuiDraw.alphaScale = was * open;
-			try {
-				UidLook.frame(graphics, x, y, w, h, 0xF0);
-			} finally {
-				GuiDraw.alphaScale = was;
-			}
-			return;
+		float was = GuiDraw.alphaScale;
+		GuiDraw.alphaScale = was * open;
+		try {
+			UidLook.frame(graphics, x, y, w, h, 0xF0);
+		} finally {
+			GuiDraw.alphaScale = was;
 		}
-		if (Looks.ex()) {
-			float was = GuiDraw.alphaScale;
-			GuiDraw.alphaScale = was * open;
-			try {
-				ExLook.surface(graphics, x, y, w, h, 20f * s, ExColors.alpha(ExColors.surfaceLow, 0.97f), true);
-			} finally {
-				GuiDraw.alphaScale = was;
-			}
-			return;
-		}
-		ShadowLook.shadow(graphics, x, y, w, h, radius, 14, Math.round(0x70 * open));
-		dev.stray.client.render.GuiFrostBlur.blitWindow(graphics, x, y, w, h, radius, open);
-		GuiDraw.roundedFine(graphics, x, y, w, h, radius, Anim.fade(ShadowLook.FILL, open));
-		GuiDraw.hairline(graphics, x, y, w, h, radius, Anim.fade(ShadowLook.LINE, open));
 	}
 
-	/** A filled cell or highlight: square in uid?, Material's rounder squares in Expressive. */
+	/** A filled cell or highlight: square in Skeet and Minecraft, small corners in Modern. */
 	private static void shape(GuiGraphicsExtractor graphics, float x, float y, float w, float h, float r, int color) {
-		if (Looks.uid() || Looks.minecraft()) {
-			GuiDraw.fillSmooth(graphics, x, y, w, h, color);
-		} else if (Looks.ex()) {
-			ExLook.rounded(graphics, x, y, w, h, Math.min(w, h) * 0.3f, color);
-		} else if (Looks.panels()) {
+		if (Looks.panels()) {
 			GuiDraw.roundedFine(graphics, x, y, w, h, Math.min(r, Math.min(w, h) * 0.2f), color);
 		} else {
-			GuiDraw.roundedFine(graphics, x, y, w, h, r, color);
+			GuiDraw.fillSmooth(graphics, x, y, w, h, color);
 		}
 	}
 
 	private static void outline(GuiGraphicsExtractor graphics, float x, float y, float w, float h, float r, int color) {
-		GuiDraw.hairline(graphics, x, y, w, h, Looks.uid() || Looks.minecraft() ? 0f : Looks.ex() ? Math.min(w, h) * 0.3f : Looks.panels() ? Math.min(r, Math.min(w, h) * 0.2f) : r, color);
+		GuiDraw.hairline(graphics, x, y, w, h, Looks.panels() ? Math.min(r, Math.min(w, h) * 0.2f) : 0f, color);
 	}
 
 	/** An empty slot: uid?'s sunken control, an Expressive container tone, Shadow's card. */
@@ -474,19 +451,15 @@ final class TerminalGui {
 			}
 			return;
 		}
-		if (Looks.ex()) {
-			ExLook.rounded(graphics, x, y, cell, cell, cell * 0.3f, Anim.fade(over ? ExColors.surfaceHighest : ExColors.surfaceHigh, open));
-			return;
-		}
 		GuiDraw.roundedFine(graphics, x, y, cell, cell, r, Anim.fade(over ? ShadowLook.CARD_HOVER : ShadowLook.CARD, open));
 	}
 
 	private static int ink() {
-		return Looks.ex() ? ExColors.onSurface : ShadowLook.TEXT;
+		return ShadowLook.TEXT;
 	}
 
 	private static int muted() {
-		return Looks.ex() ? ExColors.onSurfaceVariant : ShadowLook.MUTED;
+		return ShadowLook.MUTED;
 	}
 
 	private static void text(GuiGraphicsExtractor graphics, Font font, String value, float x, float y, float scale, int color) {

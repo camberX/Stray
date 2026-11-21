@@ -35,7 +35,7 @@ public final class UidText {
 	private static final float GAMMA = 1.3f;
 	private static final int[] LUT = new int[256];
 	private static long library;
-	private static final Face[] FACES = new Face[6];
+	private static final Face[] FACES = new Face[4];
 	private static boolean failed;
 
 	static {
@@ -85,7 +85,7 @@ public final class UidText {
 				return false;
 			}
 			library = lib.get(0);
-			String[] files = {"uid_sans.ttf", "uid_sans_bold.ttf", "ex_medium.ttf", "ex_bold.ttf", "googlesansflex_medium.ttf", "googlesansflex_bold.ttf"};
+			String[] files = {"uid_sans.ttf", "uid_sans_bold.ttf", "googlesansflex_medium.ttf", "googlesansflex_bold.ttf"};
 			for (int i = 0; i < files.length; i++) {
 				Face f = new Face();
 				try (InputStream in = UidText.class.getResourceAsStream("/assets/stray/font/" + files[i])) {
@@ -118,16 +118,14 @@ public final class UidText {
 	}
 
 	/**
-	 * Which face a family uses: 7 / 8 are uid?'s regular and bold (9 px); 20 to 24 are Expressive's
-	 * Roboto Flex: 20 body (13 px), 21 body bold, 22 small (11 px), 23 title (18 px bold), 24 headline (28 px bold).
+	 * Which face a family uses: 7 / 8 are Skeet's regular and bold (9 px); 30 to 33 are Modern's
+	 * Google Sans Flex: 30 body, 31 small, 32 title, 33 bold.
 	 */
 	private static int face(int family) {
 		return switch (family) {
 			case 8 -> 1;
-			case 20, 22 -> 2;
-			case 21, 23, 24 -> 3;
-			case 30, 31, 32 -> 4;
-			case 33 -> 5;
+			case 30, 31, 32 -> 2;
+			case 33 -> 3;
 			default -> 0;
 		};
 	}
@@ -141,18 +139,12 @@ public final class UidText {
 			FT_Face f = FACES[face(family)].face;
 			return height * f.units_per_EM() / Math.max(1f, f.ascender() - f.descender());
 		}
-		return switch (family) {
-			case 20, 21 -> 13f;
-			case 22 -> 11f;
-			case 23 -> 18f;
-			case 24 -> 28f;
-			default -> EM;
-		};
+		return EM;
 	}
 
 	/** Where the baseline sits under the text's y, in units. */
 	private static float baseline(int family) {
-		return family >= 20 ? Math.round(em(family) * 0.82f) : BASELINE;
+		return family >= 30 ? Math.round(em(family) * 0.82f) : BASELINE;
 	}
 
 	private static Atlas atlas(int family, double scale) {

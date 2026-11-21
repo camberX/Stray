@@ -1255,30 +1255,18 @@ public final class GuiDraw {
 	public static void menu(GuiGraphicsExtractor graphics, Font font, String value, float x, float y, int color) {
 		// Inside the Expressive menu any shared row text is Roboto Flex at its size, never the
 		// game-unit font (which would come out tiny at the menu's pixel scale).
-		if (dev.stray.client.ui.ExpressiveMenu.drawing()) {
-			dev.stray.client.ui.ExLook.text(graphics, font, dev.stray.client.ui.ExLook.BODY, value, x, y - 1.5f, color);
-			return;
-		}
 		if ((color >>> 24) >= 8) {
 			text(graphics, font, MenuFont.shadow(value), x, y, 1f, color, false);
 		}
 	}
 
 	public static void small(GuiGraphicsExtractor graphics, Font font, String value, float x, float y, int color) {
-		if (dev.stray.client.ui.ExpressiveMenu.drawing()) {
-			dev.stray.client.ui.ExLook.text(graphics, font, dev.stray.client.ui.ExLook.SMALL, value, x, y - 0.5f, color);
-			return;
-		}
 		if ((color >>> 24) >= 8) {
 			text(graphics, font, MenuFont.shadowSmall(value), x, y, 1f, color, false);
 		}
 	}
 
 	public static void title(GuiGraphicsExtractor graphics, Font font, String value, float x, float y, int color) {
-		if (dev.stray.client.ui.ExpressiveMenu.drawing()) {
-			dev.stray.client.ui.ExLook.text(graphics, font, dev.stray.client.ui.ExLook.BOLD, value, x, y - 1.5f, color);
-			return;
-		}
 		if ((color >>> 24) >= 8) {
 			text(graphics, font, MenuFont.shadowTitle(value), x, y, 1f, color, false);
 		}
@@ -1369,9 +1357,6 @@ public final class GuiDraw {
 		if (dev.stray.client.ui.PanelMenu.drawing()) {
 			return (int) Math.ceil(width(font, MenuFont.shadow(value)));
 		}
-		if (dev.stray.client.ui.ExpressiveMenu.drawing()) {
-			return (int) Math.ceil(dev.stray.client.ui.ExLook.width(font, dev.stray.client.ui.ExLook.BODY, value));
-		}
 		if (dev.stray.client.ui.UidMenu.drawing() && value != null && dev.stray.client.ui.UidText.ready()) {
 			int family = MenuFont.uidFamily(MenuFont.shadow(value));
 			if (family > 0) {
@@ -1385,18 +1370,12 @@ public final class GuiDraw {
 		if (dev.stray.client.ui.PanelMenu.drawing()) {
 			return (int) Math.ceil(width(font, MenuFont.shadowSmall(value)));
 		}
-		if (dev.stray.client.ui.ExpressiveMenu.drawing()) {
-			return (int) Math.ceil(dev.stray.client.ui.ExLook.width(font, dev.stray.client.ui.ExLook.SMALL, value));
-		}
 		return font.width(MenuFont.shadowSmall(value));
 	}
 
 	public static int titleWidth(Font font, String value) {
 		if (dev.stray.client.ui.PanelMenu.drawing()) {
 			return (int) Math.ceil(width(font, MenuFont.shadowTitle(value)));
-		}
-		if (dev.stray.client.ui.ExpressiveMenu.drawing()) {
-			return (int) Math.ceil(dev.stray.client.ui.ExLook.width(font, dev.stray.client.ui.ExLook.BOLD, value));
 		}
 		return font.width(MenuFont.shadowTitle(value));
 	}
