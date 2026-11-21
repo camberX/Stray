@@ -1158,6 +1158,10 @@ public final class GuiDraw {
 	}
 
 	public static void text(GuiGraphicsExtractor graphics, Font font, String value, float x, float y, int color, boolean shadow) {
+		if (HudChrome.win98Ink() && value != null) {
+			text(graphics, font, Component.literal(value), x, y, color, shadow);
+			return;
+		}
 		graphics.text(font, value, Math.round(x), Math.round(y), fade(color), shadow);
 	}
 
@@ -1167,11 +1171,21 @@ public final class GuiDraw {
 		if (scale != 1.0f) {
 			graphics.pose().scale(scale, scale);
 		}
-		graphics.text(font, value, 0, 0, fade(color), shadow);
+		if (HudChrome.win98Ink()) {
+			graphics.text(font, dev.stray.client.ui.Win98.recolor(Component.literal(value)), 0, 0, fade(dev.stray.client.ui.Win98.ink(color)), false);
+		} else {
+			graphics.text(font, value, 0, 0, fade(color), shadow);
+		}
 		graphics.pose().popMatrix();
 	}
 
 	public static void text(GuiGraphicsExtractor graphics, Font font, Component value, float x, float y, int color, boolean shadow) {
+		if (HudChrome.win98Ink() && value != null) {
+			// Windows 98 HUD: dark ink on the grey face, no shadow.
+			value = dev.stray.client.ui.Win98.recolor(value);
+			color = dev.stray.client.ui.Win98.ink(color);
+			shadow = false;
+		}
 		if (!shadow && dev.stray.client.ui.Looks.minecraft() && !dev.stray.client.ui.UidMenu.drawing() && MenuFont.isVanilla(value)) {
 			// Minecraft look: the game's font always carries the game's shadow.
 			shadow = true;
@@ -1223,6 +1237,11 @@ public final class GuiDraw {
 		if (Math.abs(scale - 1.0f) < 0.001f) {
 			text(graphics, font, value, x, y, color, shadow);
 			return;
+		}
+		if (HudChrome.win98Ink() && value != null) {
+			value = dev.stray.client.ui.Win98.recolor(value);
+			color = dev.stray.client.ui.Win98.ink(color);
+			shadow = false;
 		}
 		graphics.pose().pushMatrix();
 		graphics.pose().translate(x, y);

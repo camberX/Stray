@@ -17,8 +17,10 @@ public final class Looks {
 	public static final String PANELS = "panels";
 	/** The game's own look: its font with shadow, chat-black panels, vanilla screens left as they are. */
 	public static final String MINECRAFT = "minecraft";
-	public static final String[] ALL = {MINECRAFT, PANELS, UID};
-	public static final String[] LABELS = {"Minecraft", "Modern", "Skeet"};
+	/** Windows 98: grey bevelled windows, a blue title bar and a taskbar watermark. */
+	public static final String WIN98 = "win98";
+	public static final String[] ALL = {MINECRAFT, PANELS, UID, WIN98};
+	public static final String[] LABELS = {"Minecraft", "Modern", "Skeet", "Windows 98"};
 
 	/** While a preview draws another look than the saved one (the first-boot picker). */
 	private static String forced;
@@ -60,6 +62,10 @@ public final class Looks {
 	/** Expressive was removed: never the current look. */
 	public static boolean ex() {
 		return false;
+	}
+
+	public static boolean win98() {
+		return WIN98.equals(current());
 	}
 
 	public static boolean panels() {

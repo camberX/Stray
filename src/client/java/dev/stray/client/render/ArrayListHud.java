@@ -62,6 +62,10 @@ public final class ArrayListHud {
 		float right = width(font);
 		float y = 0f;
 		boolean background = HudChrome.background();
+		if (HudChrome.win98()) {
+			drawWin98(graphics, font, rows, right, background);
+			return;
+		}
 		for (Row row : rows) {
 			float x = right - row.width;
 			if (dev.stray.client.ui.Looks.uid()) {
@@ -101,6 +105,37 @@ public final class ArrayListHud {
 				}
 				GuiDraw.text(graphics, font, row.text, x + PAD, GuiDraw.middle(y, ROW_H), ShadowLook.TEXT, false);
 				GuiDraw.circle(graphics, right - PAD * 0.5f - DOT * 0.5f - 1f, y + ROW_H * 0.5f, DOT * 0.5f, row.color);
+			}
+			y += ROW_H + GAP;
+		}
+	}
+
+	/** Windows 98: one raised menu, like a Start menu cascade, with a coloured icon per module. */
+	private static void drawWin98(GuiGraphicsExtractor graphics, Font font, List<Row> rows, float right, boolean background) {
+		if (rows.isEmpty()) {
+			return;
+		}
+		float textW = 0f;
+		for (Row row : rows) {
+			textW = Math.max(textW, dev.stray.client.ui.Win98.width(font, row.text.getString()));
+		}
+		float w = Math.min(right, textW + 22f);
+		float h = height(font);
+		float x = right - w;
+		if (background) {
+			dev.stray.client.ui.Win98.sync();
+			dev.stray.client.ui.Win98.raised(graphics, x, 0, w, h);
+		}
+		int ink = background ? dev.stray.client.ui.Win98.TEXT : 0xFFFFFFFF;
+		float y = 0f;
+		for (Row row : rows) {
+			float ty = GuiDraw.middle(y, ROW_H);
+			GuiDraw.fill(graphics, x + 5f, y + (ROW_H - 7f) * 0.5f, 7f, 7f, 0xFF000000);
+			GuiDraw.fill(graphics, x + 6f, y + (ROW_H - 5f) * 0.5f, 5f, 5f, 0xFF000000 | row.color);
+			if (background) {
+				dev.stray.client.ui.Win98.text(graphics, font, row.text.getString(), x + 16f, ty, ink);
+			} else {
+				graphics.text(font, row.text.getString(), Math.round(x + 16f), Math.round(ty), ink, true);
 			}
 			y += ROW_H + GAP;
 		}

@@ -15,6 +15,9 @@ public final class HudChrome {
 	}
 
 	public static void beginHud() {
+		if (win98()) {
+			dev.stray.client.ui.Win98.sync();
+		}
 		hudPass = true;
 		element = null;
 	}
@@ -34,6 +37,16 @@ public final class HudChrome {
 	/** False when the element being drawn has its background turned off. */
 	public static boolean background() {
 		return element == null || HudLayout.background(element);
+	}
+
+	/** The Windows 98 look: bevelled grey HUD panels. */
+	public static boolean win98() {
+		return dev.stray.client.ui.Looks.win98();
+	}
+
+	/** HUD text is re-inked dark for the grey Windows 98 face while the HUD draws. */
+	public static boolean win98Ink() {
+		return hudPass && win98() && background();
 	}
 
 	/** HUD text drawn in the Shadow style (Google Sans Flex, no shadow): true while the HUD draws. */
@@ -71,6 +84,10 @@ public final class HudChrome {
 		if (!background()) {
 			return;
 		}
+		if (win98()) {
+			dev.stray.client.ui.Win98.raised(graphics, x, y, w, h);
+			return;
+		}
 		dev.stray.client.ui.ShadowLook.panel(graphics, x, y, w, h, dev.stray.client.ui.ShadowLook.HUD_R, Theme.HUD_WINDOW);
 	}
 
@@ -94,6 +111,10 @@ public final class HudChrome {
 		}
 		if (dev.stray.client.ui.Looks.ex()) {
 			dev.stray.client.ui.ExLook.rounded(graphics, x, y, w, h, Math.min(8f, Math.min(w, h) * 0.5f), exFill(fill));
+			return;
+		}
+		if (win98()) {
+			dev.stray.client.ui.Win98.raised(graphics, x, y, w, h);
 			return;
 		}
 		if (dev.stray.client.ui.Looks.panels()) {
@@ -145,6 +166,15 @@ public final class HudChrome {
 		}
 		if (dev.stray.client.ui.Looks.panels()) {
 			dev.stray.client.ui.PanelLook.control(graphics, x, y, size, size, false, selected);
+			return;
+		}
+		if (win98()) {
+			if (selected) {
+				dev.stray.client.ui.Win98.pressed(graphics, x, y, size, size);
+				GuiDraw.border(graphics, x - 1, y - 1, size + 2, size + 2, dev.stray.client.ui.Win98.NAVY, 1f);
+			} else {
+				dev.stray.client.ui.Win98.sunken(graphics, x, y, size, size, dev.stray.client.ui.Win98.FACE);
+			}
 			return;
 		}
 		if (dev.stray.client.ui.Looks.minecraft()) {

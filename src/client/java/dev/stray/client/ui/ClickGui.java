@@ -70,6 +70,11 @@ public final class ClickGui {
 			PanelMenu.draw(screen, graphics, font, mouseX, mouseY);
 			return;
 		}
+		if (Looks.win98()) {
+			Win98Menu.draw(screen, graphics, font, mouseX, mouseY);
+			Win98Menu.drawPicker(screen, graphics, font);
+			return;
+		}
 		ShadowMenu.draw(screen, graphics, font, mouseX, mouseY);
 		ShadowMenu.drawPicker(screen, graphics, font);
 	}
@@ -135,6 +140,10 @@ public final class ClickGui {
 		if (UidMenu.active() || ExpressiveMenu.active()) {
 			return;
 		}
+		if (Looks.win98()) {
+			Win98Menu.rightClick(x, y);
+			return;
+		}
 		ShadowMenu.rightClick(x, y);
 	}
 
@@ -147,6 +156,9 @@ public final class ClickGui {
 		}
 		if (PanelMenu.active()) {
 			return PanelMenu.scroll(x, y, wheel);
+		}
+		if (Looks.win98()) {
+			return Win98Menu.scroll(x, y, wheel);
 		}
 		return ShadowMenu.scroll(x, y, wheel);
 	}
@@ -234,6 +246,8 @@ public final class ClickGui {
 		} else if (Looks.panels()) {
 			// The accent is the Accent module's colour; this opens it beside the menu.
 			y = drawButton(screen, graphics, font, x, y, w, "Accent colour", () -> PanelMenu.open("Accent"));
+		} else if (Looks.win98()) {
+			y = next(drawChoice(screen, graphics, font, x, y, w, "Dark mode", config.win98Dark, Win98Menu::toggleDark), y);
 		}
 		if (Looks.shadow()) {
 			// Only Shadow draws outlines in the accent; uid? frames and Expressive surfaces don't.

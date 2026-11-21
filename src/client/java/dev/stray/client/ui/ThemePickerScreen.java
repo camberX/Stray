@@ -143,6 +143,7 @@ public final class ThemePickerScreen extends Screen {
 		switch (id) {
 			case Looks.UID -> uidMenu(graphics, font, uw, uh);
 			case Looks.PANELS -> panelsMenu(graphics, font, uw, uh);
+			case Looks.WIN98 -> win98Menu(graphics, font, uw, uh);
 			default -> minecraftMenu(graphics, font, uw, uh);
 		}
 		graphics.pose().popMatrix();
@@ -155,6 +156,10 @@ public final class ThemePickerScreen extends Screen {
 		float by = wy + 22f;
 		if (Looks.MINECRAFT.equals(id)) {
 			MinecraftLook.button(graphics, x, by, w, 18f, false, true);
+		} else if (Looks.WIN98.equals(id)) {
+			Win98.sync();
+			Win98.button(graphics, font, x, by, w, 18f, "Singleplayer", false, true);
+			return;
 		} else {
 			MenuChrome.box(graphics, x, by, w, 18f, false, true);
 		}
@@ -175,6 +180,20 @@ public final class ThemePickerScreen extends Screen {
 			MinecraftLook.bullet(graphics, 6, y + 3, on[i] ? 1f : 0f);
 			GuiDraw.text(graphics, font, Component.literal(rows[i]), 14, y + 2, on[i] ? MinecraftLook.WHITE : MinecraftLook.GREY, true);
 			y += 12;
+		}
+	}
+
+	/** Windows 98: a grey window with a navy title bar and checkboxes. */
+	private void win98Menu(GuiGraphicsExtractor graphics, Font font, float w, float h) {
+		Win98.sync();
+		Win98.window(graphics, font, 0, 0, w, h, "Stray - Dungeons", true);
+		String[] rows = {"Leap Menu", "Terminal Solver", "Dungeon Map", "Secret Waypoints"};
+		boolean[] on = {true, false, true, false};
+		float y = 22;
+		for (int i = 0; i < rows.length && y + 12 < h - 4; i++) {
+			Win98.checkbox(graphics, 8, y + 1, 9f, on[i], true);
+			Win98.text(graphics, font, rows[i], 21, y + 2, Win98.TEXT);
+			y += 13;
 		}
 	}
 
