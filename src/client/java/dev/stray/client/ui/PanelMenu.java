@@ -121,24 +121,24 @@ public final class PanelMenu {
 	}
 
 	private static int accent() {
-		return mc() ? MinecraftLook.YELLOW : accent();
+		return mc() ? MinecraftLook.YELLOW : PanelLook.accent();
 	}
 
 	private static int edge() {
-		return mc() ? MinecraftLook.LINE : edge();
+		return mc() ? MinecraftLook.LINE : PanelLook.EDGE;
 	}
 
 	/** The soft shadow under a window; the Minecraft look has none. */
 	private static void shade(GuiGraphicsExtractor graphics, float x, float y, float w, float h, float r, int blur, int alpha) {
 		if (!mc()) {
-			shade(graphics, x, y, w, h, r, blur, alpha);
+			ShadowLook.shadow(graphics, x, y, w, h, r, blur, alpha);
 		}
 	}
 
 	/** A panel (chat black) or, for the darker fills, a window (the item tooltip box). */
 	private static void box(GuiGraphicsExtractor graphics, float x, float y, float w, float h, int fill) {
 		if (!mc()) {
-			box(graphics, x, y, w, h, fill);
+			PanelLook.panel(graphics, x, y, w, h, fill);
 		} else if (fill == 0xFA121212 || fill == 0xFE131313) {
 			MinecraftLook.tooltip(graphics, x, y, w, h);
 		} else {
