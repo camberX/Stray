@@ -1,6 +1,7 @@
 package dev.stray.client.ui;
 
 import dev.stray.client.account.AccountStore;
+import dev.stray.client.account.NameChanger;
 import dev.stray.client.input.MouseButtons;
 import dev.stray.client.render.TitleBackdrop;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
@@ -20,6 +21,11 @@ public class AccountScreen extends SubScreen {
 	private static final String STAR_OFF = "";
 
 	private final Input token = input("account-token", 4096, "Paste a session token");
+	private final Input newName = input("account-new-name", 16, "New name");
+	private volatile String nameStatus = "";
+	/** The name the Change button was pressed for once; a second press within 10 s renames. */
+	private String armedName;
+	private long armedAt;
 	private UUID selectedId;
 	/** The row under the mouse this frame, for double click to switch. */
 	private int hoveredRow = -1;
@@ -29,6 +35,7 @@ public class AccountScreen extends SubScreen {
 		super("Accounts", parent, 360);
 		token.display = AccountScreen::mask;
 		token.clean = value -> value.replace("\n", "").replace("\r", "").trim();
+		newName.clean = value -> value.replace(" ", "").trim();
 		// Nothing focused at first: the list is what you came for.
 		focusInput(null);
 	}
@@ -37,6 +44,9 @@ public class AccountScreen extends SubScreen {
 	protected void init() {
 		super.init();
 		AccountStore.rememberLauncher(minecraft);
+		if (nameStatus.isBlank()) {
+			NameChanger.eligibility(this::setNameStatus);
+		}
 		if (selectedId == null) {
 			for (AccountStore.Entry entry : AccountStore.accounts()) {
 				if (entry.active()) {
@@ -60,7 +70,7 @@ public class AccountScreen extends SubScreen {
 		List<AccountStore.Entry> accounts = AccountStore.accounts();
 		hoveredRow = -1;
 		y = section("Saved", x, y);
-		float after = 4f + GAP + 14f + BUTTON + GAP + FIELD + 4f + 14f + 6f + BUTTON;
+		float after = 4f + GAP + 14f + BUTTON + GAP + FIELD + 4f + 14f + 6f + BUTTON + 14f + FIELD + 4f + 14f + 6f;
 		y = list("accounts", accounts.size(), ROW_H, x, y, w, listHeight(y, after, ROW_H, Math.min(accounts.size(), 6), 2), "No saved accounts yet", (i, rx, ry, rw, rh, hot) -> {
 			AccountStore.Entry entry = accounts.get(i);
 			boolean selected = entry.uuid.equals(selectedId);
@@ -104,6 +114,23 @@ public class AccountScreen extends SubScreen {
 		String lower = note.toLowerCase(Locale.ROOT);
 		boolean error = lower.contains("fail") || lower.contains("error") || lower.contains("couldn");
 		y = hint(note, x, y + 2f, w, error) + 8f;
+
+		// Username: renames the account you are playing on, like minecraft.net's profile page.
+		y = section("Username of " + AccountStore.currentName(), x, y);
+		boolean free = !NameChanger.busy();
+		float checkW = buttonWidth("Check");
+		boolean armed = armedName != null && armedName.equals(newName.get()) && System.currentTimeMillis() - armedAt < 10_000L;
+		String changeLabel = armed ? "Confirm" : "Change";
+		float changeW = buttonWidth("Confirm");
+		field(newName, null, 0f, x, y, w - checkW - changeW - GAP * 2);
+		boolean typed = !newName.get().isBlank();
+		button("Check", x + w - checkW - changeW - GAP, y + (FIELD - BUTTON) * 0.5f, checkW, Style.SECONDARY, free && typed ? this::checkName : null);
+		button(changeLabel, x + w - changeW, y + (FIELD - BUTTON) * 0.5f, changeW, armed ? Style.DANGER : Style.SECONDARY, free && typed ? this::changeName : null);
+		y += FIELD + 4f;
+		String nl = nameStatus.toLowerCase(Locale.ROOT);
+		boolean nameError = nl.contains("taken") || nl.contains("can't") || nl.contains("couldn") || nl.contains("rejected")
+			|| nl.contains("expired") || nl.contains("too many") || nl.contains("isn't") || nl.contains("doesn't");
+		y = hint(nameStatus, x, y + 2f, w, nameError) + 8f;
 		boolean picked = selectedIndex() >= 0;
 		return buttons(x, y, w,
 			new Object[][] {{"Remove", Style.DANGER, picked ? (Runnable) this::removeSelected : null}},
@@ -188,6 +215,42 @@ public class AccountScreen extends SubScreen {
 	protected void submit() {
 		if (token.focused() && !token.get().isBlank()) {
 			addToken();
+		} else if (newName.focused() && !newName.get().isBlank()) {
+			checkName();
+		}
+	}
+
+	private void checkName() {
+		click();
+		armedName = null;
+		NameChanger.check(newName.get().trim(), this::setNameStatus);
+	}
+
+	/** First press asks to confirm (a change locks the name for 30 days), the second renames. */
+	private void changeName() {
+		click();
+		String name = newName.get().trim();
+		String bad = NameChanger.invalid(name);
+		if (bad != null) {
+			setNameStatus(bad);
+			return;
+		}
+		boolean armed = name.equals(armedName) && System.currentTimeMillis() - armedAt < 10_000L;
+		if (!armed) {
+			armedName = name;
+			armedAt = System.currentTimeMillis();
+			setNameStatus("Press Confirm to rename to " + name + " (then no other change for 30 days).");
+			return;
+		}
+		armedName = null;
+		NameChanger.change(name, this::setNameStatus, now -> newName.set(""));
+	}
+
+	private void setNameStatus(String message) {
+		if (minecraft != null) {
+			minecraft.execute(() -> nameStatus = message == null ? "" : message);
+		} else {
+			nameStatus = message == null ? "" : message;
 		}
 	}
 

@@ -519,6 +519,18 @@ public final class AccountStore {
 		thread.start();
 	}
 
+	/** The saved account with this id now goes by {@code name} (after a name change). */
+	static void renamed(UUID id, String name) {
+		for (int i = 0; i < ACCOUNTS.size(); i++) {
+			Entry e = ACCOUNTS.get(i);
+			if (e.uuid.equals(id)) {
+				ACCOUNTS.set(i, new Entry(e.kind, name, e.uuid, e.accessToken, e.authManager, e.favorite));
+				save();
+				return;
+			}
+		}
+	}
+
 	public static void remove(int index) {
 		if (index < 0 || index >= ACCOUNTS.size()) {
 			return;
