@@ -6,6 +6,7 @@
 		"OitGuardMixin",
 		"EntityRenderDispatcherMixin",
 		"ParticleEngineMixin",
+		"PlayerModelMixin",
 		"AbstractButtonMixin",
 		"AbstractContainerScreenAccessor",
 		"AbstractContainerScreenInvoker",

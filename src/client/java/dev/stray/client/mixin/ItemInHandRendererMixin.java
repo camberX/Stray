@@ -61,9 +61,13 @@ public class ItemInHandRendererMixin {
 	) {
 		//? if >=26.3 {
 		LegacySkullHold.applyFirstPerson(poseStack, stack);
-		dev.stray.client.visual.FakeSwordBlock.applyFirstPerson(poseStack, hand, stack);
 		//?} else {
-		/*LegacySkullHold.applyFirstPerson(poseStack, itemStack);
-		dev.stray.client.visual.FakeSwordBlock.applyFirstPerson(poseStack, hand, itemStack);*///?}
+		/*LegacySkullHold.applyFirstPerson(poseStack, itemStack);*///?}
+	}
+
+	/** Fake sword block: the 1.7 blocking pose, right after vanilla's arm transform. */
+	@Inject(method = "applyItemArmTransform", at = @At("TAIL"))
+	private void stray$fakeSwordBlock(PoseStack poseStack, net.minecraft.world.entity.HumanoidArm arm, float equipProgress, CallbackInfo ci) {
+		dev.stray.client.visual.FakeSwordBlock.applyFirstPerson(poseStack, arm);
 	}
 }

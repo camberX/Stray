@@ -5,6 +5,7 @@
 	"client": [
 		"EntityRenderDispatcherMixin",
 		"ParticleEngineMixin",
+		"PlayerModelMixin",
 		"AbstractButtonMixin",
 		"AbstractContainerScreenAccessor",
 		"AbstractContainerScreenInvoker",
