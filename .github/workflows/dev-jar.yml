@@ -1,0 +1,36 @@
+name: dev jar
+# Copies one build run's jars onto the dev-jars branch (one commit, replaced each time), so a
+# dev jar can be fetched as a plain file where Actions artifact downloads are blocked.
+# Manual only; the push carries [skip ci] so it starts no other workflow.
+on:
+  workflow_dispatch:
+    inputs:
+      run_id:
+        description: The build run whose jars to copy
+        required: true
+
+jobs:
+  copy:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+      actions: read
+    steps:
+    - uses: actions/download-artifact@v4
+      with:
+        run-id: ${{ inputs.run_id }}
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        path: jars
+    - name: push to dev-jars
+      run: |
+        mkdir out
+        find jars -name '*.jar' -exec cp {} out/ \;
+        cd out
+        ls -la
+        git init -q -b dev-jars
+        git config user.name github-actions
+        git config user.email github-actions@users.noreply.github.com
+        echo "Jars of build run ${{ inputs.run_id }}." > README.md
+        git add -A
+        git commit -q -m "dev jars of run ${{ inputs.run_id }} [skip ci]"
+        git push -q -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" dev-jars
