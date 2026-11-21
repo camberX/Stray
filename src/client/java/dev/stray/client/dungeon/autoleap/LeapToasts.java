@@ -168,7 +168,7 @@ public final class LeapToasts {
 			int bg = t.kind == Kind.FAIL ? ExColors.errorContainer : t.kind == Kind.WAIT ? ExColors.tertiaryContainer : ExColors.primaryContainer;
 			ExLook.rounded(graphics, ix, iy, icon, icon, icon / 2f, bg);
 		} else {
-			GuiDraw.roundedFine(graphics, ix, iy, icon, icon, Looks.panels() ? 3f : 6f, Looks.panels() ? dev.stray.client.ui.PanelLook.G2 : Theme.withAlpha(tone, 0x40));
+			GuiDraw.roundedFine(graphics, ix, iy, icon, icon, Looks.panels() ? 3f : Looks.minecraft() ? 0f : 6f, Looks.panels() ? dev.stray.client.ui.PanelLook.G2 : Theme.withAlpha(tone, 0x40));
 		}
 		float face = icon - (Looks.uid() ? 5f : 6f);
 		float fx = ix + (icon - face) / 2f;

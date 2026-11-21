@@ -26,7 +26,8 @@ public final class MenuChrome {
 	}
 
 	public static boolean applies(Screen screen) {
-		if (screen == null) {
+		// Minecraft: vanilla screens stay exactly as the game draws them.
+		if (screen == null || Looks.minecraft()) {
 			return false;
 		}
 		if (screen instanceof StrayTitleScreen
@@ -200,6 +201,14 @@ public final class MenuChrome {
 	private static void look(GuiGraphicsExtractor graphics, float x, float y, float w, float h, boolean hover, boolean active, float alpha, boolean field) {
 		GuiDraw.alphaScale = alpha;
 		try {
+			if (Looks.minecraft()) {
+				if (field) {
+					MinecraftLook.field(graphics, x, y, w, h, false);
+				} else {
+					MinecraftLook.button(graphics, x, y, w, h, hover, active);
+				}
+				return;
+			}
 			if (Looks.panels()) {
 				float r = Math.min(4f, h * 0.5f);
 				GuiDraw.roundedFine(graphics, x, y, w, h, r, !active ? PanelLook.G1 : field ? PanelLook.G1 : hover ? PanelLook.G3 : PanelLook.G2);

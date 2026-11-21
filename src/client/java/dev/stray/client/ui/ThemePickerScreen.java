@@ -131,7 +131,8 @@ public final class ThemePickerScreen extends Screen {
 	private void preview(GuiGraphicsExtractor graphics, Font font, int look, float x, float y, float w, float h) {
 		double gui = minecraft.getWindow().getGuiScale();
 		// The menu part is drawn in the look's own pixels, as its real menu is.
-		double dpi = look == 1 ? UidMenu.dpiScale() : look == 2 ? ExpressiveMenu.dpiScale() : gui;
+		String id = Looks.ALL[look];
+		double dpi = Looks.UID.equals(id) ? UidMenu.dpiScale() : gui;
 		float k = (float) (dpi / gui);
 		float menuH = h - 46f;
 		graphics.pose().pushMatrix();
@@ -139,14 +140,10 @@ public final class ThemePickerScreen extends Screen {
 		graphics.pose().scale(k, k);
 		float uw = w / k;
 		float uh = menuH / k;
-		switch (look) {
-			case 1 -> uidMenu(graphics, font, uw, uh);
-			case 2 -> {
-				ExLook.textScale = dpi;
-				exMenu(graphics, font, uw, uh);
-			}
-			case 3 -> panelsMenu(graphics, font, uw, uh);
-			default -> shadowMenu(graphics, font, uw, uh);
+		switch (id) {
+			case Looks.UID -> uidMenu(graphics, font, uw, uh);
+			case Looks.PANELS -> panelsMenu(graphics, font, uw, uh);
+			default -> minecraftMenu(graphics, font, uw, uh);
 		}
 		graphics.pose().popMatrix();
 		// The watermark, as the HUD would draw it.
@@ -156,39 +153,35 @@ public final class ThemePickerScreen extends Screen {
 		WatermarkRenderer.draw(graphics, font, x, wy, ws);
 		// A vanilla button.
 		float by = wy + 22f;
-		MenuChrome.box(graphics, x, by, w, 18f, false, true);
+		if (Looks.MINECRAFT.equals(id)) {
+			MinecraftLook.button(graphics, x, by, w, 18f, false, true);
+		} else {
+			MenuChrome.box(graphics, x, by, w, 18f, false, true);
+		}
 		Component label = MenuChrome.bodyLabel(Component.literal("Singleplayer"), true);
 		float lw = font.width(label);
 		GuiDraw.text(graphics, font, label, x + (w - lw) / 2f, GuiDraw.middle(by, 18f), 0xFFFFFFFF, false);
 	}
 
-	private void shadowMenu(GuiGraphicsExtractor graphics, Font font, float w, float h) {
-		ShadowLook.window(graphics, 0, 0, w, h, ShadowLook.WINDOW_R, ShadowLook.FILL);
-		GuiDraw.menu(graphics, font, "Leap menu", 10, 9, ShadowLook.TEXT);
-		float y = 26;
-		String[] rows = {"Keys 1-4 leap", "Announce leap", "Tint dead players"};
-		boolean[] on = {true, false, true};
-		for (int i = 0; i < rows.length; i++) {
-			ShadowLook.card(graphics, 6, y, w - 12, 16, ShadowLook.CONTROL_R, false, false);
-			GuiDraw.menu(graphics, font, rows[i], 12, GuiDraw.middle(y, 16), ShadowLook.TEXT);
-			float sx = w - 12 - 18;
-			GuiDraw.roundedFine(graphics, sx, y + 4, 16, 8, 4, on[i] ? Theme.ACCENT : 0x30FFFFFF);
-			GuiDraw.circle(graphics, on[i] ? sx + 12 : sx + 4, y + 8, 3f, 0xFFFFFFFF);
-			y += 19;
+	/** Minecraft: a chat-black panel, a yellow heading, green squares for what is on. */
+	private void minecraftMenu(GuiGraphicsExtractor graphics, Font font, float w, float h) {
+		MinecraftLook.panel(graphics, 0, 0, w, h, MinecraftLook.BG);
+		GuiDraw.text(graphics, font, Component.literal("Dungeons"), 6, 4, MinecraftLook.YELLOW, true);
+		GuiDraw.fill(graphics, 0, 14, w, 1, MinecraftLook.LINE);
+		String[] rows = {"Leap Menu", "Terminal Solver", "Dungeon Map", "Secret Waypoints"};
+		boolean[] on = {true, false, true, false};
+		float y = 18;
+		for (int i = 0; i < rows.length && y + 11 < h - 2; i++) {
+			MinecraftLook.bullet(graphics, 6, y + 3, on[i] ? 1f : 0f);
+			GuiDraw.text(graphics, font, Component.literal(rows[i]), 14, y + 2, on[i] ? MinecraftLook.WHITE : MinecraftLook.GREY, true);
+			y += 12;
 		}
-		GuiDraw.menu(graphics, font, "Card size", 10, y + 2, ShadowLook.MUTED);
-		y += 13;
-		GuiDraw.roundedFine(graphics, 10, y, w - 20, 3, 1.5f, 0x22FFFFFF);
-		GuiDraw.roundedFine(graphics, 10, y, (w - 20) * 0.45f, 3, 1.5f, Theme.ACCENT);
-		GuiDraw.circle(graphics, 10 + (w - 20) * 0.45f, y + 1.5f, 3.5f, 0xFFFFFFFF);
 	}
 
 	private void panelsMenu(GuiGraphicsExtractor graphics, Font font, float w, float h) {
 		PanelLook.panel(graphics, 0, 0, w, h, 0xF51C1C1C);
 		GuiDraw.fillSmooth(graphics, 1, 18, w - 2, 1, PanelLook.EDGE);
-		GuiDraw.menu(graphics, font, "Dungeons", 8, GuiDraw.middle(0, 18), PanelLook.WHITE);
-		String count = "2/4";
-		GuiDraw.menu(graphics, font, count, w - 8 - GuiDraw.menuWidth(font, count), GuiDraw.middle(0, 18), PanelLook.accent());
+		GuiDraw.menu(graphics, font, "Dungeons", 8, GuiDraw.middle(0, 18), PanelLook.accent());
 		String[] rows = {"Leap menu", "Terminal solver", "Dungeon map", "Secret waypoints"};
 		boolean[] on = {true, false, true, false};
 		float y = 22;
@@ -221,45 +214,6 @@ public final class ThemePickerScreen extends Screen {
 		if (y + 26 < h - 14) {
 			UidLook.text(graphics, font, "Card size", gx + 30, y + 1, UidLook.LABEL);
 			UidLook.slider(graphics, gx + 30, y + 16, gw - 50, 0.45f, false, accent);
-		}
-	}
-
-	private void exMenu(GuiGraphicsExtractor graphics, Font font, float w, float h) {
-		ExLook.surface(graphics, 0, 0, w, h, 24f, ExColors.alpha(ExColors.surface, ExColors.opacity()), false);
-		// A sliver of the rail with its pill.
-		ExLook.rounded(graphics, 8, 8, 44, h - 16, 16f, ExColors.surfaceLow);
-		ExLook.rounded(graphics, 12, 22, 36, 22, 11f, ExColors.secondaryContainer);
-		for (int i = 0; i < 3; i++) {
-			ExLook.rounded(graphics, 22, 58 + i * 30, 16, 16, i == 1 ? 5f : 8f, ExColors.alpha(ExColors.onSurfaceVariant, 0.45f));
-		}
-		float cx = 62;
-		float cw = w - cx - 10;
-		ExLook.rounded(graphics, cx, 10, cw, h - 20, 20f, ExColors.surfaceHigh);
-		ExLook.text(graphics, font, ExLook.BOLD, "Leap menu", cx + 12, 22, ExColors.onSurface);
-		ExLook.toggle(graphics, cx + cw - 12 - 36, 18, 1f, 1f, false);
-		float y = 52;
-		String[] rows = {"Keys 1-4 leap", "Announce leap"};
-		float[] on = {1f, 0f};
-		for (int i = 0; i < rows.length && y + 26 < h - 20; i++) {
-			ExLook.text(graphics, font, ExLook.BODY, ExLook.fit(font, ExLook.BODY, rows[i], cw - 70), cx + 12, y + 6, ExColors.onSurface);
-			ExLook.toggle(graphics, cx + cw - 12 - 36, y, 1f, on[i], false);
-			y += 30;
-		}
-		if (y + 44 < h - 14) {
-			ExLook.text(graphics, font, ExLook.BODY, "Order", cx + 12, y + 2, ExColors.onSurface);
-			float sy = y + 20;
-			float sw = (cw - 24 - 4) / 3f;
-			String[] opts = {"Odin", "A-Z", "None"};
-			for (int i = 0; i < 3; i++) {
-				float bx = cx + 12 + i * (sw + 2);
-				ExLook.segment(graphics, bx, sy, sw, 26, i == 0, i == 2, i == 0, 0f);
-				float tw = ExLook.width(font, i == 0 ? ExLook.BOLD : ExLook.BODY, opts[i]);
-				ExLook.text(graphics, font, i == 0 ? ExLook.BOLD : ExLook.BODY, opts[i], bx + (sw - tw) / 2f, sy + 7, i == 0 ? ExColors.onPrimary : ExColors.onSurface);
-			}
-			y = sy + 34;
-		}
-		if (y + 24 < h - 14) {
-			ExLook.slider(graphics, cx + 12, y, cw - 24, 0.45f, false, 1f);
 		}
 	}
 

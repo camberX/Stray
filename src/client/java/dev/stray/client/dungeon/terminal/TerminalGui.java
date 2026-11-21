@@ -399,6 +399,16 @@ final class TerminalGui {
 
 	/** The window in the theme's own panel: Shadow's frosted card, uid?'s bevelled frame, an Expressive surface. */
 	private static void window(GuiGraphicsExtractor graphics, float x, float y, float w, float h, float radius, float s) {
+		if (Looks.minecraft()) {
+			float was = GuiDraw.alphaScale;
+			GuiDraw.alphaScale = was * open;
+			try {
+				dev.stray.client.ui.MinecraftLook.tooltip(graphics, x, y, w, h);
+			} finally {
+				GuiDraw.alphaScale = was;
+			}
+			return;
+		}
 		if (Looks.panels()) {
 			float was = GuiDraw.alphaScale;
 			GuiDraw.alphaScale = was * open;
@@ -437,7 +447,7 @@ final class TerminalGui {
 
 	/** A filled cell or highlight: square in uid?, Material's rounder squares in Expressive. */
 	private static void shape(GuiGraphicsExtractor graphics, float x, float y, float w, float h, float r, int color) {
-		if (Looks.uid()) {
+		if (Looks.uid() || Looks.minecraft()) {
 			GuiDraw.fillSmooth(graphics, x, y, w, h, color);
 		} else if (Looks.ex()) {
 			ExLook.rounded(graphics, x, y, w, h, Math.min(w, h) * 0.3f, color);
@@ -449,7 +459,7 @@ final class TerminalGui {
 	}
 
 	private static void outline(GuiGraphicsExtractor graphics, float x, float y, float w, float h, float r, int color) {
-		GuiDraw.hairline(graphics, x, y, w, h, Looks.uid() ? 0f : Looks.ex() ? Math.min(w, h) * 0.3f : Looks.panels() ? Math.min(r, Math.min(w, h) * 0.2f) : r, color);
+		GuiDraw.hairline(graphics, x, y, w, h, Looks.uid() || Looks.minecraft() ? 0f : Looks.ex() ? Math.min(w, h) * 0.3f : Looks.panels() ? Math.min(r, Math.min(w, h) * 0.2f) : r, color);
 	}
 
 	/** An empty slot: uid?'s sunken control, an Expressive container tone, Shadow's card. */

@@ -71,6 +71,13 @@ public final class ArrayListHud {
 				}
 				GuiDraw.fillSmooth(graphics, right - 2f, y, 2f, ROW_H, row.color);
 				GuiDraw.text(graphics, font, row.text, x + PAD - 1f, GuiDraw.middle(y, ROW_H), ShadowLook.TEXT, false);
+			} else if (dev.stray.client.ui.Looks.minecraft()) {
+				// Minecraft: chat-black rows, the game's font with its shadow, the module's colour on the right.
+				if (background) {
+					GuiDraw.fill(graphics, x, y, row.width, ROW_H, Theme.HUD_WINDOW);
+				}
+				GuiDraw.fill(graphics, right - 1f, y, 1f, ROW_H, row.color);
+				GuiDraw.text(graphics, font, row.text, x + PAD - 1f, GuiDraw.middle(y, ROW_H) + 0.5f, 0xFFFFFFFF, true);
 			} else if (dev.stray.client.ui.Looks.panels()) {
 				// Panels: flat grey rows, the module's colour as a thin bar on the right.
 				if (background) {

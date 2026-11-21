@@ -213,7 +213,7 @@ public final class MenuFont {
 	 * and Expressive; Shadow keeps them as they are.
 	 */
 	public static Component look(Component value) {
-		if (value == null || Looks.shadow()) {
+		if (value == null || Looks.shadow() || Looks.minecraft()) {
 			return value;
 		}
 		net.minecraft.network.chat.FontDescription font = bodyLook().getFont();
@@ -226,15 +226,37 @@ public final class MenuFont {
 	}
 
 	public static Component shadow(String value) {
+		if (Looks.minecraft() && !UidMenu.drawing()) {
+			return Component.literal(value == null ? "" : value);
+		}
 		return Component.literal(value == null ? "" : value).withStyle(hyprStyle(bodyFamily()));
 	}
 
 	public static Component shadowSmall(String value) {
+		if (Looks.minecraft() && !UidMenu.drawing()) {
+			return Component.literal(value == null ? "" : value);
+		}
 		return Component.literal(value == null ? "" : value).withStyle(hyprStyle(smallFamily()));
 	}
 
 	public static Component shadowTitle(String value) {
+		if (Looks.minecraft() && !UidMenu.drawing()) {
+			return Component.literal(value == null ? "" : value);
+		}
 		return Component.literal(value == null ? "" : value).withStyle(hyprStyle(titleFamily()));
+	}
+
+	/** Text in the game's own font (Minecraft look): no font of Stray's on it or any part of it. */
+	public static boolean vanilla(Component value) {
+		if (value == null || !FontDescription.DEFAULT.equals(value.getStyle().getFont())) {
+			return false;
+		}
+		for (Component part : value.getSiblings()) {
+			if (!vanilla(part)) {
+				return false;
+			}
+		}
+		return true;
 	}
 
 	/** uid?: DejaVu Sans at 9 px, the stand-in for Verdana 9. */

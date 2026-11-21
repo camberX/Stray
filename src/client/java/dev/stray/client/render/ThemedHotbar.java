@@ -45,7 +45,8 @@ public final class ThemedHotbar {
 	public static boolean active() {
 		StrayConfig config = StrayConfig.get();
 		Minecraft client = Minecraft.getInstance();
-		return config != null && config.themedHotbar && client.player != null && client.gameMode != null
+		// Minecraft: the game's own hotbar, untouched.
+		return config != null && config.themedHotbar && !dev.stray.client.ui.Looks.minecraft() && client.player != null && client.gameMode != null
 			&& !client.player.isSpectator();
 	}
 

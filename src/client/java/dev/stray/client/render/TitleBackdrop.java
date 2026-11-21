@@ -54,6 +54,11 @@ public final class TitleBackdrop {
 			return;
 		}
 		Theme.refresh();
+		if (dev.stray.client.ui.Looks.minecraft()) {
+			// Minecraft: the dark grey of the game's own menu backgrounds.
+			GuiDraw.fillGradient(graphics, 0, 0, width, height, 0xFF2A2A2A, 0xFF141414);
+			return;
+		}
 		if (dev.stray.client.ui.Looks.panels()) {
 			// Panels: plain neutral greys, the accent as one thin line along the top.
 			GuiDraw.fillGradient(graphics, 0, 0, width, height, 0xFF181818, 0xFF0E0E0E);

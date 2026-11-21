@@ -4,8 +4,10 @@ import dev.stray.client.config.StrayConfig;
 import dev.stray.client.config.UnloadState;
 
 /**
- * The look everything Stray draws follows: Shadow, uid?, Expressive (Material 3 Expressive) or Panels.
- * One setting picks the menu, the HUD, Stray's own screens and the vanilla menus together.
+ * The look everything Stray draws follows: Minecraft (the game's own font and widgets, chat-black
+ * panels), Modern (neutral grey panels) or Skeet (the uid? menu). One setting picks the menu, the
+ * HUD, Stray's own screens and the vanilla menus together. Shadow and Expressive were removed;
+ * a config that still names one opens as Minecraft.
  */
 public final class Looks {
 	public static final String SHADOW = "shadow";
@@ -13,8 +15,10 @@ public final class Looks {
 	public static final String EXPRESSIVE = "expressive";
 	/** Neutral greys, every category's panel side by side, what is on in white with the accent. */
 	public static final String PANELS = "panels";
-	public static final String[] ALL = {SHADOW, UID, EXPRESSIVE, PANELS};
-	public static final String[] LABELS = {"Shadow", "uid?", "Expressive", "Panels"};
+	/** The game's own look: its font with shadow, chat-black panels, vanilla screens left as they are. */
+	public static final String MINECRAFT = "minecraft";
+	public static final String[] ALL = {MINECRAFT, PANELS, UID};
+	public static final String[] LABELS = {"Minecraft", "Modern", "Skeet"};
 
 	/** While a preview draws another look than the saved one (the first-boot picker). */
 	private static String forced;
@@ -27,7 +31,7 @@ public final class Looks {
 			return forced;
 		}
 		StrayConfig config = StrayConfig.get();
-		return config == null ? SHADOW : StrayConfig.normalizeTheme(config.theme);
+		return config == null ? MINECRAFT : StrayConfig.normalizeTheme(config.theme);
 	}
 
 	public static int index() {
@@ -40,16 +44,22 @@ public final class Looks {
 		return 0;
 	}
 
+	/** Shadow was removed: never the current look. */
 	public static boolean shadow() {
-		return SHADOW.equals(current());
+		return false;
+	}
+
+	public static boolean minecraft() {
+		return MINECRAFT.equals(current());
 	}
 
 	public static boolean uid() {
 		return UID.equals(current());
 	}
 
+	/** Expressive was removed: never the current look. */
 	public static boolean ex() {
-		return EXPRESSIVE.equals(current());
+		return false;
 	}
 
 	public static boolean panels() {

@@ -187,6 +187,32 @@ public final class Theme {
 			SIDEBAR = ExColors.surfaceLow;
 			DANGER = ExColors.tertiary;
 			WINDOW_RADIUS = 20f;
+		} else if (Looks.minecraft()) {
+			// Minecraft: the chat box's black, square corners, the game's formatting colours.
+			ACCENT = MinecraftLook.YELLOW;
+			ACCENT_DIM = withAlpha(0xFFFF55, 0x66);
+			WINDOW = MinecraftLook.BG;
+			WINDOW_SOLID = 0xFF000000;
+			SHEET = 0xE0000000;
+			CARD = 0x18FFFFFF;
+			CARD_HOVER = 0x2CFFFFFF;
+			LINE = MinecraftLook.LINE;
+			TRACK = 0xFF2B2B2B;
+			PANEL = 0x60000000;
+			HUD_WINDOW = withAlpha(0x000000, Math.round(StrayConfig.clamp(StrayConfig.get().hudOpacity, 0.20f, 1f) * 0x8C));
+			HUD_LINE = MinecraftLook.LINE;
+			HUD_LINE_NEUTRAL = MinecraftLook.LINE;
+			HUD_TRACK = 0xFF2B2B2B;
+			HUD_CARD = 0x18FFFFFF;
+			HUD_CARD_HOVER = 0x2CFFFFFF;
+			HUD_PANEL = 0x60000000;
+			TEXT = MinecraftLook.WHITE;
+			MUTED = MinecraftLook.GREY;
+			HEADER = MinecraftLook.YELLOW;
+			OFF = MinecraftLook.DGREY;
+			NAV_PILL = 0x40FFFFFF;
+			SIDEBAR = 0x60000000;
+			WINDOW_RADIUS = 0f;
 		} else if (Looks.panels()) {
 			// Panels: pure neutral greys (no tint), white for what is on, the theme accent.
 			int accent = PanelLook.accent();

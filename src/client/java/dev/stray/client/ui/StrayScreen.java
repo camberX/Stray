@@ -3296,6 +3296,12 @@ public class StrayScreen extends Screen {
 	}
 
 	private void clickToggle(GuiGraphicsExtractor graphics, float x, float y, float w, float h, float t) {
+		if (PanelMenu.drawing() && Looks.minecraft()) {
+			// Minecraft: the game's checkbox, square, at the right of the row.
+			float size = Math.max(8f, h + 2f);
+			MinecraftLook.checkbox(graphics, x + w - size, y - 1f, size, t, false);
+			return;
+		}
 		if (PanelMenu.drawing()) {
 			PanelLook.toggle(graphics, x, y, w, h, t);
 			return;
@@ -4889,7 +4895,10 @@ public class StrayScreen extends Screen {
 		float barW = Math.max(24, w - GuiDraw.menuWidth(font, label) - valueWidth - 16);
 		float barY = y + row * 0.45f;
 		float t = Mth.clamp(progress, 0f, 1f);
-		if (PanelMenu.drawing()) {
+		if (PanelMenu.drawing() && Looks.minecraft()) {
+			// Minecraft: the game's slider, a dark track and a button for the handle.
+			MinecraftLook.slider(graphics, barX, barY - 4f, barW, 10f, t, false);
+		} else if (PanelMenu.drawing()) {
 			// Panels: a hairline track, the accent up to the value, a small white bar for the handle.
 			GuiDraw.fillSmooth(graphics, barX, barY + 0.75f, barW, 1.5f, PanelLook.G3);
 			GuiDraw.fillSmooth(graphics, barX, barY + 0.75f, barW * t, 1.5f, PanelLook.accent());
@@ -5016,8 +5025,12 @@ public class StrayScreen extends Screen {
 		} else if (PanelMenu.drawing()) {
 			float was = GuiDraw.alphaScale;
 			GuiDraw.alphaScale = was * pickerT;
-			ShadowLook.shadow(graphics, x, y, w, h, PanelLook.RADIUS, 14, 0xB0);
-			PanelLook.panel(graphics, x, y, w, h, 0xFE131313);
+			if (Looks.minecraft()) {
+				MinecraftLook.tooltip(graphics, x, y, w, h);
+			} else {
+				ShadowLook.shadow(graphics, x, y, w, h, PanelLook.RADIUS, 14, 0xB0);
+				PanelLook.panel(graphics, x, y, w, h, 0xFE131313);
+			}
 			GuiDraw.alphaScale = was;
 		} else if (ShadowMenu.drawing()) {
 			ShadowLook.window(graphics, x, y, w, h, ShadowLook.WINDOW_R, Anim.fade(0xF2050709, pickerT));

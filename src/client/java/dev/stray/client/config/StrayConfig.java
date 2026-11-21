@@ -94,7 +94,7 @@ public final class StrayConfig {
 	 * The look of everything Stray draws: "shadow", "uid" or "expressive" (Material 3 Expressive).
 	 * The menu, the HUD, Stray's screens and the vanilla menus all follow it.
 	 */
-	public String theme = "shadow";
+	public String theme = "minecraft";
 	/** False until the first-boot picker has been answered. */
 	public boolean themeChosen = false;
 	/** Expressive: the seed colour every Material colour role is built from. */
@@ -2146,9 +2146,9 @@ public final class StrayConfig {
 		return normalizeTheme(style);
 	}
 
-	/** One of the looks; anything else is Shadow. */
+	/** One of the looks (Minecraft, Modern = "panels", Skeet = "uid"); anything else, the removed Shadow and Expressive included, is Minecraft. */
 	public static String normalizeTheme(String style) {
-		return "uid".equals(style) || "expressive".equals(style) || "panels".equals(style) ? style : "shadow";
+		return "uid".equals(style) || "panels".equals(style) ? style : "minecraft";
 	}
 
 	public static final String[] MUSIC_LAYOUTS = {"card", "compact", "poster", "dock", "bar"};

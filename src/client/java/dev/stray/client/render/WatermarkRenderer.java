@@ -62,7 +62,7 @@ public final class WatermarkRenderer {
 			drawUid(graphics, scale);
 		} else if (ex()) {
 			drawEx(graphics, font);
-		} else if (dev.stray.client.ui.Looks.panels()) {
+		} else if (dev.stray.client.ui.Looks.panels() || dev.stray.client.ui.Looks.minecraft()) {
 			drawPanels(graphics, font);
 		} else {
 			drawShadow(graphics, font);
@@ -184,8 +184,13 @@ public final class WatermarkRenderer {
 	private static final float PN_PAD = 7f;
 	private static final float PN_GAP = 13f;
 
+	/** Modern writes the name in lower case; Minecraft as the game writes names. */
+	private static String brandText() {
+		return dev.stray.client.ui.Looks.minecraft() ? "Stray" : "stray";
+	}
+
 	private static float panelsWidth(Font font) {
-		float w = PN_PAD + font.width(MenuFont.shadow("stray"));
+		float w = PN_PAD + font.width(MenuFont.shadow(brandText()));
 		List<String> parts = shadowParts();
 		for (int i = 0; i < parts.size(); i++) {
 			w += PN_GAP + stableWidth(font, MenuFont.shadow(parts.get(i)), i < PART_KEYS.length ? PART_KEYS[i] : "shadow:" + i);
@@ -195,17 +200,23 @@ public final class WatermarkRenderer {
 
 	private static void drawPanels(GuiGraphicsExtractor graphics, Font font) {
 		List<String> parts = shadowParts();
-		Component brand = MenuFont.shadow("stray");
+		boolean mc = dev.stray.client.ui.Looks.minecraft();
+		Component brand = MenuFont.shadow(brandText());
 		float w = panelsWidth(font);
 		if (HudChrome.background()) {
-			dev.stray.client.ui.PanelLook.panel(graphics, 0, 0, w, HEIGHT, 0xF01C1C1C);
+			if (mc) {
+				// Minecraft: the chat box's black, square corners.
+				GuiDraw.fill(graphics, 0, 0, w, HEIGHT, dev.stray.client.ui.Theme.HUD_WINDOW);
+			} else {
+				dev.stray.client.ui.PanelLook.panel(graphics, 0, 0, w, HEIGHT, 0xF01C1C1C);
+			}
 		}
-		float textY = Math.round(GuiDraw.middle(0, HEIGHT));
-		GuiDraw.text(graphics, font, brand, PN_PAD, textY, dev.stray.client.ui.PanelLook.accent(), false);
+		float textY = Math.round(GuiDraw.middle(0, HEIGHT)) + (mc ? 1f : 0f);
+		GuiDraw.text(graphics, font, brand, PN_PAD, textY, mc ? dev.stray.client.ui.MinecraftLook.YELLOW : dev.stray.client.ui.PanelLook.accent(), false);
 		float x = PN_PAD + font.width(brand);
 		for (int i = 0; i < parts.size(); i++) {
 			Component text = MenuFont.shadow(parts.get(i));
-			GuiDraw.fillSmooth(graphics, x + PN_GAP * 0.5f - 0.5f, 5f, 1f, HEIGHT - 10f, dev.stray.client.ui.PanelLook.EDGE);
+			GuiDraw.fillSmooth(graphics, x + PN_GAP * 0.5f - 0.5f, 5f, 1f, HEIGHT - 10f, mc ? dev.stray.client.ui.MinecraftLook.LINE : dev.stray.client.ui.PanelLook.EDGE);
 			x += PN_GAP;
 			GuiDraw.text(graphics, font, text, x, textY, 0xFFFFFFFF, false);
 			x += stableWidth(font, text, i < PART_KEYS.length ? PART_KEYS[i] : "shadow:" + i);
@@ -455,7 +466,7 @@ public final class WatermarkRenderer {
 		if (tick == widthTick && widthCache > 0f && look.equals(widthLook)) {
 			return widthCache;
 		}
-		float w = uid() ? uidWidth(uidScale() * HudLayout.scale(HudLayout.Id.WATERMARK)) * (float) (uidScale() / guiScale()) : ex() ? exWidth(font) : dev.stray.client.ui.Looks.panels() ? panelsWidth(font) : shadowWidth(font);
+		float w = uid() ? uidWidth(uidScale() * HudLayout.scale(HudLayout.Id.WATERMARK)) * (float) (uidScale() / guiScale()) : ex() ? exWidth(font) : dev.stray.client.ui.Looks.panels() || dev.stray.client.ui.Looks.minecraft() ? panelsWidth(font) : shadowWidth(font);
 		widthTick = tick;
 		widthCache = w;
 		widthLook = look;

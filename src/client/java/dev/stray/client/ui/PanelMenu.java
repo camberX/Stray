@@ -21,13 +21,10 @@ import java.util.Locale;
  */
 public final class PanelMenu {
 	private static final float MARGIN = 12f;
-	private static final float PANEL_W = 126f;
-	private static final float GAP = 6f;
+	private static final float PANEL_GAP = 6f;
 	private static final float BAR_Y = 10f;
 	private static final float BAR_H = 20f;
 	private static final float TOP = 40f;
-	private static final float HEAD_H = 20f;
-	private static final float ROW_H = 15f;
 	private static final float SUB_H = 12f;
 	private static final float WIN_W = 250f;
 	private static final float WIN_HEAD = 30f;
@@ -99,7 +96,54 @@ public final class PanelMenu {
 	}
 
 	public static boolean active() {
-		return Looks.panels();
+		return Looks.panels() || Looks.minecraft();
+	}
+
+	/** The Minecraft look draws this same menu: the game's font, chat black, no corners. */
+	static boolean mc() {
+		return Looks.minecraft();
+	}
+
+	private static float pw() {
+		return mc() ? 104f : 126f;
+	}
+
+	private static float headH() {
+		return mc() ? 14f : 20f;
+	}
+
+	private static float rowH() {
+		return mc() ? 11f : 15f;
+	}
+
+	private static float gap() {
+		return mc() ? 4f : PANEL_GAP;
+	}
+
+	private static int accent() {
+		return mc() ? MinecraftLook.YELLOW : accent();
+	}
+
+	private static int edge() {
+		return mc() ? MinecraftLook.LINE : edge();
+	}
+
+	/** The soft shadow under a window; the Minecraft look has none. */
+	private static void shade(GuiGraphicsExtractor graphics, float x, float y, float w, float h, float r, int blur, int alpha) {
+		if (!mc()) {
+			shade(graphics, x, y, w, h, r, blur, alpha);
+		}
+	}
+
+	/** A panel (chat black) or, for the darker fills, a window (the item tooltip box). */
+	private static void box(GuiGraphicsExtractor graphics, float x, float y, float w, float h, int fill) {
+		if (!mc()) {
+			box(graphics, x, y, w, h, fill);
+		} else if (fill == 0xFA121212 || fill == 0xFE131313) {
+			MinecraftLook.tooltip(graphics, x, y, w, h);
+		} else {
+			MinecraftLook.panel(graphics, x, y, w, h, MinecraftLook.BG);
+		}
 	}
 
 	public static boolean drawing() {
@@ -115,7 +159,11 @@ public final class PanelMenu {
 	static float unit() {
 		Minecraft client = Minecraft.getInstance();
 		float w = client == null || client.getWindow() == null ? 960f : client.getWindow().getGuiScaledWidth();
-		float need = MARGIN * 2f + PANELS.length * PANEL_W + (PANELS.length - 1) * GAP;
+		if (mc()) {
+			// The game's font blurs at any fractional scale: the panels wrap into columns instead.
+			return 1f;
+		}
+		float need = MARGIN * 2f + PANELS.length * pw() + (PANELS.length - 1) * gap();
 		return Math.min(1f, w / need);
 	}
 
@@ -198,9 +246,10 @@ public final class PanelMenu {
 		graphics.pose().scale(unit, unit);
 		try {
 			GuiDraw.alphaScale = fade;
-			GuiDraw.fill(graphics, 0, 0, sw, sh, 0x8C000000);
-			float total = PANELS.length * PANEL_W + (PANELS.length - 1) * GAP;
-			float left = Math.round((sw - total) / 2f);
+			GuiDraw.fill(graphics, 0, 0, sw, sh, mc() ? 0x50000000 : 0x8C000000);
+			float[][] at = layout(screen, sw, sh);
+			float total = at[PANELS.length][0];
+			float left = at[PANELS.length][1];
 			bar(screen, graphics, font, mx, my, left, total);
 			String query = ClickGui.filterText().trim().toLowerCase(Locale.ROOT);
 			Row hovered = null;
@@ -221,7 +270,7 @@ public final class PanelMenu {
 				GuiDraw.alphaScale = (out >= 0f ? 1f : was) * panelAlpha;
 				Row h;
 				try {
-					h = panel(screen, graphics, font, mx, my, i, left + i * (PANEL_W + GAP), TOP + rise, sh - TOP - MARGIN, query);
+					h = panel(screen, graphics, font, mx, my, i, at[i][0], at[i][1] + rise, at[i][2], query);
 				} finally {
 					GuiDraw.alphaScale = was;
 				}
@@ -250,14 +299,74 @@ public final class PanelMenu {
 		}
 	}
 
+	/**
+	 * Where each panel goes: {x, y, max height} per panel, then {total width, left}. Modern puts
+	 * them side by side, scaled to fit; Minecraft keeps whole pixels, so on a narrow screen the
+	 * panels stack into as many columns as fit, each into the shortest column so far.
+	 */
+	private static float[][] layout(StrayScreen screen, float sw, float sh) {
+		float[][] at = new float[PANELS.length + 1][3];
+		int n = PANELS.length;
+		int cols = n;
+		if (mc()) {
+			cols = Math.max(1, Math.min(n, (int) Math.floor((sw - MARGIN * 2f + gap()) / (pw() + gap()))));
+		}
+		float total = cols * pw() + (cols - 1) * gap();
+		float left = Math.round((sw - total) / 2f);
+		at[n][0] = total;
+		at[n][1] = left;
+		if (cols == n) {
+			for (int i = 0; i < n; i++) {
+				at[i][0] = left + i * (pw() + gap());
+				at[i][1] = TOP;
+				at[i][2] = sh - TOP - MARGIN;
+			}
+			return at;
+		}
+		float[] colY = new float[cols];
+		java.util.Arrays.fill(colY, TOP);
+		float bottom = sh - MARGIN;
+		for (int i = 0; i < n; i++) {
+			int c = 0;
+			for (int k = 1; k < cols; k++) {
+				if (colY[k] < colY[c]) {
+					c = k;
+				}
+			}
+			float want = headH() + panelContent(screen, i);
+			float room = Math.max(headH() + rowH() * 3f, bottom - colY[c]);
+			float h = Math.min(want, room);
+			at[i][0] = left + c * (pw() + gap());
+			at[i][1] = colY[c];
+			at[i][2] = h;
+			colY[c] += h + gap();
+		}
+		return at;
+	}
+
+	/** A panel's list height, the same sum {@link #panel} makes. */
+	private static float panelContent(StrayScreen screen, int index) {
+		float content = 8f;
+		for (List<Row> group : rows(screen, PANELS[index])) {
+			content += group.size() * (rowH() + 1f);
+		}
+		return content;
+	}
+
 	/** The top bar: the name in the accent, search across the middle, Edit HUD and Theme. */
 	private static void bar(StrayScreen screen, GuiGraphicsExtractor graphics, Font font, int mx, int my, float left, float total) {
-		int accent = PanelLook.accent();
+		int accent = accent();
 		// The name on its own chip, so nothing behind the menu shows through beside it.
-		float brandW = GuiDraw.titleWidth(font, "stray") + 18f;
-		ShadowLook.shadow(graphics, left, BAR_Y, brandW, BAR_H, PanelLook.RADIUS, 8, 0x80);
-		PanelLook.panel(graphics, left, BAR_Y, brandW, BAR_H, 0xFF1C1C1C);
-		GuiDraw.title(graphics, font, "stray", left + 9f, GuiDraw.middle(BAR_Y, BAR_H), accent);
+		float brandW = GuiDraw.titleWidth(font, mc() ? "Stray" : "stray") + 18f;
+		if (mc()) {
+			// The name alone, in the yellow the game uses for headings.
+			brandW = GuiDraw.width(font, MenuFont.shadow("Stray")) + 8f;
+			GuiDraw.text(graphics, font, MenuFont.shadow("Stray"), left, GuiDraw.middle(BAR_Y, BAR_H), accent, true);
+		} else {
+			shade(graphics, left, BAR_Y, brandW, BAR_H, PanelLook.RADIUS, 8, 0x80);
+			box(graphics, left, BAR_Y, brandW, BAR_H, 0xFF1C1C1C);
+			GuiDraw.title(graphics, font, "stray", left + 9f, GuiDraw.middle(BAR_Y, BAR_H), accent);
+		}
 		float bx = left + brandW + 6f;
 		String hud = "Edit HUD";
 		String theme = "Theme";
@@ -266,10 +375,14 @@ public final class PanelMenu {
 		float right = left + total;
 		float searchW = right - bx - hudW - themeW - 12f;
 		boolean focused = ClickGui.searchFocused();
-		ShadowLook.shadow(graphics, bx, BAR_Y, searchW, BAR_H, PanelLook.RADIUS, 8, 0x80);
-		PanelLook.panel(graphics, bx, BAR_Y, searchW, BAR_H, 0xFF1C1C1C);
-		if (focused) {
-			GuiDraw.hairline(graphics, bx, BAR_Y, searchW, BAR_H, 4f, accent);
+		if (mc()) {
+			MinecraftLook.field(graphics, bx, BAR_Y, searchW, BAR_H, focused);
+		} else {
+			shade(graphics, bx, BAR_Y, searchW, BAR_H, PanelLook.RADIUS, 8, 0x80);
+			box(graphics, bx, BAR_Y, searchW, BAR_H, 0xFF1C1C1C);
+			if (focused) {
+				GuiDraw.hairline(graphics, bx, BAR_Y, searchW, BAR_H, 4f, accent);
+			}
 		}
 		String query = ClickGui.filterText();
 		boolean empty = query.isEmpty() && !focused;
@@ -289,8 +402,12 @@ public final class PanelMenu {
 
 	private static void button(StrayScreen screen, GuiGraphicsExtractor graphics, Font font, int mx, int my, float x, String label, float w, Runnable click) {
 		boolean hover = GuiDraw.hovered(mx, my, x, BAR_Y, w, BAR_H);
-		ShadowLook.shadow(graphics, x, BAR_Y, w, BAR_H, PanelLook.RADIUS, 8, 0x80);
-		PanelLook.panel(graphics, x, BAR_Y, w, BAR_H, hover ? 0xFF262626 : 0xFF1C1C1C);
+		if (mc()) {
+			MinecraftLook.button(graphics, x, BAR_Y, w, BAR_H, hover, true);
+		} else {
+			shade(graphics, x, BAR_Y, w, BAR_H, PanelLook.RADIUS, 8, 0x80);
+			box(graphics, x, BAR_Y, w, BAR_H, hover ? 0xFF262626 : 0xFF1C1C1C);
+		}
 		Component text = MenuFont.shadow(label);
 		GuiDraw.text(graphics, font, text, x + Math.round((w - GuiDraw.width(font, text)) / 2f), GuiDraw.middle(BAR_Y, BAR_H), PanelLook.WHITE, false);
 		screen.clickHit(x, BAR_Y, w, BAR_H, click);
@@ -351,38 +468,38 @@ public final class PanelMenu {
 				count++;
 				on += isOn(row) ? 1 : 0;
 				found += !query.isEmpty() && matches(row, query) ? 1 : 0;
-				content += ROW_H + 1f;
+				content += rowH() + 1f;
 			}
 		}
 		content += 8f;
-		float bodyMax = maxH - HEAD_H;
+		float bodyMax = maxH - headH();
 		float bodyHeight = Math.min(content, bodyMax);
-		float h = HEAD_H + bodyHeight;
-		ShadowLook.shadow(graphics, x, y, PANEL_W, h, PanelLook.RADIUS, 12, 0x90);
-		PanelLook.panel(graphics, x, y, PANEL_W, h, 0xF21C1C1C);
+		float h = headH() + bodyHeight;
+		shade(graphics, x, y, pw(), h, PanelLook.RADIUS, 12, 0x90);
+		box(graphics, x, y, pw(), h, 0xF21C1C1C);
 		// Header: the name in the accent; while searching, how many match.
-		GuiDraw.text(graphics, font, MenuFont.shadow(panel.title()), x + 8f, GuiDraw.middle(y, HEAD_H), PanelLook.accent(), false);
+		GuiDraw.text(graphics, font, MenuFont.shadow(panel.title()), x + 8f, GuiDraw.middle(y, headH()), accent(), false);
 		float metaT = ExMotion.spring("pn-meta/" + index, query.isEmpty() ? 0f : 1f, ExMotion.EFFECTS);
 		if (metaT > 0.02f) {
 			Component meta = MenuFont.shadowSmall(found > 0 ? found + " found" : "none");
 			int metaColor = found > 0 ? PanelLook.WHITE : PanelLook.DGREY;
 			float was = GuiDraw.alphaScale;
 			GuiDraw.alphaScale = was * metaT;
-			GuiDraw.text(graphics, font, meta, x + PANEL_W - 8f - GuiDraw.width(font, meta), GuiDraw.middle(y, HEAD_H) + 0.5f, metaColor, false);
+			GuiDraw.text(graphics, font, meta, x + pw() - 8f - GuiDraw.width(font, meta), GuiDraw.middle(y, headH()) + 0.5f, metaColor, false);
 			GuiDraw.alphaScale = was;
 		}
-		GuiDraw.fillSmooth(graphics, x + 1f, y + HEAD_H - 1f, PANEL_W - 2f, 1f, PanelLook.EDGE);
+		GuiDraw.fillSmooth(graphics, x + 1f, y + headH() - 1f, pw() - 2f, 1f, edge());
 		panelBox[index][0] = x;
-		panelBox[index][1] = y + HEAD_H;
-		panelBox[index][2] = PANEL_W;
+		panelBox[index][1] = y + headH();
+		panelBox[index][2] = pw();
 		panelBox[index][3] = bodyHeight;
 		panelContent[index] = content;
 		scroll[index] = Mth.clamp(scroll[index], 0f, Math.max(0f, content - bodyHeight));
 		float shown = Mth.clamp(ExMotion.spring("pn-scroll/" + index, scroll[index], ExMotion.EFFECTS_SLOW), 0f, Math.max(0f, content - bodyHeight));
-		float ry = y + HEAD_H + 3f - shown;
+		float ry = y + headH() + 3f - shown;
 		Row hovered = null;
 		int mark = screen.clickHitMark();
-		boolean clip = GuiDraw.scissor(graphics, x, y + HEAD_H, PANEL_W, bodyHeight);
+		boolean clip = GuiDraw.scissor(graphics, x, y + headH(), pw(), bodyHeight);
 		try {
 			for (int g = 0; g < groups.size(); g++) {
 				if (headed) {
@@ -390,29 +507,29 @@ public final class PanelMenu {
 					ry += SUB_H;
 				}
 				for (Row row : groups.get(g)) {
-					if (ry + ROW_H > y + HEAD_H && ry < y + HEAD_H + bodyHeight) {
+					if (ry + rowH() > y + headH() && ry < y + headH() + bodyHeight) {
 						// Nothing under the settings window counts as hovered.
-						boolean hover = GuiDraw.hovered(mx, my, x + 3f, ry, PANEL_W - 6f, ROW_H) && GuiDraw.hovered(mx, my, x, y + HEAD_H, PANEL_W, bodyHeight)
+						boolean hover = GuiDraw.hovered(mx, my, x + 3f, ry, pw() - 6f, rowH()) && GuiDraw.hovered(mx, my, x, y + headH(), pw(), bodyHeight)
 							&& !insideWindow(mx, my);
-						row(screen, graphics, font, row, x + 3f, ry, PANEL_W - 6f, hover, query);
+						row(screen, graphics, font, row, x + 3f, ry, pw() - 6f, hover, query);
 						if (hover) {
 							hovered = row;
 						}
 					}
-					ry += ROW_H + 1f;
+					ry += rowH() + 1f;
 				}
 			}
 		} finally {
 			if (clip) {
 				GuiDraw.disableScissor(graphics);
 			}
-			screen.clickClipHits(mark, x, y + HEAD_H, PANEL_W, bodyHeight);
+			screen.clickClipHits(mark, x, y + headH(), pw(), bodyHeight);
 		}
 		if (content > bodyHeight + 1f) {
 			float track = bodyHeight - 6f;
 			float thumb = Math.max(12f, track * bodyHeight / content);
-			float ty = y + HEAD_H + 3f + (track - thumb) * (shown / Math.max(1f, content - bodyHeight));
-			GuiDraw.roundedFine(graphics, x + PANEL_W - 3.5f, ty, 2f, thumb, 1f, PanelLook.accent());
+			float ty = y + headH() + 3f + (track - thumb) * (shown / Math.max(1f, content - bodyHeight));
+			GuiDraw.roundedFine(graphics, x + pw() - 3.5f, ty, 2f, thumb, 1f, accent());
 		}
 		return hovered;
 	}
@@ -437,14 +554,17 @@ public final class PanelMenu {
 		float onT = ExMotion.spring("pn-on/" + key, on ? 1f : 0f, ExMotion.EFFECTS);
 		float hoverT = ExMotion.spring("pn-hov/" + key, hover ? 1f : 0f, ExMotion.EFFECTS_FAST);
 		try {
+			if (mc()) {
+				mcRow(screen, graphics, font, row, x, y, w, on, onT, hoverT, dim, query);
+			} else {
 			// The fill fades between off, hovered and on; the accent bar grows out from its middle.
 			if (onT > 0.01f || hoverT > 0.01f) {
 				int fill = PanelLook.lerp(Theme.withAlpha(PanelLook.G2, Math.round(255 * hoverT)), PanelLook.G3, onT);
-				GuiDraw.roundedFine(graphics, x, y, w, ROW_H, 3f, fill);
+				GuiDraw.roundedFine(graphics, x, y, w, rowH(), 3f, fill);
 			}
 			if (onT > 0.01f) {
-				float barH = (ROW_H - 6f) * ExMotion.spring("pn-bar/" + key, on ? 1f : 0f, ExMotion.SPATIAL_FAST);
-				GuiDraw.fillSmooth(graphics, x, y + (ROW_H - Math.max(0f, barH)) * 0.5f, 1.5f, Math.max(0f, barH), PanelLook.accent());
+				float barH = (rowH() - 6f) * ExMotion.spring("pn-bar/" + key, on ? 1f : 0f, ExMotion.SPATIAL_FAST);
+				GuiDraw.fillSmooth(graphics, x, y + (rowH() - Math.max(0f, barH)) * 0.5f, 1.5f, Math.max(0f, barH), accent());
 			}
 			// Text dims through its colour, not alphaScale, so only fades go through the text curve.
 			GuiDraw.alphaScale = was;
@@ -453,21 +573,52 @@ public final class PanelMenu {
 			if (chip != null && !chip.isEmpty()) {
 				Component c = MenuFont.shadowSmall("[" + UidMenu.keyText(chip).toLowerCase(Locale.ROOT) + "]");
 				chipW = GuiDraw.width(font, c) + 6f;
-				GuiDraw.text(graphics, font, c, x + w - chipW + 2f, GuiDraw.middle(y, ROW_H) + 0.5f, dimmed(PanelLook.GREY, dim), false);
+				GuiDraw.text(graphics, font, c, x + w - chipW + 2f, GuiDraw.middle(y, rowH()) + 0.5f, dimmed(PanelLook.GREY, dim), false);
 			}
 			Component label = MenuFont.shadow(fit(font, ClickGui.display(row.label()), w - 12f - chipW));
 			int ink = PanelLook.lerp(PanelLook.lerp(PanelLook.GREY, 0xFFD4D4D4, hoverT), PanelLook.WHITE, onT);
 			float nudge = 1.5f * ExMotion.spring("pn-nudge/" + key, hover ? 1f : 0f, ExMotion.SPATIAL_FAST);
-			GuiDraw.text(graphics, font, label, x + 6f + nudge, GuiDraw.middle(y, ROW_H), dimmed(ink, dim), false);
+			GuiDraw.text(graphics, font, label, x + 6f + nudge, GuiDraw.middle(y, rowH()), dimmed(ink, dim), false);
 			float under = ExMotion.spring("pn-under/" + key, !query.isEmpty() && !dim ? 1f : 0f, ExMotion.SPATIAL);
 			if (under > 0.01f) {
-				GuiDraw.fillSmooth(graphics, x + 6f + nudge, y + ROW_H - 2.5f, Math.max(0f, Math.min(GuiDraw.width(font, label), w - 12f) * Math.min(1f, under)), 1f, PanelLook.accent());
+				GuiDraw.fillSmooth(graphics, x + 6f + nudge, y + rowH() - 2.5f, Math.max(0f, Math.min(GuiDraw.width(font, label), w - 12f) * Math.min(1f, under)), 1f, accent());
+			}
 			}
 		} finally {
 			GuiDraw.alphaScale = was;
 		}
-		spots.add(new Spot(x, y, w, ROW_H, row));
-		screen.clickHit(x, y, w, ROW_H, () -> leftClick(row));
+		spots.add(new Spot(x, y, w, rowH(), row));
+		screen.clickHit(x, y, w, rowH(), () -> leftClick(row));
+	}
+
+	/**
+	 * A Minecraft-look row: a faint white wash on hover, a small square (green when on), the name
+	 * in white when on and the chat grey when off, all in the game's font with its shadow.
+	 */
+	private static void mcRow(StrayScreen screen, GuiGraphicsExtractor graphics, Font font, Row row, float x, float y, float w, boolean on, float onT, float hoverT, boolean dim, String query) {
+		if (hoverT > 0.01f) {
+			GuiDraw.fill(graphics, x, y, w, rowH(), Theme.withAlpha(0xFFFFFF, Math.round(0x24 * hoverT)));
+		}
+		// row() has already dimmed alphaScale for rows that don't match the search.
+		float was = GuiDraw.alphaScale;
+		try {
+			MinecraftLook.bullet(graphics, x + 3f, y + Math.round((rowH() - 4f) / 2f), onT);
+			String chip = row.item() == null ? null : row.item().chip();
+			float chipW = 0f;
+			if (chip != null && !chip.isEmpty()) {
+				Component c = MenuFont.shadow("[" + UidMenu.keyText(chip).toLowerCase(Locale.ROOT) + "]");
+				chipW = GuiDraw.width(font, c) + 4f;
+				GuiDraw.text(graphics, font, c, x + w - chipW + 2f, GuiDraw.middle(y, rowH()) + 0.5f, MinecraftLook.DGREY, true);
+			}
+			Component label = MenuFont.shadow(fit(font, ClickGui.display(row.label()), w - 14f - chipW));
+			int ink = PanelLook.lerp(PanelLook.lerp(MinecraftLook.GREY, 0xFFDDDDDD, hoverT), MinecraftLook.WHITE, onT);
+			GuiDraw.text(graphics, font, label, x + 11f, GuiDraw.middle(y, rowH()) + 0.5f, ink, true);
+			if (!query.isEmpty() && !dim) {
+				GuiDraw.fill(graphics, x + 11f, y + rowH() - 1f, Math.min(GuiDraw.width(font, label), w - 14f), 1f, MinecraftLook.YELLOW);
+			}
+		} finally {
+			GuiDraw.alphaScale = was;
+		}
 	}
 
 	private static int dimmed(int color, boolean dim) {
@@ -541,8 +692,8 @@ public final class PanelMenu {
 		float tw = w + 16f;
 		float tx = mx + 10f + tw > sw - 4f ? mx - tw - 6f : mx + 10f;
 		float ty = Math.min(my + 10f, sh - h - 4f);
-		ShadowLook.shadow(graphics, tx, ty, tw, h, PanelLook.RADIUS, 12, 0xB0);
-		PanelLook.panel(graphics, tx, ty, tw, h, 0xFA121212);
+		shade(graphics, tx, ty, tw, h, PanelLook.RADIUS, 12, 0xB0);
+		box(graphics, tx, ty, tw, h, 0xFA121212);
 		float y = ty + 6f;
 		GuiDraw.text(graphics, font, title, tx + 8f, y, PanelLook.WHITE, false);
 		y += 11f;
@@ -551,7 +702,7 @@ public final class PanelMenu {
 			y += 9f;
 		}
 		if (hint != null) {
-			GuiDraw.text(graphics, font, MenuFont.shadowSmall(hint), tx + 8f, y + 2f, PanelLook.accent(), false);
+			GuiDraw.text(graphics, font, MenuFont.shadowSmall(hint), tx + 8f, y + 2f, mc() ? MinecraftLook.DGREY : accent(), false);
 		}
 	}
 
@@ -668,11 +819,13 @@ public final class PanelMenu {
 
 	private static void windowBody(StrayScreen screen, GuiGraphicsExtractor graphics, Font font, int mx, int my, ClickGui.Mod mod, String title, String where) {
 		// Darker than the panels, with a soft shadow round it so it stands off what's behind.
-		ShadowLook.shadow(graphics, winX, winY, WIN_W, winH, PanelLook.RADIUS, 18, 0xC0);
-		PanelLook.panel(graphics, winX, winY, WIN_W, winH, 0xFE131313);
-		GuiDraw.fillSmooth(graphics, winX + 3f, winY, WIN_W - 6f, 1.5f, PanelLook.accent());
+		shade(graphics, winX, winY, WIN_W, winH, PanelLook.RADIUS, 18, 0xC0);
+		box(graphics, winX, winY, WIN_W, winH, 0xFE131313);
+		if (!mc()) {
+			GuiDraw.fillSmooth(graphics, winX + 3f, winY, WIN_W - 6f, 1.5f, accent());
+		}
 		GuiDraw.text(graphics, font, MenuFont.shadowSmall(where), winX + 10f, winY + 6f, PanelLook.GREY, false);
-		GuiDraw.text(graphics, font, MenuFont.shadow(fit(font, title, WIN_W - 80f)), winX + 10f, winY + 16f, PanelLook.WHITE, false);
+		GuiDraw.text(graphics, font, MenuFont.shadow(fit(font, title, WIN_W - 80f)), winX + 10f, winY + 16f, mc() ? MinecraftLook.YELLOW : PanelLook.WHITE, false);
 		float cx = winX + WIN_W - 18f;
 		boolean closeHover = GuiDraw.hovered(mx, my, cx - 3f, winY + 6f, 16f, 18f);
 		GuiDraw.text(graphics, font, MenuFont.shadow("x"), cx + 2f, winY + 10f, closeHover ? PanelLook.WHITE : PanelLook.GREY, false);
@@ -680,10 +833,14 @@ public final class PanelMenu {
 		if (mod != null && !mod.hold()) {
 			float tx = cx - 30f;
 			boolean on = mod.on().getAsBoolean();
-			PanelLook.toggle(graphics, tx, winY + 10f, 22f, 11f, ExMotion.spring("pn-wintog/" + title, on ? 1f : 0f, ExMotion.SPATIAL_FAST));
+			if (mc()) {
+				MinecraftLook.checkbox(graphics, tx + 6f, winY + 7f, 16f, on ? 1f : 0f, GuiDraw.hovered(mx, my, tx - 2f, winY + 7f, 26f, 17f));
+			} else {
+				PanelLook.toggle(graphics, tx, winY + 10f, 22f, 11f, ExMotion.spring("pn-wintog/" + title, on ? 1f : 0f, ExMotion.SPATIAL_FAST));
+			}
 			screen.clickHit(tx - 2f, winY + 7f, 26f, 17f, () -> ClickGui.toggle(mod));
 		}
-		GuiDraw.fillSmooth(graphics, winX + 1f, winY + WIN_HEAD - 1f, WIN_W - 2f, 1f, PanelLook.EDGE);
+		GuiDraw.fillSmooth(graphics, winX + 1f, winY + WIN_HEAD - 1f, WIN_W - 2f, 1f, edge());
 		bodyY = winY + WIN_HEAD;
 		float bx = winX + 10f;
 		float bw = WIN_W - 20f;
@@ -727,7 +884,7 @@ public final class PanelMenu {
 			float track = bodyH - 4f;
 			float thumb = Math.max(14f, track * bodyH / winContent);
 			float ty = bodyY + 4f + (track - thumb) * (shownScroll / Math.max(1f, winContent - bodyH));
-			GuiDraw.roundedFine(graphics, winX + WIN_W - 4.5f, ty, 2f, thumb, 1f, PanelLook.accent());
+			GuiDraw.roundedFine(graphics, winX + WIN_W - 4.5f, ty, 2f, thumb, 1f, accent());
 		}
 	}
 
@@ -745,7 +902,11 @@ public final class PanelMenu {
 	private static float mobs(StrayScreen screen, GuiGraphicsExtractor graphics, Font font, int mx, int my, float x, float y, float w) {
 		boolean focused = ClickGui.mobSearchFocused();
 		String query = ClickGui.mobQuery();
-		PanelLook.control(graphics, x, y, w, 16f, false, focused);
+		if (mc()) {
+			MinecraftLook.field(graphics, x, y, w, 16f, focused);
+		} else {
+			PanelLook.control(graphics, x, y, w, 16f, false, focused);
+		}
 		String shown = query.isEmpty() && !focused ? "Search mobs" : query + (focused && (System.currentTimeMillis() / 500L) % 2L == 0L ? "|" : "");
 		GuiDraw.text(graphics, font, MenuFont.shadow(fit(font, shown, w - 12f)), x + 6f, GuiDraw.middle(y, 16f), query.isEmpty() && !focused ? PanelLook.DGREY : PanelLook.WHITE, false);
 		ClickGui.mobSearchBox(x, y, w, 16f);
@@ -757,19 +918,24 @@ public final class PanelMenu {
 			return y + 14f;
 		}
 		for (MenuItems.Item item : items) {
-			if (y + ROW_H > bodyY - 20f && y < bodyY + bodyH + 20f) {
+			if (y + rowH() > bodyY - 20f && y < bodyY + bodyH + 20f) {
 				boolean on = Boolean.TRUE.equals(item.on());
-				boolean hover = GuiDraw.hovered(mx, my, x, y, w, ROW_H);
-				if (on) {
-					GuiDraw.roundedFine(graphics, x, y, w, ROW_H, 3f, PanelLook.G3);
-					PanelLook.onBar(graphics, x, y, ROW_H);
+				boolean hover = GuiDraw.hovered(mx, my, x, y, w, rowH());
+				if (mc()) {
+					if (hover) {
+						GuiDraw.fill(graphics, x, y, w, rowH(), MinecraftLook.HOVER);
+					}
+					MinecraftLook.bullet(graphics, x + 3f, y + Math.round((rowH() - 4f) / 2f), on ? 1f : 0f);
+				} else if (on) {
+					GuiDraw.roundedFine(graphics, x, y, w, rowH(), 3f, PanelLook.G3);
+					PanelLook.onBar(graphics, x, y, rowH());
 				} else if (hover) {
-					GuiDraw.roundedFine(graphics, x, y, w, ROW_H, 3f, PanelLook.G2);
+					GuiDraw.roundedFine(graphics, x, y, w, rowH(), 3f, PanelLook.G2);
 				}
-				GuiDraw.text(graphics, font, MenuFont.shadow(fit(font, item.label(), w - 12f)), x + 6f, GuiDraw.middle(y, ROW_H), on ? PanelLook.WHITE : PanelLook.GREY, false);
-				screen.clickHit(x, y, w, ROW_H, item.left());
+				GuiDraw.text(graphics, font, MenuFont.shadow(fit(font, item.label(), w - 12f)), x + 6f, GuiDraw.middle(y, rowH()), on ? PanelLook.WHITE : PanelLook.GREY, false);
+				screen.clickHit(x, y, w, rowH(), item.left());
 			}
-			y += ROW_H + 1f;
+			y += rowH() + 1f;
 		}
 		return y;
 	}
@@ -786,7 +952,7 @@ public final class PanelMenu {
 		}
 		for (int i = 0; i < PANELS.length; i++) {
 			float[] b = panelBox[i];
-			if (x >= b[0] && x <= b[0] + b[2] && y >= b[1] - HEAD_H && y <= b[1] + b[3]) {
+			if (x >= b[0] && x <= b[0] + b[2] && y >= b[1] - headH() && y <= b[1] + b[3]) {
 				scroll[i] = Math.max(0f, scroll[i] - (float) wheel * 30f);
 				return true;
 			}

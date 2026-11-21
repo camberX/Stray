@@ -49,6 +49,16 @@ public final class ShadowLook {
 			SELECTED = 0xFF2E2E2E;
 			SELECTED_LINE = 0xFF3C3C3C;
 			FILL = 0xF0171717;
+		} else if (Looks.minecraft()) {
+			TEXT = MinecraftLook.WHITE;
+			MUTED = MinecraftLook.GREY;
+			FAINT = MinecraftLook.DGREY;
+			LINE = MinecraftLook.LINE;
+			CARD = 0x18FFFFFF;
+			CARD_HOVER = 0x2CFFFFFF;
+			SELECTED = 0x40FFFFFF;
+			SELECTED_LINE = MinecraftLook.WHITE;
+			FILL = MinecraftLook.BG;
 		} else if (Looks.panels()) {
 			TEXT = PanelLook.WHITE;
 			MUTED = PanelLook.GREY;
@@ -116,6 +126,10 @@ public final class ShadowLook {
 		}
 		if (Looks.panels()) {
 			PanelLook.panel(graphics, x, y, w, h, fill);
+			return;
+		}
+		if (Looks.minecraft()) {
+			MinecraftLook.panel(graphics, x, y, w, h, fill);
 			return;
 		}
 		float r = Math.min(Math.max(2f, radius), Math.min(w, h) * 0.5f);
@@ -311,6 +325,10 @@ public final class ShadowLook {
 		}
 		if (Looks.panels()) {
 			PanelLook.control(graphics, x, y, w, h, hover, selected);
+			return;
+		}
+		if (Looks.minecraft()) {
+			MinecraftLook.control(graphics, x, y, w, h, hover, selected);
 			return;
 		}
 		float r = Math.min(Math.max(1f, radius), Math.min(w, h) * 0.5f);
