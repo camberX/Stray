@@ -270,7 +270,7 @@ public final class PanelMenu {
 				GuiDraw.alphaScale = (out >= 0f ? 1f : was) * panelAlpha;
 				Row h;
 				try {
-					h = panel(screen, graphics, font, mx, my, i, at[i][0], at[i][1] + rise, at[i][2], query);
+					h = panel(screen, graphics, font, mx, my, i, at[i][0], at[i][1] + (mc() ? Math.round(rise) : rise), at[i][2], query);
 				} finally {
 					GuiDraw.alphaScale = was;
 				}
@@ -496,6 +496,10 @@ public final class PanelMenu {
 		panelContent[index] = content;
 		scroll[index] = Mth.clamp(scroll[index], 0f, Math.max(0f, content - bodyHeight));
 		float shown = Mth.clamp(ExMotion.spring("pn-scroll/" + index, scroll[index], ExMotion.EFFECTS_SLOW), 0f, Math.max(0f, content - bodyHeight));
+		if (mc()) {
+			// The game's font and boxes only look right on whole pixels: the list scrolls by them.
+			shown = Math.round(shown);
+		}
 		float ry = y + headH() + 3f - shown;
 		Row hovered = null;
 		int mark = screen.clickHitMark();
@@ -597,7 +601,7 @@ public final class PanelMenu {
 	 */
 	private static void mcRow(StrayScreen screen, GuiGraphicsExtractor graphics, Font font, Row row, float x, float y, float w, boolean on, float onT, float hoverT, boolean dim, String query) {
 		if (hoverT > 0.01f) {
-			GuiDraw.fill(graphics, x, y, w, rowH(), Theme.withAlpha(0xFFFFFF, Math.round(0x24 * hoverT)));
+			GuiDraw.fill(graphics, Math.round(x), Math.round(y), Math.round(w), rowH(), Theme.withAlpha(0xFFFFFF, Math.round(0x24 * hoverT)));
 		}
 		// row() has already dimmed alphaScale for rows that don't match the search.
 		float was = GuiDraw.alphaScale;
@@ -614,7 +618,7 @@ public final class PanelMenu {
 			int ink = PanelLook.lerp(PanelLook.lerp(MinecraftLook.GREY, 0xFFDDDDDD, hoverT), MinecraftLook.WHITE, onT);
 			GuiDraw.text(graphics, font, label, x + 11f, GuiDraw.middle(y, rowH()) + 0.5f, ink, true);
 			if (!query.isEmpty() && !dim) {
-				GuiDraw.fill(graphics, x + 11f, y + rowH() - 1f, Math.min(GuiDraw.width(font, label), w - 14f), 1f, MinecraftLook.YELLOW);
+				GuiDraw.fill(graphics, Math.round(x + 11f), Math.round(y + rowH() - 1f), Math.round(Math.min(GuiDraw.width(font, label), w - 14f)), 1f, MinecraftLook.YELLOW);
 			}
 		} finally {
 			GuiDraw.alphaScale = was;
@@ -755,11 +759,16 @@ public final class PanelMenu {
 		}
 		winX = Mth.clamp(winX, 0f, Math.max(0f, sw - WIN_W));
 		winY = Mth.clamp(winY, 0f, Math.max(0f, sh - winH));
+		if (mc()) {
+			winX = Math.round(winX);
+			winY = Math.round(winY);
+		}
 		// The window takes clicks over what is under it; on its title bar a press starts a drag.
 		screen.clickHit(winX, winY, WIN_W, winH, () -> press(ClickGui.pointerX(), ClickGui.pointerY()));
 		// Opening: it scales up a touch from its middle and fades in.
 		float enter = ExMotion.since((System.nanoTime() - winOpenedAt) / 1.0e9f, ExMotion.SPATIAL);
-		float k = 0.94f + 0.06f * enter;
+		// Minecraft only fades: scaling would put the game's font between pixels.
+		float k = mc() ? 1f : 0.94f + 0.06f * enter;
 		graphics.pose().pushMatrix();
 		graphics.pose().translate(winX + WIN_W / 2f, winY + winH / 2f);
 		graphics.pose().scale(k, k);
@@ -798,7 +807,7 @@ public final class PanelMenu {
 		String title = mobWindow ? MOBS : ClickGui.display(window.name());
 		String where = mobWindow ? "World" : ClickGui.display(window.column());
 		int mark = screen.clickHitMark();
-		float k = 1f - 0.05f * e;
+		float k = mc() ? 1f : 1f - 0.05f * e;
 		graphics.pose().pushMatrix();
 		graphics.pose().translate(winX + WIN_W / 2f, winY + winH / 2f);
 		graphics.pose().scale(k, k);
@@ -846,6 +855,9 @@ public final class PanelMenu {
 		float bw = WIN_W - 20f;
 		winScroll = Mth.clamp(winScroll, 0f, Math.max(0f, winContent - bodyH));
 		float shownScroll = Mth.clamp(ExMotion.spring("pn-winscroll/" + title, winScroll, ExMotion.EFFECTS_SLOW), 0f, Math.max(0f, winContent - bodyH));
+		if (mc()) {
+			shownScroll = Math.round(shownScroll);
+		}
 		float y = bodyY + 6f - shownScroll;
 		float start = y;
 		int mark = screen.clickHitMark();
@@ -923,7 +935,7 @@ public final class PanelMenu {
 				boolean hover = GuiDraw.hovered(mx, my, x, y, w, rowH());
 				if (mc()) {
 					if (hover) {
-						GuiDraw.fill(graphics, x, y, w, rowH(), MinecraftLook.HOVER);
+						GuiDraw.fill(graphics, Math.round(x), Math.round(y), Math.round(w), rowH(), MinecraftLook.HOVER);
 					}
 					MinecraftLook.bullet(graphics, x + 3f, y + Math.round((rowH() - 4f) / 2f), on ? 1f : 0f);
 				} else if (on) {
