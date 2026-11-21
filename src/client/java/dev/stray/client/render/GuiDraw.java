@@ -1172,7 +1172,7 @@ public final class GuiDraw {
 	}
 
 	public static void text(GuiGraphicsExtractor graphics, Font font, Component value, float x, float y, int color, boolean shadow) {
-		if (!shadow && dev.stray.client.ui.Looks.minecraft() && !dev.stray.client.ui.UidMenu.drawing() && MenuFont.vanilla(value)) {
+		if (!shadow && dev.stray.client.ui.Looks.minecraft() && !dev.stray.client.ui.UidMenu.drawing() && MenuFont.isVanilla(value)) {
 			// Minecraft look: the game's font always carries the game's shadow.
 			shadow = true;
 		}

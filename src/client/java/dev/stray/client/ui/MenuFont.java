@@ -247,12 +247,12 @@ public final class MenuFont {
 	}
 
 	/** Text in the game's own font (Minecraft look): no font of Stray's on it or any part of it. */
-	public static boolean vanilla(Component value) {
+	public static boolean isVanilla(Component value) {
 		if (value == null || !FontDescription.DEFAULT.equals(value.getStyle().getFont())) {
 			return false;
 		}
 		for (Component part : value.getSiblings()) {
-			if (!vanilla(part)) {
+			if (!isVanilla(part)) {
 				return false;
 			}
 		}
