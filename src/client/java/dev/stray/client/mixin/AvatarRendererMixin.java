@@ -46,6 +46,16 @@ public class AvatarRendererMixin {
 		}
 	}
 
+	/** Fake sword block: your own player holds the sword in the block pose (third person, visual only). */
+	@Inject(method = "getArmPose(Lnet/minecraft/world/entity/Avatar;Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/world/InteractionHand;)Lnet/minecraft/client/model/HumanoidModel$ArmPose;", at = @At("RETURN"), cancellable = true)
+	private static void stray$fakeSwordBlock(net.minecraft.world.entity.Avatar avatar, net.minecraft.world.item.ItemStack stack, net.minecraft.world.InteractionHand hand,
+		org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable<net.minecraft.client.model.HumanoidModel.ArmPose> cir) {
+		if (avatar == net.minecraft.client.Minecraft.getInstance().player && hand == net.minecraft.world.InteractionHand.MAIN_HAND
+			&& dev.stray.client.visual.FakeSwordBlock.active(stack)) {
+			cir.setReturnValue(net.minecraft.client.model.HumanoidModel.ArmPose.BLOCK);
+		}
+	}
+
 	@Inject(method = "<init>", at = @At("RETURN"))
 	private void stray$addWings(EntityRendererProvider.Context context, boolean slim, CallbackInfo ci) {
 		((LivingEntityRendererInvoker) this).stray$addLayer(new WingsLayer((AvatarRenderer<?>) (Object) this));

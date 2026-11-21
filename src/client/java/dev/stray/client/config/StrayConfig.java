@@ -654,6 +654,8 @@ public final class StrayConfig {
 	public boolean hudHotbar = false;
 	/** The hotbar selection box glides to the new slot instead of snapping. */
 	public boolean smoothHotbar = false;
+	/** Holding right click with a sword shows the 1.8 block pose. Visual only. */
+	public boolean fakeSwordBlock = false;
 	/** The hotbar, XP bar and level drawn in the theme's look (Shadow, uid?, Expressive). */
 	public boolean themedHotbar = false;
 	/** Auto / Fast Leap: a phone-style notification for each leap (and why one failed). */

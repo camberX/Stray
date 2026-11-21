@@ -61,7 +61,9 @@ public class ItemInHandRendererMixin {
 	) {
 		//? if >=26.3 {
 		LegacySkullHold.applyFirstPerson(poseStack, stack);
+		dev.stray.client.visual.FakeSwordBlock.applyFirstPerson(poseStack, hand, stack);
 		//?} else {
-		/*LegacySkullHold.applyFirstPerson(poseStack, itemStack);*///?}
+		/*LegacySkullHold.applyFirstPerson(poseStack, itemStack);
+		dev.stray.client.visual.FakeSwordBlock.applyFirstPerson(poseStack, hand, itemStack);*///?}
 	}
 }

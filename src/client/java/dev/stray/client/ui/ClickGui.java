@@ -563,6 +563,7 @@ public final class ClickGui {
 		java.util.Map.entry("Smooth hotbar", "When you change hotbar slot, the selection box glides there instead of snapping; further jumps move faster."),
 		java.util.Map.entry("Edge jump", "Jumps once at the next block edge you walk off (not while sneaking), then turns itself off. Arm it with /stray edge. Not in Stray Legit."),
 		java.util.Map.entry("Run splits", "Dungeon splits HUD timed like NoammAddons: blood, portal, boss entry and each boss phase, in real time with the server-tick time in brackets and the lag, plus Overall and Estimated."),
+		java.util.Map.entry("Sword block", "Holding right click with a sword shows the old 1.8 blocking pose, in first and third person. Purely visual: nothing is sent and right click works as before."),
 		java.util.Map.entry("F7 titles", "Short titles in the F7 boss: crystals, wither phases, Storm's lightning timer and who did which terminal. Also shown over the leap menu."),
 		java.util.Map.entry("Align triggerbot", "F7 arrow align: while you look at an arrow that is not right yet, it right clicks it with your delay until it is. Before phase 3 the first arrow you click stops one short so the device is not done early; after Goldor's first line it finishes that one too. Clicks go through the normal use key."),
 		java.util.Map.entry("Own nametag", "Shows your own name above your head in third person (F5)."),
@@ -859,6 +860,7 @@ public final class ClickGui {
 		mods.add(mod("Themed hotbar", "HUD", null, null, () -> config.themedHotbar, v -> config.themedHotbar = v, true, false));
 		mods.add(mod("Held item", "World", StrayScreen.Feature.HELD_ITEM, null, () -> config.heldItemShaderEnabled, v -> config.heldItemShaderEnabled = v, true, false));
 		mods.add(mod(CS2, "World", null, null, () -> config.cs2KnifeEnabled, v -> config.cs2KnifeEnabled = v, true, false));
+		mods.add(mod("Sword block", "World", null, null, () -> config.fakeSwordBlock, v -> config.fakeSwordBlock = v, true, false));
 		mods.add(mod("Skull hold", "World", null, null, () -> config.legacySkullHold, v -> config.legacySkullHold = v, true, false));
 		mods.add(mod("Backwards walk", "World", null, null, () -> config.legacyBackwardsWalk, v -> config.legacyBackwardsWalk = v, true, false));
 		mods.add(mod("Fairy souls", "World", dev.stray.Edition.LEGIT ? null : StrayScreen.Feature.FAIRY, null, () -> config.fairySoulEsp, v -> config.fairySoulEsp = v, true, false));
