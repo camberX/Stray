@@ -235,6 +235,13 @@ public final class DungeonMap {
 				living.add(player);
 			}
 		}
+		// The markers are numbered in tab-list order. The party is read from an unordered set of
+		// tab entries, so its order can differ, which put the wrong head on a marker.
+		List<String> order = dev.stray.client.dungeon.DungeonParty.tabOrder(Minecraft.getInstance());
+		living.sort(java.util.Comparator.comparingInt(p -> {
+			int at = order.indexOf(p.name);
+			return at < 0 ? Integer.MAX_VALUE : at;
+		}));
 		for (Map.Entry<String, MapDecoration> entry : decorations.entrySet()) {
 			String key = entry.getKey();
 			if (entry.getValue().type().value() == MapDecorationTypes.FRAME.value()) {

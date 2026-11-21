@@ -176,6 +176,34 @@ public final class DungeonParty {
 		TEAM.add(new Member(name, DungeonClass.fromName(clazz), level, skin, dead));
 	}
 
+	/**
+	 * Run members' names in the order the tab list shows them (the order NoammAddons reads them
+	 * in, from the server's tab packets): spectators last, then by team, then by profile name,
+	 * like the game's own tab list. The map's player markers are numbered in this order.
+	 */
+	public static List<String> tabOrder(Minecraft client) {
+		List<String> out = new ArrayList<>();
+		if (client.getConnection() == null) {
+			return out;
+		}
+		List<PlayerInfo> infos = new ArrayList<>(client.getConnection().getListedOnlinePlayers());
+		infos.sort(java.util.Comparator
+			.comparing((PlayerInfo i) -> i.getGameMode() == net.minecraft.world.level.GameType.SPECTATOR)
+			.thenComparing(i -> i.getTeam() == null ? "" : i.getTeam().getName())
+			.thenComparing(i -> i.getProfile().name()));
+		for (PlayerInfo info : infos) {
+			Component display = info.getTabListDisplayName();
+			if (display == null) {
+				continue;
+			}
+			Matcher m = TAB.matcher(display.getString().trim());
+			if (m.matches() && !out.contains(m.group(1))) {
+				out.add(m.group(1));
+			}
+		}
+		return out;
+	}
+
 	/** Chat lines: who opened the last wither door. */
 	public static void onChat(String plain) {
 		if (!SkyblockLocation.inDungeon || plain == null) {
