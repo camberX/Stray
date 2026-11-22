@@ -22,15 +22,6 @@ public final class VanillaHud {
 		if (customScoreboard()) {
 			ScoreboardHudRenderer.extract(graphics, delta);
 		}
-		if (customBossBar()) {
-			BossBarHudRenderer.extract(graphics, delta);
-		}
-		if (customEffects()) {
-			EffectsHudRenderer.extract(graphics, delta);
-		}
-		if (customHeldItem()) {
-			HeldItemHudRenderer.extract(graphics, delta);
-		}
 	}
 
 	public static boolean hidden() {
@@ -87,18 +78,6 @@ public final class VanillaHud {
 
 	public static boolean customScoreboard() {
 		return custom(StrayConfig.get().hudScoreboard);
-	}
-
-	public static boolean customBossBar() {
-		return custom(StrayConfig.get().hudBossBar);
-	}
-
-	public static boolean customEffects() {
-		return custom(StrayConfig.get().hudEffects);
-	}
-
-	public static boolean customHeldItem() {
-		return custom(StrayConfig.get().hudHeldItem);
 	}
 
 	public static LivingEntity mount() {

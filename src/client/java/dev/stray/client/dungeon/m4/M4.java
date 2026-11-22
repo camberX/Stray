@@ -106,12 +106,15 @@ public final class M4 {
 
 	// ---------------------------------------------------------------- queries
 
+	/** All features off: what the M4 code sees while the M4 Features module is off. */
+	private static final M4Config OFF = new M4Config();
+
 	public static M4Config config() {
 		StrayConfig config = StrayConfig.get();
 		if (config.m4 == null) {
 			config.m4 = new M4Config();
 		}
-		return config.m4;
+		return config.m4.enabled ? config.m4 : OFF;
 	}
 
 	/** In the F4 / M4 boss room (or Stray's dev mode). */

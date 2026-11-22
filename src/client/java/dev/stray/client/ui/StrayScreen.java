@@ -23,8 +23,6 @@ import dev.stray.client.movement.PathRecorder;
 import dev.stray.client.pip.PipCapture;
 import dev.stray.client.render.BlockMarks;
 import dev.stray.client.render.GuiDraw;
-import dev.stray.client.render.SkillProgressHudRenderer;
-import dev.stray.client.skill.SkillProgressTracker;
 import dev.stray.client.render.HudStats;
 import dev.stray.client.render.EspMobPrint;
 import dev.stray.client.render.MobCatalog;
@@ -172,7 +170,6 @@ public class StrayScreen extends Screen {
 		FARMING("Yaw / Pitch", 1),
 		TOP_DOWN("Top down", 0),
 		INVENTORY("Inventory", 5),
-		SKILL("Skill progress", 3),
 		PLOTS("Garden plots", 1),
 		SHOPPING("Shopping list", 1),
 		PEST("Pest ESP", 6),
@@ -192,6 +189,7 @@ public class StrayScreen extends Screen {
 		AUTO_HOTBAR("Auto hotbar", 8),
 		SMOOTH_HOTBAR("Smooth hotbar", 1),
 		GREENHOUSE_GROWTH("Greenhouse growth", 2),
+		M4_ALL("M4 Features", 0),
 		M4_BEAR("Spirit Bear", 6),
 		M4_HIGHLIGHT("Mob highlight", 15),
 		M4_WAYPOINTS("M4 waypoints", dev.stray.Edition.LEGIT ? 9 : 10),
@@ -256,6 +254,9 @@ public class StrayScreen extends Screen {
 		}
 
 		private int fullRows() {
+			if (this == M4_ALL) {
+				return m4Rows();
+			}
 			if (this == MUSIC && "music".equals(dropdownOpen)) {
 				return baseRows + StrayConfig.MUSIC_LAYOUTS.length;
 			}
@@ -2357,28 +2358,18 @@ public class StrayScreen extends Screen {
 			}
 			case ESP -> drawMobsTab(graphics, font, mouseX, mouseY);
 			case OVERLAY -> {
-				int extra = config.skillProgressHudEnabled ? Feature.SKILL.rows() : 0;
-				float y = featureCard(graphics, font, left, top, col, cardHeight(9 + extra), "HUD");
+				float y = featureCard(graphics, font, left, top, col, cardHeight(7), "HUD");
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Watermark", config.watermarkEnabled, v -> config.watermarkEnabled = v, Feature.WATERMARK);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Music", config.musicHudEnabled, v -> config.musicHudEnabled = v, Feature.MUSIC);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Picture in picture", config.pipEnabled, v -> config.pipEnabled = v, Feature.PIP);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Raw mats", config.rawmatsHudEnabled, v -> config.rawmatsHudEnabled = v, Feature.RAWMATS);
-				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Pickup log", config.pickupLogEnabled, v -> config.pickupLogEnabled = v);
-				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Skill progress", config.skillProgressHudEnabled, v -> config.skillProgressHudEnabled = v);
-				if (config.skillProgressHudEnabled) {
-					drawFeatureFields(graphics, font, mouseX, mouseY, ix, y, iw, Feature.SKILL);
-					y += Feature.SKILL.rows() * rowH();
-				}
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Inventory HUD", config.inventoryHudEnabled, v -> config.inventoryHudEnabled = v, Feature.INVENTORY);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Custom title", config.customTitleEnabled, v -> config.customTitleEnabled = v);
 				clickRow(graphics, font, ix, y, iw, mouseX, mouseY, "Edit titles", () -> minecraft.gui.setScreen(new CustomTitleScreen(this)));
 			}
 			case BARS -> {
-				float y = featureCard(graphics, font, left, top, col, cardHeight(4) + 28, "Info");
+				float y = featureCard(graphics, font, left, top, col, cardHeight(1) + 28, "Info");
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Scoreboard", config.hudScoreboard, v -> config.hudScoreboard = v);
-				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Boss bar", config.hudBossBar, v -> config.hudBossBar = v);
-				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Effects", config.hudEffects, v -> config.hudEffects = v);
-				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Held item", config.hudHeldItem, v -> config.hudHeldItem = v);
 				GuiDraw.menu(graphics, font, "Move and scale each piece", ix, y + 4, fade());
 				GuiDraw.menu(graphics, font, "from the toolbar HUD editor.", ix, y + 16, fade());
 			}
@@ -2581,8 +2572,6 @@ public class StrayScreen extends Screen {
 				y = controlCard(graphics, font, left, y, col, mouseX, mouseY, "Watermark", config.watermarkEnabled, v -> config.watermarkEnabled = v, Feature.WATERMARK);
 				y = controlCard(graphics, font, left, y, col, mouseX, mouseY, "Picture in picture", config.pipEnabled, v -> config.pipEnabled = v, Feature.PIP);
 				y = controlCard(graphics, font, left, y, col, mouseX, mouseY, "Raw mats", config.rawmatsHudEnabled, v -> config.rawmatsHudEnabled = v, Feature.RAWMATS);
-				y = toggleCard(graphics, font, left, y, col, mouseX, mouseY, "Pickup log", config.pickupLogEnabled, v -> config.pickupLogEnabled = v);
-				y = controlCard(graphics, font, left, y, col, mouseX, mouseY, "Skill progress", config.skillProgressHudEnabled, v -> config.skillProgressHudEnabled = v, Feature.SKILL);
 				y = sectionLabel(graphics, font, right, top, "Inventory");
 				y = controlCard(graphics, font, right, y, col, mouseX, mouseY, "Inventory HUD", config.inventoryHudEnabled, v -> config.inventoryHudEnabled = v, Feature.INVENTORY);
 				featureCard(
@@ -2607,11 +2596,8 @@ public class StrayScreen extends Screen {
 			}
 			case BARS -> {
 				float y = sectionLabel(graphics, font, left, top, "Vanilla HUD");
-				y = featureCard(graphics, font, left, y, col, cardHeight(4) + 28, "Show");
+				y = featureCard(graphics, font, left, y, col, cardHeight(1) + 28, "Show");
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Scoreboard", config.hudScoreboard, v -> config.hudScoreboard = v);
-				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Boss bar", config.hudBossBar, v -> config.hudBossBar = v);
-				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Effects", config.hudEffects, v -> config.hudEffects = v);
-				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Held item", config.hudHeldItem, v -> config.hudHeldItem = v);
 				GuiDraw.menu(graphics, font, "Move and scale each piece", ix, y + 4, fade());
 				GuiDraw.menu(graphics, font, "from the toolbar HUD editor.", ix, y + 16, fade());
 			}
@@ -3798,6 +3784,44 @@ public class StrayScreen extends Screen {
 		return String.valueOf(coins);
 	}
 
+	/** One part of the M4 Features module: its switch and, when it has any, its settings. */
+	private record M4Part(String title, Feature feature, java.util.function.Supplier<Boolean> on, Consumer<Boolean> set) {
+	}
+
+	private static java.util.List<M4Part> m4Parts() {
+		dev.stray.client.dungeon.m4.M4Config m4 = StrayConfig.get().m4;
+		return java.util.List.of(
+			new M4Part("Spirit Bear", Feature.M4_BEAR, () -> m4.spiritBear, v -> m4.spiritBear = v),
+			new M4Part("Boss timer", null, () -> m4.timer, v -> m4.timer = v),
+			new M4Part("Mob highlight", Feature.M4_HIGHLIGHT, () -> m4.highlight, v -> m4.highlight = v),
+			new M4Part("Waypoints", Feature.M4_WAYPOINTS, () -> m4.waypoints, v -> m4.waypoints = v),
+			new M4Part("Stun", Feature.M4_STUN, () -> m4.stun, v -> m4.stun = v),
+			new M4Part("Overkill", Feature.M4_OVERKILL, () -> m4.overkill, v -> m4.overkill = v),
+			new M4Part("Titles", Feature.M4_TITLES, () -> m4.titles, v -> m4.titles = v),
+			new M4Part("Mob counter", Feature.M4_MOBS, () -> m4.mobCounter, v -> m4.mobCounter = v),
+			new M4Part("Decoy", Feature.M4_DECOY, () -> m4.decoy, v -> m4.decoy = v),
+			new M4Part("Tac", Feature.M4_TAC, () -> m4.tac, v -> m4.tac = v),
+			new M4Part("Rabbits", Feature.M4_RABBITS, () -> m4.rabbits, v -> m4.rabbits = v),
+			new M4Part("Trajectories", Feature.M4_TRAJ, () -> m4.trajectories, v -> m4.trajectories = v),
+			new M4Part("Hide messages", Feature.M4_HIDE, () -> m4.hideMessages, v -> m4.hideMessages = v),
+			new M4Part("Sounds", Feature.M4_SOUNDS, () -> m4.sounds, v -> m4.sounds = v),
+			new M4Part("Render optimizer", Feature.M4_OPTIMIZER, () -> m4.renderOptimizer, v -> m4.renderOptimizer = v),
+			new M4Part("Extra stats", Feature.M4_STATS, () -> m4.extraStats, v -> m4.extraStats = v)
+		);
+	}
+
+	/** A switch per part, plus the settings of every part that is on. */
+	private static int m4Rows() {
+		int rows = 0;
+		for (M4Part part : m4Parts()) {
+			rows++;
+			if (part.feature() != null && part.on().get()) {
+				rows += part.feature().rows();
+			}
+		}
+		return rows;
+	}
+
 	private void drawFeatureFields(
 		GuiGraphicsExtractor graphics,
 		Font font,
@@ -4018,26 +4042,6 @@ public class StrayScreen extends Screen {
 				y = cycle(graphics, font, ix, y, iw, mouseX, mouseY, "Materials", () -> config.rawmatsModeLabel(), config::cycleRawmatsMode);
 				cycle(graphics, font, ix, y, iw, mouseX, mouseY, "Display", () -> config.rawmatsDisplayLabel(), config::cycleRawmatsDisplay);
 			}
-			case SKILL -> {
-				SkillProgressTracker.poll(minecraft);
-				// uid?: the preview in the label column, the note as a hint row under it.
-				float px = UidMenu.drawing() ? ix + 20 : ix;
-				SkillProgressHudRenderer.draw(
-					graphics,
-					font,
-					minecraft.player,
-					px,
-					y,
-					1f,
-					SkillProgressTracker.snapshot()
-				);
-				if (UidMenu.drawing()) {
-					UidMenu.extent(y + SkillProgressHudRenderer.drawHeight());
-					hint(graphics, font, ix, y + SkillProgressHudRenderer.drawHeight() + 5, iw, "From the action bar. HUD editor to move.");
-				} else {
-					GuiDraw.small(graphics, font, "From the action bar. HUD editor to move.", ix, y + SkillProgressHudRenderer.drawHeight() + 2, fade());
-				}
-			}
 			case MINING -> toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Ability alert", config.miningAbilityAlert, v -> config.miningAbilityAlert = v);
 			case TOP_DOWN -> {
 			}
@@ -4122,6 +4126,19 @@ public class StrayScreen extends Screen {
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Shadow labels", config.terminalHighlightTags, v -> config.terminalHighlightTags = v);
 				y = slider(graphics, font, ix, y, iw, "Tag size", config.terminalLabelScale + "%", (config.terminalLabelScale - 50) / 150f, v -> config.terminalLabelScale = snapInt(50 + v * 150f, 50, 200, 5));
 				colorRow(graphics, font, ix, y, iw, mouseX, mouseY, "Color", config.terminalHighlightRgb, PickerTarget.TERM_HIGHLIGHT);
+			}
+			case M4_ALL -> {
+				String outer = fieldScope;
+				for (M4Part part : m4Parts()) {
+					y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, part.title(), part.on().get(), part.set());
+					if (part.feature() != null && part.on().get()) {
+						// Each part keeps its own scope: several have a "Decimals" or "Style" row.
+						fieldScope = part.feature().name();
+						drawFeatureFields(graphics, font, mouseX, mouseY, ix + 8, y, iw - 8, part.feature());
+						fieldScope = outer;
+						y += part.feature().rows() * rowH();
+					}
+				}
 			}
 			case M4_BEAR -> {
 				dev.stray.client.dungeon.m4.M4Config m4 = config.m4;

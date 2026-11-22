@@ -35,10 +35,9 @@ public final class UidMenu {
 	private record Tab(String name, String glyph, String[] categories) {
 	}
 
-	/** Eight full-size tabs, each holding one or more click GUI categories. */
+	/** Seven full-size tabs, each holding one or more click GUI categories. */
 	private static final Tab[] TABS = {
 		new Tab("Dungeons", "\uEAB1", new String[] {"Dungeons"}),
-		new Tab("M4", "\uE799", new String[] {"M4"}),
 		new Tab("Skills", "\uEAD5", new String[] {"Mining", "Farming", "Foraging"}),
 		new Tab("Slayer", "\uEBE9", new String[] {"Slayer"}),
 		new Tab("World", "\uE80B", new String[] {"World"}),

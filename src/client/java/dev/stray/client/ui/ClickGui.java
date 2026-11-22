@@ -20,7 +20,7 @@ import java.util.function.Consumer;
  */
 public final class ClickGui {
 	private static final float CARD_R = 4f;
-	static final String[] ORDER = {"Dungeons", "M4", "Slayer", "Mining", "Farming", "Foraging", "World", "Entities", "Mobs", "HUD", "Chat", "Menus", "Player", "Keys", "Client"};
+	static final String[] ORDER = {"Dungeons", "Slayer", "Mining", "Farming", "Foraging", "World", "Entities", "Mobs", "HUD", "Chat", "Menus", "Player", "Keys", "Client"};
 	static final int[] BIND_WHICH = dev.stray.Edition.LEGIT
 		? new int[] {3, 7, 11, 12, 17}
 		: new int[] {3, 4, 13, 5, 7, 11, 12, 14, 16, 17};
@@ -477,22 +477,6 @@ public final class ClickGui {
 		java.util.Map.entry("Terminal GUI", "F7 terminals in a clean window in the theme's look: only the slots left to click light up, and a click anywhere on one goes to that slot. Try it with /stray debug dev terminal."),
 		java.util.Map.entry("Terminal highlight", "F7 phase 3: a glow on the command block of every terminal in your section that is not done yet, with its number above it."),
 		java.util.Map.entry("Mask timers", "Bonzo Mask, Spirit Mask and Phoenix Pet cooldowns, always listed with Ready when off cooldown. From NoammAddons (Zyryon style)."),
-		java.util.Map.entry("Spirit Bear", "Spirit Bear kills, spawn timer and splits, with personal bests per bear. From BirdAddon."),
-		java.util.Map.entry("Mob highlight", "Boxes around the M4 animals, Thorn and the Spirit Bear. Can hide name tags and the mobs themselves. From BirdAddon."),
-		java.util.Map.entry("M4 waypoints", "Bear spawn, next bow spot and your own class waypoints (/m4wp). Also on the cgm4 and M4Miku practice islands. From BirdAddon."),
-		java.util.Map.entry("Boss timer", "How long the Thorn fight has gone on. From BirdAddon."),
-		java.util.Map.entry("Stun", "How long Thorn is stunned, and when to stun (healer). From BirdAddon."),
-		java.util.Map.entry("Overkill", "Mobs killed while a bear is spawning or alive. From BirdAddon."),
-		java.util.Map.entry("M4 titles", "Own titles for bow and bear moments, and hides Hypixel's titles in the fight. From BirdAddon."),
-		java.util.Map.entry("Mob counter", "How many of each M4 animal are alive, under Thorn and in the middle. From BirdAddon."),
-		java.util.Map.entry("Decoy", "The best free spot to place a decoy, and the cave spot (berserk). From BirdAddon."),
-		java.util.Map.entry("Tac", "Tactical Insertion timer, and the bear timer when you tac (tank). From BirdAddon."),
-		java.util.Map.entry("Hide messages", "Hides crowd, Thorn, mine, lightning, explosion, bear and bow messages in the fight. From BirdAddon."),
-		java.util.Map.entry("Extra stats", "Per-bear stats and the last bear breakdown after Thorn dies (/bearstats). From BirdAddon."),
-		java.util.Map.entry("M4 sounds", "Mutes animal, Thorn and other noisy sounds in the fight. From BirdAddon."),
-		java.util.Map.entry("Render optimizer", "Hides particles, NPCs and invisible armor stands in the fight for more FPS. From BirdAddon."),
-		java.util.Map.entry("Trajectories", "Where flung cows and sheep will land, and the ground under chickens. From BirdAddon."),
-		java.util.Map.entry("Rabbits", "Rabbits per hutch, and a countdown to the M4 rabbits. From BirdAddon."),
 		java.util.Map.entry("Auto hotbar", "A chat message you pick moves your mapped items into their hotbar slots. Swaps while your inventory is open (it can open and close it for you), or with Swap without inventory like NoammAddons did. Not in Stray Legit."),
 		java.util.Map.entry("Greenhouse growth", "Time until the next Greenhouse growth stage. Open the Crop Diagnostics menu in the Greenhouse once to read it."),
 		java.util.Map.entry("Themed hotbar", "The hotbar, XP bar and level in the theme's look: Modern's grey slots with an accent line for XP, Skeet's frame with the colour strip as XP. Minecraft keeps the game's own hotbar."),
@@ -503,6 +487,7 @@ public final class ClickGui {
 		java.util.Map.entry("F7 titles", "Short titles in the F7 boss: crystals, wither phases, Storm's lightning timer and who did which terminal. Also shown over the leap menu."),
 		java.util.Map.entry("Align triggerbot", "F7 arrow align: while you look at an arrow that is not right yet, it right clicks it with your delay until it is. Before phase 3 the first arrow you click stops one short so the device is not done early; after Goldor's first line it finishes that one too. Clicks go through the normal use key."),
 		java.util.Map.entry("Own nametag", "Shows your own name above your head in third person (F5)."),
+		java.util.Map.entry("M4 Features", "Everything for the Thorn fight in one place: Spirit Bear timers and splits, mob highlight, waypoints, stun, titles, counters, decoy, tac, rabbits and clean-up. From BirdAddon."),
 		java.util.Map.entry("Dungeon map", "NoammAddons' dungeon map in the theme's look: rooms, doors, checkmarks or names, and where your teammates are. Move and scale it in the HUD editor."),
 		java.util.Map.entry("Leap menu", "Spirit Leap as four big panels, optionally showing what each teammate sees. Leap logic from NoammAddons."),
 		java.util.Map.entry("Array list", "Lists the modules you have turned on."),
@@ -510,15 +495,10 @@ public final class ClickGui {
 		java.util.Map.entry("Music", "What is playing right now, with controls."),
 		java.util.Map.entry("Picture in picture", "A small second view of the world."),
 		java.util.Map.entry("Raw mats", "Tracks raw materials you gather."),
-		java.util.Map.entry("Pickup log", "Shows the items you just picked up."),
-		java.util.Map.entry("Skill progress", "Skill XP gains and progress."),
 		java.util.Map.entry("Inventory", "Your inventory on the HUD."),
 		java.util.Map.entry("Custom title", "Changes the game window's title."),
 		java.util.Map.entry("Scoreboard", "Stray's restyled sidebar."),
 		java.util.Map.entry("Hide lobby ID", "Hides the lobby id after the date on the SkyBlock scoreboard, with or without Stray's scoreboard."),
-		java.util.Map.entry("Boss bar", "Stray's restyled boss bar."),
-		java.util.Map.entry("Effects", "Your active potion effects."),
-		java.util.Map.entry("Item name", "The name of the item you switch to."),
 		java.util.Map.entry("Keep break progress", "Stops block breaking from restarting when Hypixel re-sends your held tool: the same SkyBlock item counts as unchanged. /stray debug break shows when it acts. Not in Stray Legit."),
 		java.util.Map.entry("Mining HUD", "Mining stats and ability cooldown."),
 		java.util.Map.entry("Titanium ESP", "Highlights titanium ore near you."),
@@ -729,22 +709,7 @@ public final class ClickGui {
 		mods.add(mod("Star mob box", "Dungeons", StrayScreen.Feature.BOX, EntityKind.STAR, () -> config.starVisuals.boxEnabled, v -> config.starVisuals.boxEnabled = v, true, false));
 		mods.add(mod("Party stats", "Dungeons", null, null, () -> config.partyFinderStats, v -> config.partyFinderStats = v, true, false));
 
-		mods.add(mod("Spirit Bear", "M4", StrayScreen.Feature.M4_BEAR, null, () -> config.m4.spiritBear, v -> config.m4.spiritBear = v, true, false));
-		mods.add(mod("Mob highlight", "M4", StrayScreen.Feature.M4_HIGHLIGHT, null, () -> config.m4.highlight, v -> config.m4.highlight = v, true, false));
-		mods.add(mod("M4 waypoints", "M4", StrayScreen.Feature.M4_WAYPOINTS, null, () -> config.m4.waypoints, v -> config.m4.waypoints = v, true, false));
-		mods.add(mod("Boss timer", "M4", null, null, () -> config.m4.timer, v -> config.m4.timer = v, true, false));
-		mods.add(mod("Stun", "M4", StrayScreen.Feature.M4_STUN, null, () -> config.m4.stun, v -> config.m4.stun = v, true, false));
-		mods.add(mod("Overkill", "M4", StrayScreen.Feature.M4_OVERKILL, null, () -> config.m4.overkill, v -> config.m4.overkill = v, true, false));
-		mods.add(mod("M4 titles", "M4", StrayScreen.Feature.M4_TITLES, null, () -> config.m4.titles, v -> config.m4.titles = v, true, false));
-		mods.add(mod("Mob counter", "M4", StrayScreen.Feature.M4_MOBS, null, () -> config.m4.mobCounter, v -> config.m4.mobCounter = v, true, false));
-		mods.add(mod("Decoy", "M4", StrayScreen.Feature.M4_DECOY, null, () -> config.m4.decoy, v -> config.m4.decoy = v, true, false));
-		mods.add(mod("Tac", "M4", StrayScreen.Feature.M4_TAC, null, () -> config.m4.tac, v -> config.m4.tac = v, true, false));
-		mods.add(mod("Hide messages", "M4", StrayScreen.Feature.M4_HIDE, null, () -> config.m4.hideMessages, v -> config.m4.hideMessages = v, true, false));
-		mods.add(mod("Extra stats", "M4", StrayScreen.Feature.M4_STATS, null, () -> config.m4.extraStats, v -> config.m4.extraStats = v, true, false));
-		mods.add(mod("M4 sounds", "M4", StrayScreen.Feature.M4_SOUNDS, null, () -> config.m4.sounds, v -> config.m4.sounds = v, true, false));
-		mods.add(mod("Render optimizer", "M4", StrayScreen.Feature.M4_OPTIMIZER, null, () -> config.m4.renderOptimizer, v -> config.m4.renderOptimizer = v, true, false));
-		mods.add(mod("Trajectories", "M4", StrayScreen.Feature.M4_TRAJ, null, () -> config.m4.trajectories, v -> config.m4.trajectories = v, true, false));
-		mods.add(mod("Rabbits", "M4", StrayScreen.Feature.M4_RABBITS, null, () -> config.m4.rabbits, v -> config.m4.rabbits = v, true, false));
+		mods.add(mod("M4 Features", "Dungeons", StrayScreen.Feature.M4_ALL, null, () -> config.m4.enabled, v -> config.m4.enabled = v, true, false));
 
 		addSlayer(mods, config);
 
@@ -821,15 +786,10 @@ public final class ClickGui {
 		mods.add(mod("Music", "HUD", StrayScreen.Feature.MUSIC, null, () -> config.musicHudEnabled, v -> config.musicHudEnabled = v, true, false));
 		mods.add(mod("Picture in picture", "HUD", StrayScreen.Feature.PIP, null, () -> config.pipEnabled, v -> config.pipEnabled = v, true, false));
 		mods.add(mod("Raw mats", "HUD", StrayScreen.Feature.RAWMATS, null, () -> config.rawmatsHudEnabled, v -> config.rawmatsHudEnabled = v, true, false));
-		mods.add(mod("Pickup log", "HUD", null, null, () -> config.pickupLogEnabled, v -> config.pickupLogEnabled = v, true, false));
-		mods.add(mod("Skill progress", "HUD", StrayScreen.Feature.SKILL, null, () -> config.skillProgressHudEnabled, v -> config.skillProgressHudEnabled = v, true, false));
 		mods.add(mod("Inventory", "HUD", StrayScreen.Feature.INVENTORY, null, () -> config.inventoryHudEnabled, v -> config.inventoryHudEnabled = v, true, false));
 		mods.add(mod("Custom title", "HUD", null, null, () -> config.customTitleEnabled, v -> config.customTitleEnabled = v, false, false));
 		mods.add(mod("Scoreboard", "HUD", StrayScreen.Feature.SCOREBOARD, null, () -> config.hudScoreboard, v -> config.hudScoreboard = v, true, false));
 		mods.add(mod("Hide lobby ID", "HUD", null, null, () -> config.hideLobbyId, v -> config.hideLobbyId = v, true, false));
-		mods.add(mod("Boss bar", "HUD", null, null, () -> config.hudBossBar, v -> config.hudBossBar = v, true, false));
-		mods.add(mod("Effects", "HUD", null, null, () -> config.hudEffects, v -> config.hudEffects = v, true, false));
-		mods.add(mod("Item name", "HUD", null, null, () -> config.hudHeldItem, v -> config.hudHeldItem = v, true, false));
 
 		mods.add(mod("Themed chat", "Chat", null, null, () -> config.themedChatEnabled, v -> config.themedChatEnabled = v, true, false));
 		mods.add(mod("Compact stash", "Chat", null, null, () -> config.stashChatCompact, v -> config.stashChatCompact = v, true, false));

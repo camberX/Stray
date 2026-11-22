@@ -3,7 +3,6 @@ package dev.stray.client.mixin;
 import dev.stray.client.fairy.FairySoulTracker;
 import dev.stray.client.item.SackLive;
 import dev.stray.client.mining.MetalDetector;
-import dev.stray.client.skill.SkillProgressTracker;
 import dev.stray.client.ui.CommandShortcuts;
 import dev.stray.client.ui.ProfileCommands;
 import net.minecraft.client.multiplayer.ClientPacketListener;
@@ -30,7 +29,6 @@ public class ClientPacketListenerMixin {
 			SackLive.onChat(packet.content());
 			if (packet.overlay()) {
 				MetalDetector.onActionBar(packet.content());
-				SkillProgressTracker.onActionBar(packet.content());
 			}
 		}
 	}
@@ -62,7 +60,6 @@ public class ClientPacketListenerMixin {
 	private void stray$metalDetectorBar(ClientboundSetActionBarTextPacket packet, CallbackInfo ci) {
 		if (packet != null) {
 			MetalDetector.onActionBar(packet.text());
-			SkillProgressTracker.onActionBar(packet.text());
 		}
 	}
 }

@@ -127,8 +127,6 @@ public final class StrayHud {
 		HudChrome.element(null);
 		RawmatsHudRenderer.extract(graphics, delta);
 		HudChrome.element(null);
-		PickupLogRenderer.extract(graphics, delta);
-		HudChrome.element(null);
 		InventoryHudRenderer.extract(graphics, delta);
 		HudChrome.element(null);
 		NodeHudRenderer.extract(graphics, delta);
@@ -142,8 +140,6 @@ public final class StrayHud {
 		GardenHudRenderer.extract(graphics, delta);
 		HudChrome.element(null);
 		LassoReel.extract(graphics);
-		HudChrome.element(null);
-		SkillProgressHudRenderer.extract(graphics, delta);
 		HudChrome.element(null);
 		SlayerHudRenderer.extract(graphics, delta);
 		HudChrome.element(null);

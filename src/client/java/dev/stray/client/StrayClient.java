@@ -31,7 +31,6 @@ import dev.stray.client.farming.FarmingHud;
 import dev.stray.client.farming.ComposterTracker;
 import dev.stray.client.farming.GardenHud;
 import dev.stray.client.farming.JacobContestTracker;
-import dev.stray.client.skill.SkillProgressTracker;
 import dev.stray.client.account.AccountStore;
 import dev.stray.client.config.StrayConfig;
 import dev.stray.client.update.UpdateCommands;
@@ -76,13 +75,11 @@ import dev.stray.client.render.ComposterHudRenderer;
 import dev.stray.client.render.GardenHudRenderer;
 import dev.stray.client.render.InventoryHudRenderer;
 import dev.stray.client.render.JacobContestHudRenderer;
-import dev.stray.client.render.SkillProgressHudRenderer;
 import dev.stray.client.render.MusicHudRenderer;
 import dev.stray.client.render.PipHudRenderer;
 import dev.stray.client.render.EntityHealthBars;
 import dev.stray.client.render.NametagRenderer;
 import dev.stray.client.render.NodeHudRenderer;
-import dev.stray.client.render.PickupLogRenderer;
 import dev.stray.client.render.RawmatsHudRenderer;
 import dev.stray.client.render.MiningHudRenderer;
 import dev.stray.client.render.MiningWorldRenderer;
@@ -256,7 +253,6 @@ public final class StrayClient implements ClientModInitializer {
 			PestCooldown.onMessage(message, overlay);
 			ScathaTimer.onMessage(message, overlay);
 			if (overlay) {
-				SkillProgressTracker.onActionBar(message);
 				// Dungeon map: secrets found in the current room.
 				dev.stray.client.dungeon.map.DungeonMap.onActionBar(message.getString());
 			}
@@ -268,13 +264,11 @@ public final class StrayClient implements ClientModInitializer {
 		});
 		FarmingHud.init();
 		JacobContestHudRenderer.init();
-		SkillProgressHudRenderer.init();
 		ComposterHudRenderer.init();
 		GardenHudRenderer.init();
 		WatermarkRenderer.init();
 		InventoryHudRenderer.init();
 		NodeHudRenderer.init();
-		PickupLogRenderer.init();
 		MusicHudRenderer.init();
 		PipHudRenderer.init();
 		RawmatsHudRenderer.init();
@@ -610,9 +604,7 @@ public final class StrayClient implements ClientModInitializer {
 			if (!dev.stray.Edition.LEGIT) { LoadoutsScreen.tickSwap(client); }
 			if (!dev.stray.Edition.LEGIT) { WardrobeScreen.tickSwap(client); }
 			NoCursorReset.tick(client);
-			PickupLogRenderer.tick(client);
 			JacobContestTracker.tick(client);
-			SkillProgressTracker.tick(client);
 			ComposterTracker.tick(client);
 			GardenHud.tick(client);
 			PestCooldown.tick(client);
@@ -688,9 +680,7 @@ public final class StrayClient implements ClientModInitializer {
 			if (!dev.stray.Edition.LEGIT) { EmptyVacuum.reset(); }
 			PestPlotTp.reset();
 			DisabledPotions.reset();
-			PickupLogRenderer.clear();
 			JacobContestTracker.reset();
-			SkillProgressTracker.reset();
 			ComposterTracker.reset();
 			GardenHud.reset();
 			SkyblockProfileApi.refresh();
@@ -712,9 +702,7 @@ public final class StrayClient implements ClientModInitializer {
 			if (!dev.stray.Edition.LEGIT) { EmptyVacuum.reset(); }
 			PestPlotTp.reset();
 			DisabledPotions.reset();
-			PickupLogRenderer.clear();
 			JacobContestTracker.reset();
-			SkillProgressTracker.reset();
 			ComposterTracker.reset();
 			GardenHud.reset();
 			if (!dev.stray.Edition.LEGIT) { CommandRings.onWorldChange(); }

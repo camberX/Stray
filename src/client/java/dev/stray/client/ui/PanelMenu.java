@@ -34,7 +34,7 @@ public final class PanelMenu {
 	}
 
 	private static final Panel[] PANELS = {
-		new Panel("Dungeons", new String[] {"Dungeons", "M4"}),
+		new Panel("Dungeons", new String[] {"Dungeons"}),
 		new Panel("Slayer", new String[] {"Slayer"}),
 		new Panel("Skills", new String[] {"Mining", "Farming", "Foraging"}),
 		new Panel("World", new String[] {"World", "Entities", "Mobs"}),

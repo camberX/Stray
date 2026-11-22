@@ -10,6 +10,11 @@ public final class M4Config {
 	// Box style used by highlights and waypoints: 0 outline, 1 filled, 2 filled + outline.
 	public static final String[] STYLES = {"Outline", "Filled", "Filled + outline"};
 
+	// The "M4 Features" module: nothing below runs while this is off.
+	public boolean enabled = false;
+	// Set once the old one-module-per-feature setup has been carried over to the master switch.
+	public boolean enabledMigrated = false;
+
 	// Spirit Bear
 	public boolean spiritBear = false;
 	public boolean bearSplits = true;

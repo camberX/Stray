@@ -195,7 +195,6 @@ public final class StrayConfig {
 	public String spotifyAccessToken = "";
 	public long spotifyAccessExpiresAt = 0L;
 	public boolean rawmatsHudEnabled = false;
-	public boolean pickupLogEnabled = false;
 	public boolean miningHudEnabled = false;
 	public boolean miningAbilityAlert = false;
 	public boolean farmingYawPitch = false;
@@ -238,7 +237,6 @@ public final class StrayConfig {
 	public java.util.List<CustomTitleRule> customTitles = new java.util.ArrayList<>();
 	public boolean lassoDisplay = false;
 	public boolean jacobContestHudEnabled = false;
-	public boolean skillProgressHudEnabled = false;
 	public boolean gardenContestHudEnabled = false;
 	public boolean gardenVisitorHudEnabled = false;
 	public boolean gardenHoeHudEnabled = false;
@@ -697,9 +695,6 @@ public final class StrayConfig {
 	public java.util.Map<String, LeapPreset> leapClassPresets = new java.util.LinkedHashMap<>();
 	/** The class whose profile the live leap settings belong to; empty before the first one. */
 	public String leapClassActive = "";
-	public boolean hudBossBar = false;
-	public boolean hudEffects = false;
-	public boolean hudHeldItem = false;
 	public boolean hudMountHealth = false;
 	public HudSlot slotHotbar = new HudSlot();
 	public HudSlot slotHealth = new HudSlot();
@@ -709,9 +704,6 @@ public final class StrayConfig {
 	public HudSlot slotExperience = new HudSlot();
 	public HudSlot slotMount = new HudSlot();
 	public HudSlot slotScoreboard = new HudSlot();
-	public HudSlot slotBoss = new HudSlot();
-	public HudSlot slotEffects = new HudSlot();
-	public HudSlot slotHeldItem = new HudSlot();
 	public HudSlot slotGardenContest = new HudSlot();
 	public HudSlot slotGardenVisitor = new HudSlot();
 	public HudSlot slotGardenHoe = new HudSlot();
@@ -753,11 +745,9 @@ public final class StrayConfig {
 	public float hudMusicScale = 1.0f;
 	public float hudPipScale = 1.0f;
 	public float hudRawmatsScale = 1.0f;
-	public float hudPickupScale = 1.0f;
 	public float hudMiningScale = 1.0f;
 	public float hudJacobScale = 1.0f;
 	public float hudComposterScale = 1.0f;
-	public float hudSkillScale = 1.0f;
 	public float hudCrystalMapScale = 1.0f;
 	public float hudInventoryX = -1f;
 	public float hudInventoryY = -1f;
@@ -771,16 +761,12 @@ public final class StrayConfig {
 	public float hudPipY = -1f;
 	public float hudRawmatsX = -1f;
 	public float hudRawmatsY = -1f;
-	public float hudPickupX = -1f;
-	public float hudPickupY = -1f;
 	public float hudMiningX = -1f;
 	public float hudMiningY = -1f;
 	public float hudJacobX = -1f;
 	public float hudJacobY = -1f;
 	public float hudComposterX = -1f;
 	public float hudComposterY = -1f;
-	public float hudSkillX = -1f;
-	public float hudSkillY = -1f;
 	public float hudCrystalMapX = -1f;
 	public float hudCrystalMapY = -1f;
 	public float menuX = -1f;
@@ -1316,9 +1302,6 @@ public final class StrayConfig {
 					loaded.hudAir = false;
 					loaded.hudExperience = false;
 					loaded.hudScoreboard = false;
-					loaded.hudBossBar = false;
-					loaded.hudEffects = false;
-					loaded.hudHeldItem = false;
 					loaded.hudMountHealth = false;
 					loaded.starMobBats = false;
 					loaded.starMobThroughWalls = false;
@@ -1729,16 +1712,12 @@ public final class StrayConfig {
 				loaded.hudMusicScale = clampHudScale(loaded.hudMusicScale);
 				loaded.hudPipScale = clampHudScale(loaded.hudPipScale);
 				loaded.hudRawmatsScale = clampHudScale(loaded.hudRawmatsScale);
-				loaded.hudPickupScale = clampHudScale(loaded.hudPickupScale);
 				loaded.hudMiningScale = clampHudScale(loaded.hudMiningScale);
 				loaded.hudJacobScale = json.has("hudJacobScale")
 					? clampHudScale(loaded.hudJacobScale)
 					: 1.00f;
 				loaded.hudComposterScale = json.has("hudComposterScale")
 					? clampHudScale(loaded.hudComposterScale)
-					: 1.00f;
-				loaded.hudSkillScale = json.has("hudSkillScale")
-					? clampHudScale(loaded.hudSkillScale)
 					: 1.00f;
 				loaded.hudCrystalMapScale = json.has("hudCrystalMapScale")
 					? clampHudScale(loaded.hudCrystalMapScale)
@@ -1850,9 +1829,6 @@ public final class StrayConfig {
 				loaded.slotExperience = hudSlot(loaded.slotExperience);
 				loaded.slotMount = hudSlot(loaded.slotMount);
 				loaded.slotScoreboard = hudSlot(loaded.slotScoreboard);
-				loaded.slotBoss = hudSlot(loaded.slotBoss);
-				loaded.slotEffects = hudSlot(loaded.slotEffects);
-				loaded.slotHeldItem = hudSlot(loaded.slotHeldItem);
 				loaded.slotGardenContest = hudSlot(loaded.slotGardenContest);
 				loaded.slotGardenVisitor = hudSlot(loaded.slotGardenVisitor);
 				loaded.slotGardenHoe = hudSlot(loaded.slotGardenHoe);
@@ -1900,6 +1876,13 @@ public final class StrayConfig {
 				loaded.slotM4Mobs = hudSlot(loaded.slotM4Mobs);
 				if (loaded.m4 == null) {
 					loaded.m4 = new dev.stray.client.dungeon.m4.M4Config();
+				}
+				if (!loaded.m4.enabledMigrated) {
+					// Before "M4 Features" each M4 feature was its own module: keep them running if any was on.
+					dev.stray.client.dungeon.m4.M4Config m = loaded.m4;
+					m.enabled = m.spiritBear || m.highlight || m.waypoints || m.timer || m.stun || m.overkill || m.titles || m.mobCounter
+						|| m.decoy || m.tac || m.hideMessages || m.extraStats || m.sounds || m.renderOptimizer || m.trajectories || m.rabbits;
+					m.enabledMigrated = true;
 				}
 				// Hand-edited values outside what the sliders allow would stall the clicks.
 				loaded.terminalFirstClickDelay = Math.max(0, Math.min(8, loaded.terminalFirstClickDelay));
@@ -2823,9 +2806,6 @@ public final class StrayConfig {
 		slotExperience = new HudSlot();
 		slotMount = new HudSlot();
 		slotScoreboard = new HudSlot();
-		slotBoss = new HudSlot();
-		slotEffects = new HudSlot();
-		slotHeldItem = new HudSlot();
 		slotGardenContest = new HudSlot();
 		slotGardenVisitor = new HudSlot();
 		slotGardenHoe = new HudSlot();

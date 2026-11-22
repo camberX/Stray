@@ -26,13 +26,11 @@ public final class HudLayout {
 		MUSIC("Music"),
 		PIP("Picture in picture"),
 		RAWMATS("Raw mats"),
-		PICKUPS("Pickup log"),
 		MINING("Mining"),
 		SCATHA("Scatha"),
 		CRYSTAL_MAP("CH map"),
 		JACOB("Jacob contest"),
 		COMPOSTER("Composter"),
-		SKILL("Skill progress"),
 		NEXT_CONTEST("Next contest"),
 		VISITOR("Visitors"),
 		HOE("Hoe level"),
@@ -50,9 +48,6 @@ public final class HudLayout {
 		EXPERIENCE("Experience"),
 		MOUNT("Mount"),
 		SCOREBOARD("Scoreboard"),
-		BOSS("Boss bar"),
-		EFFECTS("Effects"),
-		HELD_ITEM("Held item"),
 		SLAYER("Slayer"),
 		SLAYER_PROFIT("Slayer profit"),
 		SLAYER_RNG("Slayer RNG meter"),
@@ -223,13 +218,6 @@ public final class HudLayout {
 					x = placed(config.hudRawmatsX) ? config.hudRawmatsX : Math.max(MARGIN, guiW - w - MARGIN);
 					y = placed(config.hudRawmatsY) ? config.hudRawmatsY : MARGIN;
 				}
-				case PICKUPS -> {
-					x = placed(config.hudPickupX) ? config.hudPickupX : Math.max(MARGIN, guiW - w - MARGIN);
-					float below = config.rawmatsHudEnabled
-						? RawmatsHudRenderer.drawHeight() * scale(Id.RAWMATS) + 4
-						: 0f;
-					y = placed(config.hudPickupY) ? config.hudPickupY : MARGIN + below;
-				}
 				case MINING -> {
 					x = placed(config.hudMiningX) ? config.hudMiningX : MARGIN;
 					float below = WatermarkRenderer.occupiedHeight();
@@ -279,24 +267,6 @@ public final class HudLayout {
 						below += JacobContestHudRenderer.drawHeight() * scale(Id.JACOB) + 4;
 					}
 					y = placed(config.hudComposterY) ? config.hudComposterY : MARGIN + below;
-				}
-				case SKILL -> {
-					x = placed(config.hudSkillX) ? config.hudSkillX : MARGIN;
-					float below = WatermarkRenderer.occupiedHeight();
-					if (config.hudEnabled) {
-						below += NodeHudRenderer.drawHeight() * scale(Id.NODES) + 4;
-					}
-					if (config.miningHudEnabled) {
-						below += MiningHudRenderer.drawHeight() * scale(Id.MINING) + 4;
-					}
-					below += scathaOffset(font);
-					if (config.jacobContestHudEnabled) {
-						below += JacobContestHudRenderer.drawHeight() * scale(Id.JACOB) + 4;
-					}
-					if (config.composterHudEnabled) {
-						below += ComposterHudRenderer.drawHeight() * scale(Id.COMPOSTER) + 4;
-					}
-					y = placed(config.hudSkillY) ? config.hudSkillY : MARGIN + below;
 				}
 				case TOP_DOWN -> {
 					x = Math.max(MARGIN, guiW - w - MARGIN);
@@ -380,10 +350,6 @@ public final class HudLayout {
 				config.hudRawmatsX = x;
 				config.hudRawmatsY = y;
 			}
-			case PICKUPS -> {
-				config.hudPickupX = x;
-				config.hudPickupY = y;
-			}
 			case MINING -> {
 				config.hudMiningX = x;
 				config.hudMiningY = y;
@@ -399,10 +365,6 @@ public final class HudLayout {
 			case COMPOSTER -> {
 				config.hudComposterX = x;
 				config.hudComposterY = y;
-			}
-			case SKILL -> {
-				config.hudSkillX = x;
-				config.hudSkillY = y;
 			}
 			default -> {
 			}
@@ -422,12 +384,10 @@ public final class HudLayout {
 			case MUSIC -> StrayConfig.clampHudScale(config.hudMusicScale);
 			case PIP -> StrayConfig.clampHudScale(config.hudPipScale);
 			case RAWMATS -> StrayConfig.clampHudScale(config.hudRawmatsScale);
-			case PICKUPS -> StrayConfig.clampHudScale(config.hudPickupScale);
 			case MINING -> StrayConfig.clampHudScale(config.hudMiningScale);
 			case CRYSTAL_MAP -> StrayConfig.clampHudScale(config.hudCrystalMapScale);
 			case JACOB -> StrayConfig.clampHudScale(config.hudJacobScale);
 			case COMPOSTER -> StrayConfig.clampHudScale(config.hudComposterScale);
-			case SKILL -> StrayConfig.clampHudScale(config.hudSkillScale);
 			default -> 1.0f;
 		};
 	}
@@ -448,12 +408,10 @@ public final class HudLayout {
 			case MUSIC -> config.hudMusicScale = value;
 			case PIP -> config.hudPipScale = value;
 			case RAWMATS -> config.hudRawmatsScale = value;
-			case PICKUPS -> config.hudPickupScale = value;
 			case MINING -> config.hudMiningScale = value;
 			case CRYSTAL_MAP -> config.hudCrystalMapScale = value;
 			case JACOB -> config.hudJacobScale = value;
 			case COMPOSTER -> config.hudComposterScale = value;
-			case SKILL -> config.hudSkillScale = value;
 			default -> {
 			}
 		}
@@ -493,10 +451,6 @@ public final class HudLayout {
 				config.hudRawmatsX = -1f;
 				config.hudRawmatsY = -1f;
 			}
-			case PICKUPS -> {
-				config.hudPickupX = -1f;
-				config.hudPickupY = -1f;
-			}
 			case MINING -> {
 				config.hudMiningX = -1f;
 				config.hudMiningY = -1f;
@@ -513,10 +467,6 @@ public final class HudLayout {
 				config.hudComposterX = -1f;
 				config.hudComposterY = -1f;
 			}
-			case SKILL -> {
-				config.hudSkillX = -1f;
-				config.hudSkillY = -1f;
-			}
 			default -> {
 			}
 		}
@@ -531,13 +481,11 @@ public final class HudLayout {
 			case MUSIC -> config.musicHudEnabled;
 			case PIP -> config.pipEnabled;
 			case RAWMATS -> config.rawmatsHudEnabled;
-			case PICKUPS -> config.pickupLogEnabled;
 			case MINING -> config.miningHudEnabled;
 			case SCATHA -> config.scathaHudEnabled;
 			case CRYSTAL_MAP -> config.crystalHollowsMap;
 			case JACOB -> config.jacobContestHudEnabled;
 			case COMPOSTER -> config.composterHudEnabled;
-			case SKILL -> config.skillProgressHudEnabled;
 			case NEXT_CONTEST -> config.gardenContestHudEnabled;
 			case VISITOR -> config.gardenVisitorHudEnabled;
 			case HOE -> config.gardenHoeHudEnabled;
@@ -558,9 +506,6 @@ public final class HudLayout {
 			case M4_TIMER, M4_BEAR, M4_SPLITS, M4_STUN, M4_TAC, M4_RABBITS, M4_OVERKILL, M4_MOBS -> dev.stray.client.dungeon.m4.M4Hud.enabled(id);
 			case HOTBAR, HEALTH, HUNGER, ARMOR, AIR, EXPERIENCE, MOUNT -> false;
 			case SCOREBOARD -> config.hudScoreboard;
-			case BOSS -> config.hudBossBar;
-			case EFFECTS -> config.hudEffects;
-			case HELD_ITEM -> config.hudHeldItem;
 			case SLAYER, SLAYER_PROFIT, SLAYER_RNG, SLAYER_KILLS, SLAYER_DAGGER, SLAYER_PILLAR -> SlayerHudRenderer.configured(id);
 		};
 	}
@@ -622,9 +567,6 @@ public final class HudLayout {
 			case EXPERIENCE -> config.slotExperience;
 			case MOUNT -> config.slotMount;
 			case SCOREBOARD -> config.slotScoreboard;
-			case BOSS -> config.slotBoss;
-			case EFFECTS -> config.slotEffects;
-			case HELD_ITEM -> config.slotHeldItem;
 			case NEXT_CONTEST -> config.slotGardenContest;
 			case VISITOR -> config.slotGardenVisitor;
 			case HOE -> config.slotGardenHoe;
@@ -676,9 +618,6 @@ public final class HudLayout {
 		if (config.composterHudEnabled) {
 			below += ComposterHudRenderer.drawHeight() * scale(Id.COMPOSTER) + 4;
 		}
-		if (config.skillProgressHudEnabled) {
-			below += SkillProgressHudRenderer.drawHeight() * scale(Id.SKILL) + 4;
-		}
 		Id[] order = {Id.NEXT_CONTEST, Id.VISITOR, Id.HOE, Id.MILESTONE, Id.SHOPPING, Id.PEST_COOLDOWN, Id.CROP_FEVER, Id.GREENHOUSE_GROWTH};
 		boolean[] on = {
 			config.gardenContestHudEnabled,
@@ -706,9 +645,9 @@ public final class HudLayout {
 			case HOTBAR -> (guiW - w) * 0.5f;
 			case HEALTH, ARMOR -> guiW * 0.5f - 91;
 			case HUNGER, AIR, MOUNT -> guiW * 0.5f + 91 - w;
-			case EXPERIENCE, HELD_ITEM -> (guiW - w) * 0.5f;
-			case SCOREBOARD, EFFECTS, DUNGEON_MAP, RUN_SPLITS -> guiW - w - MARGIN;
-			case BOSS, F7_TITLE, F7_LIGHTNING, F7_TERMINAL, AUTO_HOTBAR -> (guiW - w) * 0.5f;
+			case EXPERIENCE -> (guiW - w) * 0.5f;
+			case SCOREBOARD, DUNGEON_MAP, RUN_SPLITS -> guiW - w - MARGIN;
+			case F7_TITLE, F7_LIGHTNING, F7_TERMINAL, AUTO_HOTBAR -> (guiW - w) * 0.5f;
 			case SLAYER, SLAYER_PROFIT, SLAYER_RNG, SLAYER_KILLS -> guiW - w - MARGIN;
 			case SLAYER_DAGGER, SLAYER_PILLAR -> (guiW - w) * 0.5f;
 			case M4_TIMER, M4_BEAR, M4_SPLITS, M4_STUN, M4_TAC, M4_RABBITS, M4_OVERKILL, M4_MOBS -> dev.stray.client.dungeon.m4.M4Hud.defaultX(id, guiW, w);
@@ -725,8 +664,7 @@ public final class HudLayout {
 			case EXPERIENCE -> xp;
 			case HEALTH, HUNGER, MOUNT -> status;
 			case ARMOR, AIR -> status - 3 - h;
-			case HELD_ITEM -> status - 6 - h;
-			case SCOREBOARD, EFFECTS -> MARGIN;
+			case SCOREBOARD -> MARGIN;
 			case DUNGEON_MAP -> guiH * 0.5f - h * 0.5f;
 			case MASK_TIMERS -> guiH * 0.5f + 20f;
 			case RUN_SPLITS -> guiH * 0.3f;
@@ -735,7 +673,6 @@ public final class HudLayout {
 			case F7_TITLE -> guiH * 0.5f - Math.round(guiH * 0.056f) - 2f;
 			case F7_LIGHTNING -> guiH * 0.5f - guiH / 13f - 2f;
 			case F7_TERMINAL -> guiH * 0.5f + 30f;
-			case BOSS -> MARGIN;
 			case SLAYER, SLAYER_PROFIT, SLAYER_RNG, SLAYER_KILLS -> slayerDefaultY(id, font, guiH);
 			case SLAYER_DAGGER -> guiH * 0.5f + 18f;
 			case SLAYER_PILLAR -> guiH * 0.5f + 18f + (enabled(Id.SLAYER_DAGGER) ? height(Id.SLAYER_DAGGER, font) + 4f : 0f);
@@ -786,13 +723,11 @@ public final class HudLayout {
 			case MUSIC -> MusicHudRenderer.drawWidth() * scale;
 			case PIP -> PipHudRenderer.drawWidth() * scale;
 			case RAWMATS -> RawmatsHudRenderer.drawWidth() * scale;
-			case PICKUPS -> PickupLogRenderer.drawWidth() * scale;
 			case MINING -> MiningHudRenderer.drawWidth() * scale;
 			case SCATHA -> MiningHudRenderer.scathaWidth(font) * scale;
 			case CRYSTAL_MAP -> CrystalHollowsMap.drawWidth() * scale;
 			case JACOB -> JacobContestHudRenderer.drawWidth() * scale;
 			case COMPOSTER -> ComposterHudRenderer.drawWidth() * scale;
-			case SKILL -> SkillProgressHudRenderer.drawWidth() * scale;
 			case NEXT_CONTEST -> GardenHudRenderer.contestWidth() * scale;
 			case VISITOR -> GardenHudRenderer.visitorWidth() * scale;
 			case HOE -> GardenHudRenderer.hoeWidth() * scale;
@@ -813,9 +748,6 @@ public final class HudLayout {
 			case HEALTH, HUNGER, ARMOR, AIR, MOUNT -> StatusHudRenderer.BAR_W * scale;
 			case EXPERIENCE -> StatusHudRenderer.xpWidth() * scale;
 			case SCOREBOARD -> ScoreboardHudRenderer.drawWidth(font) * scale;
-			case BOSS -> BossBarHudRenderer.drawWidth() * scale;
-			case EFFECTS -> EffectsHudRenderer.drawWidth(font) * scale;
-			case HELD_ITEM -> HeldItemHudRenderer.drawWidth(font) * scale;
 			case SLAYER, SLAYER_PROFIT, SLAYER_RNG, SLAYER_KILLS, SLAYER_DAGGER, SLAYER_PILLAR -> SlayerHudRenderer.width(id, font) * scale;
 		};
 	}
@@ -829,13 +761,11 @@ public final class HudLayout {
 			case MUSIC -> MusicHudRenderer.drawHeight() * scale;
 			case PIP -> PipHudRenderer.drawHeight() * scale;
 			case RAWMATS -> RawmatsHudRenderer.drawHeight() * scale;
-			case PICKUPS -> PickupLogRenderer.drawHeight() * scale;
 			case MINING -> MiningHudRenderer.drawHeight() * scale;
 			case SCATHA -> MiningHudRenderer.scathaHeight() * scale;
 			case CRYSTAL_MAP -> CrystalHollowsMap.drawHeight() * scale;
 			case JACOB -> JacobContestHudRenderer.drawHeight() * scale;
 			case COMPOSTER -> ComposterHudRenderer.drawHeight() * scale;
-			case SKILL -> SkillProgressHudRenderer.drawHeight() * scale;
 			case NEXT_CONTEST -> GardenHudRenderer.contestHeight() * scale;
 			case VISITOR -> GardenHudRenderer.visitorHeight() * scale;
 			case HOE -> GardenHudRenderer.hoeHeight() * scale;
@@ -856,9 +786,6 @@ public final class HudLayout {
 			case HEALTH, HUNGER, ARMOR, AIR, MOUNT -> StatusHudRenderer.BAR_H * scale;
 			case EXPERIENCE -> StatusHudRenderer.XP_BOX_H * scale;
 			case SCOREBOARD -> ScoreboardHudRenderer.drawHeight(font) * scale;
-			case BOSS -> BossBarHudRenderer.drawHeight() * scale;
-			case EFFECTS -> EffectsHudRenderer.drawHeight() * scale;
-			case HELD_ITEM -> HeldItemHudRenderer.HEIGHT * scale;
 			case SLAYER, SLAYER_PROFIT, SLAYER_RNG, SLAYER_KILLS, SLAYER_DAGGER, SLAYER_PILLAR -> SlayerHudRenderer.height(id) * scale;
 		};
 	}
