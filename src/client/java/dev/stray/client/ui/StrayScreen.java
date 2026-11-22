@@ -3471,7 +3471,7 @@ public class StrayScreen extends Screen {
 	static int leapRows(boolean auto) {
 		if (!dev.stray.Edition.LEGIT) {
 			StrayConfig config = StrayConfig.get();
-			int rows = 7;
+			int rows = 8 + (config.leapClassProfiles ? 1 : 0);
 			for (dev.stray.client.dungeon.autoleap.AutoLeap.Target target : dev.stray.client.dungeon.autoleap.AutoLeap.targets()) {
 				if (auto ? !target.auto() : !target.fast()) {
 					continue;
@@ -3497,6 +3497,17 @@ public class StrayScreen extends Screen {
 	private void drawLeapPanel(GuiGraphicsExtractor graphics, Font font, float ix, float y, float iw, int mouseX, int mouseY, boolean auto) {
 		if (!dev.stray.Edition.LEGIT) {
 			StrayConfig config = StrayConfig.get();
+			// Class profiles: these settings are kept per class you play and swap with it.
+			y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Per-class profiles", config.leapClassProfiles, v -> config.leapClassProfiles = v);
+			if (config.leapClassProfiles) {
+				y = cycle(graphics, font, ix + 8, y, iw - 8, mouseX, mouseY, "Editing profile", () -> {
+					dev.stray.client.dungeon.DungeonParty.DungeonClass active = dev.stray.client.dungeon.autoleap.AutoLeap.activeClassProfile();
+					return active == null ? "None yet" : active.label;
+				}, () -> {
+					leapFocus = null;
+					dev.stray.client.dungeon.autoleap.AutoLeap.cycleClassProfile();
+				});
+			}
 			y = cycle(graphics, font, ix, y, iw, mouseX, mouseY, "Leap to", () -> config.leapMode == 1 ? "Player name" : "Class", () -> {
 				config.leapMode = config.leapMode == 1 ? 0 : 1;
 				leapFocus = null;

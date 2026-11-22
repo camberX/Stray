@@ -299,6 +299,7 @@ public final class AutoLeap {
 			lastLevel = client.level;
 			reset();
 		}
+		followOwnClass();
 		StrayConfig config = StrayConfig.get();
 		if (!config.autoLeap || client.player == null || !F7Phase.inF7Boss()) {
 			return;
@@ -464,16 +465,69 @@ public final class AutoLeap {
 		return false;
 	}
 
-	// ------------------------------------------------------------------ presets
+	// ------------------------------------------------------------------ class profiles
 
-	public static void savePreset(String rawName) {
-		String name = rawName == null ? "" : rawName.trim();
-		if (name.isEmpty()) {
-			message("§cEnter a preset name first.");
+	/** With class profiles on: your class in this run, once the tab list shows it. */
+	private static void followOwnClass() {
+		StrayConfig config = StrayConfig.get();
+		if (!config.leapClassProfiles || !inDungeon() || !(config.autoLeap || config.fastLeap)) {
 			return;
 		}
+		DungeonParty.Member self = DungeonParty.self();
+		if (self == null || self.clazz == null || self.clazz == DungeonParty.DungeonClass.EMPTY) {
+			return;
+		}
+		if (!self.clazz.label.equals(config.leapClassActive)) {
+			switchClassProfile(self.clazz, true);
+		}
+	}
+
+	/** The class whose leap settings are live, or null before any. */
+	public static DungeonParty.DungeonClass activeClassProfile() {
+		String active = StrayConfig.get().leapClassActive;
+		if (active == null || active.isEmpty()) {
+			return null;
+		}
+		DungeonParty.DungeonClass clazz = DungeonParty.DungeonClass.fromName(active);
+		return clazz == DungeonParty.DungeonClass.EMPTY ? null : clazz;
+	}
+
+	/** Menu: edit the next class's profile (Archer, Berserk, Healer, Mage, Tank, round). */
+	public static void cycleClassProfile() {
+		DungeonParty.DungeonClass current = activeClassProfile();
+		int i = -1;
+		for (int k = 0; k < CLASSES.length; k++) {
+			if (CLASSES[k] == current) {
+				i = k;
+			}
+		}
+		switchClassProfile(CLASSES[(i + 1) % CLASSES.length], false);
+	}
+
+	/**
+	 * Keeps the live settings as the profile of the class they belonged to, then loads this
+	 * class's profile. A class with no profile yet starts from the live settings.
+	 */
+	private static void switchClassProfile(DungeonParty.DungeonClass clazz, boolean announce) {
 		StrayConfig config = StrayConfig.get();
-		String key = existingKey(name);
+		String from = config.leapClassActive == null ? "" : config.leapClassActive;
+		if (!from.isEmpty()) {
+			config.leapClassPresets.put(from, snapshot(config));
+		}
+		LeapPreset next = config.leapClassPresets.get(clazz.label);
+		if (next != null) {
+			apply(config, next);
+		} else {
+			config.leapClassPresets.put(clazz.label, snapshot(config));
+		}
+		config.leapClassActive = clazz.label;
+		config.save();
+		if (announce) {
+			message("§aLeap settings switched to your §f" + clazz.label + " §aprofile.");
+		}
+	}
+
+	private static LeapPreset snapshot(StrayConfig config) {
 		LeapPreset preset = new LeapPreset();
 		preset.mode = config.leapMode;
 		preset.swapBack = config.leapSwapBack;
@@ -486,7 +540,36 @@ public final class AutoLeap {
 		preset.fastMelody = config.fastLeapMelody;
 		config.autoLeapTargets.forEach((k, v) -> preset.auto.put(k, v.copy()));
 		config.fastLeapTargets.forEach((k, v) -> preset.fast.put(k, v.copy()));
-		config.leapPresets.put(key, preset);
+		return preset;
+	}
+
+	private static void apply(StrayConfig config, LeapPreset preset) {
+		config.leapMode = preset.mode;
+		config.leapSwapBack = preset.swapBack;
+		config.autoLeapP3 = preset.autoP3;
+		config.fastLeapP3 = preset.fastP3;
+		config.autoLeapOnlyGate = preset.autoOnlyGate;
+		config.autoLeapDoorAfterBlood = preset.autoDoorAfterBlood;
+		config.fastLeapDoorAfterBlood = preset.fastDoorAfterBlood;
+		config.autoLeapMelody = preset.autoMelody;
+		config.fastLeapMelody = preset.fastMelody;
+		config.autoLeapTargets.clear();
+		config.fastLeapTargets.clear();
+		preset.auto.forEach((k, v) -> config.autoLeapTargets.put(k, v.copy()));
+		preset.fast.forEach((k, v) -> config.fastLeapTargets.put(k, v.copy()));
+	}
+
+	// ------------------------------------------------------------------ presets
+
+	public static void savePreset(String rawName) {
+		String name = rawName == null ? "" : rawName.trim();
+		if (name.isEmpty()) {
+			message("§cEnter a preset name first.");
+			return;
+		}
+		StrayConfig config = StrayConfig.get();
+		String key = existingKey(name);
+		config.leapPresets.put(key, snapshot(config));
 		config.leapPresetName = key;
 		config.save();
 		message("§aSaved leap preset §f" + key + "§a.");
@@ -505,19 +588,7 @@ public final class AutoLeap {
 			message("§cLeap preset §f" + name + " §cdoesn't exist.");
 			return;
 		}
-		config.leapMode = preset.mode;
-		config.leapSwapBack = preset.swapBack;
-		config.autoLeapP3 = preset.autoP3;
-		config.fastLeapP3 = preset.fastP3;
-		config.autoLeapOnlyGate = preset.autoOnlyGate;
-		config.autoLeapDoorAfterBlood = preset.autoDoorAfterBlood;
-		config.fastLeapDoorAfterBlood = preset.fastDoorAfterBlood;
-		config.autoLeapMelody = preset.autoMelody;
-		config.fastLeapMelody = preset.fastMelody;
-		config.autoLeapTargets.clear();
-		config.fastLeapTargets.clear();
-		preset.auto.forEach((k, v) -> config.autoLeapTargets.put(k, v.copy()));
-		preset.fast.forEach((k, v) -> config.fastLeapTargets.put(k, v.copy()));
+		apply(config, preset);
 		config.leapPresetName = key;
 		config.save();
 		message("§aLoaded leap preset §f" + key + "§a.");

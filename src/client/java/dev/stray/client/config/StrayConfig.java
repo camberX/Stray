@@ -688,6 +688,15 @@ public final class StrayConfig {
 	public java.util.Map<String, LeapTargetConfig> fastLeapTargets = new java.util.LinkedHashMap<>();
 	public java.util.Map<String, LeapPreset> leapPresets = new java.util.LinkedHashMap<>();
 	public String leapPresetName = "";
+	/**
+	 * Class profiles: one set of leap settings (class or name targets alike) per class you play,
+	 * loaded by itself when your own dungeon class changes.
+	 */
+	public boolean leapClassProfiles = false;
+	/** Your class's label ("Mage") to its saved leap settings. */
+	public java.util.Map<String, LeapPreset> leapClassPresets = new java.util.LinkedHashMap<>();
+	/** The class whose profile the live leap settings belong to; empty before the first one. */
+	public String leapClassActive = "";
 	public boolean hudBossBar = false;
 	public boolean hudEffects = false;
 	public boolean hudHeldItem = false;
