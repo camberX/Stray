@@ -55,31 +55,39 @@ jobs:
         ls -R artifacts
     - name: upload Stray 26.3
       if: success()
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
+        # Unzipped: the download is the jar itself (the artifact is named after the file).
         name: stray-26.3
         path: artifacts/stray-26.3/*.jar
+        archive: false
         if-no-files-found: error
     - name: upload Stray 26.2
       if: success()
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
+        # Unzipped: the download is the jar itself (the artifact is named after the file).
         name: stray-26.2
         path: artifacts/stray-26.2/*.jar
+        archive: false
         if-no-files-found: error
     - name: upload Stray Legit 26.3
       if: success()
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
+        # Unzipped: the download is the jar itself (the artifact is named after the file).
         name: stray-legit-26.3
         path: artifacts/stray-legit-26.3/*.jar
+        archive: false
         if-no-files-found: error
     - name: upload Stray Legit 26.2
       if: success()
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
+        # Unzipped: the download is the jar itself (the artifact is named after the file).
         name: stray-legit-26.2
         path: artifacts/stray-legit-26.2/*.jar
+        archive: false
         if-no-files-found: error
     - name: report build errors
       if: failure()
