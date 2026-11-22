@@ -38,7 +38,13 @@ public final class CustomSkin {
 	public static void init() {
 		String path = StrayConfig.get().skinPath;
 		if (path != null && !path.isBlank()) {
-			load(Path.of(path), false);
+			try {
+				load(Path.of(path), false);
+			} catch (RuntimeException exception) {
+				// A path this system can't use (a config copied from Windows to Linux): skip it.
+				Stray.LOGGER.warn("Custom skin: can't use the saved path {}", path, exception);
+				status = "Saved skin not found";
+			}
 		}
 	}
 

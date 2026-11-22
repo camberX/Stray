@@ -57,8 +57,13 @@ public final class CustomCape {
 	public static void init() {
 		StrayConfig config = StrayConfig.get();
 		if (config.capePath != null && !config.capePath.isBlank()) {
-			loadPath(Path.of(config.capePath), false);
-			return;
+			try {
+				loadPath(Path.of(config.capePath), false);
+				return;
+			} catch (RuntimeException exception) {
+				// A path this system can't use (a config copied from Windows to Linux): skip it.
+				Stray.LOGGER.warn("Custom cape: can't use the saved path {}", config.capePath, exception);
+			}
 		}
 		if (config.capeUrl != null && !config.capeUrl.isBlank()) {
 			loadUrl(config.capeUrl, false, false);
