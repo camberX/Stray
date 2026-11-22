@@ -15,6 +15,14 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.6.5", new String[]{
+			"Themes are now Minecraft (chat-black panels, the game's own font and widgets), Modern (grey panels with every category side by side, right click for settings), Skeet and Windows 98. Shadow and Expressive were removed; a config that used them opens as Minecraft.",
+			"Windows 98 is back: the Win98 click GUI with its Start menu and dark mode, and a matching HUD with bevelled panels, a taskbar watermark and a Start-menu array list.",
+			"Run splits: F7/M7 splits like NoammAddons', with server-tick time and lag for every row, an Estimated time from optimal splits, and picking up a run already in progress.",
+			"Sword block: a purely visual 1.7 blocking pose while right click is held with a sword. Nothing is sent to the server.",
+			"Accounts: change the Minecraft username of the account you're on.",
+			"Dungeon map: teammates' markers are numbered in tab-list order."
+		}),
 		new Entry("1.6.4", new String[]{
 			"New dungeon map, ported from NoammAddons with noamm's permission: rooms, doors, checkmarks or room names and secrets, teammates' heads, guesses for unopened puzzle, trap and miniboss rooms, every colour adjustable, and a Stray or NoammAddons look.",
 			"Show unopened rooms (not in Stray Legit) shows the whole dungeon from the start, read from the loaded world.",
