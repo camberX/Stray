@@ -12,6 +12,8 @@ import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
 
@@ -33,11 +35,9 @@ import java.util.regex.Pattern;
  * yourself"), Portal Entry (to entering the boss room), Boss Entry (total so far), then the
  * floor's boss splits from their boss lines (F7/M7 Necron ends when Necron dies, which is the
  * wither hurt sound after "ARGH!"), Cleared (to the "Defeated" line), Overall and Estimated.
- * The layout follows the splits table it was asked to match: every row always listed, 0.00 (0.00)
- * for rows not reached yet, and the difference once a row is done.
- *
- * <p>Each row shows the real time, the same row in server ticks in brackets (Hypixel's per-tick
- * pings, 20 a second) and the lag between them (real minus ticks), as NoammAddons shows times.
+ * Drawn like Blade Addons' splits (CC0): the coloured split name on the left and, flush right,
+ * the real time in green with the server-tick time (or the lag, real minus ticks) in grey
+ * brackets, no panel, the game's font with its shadow. Every row is always listed.
  * Estimated adds the optimal row times (F7/M7) to the time so far; on other floors it uses your
  * fastest finished run per floor, saved in {@code config/stray/runsplits.json}.
  */
@@ -51,8 +51,6 @@ public final class RunSplits {
 	private static final Pattern ELAPSED = Pattern.compile("Time Elapsed:\\s*(?:(\\d+)h\\s*)?(?:(\\d+)m\\s*)?(\\d+)s");
 	private static final Pattern RUN_END = Pattern.compile("^\\s*☠ Defeated (.+) in 0?([\\dhms ]+?)\\s*(\\(NEW RECORD!\\))?$");
 	private static final int LINE = 10;
-	private static final int PAD = 5;
-	private static final int GAP = 6;
 
 	private record Split(String name, Predicate<String> ends) {
 		static Split at(String name, String message) {
@@ -396,24 +394,23 @@ public final class RunSplits {
 		return out;
 	}
 
-	private record Line(String name, String time, String best, String diff) {
+	/** One row: label, its colour, real time and server-tick time. */
+	private record Line(String name, int color, long ms, long ticks) {
 	}
 
 	private static List<Line> lines(boolean example) {
 		if (example) {
 			return List.of(
-				new Line("§aBlood Open", "12.79", "(12.55)", "§c+0.24"),
-				new Line("§bBlood Clear", "54.16", "(50.80)", "§c+3.36"),
-				new Line("§dPortal Entry", "14.56", "(14.10)", "§c+0.46"),
-				new Line("§cBoss Entry", "1:21.50", "(1:16.65)", "§c+4.85"),
-				new Line("§5Maxor", "13.23", "(13.23)", "§f+0.00"),
-				new Line("§bStorm", "47.07", "(43.40)", "§c+3.67"),
-				new Line("§6Terminals", "26.65", "(26.20)", "§c+0.45"),
-				new Line("§eGoldor", "10.15", "(10.00)", "§c+0.15"),
-				new Line("§cNecron", "7.75", "(7.60)", "§c+0.15"),
-				new Line("§cCleared", "0.00", "(0.00)", ""),
-				new Line("§7Overall", "3:06.34", "(2:57.15)", "§c+9.19"),
-				new Line("§bEstimated", "3:50.34", "(3:41.15)", "§c+9.19")
+				new Line("Blood Open", 0xAA0000, 12_790L, 251L),
+				new Line("Blood Clear", 0xFF5555, 54_160L, 1_016L),
+				new Line("Portal", 0xFF55FF, 14_560L, 282L),
+				new Line("Boss Entry", 0x5555FF, 81_500L, 1_549L),
+				new Line("Maxor", 0xAA00AA, 13_230L, 264L),
+				new Line("Storm", 0x00AAAA, 47_070L, 868L),
+				new Line("Terminals", 0xFFFF55, 26_650L, 524L),
+				new Line("Goldor", 0xFFAA00, 10_150L, 200L),
+				new Line("Necron", 0xFF5555, 7_750L, 152L),
+				new Line("Run Time", 0x178D17, 186_340L, 3_543L)
 			);
 		}
 		if (runStart == 0L) {
@@ -432,24 +429,21 @@ public final class RunSplits {
 		Best best = bests().get(floorKey());
 		StrayConfig config = StrayConfig.get();
 		List<Row> all = segments();
-		// The lag column shows on every row for the whole run: live for the open row, +0.00 for
-		// rows not reached yet.
-		boolean lag = true;
 		List<Line> out = new ArrayList<>();
-		out.add(row("§a", bloodOpen, now, lag));
-		out.add(row("§b", bloodClear, now, lag));
-		out.add(row("§d", portal, now, lag));
+		out.add(row(bloodOpen, now));
+		out.add(row(bloodClear, now));
+		out.add(row(portal, now));
 		long entry = (bossEntry > 0L ? bossEntry : now) - runStart;
 		long entryTicks = (bossEntry > 0L ? bossEntryTick : nowTick) - runStartTick;
-		out.add(line("§cBoss Entry", entry, entryTicks, lag));
+		out.add(new Line("Boss Entry", colorOf("Boss Entry"), entry, entryTicks));
 		for (Row row : boss) {
-			out.add(row(bossColor(row.name), row, now, lag));
+			out.add(row(row, now));
 		}
-		out.add(row("§c", cleared, now, lag));
+		out.add(row(cleared, now));
 
 		long overall = now - runStart;
 		long overallTicks = Math.max(0L, nowTick - runStartTick);
-		out.add(line("§7Overall", overall, overallTicks, lag));
+		out.add(new Line("Run Time", colorOf("Run Time"), overall, overallTicks));
 		if (config.runSplitsEstimated && runEnd == 0L) {
 			// Time so far, plus the rest of the open row and every row still to come at the target
 			// times (the optimal times for the floor; your personal best where there are none).
@@ -463,7 +457,7 @@ public final class RunSplits {
 				estimate += row.started() ? Math.max(0L, goal - row.time(now)) : goal;
 			}
 			long lost = overall - overallTicks * 50L;
-			out.add(line("§bEstimated", estimate, Math.max(0L, (estimate - lost) / 50L), lag));
+			out.add(new Line("Estimated", colorOf("Estimated"), estimate, Math.max(0L, (estimate - lost) / 50L)));
 		}
 		return out;
 	}
@@ -491,83 +485,85 @@ public final class RunSplits {
 		return best == null ? Map.of() : best.segments;
 	}
 
-	private static Line row(String color, Row row, long now, boolean lag) {
-		return line(color + row.name, row.time(now), row.ticks(), lag);
+	private static Line row(Row row, long now) {
+		String label = "Portal Entry".equals(row.name) ? "Portal" : row.name;
+		return new Line(label, colorOf(row.name), row.time(now), row.ticks());
 	}
 
-	/** Real time, (tick time), and the lag between them: real minus ticks. */
-	private static Line line(String label, long ms, long ticks, boolean lag) {
-		StrayConfig config = StrayConfig.get();
-		long tickMs = ticks * 50L;
-		String bracket = config.runSplitsBest ? "(" + format(tickMs) + ")" : "";
-		String diff = "";
-		if (config.runSplitsDiff && lag) {
-			long d = ms - tickMs;
-			String color = d > 5L ? "§c" : d < -5L ? "§a" : "§f";
-			diff = color + (d < 0L ? "-" : "+") + format(Math.abs(d));
-		}
-		return new Line(label, format(ms), bracket, diff);
-	}
-
-	private static String bossColor(String name) {
+	/** Blade Addons' split colours (CC0); boss parts without one of their own are dark aqua. */
+	private static int colorOf(String name) {
 		return switch (name) {
-			case "Maxor" -> "§5";
-			case "Storm", "Thorn Kill", "Scarf", "Guardifessor" -> "§b";
-			case "Terminals" -> "§6";
-			case "Goldor", "Dialogue", "Start Dialogue", "End Dialogue", "The Professor" -> "§e";
-			case "Giants" -> "§d";
-			case "Terracottas" -> "§6";
-			case "Guardians" -> "§9";
-			case "Dragons" -> "§4";
-			default -> "§c";
+			case "Blood Open", "Dragons" -> 0xAA0000;
+			case "Blood Clear", "Necron", "Cleared" -> 0xFF5555;
+			case "Portal Entry", "Portal" -> 0xFF55FF;
+			case "Boss Entry" -> 0x5555FF;
+			case "Maxor" -> 0xAA00AA;
+			case "Terminals", "Terracottas" -> 0xFFFF55;
+			case "Goldor", "Giants" -> 0xFFAA00;
+			case "Run Time" -> 0x178D17;
+			case "Estimated" -> 0x55FFFF;
+			default -> 0x00AAAA;
 		};
 	}
 
-	/** 12.79, or 1:21.50 from a minute. */
+	// ---------------------------------------------------------------- drawing (Blade Addons' look)
+
+	/** Blade Addons' splits are 165 wide: the name on the left, the times flush right. */
+	private static final int SPLIT_W = 165;
+	private static final int REAL = 0xFF55FF55;
+	private static final int SERVER = 0xFFAAAAAA;
+	private static final int PAREN = 0xFF555555;
+
+	/** 12.34s, or 1m 2.34s from a minute (Blade Addons' format). */
 	private static String format(long ms) {
-		long hundredths = Math.max(0L, ms) / 10L;
-		long seconds = hundredths / 100L;
-		long rest = hundredths % 100L;
-		if (seconds >= 60L) {
-			return String.format(Locale.ROOT, "%d:%02d.%02d", seconds / 60L, seconds % 60L, rest);
+		double seconds = Math.max(0L, ms) / 1000.0;
+		String rest = String.format(Locale.ROOT, "%.2fs", seconds % 60.0);
+		return seconds >= 60.0 ? (int) (seconds / 60.0) + "m " + rest : rest;
+	}
+
+	/** "1m 2.34s (1m 1.90s)": real time in green, then the tick time or the lag in grey brackets. */
+	private static Component timeText(Line line) {
+		StrayConfig config = StrayConfig.get();
+		MutableComponent out = Component.literal(format(line.ms)).withColor(REAL & 0xFFFFFF);
+		String inner = null;
+		if (config.runSplitsBest) {
+			inner = format(line.ticks * 50L);
+		} else if (config.runSplitsDiff) {
+			double diff = (line.ms - line.ticks * 50L) / 1000.0;
+			inner = (diff > 0 ? "+" : "") + String.format(Locale.ROOT, "%.2fs", diff);
 		}
-		return String.format(Locale.ROOT, "%d.%02d", seconds, rest);
+		if (inner != null) {
+			out.append(Component.literal(" (").withColor(PAREN & 0xFFFFFF))
+				.append(Component.literal(inner).withColor(SERVER & 0xFFFFFF))
+				.append(Component.literal(")").withColor(PAREN & 0xFFFFFF));
+		}
+		return out;
+	}
+
+	private static Component nameText(Line line) {
+		return Component.literal(line.name + " ").withColor(line.color);
 	}
 
 	public static boolean shown() {
 		return StrayConfig.get().runSplits && (SkyblockLocation.inDungeon && runStart > 0L || HudLayout.editorOpen());
 	}
 
-	private static int[] columns(Font font, List<Line> lines) {
-		int[] w = new int[4];
+	private static int widthOf(Font font, List<Line> lines) {
+		int w = SPLIT_W;
 		for (Line line : lines) {
-			w[0] = Math.max(w[0], font.width(line.name));
-			w[1] = Math.max(w[1], font.width(line.time));
-			w[2] = Math.max(w[2], font.width(line.best));
-			w[3] = Math.max(w[3], font.width(line.diff));
+			w = Math.max(w, font.width(nameText(line)) + font.width(timeText(line)));
 		}
 		return w;
 	}
 
-	private static float widthOf(int[] w) {
-		float width = PAD * 2 + w[0] + GAP + w[1];
-		if (w[2] > 0) {
-			width += GAP + w[2];
-		}
-		if (w[3] > 0) {
-			width += GAP + w[3];
-		}
-		return width;
-	}
-
 	public static float width(Font font) {
 		List<Line> lines = lines(HudLayout.editorOpen() && runStart == 0L);
-		return lines.isEmpty() ? 0f : widthOf(columns(font, lines));
+		return lines.isEmpty() ? 0f : widthOf(font, lines);
 	}
 
 	public static float height() {
 		List<Line> lines = lines(HudLayout.editorOpen() && runStart == 0L);
-		return lines.isEmpty() ? 0f : PAD * 2 + lines.size() * LINE - 1;
+		return lines.isEmpty() ? 0f : lines.size() * LINE - 1;
 	}
 
 	public static void extract(GuiGraphicsExtractor graphics) {
@@ -580,38 +576,20 @@ public final class RunSplits {
 			return;
 		}
 		Font font = client.font;
-		int[] w = columns(font, lines);
-		float width = widthOf(w);
-		float height = PAD * 2 + lines.size() * LINE - 1;
+		int width = widthOf(font, lines);
 		HudLayout.apply(graphics, font, HudLayout.Id.RUN_SPLITS, () -> {
-			if (HudLayout.background(HudLayout.Id.RUN_SPLITS)) {
-				GuiDraw.fill(graphics, 0, 0, width, height, 0x80000000);
+			// No panel, like Blade Addons, unless Background is on.
+			if (StrayConfig.get().runSplitsPanel) {
+				GuiDraw.fill(graphics, -2, -2, width + 4, lines.size() * LINE + 3, 0x80000000);
 			}
-			float y = PAD;
+			int y = 0;
 			for (Line line : lines) {
-				float x = PAD;
-				text(graphics, font, line.name, x, y, 0xFFFFFFFF);
-				x += w[0] + GAP;
-				// Times line up on the right of their column.
-				text(graphics, font, line.time, x + w[1] - font.width(line.time), y, 0xFFFFFFFF);
-				x += w[1] + GAP;
-				if (w[2] > 0) {
-					text(graphics, font, line.best, x + w[2] - font.width(line.best), y, 0xFFAAAAAA);
-					x += w[2] + GAP;
-				}
-				if (w[3] > 0 && !line.diff.isEmpty()) {
-					text(graphics, font, line.diff, x + w[3] - font.width(line.diff), y, 0xFFFFFFFF);
-				}
+				Component time = timeText(line);
+				graphics.text(font, nameText(line), 0, y, 0xFFFFFFFF, true);
+				graphics.text(font, time, width - font.width(time), y, 0xFFFFFFFF, true);
 				y += LINE;
 			}
 		});
-	}
-
-	/** Minecraft's own font with its shadow, like the splits table this matches. */
-	private static void text(GuiGraphicsExtractor graphics, Font font, String text, float x, float y, int color) {
-		if (!text.isEmpty()) {
-			graphics.text(font, text, Math.round(x), Math.round(y), color, true);
-		}
 	}
 
 	// ================================================================ floors (NoammAddons' splits)

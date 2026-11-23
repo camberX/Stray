@@ -466,6 +466,8 @@ public final class StrayConfig {
 	public boolean runSplitsBest = true;
 	public boolean runSplitsDiff = true;
 	public boolean runSplitsEstimated = true;
+	/** A see-through black panel behind the splits (Blade Addons draws none). */
+	public boolean runSplitsPanel = false;
 	/** Auto hotbar (NoammAddons): chat triggers move mapped items into hotbar slots. Not in Stray Legit. */
 	public boolean autoHotbar = false;
 	public int autoHotbarDelay = 100;

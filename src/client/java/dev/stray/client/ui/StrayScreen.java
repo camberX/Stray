@@ -4314,8 +4314,19 @@ public class StrayScreen extends Screen {
 				}
 			}
 			case RUN_SPLITS -> {
-				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Tick time", config.runSplitsBest, v -> config.runSplitsBest = v);
-				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Lag", config.runSplitsDiff, v -> config.runSplitsDiff = v);
+				// Blade Addons' brackets: tick time, or the lag (real minus tick time), or nothing.
+				y = cycle(graphics, font, ix, y, iw, mouseX, mouseY, "Brackets",
+					() -> config.runSplitsBest ? "Tick time" : config.runSplitsDiff ? "Lag" : "Off", () -> {
+						if (config.runSplitsBest) {
+							config.runSplitsBest = false;
+							config.runSplitsDiff = true;
+						} else if (config.runSplitsDiff) {
+							config.runSplitsDiff = false;
+						} else {
+							config.runSplitsBest = true;
+						}
+					});
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Background", config.runSplitsPanel, v -> config.runSplitsPanel = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Estimated", config.runSplitsEstimated, v -> config.runSplitsEstimated = v);
 				clickAction(graphics, font, ix, y, iw, "Reset personal bests", dev.stray.client.dungeon.RunSplits::clearBests);
 			}
