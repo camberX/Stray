@@ -52,6 +52,13 @@ public final class LeapRunner {
 	private static String queued;
 	private static String queuedLabel;
 	private static int cooldownTicks;
+	/**
+	 * Double leaps: the leap item this leap uses (its SkyBlock id), and each item's own
+	 * cooldown. Spirit Leap and InfiniLeap cool down separately. Null when the setting is off.
+	 */
+	private static String leapId;
+	private static final java.util.Map<String, Integer> itemCooldown = new java.util.HashMap<>();
+	private static String lastLeapId;
 	private static ClientLevel lastLevel;
 	/**
 	 * Debug leaps ({@code /stray debug dev leap}): no dungeon or party needed, the name is used
@@ -163,7 +170,8 @@ public final class LeapRunner {
 	}
 
 	private static void start(String name, String label) {
-		if (cooldownTicks > 0) {
+		boolean twoLeaps = StrayConfig.get().leapDouble;
+		if (!twoLeaps && cooldownTicks > 0) {
 			message("§cFailed to leap! On cooldown: " + String.format(Locale.ROOT, "%.1f", cooldownTicks / 20.0) + "s");
 			return;
 		}
@@ -171,6 +179,29 @@ public final class LeapRunner {
 		LocalPlayer player = client.player;
 		if (player == null) {
 			return;
+		}
+		leapId = null;
+		if (twoLeaps) {
+			java.util.List<String> held = leapIdsInHotbar(player);
+			String pick = null;
+			int wait = Integer.MAX_VALUE;
+			for (String id : held) {
+				int left = itemCooldown.getOrDefault(id, 0);
+				if (left <= 0) {
+					// both ready: the one not used last
+					if (pick == null || pick.equals(lastLeapId) && !id.equals(lastLeapId)) {
+						pick = id;
+					}
+				} else {
+					wait = Math.min(wait, left);
+				}
+			}
+			if (pick == null && !held.isEmpty()) {
+				message("§cFailed to leap! " + (held.size() > 1 ? "Both leaps on" : "On") + " cooldown: "
+					+ String.format(Locale.ROOT, "%.1f", wait / 20.0) + "s");
+				return;
+			}
+			leapId = pick;
 		}
 		int slot = leapSlot(player);
 		if (slot < 0) {
@@ -202,11 +233,36 @@ public final class LeapRunner {
 
 	private static int leapSlot(LocalPlayer player) {
 		for (int i = 0; i < 9; i++) {
-			if (isLeap(player.getInventory().getItem(i))) {
+			ItemStack stack = player.getInventory().getItem(i);
+			if (isLeap(stack) && (leapId == null || leapId.equals(leapKind(stack)))) {
 				return i;
 			}
 		}
 		return -1;
+	}
+
+	/** Which leap item this is, for the separate cooldowns: its SkyBlock id ("SPIRIT_LEAP", "INFINITE_SPIRIT_LEAP"). */
+	private static String leapKind(ItemStack stack) {
+		String id = ItemIds.skyblockId(stack);
+		if (id == null) {
+			return loose && isLeap(stack) ? "SPIRIT_LEAP" : null;
+		}
+		return id;
+	}
+
+	/** The different leap items in the hotbar, left to right. */
+	private static java.util.List<String> leapIdsInHotbar(LocalPlayer player) {
+		java.util.List<String> ids = new java.util.ArrayList<>();
+		for (int i = 0; i < 9; i++) {
+			ItemStack stack = player.getInventory().getItem(i);
+			if (isLeap(stack)) {
+				String kind = leapKind(stack);
+				if (kind != null && !ids.contains(kind)) {
+					ids.add(kind);
+				}
+			}
+		}
+		return ids;
 	}
 
 	public static boolean isLeap(ItemStack stack) {
@@ -231,10 +287,13 @@ public final class LeapRunner {
 			queued = null;
 			loose = false;
 			cooldownTicks = 0;
+			itemCooldown.clear();
+			lastLeapId = null;
 		}
 		if (cooldownTicks > 0) {
 			cooldownTicks--;
 		}
+		itemCooldown.replaceAll((id, left) -> Math.max(0, left - 1));
 	}
 
 	/** Tick start, before keys are handled: one step of the leap. */
@@ -268,7 +327,7 @@ public final class LeapRunner {
 				step = Step.USE;
 			}
 			case USE -> {
-				if (!isLeap(player.getMainHandItem())) {
+				if (!isLeap(player.getMainHandItem()) || leapId != null && !leapId.equals(leapKind(player.getMainHandItem()))) {
 					fail("could not select a Spirit Leap");
 					return;
 				}
@@ -344,7 +403,13 @@ public final class LeapRunner {
 		player.closeContainer();
 		silentMenu = null;
 		menuId = -1;
-		cooldownTicks = (int) Math.round(48 * mageMultiplier());
+		int cooldown = (int) Math.round(48 * mageMultiplier());
+		if (leapId != null) {
+			itemCooldown.put(leapId, cooldown);
+			lastLeapId = leapId;
+		} else {
+			cooldownTicks = cooldown;
+		}
 		message("§aLeaping to §f" + targetLabel + (targetLabel.equals(target) ? "" : " §7(" + target + ")"));
 		step = previousSlot >= 0 ? Step.SWAP_BACK : Step.IDLE;
 		if (step == Step.IDLE) {
@@ -454,6 +519,7 @@ public final class LeapRunner {
 		silentMenu = null;
 		menuId = -1;
 		waitTicks = 0;
+		leapId = null;
 	}
 
 	/** Which leap this is ("Auto leap", "Fast leap"), for its notification; set by whoever asks. */

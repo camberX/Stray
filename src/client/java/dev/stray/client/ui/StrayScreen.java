@@ -3457,7 +3457,7 @@ public class StrayScreen extends Screen {
 	static int leapRows(boolean auto) {
 		if (!dev.stray.Edition.LEGIT) {
 			StrayConfig config = StrayConfig.get();
-			int rows = 8 + (config.leapClassProfiles ? 1 : 0);
+			int rows = 9 + (config.leapClassProfiles ? 1 : 0);
 			for (dev.stray.client.dungeon.autoleap.AutoLeap.Target target : dev.stray.client.dungeon.autoleap.AutoLeap.targets()) {
 				if (auto ? !target.auto() : !target.fast()) {
 					continue;
@@ -3499,6 +3499,7 @@ public class StrayScreen extends Screen {
 				leapFocus = null;
 			});
 			y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Swap back", config.leapSwapBack, v -> config.leapSwapBack = v);
+			y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Double leaps", config.leapDouble, v -> config.leapDouble = v);
 			y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Show leap menu", config.leapShowMenu, v -> config.leapShowMenu = v);
 			y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Swing (client side)", config.leapSwing, v -> config.leapSwing = v);
 			y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Notifications", config.leapNotifications, v -> config.leapNotifications = v);

@@ -666,6 +666,11 @@ public final class StrayConfig {
 	/** 0 = by class, 1 = by player name. */
 	public int leapMode = 0;
 	public boolean leapSwapBack = false;
+	/**
+	 * Double leaps: with a Spirit Leap and an InfiniLeap in the hotbar, each with its own
+	 * cooldown, leap with whichever is ready (the one not used last when both are).
+	 */
+	public boolean leapDouble = false;
 	/** Auto / Fast Leap open the leap menu as the normal screen instead of silently. */
 	public boolean leapShowMenu = false;
 	/** Auto / Fast Leap swing your arm on your screen when they use the leap (nothing is sent). */
