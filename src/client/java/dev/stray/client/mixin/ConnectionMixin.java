@@ -43,6 +43,13 @@ public class ConnectionMixin {
 		if (!dev.stray.Edition.LEGIT && packet instanceof net.minecraft.network.protocol.game.ServerboundContainerClickPacket click) {
 			// Only looks: lets the terminal GUI follow clicks other mods send (NoammAddons' auto terminals).
 			dev.stray.client.dungeon.terminal.TerminalSession.onClickSent(click.containerId(), click.slotNum(), click.buttonNum(), click.containerInput());
+			// Double leaps: the leap's cooldown starts here (looks only).
+			net.minecraft.client.Minecraft client = net.minecraft.client.Minecraft.getInstance();
+			if (client.isSameThread()) {
+				dev.stray.client.dungeon.autoleap.LeapRunner.onClickSent(click.containerId(), click.slotNum(), click.containerInput());
+			} else {
+				client.execute(() -> dev.stray.client.dungeon.autoleap.LeapRunner.onClickSent(click.containerId(), click.slotNum(), click.containerInput()));
+			}
 		}
 	}
 }

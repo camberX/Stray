@@ -667,8 +667,8 @@ public final class StrayConfig {
 	public int leapMode = 0;
 	public boolean leapSwapBack = false;
 	/**
-	 * Double leaps: with a Spirit Leap and an InfiniLeap in the hotbar, each with its own
-	 * cooldown, leap with whichever is ready (the one not used last when both are).
+	 * Double leaps (quoi's way): Spirit Leap and InfiniLeap each keep their own cooldown, and
+	 * the leap uses whichever in the hotbar is ready soonest, InfiniLeap when both are.
 	 */
 	public boolean leapDouble = false;
 	/** Auto / Fast Leap open the leap menu as the normal screen instead of silently. */

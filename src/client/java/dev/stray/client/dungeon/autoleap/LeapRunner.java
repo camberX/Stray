@@ -53,12 +53,14 @@ public final class LeapRunner {
 	private static String queuedLabel;
 	private static int cooldownTicks;
 	/**
-	 * Double leaps: the leap item this leap uses (its SkyBlock id), and each item's own
-	 * cooldown. Spirit Leap and InfiniLeap cool down separately. Null when the setting is off.
+	 * Double leaps, as quoi's LeapManager does them: the leap item this leap uses (its SkyBlock
+	 * id, null when the setting is off) and each item's own cooldown in ticks. Spirit Leap and
+	 * InfiniLeap cool down separately.
 	 */
 	private static String leapId;
 	private static final java.util.Map<String, Integer> itemCooldown = new java.util.HashMap<>();
-	private static String lastLeapId;
+	/** Which leap is tried first when both are ready: InfiniLeap, as in quoi. */
+	private static final String[] LEAP_ORDER = {"INFINITE_SPIRIT_LEAP", "SPIRIT_LEAP"};
 	private static ClientLevel lastLevel;
 	/**
 	 * Debug leaps ({@code /stray debug dev leap}): no dungeon or party needed, the name is used
@@ -182,23 +184,16 @@ public final class LeapRunner {
 		}
 		leapId = null;
 		if (twoLeaps) {
+			// The leap in the hotbar that is ready soonest; InfiniLeap when both are equal.
 			java.util.List<String> held = leapIdsInHotbar(player);
 			String pick = null;
-			int wait = Integer.MAX_VALUE;
-			for (String id : held) {
-				int left = itemCooldown.getOrDefault(id, 0);
-				if (left <= 0) {
-					// both ready: the one not used last
-					if (pick == null || pick.equals(lastLeapId) && !id.equals(lastLeapId)) {
-						pick = id;
-					}
-				} else {
-					wait = Math.min(wait, left);
+			for (String id : LEAP_ORDER) {
+				if (held.contains(id) && (pick == null || itemCooldown.getOrDefault(id, 0) < itemCooldown.getOrDefault(pick, 0))) {
+					pick = id;
 				}
 			}
-			if (pick == null && !held.isEmpty()) {
-				message("§cFailed to leap! " + (held.size() > 1 ? "Both leaps on" : "On") + " cooldown: "
-					+ String.format(Locale.ROOT, "%.1f", wait / 20.0) + "s");
+			if (pick != null && itemCooldown.getOrDefault(pick, 0) > 0) {
+				message("§cFailed to leap! On cooldown: " + String.format(Locale.ROOT, "%.1f", itemCooldown.get(pick) / 20.0) + "s");
 				return;
 			}
 			leapId = pick;
@@ -288,7 +283,6 @@ public final class LeapRunner {
 			loose = false;
 			cooldownTicks = 0;
 			itemCooldown.clear();
-			lastLeapId = null;
 		}
 		if (cooldownTicks > 0) {
 			cooldownTicks--;
@@ -327,7 +321,8 @@ public final class LeapRunner {
 				step = Step.USE;
 			}
 			case USE -> {
-				if (!isLeap(player.getMainHandItem()) || leapId != null && !leapId.equals(leapKind(player.getMainHandItem()))) {
+				if (!isLeap(player.getMainHandItem()) || leapId != null && (!leapId.equals(leapKind(player.getMainHandItem()))
+					|| itemCooldown.getOrDefault(leapId, 0) > 0)) {
 					fail("could not select a Spirit Leap");
 					return;
 				}
@@ -403,13 +398,10 @@ public final class LeapRunner {
 		player.closeContainer();
 		silentMenu = null;
 		menuId = -1;
-		int cooldown = (int) Math.round(48 * mageMultiplier());
-		if (leapId != null) {
-			itemCooldown.put(leapId, cooldown);
-			lastLeapId = leapId;
-		} else {
-			cooldownTicks = cooldown;
+		if (leapId == null) {
+			cooldownTicks = (int) Math.round(48 * mageMultiplier());
 		}
+		// Double leaps: the item's cooldown starts from the sent click, in onClickSent.
 		message("§aLeaping to §f" + targetLabel + (targetLabel.equals(target) ? "" : " §7(" + target + ")"));
 		step = previousSlot >= 0 ? Step.SWAP_BACK : Step.IDLE;
 		if (step == Step.IDLE) {
@@ -462,6 +454,42 @@ public final class LeapRunner {
 		waitTicks = 0;
 		menuTicks = 0;
 		return true;
+	}
+
+	/**
+	 * A container click on its way to the server (looks only, changes nothing): a click on a
+	 * head in the "Spirit Leap" menu starts the cooldown of the leap in your hand, yours or
+	 * this mod's, like quoi. Spirit Leap 5 s, InfiniLeap 2 s, plus 7 ticks for lag, less for Mage.
+	 */
+	public static void onClickSent(int containerId, int slot, ContainerInput input) {
+		if (!StrayConfig.get().leapDouble || input != ContainerInput.PICKUP || slot < 11 || slot > 15) {
+			return;
+		}
+		Minecraft client = Minecraft.getInstance();
+		LocalPlayer player = client.player;
+		if (player == null) {
+			return;
+		}
+		boolean ours = menuId >= 0 && containerId == menuId;
+		boolean shown = client.gui.screen() instanceof net.minecraft.client.gui.screens.inventory.AbstractContainerScreen<?> screen
+			&& player.containerMenu.containerId == containerId && screen.getTitle().getString().contains("Spirit Leap");
+		if (!ours && !shown) {
+			return;
+		}
+		String id = leapKind(player.getMainHandItem());
+		if (id == null || itemCooldown.getOrDefault(id, 0) > 0) {
+			return;
+		}
+		int base;
+		if ("SPIRIT_LEAP".equals(id)) {
+			base = 107;
+		} else if ("INFINITE_SPIRIT_LEAP".equals(id)) {
+			base = 47;
+		} else {
+			return;
+		}
+		long percent = Math.round(mageMultiplier() * 100);
+		itemCooldown.put(id, (int) Math.ceil(base * percent / 100.0));
 	}
 
 	/** Chat: the server refusing the leap. */
