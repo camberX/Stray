@@ -57,7 +57,6 @@ public final class AutoLeap {
 	private static boolean bloodOpen;
 	private static String melodyTarget;
 	private static String lastDoorOpener;
-	private static long lastFastClick;
 	private static ClientLevel lastLevel;
 	private static boolean listening;
 
@@ -436,11 +435,8 @@ public final class AutoLeap {
 		if (!clicked) {
 			return;
 		}
-		long now = System.currentTimeMillis();
-		if (now - lastFastClick < 250) {
-			return;
-		}
-		lastFastClick = now;
+		// No extra wait between clicks, as in quoi: clicks in one tick count once, and a click
+		// while a leap runs is queued by LeapRunner.
 		if (!attemptFastLeap() && config.fastLeapP3 && F7Phase.inF7Boss()) {
 			leapToSection(F7Phase.stageAt(client.player), false);
 		}
