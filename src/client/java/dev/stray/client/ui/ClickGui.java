@@ -764,6 +764,7 @@ public final class ClickGui {
 		mods.add(mod("Sword block", "World", null, null, () -> config.fakeSwordBlock, v -> config.fakeSwordBlock = v, true, false));
 		mods.add(mod("Skull hold", "World", null, null, () -> config.legacySkullHold, v -> config.legacySkullHold = v, true, false));
 		mods.add(mod("Backwards walk", "World", null, null, () -> config.legacyBackwardsWalk, v -> config.legacyBackwardsWalk = v, true, false));
+		mods.add(mod("Hand-only bobbing", "World", null, null, () -> config.handOnlyBobbing, v -> config.handOnlyBobbing = v, true, false));
 		mods.add(mod("Fairy souls", "World", dev.stray.Edition.LEGIT ? null : StrayScreen.Feature.FAIRY, null, () -> config.fairySoulEsp, v -> config.fairySoulEsp = v, true, false));
 		mods.add(mod("Block marks", "World", StrayScreen.Feature.MARKS, null, () -> config.blockMarksEnabled, v -> config.blockMarksEnabled = v, true, false));
 		mods.add(mod("Paths", "World", StrayScreen.Feature.PATHS, null, () -> config.pathsEnabled, v -> config.pathsEnabled = v, true, false));

@@ -605,6 +605,8 @@ public final class StrayConfig {
 	public boolean sackRecipe = false;
 	public boolean legacySkullHold = false;
 	public boolean legacyBackwardsWalk = false;
+	/** View bobbing moves only the hand, never the camera. */
+	public boolean handOnlyBobbing = false;
 	public boolean heldItemShaderEnabled = false;
 	public int heldItemShaderRgb = 0x4FD6EA;
 	public int heldItemShaderOutlineRgb = liftedOutlineRgb(0x4FD6EA);
@@ -1642,6 +1644,9 @@ public final class StrayConfig {
 				}
 				if (!json.has("legacyBackwardsWalk")) {
 					loaded.legacyBackwardsWalk = false;
+				}
+				if (!json.has("handOnlyBobbing")) {
+					loaded.handOnlyBobbing = false;
 				}
 				if (!json.has("accentOutlines")) {
 					loaded.accentOutlines = false;

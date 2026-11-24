@@ -2340,12 +2340,13 @@ public class StrayScreen extends Screen {
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "World tint", config.worldTintEnabled, v -> config.worldTintEnabled = v, Feature.WORLD);
 				toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Skybox", config.skyTintEnabled, v -> config.skyTintEnabled = v, Feature.SKY);
 
-				y = featureCard(graphics, font, right, top, col, cardHeight(5), "Camera");
+				y = featureCard(graphics, font, right, top, col, cardHeight(6), "Camera");
 				y = toggle(graphics, font, rx, y, iw, mouseX, mouseY, "Fog", config.fogEnabled, v -> config.fogEnabled = v, Feature.FOG);
 				y = toggle(graphics, font, rx, y, iw, mouseX, mouseY, "Aspect ratio", config.aspectEnabled, v -> config.aspectEnabled = v, Feature.VIEW);
 				y = toggle(graphics, font, rx, y, iw, mouseX, mouseY, "Motion blur", config.motionBlurEnabled, v -> config.motionBlurEnabled = v, Feature.MOTION);
 				y = toggle(graphics, font, rx, y, iw, mouseX, mouseY, "1.8 skull hold", config.legacySkullHold, v -> config.legacySkullHold = v);
-				toggle(graphics, font, rx, y, iw, mouseX, mouseY, "Backwards walk", config.legacyBackwardsWalk, v -> config.legacyBackwardsWalk = v);
+				y = toggle(graphics, font, rx, y, iw, mouseX, mouseY, "Backwards walk", config.legacyBackwardsWalk, v -> config.legacyBackwardsWalk = v);
+				toggle(graphics, font, rx, y, iw, mouseX, mouseY, "Hand-only bobbing", config.handOnlyBobbing, v -> config.handOnlyBobbing = v);
 			}
 			case COMBAT -> {
 				float y = featureCard(graphics, font, left, top, col, cardHeight(1), "Party stats");
@@ -2539,6 +2540,7 @@ public class StrayScreen extends Screen {
 				y = controlCard(graphics, font, left, y, col, mouseX, mouseY, "Aspect ratio", config.aspectEnabled, v -> config.aspectEnabled = v, Feature.VIEW);
 				y = toggleCard(graphics, font, left, y, col, mouseX, mouseY, "1.8 skull hold", config.legacySkullHold, v -> config.legacySkullHold = v);
 				y = toggleCard(graphics, font, left, y, col, mouseX, mouseY, "Backwards walk", config.legacyBackwardsWalk, v -> config.legacyBackwardsWalk = v);
+				y = toggleCard(graphics, font, left, y, col, mouseX, mouseY, "Hand-only bobbing", config.handOnlyBobbing, v -> config.handOnlyBobbing = v);
 				y = sectionLabel(graphics, font, right, top, "Motion");
 				controlCard(graphics, font, right, y, col, mouseX, mouseY, "Motion blur", config.motionBlurEnabled, v -> config.motionBlurEnabled = v, Feature.MOTION);
 			}

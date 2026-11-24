@@ -50,6 +50,7 @@
 		"GuiAccessor",
 		"GuiMixin",
 		"LeapSilentMixin",
+		"HandOnlyBobbingMixin",
 		"SecretHitboxMixin",
 		"LivingEntitySwingAccessor",
 		"SwingWatchMixin",
