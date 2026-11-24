@@ -17,6 +17,7 @@ dev/stray/client/farming/PestLoadoutSwap*.class
 dev/stray/client/dungeon/AlignTriggerbot*.class
 dev/stray/client/dungeon/LeverTriggerbot*.class
 dev/stray/client/dungeon/EtherwarpAim*.class
+dev/stray/client/debug/MenuSwapTest*.class
 dev/stray/client/dungeon/DungeonRooms*.class
 dev/stray/client/ui/EtherwarpAimScreen*.class
 dev/stray/client/ui/EtherwarpRoutesScreen*.class

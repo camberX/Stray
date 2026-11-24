@@ -27,6 +27,7 @@ public class MinecraftMixin {
 			dev.stray.client.dungeon.EtherwarpAim.beforeKeybinds((Minecraft) (Object) this);
 			dev.stray.client.dungeon.autoleap.AutoLeap.beforeKeybinds((Minecraft) (Object) this);
 			dev.stray.client.dungeon.autoleap.LeapRunner.beforeKeybinds((Minecraft) (Object) this);
+			dev.stray.client.debug.MenuSwapTest.beforeKeybinds((Minecraft) (Object) this);
 		}
 		Minecraft client = (Minecraft) (Object) this;
 		dev.stray.client.movement.Freecam.preKeybinds(client);

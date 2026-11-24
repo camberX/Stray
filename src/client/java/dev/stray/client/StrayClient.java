@@ -530,6 +530,7 @@ public final class StrayClient implements ClientModInitializer {
 
 		ClientTickEvents.START_CLIENT_TICK.register(client -> {
 			if (!dev.stray.Edition.LEGIT) { dev.stray.client.net.SlotGuard.onTickStart(); }
+			if (!dev.stray.Edition.LEGIT) { dev.stray.client.debug.MenuSwapTest.onTickStart(client); }
 			if (!dev.stray.Edition.LEGIT) { LoadoutSwap.onStart(client); }
 			if (!dev.stray.Edition.LEGIT) { EmptyVacuum.onStart(client); }
 			LassoReel.tick(client);
@@ -671,6 +672,7 @@ public final class StrayClient implements ClientModInitializer {
 			MobGlowRenderer.reset();
 			StarMobEsp.reset();
 			if (!dev.stray.Edition.LEGIT) { AutoClicker.reset(); }
+			if (!dev.stray.Edition.LEGIT) { dev.stray.client.debug.MenuSwapTest.reset(); }
 			if (!dev.stray.Edition.LEGIT) { AutoExperiments.reset(); }
 			if (!dev.stray.Edition.LEGIT) { AutoDna.reset(); }
 			PestEsp.reset();
@@ -693,6 +695,7 @@ public final class StrayClient implements ClientModInitializer {
 			if (!dev.stray.Edition.LEGIT) { FarmKeys.restore(); }
 			SkyblockLocation.reset();
 			if (!dev.stray.Edition.LEGIT) { AutoClicker.reset(); }
+			if (!dev.stray.Edition.LEGIT) { dev.stray.client.debug.MenuSwapTest.reset(); }
 			if (!dev.stray.Edition.LEGIT) { AutoExperiments.reset(); }
 			if (!dev.stray.Edition.LEGIT) { AutoDna.reset(); }
 			PestEsp.reset();
@@ -1133,6 +1136,15 @@ public final class StrayClient implements ClientModInitializer {
 			// Auto Leap's client side swing, with a report of what was sent in the second after.
 			node.then(ClientCommands.literal("swing").executes(context -> {
 				dev.stray.client.dungeon.autoleap.SwingCheck.start();
+				return Command.SINGLE_SUCCESS;
+			}));
+			// The leap's swap-and-use, on the SkyBlock Menu in slot 9: for anticheat tests.
+			node.then(ClientCommands.literal("menuswap").executes(context -> {
+				String why = dev.stray.client.debug.MenuSwapTest.start();
+				if (why != null) {
+					context.getSource().sendFeedback(Component.literal("§bStray §7» §c" + why));
+					return 0;
+				}
 				return Command.SINGLE_SUCCESS;
 			}));
 			// Leap tests on any server (a test server with an alt): no dungeon or party needed.
