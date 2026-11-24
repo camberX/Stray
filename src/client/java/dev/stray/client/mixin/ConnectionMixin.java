@@ -30,6 +30,10 @@ public class ConnectionMixin {
 		dev.stray.client.net.PacketDebug.onSend(packet);
 		if (!dev.stray.Edition.LEGIT) {
 			dev.stray.client.dungeon.autoleap.SwingCheck.onSend(packet);
+			if (packet instanceof net.minecraft.network.protocol.game.ServerboundSetCarriedItemPacket) {
+				// Looks only: Stray never swaps twice in one tick.
+				dev.stray.client.net.SlotGuard.onSlotSent();
+			}
 		}
 		if (packet instanceof net.minecraft.network.protocol.game.ServerboundUseItemPacket) {
 			// M4 Tac timer (BirdAddon): looks only.

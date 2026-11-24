@@ -529,6 +529,7 @@ public final class StrayClient implements ClientModInitializer {
 		});
 
 		ClientTickEvents.START_CLIENT_TICK.register(client -> {
+			if (!dev.stray.Edition.LEGIT) { dev.stray.client.net.SlotGuard.onTickStart(); }
 			if (!dev.stray.Edition.LEGIT) { LoadoutSwap.onStart(client); }
 			if (!dev.stray.Edition.LEGIT) { EmptyVacuum.onStart(client); }
 			LassoReel.tick(client);

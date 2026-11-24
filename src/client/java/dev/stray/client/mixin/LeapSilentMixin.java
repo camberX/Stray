@@ -2,6 +2,8 @@ package dev.stray.client.mixin;
 
 import dev.stray.client.dungeon.autoleap.LeapRunner;
 import net.minecraft.client.multiplayer.ClientPacketListener;
+import net.minecraft.network.protocol.game.ClientboundContainerSetContentPacket;
+import net.minecraft.network.protocol.game.ClientboundContainerSetSlotPacket;
 import net.minecraft.network.protocol.game.ClientboundOpenScreenPacket;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -21,5 +23,16 @@ public class LeapSilentMixin {
 		if (LeapRunner.onOpenScreen(packet)) {
 			ci.cancel();
 		}
+	}
+
+	/** The leap menu's items, after vanilla filled them in: Auto Leap clicks the head right away. */
+	@Inject(method = "handleContainerContent", require = 0, at = @At("TAIL"))
+	private void stray$leapItems(ClientboundContainerSetContentPacket packet, CallbackInfo ci) {
+		LeapRunner.onMenuItems(packet.containerId());
+	}
+
+	@Inject(method = "handleContainerSetSlot", require = 0, at = @At("TAIL"))
+	private void stray$leapSlot(ClientboundContainerSetSlotPacket packet, CallbackInfo ci) {
+		LeapRunner.onMenuItems(packet.getContainerId());
 	}
 }

@@ -47,6 +47,8 @@ public final class LeapRunner {
 	/** Ticks the leap menu has been open, for "Wait in menu". */
 	private static int menuTicks;
 	private static int menuId = -1;
+	/** The leap goes through a leap menu you opened yourself: click at tick start only. */
+	private static boolean preOpened;
 	private static AbstractContainerMenu silentMenu;
 	/** A leap asked for while a screen or another leap was in the way; tried each tick. */
 	private static String queued;
@@ -159,6 +161,10 @@ public final class LeapRunner {
 	private static void request(String name, String label) {
 		who = name;
 		Minecraft client = Minecraft.getInstance();
+		if (!busy() && openLeapMenu(client) != null) {
+			startPreOpened(client, name, label);
+			return;
+		}
 		if (busy() || client.gui.screen() != null || client.player == null
 			|| client.player.containerMenu != client.player.inventoryMenu) {
 			queued = name;
@@ -169,6 +175,46 @@ public final class LeapRunner {
 			return;
 		}
 		start(name, label);
+	}
+
+	/**
+	 * The "Spirit Leap" menu you opened yourself and still have open, or null. Like quoi's
+	 * pre-opened leap: a leap then only clicks the head in it.
+	 */
+	private static AbstractContainerMenu openLeapMenu(Minecraft client) {
+		LocalPlayer player = client.player;
+		if (player == null || !(client.gui.screen() instanceof net.minecraft.client.gui.screens.inventory.AbstractContainerScreen<?> screen)) {
+			return null;
+		}
+		AbstractContainerMenu menu = screen.getMenu();
+		if (menu != player.containerMenu || menu == player.inventoryMenu || !screen.getTitle().getString().contains("Spirit Leap")) {
+			return null;
+		}
+		return menu;
+	}
+
+	/**
+	 * Leap through your own open leap menu: no swap, no use, no waiting for the menu. The head
+	 * is clicked at the next tick start ({@link #screenStep}), then the menu closes, as a mouse
+	 * click on the head and closing it would. The cooldown isn't checked here (as in quoi): the
+	 * menu being open means the leap was usable.
+	 */
+	private static void startPreOpened(Minecraft client, String name, String label) {
+		AbstractContainerMenu menu = openLeapMenu(client);
+		if (menu == null) {
+			return;
+		}
+		target = name;
+		targetLabel = label;
+		leapId = null;
+		previousSlot = -1;
+		silentMenu = null;
+		preOpened = true;
+		menuId = menu.containerId;
+		step = Step.CLICK;
+		waitTicks = 0;
+		// The menu's been open a while: no "Wait in menu".
+		menuTicks = StrayConfig.get().leapMenuWait;
 	}
 
 	private static void start(String name, String label) {
@@ -316,28 +362,24 @@ public final class LeapRunner {
 					fail("could not select a Spirit Leap");
 					return;
 				}
-				// The same as pressing that hotbar number key.
+				if (!dev.stray.client.net.SlotGuard.canSwap()) {
+					// One slot change per tick: swap next tick.
+					return;
+				}
+				// Your own number keys this tick would be a second slot change: dropped.
+				for (net.minecraft.client.KeyMapping key : client.options.keyHotbarSlots) {
+					while (key.consumeClick()) {
+						// drained
+					}
+				}
+				// The same as pressing that hotbar number key. Then use it in this same tick, as a
+				// number key and a right click in one tick do (vanilla handles the hotbar keys
+				// first, and useItem sends the new slot before the use), like quoi.
 				player.getInventory().setSelectedSlot(slot);
 				step = Step.USE;
+				use(client, player);
 			}
-			case USE -> {
-				if (!isLeap(player.getMainHandItem()) || leapId != null && (!leapId.equals(leapKind(player.getMainHandItem()))
-					|| itemCooldown.getOrDefault(leapId, 0) > 0)) {
-					fail("could not select a Spirit Leap");
-					return;
-				}
-				if (client.gui.screen() != null) {
-					return;
-				}
-				// Like quoi: use the item itself, as a right click into the air does, so the
-				// terminal or teammate under the crosshair can't take the click.
-				client.gameMode.useItem(player, net.minecraft.world.InteractionHand.MAIN_HAND);
-				if (StrayConfig.get().leapSwing) {
-					swingOnScreen(player);
-				}
-				step = Step.AWAIT_MENU;
-				waitTicks = 0;
-			}
+			case USE -> use(client, player);
 			case AWAIT_MENU -> {
 				if (++waitTicks > MENU_TIMEOUT) {
 					fail("Spirit Leap menu did not open in time");
@@ -345,6 +387,9 @@ public final class LeapRunner {
 			}
 			case CLICK -> click(client, player);
 			case SWAP_BACK -> {
+				if (!dev.stray.client.net.SlotGuard.canSwap()) {
+					return;
+				}
 				if (previousSlot >= 0 && previousSlot < 9) {
 					player.getInventory().setSelectedSlot(previousSlot);
 				}
@@ -353,6 +398,44 @@ public final class LeapRunner {
 			default -> {
 			}
 		}
+	}
+
+	private static void use(Minecraft client, LocalPlayer player) {
+		if (!isLeap(player.getMainHandItem()) || leapId != null && (!leapId.equals(leapKind(player.getMainHandItem()))
+			|| itemCooldown.getOrDefault(leapId, 0) > 0)) {
+			fail("could not select a Spirit Leap");
+			return;
+		}
+		if (client.gui.screen() != null) {
+			return;
+		}
+		// Like quoi: use the item itself, as a right click into the air does, so the
+		// terminal or teammate under the crosshair can't take the click.
+		client.gameMode.useItem(player, net.minecraft.world.InteractionHand.MAIN_HAND);
+		if (StrayConfig.get().leapSwing) {
+			swingOnScreen(player);
+		}
+		step = Step.AWAIT_MENU;
+		waitTicks = 0;
+	}
+
+	/**
+	 * The leap menu's items just arrived from the server (after vanilla filled them in): click
+	 * the head right away, like quoi and like a mouse click in a menu, instead of waiting for
+	 * the next tick start. Only with "Wait in menu" at 0; with a wait, tick start counts it.
+	 */
+	public static void onMenuItems(int containerId) {
+		if (step != Step.CLICK || preOpened || containerId != menuId || StrayConfig.get().leapMenuWait > 0) {
+			return;
+		}
+		Minecraft client = Minecraft.getInstance();
+		LocalPlayer player = client.player;
+		if (player == null || client.gameMode == null || !ourMenu(player.containerMenu)
+			|| headSlot(player.containerMenu, target) < 0) {
+			return;
+		}
+		holdUseKey(client);
+		click(client, player);
 	}
 
 	/** The leap menu we wait to click in: the silent one, or the screen's when the menu is shown. */
@@ -369,6 +452,13 @@ public final class LeapRunner {
 	 */
 	public static void screenStep(Minecraft client) {
 		LocalPlayer player = client.player;
+		// A queued leap and you open the leap menu yourself: use that menu.
+		if (step == Step.IDLE && queued != null && openLeapMenu(client) != null) {
+			String name = queued;
+			String label = queuedLabel;
+			queued = null;
+			startPreOpened(client, name, label);
+		}
 		if (step != Step.CLICK || silentMenu != null || client.gui.screen() == null || player == null || client.gameMode == null) {
 			return;
 		}
@@ -548,6 +638,7 @@ public final class LeapRunner {
 		menuId = -1;
 		waitTicks = 0;
 		leapId = null;
+		preOpened = false;
 	}
 
 	/** Which leap this is ("Auto leap", "Fast leap"), for its notification; set by whoever asks. */

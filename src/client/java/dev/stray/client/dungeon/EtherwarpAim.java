@@ -262,6 +262,10 @@ public final class EtherwarpAim {
 			boolean done = swapBackNext && --swapBackIn <= 0
 				|| !swapBackNext && (!ready(client) || lookedAtPoint(client, player) == null && System.currentTimeMillis() - swappedAt > 400L);
 			if (done) {
+				if (!dev.stray.client.net.SlotGuard.canSwap()) {
+					// A slot change already went out this tick: swap back next tick.
+					return;
+				}
 				if (config.etherwarpAimSwapBack && swappedFrom < 9) {
 					// The same as pressing that hotbar number key.
 					player.getInventory().setSelectedSlot(swappedFrom);
@@ -295,7 +299,7 @@ public final class EtherwarpAim {
 		if (!holdingEther(player)) {
 			// Auto swap: pick up the etherwarp item now, click on a later tick.
 			int slot = etherSlot(player);
-			if (!config.etherwarpAimAutoSwap || slot < 0) {
+			if (!config.etherwarpAimAutoSwap || slot < 0 || !dev.stray.client.net.SlotGuard.canSwap()) {
 				return;
 			}
 			if (swappedFrom < 0) {
