@@ -108,6 +108,7 @@
 		"cs2.Cs2ThirdPersonMixin",
 		"customize.DyedItemColorMixin",
 		"customize.EquipmentLayerRendererMixin",
+		"customize.HumanoidArmorLayerMixin",
 		"customize.InventoryKeepCustomMixin",
 		"customize.GuiSelectedNameMixin",
 		"customize.HumanoidMobRendererMixin",

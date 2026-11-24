@@ -410,6 +410,32 @@ public final class CustomItems {
 		return null;
 	}
 
+	/**
+	 * Worn armor look: if the customized model is another armor item, draw that item's armor
+	 * texture instead (e.g. leather helmet shown as diamond). Keeps the piece's own slot and
+	 * everything else; only the equipment asset changes. Visual only.
+	 */
+	public static Equippable wornArmor(ItemStack stack, Equippable original) {
+		if (original == null || stack == null || stack.isEmpty()) {
+			return original;
+		}
+		Data data = get(stack);
+		if (data == null) {
+			return original;
+		}
+		Item item = item(data.model);
+		if (item == null) {
+			return original;
+		}
+		Equippable other = item.components().get(DataComponents.EQUIPPABLE);
+		if (other == null || other.assetId().isEmpty() || other.assetId().equals(original.assetId())) {
+			return original;
+		}
+		return new Equippable(original.slot(), original.equipSound(), other.assetId(), original.cameraOverlay(),
+			original.allowedEntities(), original.dispensable(), original.swappable(), original.damageOnHurt(),
+			original.equipOnInteract(), original.canBeSheared(), original.shearingSound());
+	}
+
 	/** The item model id of a Minecraft item, or null if the id isn't an item. */
 	public static Identifier model(String raw) {
 		Item item = item(raw);
