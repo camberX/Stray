@@ -221,8 +221,8 @@ public final class CasinoScreen extends Screen {
 		// glow fading down from the top-left and a gradient border.
 		GuiFrostBlur.blitWindow(g, left, top, W, H, R, 1f);
 		RoundRect.vertical(g, left, top, W, H, R, withA(surfaceLow, 0xEC), withA(surface, 0xF6));
-		RoundRect.draw(g, left, top, W, H, R, withA(primary, 0x30), withA(primary2, 0x18), withA(primary2, 0x00), withA(primary, 0x00), false);
-		RoundRect.outline(g, left, top, W, H, R, withA(primary, 0xE0), withA(primary2, 0x50));
+		RoundRect.draw(g, left, top, W, H, R, withA(primary, 0x14), withA(primary2, 0x0A), withA(primary2, 0x00), withA(primary, 0x00), false);
+		RoundRect.outline(g, left, top, W, H, R, withA(primary, 0x60), withA(line, 0x30));
 		drawHeader(g, mouseX, mouseY);
 
 		switch (tab) {
@@ -236,19 +236,50 @@ public final class CasinoScreen extends Screen {
 		g.pose().popMatrix();
 	}
 
+	/**
+	 * Colours for the theme in use. The surfaces are opaque dark greys: the casino lays its own
+	 * alpha over them, so a see-through tint (the click GUI's white-at-10% cards) would turn into
+	 * solid white here.
+	 */
 	private void palette() {
-		primary = dev.stray.client.ui.Theme.ACCENT;
-		primary2 = hueShift(primary, 0.11f);
 		onPrimary = 0xFF0B0E14;
-		surface = dev.stray.client.ui.ShadowLook.FILL;
-		surfaceLow = dev.stray.client.ui.ShadowLook.FILL;
-		container = dev.stray.client.ui.ShadowLook.CARD;
-		containerHigh = dev.stray.client.ui.ShadowLook.CARD;
-		containerHighest = dev.stray.client.ui.ShadowLook.CARD_HOVER;
-		line = dev.stray.client.ui.ShadowLook.LINE;
-		TEXT = dev.stray.client.ui.ShadowLook.TEXT;
-		MUTED = dev.stray.client.ui.ShadowLook.MUTED;
 		FAINT = 0x40FFFFFF;
+		if (dev.stray.client.ui.Looks.minecraft()) {
+			// chat-panel black with Minecraft's yellow and greys
+			primary = dev.stray.client.ui.MinecraftLook.YELLOW;
+			primary2 = mixColor(primary, 0xFFFFAA00, 0.35f);
+			surface = 0xFF0E0E0E;
+			surfaceLow = 0xFF080808;
+			container = 0xFF181818;
+			containerHigh = 0xFF1F1F1F;
+			containerHighest = 0xFF2A2A2A;
+			line = dev.stray.client.ui.MinecraftLook.LINE;
+			TEXT = dev.stray.client.ui.MinecraftLook.WHITE;
+			MUTED = dev.stray.client.ui.MinecraftLook.GREY;
+		} else if (dev.stray.client.ui.Looks.uid()) {
+			primary = dev.stray.client.ui.Theme.ACCENT;
+			primary2 = hueShift(primary, 0.11f);
+			surface = 0xFF111111;
+			surfaceLow = 0xFF0C0C0C;
+			container = dev.stray.client.ui.UidLook.GROUP;
+			containerHigh = 0xFF1F1F1F;
+			containerHighest = 0xFF292929;
+			line = dev.stray.client.ui.UidLook.GROUP_EDGE;
+			TEXT = dev.stray.client.ui.UidLook.LABEL;
+			MUTED = dev.stray.client.ui.UidLook.VALUE;
+		} else {
+			// Modern, and the fallback for any other theme
+			primary = dev.stray.client.ui.Looks.panels() ? dev.stray.client.ui.PanelLook.accent() : dev.stray.client.ui.Theme.ACCENT;
+			primary2 = hueShift(primary, 0.11f);
+			surface = 0xFF161616;
+			surfaceLow = 0xFF121212;
+			container = dev.stray.client.ui.PanelLook.G1;
+			containerHigh = dev.stray.client.ui.PanelLook.G2;
+			containerHighest = dev.stray.client.ui.PanelLook.G3;
+			line = dev.stray.client.ui.PanelLook.EDGE;
+			TEXT = dev.stray.client.ui.PanelLook.WHITE;
+			MUTED = dev.stray.client.ui.PanelLook.GREY;
+		}
 	}
 
 	private static final net.minecraft.resources.Identifier LOGO = dev.stray.Stray.id("textures/gui/catbet.png");
@@ -1438,7 +1469,7 @@ public final class CasinoScreen extends Screen {
 		label(g, "Amount", x, y + 76, 12, MUTED, T.SMALL);
 		field(g, mx, my, 3, x, y + 89, w, "0");
 		button(g, mx, my, x, y + 122, w, 28, "Send", !busy && !fields[2].isBlank() && parse(fields[3]) > 0, true, null, this::sendChips);
-		label(g, "Arrives right away. New players start with 1,000.", x, y + 154, 12, FAINT, T.SMALL);
+		label(g, fitText("Arrives right away. New players start with 1,000.", w, T.SMALL), x, y + 154, 12, MUTED, T.SMALL);
 		RoundRect.fill(g, x, y + 172, w, 1, 0.5f, withA(TEXT, 0x16));
 		label(g, "Inbox", x, y + 178, 12, MUTED, T.SMALL);
 		if (inbox.isEmpty()) {
