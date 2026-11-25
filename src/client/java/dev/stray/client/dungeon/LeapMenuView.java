@@ -63,6 +63,11 @@ public final class LeapMenuView {
 		if (bg > 0) {
 			GuiDraw.fill(graphics, 0, 0, width, height, bg << 24 | 0x050709);
 		}
+		if (!any && LeapMenu.loading()) {
+			// The heads are still on their way from the server: just the background for now.
+			F7Titles.renderOverMenu(graphics, width, height);
+			return;
+		}
 		if (!any) {
 			String text = "No players found";
 			GuiDraw.text(graphics, font, text, (width - font.width(text) * 2f) * 0.5f, height * 0.5f - 8, 2f, 0xFFFF5555, false);

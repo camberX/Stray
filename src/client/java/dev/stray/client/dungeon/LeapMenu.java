@@ -39,12 +39,18 @@ public final class LeapMenu {
 	private static final List<DungeonParty.Member> TEST_TEAM = new ArrayList<>();
 	private static final Entry[] PLAYERS = new Entry[4];
 	private static boolean clicked;
+	/** The menu's items haven't arrived yet: nothing to say "No players found" about. */
+	private static boolean loading;
 
 	private LeapMenu() {
 	}
 
 	public static Entry[] players() {
 		return PLAYERS;
+	}
+
+	public static boolean loading() {
+		return loading;
 	}
 
 	public static boolean testMode() {
@@ -89,20 +95,23 @@ public final class LeapMenu {
 			return;
 		}
 		AbstractContainerMenu menu = client.player.containerMenu;
+		loading = false;
 		if (testMode) {
 			fillTest(client, menu);
 			return;
 		}
 		Map<String, Integer> loadedHeads = new HashMap<>();
+		// No leap menu from the server yet (the instant menu): your own inventory is not it.
+		int size = menu == client.player.inventoryMenu ? 0 : menu.slots.size() - 36;
+		boolean empty = true;
+		for (int i = 0; i < size && empty; i++) {
+			empty = menu.slots.get(i).getItem().isEmpty();
+		}
+		loading = empty;
 		// Instant leap menu: until the heads arrive, every teammate gets a placeholder (slot -1)
 		// and a click on it is queued (Noamm's change). Not in Stray Legit.
-		boolean awaiting = !dev.stray.Edition.LEGIT && dev.stray.client.dungeon.autoleap.InstantLeap.enabled();
-		for (int i = 0; i < menu.slots.size() - 36 && awaiting; i++) {
-			if (!menu.slots.get(i).getItem().isEmpty()) {
-				awaiting = false;
-			}
-		}
-		for (int i = 0; i < menu.slots.size() - 36; i++) {
+		boolean awaiting = empty && !dev.stray.Edition.LEGIT && dev.stray.client.dungeon.autoleap.InstantLeap.enabled();
+		for (int i = 0; i < size; i++) {
 			ItemStack stack = menu.slots.get(i).getItem();
 			if (stack.isEmpty() || !stack.is(Items.PLAYER_HEAD)) {
 				continue;
