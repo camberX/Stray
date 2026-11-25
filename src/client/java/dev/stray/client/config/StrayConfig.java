@@ -365,6 +365,11 @@ public final class StrayConfig {
 	public int leapSorting = 0;
 	public boolean leapLeftClickOnly = false;
 	public boolean leapKeybinds = false;
+	/**
+	 * Instant leap menu (full edition): opens on your client the moment you use a leap, before the
+	 * server's menu arrives; a click before the heads load is queued (Noamm's leap-menu change).
+	 */
+	public boolean leapInstant = false;
 	public boolean leapAnnounce = false;
 	public String leapMessage = "Leaping to {name}";
 	public boolean leapTintDead = true;

@@ -571,6 +571,7 @@ public final class StrayClient implements ClientModInitializer {
 				dev.stray.client.dungeon.autoleap.F7Phase.tick(client);
 				dev.stray.client.dungeon.autoleap.LeapRunner.tick(client);
 				dev.stray.client.dungeon.autoleap.AutoLeap.tick(client);
+				dev.stray.client.dungeon.autoleap.InstantLeap.tick(client);
 			}
 			if (!dev.stray.Edition.LEGIT) { dev.stray.client.dungeon.terminal.TerminalSession.tick(client); }
 			dev.stray.client.dungeon.F7Titles.tick(client);

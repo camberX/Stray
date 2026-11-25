@@ -43,6 +43,14 @@ public class ConnectionMixin {
 			} else {
 				client.execute(dev.stray.client.dungeon.m4.M4Features::onUseItem);
 			}
+			if (!dev.stray.Edition.LEGIT) {
+				// Instant leap menu: open Stray's leap menu before the server's arrives.
+				if (client.isSameThread()) {
+					dev.stray.client.dungeon.autoleap.InstantLeap.onUseItem();
+				} else {
+					client.execute(dev.stray.client.dungeon.autoleap.InstantLeap::onUseItem);
+				}
+			}
 		}
 		if (!dev.stray.Edition.LEGIT && packet instanceof net.minecraft.network.protocol.game.ServerboundContainerClickPacket click) {
 			// Only looks: lets the terminal GUI follow clicks other mods send (NoammAddons' auto terminals).

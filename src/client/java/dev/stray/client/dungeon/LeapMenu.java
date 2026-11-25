@@ -63,6 +63,9 @@ public final class LeapMenu {
 	}
 
 	public static boolean isLeapMenu(Screen screen) {
+		if (!dev.stray.Edition.LEGIT && dev.stray.client.dungeon.autoleap.InstantLeap.isScreen(screen)) {
+			return true;
+		}
 		if (testMode && screen instanceof AbstractContainerScreen<?>
 			&& !(screen instanceof net.minecraft.client.gui.screens.inventory.InventoryScreen)
 			&& !(screen instanceof net.minecraft.client.gui.screens.inventory.CreativeModeInventoryScreen)) {
@@ -91,6 +94,14 @@ public final class LeapMenu {
 			return;
 		}
 		Map<String, Integer> loadedHeads = new HashMap<>();
+		// Instant leap menu: until the heads arrive, every teammate gets a placeholder (slot -1)
+		// and a click on it is queued (Noamm's change). Not in Stray Legit.
+		boolean awaiting = !dev.stray.Edition.LEGIT && dev.stray.client.dungeon.autoleap.InstantLeap.enabled();
+		for (int i = 0; i < menu.slots.size() - 36 && awaiting; i++) {
+			if (!menu.slots.get(i).getItem().isEmpty()) {
+				awaiting = false;
+			}
+		}
 		for (int i = 0; i < menu.slots.size() - 36; i++) {
 			ItemStack stack = menu.slots.get(i).getItem();
 			if (stack.isEmpty() || !stack.is(Items.PLAYER_HEAD)) {
@@ -106,6 +117,9 @@ public final class LeapMenu {
 		for (int i = 0; i < Math.min(4, sorted.size()); i++) {
 			DungeonParty.Member player = sorted.get(i);
 			Integer slotIndex = loadedHeads.get(player.name);
+			if (slotIndex == null && awaiting) {
+				slotIndex = -1;
+			}
 			if (slotIndex != null) {
 				PLAYERS[i] = new Entry(slotIndex, player);
 			}
@@ -235,6 +249,16 @@ public final class LeapMenu {
 		}
 		dev.stray.client.net.PacketDebug.note("§b[leap] §7panel " + (index + 1) + " → slot " + entry.slotIndex());
 		client.player.playSound(SoundEvents.UI_BUTTON_CLICK.value(), 0.25f, 1f);
+		if (entry.slotIndex() < 0) {
+			// A placeholder: the leap goes through once the server's menu and heads arrive.
+			if (!dev.stray.Edition.LEGIT) {
+				dev.stray.client.dungeon.autoleap.InstantLeap.queue(entry);
+			}
+			return;
+		}
+		if (!dev.stray.Edition.LEGIT) {
+			dev.stray.client.dungeon.autoleap.InstantLeap.onHeadClicked();
+		}
 		int containerId = client.player.containerMenu.containerId;
 		client.gameMode.handleContainerInput(containerId, entry.slotIndex(), 0, ContainerInput.PICKUP, client.player);
 		if (!dev.stray.Edition.LEGIT) {
@@ -250,6 +274,9 @@ public final class LeapMenu {
 			return;
 		}
 		String name = plain.substring("You have teleported to ".length(), plain.length() - 1);
+		if (!dev.stray.Edition.LEGIT) {
+			dev.stray.client.dungeon.autoleap.InstantLeap.onLeap();
+		}
 		StrayConfig config = StrayConfig.get();
 		// Like the original, only with someone to tell: in a party of more than one.
 		if (config.leapAnnounce && config.leapMenuEnabled && !DungeonParty.others().isEmpty()) {

@@ -175,7 +175,7 @@ public class StrayScreen extends Screen {
 		PEST("Pest ESP", 6),
 		PEST_COOLDOWN("Pest cooldown", 3),
 		TERMINALS("Terminal GUI", 15),
-		LEAP_MENU("Leap menu", 9),
+		LEAP_MENU("Leap menu", 10),
 		ALIGN_BOT("Align triggerbot", 2),
 		LEVER_BOT("Lever triggerbot", 2),
 		SECRET_HITBOXES("Hitboxes", 6),
@@ -248,6 +248,7 @@ public class StrayScreen extends Screen {
 			return switch (this) {
 				case FILL, MOB, STAR, CHEST, FAIRY, PATHS, NODE_ESP, TITANIUM, CRYSTAL, HEALTH, BOX, NAMETAGS -> 1;
 				case PEST -> 3;
+				case LEAP_MENU -> 1;
 				case PEST_COOLDOWN -> 1 + (StrayConfig.get().pestLoadoutSwap ? 1 : 0);
 				default -> 0;
 			};
@@ -4081,6 +4082,10 @@ public class StrayScreen extends Screen {
 				y = cycle(graphics, font, ix, y, iw, mouseX, mouseY, "Order", () -> sorting[Math.floorMod(config.leapSorting, sorting.length)], () -> config.leapSorting = Math.floorMod(config.leapSorting + 1, sorting.length));
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Left click only", config.leapLeftClickOnly, v -> config.leapLeftClickOnly = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Keys 1-4 leap", config.leapKeybinds, v -> config.leapKeybinds = v);
+				if (!dev.stray.Edition.LEGIT) {
+					// Noamm's instant leap menu: opens before the server's, clicks queue until heads load.
+					y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Instant open", config.leapInstant, v -> config.leapInstant = v);
+				}
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Announce leap", config.leapAnnounce, v -> config.leapAnnounce = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Tint dead players", config.leapTintDead, v -> config.leapTintDead = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Show last door opener", config.leapShowDoorOpener, v -> config.leapShowDoorOpener = v);

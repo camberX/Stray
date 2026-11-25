@@ -20,7 +20,7 @@ public class LeapSilentMixin {
 	@Inject(method = "handleOpenScreen", cancellable = true, require = 0, at = @At(value = "INVOKE",
 		target = "Lnet/minecraft/client/gui/screens/MenuScreens;create(Lnet/minecraft/world/inventory/MenuType;Lnet/minecraft/client/Minecraft;ILnet/minecraft/network/chat/Component;)V"))
 	private void stray$silentLeap(ClientboundOpenScreenPacket packet, CallbackInfo ci) {
-		if (LeapRunner.onOpenScreen(packet)) {
+		if (LeapRunner.onOpenScreen(packet) || dev.stray.client.dungeon.autoleap.InstantLeap.onOpenScreen(packet)) {
 			ci.cancel();
 		}
 	}
@@ -29,10 +29,12 @@ public class LeapSilentMixin {
 	@Inject(method = "handleContainerContent", require = 0, at = @At("TAIL"))
 	private void stray$leapItems(ClientboundContainerSetContentPacket packet, CallbackInfo ci) {
 		LeapRunner.onMenuItems(packet.containerId());
+		dev.stray.client.dungeon.autoleap.InstantLeap.onMenuItems(packet.containerId());
 	}
 
 	@Inject(method = "handleContainerSetSlot", require = 0, at = @At("TAIL"))
 	private void stray$leapSlot(ClientboundContainerSetSlotPacket packet, CallbackInfo ci) {
 		LeapRunner.onMenuItems(packet.getContainerId());
+		dev.stray.client.dungeon.autoleap.InstantLeap.onMenuItems(packet.getContainerId());
 	}
 }
