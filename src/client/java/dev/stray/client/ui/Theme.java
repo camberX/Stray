@@ -182,6 +182,34 @@ public final class Theme {
 			NAV_PILL = 0x40FFFFFF;
 			SIDEBAR = 0x60000000;
 			WINDOW_RADIUS = 0f;
+		} else if (Looks.signature()) {
+			// Stray: near-black, hairlines, warm off-white text, the chosen accent.
+			int accent = SignatureLook.accent();
+			int hudA = Math.round(StrayConfig.clamp(StrayConfig.get().hudOpacity, 0.20f, 1f) * 255);
+			ACCENT = accent;
+			ACCENT_DIM = withAlpha(accent, 0x66);
+			WINDOW = withAlpha(SignatureLook.BG, 0xF5);
+			WINDOW_SOLID = SignatureLook.BG;
+			SHEET = SignatureLook.RAISED;
+			CARD = SignatureLook.RAISED;
+			CARD_HOVER = SignatureLook.PICKED;
+			LINE = SignatureLook.LINE;
+			TRACK = SignatureLook.TRACK;
+			PANEL = 0xFF0A0A0A;
+			HUD_WINDOW = withAlpha(SignatureLook.BG, hudA);
+			HUD_LINE = SignatureLook.LINE;
+			HUD_LINE_NEUTRAL = SignatureLook.LINE;
+			HUD_TRACK = SignatureLook.TRACK;
+			HUD_CARD = SignatureLook.RAISED;
+			HUD_CARD_HOVER = SignatureLook.PICKED;
+			HUD_PANEL = 0xFF0A0A0A;
+			TEXT = SignatureLook.TEXT;
+			MUTED = SignatureLook.MUTED;
+			HEADER = SignatureLook.TEXT;
+			OFF = SignatureLook.FAINT;
+			NAV_PILL = SignatureLook.PICKED;
+			SIDEBAR = 0xFF0A0A0A;
+			WINDOW_RADIUS = SignatureLook.WINDOW_R;
 		} else if (Looks.panels()) {
 			// Panels: pure neutral greys (no tint), white for what is on, the theme accent.
 			int accent = PanelLook.accent();

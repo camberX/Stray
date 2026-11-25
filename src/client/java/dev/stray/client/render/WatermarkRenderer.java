@@ -128,6 +128,9 @@ public final class WatermarkRenderer {
 
 	/** Modern writes the name in lower case; Minecraft as the game writes names. */
 	private static String brandText() {
+		if (dev.stray.client.ui.Looks.signature()) {
+			return "stray.";
+		}
 		return dev.stray.client.ui.Looks.minecraft() ? "Stray" : "stray";
 	}
 
@@ -143,24 +146,34 @@ public final class WatermarkRenderer {
 	private static void drawPanels(GuiGraphicsExtractor graphics, Font font) {
 		List<String> parts = shadowParts();
 		boolean mc = dev.stray.client.ui.Looks.minecraft();
+		boolean sig = dev.stray.client.ui.Looks.signature();
 		Component brand = MenuFont.shadow(brandText());
 		float w = panelsWidth(font);
 		if (HudChrome.background()) {
 			if (mc) {
 				// Minecraft: the chat box's black, square corners.
 				GuiDraw.fill(graphics, 0, 0, w, HEIGHT, dev.stray.client.ui.Theme.HUD_WINDOW);
+			} else if (sig) {
+				dev.stray.client.ui.SignatureLook.panel(graphics, 0, 0, w, HEIGHT, dev.stray.client.ui.Theme.HUD_WINDOW);
 			} else {
 				dev.stray.client.ui.PanelLook.panel(graphics, 0, 0, w, HEIGHT, 0xF01C1C1C);
 			}
 		}
 		float textY = Math.round(GuiDraw.middle(0, HEIGHT)) + (mc ? 1f : 0f);
-		GuiDraw.text(graphics, font, brand, PN_PAD, textY, mc ? dev.stray.client.ui.MinecraftLook.YELLOW : dev.stray.client.ui.PanelLook.accent(), false);
+		if (sig) {
+			// "stray" in the text colour, the dot in the accent.
+			Component word = MenuFont.shadow("stray");
+			GuiDraw.text(graphics, font, word, PN_PAD, textY, dev.stray.client.ui.SignatureLook.TEXT, false);
+			GuiDraw.text(graphics, font, MenuFont.shadow("."), PN_PAD + font.width(word), textY, dev.stray.client.ui.SignatureLook.accent(), false);
+		} else {
+			GuiDraw.text(graphics, font, brand, PN_PAD, textY, mc ? dev.stray.client.ui.MinecraftLook.YELLOW : dev.stray.client.ui.PanelLook.accent(), false);
+		}
 		float x = PN_PAD + font.width(brand);
 		for (int i = 0; i < parts.size(); i++) {
 			Component text = MenuFont.shadow(parts.get(i));
-			GuiDraw.fillSmooth(graphics, x + PN_GAP * 0.5f - 0.5f, 5f, 1f, HEIGHT - 10f, mc ? dev.stray.client.ui.MinecraftLook.LINE : dev.stray.client.ui.PanelLook.EDGE);
+			GuiDraw.fillSmooth(graphics, x + PN_GAP * 0.5f - 0.5f, 5f, 1f, HEIGHT - 10f, mc ? dev.stray.client.ui.MinecraftLook.LINE : sig ? dev.stray.client.ui.SignatureLook.LINE : dev.stray.client.ui.PanelLook.EDGE);
 			x += PN_GAP;
-			GuiDraw.text(graphics, font, text, x, textY, 0xFFFFFFFF, false);
+			GuiDraw.text(graphics, font, text, x, textY, sig ? dev.stray.client.ui.SignatureLook.SOFT : 0xFFFFFFFF, false);
 			x += stableWidth(font, text, i < PART_KEYS.length ? PART_KEYS[i] : "shadow:" + i);
 		}
 	}

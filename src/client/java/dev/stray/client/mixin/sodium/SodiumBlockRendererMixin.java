@@ -26,6 +26,14 @@ public class SodiumBlockRendererMixin {
 	@Inject(method = "bufferQuad", at = @At("HEAD"), remap = false)
 	private void stray$focus(MutableQuadViewImpl quad, float[] brightness, Material material, CallbackInfo ci) {
 		BlockState state = this.stray$state;
+		if (state != null && dev.stray.client.visual.Monochrome.marks(state.getBlock())) {
+			// Monochrome: the magenta marker, keeping Sodium's face shade and AO in it.
+			for (int vertex = 0; vertex < 4; vertex++) {
+				int alpha = (quad.baseColor(vertex) >>> 24) & 0xFF;
+				quad.setColor(vertex, ((alpha == 0 ? 0xFF : alpha) << 24) | dev.stray.client.visual.Monochrome.MARKER);
+			}
+			return;
+		}
 		if (!FocusMode.visual() || state == null) {
 			return;
 		}

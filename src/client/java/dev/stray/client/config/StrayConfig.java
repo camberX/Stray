@@ -45,6 +45,28 @@ public final class StrayConfig {
 	public float fillOpacity = 0.32f;
 	public int colorRgb = 0x2FB5FF;
 	public boolean worldTintEnabled = false;
+	/** Waypoints: boxes placed at your feet. These are the size and colours new ones get. */
+	public boolean waypoints = false;
+	public float waypointWidth = 1f;
+	public float waypointHeight = 2f;
+	/** Outline thickness in pixels; 0 draws no outline. */
+	public float waypointThickness = 2f;
+	public int waypointOutline = 0xFFFF6A3D;
+	public int waypointFill = 0x40FF6A3D;
+	public boolean waypointsSnap = false;
+	public boolean waypointsThroughWalls = false;
+	/** Monochrome: blocks in black and white, splash hue and marked blocks in the accent. */
+	public boolean monochrome = false;
+	public int monochromeRgb = 0xE8443A;
+	public boolean monochromeSplash = true;
+	/** Index into Monochrome.SPLASH_LABELS: 0 is the accent's own hue. */
+	public int monochromeSplashHue = 0;
+	/** Degrees either side of the splash hue that still count. */
+	public float monochromeSplashWidth = 25f;
+	public float monochromeContrast = 1f;
+	public boolean monochromeUsable = true;
+	/** Your own blocks to accent, as block ids (minecraft:oak_planks). */
+	public java.util.List<String> monochromeBlocks = new java.util.ArrayList<>();
 	public int worldTintRgb = 0x2FB5FF;
 	public float worldTintStrength = 0.70f;
 	public String worldTintMode = "shader";
@@ -350,6 +372,8 @@ public final class StrayConfig {
 	/** uid? menu: DPI scale (0 = auto, 1 = 100 % ... 5 = 200 %) and its accent colour. */
 	public int uidDpi = 0;
 	public int uidAccent = 0x9FCA2B;
+	/** The Stray look's accent colour (RGB). */
+	public int signatureAccent = 0xFF6A3D;
 	/** Always {@code shadow}; kept so old configs load. */
 	public String guiStyle = "shadow";
 	/** How opaque every Shadow panel is (menus, screens, HUD, chat), 0.2 to 1. */
@@ -1650,6 +1674,18 @@ public final class StrayConfig {
 				if (!json.has("legacyBackwardsWalk")) {
 					loaded.legacyBackwardsWalk = false;
 				}
+				if (!json.has("signatureAccent") || (loaded.signatureAccent & 0xFFFFFF) == 0) {
+					loaded.signatureAccent = 0xFF6A3D;
+				}
+				if (!json.has("waypoints")) {
+					loaded.waypoints = false;
+				}
+				if (!json.has("monochrome")) {
+					loaded.monochrome = false;
+				}
+				if (loaded.monochromeBlocks == null) {
+					loaded.monochromeBlocks = new java.util.ArrayList<>();
+				}
 				if (!json.has("handOnlyBobbing")) {
 					loaded.handOnlyBobbing = false;
 				}
@@ -2134,7 +2170,7 @@ public final class StrayConfig {
 
 	/** One of the looks (Minecraft, Modern = "panels", Skeet = "uid"); anything else, the removed Shadow and Expressive included, is Minecraft. */
 	public static String normalizeTheme(String style) {
-		return "uid".equals(style) || "panels".equals(style) || "win98".equals(style) ? style : "minecraft";
+		return "uid".equals(style) || "panels".equals(style) || "win98".equals(style) || "signature".equals(style) ? style : "minecraft";
 	}
 
 	public static final String[] MUSIC_LAYOUTS = {"card", "compact", "poster", "dock", "bar"};

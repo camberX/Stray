@@ -48,6 +48,7 @@ public abstract class FrontendRenderPassMixin {
 				TopDownTerrainCut.bind();
 				FocusMode.bind();
 				WorldTint.bind();
+				dev.stray.client.visual.Monochrome.bind();
 				CustomFog.bind();
 				slice = StrayUniforms.upload();
 			}

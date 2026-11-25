@@ -6,7 +6,8 @@ import dev.stray.client.config.UnloadState;
 /**
  * The look everything Stray draws follows: Minecraft (the game's own font and widgets, chat-black
  * panels), Modern (neutral grey panels) or Skeet (the uid? menu). One setting picks the menu, the
- * HUD, Stray's own screens and the vanilla menus together. Shadow and Expressive were removed;
+ * HUD, Stray's own screens and the vanilla menus together. Stray is the house look: near-black,
+ * hairlines and one accent colour. Shadow and Expressive were removed;
  * a config that still names one opens as Minecraft.
  */
 public final class Looks {
@@ -17,8 +18,10 @@ public final class Looks {
 	public static final String MINECRAFT = "minecraft";
 	/** Windows 98: grey bevelled windows, a blue title bar and a taskbar watermark. */
 	public static final String WIN98 = "win98";
-	public static final String[] ALL = {MINECRAFT, PANELS, UID, WIN98};
-	public static final String[] LABELS = {"Minecraft", "Modern", "Skeet", "Windows 98"};
+	/** Stray: near-black panels, hairlines, numbered categories and one accent colour. */
+	public static final String SIGNATURE = "signature";
+	public static final String[] ALL = {MINECRAFT, PANELS, UID, WIN98, SIGNATURE};
+	public static final String[] LABELS = {"Minecraft", "Modern", "Skeet", "Windows 98", "Stray"};
 
 	/** While a preview draws another look than the saved one (the first-boot picker). */
 	private static String forced;
@@ -55,6 +58,10 @@ public final class Looks {
 
 	public static boolean win98() {
 		return WIN98.equals(current());
+	}
+
+	public static boolean signature() {
+		return SIGNATURE.equals(current());
 	}
 
 	public static boolean panels() {

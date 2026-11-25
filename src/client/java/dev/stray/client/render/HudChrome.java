@@ -108,6 +108,10 @@ public final class HudChrome {
 			dev.stray.client.ui.Win98.raised(graphics, x, y, w, h);
 			return;
 		}
+		if (dev.stray.client.ui.Looks.signature()) {
+			dev.stray.client.ui.SignatureLook.panel(graphics, x, y, w, h, Theme.withAlpha(0, Math.max(0xC8, (fill >>> 24) & 0xFF)));
+			return;
+		}
 		if (dev.stray.client.ui.Looks.panels()) {
 			dev.stray.client.ui.PanelLook.panel(graphics, x, y, w, h, Theme.withAlpha(0x1C1C1C, Math.max(0xC8, (fill >>> 24) & 0xFF)));
 			return;
@@ -129,6 +133,10 @@ public final class HudChrome {
 	}
 
 	public static void slot(GuiGraphicsExtractor graphics, float x, float y, float size, boolean selected) {
+		if (dev.stray.client.ui.Looks.signature()) {
+			dev.stray.client.ui.SignatureLook.control(graphics, x, y, size, size, false, selected);
+			return;
+		}
 		if (dev.stray.client.ui.Looks.panels()) {
 			dev.stray.client.ui.PanelLook.control(graphics, x, y, size, size, false, selected);
 			return;

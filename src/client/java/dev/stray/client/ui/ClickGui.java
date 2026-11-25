@@ -62,6 +62,10 @@ public final class ClickGui {
 			UidMenu.draw(screen, graphics, font, mouseX, mouseY);
 			return;
 		}
+		if (SignatureMenu.active()) {
+			SignatureMenu.draw(screen, graphics, font, mouseX, mouseY);
+			return;
+		}
 		if (Looks.win98()) {
 			Win98Menu.draw(screen, graphics, font, mouseX, mouseY);
 			Win98Menu.drawPicker(screen, graphics, font);
@@ -128,6 +132,10 @@ public final class ClickGui {
 			PanelMenu.rightClick(x, y);
 			return;
 		}
+		if (SignatureMenu.active()) {
+			SignatureMenu.rightClick(x, y);
+			return;
+		}
 		if (Looks.win98()) {
 			Win98Menu.rightClick(x, y);
 		}
@@ -137,6 +145,9 @@ public final class ClickGui {
 		if (UidMenu.active()) {
 			return UidMenu.scroll(x, y, wheel);
 		}
+		if (SignatureMenu.active()) {
+			return SignatureMenu.scroll(x, y, wheel);
+		}
 		if (Looks.win98()) {
 			return Win98Menu.scroll(x, y, wheel);
 		}
@@ -145,7 +156,7 @@ public final class ClickGui {
 
 	/** The next row's y: uid? rows have their own heights, the other styles step by a row. */
 	private static float next(float drawn, float y) {
-		return UidMenu.drawing() || PanelMenu.drawing() ? drawn : y + stride();
+		return UidMenu.drawing() || PanelMenu.drawing() || SignatureMenu.drawing() ? drawn : y + stride();
 	}
 
 	public static List<String> enabledLabels() {
@@ -198,7 +209,7 @@ public final class ClickGui {
 	private static void drawHud(StrayScreen screen, GuiGraphicsExtractor graphics, Font font, float x, float y, float w) {
 		StrayConfig config = StrayConfig.get();
 		int look = Looks.index();
-		y = UidMenu.drawing() || PanelMenu.drawing()
+		y = UidMenu.drawing() || PanelMenu.drawing() || SignatureMenu.drawing()
 			? screen.clickDropdown(graphics, font, x, y, w, "theme", "Theme", Looks.LABELS, look, i -> Looks.set(Looks.ALL[i]))
 			: next(screen.clickCycle(graphics, font, x, y, w, "Theme", () -> Looks.LABELS[Looks.index()], () -> Looks.set(Looks.ALL[(Looks.index() + 1) % Looks.ALL.length])), y);
 		if (Looks.uid()) {
@@ -223,6 +234,13 @@ public final class ClickGui {
 			y = drawButton(screen, graphics, font, x, y, w, "Reset menu layout", UidMenu::resetPosition);
 		} else if (Looks.win98()) {
 			y = next(drawChoice(screen, graphics, font, x, y, w, "Dark mode", config.win98Dark, Win98Menu::toggleDark), y);
+		} else if (Looks.signature()) {
+			y = screen.clickSignatureAccent(graphics, font, x, y, w);
+			// The window rising in, the gliding marker, rows coming in, springy switches: all off.
+			y = next(screen.clickToggle(graphics, font, x, y, w, "Reduce motion", config.exReduceMotion, () -> {
+				StrayConfig.get().exReduceMotion = !StrayConfig.get().exReduceMotion;
+				UnloadState.markDirty();
+			}), y);
 		} else {
 			if (Looks.panels()) {
 				// The accent is the Accent module's colour; this opens it beside the menu.
@@ -316,7 +334,7 @@ public final class ClickGui {
 		}
 		if (mod.menuStyle) {
 			if (HUD_LOOK.equals(mod.name)) {
-				return stackH(Looks.uid() ? 8 : Looks.panels() ? 4 : 3);
+				return stackH(Looks.uid() ? 8 : Looks.panels() ? 4 : Looks.signature() ? 4 : 3);
 			}
 			return stackH(1);
 		}
@@ -450,6 +468,8 @@ public final class ClickGui {
 		java.util.Map.entry("Fog", "Custom fog colour and distance."),
 		java.util.Map.entry("Aspect", "Stretches the view to another aspect ratio, like 4:3."),
 		java.util.Map.entry("Motion blur", "Blurs the screen while you move and turn."),
+		java.util.Map.entry("Waypoints", "Boxes you place where you stand: the bottom at your feet, your own width, height, outline and colours. Saved per island."),
+		java.util.Map.entry("Monochrome", "Blocks in black and white. Things in the splash colour, usable blocks and your own list stay in the accent colour, with their texture and lighting."),
 		java.util.Map.entry("Skull hold", "Holds skulls and heads the 1.8 way."),
 		java.util.Map.entry("Backwards walk", "1.8 style body turn when walking backwards."),
 		java.util.Map.entry("Player glow", "Outlines other players so you can see them through walls."),
@@ -755,6 +775,8 @@ public final class ClickGui {
 		mods.add(mod("Ambience", "World", StrayScreen.Feature.AMBIENCE, null, () -> config.ambienceEnabled, v -> config.ambienceEnabled = v, true, false));
 		mods.add(mod("Fog", "World", StrayScreen.Feature.FOG, null, () -> config.fogEnabled, v -> config.fogEnabled = v, true, false));
 		mods.add(mod("Aspect", "World", StrayScreen.Feature.VIEW, null, () -> config.aspectEnabled, v -> config.aspectEnabled = v, true, false));
+		mods.add(mod("Waypoints", "World", StrayScreen.Feature.WAYPOINTS, null, () -> config.waypoints, v -> config.waypoints = v, true, false));
+		mods.add(mod("Monochrome", "World", StrayScreen.Feature.MONOCHROME, null, () -> config.monochrome, v -> config.monochrome = v, true, false));
 		mods.add(mod("Motion blur", "World", StrayScreen.Feature.MOTION, null, () -> config.motionBlurEnabled, v -> config.motionBlurEnabled = v, true, false));
 		mods.add(mod("Block outline", "World", StrayScreen.Feature.BLOCK, null, () -> config.blockOutlineGlow, v -> config.blockOutlineGlow = v, true, false));
 		mods.add(mod("Smooth hotbar", "HUD", StrayScreen.Feature.SMOOTH_HOTBAR, null, () -> config.smoothHotbar, v -> config.smoothHotbar = v, true, false));

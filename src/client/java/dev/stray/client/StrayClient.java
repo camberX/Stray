@@ -219,6 +219,7 @@ public final class StrayClient implements ClientModInitializer {
 		BlockOutlineGlow.init();
 		dev.stray.client.dungeon.TerminalHighlight.init();
 		BlockMarks.init();
+		dev.stray.client.render.BoxWaypoints.init();
 		if (!dev.stray.Edition.LEGIT) {
 			dev.stray.client.dungeon.EtherwarpAim.init();
 		}
@@ -355,6 +356,11 @@ public final class StrayClient implements ClientModInitializer {
 						return Command.SINGLE_SUCCESS;
 					})));
 			}
+			root.then(ClientCommands.literal("waypoint")
+				.then(ClientCommands.literal("add").executes(context -> waypointCommand(context.getSource(), dev.stray.client.render.BoxWaypoints::addHere)))
+				.then(ClientCommands.literal("restyle").executes(context -> waypointCommand(context.getSource(), dev.stray.client.render.BoxWaypoints::restyleNearest)))
+				.then(ClientCommands.literal("remove").executes(context -> waypointCommand(context.getSource(), dev.stray.client.render.BoxWaypoints::removeNearest)))
+				.then(ClientCommands.literal("clear").executes(context -> waypointCommand(context.getSource(), dev.stray.client.render.BoxWaypoints::clear))));
 			root.then(ClientCommands.literal("debug").then(debugDev()));
 			root.then(ClientCommands.literal("edit").executes(context -> openItemEdit()));
 			root.then(ClientCommands.literal("casino").executes(context -> {
@@ -630,6 +636,7 @@ public final class StrayClient implements ClientModInitializer {
 			FairySoulTracker.tick(client);
 			CrystalHollows.tick(client);
 			RouteMiner.tick(client);
+			dev.stray.client.visual.Monochrome.tick();
 			CrystalHollowsMap.tick(client);
 			MetalDetector.tick(client);
 			NucleusAlerts.tick(client);
@@ -1204,6 +1211,16 @@ public final class StrayClient implements ClientModInitializer {
 			StrayConfig.get().alignTriggerbot = true;
 			StrayConfig.get().save();
 		}
+	}
+
+	/** /stray waypoint ...: runs the action and says what happened (and when the feature is off). */
+	private static int waypointCommand(FabricClientCommandSource source, java.util.function.Supplier<String> action) {
+		String said = action.get();
+		if (!StrayConfig.get().waypoints) {
+			said += " Waypoints is off, so they don't show: turn it on in World.";
+		}
+		source.sendFeedback(Component.literal("\u00A7bStray \u00A77\u00BB \u00A7f" + said));
+		return Command.SINGLE_SUCCESS;
 	}
 
 	private static int openItemEdit() {

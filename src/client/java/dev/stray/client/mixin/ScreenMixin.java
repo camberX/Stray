@@ -80,7 +80,7 @@ public abstract class ScreenMixin {
 	private void stray$sharpStars(GuiGraphicsExtractor graphics, CallbackInfo ci) {
 		Screen self = (Screen) (Object) this;
 		// uid? menus have no blur behind them, in the world either.
-		if (MenuChrome.applies(self) && (MenuChrome.outOfWorld() || dev.stray.client.ui.Looks.uid() || dev.stray.client.ui.Looks.panels())) {
+		if (MenuChrome.applies(self) && (MenuChrome.outOfWorld() || dev.stray.client.ui.Looks.uid() || dev.stray.client.ui.Looks.panels() || dev.stray.client.ui.Looks.signature())) {
 			ci.cancel();
 		}
 	}
@@ -92,7 +92,7 @@ public abstract class ScreenMixin {
 			return;
 		}
 		if (!MenuChrome.outOfWorld()) {
-			int dim = dev.stray.client.ui.Looks.panels() ? 0x99000000 : dev.stray.client.ui.Looks.uid() ? 0x90070707 : 0x55000000;
+			int dim = dev.stray.client.ui.Looks.panels() || dev.stray.client.ui.Looks.signature() ? 0x99000000 : dev.stray.client.ui.Looks.uid() ? 0x90070707 : 0x55000000;
 			GuiDraw.fill(graphics, 0, 0, width, height, dim);
 		}
 		ci.cancel();

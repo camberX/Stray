@@ -57,8 +57,8 @@ public final class MenuChrome {
 			return;
 		}
 		Theme.refresh();
-		if (Looks.panels()) {
-			// Panels: no frost, the world simply dimmed.
+		if (Looks.panels() || Looks.signature()) {
+			// Panels and Stray: no frost, the world simply dimmed.
 			GuiDraw.fill(graphics, 0, 0, width, height, 0x99000000);
 			return;
 		}
@@ -88,9 +88,9 @@ public final class MenuChrome {
 		float alpha = widget.getAlpha();
 		boolean focus = widget.isFocused();
 		look(graphics, widget.getX(), widget.getY(), widget.getWidth(), widget.getHeight(), widget.isHovered(), true, alpha, true);
-		if (focus && Looks.panels()) {
+		if (focus && (Looks.panels() || Looks.signature())) {
 			GuiDraw.alphaScale = alpha;
-			GuiDraw.hairline(graphics, widget.getX(), widget.getY(), widget.getWidth(), widget.getHeight(), Math.min(4f, widget.getHeight() * 0.5f), PanelLook.accent());
+			GuiDraw.hairline(graphics, widget.getX(), widget.getY(), widget.getWidth(), widget.getHeight(), Math.min(4f, widget.getHeight() * 0.5f), Theme.ACCENT);
 			GuiDraw.alphaScale = 1f;
 		} else if (focus && Looks.uid()) {
 			GuiDraw.fillSmooth(graphics, widget.getX() + 1, widget.getY() + widget.getHeight() - 1, widget.getWidth() - 2, 1, UidMenu.accent());
@@ -113,6 +113,17 @@ public final class MenuChrome {
 			GuiDraw.fillSmooth(graphics, x + 4f, y + h - 4f, tw, 1.5f, PanelLook.EDGE);
 			GuiDraw.fillSmooth(graphics, x + 4f, y + h - 4f, tw * tv, 1.5f, PanelLook.accent());
 			GuiDraw.fillSmooth(graphics, x + 4f + (tw - 2f) * tv, y + 3f, 2f, h - 6f, PanelLook.WHITE);
+			GuiDraw.alphaScale = 1f;
+			return;
+		}
+		if (Looks.signature()) {
+			// Stray: the button box, a hairline track along the bottom, accent up to the value, a light notch.
+			look(graphics, x, y, w, h, hover, widget.active, alpha, false);
+			GuiDraw.alphaScale = alpha;
+			float tw = w - 8f;
+			GuiDraw.fillSmooth(graphics, x + 4f, y + h - 4f, tw, 1.5f, SignatureLook.TRACK);
+			GuiDraw.fillSmooth(graphics, x + 4f, y + h - 4f, tw * tv, 1.5f, SignatureLook.accent());
+			GuiDraw.fillSmooth(graphics, x + 4f + (tw - 2f) * tv, y + 3f, 2f, h - 6f, SignatureLook.TEXT);
 			GuiDraw.alphaScale = 1f;
 			return;
 		}
@@ -145,6 +156,12 @@ public final class MenuChrome {
 				}
 				return;
 			}
+			if (Looks.signature()) {
+				float r = Math.min(SignatureLook.CONTROL_R, h * 0.5f);
+				GuiDraw.roundedFine(graphics, x, y, w, h, r, !active || field ? SignatureLook.BG : hover ? SignatureLook.PICKED : SignatureLook.RAISED);
+				GuiDraw.hairline(graphics, x, y, w, h, r, hover && active ? SignatureLook.LINE_HOT : SignatureLook.LINE);
+				return;
+			}
 			if (Looks.panels()) {
 				float r = Math.min(4f, h * 0.5f);
 				GuiDraw.roundedFine(graphics, x, y, w, h, r, !active ? PanelLook.G1 : field ? PanelLook.G1 : hover ? PanelLook.G3 : PanelLook.G2);
@@ -168,6 +185,11 @@ public final class MenuChrome {
 	}
 
 	public static void selection(GuiGraphicsExtractor graphics, int x, int y, int w, int h) {
+		if (Looks.signature()) {
+			GuiDraw.fillSmooth(graphics, x, y, w, h, SignatureLook.PICKED);
+			GuiDraw.fillSmooth(graphics, x + 1f, y + 2f, 1.5f, Math.max(1f, h - 4f), SignatureLook.accent());
+			return;
+		}
 		if (Looks.panels()) {
 			GuiDraw.roundedFine(graphics, x, y, w, h, 3f, PanelLook.G3);
 			PanelLook.onBar(graphics, x + 1f, y, h);
@@ -178,9 +200,9 @@ public final class MenuChrome {
 	}
 
 	public static void scrollbar(GuiGraphicsExtractor graphics, int x, int y, int w, int h, int thumbY, int thumbH, boolean active) {
-		if (Looks.panels()) {
+		if (Looks.panels() || Looks.signature()) {
 			if (active && thumbH > 0) {
-				GuiDraw.roundedFine(graphics, x + 1, thumbY, Math.max(2, w - 2), thumbH, 1f, PanelLook.DGREY);
+				GuiDraw.roundedFine(graphics, x + 1, thumbY, Math.max(2, w - 2), thumbH, 1f, Looks.signature() ? SignatureLook.LINE_HOT : PanelLook.DGREY);
 			}
 			return;
 		}

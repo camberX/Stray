@@ -140,6 +140,8 @@ public class StrayScreen extends Screen {
 		FOG("Fog", 5),
 		VIEW("Aspect", 3),
 		MOTION("Motion blur", 3),
+		MONOCHROME("Monochrome", 9),
+		WAYPOINTS("Waypoints", 11),
 		HELD_ITEM("Held item", 7),
 		FILL("Shader", 8),
 		AUTO_CLICKER("Auto clicker", 8),
@@ -249,6 +251,7 @@ public class StrayScreen extends Screen {
 				case FILL, MOB, STAR, CHEST, FAIRY, PATHS, NODE_ESP, TITANIUM, CRYSTAL, HEALTH, BOX, NAMETAGS -> 1;
 				case PEST -> 3;
 				case LEAP_MENU -> 1;
+				case WAYPOINTS -> 1;
 				case PEST_COOLDOWN -> 1 + (StrayConfig.get().pestLoadoutSwap ? 1 : 0);
 				default -> 0;
 			};
@@ -305,7 +308,7 @@ public class StrayScreen extends Screen {
 	}
 
 	private enum PickerTarget {
-		WORLD, SKY, FOG, NODE, THEME, PANE, CONTROL, PILL, MOB, STAR, BLOCK, TITANIUM, CHEST, PEST, HELD_ITEM, HELD_ITEM_OUTLINE, FILL, FILL_OUTLINE, MARKS, PATHS, RINGS, HEALTH_FULL, HEALTH_EMPTY, BOX, SLAYER, TERMINAL, TERM_HIGHLIGHT, UID_ACCENT, ARGB_FIELD
+		WORLD, SKY, FOG, NODE, THEME, PANE, CONTROL, PILL, MOB, STAR, BLOCK, TITANIUM, CHEST, PEST, HELD_ITEM, HELD_ITEM_OUTLINE, FILL, FILL_OUTLINE, MARKS, PATHS, RINGS, HEALTH_FULL, HEALTH_EMPTY, BOX, SLAYER, TERMINAL, TERM_HIGHLIGHT, UID_ACCENT, SIGNATURE_ACCENT, MONOCHROME, ARGB_FIELD
 	}
 
 	/** Which slayer colour the SLAYER picker edits (see SlayerSettings.color). */
@@ -829,13 +832,15 @@ public class StrayScreen extends Screen {
 			viewLift = 0f;
 			viewCx = 0f;
 			viewCy = 0f;
-			if (closing && (UidMenu.active() ? UidMenu.faded(this) : PanelMenu.active() ? PanelMenu.faded(this) : appear <= 0.02f)) {
+			if (closing && (UidMenu.active() ? UidMenu.faded(this) : SignatureMenu.active() ? SignatureMenu.faded(this) : PanelMenu.active() ? PanelMenu.faded(this) : appear <= 0.02f)) {
 				finishClose();
 				return;
 			}
 			if (UidMenu.active()) {
 				// uid? draws in its own pixels: clicks, drags and scrolls map through the same scale.
 				viewScale = UidMenu.unit();
+			} else if (SignatureMenu.active()) {
+				viewScale = SignatureMenu.unit();
 			} else if (PanelMenu.active()) {
 				viewScale = PanelMenu.unit();
 			} else if (Looks.win98()) {
@@ -956,7 +961,7 @@ public class StrayScreen extends Screen {
 
 	private float anim(String key, float target) {
 		float current = anims.getOrDefault(key, target);
-		float next = Anim.exp(current, target, 16f, dt);
+		float next = SignatureMenu.drawing() ? SignatureLook.exp(current, target, 16f, dt) : Anim.exp(current, target, 16f, dt);
 		anims.put(key, next);
 		return next;
 	}
@@ -3238,12 +3243,12 @@ public class StrayScreen extends Screen {
 		String animKey = rowAnimKey(label, x, y);
 		float hover = anim("hov-" + animKey, hovered ? 1f : 0f);
 		if (hover > 0.02f) {
-			GuiDraw.rounded(graphics, x - 3, y, w + 6, row, 6, Anim.fade(0x08FFFFFF, hover));
+			rowHover(graphics, x, y, w, row, hover);
 		}
 		float labelY = GuiDraw.middle(y, row);
 		GuiDraw.menu(graphics, font, label, x + 1, labelY, ink());
 
-		float t = anim("tog-" + animKey, value ? 1f : 0f);
+		float t = SignatureMenu.drawing() ? SignatureLook.spring("tog-" + fieldScope + animKey, value) : anim("tog-" + animKey, value ? 1f : 0f);
 		boolean clickList = StrayConfig.get().clickGui;
 		float trackW = clickList ? 18 : controlCenter() ? 28 : 22;
 		float trackH = clickList ? 10 : controlCenter() ? 16 : 11;
@@ -3285,9 +3290,22 @@ public class StrayScreen extends Screen {
 		return y + row;
 	}
 
+	/** The faint wash behind a hovered settings row; the Stray menu's matches its own corners. */
+	private static void rowHover(GuiGraphicsExtractor graphics, float x, float y, float w, float row, float hover) {
+		if (SignatureMenu.drawing()) {
+			GuiDraw.roundedFine(graphics, x - 4, y, w + 8, row, SignatureLook.CONTROL_R, Anim.fade(SignatureLook.RAISED, hover));
+			return;
+		}
+		GuiDraw.rounded(graphics, x - 3, y, w + 6, row, 6, Anim.fade(0x08FFFFFF, hover));
+	}
+
 	private void clickToggle(GuiGraphicsExtractor graphics, float x, float y, float w, float h, float t) {
 		if (Win98Menu.drawing()) {
 			Win98.checkbox(graphics, x + w - 9, y + (h - 9) / 2f, 9, t > 0.5f, true);
+			return;
+		}
+		if (SignatureMenu.drawing()) {
+			SignatureLook.toggle(graphics, x, y, w, h, t);
 			return;
 		}
 		if (PanelMenu.drawing() && Looks.minecraft()) {
@@ -3648,6 +3666,14 @@ public class StrayScreen extends Screen {
 		return y + row;
 	}
 
+	/** A Stray chat line for the buttons that act in the world (Monochrome, Waypoints). */
+	private static void monoMessage(String text) {
+		net.minecraft.client.player.LocalPlayer player = net.minecraft.client.Minecraft.getInstance().player;
+		if (player != null) {
+			player.sendSystemMessage(net.minecraft.network.chat.Component.literal("\u00A7bStray \u00A77\u00BB \u00A7f" + text));
+		}
+	}
+
 	private float clickButton(GuiGraphicsExtractor graphics, Font font, float x, float y, float w, int mouseX, int mouseY, String label, Runnable action) {
 		if (UidMenu.drawing()) {
 			return uidButton(graphics, font, x, y, w, mouseX, mouseY, label, action);
@@ -3888,6 +3914,55 @@ public class StrayScreen extends Screen {
 					float[] values = {1.00f, 0.90f, 0.75f, 0.70f};
 					config.aspectEnabled = true;
 					config.aspectRatio = values[index];
+				});
+			}
+			case WAYPOINTS -> {
+				y = slider(graphics, font, ix, y, iw, "Width", String.format(Locale.ROOT, "%.2f", config.waypointWidth), (config.waypointWidth - 0.25f) / 9.75f,
+					v -> config.waypointWidth = snapInt(25f + v * 975f, 25, 1000, 25) / 100f);
+				y = slider(graphics, font, ix, y, iw, "Height", String.format(Locale.ROOT, "%.2f", config.waypointHeight), (config.waypointHeight - 0.25f) / 19.75f,
+					v -> config.waypointHeight = snapInt(25f + v * 1975f, 25, 2000, 25) / 100f);
+				y = slider(graphics, font, ix, y, iw, "Outline thickness", config.waypointThickness <= 0f ? "Off" : Math.round(config.waypointThickness) + " px", config.waypointThickness / 10f,
+					v -> config.waypointThickness = snapInt(v * 10f, 0, 10, 1));
+				y = argbColor(graphics, font, ix, y, iw, mouseX, mouseY, "Outline colour", "waypointOutline");
+				y = argbColor(graphics, font, ix, y, iw, mouseX, mouseY, "Fill colour", "waypointFill");
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Centre on block", config.waypointsSnap, v -> config.waypointsSnap = v);
+				if (!dev.stray.Edition.LEGIT) {
+					y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Through walls", config.waypointsThroughWalls, v -> config.waypointsThroughWalls = v);
+				}
+				y = clickButton(graphics, font, ix, y, iw, mouseX, mouseY, "Place at my feet", () -> monoMessage(dev.stray.client.render.BoxWaypoints.addHere()));
+				y = clickButton(graphics, font, ix, y, iw, mouseX, mouseY, "Restyle nearest", () -> monoMessage(dev.stray.client.render.BoxWaypoints.restyleNearest()));
+				y = clickButton(graphics, font, ix, y, iw, mouseX, mouseY, "Remove nearest", () -> monoMessage(dev.stray.client.render.BoxWaypoints.removeNearest()));
+				int count = dev.stray.client.render.BoxWaypoints.count();
+				clickButton(graphics, font, ix, y, iw, mouseX, mouseY, count == 0 ? "No waypoints here" : "Clear " + count + (count == 1 ? " waypoint" : " waypoints") + " here", () -> monoMessage(dev.stray.client.render.BoxWaypoints.clear()));
+			}
+			case MONOCHROME -> {
+				y = colorRow(graphics, font, ix, y, iw, mouseX, mouseY, "Accent colour", config.monochromeRgb, PickerTarget.MONOCHROME);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Splash", config.monochromeSplash, v -> config.monochromeSplash = v);
+				y = dropdown(graphics, font, ix, y, iw, mouseX, mouseY, "mono-splash-hue", "Splash colour", dev.stray.client.visual.Monochrome.SPLASH_LABELS,
+					Math.floorMod(config.monochromeSplashHue, dev.stray.client.visual.Monochrome.SPLASH_LABELS.length), i -> config.monochromeSplashHue = i);
+				y = slider(graphics, font, ix, y, iw, "Splash range", Math.round(config.monochromeSplashWidth) + "\u00B0", (config.monochromeSplashWidth - 5f) / 85f,
+					v -> config.monochromeSplashWidth = snapInt(5f + v * 85f, 5, 90, 1));
+				y = slider(graphics, font, ix, y, iw, "Contrast", Math.round(config.monochromeContrast * 100f) + "%", (config.monochromeContrast - 0.5f),
+					v -> config.monochromeContrast = snapInt(50f + v * 100f, 50, 150, 5) / 100f);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Usable blocks", config.monochromeUsable, v -> config.monochromeUsable = v);
+				net.minecraft.world.level.block.Block looked = dev.stray.client.visual.Monochrome.lookedAt();
+				String lookedName = looked == null ? null : dev.stray.client.visual.Monochrome.name(looked);
+				y = clickButton(graphics, font, ix, y, iw, mouseX, mouseY, looked == null ? "Look at a block to add it" : "Add " + lookedName, () -> {
+					if (looked != null) {
+						monoMessage(dev.stray.client.visual.Monochrome.add(looked) ? "Added " + lookedName + "." : lookedName + " is on your list already.");
+					}
+				});
+				y = clickButton(graphics, font, ix, y, iw, mouseX, mouseY, looked == null ? "Look at a block to remove it" : "Remove " + lookedName, () -> {
+					if (looked != null) {
+						monoMessage(dev.stray.client.visual.Monochrome.remove(looked) ? "Removed " + lookedName + "." : lookedName + " isn't on your list.");
+					}
+				});
+				int count = dev.stray.client.visual.Monochrome.listSize();
+				clickButton(graphics, font, ix, y, iw, mouseX, mouseY, count == 0 ? "Your list is empty" : "Clear your list (" + count + (count == 1 ? " block)" : " blocks)"), () -> {
+					if (dev.stray.client.visual.Monochrome.listSize() > 0) {
+						dev.stray.client.visual.Monochrome.clear();
+						monoMessage("Cleared your Monochrome list.");
+					}
 				});
 			}
 			case MOTION -> {
@@ -4719,8 +4794,8 @@ public class StrayScreen extends Screen {
 		if (UidMenu.drawing()) {
 			return uidCycle(graphics, font, x, y, w, mouseX, mouseY, label, current, next);
 		}
-		if (PanelMenu.drawing()) {
-			// Panels: never a value that steps on click; the choices open as a dropdown. They're
+		if (PanelMenu.drawing() || SignatureMenu.drawing()) {
+			// Panels and Stray: never a value that steps on click; the choices open as a dropdown. They're
 			// found once, the first time it opens, by stepping through them back to the start.
 			String key = "pcyc/" + fieldScope + "/" + label;
 			String now = current.get();
@@ -4786,9 +4861,13 @@ public class StrayScreen extends Screen {
 		float row = rowH();
 		boolean open = key.equals(dropdownOpen);
 		float t = dropdownT.getOrDefault(key, 0f);
-		t = Anim.exp(t, open ? 1f : 0f, 18f, dt);
-		if (!StrayConfig.get().uiAnimations) {
-			t = open ? 1f : 0f;
+		if (SignatureMenu.drawing()) {
+			t = SignatureLook.exp(t, open ? 1f : 0f, 18f, dt);
+		} else {
+			t = Anim.exp(t, open ? 1f : 0f, 18f, dt);
+			if (!StrayConfig.get().uiAnimations) {
+				t = open ? 1f : 0f;
+			}
 		}
 		if (t <= 0.001f && !open) {
 			dropdownT.remove(key);
@@ -4797,6 +4876,9 @@ public class StrayScreen extends Screen {
 		}
 		if (Win98Menu.drawing()) {
 			return win98Dropdown(graphics, font, x, y, w, mouseX, mouseY, key, label, options, selected, pick, row, open, t);
+		}
+		if (SignatureMenu.drawing()) {
+			return signatureDropdown(graphics, font, x, y, w, mouseX, mouseY, key, label, options, selected, pick, row, open, t);
 		}
 		boolean hovered = GuiDraw.hovered(mouseX, mouseY, x, y, w, row);
 		if (hovered || t > 0.01f) {
@@ -4848,6 +4930,66 @@ public class StrayScreen extends Screen {
 			}
 		}
 		return bottom + shownH;
+	}
+
+	/**
+	 * Stray look: the label on the left, a field with the value and a chevron on the right; the
+	 * options drop out of the field in a bordered list as it opens.
+	 */
+	private float signatureDropdown(GuiGraphicsExtractor graphics, Font font, float x, float y, float w, int mouseX, int mouseY, String key, String label, String[] options, int selected, java.util.function.IntConsumer pick, float row, boolean open, float t) {
+		float labelY = GuiDraw.middle(y, row);
+		GuiDraw.menu(graphics, font, label, x + 1, labelY, ink());
+		String value = selected >= 0 && selected < options.length ? options[selected] : "";
+		int widest = 0;
+		for (String option : options) {
+			widest = Math.max(widest, GuiDraw.menuWidth(font, option));
+		}
+		float fw = Math.min(w * 0.6f, Math.max(56f, widest + 24f));
+		float fx = x + w - fw;
+		float fh = Math.min(row - 2f, 14f);
+		float fy = y + (row - fh) / 2f;
+		boolean hovered = GuiDraw.hovered(mouseX, mouseY, fx, y, fw, row);
+		SignatureLook.field(graphics, fx, fy, fw, fh, hovered, open || t > 0.5f);
+		GuiDraw.menu(graphics, font, GuiDraw.ellipsize(font, value, fw - 20f, false), fx + 6f, GuiDraw.middle(fy, fh), Theme.TEXT);
+		chevron(graphics, fx + fw - 12f, fy + fh * 0.5f, 6f, t, open ? SignatureLook.accent() : Theme.MUTED);
+		hits.add(new Hit(fx, y, fw, row, () -> dropdownOpen = key.equals(dropdownOpen) ? null : key));
+		float bottom = y + row;
+		if (t <= 0.01f) {
+			dropdownH.remove(key);
+			return bottom;
+		}
+		float itemH = 13f;
+		float listH = options.length * itemH + 4f;
+		float shownH = listH * t;
+		dropdownH.put(key, shownH + 2f);
+		float ly = fy + fh + 2f;
+		float was = GuiDraw.alphaScale;
+		GuiDraw.alphaScale = was * Math.min(1f, t * 1.4f);
+		GuiDraw.roundedFine(graphics, fx, ly, fw, shownH, SignatureLook.CONTROL_R, SignatureLook.RAISED);
+		GuiDraw.hairline(graphics, fx, ly, fw, shownH, SignatureLook.CONTROL_R, SignatureLook.LINE);
+		for (int i = 0; i < options.length; i++) {
+			float iy = ly + 2f + i * itemH;
+			if (iy + itemH > ly + shownH + 0.5f) {
+				break;
+			}
+			boolean on = i == selected;
+			boolean hot = GuiDraw.hovered(mouseX, mouseY, fx, iy, fw, itemH);
+			if (hot) {
+				GuiDraw.roundedFine(graphics, fx + 2f, iy, fw - 4f, itemH, 2f, SignatureLook.PICKED);
+			}
+			GuiDraw.menu(graphics, font, GuiDraw.ellipsize(font, options[i], fw - 12f, false), fx + 6f, GuiDraw.middle(iy, itemH), on ? SignatureLook.accent() : hot ? Theme.TEXT : Theme.MUTED);
+			int index = i;
+			if (open) {
+				hits.add(new Hit(fx, iy, fw, itemH, () -> {
+					pick.accept(index);
+					dropdownOpen = null;
+					Theme.refresh();
+					UnloadState.markDirty();
+				}));
+			}
+		}
+		GuiDraw.alphaScale = was;
+		return bottom + shownH + 2f;
 	}
 
 	private float win98Dropdown(GuiGraphicsExtractor graphics, Font font, float x, float y, float w, int mouseX, int mouseY, String key, String label, String[] options, int selected, java.util.function.IntConsumer pick, float row, boolean open, float t) {
@@ -4962,6 +5104,8 @@ public class StrayScreen extends Screen {
 		float t = Mth.clamp(progress, 0f, 1f);
 		if (Win98Menu.drawing()) {
 			Win98.trackbar(graphics, barX, y + (row - 10) / 2f, barW, 10, t);
+		} else if (SignatureMenu.drawing()) {
+			SignatureLook.slider(graphics, barX, y + row * 0.5f, barW, t);
 		} else if (PanelMenu.drawing() && Looks.minecraft()) {
 			// Minecraft: the game's slider, a dark track and a button for the handle.
 			MinecraftLook.slider(graphics, barX, barY - 4f, barW, 10f, t, false);
@@ -5078,6 +5222,12 @@ public class StrayScreen extends Screen {
 			Win98.raised(graphics, x, y, w, h);
 		} else if (UidMenu.drawing()) {
 			UidLook.panel(graphics, x, y, w, h);
+		} else if (SignatureMenu.drawing()) {
+			float was = GuiDraw.alphaScale;
+			GuiDraw.alphaScale = was * pickerT;
+			ShadowLook.shadow(graphics, x, y, w, h, SignatureLook.WINDOW_R, 14, 0xB0);
+			SignatureLook.panel(graphics, x, y, w, h, 0xFE000000);
+			GuiDraw.alphaScale = was;
 		} else if (PanelMenu.drawing()) {
 			float was = GuiDraw.alphaScale;
 			GuiDraw.alphaScale = was * pickerT;
@@ -5258,6 +5408,11 @@ public class StrayScreen extends Screen {
 			case ARGB_FIELD -> config.setArgbField(argbFieldKey, (config.argbField(argbFieldKey) & 0xFF000000) | (packed & 0xFFFFFF));
 			case THEME -> Theme.applyCustom(packed);
 			case UID_ACCENT -> config.uidAccent = packed == 0 ? 0x9FCA2B : packed;
+			case MONOCHROME -> config.monochromeRgb = packed == 0 ? 0xE8443A : packed;
+			case SIGNATURE_ACCENT -> {
+				config.signatureAccent = packed == 0 ? SignatureLook.DEFAULT_ACCENT : packed;
+				Theme.refresh();
+			}
 			case PANE -> Theme.applyPane(packed);
 			case CONTROL -> {
 				config.controlPaneRgb = packed == 0 ? 0x181818 : packed;
@@ -5276,7 +5431,7 @@ public class StrayScreen extends Screen {
 			case PANE -> 0.20f;
 			case MOB, STAR, BLOCK, TERM_HIGHLIGHT -> 0.15f;
 			case NODE, HELD_ITEM, FILL, CHEST, TITANIUM, PEST, BOX -> 0.08f;
-			case THEME, UID_ACCENT, HELD_ITEM_OUTLINE, FILL_OUTLINE, MARKS, PATHS, RINGS, HEALTH_FULL, HEALTH_EMPTY, SLAYER, TERMINAL -> 1f;
+			case THEME, UID_ACCENT, SIGNATURE_ACCENT, MONOCHROME, HELD_ITEM_OUTLINE, FILL_OUTLINE, MARKS, PATHS, RINGS, HEALTH_FULL, HEALTH_EMPTY, SLAYER, TERMINAL -> 1f;
 			default -> 0f;
 		};
 	}
@@ -5311,7 +5466,7 @@ public class StrayScreen extends Screen {
 			case SKY -> config.skyTintStrength;
 			case FOG -> config.fogDensity;
 			case ARGB_FIELD -> (config.argbField(argbFieldKey) >>> 24) / 255f;
-			case THEME, UID_ACCENT, HELD_ITEM_OUTLINE, FILL_OUTLINE, MARKS, PATHS, RINGS, HEALTH_FULL, HEALTH_EMPTY, SLAYER, TERMINAL -> 1f;
+			case THEME, UID_ACCENT, SIGNATURE_ACCENT, MONOCHROME, HELD_ITEM_OUTLINE, FILL_OUTLINE, MARKS, PATHS, RINGS, HEALTH_FULL, HEALTH_EMPTY, SLAYER, TERMINAL -> 1f;
 		};
 	}
 
@@ -5337,7 +5492,7 @@ public class StrayScreen extends Screen {
 			case SKY -> config.skyTintStrength = clamped;
 			case FOG -> config.fogDensity = clamped;
 			case ARGB_FIELD -> config.setArgbField(argbFieldKey, (Math.round(clamped * 255f) << 24) | (config.argbField(argbFieldKey) & 0xFFFFFF));
-			case THEME, UID_ACCENT, HELD_ITEM_OUTLINE, FILL_OUTLINE, MARKS, PATHS, RINGS, HEALTH_FULL, HEALTH_EMPTY, SLAYER, TERMINAL -> {
+			case THEME, UID_ACCENT, SIGNATURE_ACCENT, MONOCHROME, HELD_ITEM_OUTLINE, FILL_OUTLINE, MARKS, PATHS, RINGS, HEALTH_FULL, HEALTH_EMPTY, SLAYER, TERMINAL -> {
 				return;
 			}
 		}
@@ -5873,7 +6028,7 @@ public class StrayScreen extends Screen {
 			stealFocused = false;
 			commitSteal();
 		}
-		boolean uidFade = StrayConfig.get().clickGui && (UidMenu.active() && StrayConfig.get().uidAnimMs > 0 || PanelMenu.active());
+		boolean uidFade = StrayConfig.get().clickGui && (UidMenu.active() && StrayConfig.get().uidAnimMs > 0 || PanelMenu.active() || SignatureMenu.active() && !ExMotion.reduced());
 		if (!closing && (uidFade || (StrayConfig.get().uiAnimations && appear > 0.04f))) {
 			closing = true;
 			capeFocused = false;
@@ -5977,7 +6132,7 @@ public class StrayScreen extends Screen {
 		boolean hovered = GuiDraw.hovered(mouseX, mouseY, x, y, w, row);
 		float hover = anim("hov-" + rowAnimKey(label, x, y), hovered ? 1f : 0f);
 		if (hover > 0.02f) {
-			GuiDraw.rounded(graphics, x - 3, y, w + 6, row, 6, Anim.fade(0x08FFFFFF, hover));
+			rowHover(graphics, x, y, w, row, hover);
 		}
 		float labelY = GuiDraw.middle(y, row);
 		GuiDraw.menu(graphics, font, label, x + 1, labelY, ink());
@@ -5995,6 +6150,11 @@ public class StrayScreen extends Screen {
 	/** uid?'s "Menu color" row: its accent, through the colour picker. */
 	float clickUidAccent(GuiGraphicsExtractor graphics, Font font, float x, float y, float w) {
 		return colorRow(graphics, font, x, y, w, (int) Math.round(ClickGui.pointerX()), (int) Math.round(ClickGui.pointerY()), "Menu color", StrayConfig.get().uidAccent, PickerTarget.UID_ACCENT);
+	}
+
+	/** The Stray look's "Accent colour" row, through the colour picker. */
+	float clickSignatureAccent(GuiGraphicsExtractor graphics, Font font, float x, float y, float w) {
+		return colorRow(graphics, font, x, y, w, (int) Math.round(ClickGui.pointerX()), (int) Math.round(ClickGui.pointerY()), "Accent colour", SignatureLook.accent() & 0xFFFFFF, PickerTarget.SIGNATURE_ACCENT);
 	}
 
 	boolean clickClosing() {

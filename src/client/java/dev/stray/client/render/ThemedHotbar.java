@@ -64,28 +64,34 @@ public final class ThemedHotbar {
 
 	private static void panels(GuiGraphicsExtractor graphics, DeltaTracker delta, Player player) {
 		Minecraft client = Minecraft.getInstance();
+		// Modern's greys, or the Stray look's near-black and hairlines; both mark with the accent.
+		boolean sig = Looks.signature();
+		int edge = sig ? dev.stray.client.ui.SignatureLook.LINE : dev.stray.client.ui.PanelLook.EDGE;
+		int slotFill = sig ? dev.stray.client.ui.SignatureLook.RAISED : dev.stray.client.ui.PanelLook.G2;
+		int picked = sig ? dev.stray.client.ui.SignatureLook.PICKED : dev.stray.client.ui.PanelLook.G3;
+		int accent = sig ? dev.stray.client.ui.SignatureLook.accent() : dev.stray.client.ui.PanelLook.accent();
 		float pad = 3f;
 		float w = 9 * PITCH - (PITCH - SLOT) + pad * 2f;
 		float h = SLOT + pad * 2f + 2f;
 		float x = Math.round(graphics.guiWidth() / 2f - w / 2f);
 		float y = graphics.guiHeight() - h - 1f;
-		dev.stray.client.ui.PanelLook.panel(graphics, x, y, w, h, 0xF01C1C1C);
+		hotbarPanel(graphics, x, y, w, h, sig);
 		float sel = picked(player);
 		for (int i = 0; i < 9; i++) {
-			GuiDraw.roundedFine(graphics, x + pad + i * PITCH, y + pad, SLOT, SLOT, 3f, dev.stray.client.ui.PanelLook.G2);
+			GuiDraw.roundedFine(graphics, x + pad + i * PITCH, y + pad, SLOT, SLOT, 3f, slotFill);
 		}
 		float sx = x + pad + sel * PITCH;
-		GuiDraw.roundedFine(graphics, sx, y + pad, SLOT, SLOT, 3f, dev.stray.client.ui.PanelLook.G3);
-		GuiDraw.hairline(graphics, sx, y + pad, SLOT, SLOT, 3f, dev.stray.client.ui.PanelLook.accent());
+		GuiDraw.roundedFine(graphics, sx, y + pad, SLOT, SLOT, 3f, picked);
+		GuiDraw.hairline(graphics, sx, y + pad, SLOT, SLOT, 3f, accent);
 		items(graphics, delta, player, x + pad + 1f, y + pad + 1f);
 		// XP: one thin accent line along the bottom, grey after your progress.
 		float lx = x + pad;
 		float lw = w - pad * 2f;
 		float ly = y + h - 2.5f;
 		float p = xp(player);
-		GuiDraw.fillSmooth(graphics, lx, ly, lw, 1f, dev.stray.client.ui.PanelLook.EDGE);
+		GuiDraw.fillSmooth(graphics, lx, ly, lw, 1f, edge);
 		if (p > 0f) {
-			GuiDraw.fillSmooth(graphics, lx, ly, lw * p, 1f, dev.stray.client.ui.PanelLook.accent());
+			GuiDraw.fillSmooth(graphics, lx, ly, lw * p, 1f, accent);
 		}
 		int level = level(player);
 		if (level > 0) {
@@ -94,9 +100,17 @@ public final class ThemedHotbar {
 			float lvx = Math.round(graphics.guiWidth() / 2f - tw / 2f);
 			float ty = y - 9f;
 			GuiDraw.text(graphics, client.font, text, lvx + 1f, ty + 1f, 0xFF000000, false);
-			GuiDraw.text(graphics, client.font, text, lvx, ty, dev.stray.client.ui.PanelLook.accent(), false);
+			GuiDraw.text(graphics, client.font, text, lvx, ty, accent, false);
 		}
-		offhand(graphics, delta, player, x, y, w, h, (ox, oy, os) -> dev.stray.client.ui.PanelLook.panel(graphics, ox, oy, os, os, 0xF01C1C1C));
+		offhand(graphics, delta, player, x, y, w, h, (ox, oy, os) -> hotbarPanel(graphics, ox, oy, os, os, sig));
+	}
+
+	private static void hotbarPanel(GuiGraphicsExtractor graphics, float x, float y, float w, float h, boolean sig) {
+		if (sig) {
+			dev.stray.client.ui.SignatureLook.panel(graphics, x, y, w, h, 0xF0000000);
+		} else {
+			dev.stray.client.ui.PanelLook.panel(graphics, x, y, w, h, 0xF01C1C1C);
+		}
 	}
 
 	// ------------------------------------------------------------------ uid?

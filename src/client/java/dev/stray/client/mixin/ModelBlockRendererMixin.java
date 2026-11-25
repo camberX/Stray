@@ -30,5 +30,6 @@ public class ModelBlockRendererMixin {
 	private void stray$tintRenderedBlock(BlockQuadOutput output, float x, float y, float z, BlockAndTintGetter level, BlockState state, BlockPos pos, BakedQuad quad, CallbackInfo ci) {
 		WorldTint.tintQuad(this.quadInstance);
 		FocusMode.paint(this.quadInstance, state);
+		dev.stray.client.visual.Monochrome.paint(this.quadInstance, state);
 	}
 }

@@ -35,6 +35,7 @@ public abstract class RenderPassMixin {
 		TopDownTerrainCut.bind();
 		FocusMode.bind();
 		WorldTint.bind();
+		dev.stray.client.visual.Monochrome.bind();
 		CustomFog.bind();
 		((RenderPass) (Object) this).setUniform("StrayBlock", StrayUniforms.upload());
 	}

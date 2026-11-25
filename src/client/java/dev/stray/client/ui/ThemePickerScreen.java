@@ -144,6 +144,7 @@ public final class ThemePickerScreen extends Screen {
 			case Looks.UID -> uidMenu(graphics, font, uw, uh);
 			case Looks.PANELS -> panelsMenu(graphics, font, uw, uh);
 			case Looks.WIN98 -> win98Menu(graphics, font, uw, uh);
+			case Looks.SIGNATURE -> signatureMenu(graphics, font, uw, uh);
 			default -> minecraftMenu(graphics, font, uw, uh);
 		}
 		graphics.pose().popMatrix();
@@ -194,6 +195,23 @@ public final class ThemePickerScreen extends Screen {
 			Win98.checkbox(graphics, 8, y + 1, 9f, on[i], true);
 			Win98.text(graphics, font, rows[i], 21, y + 2, Win98.TEXT);
 			y += 13;
+		}
+	}
+
+	/** Stray: near-black, a numbered category, rows with springy switches, the accent on what is on. */
+	private void signatureMenu(GuiGraphicsExtractor graphics, Font font, float w, float h) {
+		SignatureLook.panel(graphics, 0, 0, w, h, 0xFF000000);
+		GuiDraw.small(graphics, font, "03", 8, GuiDraw.middle(0, 20) + 1f, SignatureLook.accent());
+		GuiDraw.menu(graphics, font, "Dungeons", 22, GuiDraw.middle(0, 20), SignatureLook.TEXT);
+		GuiDraw.fillSmooth(graphics, 1, 20, w - 2, 1, SignatureLook.LINE);
+		String[] rows = {"Leap menu", "Terminal solver", "Dungeon map", "Secret waypoints"};
+		boolean[] on = {true, false, true, false};
+		float y = 21;
+		for (int i = 0; i < rows.length && y + 16 < h - 2; i++) {
+			GuiDraw.menu(graphics, font, rows[i], 8, GuiDraw.middle(y, 16), on[i] ? SignatureLook.TEXT : SignatureLook.SOFT);
+			SignatureLook.toggle(graphics, w - 26, y + 3, 18, 10, on[i] ? 1f : 0f);
+			GuiDraw.fillSmooth(graphics, 1, y + 16, w - 2, 1, SignatureLook.LINE);
+			y += 17;
 		}
 	}
 

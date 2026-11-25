@@ -47,6 +47,8 @@
 		"GameRendererAccessor",
 		"GlRenderPassMixin",
 		"GameRendererMixin",
+		"BakedSheetGlyphAccessor",
+		"FontGlyphInvoker",
 		"GuiAccessor",
 		"GuiMixin",
 		"LeapSilentMixin",

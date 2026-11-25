@@ -71,6 +71,13 @@ public final class ArrayListHud {
 				}
 				GuiDraw.fillSmooth(graphics, right - 2f, y, 2f, ROW_H, row.color);
 				GuiDraw.text(graphics, font, row.text, x + PAD - 1f, GuiDraw.middle(y, ROW_H), ShadowLook.TEXT, false);
+			} else if (dev.stray.client.ui.Looks.signature()) {
+				// Stray: near-black rows, every module marked with the one accent on the right.
+				if (background) {
+					GuiDraw.roundedFine(graphics, x, y, row.width, ROW_H, 2f, Theme.withAlpha(dev.stray.client.ui.SignatureLook.BG, 0xE0));
+				}
+				GuiDraw.fillSmooth(graphics, right - 1.5f, y + 2f, 1.5f, ROW_H - 4f, dev.stray.client.ui.SignatureLook.accent());
+				GuiDraw.text(graphics, font, row.text, x + PAD - 1f, GuiDraw.middle(y, ROW_H), dev.stray.client.ui.SignatureLook.TEXT, false);
 			} else if (dev.stray.client.ui.Looks.minecraft()) {
 				// Minecraft: chat-black rows, the game's font with its shadow, the module's colour on the right.
 				if (background) {

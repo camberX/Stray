@@ -18,6 +18,11 @@ public final class TitleBackdrop {
 			GuiDraw.fillGradient(graphics, 0, 0, width, height, 0xFF2A2A2A, 0xFF141414);
 			return;
 		}
+		if (dev.stray.client.ui.Looks.signature()) {
+			// Stray: the menu's near-black, a touch darker at the bottom.
+			GuiDraw.fillGradient(graphics, 0, 0, width, height, 0xFF0F0F0F, 0xFF090909);
+			return;
+		}
 		if (dev.stray.client.ui.Looks.panels()) {
 			// Modern: plain neutral greys, the accent as one thin line along the top.
 			GuiDraw.fillGradient(graphics, 0, 0, width, height, 0xFF181818, 0xFF0E0E0E);

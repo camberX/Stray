@@ -158,10 +158,10 @@ public final class FocusMode {
 			//?} else {
 			/*"in vec4 vertexColor;\nflat in vec4 strayTint;\nin vec4 strayLight;"*///?}
 		);
-		String withFn = StrayUniforms.insertBlock(withIns).replace("void main() {", FOCUS_FN + "void main() {");
+		String withFn = StrayUniforms.insertBlock(withIns).replace("void main() {", FOCUS_FN + dev.stray.client.visual.Monochrome.FN + "void main() {");
 		return withFn.replace(
 			"vec4 color = (UseRgss == 1 ? sampleRGSS(Sampler0, texCoord0, 1.0f / TextureSize) : sampleNearest(Sampler0, texCoord0, 1.0f / TextureSize)) * vertexColor;",
-			"vec4 strayTex = (UseRgss == 1 ? sampleRGSS(Sampler0, texCoord0, 1.0f / TextureSize) : sampleNearest(Sampler0, texCoord0, 1.0f / TextureSize));\n    vec4 color = u_StrayMisc.x > 0.5 ? strayFocus(strayTex, strayTint, strayLight) : strayTex * vertexColor;"
+			"vec4 strayTex = (UseRgss == 1 ? sampleRGSS(Sampler0, texCoord0, 1.0f / TextureSize) : sampleNearest(Sampler0, texCoord0, 1.0f / TextureSize));\n    vec4 color = u_StrayMisc.x > 0.5 ? strayFocus(strayTex, strayTint, strayLight) : strayTex * vertexColor;\n    if (u_StrayMono.a > 0.5 && u_StrayMisc.x < 0.5) {\n        color = strayMono(strayTex, strayTint, strayLight, color);\n    }"
 		);
 	}
 
@@ -204,10 +204,10 @@ public final class FocusMode {
 			: source.replace("in vec4 v_Color;", "in vec4 v_Color;\nlayout(location = 12) flat in vec4 strayTint;\nlayout(location = 13) in vec4 strayLight;");
 			//?} else {
 			/*: source.replace("in vec4 v_Color;", "in vec4 v_Color;\nflat in vec4 strayTint;\nin vec4 strayLight;");*///?}
-		String withFn = StrayUniforms.insertBlock(withIns).replace("void main() {", FOCUS_FN + "void main() {");
+		String withFn = StrayUniforms.insertBlock(withIns).replace("void main() {", FOCUS_FN + dev.stray.client.visual.Monochrome.FN + "void main() {");
 		return withFn.replace(
 			"color *= v_Color;",
-			"vec4 strayTex = color;\n    if (u_StrayMisc.x > 0.5) {\n        color = strayFocus(strayTex, strayTint, strayLight);\n    } else {\n        color *= v_Color;\n    }"
+			"vec4 strayTex = color;\n    if (u_StrayMisc.x > 0.5) {\n        color = strayFocus(strayTex, strayTint, strayLight);\n    } else {\n        color *= v_Color;\n    }\n    if (u_StrayMono.a > 0.5 && u_StrayMisc.x < 0.5) {\n        color = strayMono(strayTex, strayTint, strayLight, color);\n    }"
 		);
 	}
 

@@ -47,6 +47,7 @@ public abstract class GlRenderPassMixin {
 		TopDownTerrainCut.bind();
 		FocusMode.bind();
 		WorldTint.bind();
+		dev.stray.client.visual.Monochrome.bind();
 		CustomFog.bind();
 		GpuBufferSlice slice = null;
 		int count = Math.min(program.uniformCount(), uniforms.size());

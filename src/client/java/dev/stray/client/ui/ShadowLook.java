@@ -59,6 +59,16 @@ public final class ShadowLook {
 			SELECTED = 0x40FFFFFF;
 			SELECTED_LINE = MinecraftLook.WHITE;
 			FILL = MinecraftLook.BG;
+		} else if (Looks.signature()) {
+			TEXT = SignatureLook.TEXT;
+			MUTED = SignatureLook.MUTED;
+			FAINT = SignatureLook.FAINT;
+			LINE = SignatureLook.LINE;
+			CARD = SignatureLook.RAISED;
+			CARD_HOVER = SignatureLook.PICKED;
+			SELECTED = SignatureLook.PICKED;
+			SELECTED_LINE = SignatureLook.accent();
+			FILL = Theme.withAlpha(SignatureLook.BG, Math.round(StrayConfig.clamp(StrayConfig.get().hudOpacity, 0.2f, 1f) * 255f));
 		} else if (Looks.panels()) {
 			TEXT = PanelLook.WHITE;
 			MUTED = PanelLook.GREY;
@@ -108,6 +118,10 @@ public final class ShadowLook {
 		}
 		if (Looks.uid() && !UidMenu.drawing()) {
 			UidLook.frame(graphics, x, y, w, h, (fill >>> 24) & 0xFF);
+			return;
+		}
+		if (Looks.signature()) {
+			SignatureLook.panel(graphics, x, y, w, h, fill);
 			return;
 		}
 		if (Looks.panels()) {
@@ -280,6 +294,10 @@ public final class ShadowLook {
 		}
 		if (Looks.uid() && !UidMenu.drawing()) {
 			UidLook.control(graphics, x, y, w, h, hover, selected);
+			return;
+		}
+		if (Looks.signature()) {
+			SignatureLook.control(graphics, x, y, w, h, hover, selected);
 			return;
 		}
 		if (Looks.panels()) {

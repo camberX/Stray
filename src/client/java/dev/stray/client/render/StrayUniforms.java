@@ -11,7 +11,7 @@ import net.minecraft.client.renderer.DynamicGpuDataStorageMapped;
 /*import net.minecraft.client.renderer.DynamicUniformStorage;*///?}
 
 /**
- * Focus, world tint, fog density, and the top-down cut share one std140 block.
+ * Focus, world tint, fog density, the top-down cut and Monochrome share one std140 block.
  * Values go through the same per-frame mapped ring buffer vanilla uses for its
  * dynamic transforms, so writing works mid-pass on both OpenGL and Vulkan.
  */
@@ -23,11 +23,13 @@ public final class StrayUniforms {
 		    vec4 u_StrayCut;
 		    vec4 u_WorldTint;
 		    vec4 u_StrayMisc;
+		    vec4 u_StrayMono;
+		    vec4 u_StrayMono2;
 		};
 		#endif
 		""";
 
-	private static final int BLOCK_BYTES = 48;
+	private static final int BLOCK_BYTES = 80;
 	private static BindGroupLayout layout;
 	//? if >=26.3 {
 	private static DynamicGpuDataStorageMapped<Block> storage;
@@ -42,6 +44,12 @@ public final class StrayUniforms {
 	private static float tintStrength;
 	private static float focus;
 	private static float fog;
+	/** Monochrome: accent rgb and on; splash hue, width, on and contrast. */
+	private static Mono mono = new Mono(0f, 0f, 0f, 0f, 0f, 0f, 0f, 1f);
+
+	/** A record, not an array, so equal values dedupe within the frame like the rest. */
+	private record Mono(float r, float g, float b, float on, float hue, float width, float splash, float contrast) {
+	}
 
 	private StrayUniforms() {
 	}
@@ -49,7 +57,7 @@ public final class StrayUniforms {
 	private record Block(
 		float cutY, float cutRadius, float cutEnabled,
 		float tintRed, float tintGreen, float tintBlue, float tintStrength,
-		float focus, float fog
+		float focus, float fog, Mono mono
 	//? if >=26.3 {
 	) implements DynamicGpuDataStorage.DynamicGpuData {
 	//?} else {
@@ -69,6 +77,14 @@ public final class StrayUniforms {
 			buffer.putFloat(base + 36, fog);
 			buffer.putFloat(base + 40, 0f);
 			buffer.putFloat(base + 44, 0f);
+			buffer.putFloat(base + 48, mono.r());
+			buffer.putFloat(base + 52, mono.g());
+			buffer.putFloat(base + 56, mono.b());
+			buffer.putFloat(base + 60, mono.on());
+			buffer.putFloat(base + 64, mono.hue());
+			buffer.putFloat(base + 68, mono.width());
+			buffer.putFloat(base + 72, mono.splash());
+			buffer.putFloat(base + 76, mono.contrast());
 		}
 	}
 
@@ -127,6 +143,10 @@ public final class StrayUniforms {
 		fog = enabled;
 	}
 
+	public static void monochrome(float r, float g, float b, float on, float hue, float width, float splash, float contrast) {
+		mono = new Mono(r, g, b, on, hue, width, splash, contrast);
+	}
+
 	/** Writes the current values (deduplicated within the frame) and returns their slice. */
 	public static GpuBufferSlice upload() {
 		if (storage == null) {
@@ -136,9 +156,9 @@ public final class StrayUniforms {
 			/*storage = new DynamicUniformStorage<>("Stray block UBO", BLOCK_BYTES, 64);*///?}
 		}
 		//? if >=26.3 {
-		return storage.writeData(new Block(cutY, cutRadius, cutEnabled, tintRed, tintGreen, tintBlue, tintStrength, focus, fog));
+		return storage.writeData(new Block(cutY, cutRadius, cutEnabled, tintRed, tintGreen, tintBlue, tintStrength, focus, fog, mono));
 		//?} else {
-		/*return storage.writeUniform(new Block(cutY, cutRadius, cutEnabled, tintRed, tintGreen, tintBlue, tintStrength, focus, fog));*///?}
+		/*return storage.writeUniform(new Block(cutY, cutRadius, cutEnabled, tintRed, tintGreen, tintBlue, tintStrength, focus, fog, mono));*///?}
 	}
 
 	/** Called once per frame together with vanilla's dynamic uniforms. */

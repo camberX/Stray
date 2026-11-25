@@ -1323,6 +1323,10 @@ public final class GuiDraw {
 	}
 
 	public static float middle(float y, float height) {
+		if (dev.stray.client.ui.SignatureMenu.drawing()) {
+			// The Stray menu centres its font's real capitals, not a 9-tall vanilla line.
+			return TextMetrics.centered(Minecraft.getInstance().font, MenuFont.shadow("H"), y, height);
+		}
 		return y + (height - 9.0f) * 0.5f;
 	}
 
