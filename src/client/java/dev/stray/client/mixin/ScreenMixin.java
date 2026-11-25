@@ -25,6 +25,14 @@ public abstract class ScreenMixin {
 		// A terminal we draw ourselves: skip the whole vanilla chest (background, themed
 		// chest, slots, title), not just its contents, so nothing shows behind our window.
 		Screen self = (Screen) (Object) this;
+		// The leap menu: the same, so the themed chest (its panel and empty slots) and the
+		// vanilla dim don't show behind the cards. The leap menu draws its own background.
+		if (dev.stray.client.dungeon.LeapMenu.isLeapMenu(self)) {
+			dev.stray.client.dungeon.LeapMenu.updateLeapMenu();
+			dev.stray.client.dungeon.LeapMenuView.render(graphics, self.width, self.height);
+			ci.cancel();
+			return;
+		}
 		if (!dev.stray.Edition.LEGIT && dev.stray.client.dungeon.terminal.TerminalSession.handles(self)) {
 			dev.stray.client.dungeon.terminal.TerminalSession.render(graphics, self.width, self.height, mouseX, mouseY);
 			ci.cancel();
