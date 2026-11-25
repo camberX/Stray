@@ -15,6 +15,18 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.6.6", new String[]{
+			"Leap: swaps to the leap and uses it in the same tick, clicks the head the moment the menu loads, and uses a leap menu you opened yourself. Never two slot changes in one tick.",
+			"Double leaps: alternates Spirit Leap and InfiniLeap with their own cooldowns, like quoi. Fast leap no longer waits 250 ms between clicks.",
+			"Auto/Fast leap: every dungeon class keeps its own leap profile, loaded by itself from the tab list.",
+			"Hand-only view bobbing: the hand bobs, the screen stays still.",
+			"Run splits: Blade Addons' design.",
+			"M4 Features: one module for the Thorn fight. Item name, boss bar, effects, pickup log and skill progress were removed.",
+			"Customize: worn armor shows the armor of the item id you picked.",
+			"Saves can no longer be wiped by a crash; a file that can't be read is kept as .bad.",
+			"No more freezes from the launch update check or the media buttons; motion blur frees its video memory when turned off; fewer texture leaks.",
+			"Fixes: the updater only deletes Stray's own jars, Stray Legit slayer boxes don't show through walls, casino colours, and a launch crash with a config copied from another OS."
+		}),
 		new Entry("1.6.5", new String[]{
 			"Themes are now Minecraft (chat-black panels, the game's own font and widgets), Modern (grey panels with every category side by side, right click for settings), Skeet and Windows 98. Shadow and Expressive were removed; a config that used them opens as Minecraft.",
 			"Windows 98 is back: the Win98 click GUI with its Start menu and dark mode, and a matching HUD with bevelled panels, a taskbar watermark and a Start-menu array list.",
