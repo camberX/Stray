@@ -30,15 +30,15 @@ void main() {
         // A band of whole pixels, soft on both edges.
         mask = clamp((1.0 - d) / fw + 0.5, 0.0, 1.0) - clamp((1.0 - band * fw - d) / fw + 0.5, 0.0, 1.0);
     } else if (ring) {
-        // Measured in whole pixel steps (the larger of the x and y change), a 1px ring lights one
-        // pixel per row or column on the curve, like the straight sides, instead of a two-pixel
-        // smear where it runs diagonally.
-        vec2 g = abs(vec2(dFdx(d), dFdy(d)));
-        float px = max(max(g.x, g.y), 1e-5);
-        // A touch thinner where it runs diagonally, which still reads heavier than the sides.
-        float diag = min(g.x, g.y) / px;
-        float w = px * (1.0 - 0.6 * diag);
-        mask = clamp((1.0 - d) / px + 0.5, 0.0, 1.0) - clamp((1.0 - w - d) / px + 0.5, 0.0, 1.0);
+        // Exactly one screen pixel wide measured across the line, everywhere: fw is how far d
+        // moves per pixel along the curve's normal, so the band is one pixel thick on the
+        // straight sides and on the curve alike, with the same total ink per pixel of length.
+        // (The old version measured along x or y and thinned the diagonals on purpose, so the
+        // corners came out lighter than the sides they join.)
+        mask = clamp((1.0 - d) / fw + 0.5, 0.0, 1.0) - clamp((1.0 - fw - d) / fw + 0.5, 0.0, 1.0);
+        // A curve spreads its pixel over two half-covered ones; blended in sRGB those read
+        // lighter than one full pixel. Lift partial coverage so the curve weighs the same.
+        mask = pow(mask, 0.8);
     } else {
         mask = clamp((1.0 - d) / fw + 0.5, 0.0, 1.0);
     }
