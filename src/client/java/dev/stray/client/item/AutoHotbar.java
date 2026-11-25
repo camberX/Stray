@@ -140,8 +140,7 @@ public final class AutoHotbar {
 			return;
 		}
 		try {
-			Files.createDirectories(file().getParent());
-			Files.writeString(file(), GSON.toJson(setup));
+			dev.stray.client.util.SafeFiles.write(file(), GSON.toJson(setup));
 		} catch (IOException exception) {
 			Stray.LOGGER.warn("Could not save the auto hotbar setup", exception);
 		}

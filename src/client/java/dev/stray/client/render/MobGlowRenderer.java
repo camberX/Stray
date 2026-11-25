@@ -52,6 +52,8 @@ public final class MobGlowRenderer {
 	private static volatile Set<Integer> nameIds = Set.of();
 	private static final Map<UUID, String> remembered = new ConcurrentHashMap<>();
 	private static final Map<Integer, String> packetLabels = new ConcurrentHashMap<>();
+	/** Each entity's own name from its packets, without its passengers' (the base of a merged label). */
+	private static final Map<Integer, String> ownLabels = new ConcurrentHashMap<>();
 	private static int needleTick = Integer.MIN_VALUE;
 	private static List<String> cachedNeedles = List.of();
 	private static String cachedNeedleKey = "";
@@ -82,6 +84,7 @@ public final class MobGlowRenderer {
 			COLOR_CACHE.clear();
 			remembered.clear();
 			packetLabels.clear();
+			ownLabels.clear();
 			EspMobPrint.clear();
 		}
 	}
@@ -91,6 +94,7 @@ public final class MobGlowRenderer {
 			return;
 		}
 		packetLabels.put(entityId, label.toLowerCase(Locale.ROOT));
+		ownLabels.put(entityId, label.toLowerCase(Locale.ROOT));
 		nameTick = Integer.MIN_VALUE;
 		Minecraft client = Minecraft.getInstance();
 		if (client.level == null || client.player == null) {
@@ -112,7 +116,9 @@ public final class MobGlowRenderer {
 		if (vehicle == null || isHologram(vehicle)) {
 			return;
 		}
-		String combined = packetLabels.getOrDefault(vehicleId, "");
+		// The packet lists all current passengers: start from the vehicle's own name, not the last
+		// merged label, so old passengers drop out and repeat packets don't grow the label.
+		String combined = ownLabels.getOrDefault(vehicleId, "");
 		if (passengerIds != null) {
 			for (int id : passengerIds) {
 				String extra = packetLabels.getOrDefault(id, "");
@@ -120,9 +126,7 @@ public final class MobGlowRenderer {
 				if (extra.isEmpty() && passenger != null) {
 					extra = labelOf(passenger);
 				}
-				if (!extra.isEmpty()) {
-					combined = combined.isEmpty() ? extra : combined + " " + extra;
-				}
+				combined = joinLabels(combined, extra);
 			}
 		}
 		if (!combined.isEmpty()) {
@@ -138,6 +142,7 @@ public final class MobGlowRenderer {
 		}
 		for (int i = 0; i < ids.size(); i++) {
 			packetLabels.remove(ids.getInt(i));
+			ownLabels.remove(ids.getInt(i));
 		}
 	}
 

@@ -673,7 +673,11 @@ public final class SlayerWorld {
 				}
 				AABB box = fill.entity.getBoundingBox().move(fill.entity.getPosition(partial).subtract(fill.entity.position())).inflate(0.05);
 				int edge = 0xFF000000 | fill.rgb;
-				net.minecraft.gizmos.Gizmos.cuboid(box, net.minecraft.gizmos.GizmoStyle.strokeAndFill(edge, 2.0f, (alpha << 24) | fill.rgb)).setAlwaysOnTop();
+				var gizmo = net.minecraft.gizmos.Gizmos.cuboid(box, net.minecraft.gizmos.GizmoStyle.strokeAndFill(edge, 2.0f, (alpha << 24) | fill.rgb));
+				// Stray Legit has no through-walls ESP.
+				if (!dev.stray.Edition.LEGIT) {
+					gizmo.setAlwaysOnTop();
+				}
 			}
 		}
 		Vec3 camera = client.gameRenderer.mainCamera().position();
@@ -694,7 +698,10 @@ public final class SlayerWorld {
 			} else {
 				to = line.fixed;
 			}
-			Gizmos.line(from, to, 0xFF000000 | line.rgb, width).setAlwaysOnTop();
+			var gizmo = Gizmos.line(from, to, 0xFF000000 | line.rgb, width);
+			if (!dev.stray.Edition.LEGIT) {
+				gizmo.setAlwaysOnTop();
+			}
 		}
 	}
 

@@ -89,10 +89,7 @@ public final class FairySoulProgress {
 		}
 		json.add("found", found);
 		try {
-			Files.createDirectories(PATH.getParent());
-			try (Writer writer = Files.newBufferedWriter(PATH)) {
-				GSON.toJson(json, writer);
-			}
+			dev.stray.client.util.SafeFiles.write(PATH, GSON.toJson(json));
 		} catch (Exception ignored) {
 		}
 	}

@@ -1,6 +1,7 @@
 # Stray Legit: classes left out of the legit jar (Ant patterns, applied to tasks.jar).
 # Everything that references them is behind `if (!Edition.LEGIT)`, so the legit build
-# compiles without those references; check-legit.py verifies that.
+# compiles without those references. Nothing checks this automatically: build with
+# -PstrayEdition=legit after touching these classes.
 
 # Automation: auto clicker, experiments, book combine, DNA, lasso reel's click lives in LassoReel
 dev/stray/client/combat/AutoClicker*.class

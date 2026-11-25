@@ -163,14 +163,6 @@ public final class MenuChrome {
 		}
 	}
 
-	public static void listPanel(GuiGraphicsExtractor graphics, int x, int y, int w, int h) {
-		if (Looks.panels()) {
-			PanelLook.panel(graphics, x, y, w, h, 0xF51C1C1C);
-			return;
-		}
-		UidLook.frame(graphics, x, y, w, h, 0xE0);
-	}
-
 	public static void listSeparators(GuiGraphicsExtractor graphics, int x, int y, int w, int bottom) {
 		// None in any look: lists sit in their panel.
 	}

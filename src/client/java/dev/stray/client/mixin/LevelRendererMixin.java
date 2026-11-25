@@ -70,6 +70,7 @@ public class LevelRendererMixin {
 		double cz = cameraState.pos.z();
 		if (!blurActive) {
 			MotionBlurShaders.clearFrameAllocator();
+			MotionBlurShaders.releaseIfInactive();
 			stray$rememberFrame(modelViewMatrix, cameraState.projectionMatrix, cx, cy, cz);
 			return;
 		}

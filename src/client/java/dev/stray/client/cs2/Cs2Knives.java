@@ -334,12 +334,10 @@ public final class Cs2Knives {
 		if (stack == null || stack.isEmpty()) {
 			return null;
 		}
-		var data = stack.get(net.minecraft.core.component.DataComponents.CUSTOM_DATA);
-		if (data != null && !data.isEmpty()) {
-			String id = data.copyTag().getStringOr("id", "");
-			if (!id.isEmpty()) {
-				return "sb:" + id;
-			}
+		// Cached per stack (no NBT copy): this runs every frame.
+		String id = dev.stray.client.item.ItemIds.skyblockId(stack);
+		if (id != null && !id.isEmpty()) {
+			return "sb:" + id;
 		}
 		return BuiltInRegistries.ITEM.getKey(stack.getItem()).toString();
 	}
@@ -472,17 +470,6 @@ public final class Cs2Knives {
 			BUILDING.put(k, CompletableFuture.supplyAsync(() -> build(k, s.knife, s.finish == null ? "" : s.finish, s.seed, s.wear), WORKER));
 		}
 		status = CACHE.containsKey(key) ? "" : "Building knife...";
-	}
-
-	/** Reopens the install (after changing the path). */
-	public static void reload() {
-		library = null;
-		libraryPath = null;
-		current = null;
-		pending = null;
-		loadingKey = null;
-		BUILDING.clear();
-		CACHE.clear();
 	}
 
 	private static void ensureLibrary() {

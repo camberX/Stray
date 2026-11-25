@@ -71,31 +71,38 @@ public final class MediaChat {
 
 	public static int toggle() {
 		NowPlaying before = MediaSession.current();
-		boolean ok = MediaSession.playPause();
-		if (!ok) {
-			Chat.tell(Component.literal("Could not reach the media player.").withStyle(style(Theme.DANGER)));
-			return 0;
-		}
-		boolean playing = before.present() && !before.playing();
-		MutableComponent line = brand()
-			.append(sep())
-			.append(Component.literal(playing ? "PLAYING" : "PAUSED").withStyle(style(playing ? Theme.ACCENT : Theme.MUTED).withBold(true)));
-		if (before.present()) {
-			line.append(Component.literal("  " + before.title()).withStyle(style(Theme.TEXT)));
-		}
-		Chat.tell(line);
+		MediaSession.playPause(ok -> {
+			if (!ok) {
+				Chat.tell(Component.literal("Could not reach the media player.").withStyle(style(Theme.DANGER)));
+				return;
+			}
+			boolean playing = before.present() && !before.playing();
+			MutableComponent line = brand()
+				.append(sep())
+				.append(Component.literal(playing ? "PLAYING" : "PAUSED").withStyle(style(playing ? Theme.ACCENT : Theme.MUTED).withBold(true)));
+			if (before.present()) {
+				line.append(Component.literal("  " + before.title()).withStyle(style(Theme.TEXT)));
+			}
+			Chat.tell(line);
+		});
 		return 1;
 	}
 
 	public static int skip(boolean next) {
-		boolean ok = next ? MediaSession.next() : MediaSession.previous();
-		if (!ok) {
-			Chat.tell(Component.literal("Could not skip.").withStyle(style(Theme.DANGER)));
-			return 0;
+		java.util.function.Consumer<Boolean> done = ok -> {
+			if (!ok) {
+				Chat.tell(Component.literal("Could not skip.").withStyle(style(Theme.DANGER)));
+				return;
+			}
+			Chat.tell(brand()
+				.append(sep())
+				.append(Component.literal(next ? "NEXT TRACK" : "PREVIOUS TRACK").withStyle(style(Theme.ACCENT).withBold(true))));
+		};
+		if (next) {
+			MediaSession.next(done);
+		} else {
+			MediaSession.previous(done);
 		}
-		Chat.tell(brand()
-			.append(sep())
-			.append(Component.literal(next ? "NEXT TRACK" : "PREVIOUS TRACK").withStyle(style(Theme.ACCENT).withBold(true))));
 		return 1;
 	}
 

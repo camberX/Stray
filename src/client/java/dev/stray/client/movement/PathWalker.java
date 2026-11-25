@@ -68,6 +68,9 @@ public final class PathWalker {
 		return walking;
 	}
 
+	/** The world the walk started in. */
+	private static net.minecraft.world.level.Level walkLevel;
+
 	public static void go(double x, double y, double z) {
 		Minecraft client = Minecraft.getInstance();
 		LocalPlayer player = client.player;
@@ -81,6 +84,7 @@ public final class PathWalker {
 		}
 		goal = target;
 		walking = true;
+		walkLevel = client.level;
 		ticks = 0;
 		replans = 0;
 		stuckTicks = 0;
@@ -115,7 +119,8 @@ public final class PathWalker {
 			return;
 		}
 		LocalPlayer player = client.player;
-		if (player == null || client.level == null) {
+		if (player == null || client.level == null || client.level != walkLevel) {
+			// No world, or a new one (/warp, server switch): the target was in the old world.
 			stop(false);
 			return;
 		}

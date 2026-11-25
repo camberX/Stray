@@ -5,7 +5,6 @@ import dev.stray.client.ui.Theme;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 
 public final class HudChrome {
-	private static final float STROKE = 0.5f;
 
 	private static boolean hudPass;
 	/** This draw skips accent strokes. Inventory HUD minimal uses it. */
@@ -64,10 +63,6 @@ public final class HudChrome {
 			return 0xFF000000;
 		}
 		return StrayConfig.get().accentOutlines ? Theme.ACCENT : 0xFF000000;
-	}
-
-	private static int line() {
-		return neutralOutline ? Theme.HUD_LINE_NEUTRAL : Theme.HUD_LINE;
 	}
 
 	public static void panel(

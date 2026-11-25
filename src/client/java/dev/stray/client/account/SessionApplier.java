@@ -62,6 +62,8 @@ public final class SessionApplier {
 		access.stray$services(next);
 		access.stray$userApiService(userApi);
 		access.stray$profileKeys(keys);
+		// The stray.gay login belongs to the old account: log in again as the new one.
+		dev.stray.client.casino.CasinoApi.dropToken();
 	}
 
 	public static Snapshot snapshot(Minecraft client) {
@@ -86,6 +88,7 @@ public final class SessionApplier {
 			access.stray$userApiService(snapshot.userApi);
 		}
 		access.stray$profileKeys(snapshot.keys == null ? ProfileKeyPairManager.EMPTY_KEY_MANAGER : snapshot.keys);
+		dev.stray.client.casino.CasinoApi.dropToken();
 	}
 
 	private static UserApiService userApi(Minecraft client) {

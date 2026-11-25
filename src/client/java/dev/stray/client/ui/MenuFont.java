@@ -397,29 +397,14 @@ public final class MenuFont {
 	private static final float LINE = 9.0f;
 	private static final float GLYPH = 8.0f;
 
-	public static float bodyScale() {
-		return minecraft() ? MC_BODY : 1.0f;
-	}
-
 	public static float smallScale() {
 		return minecraft() ? MC_SMALL : 1.0f;
-	}
-
-	public static float titleScale() {
-		return minecraft() ? MC_TITLE : 1.0f;
 	}
 
 	/** Nunito uses a -1 nudge; scaled vanilla is centered in the 9px line box. */
 	public static float menuY(float y, float scale) {
 		if (!minecraft()) {
 			return y - 1.0f;
-		}
-		return y + (LINE - GLYPH * scale) * 0.5f;
-	}
-
-	public static float hudY(float y, float scale) {
-		if (!minecraft()) {
-			return y;
 		}
 		return y + (LINE - GLYPH * scale) * 0.5f;
 	}

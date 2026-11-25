@@ -376,6 +376,7 @@ public final class LeapRunner {
 				// number key and a right click in one tick do (vanilla handles the hotbar keys
 				// first, and useItem sends the new slot before the use), like quoi.
 				player.getInventory().setSelectedSlot(slot);
+				dev.stray.client.net.SlotGuard.markSwapped();
 				step = Step.USE;
 				use(client, player);
 			}
@@ -392,6 +393,7 @@ public final class LeapRunner {
 				}
 				if (previousSlot >= 0 && previousSlot < 9) {
 					player.getInventory().setSelectedSlot(previousSlot);
+					dev.stray.client.net.SlotGuard.markSwapped();
 				}
 				finish();
 			}

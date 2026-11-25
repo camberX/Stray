@@ -63,7 +63,8 @@ public final class IslandSaves {
 			JsonObject islands = root.getAsJsonObject("islands");
 			return islands == null ? new JsonObject() : islands;
 		} catch (Exception exception) {
-			Stray.LOGGER.warn("Could not read {}", file.getFileName(), exception);
+			Stray.LOGGER.warn("Could not read {} (the old file is kept as .bad)", file.getFileName(), exception);
+			dev.stray.client.util.SafeFiles.keepBroken(file);
 			return new JsonObject();
 		}
 	}
@@ -72,10 +73,7 @@ public final class IslandSaves {
 		JsonObject root = new JsonObject();
 		root.add("islands", islands);
 		try {
-			Files.createDirectories(file.getParent());
-			try (Writer writer = Files.newBufferedWriter(file)) {
-				GSON.toJson(root, writer);
-			}
+			dev.stray.client.util.SafeFiles.write(file, GSON.toJson(root));
 			return true;
 		} catch (IOException exception) {
 			Stray.LOGGER.warn("Could not write {}", file.getFileName(), exception);

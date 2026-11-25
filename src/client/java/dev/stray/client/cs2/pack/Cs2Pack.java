@@ -79,7 +79,12 @@ public final class Cs2Pack implements AutoCloseable {
 			byte[] out = new byte[e.raw()];
 			int n = 0;
 			while (n < out.length && !inflater.finished()) {
-				n += inflater.inflate(out, n, out.length - n);
+				int got = inflater.inflate(out, n, out.length - n);
+				if (got == 0 && (inflater.needsInput() || inflater.needsDictionary())) {
+					// Truncated or damaged entry: fail instead of looping forever.
+					throw new IOException("cs2.pack entry is damaged");
+				}
+				n += got;
 			}
 			return out;
 		} catch (DataFormatException ex) {

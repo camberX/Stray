@@ -11,14 +11,15 @@ import net.minecraft.world.item.Items;
 
 /**
  * Hypixel chest menus pad empty cells with black stained glass. Skip drawing
- * those items so the themed well (or vanilla slot) shows through.
+ * those items so the themed well shows through. Part of Themed GUIs.
  */
 public final class ChestFillers {
 	private ChestFillers() {
 	}
 
+	/** Only with Themed GUIs on (off by default): with them off, chests look like vanilla. */
 	public static boolean hide(Slot slot) {
-		if (slot == null || slot.container instanceof Inventory) {
+		if (!ContainerChrome.enabled() || slot == null || slot.container instanceof Inventory) {
 			return false;
 		}
 		Minecraft client = Minecraft.getInstance();

@@ -50,7 +50,9 @@ public final class ShopSkin {
 			return;
 		}
 		if (hash == null || hash.isBlank()) {
-			SKINS.remove(uuid);
+			if (SKINS.remove(uuid) != null) {
+				Minecraft.getInstance().execute(() -> Minecraft.getInstance().getTextureManager().release(textureId(uuid)));
+			}
 			return;
 		}
 		Entry entry = SKINS.computeIfAbsent(uuid, id -> new Entry());
@@ -141,8 +143,8 @@ public final class ShopSkin {
 				return;
 			}
 			try {
-				String safe = hash.replaceAll("[^a-z0-9_]", "");
-				Identifier id = Stray.id("shop_skin/" + uuid.toString().replace("-", "") + "_" + (safe.isEmpty() ? "x" : safe));
+				// One id per player: registering again frees the previous skin's texture.
+				Identifier id = textureId(uuid);
 				Minecraft.getInstance().getTextureManager().register(id, new DynamicTexture(() -> "stray-shop-skin-" + uuid, ready));
 				entry.asset = new ClientAsset.ResourceTexture(id, id);
 			} catch (Exception exception) {
@@ -150,5 +152,9 @@ public final class ShopSkin {
 			}
 			entry.loading = false;
 		});
+	}
+
+	private static Identifier textureId(UUID uuid) {
+		return Stray.id("shop_skin/" + uuid.toString().replace("-", ""));
 	}
 }

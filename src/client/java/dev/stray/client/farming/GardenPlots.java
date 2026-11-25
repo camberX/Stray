@@ -107,10 +107,7 @@ public final class GardenPlots {
 			array.add(object);
 		}
 		try {
-			Files.createDirectories(PATH.getParent());
-			try (Writer writer = Files.newBufferedWriter(PATH)) {
-				GSON.toJson(array, writer);
-			}
+			dev.stray.client.util.SafeFiles.write(PATH, GSON.toJson(array));
 		} catch (IOException exception) {
 			Stray.LOGGER.warn("Could not write stray-garden-plots.json", exception);
 		}

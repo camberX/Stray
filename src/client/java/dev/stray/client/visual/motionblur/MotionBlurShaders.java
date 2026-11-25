@@ -60,7 +60,22 @@ public final class MotionBlurShaders {
 		frameAllocator = null;
 	}
 
+	/** Whether the blur's frame targets may be allocated (it ran since the last release). */
+	private static boolean holdingTargets;
+
+	/**
+	 * A frame with motion blur off: frees its history and accumulation targets once (up to 26
+	 * full-screen targets), instead of keeping them until disconnect. Render thread.
+	 */
+	public static void releaseIfInactive() {
+		if (holdingTargets) {
+			holdingTargets = false;
+			invalidate();
+		}
+	}
+
 	public static void beginFrame() {
+		holdingTargets = true;
 		FRAME_TIMER.beginFrame();
 		deferredTemporalApplied = false;
 	}

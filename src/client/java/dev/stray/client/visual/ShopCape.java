@@ -274,6 +274,7 @@ public final class ShopCape {
 						return;
 					}
 					SLOTS.remove(uuid);
+					Minecraft.getInstance().getTextureManager().release(textureId(uuid));
 					publishStatus = "Shop cape removed.";
 				});
 			} catch (Exception exception) {
@@ -383,10 +384,10 @@ public final class ShopCape {
 			failKeep(slot);
 			return;
 		}
-		String safeHash = hash == null || hash.isBlank() ? Long.toHexString(System.currentTimeMillis()) : hash;
 		Minecraft.getInstance().execute(() -> {
 			try {
-				Identifier id = Stray.id("shop_cape/" + uuid.toString().replace("-", "") + "_" + safeHash);
+				// One id per player: registering again frees the previous cape's texture.
+				Identifier id = textureId(uuid);
 				DynamicTexture texture = new DynamicTexture(() -> "stray-shop-cape-" + uuid, atlas);
 				Minecraft.getInstance().getTextureManager().register(id, texture);
 				slot.asset = new ClientAsset.ResourceTexture(id, id);
@@ -506,6 +507,10 @@ public final class ShopCape {
 
 	private enum Kind {
 		LOADING, READY, MISS
+	}
+
+	private static Identifier textureId(UUID uuid) {
+		return Stray.id("shop_cape/" + uuid.toString().replace("-", ""));
 	}
 
 	private static final class Slot {

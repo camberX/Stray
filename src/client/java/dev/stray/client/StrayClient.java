@@ -197,8 +197,16 @@ public final class StrayClient implements ClientModInitializer {
 		if (!dev.stray.Edition.LEGIT) {
 			AccountStore.load();
 		}
-		String newer = AutoUpdate.clientLaunchCheck(StrayConfig.get().autoUpdate, StrayConfig.get().updateNotify);
-		UpdateNotifier.announce(newer);
+		// Off the main thread: a slow or down stray.gay must not hold the loading screen (up to 18 s,
+		// longer for a download). The result is announced on the client thread.
+		boolean autoUpdate = StrayConfig.get().autoUpdate;
+		boolean updateNotify = StrayConfig.get().updateNotify;
+		Thread updateCheck = new Thread(() -> {
+			String newer = AutoUpdate.clientLaunchCheck(autoUpdate, updateNotify);
+			Minecraft.getInstance().execute(() -> UpdateNotifier.announce(newer));
+		}, "stray-update-check");
+		updateCheck.setDaemon(true);
+		updateCheck.start();
 		Theme.refresh();
 		SkyblockItems.load();
 		SkyblockRecipes.load();

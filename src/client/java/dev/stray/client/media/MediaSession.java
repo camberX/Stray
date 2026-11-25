@@ -39,16 +39,42 @@ public final class MediaSession {
 		return hint;
 	}
 
-	public static boolean playPause() {
-		return control("toggle");
+	/**
+	 * Media buttons run on their own thread: they can wait on a companion app's HTTP server or on
+	 * playerctl, which would freeze the game for up to ~1.6 s on the render thread. {@code done}
+	 * (may be null) gets whether it worked, back on the client thread.
+	 */
+	private static final java.util.concurrent.ExecutorService CONTROL = java.util.concurrent.Executors.newSingleThreadExecutor(runnable -> {
+		Thread thread = new Thread(runnable, "stray-media-control");
+		thread.setDaemon(true);
+		return thread;
+	});
+
+	public static void playPause(java.util.function.Consumer<Boolean> done) {
+		controlAsync("toggle", done);
 	}
 
-	public static boolean next() {
-		return control("next");
+	public static void next(java.util.function.Consumer<Boolean> done) {
+		controlAsync("next", done);
 	}
 
-	public static boolean previous() {
-		return control("prev");
+	public static void previous(java.util.function.Consumer<Boolean> done) {
+		controlAsync("prev", done);
+	}
+
+	private static void controlAsync(String action, java.util.function.Consumer<Boolean> done) {
+		CONTROL.execute(() -> {
+			boolean ok;
+			try {
+				ok = control(action);
+			} catch (Exception exception) {
+				ok = false;
+			}
+			if (done != null) {
+				boolean result = ok;
+				Minecraft.getInstance().execute(() -> done.accept(result));
+			}
+		});
 	}
 
 	private static boolean control(String action) {

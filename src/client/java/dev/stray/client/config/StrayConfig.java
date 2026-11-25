@@ -1974,7 +1974,8 @@ public final class StrayConfig {
 				}
 			}
 		} catch (Exception exception) {
-			Stray.LOGGER.warn("Could not read stray.json, using defaults", exception);
+			Stray.LOGGER.warn("Could not read stray.json, using defaults (the old file is kept as stray.json.bad)", exception);
+			dev.stray.client.util.SafeFiles.keepBroken(path);
 			instance = new StrayConfig();
 		}
 		instance.applyEdition();
@@ -2060,10 +2061,7 @@ public final class StrayConfig {
 				starVisuals.clamp();
 			}
 			syncLegacyVisuals();
-			Files.createDirectories(PATH.getParent());
-			try (Writer writer = Files.newBufferedWriter(PATH)) {
-				GSON.toJson(this, writer);
-			}
+			dev.stray.client.util.SafeFiles.write(PATH, GSON.toJson(this));
 		} catch (IOException exception) {
 			Stray.LOGGER.warn("Could not write stray.json", exception);
 		}
@@ -2143,10 +2141,6 @@ public final class StrayConfig {
 
 	public void setMusicLayout(String layout) {
 		musicHudLayout = normalizeMusicLayout(layout);
-	}
-
-	public void cycleMusicLayout() {
-		musicHudLayout = MUSIC_LAYOUTS[(musicLayoutIndex() + 1) % MUSIC_LAYOUTS.length];
 	}
 
 	public void cycleRouteMinerGem() {
@@ -2237,11 +2231,6 @@ public final class StrayConfig {
 		return !"vanilla".equalsIgnoreCase(nametagStyle);
 	}
 
-	public void cycleGuiDesign() {
-		guiDesign = "control";
-		Theme.refresh();
-	}
-
 	public String guiDesignLabel() {
 		return "Control";
 	}
@@ -2270,20 +2259,12 @@ public final class StrayConfig {
 		return healthBarRight() ? "Right" : "Left";
 	}
 
-	public void cycleHealthBarSide() {
-		healthBarSide = healthBarRight() ? "left" : "right";
-	}
-
 	public boolean healthBarCsgo() {
 		return "csgo".equalsIgnoreCase(healthBarStyle);
 	}
 
 	public String healthBarStyleLabel() {
 		return healthBarCsgo() ? "CS:GO" : "Stray";
-	}
-
-	public void cycleHealthBarStyle() {
-		healthBarStyle = healthBarCsgo() ? "stray" : "csgo";
 	}
 
 
@@ -2426,10 +2407,6 @@ public final class StrayConfig {
 		return shaderStyleIndex(heldItemShaderStyle);
 	}
 
-	public void cyclePlayerFillStyle() {
-		playerFillStyle = nextShaderStyle(playerFillStyle);
-	}
-
 	public String playerFillStyleLabel() {
 		return shaderStyleLabel(playerFillStyle);
 	}
@@ -2487,15 +2464,6 @@ public final class StrayConfig {
 
 	public static String normalizeNametagStyle(String style) {
 		return "vanilla".equalsIgnoreCase(style) ? "vanilla" : "custom";
-	}
-
-	public void cycleInventoryHudAnchor() {
-		inventoryHudAnchor = switch (inventoryHudAnchor) {
-			case "top_left" -> "top_right";
-			case "top_right" -> "bottom_right";
-			case "bottom_right" -> "bottom_left";
-			default -> "top_left";
-		};
 	}
 
 	public String inventoryHudAnchorLabel() {

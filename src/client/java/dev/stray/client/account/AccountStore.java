@@ -97,7 +97,8 @@ public final class AccountStore {
 			}
 			return true;
 		} catch (Exception exception) {
-			Stray.LOGGER.warn("Could not read accounts.json ({})", path, exception);
+			Stray.LOGGER.warn("Could not read accounts.json ({}), kept as .bad", path, exception);
+			dev.stray.client.util.SafeFiles.keepBroken(path);
 			return false;
 		}
 	}
@@ -641,10 +642,8 @@ public final class AccountStore {
 		}
 		root.add("accounts", list);
 		try {
-			Files.createDirectories(PATH.getParent());
-			try (Writer writer = Files.newBufferedWriter(PATH)) {
-				GSON.toJson(root, writer);
-			}
+			// Tokens: readable by your user only.
+			dev.stray.client.util.SafeFiles.write(PATH, GSON.toJson(root), true);
 			return true;
 		} catch (IOException exception) {
 			Stray.LOGGER.warn("Could not write accounts.json", exception);

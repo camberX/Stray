@@ -269,6 +269,7 @@ public final class EtherwarpAim {
 				if (config.etherwarpAimSwapBack && swappedFrom < 9) {
 					// The same as pressing that hotbar number key.
 					player.getInventory().setSelectedSlot(swappedFrom);
+					dev.stray.client.net.SlotGuard.markSwapped();
 				}
 				swappedFrom = -1;
 				swapBackNext = false;
@@ -307,6 +308,7 @@ public final class EtherwarpAim {
 			}
 			swappedAt = now;
 			player.getInventory().setSelectedSlot(slot);
+			dev.stray.client.net.SlotGuard.markSwapped();
 			// At least a tick between the swap and the click, and the delay from here.
 			aimedSince = now;
 			return;

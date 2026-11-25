@@ -32,7 +32,6 @@ public final class ThemedHotbar {
 
 	private static final float SLOT = 18f;
 	private static final float PITCH = 20f;
-	private static long startNs = System.nanoTime();
 
 	private ThemedHotbar() {
 	}
@@ -50,10 +49,6 @@ public final class ThemedHotbar {
 		int selected = player.getInventory().getSelectedSlot();
 		float offset = SmoothHotbar.offset(selected);
 		return selected + offset / 20f;
-	}
-
-	private static float seconds() {
-		return (System.nanoTime() - startNs) / 1.0e9f;
 	}
 
 	public static void draw(GuiGraphicsExtractor graphics, DeltaTracker delta, Player player) {

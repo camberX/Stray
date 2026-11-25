@@ -684,7 +684,8 @@ public final class AutoUpdate implements PreLaunchEntrypoint {
 		try (DirectoryStream<Path> stream = Files.newDirectoryStream(mods, "*.jar")) {
 			for (Path path : stream) {
 				Path absolute = path.toAbsolutePath().normalize();
-				if (!absolute.equals(keep) && branded(path)) {
+				// Only Stray's own jars (mod id "stray"), never another mod whose name starts with "stray".
+				if (!absolute.equals(keep) && branded(path) && jarVersion(absolute) != null) {
 					stale.add(absolute);
 				}
 			}
@@ -866,7 +867,9 @@ public final class AutoUpdate implements PreLaunchEntrypoint {
 					|| name.endsWith(".jar.old");
 				boolean extraJar = name.endsWith(".jar")
 					&& (keepAbs == null || !absolute.equals(keepAbs))
-					&& (keepAbs == null || sameChannel(absolute, keepAbs));
+					&& (keepAbs == null || sameChannel(absolute, keepAbs))
+					// Only Stray's own jars (mod id "stray"), never another mod named "stray...".
+					&& jarVersion(absolute) != null;
 				if (trash || extraJar) {
 					if (deleteQuiet(absolute)) {
 						if (extraJar) {

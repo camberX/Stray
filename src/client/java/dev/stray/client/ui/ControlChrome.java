@@ -66,10 +66,6 @@ public final class ControlChrome {
 		return darkText(paneRgb());
 	}
 
-	public static boolean pillDarkText() {
-		return darkText(pillRgb());
-	}
-
 	private static boolean darkText(int rgb) {
 		int r = (rgb >> 16) & 0xFF;
 		int g = (rgb >> 8) & 0xFF;
@@ -120,10 +116,6 @@ public final class ControlChrome {
 		return Theme.withAlpha(rgb, Math.round(Math.min(0.56f, paneOpacity() + 0.16f) * 255f));
 	}
 
-	public static int pillFill() {
-		return Theme.withAlpha(pillRgb(), Math.round(pillAlpha() * 0.78f));
-	}
-
 	private static int pillAlpha() {
 		return Math.round(pillOpacity() * 255f);
 	}
@@ -137,10 +129,6 @@ public final class ControlChrome {
 
 	public static int clipFill() {
 		return Theme.withAlpha(paneRgb(), Math.min(255, Math.round(paneOpacity() * 255f) + 48));
-	}
-
-	public static int frostVeil() {
-		return Theme.withAlpha(Theme.mix(paneRgb(), 0xFFFFFF, 0.72f), 168);
 	}
 
 	public static void window(GuiGraphicsExtractor graphics, float x, float y, float w, float h) {

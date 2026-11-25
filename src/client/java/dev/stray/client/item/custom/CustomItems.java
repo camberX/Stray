@@ -333,8 +333,7 @@ public final class CustomItems {
 		ITEMS.values().removeIf(Data::empty);
 		try {
 			Path file = file();
-			Files.createDirectories(file.getParent());
-			Files.writeString(file, GSON.toJson(ITEMS), StandardCharsets.UTF_8);
+			dev.stray.client.util.SafeFiles.write(file, GSON.toJson(ITEMS));
 		} catch (Exception exception) {
 			Stray.LOGGER.warn("Could not save custom items", exception);
 		}

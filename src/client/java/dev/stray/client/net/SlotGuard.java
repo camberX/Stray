@@ -22,7 +22,15 @@ public final class SlotGuard {
 		sentThisTick = true;
 	}
 
-	/** False when a slot change already went to the server this tick. */
+	/**
+	 * A feature picked a hotbar slot this tick (sent or not yet): a second feature must not pick
+	 * another one in the same tick, or the first one's swap-back slot would be wrong.
+	 */
+	public static void markSwapped() {
+		sentThisTick = true;
+	}
+
+	/** False when a slot change already went to the server, or a feature picked a slot, this tick. */
 	public static boolean canSwap() {
 		return !sentThisTick;
 	}

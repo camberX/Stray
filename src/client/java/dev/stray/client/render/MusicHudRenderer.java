@@ -91,15 +91,15 @@ public final class MusicHudRenderer {
 		double x = event.x();
 		double y = event.y();
 		if (prevHit.contains(x, y)) {
-			MediaSession.previous();
+			MediaSession.previous(null);
 			return true;
 		}
 		if (playHit.contains(x, y)) {
-			MediaSession.playPause();
+			MediaSession.playPause(null);
 			return true;
 		}
 		if (nextHit.contains(x, y)) {
-			MediaSession.next();
+			MediaSession.next(null);
 			return true;
 		}
 		return false;

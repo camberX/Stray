@@ -93,7 +93,9 @@ final class PipWin32 {
 		return out;
 	}
 
-	static int[] capture(String id, int[] sizeOut, int[] reuse) {
+	// capture (worker thread) and close (main thread, PiP off) share the session: one at a time,
+	// so close never frees the DIB while a capture is still reading it.
+	static synchronized int[] capture(String id, int[] sizeOut, int[] reuse) {
 		HWND hwnd = hwnd(id);
 		if (hwnd == null || !User32.INSTANCE.IsWindow(hwnd)) {
 			close();
@@ -137,7 +139,7 @@ final class PipWin32 {
 		return argb;
 	}
 
-	static void close() {
+	static synchronized void close() {
 		if (session != null) {
 			session.free();
 			session = null;

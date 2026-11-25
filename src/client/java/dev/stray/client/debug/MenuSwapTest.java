@@ -94,6 +94,7 @@ public final class MenuSwapTest {
 				previousSlot = player.getInventory().getSelectedSlot();
 				// As a number key and a right click in one tick: useItem sends the slot first.
 				player.getInventory().setSelectedSlot(MENU_SLOT);
+				dev.stray.client.net.SlotGuard.markSwapped();
 				client.gameMode.useItem(player, InteractionHand.MAIN_HAND);
 				message("§aSwapped to slot 9 and used §f" + stack.getHoverName().getString() + " §ain one tick. Swapping back after you close the menu.");
 				step = Step.AWAIT_OPEN;
@@ -102,6 +103,7 @@ public final class MenuSwapTest {
 			case SWAP_BACK -> {
 				if (previousSlot >= 0 && previousSlot < 9) {
 					player.getInventory().setSelectedSlot(previousSlot);
+					dev.stray.client.net.SlotGuard.markSwapped();
 				}
 				message("§aSwapped back to slot " + (previousSlot + 1) + ".");
 				previousSlot = -1;

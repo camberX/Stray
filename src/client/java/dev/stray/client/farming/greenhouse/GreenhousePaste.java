@@ -636,10 +636,7 @@ public final class GreenhousePaste {
 		JsonObject root = new JsonObject();
 		root.add("presets", presets);
 		try {
-			Files.createDirectories(PRESETS.getParent());
-			try (Writer writer = Files.newBufferedWriter(PRESETS)) {
-				GSON.toJson(root, writer);
-			}
+			dev.stray.client.util.SafeFiles.write(PRESETS, GSON.toJson(root));
 		} catch (Exception exception) {
 			Stray.LOGGER.warn("Could not write stray-greenhouse.json", exception);
 		}
