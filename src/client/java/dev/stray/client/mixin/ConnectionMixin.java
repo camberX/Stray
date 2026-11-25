@@ -52,6 +52,20 @@ public class ConnectionMixin {
 				}
 			}
 		}
+		if (!dev.stray.Edition.LEGIT && packet instanceof net.minecraft.network.protocol.game.ServerboundUseItemOnPacket useOn) {
+			// Instant leap menu: a right click on a block uses the leap too, unless the block takes it.
+			net.minecraft.client.Minecraft client = net.minecraft.client.Minecraft.getInstance();
+			//? if >=26.3 {
+			net.minecraft.core.BlockPos pos = useOn.hitResult().getBlockPos();
+			//?} else {
+			/*net.minecraft.core.BlockPos pos = useOn.getHitResult().getBlockPos();
+			*///?}
+			if (client.isSameThread()) {
+				dev.stray.client.dungeon.autoleap.InstantLeap.onUseItemOn(pos);
+			} else {
+				client.execute(() -> dev.stray.client.dungeon.autoleap.InstantLeap.onUseItemOn(pos));
+			}
+		}
 		if (!dev.stray.Edition.LEGIT && packet instanceof net.minecraft.network.protocol.game.ServerboundContainerClickPacket click) {
 			// Only looks: lets the terminal GUI follow clicks other mods send (NoammAddons' auto terminals).
 			dev.stray.client.dungeon.terminal.TerminalSession.onClickSent(click.containerId(), click.slotNum(), click.buttonNum(), click.containerInput());

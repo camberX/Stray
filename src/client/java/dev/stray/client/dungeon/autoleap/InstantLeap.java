@@ -145,6 +145,27 @@ public final class InstantLeap {
 		client.gui.setScreen(new MenuScreen());
 	}
 
+	/** Blocks a right click opens or flips instead of using the leap (NoammAddons' list). */
+	private static final java.util.Set<net.minecraft.world.level.block.Block> INTERACTABLE = java.util.Set.of(
+		net.minecraft.world.level.block.Blocks.CHEST, net.minecraft.world.level.block.Blocks.TRAPPED_CHEST,
+		net.minecraft.world.level.block.Blocks.ENDER_CHEST, net.minecraft.world.level.block.Blocks.HOPPER,
+		net.minecraft.world.level.block.Blocks.CAULDRON, net.minecraft.world.level.block.Blocks.LEVER,
+		net.minecraft.world.level.block.Blocks.STONE_BUTTON, net.minecraft.world.level.block.Blocks.OAK_BUTTON,
+		net.minecraft.world.level.block.Blocks.OAK_TRAPDOOR, net.minecraft.world.level.block.Blocks.IRON_TRAPDOOR);
+
+	/**
+	 * A right click on a block on its way to the server: the game sends only this (no plain use)
+	 * when the held item counts as usable on the block, so the leap is used here too, unless the
+	 * block is one you open or flip.
+	 */
+	public static void onUseItemOn(net.minecraft.core.BlockPos pos) {
+		Minecraft client = Minecraft.getInstance();
+		if (client.level == null || INTERACTABLE.contains(client.level.getBlockState(pos).getBlock())) {
+			return;
+		}
+		onUseItem();
+	}
+
 	/**
 	 * A placeholder was clicked (the heads aren't there yet): remember the teammate and get the
 	 * screen out of the way. Returns false when this isn't one.
