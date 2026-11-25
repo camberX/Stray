@@ -15,6 +15,14 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.6.7", new String[]{
+			"New theme: Stray. One window with numbered categories, the features in the middle and the picked one's settings beside them, search on top. Near-black, hairlines and one accent colour you pick (orange by default). The window rises in, the category marker glides, rows come in one after another and switches spring. The HUD, hotbar and vanilla screens match. Reduce motion turns the motion off.",
+			"Monochrome (World): blocks in black and white. Things in the splash colour, usable blocks (levers, buttons, doors, stations) and your own block list stay in the accent colour, keeping their texture and lighting.",
+			"Waypoints (World): boxes placed at your feet with your own width, height, outline thickness and colours. Saved per island; also /stray waypoint add, restyle, remove, clear.",
+			"Leap menu: Instant open shows the leap menu the moment you use the leap, before the server's menu arrives (full edition, off by default). No chest panel or empty slots behind the cards.",
+			"Settings that stepped through values on click are dropdowns in the Stray menu.",
+			"Rounded outlines: the corners are as thick as the straight sides now, in every theme."
+		}),
 		new Entry("1.6.6", new String[]{
 			"Leap: swaps to the leap and uses it in the same tick, clicks the head the moment the menu loads, and uses a leap menu you opened yourself. Never two slot changes in one tick.",
 			"Double leaps: alternates Spirit Leap and InfiniLeap with their own cooldowns, like quoi. Fast leap no longer waits 250 ms between clicks.",
