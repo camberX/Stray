@@ -631,6 +631,14 @@ final class OverlayGl implements Canvas {
 	@Override
 	public float width(String text) {
 		useFace();
+		return measure(text);
+	}
+
+	/**
+	 * Text width with the font as it is now, without baking a face: needs no GL context, so the
+	 * game thread can ask while it records a frame.
+	 */
+	float measure(String text) {
 		if (chars == null || text == null) {
 			return 0f;
 		}

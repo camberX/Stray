@@ -21,6 +21,11 @@ public final class Streamproof {
 	private static String failure;
 	private static boolean warned;
 	private static boolean drewLast;
+	private static long lastSyncNs;
+	private static long lastHash;
+	/** The frame being recorded; text is measured with the overlay's own font. */
+	private static final dev.stray.client.render.overlay.RecordingCanvas RECORD =
+		new dev.stray.client.render.overlay.RecordingCanvas(text -> gl == null ? 0f : gl.measure(text));
 
 	private Streamproof() {
 	}
@@ -77,11 +82,41 @@ public final class Streamproof {
 					window.end();
 				}
 				drewLast = false;
+				lastHash = 0L;
 			}
 			return;
 		}
+		// The overlay's own context, Wayland calls and a full-screen swap cost about a
+		// millisecond. They used to run every game frame (1000 times a second at 1000 fps); now
+		// at most once per monitor refresh, and only when what it shows changed.
+		long now = System.nanoTime();
+		if (now - lastSyncNs < frameInterval(client)) {
+			return;
+		}
+		lastSyncNs = now;
 		boolean show = window.sync(true);
 		if (!show && !drewLast) {
+			return;
+		}
+		int pw = window.pixelWidth();
+		int ph = window.pixelHeight();
+		int guiW = client.getWindow().getGuiScaledWidth();
+		int guiH = client.getWindow().getGuiScaledHeight();
+		float scale = pw / (float) Math.max(1, guiW);
+		boolean content = show && !client.gui.hud.isHidden() && !menuOpen(client);
+		OverlayGl measuring = gl;
+		RECORD.reset();
+		RECORD.mix(pw);
+		RECORD.mix(ph);
+		RECORD.mix(Float.floatToIntBits(scale));
+		RECORD.mix(content ? 1 : 0);
+		if (content) {
+			float partial = client.getDeltaTracker().getGameTimeDeltaPartialTick(true);
+			StarMobOverlay.draw(RECORD, guiW, guiH, partial);
+			DungeonMapHud.overlay(RECORD, guiW, guiH, partial);
+		}
+		if (measuring != null && RECORD.hash() == lastHash) {
+			// Same picture as on screen: nothing to do.
 			return;
 		}
 		window.begin();
@@ -90,19 +125,12 @@ public final class Streamproof {
 				gl = new OverlayGl();
 				gl.init();
 			}
-			int pw = window.pixelWidth();
-			int ph = window.pixelHeight();
-			int guiW = client.getWindow().getGuiScaledWidth();
-			int guiH = client.getWindow().getGuiScaledHeight();
-			float scale = pw / (float) Math.max(1, guiW);
 			gl.begin(pw, ph, scale);
-			if (show && !client.gui.hud.isHidden() && !menuOpen(client)) {
-				float partial = client.getDeltaTracker().getGameTimeDeltaPartialTick(true);
-				StarMobOverlay.draw(gl, guiW, guiH, partial);
-				DungeonMapHud.overlay(gl, guiW, guiH, partial);
-			}
+			RECORD.replay(gl);
 			gl.end();
 			drewLast = show;
+			// Text measured before the font existed: draw again next time with real widths.
+			lastHash = measuring == null ? 0L : RECORD.hash();
 		} catch (Throwable t) {
 			failure = "drawing failed (" + t.getClass().getSimpleName() + ")";
 			LOGGER.warn("Streamproof overlay draw failed", t);
@@ -112,6 +140,19 @@ public final class Streamproof {
 		if (failure != null) {
 			close();
 		}
+	}
+
+	/** One monitor refresh in nanoseconds (240 Hz when the game can't tell). */
+	private static long frameInterval(Minecraft client) {
+		int hz = 0;
+		if (client.getWindow() != null) {
+			//? if >=26.3 {
+			com.mojang.blaze3d.platform.VideoMode mode = client.getWindow().getActiveVideoMode();
+			hz = mode == null ? 0 : Math.round(mode.getRefreshRate());
+			//?} else {
+			/*hz = client.getWindow().getRefreshRate();*///?}
+		}
+		return 1_000_000_000L / Math.max(30, hz <= 0 ? 240 : hz);
 	}
 
 	/** Any menu but chat: streamproof things hide (the overlay can't go under the game's GUI). */
@@ -125,6 +166,7 @@ public final class Streamproof {
 	}
 
 	public static void close() {
+		lastHash = 0L;
 		if (window != null) {
 			window.destroy();
 			window = null;
