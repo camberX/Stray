@@ -30,7 +30,11 @@ public class AvatarRendererMixin {
 		at = @At("RETURN")
 	)
 	private void stray$showCustomCape(Avatar entity, AvatarRenderState state, float tickDelta, CallbackInfo ci) {
-		if (entity == null || state.skin == null) {
+		if (entity == null) {
+			return;
+		}
+		dev.stray.client.visual.Schizophrenia.apply(entity, state, tickDelta);
+		if (state.skin == null) {
 			return;
 		}
 		state.skin = ShopCape.patch(entity.getUUID(), state.skin);

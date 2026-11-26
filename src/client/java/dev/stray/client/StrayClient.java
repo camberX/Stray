@@ -1020,7 +1020,7 @@ public final class StrayClient implements ClientModInitializer {
 			boolean on = !dev.stray.client.dungeon.DevMode.on();
 			dev.stray.client.dungeon.DevMode.set(on);
 			context.getSource().sendFeedback(Component.literal("§bStray §7dev mode " + (on ? "§aon§7: F7 titles" + (dev.stray.Edition.LEGIT ? "" : " and terminal GUIs") + " work outside dungeons (e.g. your own server)." : "§coff§7.")
-				+ " §8/stray debug dev " + (dev.stray.Edition.LEGIT ? "titles" : "terminal <name>, titles") + ", map, highlight, section <1-4>"));
+				+ " §8/stray debug dev " + (dev.stray.Edition.LEGIT ? "titles" : "terminal <name>, titles") + ", leap, map, highlight, section <1-4>"));
 			return Command.SINGLE_SUCCESS;
 		});
 		node.then(ClientCommands.literal("titles").executes(context -> {
@@ -1028,8 +1028,19 @@ public final class StrayClient implements ClientModInitializer {
 				StrayConfig.get().f7TitlesEnabled = true;
 				StrayConfig.get().save();
 			}
-			dev.stray.client.dungeon.F7Titles.preview();
-			context.getSource().sendFeedback(Component.literal("§bStray §7showing each F7 title once."));
+			dev.stray.client.dungeon.F7Titles.simulate();
+			context.getSource().sendFeedback(Component.literal("§bStray §7simulating an F7 boss fight (about 35 s): crystals, Maxor, Storm and its lightning, all 7 terminals, the gate, Goldor and Necron. Dev mode is on."));
+			return Command.SINGLE_SUCCESS;
+		}));
+		node.then(ClientCommands.literal("leap").executes(context -> {
+			StrayConfig config = StrayConfig.get();
+			if (!config.f7TitlesEnabled || !config.f7LeapCounter) {
+				config.f7TitlesEnabled = true;
+				config.f7LeapCounter = true;
+				config.save();
+			}
+			dev.stray.client.dungeon.LeapCounter.simulate();
+			context.getSource().sendFeedback(Component.literal("§bStray §7simulating Leaped: three teammates leap to you one after another."));
 			return Command.SINGLE_SUCCESS;
 		}));
 		node.then(ClientCommands.literal("map").executes(context -> {

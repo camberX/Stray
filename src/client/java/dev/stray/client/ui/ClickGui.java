@@ -468,8 +468,9 @@ public final class ClickGui {
 		java.util.Map.entry("Fog", "Custom fog colour and distance."),
 		java.util.Map.entry("Aspect", "Stretches the view to another aspect ratio, like 4:3."),
 		java.util.Map.entry("Motion blur", "Blurs the screen while you move and turn."),
+		java.util.Map.entry("Schizophrenia", "Every other player near you snaps their head to stare at you. Only on your screen."),
 		java.util.Map.entry("Waypoints", "Boxes you place where you stand: the bottom at your feet, your own width, height, outline and colours. Saved per island."),
-		java.util.Map.entry("Monochrome", "Blocks in black and white. Things in the splash colour, usable blocks and your own list stay in the accent colour, with their texture and lighting."),
+		java.util.Map.entry("Monochrome", "Blocks in black and white. Things in the splash colour, usable blocks and your own list stay in the accent colour, with their texture and lighting. Whole screen does items, menus and mobs too."),
 		java.util.Map.entry("Skull hold", "Holds skulls and heads the 1.8 way."),
 		java.util.Map.entry("Backwards walk", "1.8 style body turn when walking backwards."),
 		java.util.Map.entry("Player glow", "Outlines other players so you can see them through walls."),
@@ -776,6 +777,7 @@ public final class ClickGui {
 		mods.add(mod("Fog", "World", StrayScreen.Feature.FOG, null, () -> config.fogEnabled, v -> config.fogEnabled = v, true, false));
 		mods.add(mod("Aspect", "World", StrayScreen.Feature.VIEW, null, () -> config.aspectEnabled, v -> config.aspectEnabled = v, true, false));
 		mods.add(mod("Waypoints", "World", StrayScreen.Feature.WAYPOINTS, null, () -> config.waypoints, v -> config.waypoints = v, true, false));
+		mods.add(mod("Schizophrenia", "World", StrayScreen.Feature.SCHIZOPHRENIA, null, () -> config.schizophrenia, v -> config.schizophrenia = v, true, false));
 		mods.add(mod("Monochrome", "World", StrayScreen.Feature.MONOCHROME, null, () -> config.monochrome, v -> config.monochrome = v, true, false));
 		mods.add(mod("Motion blur", "World", StrayScreen.Feature.MOTION, null, () -> config.motionBlurEnabled, v -> config.motionBlurEnabled = v, true, false));
 		mods.add(mod("Block outline", "World", StrayScreen.Feature.BLOCK, null, () -> config.blockOutlineGlow, v -> config.blockOutlineGlow = v, true, false));

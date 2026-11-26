@@ -99,8 +99,15 @@ public final class Monochrome {
 		float width = StrayConfig.clamp(config.monochromeSplashWidth, 5f, 90f) / 360f;
 		StrayUniforms.monochrome(
 			((rgb >> 16) & 0xFF) / 255f, ((rgb >> 8) & 0xFF) / 255f, (rgb & 0xFF) / 255f, on ? 1f : 0f,
-			hue / 360f, width, config.monochromeSplash ? 1f : 0f, StrayConfig.clamp(config.monochromeContrast, 0.5f, 1.5f)
+			hue / 360f, width, config.monochromeSplash ? 1f : 0f,
+			// With Whole screen on, the screen pass applies the contrast once to everything.
+			MonochromeScreen.wanted(Minecraft.getInstance()) ? 1f : StrayConfig.clamp(config.monochromeContrast, 0.5f, 1.5f)
 		);
+	}
+
+	/** The splash hue in degrees: the picked one, or the accent's own. */
+	static float splashHueDegrees(StrayConfig config) {
+		return splashHue(config);
 	}
 
 	private static float splashHue(StrayConfig config) {

@@ -140,8 +140,9 @@ public class StrayScreen extends Screen {
 		FOG("Fog", 5),
 		VIEW("Aspect", 3),
 		MOTION("Motion blur", 3),
-		MONOCHROME("Monochrome", 9),
+		MONOCHROME("Monochrome", 10),
 		WAYPOINTS("Waypoints", 11),
+		SCHIZOPHRENIA("Schizophrenia", 2),
 		HELD_ITEM("Held item", 7),
 		FILL("Shader", 8),
 		AUTO_CLICKER("Auto clicker", 8),
@@ -182,7 +183,7 @@ public class StrayScreen extends Screen {
 		LEVER_BOT("Lever triggerbot", 2),
 		SECRET_HITBOXES("Hitboxes", 6),
 		ETHERWARP_AIM("Etherwarp aim", 1),
-		F7_TITLES("F7 titles", 4),
+		F7_TITLES("F7 titles", 6),
 		TERM_HIGHLIGHT("Terminal highlight", 4),
 		RUN_SPLITS("Run splits", 4),
 		SCOREBOARD("Scoreboard", 1),
@@ -3919,6 +3920,11 @@ public class StrayScreen extends Screen {
 					config.aspectRatio = values[index];
 				});
 			}
+			case SCHIZOPHRENIA -> {
+				y = slider(graphics, font, ix, y, iw, "Range", Math.round(config.schizophreniaRange) + " blocks", (config.schizophreniaRange - 4f) / 124f,
+					v -> config.schizophreniaRange = snapInt(4f + v * 124f, 4, 128, 4));
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Turn body too", config.schizophreniaBody, v -> config.schizophreniaBody = v);
+			}
 			case WAYPOINTS -> {
 				y = slider(graphics, font, ix, y, iw, "Width", String.format(Locale.ROOT, "%.2f", config.waypointWidth), (config.waypointWidth - 0.25f) / 9.75f,
 					v -> config.waypointWidth = snapInt(25f + v * 975f, 25, 1000, 25) / 100f);
@@ -3948,6 +3954,7 @@ public class StrayScreen extends Screen {
 				y = slider(graphics, font, ix, y, iw, "Contrast", Math.round(config.monochromeContrast * 100f) + "%", (config.monochromeContrast - 0.5f),
 					v -> config.monochromeContrast = snapInt(50f + v * 100f, 50, 150, 5) / 100f);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Usable blocks", config.monochromeUsable, v -> config.monochromeUsable = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Whole screen", config.monochromeScreen, v -> config.monochromeScreen = v);
 				net.minecraft.world.level.block.Block looked = dev.stray.client.visual.Monochrome.lookedAt();
 				String lookedName = looked == null ? null : dev.stray.client.visual.Monochrome.name(looked);
 				y = clickButton(graphics, font, ix, y, iw, mouseX, mouseY, looked == null ? "Look at a block to add it" : "Add " + lookedName, () -> {
@@ -4436,7 +4443,9 @@ public class StrayScreen extends Screen {
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Crystals", config.f7CrystalTitles, v -> config.f7CrystalTitles = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Wither phases", config.f7WitherTitles, v -> config.f7WitherTitles = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Lightning timer", config.f7LightningTimer, v -> config.f7LightningTimer = v);
-				toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Terminal progress", config.f7TerminalTitles, v -> config.f7TerminalTitles = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Terminal progress", config.f7TerminalTitles, v -> config.f7TerminalTitles = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Leaped", config.f7LeapCounter, v -> config.f7LeapCounter = v);
+				toggle(graphics, font, ix, y, iw, mouseX, mouseY, "No backgrounds", config.f7NoBackgrounds, v -> config.f7NoBackgrounds = v);
 			}
 			case DUNGEON_MAP -> {
 				String[] info = {"Checkmarks", "Secrets", "Room names", "Names + secrets", "Secrets + puzzles"};

@@ -55,6 +55,10 @@ public final class StrayConfig {
 	public int waypointFill = 0x40FF6A3D;
 	public boolean waypointsSnap = false;
 	public boolean waypointsThroughWalls = false;
+	/** Schizophrenia: other players' heads turn to stare at you (on your screen only). */
+	public boolean schizophrenia = false;
+	public float schizophreniaRange = 32f;
+	public boolean schizophreniaBody = false;
 	/** Monochrome: blocks in black and white, splash hue and marked blocks in the accent. */
 	public boolean monochrome = false;
 	public int monochromeRgb = 0xE8443A;
@@ -65,6 +69,8 @@ public final class StrayConfig {
 	public float monochromeSplashWidth = 25f;
 	public float monochromeContrast = 1f;
 	public boolean monochromeUsable = true;
+	/** Also the finished frame: items, GUI, mobs, sky and every resource pack texture. */
+	public boolean monochromeScreen = false;
 	/** Your own blocks to accent, as block ids (minecraft:oak_planks). */
 	public java.util.List<String> monochromeBlocks = new java.util.ArrayList<>();
 	public int worldTintRgb = 0x2FB5FF;
@@ -519,6 +525,10 @@ public final class StrayConfig {
 	public boolean f7WitherTitles = true;
 	public boolean f7LightningTimer = true;
 	public boolean f7TerminalTitles = true;
+	/** Leaped: who has leaped to your P3 spot, as heads and names. */
+	public boolean f7LeapCounter = false;
+	/** F7 titles without their dark cards (text with a shadow instead). */
+	public boolean f7NoBackgrounds = false;
 	/** F7 phase 3: glow on the terminals of the current section that are not done yet. */
 	public boolean terminalHighlight = false;
 	public boolean terminalHighlightNumbers = true;
@@ -755,6 +765,7 @@ public final class StrayConfig {
 	public HudSlot slotF7Title = new HudSlot();
 	public HudSlot slotF7Lightning = new HudSlot();
 	public HudSlot slotF7Terminal = new HudSlot();
+	public HudSlot slotF7Leaped = new HudSlot();
 	public HudSlot slotArrayList = new HudSlot();
 	public HudSlot slotMaskTimers = new HudSlot();
 	public HudSlot slotRunSplits = new HudSlot();
@@ -1914,6 +1925,7 @@ public final class StrayConfig {
 				loaded.slotF7Title = hudSlot(loaded.slotF7Title);
 				loaded.slotF7Lightning = hudSlot(loaded.slotF7Lightning);
 				loaded.slotF7Terminal = hudSlot(loaded.slotF7Terminal);
+				loaded.slotF7Leaped = hudSlot(loaded.slotF7Leaped);
 				loaded.slotArrayList = hudSlot(loaded.slotArrayList);
 				loaded.slotMaskTimers = hudSlot(loaded.slotMaskTimers);
 				loaded.slotRunSplits = hudSlot(loaded.slotRunSplits);
@@ -2840,6 +2852,7 @@ public final class StrayConfig {
 		slotF7Title = new HudSlot();
 		slotF7Lightning = new HudSlot();
 		slotF7Terminal = new HudSlot();
+		slotF7Leaped = new HudSlot();
 		slotArrayList = new HudSlot();
 		slotMaskTimers = new HudSlot();
 		slotRunSplits = new HudSlot();

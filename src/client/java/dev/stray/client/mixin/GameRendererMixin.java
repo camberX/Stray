@@ -92,4 +92,17 @@ public class GameRendererMixin {
 	private void stray$captureControlFrost(CallbackInfo ci) {
 		GuiFrostBlur.captureAfterWorld();
 	}
+
+	/** Monochrome "Whole screen": the finished frame, GUI included, in black and white. */
+	@Inject(
+		method = "render",
+		at = @At(
+			value = "INVOKE",
+			target = "Lnet/minecraft/client/gui/render/GuiRenderer;render()V",
+			shift = At.Shift.AFTER
+		)
+	)
+	private void stray$monochromeScreen(CallbackInfo ci) {
+		dev.stray.client.visual.MonochromeScreen.apply();
+	}
 }

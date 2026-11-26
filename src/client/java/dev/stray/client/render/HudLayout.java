@@ -58,6 +58,7 @@ public final class HudLayout {
 		F7_TITLE("F7 titles"),
 		F7_LIGHTNING("Lightning timer"),
 		F7_TERMINAL("Terminal progress"),
+		F7_LEAPED("Leaped"),
 		ARRAY_LIST("Array list"),
 		MASK_TIMERS("Mask timers"),
 		RUN_SPLITS("Run splits"),
@@ -499,6 +500,7 @@ public final class HudLayout {
 			case F7_TITLE -> config.f7TitlesEnabled && (config.f7CrystalTitles || config.f7WitherTitles || config.f7LightningTimer);
 			case F7_LIGHTNING -> config.f7TitlesEnabled && config.f7LightningTimer;
 			case F7_TERMINAL -> config.f7TitlesEnabled && config.f7TerminalTitles;
+			case F7_LEAPED -> config.f7TitlesEnabled && config.f7LeapCounter;
 			case ARRAY_LIST -> config.arrayList;
 			case MASK_TIMERS -> config.maskTimers;
 			case RUN_SPLITS -> config.runSplits;
@@ -581,6 +583,7 @@ public final class HudLayout {
 			case F7_TITLE -> config.slotF7Title;
 			case F7_LIGHTNING -> config.slotF7Lightning;
 			case F7_TERMINAL -> config.slotF7Terminal;
+			case F7_LEAPED -> config.slotF7Leaped;
 			case ARRAY_LIST -> config.slotArrayList;
 			case MASK_TIMERS -> config.slotMaskTimers;
 			case RUN_SPLITS -> config.slotRunSplits;
@@ -647,7 +650,7 @@ public final class HudLayout {
 			case HUNGER, AIR, MOUNT -> guiW * 0.5f + 91 - w;
 			case EXPERIENCE -> (guiW - w) * 0.5f;
 			case SCOREBOARD, DUNGEON_MAP, RUN_SPLITS -> guiW - w - MARGIN;
-			case F7_TITLE, F7_LIGHTNING, F7_TERMINAL, AUTO_HOTBAR -> (guiW - w) * 0.5f;
+			case F7_TITLE, F7_LIGHTNING, F7_TERMINAL, F7_LEAPED, AUTO_HOTBAR -> (guiW - w) * 0.5f;
 			case SLAYER, SLAYER_PROFIT, SLAYER_RNG, SLAYER_KILLS -> guiW - w - MARGIN;
 			case SLAYER_DAGGER, SLAYER_PILLAR -> (guiW - w) * 0.5f;
 			case M4_TIMER, M4_BEAR, M4_SPLITS, M4_STUN, M4_TAC, M4_RABBITS, M4_OVERKILL, M4_MOBS -> dev.stray.client.dungeon.m4.M4Hud.defaultX(id, guiW, w);
@@ -673,6 +676,7 @@ public final class HudLayout {
 			case F7_TITLE -> guiH * 0.5f - Math.round(guiH * 0.056f) - 2f;
 			case F7_LIGHTNING -> guiH * 0.5f - guiH / 13f - 2f;
 			case F7_TERMINAL -> guiH * 0.5f + 30f;
+			case F7_LEAPED -> guiH * 0.5f + 56f;
 			case SLAYER, SLAYER_PROFIT, SLAYER_RNG, SLAYER_KILLS -> slayerDefaultY(id, font, guiH);
 			case SLAYER_DAGGER -> guiH * 0.5f + 18f;
 			case SLAYER_PILLAR -> guiH * 0.5f + 18f + (enabled(Id.SLAYER_DAGGER) ? height(Id.SLAYER_DAGGER, font) + 4f : 0f);
@@ -738,7 +742,7 @@ public final class HudLayout {
 			case GREENHOUSE_GROWTH -> GardenHudRenderer.greenhouseWidth(font) * scale;
 			case TOP_DOWN -> TopDownHudRenderer.drawWidth() * scale;
 			case DUNGEON_MAP -> dev.stray.client.dungeon.map.MapRenderer.SIZE * scale;
-			case F7_TITLE, F7_LIGHTNING, F7_TERMINAL -> dev.stray.client.dungeon.F7Titles.boxWidth(id) * scale;
+			case F7_TITLE, F7_LIGHTNING, F7_TERMINAL, F7_LEAPED -> dev.stray.client.dungeon.F7Titles.boxWidth(id) * scale;
 			case ARRAY_LIST -> ArrayListHud.width(font) * scale;
 			case MASK_TIMERS -> dev.stray.client.dungeon.MaskTimers.width(font) * scale;
 			case RUN_SPLITS -> dev.stray.client.dungeon.RunSplits.width(font) * scale;
@@ -776,7 +780,7 @@ public final class HudLayout {
 			case GREENHOUSE_GROWTH -> GardenHudRenderer.greenhouseHeight() * scale;
 			case TOP_DOWN -> TopDownHudRenderer.drawHeight() * scale;
 			case DUNGEON_MAP -> dev.stray.client.dungeon.map.MapRenderer.SIZE * scale;
-			case F7_TITLE, F7_LIGHTNING, F7_TERMINAL -> dev.stray.client.dungeon.F7Titles.boxHeight(id) * scale;
+			case F7_TITLE, F7_LIGHTNING, F7_TERMINAL, F7_LEAPED -> dev.stray.client.dungeon.F7Titles.boxHeight(id) * scale;
 			case ARRAY_LIST -> ArrayListHud.height(font) * scale;
 			case MASK_TIMERS -> dev.stray.client.dungeon.MaskTimers.height() * scale;
 			case RUN_SPLITS -> dev.stray.client.dungeon.RunSplits.height() * scale;
