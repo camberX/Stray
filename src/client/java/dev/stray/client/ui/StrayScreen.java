@@ -261,6 +261,9 @@ public class StrayScreen extends Screen {
 			if (this == M4_ALL) {
 				return m4Rows();
 			}
+			if (this == PIP && "pip".equals(dropdownOpen)) {
+				return baseRows + PipCapture.windowsForMenu().size();
+			}
 			if (this == MUSIC && "music".equals(dropdownOpen)) {
 				return baseRows + StrayConfig.MUSIC_LAYOUTS.length;
 			}
@@ -4112,8 +4115,18 @@ public class StrayScreen extends Screen {
 				toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Spotify", config.spotifyEnabled, v -> config.spotifyEnabled = v);
 			}
 			case PIP -> {
-				String window = config.pipWindowTitle == null || config.pipWindowTitle.isBlank() ? "Click to pick" : config.pipWindowTitle;
-				y = clickRow(graphics, font, ix, y, iw, mouseX, mouseY, clip(font, window, (int) iw - 4), PipCapture::cycleWindow);
+				java.util.List<PipCapture.WindowInfo> windows = PipCapture.windowsForMenu();
+				if (windows.isEmpty()) {
+					String why = PipCapture.supported() ? "No windows found" : "Windows only";
+					y = clickRow(graphics, font, ix, y, iw, mouseX, mouseY, why, PipCapture::cycleWindow);
+				} else {
+					String[] titles = new String[windows.size()];
+					for (int i = 0; i < titles.length; i++) {
+						titles[i] = clip(font, windows.get(i).title(), (int) (iw * 0.55f) - 8);
+					}
+					y = dropdown(graphics, font, ix, y, iw, mouseX, mouseY, "pip", "Window", titles, PipCapture.pickedIndex(windows),
+						i -> PipCapture.pick(windows.get(i)));
+				}
 				y = slider(graphics, font, ix, y, iw, "Capture", config.pipFps + " fps", (config.pipFps - 15) / 45f, v -> config.pipFps = StrayConfig.clamp(15 + Math.round(v * 45f), 15, 60));
 				slider(graphics, font, ix, y, iw, "Opacity", Math.round(config.pipOpacity * 100) + "%", config.pipOpacity, v -> config.pipOpacity = StrayConfig.clamp(v, 0.25f, 1f));
 			}

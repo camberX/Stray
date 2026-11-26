@@ -72,6 +72,41 @@ public final class PipCapture {
 		return "None";
 	}
 
+	private static List<WindowInfo> listed = List.of();
+	private static long listedAt;
+
+	/** The window list for the menu's dropdown, looked up at most once a second. */
+	public static List<WindowInfo> windowsForMenu() {
+		long now = System.nanoTime();
+		if (listedAt == 0L || now - listedAt > 1_000_000_000L) {
+			listed = windows();
+			listedAt = now;
+		}
+		return listed;
+	}
+
+	/** Index of the picked window in {@link #windowsForMenu()}, or -1. */
+	public static int pickedIndex(List<WindowInfo> list) {
+		StrayConfig config = StrayConfig.get();
+		for (int i = 0; i < list.size(); i++) {
+			if (list.get(i).id().equals(config.pipWindowId) || list.get(i).title().equals(config.pipWindowTitle)) {
+				return i;
+			}
+		}
+		return -1;
+	}
+
+	public static void pick(WindowInfo next) {
+		StrayConfig config = StrayConfig.get();
+		config.pipWindowId = next.id();
+		config.pipWindowTitle = next.title();
+		cached = next;
+		cachedAt = System.nanoTime();
+		FRAME.set(null);
+		DIRTY.set(false);
+		status = next.title();
+	}
+
 	public static void cycleWindow() {
 		List<WindowInfo> list = windows();
 		if (list.isEmpty()) {

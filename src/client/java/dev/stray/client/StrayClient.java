@@ -306,6 +306,8 @@ public final class StrayClient implements ClientModInitializer {
 				dispatcher.register(ClientCommands.literal("m" + floor).executes(context -> joinInstance("MASTER_CATACOMBS_FLOOR_" + name)));
 			}
 			var root = ClientCommands.literal("stray").executes(context -> openScreen());
+			// /stray hud: move and resize the HUD elements (the HUD editor).
+			root.then(ClientCommands.literal("hud").executes(context -> openHudEditor()));
 			root.then(ClientCommands.literal("version").executes(context -> {
 				reportVersion(context.getSource());
 				return Command.SINGLE_SUCCESS;
@@ -955,6 +957,13 @@ public final class StrayClient implements ClientModInitializer {
 		if (client.player != null) {
 			client.player.connection.sendCommand("joininstance " + instance);
 		}
+		return Command.SINGLE_SUCCESS;
+	}
+
+	private static int openHudEditor() {
+		Minecraft client = Minecraft.getInstance();
+		// After the chat screen closes, or it would close the editor again.
+		client.execute(() -> client.gui.setScreen(new dev.stray.client.ui.HudEditorScreen()));
 		return Command.SINGLE_SUCCESS;
 	}
 
