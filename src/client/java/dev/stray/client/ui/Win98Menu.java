@@ -469,16 +469,16 @@ public final class Win98Menu {
 		screen.clickHit(x + w - 2 - SCROLL_W, y + h - 2 - SCROLL_W, SCROLL_W, SCROLL_W, () -> listScroll += ROW * 3);
 	}
 
-	/** Click a row: modules with settings open in Properties; the rest do their thing; double click toggles. */
+	/**
+	 * Left click a row: a module switches on or off (one you hold, or with no switch, opens its
+	 * Properties instead); anything else does its thing. Right click opens Properties.
+	 */
 	private static void clickRow(MenuItems.Item item) {
-		long now = System.currentTimeMillis();
-		boolean doubled = item.key().equals(lastClickKey) && now - lastClickAt < 350;
-		lastClickKey = item.key();
-		lastClickAt = now;
 		if (item.mod() != null) {
-			select(item.mod().name());
-			if (doubled && item.left() != null) {
+			if (item.on() != null && item.left() != null && !item.mod().hold()) {
 				item.left().run();
+			} else {
+				select(item.mod().name());
 			}
 			return;
 		}
@@ -500,7 +500,7 @@ public final class Win98Menu {
 		float iw = w - 16 - SCROLL_W;
 		float ih = h - 18;
 		if (mod == null) {
-			Win98.text(graphics, font, "Select an item to view its properties.", ix, iy + 2, Win98.TEXT);
+			Win98.text(graphics, font, "Right-click an item to view its properties.", ix, iy + 2, Win98.TEXT);
 			return;
 		}
 		if (!ClickGui.moduleHasSettings(mod)) {
