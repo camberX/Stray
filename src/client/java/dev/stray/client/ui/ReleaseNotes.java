@@ -15,6 +15,16 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.6.8", new String[]{
+			"F7 titles work again and have a new look: crystals, boss lines, the lightning countdown, terminals, devices, levers and the gate. A No backgrounds option draws just the text.",
+			"Leaped (F7 titles): your teammates' heads and names. Grey until they leap to you, then in colour with a white name.",
+			"Monochrome: Whole screen also turns items, the GUI and texture pack textures black and white. The contrast is applied only once.",
+			"Schizophrenia (World): other players near you turn their heads to stare at you. Only on your screen.",
+			"The dungeon map window (streamproof) no longer costs half your FPS: it redraws only when something changes, at most at your monitor's refresh rate.",
+			"Leap menu: Instant open also works when you right click a block, and shows placeholders instead of \"No players found\" before the heads load.",
+			"/f1 to /f7 and /m1 to /m7 join that dungeon floor. /stray hud opens the HUD editor.",
+			"Windows 98 menu: left click toggles a module, right click opens its Properties. Picture in picture picks the window from a dropdown, and dropdowns list their choices from the start."
+		}),
 		new Entry("1.6.7", new String[]{
 			"New theme: Stray. One window with numbered categories, the features in the middle and the picked one's settings beside them, search on top. Near-black, hairlines and one accent colour you pick (orange by default). The window rises in, the category marker glides, rows come in one after another and switches spring. The HUD, hotbar and vanilla screens match. Reduce motion turns the motion off.",
 			"Monochrome (World): blocks in black and white. Things in the splash colour, usable blocks (levers, buttons, doors, stations) and your own block list stay in the accent colour, keeping their texture and lighting.",
