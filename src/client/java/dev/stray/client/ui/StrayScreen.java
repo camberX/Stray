@@ -6294,6 +6294,44 @@ public class StrayScreen extends Screen {
 	}
 
 	/** Every value a stepping row goes through, starting at the current one; null when it never comes back. */
+	/**
+	 * The probe lists the choices from whatever is set now ("8, 9, 1, 2 ..."). Rotate (never
+	 * reorder: picking counts steps around the cycle) so the list starts where it naturally
+	 * does: at Off / None if there is one, else at the lowest number.
+	 */
+	private static java.util.List<String> naturalStart(java.util.List<String> seen) {
+		int start = -1;
+		for (int i = 0; i < seen.size() && start < 0; i++) {
+			String v = seen.get(i).trim().toLowerCase(java.util.Locale.ROOT);
+			if (v.equals("off") || v.equals("none") || v.equals("disabled") || v.equals("default")) {
+				start = i;
+			}
+		}
+		if (start < 0) {
+			double low = Double.MAX_VALUE;
+			java.util.regex.Pattern number = java.util.regex.Pattern.compile("^-?\\d+(?:\\.\\d+)?");
+			for (int i = 0; i < seen.size(); i++) {
+				java.util.regex.Matcher m = number.matcher(seen.get(i).trim());
+				if (!m.find()) {
+					start = -1;
+					low = Double.MAX_VALUE;
+					break;
+				}
+				double n = Double.parseDouble(m.group());
+				if (n < low) {
+					low = n;
+					start = i;
+				}
+			}
+		}
+		if (start <= 0) {
+			return seen;
+		}
+		java.util.List<String> out = new java.util.ArrayList<>(seen.subList(start, seen.size()));
+		out.addAll(seen.subList(0, start));
+		return out;
+	}
+
 	private static String[] uidProbe(java.util.function.Supplier<String> current, Runnable next) {
 		String start = current.get();
 		java.util.List<String> seen = new java.util.ArrayList<>();
@@ -6302,7 +6340,7 @@ public class StrayScreen extends Screen {
 			next.run();
 			String value = current.get();
 			if (java.util.Objects.equals(value, start)) {
-				return seen.size() > 1 ? seen.toArray(new String[0]) : null;
+				return seen.size() > 1 ? naturalStart(seen).toArray(new String[0]) : null;
 			}
 			seen.add(value);
 		}
