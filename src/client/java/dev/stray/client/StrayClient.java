@@ -298,6 +298,13 @@ public final class StrayClient implements ClientModInitializer {
 		UpdateNotifier.init();
 
 		ClientCommandRegistrationCallback.EVENT.register((dispatcher, registryAccess) -> {
+			// /f1-/f7 and /m1-/m7: join that floor, the way NoammAddons' !f / !m party commands do.
+			String[] floorNames = {"ONE", "TWO", "THREE", "FOUR", "FIVE", "SIX", "SEVEN"};
+			for (int floor = 1; floor <= 7; floor++) {
+				String name = floorNames[floor - 1];
+				dispatcher.register(ClientCommands.literal("f" + floor).executes(context -> joinInstance("CATACOMBS_FLOOR_" + name)));
+				dispatcher.register(ClientCommands.literal("m" + floor).executes(context -> joinInstance("MASTER_CATACOMBS_FLOOR_" + name)));
+			}
 			var root = ClientCommands.literal("stray").executes(context -> openScreen());
 			root.then(ClientCommands.literal("version").executes(context -> {
 				reportVersion(context.getSource());
@@ -940,6 +947,15 @@ public final class StrayClient implements ClientModInitializer {
 		} catch (Exception ignored) {
 			return "";
 		}
+	}
+
+	/** Sends /joininstance for a dungeon floor (the server queues you or your party). */
+	private static int joinInstance(String instance) {
+		Minecraft client = Minecraft.getInstance();
+		if (client.player != null) {
+			client.player.connection.sendCommand("joininstance " + instance);
+		}
+		return Command.SINGLE_SUCCESS;
 	}
 
 	private static int openScreen() {
