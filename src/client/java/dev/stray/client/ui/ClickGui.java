@@ -468,7 +468,7 @@ public final class ClickGui {
 		java.util.Map.entry("Fog", "Custom fog colour and distance."),
 		java.util.Map.entry("Aspect", "Stretches the view to another aspect ratio, like 4:3."),
 		java.util.Map.entry("Motion blur", "Blurs the screen while you move and turn."),
-		java.util.Map.entry("Schizophrenia", "Every other player near you snaps their head to stare at you. Only on your screen."),
+		java.util.Map.entry("Schizophrenia", "Players near you stare at you, and now and then you hear and see things that are not there. Only on your screen."),
 		java.util.Map.entry("Waypoints", "Boxes you place where you stand: the bottom at your feet, your own width, height, outline and colours. Saved per island."),
 		java.util.Map.entry("Monochrome", "Blocks in black and white. Things in the splash colour, usable blocks and your own list stay in the accent colour, with their texture and lighting. Whole screen does items, menus and mobs too."),
 		java.util.Map.entry("Skull hold", "Holds skulls and heads the 1.8 way."),

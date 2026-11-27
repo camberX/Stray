@@ -59,6 +59,16 @@ public final class StrayConfig {
 	public boolean schizophrenia = false;
 	public float schizophreniaRange = 32f;
 	public boolean schizophreniaBody = false;
+	/** Index into Schizophrenia.BEHAVIOURS: 0 look away when watched, 1 always stare, 2 late notice. */
+	public int schizophreniaBehaviour = 0;
+	/** Index into Schizophrenia.INTENSITIES: how often episodes happen. */
+	public int schizophreniaIntensity = 0;
+	public boolean schizophreniaTilt = false;
+	public boolean schizophreniaMobs = false;
+	public boolean schizophreniaWhispers = false;
+	public boolean schizophreniaNametags = false;
+	public boolean schizophreniaPings = false;
+	public boolean schizophreniaShadows = false;
 	/** Monochrome: blocks in black and white, splash hue and marked blocks in the accent. */
 	public boolean monochrome = false;
 	public int monochromeRgb = 0xE8443A;

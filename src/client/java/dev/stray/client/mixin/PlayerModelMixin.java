@@ -14,5 +14,6 @@ public class PlayerModelMixin {
 	private void stray$fakeSwordBlock(AvatarRenderState state, CallbackInfo ci) {
 		PlayerModel model = (PlayerModel) (Object) this;
 		dev.stray.client.visual.FakeSwordBlock.applyArm(state.id, model.rightArm, model.leftArm);
+		model.head.zRot += dev.stray.client.visual.Schizophrenia.tilt(state.id);
 	}
 }

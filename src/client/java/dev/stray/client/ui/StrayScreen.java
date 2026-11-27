@@ -142,7 +142,7 @@ public class StrayScreen extends Screen {
 		MOTION("Motion blur", 3),
 		MONOCHROME("Monochrome", 10),
 		WAYPOINTS("Waypoints", 11),
-		SCHIZOPHRENIA("Schizophrenia", 2),
+		SCHIZOPHRENIA("Schizophrenia", 11),
 		HELD_ITEM("Held item", 7),
 		FILL("Shader", 8),
 		AUTO_CLICKER("Auto clicker", 8),
@@ -3923,7 +3923,18 @@ public class StrayScreen extends Screen {
 			case SCHIZOPHRENIA -> {
 				y = slider(graphics, font, ix, y, iw, "Range", Math.round(config.schizophreniaRange) + " blocks", (config.schizophreniaRange - 4f) / 124f,
 					v -> config.schizophreniaRange = snapInt(4f + v * 124f, 4, 128, 4));
+				y = dropdown(graphics, font, ix, y, iw, mouseX, mouseY, "schizo-behaviour", "Behaviour", dev.stray.client.visual.Schizophrenia.BEHAVIOURS,
+					Math.floorMod(config.schizophreniaBehaviour, dev.stray.client.visual.Schizophrenia.BEHAVIOURS.length), i -> config.schizophreniaBehaviour = i);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Turn body too", config.schizophreniaBody, v -> config.schizophreniaBody = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Head tilt", config.schizophreniaTilt, v -> config.schizophreniaTilt = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Mobs too", config.schizophreniaMobs, v -> config.schizophreniaMobs = v);
+				y = dropdown(graphics, font, ix, y, iw, mouseX, mouseY, "schizo-intensity", "Intensity", dev.stray.client.visual.Schizophrenia.INTENSITIES,
+					Math.floorMod(config.schizophreniaIntensity, dev.stray.client.visual.Schizophrenia.INTENSITIES.length), i -> config.schizophreniaIntensity = i);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Whispers", config.schizophreniaWhispers, v -> config.schizophreniaWhispers = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Nametags say your name", config.schizophreniaNametags, v -> config.schizophreniaNametags = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Fake pings", config.schizophreniaPings, v -> config.schizophreniaPings = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Shadow people", config.schizophreniaShadows, v -> config.schizophreniaShadows = v);
+				y = clickButton(graphics, font, ix, y, iw, mouseX, mouseY, "Have an episode now", dev.stray.client.visual.Schizophrenia::episodeNow);
 			}
 			case WAYPOINTS -> {
 				y = slider(graphics, font, ix, y, iw, "Width", String.format(Locale.ROOT, "%.2f", config.waypointWidth), (config.waypointWidth - 0.25f) / 9.75f,

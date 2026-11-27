@@ -220,6 +220,7 @@ public final class StrayClient implements ClientModInitializer {
 		dev.stray.client.dungeon.TerminalHighlight.init();
 		BlockMarks.init();
 		dev.stray.client.render.BoxWaypoints.init();
+		dev.stray.client.visual.Schizophrenia.init();
 		if (!dev.stray.Edition.LEGIT) {
 			dev.stray.client.dungeon.EtherwarpAim.init();
 		}
@@ -646,6 +647,7 @@ public final class StrayClient implements ClientModInitializer {
 			CrystalHollows.tick(client);
 			RouteMiner.tick(client);
 			dev.stray.client.visual.Monochrome.tick();
+			dev.stray.client.visual.Schizophrenia.tick(client);
 			CrystalHollowsMap.tick(client);
 			MetalDetector.tick(client);
 			NucleusAlerts.tick(client);

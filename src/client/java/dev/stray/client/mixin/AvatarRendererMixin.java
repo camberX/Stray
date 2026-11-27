@@ -33,7 +33,9 @@ public class AvatarRendererMixin {
 		if (entity == null) {
 			return;
 		}
-		dev.stray.client.visual.Schizophrenia.apply(entity, state, tickDelta);
+		if (entity instanceof net.minecraft.client.player.AbstractClientPlayer player) {
+			dev.stray.client.visual.Schizophrenia.applyPlayer(player, state, tickDelta);
+		}
 		if (state.skin == null) {
 			return;
 		}

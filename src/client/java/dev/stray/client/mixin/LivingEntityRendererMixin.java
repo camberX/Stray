@@ -72,6 +72,14 @@ public abstract class LivingEntityRendererMixin {
 		}
 	}
 
+	@Inject(
+		method = "extractRenderState(Lnet/minecraft/world/entity/LivingEntity;Lnet/minecraft/client/renderer/entity/state/LivingEntityRenderState;F)V",
+		at = @At("RETURN")
+	)
+	private void stray$mobsStare(LivingEntity entity, LivingEntityRenderState state, float partial, CallbackInfo ci) {
+		dev.stray.client.visual.Schizophrenia.applyMob(entity, state, partial);
+	}
+
 	@Inject(method = "getRenderType", at = @At("RETURN"), cancellable = true)
 	private void stray$playerFill(
 		LivingEntityRenderState state,
