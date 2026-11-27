@@ -15,6 +15,14 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.6.9", new String[]{
+			"The Schizophrenia Update.",
+			"Schizophrenia (World): players near you stare at you. By default they look away the moment your crosshair is on them, and stare again once it's gone. Or pick Always stare, or Late notice (they ignore you, then all turn together).",
+			"Optional head tilt, the body turning along, and mobs staring too.",
+			"Episodes, each one a toggle: whispers (footsteps walking up behind you, a chest or door, breathing, a cave sound), a nearby nametag showing your name, a fake chat ping with your name that is gone a second later, and shadow people in the corners of your screen that vanish when you look.",
+			"Intensity (Mild, Bad day, Full episode) sets how often. Have an episode now tries each one.",
+			"All of it is on your screen only: nothing is sent and nothing is added to the world."
+		}),
 		new Entry("1.6.8", new String[]{
 			"F7 titles work again and have a new look: crystals, boss lines, the lightning countdown, terminals, devices, levers and the gate. A No backgrounds option draws just the text.",
 			"Leaped (F7 titles): your teammates' heads and names. Grey until they leap to you, then in colour with a white name.",
