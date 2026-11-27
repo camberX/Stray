@@ -114,6 +114,7 @@ public final class ServerTicks {
 			for (int i = 0; i < n; i++) {
 				dev.stray.client.dungeon.m4.M4.serverTick();
 				dev.stray.client.dungeon.RunSplits.serverTick();
+				dev.stray.client.dungeon.P3StartTimer.serverTick();
 			}
 		});
 	}

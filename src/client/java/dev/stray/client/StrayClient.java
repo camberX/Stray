@@ -678,6 +678,7 @@ public final class StrayClient implements ClientModInitializer {
 			dev.stray.client.dungeon.MaskTimers.reset();
 			dev.stray.client.dungeon.m4.M4.onWorldLoad();
 			dev.stray.client.dungeon.RunSplits.reset();
+			dev.stray.client.dungeon.P3StartTimer.reset();
 			if (!dev.stray.Edition.LEGIT) { dev.stray.client.item.AutoHotbar.onWorldChange(); }
 			LassoReel.reset();
 			if (!dev.stray.Edition.LEGIT) { EmptyVacuum.reset(); }

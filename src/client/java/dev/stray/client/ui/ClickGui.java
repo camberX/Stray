@@ -716,6 +716,7 @@ public final class ClickGui {
 		mods.add(mod(TITLES, "Dungeons", StrayScreen.Feature.F7_TITLES, null, () -> config.f7TitlesEnabled, v -> config.f7TitlesEnabled = v, true, false));
 		mods.add(mod("Run splits", "Dungeons", StrayScreen.Feature.RUN_SPLITS, null, () -> config.runSplits, v -> config.runSplits = v, true, false));
 		mods.add(mod("Terminal highlight", "Dungeons", StrayScreen.Feature.TERM_HIGHLIGHT, null, () -> config.terminalHighlight, v -> config.terminalHighlight = v, true, false));
+		mods.add(mod("P3 start timer", "Dungeons", null, null, () -> config.p3StartTimer, v -> config.p3StartTimer = v, true, false));
 		mods.add(mod("Mask timers", "Dungeons", StrayScreen.Feature.MASK_TIMERS, null, () -> config.maskTimers, v -> config.maskTimers = v, true, false));
 		mods.add(mod(ALIGN, "Dungeons", StrayScreen.Feature.ALIGN_BOT, null, () -> config.alignTriggerbot, v -> config.alignTriggerbot = v, true, false));
 		mods.add(mod(LEVER, "Dungeons", StrayScreen.Feature.LEVER_BOT, null, () -> config.leverTriggerbot, v -> config.leverTriggerbot = v, true, false));

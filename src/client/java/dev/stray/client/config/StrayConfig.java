@@ -506,6 +506,8 @@ public final class StrayConfig {
 	public boolean f7TitlesEnabled = false;
 	/** Bonzo / Spirit Mask and Phoenix Pet cooldowns (NoammAddons, Zyryon look). */
 	public boolean maskTimers = false;
+	/** F7/M7: 3 second server-tick countdown from Storm's death to P3 (Blade Addons). */
+	public boolean p3StartTimer = false;
 	/** Dungeon run splits HUD (NoammAddons' timings) with personal bests. */
 	public boolean runSplits = false;
 	public boolean runSplitsBest = true;
@@ -779,6 +781,7 @@ public final class StrayConfig {
 	public HudSlot slotArrayList = new HudSlot();
 	public HudSlot slotMaskTimers = new HudSlot();
 	public HudSlot slotRunSplits = new HudSlot();
+	public HudSlot slotP3Start = new HudSlot();
 	public HudSlot slotGreenhouseGrowth = new HudSlot();
 	public HudSlot slotAutoHotbar = new HudSlot();
 	public HudSlot slotM4Timer = new HudSlot();
@@ -1939,6 +1942,7 @@ public final class StrayConfig {
 				loaded.slotArrayList = hudSlot(loaded.slotArrayList);
 				loaded.slotMaskTimers = hudSlot(loaded.slotMaskTimers);
 				loaded.slotRunSplits = hudSlot(loaded.slotRunSplits);
+				loaded.slotP3Start = hudSlot(loaded.slotP3Start);
 				loaded.slotGreenhouseGrowth = hudSlot(loaded.slotGreenhouseGrowth);
 				loaded.slotAutoHotbar = hudSlot(loaded.slotAutoHotbar);
 				loaded.slotM4Timer = hudSlot(loaded.slotM4Timer);
@@ -2866,6 +2870,7 @@ public final class StrayConfig {
 		slotArrayList = new HudSlot();
 		slotMaskTimers = new HudSlot();
 		slotRunSplits = new HudSlot();
+		slotP3Start = new HudSlot();
 		slotGreenhouseGrowth = new HudSlot();
 		slotAutoHotbar = new HudSlot();
 		slotM4Timer = new HudSlot();

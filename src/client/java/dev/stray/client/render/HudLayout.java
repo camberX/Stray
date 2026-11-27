@@ -62,6 +62,7 @@ public final class HudLayout {
 		ARRAY_LIST("Array list"),
 		MASK_TIMERS("Mask timers"),
 		RUN_SPLITS("Run splits"),
+		P3_START("P3 start timer"),
 		AUTO_HOTBAR("Auto hotbar"),
 		M4_TIMER("M4 timer"),
 		M4_BEAR("Spirit Bear"),
@@ -504,6 +505,7 @@ public final class HudLayout {
 			case ARRAY_LIST -> config.arrayList;
 			case MASK_TIMERS -> config.maskTimers;
 			case RUN_SPLITS -> config.runSplits;
+			case P3_START -> config.p3StartTimer;
 			case AUTO_HOTBAR -> !dev.stray.Edition.LEGIT && config.autoHotbar && config.autoHotbarHud;
 			case M4_TIMER, M4_BEAR, M4_SPLITS, M4_STUN, M4_TAC, M4_RABBITS, M4_OVERKILL, M4_MOBS -> dev.stray.client.dungeon.m4.M4Hud.enabled(id);
 			case HOTBAR, HEALTH, HUNGER, ARMOR, AIR, EXPERIENCE, MOUNT -> false;
@@ -587,6 +589,7 @@ public final class HudLayout {
 			case ARRAY_LIST -> config.slotArrayList;
 			case MASK_TIMERS -> config.slotMaskTimers;
 			case RUN_SPLITS -> config.slotRunSplits;
+			case P3_START -> config.slotP3Start;
 			case AUTO_HOTBAR -> config.slotAutoHotbar;
 			case M4_TIMER -> config.slotM4Timer;
 			case M4_BEAR -> config.slotM4Bear;
@@ -650,7 +653,7 @@ public final class HudLayout {
 			case HUNGER, AIR, MOUNT -> guiW * 0.5f + 91 - w;
 			case EXPERIENCE -> (guiW - w) * 0.5f;
 			case SCOREBOARD, DUNGEON_MAP, RUN_SPLITS -> guiW - w - MARGIN;
-			case F7_TITLE, F7_LIGHTNING, F7_TERMINAL, F7_LEAPED, AUTO_HOTBAR -> (guiW - w) * 0.5f;
+			case F7_TITLE, F7_LIGHTNING, F7_TERMINAL, F7_LEAPED, AUTO_HOTBAR, P3_START -> (guiW - w) * 0.5f;
 			case SLAYER, SLAYER_PROFIT, SLAYER_RNG, SLAYER_KILLS -> guiW - w - MARGIN;
 			case SLAYER_DAGGER, SLAYER_PILLAR -> (guiW - w) * 0.5f;
 			case M4_TIMER, M4_BEAR, M4_SPLITS, M4_STUN, M4_TAC, M4_RABBITS, M4_OVERKILL, M4_MOBS -> dev.stray.client.dungeon.m4.M4Hud.defaultX(id, guiW, w);
@@ -671,6 +674,7 @@ public final class HudLayout {
 			case DUNGEON_MAP -> guiH * 0.5f - h * 0.5f;
 			case MASK_TIMERS -> guiH * 0.5f + 20f;
 			case RUN_SPLITS -> guiH * 0.3f;
+			case P3_START -> guiH * 0.5f - 24f;
 			case AUTO_HOTBAR -> guiH * 0.5f + 30f;
 			case M4_TIMER, M4_BEAR, M4_SPLITS, M4_STUN, M4_TAC, M4_RABBITS, M4_OVERKILL, M4_MOBS -> dev.stray.client.dungeon.m4.M4Hud.defaultY(id, guiH);
 			case F7_TITLE -> guiH * 0.5f - Math.round(guiH * 0.056f) - 2f;
@@ -746,6 +750,7 @@ public final class HudLayout {
 			case ARRAY_LIST -> ArrayListHud.width(font) * scale;
 			case MASK_TIMERS -> dev.stray.client.dungeon.MaskTimers.width(font) * scale;
 			case RUN_SPLITS -> dev.stray.client.dungeon.RunSplits.width(font) * scale;
+			case P3_START -> dev.stray.client.dungeon.P3StartTimer.width(font) * scale;
 			case AUTO_HOTBAR -> dev.stray.Edition.LEGIT ? 0f : dev.stray.client.item.AutoHotbar.width(font) * scale;
 			case M4_TIMER, M4_BEAR, M4_SPLITS, M4_STUN, M4_TAC, M4_RABBITS, M4_OVERKILL, M4_MOBS -> dev.stray.client.dungeon.m4.M4Hud.width(id, font) * scale;
 			case HOTBAR -> HotbarHudRenderer.drawWidth() * scale;
@@ -784,6 +789,7 @@ public final class HudLayout {
 			case ARRAY_LIST -> ArrayListHud.height(font) * scale;
 			case MASK_TIMERS -> dev.stray.client.dungeon.MaskTimers.height() * scale;
 			case RUN_SPLITS -> dev.stray.client.dungeon.RunSplits.height() * scale;
+			case P3_START -> dev.stray.client.dungeon.P3StartTimer.height() * scale;
 			case AUTO_HOTBAR -> 9f * scale;
 			case M4_TIMER, M4_BEAR, M4_SPLITS, M4_STUN, M4_TAC, M4_RABBITS, M4_OVERKILL, M4_MOBS -> dev.stray.client.dungeon.m4.M4Hud.height(id) * scale;
 			case HOTBAR -> HotbarHudRenderer.HEIGHT * scale;
