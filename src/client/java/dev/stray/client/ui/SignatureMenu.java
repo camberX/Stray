@@ -550,10 +550,18 @@ public final class SignatureMenu {
 		categoryAt = System.nanoTime();
 	}
 
-	/** A row: features open on the right; loose items (key binds, actions, mobs) do their thing. */
+	/**
+	 * Left click a row: a feature switches on or off (one you hold, or with no switch, opens on
+	 * the right instead); loose items (key binds, actions, mobs) do their thing. Right click
+	 * opens a feature's settings on the right.
+	 */
 	private static void clickRow(MenuItems.Item item) {
 		if (item.mod() != null) {
-			select(item.mod().name());
+			if (item.on() != null && item.left() != null && !item.mod().hold()) {
+				item.left().run();
+			} else {
+				select(item.mod().name());
+			}
 			return;
 		}
 		if (item.left() != null) {
@@ -613,7 +621,7 @@ public final class SignatureMenu {
 		return false;
 	}
 
-	/** Right click on a row picks it, like a left click on its name. */
+	/** Right click on a row opens its settings on the right. */
 	static void rightClick(double x, double y) {
 		for (RowHit hit : rowHits) {
 			if (hit.item.mod() != null && hot(x, y, hit.x, hit.y, hit.w, hit.h)) {
