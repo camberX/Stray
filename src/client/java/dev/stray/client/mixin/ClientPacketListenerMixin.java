@@ -29,6 +29,9 @@ public class ClientPacketListenerMixin {
 			SackLive.onChat(packet.content());
 			if (packet.overlay()) {
 				MetalDetector.onActionBar(packet.content());
+				if (!dev.stray.Edition.LEGIT) {
+					dev.stray.client.dungeon.autoleap.AutoRag.onActionBar(packet.content());
+				}
 			}
 		}
 	}
@@ -60,6 +63,9 @@ public class ClientPacketListenerMixin {
 	private void stray$metalDetectorBar(ClientboundSetActionBarTextPacket packet, CallbackInfo ci) {
 		if (packet != null) {
 			MetalDetector.onActionBar(packet.text());
+			if (!dev.stray.Edition.LEGIT) {
+				dev.stray.client.dungeon.autoleap.AutoRag.onActionBar(packet.text());
+			}
 		}
 	}
 }

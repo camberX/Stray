@@ -112,6 +112,11 @@ public class MouseHandlerMixin {
 			ci.cancel();
 			return;
 		}
+		// Auto Rag: no hotbar scrolling until the cast started (only in game, not in menus).
+		if (!dev.stray.Edition.LEGIT && client.gui.screen() == null && dev.stray.client.dungeon.autoleap.AutoRag.blocking()) {
+			ci.cancel();
+			return;
+		}
 		if (ChatPeek.mouseScrolled(yOffset)) {
 			ci.cancel();
 		}

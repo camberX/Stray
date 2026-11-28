@@ -41,5 +41,6 @@ public class RenderTypeMixin {
 	@Inject(method = "prepare", at = @At("RETURN"))
 	private void stray$knifePrepared(CallbackInfoReturnable<net.minecraft.client.renderer.rendertype.PreparedRenderType> cir) {
 		dev.stray.client.cs2.render.KnifeGpu.prepared((RenderType) (Object) this, cir.getReturnValue());
+		dev.stray.client.visual.SpaceRoofGpu.prepared((RenderType) (Object) this, cir.getReturnValue());
 	}
 }

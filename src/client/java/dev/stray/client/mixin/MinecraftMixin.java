@@ -27,6 +27,7 @@ public class MinecraftMixin {
 			dev.stray.client.dungeon.EtherwarpAim.beforeKeybinds((Minecraft) (Object) this);
 			dev.stray.client.dungeon.autoleap.AutoLeap.beforeKeybinds((Minecraft) (Object) this);
 			dev.stray.client.dungeon.autoleap.LeapRunner.beforeKeybinds((Minecraft) (Object) this);
+			dev.stray.client.dungeon.autoleap.AutoRag.beforeKeybinds((Minecraft) (Object) this);
 			dev.stray.client.debug.MenuSwapTest.beforeKeybinds((Minecraft) (Object) this);
 		}
 		Minecraft client = (Minecraft) (Object) this;
@@ -46,6 +47,7 @@ public class MinecraftMixin {
 	private void stray$screenTickStart(CallbackInfo ci) {
 		if (!dev.stray.Edition.LEGIT) {
 			dev.stray.client.dungeon.autoleap.LeapRunner.screenStep((Minecraft) (Object) this);
+			dev.stray.client.dungeon.autoleap.AutoRag.screenStep((Minecraft) (Object) this);
 		}
 	}
 

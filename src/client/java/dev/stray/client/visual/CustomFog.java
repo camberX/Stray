@@ -30,11 +30,19 @@ public final class CustomFog {
 		return sample;
 	}
 
+	/** How much Space Roof's haze is in (0..1), eased in and out. */
+	private static float haze;
+	private static long hazeNs;
+
 	public static void apply(FogData data, Camera camera, int renderDistanceChunks) {
 		applied = false;
 		sample = Sample.OFF;
 		StrayConfig config = StrayConfig.get();
-		if (!config.fogEnabled || data == null || camera == null || data.color == null) {
+		if (data == null || camera == null || data.color == null) {
+			return;
+		}
+		applyHaze(data, camera, config);
+		if (!config.fogEnabled) {
 			return;
 		}
 
@@ -95,6 +103,38 @@ public final class CustomFog {
 			}
 			return vec4(mix(fragColor.rgb, fogColor.rgb, strayMix), fragColor.a);""";
 		return StrayUniforms.insertBlock(src).replace(needle, curved);
+	}
+
+	/**
+	 * Space Roof's cosmic haze: inside a boss part with sky, the air fills with a thin haze in a
+	 * soft shade of the sky's colour, so the room fades into it with distance (never fully).
+	 * Through vanilla's fog, so blocks, players and mobs all get it evenly. Eases in and out.
+	 */
+	private static void applyHaze(FogData data, Camera camera, StrayConfig config) {
+		long now = System.nanoTime();
+		float dt = hazeNs == 0L ? 0f : Math.min(0.25f, (now - hazeNs) / 1.0e9f);
+		hazeNs = now;
+		FogType type = camera.getFluidInCamera();
+		boolean want = config.spaceRoofMist && type != FogType.WATER && type != FogType.LAVA && type != FogType.POWDER_SNOW
+			&& SpaceRoof.underSky(camera.position());
+		haze += ((want ? 1f : 0f) - haze) * Math.min(1f, dt * 1.5f);
+		if (haze < 0.002f) {
+			haze = want ? haze : 0f;
+			return;
+		}
+		int rgb = config.spaceRoofRgb & 0xFFFFFF;
+		// Lighter than the stone, so it reads as glowing haze rather than just darkness.
+		float red = ((rgb >> 16) & 0xFF) / 255f * 0.55f + 0.07f;
+		float green = ((rgb >> 8) & 0xFF) / 255f * 0.55f + 0.06f;
+		float blue = (rgb & 0xFF) / 255f * 0.55f + 0.09f;
+		float start = Mth.lerp(haze, data.environmentalStart, 2f);
+		float end = Mth.lerp(haze, data.environmentalEnd, 42f);
+		data.environmentalStart = start;
+		data.environmentalEnd = end;
+		data.renderDistanceStart = Math.min(data.renderDistanceStart, end);
+		data.renderDistanceEnd = Math.min(data.renderDistanceEnd, Math.max(end, data.renderDistanceStart + 1f));
+		float alpha = Mth.lerp(haze, data.color.w, 0.65f);
+		data.color.set(Mth.lerp(haze, data.color.x, red), Mth.lerp(haze, data.color.y, green), Mth.lerp(haze, data.color.z, blue), alpha);
 	}
 
 	public static int fogRgb(StrayConfig config) {

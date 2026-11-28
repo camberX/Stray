@@ -36,7 +36,18 @@ public final class ServerTicks {
 	private static boolean usingPings = true;
 	private static boolean worldHasPings;
 
+	/** Server ticks seen since start, on the render thread (for lag-aware waits). */
+	private static volatile long seen;
+
 	private ServerTicks() {
+	}
+
+	/**
+	 * Server ticks counted so far. Lag slows it down and a frozen server stops it, so a wait
+	 * measured with it stretches with the server. Read on the render thread.
+	 */
+	public static long seen() {
+		return seen;
 	}
 
 	public static synchronized void onPacket(Packet<?> packet) {
@@ -112,6 +123,7 @@ public final class ServerTicks {
 		int n = (int) Math.min(count, 200L);
 		Minecraft.getInstance().execute(() -> {
 			for (int i = 0; i < n; i++) {
+				seen++;
 				dev.stray.client.dungeon.m4.M4.serverTick();
 				dev.stray.client.dungeon.RunSplits.serverTick();
 				dev.stray.client.dungeon.P3StartTimer.serverTick();

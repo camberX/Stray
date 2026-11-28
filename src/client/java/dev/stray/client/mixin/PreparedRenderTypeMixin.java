@@ -11,7 +11,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-/** CS2 knives: draw the knife from its GPU mesh instead of the batch's placeholder triangle. */
+/** CS2 knives and Space Roof: draw from their GPU meshes instead of the batch's placeholder. */
 @Mixin(PreparedRenderType.class)
 public class PreparedRenderTypeMixin {
 	@Inject(method = "drawFromBuffer", at = @At("HEAD"), cancellable = true)
@@ -25,6 +25,13 @@ public class PreparedRenderTypeMixin {
 			KnifeGpu.draw(self, renderPass);
 			//?} else {
 			/*KnifeGpu.draw(self);*///?}
+			ci.cancel();
+		} else if (dev.stray.client.visual.SpaceRoofGpu.handles(self)) {
+			// Space Roof: its cached meshes instead of the placeholder.
+			//? if >=26.3 {
+			dev.stray.client.visual.SpaceRoofGpu.draw(self, info, renderPass);
+			//?} else {
+			/*dev.stray.client.visual.SpaceRoofGpu.draw(self, info);*///?}
 			ci.cancel();
 		}
 	}

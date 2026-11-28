@@ -221,6 +221,9 @@ public final class StrayClient implements ClientModInitializer {
 		BlockMarks.init();
 		dev.stray.client.render.BoxWaypoints.init();
 		dev.stray.client.visual.Schizophrenia.init();
+		dev.stray.client.visual.SpaceRoof.init();
+		dev.stray.client.visual.SpaceRipples.init();
+		dev.stray.client.visual.SkyEditor.init();
 		if (!dev.stray.Edition.LEGIT) {
 			dev.stray.client.dungeon.EtherwarpAim.init();
 		}
@@ -648,6 +651,8 @@ public final class StrayClient implements ClientModInitializer {
 			RouteMiner.tick(client);
 			dev.stray.client.visual.Monochrome.tick();
 			dev.stray.client.visual.Schizophrenia.tick(client);
+			dev.stray.client.visual.SpaceRoof.tick(client);
+			dev.stray.client.visual.SpaceRipples.tick(client);
 			CrystalHollowsMap.tick(client);
 			MetalDetector.tick(client);
 			NucleusAlerts.tick(client);
@@ -1023,7 +1028,7 @@ public final class StrayClient implements ClientModInitializer {
 			boolean on = !dev.stray.client.dungeon.DevMode.on();
 			dev.stray.client.dungeon.DevMode.set(on);
 			context.getSource().sendFeedback(Component.literal("§bStray §7dev mode " + (on ? "§aon§7: F7 titles" + (dev.stray.Edition.LEGIT ? "" : " and terminal GUIs") + " work outside dungeons (e.g. your own server)." : "§coff§7.")
-				+ " §8/stray debug dev " + (dev.stray.Edition.LEGIT ? "titles" : "terminal <name>, titles") + ", leap, map, highlight, section <1-4>"));
+				+ " §8/stray debug dev " + (dev.stray.Edition.LEGIT ? "titles" : "terminal <name>, titles, rag") + ", leap, map, highlight, section <1-4>"));
 			return Command.SINGLE_SUCCESS;
 		});
 		node.then(ClientCommands.literal("titles").executes(context -> {
@@ -1035,6 +1040,36 @@ public final class StrayClient implements ClientModInitializer {
 			context.getSource().sendFeedback(Component.literal("§bStray §7simulating an F7 boss fight (about 35 s): crystals, Maxor, Storm and its lightning, all 7 terminals, the gate, Goldor and Necron. Dev mode is on."));
 			return Command.SINGLE_SUCCESS;
 		}));
+		if (!dev.stray.Edition.LEGIT) {
+			node.then(ClientCommands.literal("rag").executes(context -> {
+				context.getSource().sendFeedback(Component.literal("§bStray §7Auto Rag: acting as if you just placed your relic."));
+				dev.stray.client.dungeon.autoleap.AutoRag.simulate();
+				return Command.SINGLE_SUCCESS;
+			}));
+		}
+		node.then(ClientCommands.literal("roof").executes(context -> {
+			context.getSource().sendFeedback(Component.literal("§bStray §7Space roof: " + dev.stray.client.visual.SpaceRoof.describe(Minecraft.getInstance())
+				+ " §8/stray debug dev roof edit, clear, boss <floor>"));
+			return Command.SINGLE_SUCCESS;
+		}).then(ClientCommands.literal("bench").executes(context -> {
+			context.getSource().sendFeedback(Component.literal("§bStray §7Space roof: " + dev.stray.client.visual.SpaceRoof.bench()));
+			return 1;
+		})).then(ClientCommands.literal("stream").executes(context -> {
+			context.getSource().sendFeedback(Component.literal("§bStray §7Space roof: " + dev.stray.client.visual.SpaceRoofGpu.toggleStream()));
+			return 1;
+		})).then(ClientCommands.literal("clear").executes(context -> {
+			context.getSource().sendFeedback(Component.literal("§bStray §7Space roof: " + dev.stray.client.visual.SpaceRoof.clear(Minecraft.getInstance())));
+			return Command.SINGLE_SUCCESS;
+		})).then(ClientCommands.literal("boss").then(ClientCommands.argument("floor", com.mojang.brigadier.arguments.IntegerArgumentType.integer(0, 7)).executes(context -> {
+			context.getSource().sendFeedback(Component.literal("§bStray §7Space roof: " + dev.stray.client.visual.SpaceRoof.debugBoss(
+				com.mojang.brigadier.arguments.IntegerArgumentType.getInteger(context, "floor"))));
+			return Command.SINGLE_SUCCESS;
+		}))).then(ClientCommands.literal("edit").executes(context -> {
+			Minecraft client = Minecraft.getInstance();
+			// Freecam starts on the next tick, not from inside the command.
+			client.execute(() -> client.player.sendSystemMessage(Component.literal("§bStray §7Space roof: " + dev.stray.client.visual.SkyEditor.toggle(client))));
+			return Command.SINGLE_SUCCESS;
+		})));
 		node.then(ClientCommands.literal("leap").executes(context -> {
 			StrayConfig config = StrayConfig.get();
 			if (!config.f7TitlesEnabled || !config.f7LeapCounter) {

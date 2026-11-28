@@ -192,6 +192,9 @@ public final class Freecam {
 		options.keyAttack.setDown(false);
 		options.keyUse.setDown(false);
 		options.keyPickItem.setDown(false);
+		if (dev.stray.client.visual.SkyEditor.active()) {
+			dev.stray.client.visual.SkyEditor.onInput(client, picks);
+		}
 		if (WorldEditor.active()) {
 			int[] slots = new int[options.keyHotbarSlots.length];
 			for (int i = 0; i < slots.length; i++) {
@@ -216,6 +219,9 @@ public final class Freecam {
 		}
 		if (WorldEditor.active()) {
 			return WorldEditor.scroll(amount);
+		}
+		if (dev.stray.client.visual.SkyEditor.active()) {
+			return dev.stray.client.visual.SkyEditor.scroll(amount);
 		}
 		StrayConfig config = StrayConfig.get();
 		double next = speed() * (amount > 0 ? 1.15 : 1 / 1.15);

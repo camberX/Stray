@@ -72,6 +72,26 @@ public final class StrayConfig {
 	/** Monochrome: blocks in black and white, splash hue and marked blocks in the accent. */
 	public boolean monochrome = false;
 	public int monochromeRgb = 0xE8443A;
+	/** Space Roof: dungeon room ceilings show a night sky. */
+	public boolean spaceRoof = false;
+	public int spaceRoofRgb = 0x6A4CFF;
+	public float spaceRoofOpacity = 1f;
+	/** Blocks from the walls over which the sky fades back to the bricks. */
+	public float spaceRoofFade = 4f;
+	public boolean spaceRoofShootingStars = false;
+	/** Glowing specks drifting down out of the sky. */
+	public boolean spaceRoofStardust = false;
+	/** The blocks under the sky: lit in its colour, glowing seams, cracks into space, stone bits rising into it. */
+	public boolean spaceRoofLight = false;
+	public boolean spaceRoofSeams = false;
+	public boolean spaceRoofCracks = false;
+	public boolean spaceRoofDebris = false;
+	/** The floors under the sky: reflecting it, and a haze in the sky's colour. */
+	public boolean spaceRoofReflect = false;
+	public boolean spaceRoofMist = false;
+	/** Footstep ripples: a ring of light spreading from every step people take. */
+	public boolean footstepRipples = false;
+	public int footstepRipplesRgb = 0x8FA8FF;
 	public boolean monochromeSplash = true;
 	/** Index into Monochrome.SPLASH_LABELS: 0 is the accent's own hue. */
 	public int monochromeSplashHue = 0;
@@ -717,6 +737,13 @@ public final class StrayConfig {
 	public boolean hideOtherNames = false;
 	/** Auto Leap (full edition): leaps on F7 events. Fast Leap: left click the leap to leap. */
 	public boolean autoLeap = false;
+	public boolean autoRag = false;
+	/** Auto rag: wardrobe set to equip after Ender Dragon, 0 = off. */
+	public int autoRagWardrobe = 0;
+	/** Auto rag: 0 = wardrobe set during the cast, 1 = loadout after it. */
+	public int autoRagMode = 0;
+	/** Auto rag: loadout to equip after CASTING (loadout mode), 0 = off. */
+	public int autoRagLoadout = 0;
 	public boolean fastLeap = false;
 	/** 0 = by class, 1 = by player name. */
 	public int leapMode = 0;
@@ -1584,6 +1611,10 @@ public final class StrayConfig {
 					loaded.loadoutSwapSlotC = 3;
 				}
 				loaded.loadoutSwapSlotC = clampLoadoutSwapSlot(loaded.loadoutSwapSlotC);
+				// Space roof's first default (95%) let the brick edges show through the sky.
+				if (loaded.spaceRoofOpacity == 0.95f) {
+					loaded.spaceRoofOpacity = 1f;
+				}
 				if (!json.has("loadoutSwapTri")) {
 					loaded.loadoutSwapTri = false;
 				}

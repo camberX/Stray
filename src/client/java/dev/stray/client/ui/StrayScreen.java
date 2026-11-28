@@ -141,6 +141,8 @@ public class StrayScreen extends Screen {
 		VIEW("Aspect", 3),
 		MOTION("Motion blur", 3),
 		MONOCHROME("Monochrome", 10),
+		SPACE_ROOF("Space roof", 10),
+		FOOTSTEP_RIPPLES("Footstep ripples", 1),
 		WAYPOINTS("Waypoints", 11),
 		SCHIZOPHRENIA("Schizophrenia", 11),
 		HELD_ITEM("Held item", 7),
@@ -188,6 +190,7 @@ public class StrayScreen extends Screen {
 		RUN_SPLITS("Run splits", 4),
 		SCOREBOARD("Scoreboard", 1),
 		AUTO_LEAP("Auto leap", 1),
+		AUTO_RAG("Auto rag", 1),
 		FAST_LEAP("Fast leap", 1),
 		AUTO_HOTBAR("Auto hotbar", 8),
 		SMOOTH_HOTBAR("Smooth hotbar", 1),
@@ -289,6 +292,9 @@ public class StrayScreen extends Screen {
 			if (this == PATHS) {
 				return baseRows + Math.min(PathRecorder.here().size(), 10);
 			}
+			if (this == AUTO_RAG) {
+				return 2 + ("ragmode".equals(dropdownOpen) ? 2 : 0) + ("ragwardrobe".equals(dropdownOpen) ? 19 : 0) + ("ragloadout".equals(dropdownOpen) ? 13 : 0);
+			}
 			if (this == AUTO_LEAP || this == FAST_LEAP) {
 				return leapRows(this == AUTO_LEAP);
 			}
@@ -312,7 +318,7 @@ public class StrayScreen extends Screen {
 	}
 
 	private enum PickerTarget {
-		WORLD, SKY, FOG, NODE, THEME, PANE, CONTROL, PILL, MOB, STAR, BLOCK, TITANIUM, CHEST, PEST, HELD_ITEM, HELD_ITEM_OUTLINE, FILL, FILL_OUTLINE, MARKS, PATHS, RINGS, HEALTH_FULL, HEALTH_EMPTY, BOX, SLAYER, TERMINAL, TERM_HIGHLIGHT, UID_ACCENT, SIGNATURE_ACCENT, MONOCHROME, ARGB_FIELD
+		WORLD, SKY, FOG, NODE, THEME, PANE, CONTROL, PILL, MOB, STAR, BLOCK, TITANIUM, CHEST, PEST, HELD_ITEM, HELD_ITEM_OUTLINE, FILL, FILL_OUTLINE, MARKS, PATHS, RINGS, HEALTH_FULL, HEALTH_EMPTY, BOX, SLAYER, TERMINAL, TERM_HIGHLIGHT, UID_ACCENT, SIGNATURE_ACCENT, MONOCHROME, SPACE_ROOF, FOOTSTEP_RIPPLES, ARGB_FIELD
 	}
 
 	/** Which slayer colour the SLAYER picker edits (see SlayerSettings.color). */
@@ -3955,6 +3961,23 @@ public class StrayScreen extends Screen {
 				int count = dev.stray.client.render.BoxWaypoints.count();
 				clickButton(graphics, font, ix, y, iw, mouseX, mouseY, count == 0 ? "No waypoints here" : "Clear " + count + (count == 1 ? " waypoint" : " waypoints") + " here", () -> monoMessage(dev.stray.client.render.BoxWaypoints.clear()));
 			}
+			case SPACE_ROOF -> {
+				y = colorRow(graphics, font, ix, y, iw, mouseX, mouseY, "Colour", config.spaceRoofRgb, PickerTarget.SPACE_ROOF);
+				int wallFade = Math.round(config.spaceRoofFade);
+				y = slider(graphics, font, ix, y, iw, "Wall fade", wallFade == 0 ? "Off" : wallFade + (wallFade == 1 ? " block" : " blocks"), config.spaceRoofFade / 20f,
+					v -> config.spaceRoofFade = snapInt(v * 20f, 0, 20, 1));
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Shooting stars", config.spaceRoofShootingStars, v -> config.spaceRoofShootingStars = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Falling stardust", config.spaceRoofStardust, v -> config.spaceRoofStardust = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Nebula light", config.spaceRoofLight, v -> config.spaceRoofLight = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Glowing seams", config.spaceRoofSeams, v -> config.spaceRoofSeams = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Space cracks", config.spaceRoofCracks, v -> config.spaceRoofCracks = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Rising debris", config.spaceRoofDebris, v -> config.spaceRoofDebris = v);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Starlit floor", config.spaceRoofReflect, v -> config.spaceRoofReflect = v);
+				toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Cosmic haze", config.spaceRoofMist, v -> config.spaceRoofMist = v);
+			}
+			case FOOTSTEP_RIPPLES -> {
+				colorRow(graphics, font, ix, y, iw, mouseX, mouseY, "Colour", config.footstepRipplesRgb, PickerTarget.FOOTSTEP_RIPPLES);
+			}
 			case MONOCHROME -> {
 				y = colorRow(graphics, font, ix, y, iw, mouseX, mouseY, "Accent colour", config.monochromeRgb, PickerTarget.MONOCHROME);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Splash", config.monochromeSplash, v -> config.monochromeSplash = v);
@@ -4228,6 +4251,19 @@ public class StrayScreen extends Screen {
 			case ETHERWARP_AIM -> {
 				if (!dev.stray.Edition.LEGIT) {
 					clickAction(graphics, font, ix, y, iw, "Open settings", () -> minecraft.gui.setScreen(new EtherwarpAimScreen(minecraft.gui.screen())));
+				}
+			}
+			case AUTO_RAG -> {
+				if (!dev.stray.Edition.LEGIT) {
+					y = dropdown(graphics, font, ix, y, iw, mouseX, mouseY, "ragmode", "Swap with", dev.stray.client.dungeon.autoleap.AutoRag.MODES,
+						config.autoRagMode, i -> config.autoRagMode = i);
+					if (config.autoRagMode == 1) {
+						dropdown(graphics, font, ix, y, iw, mouseX, mouseY, "ragloadout", "Loadout", dev.stray.client.dungeon.autoleap.AutoRag.LOADOUTS,
+							config.autoRagLoadout, i -> config.autoRagLoadout = i);
+					} else {
+						dropdown(graphics, font, ix, y, iw, mouseX, mouseY, "ragwardrobe", "Wardrobe set", dev.stray.client.dungeon.autoleap.AutoRag.WARDROBE_SETS,
+							config.autoRagWardrobe, i -> config.autoRagWardrobe = i);
+					}
 				}
 			}
 			case AUTO_LEAP -> drawLeapPanel(graphics, font, ix, y, iw, mouseX, mouseY, true);
@@ -5442,6 +5478,8 @@ public class StrayScreen extends Screen {
 			case THEME -> Theme.applyCustom(packed);
 			case UID_ACCENT -> config.uidAccent = packed == 0 ? 0x9FCA2B : packed;
 			case MONOCHROME -> config.monochromeRgb = packed == 0 ? 0xE8443A : packed;
+			case FOOTSTEP_RIPPLES -> config.footstepRipplesRgb = packed == 0 ? 0x8FA8FF : packed;
+			case SPACE_ROOF -> config.spaceRoofRgb = packed == 0 ? 0x6A4CFF : packed;
 			case SIGNATURE_ACCENT -> {
 				config.signatureAccent = packed == 0 ? SignatureLook.DEFAULT_ACCENT : packed;
 				Theme.refresh();
@@ -5462,9 +5500,10 @@ public class StrayScreen extends Screen {
 		return switch (target) {
 			case CONTROL, PILL -> 0.12f;
 			case PANE -> 0.20f;
+			case SPACE_ROOF -> 0.20f;
 			case MOB, STAR, BLOCK, TERM_HIGHLIGHT -> 0.15f;
 			case NODE, HELD_ITEM, FILL, CHEST, TITANIUM, PEST, BOX -> 0.08f;
-			case THEME, UID_ACCENT, SIGNATURE_ACCENT, MONOCHROME, HELD_ITEM_OUTLINE, FILL_OUTLINE, MARKS, PATHS, RINGS, HEALTH_FULL, HEALTH_EMPTY, SLAYER, TERMINAL -> 1f;
+			case THEME, UID_ACCENT, SIGNATURE_ACCENT, MONOCHROME, FOOTSTEP_RIPPLES, HELD_ITEM_OUTLINE, FILL_OUTLINE, MARKS, PATHS, RINGS, HEALTH_FULL, HEALTH_EMPTY, SLAYER, TERMINAL -> 1f;
 			default -> 0f;
 		};
 	}
@@ -5496,10 +5535,11 @@ public class StrayScreen extends Screen {
 			case HELD_ITEM -> config.heldItemShaderFill;
 			case FILL -> config.visuals(pickerKind).shaderFill;
 			case WORLD -> config.worldTintStrength;
+			case SPACE_ROOF -> config.spaceRoofOpacity;
 			case SKY -> config.skyTintStrength;
 			case FOG -> config.fogDensity;
 			case ARGB_FIELD -> (config.argbField(argbFieldKey) >>> 24) / 255f;
-			case THEME, UID_ACCENT, SIGNATURE_ACCENT, MONOCHROME, HELD_ITEM_OUTLINE, FILL_OUTLINE, MARKS, PATHS, RINGS, HEALTH_FULL, HEALTH_EMPTY, SLAYER, TERMINAL -> 1f;
+			case THEME, UID_ACCENT, SIGNATURE_ACCENT, MONOCHROME, FOOTSTEP_RIPPLES, HELD_ITEM_OUTLINE, FILL_OUTLINE, MARKS, PATHS, RINGS, HEALTH_FULL, HEALTH_EMPTY, SLAYER, TERMINAL -> 1f;
 		};
 	}
 
@@ -5522,10 +5562,11 @@ public class StrayScreen extends Screen {
 			case HELD_ITEM -> config.heldItemShaderFill = clamped;
 			case FILL -> config.visuals(pickerKind).shaderFill = clamped;
 			case WORLD -> config.worldTintStrength = clamped;
+			case SPACE_ROOF -> config.spaceRoofOpacity = clamped;
 			case SKY -> config.skyTintStrength = clamped;
 			case FOG -> config.fogDensity = clamped;
 			case ARGB_FIELD -> config.setArgbField(argbFieldKey, (Math.round(clamped * 255f) << 24) | (config.argbField(argbFieldKey) & 0xFFFFFF));
-			case THEME, UID_ACCENT, SIGNATURE_ACCENT, MONOCHROME, HELD_ITEM_OUTLINE, FILL_OUTLINE, MARKS, PATHS, RINGS, HEALTH_FULL, HEALTH_EMPTY, SLAYER, TERMINAL -> {
+			case THEME, UID_ACCENT, SIGNATURE_ACCENT, MONOCHROME, FOOTSTEP_RIPPLES, HELD_ITEM_OUTLINE, FILL_OUTLINE, MARKS, PATHS, RINGS, HEALTH_FULL, HEALTH_EMPTY, SLAYER, TERMINAL -> {
 				return;
 			}
 		}

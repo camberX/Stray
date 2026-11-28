@@ -271,6 +271,18 @@ public final class WorldEditor {
 		});
 	}
 
+	/**
+	 * The workspace closed (to look around) or another action took over: a selection drag keeps
+	 * going while the left button is held, so you can turn and fly mid-drag (the far corner then
+	 * follows the crosshair). Anything else lets go.
+	 */
+	public static void viewportPause() {
+		if (selectDragging && leftHeld) {
+			return;
+		}
+		viewportRelease();
+	}
+
 	public static void viewportRelease() {
 		if (!leftHeld) {
 			return;
@@ -288,8 +300,8 @@ public final class WorldEditor {
 	/** Hold right mouse: grab the mouse so it turns the camera, until the button is let go. */
 	private static void beginLook() {
 		Minecraft client = Minecraft.getInstance();
-		viewportRelease();
 		looking = true;
+		viewportPause();
 		client.mouseHandler.grabMouse();
 	}
 
@@ -830,6 +842,13 @@ public final class WorldEditor {
 			return false;
 		}
 		return true;
+	}
+
+	/** Every block of the selection (box or magic wand); nothing without one. */
+	public static void forEachSelected(java.util.function.Consumer<BlockPos> action) {
+		if (hasSelection()) {
+			forSelection(action);
+		}
 	}
 
 	private static void forSelection(java.util.function.Consumer<BlockPos> action) {

@@ -276,6 +276,7 @@ public final class ClickGui {
 	static final String ETHERWARP_AIM = "Etherwarp aim";
 	static final String AUTO_LEAP = "Auto leap";
 	static final String FAST_LEAP = "Fast leap";
+	static final String AUTO_RAG = "Auto rag";
 	static final String MAP = "Dungeon map";
 
 	/** CS2 knives (local build): pick the knife, finish, seed and wear. */
@@ -470,6 +471,8 @@ public final class ClickGui {
 		java.util.Map.entry("Motion blur", "Blurs the screen while you move and turn."),
 		java.util.Map.entry("Schizophrenia", "Players near you stare at you, and now and then you hear and see things that are not there. Only on your screen."),
 		java.util.Map.entry("Waypoints", "Boxes you place where you stand: the bottom at your feet, your own width, height, outline and colours. Saved per island."),
+		java.util.Map.entry("Footstep ripples", "A soft ring of light in your colour spreads from every step you and other players take, and fades."),
+		java.util.Map.entry("Space roof", "The Floor 7 boss ceilings show a night sky in your colour, fading back to the bricks at its edges. Only the look changes: the ceiling is still there."),
 		java.util.Map.entry("Monochrome", "Blocks in black and white. Things in the splash colour, usable blocks and your own list stay in the accent colour, with their texture and lighting. Whole screen does items, menus and mobs too."),
 		java.util.Map.entry("Skull hold", "Holds skulls and heads the 1.8 way."),
 		java.util.Map.entry("Backwards walk", "1.8 style body turn when walking backwards."),
@@ -490,6 +493,7 @@ public final class ClickGui {
 		java.util.Map.entry("Block outline", "A glowing outline on the block you look at."),
 		java.util.Map.entry("Fairy souls", "Shows fairy souls you have not collected yet."),
 		java.util.Map.entry("Auto clicker", "Clicks for you while you hold the bind."),
+		java.util.Map.entry(AUTO_RAG, "M7 P5: after placing your relic, swaps to your Ragnarock and casts it once your crosshair is free, with Golden Dragon and your wardrobe set during the cast and Ender Dragon after, or your loadout after. Hotbar keys and scrolling are ignored until it says CASTING."),
 		java.util.Map.entry("Party stats", "Shows a stats card when someone joins from the party finder."),
 		java.util.Map.entry("Auto leap", "F7/M7: leaps to the teammate you pick when a boss moment happens (crushes, P3 sections, I4, relic...). Silent menu, every step at tick start. Ported from quoi by jcnlk, used with permission."),
 		java.util.Map.entry("Fast leap", "F7/M7: while holding a Spirit Leap, left click leaps to the teammate set for where you are in the fight. Ported from quoi by jcnlk, used with permission."),
@@ -664,7 +668,7 @@ public final class ClickGui {
 	/** Modules Stray Legit leaves out: they automate input or are the loadouts / wardrobe menus. */
 	private static final java.util.Set<String> LEGIT_REMOVED = java.util.Set.of(
 		"Auto clicker", "Experiments", "Book combine", "Loadouts", "Wardrobe", "Auto DNA",
-		"Command rings", "Movement rings", "Align triggerbot", "Terminal GUI", "Lever triggerbot", "Hitboxes", "Etherwarp aim", "Auto leap", "Fast leap"
+		"Command rings", "Movement rings", "Align triggerbot", "Terminal GUI", "Lever triggerbot", "Hitboxes", "Etherwarp aim", "Auto leap", "Fast leap", "Auto rag"
 	);
 
 	/**
@@ -724,6 +728,7 @@ public final class ClickGui {
 		mods.add(mod(ETHERWARP_AIM, "Dungeons", StrayScreen.Feature.ETHERWARP_AIM, null, () -> config.etherwarpAim, v -> config.etherwarpAim = v, true, false));
 		mods.add(mod(AUTO_LEAP, "Dungeons", StrayScreen.Feature.AUTO_LEAP, null, () -> config.autoLeap, v -> config.autoLeap = v, true, false));
 		mods.add(mod(FAST_LEAP, "Dungeons", StrayScreen.Feature.FAST_LEAP, null, () -> config.fastLeap, v -> config.fastLeap = v, true, false));
+		mods.add(mod(AUTO_RAG, "Dungeons", StrayScreen.Feature.AUTO_RAG, null, () -> config.autoRag, v -> config.autoRag = v, true, false));
 		mods.add(mod("Star mobs", "Dungeons", StrayScreen.Feature.STAR, EntityKind.STAR, () -> config.starVisuals.glowEnabled, v -> {
 			config.starVisuals.glowEnabled = v;
 			config.starMobEsp = v;
@@ -779,6 +784,8 @@ public final class ClickGui {
 		mods.add(mod("Aspect", "World", StrayScreen.Feature.VIEW, null, () -> config.aspectEnabled, v -> config.aspectEnabled = v, true, false));
 		mods.add(mod("Waypoints", "World", StrayScreen.Feature.WAYPOINTS, null, () -> config.waypoints, v -> config.waypoints = v, true, false));
 		mods.add(mod("Schizophrenia", "World", StrayScreen.Feature.SCHIZOPHRENIA, null, () -> config.schizophrenia, v -> config.schizophrenia = v, true, false));
+		mods.add(mod("Space roof", "World", StrayScreen.Feature.SPACE_ROOF, null, () -> config.spaceRoof, v -> config.spaceRoof = v, true, false));
+		mods.add(mod("Footstep ripples", "World", StrayScreen.Feature.FOOTSTEP_RIPPLES, null, () -> config.footstepRipples, v -> config.footstepRipples = v, true, false));
 		mods.add(mod("Monochrome", "World", StrayScreen.Feature.MONOCHROME, null, () -> config.monochrome, v -> config.monochrome = v, true, false));
 		mods.add(mod("Motion blur", "World", StrayScreen.Feature.MOTION, null, () -> config.motionBlurEnabled, v -> config.motionBlurEnabled = v, true, false));
 		mods.add(mod("Block outline", "World", StrayScreen.Feature.BLOCK, null, () -> config.blockOutlineGlow, v -> config.blockOutlineGlow = v, true, false));

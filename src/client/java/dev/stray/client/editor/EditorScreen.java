@@ -150,7 +150,7 @@ public class EditorScreen extends Screen {
 	@Override
 	public void removed() {
 		WorldEditor.cursor(Double.NaN, Double.NaN);
-		WorldEditor.viewportRelease();
+		WorldEditor.viewportPause();
 	}
 
 	/** Draws the workspace without taking input (while looking around or with chat open). */

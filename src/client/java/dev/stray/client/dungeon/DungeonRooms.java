@@ -100,12 +100,53 @@ public final class DungeonRooms {
 		return Rooms.byCore(Scanner.core(level, x, z));
 	}
 
-	private static Room find(ClientLevel level, int cx, int cz) {
+	/** The room at a world position (not only where you stand), with its turn if found. */
+	public static Room at(ClientLevel level, double x, double z) {
+		return find(level, (int) Math.rint((x - Scanner.START_X) / SIZE), (int) Math.rint((z - Scanner.START_Z) / SIZE));
+	}
+
+	/**
+	 * The floor plan of the room at a world position, as boxes {minX, minZ, maxX, maxZ}
+	 * (inclusive): each of its 31 x 31 cells, the 1-wide joins between its cells, and the
+	 * middle of a 2 x 2. Empty when no room is there.
+	 */
+	public static List<int[]> footprint(ClientLevel level, double x, double z) {
+		int cx = (int) Math.rint((x - Scanner.START_X) / SIZE);
+		int cz = (int) Math.rint((z - Scanner.START_Z) / SIZE);
 		RoomData data = dataAt(level, cx, cz);
+		List<int[]> boxes = new ArrayList<>();
 		if (data == null) {
-			return null;
+			return boxes;
 		}
-		// The room's cells: this one and every touching cell with the same room in it.
+		List<int[]> cells = cellsOf(level, cx, cz, data);
+		for (int[] cell : cells) {
+			int mx = centerX(cell[0]);
+			int mz = centerZ(cell[1]);
+			boxes.add(new int[] {mx - HALF, mz - HALF, mx + HALF, mz + HALF});
+			if (has(cells, cell[0] + 1, cell[1])) {
+				boxes.add(new int[] {mx + HALF + 1, mz - HALF, mx + HALF + 1, mz + HALF});
+			}
+			if (has(cells, cell[0], cell[1] + 1)) {
+				boxes.add(new int[] {mx - HALF, mz + HALF + 1, mx + HALF, mz + HALF + 1});
+			}
+			if (has(cells, cell[0] + 1, cell[1]) && has(cells, cell[0], cell[1] + 1) && has(cells, cell[0] + 1, cell[1] + 1)) {
+				boxes.add(new int[] {mx + HALF + 1, mz + HALF + 1, mx + HALF + 1, mz + HALF + 1});
+			}
+		}
+		return boxes;
+	}
+
+	private static boolean has(List<int[]> cells, int cx, int cz) {
+		for (int[] c : cells) {
+			if (c[0] == cx && c[1] == cz) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	/** The room's cells: this one and every touching cell with the same room in it. */
+	private static List<int[]> cellsOf(ClientLevel level, int cx, int cz, RoomData data) {
 		List<int[]> cells = new ArrayList<>();
 		ArrayDeque<int[]> queue = new ArrayDeque<>();
 		queue.add(new int[] {cx, cz});
@@ -130,6 +171,15 @@ public final class DungeonRooms {
 			queue.add(new int[] {cell[0], cell[1] + 1});
 			queue.add(new int[] {cell[0], cell[1] - 1});
 		}
+		return cells;
+	}
+
+	private static Room find(ClientLevel level, int cx, int cz) {
+		RoomData data = dataAt(level, cx, cz);
+		if (data == null) {
+			return null;
+		}
+		List<int[]> cells = cellsOf(level, cx, cz, data);
 		int minX = Integer.MAX_VALUE;
 		int maxX = Integer.MIN_VALUE;
 		int minZ = Integer.MAX_VALUE;

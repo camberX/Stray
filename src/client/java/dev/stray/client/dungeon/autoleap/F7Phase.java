@@ -45,8 +45,19 @@ public final class F7Phase {
 	}
 
 	public static boolean inF7Boss() {
-		return DevMode.on() || SkyblockLocation.inDungeon && SkyblockLocation.inBoss && SkyblockLocation.dungeonFloor == 7;
+		return DevMode.on() || sawBoss || bossNow();
 	}
+
+	private static boolean bossNow() {
+		return SkyblockLocation.inDungeon && SkyblockLocation.inBoss && SkyblockLocation.dungeonFloor == 7;
+	}
+
+	/**
+	 * Seen the F7 boss in this world. Sticks until the world changes: the sidebar the location
+	 * comes from can drop out for a moment (phase changes, Hypixel redrawing it), and a leap
+	 * checked in that moment was skipped.
+	 */
+	private static boolean sawBoss;
 
 	public static Phase phase() {
 		return inF7Boss() ? phase : Phase.UNKNOWN;
@@ -119,7 +130,23 @@ public final class F7Phase {
 	public static void tick(Minecraft client) {
 		if (client.level != lastLevel) {
 			lastLevel = client.level;
+			sawBoss = false;
 			reset();
+		}
+		if (bossNow()) {
+			sawBoss = true;
+		}
+		// Missed the phase's chat line (it came before the boss room was known, or you joined
+		// late): take it from your height, like quoi. P3 needs its own line (the sections).
+		if (inF7Boss()) {
+			Phase at = phaseAt(client.player);
+			if (phase == Phase.UNKNOWN && (at == Phase.P1 || at == Phase.P2 || at == Phase.P4)) {
+				phase = at;
+			}
+			// Below the P4 floor is only reachable in M7 P5.
+			if ((phase == Phase.UNKNOWN || phase == Phase.P4) && at == Phase.P5) {
+				phase = Phase.P5;
+			}
 		}
 	}
 
@@ -137,7 +164,10 @@ public final class F7Phase {
 	}
 
 	public static void onChat(String plain) {
-		if (!inF7Boss() || plain == null) {
+		// Any time in a dungeon, not only once the boss room is known: Maxor's first line comes
+		// the moment you enter, often before the location (read every 5 ticks) has caught up.
+		// These lines only exist in F7 and M7.
+		if (plain == null || !(inF7Boss() || SkyblockLocation.inDungeon)) {
 			return;
 		}
 		switch (plain) {
@@ -164,6 +194,12 @@ public final class F7Phase {
 				resetStage();
 				return;
 			}
+			case "[BOSS] Necron: All this, for nothing..." -> {
+				if (SkyblockLocation.dungeonMaster) {
+					phase = Phase.P5;
+				}
+				return;
+			}
 			case "The Core entrance is opening!" -> {
 				int old = stage;
 				stage = 5;
@@ -174,6 +210,10 @@ public final class F7Phase {
 				return;
 			}
 			default -> {
+				if (plain.startsWith("[BOSS] Wither King:") && phase != Phase.P5) {
+					phase = Phase.P5;
+					return;
+				}
 			}
 		}
 		if (phase != Phase.P3 || stage < 1 || stage > 4) {
