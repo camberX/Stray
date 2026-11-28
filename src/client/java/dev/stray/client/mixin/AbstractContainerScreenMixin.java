@@ -48,6 +48,7 @@ public class AbstractContainerScreenMixin {
 	@Inject(method = "mouseReleased", at = @At("HEAD"), cancellable = true)
 	private void stray$terminalRelease(MouseButtonEvent event, CallbackInfoReturnable<Boolean> cir) {
 		if (!dev.stray.Edition.LEGIT && dev.stray.client.dungeon.terminal.TerminalSession.handles((AbstractContainerScreen<?>) (Object) this)) {
+			dev.stray.client.dungeon.terminal.TerminalSession.mouseReleased();
 			cir.setReturnValue(true);
 		}
 	}
@@ -55,6 +56,9 @@ public class AbstractContainerScreenMixin {
 	@Inject(method = "mouseDragged", at = @At("HEAD"), cancellable = true)
 	private void stray$terminalDrag(MouseButtonEvent event, double dx, double dy, CallbackInfoReturnable<Boolean> cir) {
 		if (!dev.stray.Edition.LEGIT && dev.stray.client.dungeon.terminal.TerminalSession.handles((AbstractContainerScreen<?>) (Object) this)) {
+			if (event.button() == 0) {
+				dev.stray.client.dungeon.terminal.TerminalSession.mouseDragged(event.x(), event.y());
+			}
 			cir.setReturnValue(true);
 		}
 	}

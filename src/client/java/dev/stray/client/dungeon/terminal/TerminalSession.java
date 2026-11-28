@@ -235,12 +235,38 @@ public final class TerminalSession {
 		return System.currentTimeMillis() - openMs < delay * 50L;
 	}
 
+	/** The slot left click is held on: dragging onto another slot clicks that one. */
+	private static int dragSlot = -1;
+
 	public static boolean mouseClicked(double mouseX, double mouseY) {
 		if (term == null) {
 			return false;
 		}
-		click(TerminalGui.slotAt(mouseX, mouseY));
+		dragSlot = TerminalGui.slotAt(mouseX, mouseY);
+		click(dragSlot);
 		return true;
+	}
+
+	/**
+	 * Left click held and the mouse moved: each slot it moves onto is clicked once, like a
+	 * click on it. Leaving a slot and coming back clicks it again.
+	 */
+	public static void mouseDragged(double mouseX, double mouseY) {
+		if (term == null) {
+			return;
+		}
+		int slot = TerminalGui.slotAt(mouseX, mouseY);
+		if (slot == dragSlot) {
+			return;
+		}
+		dragSlot = slot;
+		if (slot >= 0) {
+			click(slot);
+		}
+	}
+
+	public static void mouseReleased() {
+		dragSlot = -1;
 	}
 
 	/** Returns true when the key is used up: everything but closing keys; drop clicks the hovered slot. */

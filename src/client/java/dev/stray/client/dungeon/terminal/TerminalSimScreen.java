@@ -41,6 +41,20 @@ final class TerminalSimScreen extends Screen {
 	}
 
 	@Override
+	public boolean mouseDragged(MouseButtonEvent event, double dx, double dy) {
+		if (event.button() == 0) {
+			TerminalSession.mouseDragged(event.x(), event.y());
+		}
+		return true;
+	}
+
+	@Override
+	public boolean mouseReleased(MouseButtonEvent event) {
+		TerminalSession.mouseReleased();
+		return true;
+	}
+
+	@Override
 	public boolean keyPressed(KeyEvent event) {
 		if (minecraft != null && minecraft.options.keyInventory.matches(event)) {
 			onClose();
