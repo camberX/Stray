@@ -60,6 +60,14 @@ public final class MiningTracker {
 
 	private static final Object LOCK = new Object();
 	private static List<Commission> commissions = List.of();
+	/** Each commission's progress as the tab list last showed it. */
+	private static final java.util.Map<String, String> lastTab = new java.util.HashMap<>();
+	/**
+	 * Progress Stray worked out before the tab list caught up (a titanium ore broken, the
+	 * "Commission Complete!" line). Dropped as soon as the tab list shows something new.
+	 */
+	private static final java.util.Map<String, Commission> ahead = new java.util.HashMap<>();
+	private static final Pattern COMPLETE = Pattern.compile("^(.+?) Commission Complete!.*$");
 	private static String ability = "Pickaxe";
 	private static boolean abilityReady = true;
 	private static long cooldownUntil;
@@ -103,7 +111,7 @@ public final class MiningTracker {
 		List<Commission> parsed = readCommissions(client);
 		syncAbility(client);
 		synchronized (LOCK) {
-			commissions = parsed;
+			commissions = merge(parsed);
 			if (!abilityReady && System.currentTimeMillis() >= cooldownUntil) {
 				abilityReady = true;
 			}
@@ -114,6 +122,11 @@ public final class MiningTracker {
 	public static void onChat(Component message) {
 		String text = plain(message);
 		if (text.isEmpty()) {
+			return;
+		}
+		Matcher complete = COMPLETE.matcher(text);
+		if (complete.matches()) {
+			markComplete(complete.group(1).trim());
 			return;
 		}
 		String key = text.toLowerCase(Locale.ROOT);
@@ -142,6 +155,8 @@ public final class MiningTracker {
 	public static void reset() {
 		synchronized (LOCK) {
 			commissions = List.of();
+			lastTab.clear();
+			ahead.clear();
 			alertName = "";
 			alertUntil = 0L;
 		}
@@ -619,6 +634,114 @@ public final class MiningTracker {
 	}
 
 	public record Commission(String name, String progress, float fraction, boolean done) {
+	}
+
+	// ------------------------------------------------------------------ live progress
+
+	/**
+	 * The tab list's commissions with Stray's own progress on top, where the tab list hasn't
+	 * changed since. Any change on the tab list wins.
+	 */
+	private static List<Commission> merge(List<Commission> parsed) {
+		java.util.Set<String> names = new java.util.HashSet<>();
+		List<Commission> out = new ArrayList<>(parsed.size());
+		for (Commission tab : parsed) {
+			names.add(tab.name());
+			String before = lastTab.put(tab.name(), tab.progress());
+			if (before != null && !before.equals(tab.progress())) {
+				ahead.remove(tab.name());
+			}
+			out.add(ahead.getOrDefault(tab.name(), tab));
+		}
+		lastTab.keySet().retainAll(names);
+		ahead.keySet().retainAll(names);
+		return List.copyOf(out);
+	}
+
+	/** How many a commission asks for, or 0 when Stray doesn't know (shown as the tab shows it). */
+	public static int needed(String name) {
+		String key = name.toLowerCase(Locale.ROOT);
+		if (key.equals("titanium miner")) {
+			return 15;
+		}
+		if (key.endsWith(" titanium")) {
+			return 10;
+		}
+		if (key.equals("mithril miner")) {
+			return 350;
+		}
+		if (key.endsWith(" mithril")) {
+			return 250;
+		}
+		if (key.equals("goblin slayer")) {
+			return 100;
+		}
+		if (key.equals("ice walker slayer") || key.equals("glacite walker slayer")) {
+			return 50;
+		}
+		return 0;
+	}
+
+	/** The progress to draw: "6/15" with numbers on (when the amount is known), else the tab's. */
+	public static String shown(Commission commission) {
+		int need = needed(commission.name());
+		if (!StrayConfig.get().miningHudNumbers || need <= 0) {
+			return commission.progress();
+		}
+		int have = commission.done() ? need : Math.min(need, Math.round(commission.fraction() * need));
+		return have + "/" + need;
+	}
+
+	/** The titanium ore you were mining broke: one more for the titanium commissions it counts for. */
+	public static void onTitaniumBroken(net.minecraft.core.BlockPos pos) {
+		synchronized (LOCK) {
+			List<Commission> out = new ArrayList<>(commissions.size());
+			boolean changed = false;
+			for (Commission commission : commissions) {
+				int need = needed(commission.name());
+				String key = commission.name().toLowerCase(Locale.ROOT);
+				boolean counts = need > 0 && !commission.done() && key.contains("titanium")
+					&& (key.equals("titanium miner") || MiningAreas.filter(List.of(commission)).allows(pos));
+				if (!counts) {
+					out.add(commission);
+					continue;
+				}
+				int have = Math.min(need, Math.round(commission.fraction() * need) + 1);
+				float fraction = have / (float) need;
+				boolean done = have >= need;
+				String label = done ? "Done" : commission.progress().contains("/") ? have + "/" + need : Math.round(fraction * 100f) + "%";
+				Commission next = new Commission(commission.name(), label, fraction, done);
+				ahead.put(commission.name(), next);
+				out.add(next);
+				changed = true;
+			}
+			if (changed) {
+				commissions = List.copyOf(out);
+				snapTick = Integer.MIN_VALUE;
+			}
+		}
+	}
+
+	/** "TITANIUM MINER Commission Complete!": that one is done, before the tab list says so. */
+	private static void markComplete(String name) {
+		synchronized (LOCK) {
+			List<Commission> out = new ArrayList<>(commissions.size());
+			boolean changed = false;
+			for (Commission commission : commissions) {
+				if (commission.name().equalsIgnoreCase(name) && !commission.done()) {
+					Commission next = new Commission(commission.name(), "Done", 1f, true);
+					ahead.put(commission.name(), next);
+					out.add(next);
+					changed = true;
+				} else {
+					out.add(commission);
+				}
+			}
+			if (changed) {
+				commissions = List.copyOf(out);
+				snapTick = Integer.MIN_VALUE;
+			}
+		}
 	}
 
 	public record Snapshot(

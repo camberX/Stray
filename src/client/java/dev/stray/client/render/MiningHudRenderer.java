@@ -111,11 +111,12 @@ public final class MiningHudRenderer {
 				int progressColor = progressColor(commission);
 				String name = clip(font, commission.name(), WIDTH - PAD * 2 - 28);
 				GuiDraw.small(graphics, font, name, PAD + 2, rowY, commission.done() ? Theme.ACCENT : Theme.TEXT);
+				String progress = MiningTracker.shown(commission);
 				GuiDraw.small(
 					graphics,
 					font,
-					commission.progress(),
-					WIDTH - PAD - GuiDraw.smallWidth(font, commission.progress()),
+					progress,
+					WIDTH - PAD - GuiDraw.smallWidth(font, progress),
 					rowY,
 					progressColor
 				);

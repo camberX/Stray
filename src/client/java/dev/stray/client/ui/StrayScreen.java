@@ -166,7 +166,7 @@ public class StrayScreen extends Screen {
 		MUSIC("Music", 4),
 		PIP("Picture in picture", 3),
 		RAWMATS("Raw mats", 2),
-		MINING("Mining HUD", 1),
+		MINING("Mining HUD", 2),
 		TITANIUM("Titanium ESP", 4),
 		CRYSTAL("CH waypoints", 5),
 		ROUTE("Route miner", 4),
@@ -4192,7 +4192,10 @@ public class StrayScreen extends Screen {
 				y = cycle(graphics, font, ix, y, iw, mouseX, mouseY, "Materials", () -> config.rawmatsModeLabel(), config::cycleRawmatsMode);
 				cycle(graphics, font, ix, y, iw, mouseX, mouseY, "Display", () -> config.rawmatsDisplayLabel(), config::cycleRawmatsDisplay);
 			}
-			case MINING -> toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Ability alert", config.miningAbilityAlert, v -> config.miningAbilityAlert = v);
+			case MINING -> {
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Ability alert", config.miningAbilityAlert, v -> config.miningAbilityAlert = v);
+				toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Progress in numbers", config.miningHudNumbers, v -> config.miningHudNumbers = v);
+			}
 			case TOP_DOWN -> {
 			}
 			case FARMING -> slider(graphics, font, ix, y, iw, "Scale", Math.round(config.farmingYawPitchScale * 100) + "%", (config.farmingYawPitchScale - 0.50f) / 1.50f, v -> config.farmingYawPitchScale = StrayConfig.clampHudScale(0.50f + v * 1.50f));

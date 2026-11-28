@@ -43,6 +43,7 @@ public final class ClientPackets {
 			client.execute(() -> {
 				if (client.level != null) {
 					dev.stray.client.dungeon.m4.M4.onBlockUpdate(update.getPos(), client.level.getBlockState(update.getPos()), update.getBlockState());
+					titaniumBroken(client, update.getPos(), client.level.getBlockState(update.getPos()), update.getBlockState());
 				}
 			});
 		} else if (packet instanceof net.minecraft.network.protocol.game.ClientboundSectionBlocksUpdatePacket section) {
@@ -51,10 +52,27 @@ public final class ClientPackets {
 					section.runUpdates((pos, state) -> {
 						net.minecraft.core.BlockPos at = pos.immutable();
 						dev.stray.client.dungeon.m4.M4.onBlockUpdate(at, client.level.getBlockState(at), state);
+						titaniumBroken(client, at, client.level.getBlockState(at), state);
 					});
 				}
 			});
 		}
+	}
+
+	/**
+	 * Mining HUD: the titanium ore (polished diorite) you are mining turned into something else,
+	 * before vanilla applies the change. You were looking at it with attack held.
+	 */
+	private static void titaniumBroken(Minecraft client, net.minecraft.core.BlockPos pos,
+		net.minecraft.world.level.block.state.BlockState before, net.minecraft.world.level.block.state.BlockState after) {
+		if (!before.is(net.minecraft.world.level.block.Blocks.POLISHED_DIORITE) || after.is(net.minecraft.world.level.block.Blocks.POLISHED_DIORITE)) {
+			return;
+		}
+		if (!client.options.keyAttack.isDown() || !(client.hitResult instanceof net.minecraft.world.phys.BlockHitResult hit)
+			|| !hit.getBlockPos().equals(pos) || !dev.stray.client.mining.MiningTracker.inMiningIsland()) {
+			return;
+		}
+		dev.stray.client.mining.MiningTracker.onTitaniumBroken(pos);
 	}
 
 	/** Every packet as it arrives (from {@code Connection.channelRead0}). */

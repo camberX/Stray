@@ -259,6 +259,8 @@ public final class StrayConfig {
 	public boolean rawmatsHudEnabled = false;
 	public boolean miningHudEnabled = false;
 	public boolean miningAbilityAlert = false;
+	/** Mining HUD: commission progress as "6/15" where the amount is known, instead of percent. */
+	public boolean miningHudNumbers = false;
 	public boolean farmingYawPitch = false;
 	public float farmingYawPitchScale = 1.00f;
 	public boolean autoDnaEnabled = false;
