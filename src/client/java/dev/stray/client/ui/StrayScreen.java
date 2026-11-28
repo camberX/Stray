@@ -141,7 +141,7 @@ public class StrayScreen extends Screen {
 		VIEW("Aspect", 3),
 		MOTION("Motion blur", 3),
 		MONOCHROME("Monochrome", 10),
-		SPACE_ROOF("Space roof", 10),
+		SPACE_ROOF("Space roof", 23),
 		FOOTSTEP_RIPPLES("Footstep ripples", 1),
 		WAYPOINTS("Waypoints", 11),
 		SCHIZOPHRENIA("Schizophrenia", 11),
@@ -3973,7 +3973,24 @@ public class StrayScreen extends Screen {
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Space cracks", config.spaceRoofCracks, v -> config.spaceRoofCracks = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Rising debris", config.spaceRoofDebris, v -> config.spaceRoofDebris = v);
 				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Starlit floor", config.spaceRoofReflect, v -> config.spaceRoofReflect = v);
-				toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Cosmic haze", config.spaceRoofMist, v -> config.spaceRoofMist = v);
+				float strength = StrayConfig.clamp(config.spaceRoofReflectStrength, 0.25f, 3f);
+				y = slider(graphics, font, ix, y, iw, "Reflection strength", String.format(java.util.Locale.ROOT, "%.2fx", strength), (strength - 0.25f) / 2.75f,
+					v -> config.spaceRoofReflectStrength = 0.25f + snapInt(v * 11f, 0, 11, 1) * 0.25f);
+				y = toggle(graphics, font, ix, y, iw, mouseX, mouseY, "Cosmic haze", config.spaceRoofMist, v -> config.spaceRoofMist = v);
+				// Each roof piece's height: moves its sky up or down whole blocks from where it was placed.
+				for (String[] piece : dev.stray.client.visual.SpaceRoof.PIECES) {
+					String key = piece[0];
+					int lift = Math.clamp(config.spaceRoofHeights.getOrDefault(key, 0), -6, 6);
+					String text = lift == 0 ? "As placed" : (lift > 0 ? "+" : "") + lift + (Math.abs(lift) == 1 ? " block" : " blocks");
+					y = slider(graphics, font, ix, y, iw, piece[1] + " height", text, (lift + 6) / 12f, v -> {
+						int set = snapInt(v * 12f, 0, 12, 1) - 6;
+						if (set == 0) {
+							config.spaceRoofHeights.remove(key);
+						} else {
+							config.spaceRoofHeights.put(key, set);
+						}
+					});
+				}
 			}
 			case FOOTSTEP_RIPPLES -> {
 				colorRow(graphics, font, ix, y, iw, mouseX, mouseY, "Colour", config.footstepRipplesRgb, PickerTarget.FOOTSTEP_RIPPLES);

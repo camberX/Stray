@@ -161,6 +161,18 @@ public final class SkyblockLocation {
 		return brand == null ? "" : brand;
 	}
 
+	/** On the Dungeon Hub island (the area or point of interest says so). */
+	public static boolean inDungeonHub() {
+		if (!inSkyblock) {
+			return false;
+		}
+		return hubName(area) || hubName(poi);
+	}
+
+	private static boolean hubName(String name) {
+		return name != null && name.toLowerCase(java.util.Locale.ROOT).contains("dungeon hub");
+	}
+
 	public static boolean inGarden() {
 		if (!inSkyblock) {
 			return false;

@@ -88,7 +88,7 @@ public final class SpaceRoof {
 	}
 
 	/** A room's sky: its tiles, and which world columns have a layer at which heights (for stardust). */
-	private record Baked(String name, int version, float fade, int glowFlags, int floorFlags, Tile[] sheet, Tile[] tiles, Tile[] glow, Tile[] floor, Map<Long, int[]> plan,
+	private record Baked(String name, int version, float fade, int glowFlags, int floorFlags, int lift, Tile[] sheet, Tile[] tiles, Tile[] glow, Tile[] floor, Map<Long, int[]> plan,
 		double minX, double minZ, double maxX, double maxZ) {
 		boolean empty() {
 			return tiles.length == 0 && sheet.length == 0;
@@ -199,7 +199,7 @@ public final class SpaceRoof {
 		float cy = (float) camera.y;
 		float cz = (float) camera.z;
 		int rgb = config.spaceRoofRgb & 0xFFFFFF;
-		int floorBits = floorFlags(config);
+		int floorBits = floorShaderBits(config);
 		if (floorBits != 0 && !nearFloor.isEmpty()) {
 			int argb = floorBits << 24 | rgb;
 			context.submitNodeCollector().submitCustomGeometry(context.poseStack(), floorType(), (pose, consumer) -> streamTiles(consumer, pose, nearFloor, GLOW_QUAD, cx, cy, cz, 0f, argb));
@@ -369,7 +369,7 @@ public final class SpaceRoof {
 		float opacity = StrayConfig.clamp(config.spaceRoofOpacity, 0f, 1f);
 		// The benchmark can leave single block effects out (bits 16, 32, 64 of hidden).
 		int glowBits = glowFlags(config) & ~(hidden >> 4 & 7);
-		int floorBits = floorFlags(config);
+		int floorBits = floorShaderBits(config);
 		long skyStyle = (long) rgb << 32 | Float.floatToIntBits(opacity) & 0xFFFFFFFFL;
 		long glowStyle = (long) glowBits << 24 | rgb;
 		long floorStyle = (long) floorBits << 24 | rgb;
@@ -436,6 +436,16 @@ public final class SpaceRoof {
 		return (config.spaceRoofLight ? 1 : 0) | (config.spaceRoofSeams ? 2 : 0) | (config.spaceRoofCracks ? 4 : 0);
 	}
 
+	/** For the shader: bit 0 the starlit floor, bits 1 to 7 its strength in 32nds (Reflection strength slider). */
+	private static int floorShaderBits(StrayConfig config) {
+		int on = floorFlags(config);
+		if (on == 0) {
+			return 0;
+		}
+		int level = Math.clamp(Math.round(StrayConfig.clamp(config.spaceRoofReflectStrength, 0.25f, 3f) * 32f), 1, 127);
+		return on | level << 1;
+	}
+
 	/** Which floor effects are on, as bits for the shader: 1 starlit floor (the haze is fog, see CustomFog). */
 	private static int floorFlags(StrayConfig config) {
 		return config.spaceRoofReflect ? 1 : 0;
@@ -498,7 +508,8 @@ public final class SpaceRoof {
 		int floor = floorFlags(StrayConfig.get());
 		for (DungeonRooms.Room seen : SEEN.values()) {
 			Baked old = BAKED.get(seen.name());
-			if (old != null && old.version == version && old.fade == fade && old.glowFlags == glow && old.floorFlags == floor) {
+			int lift = lift(seen.name());
+			if (old != null && old.version == version && old.fade == fade && old.glowFlags == glow && old.floorFlags == floor && old.lift == lift) {
 				continue;
 			}
 			// Everything it reads from the saves is copied here, on the main thread.
@@ -509,16 +520,16 @@ public final class SpaceRoof {
 			int v = version;
 			if (mainThreadBake) {
 				try {
-					BAKED.put(seen.name(), bake(level, seen, sheetsCopy, carved, v, fade, glow, floor));
+					BAKED.put(seen.name(), bake(level, seen, sheetsCopy, carved, v, fade, glow, floor, lift));
 				} catch (RuntimeException e) {
 					bakeError = String.valueOf(e);
 					Stray.LOGGER.warn("Space roof: bake failed", e);
-					BAKED.put(seen.name(), new Baked(seen.name(), v, fade, glow, floor, new Tile[0], new Tile[0], new Tile[0], new Tile[0], Map.of(), 0, 0, 0, 0));
+					BAKED.put(seen.name(), new Baked(seen.name(), v, fade, glow, floor, lift, new Tile[0], new Tile[0], new Tile[0], new Tile[0], Map.of(), 0, 0, 0, 0));
 				}
 				return;
 			}
 			bakingLevel = level;
-			baking = BAKER.submit(() -> bake(level, seen, sheetsCopy, carved, v, fade, glow, floor));
+			baking = BAKER.submit(() -> bake(level, seen, sheetsCopy, carved, v, fade, glow, floor, lift));
 			return;
 		}
 	}
@@ -535,8 +546,47 @@ public final class SpaceRoof {
 	private static String bakeError;
 	private static ClientLevel bakingLevel;
 
+	/** The roof pieces with a height slider: name and label. */
+	public static final String[][] PIECES = {
+		{"@boss:f7:p1", "P1"}, {"@boss:f7:p2", "P2"}, {"@boss:f7:p3s1", "P3 section 1"}, {"@boss:f7:p3s2", "P3 section 2"},
+		{"@boss:f7:p3s3", "P3 section 3"}, {"@boss:f7:p3s4", "P3 section 4"}, {"@boss:f7:p3core", "P3 core"},
+		{"@boss:f7:p3", "P3 rest"}, {"@boss:f7:p4", "P4"}, {"@boss:f7:p5", "P5"}, {"@hub:dungeon", "Dungeon Hub"}
+	};
+
+	/** A piece's height slider (blocks, -6 to +6). */
+	static int lift(String name) {
+		Integer lift = StrayConfig.get().spaceRoofHeights.get(name);
+		return lift == null ? 0 : Math.clamp(lift, -6, 6);
+	}
+
 	static boolean active() {
-		return StrayConfig.get().spaceRoof && (SkyblockLocation.inDungeon || DevMode.on() || SkyEditor.active() || debugBoss > 0);
+		return StrayConfig.get().spaceRoof && (SkyblockLocation.inDungeon || inHub() || DevMode.on() || SkyEditor.active() || debugBoss > 0);
+	}
+
+	// ------------------------------------------------------------------ dungeon hub
+
+	/** {@code /stray debug dev roof hub}: act as if you're in the Dungeon Hub. */
+	private static boolean debugHub;
+
+	/** The Dungeon Hub (or the debug override): one place, its layers kept in world coordinates like the boss's. */
+	static boolean inHub() {
+		return debugHub || SkyblockLocation.inDungeonHub();
+	}
+
+	private static final DungeonRooms.Room HUB = new DungeonRooms.Room("@hub:dungeon", BlockPos.ZERO, 0, true);
+
+	/** {@code /stray debug dev roof hub}. */
+	public static String debugHub() {
+		debugHub = !debugHub;
+		if (debugHub) {
+			StrayConfig config = StrayConfig.get();
+			if (!config.spaceRoof) {
+				config.spaceRoof = true;
+				config.save();
+			}
+			return "acting as if you're in the Dungeon Hub (layers saved as @hub:dungeon, in world coordinates). Run it again to stop.";
+		}
+		return "Dungeon Hub override off.";
 	}
 
 	// ------------------------------------------------------------------ boss rooms
@@ -601,7 +651,7 @@ public final class SpaceRoof {
 	static DungeonRooms.Room bossRoom(int x, int y, int z) {
 		int floor = bossFloor();
 		if (floor <= 0) {
-			return null;
+			return inHub() ? HUB : null;
 		}
 		return bossPart(floor, floor == 7 ? f7Part(x, y, z) : null);
 	}
@@ -616,6 +666,8 @@ public final class SpaceRoof {
 			}
 		} else if (floor > 0) {
 			out.add(bossPart(floor, null));
+		} else if (inHub()) {
+			out.add(HUB);
 		}
 		return out;
 	}
@@ -626,8 +678,9 @@ public final class SpaceRoof {
 		return name.startsWith("@boss:f7:") ? name.substring("@boss:f7:".length()) : null;
 	}
 
+	/** A place kept in world coordinates and filled by spreading (a boss room, or the Dungeon Hub). */
 	static boolean isBoss(DungeonRooms.Room room) {
-		return room != null && room.name().startsWith("@boss:");
+		return room != null && (room.name().startsWith("@boss:") || room.name().startsWith("@hub:"));
 	}
 
 	/** {@code /stray debug dev roof boss <floor>}. */
@@ -944,7 +997,7 @@ public final class SpaceRoof {
 	public static String clear(Minecraft client) {
 		DungeonRooms.Room room = roomAt(client);
 		if (room == null) {
-			return "not in a boss room (/stray debug dev roof boss 7 to act as if).";
+			return "not in the boss room or Dungeon Hub (/stray debug dev roof boss 7 or hub to act as if).";
 		}
 		load();
 		// Kept as an empty part, so the shipped layers don't come back in its place.
@@ -964,7 +1017,7 @@ public final class SpaceRoof {
 		String where = "in dungeon " + SkyblockLocation.inDungeon + ", boss " + SkyblockLocation.inBoss + (debugBoss > 0 ? " (override F" + debugBoss + ")" : "")
 			+ ", dev mode " + DevMode.on() + ", Space roof " + (StrayConfig.get().spaceRoof ? "on" : "off");
 		if (room == null) {
-			return "not in a boss room (" + where + "). Space roof only shows in the boss room; /stray debug dev roof boss 7 acts as if.";
+			return "not in the boss room or Dungeon Hub (" + where + "). Space roof only shows there; /stray debug dev roof boss 7 or hub acts as if.";
 		}
 		List<Sheet> sheets = SAVED.get(room.name());
 		List<int[]> carves = CARVES.get(room.name());
@@ -1003,9 +1056,9 @@ public final class SpaceRoof {
 	 * the faces turned to the layer.
 	 */
 	private static Baked bake(ClientLevel level, DungeonRooms.Room room, List<Sheet> sheets, List<int[]> carved, int version,
-		float fade, int glowFlags, int floor) {
+		float fade, int glowFlags, int floor, int lift) {
 		if (sheets.isEmpty()) {
-			return new Baked(room.name(), version, fade, glowFlags, floor, new Tile[0], new Tile[0], new Tile[0], new Tile[0], Map.of(), 0, 0, 0, 0);
+			return new Baked(room.name(), version, fade, glowFlags, floor, lift, new Tile[0], new Tile[0], new Tile[0], new Tile[0], Map.of(), 0, 0, 0, 0);
 		}
 		boolean glow = glowFlags != 0;
 		Map<Long, List<float[]>> tiles = new HashMap<>();
@@ -1033,7 +1086,8 @@ public final class SpaceRoof {
 		int reach = Math.clamp(depth, 2, 5);
 		Map<Integer, Map<Long, Integer>> rings = new HashMap<>();
 		for (Sheet sheet : sheets) {
-			int top = sheet.y;
+			// Moved by its height slider (whole blocks), shape unchanged.
+			int top = sheet.y + lift;
 			float y = top - INSET;
 			Set<Long> plan = new java.util.HashSet<>();
 			Set<Long> worldCells = new LinkedHashSet<>();
@@ -1161,7 +1215,7 @@ public final class SpaceRoof {
 		merge(faces, false, (key, a0, a1) -> addTile(tiles, sideways(faceQuad(key, a0, a1, fade), rings.get(key.top), reachF)));
 		int fadeBlocks = Math.round(fade);
 		merge(glowFaces, false, (key, a0, a1) -> addTile(glowTiles, glowQuad(key, a0, a1, fadeBlocks, rings.get(key.top), reachF)));
-		return new Baked(room.name(), version, fade, glowFlags, floor, pack(sheetTiles, QUAD), pack(tiles, QUAD), pack(glowTiles, GLOW_QUAD), pack(floorTiles, GLOW_QUAD), allPlan, minX, minZ, maxX, maxZ);
+		return new Baked(room.name(), version, fade, glowFlags, floor, lift, pack(sheetTiles, QUAD), pack(tiles, QUAD), pack(glowTiles, GLOW_QUAD), pack(floorTiles, GLOW_QUAD), allPlan, minX, minZ, maxX, maxZ);
 	}
 
 	private interface Strip {
@@ -1834,12 +1888,12 @@ public final class SpaceRoof {
 	}
 
 	/**
-	 * The layers that ship with Stray (the F7 boss, every phase and P3 section), stored as
+	 * The layers that ship with Stray (the F7 boss, every phase and P3 section, and the Dungeon Hub), stored as
 	 * rectangles: {"@boss:f7:p1": [{"y": 246, "rects": [[x0, z0, x1, z1], ...]}, ...]}. A part in
 	 * the local file (from the sky painter) replaces the shipped one, so they can still be edited.
 	 */
 	private static void loadBundled() {
-		try (java.io.InputStream in = SpaceRoof.class.getResourceAsStream("/assets/stray/space_roof/f7.json")) {
+		try (java.io.InputStream in = SpaceRoof.class.getResourceAsStream("/assets/stray/space_roof/layers.json")) {
 			if (in == null) {
 				return;
 			}

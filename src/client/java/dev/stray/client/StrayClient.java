@@ -1064,7 +1064,10 @@ public final class StrayClient implements ClientModInitializer {
 			context.getSource().sendFeedback(Component.literal("§bStray §7Space roof: " + dev.stray.client.visual.SpaceRoof.debugBoss(
 				com.mojang.brigadier.arguments.IntegerArgumentType.getInteger(context, "floor"))));
 			return Command.SINGLE_SUCCESS;
-		}))).then(ClientCommands.literal("edit").executes(context -> {
+		}))).then(ClientCommands.literal("hub").executes(context -> {
+			context.getSource().sendFeedback(Component.literal("§bStray §7Space roof: " + dev.stray.client.visual.SpaceRoof.debugHub()));
+			return Command.SINGLE_SUCCESS;
+		})).then(ClientCommands.literal("edit").executes(context -> {
 			Minecraft client = Minecraft.getInstance();
 			// Freecam starts on the next tick, not from inside the command.
 			client.execute(() -> client.player.sendSystemMessage(Component.literal("§bStray §7Space roof: " + dev.stray.client.visual.SkyEditor.toggle(client))));

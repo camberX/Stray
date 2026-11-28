@@ -268,7 +268,7 @@ public final class SkyEditor {
 		}
 		if (hudTicks-- <= 0) {
 			hudTicks = 10;
-			String where = hit == null ? "§7aim at a ceiling" : room == null ? "§cnot in a boss room (/stray debug dev roof boss 7)" : "§f" + room.name();
+			String where = hit == null ? "§7aim at a ceiling" : room == null ? "§cnot in the boss room or Dungeon Hub (/stray debug dev roof boss 7 or hub)" : "§f" + room.name();
 			client.gui.hud.setOverlayMessage(Component.literal("§bSky painter §7· " + where + " §7· height §f" + y + (shift != 0 ? " §7(" + (shift > 0 ? "+" : "") + shift + ")" : "")
 				+ " §7· left place · right remove · scroll height · Z undo · C carve"), false);
 		}
@@ -335,7 +335,7 @@ public final class SkyEditor {
 		}
 		if (hudTicks-- <= 0) {
 			hudTicks = 10;
-			String where = room == null ? "§cnot in a boss room" : "§f" + room.name();
+			String where = room == null ? "§cnot in the boss room or Dungeon Hub" : "§f" + room.name();
 			String step = carveStart == null ? "left first corner" : "left second corner · middle cancel";
 			client.gui.hud.setOverlayMessage(Component.literal("§cCarving §7· " + where + " §7· " + step + " · right remove box · scroll up/down"
 				+ (shift != 0 ? " §f(" + (shift > 0 ? "+" : "") + shift + ")" : "") + " §7· Z undo · C back to sky"), false);

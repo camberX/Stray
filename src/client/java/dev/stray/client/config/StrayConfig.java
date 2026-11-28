@@ -89,6 +89,10 @@ public final class StrayConfig {
 	/** The floors under the sky: reflecting it, and a haze in the sky's colour. */
 	public boolean spaceRoofReflect = false;
 	public boolean spaceRoofMist = false;
+	/** Starlit floor: how strong the reflection is (1 = as made). */
+	public float spaceRoofReflectStrength = 1f;
+	/** Blocks each roof piece's sky is moved up (+) or down (-) from where it was placed, by piece name. */
+	public java.util.Map<String, Integer> spaceRoofHeights = new java.util.LinkedHashMap<>();
 	/** Footstep ripples: a ring of light spreading from every step people take. */
 	public boolean footstepRipples = false;
 	public int footstepRipplesRgb = 0x8FA8FF;

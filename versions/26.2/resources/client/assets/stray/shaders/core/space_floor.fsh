@@ -12,8 +12,8 @@ out vec4 fragColor;
 
 // Space Roof floor effects: the starlit floor, the sky mirrored in the floor's tops (real block
 // shapes). UV0: x = which way the face points (1 up plus the block's reflectivity 0..1, -1 down,
-// 0 a side), y = height over the floor of its column. Vertex colour: rgb = sky colour, a = effect
-// bits (1 starlit floor). Premultiplied: the reflection paints over.
+// 0 a side), y = height over the floor of its column. Vertex colour: rgb = sky colour, a = bit 0
+// the starlit floor, bits 1 to 7 its strength in 32nds. Premultiplied: the reflection paints over.
 
 float hash13(vec3 p) {
     p = fract(p * 0.1031);
@@ -86,12 +86,14 @@ void main() {
         float shine = clamp((facing - 1.0) / 0.998, 0.0, 1.0);
         float fresnel = 0.05 + 0.95 * pow(1.0 - abs(view.y), 5.0);
         // Only where it shows at all (carpets and the like reflect nothing).
-        if ((flags & 1) != 0 && fresnel * shine * 0.75 > 0.004) {
+        // Reflection strength slider: bits 1 to 7 in 32nds (1 = as made).
+        float strength = float(flags >> 1) / 32.0;
+        if ((flags & 1) != 0 && fresnel * shine * 0.75 * strength > 0.004) {
             vec3 r = vec3(view.x, -view.y, view.z);
             r.xz += (vec2(valueNoise(world * 1.7), valueNoise(world * 1.7 + 9.0)) - 0.5) * 0.03;
             // How reflective this block is (polished stone a lot, carpet not at all).
-            float s = clamp(fresnel * 0.75, 0.0, 0.8) * shine;
-            color = over(color, vec4(space(r, tint, t) * s, s * 0.55));
+            float s = clamp(fresnel * 0.75, 0.0, 0.8) * shine * strength;
+            color = over(color, vec4(space(r, tint, t) * s, min(s * 0.55, 0.92)));
         }
     }
 

@@ -472,7 +472,7 @@ public final class ClickGui {
 		java.util.Map.entry("Schizophrenia", "Players near you stare at you, and now and then you hear and see things that are not there. Only on your screen."),
 		java.util.Map.entry("Waypoints", "Boxes you place where you stand: the bottom at your feet, your own width, height, outline and colours. Saved per island."),
 		java.util.Map.entry("Footstep ripples", "A soft ring of light in your colour spreads from every step you and other players take, and fades."),
-		java.util.Map.entry("Space roof", "The Floor 7 boss ceilings show a night sky in your colour, fading back to the bricks at its edges. Only the look changes: the ceiling is still there."),
+		java.util.Map.entry("Space roof", "The Floor 7 boss and Dungeon Hub ceilings show a night sky in your colour, fading back to the bricks at its edges. Only the look changes: the ceiling is still there."),
 		java.util.Map.entry("Monochrome", "Blocks in black and white. Things in the splash colour, usable blocks and your own list stay in the accent colour, with their texture and lighting. Whole screen does items, menus and mobs too."),
 		java.util.Map.entry("Skull hold", "Holds skulls and heads the 1.8 way."),
 		java.util.Map.entry("Backwards walk", "1.8 style body turn when walking backwards."),
