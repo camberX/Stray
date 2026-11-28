@@ -15,6 +15,11 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.6.11", new String[]{
+			"Hotfix.",
+			"Space roof: the gaps in the F7 sky are filled, where the ceiling had barriers or thick bridges and ledges under it.",
+			"Space roof: the P2 sky sits right under its ceiling now, and P1, the third P3 section and P4 got an updated sky."
+		}),
 		new Entry("1.6.10", new String[]{
 			"The Space Update.",
 			"Space roof (World): the Floor 7 boss ceilings open up into a night sky in your colour, with nebula clouds, twinkling stars and a soft fade back to the bricks down the walls (Wall fade). Every phase and P3 section is set up and ships with Stray. Only the look changes: the ceiling is still there.",
