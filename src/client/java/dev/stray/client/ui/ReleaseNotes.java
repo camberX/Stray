@@ -15,6 +15,11 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.6.12", new String[]{
+			"Space roof: the Dungeon Hub gets the night sky too.",
+			"Space roof: a height slider for every roof piece (each F7 phase and P3 section, and the Dungeon Hub) moves its sky up or down.",
+			"Starlit floor: a Reflection strength slider, from a hint to a strong mirror. Polished stone still shines more than carpet."
+		}),
 		new Entry("1.6.11", new String[]{
 			"Hotfix.",
 			"Space roof: the gaps in the F7 sky are filled, where the ceiling had barriers or thick bridges and ledges under it.",
