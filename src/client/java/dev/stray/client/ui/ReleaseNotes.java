@@ -15,6 +15,16 @@ public final class ReleaseNotes {
 
 	public static final int VISIBLE = 10;
 	public static final Entry[] ENTRIES = {
+		new Entry("1.6.10", new String[]{
+			"The Space Update.",
+			"Space roof (World): the Floor 7 boss ceilings open up into a night sky in your colour, with nebula clouds, twinkling stars and a soft fade back to the bricks down the walls (Wall fade). Every phase and P3 section is set up and ships with Stray. Only the look changes: the ceiling is still there.",
+			"Space roof extras, each one a toggle: shooting stars, falling stardust, nebula light on the walls, glowing seams, space cracks where the sky ends, stone bits rising into the sky, a starlit floor that mirrors the sky (polished stone more, carpet not at all) and a cosmic haze in the sky's colour.",
+			"Built to be light: the sky sits on your graphics card and is drawn in one go, and works on OpenGL and Vulkan.",
+			"Footstep ripples (World): a soft ring of light in your colour spreads from every step you and other players take.",
+			"Auto rag (full edition): after the relic is placed in M7 P5, swaps to your Ragnarock and casts it, then swaps to Golden Dragon and your wardrobe set or loadout. Off by default.",
+			"F7 phase detection no longer drops out for a moment when the sidebar flickers between phases.",
+			"World editor: a selection drag keeps going while you turn around."
+		}),
 		new Entry("1.6.9", new String[]{
 			"The Schizophrenia Update.",
 			"Schizophrenia (World): players near you stare at you. By default they look away the moment your crosshair is on them, and stare again once it's gone. Or pick Always stare, or Late notice (they ignore you, then all turn together).",
