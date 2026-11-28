@@ -686,7 +686,7 @@ public final class SpaceRoof {
 	private static Set<Long> spread(ClientLevel level, int startX, int startZ, int y, String part) {
 		Set<Long> cells = new LinkedHashSet<>();
 		BlockPos.MutableBlockPos at = new BlockPos.MutableBlockPos();
-		if (wall(level, at, startX, y, startZ)) {
+		if (wall(level, at, startX, y, startZ, part)) {
 			return cells;
 		}
 		ArrayDeque<long[]> queue = new ArrayDeque<>();
@@ -703,7 +703,7 @@ public final class SpaceRoof {
 				}
 				long k = key(x, z);
 				if (cells.contains(k) || part != null && !part.equals(f7Part(x, y - 1, z))
-					|| wall(level, at, x, y, z)) {
+					|| wall(level, at, x, y, z, part)) {
 					continue;
 				}
 				cells.add(k);
@@ -723,6 +723,69 @@ public final class SpaceRoof {
 			}
 		}
 		return grown;
+	}
+
+	/** How far past a saved layer's edges {@link #regrow} may reach. */
+	private static final int REGROW = 24;
+
+	/**
+	 * A boss layer as the fill would place it now: from its saved cells, out through every
+	 * column the current rule lets through (barriers, thick bridges, ledges), within the same part
+	 * and at most {@code REGROW} blocks past the saved layer's edges (so it can't leak out of an
+	 * opening into the void round the boss). Layers placed under older rules get their gaps
+	 * filled without placing them again; the saved cells stay as they are.
+	 */
+	private static Set<Long> regrow(ClientLevel level, Set<Long> saved, int y, String part) {
+		if (saved.isEmpty()) {
+			return saved;
+		}
+		int minX = Integer.MAX_VALUE;
+		int minZ = Integer.MAX_VALUE;
+		int maxX = Integer.MIN_VALUE;
+		int maxZ = Integer.MIN_VALUE;
+		for (long cell : saved) {
+			minX = Math.min(minX, x(cell));
+			minZ = Math.min(minZ, z(cell));
+			maxX = Math.max(maxX, x(cell));
+			maxZ = Math.max(maxZ, z(cell));
+		}
+		minX -= REGROW;
+		minZ -= REGROW;
+		maxX += REGROW;
+		maxZ += REGROW;
+		Set<Long> cells = new LinkedHashSet<>(saved);
+		Set<Long> added = new java.util.HashSet<>();
+		ArrayDeque<Long> queue = new ArrayDeque<>(saved);
+		BlockPos.MutableBlockPos at = new BlockPos.MutableBlockPos();
+		int[][] steps = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}};
+		while (!queue.isEmpty() && cells.size() < BOSS_MAX) {
+			long cell = queue.poll();
+			for (int[] step : steps) {
+				int x = x(cell) + step[0];
+				int z = z(cell) + step[1];
+				if (x < minX || x > maxX || z < minZ || z > maxZ) {
+					continue;
+				}
+				long k = key(x, z);
+				// Not into chunks that aren't loaded yet (they'd read as air).
+				if (cells.contains(k) || !level.hasChunk(x >> 4, z >> 4) || part != null && !part.equals(f7Part(x, y - 1, z))
+					|| wall(level, at, x, y, z, part)) {
+					continue;
+				}
+				cells.add(k);
+				added.add(k);
+				queue.add(k);
+			}
+		}
+		// Like the fill: one more block round what was added, so thin pillars there are closed over.
+		for (long cell : added) {
+			for (int dx = -1; dx <= 1; dx++) {
+				for (int dz = -1; dz <= 1; dz++) {
+					cells.add(key(x(cell) + dx, z(cell) + dz));
+				}
+			}
+		}
+		return cells;
 	}
 
 	/** Adds a layer (world cells) to the room; returns it in room coordinates, for undo. */
@@ -751,8 +814,9 @@ public final class SpaceRoof {
 	static void remove(DungeonRooms.Room room, Sheet sheet) {
 		load();
 		List<Sheet> sheets = SAVED.get(room.name());
-		if (sheets != null && sheets.remove(sheet) && sheets.isEmpty()) {
-			SAVED.remove(room.name());
+		// An emptied part stays (empty) in the local file, so the shipped layers don't come back in its place.
+		if (sheets != null) {
+			sheets.remove(sheet);
 		}
 		changed();
 	}
@@ -883,7 +947,8 @@ public final class SpaceRoof {
 			return "not in a boss room (/stray debug dev roof boss 7 to act as if).";
 		}
 		load();
-		List<Sheet> removed = SAVED.remove(room.name());
+		// Kept as an empty part, so the shipped layers don't come back in its place.
+		List<Sheet> removed = SAVED.put(room.name(), new ArrayList<>());
 		CARVES.remove(room.name());
 		changed();
 		return "cleared " + room.name() + " (" + (removed == null ? 0 : removed.size()) + " layers).";
@@ -971,12 +1036,20 @@ public final class SpaceRoof {
 			int top = sheet.y;
 			float y = top - INSET;
 			Set<Long> plan = new java.util.HashSet<>();
+			Set<Long> worldCells = new LinkedHashSet<>();
 			for (long cell : sheet.cells) {
 				BlockPos world = room.toWorld(new BlockPos(x(cell), top, z(cell)));
-				if (world == null || carved(carved, world.getX(), top, world.getZ()) || carved(carved, world.getX(), top - 1, world.getZ())) {
+				if (world != null) {
+					worldCells.add(key(world.getX(), world.getZ()));
+				}
+			}
+			if (isBoss(room)) {
+				worldCells = regrow(level, worldCells, top, partOf(room));
+			}
+			for (long k : worldCells) {
+				if (carved(carved, x(k), top, z(k)) || carved(carved, x(k), top - 1, z(k))) {
 					continue;
 				}
-				long k = key(world.getX(), world.getZ());
 				plan.add(k);
 				int[] ys = allPlan.get(k);
 				if (ys == null) {
@@ -1646,15 +1719,19 @@ public final class SpaceRoof {
 	}
 
 	/** Blocks under a layer that must all be solid for a column to count as wall. */
-	private static final int WALL_DEPTH = 6;
+	private static final int WALL_DEPTH = 16;
 
 	/**
 	 * A column the boss fill stops at: solid all the way down for {@code WALL_DEPTH} blocks under
-	 * the layer. A column solid only near the ceiling, with open space lower down (stairs or a
-	 * ledge running up to the roof), is still part of the room and gets the sky.
+	 * the layer. A column solid only near the ceiling, with open space lower down (stairs, a ledge
+	 * or a thick bridge running along the roof), is still part of the room and gets the sky. On F7
+	 * the check ends at the bottom of the part, so open space in the phase below doesn't count.
 	 */
-	private static boolean wall(ClientLevel level, BlockPos.MutableBlockPos at, int x, int y, int z) {
+	private static boolean wall(ClientLevel level, BlockPos.MutableBlockPos at, int x, int y, int z, String part) {
 		for (int k = 1; k <= WALL_DEPTH; k++) {
+			if (part != null && !part.equals(f7Part(x, y - k, z))) {
+				return true;
+			}
 			if (!stops(level, at.set(x, y - k, z))) {
 				return false;
 			}
@@ -1714,9 +1791,8 @@ public final class SpaceRoof {
 					sheets.add(new Sheet(object.get("y").getAsInt(), cells));
 				}
 			}
-			if (!sheets.isEmpty()) {
-				SAVED.put(key, sheets);
-			}
+			// Even an empty part: it was cleared on purpose and replaces the shipped one.
+			SAVED.put(key, sheets);
 			if (!carves.isEmpty()) {
 				CARVES.put(key, carves);
 			}
