@@ -224,6 +224,7 @@ public final class TerminalSession {
 		processPending();
 		poll();
 		checkSimSolved();
+		holdClick(mouseX, mouseY);
 		TerminalGui.render(graphics, width, height, term, loaded, firstClickBlocked(), doneText, mouseX, mouseY);
 	}
 
@@ -267,6 +268,18 @@ public final class TerminalSession {
 
 	public static void mouseReleased() {
 		dragSlot = -1;
+	}
+
+	/**
+	 * Every frame: with left click held down (read from the mouse itself, not from drag events,
+	 * which don't always arrive), a slot the cursor moves onto is clicked once.
+	 */
+	private static void holdClick(double mouseX, double mouseY) {
+		if (!dev.stray.client.input.MouseButtons.down(0)) {
+			dragSlot = -1;
+			return;
+		}
+		mouseDragged(mouseX, mouseY);
 	}
 
 	/** Returns true when the key is used up: everything but closing keys; drop clicks the hovered slot. */
