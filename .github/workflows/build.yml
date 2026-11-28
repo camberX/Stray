@@ -18,7 +18,8 @@ jobs:
   build:
     runs-on: ubuntu-24.04
     permissions:
-      contents: read
+      # write: player releases also go to the GitHub Releases tab (last step).
+      contents: write
     env:
       HAS_CLOUDFLARE: ${{ secrets.CLOUDFLARE_API_TOKEN != '' }}
       HAS_RELEASES_WEBHOOK: ${{ secrets.DISCORD_RELEASES_WEBHOOK != '' }}
@@ -180,3 +181,30 @@ jobs:
                                      headers={"Content-Type": "application/json", "User-Agent": "stray-release"})
         urllib.request.urlopen(req).read()
         PY
+    - name: publish the GitHub release
+      if: success() && github.event_name == 'workflow_dispatch' && inputs.release == true
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        LEGIT_ONLY: ${{ inputs.legit_only == true }}
+      run: |
+        set -euo pipefail
+        VERSION=$(grep '^version=' gradle.properties | cut -d= -f2 | tr -d '[:space:]')
+        # The newest ReleaseNotes entry as the release text (like the Discord post).
+        python3 - <<'PY'
+        import json, re
+        src = open("src/client/java/dev/stray/client/ui/ReleaseNotes.java", encoding="utf-8").read()
+        m = re.search(r'new Entry\("([^"]+)", new String\[\]\{(.*?)\}\)', src, re.S)
+        lines = [json.loads('"' + l + '"') for l in re.findall(r'"((?:[^"\\]|\\.)*)"', m.group(2))]
+        open("notes.md", "w", encoding="utf-8").write("\n".join("- " + l for l in lines) + "\n\nDownloads and in-game updates: https://stray.gay\n")
+        PY
+        if [ "$LEGIT_ONLY" = "true" ]; then
+          FILES=$(ls artifacts/stray-legit-*/*.jar)
+        else
+          FILES=$(ls artifacts/stray-*/*.jar)
+        fi
+        if gh release view "v$VERSION" >/dev/null 2>&1; then
+          # Already there (a Legit-only release after the full one): replace the jars.
+          gh release upload "v$VERSION" $FILES --clobber
+        else
+          gh release create "v$VERSION" $FILES --target "$GITHUB_SHA" --title "$VERSION" --notes-file notes.md --latest
+        fi
